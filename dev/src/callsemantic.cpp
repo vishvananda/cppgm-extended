@@ -13911,7 +13911,9 @@ private:
 	      vector<TemplateArgumentSyntax> structural_arg_syntaxes;
 	      structural_arg_syntaxes.reserve(arguments.size());
 	      for(size_t i = 0; i < arguments.size(); ++i) {
-	        TemplateArgumentSyntax syntax;
+	        TemplateArgumentSyntax syntax = arguments[i].source_syntax ?
+	            *arguments[i].source_syntax :
+	            TemplateArgumentSyntax();
 	        syntax.text = i < structural_arg_texts.size() ?
 	            structural_arg_texts[i] :
 	            template_argument_text(arguments[i]);

@@ -7,14 +7,6 @@
 
 namespace template_api {
 
-bool resolve_template_template_argument_text(
-    TemplateServices & services,
-    TemplateEnvironmentHandle scope,
-    const std::string & text,
-    std::size_t expected_parameter_count,
-    bool allow_dependent_placeholders,
-    template_model::TemplateArgument & out);
-
 NonTypeArgumentStatus evaluate_non_type_argument_expression(
     TemplateServices & services,
     TemplateEnvironmentHandle scope,

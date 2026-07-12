@@ -5510,18 +5510,6 @@ void append_template_witness_source_bindings(
   }
 }
 
-bool resolve_template_template_argument_text(
-    TemplateServices & services,
-    TemplateEnvironmentHandle scope,
-    const std::string & text,
-    std::size_t expected_parameter_count,
-    bool allow_dependent_placeholders,
-    template_model::TemplateArgument & out)
-{
-  return template_argument_semantics::resolve_template_template_argument_text(
-      services, scope, text, expected_parameter_count, allow_dependent_placeholders, out);
-}
-
 NonTypeArgumentStatus evaluate_non_type_argument_expression(
     TemplateServices & services,
     TemplateEnvironmentHandle scope,

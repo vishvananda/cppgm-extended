@@ -9976,17 +9976,6 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
                 resolved);
       }
     }
-    if(!resolved_template_argument &&
-       actual_arg.find("::") == std::string::npos) {
-      resolved_template_argument =
-          template_api::resolve_template_template_argument_text(
-              services,
-              template_api::make_template_environment(match_scope),
-              actual_arg,
-              static_cast<std::size_t>(-1),
-              false,
-              resolved);
-    }
     if(resolved_template_argument &&
        deduce_template_template_parameter_from_argument(
            deduced, direct_parameter->name, resolved)) {

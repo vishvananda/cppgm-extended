@@ -76,14 +76,6 @@ struct ExpandedTemplateArgumentInputs
   cpp_decl::TypePtr type_for(std::size_t index) const;
 };
 
-bool resolve_template_template_argument_text(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const std::string & text,
-    std::size_t expected_parameter_count,
-    bool allow_dependent_placeholders,
-    template_model::TemplateArgument & out);
-
 bool resolve_template_template_argument_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

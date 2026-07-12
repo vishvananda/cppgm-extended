@@ -5784,10 +5784,14 @@ bool resolve_bound_template_template_id_argument_syntax(
   }
 
   TemplateArgument replacement;
-  if(!template_argument_semantics::resolve_template_template_argument_text(
+  TemplateArgumentSyntax head_syntax;
+  head_syntax.text = syntax.name.name;
+  head_syntax.template_id.reset(new TemplateIdSyntax(syntax));
+  if(!template_argument_semantics::resolve_template_template_argument_syntax(
          services,
          template_api::make_template_environment(scope),
          syntax.name.name,
+         head_syntax,
          static_cast<std::size_t>(-1),
          true,
          replacement) ||
@@ -8017,10 +8021,11 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
         } else if(parameter &&
                   parameter->kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
           TemplateArgument arg;
-          if(template_api::resolve_template_template_argument_text(
+          if(template_argument_semantics::resolve_template_template_argument_syntax(
                  services,
                  template_api::make_template_environment(lookup_scope),
                  dependent_arg.text,
+                 dependent_arg.syntax,
                  parameter->template_parameter_count,
                  true,
                  arg)) {
@@ -11606,19 +11611,12 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   attach_template_argument_source_syntax(syntax, out);
 
   if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
-    const bool ok = syntax ?
+    const bool ok = syntax &&
         template_argument_semantics::resolve_template_template_argument_syntax(
             services,
             argument_scope,
             trimmed,
             *syntax,
-            parameter.template_parameter_count,
-            true,
-            out) :
-        template_api::resolve_template_template_argument_text(
-            services,
-            argument_scope,
-            trimmed,
             parameter.template_parameter_count,
             true,
             out);
