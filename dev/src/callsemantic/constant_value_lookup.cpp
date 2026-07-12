@@ -359,8 +359,11 @@ public:
             << " arg_count=" << template_id.arguments.size();
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
+    const CppAstNode template_name_node =
+        retained_template_name_node(template_id);
     VariableTemplateDecl * variable_template =
-        lookup_variable_template(scope, template_id.name);
+        semantic_lookup::lookup_variable_template_node(
+            ctx, scope, template_id.name, template_name_node);
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "lookup-constant template-id=" << display_name
@@ -870,8 +873,14 @@ public:
       return false;
     }
 
+    const CppAstNode template_name_node =
+        retained_template_name_node(qualifier_template_id);
     ClassTemplateDecl * class_template =
-        lookup_class_template(scope, qualifier_template_id.name);
+        semantic_lookup::lookup_class_template_node(
+            ctx,
+            scope,
+            qualifier_template_id.name,
+            template_name_node);
 
     const bool std_qualified_is_same =
         !qualifier_template_id.name.qualifiers.empty() &&
@@ -925,7 +934,11 @@ public:
 
     if(!class_template) {
       AliasTemplateDecl * alias_template =
-          ctx.lookup_alias_template(scope, qualifier_template_id.name);
+          semantic_lookup::lookup_alias_template_node(
+              ctx,
+              scope,
+              qualifier_template_id.name,
+              template_name_node);
       if(!alias_template) {
         return false;
       }
@@ -2530,6 +2543,18 @@ private:
                                             const std::string & name)
   {
     return ctx.lookup_class_template(scope, name);
+  }
+
+  static CppAstNode retained_template_name_node(
+      const TemplateIdSyntax & syntax)
+  {
+    CppAstNode node;
+    node.qualified_name_syntax.reset(new QualifiedName(syntax.name));
+    node.template_id_syntax.reset(new TemplateIdSyntax(syntax));
+    node.qualifier_template_id_syntaxes =
+        syntax.qualifier_template_id_syntaxes;
+    node.source_location_id = syntax.source_location_id;
+    return node;
   }
 
   ClassTemplateDecl * lookup_class_template(Scope & scope,

@@ -302,12 +302,22 @@ ClassTemplateDecl * lookup_class_template(SemanticContext & ctx,
 ClassTemplateDecl * lookup_class_template(SemanticContext & ctx,
                                           Scope & scope,
                                           const cpp_decl::QualifiedName & name);
+ClassTemplateDecl * lookup_class_template_node(
+    SemanticContext & ctx,
+    Scope & scope,
+    const cpp_decl::QualifiedName & name,
+    const CppAstNode & node);
 AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
                                           Scope & scope,
                                           const std::string & name);
 AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
                                           Scope & scope,
                                           const cpp_decl::QualifiedName & name);
+AliasTemplateDecl * lookup_alias_template_node(
+    SemanticContext & ctx,
+    Scope & scope,
+    const cpp_decl::QualifiedName & name,
+    const CppAstNode & node);
 std::vector<FunctionTemplateDecl *> lookup_function_templates(SemanticContext & ctx,
                                                               Scope & scope,
                                                               const std::string & name);
@@ -325,6 +335,11 @@ VariableTemplateDecl * lookup_variable_template(SemanticContext & ctx,
 VariableTemplateDecl * lookup_variable_template(SemanticContext & ctx,
                                                 Scope & scope,
                                                 const cpp_decl::QualifiedName & qualified);
+VariableTemplateDecl * lookup_variable_template_node(
+    SemanticContext & ctx,
+    Scope & scope,
+    const cpp_decl::QualifiedName & qualified,
+    const CppAstNode & node);
 Scope * resolve_qualified_scope_for_class_or_namespace(SemanticContext & ctx,
                                                        Scope & scope,
                                                        const cpp_decl::QualifiedName & qualified,

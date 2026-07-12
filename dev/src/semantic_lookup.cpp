@@ -5501,6 +5501,34 @@ ClassTemplateDecl * lookup_class_template(SemanticContext & ctx,
       });
 }
 
+ClassTemplateDecl * lookup_class_template_node(
+    SemanticContext & ctx,
+    Scope & scope,
+    const QualifiedName & qualified,
+    const CppAstNode & node)
+{
+  if(!qualified.rooted && qualified.qualifiers.empty()) {
+    return lookup_class_template(ctx, scope, qualified.name);
+  }
+  Scope * target =
+      ctx.resolve_qualified_scope_for_node(scope, qualified, node, false);
+  if(!target) {
+    return nullptr;
+  }
+  return lookup_qualified_decl_with_using_directives<ClassTemplateDecl>(
+      *target,
+      qualified.name,
+      [](Scope & direct_scope, const string & direct_name) -> ClassTemplateDecl *
+      {
+        return lookup_class_template_in_direct_or_inline_scope(direct_scope,
+                                                               direct_name);
+      },
+      [](ClassTemplateDecl * lhs, ClassTemplateDecl * rhs) -> bool
+      {
+        return same_inline_namespace_class_template_entity(lhs, rhs);
+      });
+}
+
 ClassTemplateDecl * lookup_unqualified_class_template(Scope & scope,
                                                       const string & name)
 {
@@ -5573,6 +5601,34 @@ AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
         return lookup_alias_template_in_scope_or_inherited_members(ctx,
                                                                    target,
                                                                    lookup_name);
+      },
+      [](AliasTemplateDecl * lhs, AliasTemplateDecl * rhs) -> bool
+      {
+        return same_inline_namespace_alias_template_entity(lhs, rhs);
+      });
+}
+
+AliasTemplateDecl * lookup_alias_template_node(
+    SemanticContext & ctx,
+    Scope & scope,
+    const QualifiedName & qualified,
+    const CppAstNode & node)
+{
+  if(!qualified.rooted && qualified.qualifiers.empty()) {
+    return lookup_alias_template(ctx, scope, qualified.name);
+  }
+  Scope * target =
+      ctx.resolve_qualified_scope_for_node(scope, qualified, node, false);
+  if(!target) {
+    return nullptr;
+  }
+  return lookup_qualified_decl_with_using_directives<AliasTemplateDecl>(
+      *target,
+      qualified.name,
+      [](Scope & direct_scope, const string & direct_name) -> AliasTemplateDecl *
+      {
+        return lookup_alias_template_in_direct_or_inline_scope(direct_scope,
+                                                               direct_name);
       },
       [](AliasTemplateDecl * lhs, AliasTemplateDecl * rhs) -> bool
       {
@@ -5740,6 +5796,34 @@ VariableTemplateDecl * lookup_variable_template(SemanticContext & ctx,
       {
         return result != nullptr;
       });
+}
+
+VariableTemplateDecl * lookup_variable_template_node(
+    SemanticContext & ctx,
+    Scope & scope,
+    const QualifiedName & qualified,
+    const CppAstNode & node)
+{
+  if(!qualified.rooted && qualified.qualifiers.empty()) {
+    return lookup_variable_template(ctx, scope, qualified.name);
+  }
+  Scope * target =
+      ctx.resolve_qualified_scope_for_node(scope, qualified, node, false);
+  if(!target) {
+    return nullptr;
+  }
+  if(target->class_info) {
+    MemberVariableTemplateLookupResult member =
+        lookup_member_variable_template(ctx,
+                                        *target->class_info,
+                                        qualified.name);
+    if(member.variable_template) {
+      return member.variable_template;
+    }
+  }
+  map<string, VariableTemplateDecl *>::iterator found =
+      target->variable_templates.find(qualified.name);
+  return found == target->variable_templates.end() ? nullptr : found->second;
 }
 
 Scope * resolve_qualified_scope_for_class_or_namespace(SemanticContext & ctx,
