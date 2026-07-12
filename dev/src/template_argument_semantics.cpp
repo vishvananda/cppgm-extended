@@ -5233,24 +5233,14 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     return source_location;
   };
 
-  QualifiedName qualified;
   const bool source_qualified_has_lookup =
       source_qualified_syntax &&
       (source_qualified_syntax->rooted ||
        !source_qualified_syntax->qualifiers.empty());
-  const bool node_has_structured_qualifier_payload =
-      has_qualifier_template_id_syntax_payload(node) ||
-      has_qualifier_type_syntax(node);
-  if(source_qualified_has_lookup &&
-     (normalize_type_lookup_name(template_api::qualified_name_text(
-          *source_qualified_syntax)) ==
-          normalized_lookup_name ||
-      node_has_structured_qualifier_payload)) {
-    qualified = *source_qualified_syntax;
-  } else if(!semantic_utils::split_qualified_name_text(normalized_lookup_name,
-                                                       qualified)) {
+  if(!source_qualified_has_lookup) {
     return StructuredTypeLookupResult::NotApplicable;
   }
+  const QualifiedName qualified = *source_qualified_syntax;
   if(qualified.qualifiers.empty()) {
     return StructuredTypeLookupResult::NotApplicable;
   }

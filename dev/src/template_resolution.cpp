@@ -5449,71 +5449,8 @@ void set_resolved_type_template_argument(
           deduction_lookup_type_text(type_system, type);
 }
 
-bool strip_leading_typename_for_dependent_member(const std::string & text,
-                                                 std::string & out)
-{
-  const std::string trimmed = trim_space(text);
-  static const char keyword[] = "typename";
-  static const std::size_t keyword_size = sizeof(keyword) - 1;
-  if(trimmed.size() <= keyword_size ||
-     trimmed.compare(0, keyword_size, keyword) != 0 ||
-     !std::isspace(static_cast<unsigned char>(trimmed[keyword_size]))) {
-    return false;
-  }
-  out = trim_space(trimmed.substr(keyword_size));
-  return !out.empty();
-}
-
-bool leading_typename_template_member_text(const std::string & text)
-{
-  std::string qualified_text;
-  if(!strip_leading_typename_for_dependent_member(text, qualified_text)) {
-    return false;
-  }
-
-  const std::size_t split = semantic_utils::top_level_scope_split(qualified_text);
-  if(split == std::string::npos || split + 2 >= qualified_text.size()) {
-    return false;
-  }
-
-  const std::string owner_text = trim_space(qualified_text.substr(0, split));
-  const std::string member_text = trim_space(qualified_text.substr(split + 2));
-  if(owner_text.empty() ||
-     !is_identifier_text(member_text)) {
-    return false;
-  }
-
-  const std::string owner_template_head =
-      semantic_utils::strip_trailing_top_level_template_arguments(owner_text);
-  return owner_template_head != owner_text &&
-         !owner_template_head.empty();
-}
-
-bool leading_typename_qualified_member_text(const std::string & text)
-{
-  std::string qualified_text;
-  if(!strip_leading_typename_for_dependent_member(text, qualified_text)) {
-    return false;
-  }
-
-  QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(qualified_text, qualified) ||
-     qualified.rooted ||
-     qualified.qualifiers.empty() ||
-     !is_identifier_text(qualified.name)) {
-    return false;
-  }
-  for(std::size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    if(!is_identifier_text(qualified.qualifiers[i])) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool type_argument_can_remain_dependent_after_structured_failure(
-    const TemplateArgumentSyntax * syntax,
-    const std::string & text)
+    const TemplateArgumentSyntax * syntax)
 {
   if(syntax) {
     if(syntax->dependent || syntax->pack_expansion) {
@@ -5535,8 +5472,7 @@ bool type_argument_can_remain_dependent_after_structured_failure(
     }
   }
 
-  return leading_typename_template_member_text(text) ||
-         leading_typename_qualified_member_text(text);
+  return false;
 }
 
 TypePtr make_deferred_dependent_type_argument(const std::string & text)
@@ -12192,7 +12128,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
             services, raw_argument_scope, *syntax->type_id, type, true);
       } catch(const semantic_fallback_audit::SemanticFallbackError &) {
         if(!type_argument_can_remain_dependent_after_structured_failure(
-               syntax, trimmed)) {
+               syntax)) {
           throw;
         }
         type = make_deferred_dependent_type_argument(trimmed);
@@ -12322,7 +12258,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   }
 
   if(!type &&
-     type_argument_can_remain_dependent_after_structured_failure(syntax, trimmed)) {
+     type_argument_can_remain_dependent_after_structured_failure(syntax)) {
     type = make_deferred_dependent_type_argument(trimmed);
   }
 
