@@ -4668,7 +4668,8 @@ void clear_class_template_cached_lambda_mangle_metadata(
   }
 
   (void)arguments;
-  info.type->named_lambda_mangle.reset();
+  info.type->set_named_lambda_mangle(
+      std::shared_ptr<cpp_decl::Type::LambdaMangleMetadata>());
 }
 
 void record_class_template_argument_state(

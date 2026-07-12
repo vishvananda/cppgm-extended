@@ -28801,7 +28801,7 @@ private:
         new Type::LambdaMangleMetadata);
     metadata->local_source_name = source_name;
     metadata->namespace_qualifiers = qualified_name_syntax.qualifiers;
-    info.type->named_lambda_mangle = metadata;
+    info.type->set_named_lambda_mangle(metadata);
   }
 
   bool lambda_uses_clang_local_source_name(
@@ -28881,7 +28881,7 @@ private:
               context_options);
       metadata->signature_parameter_types = signature_parameter_types;
       metadata->discriminator = discriminator;
-      info.type->named_lambda_mangle = metadata;
+      info.type->set_named_lambda_mangle(metadata);
     }
   }
 
@@ -28942,7 +28942,7 @@ private:
         symbol_linkage::make_lambda_context_function_symbol_options(
             context_options);
     metadata->local_source_name = source_name;
-    info.type->named_lambda_mangle = metadata;
+    info.type->set_named_lambda_mangle(metadata);
   }
 
   SyntheticLambdaKey make_synthetic_lambda_key(Scope & scope, const CppAstNode & node) const
@@ -30639,7 +30639,8 @@ private:
       base_type->named_size = completed->type->named_size;
       base_type->named_is_empty = completed->type->named_is_empty;
       base_type->named_host_abi_chunks = completed->type->named_host_abi_chunks;
-      base_type->named_lambda_mangle = completed->type->named_lambda_mangle;
+      base_type->set_named_lambda_mangle(
+          completed->type->named_lambda_mangle());
       base_type->named_class_template_specialization_mangle_info =
           completed->type->named_class_template_specialization_mangle_info;
     };

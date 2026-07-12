@@ -157,7 +157,7 @@ void sync_named_layout_from_class_info(TypePtr type, ClassInfo * info)
   base->named_size = info->type->named_size;
   base->named_is_empty = info->type->named_is_empty;
   base->named_host_abi_chunks = info->type->named_host_abi_chunks;
-  base->named_lambda_mangle = info->type->named_lambda_mangle;
+  base->set_named_lambda_mangle(info->type->named_lambda_mangle());
   base->named_class_template_specialization_mangle_info =
       info->type->named_class_template_specialization_mangle_info;
 }

@@ -83,12 +83,6 @@ enum FunctionTypeRefQualifier
 
 struct Type
 {
-  struct NamedSyntaxMetadata
-  {
-    QualifiedName qualified_name;
-    std::string source_name;
-  };
-
   struct HostAbiChunk
   {
     enum Kind
@@ -110,6 +104,14 @@ struct Type
     std::vector<std::string> namespace_qualifiers;
     std::string discriminator;
     std::string local_source_name;
+  };
+
+  struct NamedRareMetadata
+  {
+    QualifiedName qualified_name;
+    std::string source_name;
+    std::shared_ptr<LambdaMangleMetadata> lambda_mangle;
+    bool dependent_type_expression_formed_with_placeholders = false;
   };
 
   enum Kind
@@ -163,15 +165,20 @@ struct Type
 
   const QualifiedName & named_qualified_name_syntax() const;
   const std::string & named_source_name() const;
+  const std::shared_ptr<LambdaMangleMetadata> & named_lambda_mangle() const;
+  bool dependent_type_expression_formed_with_placeholders() const;
   void set_named_qualified_name_syntax(const QualifiedName & syntax);
   void set_named_source_name(const std::string & name);
+  void set_named_lambda_mangle(
+      const std::shared_ptr<LambdaMangleMetadata> & metadata);
+  void set_dependent_type_expression_formed_with_placeholders(bool formed);
+  NamedRareMetadata & mutable_named_rare_metadata();
 
   Kind kind;
   EFundamentalType fundamental;
   std::string named_display;
   std::string named_key;
-  std::shared_ptr<NamedSyntaxMetadata> named_syntax_metadata;
-  std::shared_ptr<LambdaMangleMetadata> named_lambda_mangle;
+  std::shared_ptr<NamedRareMetadata> named_rare_metadata;
   NamedSemanticKind named_semantic_kind;
   std::string named_semantic_payload;
   bool named_complete;
@@ -196,7 +203,6 @@ struct Type
   TypePtr inner;
   TypePtr owner;
   std::shared_ptr<CppAstNode> named_dependent_type_expression_node;
-  bool named_dependent_type_expression_formed_with_placeholders = false;
   void * named_dependent_alias_template_decl = nullptr;
   std::vector<DependentAliasTemplateArgumentSyntax> named_dependent_alias_arguments;
   void * named_dependent_class_template_decl = nullptr;

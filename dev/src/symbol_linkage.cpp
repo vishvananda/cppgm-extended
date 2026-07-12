@@ -10316,11 +10316,11 @@ static const Type::LambdaMangleMetadata * named_type_lambda_mangle_metadata(
 {
   if(!type ||
      type->kind != Type::TK_NAMED ||
-     !type->named_lambda_mangle) {
+     !type->named_lambda_mangle()) {
     return nullptr;
   }
   const Type::LambdaMangleMetadata * metadata =
-      type->named_lambda_mangle.get();
+      type->named_lambda_mangle().get();
   const bool function_context =
       metadata->context_function_type &&
       metadata->context_function_symbol_options &&

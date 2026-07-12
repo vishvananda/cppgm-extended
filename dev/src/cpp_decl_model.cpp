@@ -392,35 +392,63 @@ TypeSpelling spell_template_argument_type(const TypePtr & type)
 const QualifiedName & Type::named_qualified_name_syntax() const
 {
   static const QualifiedName empty;
-  return named_syntax_metadata ? named_syntax_metadata->qualified_name : empty;
+  return named_rare_metadata ? named_rare_metadata->qualified_name : empty;
 }
 
 const string & Type::named_source_name() const
 {
   static const string empty;
-  return named_syntax_metadata ? named_syntax_metadata->source_name : empty;
+  return named_rare_metadata ? named_rare_metadata->source_name : empty;
+}
+
+const shared_ptr<Type::LambdaMangleMetadata> & Type::named_lambda_mangle() const
+{
+  static const shared_ptr<LambdaMangleMetadata> empty;
+  return named_rare_metadata ? named_rare_metadata->lambda_mangle : empty;
+}
+
+bool Type::dependent_type_expression_formed_with_placeholders() const
+{
+  return named_rare_metadata &&
+         named_rare_metadata->dependent_type_expression_formed_with_placeholders;
+}
+
+Type::NamedRareMetadata & Type::mutable_named_rare_metadata()
+{
+  if(!named_rare_metadata) {
+    named_rare_metadata.reset(new NamedRareMetadata());
+  } else if(!named_rare_metadata.unique()) {
+    named_rare_metadata.reset(new NamedRareMetadata(*named_rare_metadata));
+  }
+  return *named_rare_metadata;
 }
 
 void Type::set_named_qualified_name_syntax(const QualifiedName & syntax)
 {
-  if(!named_syntax_metadata) {
-    named_syntax_metadata.reset(new NamedSyntaxMetadata());
-  } else if(!named_syntax_metadata.unique()) {
-    named_syntax_metadata.reset(
-        new NamedSyntaxMetadata(*named_syntax_metadata));
-  }
-  named_syntax_metadata->qualified_name = syntax;
+  mutable_named_rare_metadata().qualified_name = syntax;
 }
 
 void Type::set_named_source_name(const string & name)
 {
-  if(!named_syntax_metadata) {
-    named_syntax_metadata.reset(new NamedSyntaxMetadata());
-  } else if(!named_syntax_metadata.unique()) {
-    named_syntax_metadata.reset(
-        new NamedSyntaxMetadata(*named_syntax_metadata));
+  mutable_named_rare_metadata().source_name = name;
+}
+
+void Type::set_named_lambda_mangle(
+    const shared_ptr<LambdaMangleMetadata> & metadata)
+{
+  if(!metadata && !named_rare_metadata) {
+    return;
   }
-  named_syntax_metadata->source_name = name;
+  mutable_named_rare_metadata().lambda_mangle = metadata;
+}
+
+void Type::set_dependent_type_expression_formed_with_placeholders(bool formed)
+{
+  if(!formed && !named_rare_metadata) {
+    return;
+  }
+  mutable_named_rare_metadata()
+      .dependent_type_expression_formed_with_placeholders = formed;
 }
 
 TypePtr make_fundamental(EFundamentalType type)
@@ -507,8 +535,8 @@ TypePtr make_dependent_type_expression_type(const string & display_name,
      (semantic_kind == Type::NSK_DEPENDENT_DECLTYPE ||
       semantic_kind == Type::NSK_DEPENDENT_TYPEOF)) {
     base->named_dependent_type_expression_node.reset(new CppAstNode(expression_node));
-    base->named_dependent_type_expression_formed_with_placeholders =
-        formed_with_placeholders;
+    base->set_dependent_type_expression_formed_with_placeholders(
+        formed_with_placeholders);
   }
   return result;
 }
@@ -682,7 +710,7 @@ bool named_type_dependent_type_expression_formed_with_placeholders(
       base->named_semantic_kind != Type::NSK_DEPENDENT_TYPEOF)) {
     return false;
   }
-  return base->named_dependent_type_expression_formed_with_placeholders;
+  return base->dependent_type_expression_formed_with_placeholders();
 }
 
 bool named_type_dependent_alias_template(

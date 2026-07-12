@@ -7205,7 +7205,7 @@ void synchronize_output_named_type_layout(const TypePtr & type,
   base->named_size = info_base->named_size;
   base->named_is_empty = info_base->named_is_empty;
   base->named_host_abi_chunks = info_base->named_host_abi_chunks;
-  base->named_lambda_mangle = info_base->named_lambda_mangle;
+  base->set_named_lambda_mangle(info_base->named_lambda_mangle());
   base->named_class_template_specialization_mangle_info =
       info_base->named_class_template_specialization_mangle_info;
   base->named_member_owner_type = info_base->named_member_owner_type;

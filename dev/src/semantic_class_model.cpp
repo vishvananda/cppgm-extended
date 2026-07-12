@@ -5515,7 +5515,7 @@ void synchronize_named_type_layout(const TypePtr & type,
   base->named_size = info.type->named_size;
   base->named_is_empty = info.type->named_is_empty;
   base->named_host_abi_chunks = info.type->named_host_abi_chunks;
-  base->named_lambda_mangle = info.type->named_lambda_mangle;
+  base->set_named_lambda_mangle(info.type->named_lambda_mangle());
   base->named_class_template_specialization_mangle_info =
       info.type->named_class_template_specialization_mangle_info;
   base->named_member_owner_type = info.type->named_member_owner_type;
@@ -6652,7 +6652,8 @@ void reset_instantiated_class_info(ClassInfo & info,
 {
   const bool was_lambda_closure = info.is_lambda_closure;
   std::shared_ptr<cpp_decl::Type::LambdaMangleMetadata> lambda_mangle =
-      info.type ? info.type->named_lambda_mangle : std::shared_ptr<cpp_decl::Type::LambdaMangleMetadata>();
+      info.type ? info.type->named_lambda_mangle() :
+                  std::shared_ptr<cpp_decl::Type::LambdaMangleMetadata>();
   info.template_output_node = output_node;
   info.is_final = output_node && output_node->is_final_specifier;
   info.fields.clear();
@@ -6688,9 +6689,10 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.type->named_size = 0;
   info.type->named_is_empty = false;
   if(was_lambda_closure || info.source_is_named_function_local_class) {
-    info.type->named_lambda_mangle = lambda_mangle;
+    info.type->set_named_lambda_mangle(lambda_mangle);
   } else {
-    info.type->named_lambda_mangle.reset();
+    info.type->set_named_lambda_mangle(
+        std::shared_ptr<cpp_decl::Type::LambdaMangleMetadata>());
   }
 
   info.member_scope->named_types.clear();
