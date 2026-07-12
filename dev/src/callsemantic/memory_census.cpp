@@ -296,6 +296,16 @@ void census_type(const TypePtr & type,
                  string_storage_bytes(type->bound_text) +
                  vector_storage_bytes(type->named_host_abi_chunks) +
                  vector_storage_bytes(type->params);
+  if(type->named_syntax_metadata) {
+    const Type::NamedSyntaxMetadata & syntax = *type->named_syntax_metadata;
+    bytes += sizeof(Type::NamedSyntaxMetadata) +
+             string_storage_bytes(syntax.qualified_name.name) +
+             vector_storage_bytes(syntax.qualified_name.qualifiers) +
+             string_storage_bytes(syntax.source_name);
+    for(size_t i = 0; i < syntax.qualified_name.qualifiers.size(); ++i) {
+      bytes += string_storage_bytes(syntax.qualified_name.qualifiers[i]);
+    }
+  }
   census.note("type", bytes);
 
   census_type(type->inner, census, seen_types);

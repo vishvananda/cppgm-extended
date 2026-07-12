@@ -2619,13 +2619,13 @@ TypePtr rebind_out_of_class_member_nested_self_type(
     return TypePtr();
   }
 
-  QualifiedName current_qualified = unqualified->named_qualified_name_syntax;
+  QualifiedName current_qualified = unqualified->named_qualified_name_syntax();
   if(current_qualified.name.empty() &&
      unqualified->named_member_owner_type &&
      !unqualified->named_member_name.empty()) {
     TypePtr owner = strip_top_level_cv(unqualified->named_member_owner_type);
     if(owner && owner->kind == Type::TK_NAMED) {
-      current_qualified = owner->named_qualified_name_syntax;
+      current_qualified = owner->named_qualified_name_syntax();
       if(!current_qualified.name.empty()) {
         current_qualified.qualifiers.push_back(current_qualified.name);
         current_qualified.name = unqualified->named_member_name;
@@ -3023,7 +3023,7 @@ QualifiedName class_info_qualified_name_syntax(const ClassInfo & info)
   }
   TypePtr type = strip_top_level_cv(info.type);
   if(type && type->kind == Type::TK_NAMED) {
-    return type->named_qualified_name_syntax;
+    return type->named_qualified_name_syntax();
   }
   QualifiedName name;
   name.name = info.name;
@@ -4623,7 +4623,7 @@ void update_class_template_specialization_mangle_info(
   mangle_info->class_template_decl = info.source_template;
   mangle_info->template_name_syntax = info.symbol_qualified_name_syntax;
   if(mangle_info->template_name_syntax.name.empty() && info.type) {
-    mangle_info->template_name_syntax = info.type->named_qualified_name_syntax;
+    mangle_info->template_name_syntax = info.type->named_qualified_name_syntax();
   }
   mangle_info->template_name_syntax.name = info.source_template->name;
   mangle_info->template_name = info.source_template->name;

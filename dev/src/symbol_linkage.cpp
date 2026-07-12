@@ -4401,8 +4401,8 @@ static bool replacement_syntax_qualified_name(
   TypePtr resolved = strip_top_level_cv(replacement.resolved_type);
   if(resolved &&
      resolved->kind == Type::TK_NAMED &&
-     !resolved->named_qualified_name_syntax.name.empty()) {
-    out = resolved->named_qualified_name_syntax;
+     !resolved->named_qualified_name_syntax().name.empty()) {
+    out = resolved->named_qualified_name_syntax();
     return true;
   }
   if(replacement_text.empty() || replacement_text.find("::") != string::npos) {
@@ -13209,7 +13209,7 @@ static bool try_build_named_type_ir(const TypePtr & type,
      selected_text.find('>') != string::npos) {
     return false;
   }
-  const QualifiedName & qualified = type->named_qualified_name_syntax;
+  const QualifiedName & qualified = type->named_qualified_name_syntax();
   if(qualified.rooted || qualified.name.empty()) {
     return false;
   }
@@ -13279,7 +13279,7 @@ static bool try_build_contextual_local_named_type_ir(
     return false;
   }
 
-  const QualifiedName & qualified = type->named_qualified_name_syntax;
+  const QualifiedName & qualified = type->named_qualified_name_syntax();
   if(!qualified.name.empty() &&
      !qualified.rooted &&
      is_identifier_text_for_mangling(qualified.name)) {
@@ -13987,8 +13987,8 @@ static bool should_prefer_unqualified_lexical_named_type(const TypePtr & type,
   }
 
   const string display_text = trim_elaborated_type_prefix(type->named_display);
-  if(type->named_source_name.empty() ||
-     display_text != type->named_source_name) {
+  if(type->named_source_name().empty() ||
+     display_text != type->named_source_name()) {
     return false;
   }
 
@@ -13999,12 +13999,12 @@ static bool should_prefer_unqualified_lexical_named_type(const TypePtr & type,
 
   QualifiedName lexical_name = mangle_ctx->lexical_scope_syntax;
   if(lexical_name.name.empty()) {
-    lexical_name.name = type->named_source_name;
+    lexical_name.name = type->named_source_name();
   } else {
     lexical_name.qualifiers.push_back(lexical_name.name);
-    lexical_name.name = type->named_source_name;
+    lexical_name.name = type->named_source_name();
   }
-  const QualifiedName & type_name = type->named_qualified_name_syntax;
+  const QualifiedName & type_name = type->named_qualified_name_syntax();
   return !type_name.name.empty() &&
          type_name.rooted == lexical_name.rooted &&
          type_name.qualifiers == lexical_name.qualifiers &&
@@ -14769,10 +14769,10 @@ static string preferred_named_type_text(const TypePtr & type,
     if(!selected_syntax.name.empty()) {
       selected_syntax.qualifiers.push_back(selected_syntax.name);
     }
-    selected_syntax.name = type->named_source_name;
+    selected_syntax.name = type->named_source_name();
   } else if(selected_text == key_text &&
-            !type->named_qualified_name_syntax.name.empty()) {
-    selected_syntax = type->named_qualified_name_syntax;
+            !type->named_qualified_name_syntax().name.empty()) {
+    selected_syntax = type->named_qualified_name_syntax();
   }
   if(!selected_syntax.name.empty()) {
     return qualified_name_syntax_key_text(selected_syntax);
@@ -15010,8 +15010,8 @@ static bool build_type_substitution_key_impl(const TypePtr & type,
         }
       }
     }
-    out = !type->named_qualified_name_syntax.name.empty() ?
-        named_substitution_key(type->named_qualified_name_syntax) :
+    out = !type->named_qualified_name_syntax().name.empty() ?
+        named_substitution_key(type->named_qualified_name_syntax()) :
         named_substitution_key(preferred_named_type_text(type, mangle_ctx));
     return !out.empty();
   }

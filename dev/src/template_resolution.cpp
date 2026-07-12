@@ -4974,7 +4974,7 @@ bool direct_identifier_argument_syntax(const TemplateArgumentSyntax * syntax,
 
   TypePtr resolved = strip_top_level_cv(syntax->resolved_type);
   if(resolved && resolved->kind == Type::TK_NAMED) {
-    name = trim_space(resolved->named_source_name);
+    name = trim_space(resolved->named_source_name());
     return is_identifier_text(name);
   }
   return false;

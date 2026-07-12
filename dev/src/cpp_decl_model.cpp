@@ -389,6 +389,40 @@ TypeSpelling spell_template_argument_type(const TypePtr & type)
 
 }  // namespace
 
+const QualifiedName & Type::named_qualified_name_syntax() const
+{
+  static const QualifiedName empty;
+  return named_syntax_metadata ? named_syntax_metadata->qualified_name : empty;
+}
+
+const string & Type::named_source_name() const
+{
+  static const string empty;
+  return named_syntax_metadata ? named_syntax_metadata->source_name : empty;
+}
+
+void Type::set_named_qualified_name_syntax(const QualifiedName & syntax)
+{
+  if(!named_syntax_metadata) {
+    named_syntax_metadata.reset(new NamedSyntaxMetadata());
+  } else if(!named_syntax_metadata.unique()) {
+    named_syntax_metadata.reset(
+        new NamedSyntaxMetadata(*named_syntax_metadata));
+  }
+  named_syntax_metadata->qualified_name = syntax;
+}
+
+void Type::set_named_source_name(const string & name)
+{
+  if(!named_syntax_metadata) {
+    named_syntax_metadata.reset(new NamedSyntaxMetadata());
+  } else if(!named_syntax_metadata.unique()) {
+    named_syntax_metadata.reset(
+        new NamedSyntaxMetadata(*named_syntax_metadata));
+  }
+  named_syntax_metadata->source_name = name;
+}
+
 TypePtr make_fundamental(EFundamentalType type)
 {
   TypePtr result(new Type(Type::TK_FUNDAMENTAL));
@@ -455,7 +489,7 @@ TypePtr make_template_parameter_type(const string & display_name,
                                        true);
   TypePtr base = strip_top_level_cv(result);
   if(base && base->kind == Type::TK_NAMED) {
-    base->named_source_name = source_name;
+    base->set_named_source_name(source_name);
   }
   return result;
 }

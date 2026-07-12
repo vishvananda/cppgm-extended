@@ -264,8 +264,8 @@ ClassInfo * create_class_info(TypeRegistryState & state,
               base ? class_info_for_type(state, base) : nullptr));
     }
     base->named_display = display_name;
-    base->named_qualified_name_syntax = symbol_qualified_name_syntax;
-    base->named_source_name = canonical_name;
+    base->set_named_qualified_name_syntax(symbol_qualified_name_syntax);
+    base->set_named_source_name(canonical_name);
     ClassInfo * info = class_info_for_type(state, base);
     if(!info) {
       std::ostringstream out;
@@ -318,8 +318,8 @@ ClassInfo * create_class_info(TypeRegistryState & state,
   info->default_access =
       callsemantic_internal::default_access_for_class_kind(class_kind);
   info->type = make_named(display_name, type_key, false);
-  info->type->named_qualified_name_syntax = symbol_qualified_name_syntax;
-  info->type->named_source_name = canonical_name;
+  info->type->set_named_qualified_name_syntax(symbol_qualified_name_syntax);
+  info->type->set_named_source_name(canonical_name);
   if(durable_scope.class_info && durable_scope.class_info->type) {
     TypePtr base = strip_top_level_cv(info->type);
     if(base && base->kind == Type::TK_NAMED) {
@@ -409,8 +409,8 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
   info->type = make_named(class_kind + " " + display_qualified_name,
                           type_key,
                           false);
-  info->type->named_qualified_name_syntax = symbol_qualified_name_syntax;
-  info->type->named_source_name = template_name;
+  info->type->set_named_qualified_name_syntax(symbol_qualified_name_syntax);
+  info->type->set_named_source_name(template_name);
   if(durable_scope.class_info && durable_scope.class_info->type) {
     TypePtr base = strip_top_level_cv(info->type);
     if(base && base->kind == Type::TK_NAMED) {

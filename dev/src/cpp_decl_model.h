@@ -83,6 +83,12 @@ enum FunctionTypeRefQualifier
 
 struct Type
 {
+  struct NamedSyntaxMetadata
+  {
+    QualifiedName qualified_name;
+    std::string source_name;
+  };
+
   struct HostAbiChunk
   {
     enum Kind
@@ -155,12 +161,16 @@ struct Type
       named_dependent_qualified_leading_typename(false)
   {}
 
+  const QualifiedName & named_qualified_name_syntax() const;
+  const std::string & named_source_name() const;
+  void set_named_qualified_name_syntax(const QualifiedName & syntax);
+  void set_named_source_name(const std::string & name);
+
   Kind kind;
   EFundamentalType fundamental;
   std::string named_display;
   std::string named_key;
-  QualifiedName named_qualified_name_syntax;
-  std::string named_source_name;
+  std::shared_ptr<NamedSyntaxMetadata> named_syntax_metadata;
   std::shared_ptr<LambdaMangleMetadata> named_lambda_mangle;
   NamedSemanticKind named_semantic_kind;
   std::string named_semantic_payload;

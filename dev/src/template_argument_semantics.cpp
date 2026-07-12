@@ -1802,10 +1802,10 @@ bool qualified_name_for_resolved_type_annotation(const TypePtr & type,
   if(!base ||
      base->kind != Type::TK_NAMED ||
      named_type_has_function_local_marker(base) ||
-     base->named_qualified_name_syntax.qualifiers.empty()) {
+     base->named_qualified_name_syntax().qualifiers.empty()) {
     return false;
   }
-  out = base->named_qualified_name_syntax;
+  out = base->named_qualified_name_syntax();
   return true;
 }
 
@@ -16309,7 +16309,7 @@ void attach_substituted_dependent_class_mangle_info_from_arguments(
   shared_ptr<ClassTemplateSpecializationMangleInfo> info(
       new ClassTemplateSpecializationMangleInfo());
   info->class_template_decl = const_cast<ClassTemplateDecl *>(&class_template);
-  info->template_name_syntax = substituted->named_qualified_name_syntax;
+  info->template_name_syntax = substituted->named_qualified_name_syntax();
   if(info->template_name_syntax.name.empty() && class_template.declaring_scope) {
     info->template_name_syntax =
         semantic_lookup::scope_qualified_name_syntax(
@@ -28186,7 +28186,7 @@ bool structured_type_mentions_local_dependent_placeholder(
            trim_space(named_type_semantic_payload(named)) == name) {
           return true;
         }
-        const QualifiedName & qualified = named->named_qualified_name_syntax;
+        const QualifiedName & qualified = named->named_qualified_name_syntax();
         if(qualified.name == name ||
            find(qualified.qualifiers.begin(), qualified.qualifiers.end(), name) !=
                qualified.qualifiers.end()) {
@@ -28282,9 +28282,9 @@ TypePtr resolve_bound_dependent_qualified_owner(
     owner_name = trim_space(named_type_semantic_payload(named_owner));
   }
   if(owner_name.empty() &&
-     !named_owner->named_qualified_name_syntax.rooted &&
-     named_owner->named_qualified_name_syntax.qualifiers.empty()) {
-    owner_name = trim_space(named_owner->named_qualified_name_syntax.name);
+     !named_owner->named_qualified_name_syntax().rooted &&
+     named_owner->named_qualified_name_syntax().qualifiers.empty()) {
+    owner_name = trim_space(named_owner->named_qualified_name_syntax().name);
   }
   if(!is_identifier_text(owner_name)) {
     return TypePtr();
@@ -28743,7 +28743,7 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
 
   const string & key = type->named_key;
   const string lookup_text = named_type_is_template_parameter(type) ?
-      trim_space(type->named_source_name) :
+      trim_space(type->named_source_name()) :
       trim_space(named_type_semantic_payload(type));
   const bool syntactically_dependent =
       named_type_has_dependent_semantic(type) ||

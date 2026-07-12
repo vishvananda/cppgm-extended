@@ -192,7 +192,7 @@ const TemplateParameterInfo * find_template_parameter(
   const string candidates[] = {
       base->named_key,
       base->named_semantic_payload,
-      base->named_source_name,
+      base->named_source_name(),
   };
   for(size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
     if(candidates[i].empty()) {
