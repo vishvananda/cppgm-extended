@@ -539,9 +539,18 @@ TypePtr named_base(const TypePtr & type)
   return base && base->kind == Type::TK_NAMED ? base : TypePtr();
 }
 
+const Type * named_base_ptr(const TypePtr & type)
+{
+  const Type * base = type.get();
+  while(base && base->kind == Type::TK_CV) {
+    base = base->inner.get();
+  }
+  return base && base->kind == Type::TK_NAMED ? base : nullptr;
+}
+
 bool named_type_has_kind(const TypePtr & type, Type::NamedSemanticKind kind)
 {
-  TypePtr base = named_base(type);
+  const Type * base = named_base_ptr(type);
   return base && base->named_semantic_kind == kind;
 }
 
@@ -619,7 +628,7 @@ bool named_type_is_dependent_typeof(const TypePtr & type)
 
 bool named_type_has_dependent_semantic(const TypePtr & type)
 {
-  TypePtr base = named_base(type);
+  const Type * base = named_base_ptr(type);
   if(!base) {
     return false;
   }
@@ -639,24 +648,12 @@ bool named_type_has_dependent_semantic(const TypePtr & type)
 
 bool named_type_key_contains_dependent_semantic(const TypePtr & type)
 {
-  TypePtr base = named_base(type);
-  if(!base || base->named_key.find("builtin ") != 0) {
-    return false;
-  }
-  return base->named_key.find("template-parameter ") != string::npos ||
-         base->named_key.find("partial-order ") != string::npos ||
-         base->named_key.find("dependent alias ") != string::npos ||
-         base->named_key.find("dependent type ") != string::npos ||
-         base->named_key.find("dependent decltype ") != string::npos ||
-         base->named_key.find("dependent typeof ") != string::npos;
+  return named_type_has_dependent_semantic(type);
 }
 
 bool named_type_key_contains_partial_order_placeholder(const TypePtr & type)
 {
-  TypePtr base = named_base(type);
-  return base &&
-         base->named_key.find("builtin ") == 0 &&
-         base->named_key.find("partial-order ") != string::npos;
+  return named_type_is_partial_order_placeholder(type);
 }
 
 std::string named_type_semantic_payload(const TypePtr & type)

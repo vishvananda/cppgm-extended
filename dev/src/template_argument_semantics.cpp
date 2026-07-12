@@ -16243,8 +16243,7 @@ bool dependent_class_argument_to_mangle_argument(
     out.type = source.type;
     out.dependent =
         source.syntax.dependent ||
-        named_type_has_dependent_semantic(source.type) ||
-        named_type_key_contains_dependent_semantic(source.type);
+        named_type_has_dependent_semantic(source.type);
     if(out.text.empty()) {
       out.text = trim_space(substituted_dependent_argument_type_text(source.type));
     }
@@ -26829,8 +26828,7 @@ bool type_depends_on_template_parameter(template_api::TemplateTypeSystem & type_
         }
       }
     }
-    if(named_type_has_dependent_semantic(type) ||
-       named_type_key_contains_dependent_semantic(type)) {
+    if(named_type_has_dependent_semantic(type)) {
       return true;
     }
     if(semantic_model::ClassInfo * info =
@@ -28746,8 +28744,7 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
       trim_space(type->named_source_name()) :
       trim_space(named_type_semantic_payload(type));
   const bool syntactically_dependent =
-      named_type_has_dependent_semantic(type) ||
-      named_type_key_contains_dependent_semantic(type);
+      named_type_has_dependent_semantic(type);
   bool semantically_dependent =
       syntactically_dependent ||
       type_is_dependent(type);

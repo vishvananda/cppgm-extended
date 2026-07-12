@@ -4556,8 +4556,7 @@ private:
       return false;
 
     case Type::TK_NAMED:
-      if(named_type_has_dependent_semantic(type) ||
-         named_type_key_contains_dependent_semantic(type)) {
+      if(named_type_has_dependent_semantic(type)) {
         return true;
       }
       if(ClassInfo * info = class_info_for_type(type)) {
@@ -30615,7 +30614,6 @@ private:
       return nullptr;
     }
     if(named_type_has_dependent_semantic(base_type) ||
-       named_type_key_contains_dependent_semantic(base_type) ||
        base_type->named_key.compare(0, 5, "enum ") == 0) {
       note_performance_counter(&semantic_metrics::AnalyzerCounters::complete_class_type_no_class);
       return nullptr;

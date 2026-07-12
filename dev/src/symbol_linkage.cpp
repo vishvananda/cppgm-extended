@@ -5582,8 +5582,7 @@ static bool dependent_class_template_metadata_should_drive_mangling(
      !text_mentions_template_mangle_parameter(selected_text, mangle_ctx)) {
     return false;
   }
-  if(named_type_has_dependent_semantic(type) ||
-     named_type_key_contains_dependent_semantic(type)) {
+  if(named_type_has_dependent_semantic(type)) {
     return true;
   }
   if(!mangle_ctx) {
@@ -8520,8 +8519,7 @@ static bool type_template_argument_requires_syntax_ir(const TypePtr & type)
   switch(base->kind) {
   case Type::TK_NAMED:
     return base->named_semantic_kind != Type::NSK_TEMPLATE_PARAMETER &&
-           (named_type_has_dependent_semantic(base) ||
-            named_type_key_contains_dependent_semantic(base));
+           named_type_has_dependent_semantic(base);
 
   case Type::TK_CV:
   case Type::TK_ATOMIC:
@@ -14323,8 +14321,7 @@ static bool type_has_dependent_mangle_state(const TypePtr & type)
   }
 
   if(type->kind == Type::TK_NAMED &&
-     (named_type_has_dependent_semantic(type) ||
-      named_type_key_contains_dependent_semantic(type))) {
+     named_type_has_dependent_semantic(type)) {
     return true;
   }
 

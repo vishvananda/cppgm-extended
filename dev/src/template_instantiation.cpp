@@ -1481,7 +1481,6 @@ bool type_mentions_template_parameter_name(
   if(type->kind == Type::TK_NAMED) {
     const bool dependent_named_type =
         named_type_has_dependent_semantic(type) ||
-        named_type_key_contains_dependent_semantic(type) ||
         type->named_dependent_class_template_decl != nullptr;
     if(dependent_named_type &&
        (text_mentions_template_parameter_name(type->named_key, parameters) ||
