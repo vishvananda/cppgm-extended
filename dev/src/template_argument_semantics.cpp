@@ -41188,11 +41188,25 @@ ExpandedTemplateArgumentInputs expand_template_argument_inputs(
     TypePtr carried_type;
     if(source_syntax &&
        !template_argument_syntax_matches_text(*source_syntax, trimmed_text)) {
-      const TemplateArgumentSyntax * carried_syntax =
-          carry_resolved_type_argument_syntax(out,
-                                             *source_syntax,
-                                             trimmed_text,
-                                             carried_type);
+      TemplateArgumentSyntax substituted_syntax;
+      const TemplateArgumentSyntax * carried_syntax = nullptr;
+      if(source_syntax->expression &&
+         prepare_structured_bool_dependency_argument_syntax(
+             services,
+             template_api::make_template_environment(scope),
+             *source_syntax,
+             substituted_syntax)) {
+        substituted_syntax.text = trimmed_text;
+        carried_syntax =
+            add_owned_expanded_argument_syntax(out, substituted_syntax);
+      }
+      if(!carried_syntax) {
+        carried_syntax =
+            carry_resolved_type_argument_syntax(out,
+                                                *source_syntax,
+                                                trimmed_text,
+                                                carried_type);
+      }
       if(!carried_syntax) {
         carried_syntax =
             carry_substituted_bound_type_argument_syntax(out,

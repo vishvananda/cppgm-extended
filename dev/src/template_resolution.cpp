@@ -751,9 +751,9 @@ std::vector<FunctionBinding *> lookup_unqualified_functions(Scope & scope,
 bool try_resolve_named_non_type_template_argument(template_api::TemplateServices & services,
                                                   Scope & scope,
                                                   const std::string & text,
+                                                  const TemplateArgumentSyntax * syntax,
                                                   const TypePtr & target_type,
                                                   TemplateArgument & out,
-                                                  bool suppress_qualified_text_lookup,
                                                   const ValueBinding ** out_binding = nullptr);
 
 bool is_identifier_text(const std::string & text);
@@ -1607,52 +1607,6 @@ bool try_resolve_function_non_type_template_argument_name(
       out);
 }
 
-bool lookup_member_pointer_function_candidates(template_api::TemplateServices & services,
-                                               Scope & scope,
-                                               const QualifiedName & qualified,
-                                               std::vector<FunctionBinding *> & out)
-{
-  out.clear();
-  if(!services.semantic_context ||
-     (!qualified.rooted && qualified.qualifiers.empty())) {
-    return false;
-  }
-
-  Scope * target =
-      semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
-          *services.semantic_context,
-          scope,
-          qualified);
-  if(!target || !target->class_info) {
-    return false;
-  }
-
-  ClassInfo * target_class = target->class_info;
-  if(!target_class->complete && target_class->type) {
-    if(ClassInfo * completed =
-           services.semantic_context->complete_class_type(target_class->type)) {
-      target_class = completed;
-    }
-  }
-
-  semantic_lookup::MemberCallableLookupResult callables =
-      semantic_lookup::lookup_visible_member_callables(*target_class, qualified.name);
-  if(member_pointer_callable_lookup_has_non_callable_collision(
-         *services.semantic_context,
-         scope,
-         *target_class,
-         qualified.name,
-         callables.declared_in)) {
-    return false;
-  }
-  if(callables.functions.empty() && !callables.templates.empty()) {
-    return false;
-  }
-
-  out = callables.functions;
-  return !out.empty();
-}
-
 bool lookup_qualified_function_callable_candidates_node(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -1947,9 +1901,9 @@ bool try_resolve_function_non_type_template_argument_syntax(
 bool try_resolve_named_non_type_template_argument(template_api::TemplateServices & services,
                                                   Scope & scope,
                                                   const std::string & text,
+                                                  const TemplateArgumentSyntax * syntax,
                                                   const TypePtr & target_type,
                                                   TemplateArgument & out,
-                                                  bool suppress_qualified_text_lookup,
                                                   const ValueBinding ** out_binding)
 {
   if(out_binding) {
@@ -1959,6 +1913,26 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
   if(trimmed.empty() || !target_type) {
     return false;
   }
+  const CppAstNode * named_operand =
+      syntax && syntax->expression ? syntax->expression.get() : nullptr;
+  bool explicit_address = false;
+  if(named_operand &&
+     named_operand->kind == CppAstKind::unary_expression &&
+     named_operand->children.size() == 1 &&
+     named_operand->has_token &&
+     named_operand->simple_type == OP_AMP) {
+    named_operand = &named_operand->children[0];
+    explicit_address = true;
+  }
+  const QualifiedName * structured_qualified =
+      named_operand && named_operand->kind == CppAstKind::id_expression ?
+          cppast_qualified_name_syntax(*named_operand) :
+          nullptr;
+  const bool has_structured_qualified_lookup =
+      structured_qualified &&
+      (structured_qualified->rooted || !structured_qualified->qualifiers.empty());
+  const bool has_structured_qualifier_template_id =
+      named_operand && cppast_has_qualifier_template_id_syntaxes(*named_operand);
   TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
   if(target_base && is_bool_type(target_base) &&
      (trimmed == "true" || trimmed == "false")) {
@@ -2012,23 +1986,18 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
       return true;
     }
   }
-  QualifiedName qualified_value_name;
-  if(!suppress_qualified_text_lookup &&
-     services.semantic_context &&
-     semantic_utils::split_qualified_name_text(trimmed, qualified_value_name) &&
-     (qualified_value_name.rooted || !qualified_value_name.qualifiers.empty()) &&
-     compact_source_argument_key(source_text_for_qualified_name(qualified_value_name)) ==
-         compact_source_argument_key(trimmed) &&
-     !text_mentions_template_dependency(
-         services,
-         template_api::make_template_environment(scope),
-         trimmed)) {
+  if(!explicit_address &&
+     has_structured_qualified_lookup &&
+     !has_structured_qualifier_template_id &&
+     services.semantic_context) {
     const ValueBinding * binding = nullptr;
     try {
       binding =
-          semantic_lookup::lookup_qualified_value_binding(*services.semantic_context,
-                                                          scope,
-                                                          qualified_value_name);
+          semantic_lookup::lookup_qualified_value_binding_node(
+              *services.semantic_context,
+              scope,
+              *structured_qualified,
+              *named_operand);
     } catch(const TemplateSubstitutionFailure &) {
       binding = nullptr;
     } catch(const SemanticSoftFailure &) {
@@ -2078,24 +2047,24 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
     const ValueBinding * binding = nullptr;
     if(is_identifier_text(object_text)) {
       binding = lookup_unqualified_value(services, scope, object_text);
-    } else if(services.semantic_context) {
-      QualifiedName qualified;
-      if(semantic_utils::split_qualified_name_text(object_text, qualified) &&
-         (qualified.rooted || !qualified.qualifiers.empty())) {
-        try {
-          binding =
-              semantic_lookup::lookup_qualified_value_binding(*services.semantic_context,
-                                                              scope,
-                                                              qualified);
-        } catch(const TemplateSubstitutionFailure &) {
-          binding = nullptr;
-        } catch(const SemanticSoftFailure &) {
-          binding = nullptr;
-        } catch(const SemanticDiagnosticError &) {
-          binding = nullptr;
-        } catch(const semantic_fallback_audit::SemanticFallbackError &) {
-          binding = nullptr;
-        }
+    } else if(services.semantic_context &&
+              explicit_address &&
+              has_structured_qualified_lookup) {
+      try {
+        binding =
+            semantic_lookup::lookup_qualified_value_binding_node(
+                *services.semantic_context,
+                scope,
+                *structured_qualified,
+                *named_operand);
+      } catch(const TemplateSubstitutionFailure &) {
+        binding = nullptr;
+      } catch(const SemanticSoftFailure &) {
+        binding = nullptr;
+      } catch(const SemanticDiagnosticError &) {
+        binding = nullptr;
+      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+        binding = nullptr;
       }
     }
     if(binding &&
@@ -2131,15 +2100,15 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
      !is_function_type(target_base->inner) &&
      trimmed.size() > 1 &&
      trimmed[0] == '&') {
-    const std::string member_text = trim_space(trimmed.substr(1));
-    QualifiedName qualified;
-    if(semantic_utils::split_qualified_name_text(member_text, qualified) &&
-       (qualified.rooted || !qualified.qualifiers.empty())) {
+    if(explicit_address &&
+       has_structured_qualified_lookup) {
       const ValueBinding * binding =
           services.semantic_context ?
-              semantic_lookup::lookup_qualified_value_binding(*services.semantic_context,
-                                                              scope,
-                                                              qualified) :
+              semantic_lookup::lookup_qualified_value_binding_node(
+                  *services.semantic_context,
+                  scope,
+                  *structured_qualified,
+                  *named_operand) :
               nullptr;
       if(binding &&
          bind_data_member_pointer_non_type_template_argument(target_type,
@@ -2148,86 +2117,6 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
                                                              out,
                                                              out_binding)) {
         return true;
-      }
-    }
-  }
-
-  if(target_base &&
-     target_base->kind == Type::TK_MEMBER_POINTER &&
-     target_base->inner &&
-     is_function_type(target_base->inner) &&
-     trimmed.size() > 1 &&
-     trimmed[0] == '&') {
-    const std::string member_text = trim_space(trimmed.substr(1));
-    QualifiedName qualified;
-    if(services.semantic_context &&
-       semantic_utils::split_qualified_name_text(member_text, qualified) &&
-       (qualified.rooted || !qualified.qualifiers.empty())) {
-      std::vector<FunctionBinding *> functions;
-      try {
-        if(!lookup_member_pointer_function_candidates(services,
-                                                      scope,
-                                                      qualified,
-                                                      functions)) {
-          return false;
-        }
-      } catch(const TemplateSubstitutionFailure &) {
-        return false;
-      } catch(const SemanticSoftFailure &) {
-        return false;
-      } catch(const SemanticDiagnosticError &) {
-        return false;
-      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
-        return false;
-      } catch(const std::logic_error &) {
-        return false;
-      }
-      FunctionBinding * selected = nullptr;
-      for(std::size_t i = 0; i < functions.size(); ++i) {
-        FunctionBinding * binding = functions[i];
-        if(!binding ||
-           !binding->is_method ||
-           !binding->owner_class ||
-           binding->is_constructor ||
-           binding->is_destructor ||
-           !binding->owner_class->type ||
-           !type_equals(strip_top_level_cv(binding->owner_class->type),
-                        strip_top_level_cv(target_base->owner))) {
-          continue;
-        }
-        TypePtr member_function_type =
-            binding->declared_type ? binding->declared_type : binding->type;
-        TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
-        const FunctionTypeRefQualifier binding_ref_qualifier =
-            function_type_ref_qualifier_from_method_ref(binding->ref_qualifier);
-        if(stripped_function_type &&
-           stripped_function_type->kind == Type::TK_FUNCTION &&
-           (stripped_function_type->function_const != binding->is_const_method ||
-            stripped_function_type->function_volatile != binding->is_volatile_method ||
-            stripped_function_type->function_ref_qualifier != binding_ref_qualifier)) {
-          member_function_type = make_function(stripped_function_type->inner,
-                                               stripped_function_type->params,
-                                               stripped_function_type->variadic,
-                                               binding->is_const_method,
-                                               binding->is_volatile_method,
-                                               stripped_function_type->prototype_relaxed,
-                                               binding_ref_qualifier);
-        }
-        if(!type_equals(strip_top_level_cv(member_function_type),
-                        strip_top_level_cv(target_base->inner))) {
-          continue;
-        }
-        if(selected) {
-          return false;
-        }
-        selected = binding;
-      }
-      if(selected) {
-        return bind_non_type_function_argument(services.semantic_context,
-                                               target_type,
-                                               selected,
-                                               trimmed,
-                                               out);
       }
     }
   }
@@ -6758,18 +6647,14 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
               syntax,
               bound_value_type,
               arg);
-      const bool suppress_qualified_text_lookup =
-          syntax &&
-          syntax->expression &&
-          cppast_has_qualifier_template_id_syntaxes(*syntax->expression);
       const ValueBinding * named_binding = nullptr;
       if(!structured_function_resolved &&
          !try_resolve_named_non_type_template_argument(services,
-                                                       raw_scope,
+                                                       bound_scope,
                                                        inputs.texts[i],
+                                                       syntax,
                                                        bound_value_type,
                                                        arg,
-                                                       suppress_qualified_text_lookup,
                                                        &named_binding)) {
         if(!allow_expensive_resolution) {
           return FRTA_UNSUPPORTED;
@@ -11816,10 +11701,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       bound_value_type = parameter.value_type;
     }
 
-    const bool suppress_qualified_text_lookup =
-        syntax &&
-        syntax->expression;
-
     const auto try_resolve_named_non_type =
         [&](const std::string & candidate_text) -> bool
     {
@@ -11828,9 +11709,9 @@ bool resolve_template_argument(template_api::TemplateServices & services,
              services,
              raw_argument_scope,
              candidate_text,
+             syntax,
              bound_value_type,
              out,
-             suppress_qualified_text_lookup,
              &named_binding)) {
         return false;
       }
