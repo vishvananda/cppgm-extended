@@ -274,6 +274,13 @@ inline TemplateParameterInfo & TemplateParameterInfo::operator=(
 
 struct TemplateArgument
 {
+  struct TemplateEntityIdentity
+  {
+    std::string scope_prefix;
+    std::string name;
+    cpp_decl::QualifiedName name_syntax;
+  };
+
   enum Kind
   {
     TA_TYPE,
@@ -286,9 +293,7 @@ struct TemplateArgument
   cpp_decl::TypePtr type;
   void * template_decl = nullptr;
   cpp_decl::TypePtr template_owner_type;
-  std::string template_entity_scope_prefix;
-  std::string template_entity_name;
-  cpp_decl::QualifiedName template_entity_name_syntax;
+  std::shared_ptr<TemplateEntityIdentity> template_entity_identity;
   const semantic_model::FunctionBinding * function_value = nullptr;
   std::string function_internal_symbol;
   const semantic_model::ValueBinding * value_binding = nullptr;
@@ -300,15 +305,56 @@ struct TemplateArgument
   bool dependent = false;
   bool source_defaulted = false;
   bool partial_order_placeholder = false;
+
+  const std::string & template_entity_scope_prefix() const
+  {
+    static const std::string empty;
+    return template_entity_identity ? template_entity_identity->scope_prefix : empty;
+  }
+
+  const std::string & template_entity_name() const
+  {
+    static const std::string empty;
+    return template_entity_identity ? template_entity_identity->name : empty;
+  }
+
+  const cpp_decl::QualifiedName & template_entity_name_syntax() const
+  {
+    static const cpp_decl::QualifiedName empty;
+    return template_entity_identity ? template_entity_identity->name_syntax : empty;
+  }
 };
+
+inline TemplateArgument::TemplateEntityIdentity &
+mutable_template_argument_entity_identity(TemplateArgument & argument)
+{
+  if(!argument.template_entity_identity) {
+    argument.template_entity_identity.reset(
+        new TemplateArgument::TemplateEntityIdentity());
+  } else if(!argument.template_entity_identity.unique()) {
+    argument.template_entity_identity.reset(
+        new TemplateArgument::TemplateEntityIdentity(
+            *argument.template_entity_identity));
+  }
+  return *argument.template_entity_identity;
+}
 
 inline void set_template_argument_entity_identity(
     TemplateArgument & argument,
     const std::string & scope_prefix,
     const std::string & name)
 {
-  argument.template_entity_scope_prefix = scope_prefix;
-  argument.template_entity_name = name;
+  TemplateArgument::TemplateEntityIdentity & identity =
+      mutable_template_argument_entity_identity(argument);
+  identity.scope_prefix = scope_prefix;
+  identity.name = name;
+}
+
+inline void set_template_argument_entity_name_syntax(
+    TemplateArgument & argument,
+    const cpp_decl::QualifiedName & syntax)
+{
+  mutable_template_argument_entity_identity(argument).name_syntax = syntax;
 }
 
 bool template_arguments_are_dependent(

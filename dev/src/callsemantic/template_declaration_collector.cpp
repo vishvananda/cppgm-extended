@@ -4106,12 +4106,13 @@ private:
     if(lhs.template_decl || rhs.template_decl) {
       return lhs.template_decl == rhs.template_decl;
     }
-    if(!lhs.template_entity_scope_prefix.empty() ||
-       !rhs.template_entity_scope_prefix.empty() ||
-       !lhs.template_entity_name.empty() ||
-       !rhs.template_entity_name.empty()) {
-      return lhs.template_entity_scope_prefix == rhs.template_entity_scope_prefix &&
-             lhs.template_entity_name == rhs.template_entity_name;
+    if(!lhs.template_entity_scope_prefix().empty() ||
+       !rhs.template_entity_scope_prefix().empty() ||
+       !lhs.template_entity_name().empty() ||
+       !rhs.template_entity_name().empty()) {
+      return lhs.template_entity_scope_prefix() ==
+                 rhs.template_entity_scope_prefix() &&
+             lhs.template_entity_name() == rhs.template_entity_name();
     }
     return lhs.dependent == rhs.dependent && lhs.text == rhs.text;
   }

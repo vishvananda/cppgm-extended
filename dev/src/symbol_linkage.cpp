@@ -7120,7 +7120,7 @@ static bool try_build_template_entity_argument_name_ir(
   }
 
   const semantic_model::Scope * declaring_scope = nullptr;
-  template_name = trim_space(argument.template_entity_name);
+  template_name = trim_space(argument.template_entity_name());
   if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE) {
     if(argument.template_decl) {
       const semantic_model::ClassTemplateDecl * decl =
@@ -7175,11 +7175,11 @@ static bool try_build_template_entity_argument_name_ir(
     if(scope_prefix_syntax_for_template_decl(declaring_scope, prefix)) {
       prefix_ptr = &prefix;
     }
-  } else if(!argument.template_entity_name_syntax.name.empty() &&
-            argument.template_entity_name_syntax.name == template_name &&
-            !argument.template_entity_name_syntax.qualifiers.empty()) {
-    prefix.rooted = argument.template_entity_name_syntax.rooted;
-    prefix.qualifiers = argument.template_entity_name_syntax.qualifiers;
+  } else if(!argument.template_entity_name_syntax().name.empty() &&
+            argument.template_entity_name_syntax().name == template_name &&
+            !argument.template_entity_name_syntax().qualifiers.empty()) {
+    prefix.rooted = argument.template_entity_name_syntax().rooted;
+    prefix.qualifiers = argument.template_entity_name_syntax().qualifiers;
     prefix.name = prefix.qualifiers.back();
     prefix.qualifiers.pop_back();
     prefix_ptr = &prefix;
@@ -7197,10 +7197,10 @@ static bool try_build_template_entity_argument_name_ir(
       prefix.name = prefix.qualifiers.back();
       prefix.qualifiers.pop_back();
       prefix_ptr = &prefix;
-    } else if(!trim_space(argument.template_entity_scope_prefix).empty()) {
+    } else if(!trim_space(argument.template_entity_scope_prefix()).empty()) {
       return false;
     }
-  } else if(!trim_space(argument.template_entity_scope_prefix).empty()) {
+  } else if(!trim_space(argument.template_entity_scope_prefix()).empty()) {
     return false;
   }
   string canonical_prefix;

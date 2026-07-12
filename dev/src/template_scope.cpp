@@ -54,13 +54,13 @@ void set_template_argument_entity_identity_from_decl(
       argument,
       template_entity_scope_prefix_text(scope, name),
       name);
+  QualifiedName syntax;
   if(scope) {
-    argument.template_entity_name_syntax =
-        semantic_lookup::scope_qualified_name_syntax(*scope, name);
+    syntax = semantic_lookup::scope_qualified_name_syntax(*scope, name);
   } else {
-    argument.template_entity_name_syntax = QualifiedName();
-    argument.template_entity_name_syntax.name = name;
+    syntax.name = name;
   }
+  set_template_argument_entity_name_syntax(argument, syntax);
 }
 
 std::size_t & global_binding_fingerprint_epoch()
@@ -620,7 +620,7 @@ void bind_template_template_argument(Scope & scope,
         static_cast<AliasTemplateDecl *>(argument.template_decl);
     bind_alias_template(scope, name, decl);
     if(!preserve_concrete_member_template ||
-       stored_argument.template_entity_name.empty()) {
+       stored_argument.template_entity_name().empty()) {
       set_template_argument_entity_identity_from_decl(stored_argument, decl);
     }
     if(decl && decl->declaring_scope && decl->declaring_scope->class_info) {
@@ -634,7 +634,7 @@ void bind_template_template_argument(Scope & scope,
         static_cast<ClassTemplateDecl *>(argument.template_decl);
     bind_class_template(scope, name, decl);
     if(!preserve_concrete_member_template ||
-       stored_argument.template_entity_name.empty()) {
+       stored_argument.template_entity_name().empty()) {
       set_template_argument_entity_identity_from_decl(stored_argument, decl);
     }
     if(decl && decl->declaring_scope && decl->declaring_scope->class_info) {

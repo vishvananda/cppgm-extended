@@ -318,16 +318,16 @@ bool template_template_argument_has_more_identity(const TemplateArgument & candi
   if(!candidate.text.empty() && current.text.empty()) {
     return true;
   }
-  if(!candidate.template_entity_name.empty() &&
-     current.template_entity_name.empty()) {
+  if(!candidate.template_entity_name().empty() &&
+     current.template_entity_name().empty()) {
     return true;
   }
-  if(!candidate.template_entity_scope_prefix.empty() &&
-     current.template_entity_scope_prefix.empty()) {
+  if(!candidate.template_entity_scope_prefix().empty() &&
+     current.template_entity_scope_prefix().empty()) {
     return true;
   }
-  if(!candidate.template_entity_name_syntax.name.empty() &&
-     current.template_entity_name_syntax.name.empty()) {
+  if(!candidate.template_entity_name_syntax().name.empty() &&
+     current.template_entity_name_syntax().name.empty()) {
     return true;
   }
   return false;
@@ -339,9 +339,12 @@ TemplateArgument template_template_identity_argument(const TemplateArgument & ar
   stored.kind = argument.kind;
   stored.template_decl = argument.template_decl;
   stored.template_owner_type = argument.template_owner_type;
-  stored.template_entity_scope_prefix = argument.template_entity_scope_prefix;
-  stored.template_entity_name = argument.template_entity_name;
-  stored.template_entity_name_syntax = argument.template_entity_name_syntax;
+  set_template_argument_entity_identity(
+      stored,
+      argument.template_entity_scope_prefix(),
+      argument.template_entity_name());
+  set_template_argument_entity_name_syntax(
+      stored, argument.template_entity_name_syntax());
   stored.text = argument.text;
   stored.dependent = argument.dependent;
   return stored;

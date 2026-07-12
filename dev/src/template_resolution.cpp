@@ -14756,9 +14756,10 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           if(lhs.template_decl || rhs.template_decl) {
             return lhs.template_decl == rhs.template_decl;
           }
-          return !lhs.template_entity_name.empty() &&
-                 lhs.template_entity_scope_prefix == rhs.template_entity_scope_prefix &&
-                 lhs.template_entity_name == rhs.template_entity_name;
+          return !lhs.template_entity_name().empty() &&
+                 lhs.template_entity_scope_prefix() ==
+                     rhs.template_entity_scope_prefix() &&
+                 lhs.template_entity_name() == rhs.template_entity_name();
         };
         const auto structured_template_arguments_match =
             [&](const TemplateArgument & pattern_argument,

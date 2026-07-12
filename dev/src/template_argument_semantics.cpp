@@ -14648,7 +14648,7 @@ TemplateTemplateReplacement template_template_argument_replacement(
 {
   TemplateTemplateReplacement replacement;
   replacement.text = template_template_argument_replacement_text(argument);
-  replacement.name = argument.template_entity_name_syntax;
+  replacement.name = argument.template_entity_name_syntax();
   if(replacement.name.name.empty() &&
      replacement.text.find("::") == string::npos &&
      is_identifier_text(replacement.text)) {

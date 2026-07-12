@@ -611,8 +611,9 @@ bool template_result_argument_refines_same_pattern(
   if(current.template_decl || parsed.template_decl) {
     return current.template_decl == parsed.template_decl;
   }
-  return current.template_entity_scope_prefix == parsed.template_entity_scope_prefix &&
-         current.template_entity_name == parsed.template_entity_name;
+  return current.template_entity_scope_prefix() ==
+             parsed.template_entity_scope_prefix() &&
+         current.template_entity_name() == parsed.template_entity_name();
 }
 
 bool template_arguments_are_dependent_for_instantiation(
