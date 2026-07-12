@@ -39092,13 +39092,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
         skip_leaf_constant_discovery = true;
       }
     }
-    if(status != NT_ARG_EVALUATED && status != NT_ARG_DEPENDENT) {
-      const string expr_text =
-          trim_space(callsemantic_internal::describe_expression_for_diagnostic(expr));
-      if(try_evaluate_integral_text(expr_text, value)) {
-        status = NT_ARG_EVALUATED;
-      }
-    }
   } catch(const ExplicitSpecializationAfterInstantiationError &) {
     throw;
   } catch(const semantic_fallback_audit::SemanticFallbackError & e) {
@@ -39107,33 +39100,27 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
     }
     status = NT_ARG_EVAL_FAILED;
   } catch(const logic_error & e) {
-    const string expr_text =
-        trim_space(callsemantic_internal::describe_expression_for_diagnostic(expr));
-    if(try_evaluate_integral_text(expr_text, value)) {
+    bool structured_bool_value = false;
+    const NonTypeArgumentStatus structured_status =
+        structured_bool_shortcut_allowed ?
+            evaluate_structured_bool_shortcut(expr, structured_bool_value) :
+            NT_ARG_PARSE_FAILED;
+    if(structured_status == NT_ARG_EVALUATED) {
+      value = structured_bool_value ? 1 : 0;
       status = NT_ARG_EVALUATED;
+      skip_leaf_constant_discovery =
+          structured_template_member_bool_value_is_pure_trait(
+              services, scope, expr);
+    } else if(structured_status == NT_ARG_DEPENDENT) {
+      status = NT_ARG_DEPENDENT;
+    } else if(structured_status == NT_ARG_EVAL_FAILED) {
+      status = NT_ARG_EVAL_FAILED;
+      skip_leaf_constant_discovery = true;
     } else {
-      bool structured_bool_value = false;
-      const NonTypeArgumentStatus structured_status =
-          structured_bool_shortcut_allowed ?
-              evaluate_structured_bool_shortcut(expr, structured_bool_value) :
-              NT_ARG_PARSE_FAILED;
-      if(structured_status == NT_ARG_EVALUATED) {
-        value = structured_bool_value ? 1 : 0;
-        status = NT_ARG_EVALUATED;
-        skip_leaf_constant_discovery =
-            structured_template_member_bool_value_is_pure_trait(
-                services, scope, expr);
-      } else if(structured_status == NT_ARG_DEPENDENT) {
-        status = NT_ARG_DEPENDENT;
-      } else if(structured_status == NT_ARG_EVAL_FAILED) {
-        status = NT_ARG_EVAL_FAILED;
-        skip_leaf_constant_discovery = true;
-      } else {
-        if(eval_error) {
-          *eval_error = e.what();
-        }
-        status = NT_ARG_EVAL_FAILED;
+      if(eval_error) {
+        *eval_error = e.what();
       }
+      status = NT_ARG_EVAL_FAILED;
     }
   }
   if(status == NT_ARG_EVALUATED) {
