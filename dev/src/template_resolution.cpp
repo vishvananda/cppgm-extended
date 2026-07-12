@@ -6527,6 +6527,12 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
     } else if(parameters[i].kind == TemplateParameterInfo::TP_TYPE) {
       TypePtr type;
       const TypePtr expanded_type = inputs.type_for(i);
+      const TemplateArgumentSyntax * syntax = inputs.syntax_for(i);
+      if(syntax &&
+         syntax->type_id &&
+         qualified_name_syntax_in_type_argument(*syntax->type_id)) {
+        return FRTA_UNSUPPORTED;
+      }
       if(!expanded_type &&
          text_is_top_level_function_type_argument(inputs.texts[i])) {
         return FRTA_UNSUPPORTED;
@@ -6537,14 +6543,14 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
              template_api::make_template_environment(bound_scope),
              parameters[i],
              inputs.texts[i],
-             inputs.syntax_for(i),
+             syntax,
              expanded_type,
              arg)) {
         bool determinate_member_failure = false;
         if(try_resolve_bound_member_type_argument(type_system,
                                                   raw_scope,
                                                   bound_scope,
-                                                  inputs.syntax_for(i),
+                                                  syntax,
                                                   type,
                                                   determinate_member_failure,
                                                   services.counters)) {
@@ -6566,7 +6572,7 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
                                                      type) ||
                    lookup_exact_visible_qualified_type_argument(
                        bound_scope,
-                       inputs.syntax_for(i),
+                       syntax,
                        type) ||
                    lookup_exact_visible_direct_type_argument(bound_scope,
                                                             inputs.texts[i],
