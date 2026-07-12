@@ -2349,6 +2349,40 @@ static bool scope_prefix_text_for_template_decl(const semantic_model::Scope * sc
   return !out.empty();
 }
 
+static bool scope_prefix_syntax_for_template_decl(
+    const semantic_model::Scope * scope,
+    QualifiedName & out)
+{
+  vector<string> parts;
+  for(const semantic_model::Scope * current = scope; current; current = current->parent) {
+    if(current->class_info &&
+       current->class_info->member_scope.get() == current) {
+      out = current->class_info->symbol_qualified_name_syntax;
+      if(out.name.empty()) {
+        return false;
+      }
+      reverse(parts.begin(), parts.end());
+      for(size_t i = 0; i < parts.size(); ++i) {
+        out.qualifiers.push_back(out.name);
+        out.name = parts[i];
+      }
+      return true;
+    }
+    if(current->namespace_scope && current->parent && !current->name.empty() &&
+       current->name != "<global>") {
+      parts.push_back(current->name);
+    }
+  }
+  reverse(parts.begin(), parts.end());
+  out = QualifiedName();
+  if(parts.empty()) {
+    return false;
+  }
+  out.qualifiers.assign(parts.begin(), parts.end() - 1);
+  out.name = parts.back();
+  return true;
+}
+
 static const semantic_model::ClassTemplateDecl *
 find_class_template_in_inline_namespace_children(
     const semantic_model::Scope & scope,
@@ -2526,20 +2560,15 @@ static bool qualify_template_id_syntax_from_lookup(
          mangle_ctx)) {
     return false;
   }
-  string prefix;
   const semantic_model::ClassTemplateDecl * class_template =
       lookup_class_template_for_template_id_syntax(syntax, mangle_ctx);
-  if(class_template) {
-    if(!scope_prefix_text_for_template_decl(class_template->declaring_scope, prefix)) {
-      return false;
-    }
-  } else {
+  if(!class_template) {
     return false;
   }
   QualifiedName qualified_prefix;
-  if(!semantic_utils::split_qualified_name_text(prefix, qualified_prefix) ||
-     qualified_prefix.rooted ||
-     qualified_prefix.name.empty()) {
+  if(!scope_prefix_syntax_for_template_decl(class_template->declaring_scope,
+                                            qualified_prefix) ||
+     qualified_prefix.rooted) {
     return false;
   }
   out = QualifiedName();
