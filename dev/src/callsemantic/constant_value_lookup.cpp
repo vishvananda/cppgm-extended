@@ -40,7 +40,6 @@ using template_model::TemplateParameterInfo;
 using semantic_lookup::canonical_function_lookup_name;
 using semantic_lookup::MemberValueLookupResult;
 using semantic_lookup::lookup_member_value;
-using semantic_utils::split_qualified_name_text;
 using semantic_utils::strip_trailing_top_level_template_arguments;
 using semantic_utils::trim_space;
 using semantic_utils::unqualified_member_name;
@@ -1479,12 +1478,14 @@ public:
                                   const CppAstNode * node,
                                   constant_eval::ConstexprValue & out)
   {
-    if(node &&
-       node->kind == CppAstKind::id_expression &&
-       (!node->qualifier_type_syntaxes.empty() ||
-        !node->qualifier_template_id_syntaxes.empty())) {
+    if(node && node->kind == CppAstKind::id_expression) {
       const QualifiedName * qualified = cppast_qualified_name_syntax(*node);
       if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
+        if(node->qualifier_type_syntaxes.empty() &&
+           node->qualifier_template_id_syntaxes.empty() &&
+           value_class_use_is_from_template_instantiation(scope)) {
+          return lookup_constant_value(scope, name, out, qualified);
+        }
         const ValueBinding * member_binding = nullptr;
         if(lookup_qualified_type_member_constant_value_node(scope,
                                                             *qualified,
@@ -1612,11 +1613,14 @@ public:
 
   bool lookup_constant_value(Scope & scope,
                              const string & name,
-                             constant_eval::ConstexprValue & out)
+                             constant_eval::ConstexprValue & out,
+                             const QualifiedName * carried_qualified = nullptr)
   {
     const bool witness_capture_enabled =
         witness::source_capture_enabled(template_witness_context());
-
+    if(!carried_qualified && name.find("::") != string::npos) {
+      return false;
+    }
     const auto qualified_name_text = [](const QualifiedName & qualified_name) -> string
     {
       string out;
@@ -1927,16 +1931,16 @@ public:
                                                         request.template_name);
     };
 
-    QualifiedName qualified;
-    if(split_qualified_name_text(name, qualified) &&
-       (qualified.rooted || !qualified.qualifiers.empty())) {
-      const string qualifier_name = qualifier_prefix_text(qualified);
+    const QualifiedName * qualified = carried_qualified;
+    if(qualified &&
+       (qualified->rooted || !qualified->qualifiers.empty())) {
+      const string qualifier_name = qualifier_prefix_text(*qualified);
 
       const ValueBinding * binding =
-          semantic_lookup::lookup_qualified_value_binding(*this, scope, qualified);
+          semantic_lookup::lookup_qualified_value_binding(*this, scope, *qualified);
       if(binding &&
          materialize_constant_binding_value(const_cast<ValueBinding &>(*binding), out)) {
-        note_single_qualified_class_use(qualified, binding);
+        note_single_qualified_class_use(*qualified, binding);
         return true;
       }
 
@@ -1946,10 +1950,10 @@ public:
         if(qualifier_info) {
           finalize_class_constant_members(*qualifier_info);
           MemberValueLookupResult member =
-              lookup_member_value(*qualifier_info, qualified.name);
+              lookup_member_value(*qualifier_info, qualified->name);
           if(member.binding &&
              materialize_constant_binding_value(const_cast<ValueBinding &>(*member.binding), out)) {
-            note_single_qualified_class_use(qualified, member.binding);
+            note_single_qualified_class_use(*qualified, member.binding);
             return true;
           }
         }
