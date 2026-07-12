@@ -902,7 +902,8 @@ public:
                                                    params,
                                                    syntax.is_const_method,
                                                    syntax.is_volatile_method,
-                                                   syntax.ref_qualifier);
+                                                   syntax.ref_qualifier,
+                                                   conversion_identifier);
           if(template_decl) {
             if(inner.kind == CppAstKind::special_member_definition) {
               if(template_decl->body) {
@@ -2460,7 +2461,8 @@ public:
                                                        params,
                                                        prepared_owner_method.syntax.is_const_method,
                                                        prepared_owner_method.syntax.is_volatile_method,
-                                                     prepared_owner_method.syntax.ref_qualifier);
+                                                       prepared_owner_method.syntax.ref_qualifier,
+                                                       function_identifier);
             const bool matches_owner_template_parameters =
                   owner_template_decl &&
                   !partial_owner &&
@@ -4869,10 +4871,18 @@ private:
       const vector<pair<string, TypePtr> > & params,
       bool is_const_method,
       bool is_volatile_method,
-      RefQualifier ref_qualifier)
+      RefQualifier ref_qualifier,
+      const CppAstNode * function_identifier)
   {
     return callbacks.out_of_class_services->resolve_out_of_class_method_template(
-        scope, qualified, template_parameters, params, is_const_method, is_volatile_method, ref_qualifier);
+        scope,
+        qualified,
+        template_parameters,
+        params,
+        is_const_method,
+        is_volatile_method,
+        ref_qualifier,
+        function_identifier);
   }
 
   bool resolve_out_of_class_method_binding_with_resolution(

@@ -7787,38 +7787,68 @@ private:
     vector<string> arg_texts;
     const vector<TemplateArgumentSyntax> * arg_syntaxes = nullptr;
     string template_lookup_name = normalized_name;
+    bool structured_template_id = false;
+    if(template_lookup_name.find('<') != string::npos &&
+       !template_lookup_name.empty() &&
+       template_lookup_name.back() == '>') {
+      const ExactTemplateTypeLookupAnchor * anchor =
+          current_exact_template_type_lookup_anchor();
+      const function<const TemplateIdSyntax *(const TemplateIdSyntax &)>
+          matching_retained_template_id =
+          [&](const TemplateIdSyntax & syntax) -> const TemplateIdSyntax *
+          {
+            if(compact_lookup_text(
+                   template_id_syntax_text_preserving_spacing(syntax)) ==
+               compact_lookup_text(normalized_name)) {
+              return &syntax;
+            }
+            for(size_t i = 0;
+                i < syntax.qualifier_template_id_syntaxes.size();
+                ++i) {
+              if(const TemplateIdSyntax * match =
+                     matching_retained_template_id(
+                         syntax.qualifier_template_id_syntaxes[i])) {
+                return match;
+              }
+            }
+            return nullptr;
+          };
+      const TemplateIdSyntax * retained_template_id =
+          anchor && anchor->template_id_syntax_ref ?
+              matching_retained_template_id(
+                  *anchor->template_id_syntax_ref) :
+              nullptr;
+      if(anchor &&
+         anchor->has_argument_list &&
+         retained_template_id) {
+        template_id = retained_template_id->name;
+        const vector<string> & anchor_arg_texts =
+            retained_template_id == anchor->template_id_syntax_ref ?
+                exact_template_type_lookup_anchor_texts(*anchor) :
+                retained_template_id->arguments;
+        const vector<TemplateArgumentSyntax> * anchor_arg_syntaxes =
+            retained_template_id == anchor->template_id_syntax_ref ?
+                exact_template_type_lookup_anchor_syntaxes(*anchor) :
+                &retained_template_id->argument_syntaxes;
+        if(anchor_arg_syntaxes &&
+           anchor_arg_syntaxes->size() == anchor_arg_texts.size()) {
+          template_lookup_name =
+              template_id_syntax_text_preserving_spacing(
+                  *retained_template_id);
+          arg_texts = anchor_arg_texts;
+          arg_syntaxes = anchor_arg_syntaxes;
+          structured_template_id = true;
+        }
+      }
+    }
     bool parsed_template_id =
+        structured_template_id ? true :
         template_lookup_name.find('<') != string::npos &&
         !template_lookup_name.empty() &&
         template_lookup_name.back() == '>' &&
         semantic_utils::split_top_level_template_id_text(template_lookup_name,
                                                          template_id,
                                                          arg_texts);
-    if(!parsed_template_id &&
-       normalized_name.find('<') != string::npos &&
-       !normalized_name.empty() &&
-       normalized_name.back() == '>') {
-      const ExactTemplateTypeLookupAnchor * anchor =
-          current_exact_template_type_lookup_anchor();
-      if(anchor &&
-         anchor->has_argument_list &&
-         exact_template_type_lookup_anchor_matches_syntax(*anchor,
-                                                          normalized_name) &&
-         anchor->template_id_syntax_ref) {
-        template_id = anchor->template_id_syntax_ref->name;
-        const vector<string> & anchor_arg_texts =
-            exact_template_type_lookup_anchor_texts(*anchor);
-        const vector<TemplateArgumentSyntax> * anchor_arg_syntaxes =
-            exact_template_type_lookup_anchor_syntaxes(*anchor);
-        if(anchor_arg_syntaxes &&
-           anchor_arg_syntaxes->size() == anchor_arg_texts.size()) {
-          template_lookup_name = anchor->template_text;
-          arg_texts = anchor_arg_texts;
-          arg_syntaxes = anchor_arg_syntaxes;
-          parsed_template_id = true;
-        }
-      }
-    }
     if(parsed_template_id) {
       if(!arg_syntaxes) {
         arg_syntaxes =
@@ -26071,9 +26101,17 @@ private:
       const vector<pair<string, TypePtr> > & params,
       bool is_const_method,
       bool is_volatile_method,
-      RefQualifier ref_qualifier) override
+      RefQualifier ref_qualifier,
+      const CppAstNode * function_identifier) override
   {
-    ClassInfo * info = resolve_out_of_class_owner_class(scope, qualified);
+    ClassInfo * info =
+        resolve_out_of_class_owner_class_from_template_id_syntax(
+            scope,
+            qualified,
+            function_identifier);
+    if(!info) {
+      info = resolve_out_of_class_owner_class(scope, qualified);
+    }
     if(!info) {
       return nullptr;
     }
