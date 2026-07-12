@@ -18072,7 +18072,6 @@ private:
           return structured_template_placeholder;
         }
       }
-      return TypePtr();
     }
     const bool fallback_lookup_is_qualified =
         qualified_lookup &&
