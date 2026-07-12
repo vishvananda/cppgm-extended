@@ -8732,7 +8732,6 @@ private:
       return (*bound_pack)[0];
     }
 
-    QualifiedName reparsed_qualified_name;
     const QualifiedName * retained_qualified_name =
         structured_name &&
                 (structured_name->rooted ||
@@ -8742,12 +8741,6 @@ private:
                 (template_id.rooted || !template_id.qualifiers.empty()) ?
             &template_id :
             nullptr;
-    if(!retained_qualified_name &&
-       split_qualified_name_text(normalized_name, reparsed_qualified_name) &&
-       (reparsed_qualified_name.rooted ||
-        !reparsed_qualified_name.qualifiers.empty())) {
-      retained_qualified_name = &reparsed_qualified_name;
-    }
     if(retained_qualified_name) {
       const QualifiedName & qualified = *retained_qualified_name;
       const bool trace_node_traits_pointer_lookup =
