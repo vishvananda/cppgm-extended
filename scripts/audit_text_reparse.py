@@ -197,6 +197,21 @@ CATEGORIES = [
         ),
     ),
     Category(
+        "semantic_argument_spelling_recovery",
+        "Template and non-type argument semantics recovered from saved spelling.",
+        re.compile(
+            r"\bevaluate_non_type_argument_text\s*\(|"
+            r"\btry_parse_builtin_type_trait_text\s*\(|"
+            r"\bresolve_template_template_argument_text\s*\(|"
+            r"\bresolve_member_template_template_argument_text\s*\(|"
+            r"\bresolve_member_template_owner_type_text\s*\(|"
+            r"\blookup_rewritten_bound_type_argument\s*\(|"
+            r"\btemplate_argument_text_matches_type_binding\s*\(|"
+            r"\bannotate_template_id_type_arguments_"
+            r"from_matching_scope_bindings\s*\("
+        ),
+    ),
+    Category(
         "added_semantic_text_reparse",
         "Newly added semantic code that resolves or parses template/type facts from text.",
         re.compile(

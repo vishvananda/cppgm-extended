@@ -39,6 +39,7 @@ ZERO_LIMITS = {
     "function_result_argument_text_reparse": 0,
     "owner_member_text_reparse": 0,
     "abi_template_component_text_reparse": 0,
+    "semantic_argument_spelling_recovery": 0,
     "added_semantic_text_reparse": 0,
 }
 
@@ -251,6 +252,45 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("abi_template_component_text_reparse", result.stdout)
             self.assertIn("parse_template_component", result.stdout)
             self.assertIn("split_template_arguments", result.stdout)
+
+    def test_semantic_argument_spelling_recovery_is_counted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
+            root = Path(temp_dir)
+            src = root / "dev" / "src"
+            src.mkdir(parents=True)
+            (src / "template_argument_semantics.cpp").write_text(
+                "evaluate_non_type_argument_text(services, scope, text, value);\n"
+                "try_parse_builtin_type_trait_text(scope, text, value);\n"
+                "resolve_template_template_argument_text(scope, text, result);\n"
+                "resolve_member_template_template_argument_text(scope, text, result);\n"
+                "resolve_member_template_owner_type_text(scope, text, result);\n"
+                "lookup_rewritten_bound_type_argument(scope, text, result);\n"
+                "template_argument_text_matches_type_binding(text, type);\n"
+                "annotate_template_id_type_arguments_from_matching_scope_bindings(\n"
+                "    scope, decl, syntax);\n",
+                encoding="utf-8",
+            )
+            baseline = root / "baseline.json"
+            baseline.write_text(
+                json.dumps({"limits": ZERO_LIMITS}),
+                encoding="utf-8",
+            )
+
+            result = self.run_script(src, "--baseline", str(baseline), "--list-sites")
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("semantic_argument_spelling_recovery", result.stdout)
+            self.assertIn("evaluate_non_type_argument_text", result.stdout)
+            self.assertIn("try_parse_builtin_type_trait_text", result.stdout)
+            self.assertIn("resolve_template_template_argument_text", result.stdout)
+            self.assertIn("resolve_member_template_template_argument_text", result.stdout)
+            self.assertIn("resolve_member_template_owner_type_text", result.stdout)
+            self.assertIn("lookup_rewritten_bound_type_argument", result.stdout)
+            self.assertIn("template_argument_text_matches_type_binding", result.stdout)
+            self.assertIn(
+                "annotate_template_id_type_arguments_from_matching_scope_bindings",
+                result.stdout,
+            )
 
     def test_semantic_qualified_name_text_reparse_is_counted(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
