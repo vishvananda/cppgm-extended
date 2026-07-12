@@ -4211,6 +4211,24 @@ void note_class_closure_event(
   if(ctx.template_witness_context().session == nullptr) {
     return;
   }
+  if(kind == TemplateWitnessLogEventKind::ClassInstantiation &&
+     info &&
+     info->source_template &&
+     info->template_output_node &&
+     info->source_template->declaring_scope &&
+     info->source_template->declaring_scope->class_info) {
+    for(std::size_t i = 0;
+        i < info->source_template->partial_specializations.size();
+        ++i) {
+      const semantic_model::PartialClassTemplateSpecializationDecl & partial =
+          info->source_template->partial_specializations[i];
+      if(partial.class_node == info->template_output_node &&
+         partial.declaring_scope &&
+         partial.declaring_scope != info->source_template->declaring_scope) {
+        return;
+      }
+    }
+  }
   note_template_witness_log_event(
       kind,
       location,

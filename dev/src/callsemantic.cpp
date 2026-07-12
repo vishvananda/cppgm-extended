@@ -7841,14 +7841,7 @@ private:
         }
       }
     }
-    bool parsed_template_id =
-        structured_template_id ? true :
-        template_lookup_name.find('<') != string::npos &&
-        !template_lookup_name.empty() &&
-        template_lookup_name.back() == '>' &&
-        semantic_utils::split_top_level_template_id_text(template_lookup_name,
-                                                         template_id,
-                                                         arg_texts);
+    bool parsed_template_id = structured_template_id;
     if(parsed_template_id) {
       if(!arg_syntaxes) {
         arg_syntaxes =
@@ -24293,9 +24286,7 @@ private:
       QualifiedName owner_scope_name;
       owner_scope_name.rooted = qualified.rooted;
       owner_scope_name.qualifiers.assign(qualified.qualifiers.begin(),
-                                         qualified.qualifiers.end() - 2);
-      owner_scope_name.name =
-          qualified.qualifiers[qualified.qualifiers.size() - 2];
+                                         qualified.qualifiers.end() - 1);
       owner_lookup_scope =
           semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
               *this, scope, owner_scope_name, true);

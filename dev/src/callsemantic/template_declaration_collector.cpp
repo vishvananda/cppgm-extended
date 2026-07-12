@@ -533,25 +533,44 @@ public:
                 *class_template_id,
                 owner_template_parameters,
                 owner_member_template_name);
+        ClassTemplateDecl * primary = nullptr;
+        if(owner_template_for_member_partial) {
+          ClassInfo * owner_reference =
+              resolve_qualified_owner_class_from_template_id_syntax(
+                  scope,
+                  specialization_name,
+                  &inner,
+                  QualifiedOwnerClassResolution::ReferenceMembers);
+          if(owner_reference && owner_reference->member_scope) {
+            primary_scope = owner_reference->member_scope.get();
+            primary = lookup_class_template(*primary_scope,
+                                            owner_member_template_name);
+          }
+        }
         if(specialization_name.rooted || !specialization_name.qualifiers.empty()) {
           if(specialization_name.qualifiers.empty()) {
             throw logic_error("unsupported class partial specialization");
           }
-          QualifiedName target_scope_name;
-          target_scope_name.rooted = specialization_name.rooted;
-          target_scope_name.qualifiers = specialization_name.qualifiers;
-          primary_scope =
-              semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
-                  *this, scope, target_scope_name, true);
-          if(!primary_scope) {
-            throw logic_error("unknown qualified class partial specialization scope");
+          if(!primary) {
+            QualifiedName target_scope_name;
+            target_scope_name.rooted = specialization_name.rooted;
+            target_scope_name.qualifiers = specialization_name.qualifiers;
+            primary_scope = ctx.resolve_qualified_scope_for_node(
+                scope, target_scope_name, inner, true);
+            if(!primary_scope) {
+              throw logic_error("unknown qualified class partial specialization scope");
+            }
+            primary = lookup_class_template(*primary_scope,
+                                            specialization_name.name);
           }
           pattern_scope.parent = primary_scope;
           pattern_scope.class_info = primary_scope->class_info;
           pattern_scope.function = primary_scope->function;
         }
-        ClassTemplateDecl * primary =
-            lookup_class_template(*primary_scope, specialization_name.name);
+        if(!primary) {
+          primary = lookup_class_template(*primary_scope,
+                                          specialization_name.name);
+        }
         if(!primary) {
           throw logic_error("unknown class template partial specialization");
         }
@@ -4251,9 +4270,7 @@ private:
       owner_scope_name.rooted = qualified_member.rooted;
       if(qualified_member.qualifiers.size() > 1) {
         owner_scope_name.qualifiers.assign(qualified_member.qualifiers.begin(),
-                                           qualified_member.qualifiers.end() - 2);
-        owner_scope_name.name =
-            qualified_member.qualifiers[qualified_member.qualifiers.size() - 2];
+                                           qualified_member.qualifiers.end() - 1);
       }
       owner_lookup_scope =
           semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
