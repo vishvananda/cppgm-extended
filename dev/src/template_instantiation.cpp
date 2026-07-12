@@ -9487,6 +9487,15 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   FunctionTemplateDecl * source_decl =
       canonical_instantiation_template_decl(ctx, instantiation_owner, &decl);
   ensure_result_type_pattern(*source_decl);
+  TypePtr instantiation_type_pattern = source_decl->type_pattern;
+  ClassInfo * declaration_owner =
+      decl.declaring_scope ? decl.declaring_scope->class_info : nullptr;
+  if(source_decl != &decl &&
+     declaration_owner &&
+     declaration_owner == instantiation_owner &&
+     decl.type_pattern) {
+    instantiation_type_pattern = decl.type_pattern;
+  }
   if(!instantiation_owner) {
     instantiation_owner =
         select_hidden_friend_instantiation_owner(ctx, *source_decl, arguments);
@@ -10239,7 +10248,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     }
   } else if(source_decl->is_conversion_operator) {
     name = source_decl->name;
-    type = source_decl->type_pattern;
+    type = instantiation_type_pattern;
     params = source_decl->params_pattern;
     default_args = source_decl->default_arguments_pattern;
     if(source_decl->has_trailing_function_parameter_pack) {
@@ -10262,12 +10271,12 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     }
   } else if(source_decl->is_lambda_call_operator_template) {
     name = source_decl->name;
-    type = source_decl->type_pattern;
+    type = instantiation_type_pattern;
     params = source_decl->params_pattern;
     default_args = source_decl->default_arguments_pattern;
   } else if(source_decl->type_pattern) {
     name = source_decl->name;
-    type = source_decl->type_pattern;
+    type = instantiation_type_pattern;
     params = source_decl->params_pattern;
     default_args = source_decl->default_arguments_pattern;
     if(source_decl->has_trailing_function_parameter_pack) {
