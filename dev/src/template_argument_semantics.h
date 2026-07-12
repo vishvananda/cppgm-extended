@@ -465,11 +465,6 @@ std::vector<std::string> expand_bound_expression_pack_texts(
     semantic_model::Scope & scope,
     const std::string & text);
 
-std::vector<std::string> rewrite_decltype_expression_pack_texts(
-    template_api::TemplateServices & services,
-    semantic_model::Scope & scope,
-    const std::string & text);
-
 ExpandedTemplateArgumentInputs expand_template_argument_inputs(
     template_api::TemplateServices & services,
     semantic_model::Scope & scope,

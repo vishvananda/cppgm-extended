@@ -313,20 +313,6 @@ std::vector<std::string> expand_bound_expression_pack_texts(
       });
 }
 
-std::vector<std::string> rewrite_decltype_expression_pack_texts(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & text)
-{
-  return template_api::with_template_services(
-      ctx,
-      [&](template_api::TemplateServices & services)
-      {
-        return template_argument_semantics::rewrite_decltype_expression_pack_texts(
-            services, scope, text);
-      });
-}
-
 bool parse_type_id_node_for_templates(SemanticContext & ctx,
                                       semantic_model::Scope & scope,
                                       const CppAstNode & type_id,

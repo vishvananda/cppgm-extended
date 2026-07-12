@@ -787,11 +787,6 @@ std::vector<std::string> expand_bound_expression_pack_texts(
     semantic_model::Scope & scope,
     const std::string & text);
 
-std::vector<std::string> rewrite_decltype_expression_pack_texts(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & text);
-
 bool parse_type_id_node_for_templates(SemanticContext & ctx,
                                       semantic_model::Scope & scope,
                                       const CppAstNode & type_id,

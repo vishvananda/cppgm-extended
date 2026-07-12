@@ -4035,13 +4035,6 @@ private:
         text);
   }
 
-  vector<string> rewrite_decltype_expression_pack_texts(Scope & scope,
-                                                        const string & text)
-  {
-    return template_api::type::rewrite_decltype_expression_pack_texts(
-        *this, scope, text);
-  }
-
   bool should_defer_unresolved_type_lookup(Scope & scope,
                                            const string & text) const override
   {
@@ -4233,7 +4226,6 @@ private:
     if(inner.empty()) {
       return false;
     }
-    const string source_inner = inner;
     const CppAstNode * operand = node.children.empty() ? nullptr : &node.children[0];
 
     const bool mentions_template_placeholders =
@@ -4281,12 +4273,6 @@ private:
         return true;
       }
     }
-
-    const vector<string> rewritten_exprs = rewrite_decltype_expression_pack_texts(scope, inner);
-    if(rewritten_exprs.size() != 1) {
-      return dependent_fallback();
-    }
-    inner = rewritten_exprs[0];
 
     if(!operand || operand->kind == CppAstKind::type_id) {
       return dependent_fallback();
