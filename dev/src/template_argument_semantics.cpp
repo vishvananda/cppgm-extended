@@ -3239,15 +3239,8 @@ bool resolve_member_template_owner_type_text(
     return false;
   }
 
-  QualifiedName owner_name;
-  if(semantic_utils::split_qualified_name_text(owner_text, owner_name)) {
-    return resolve_direct_type_name_lookup(services,
-                                           scope.require(),
-                                           owner_name,
-                                           reference_class_templates_only,
-                                           string(),
-                                           out) &&
-           out;
+  if(owner_text.find("::") != string::npos) {
+    return false;
   }
   return resolve_direct_type_name_lookup(services,
                                          scope.require(),
