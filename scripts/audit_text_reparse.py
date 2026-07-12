@@ -117,6 +117,19 @@ CATEGORIES = [
         ),
     ),
     Category(
+        "semantic_expression_text_reparse",
+        "Expression and pack semantics recovered by manually decomposing text.",
+        re.compile(
+            r"\btry_evaluate_integral_text_with_pack_scope\s*\(|"
+            r"\bfind_top_level_binary_operator(?:_token)?_text\s*\(|"
+            r"\b(?:parse_sizeof_pack_count|lookup_integral_constant_count|"
+            r"evaluate_integer_pack_count)_text\s*\(|"
+            r"\binteger_pack_prefix\b|"
+            r"\brewrite_decltype_expression_pack_texts(?:_impl)?\s*\(|"
+            r"\bsplit_top_level_call_expression_text\s*\("
+        ),
+    ),
+    Category(
         "semantic_template_id_text_decomposition",
         "Template-id structure or dependencies recovered from semantic text.",
         re.compile(

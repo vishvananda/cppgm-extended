@@ -32,6 +32,7 @@ ZERO_LIMITS = {
     "semantic_template_fragment_reparse": 0,
     "semantic_text_tokenizer_reparse": 0,
     "manual_template_argument_text_parse": 0,
+    "semantic_expression_text_reparse": 0,
     "semantic_template_id_text_decomposition": 0,
     "semantic_qualified_name_text_reparse": 0,
     "semantic_nttp_text_rebind": 0,
@@ -139,6 +140,39 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("ctx.lookup_value", result.stdout)
             self.assertIn("ctx.lookup_functions", result.stdout)
             self.assertIn("rebound_text", result.stdout)
+
+    def test_semantic_expression_text_reparse_is_counted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
+            root = Path(temp_dir)
+            src = root / "dev" / "src"
+            src.mkdir(parents=True)
+            (src / "template_argument_semantics.cpp").write_text(
+                "try_evaluate_integral_text_with_pack_scope(scope, text, value);\n"
+                "find_top_level_binary_operator_token_text(text, ops, pos, op);\n"
+                "parse_sizeof_pack_count_text(scope, text, value);\n"
+                "lookup_integral_constant_count_text(scope, text, value);\n"
+                "const string integer_pack_prefix = \"__integer_pack(\";\n"
+                "rewrite_decltype_expression_pack_texts(services, scope, text);\n"
+                "split_top_level_call_expression_text(text, callee, args);\n",
+                encoding="utf-8",
+            )
+            baseline = root / "baseline.json"
+            baseline.write_text(
+                json.dumps({"limits": ZERO_LIMITS}),
+                encoding="utf-8",
+            )
+
+            result = self.run_script(src, "--baseline", str(baseline), "--list-sites")
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("semantic_expression_text_reparse", result.stdout)
+            self.assertIn("try_evaluate_integral_text_with_pack_scope", result.stdout)
+            self.assertIn("find_top_level_binary_operator_token_text", result.stdout)
+            self.assertIn("parse_sizeof_pack_count_text", result.stdout)
+            self.assertIn("lookup_integral_constant_count_text", result.stdout)
+            self.assertIn("integer_pack_prefix", result.stdout)
+            self.assertIn("rewrite_decltype_expression_pack_texts", result.stdout)
+            self.assertIn("split_top_level_call_expression_text", result.stdout)
 
     def test_legacy_template_id_text_decomposition_is_counted(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
