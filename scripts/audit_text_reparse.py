@@ -176,6 +176,14 @@ CATEGORIES = [
         ),
     ),
     Category(
+        "abi_template_component_text_reparse",
+        "ABI template components recovered by splitting rendered name text.",
+        re.compile(
+            r"\bparse_template_component\s*\(|"
+            r"\bsplit_template_arguments\s*\("
+        ),
+    ),
+    Category(
         "added_semantic_text_reparse",
         "Newly added semantic code that resolves or parses template/type facts from text.",
         re.compile(

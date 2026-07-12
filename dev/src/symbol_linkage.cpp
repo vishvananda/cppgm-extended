@@ -648,36 +648,6 @@ static long long parse_signed_decimal_integer_value(const string & text)
   return value;
 }
 
-static size_t previous_non_space_for_mangling(const string & text, size_t pos)
-{
-  while(pos > 0) {
-    --pos;
-    if(!isspace(static_cast<unsigned char>(text[pos]))) {
-      return pos;
-    }
-  }
-  return string::npos;
-}
-
-static bool relational_less_operator_at_for_mangling(const string & text,
-                                                     size_t pos)
-{
-  if(pos >= text.size() || text[pos] != '<') {
-    return false;
-  }
-  if(pos + 1 < text.size() && text[pos + 1] == '=') {
-    return true;
-  }
-  const size_t prev = previous_non_space_for_mangling(text, pos);
-  return prev != string::npos &&
-         (text[prev] == ')' || text[prev] == ']');
-}
-
-static bool greater_equal_operator_at_for_mangling(const string & text,
-                                                   size_t pos)
-{
-  return pos + 1 < text.size() && text[pos] == '>' && text[pos + 1] == '=';
-}
 
 static bool contains_template_suffix(const string & text)
 {
@@ -703,76 +673,6 @@ struct TemplateComponent
   bool has_template_id = false;
 };
 
-static bool split_template_arguments(const string & text, vector<string> & out)
-{
-  out.clear();
-  string current;
-  int angle_depth = 0;
-  int paren_depth = 0;
-  int bracket_depth = 0;
-  int brace_depth = 0;
-  for(size_t i = 0; i < text.size(); ++i) {
-    const char ch = text[i];
-    if(ch == '<') {
-      if(relational_less_operator_at_for_mangling(text, i)) {
-        current.push_back(ch);
-        continue;
-      }
-      ++angle_depth;
-      current.push_back(ch);
-    } else if(ch == '>') {
-      if(greater_equal_operator_at_for_mangling(text, i)) {
-        current.push_back(ch);
-        continue;
-      }
-      if(angle_depth == 0) {
-        return false;
-      }
-      --angle_depth;
-      current.push_back(ch);
-    } else if(ch == '(') {
-      ++paren_depth;
-      current.push_back(ch);
-    } else if(ch == ')') {
-      if(paren_depth == 0) {
-        return false;
-      }
-      --paren_depth;
-      current.push_back(ch);
-    } else if(ch == '[') {
-      ++bracket_depth;
-      current.push_back(ch);
-    } else if(ch == ']') {
-      if(bracket_depth == 0) {
-        return false;
-      }
-      --bracket_depth;
-      current.push_back(ch);
-    } else if(ch == '{') {
-      ++brace_depth;
-      current.push_back(ch);
-    } else if(ch == '}') {
-      if(brace_depth == 0) {
-        return false;
-      }
-      --brace_depth;
-      current.push_back(ch);
-    } else if(ch == ',' && angle_depth == 0 && paren_depth == 0 &&
-              bracket_depth == 0 && brace_depth == 0) {
-      out.push_back(trim_space(current));
-      current.clear();
-    } else {
-      current.push_back(ch);
-    }
-  }
-  if(angle_depth != 0 || paren_depth != 0 || bracket_depth != 0 || brace_depth != 0) {
-    return false;
-  }
-  if(!current.empty() || !out.empty()) {
-    out.push_back(trim_space(current));
-  }
-  return true;
-}
 
 static bool contains_identifier_token(const string & text, const string & name)
 {
@@ -809,30 +709,6 @@ static string strip_leading_template_disambiguator(const string & text)
   return out;
 }
 
-static bool parse_template_component(const string & text, TemplateComponent & out)
-{
-  out = TemplateComponent();
-  const string trimmed = trim_space(text);
-  const size_t open = trimmed.find('<');
-  const auto normalize_base_name = [](const string & text) -> string
-  {
-    return strip_leading_template_disambiguator(text);
-  };
-  if(open == string::npos) {
-    out.base_name = normalize_base_name(trimmed);
-    return !out.base_name.empty();
-  }
-  if(trimmed.empty() || trimmed[trimmed.size() - 1] != '>') {
-    return false;
-  }
-  out.has_template_id = true;
-  out.base_name = normalize_base_name(trimmed.substr(0, open));
-  if(out.base_name.empty()) {
-    return false;
-  }
-  return split_template_arguments(trimmed.substr(open + 1, trimmed.size() - open - 2),
-                                  out.arg_texts);
-}
 
 struct MangleSubstitutionState
 {
@@ -15482,17 +15358,18 @@ static bool owner_template_arguments_can_use_structured_mangling(
 
 static const FunctionSymbolOptions::OwnerTemplateComponent *
 find_matching_owner_template_component(const FunctionSymbolOptions & options,
-                                       const string & base_name,
+                                       const string & component_text,
                                        size_t & search_index)
 {
-  const string stripped = trim_space(base_name);
-  if(stripped.empty()) {
-    return nullptr;
-  }
+  const string stripped =
+      strip_leading_template_disambiguator(component_text);
   for(size_t i = search_index; i < options.owner_template_components.size(); ++i) {
     const FunctionSymbolOptions::OwnerTemplateComponent & component =
         options.owner_template_components[i];
-    if(trim_space(component.template_name) != stripped ||
+    const string template_name = trim_space(component.template_name);
+    if(template_name.empty() ||
+       stripped.compare(0, template_name.size(), template_name) != 0 ||
+       trim_space(stripped.substr(template_name.size())).compare(0, 1, "<") != 0 ||
        !component.arguments ||
        !owner_template_arguments_can_use_structured_mangling(
            *component.arguments)) {
@@ -15744,7 +15621,7 @@ static bool try_build_function_qualifier_component_ir(
     abi_mangle::FunctionNameComponent & out)
 {
   TemplateComponent component;
-  const bool has_parsed_component = parse_template_component(part, component);
+  const string stripped_part = strip_leading_template_disambiguator(part);
   TypeMangleContext owner_component_ctx;
   owner_component_ctx.lookup_scope = options.lookup_scope;
   owner_component_ctx.suppress_template_argument_pack_grouping =
@@ -15753,16 +15630,49 @@ static bool try_build_function_qualifier_component_ir(
   size_t candidate_owner_template_component_index =
       owner_template_component_index;
   const FunctionSymbolOptions::OwnerTemplateComponent * owner_component =
-      has_parsed_component ?
-          find_matching_owner_template_component(
-              options,
-              component.base_name,
-              candidate_owner_template_component_index) :
-          nullptr;
+      find_matching_owner_template_component(
+          options,
+          stripped_part,
+          candidate_owner_template_component_index);
+  const semantic_model::ClassInfo * lexical_owner = nullptr;
+  for(const semantic_model::Scope * current = options.lookup_scope;
+      current && !lexical_owner;
+      current = current->parent) {
+    lexical_owner = current->class_info;
+  }
+  const auto spells_known_template =
+      [&](const string & template_name) -> bool
+  {
+    const string known_name = trim_space(template_name);
+    if(known_name.empty() ||
+       stripped_part.compare(0, known_name.size(), known_name) != 0) {
+      return false;
+    }
+    const string suffix = trim_space(stripped_part.substr(known_name.size()));
+    return !suffix.empty() && suffix.front() == '<' && suffix.back() == '>';
+  };
   bool component_matches_owner_template =
       !options.owner_template_name.empty() &&
-      has_parsed_component &&
-      trim_space(component.base_name) == options.owner_template_name;
+      spells_known_template(options.owner_template_name);
+  const bool component_matches_lexical_owner_template =
+      !owner_component &&
+      is_last_qualifier &&
+      lexical_owner &&
+      lexical_owner->source_template &&
+      spells_known_template(lexical_owner->source_template->name);
+  const bool has_structured_template_component =
+      owner_component ||
+      component_matches_owner_template ||
+      component_matches_lexical_owner_template;
+  const bool has_parsed_component =
+      has_structured_template_component ||
+      !contains_template_suffix(stripped_part);
+  component.has_template_id = has_structured_template_component;
+  component.base_name = owner_component ? owner_component->template_name :
+      (component_matches_lexical_owner_template ?
+           lexical_owner->source_template->name :
+           (component_matches_owner_template ?
+                options.owner_template_name : stripped_part));
   const vector<TemplateParameterInfo> * structured_parameters =
       owner_component ? owner_component->parameters : options.owner_template_parameters;
   const vector<TemplateArgument> * structured_arguments =
@@ -15784,19 +15694,6 @@ static bool try_build_function_qualifier_component_ir(
   if(owner_component) {
     component_matches_owner_template = true;
   }
-  const semantic_model::ClassInfo * lexical_owner = nullptr;
-  for(const semantic_model::Scope * current = options.lookup_scope;
-      current && !lexical_owner;
-      current = current->parent) {
-    lexical_owner = current->class_info;
-  }
-  const bool component_matches_lexical_owner_template =
-      !owner_component &&
-      is_last_qualifier &&
-      has_parsed_component &&
-      lexical_owner &&
-      lexical_owner->source_template &&
-      trim_space(component.base_name) == lexical_owner->source_template->name;
   if(component_matches_lexical_owner_template) {
     component_matches_owner_template = true;
     structured_parameters = &lexical_owner->source_template->parameters;

@@ -37,6 +37,7 @@ ZERO_LIMITS = {
     "semantic_nttp_text_rebind": 0,
     "function_result_argument_text_reparse": 0,
     "owner_member_text_reparse": 0,
+    "abi_template_component_text_reparse": 0,
     "added_semantic_text_reparse": 0,
 }
 
@@ -193,6 +194,29 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("function_result_argument_text_reparse", result.stdout)
             self.assertIn("instantiated_result_argument_text", result.stdout)
             self.assertIn("result_non_type_argument_text_reparse", result.stdout)
+
+    def test_abi_template_component_text_reparse_is_counted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
+            root = Path(temp_dir)
+            src = root / "dev" / "src"
+            src.mkdir(parents=True)
+            (src / "symbol_linkage.cpp").write_text(
+                "parse_template_component(text, component);\n"
+                "split_template_arguments(body, arguments);\n",
+                encoding="utf-8",
+            )
+            baseline = root / "baseline.json"
+            baseline.write_text(
+                json.dumps({"limits": ZERO_LIMITS}),
+                encoding="utf-8",
+            )
+
+            result = self.run_script(src, "--baseline", str(baseline), "--list-sites")
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("abi_template_component_text_reparse", result.stdout)
+            self.assertIn("parse_template_component", result.stdout)
+            self.assertIn("split_template_arguments", result.stdout)
 
     def test_semantic_qualified_name_text_reparse_is_counted(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:

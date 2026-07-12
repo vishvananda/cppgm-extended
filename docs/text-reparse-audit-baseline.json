@@ -19,6 +19,7 @@
     "semantic_qualified_name_text_reparse": 0,
     "semantic_nttp_text_rebind": 0,
     "function_result_argument_text_reparse": 0,
-    "owner_member_text_reparse": 0
+    "owner_member_text_reparse": 0,
+    "abi_template_component_text_reparse": 0
   }
 }
