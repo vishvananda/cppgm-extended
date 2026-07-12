@@ -11613,7 +11613,17 @@ private:
     arg_texts = template_id_argument_texts_preserving_spacing(source_syntax);
     const vector<TemplateArgumentSyntax> * arg_syntaxes =
         &source_syntax.argument_syntaxes;
-    ClassTemplateDecl * class_template = lookup_class_template(scope, template_id);
+    CppAstNode template_name_node;
+    template_name_node.qualified_name_syntax.reset(
+        new QualifiedName(source_syntax.name));
+    template_name_node.template_id_syntax.reset(
+        new TemplateIdSyntax(source_syntax));
+    template_name_node.qualifier_template_id_syntaxes =
+        source_syntax.qualifier_template_id_syntaxes;
+    template_name_node.source_location_id = source_syntax.source_location_id;
+    ClassTemplateDecl * class_template =
+        semantic_lookup::lookup_class_template_node(
+            *this, scope, template_id, template_name_node);
     if(!class_template) {
       return false;
     }
@@ -25004,9 +25014,14 @@ private:
       return;
     }
 
-    ClassInfo * owner = owner_override ?
-        owner_override :
-        resolve_qualified_owner_class(scope, owner_name);
+    ClassInfo * owner = owner_override;
+    if(!owner && qualified_syntax && anchor_node) {
+      owner = resolve_out_of_class_owner_class_from_template_id_syntax(
+          scope, *qualified_syntax, anchor_node);
+    }
+    if(!owner) {
+      owner = resolve_qualified_owner_class(scope, owner_name);
+    }
     template_api::ClassTemplateUseInfo owner_use;
     if(!template_api::class_template_use_info_for_class(*this,
                                                                   scope,
@@ -27857,7 +27872,11 @@ private:
       }
     }
     emit_out_of_class_owner_class_use_if_needed(
-        scope, *qualified_name, node.value, &node);
+        scope,
+        *qualified_name,
+        node.value,
+        &node,
+        binding ? binding->owner_class : nullptr);
     if(!explicit_function_nothrow_specifications_match(
            *binding,
            declarator_function_qualifier(*declarator))) {
