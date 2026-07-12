@@ -28,6 +28,7 @@ class Category:
     description: str
     pattern: re.Pattern[str]
     diff_only: bool = False
+    whole_file: bool = False
 
 
 CATEGORIES = [
@@ -212,6 +213,15 @@ CATEGORIES = [
         ),
     ),
     Category(
+        "template_parameter_display_lookup",
+        "Template parameters recovered by looking up rendered type display text.",
+        re.compile(
+            r"\bfind_(?:template_parameter(?:_by_name)?|parameter_for_type_text)"
+            r"\s*\([\s\S]{0,320}?\bnamed_display\b"
+        ),
+        whole_file=True,
+    ),
+    Category(
         "added_semantic_text_reparse",
         "Newly added semantic code that resolves or parses template/type facts from text.",
         re.compile(
@@ -310,10 +320,18 @@ def count_sites(root: Path) -> dict[str, list[str]]:
         rel = path.as_posix()
         for lineno, line in enumerate(lines, 1):
             for category in CATEGORIES:
-                if category.diff_only:
+                if category.diff_only or category.whole_file:
                     continue
                 if category.pattern.search(line):
                     sites[category.name].append(f"{rel}:{lineno}:{line.strip()}")
+        text = "\n".join(lines)
+        for category in CATEGORIES:
+            if category.diff_only or not category.whole_file:
+                continue
+            for match in category.pattern.finditer(text):
+                lineno = text.count("\n", 0, match.start()) + 1
+                snippet = " ".join(match.group(0).split())
+                sites[category.name].append(f"{rel}:{lineno}:{snippet}")
     diff_categories = [category for category in CATEGORIES if category.diff_only]
     if diff_categories:
         for rel, lineno, line in git_added_lines(root):

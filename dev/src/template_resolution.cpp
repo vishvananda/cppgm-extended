@@ -6856,16 +6856,7 @@ const TemplateParameterInfo * direct_type_parameter_pack_pattern(
   }
 
   const TemplateParameterInfo * parameter =
-      find_template_parameter(parameters, base->named_key);
-  if(!parameter) {
-    parameter = find_template_parameter_by_name(parameters, base->named_key);
-  }
-  if(!parameter && base->named_display != base->named_key) {
-    parameter = find_template_parameter(parameters, base->named_display);
-  }
-  if(!parameter && base->named_display != base->named_key) {
-    parameter = find_template_parameter_by_name(parameters, base->named_display);
-  }
+      find_template_parameter(parameters, base);
   return parameter &&
          parameter->kind == TemplateParameterInfo::TP_TYPE &&
          parameter->parameter_pack ?
@@ -9421,11 +9412,7 @@ bool type_mentions_function_template_parameter(
   switch(base->kind) {
   case Type::TK_NAMED:
   {
-    if(find_template_parameter(parameters, base->named_key) ||
-       find_template_parameter_by_name(parameters, base->named_key) ||
-       (!base->named_display.empty() &&
-        (find_template_parameter(parameters, base->named_display) ||
-         find_template_parameter_by_name(parameters, base->named_display)))) {
+    if(find_template_parameter(parameters, base)) {
       return true;
     }
     if(dependent_alias_arguments_mention_function_template_parameter(
@@ -9504,11 +9491,7 @@ bool type_mentions_function_template_parameter(
   switch(base->kind) {
   case Type::TK_NAMED:
   {
-    if(find_template_parameter(parameters, base->named_key) ||
-       find_template_parameter_by_name(parameters, base->named_key) ||
-       (!base->named_display.empty() &&
-        (find_template_parameter(parameters, base->named_display) ||
-         find_template_parameter_by_name(parameters, base->named_display)))) {
+    if(find_template_parameter(parameters, base)) {
       return true;
     }
     if(dependent_alias_arguments_mention_function_template_parameter(
@@ -9635,16 +9618,7 @@ bool type_mentions_unbound_function_template_parameter(
   case Type::TK_NAMED:
   {
     const TemplateParameterInfo * parameter =
-        find_template_parameter(parameters, base->named_key);
-    if(!parameter) {
-      parameter = find_template_parameter_by_name(parameters, base->named_key);
-    }
-    if(!parameter && !base->named_display.empty()) {
-      parameter = find_template_parameter(parameters, base->named_display);
-      if(!parameter) {
-        parameter = find_template_parameter_by_name(parameters, base->named_display);
-      }
-    }
+        find_template_parameter(parameters, base);
     if(parameter &&
        !function_template_parameter_has_non_dependent_binding(ctx, scope, *parameter)) {
       return true;
@@ -13383,18 +13357,7 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
 
   if(pattern_base->kind == Type::TK_NAMED) {
     const TemplateParameterInfo * parameter =
-        find_template_parameter(parameters, pattern_base->named_key);
-    if(!parameter) {
-      parameter = find_template_parameter_by_name(parameters,
-                                                  pattern_base->named_key);
-    }
-    if(!parameter && pattern_base->named_display != pattern_base->named_key) {
-      parameter = find_template_parameter(parameters, pattern_base->named_display);
-    }
-    if(!parameter && pattern_base->named_display != pattern_base->named_key) {
-      parameter = find_template_parameter_by_name(parameters,
-                                                  pattern_base->named_display);
-    }
+        find_template_parameter(parameters, pattern_base);
     if(!parameter) {
       const auto normalize_direct_type_parameter_name =
           [](std::string raw) -> std::string

@@ -5850,10 +5850,7 @@ bool template_parameter_index_for_type(
   }
 
   const TemplateParameterInfo * parameter =
-      find_template_parameter(parameters, base->named_key);
-  if(!parameter && base->named_display != base->named_key) {
-    parameter = find_template_parameter(parameters, base->named_display);
-  }
+      find_template_parameter(parameters, base);
   if(!parameter) {
     return false;
   }

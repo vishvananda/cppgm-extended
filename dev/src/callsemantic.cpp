@@ -13180,25 +13180,7 @@ private:
         if(!base || base->kind != Type::TK_NAMED) {
           return false;
         }
-        const auto matches_text =
-            [&](const string & text) -> bool
-        {
-          if(text.empty()) {
-            return false;
-          }
-          if(template_model::find_template_parameter(parameters, text) ||
-             find_template_parameter_by_name(parameters, text)) {
-            return true;
-          }
-          const string stripped = strip_elaborated_type_prefix(trim_space(text));
-          return stripped != text &&
-                 !stripped.empty() &&
-                 (template_model::find_template_parameter(parameters, stripped) ||
-                  find_template_parameter_by_name(parameters, stripped));
-        };
-        return matches_text(base->named_key) ||
-               matches_text(base->named_display) ||
-               matches_text(base->named_semantic_payload);
+        return template_model::find_template_parameter(parameters, base) != nullptr;
       }
 
       bool mentions_alias_parameter(const TypePtr & type, int depth = 0) const
@@ -25362,10 +25344,7 @@ private:
         return false;
       }
       const TemplateParameterInfo * parameter =
-          find_template_parameter(parameters, base->named_key);
-      if(!parameter && base->named_display != base->named_key) {
-        parameter = find_template_parameter(parameters, base->named_display);
-      }
+          template_model::find_template_parameter(parameters, base);
       if(!parameter) {
         return false;
       }

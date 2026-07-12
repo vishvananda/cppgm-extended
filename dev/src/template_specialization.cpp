@@ -1653,10 +1653,7 @@ void collect_type_parameter_pack_patterns_from_type(
   case Type::TK_NAMED:
     if(named_type_is_template_parameter(base)) {
       const TemplateParameterInfo * parameter =
-          find_template_parameter(parameters, base->named_semantic_payload);
-      if(!parameter) {
-        parameter = find_template_parameter(parameters, base->named_display);
-      }
+          find_template_parameter(parameters, base);
       if(parameter &&
          parameter->kind == TemplateParameterInfo::TP_TYPE &&
          parameter->parameter_pack) {
@@ -4003,27 +4000,7 @@ bool named_type_matches_template_parameter(
   if(!base || base->kind != Type::TK_NAMED) {
     return false;
   }
-  const auto matches_text =
-      [&parameters](const std::string & raw) -> bool
-  {
-    if(raw.empty()) {
-      return false;
-    }
-    if(find_template_parameter(parameters, raw) ||
-       find_template_parameter_by_name(parameters, raw)) {
-      return true;
-    }
-    const std::string text =
-        semantic_utils::strip_elaborated_type_prefix(
-            semantic_utils::trim_space(raw));
-    return text != raw &&
-           !text.empty() &&
-           (find_template_parameter(parameters, text) ||
-            find_template_parameter_by_name(parameters, text));
-  };
-  return matches_text(base->named_key) ||
-         matches_text(base->named_display) ||
-         matches_text(base->named_semantic_payload);
+  return find_template_parameter(parameters, base) != nullptr;
 }
 
 bool type_mentions_template_parameter(

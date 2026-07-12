@@ -333,5 +333,8 @@ const TemplateParameterInfo * find_template_parameter_by_name(
 const TemplateParameterInfo * find_template_parameter(
     const std::vector<TemplateParameterInfo> & parameters,
     const std::string & placeholder_key);
+const TemplateParameterInfo * find_template_parameter(
+    const std::vector<TemplateParameterInfo> & parameters,
+    const cpp_decl::TypePtr & type);
 
 }  // namespace template_model

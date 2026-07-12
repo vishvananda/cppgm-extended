@@ -40,6 +40,7 @@ ZERO_LIMITS = {
     "owner_member_text_reparse": 0,
     "abi_template_component_text_reparse": 0,
     "semantic_argument_spelling_recovery": 0,
+    "template_parameter_display_lookup": 0,
     "added_semantic_text_reparse": 0,
 }
 
@@ -291,6 +292,29 @@ class AuditTextReparseTests(unittest.TestCase):
                 "annotate_template_id_type_arguments_from_matching_scope_bindings",
                 result.stdout,
             )
+
+    def test_template_parameter_display_lookup_is_counted_across_lines(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
+            root = Path(temp_dir)
+            src = root / "dev" / "src"
+            src.mkdir(parents=True)
+            (src / "template_resolution.cpp").write_text(
+                "parameter = find_template_parameter(\n"
+                "    parameters,\n"
+                "    base->named_display);\n",
+                encoding="utf-8",
+            )
+            baseline = root / "baseline.json"
+            baseline.write_text(
+                json.dumps({"limits": ZERO_LIMITS}),
+                encoding="utf-8",
+            )
+
+            result = self.run_script(src, "--baseline", str(baseline), "--list-sites")
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("template_parameter_display_lookup", result.stdout)
+            self.assertIn("base->named_display", result.stdout)
 
     def test_semantic_qualified_name_text_reparse_is_counted(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:

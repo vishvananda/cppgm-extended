@@ -22,6 +22,7 @@
     "function_result_argument_text_reparse": 0,
     "owner_member_text_reparse": 0,
     "abi_template_component_text_reparse": 0,
-    "semantic_argument_spelling_recovery": 0
+    "semantic_argument_spelling_recovery": 0,
+    "template_parameter_display_lookup": 0
   }
 }

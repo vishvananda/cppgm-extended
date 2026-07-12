@@ -905,16 +905,8 @@ const TemplateParameterInfo * direct_type_template_parameter_for_reason(
     return nullptr;
   }
 
-  const std::string semantic_payload = named_type_semantic_payload(base);
   const TemplateParameterInfo * parameter =
-      !semantic_payload.empty() ? find_template_parameter(parameters, semantic_payload) :
-                                  nullptr;
-  if(!parameter) {
-    parameter = find_template_parameter(parameters, base->named_key);
-  }
-  if(!parameter && base->named_display != base->named_key) {
-    parameter = find_template_parameter(parameters, base->named_display);
-  }
+      find_template_parameter(parameters, base);
   return parameter && parameter->kind == TemplateParameterInfo::TP_TYPE ?
              parameter :
              nullptr;
@@ -1291,11 +1283,7 @@ bool type_mentions_deduction_parameter(
   switch(base->kind) {
   case Type::TK_NAMED:
   {
-    if(find_template_parameter(parameters, base->named_key) ||
-       find_template_parameter_by_name(parameters, base->named_key) ||
-       (!base->named_display.empty() &&
-        (find_template_parameter(parameters, base->named_display) ||
-         find_template_parameter_by_name(parameters, base->named_display)))) {
+    if(find_template_parameter(parameters, base)) {
       return true;
     }
     ClassInfo * info = ctx.class_info_for_type(base);
@@ -3841,27 +3829,6 @@ std::string normalize_template_parameter_reference_text(std::string text)
   return text;
 }
 
-const TemplateParameterInfo * type_parameter_pack_for_reference_text(
-    const vector<TemplateParameterInfo> & parameters,
-    const std::string & text)
-{
-  const std::string normalized =
-      normalize_template_parameter_reference_text(text);
-  if(normalized.empty()) {
-    return nullptr;
-  }
-  const TemplateParameterInfo * parameter =
-      find_template_parameter(parameters, normalized);
-  if(!parameter) {
-    parameter = find_template_parameter_by_name(parameters, normalized);
-  }
-  return parameter &&
-         parameter->kind == TemplateParameterInfo::TP_TYPE &&
-         parameter->parameter_pack ?
-             parameter :
-             nullptr;
-}
-
 const TemplateParameterInfo * non_type_parameter_pack_for_reference_text(
     const vector<TemplateParameterInfo> & parameters,
     const std::string & text)
@@ -3894,18 +3861,12 @@ const TemplateParameterInfo * direct_type_parameter_pack_reference(
     return nullptr;
   }
 
-  const TemplateParameterInfo * parameter = nullptr;
-  if(!base->named_semantic_payload.empty()) {
-    parameter = type_parameter_pack_for_reference_text(
-        parameters, base->named_semantic_payload);
-  }
-  if(!parameter) {
-    parameter = type_parameter_pack_for_reference_text(
-        parameters, base->named_key);
-  }
-  if(!parameter && base->named_display != base->named_key) {
-    parameter = type_parameter_pack_for_reference_text(
-        parameters, base->named_display);
+  const TemplateParameterInfo * parameter =
+      find_template_parameter(parameters, base);
+  if(!parameter ||
+     parameter->kind != TemplateParameterInfo::TP_TYPE ||
+     !parameter->parameter_pack) {
+    return nullptr;
   }
   return parameter;
 }
@@ -4419,35 +4380,8 @@ bool is_forwarding_reference_pattern(const vector<TemplateParameterInfo> & param
     return false;
   }
 
-  const auto find_parameter_for_type_text =
-      [&](const string & text) -> const TemplateParameterInfo *
-  {
-    string trimmed = semantic_utils::trim_space(text);
-    if(trimmed.size() >= 3 &&
-       trimmed.compare(trimmed.size() - 3, 3, "...") == 0) {
-      trimmed.erase(trimmed.size() - 3);
-      trimmed = semantic_utils::trim_space(trimmed);
-    }
-    const string dependent_prefix = "dependent type ";
-    if(trimmed.compare(0, dependent_prefix.size(), dependent_prefix) == 0) {
-      trimmed = semantic_utils::trim_space(trimmed.substr(dependent_prefix.size()));
-    }
-    if(trimmed.compare(0, 9, "typename ") == 0) {
-      trimmed = semantic_utils::trim_space(trimmed.substr(9));
-    }
-    const TemplateParameterInfo * parameter =
-        find_template_parameter_by_name(parameters, trimmed);
-    if(!parameter) {
-      parameter = find_template_parameter(parameters, trimmed);
-    }
-    return parameter;
-  };
-
   const TemplateParameterInfo * parameter =
-      find_parameter_for_type_text(inner->named_key);
-  if(!parameter) {
-    parameter = find_parameter_for_type_text(inner->named_display);
-  }
+      find_template_parameter(parameters, inner);
   return parameter && parameter->kind == TemplateParameterInfo::TP_TYPE;
 }
 
@@ -7714,22 +7648,8 @@ const TemplateParameterInfo * direct_type_template_parameter_pack_reference(
     return nullptr;
   }
 
-  const std::string semantic_payload = named_type_semantic_payload(base);
   const TemplateParameterInfo * parameter =
-      !semantic_payload.empty() ? find_template_parameter(parameters, semantic_payload) :
-                                  nullptr;
-  if(!parameter) {
-    parameter = find_template_parameter(parameters, base->named_key);
-  }
-  if(!parameter) {
-    parameter = find_template_parameter_by_name(parameters, base->named_key);
-  }
-  if(!parameter && base->named_display != base->named_key) {
-    parameter = find_template_parameter(parameters, base->named_display);
-  }
-  if(!parameter && base->named_display != base->named_key) {
-    parameter = find_template_parameter_by_name(parameters, base->named_display);
-  }
+      find_template_parameter(parameters, base);
   return parameter &&
                  parameter->kind == TemplateParameterInfo::TP_TYPE &&
                  parameter->parameter_pack ?

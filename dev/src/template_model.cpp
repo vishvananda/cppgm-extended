@@ -180,4 +180,34 @@ const TemplateParameterInfo * find_template_parameter(
   return nullptr;
 }
 
+const TemplateParameterInfo * find_template_parameter(
+    const vector<TemplateParameterInfo> & parameters,
+    const cpp_decl::TypePtr & type)
+{
+  cpp_decl::TypePtr base = cpp_decl::strip_top_level_cv(type);
+  if(!base || base->kind != cpp_decl::Type::TK_NAMED) {
+    return nullptr;
+  }
+
+  const string candidates[] = {
+      base->named_key,
+      base->named_semantic_payload,
+      base->named_source_name,
+  };
+  for(size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
+    if(candidates[i].empty()) {
+      continue;
+    }
+    if(const TemplateParameterInfo * parameter =
+           find_template_parameter(parameters, candidates[i])) {
+      return parameter;
+    }
+    if(const TemplateParameterInfo * parameter =
+           find_template_parameter_by_name(parameters, candidates[i])) {
+      return parameter;
+    }
+  }
+  return nullptr;
+}
+
 }  // namespace template_model
