@@ -2085,6 +2085,33 @@ TypePtr canonicalize_member_typedef_type(SemanticContext & ctx,
     return type;
   }
 
+  TypePtr base;
+  bool cv_const = false;
+  bool cv_volatile = false;
+  if(current_info &&
+     current_info->member_scope &&
+     top_level_cv_flags(type, base, cv_const, cv_volatile) &&
+    base &&
+    base->kind == Type::TK_NAMED) {
+    std::string name = semantic_utils::trim_space(
+        !base->named_display.empty() ? base->named_display : base->named_key);
+    const std::string typename_prefix = "typename ";
+    if(name.compare(0, typename_prefix.size(), typename_prefix) == 0) {
+      name = semantic_utils::trim_space(name.substr(typename_prefix.size()));
+    }
+    name = semantic_utils::strip_elaborated_type_prefix(name);
+    if(!name.empty() &&
+       name.find("::") == std::string::npos &&
+       name.find('<') == std::string::npos) {
+      const auto found = current_info->member_scope->named_types.find(name);
+      if(found != current_info->member_scope->named_types.end() &&
+         found->second &&
+         !type_equals(found->second, base)) {
+        return apply_cv(found->second, cv_const, cv_volatile);
+      }
+    }
+  }
+
   if(TypePtr resolved_member_alias =
          try_resolve_instantiated_member_alias_type(ctx, scope, type, current_info)) {
     return resolved_member_alias;

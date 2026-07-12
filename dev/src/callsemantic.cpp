@@ -24853,6 +24853,17 @@ private:
 
       for(size_t i = 0; i < params.size(); ++i) {
         TypePtr expected_param = params[i].second;
+        if(info->member_scope) {
+          TypePtr normalized =
+              semantic_class_model::resolve_instantiated_member_alias_type(
+                  *this,
+                  *info->member_scope,
+                  expected_param,
+                  info);
+          if(normalized) {
+            expected_param = normalized;
+          }
+        }
         TypePtr resolved_expected;
         if(info->member_scope &&
            resolve_instantiated_dependent_type(*info->member_scope,
@@ -24863,6 +24874,17 @@ private:
         }
 
         TypePtr candidate_param = candidate_type->params[i + 1];
+        if(info->member_scope) {
+          TypePtr normalized =
+              semantic_class_model::resolve_instantiated_member_alias_type(
+                  *this,
+                  *info->member_scope,
+                  candidate_param,
+                  info);
+          if(normalized) {
+            candidate_param = normalized;
+          }
+        }
         TypePtr resolved_candidate;
         if(info->member_scope &&
            resolve_instantiated_dependent_type(*info->member_scope,
@@ -26022,10 +26044,18 @@ private:
       Scope & scope,
       const QualifiedName & qualified,
       const vector<TemplateParameterInfo> & template_parameters,
-      const vector<pair<string, TypePtr> > & params) override
+      const vector<pair<string, TypePtr> > & params,
+      const CppAstNode * function_identifier) override
   {
     const string qualified_name = qualified_name_syntax_text(qualified);
-    ClassInfo * info = resolve_out_of_class_owner_class(scope, qualified);
+    ClassInfo * info =
+        resolve_out_of_class_owner_class_from_template_id_syntax(
+            scope,
+            qualified,
+            function_identifier);
+    if(!info) {
+      info = resolve_out_of_class_owner_class(scope, qualified);
+    }
     if(!info) {
       return nullptr;
     }

@@ -96,7 +96,8 @@ struct OutOfClassMemberResolutionServices
       const cpp_decl::QualifiedName & qualified,
       const std::vector<template_model::TemplateParameterInfo> &
           template_parameters,
-      const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params) = 0;
+      const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
+      const CppAstNode * function_identifier) = 0;
   virtual std::string describe_template_parameter_infos(
       const std::vector<template_model::TemplateParameterInfo> & parameters)
       const = 0;

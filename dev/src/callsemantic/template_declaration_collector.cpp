@@ -4405,7 +4405,11 @@ private:
         retained_template_type_lookup_anchor(function_identifier);
     const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
     return callbacks.out_of_class_services->resolve_out_of_class_special_member_template(
-        scope, qualified, template_parameters, params);
+        scope,
+        qualified,
+        template_parameters,
+        params,
+        function_identifier);
   }
 
   string describe_template_parameter_infos(
