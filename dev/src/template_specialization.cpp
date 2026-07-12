@@ -296,6 +296,10 @@ bool template_template_arguments_match(const TemplateArgument & lhs,
     return false;
   }
 
+  if(lhs.template_decl) {
+    return true;
+  }
+
   const std::string lhs_text = semantic_utils::trim_space(lhs.text);
   const std::string rhs_text = semantic_utils::trim_space(rhs.text);
   if(!lhs_text.empty() && !rhs_text.empty() && lhs_text != rhs_text) {
