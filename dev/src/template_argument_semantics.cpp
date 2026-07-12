@@ -198,9 +198,17 @@ bool resolve_type_argument_syntax_type(template_api::TemplateServices & services
                                        bool reference_class_templates_only,
                                        TypePtr & out);
 
+struct TemplateTemplateReplacement
+{
+  string text;
+  QualifiedName name;
+};
+typedef map<string, TemplateTemplateReplacement>
+    TemplateTemplateReplacementMap;
+
 bool substitute_template_template_names_in_ast_template_ids(
     CppAstNode & node,
-    const map<string, string> & template_replacements);
+    const TemplateTemplateReplacementMap & template_replacements);
 void clear_template_argument_syntax_dependent_flags(
     TemplateArgumentSyntax & syntax);
 static bool template_argument_syntax_mentions_template_dependency(
@@ -12821,16 +12829,18 @@ bool substitute_bound_replacements_in_argument_syntax(
     TemplateArgumentSyntax & syntax);
 bool substitute_template_template_parameter_names_in_template_id_arguments(
     TemplateIdSyntax & syntax,
-    const map<string, string> & template_replacements);
+    const TemplateTemplateReplacementMap & template_replacements);
 bool rebase_argument_syntax_tokens_from_source_anchor(
     TemplateArgumentSyntax & syntax);
 string template_template_argument_replacement_text(
+    const TemplateArgument & argument);
+TemplateTemplateReplacement template_template_argument_replacement(
     const TemplateArgument & argument);
 
 bool collect_bound_template_template_replacements_in_argument_syntax(
     Scope & scope,
     const TemplateArgumentSyntax & syntax,
-    map<string, string> & out)
+    TemplateTemplateReplacementMap & out)
 {
   bool changed = false;
   for(Scope * current = &scope; current; current = current->parent) {
@@ -12848,9 +12858,9 @@ bool collect_bound_template_template_replacements_in_argument_syntax(
                                                                     name)) {
         continue;
       }
-      const string replacement =
-          template_template_argument_replacement_text(it->second);
-      if(replacement.empty()) {
+      const TemplateTemplateReplacement replacement =
+          template_template_argument_replacement(it->second);
+      if(replacement.text.empty()) {
         continue;
       }
       out[name] = replacement;
@@ -12864,7 +12874,7 @@ bool substitute_bound_template_template_names_in_argument_syntax(
     Scope & scope,
     TemplateArgumentSyntax & syntax)
 {
-  map<string, string> template_replacements;
+  TemplateTemplateReplacementMap template_replacements;
   if(!collect_bound_template_template_replacements_in_argument_syntax(
          scope, syntax, template_replacements)) {
     return false;
@@ -13304,7 +13314,7 @@ void substitute_type_pack_template_id_arguments(
     const map<string, TypePtr> & type_replacements);
 bool substitute_template_template_parameter_names_in_template_id_arguments(
     TemplateIdSyntax & syntax,
-    const map<string, string> & template_replacements);
+    const TemplateTemplateReplacementMap & template_replacements);
 bool substitute_type_pack_expression_node(
     Scope & scope,
     const CppAstNode & node,
@@ -14770,6 +14780,20 @@ string template_template_argument_replacement_text(
   return trim_space(argument.text);
 }
 
+TemplateTemplateReplacement template_template_argument_replacement(
+    const TemplateArgument & argument)
+{
+  TemplateTemplateReplacement replacement;
+  replacement.text = template_template_argument_replacement_text(argument);
+  replacement.name = argument.template_entity_name_syntax;
+  if(replacement.name.name.empty() &&
+     replacement.text.find("::") == string::npos &&
+     is_identifier_text(replacement.text)) {
+    replacement.name.name = replacement.text;
+  }
+  return replacement;
+}
+
 bool substitution_parameter_has_name(
     const vector<TemplateParameterInfo> & parameters,
     const string & name)
@@ -14926,7 +14950,7 @@ bool substitute_dependent_argument_text_and_syntax(
   map<string, TypePtr> type_replacements;
   map<string, vector<TypePtr> > type_pack_replacements;
   map<string, ValueBinding> value_replacements;
-  map<string, string> template_replacements;
+  TemplateTemplateReplacementMap template_replacements;
   map<string, size_t> pack_size_replacements;
   collect_type_pack_replacements_for_substitution(scope,
                                                   parameters,
@@ -15011,9 +15035,9 @@ bool substitute_dependent_argument_text_and_syntax(
              parameters[i].name)) {
         continue;
       }
-      const string replacement =
-          template_template_argument_replacement_text(bound_argument);
-      if(!replacement.empty()) {
+      const TemplateTemplateReplacement replacement =
+          template_template_argument_replacement(bound_argument);
+      if(!replacement.text.empty()) {
         template_replacements[parameters[i].name] = replacement;
       }
     }
@@ -15125,12 +15149,13 @@ bool substitute_dependent_argument_text_and_syntax(
         substituted_value_pack_argument_text(it->second),
         text_changed);
   }
-  for(map<string, string>::const_iterator it = template_replacements.begin();
+  for(TemplateTemplateReplacementMap::const_iterator it =
+          template_replacements.begin();
       it != template_replacements.end();
       ++it) {
     rewritten_text = replace_identifier_token_text(rewritten_text,
                                                   it->first,
-                                                  it->second,
+                                                  it->second.text,
                                                   text_changed);
   }
 
@@ -23606,7 +23631,7 @@ void substitute_value_pack_template_id_arguments(
 
 bool substitute_template_template_parameter_names_in_template_id_arguments(
     TemplateIdSyntax & syntax,
-    const map<string, string> & template_replacements)
+    const TemplateTemplateReplacementMap & template_replacements)
 {
   if(template_replacements.empty()) {
     return false;
@@ -23614,16 +23639,11 @@ bool substitute_template_template_parameter_names_in_template_id_arguments(
 
   bool changed = false;
   if(syntax.name.qualifiers.empty()) {
-    map<string, string>::const_iterator head =
+    TemplateTemplateReplacementMap::const_iterator head =
         template_replacements.find(syntax.name.name);
-    if(head != template_replacements.end()) {
-      QualifiedName replacement_name;
-      if(semantic_utils::split_qualified_name_text(head->second,
-                                                   replacement_name)) {
-        syntax.name = replacement_name;
-      } else {
-        syntax.name.name = head->second;
-      }
+    if(head != template_replacements.end() &&
+       !head->second.name.name.empty()) {
+      syntax.name = head->second.name;
       changed = true;
     }
   }
@@ -23637,12 +23657,13 @@ bool substitute_template_template_parameter_names_in_template_id_arguments(
   for(size_t i = 0; i < syntax.arguments.size(); ++i) {
     bool argument_changed = false;
     string rewritten = syntax.arguments[i];
-    for(map<string, string>::const_iterator it = template_replacements.begin();
+    for(TemplateTemplateReplacementMap::const_iterator it =
+            template_replacements.begin();
         it != template_replacements.end();
         ++it) {
       rewritten = replace_identifier_token_text(rewritten,
                                                 it->first,
-                                                it->second,
+                                                it->second.text,
                                                 argument_changed);
     }
     if(argument_changed) {
@@ -23673,12 +23694,13 @@ bool substitute_template_template_parameter_names_in_template_id_arguments(
       argument.resolved_type.reset();
     }
     bool argument_changed = false;
-    for(map<string, string>::const_iterator it = template_replacements.begin();
+    for(TemplateTemplateReplacementMap::const_iterator it =
+            template_replacements.begin();
         it != template_replacements.end();
         ++it) {
       argument.text = replace_identifier_token_text(argument.text,
                                                     it->first,
-                                                    it->second,
+                                                    it->second.text,
                                                     argument_changed);
     }
     if(argument_changed &&
@@ -40164,7 +40186,7 @@ void collect_template_template_replacements_for_substitution(
     const CppAstNode & source_node,
     const vector<TemplateParameterInfo> & parameters,
     const vector<TemplateArgument> & arguments,
-    map<string, string> & out)
+    TemplateTemplateReplacementMap & out)
 {
   out.clear();
   const size_t count = std::min(parameters.size(), arguments.size());
@@ -40181,9 +40203,9 @@ void collect_template_template_replacements_for_substitution(
            parameters[i].name)) {
       continue;
     }
-    const string replacement =
-        template_template_argument_replacement_text(arguments[i]);
-    if(!replacement.empty()) {
+    const TemplateTemplateReplacement replacement =
+        template_template_argument_replacement(arguments[i]);
+    if(!replacement.text.empty()) {
       out[parameters[i].name] = replacement;
     }
   }
@@ -40191,7 +40213,7 @@ void collect_template_template_replacements_for_substitution(
 
 bool substitute_template_template_names_in_ast_template_ids(
     CppAstNode & node,
-    const map<string, string> & template_replacements)
+    const TemplateTemplateReplacementMap & template_replacements)
 {
   if(template_replacements.empty()) {
     return false;
@@ -40308,7 +40330,7 @@ bool substitute_type_id_node_for_template_arguments(
                                                         substituted)) {
     return false;
   }
-  map<string, string> template_replacements;
+  TemplateTemplateReplacementMap template_replacements;
   collect_template_template_replacements_for_substitution(*current,
                                                          parameters,
                                                          arguments,
