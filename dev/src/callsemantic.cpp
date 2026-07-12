@@ -9104,6 +9104,17 @@ private:
       return owner_scope;
     }
 
+    if(!identifier->qualifier_template_id_syntaxes.empty()) {
+      Scope * structured_owner_scope =
+          resolve_qualified_scope_for_node(scope,
+                                           *qualified,
+                                           *identifier,
+                                           true);
+      if(structured_owner_scope && structured_owner_scope->class_info) {
+        return structured_owner_scope;
+      }
+    }
+
     QualifiedName owner_qualified;
     owner_qualified.rooted = qualified->rooted;
     owner_qualified.qualifiers = qualified->qualifiers;
@@ -24675,12 +24686,21 @@ private:
                                                             : nullptr;
   }
 
-  bool resolve_out_of_class_special_member_binding(Scope & scope,
-                                                   const QualifiedName & qualified,
-                                                   const vector<pair<string, TypePtr> > & params,
-                                                   FunctionBinding *& out) override
+  bool resolve_out_of_class_special_member_binding_with_syntax(
+      Scope & scope,
+      const QualifiedName & qualified,
+      const vector<pair<string, TypePtr> > & params,
+      FunctionBinding *& out,
+      const CppAstNode * function_identifier)
   {
-    ClassInfo * info = resolve_out_of_class_owner_class(scope, qualified);
+    ClassInfo * info =
+        resolve_out_of_class_owner_class_from_template_id_syntax(
+            scope,
+            qualified,
+            function_identifier);
+    if(!info) {
+      info = resolve_out_of_class_owner_class(scope, qualified);
+    }
     if(!info) {
       return false;
     }
@@ -24840,6 +24860,16 @@ private:
     }
     out = matched;
     return out != nullptr;
+  }
+
+  bool resolve_out_of_class_special_member_binding(
+      Scope & scope,
+      const QualifiedName & qualified,
+      const vector<pair<string, TypePtr> > & params,
+      FunctionBinding *& out) override
+  {
+    return resolve_out_of_class_special_member_binding_with_syntax(
+        scope, qualified, params, out, nullptr);
   }
 
   void emit_out_of_class_owner_class_use_if_needed_impl(
@@ -27796,8 +27826,8 @@ private:
     const QualifiedName * qualified_name =
         identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
     if(!qualified_name ||
-       !resolve_out_of_class_special_member_binding(
-           scope, *qualified_name, params, binding)) {
+       !resolve_out_of_class_special_member_binding_with_syntax(
+           scope, *qualified_name, params, binding, identifier)) {
       throw logic_error("missing special member binding");
     }
     note_out_of_class_definition_binding(node, binding);
