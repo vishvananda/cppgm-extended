@@ -81,14 +81,6 @@ bool explicit_function_template_arguments_determine_signature(
 
 namespace template_argument_semantics {
 
-bool resolve_template_template_argument_text(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & text,
-    std::size_t expected_parameter_count,
-    bool allow_dependent_placeholders,
-    template_model::TemplateArgument & out);
-
 // template-boundary-audit: begin text_recovery_bridge
 std::string lookup_text_for_type_argument(SemanticContext & ctx,
                                           const cpp_decl::TypePtr & type);
@@ -5508,18 +5500,6 @@ void append_template_witness_source_bindings(
     out.push_back(binding);
     ++arg_index;
   }
-}
-
-bool resolve_template_template_argument_text(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & text,
-    std::size_t expected_parameter_count,
-    bool allow_dependent_placeholders,
-    template_model::TemplateArgument & out)
-{
-  return template_argument_semantics::resolve_template_template_argument_text(
-      ctx, scope, text, expected_parameter_count, allow_dependent_placeholders, out);
 }
 
 bool resolve_template_template_argument_text(
