@@ -519,40 +519,13 @@ const TemplateParameterInfo * type_pattern_template_parameter(
     const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
-  if(!base || base->kind != Type::TK_NAMED) {
+  if(!base ||
+     base->kind != Type::TK_NAMED ||
+     !named_type_is_template_parameter(base)) {
     return nullptr;
   }
-
-  const auto find_parameter_by_text =
-      [&parameters](const std::string & raw) -> const TemplateParameterInfo *
-  {
-    const std::string text = semantic_utils::trim_space(raw);
-    if(text.empty()) {
-      return nullptr;
-    }
-    const TemplateParameterInfo * parameter =
-        find_template_parameter(parameters, text);
-    if(!parameter) {
-      parameter = find_template_parameter_by_name(parameters, text);
-    }
-    const std::string stripped = semantic_utils::strip_elaborated_type_prefix(text);
-    if(!parameter && stripped != text) {
-      parameter = find_template_parameter(parameters, stripped);
-    }
-    if(!parameter && stripped != text) {
-      parameter = find_template_parameter_by_name(parameters, stripped);
-    }
-    return parameter;
-  };
-
   const TemplateParameterInfo * parameter =
-      find_parameter_by_text(named_type_semantic_payload(base));
-  if(!parameter) {
-    parameter = find_parameter_by_text(base->named_key);
-  }
-  if(!parameter && base->named_display != base->named_key) {
-    parameter = find_parameter_by_text(base->named_display);
-  }
+      find_template_parameter(parameters, base->named_semantic_payload);
   return parameter && parameter->kind == TemplateParameterInfo::TP_TYPE ?
              parameter :
              nullptr;
