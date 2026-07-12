@@ -27277,9 +27277,23 @@ ClassTemplateDecl * lookup_class_template(template_api::TemplateServices & servi
   return lookup_class_template_impl(services, scope, name);
 }
 
+ClassTemplateDecl * lookup_class_template(template_api::TemplateServices & services,
+                                          Scope & scope,
+                                          const QualifiedName & name)
+{
+  return lookup_class_template_impl(services, scope, name);
+}
+
 AliasTemplateDecl * lookup_alias_template(template_api::TemplateServices & services,
                                           Scope & scope,
                                           const string & name)
+{
+  return lookup_alias_template_impl(services, scope, name);
+}
+
+AliasTemplateDecl * lookup_alias_template(template_api::TemplateServices & services,
+                                          Scope & scope,
+                                          const QualifiedName & name)
 {
   return lookup_alias_template_impl(services, scope, name);
 }
@@ -31283,6 +31297,75 @@ bool resolve_template_template_argument_syntax(
                                                       expected_parameter_count,
                                                       out)) {
     return true;
+  }
+  const function<const QualifiedName *(const CppAstNode &)> find_qualified =
+      [&](const CppAstNode & node) -> const QualifiedName *
+      {
+        if(const QualifiedName * qualified = cppast_qualified_name_syntax(node)) {
+          if(!qualified->name.empty()) {
+            return qualified;
+          }
+        }
+        for(size_t i = 0; i < node.children.size(); ++i) {
+          if(const QualifiedName * qualified = find_qualified(node.children[i])) {
+            return qualified;
+          }
+        }
+        return nullptr;
+      };
+  const QualifiedName * qualified = nullptr;
+  if(syntax.template_id) {
+    qualified = &syntax.template_id->name;
+  }
+  if(!qualified && syntax.type_id) {
+    qualified = find_qualified(*syntax.type_id);
+  }
+  if(!qualified && syntax.source_type_id) {
+    qualified = find_qualified(*syntax.source_type_id);
+  }
+  if(!qualified && syntax.expression) {
+    qualified = find_qualified(*syntax.expression);
+  }
+  if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
+    Scope & raw_scope = scope.require();
+    AliasTemplateDecl * alias_template =
+        lookup_alias_template_impl(services, raw_scope, *qualified);
+    if(alias_template &&
+       (expected_parameter_count == static_cast<size_t>(-1) ||
+        alias_template->parameters.size() == expected_parameter_count)) {
+      out.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
+      out.template_decl = alias_template;
+      template_scope::set_template_argument_entity_identity_from_decl(out,
+                                                                      alias_template);
+      out.text = alias_template->declaring_scope ?
+          semantic_lookup::scope_qualified_name(*alias_template->declaring_scope,
+                                                alias_template->name) :
+          alias_template->name;
+      if(alias_template->declaring_scope &&
+         alias_template->declaring_scope->class_info) {
+        out.template_owner_type = alias_template->declaring_scope->class_info->type;
+      }
+      return true;
+    }
+    ClassTemplateDecl * class_template =
+        lookup_class_template_impl(services, raw_scope, *qualified);
+    if(class_template &&
+       (expected_parameter_count == static_cast<size_t>(-1) ||
+        class_template->parameters.size() == expected_parameter_count)) {
+      out.kind = TemplateArgument::TA_CLASS_TEMPLATE;
+      out.template_decl = class_template;
+      template_scope::set_template_argument_entity_identity_from_decl(out,
+                                                                      class_template);
+      out.text = class_template->declaring_scope ?
+          semantic_lookup::scope_qualified_name(*class_template->declaring_scope,
+                                                class_template->name) :
+          class_template->name;
+      if(class_template->declaring_scope &&
+         class_template->declaring_scope->class_info) {
+        out.template_owner_type = class_template->declaring_scope->class_info->type;
+      }
+      return true;
+    }
   }
   return resolve_template_template_argument_text(services,
                                                  scope,

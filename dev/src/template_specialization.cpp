@@ -1334,7 +1334,7 @@ void record_alias_pattern_source_use_from_texts(
   Scope & scope = match_scope.require();
   AliasTemplateDecl * alias_template =
       template_argument_semantics::lookup_alias_template(
-          services, scope, template_api::qualified_name_text(qualified));
+          services, scope, qualified);
   if(!alias_template ||
      qualified.name != alias_template->name) {
     return;
@@ -8525,7 +8525,7 @@ bool expand_alias_template_pattern_id_impl(template_api::TemplateServices & serv
   if(!alias_template) {
     alias_template =
         template_argument_semantics::lookup_alias_template(
-            services, scope, template_api::qualified_name_text(qualified));
+            services, scope, qualified);
   }
   if(!alias_template || !alias_template->type_id) {
     if(parser_trace::enabled("template.resolve")) {
@@ -11088,7 +11088,7 @@ bool expand_alias_template_pattern_type(
   Scope & scope = match_scope.require();
   AliasTemplateDecl * alias_template =
       template_argument_semantics::lookup_alias_template(
-          services, scope, template_api::qualified_name_text(qualified));
+          services, scope, qualified);
   if(!alias_template || !alias_template->type_id) {
     return false;
   }

@@ -350,11 +350,19 @@ semantic_model::ClassTemplateDecl * lookup_class_template(
     template_api::TemplateServices & services,
     semantic_model::Scope & scope,
     const std::string & name);
+semantic_model::ClassTemplateDecl * lookup_class_template(
+    template_api::TemplateServices & services,
+    semantic_model::Scope & scope,
+    const cpp_decl::QualifiedName & name);
 
 semantic_model::AliasTemplateDecl * lookup_alias_template(
     template_api::TemplateServices & services,
     semantic_model::Scope & scope,
     const std::string & name);
+semantic_model::AliasTemplateDecl * lookup_alias_template(
+    template_api::TemplateServices & services,
+    semantic_model::Scope & scope,
+    const cpp_decl::QualifiedName & name);
 
 cpp_decl::TypePtr lookup_structured_type_node(
     template_api::TemplateServices & services,

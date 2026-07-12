@@ -8068,7 +8068,7 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
     }
     AliasTemplateDecl * visible_alias_template = alias_template ?
         template_argument_semantics::lookup_alias_template(
-            services, lookup_scope, qualified_name_text(alias_name)) :
+            services, lookup_scope, alias_name) :
         nullptr;
     if(alias_template &&
        visible_alias_template != alias_template &&
@@ -8078,7 +8078,7 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
           alias_template->name);
       visible_alias_template =
           template_argument_semantics::lookup_alias_template(
-              services, lookup_scope, qualified_name_text(alias_name));
+              services, lookup_scope, alias_name);
     }
     if(alias_template && visible_alias_template == alias_template) {
       std::vector<std::string> alias_arg_texts;

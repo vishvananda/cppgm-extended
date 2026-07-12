@@ -55,7 +55,7 @@ semantic_model::ClassTemplateDecl * lookup_class_template_for_syntax(
   semantic_model::ClassTemplateDecl * class_template =
       template_argument_semantics::lookup_class_template(services,
                                                          scope,
-                                                         qualified_name);
+                                                         syntax.name);
   if(!class_template && qualified_name != syntax.name.name) {
     class_template =
         template_argument_semantics::lookup_class_template(services,
@@ -77,7 +77,7 @@ semantic_model::AliasTemplateDecl * lookup_alias_template_for_syntax(
   semantic_model::AliasTemplateDecl * alias_template =
       template_argument_semantics::lookup_alias_template(services,
                                                          scope,
-                                                         qualified_name);
+                                                         syntax.name);
   if(!alias_template && qualified_name != syntax.name.name) {
     alias_template =
         template_argument_semantics::lookup_alias_template(services,
