@@ -2334,7 +2334,11 @@ const CppAstNode * find_child_kind(const CppAstNode & node, CppAstKind kind)
 
 TypePtr rtti_object_type(SemanticContext & ctx, Scope & scope)
 {
-  TypePtr type_info = ctx.lookup_type(scope, "std::type_info", true);
+  QualifiedName type_info_name;
+  type_info_name.qualifiers.push_back("std");
+  type_info_name.name = "type_info";
+  TypePtr type_info =
+      ctx.lookup_non_template_type_name(scope, type_info_name);
   if(!type_info) {
     throw logic_error("typeid requires declared std::type_info");
   }

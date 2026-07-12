@@ -6519,24 +6519,70 @@ bool CppAstParser::parse_ptr_operator_node(CppAstNode & out)
   pos = start;
 
   size_t qualifier_start = pos;
-  consume_simple(OP_COLON2);
-  bool saw_qualifier = false;
-  string component;
+  const bool rooted = consume_simple(OP_COLON2);
+  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup();
+  vector<qualified_name_parser::NameComponentParseResult> components;
+  vector<size_t> component_starts;
   while(true) {
     const size_t component_start = pos;
-    if(!parse_name_component_text(component)) {
+    qualified_name_parser::NameComponentParseResult component;
+    if(!qualified_name_parser::parse_name_component(tokens,
+                                                     component_start,
+                                                     lookup,
+                                                     component)) {
       break;
     }
+    pos = component.end;
     if(!consume_simple(OP_COLON2)) {
       pos = component_start;
       break;
     }
-    saw_qualifier = true;
+    component_starts.push_back(component_start);
+    components.push_back(std::move(component));
   }
-  if(saw_qualifier && consume_simple(OP_STAR)) {
+  if(!components.empty() && consume_simple(OP_STAR)) {
     out = make_node(CppAstKind::ptr_operator, token_span_text_spaced(start, pos));
-    if(pos >= 2) {
-      attach_qualified_name_syntax_from_span(out, start, pos - 2);
+
+    qualified_name_parser::QualifiedNameParseResult owner;
+    owner.rooted = rooted;
+    for(size_t i = 0; i + 1 < components.size(); ++i) {
+      owner.qualifiers.push_back(
+          make_pair(component_starts[i], components[i].end));
+      owner.qualifier_components.push_back(components[i]);
+    }
+    const size_t final_index = components.size() - 1;
+    owner.name_component =
+        make_pair(component_starts[final_index], components[final_index].end);
+    owner.name_template_head_component = components[final_index].name_component;
+    owner.name_kind = qualified_name_parser::UNQ_COMPONENT;
+    owner.name_has_template_suffix = components[final_index].has_template_suffix;
+    owner.name_template_arg_ranges = components[final_index].template_arg_ranges;
+    owner.end = components[final_index].end;
+
+    set_cppast_qualified_name_syntax(out,
+                                     build_qualified_name_syntax(tokens, owner));
+    CppAstParser * template_argument_parser_context =
+        suppress_template_argument_fragment_syntax ? nullptr : this;
+    if(owner.name_has_template_suffix) {
+      cpp_decl::TemplateIdSyntax owner_template_id;
+      if(build_template_id_syntax(tokens,
+                                  lookup,
+                                  owner,
+                                  owner_template_id,
+                                  template_argument_parser_context)) {
+        set_cppast_template_id_syntax(out, std::move(owner_template_id));
+      }
+    }
+    vector<cpp_decl::TemplateIdSyntax> owner_qualifier_template_ids;
+    build_qualifier_template_id_syntaxes(tokens,
+                                         lookup,
+                                         owner,
+                                         owner_qualifier_template_ids,
+                                         template_argument_parser_context);
+    if(!owner_qualifier_template_ids.empty()) {
+      set_cppast_qualifier_template_id_syntaxes(
+          out,
+          std::move(owner_qualifier_template_ids));
     }
     return true;
   }
