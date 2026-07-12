@@ -23565,7 +23565,6 @@ void substitute_value_pack_template_id_arguments(
   }
   for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
     TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
-    bool pack_expansion_consumed = false;
     const string original_argument_text =
         preserve_source_syntax ? trim_space(argument.text) : string();
     for(map<string, ValueBinding>::const_iterator it = value_replacements.begin();
@@ -23573,9 +23572,6 @@ void substitute_value_pack_template_id_arguments(
         ++it) {
       if(!argument_syntax_mentions_identifier(argument, it->first)) {
         continue;
-      }
-      if(argument.pack_expansion) {
-        pack_expansion_consumed = true;
       }
       bool argument_changed = false;
       argument.text = replace_identifier_token_text(
@@ -23614,14 +23610,6 @@ void substitute_value_pack_template_id_arguments(
     if(argument.template_id) {
       substitute_value_pack_template_id_arguments(*argument.template_id,
                                                   value_replacements);
-    }
-    if(pack_expansion_consumed) {
-      string text = trim_space(argument.text);
-      if(text.size() >= 3 && text.substr(text.size() - 3) == "...") {
-        text = trim_space(text.substr(0, text.size() - 3));
-      }
-      argument.text = text;
-      argument.pack_expansion = false;
     }
   }
   for(size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
@@ -32473,6 +32461,60 @@ bool try_evaluate_integral_expression_ast(
   return false;
 }
 
+bool expand_integer_pack_argument_syntax(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax,
+    vector<ExpandedTypeArgumentInput> & out)
+{
+  out.clear();
+  if(!syntax.pack_expansion || !syntax.expression) {
+    return false;
+  }
+
+  const CppAstNode * call = syntax.expression.get();
+  if(call->kind == CppAstKind::pack_expansion_expression &&
+     call->children.size() == 1) {
+    call = &call->children[0];
+  }
+  if(call->kind != CppAstKind::call_expression || call->children.empty()) {
+    return false;
+  }
+  const CppAstNode * callee = &call->children[0];
+  if(callee->kind != CppAstKind::id_expression ||
+     callee->value != "__integer_pack") {
+    return false;
+  }
+  const CppAstNode * arguments =
+      callsemantic_internal::find_child_kind(
+          *call, CppAstKind::argument_list);
+  if(!arguments) {
+    arguments = callsemantic_internal::find_child_kind(
+        *call, CppAstKind::paren_argument_list);
+  }
+  if(!arguments || arguments->children.size() != 1) {
+    return false;
+  }
+
+  long long count = 0;
+  if(!try_evaluate_integral_expression_ast(
+         services,
+         scope,
+         arguments->children[0],
+         make_fundamental(FT_UNSIGNED_LONG_INT),
+         count) ||
+     count < 0) {
+    return false;
+  }
+  out.reserve(static_cast<size_t>(count));
+  for(long long value = 0; value < count; ++value) {
+    ExpandedTypeArgumentInput input;
+    input.text = to_string(value);
+    out.push_back(input);
+  }
+  return true;
+}
+
 bool type_is_structured_bool_constant(template_api::TemplateServices & services,
                                       template_api::TemplateEnvironmentHandle scope,
                                       const TypePtr & type,
@@ -40935,8 +40977,14 @@ ExpandedTemplateArgumentInputs expand_template_argument_inputs(
       continue;
     }
 
-    const vector<ExpandedTypeArgumentInput> type_expanded_inputs =
-        expand_bound_type_pack_arguments(services, scope, vector<string>(1, texts[i]));
+    vector<ExpandedTypeArgumentInput> type_expanded_inputs;
+    if(!source_syntax ||
+       !expand_integer_pack_argument_syntax(
+           services, scope, *source_syntax, type_expanded_inputs)) {
+      type_expanded_inputs =
+          expand_bound_type_pack_arguments(
+              services, scope, vector<string>(1, texts[i]));
+    }
     vector<string> type_expanded_texts;
     type_expanded_texts.reserve(type_expanded_inputs.size());
     for(size_t j = 0; j < type_expanded_inputs.size(); ++j) {

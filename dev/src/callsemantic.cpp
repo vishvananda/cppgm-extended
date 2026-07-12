@@ -13722,6 +13722,18 @@ private:
       }
       return source_location_for_template_id_syntax_name(*source_syntax);
     };
+    const auto retained_template_name_node =
+        [](const TemplateIdSyntax & syntax) -> CppAstNode
+    {
+      CppAstNode node;
+      set_cppast_qualified_name_syntax(node, syntax.name);
+      set_cppast_template_id_syntax(node, syntax);
+      set_cppast_qualifier_template_id_syntaxes(
+          node,
+          syntax.qualifier_template_id_syntaxes);
+      node.source_location_id = syntax.source_location_id;
+      return node;
+    };
     auto resolve_nested_alias_type_id_syntax =
         [&](TypePtr & out) -> bool
     {
@@ -13735,8 +13747,14 @@ private:
       if(!syntax || syntax->name.name.empty()) {
         return false;
       }
+      const CppAstNode template_name_node =
+          retained_template_name_node(*syntax);
       AliasTemplateDecl * nested_alias =
-          lookup_alias_template(*inst_scope, syntax->name);
+          semantic_lookup::lookup_alias_template_node(
+              *this,
+              *inst_scope,
+              syntax->name,
+              template_name_node);
       if(!nested_alias || nested_alias == &decl) {
         return false;
       }
@@ -13784,8 +13802,14 @@ private:
              template_id_syntax_text_preserving_spacing(*syntax))) {
         return false;
       }
+      const CppAstNode template_name_node =
+          retained_template_name_node(*syntax);
       AliasTemplateDecl * nested_alias =
-          lookup_alias_template(*inst_scope, syntax->name);
+          semantic_lookup::lookup_alias_template_node(
+              *this,
+              *inst_scope,
+              syntax->name,
+              template_name_node);
       if(!nested_alias || nested_alias == &decl) {
         return false;
       }
