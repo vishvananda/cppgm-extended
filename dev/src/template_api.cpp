@@ -4997,18 +4997,16 @@ bool explicit_type_argument_uses_typedef_spelling(
       stripped_cv = true;
     }
   }
-  cpp_decl::QualifiedName qualified_source;
+  const bool source_is_identifier =
+      callsemantic_internal::is_identifier_text(lookup_source);
   if(lookup_source.empty() ||
-     (!callsemantic_internal::is_identifier_text(lookup_source) &&
-      !semantic_utils::split_qualified_name_text(lookup_source,
-                                                 qualified_source)) ||
      is_builtin_type_keyword_spelling(lookup_source)) {
     return false;
   }
   resolved_text = witness_lookup_text_for_type_argument(ctx, arg.type);
   if(semantic_model::ClassInfo * info = ctx.class_info_for_type(arg.type)) {
     if(info->source_is_named_function_local_class &&
-       callsemantic_internal::is_identifier_text(lookup_source) &&
+       source_is_identifier &&
        semantic_utils::unqualified_member_name(info->name) == lookup_source) {
       return false;
     }
