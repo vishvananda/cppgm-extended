@@ -2619,12 +2619,20 @@ TypePtr rebind_out_of_class_member_nested_self_type(
     return TypePtr();
   }
 
-  const std::string current_text =
-      normalized_current_instantiation_text(
-          unqualified->named_display.empty() ? unqualified->named_key :
-                                               unqualified->named_display);
-  QualifiedName current_qualified;
-  if(!semantic_utils::split_qualified_name_text(current_text, current_qualified)) {
+  QualifiedName current_qualified = unqualified->named_qualified_name_syntax;
+  if(current_qualified.name.empty() &&
+     unqualified->named_member_owner_type &&
+     !unqualified->named_member_name.empty()) {
+    TypePtr owner = strip_top_level_cv(unqualified->named_member_owner_type);
+    if(owner && owner->kind == Type::TK_NAMED) {
+      current_qualified = owner->named_qualified_name_syntax;
+      if(!current_qualified.name.empty()) {
+        current_qualified.qualifiers.push_back(current_qualified.name);
+        current_qualified.name = unqualified->named_member_name;
+      }
+    }
+  }
+  if(current_qualified.name.empty()) {
     return TypePtr();
   }
 
@@ -2632,14 +2640,6 @@ TypePtr rebind_out_of_class_member_nested_self_type(
       ctx.class_info_for_type(strip_top_level_cv(target_class_type));
   if(!target_info || !target_info->member_scope) {
     return TypePtr();
-  }
-
-  if(!current_qualified.qualifiers.empty()) {
-    TypePtr rebound =
-        ctx.lookup_non_template_type_name(*target_info->member_scope, current_text);
-    if(rebound && !type_equals(rebound, unqualified)) {
-      return apply_original_cv_ref_qualifiers(type, rebound);
-    }
   }
 
   if(current_qualified.qualifiers.empty()) {
@@ -2657,6 +2657,11 @@ TypePtr rebind_out_of_class_member_nested_self_type(
       nested_info && nested_info->enclosing_scope ?
           nested_info->enclosing_scope->class_info :
           nullptr;
+  if(!nested_owner_info && unqualified->named_member_owner_type) {
+    nested_owner_info =
+        ctx.class_info_for_type(
+            strip_top_level_cv(unqualified->named_member_owner_type));
+  }
   const bool same_template_owner =
       nested_owner_info &&
       (nested_owner_info == target_info ||
@@ -3330,12 +3335,14 @@ void apply_stored_out_of_class_member_function_abi_metadata_map(
         qualified_operator_name = stored.qualified_name;
       }
       if(!qualified_operator_name.empty()) {
-        QualifiedName parsed_operator_name;
-        if(semantic_utils::split_qualified_name_text(qualified_operator_name,
-                                                     parsed_operator_name) &&
-           !parsed_operator_name.qualifiers.empty() &&
-           parsed_operator_name.name.find("operator") != std::string::npos) {
-          effective_qualified_name_syntax = parsed_operator_name;
+        const QualifiedName * operator_name =
+            stored_operator_identifier ?
+                cppast_qualified_name_syntax(*stored_operator_identifier) :
+                nullptr;
+        if(operator_name &&
+           !operator_name->qualifiers.empty() &&
+           operator_name->name.find("operator") != std::string::npos) {
+          effective_qualified_name_syntax = *operator_name;
         }
       }
       std::vector<std::pair<std::string, TypePtr> > effective_params =
@@ -3498,12 +3505,14 @@ void apply_stored_out_of_class_member_function_definitions_map(
         qualified_operator_name = stored.qualified_name;
       }
       if(!qualified_operator_name.empty()) {
-        QualifiedName parsed_operator_name;
-        if(semantic_utils::split_qualified_name_text(qualified_operator_name,
-                                                     parsed_operator_name) &&
-           !parsed_operator_name.qualifiers.empty() &&
-           parsed_operator_name.name.find("operator") != std::string::npos) {
-          effective_qualified_name_syntax = parsed_operator_name;
+        const QualifiedName * operator_name =
+            stored_operator_identifier ?
+                cppast_qualified_name_syntax(*stored_operator_identifier) :
+                nullptr;
+        if(operator_name &&
+           !operator_name->qualifiers.empty() &&
+           operator_name->name.find("operator") != std::string::npos) {
+          effective_qualified_name_syntax = *operator_name;
         }
       }
       std::vector<std::pair<std::string, TypePtr> > effective_params =
