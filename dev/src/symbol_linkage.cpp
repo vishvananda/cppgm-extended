@@ -13194,25 +13194,16 @@ static bool try_build_class_template_specialization_type_ir(
   if(!specialization ||
      trim_space(specialization->template_name).empty() ||
      (!has_typed_member_owner &&
-      (specialization->template_scope_prefix.find('<') != string::npos ||
-       specialization->template_scope_prefix.find('>') != string::npos))) {
+      (specialization->template_name_syntax.rooted ||
+       specialization->template_name_syntax.name.empty()))) {
     return false;
   }
 
   vector<abi_mangle::Type::NameComponent> prefix_components;
   string canonical_prefix;
-  if(!has_typed_member_owner &&
-     !trim_space(specialization->template_scope_prefix).empty()) {
-    QualifiedName prefix;
-    if(!semantic_utils::split_qualified_name_text(
-           specialization->template_scope_prefix,
-           prefix) ||
-       prefix.rooted ||
-       prefix.name.empty()) {
-      return false;
-    }
-    vector<string> prefix_parts = prefix.qualifiers;
-    prefix_parts.push_back(prefix.name);
+  if(!has_typed_member_owner) {
+    const vector<string> & prefix_parts =
+        specialization->template_name_syntax.qualifiers;
     for(size_t i = 0; i < prefix_parts.size(); ++i) {
       const string canonical_component = canonical_component_text(prefix_parts[i]);
       if(i == 0 && canonical_component == "std") {
