@@ -3420,13 +3420,18 @@ void apply_stored_out_of_class_member_function_abi_metadata_map(
                                                                 effective_params,
                                                                 binding) :
                 (declared_type &&
-                 ctx.resolve_out_of_class_method_binding(binding_scope,
-                                                         effective_qualified_name_syntax,
-                                                         declared_type,
-                                                         stored.is_const_method,
-                                                         stored.is_volatile_method,
-                                                         stored.ref_qualifier,
-                                                         binding));
+                 ctx.resolve_out_of_class_method_binding_from_declarator_syntax(
+                     binding_scope,
+                     effective_qualified_name_syntax,
+                     stored.declarator ?
+                         find_child_kind(*stored.declarator,
+                                         CppAstKind::identifier) :
+                         nullptr,
+                     declared_type,
+                     stored.is_const_method,
+                     stored.is_volatile_method,
+                     stored.ref_qualifier,
+                     binding));
       }
       if(found && binding) {
         if(stored_member_definition_suppressed_by_explicit_instantiation(
@@ -3598,13 +3603,18 @@ void apply_stored_out_of_class_member_function_definitions_map(
                                                                 effective_params,
                                                                 binding) :
                 (declared_type &&
-                 ctx.resolve_out_of_class_method_binding(binding_scope,
-                                                         effective_qualified_name_syntax,
-                                                         declared_type,
-                                                         stored.is_const_method,
-                                                         stored.is_volatile_method,
-                                                         stored.ref_qualifier,
-                                                         binding));
+                 ctx.resolve_out_of_class_method_binding_from_declarator_syntax(
+                     binding_scope,
+                     effective_qualified_name_syntax,
+                     stored.declarator ?
+                         find_child_kind(*stored.declarator,
+                                         CppAstKind::identifier) :
+                         nullptr,
+                     declared_type,
+                     stored.is_const_method,
+                     stored.is_volatile_method,
+                     stored.ref_qualifier,
+                     binding));
       }
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;

@@ -12308,7 +12308,10 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
               nullptr;
       if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
         Scope * target_scope =
-            resolve_qualified_scope_for_class_or_namespace(ctx, scope, *qualified);
+            ctx.resolve_qualified_scope_for_node(scope,
+                                                 *qualified,
+                                                 lookup_callee_node,
+                                                 false);
         ClassInfo * target_class =
             target_scope && target_scope->class_info ? target_scope->class_info : nullptr;
         const ExprInfo & source_this = get_implicit_this_arg();
