@@ -9993,14 +9993,6 @@ static bool try_build_resolved_type_argument_text_ir(
     return true;
   }
 
-  QualifiedName qualified;
-  if(semantic_utils::split_qualified_name_text(text, qualified) &&
-     !qualified.qualifiers.empty()) {
-    TypePtr lookup_type =
-        lookup_qualified_named_type_for_mangling(qualified, mangle_ctx);
-    return lookup_type && try_build_type_ir(lookup_type, mangle_ctx, out);
-  }
-
   return false;
 }
 
