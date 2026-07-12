@@ -2213,27 +2213,7 @@ static string canonical_component_text(const string & text)
     return cached;
   }
 
-  TemplateComponent component;
-  if(!parse_template_component(text, component) || component.base_name.empty()) {
-    string fallback = trim_space(text);
-    store_string_memo(cache, text, fallback);
-    return fallback;
-  }
-
-  string out = trim_space(component.base_name);
-  if(!component.has_template_id) {
-    store_string_memo(cache, text, out);
-    return out;
-  }
-
-  out += '<';
-  for(size_t i = 0; i < component.arg_texts.size(); ++i) {
-    if(i != 0) {
-      out += ", ";
-    }
-    out += canonical_template_argument_text(component.arg_texts[i]);
-  }
-  out += '>';
+  const string out = strip_leading_template_disambiguator(trim_space(text));
   store_string_memo(cache, text, out);
   return out;
 }
