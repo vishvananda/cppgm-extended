@@ -5350,30 +5350,6 @@ bool carried_dependent_expression_has_unresolved_lookup(
   return false;
 }
 
-bool template_id_head_name_from_type_text(const std::string & text,
-                                          QualifiedName & out)
-{
-  out = QualifiedName();
-  const std::string lookup_text = strip_elaborated_type_prefix(trim_space(text));
-  if(lookup_text.empty()) {
-    return false;
-  }
-
-  const std::string template_head =
-      semantic_utils::strip_trailing_top_level_template_arguments(lookup_text);
-  if(template_head == lookup_text || template_head.empty()) {
-    return false;
-  }
-  if(semantic_utils::split_qualified_name_text(template_head, out)) {
-    return !out.name.empty();
-  }
-  if(!is_identifier_text(template_head)) {
-    return false;
-  }
-  out.name = template_head;
-  return true;
-}
-
 std::string named_type_head_text(const std::string & text)
 {
   const std::string trimmed = trim_space(text);
@@ -11064,26 +11040,20 @@ bool can_skip_resolved_non_dependent_pattern_check(
 
     TypePtr original_base = strip_top_level_cv(original_pattern);
     if(original_base && original_base->kind == Type::TK_NAMED) {
-      QualifiedName parsed_name;
-      const std::string normalized_text = strip_elaborated_type_prefix(
-          trim_space(type_argument_text_for_deduction(ctx, original_base)));
-      if(template_id_head_name_from_type_text(normalized_text, parsed_name)) {
+      void * alias_identity = nullptr;
+      std::vector<DependentAliasTemplateArgumentSyntax> alias_arguments;
+      if(named_type_dependent_alias_template(original_base,
+                                             alias_identity,
+                                             alias_arguments) &&
+         alias_identity) {
         AliasTemplateDecl * alias_decl =
-            ((!parsed_name.rooted && parsed_name.qualifiers.empty()) ?
-                 semantic_lookup::lookup_unqualified_alias_template(
-                     scope, parsed_name.name) :
-                 nullptr);
-        if(!alias_decl) {
-          alias_decl = ctx.lookup_alias_template(scope, parsed_name);
-        }
-        if(alias_decl) {
-          if(alias_decl->resolved_type_pattern &&
-             is_dependent_qualified_nondeduced_type_context(
-                 ctx, alias_decl->parameters, alias_decl->resolved_type_pattern)) {
-            return true;
-          }
+            static_cast<AliasTemplateDecl *>(alias_identity);
+        if(alias_decl->resolved_type_pattern &&
+           is_dependent_qualified_nondeduced_type_context(
+               ctx, alias_decl->parameters, alias_decl->resolved_type_pattern)) {
           return true;
         }
+        return true;
       }
     }
 
@@ -16118,28 +16088,6 @@ bool deduce_function_template_arguments_uncached(
               }
             }
           }
-          if(!alias_decl) {
-            const std::string normalized_text = strip_elaborated_type_prefix(
-                trim_space(type_argument_text_for_deduction(ctx, original_base)));
-            QualifiedName parsed_name;
-            if(template_id_head_name_from_type_text(normalized_text, parsed_name)) {
-              alias_decl =
-                  ((!parsed_name.rooted && parsed_name.qualifiers.empty()) ?
-                       semantic_lookup::lookup_unqualified_alias_template(
-                           bound_scope, parsed_name.name) :
-                       nullptr);
-              if(!alias_decl) {
-                alias_decl = ctx.lookup_alias_template(bound_scope, parsed_name);
-              }
-              if(alias_decl) {
-                if(!have_dependent_alias_args ||
-                   dependent_alias_template_decl != alias_decl) {
-                  continue;
-                }
-                alias_name = parsed_name;
-              }
-            }
-          }
           if(alias_decl && !alias_name.name.empty()) {
             std::vector<std::string> alias_arg_texts;
             std::vector<TemplateArgumentSyntax> alias_arg_syntaxes;
@@ -16767,21 +16715,13 @@ bool deduce_function_template_arguments_with_explicit(
       if(!deduced_argument) {
         TypePtr original_base = strip_top_level_cv(original_pattern);
         if(original_base && original_base->kind == Type::TK_NAMED) {
-          const std::string normalized_text = strip_elaborated_type_prefix(
-              trim_space(type_argument_text_for_deduction(ctx, original_base)));
-          QualifiedName parsed_name;
-          if(template_id_head_name_from_type_text(normalized_text, parsed_name)) {
-            AliasTemplateDecl * alias_decl =
-                ((!parsed_name.rooted && parsed_name.qualifiers.empty()) ?
-                     semantic_lookup::lookup_unqualified_alias_template(
-                         bound_scope, parsed_name.name) :
-                     nullptr);
-            if(!alias_decl) {
-              alias_decl = ctx.lookup_alias_template(bound_scope, parsed_name);
-            }
-            if(alias_decl) {
-              continue;
-            }
+          void * alias_identity = nullptr;
+          std::vector<DependentAliasTemplateArgumentSyntax> alias_arguments;
+          if(named_type_dependent_alias_template(original_base,
+                                                 alias_identity,
+                                                 alias_arguments) &&
+             alias_identity) {
+            continue;
           }
         }
         if(template_argument_semantics::type_depends_on_template_parameter(ctx, pattern) &&
