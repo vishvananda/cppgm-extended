@@ -2828,9 +2828,10 @@ void collect_implicit_lambda_capture_names(SemanticContext & ctx,
     vector<pair<string, bool> > nested_captures;
     LambdaCaptureDefaultMode nested_default = LCD_NONE;
     if(introducer &&
-       parse_lambda_capture_list(introducer->value, nested_captures, nested_default)) {
+      parse_lambda_capture_list(introducer->value, nested_captures, nested_default)) {
       for(size_t i = 0; i < nested_captures.size(); ++i) {
-        if(seen.insert(nested_captures[i].first).second) {
+        if(declared_names.count(nested_captures[i].first) == 0 &&
+           seen.insert(nested_captures[i].first).second) {
           out.push_back(nested_captures[i].first);
         }
       }

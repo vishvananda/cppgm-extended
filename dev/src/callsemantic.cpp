@@ -29274,7 +29274,7 @@ private:
       field.name = capture_name;
       if(capture_name == "this") {
         if(!resolve_this_capture_type(field.type) || !field.type) {
-          throw logic_error("unsupported lambda capture");
+          throw logic_error("unsupported lambda capture this");
         }
       } else {
         const ValueBinding * outer = lookup_value(scope, capture_name);
@@ -29285,7 +29285,7 @@ private:
             outer->owner_class->is_lambda_closure &&
             capture_name != "this";
         if(!outer || (outer->kind == ValueBinding::VK_FIELD && !capture_from_lambda_field)) {
-          throw logic_error("unsupported lambda capture");
+          throw logic_error("unsupported lambda capture " + capture_name);
         }
         field.type = capture_by_reference && !is_reference_type(outer->type) ?
                          make_lvalue_reference_raw(outer->type) :
