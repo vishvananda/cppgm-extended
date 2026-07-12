@@ -322,6 +322,10 @@ bool template_template_argument_has_more_identity(const TemplateArgument & candi
      current.template_entity_scope_prefix.empty()) {
     return true;
   }
+  if(!candidate.template_entity_name_syntax.name.empty() &&
+     current.template_entity_name_syntax.name.empty()) {
+    return true;
+  }
   return false;
 }
 
@@ -333,6 +337,7 @@ TemplateArgument template_template_identity_argument(const TemplateArgument & ar
   stored.template_owner_type = argument.template_owner_type;
   stored.template_entity_scope_prefix = argument.template_entity_scope_prefix;
   stored.template_entity_name = argument.template_entity_name;
+  stored.template_entity_name_syntax = argument.template_entity_name_syntax;
   stored.text = argument.text;
   stored.dependent = argument.dependent;
   return stored;

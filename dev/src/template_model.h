@@ -287,6 +287,7 @@ struct TemplateArgument
   cpp_decl::TypePtr template_owner_type;
   std::string template_entity_scope_prefix;
   std::string template_entity_name;
+  cpp_decl::QualifiedName template_entity_name_syntax;
   const semantic_model::FunctionBinding * function_value = nullptr;
   std::string function_internal_symbol;
   const semantic_model::ValueBinding * value_binding = nullptr;

@@ -7295,28 +7295,21 @@ static bool try_build_typed_member_named_type_ir(
 }
 
 static bool build_name_prefix_components_ir(
-    const string & prefix_text,
+    const QualifiedName * prefix,
     vector<abi_mangle::Type::NameComponent> & prefix_components,
     string & canonical_prefix)
 {
   prefix_components.clear();
   canonical_prefix.clear();
-  if(trim_space(prefix_text).empty()) {
+  if(!prefix || prefix->name.empty()) {
     return true;
   }
-  if(prefix_text.find('<') != string::npos ||
-     prefix_text.find('>') != string::npos) {
+  if(prefix->rooted) {
     return false;
   }
 
-  QualifiedName prefix;
-  if(!semantic_utils::split_qualified_name_text(prefix_text, prefix) ||
-     prefix.rooted ||
-     prefix.name.empty()) {
-    return false;
-  }
-  vector<string> prefix_parts = prefix.qualifiers;
-  prefix_parts.push_back(prefix.name);
+  vector<string> prefix_parts = prefix->qualifiers;
+  prefix_parts.push_back(prefix->name);
   for(size_t i = 0; i < prefix_parts.size(); ++i) {
     const string canonical_component = canonical_component_text(prefix_parts[i]);
     if(i == 0 && canonical_component == "std") {
@@ -7400,12 +7393,42 @@ static bool try_build_template_entity_argument_name_ir(
     return !template_name.empty();
   }
 
-  string prefix_text = trim_space(argument.template_entity_scope_prefix);
-  if(prefix_text.empty() && declaring_scope) {
-    scope_prefix_text_for_template_decl(declaring_scope, prefix_text);
+  QualifiedName prefix;
+  const QualifiedName * prefix_ptr = nullptr;
+  if(declaring_scope) {
+    if(scope_prefix_syntax_for_template_decl(declaring_scope, prefix)) {
+      prefix_ptr = &prefix;
+    }
+  } else if(!argument.template_entity_name_syntax.name.empty() &&
+            argument.template_entity_name_syntax.name == template_name &&
+            !argument.template_entity_name_syntax.qualifiers.empty()) {
+    prefix.rooted = argument.template_entity_name_syntax.rooted;
+    prefix.qualifiers = argument.template_entity_name_syntax.qualifiers;
+    prefix.name = prefix.qualifiers.back();
+    prefix.qualifiers.pop_back();
+    prefix_ptr = &prefix;
+  } else if(argument.source_syntax) {
+    QualifiedName entity_name;
+    const bool have_entity_name =
+        replacement_syntax_qualified_name(*argument.source_syntax,
+                                          entity_name,
+                                          nullptr);
+    if(have_entity_name &&
+       entity_name.name == template_name &&
+       !entity_name.qualifiers.empty()) {
+      prefix.rooted = entity_name.rooted;
+      prefix.qualifiers = entity_name.qualifiers;
+      prefix.name = prefix.qualifiers.back();
+      prefix.qualifiers.pop_back();
+      prefix_ptr = &prefix;
+    } else if(!trim_space(argument.template_entity_scope_prefix).empty()) {
+      return false;
+    }
+  } else if(!trim_space(argument.template_entity_scope_prefix).empty()) {
+    return false;
   }
   string canonical_prefix;
-  if(!build_name_prefix_components_ir(prefix_text,
+  if(!build_name_prefix_components_ir(prefix_ptr,
                                       prefix_components,
                                       canonical_prefix)) {
     return false;
@@ -9084,9 +9107,13 @@ static bool try_build_template_id_type_ir(const TemplateIdSyntax & syntax,
       !syntax.name.rooted &&
       syntax.name.qualifiers.empty();
   if(class_template && !member_template_scope && !preserve_source_template_prefix) {
-    string prefix;
-    scope_prefix_text_for_template_decl(class_template->declaring_scope, prefix);
-    if(!build_name_prefix_components_ir(prefix,
+    QualifiedName prefix;
+    const QualifiedName * prefix_ptr =
+        scope_prefix_syntax_for_template_decl(class_template->declaring_scope,
+                                              prefix) ?
+            &prefix :
+            nullptr;
+    if(!build_name_prefix_components_ir(prefix_ptr,
                                         prefix_components,
                                         canonical_prefix)) {
       return false;
@@ -9097,12 +9124,15 @@ static bool try_build_template_id_type_ir(const TemplateIdSyntax & syntax,
     prefix_name.qualifiers = syntax.name.qualifiers;
     if(syntax.name.qualifiers.empty()) {
       canonical_prefix.clear();
-    } else if(!build_name_prefix_components_ir(
-                  join_canonical_qualified_parts(syntax.name.qualifiers,
-                                                 syntax.name.qualifiers.size()),
+    } else {
+      prefix_name.name = prefix_name.qualifiers.back();
+      prefix_name.qualifiers.pop_back();
+      if(!build_name_prefix_components_ir(
+                  &prefix_name,
                   prefix_components,
                   canonical_prefix)) {
-      return false;
+        return false;
+      }
     }
   }
 
@@ -9606,12 +9636,15 @@ static bool try_build_qualified_named_type_syntax_ir(
 
   vector<abi_mangle::Type::NameComponent> prefix_components;
   string canonical_prefix;
-  if(!qualifiers.empty() &&
-     !build_name_prefix_components_ir(
-         join_canonical_qualified_parts(qualifiers, qualifiers.size()),
-         prefix_components,
-         canonical_prefix)) {
-    return false;
+  if(!qualifiers.empty()) {
+    QualifiedName prefix;
+    prefix.name = qualifiers.back();
+    prefix.qualifiers.assign(qualifiers.begin(), qualifiers.end() - 1);
+    if(!build_name_prefix_components_ir(&prefix,
+                                        prefix_components,
+                                        canonical_prefix)) {
+      return false;
+    }
   }
 
   const string canonical_name =
@@ -10200,11 +10233,15 @@ static bool try_build_dependent_class_template_type_ir(
     return false;
   }
 
-  string prefix;
-  scope_prefix_text_for_template_decl(class_template->declaring_scope, prefix);
+  QualifiedName prefix;
   vector<abi_mangle::Type::NameComponent> prefix_components;
   string canonical_prefix;
-  if(!build_name_prefix_components_ir(prefix,
+  const QualifiedName * prefix_ptr =
+      scope_prefix_syntax_for_template_decl(class_template->declaring_scope,
+                                            prefix) ?
+          &prefix :
+          nullptr;
+  if(!build_name_prefix_components_ir(prefix_ptr,
                                       prefix_components,
                                       canonical_prefix)) {
     return false;

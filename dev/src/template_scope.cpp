@@ -54,6 +54,13 @@ void set_template_argument_entity_identity_from_decl(
       argument,
       template_entity_scope_prefix_text(scope, name),
       name);
+  if(scope) {
+    argument.template_entity_name_syntax =
+        semantic_lookup::scope_qualified_name_syntax(*scope, name);
+  } else {
+    argument.template_entity_name_syntax = QualifiedName();
+    argument.template_entity_name_syntax.name = name;
+  }
 }
 
 std::size_t & global_binding_fingerprint_epoch()
