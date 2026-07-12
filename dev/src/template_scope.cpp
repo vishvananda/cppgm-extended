@@ -477,13 +477,12 @@ void bind_template_parameter_placeholders(
       }
       bind_named_type(scope,
                       parameter.name,
-                      make_semantic_named(
+                      make_template_parameter_type(
                           std::string("typename ") + parameter.name,
-                          Type::NSK_TEMPLATE_PARAMETER,
                           placeholder_payload.empty() ?
                               parameter.name :
                               placeholder_payload,
-                          true));
+                          parameter.name));
       if(parameter.parameter_pack) {
         scope.template_bound_type_pack_names.insert(parameter.name);
         bump_binding_fingerprint_epoch(scope);

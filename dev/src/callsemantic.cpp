@@ -121,6 +121,23 @@ using callsemantic::declarator_declared_identifier;
 using callsemantic::subtree_alias_redeclares_template_parameter;
 using callsemantic::template_parameter_names;
 
+TypePtr make_dependent_class_member_type_placeholder(
+    const ClassInfo & info,
+    const string & member_name,
+    const string & display_name = string())
+{
+  TypePtr out =
+      make_named(display_name.empty() ? member_name : display_name,
+                 "dependent alias " + info.qualified_name + "::" + member_name,
+                 true);
+  TypePtr base = strip_top_level_cv(out);
+  if(base && base->kind == Type::TK_NAMED && info.type) {
+    base->named_member_owner_type = info.type;
+    base->named_member_name = member_name;
+  }
+  return out;
+}
+
 bool function_binding_is_concrete_class_template_member_candidate(
     const FunctionBinding * binding)
 {
@@ -6050,11 +6067,9 @@ private:
                 if(enclosing) {
                   return enclosing;
                 }
-                return make_named(lookup_name,
-                                  "dependent alias " +
-                                      direct_scope.class_info->qualified_name +
-                                      "::" + lookup_name,
-                                  true);
+                return make_dependent_class_member_type_placeholder(
+                    *direct_scope.class_info,
+                    lookup_name);
               }
               if(direct_scope.class_info) {
                 const bool ensure_current_member_references =
@@ -6927,11 +6942,9 @@ private:
           if(enclosing) {
             return enclosing;
           }
-          return make_named(normalized_name,
-                            "dependent alias " +
-                                current->class_info->qualified_name +
-                                "::" + normalized_name,
-                            true);
+          return make_dependent_class_member_type_placeholder(
+              *current->class_info,
+              normalized_name);
         }
       }
     }
@@ -7527,11 +7540,9 @@ private:
                         if(enclosing) {
                           return enclosing;
                         }
-                        return make_named(lookup_name,
-                                          "dependent alias " +
-                                              direct_scope.class_info->qualified_name +
-                                              "::" + lookup_name,
-                                          true);
+                        return make_dependent_class_member_type_placeholder(
+                            *direct_scope.class_info,
+                            lookup_name);
                       }
                       if(direct_scope.class_info &&
                          !template_argument_semantics::
@@ -8726,10 +8737,9 @@ private:
         if(current->class_info->reference_member_collection_in_progress &&
            (current->class_info->dependent_instantiation ||
             scope_has_template_placeholders(*current->class_info->member_scope))) {
-          return make_named(qualified.name,
-                            "dependent alias " +
-                                current->class_info->qualified_name + "::" + qualified.name,
-                            true);
+          return make_dependent_class_member_type_placeholder(
+              *current->class_info,
+              qualified.name);
         }
         if(!current->class_info->complete &&
            current->class_info->template_instantiation_in_progress) {
@@ -10143,9 +10153,9 @@ private:
         TypePtr alias;
         parse_type_id(*info.member_scope, *type_id, alias, true);
         if(keep_dependent_alias) {
-          alias = make_named(child.value,
-                             "dependent alias " + info.qualified_name + "::" + child.value,
-                             true);
+          alias = make_dependent_class_member_type_placeholder(
+              info,
+              child.value);
         }
         if(alias) {
           template_api::binding::bind_named_type(*info.member_scope, child.value, alias);
@@ -16648,12 +16658,12 @@ private:
               template_scope::bind_named_type(
                   *placeholder_scope,
                   info.name,
-                  make_semantic_named(string("typename ") + info.name,
-                                      Type::NSK_TEMPLATE_PARAMETER,
-                                      placeholder_payload.empty() ?
-                                          info.name :
-                                          placeholder_payload,
-                                      true));
+                  make_template_parameter_type(
+                      string("typename ") + info.name,
+                      placeholder_payload.empty() ?
+                          info.name :
+                          placeholder_payload,
+                      info.name));
               if(info.parameter_pack) {
                 placeholder_scope->template_bound_type_pack_names.insert(info.name);
                 template_scope::bump_binding_fingerprint_epoch(*placeholder_scope);
@@ -16784,10 +16794,9 @@ private:
           template_scope::bind_named_type(
               placeholder_scope,
               name,
-              make_semantic_named(string("typename ") + name,
-                                  Type::NSK_TEMPLATE_PARAMETER,
-                                  name,
-                                  true));
+              make_template_parameter_type(string("typename ") + name,
+                                           name,
+                                           name));
           if(find_child_kind(parameter, CppAstKind::parameter_pack)) {
             placeholder_scope.template_bound_type_pack_names.insert(name);
             template_scope::bump_binding_fingerprint_epoch(placeholder_scope);

@@ -445,6 +445,21 @@ TypePtr make_semantic_named(const string & display_name,
   return result;
 }
 
+TypePtr make_template_parameter_type(const string & display_name,
+                                     const string & semantic_payload,
+                                     const string & source_name)
+{
+  TypePtr result = make_semantic_named(display_name,
+                                       Type::NSK_TEMPLATE_PARAMETER,
+                                       semantic_payload,
+                                       true);
+  TypePtr base = strip_top_level_cv(result);
+  if(base && base->kind == Type::TK_NAMED) {
+    base->named_source_name = source_name;
+  }
+  return result;
+}
+
 TypePtr make_dependent_type_expression_type(const string & display_name,
                                             Type::NamedSemanticKind semantic_kind,
                                             const string & semantic_payload,

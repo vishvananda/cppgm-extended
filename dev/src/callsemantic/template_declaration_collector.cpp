@@ -2039,12 +2039,12 @@ public:
         template_scope::bind_named_type(
             template_parameter_parse_scope,
             parameter.name,
-            make_semantic_named(string("typename ") + parameter.name,
-                                Type::NSK_TEMPLATE_PARAMETER,
-                                placeholder_payload.empty() ?
-                                    parameter.name :
-                                    placeholder_payload,
-                                true));
+            make_template_parameter_type(
+                string("typename ") + parameter.name,
+                placeholder_payload.empty() ?
+                    parameter.name :
+                    placeholder_payload,
+                parameter.name));
         if(parameter.parameter_pack) {
           template_parameter_parse_scope.template_bound_type_pack_names.insert(parameter.name);
           template_scope::bump_binding_fingerprint_epoch(template_parameter_parse_scope);

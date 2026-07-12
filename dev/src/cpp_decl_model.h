@@ -220,6 +220,9 @@ TypePtr make_semantic_named(const std::string & display_name,
                             bool has_layout = false,
                             std::size_t alignment = 0,
                             std::size_t size = 0);
+TypePtr make_template_parameter_type(const std::string & display_name,
+                                     const std::string & semantic_payload,
+                                     const std::string & source_name);
 TypePtr make_dependent_type_expression_type(
     const std::string & display_name,
     Type::NamedSemanticKind semantic_kind,

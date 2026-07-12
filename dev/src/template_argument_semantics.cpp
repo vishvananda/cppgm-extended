@@ -28721,14 +28721,9 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   };
 
   const string & key = type->named_key;
-  const string text = [&]() -> string
-  {
-    const string reparsed = reparseable_type_argument_text(type);
-    if(!reparsed.empty()) {
-      return reparsed;
-    }
-    return type->named_display.empty() ? describe_type(type) : type->named_display;
-  }();
+  const string lookup_text = named_type_is_template_parameter(type) ?
+      trim_space(type->named_source_name) :
+      trim_space(named_type_semantic_payload(type));
   const bool syntactically_dependent =
       named_type_has_dependent_semantic(type) ||
       named_type_key_contains_dependent_semantic(type);
@@ -28763,7 +28758,7 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   const bool keep_local_type_placeholders_dependent =
       structured_type_mentions_local_dependent_placeholder(
           services, raw_scope, type);
-  const string normalized_text = normalize_type_lookup_name(text);
+  const string normalized_text = normalize_type_lookup_name(lookup_text);
   const auto normalize_bound_type_lookup_name =
       [](const string & raw) -> string
   {
@@ -28829,8 +28824,6 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
         }
         lookup_names.push_back(lookup_name);
       };
-      append_lookup_name(named_type_semantic_payload(named));
-      append_lookup_name(named->named_display);
       append_lookup_name(normalized_text);
 
       bool saw_dependent_bound = false;
@@ -29102,7 +29095,7 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   }
 
   if(!syntactically_dependent &&
-     !text_mentions_non_namespace_binding_names(scope, text)) {
+     !text_mentions_non_namespace_binding_names(scope, lookup_text)) {
     return DependentNamedTypeResolutionStatus::KeepDependent;
   }
   return DependentNamedTypeResolutionStatus::KeepDependent;

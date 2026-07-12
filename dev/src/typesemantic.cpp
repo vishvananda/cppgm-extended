@@ -1240,9 +1240,10 @@ private:
         if(find_child_kind(parameter, CppAstKind::template_template_parameter)) {
           display = "template-parameter " + identifier->value;
         }
-        string key = "template-parameter " + scope_qualified_name(template_scope,
-                                                                  identifier->value);
-        TypePtr param_type = make_named(display, key, true);
+        string payload = scope_qualified_name(template_scope, identifier->value);
+        TypePtr param_type = make_template_parameter_type(display,
+                                                          payload,
+                                                          identifier->value);
         template_scope.named_types[identifier->value] = NamedTypeBinding(NTK_TYPE, param_type);
         add_binding(template_scope, BK_TYPE, identifier->value, param_type);
       }

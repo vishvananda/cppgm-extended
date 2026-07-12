@@ -8080,13 +8080,12 @@ bool register_friend_function_template_binding(SemanticContext & ctx,
           semantic_scope_mutation::ensure_template_named_type(
               canonical_scope,
               parameter.name,
-              make_semantic_named(
+              make_template_parameter_type(
                   std::string("typename ") + parameter.name,
-                  Type::NSK_TEMPLATE_PARAMETER,
                   placeholder_payload.empty() ?
                       parameter.name :
                       placeholder_payload,
-                  true));
+                  parameter.name));
         } else if(parameter.kind == template_model::TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
           semantic_scope_mutation::bind_template_template_parameter(canonical_scope,
                                                                     parameter.name,
