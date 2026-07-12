@@ -6032,9 +6032,56 @@ bool lookup_rewritten_bound_type_argument(Scope & scope,
   return false;
 }
 
-bool lookup_exact_visible_type_argument_text(Scope & scope,
-                                             const std::string & text,
-                                             TypePtr & out)
+const QualifiedName * qualified_name_syntax_in_type_argument(
+    const CppAstNode & node)
+{
+  if(const QualifiedName * qualified = cppast_qualified_name_syntax(node)) {
+    if(qualified->rooted || !qualified->qualifiers.empty()) {
+      return qualified;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(const QualifiedName * qualified =
+           qualified_name_syntax_in_type_argument(node.children[i])) {
+      return qualified;
+    }
+  }
+  return nullptr;
+}
+
+bool lookup_exact_visible_qualified_type_argument(
+    Scope & scope,
+    const TemplateArgumentSyntax * syntax,
+    TypePtr & out)
+{
+  out.reset();
+  const QualifiedName * qualified =
+      syntax && syntax->type_id ?
+          qualified_name_syntax_in_type_argument(*syntax->type_id) :
+          nullptr;
+  if(!qualified) {
+    return false;
+  }
+  QualifiedName owner;
+  owner.rooted = qualified->rooted;
+  if(!qualified->qualifiers.empty()) {
+    owner.qualifiers.assign(qualified->qualifiers.begin(),
+                            qualified->qualifiers.end() - 1);
+    owner.name = qualified->qualifiers.back();
+  }
+  Scope * owner_scope = semantic_lookup::lookup_namespace_name(scope, owner);
+  if(!owner_scope) {
+    return false;
+  }
+  out = template_api::lookup_direct_named_type_in_inline_namespaces(
+      *owner_scope,
+      qualified->name);
+  return out != nullptr;
+}
+
+bool lookup_exact_visible_direct_type_argument(Scope & scope,
+                                               const std::string & text,
+                                               TypePtr & out)
 {
   out.reset();
   std::string name = strip_elaborated_type_prefix(trim_space(text));
@@ -6045,23 +6092,7 @@ bool lookup_exact_visible_type_argument_text(Scope & scope,
   if(name.empty()) {
     return false;
   }
-  QualifiedName qualified;
-  if(semantic_utils::split_qualified_name_text(name, qualified) &&
-     (qualified.rooted || !qualified.qualifiers.empty())) {
-    QualifiedName owner;
-    owner.rooted = qualified.rooted;
-    if(!qualified.qualifiers.empty()) {
-      owner.qualifiers.assign(qualified.qualifiers.begin(),
-                              qualified.qualifiers.end() - 1);
-      owner.name = qualified.qualifiers.back();
-    }
-    Scope * owner_scope = semantic_lookup::lookup_namespace_name(scope, owner);
-    if(owner_scope) {
-      out = template_api::lookup_direct_named_type_in_inline_namespaces(
-          *owner_scope,
-          qualified.name);
-      return out != nullptr;
-    }
+  if(name.find("::") != std::string::npos) {
     return false;
   }
   for(Scope * current = &scope; current; current = current->parent) {
@@ -6303,7 +6334,13 @@ PreExpansionResolveStatus try_resolve_pre_expansion_simple_type_arguments(
     }
     if(!type &&
        !lookup_direct_bound_type_argument(raw_scope, texts[index], type)) {
-      lookup_exact_visible_type_argument_text(raw_scope, texts[index], type);
+      if(!lookup_exact_visible_qualified_type_argument(raw_scope,
+                                                       syntax,
+                                                       type)) {
+        lookup_exact_visible_direct_type_argument(raw_scope,
+                                                  texts[index],
+                                                  type);
+      }
     }
     if(!type) {
       return PERTA_UNSUPPORTED;
@@ -6527,9 +6564,13 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
         } else if((lookup_direct_bound_type_argument(bound_scope,
                                                      inputs.texts[i],
                                                      type) ||
-                   lookup_exact_visible_type_argument_text(bound_scope,
-                                                          inputs.texts[i],
-                                                          type)) &&
+                   lookup_exact_visible_qualified_type_argument(
+                       bound_scope,
+                       inputs.syntax_for(i),
+                       type) ||
+                   lookup_exact_visible_direct_type_argument(bound_scope,
+                                                            inputs.texts[i],
+                                                            type)) &&
                   type) {
           template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
               services, template_api::make_template_environment(bound_scope), type);
@@ -12199,9 +12240,12 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   }
   if(!type && !has_structured_type_syntax) {
     TypePtr exact_visible_type;
-    if(lookup_exact_visible_type_argument_text(raw_argument_scope,
-                                               trimmed,
-                                               exact_visible_type) &&
+    if((lookup_exact_visible_qualified_type_argument(raw_argument_scope,
+                                                     syntax,
+                                                     exact_visible_type) ||
+        lookup_exact_visible_direct_type_argument(raw_argument_scope,
+                                                  trimmed,
+                                                  exact_visible_type)) &&
        exact_visible_type) {
       resolve_type_argument_if_needed(exact_visible_type);
       type = exact_visible_type;
