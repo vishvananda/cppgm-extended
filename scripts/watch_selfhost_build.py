@@ -251,7 +251,7 @@ def parse_inception_layout(path: Path) -> tuple[List[str], Dict[str, str]]:
 
 
 def capture_processes() -> List[ProcessInfo]:
-    output = run_capture(["ps", "-axo", "pid=,ppid=,etime=,command="])
+    output = run_capture(["ps", "-axo", "pid=,ppid=,etimes=,command="])
     processes: List[ProcessInfo] = []
     for line in output.splitlines():
         line = line.rstrip()
@@ -262,7 +262,7 @@ def capture_processes() -> List[ProcessInfo]:
             continue
         pid = int(match.group(1))
         ppid = int(match.group(2))
-        elapsed_seconds = parse_elapsed_text(match.group(3))
+        elapsed_seconds = int(match.group(3))
         command = match.group(4)
         try:
             argv = shlex.split(command)
@@ -837,6 +837,16 @@ def active_tasks_for_build(root_pid: Optional[int],
     bin_root = spec.bin_root_base / spec.flavor
     tasks: List[ActiveTask] = []
     output_tasks: Dict[tuple[str, Path], tuple[tuple[int, int, int, int], ActiveTask]] = {}
+    root_elapsed_seconds = (
+        proc_by_pid[root_pid].elapsed_seconds
+        if root_pid is not None and root_pid in proc_by_pid
+        else None
+    )
+
+    def elapsed_seconds(process: ProcessInfo) -> int:
+        if root_elapsed_seconds is None:
+            return process.elapsed_seconds
+        return min(process.elapsed_seconds, root_elapsed_seconds)
 
     def add_task(process: ProcessInfo, task: ActiveTask) -> None:
         if task.output_path is None:
@@ -870,7 +880,7 @@ def active_tasks_for_build(root_pid: Optional[int],
                 add_task(process, ActiveTask(phase="compile",
                                              label=label,
                                              detail=detail,
-                                             elapsed_seconds=process.elapsed_seconds,
+                                             elapsed_seconds=elapsed_seconds(process),
                                              output_path=output_path.resolve()))
                 continue
             if bin_root in output_path.parents and "-c" not in argv:
@@ -879,7 +889,7 @@ def active_tasks_for_build(root_pid: Optional[int],
                 add_task(process, ActiveTask(phase="link",
                                              label=checkpoint,
                                              detail=str(output_path),
-                                             elapsed_seconds=process.elapsed_seconds,
+                                             elapsed_seconds=elapsed_seconds(process),
                                              output_path=final_output_path.resolve()))
                 continue
 
@@ -890,7 +900,7 @@ def active_tasks_for_build(root_pid: Optional[int],
                     add_task(process, ActiveTask(phase="test",
                                                  label=target,
                                                  detail=process.command,
-                                                 elapsed_seconds=process.elapsed_seconds))
+                                                 elapsed_seconds=elapsed_seconds(process)))
                     break
     tasks.extend(task for _, task in output_tasks.values())
     return tasks

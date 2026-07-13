@@ -78,6 +78,22 @@ class WatchSelfhostBuildTests(unittest.TestCase):
             / "types.d",
         )
 
+    def test_process_capture_uses_unambiguous_elapsed_seconds(self):
+        original_run_capture = watch.run_capture
+        try:
+            watch.run_capture = lambda command: (
+                "  98765   43210       7 compiler -c source.cpp\n"
+            )
+            processes = watch.capture_processes()
+        finally:
+            watch.run_capture = original_run_capture
+
+        self.assertEqual(len(processes), 1)
+        self.assertEqual(processes[0].pid, 98765)
+        self.assertEqual(processes[0].ppid, 43210)
+        self.assertEqual(processes[0].elapsed_seconds, 7)
+        self.assertEqual(processes[0].argv, ["compiler", "-c", "source.cpp"])
+
 
 if __name__ == "__main__":
     unittest.main()
