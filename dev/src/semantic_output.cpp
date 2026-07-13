@@ -6634,6 +6634,10 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
         if(binding->is_deleted) {
           return OAT_DONE;
         }
+        if(template_api::function_binding_output_suppressed_by_explicit_instantiation(
+               *binding)) {
+          return OAT_DONE;
+        }
         if(binding->output_emitted &&
            (!binding->has_definition || binding->definition_output_emitted)) {
           return OAT_DONE;
@@ -6940,6 +6944,10 @@ std::string required_definition_validation_skip_reason(SemanticContext & ctx,
       }
     }
     return out.str();
+  }
+  if(template_api::function_binding_output_suppressed_by_explicit_instantiation(
+         binding)) {
+    return "explicit instantiation suppression";
   }
   if(binding.owner_class) {
     const ClassOutputReadiness class_output_readiness =

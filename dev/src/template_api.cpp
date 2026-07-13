@@ -2120,16 +2120,18 @@ bool function_binding_output_suppressed_by_explicit_instantiation(
   const bool class_instantiation_suppressed =
       function_binding_owner_class_suppresses_implicit_instantiation_definition(
           binding);
+  const bool explicit_instantiation_suppressed =
+      binding.suppress_implicit_instantiation_definition ||
+      class_instantiation_suppressed;
   if(class_instantiation_suppressed &&
      !binding.suppress_implicit_instantiation_definition &&
      function_binding_has_in_class_member_definition(binding)) {
     return false;
   }
-  return class_instantiation_suppressed &&
+  return explicit_instantiation_suppressed &&
          !function_binding_excluded_from_explicit_instantiation(binding) &&
          !function_binding_bypasses_explicit_instantiation_suppression(
-             binding,
-             class_instantiation_suppressed);
+             binding, explicit_instantiation_suppressed);
 }
 
 bool value_binding_owner_class_suppresses_implicit_instantiation_definition(
