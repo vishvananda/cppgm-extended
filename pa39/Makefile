@@ -58,7 +58,7 @@ HOST_CXX_DEFAULT = g++
 endif
 
 ifeq ($(origin CXX), default)
-CXX := $(HOST_CXX_DEFAULT)
+CXX := ../dev/cppgm++
 endif
 
 ifeq ($(origin CPPGM_HOST_CXX), undefined)

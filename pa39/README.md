@@ -56,9 +56,11 @@ object files and provides the hosted configuration used by the compiler build.
 
 ### Build Variables
 
-Use two compiler variables when running PA39:
+PA39 defaults to the course compiler under test. Use these compiler variables
+to override either side of the build:
 
-- `CXX=../dev/cppgm++` selects the course compiler as the compiler under test.
+- `CXX=../dev/cppgm++` selects the course compiler as the compiler under test
+  and is the default.
 - `CPPGM_HOST_CXX=<host-cxx>` selects the host C++ compiler used for linking
   checkpoint programs and generating hosted compiler configuration.
 
