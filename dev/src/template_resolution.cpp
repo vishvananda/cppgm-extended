@@ -8040,6 +8040,26 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
           template_argument_semantics::lookup_alias_template(
               services, lookup_scope, alias_name);
     }
+    if(alias_template &&
+       visible_alias_template != alias_template &&
+       alias_template->declaring_scope &&
+       alias_template->declaring_scope->class_info &&
+       alias_template->declaring_scope->class_info->source_template) {
+      AliasTemplateDecl * current_member_alias =
+          template_argument_semantics::lookup_alias_template(
+              services, lookup_scope, alias_template->name);
+      ClassInfo * current_owner =
+          current_member_alias && current_member_alias->declaring_scope ?
+              current_member_alias->declaring_scope->class_info : nullptr;
+      if(current_owner &&
+         current_owner->source_template ==
+             alias_template->declaring_scope->class_info->source_template) {
+        alias_template = current_member_alias;
+        alias_name = QualifiedName();
+        alias_name.name = alias_template->name;
+        visible_alias_template = alias_template;
+      }
+    }
     if(alias_template && visible_alias_template == alias_template) {
       std::vector<std::string> alias_arg_texts;
       std::vector<TemplateArgumentSyntax> alias_arg_syntaxes;
