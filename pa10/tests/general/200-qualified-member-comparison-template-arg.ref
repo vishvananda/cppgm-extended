@@ -60,6 +60,30 @@ translation-unit
   template-declaration
     template-parameter-clause
       template-parameter-list
+        non-type-template-parameter
+          decl-specifier-seq
+            decl-specifier KW_LONG:long
+            decl-specifier KW_LONG:long
+          declarator
+            identifier N
+        non-type-template-parameter
+          decl-specifier-seq
+            decl-specifier KW_LONG:long
+            decl-specifier KW_LONG:long
+          declarator
+            identifier D
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_CONST:const
+        decl-specifier KW_LONG:long
+        decl-specifier KW_LONG:long
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier ratio<N,D>::num
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
         type-parameter
           parameter-key KW_CLASS:class
           identifier R1

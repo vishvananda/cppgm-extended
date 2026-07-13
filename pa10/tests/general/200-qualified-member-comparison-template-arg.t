@@ -5,6 +5,9 @@ template<long long N, long long D = 1> struct ratio {
   static const long long den = D;
 };
 
+template<long long N, long long D>
+const long long ratio<N, D>::num;
+
 template<class R1, class R2, bool B1 = true, bool B2 = false>
 struct ratio_less;
 

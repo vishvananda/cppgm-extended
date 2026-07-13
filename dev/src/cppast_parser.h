@@ -288,6 +288,8 @@ protected:
                                          NameSet & out) const;
   void collect_declarator_identifiers(const CppAstNode & node,
                                       NameSet & out) const;
+  void collect_visible_declarator_identifiers(const CppAstNode & node,
+                                              NameSet & out) const;
   bool collect_outer_parameter_value_names(const CppAstNode & node,
                                            NameSet & out) const;
   void collect_declared_type_names(const CppAstNode & node,

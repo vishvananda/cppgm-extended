@@ -11517,6 +11517,32 @@ void CppAstParser::collect_declarator_identifiers(const CppAstNode & node,
   }
 }
 
+void CppAstParser::collect_visible_declarator_identifiers(
+    const CppAstNode & node,
+    NameSet & out) const
+{
+  if(node.kind == CppAstKind::identifier) {
+    const cpp_decl::QualifiedName * syntax =
+        cppast_qualified_name_syntax(node);
+    if(!syntax || (!syntax->rooted && syntax->qualifiers.empty())) {
+      out.insert(unqualified_name_text(node.value));
+    }
+    return;
+  }
+
+  if(node.kind == CppAstKind::parameter_clause) {
+    return;
+  }
+
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    const size_t size_before = out.size();
+    collect_visible_declarator_identifiers(node.children[i], out);
+    if(out.size() != size_before) {
+      return;
+    }
+  }
+}
+
 bool CppAstParser::collect_outer_parameter_value_names(const CppAstNode & node,
                                                        NameSet & out) const
 {
@@ -11574,7 +11600,8 @@ void CppAstParser::collect_declared_type_names(const CppAstNode & node,
           for(size_t j = 0; j < node.children.size(); ++j) {
             if(node.children[j].kind == CppAstKind::init_declarator_list) {
               for(size_t k = 0; k < node.children[j].children.size(); ++k) {
-                collect_declarator_identifiers(node.children[j].children[k], out);
+                collect_visible_declarator_identifiers(
+                    node.children[j].children[k], out);
               }
             }
           }
@@ -11608,7 +11635,8 @@ void CppAstParser::collect_declared_value_names(const CppAstNode & node,
     for(size_t i = 0; i < node.children.size(); ++i) {
       if(node.children[i].kind == CppAstKind::init_declarator_list) {
         for(size_t j = 0; j < node.children[i].children.size(); ++j) {
-          collect_declarator_identifiers(node.children[i].children[j], out);
+          collect_visible_declarator_identifiers(
+              node.children[i].children[j], out);
         }
       }
     }
@@ -11732,7 +11760,8 @@ void CppAstParser::collect_declared_template_names(const CppAstNode & node,
   for(size_t i = 0; i < declaration.children.size(); ++i) {
     if(declaration.children[i].kind == CppAstKind::init_declarator_list) {
       for(size_t j = 0; j < declaration.children[i].children.size(); ++j) {
-        collect_declarator_identifiers(declaration.children[i].children[j], out);
+        collect_visible_declarator_identifiers(
+            declaration.children[i].children[j], out);
       }
       if(!out.empty()) {
         return;
@@ -11744,14 +11773,14 @@ void CppAstParser::collect_declared_template_names(const CppAstNode & node,
     if(declaration.children[i].kind == CppAstKind::declarator ||
        declaration.children[i].kind == CppAstKind::init_declarator ||
        declaration.children[i].kind == CppAstKind::structured_binding_declarator) {
-      collect_declarator_identifiers(declaration.children[i], out);
+      collect_visible_declarator_identifiers(declaration.children[i], out);
       if(!out.empty()) {
         return;
       }
     }
   }
 
-  collect_declarator_identifiers(declaration, out);
+  collect_visible_declarator_identifiers(declaration, out);
 }
 
 void CppAstParser::collect_declared_template_value_names(const CppAstNode & node,
@@ -11771,7 +11800,7 @@ void CppAstParser::collect_declared_template_value_names(const CppAstNode & node
   if(declaration.kind == CppAstKind::simple_declaration ||
      declaration.kind == CppAstKind::bit_field_declaration ||
      declaration.kind == CppAstKind::function_definition) {
-    collect_declarator_identifiers(declaration, out);
+    collect_visible_declarator_identifiers(declaration, out);
   }
 }
 
