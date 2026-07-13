@@ -4077,7 +4077,11 @@ bool resolve_qualified_member_target(SemanticContext & ctx,
     return true;
   }
 
-  Scope * target =
+  Scope * target = member_name_node ?
+      ctx.resolve_qualified_scope_for_node(scope,
+                                           member_name,
+                                           *member_name_node,
+                                           allow_dependent_class_qualifiers) :
       resolve_qualified_scope_for_class_or_namespace(ctx,
                                                      scope,
                                                      member_name,
