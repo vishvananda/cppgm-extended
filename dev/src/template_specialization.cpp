@@ -9265,21 +9265,21 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
 	      return true;
 	    };
 
-		  if(have_actual_class && actual_class.source_template) {
-		    if(decompose_source_template(actual_class.source_template,
-		                                 actual_class.instantiation_arguments)) {
-		      return true;
-		    }
-        if(actual_mangle_info &&
-           actual_mangle_info->class_template_decl) {
-          if(decompose_source_template(
-                 static_cast<ClassTemplateDecl *>(
-                     actual_mangle_info->class_template_decl),
-                 actual_mangle_info->arguments)) {
-            return true;
-          }
-        }
-	  }
+    // A substituted type can carry newer structured arguments than its indexed class.
+    if(actual_mangle_info && actual_mangle_info->class_template_decl) {
+      if(decompose_source_template(
+             static_cast<ClassTemplateDecl *>(
+                 actual_mangle_info->class_template_decl),
+             actual_mangle_info->arguments)) {
+        return true;
+      }
+    }
+    if(have_actual_class && actual_class.source_template) {
+      if(decompose_source_template(actual_class.source_template,
+                                   actual_class.instantiation_arguments)) {
+        return true;
+      }
+    }
     void * dependent_class_template_decl = nullptr;
     std::vector<DependentAliasTemplateArgumentSyntax> dependent_class_args;
     if(named_type_dependent_class_template(actual_type,
