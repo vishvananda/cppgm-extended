@@ -205,6 +205,26 @@ bool try_resolve_non_type_template_parameter_type(
     const TemplateParameterInfo & parameter,
     TypePtr & out);
 
+bool substitute_bound_non_type_parameter_syntax(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & syntax,
+    CppAstNode & out)
+{
+  if(!scope.valid()) {
+    return false;
+  }
+  const std::vector<TemplateParameterInfo> no_parameters;
+  const std::vector<TemplateArgument> no_arguments;
+  return template_argument_semantics::substitute_type_id_node_for_template_arguments(
+      services,
+      scope.require(),
+      syntax,
+      no_parameters,
+      no_arguments,
+      out);
+}
+
 TypePtr adjusted_non_type_template_parameter_type_for_resolution(
     const TypePtr & type);
 
@@ -8423,8 +8443,23 @@ bool non_type_template_parameter_is_still_dependent(
       };
   if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE &&
      parameter.non_type_decl_specifier_seq) {
+    TypePtr structured_value_type;
+    try {
+      if(try_resolve_non_type_template_parameter_type_from_syntax(
+             services, scope, parameter, structured_value_type)) {
+        return false;
+      }
+    } catch(const TemplateSubstitutionFailure &) {
+      return false;
+    }
+    CppAstNode substituted_specifiers;
+    const CppAstNode * specifiers = parameter.non_type_decl_specifier_seq;
+    if(substitute_bound_non_type_parameter_syntax(
+           services, scope, *specifiers, substituted_specifiers)) {
+      specifiers = &substituted_specifiers;
+    }
     if(template_argument_semantics::ast_node_syntax_has_template_dependency(
-           services, scope, *parameter.non_type_decl_specifier_seq)) {
+           services, scope, *specifiers)) {
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "non-type-param-dependent name=" << parameter.name
@@ -8434,6 +8469,7 @@ bool non_type_template_parameter_is_still_dependent(
       }
       return true;
     }
+    return false;
   }
   if(parameter.value_type) {
     TypePtr resolved_value_type;
@@ -10843,9 +10879,11 @@ bool try_resolve_non_type_template_parameter_type_from_syntax(
      !parameter.non_type_decl_specifier_seq) {
     return false;
   }
-  if(template_argument_semantics::ast_node_syntax_has_template_dependency(
-         services, scope, *parameter.non_type_decl_specifier_seq)) {
-    return false;
+  CppAstNode substituted_specifiers;
+  const CppAstNode * specifiers = parameter.non_type_decl_specifier_seq;
+  if(substitute_bound_non_type_parameter_syntax(
+         services, scope, *specifiers, substituted_specifiers)) {
+    specifiers = &substituted_specifiers;
   }
 
   Scope & raw_scope = scope.require();
@@ -10854,7 +10892,7 @@ bool try_resolve_non_type_template_parameter_type_from_syntax(
          services,
          raw_scope,
          raw_scope,
-         *parameter.non_type_decl_specifier_seq,
+         *specifiers,
          base,
          true,
          true) ||
@@ -10864,11 +10902,17 @@ bool try_resolve_non_type_template_parameter_type_from_syntax(
 
   TypePtr resolved_type = base;
   if(parameter.non_type_declarator) {
+    CppAstNode substituted_declarator;
+    const CppAstNode * declarator = parameter.non_type_declarator;
+    if(substitute_bound_non_type_parameter_syntax(
+           services, scope, *declarator, substituted_declarator)) {
+      declarator = &substituted_declarator;
+    }
     std::string ignored_name;
     if(!template_decl_ast::parse_declarator(services,
                                             raw_scope,
                                             raw_scope,
-                                            *parameter.non_type_declarator,
+                                            *declarator,
                                             base,
                                             ignored_name,
                                             resolved_type,
@@ -10877,11 +10921,17 @@ bool try_resolve_non_type_template_parameter_type_from_syntax(
       return false;
     }
   } else if(parameter.non_type_abstract_declarator) {
+    CppAstNode substituted_declarator;
+    const CppAstNode * declarator = parameter.non_type_abstract_declarator;
+    if(substitute_bound_non_type_parameter_syntax(
+           services, scope, *declarator, substituted_declarator)) {
+      declarator = &substituted_declarator;
+    }
     if(!template_decl_ast::parse_abstract_declarator(
            services,
            raw_scope,
            raw_scope,
-           *parameter.non_type_abstract_declarator,
+           *declarator,
            base,
            resolved_type,
            true) ||
