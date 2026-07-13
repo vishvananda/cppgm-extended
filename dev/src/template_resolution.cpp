@@ -10918,13 +10918,6 @@ bool try_resolve_non_type_template_parameter_type(
           if(can_remain_dependent) {
             *can_remain_dependent = syntax_can_remain_dependent;
           }
-          template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
-              services, scope, out);
-          if(out &&
-             !template_argument_semantics::type_depends_on_template_parameter(
-                 type_system, out)) {
-            resolved = true;
-          }
         }
       }
     }
