@@ -21838,16 +21838,15 @@ private:
          !detector.node_has_sfinae_discriminator(rhs)) {
         return true;
       }
-      const auto qualified_names_equal =
-          [](const QualifiedName & lhs_name, const QualifiedName & rhs_name) -> bool
-      {
-        return lhs_name.rooted == rhs_name.rooted &&
-               lhs_name.qualifiers == rhs_name.qualifiers &&
-               lhs_name.name == rhs_name.name;
-      };
       struct Comparer
       {
-        decltype(qualified_names_equal) & qualified_names_equal;
+        bool qualified_names_equal(const QualifiedName & lhs,
+                                   const QualifiedName & rhs) const
+        {
+          return lhs.rooted == rhs.rooted &&
+                 lhs.qualifiers == rhs.qualifiers &&
+                 lhs.name == rhs.name;
+        }
 
         bool template_argument_syntax_equal(const TemplateArgumentSyntax & lhs,
                                             const TemplateArgumentSyntax & rhs) const
@@ -21958,7 +21957,7 @@ private:
           return true;
         }
       };
-      Comparer comparer{qualified_names_equal};
+      Comparer comparer;
       return comparer.node_equal(lhs, rhs);
     };
     auto function_result_types_match =
