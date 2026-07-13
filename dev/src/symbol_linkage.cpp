@@ -17018,7 +17018,6 @@ static bool build_itanium_context_function_type_mangle_context(
      !options.template_arguments->empty()) {
     template_ctx.parameters = options.template_parameters;
     mangle_ctx.template_parameters = &template_ctx;
-    mangle_ctx.allow_direct_std_standard_substitutions = false;
     function_parameter_context =
         build_function_parameter_mangle_context(options);
     if(!function_parameter_context.empty()) {
@@ -17455,7 +17454,6 @@ static bool try_emit_itanium_function_symbol_ir(
     }
     template_ctx.parameters = options.template_parameters;
     mangle_ctx.template_parameters = &template_ctx;
-    mangle_ctx.allow_direct_std_standard_substitutions = false;
     const vector<FunctionParameterMangleInfo> function_parameter_context =
         build_function_parameter_mangle_context(options);
     if(!function_parameter_context.empty()) {
