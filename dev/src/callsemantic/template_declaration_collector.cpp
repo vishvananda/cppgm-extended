@@ -2411,11 +2411,21 @@ public:
         owner_name_syntax.name = qualified_member.qualifiers.back();
         const string owner_name = qualified_name_syntax_text(owner_name_syntax);
 
+        ClassInfo * parsed_scope_owner = parse_scope->class_info;
+        const bool parsed_scope_owner_is_nested_template_member =
+            parsed_scope_owner &&
+            !parsed_scope_owner->source_template &&
+            parsed_scope_owner->enclosing_scope &&
+            parsed_scope_owner->enclosing_scope->class_info &&
+            parsed_scope_owner->enclosing_scope->class_info->source_template;
         ClassInfo * owner =
             resolve_qualified_owner_class_from_template_id_syntax(
                 pattern_scope,
                 qualified_member,
                 function_identifier);
+        if(!owner && parsed_scope_owner_is_nested_template_member) {
+          owner = parsed_scope_owner;
+        }
         if(!owner) {
           owner = resolve_qualified_owner_class(pattern_scope, owner_name);
         }
@@ -2481,37 +2491,44 @@ public:
                                                              true,
                                                              true);
 
+          const bool use_parsed_scope_signature =
+              owner == parsed_scope_owner &&
+              parsed_scope_owner_is_nested_template_member;
           bool owner_is_typedef = false;
           TypePtr owner_base;
           const CppAstNode filtered_owner_declarator =
               filtered_function_declarator(prepared_owner_method.parse_declarator_node());
           const bool parsed_base =
-              inner.kind == CppAstKind::function_definition ?
-                  parse_function_definition_base(*effective_owner_parse_scope,
-                                                 *prepared_owner_method.parse_specifiers_node(),
-                                                 prepared_owner_method.parse_declarator_node(),
-                                                 *body,
-                                                 prepared_owner_method.syntax.is_const_method,
-                                                 prepared_owner_method.syntax.is_volatile_method,
-                                                 owner_is_typedef,
-                                                 owner_base) :
-                  parse_trailing_return_base(*effective_owner_parse_scope,
-                                             *prepared_owner_method.parse_specifiers_node(),
-                                             prepared_owner_method.parse_declarator_node(),
-                                             owner_is_typedef,
-                                             owner_base,
-                                             true);
-          TypePtr declared_type;
+              use_parsed_scope_signature ||
+              (inner.kind == CppAstKind::function_definition ?
+                   parse_function_definition_base(*effective_owner_parse_scope,
+                                                  *prepared_owner_method.parse_specifiers_node(),
+                                                  prepared_owner_method.parse_declarator_node(),
+                                                  *body,
+                                                  prepared_owner_method.syntax.is_const_method,
+                                                  prepared_owner_method.syntax.is_volatile_method,
+                                                  owner_is_typedef,
+                                                  owner_base) :
+                   parse_trailing_return_base(*effective_owner_parse_scope,
+                                              *prepared_owner_method.parse_specifiers_node(),
+                                              prepared_owner_method.parse_declarator_node(),
+                                              owner_is_typedef,
+                                              owner_base,
+                                              true));
+          TypePtr declared_type = use_parsed_scope_signature ? type : TypePtr();
           string parsed_name;
           const bool parsed_declarator =
               parsed_base &&
               !owner_is_typedef &&
-              parse_declarator(*effective_owner_parse_scope,
-                               filtered_owner_declarator,
-                               owner_base,
-                               parsed_name,
-                               declared_type,
-                               true);
+              (use_parsed_scope_signature ?
+                   declared_type &&
+                       strip_top_level_cv(declared_type)->kind == Type::TK_FUNCTION :
+                   parse_declarator(*effective_owner_parse_scope,
+                                    filtered_owner_declarator,
+                                    owner_base,
+                                    parsed_name,
+                                    declared_type,
+                                    true));
           if(parsed_declarator) {
             FunctionTemplateDecl * template_decl =
                   resolve_out_of_class_method_template(pattern_scope,
