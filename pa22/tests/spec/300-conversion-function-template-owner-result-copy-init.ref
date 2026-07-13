@@ -48,6 +48,17 @@ function @basic_string_view_char___operatorbasic_string_Ch_char_traits_A_(%this 
     call void @basic_string_char__char_traits__allocator___basic_string__ov2(%t1, %t3, %t5)
     return obj<1x1> $retobj__1
 }
+function @basic_string_char__char_traits__allocator___basic_string__ov2(%this : ptr, %__param1 : ptr, %__param2 : i64) -> void [binding=weak, object=_ZN12basic_stringIc11char_traits9allocatorEC1EPKcm] {
+  slot $this : ptr
+  slot $__param1 : ptr
+  slot $__param2 : i64
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    store i64 %__param2, $__param2
+    return void
+}
 function @basic_string_view_char___data(%this : ptr) -> ptr [binding=weak, object=_ZNK17basic_string_viewIcE4dataEv] {
   slot $this : ptr
 
@@ -63,17 +74,6 @@ function @basic_string_view_char___size(%this : ptr) -> i64 [binding=weak, objec
     store ptr %this, $this
     %t1 = convert sext i64 i32 3
     return i64 %t1
-}
-function @basic_string_char__char_traits__allocator___basic_string__ov2(%this : ptr, %__param1 : ptr, %__param2 : i64) -> void [binding=weak, object=_ZN12basic_stringIc11char_traits9allocatorEC1EPKcm] {
-  slot $this : ptr
-  slot $__param1 : ptr
-  slot $__param2 : i64
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store i64 %__param2, $__param2
-    return void
 }
 alias object _ZN17basic_string_viewIcEC2Ev = @basic_string_view_char___basic_string_view
 alias object _ZN12basic_stringIc11char_traits9allocatorEC2EPKcm = @basic_string_char__char_traits__allocator___basic_string__ov2

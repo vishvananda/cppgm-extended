@@ -34,13 +34,6 @@ function @detail__expression_detail__matcher_traits____get_width(%this : ptr) ->
     %t3 = call i64 @detail__expression_detail__matcher_traits____get_width___ov2(%t1, $argobj__1)
     return i64 %t3
 }
-function @mpl___size_t_1___size_t(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4mpl_6size_tILm1EEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
 function @detail__expression_detail__matcher_traits____get_width___ov2(%this : ptr, %__param1 : obj<1x1>) -> i64 [binding=weak, object=_ZNK6detail10expressionINS_7matcherI6traitsEEE10get_width_ILm1EEEmN4mpl_6size_tIXT_EEE] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
@@ -48,5 +41,12 @@ function @detail__expression_detail__matcher_traits____get_width___ov2(%this : p
   block ^entry:
     store ptr %this, $this
     return i64 1
+}
+function @mpl___size_t_1___size_t(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4mpl_6size_tILm1EEC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
 }
 alias object _ZN4mpl_6size_tILm1EEC2Ev = @mpl___size_t_1___size_t

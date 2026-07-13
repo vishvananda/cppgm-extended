@@ -205,6 +205,99 @@ function @string_like_char__traits___data(%this : ptr) -> ptr [binding=weak, obj
     %t3 = unary decay ptr %t2
     return ptr %t3
 }
+function @string_like_char__traits___operator___ov2(%this : ptr, %v : ptr [pass=by_address]) -> ptr [binding=weak, object=_ZN11string_likeIc6traitsEaSI4viewEERS1_T_IcS0_E] {
+  slot $this : ptr
+  slot $v : obj<16x8>
+  slot $i : i64
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = convert sext i64 i32 0
+    store i64 %t1, $i
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t2 = load i64 $i
+    %t3 = convert sext i64 i32 4
+    %t4 = cmp ult i64 %t2, %t3
+    branch %t4, ^for_body_2, ^for_end_4
+
+  block ^for_body_2:
+    %t5 = index i8 [projection=field] %v, 0
+    %t6 = load ptr %t5
+    %t7 = load i64 $i
+    %t8 = index i8 [projection=array_element] %t6, %t7
+    %t9 = load i8 %t8
+    %t10 = load ptr $this
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = unary decay ptr %t11
+    %t13 = load i64 $i
+    %t14 = index i8 [projection=array_element] %t12, %t13
+    store i8 %t9, %t14
+    jump ^for_iter_3
+
+  block ^for_iter_3:
+    %t15 = load i64 $i
+    %t16 = binary add i64 %t15, 1
+    store i64 %t16, $i
+    jump ^for_cond_1
+
+  block ^for_end_4:
+    %t17 = load ptr $this
+    return ptr %t17
+}
+function @string_like_char__traits___operatorView_CharT_Traits_(%ret : ptr [pass=indirect_result], %this : ptr) -> void [binding=weak, object=_ZNK11string_likeIc6traitsEcvT_Ic6traitsEI4viewEET_IcS0_Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = call ptr @string_like_char__traits___data(%t1)
+    %t3 = load ptr $this
+    %t4 = call i64 @string_like_char__traits___size(%t3)
+    call void @view_char__traits___view__ov3(%ret, %t2, %t4)
+    return void
+}
+function @string_like_char__traits___string_like__ov4(%this : ptr, %v : ptr [pass=by_address]) -> void [binding=weak, object=_ZN11string_likeIc6traitsEC1I4viewEET_IcS0_E] {
+  slot $this : ptr
+  slot $v : obj<16x8>
+  slot $i : i64
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = convert sext i64 i32 0
+    store i64 %t1, $i
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t2 = load i64 $i
+    %t3 = convert sext i64 i32 4
+    %t4 = cmp ult i64 %t2, %t3
+    branch %t4, ^for_body_2, ^for_end_4
+
+  block ^for_body_2:
+    %t5 = index i8 [projection=field] %v, 0
+    %t6 = load ptr %t5
+    %t7 = load i64 $i
+    %t8 = index i8 [projection=array_element] %t6, %t7
+    %t9 = load i8 %t8
+    %t10 = load ptr $this
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = unary decay ptr %t11
+    %t13 = load i64 $i
+    %t14 = index i8 [projection=array_element] %t12, %t13
+    store i8 %t9, %t14
+    jump ^for_iter_3
+
+  block ^for_iter_3:
+    %t15 = load i64 $i
+    %t16 = binary add i64 %t15, 1
+    store i64 %t16, $i
+    jump ^for_cond_1
+
+  block ^for_end_4:
+    return void
+}
 function @view_char__traits___view(%this : ptr) -> void [binding=weak, object=_ZN4viewIc6traitsEC1Ev] {
   slot $this : ptr
 
@@ -272,99 +365,6 @@ function @view_char__traits___operator_(%this : ptr, %other : ptr [pass=referenc
     %t3 = load ptr $this
     return ptr %t3
 }
-function @string_like_char__traits___operatorView_CharT_Traits_(%ret : ptr [pass=indirect_result], %this : ptr) -> void [binding=weak, object=_ZNK11string_likeIc6traitsEcvT_Ic6traitsEI4viewEET_IcS0_Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = call ptr @string_like_char__traits___data(%t1)
-    %t3 = load ptr $this
-    %t4 = call i64 @string_like_char__traits___size(%t3)
-    call void @view_char__traits___view__ov3(%ret, %t2, %t4)
-    return void
-}
-function @string_like_char__traits___string_like__ov4(%this : ptr, %v : ptr [pass=by_address]) -> void [binding=weak, object=_ZN11string_likeIc6traitsEC1I4viewEET_IcS0_E] {
-  slot $this : ptr
-  slot $v : obj<16x8>
-  slot $i : i64
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = convert sext i64 i32 0
-    store i64 %t1, $i
-    jump ^for_cond_1
-
-  block ^for_cond_1:
-    %t2 = load i64 $i
-    %t3 = convert sext i64 i32 4
-    %t4 = cmp ult i64 %t2, %t3
-    branch %t4, ^for_body_2, ^for_end_4
-
-  block ^for_body_2:
-    %t5 = index i8 [projection=field] %v, 0
-    %t6 = load ptr %t5
-    %t7 = load i64 $i
-    %t8 = index i8 [projection=array_element] %t6, %t7
-    %t9 = load i8 %t8
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
-    %t12 = unary decay ptr %t11
-    %t13 = load i64 $i
-    %t14 = index i8 [projection=array_element] %t12, %t13
-    store i8 %t9, %t14
-    jump ^for_iter_3
-
-  block ^for_iter_3:
-    %t15 = load i64 $i
-    %t16 = binary add i64 %t15, 1
-    store i64 %t16, $i
-    jump ^for_cond_1
-
-  block ^for_end_4:
-    return void
-}
-function @string_like_char__traits___operator___ov2(%this : ptr, %v : ptr [pass=by_address]) -> ptr [binding=weak, object=_ZN11string_likeIc6traitsEaSI4viewEERS1_T_IcS0_E] {
-  slot $this : ptr
-  slot $v : obj<16x8>
-  slot $i : i64
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = convert sext i64 i32 0
-    store i64 %t1, $i
-    jump ^for_cond_1
-
-  block ^for_cond_1:
-    %t2 = load i64 $i
-    %t3 = convert sext i64 i32 4
-    %t4 = cmp ult i64 %t2, %t3
-    branch %t4, ^for_body_2, ^for_end_4
-
-  block ^for_body_2:
-    %t5 = index i8 [projection=field] %v, 0
-    %t6 = load ptr %t5
-    %t7 = load i64 $i
-    %t8 = index i8 [projection=array_element] %t6, %t7
-    %t9 = load i8 %t8
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
-    %t12 = unary decay ptr %t11
-    %t13 = load i64 $i
-    %t14 = index i8 [projection=array_element] %t12, %t13
-    store i8 %t9, %t14
-    jump ^for_iter_3
-
-  block ^for_iter_3:
-    %t15 = load i64 $i
-    %t16 = binary add i64 %t15, 1
-    store i64 %t16, $i
-    jump ^for_cond_1
-
-  block ^for_end_4:
-    %t17 = load ptr $this
-    return ptr %t17
-}
 function @string_like_char__traits___size(%this : ptr) -> i64 [binding=weak, object=_ZNK11string_likeIc6traitsE4sizeEv] {
   slot $this : ptr
 
@@ -374,7 +374,7 @@ function @string_like_char__traits___size(%this : ptr) -> i64 [binding=weak, obj
     return i64 %t1
 }
 alias object _ZN11string_likeIc6traitsEC2Ev = @string_like_char__traits___string_like
+alias object _ZN11string_likeIc6traitsEC2I4viewEET_IcS0_E = @string_like_char__traits___string_like__ov4
 alias object _ZN4viewIc6traitsEC2Ev = @view_char__traits___view
 alias object _ZN4viewIc6traitsEC2ERKS1_ = @view_char__traits___view__ov2
 alias object _ZN4viewIc6traitsEC2EPKcm = @view_char__traits___view__ov3
-alias object _ZN11string_likeIc6traitsEC2I4viewEET_IcS0_E = @string_like_char__traits___string_like__ov4

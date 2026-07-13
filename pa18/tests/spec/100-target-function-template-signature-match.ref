@@ -21,12 +21,12 @@ function @call(%target : ptr) -> i32 [binding=strong, object=_Z4callPFiR4SinkPKc
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = addr @select
+    %t1 = addr @select__ov2
     %t2 = unary decay ptr %t1
     %t3 = call i32 @call(%t2)
     return i32 %t3
 }
-function @select(%sink : ptr [pass=reference], %__param1 : ptr) -> i32 [binding=weak, object=_Z6selectI4SinkEiRT_PKc] {
+function @select__ov2(%sink : ptr [pass=reference], %__param1 : ptr) -> i32 [binding=weak, object=_Z6selectI4SinkEiRT_PKc] {
   slot $sink : ptr
   slot $__param1 : ptr
   slot $cond__1 : i32

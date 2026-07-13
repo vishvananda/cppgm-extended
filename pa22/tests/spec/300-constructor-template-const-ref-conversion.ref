@@ -34,19 +34,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @accept(%t1)
     return i32 %t3
 }
-function @duration_int__tag_2____duration(%this : ptr, %r : i32) -> void [binding=weak, object=_ZN8durationIi3tagILi2EEEC1Ei] {
-  slot $this : ptr
-  slot $r : i32
-
-  block ^entry:
-    store ptr %this, $this
-    store i32 %r, $r
-    %t1 = load i32 $r
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    return void
-}
 function @duration_long_int__tag_1____duration__ov4(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN8durationIl3tagILi1EEEC1IiS0_ILi2EEEERKS_IT_T0_E] {
   slot $this : ptr
   slot $other : ptr
@@ -63,5 +50,18 @@ function @duration_long_int__tag_1____duration__ov4(%this : ptr, %other : ptr [p
     store i64 %t4, %t6
     return void
 }
-alias object _ZN8durationIi3tagILi2EEEC2Ei = @duration_int__tag_2____duration
+function @duration_int__tag_2____duration(%this : ptr, %r : i32) -> void [binding=weak, object=_ZN8durationIi3tagILi2EEEC1Ei] {
+  slot $this : ptr
+  slot $r : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %r, $r
+    %t1 = load i32 $r
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
 alias object _ZN8durationIl3tagILi1EEEC2IiS0_ILi2EEEERKS_IT_T0_E = @duration_long_int__tag_1____duration__ov4
+alias object _ZN8durationIi3tagILi2EEEC2Ei = @duration_int__tag_2____duration

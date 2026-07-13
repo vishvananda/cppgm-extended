@@ -33,6 +33,26 @@ function @holder_int___holder(%this : ptr) -> void [binding=weak, object=_ZN6hol
     call void @detail__relay_int___relay__base_entry(%t2)
     return void
 }
+function @detail__relay_int___relay__base_entry(%this : ptr) -> void [binding=weak, object=_ZN6detail5relayIJiEEC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @detail__base_impl_false__int___base_impl__base_entry(%t2)
+    return void
+}
+function @detail__base_impl_false__int___base_impl__base_entry(%this : ptr) -> void [binding=weak, object=_ZN6detail9base_implILb0EJiEEC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
 function @unsafe_get(%v : ptr [pass=reference]) -> ptr [binding=weak, object=_Z10unsafe_getILm0EJiEERKN3altIXT_E6holderIJDpT0_EEE4typeERKS4_] {
   slot $v : ptr
   slot $argobj__1 : obj<1x1>
@@ -63,36 +83,5 @@ function @boost__mp11__integral_constant_unsigned_long_int__0___integral_constan
     store ptr %this, $this
     return void
 }
-function @detail__relay_int___relay__base_entry(%this : ptr) -> void [binding=weak, object=_ZN6detail5relayIJiEEC2Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
-    call void @detail__base_impl_false__int___base_impl__base_entry(%t2)
-    return void
-}
-function @detail__base_impl_false__int___base_impl__base_entry(%this : ptr) -> void [binding=weak, object=_ZN6detail9base_implILb0EJiEEC2Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
-    return void
-}
-function @detail__base_impl_false__int___base_impl(%this : ptr) -> void [binding=weak, object=_ZN6detail9base_implILb0EJiEEC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
-    return void
-}
 alias object _ZN6holderIJiEEC2Ev = @holder_int___holder
 alias object _ZN5boost4mp1117integral_constantImLm0EEC2Ev = @boost__mp11__integral_constant_unsigned_long_int__0___integral_constant
-alias object _ZN6detail9base_implILb0EJiEEC2Ev = @detail__base_impl_false__int___base_impl

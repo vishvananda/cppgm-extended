@@ -44,15 +44,5 @@ function @YBase_YTraits___YBase__base_entry(%this : ptr, %__param1 : ptr [pass=r
     store ptr %__param1, $__param1
     return void
 }
-function @YBase_YTraits___YBase(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5YBaseI7YTraitsEC1ERKS0_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    return void
-}
 alias object _ZN7YHolderI7YTraitsEC2ERKS0_ = @YHolder_YTraits___YHolder
 alias object _ZN8YDerivedI7YTraitsEC2ERKS0_ = @YDerived_YTraits___YDerived
-alias object _ZN5YBaseI7YTraitsEC2ERKS0_ = @YBase_YTraits___YBase

@@ -48,15 +48,6 @@ function @op_impl__work__handler__void_int____op__ov2(%this : ptr, %impl : ptr [
     call void @op_impl__work__handler___op__ov2__base_entry(%t2, %t3, %t4, %t5)
     return void
 }
-function @impl__operator__(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN4implclI2opIS_4work7handlerJFviEEEEEvRT_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    return void
-}
 function @op_impl__work__handler___op__ov2__base_entry(%this : ptr, %impl : ptr [pass=reference], %work : ptr [pass=reference], %handler : ptr [pass=reference]) -> void [binding=weak, object=_ZN2opI4impl4work7handlerJEEC2IS0_S1_S2_EEOT_OT0_OT1_] {
   slot $this : ptr
   slot $impl : ptr
@@ -74,6 +65,15 @@ function @op_impl__work__handler___op__ov2__base_entry(%this : ptr, %impl : ptr 
     %t4 = index i8 [projection=field] %t3, 1
     %t5 = load ptr $this
     %t6 = index i8 [projection=field] %t5, 2
+    return void
+}
+function @impl__operator__(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN4implclI2opIS_4work7handlerJFviEEEEEvRT_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
     return void
 }
 alias object _ZN2opI4impl4work7handlerJFviEEEC2IS0_S1_S2_EEOT_OT0_OT1_ = @op_impl__work__handler__void_int____op__ov2

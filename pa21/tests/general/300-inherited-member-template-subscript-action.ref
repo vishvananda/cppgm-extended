@@ -51,6 +51,20 @@ function @parser_base_rule___operator__(%this : ptr, %action : ptr [pass=referen
     call void @parser_action_rule__action___parser_action(%t1, %t2, %t3)
     return obj<4x4> $retobj__1
 }
+function @parser_action_rule__action___parser_action(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN13parser_actionI4rule6actionEC1ERKS0_RKS1_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    store ptr %__param2, $__param2
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
 function @rule__operator___ov3(%this : ptr, %parser : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN4ruleaSI13parser_actionIS_6actionEEERS_RKT_] {
   slot $this : ptr
   slot $parser : ptr
@@ -84,20 +98,6 @@ function @rule__rule(%this : ptr) -> void [binding=weak, object=_ZN4ruleC1Ev] {
     store i32 0, %t2
     return void
 }
-function @parser_action_rule__action___parser_action(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN13parser_actionI4rule6actionEC1ERKS0_RKS1_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-  slot $__param2 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store ptr %__param2, $__param2
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
-    return void
-}
+alias object _ZN13parser_actionI4rule6actionEC2ERKS0_RKS1_ = @parser_action_rule__action___parser_action
 alias object _ZN6actionC2Ev = @action__action
 alias object _ZN4ruleC2Ev = @rule__rule
-alias object _ZN13parser_actionI4rule6actionEC2ERKS0_RKS1_ = @parser_action_rule__action___parser_action

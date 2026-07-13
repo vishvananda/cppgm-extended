@@ -59,6 +59,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = load i32 $cond__6
     return i32 %t19
 }
+function @keyword_weight_tag___operator_(%this : ptr, %d : ptr [pass=reference]) -> obj<8x8> [binding=weak, object=_ZNK7keywordI10weight_tagEorI11default_mapEE8default_IS0_T_ERS5_] {
+  slot $this : ptr
+  slot $d : ptr
+  slot $retobj__1 : obj<8x8>
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %d, $d
+    %t1 = addr $retobj__1
+    %t2 = load ptr $d
+    call void @default__weight_tag__default_map___default_(%t1, %t2)
+    return obj<8x8> $retobj__1
+}
 function @arg_list_tagged_argument_weight_tag__supplied_map___arg_list_tagged_argument_predecessor_tag__int___empty_arg_list____arg_list(%this : ptr, %tagged : ptr [pass=reference], %next : ptr [pass=reference]) -> void [binding=weak, object=_ZN8arg_listI15tagged_argumentI10weight_tag12supplied_mapES_IS0_I15predecessor_tagiE14empty_arg_listEEC1ERKS3_RKS7_] {
   slot $this : ptr
   slot $tagged : ptr
@@ -77,6 +90,18 @@ function @arg_list_tagged_argument_weight_tag__supplied_map___arg_list_tagged_ar
     %t6 = load ptr $tagged
     copyobj 8x8 %t6, %t5
     return void
+}
+function @arg_list_tagged_argument_weight_tag__supplied_map___arg_list_tagged_argument_predecessor_tag__int___empty_arg_list____operator____ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK8arg_listI15tagged_argumentI10weight_tag12supplied_mapES_IS0_I15predecessor_tagiE14empty_arg_listEEixI11default_mapEERKS2_RK8default_IS1_T_E] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = call ptr @tagged_argument_weight_tag__supplied_map___get_value(%t2)
+    return ptr %t3
 }
 function @arg_list_tagged_argument_predecessor_tag__int___empty_arg_list___arg_list(%this : ptr, %tagged : ptr [pass=reference], %next : ptr [pass=reference]) -> void [binding=weak, object=_ZN8arg_listI15tagged_argumentI15predecessor_tagiE14empty_arg_listEC1ERKS2_RKS3_] {
   slot $this : ptr
@@ -121,38 +146,6 @@ function @tagged_argument_weight_tag__supplied_map___tagged_argument(%this : ptr
     store ptr %t1, %t3
     return void
 }
-function @keyword_weight_tag___operator_(%this : ptr, %d : ptr [pass=reference]) -> obj<8x8> [binding=weak, object=_ZNK7keywordI10weight_tagEorI11default_mapEE8default_IS0_T_ERS5_] {
-  slot $this : ptr
-  slot $d : ptr
-  slot $retobj__1 : obj<8x8>
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %d, $d
-    %t1 = addr $retobj__1
-    %t2 = load ptr $d
-    call void @default__weight_tag__default_map___default_(%t1, %t2)
-    return obj<8x8> $retobj__1
-}
-function @arg_list_tagged_argument_weight_tag__supplied_map___arg_list_tagged_argument_predecessor_tag__int___empty_arg_list____operator____ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK8arg_listI15tagged_argumentI10weight_tag12supplied_mapES_IS0_I15predecessor_tagiE14empty_arg_listEEixI11default_mapEERKS2_RK8default_IS1_T_E] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
-    %t3 = call ptr @tagged_argument_weight_tag__supplied_map___get_value(%t2)
-    return ptr %t3
-}
-function @empty_arg_list__empty_arg_list(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN14empty_arg_listC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
 function @tagged_argument_weight_tag__supplied_map___get_value(%this : ptr) -> ptr [binding=weak, object=_ZNK15tagged_argumentI10weight_tag12supplied_mapE9get_valueEv] {
   slot $this : ptr
 
@@ -176,6 +169,13 @@ function @default__weight_tag__default_map___default_(%this : ptr, %v : ptr [pas
     store ptr %t1, %t3
     return void
 }
+function @empty_arg_list__empty_arg_list(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN14empty_arg_listC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     return void
@@ -184,5 +184,5 @@ alias object _ZN8arg_listI15tagged_argumentI10weight_tag12supplied_mapES_IS0_I15
 alias object _ZN8arg_listI15tagged_argumentI15predecessor_tagiE14empty_arg_listEC2ERKS2_RKS3_ = @arg_list_tagged_argument_predecessor_tag__int___empty_arg_list___arg_list
 alias object _ZN15tagged_argumentI15predecessor_tagiEC2ERKi = @tagged_argument_predecessor_tag__int___tagged_argument
 alias object _ZN15tagged_argumentI10weight_tag12supplied_mapEC2ERKS1_ = @tagged_argument_weight_tag__supplied_map___tagged_argument
-alias object _ZN14empty_arg_listC2Ev = @empty_arg_list__empty_arg_list
 alias object _ZN8default_I10weight_tag11default_mapEC2ERS1_ = @default__weight_tag__default_map___default_
+alias object _ZN14empty_arg_listC2Ev = @empty_arg_list__empty_arg_list
