@@ -439,6 +439,8 @@ bool expand_bound_packs_in_type_id_node(template_api::TemplateServices & service
                                         const CppAstNode & node,
                                         CppAstNode & out);
 
+bool type_id_node_contains_pack_expansion_syntax(const CppAstNode & node);
+
 std::vector<cpp_decl::TemplateArgumentSyntax> expand_type_pack_argument_syntaxes(
     template_api::TemplateServices & services,
     semantic_model::Scope & scope,

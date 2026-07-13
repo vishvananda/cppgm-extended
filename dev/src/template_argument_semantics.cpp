@@ -39521,6 +39521,11 @@ static bool ast_node_contains_pack_expansion_syntax(const CppAstNode & node)
   return false;
 }
 
+bool type_id_node_contains_pack_expansion_syntax(const CppAstNode & node)
+{
+  return ast_node_contains_pack_expansion_syntax(node);
+}
+
 static bool argument_syntax_contains_pack_expansion(
     const TemplateArgumentSyntax & syntax)
 {
