@@ -10432,23 +10432,8 @@ bool append_leaf_function_template_instantiations_from_candidates(
     vector<TemplateArgument> explicit_arguments;
     const vector<TemplateArgument> * explicit_arguments_ptr = nullptr;
     if(template_id) {
-      bool has_dependent_argument_syntax = false;
       const template_api::TemplateEnvironmentHandle argument_scope =
           template_api::make_template_environment(scope);
-      for(size_t arg_index = 0;
-          arg_index < template_id->argument_syntaxes.size();
-          ++arg_index) {
-        if(template_argument_syntax_has_structural_template_dependency(
-               services,
-               argument_scope,
-               template_id->argument_syntaxes[arg_index])) {
-          has_dependent_argument_syntax = true;
-          break;
-        }
-      }
-      if(has_dependent_argument_syntax) {
-        continue;
-      }
       if(!template_api::resolve_template_arguments(
              services,
              argument_scope,
@@ -15537,17 +15522,6 @@ bool expand_dependent_argument_syntax_pack(
                                                            value_replacements,
                                                            template_replacements,
                                                            expanded.syntax);
-    if(source_argument.type) {
-      TypePtr substituted_type;
-      if(substitute_type_impl(source_argument.type,
-                              parameters,
-                              element_arguments,
-                              scope,
-                              substituted_type) &&
-         substituted_type) {
-        expanded.type = substituted_type;
-      }
-    }
     expanded.syntax.pack_expansion = false;
     expanded.syntax.dependent =
         argument_live_syntax_mentions_any_substitution_parameter(expanded.syntax,
@@ -16168,6 +16142,20 @@ bool template_argument_from_bound_value(const ValueBinding & binding,
   return !out.dependent;
 }
 
+static bool expression_is_literal_after_casts(const CppAstNode * expression)
+{
+  const CppAstNode * current = expression;
+  while(current &&
+        (current->kind == CppAstKind::cast_expression ||
+         current->kind == CppAstKind::unary_expression) &&
+        !current->children.empty()) {
+    current = &current->children.back();
+  }
+  return current &&
+         (current->kind == CppAstKind::literal ||
+          current->kind == CppAstKind::keyword_literal);
+}
+
 bool substitute_template_argument_for_mangle_info(
     const TemplateArgument & source,
     const vector<TemplateParameterInfo> & parameters,
@@ -16236,6 +16224,10 @@ bool substitute_template_argument_for_mangle_info(
         if(dependent_argument.syntax.expression) {
           out.expression.reset(
               new CppAstNode(*dependent_argument.syntax.expression));
+        }
+        if(expression_is_literal_after_casts(out.expression.get())) {
+          out.dependent = false;
+          out.source_syntax->dependent = false;
         }
         return true;
       }
@@ -16384,10 +16376,11 @@ bool dependent_class_argument_to_mangle_argument(
     out.function_internal_symbol = source.function_internal_symbol;
     out.value_binding = source.value_binding;
     out.value = source.value;
-    out.dependent = source.dependent_value ||
-        source.syntax.dependent ||
-        (!source.has_non_type_value && source.syntax.expression);
-    if(source.syntax.expression) {
+    out.dependent = !source.has_non_type_value &&
+        (source.dependent_value ||
+         source.syntax.dependent ||
+         source.syntax.expression);
+    if(source.syntax.expression && !source.has_non_type_value) {
       out.expression.reset(new CppAstNode(*source.syntax.expression));
     }
     return true;
@@ -16562,22 +16555,20 @@ bool substitute_dependent_class_type(const TypePtr & type,
   set_named_type_dependent_class_template(substituted,
                                           class_template_decl,
                                           substituted_arguments);
-  bool rebuilt_mangle_info = false;
   if(ClassTemplateDecl * class_template =
          static_cast<ClassTemplateDecl *>(class_template_decl)) {
-    rebuilt_mangle_info =
-        attach_substituted_dependent_class_mangle_info_from_arguments(
-            substituted,
-            *class_template,
-            substituted_arguments);
+    attach_substituted_dependent_class_mangle_info_from_arguments(
+        substituted,
+        *class_template,
+        substituted_arguments);
   }
-  if(!rebuilt_mangle_info) {
-    update_substituted_dependent_class_mangle_info(substituted,
-                                                  type,
-                                                  parameters,
-                                                  arguments,
-                                                  scope);
-  }
+  // Preserve source-scope member expressions while refreshing any arguments
+  // that became concrete during this substitution.
+  update_substituted_dependent_class_mangle_info(substituted,
+                                                type,
+                                                parameters,
+                                                arguments,
+                                                scope);
   out = substituted;
   return true;
 }
@@ -36878,32 +36869,6 @@ static bool ast_node_syntax_mentions_template_dependency(
     }
   }
   return false;
-}
-
-bool template_argument_syntax_has_structural_template_dependency(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const TemplateArgumentSyntax & syntax)
-{
-  return scope.valid() &&
-         template_argument_syntax_structurally_mentions_template_dependency(
-             services, scope, syntax);
-}
-
-bool template_argument_syntax_has_structural_template_dependency(
-    SemanticContext & ctx,
-    Scope & scope,
-    const TemplateArgumentSyntax & syntax)
-{
-  return template_api::with_template_services(
-      ctx,
-      [&](template_api::TemplateServices & services)
-      {
-        return template_argument_syntax_has_structural_template_dependency(
-            services,
-            template_api::make_template_environment(scope),
-            syntax);
-      });
 }
 
 bool ast_node_syntax_has_template_dependency(

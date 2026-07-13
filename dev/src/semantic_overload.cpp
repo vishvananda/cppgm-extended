@@ -39,7 +39,6 @@
 #include "semantic_utils.h"
 #include "symbol_linkage.h"
 #include "template_api.h"
-#include "template_argument_semantics.h"
 #include "template_model.h"
 #include "template_witness.h"
 
@@ -9094,19 +9093,6 @@ void append_function_template_call_candidates_impl(
     explicit_name = name_template_id_syntax->name;
     explicit_args = name_template_id_syntax->arguments;
   }
-  if(name_template_id_syntax) {
-    for(size_t i = 0;
-        i < name_template_id_syntax->argument_syntaxes.size();
-        ++i) {
-      if(template_argument_semantics::
-             template_argument_syntax_has_structural_template_dependency(
-                 ctx,
-                 argument_scope,
-                 name_template_id_syntax->argument_syntaxes[i])) {
-        return;
-      }
-    }
-  }
   string template_name = name;
   if(has_explicit_args) {
     template_name.clear();
@@ -9478,7 +9464,8 @@ void append_function_template_call_candidates_impl(
         }
         continue;
       }
-      if(template_api::template_arguments_are_dependent(
+      if(arg_nodes.empty() &&
+         template_api::template_arguments_are_dependent(
              ctx, resolved_explicit_arguments)) {
         continue;
       }

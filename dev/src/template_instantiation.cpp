@@ -10683,7 +10683,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
               "template-instantiation");
         }
       }
-      if(result_type_still_dependent &&
+      if((result_type_still_dependent ||
+          source_result_mentions_template_parameter) &&
          source_decl->result_type_pattern.kind != CppAstKind::invalid) {
         TypePtr parsed_result;
         const bool parsed_result_type =
@@ -10886,7 +10887,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           }
           if(parser_trace::enabled("template.resolve")) {
             std::ostringstream trace;
-            trace << "function-instantiation-result-reparsed name=" << source_decl->name
+            trace << "function-instantiation-result-rebound name=" << source_decl->name
                   << " key=" << key
                   << " type=" << describe_type(parsed_result)
                   << " dependent="

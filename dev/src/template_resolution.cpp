@@ -4968,7 +4968,15 @@ bool direct_identifier_argument_syntax(const TemplateArgumentSyntax * syntax,
                                          CppAstKind::declarator);
     }
     if(declarator) {
-      return false;
+      for(size_t i = 0; i < declarator->children.size(); ++i) {
+        if(declarator->children[i].kind != CppAstKind::parameter_pack) {
+          return false;
+        }
+      }
+      if(declarator->children.empty()) {
+        return false;
+      }
+      pack_expansion = true;
     }
     const CppAstNode * specifiers =
         cppast_find_child_kind(*syntax->type_id, CppAstKind::type_specifier_seq);
