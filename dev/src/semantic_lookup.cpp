@@ -2454,6 +2454,32 @@ std::string canonicalize_template_named_type_text(
           canonicalize_template_parameter_tokens(parameters, text)));
 }
 
+std::string canonicalize_template_type_argument_text(
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::string & text)
+{
+  const std::string canonical =
+      canonicalize_template_named_type_text(parameters, text);
+  std::string out;
+  out.reserve(canonical.size());
+  for(std::size_t i = 0; i < canonical.size();) {
+    if(canonical.compare(i, 8, "typename") == 0 &&
+       (i == 0 || !is_identifier_char(canonical[i - 1])) &&
+       (i + 8 == canonical.size() ||
+        !is_identifier_char(canonical[i + 8]))) {
+      i += 8;
+      while(i < canonical.size() &&
+            (canonical[i] == ' ' || canonical[i] == '\t' ||
+             canonical[i] == '\n' || canonical[i] == '\r')) {
+        ++i;
+      }
+      continue;
+    }
+    out += canonical[i++];
+  }
+  return out;
+}
+
 bool same_function_template_entity_type_impl(
     const TypePtr & lhs_type,
     const std::vector<TemplateParameterInfo> & lhs_parameters,
@@ -2472,6 +2498,180 @@ std::string canonicalize_dependent_template_argument_text(
       strip_leading_typename_token(text));
 }
 
+bool same_dependent_expression_metadata(
+    const CppAstNode & lhs,
+    const std::vector<TemplateParameterInfo> & lhs_parameters,
+    const CppAstNode & rhs,
+    const std::vector<TemplateParameterInfo> & rhs_parameters);
+
+bool same_dependent_expression_template_id_metadata(
+    const TemplateIdSyntax & lhs,
+    const std::vector<TemplateParameterInfo> & lhs_parameters,
+    const TemplateIdSyntax & rhs,
+    const std::vector<TemplateParameterInfo> & rhs_parameters);
+
+bool same_dependent_expression_argument_metadata(
+    const TemplateArgumentSyntax & lhs,
+    const std::vector<TemplateParameterInfo> & lhs_parameters,
+    const TemplateArgumentSyntax & rhs,
+    const std::vector<TemplateParameterInfo> & rhs_parameters)
+{
+  if(lhs.pack_expansion != rhs.pack_expansion) {
+    return false;
+  }
+  if(lhs.type_id && rhs.type_id) {
+    const bool result =
+        same_dependent_expression_metadata(*lhs.type_id,
+                                           lhs_parameters,
+                                           *rhs.type_id,
+                                           rhs_parameters);
+    return result ||
+           canonicalize_template_type_argument_text(lhs_parameters, lhs.text) ==
+               canonicalize_template_type_argument_text(rhs_parameters,
+                                                        rhs.text);
+  }
+  if(lhs.expression || rhs.expression) {
+    const bool result = lhs.expression &&
+                        rhs.expression &&
+                        same_dependent_expression_metadata(*lhs.expression,
+                                                           lhs_parameters,
+                                                           *rhs.expression,
+                                                           rhs_parameters);
+    return result;
+  }
+  if(lhs.type_id || rhs.type_id) {
+    return canonicalize_template_type_argument_text(lhs_parameters, lhs.text) ==
+           canonicalize_template_type_argument_text(rhs_parameters, rhs.text);
+  }
+  if(lhs.template_id || rhs.template_id) {
+    return lhs.template_id &&
+           rhs.template_id &&
+           same_dependent_expression_template_id_metadata(*lhs.template_id,
+                                                          lhs_parameters,
+                                                          *rhs.template_id,
+                                                          rhs_parameters);
+  }
+  if(lhs.resolved_type || rhs.resolved_type) {
+    const bool result = lhs.resolved_type &&
+                        rhs.resolved_type &&
+                        same_function_template_entity_type_impl(lhs.resolved_type,
+                                                                lhs_parameters,
+                                                                rhs.resolved_type,
+                                                                rhs_parameters,
+                                                                true);
+    return result;
+  }
+  return canonicalize_template_named_type_text(lhs_parameters, lhs.text) ==
+         canonicalize_template_named_type_text(rhs_parameters, rhs.text);
+}
+
+bool same_dependent_expression_template_id_metadata(
+    const TemplateIdSyntax & lhs,
+    const std::vector<TemplateParameterInfo> & lhs_parameters,
+    const TemplateIdSyntax & rhs,
+    const std::vector<TemplateParameterInfo> & rhs_parameters)
+{
+  if(lhs.name.rooted != rhs.name.rooted ||
+     canonicalize_template_named_type_text(
+         lhs_parameters, qualified_name_text(lhs.name)) !=
+         canonicalize_template_named_type_text(
+             rhs_parameters, qualified_name_text(rhs.name)) ||
+     lhs.qualifier_template_id_syntaxes.size() !=
+         rhs.qualifier_template_id_syntaxes.size() ||
+     lhs.argument_syntaxes.size() != rhs.argument_syntaxes.size()) {
+    return false;
+  }
+  for(std::size_t i = 0;
+      i < lhs.qualifier_template_id_syntaxes.size();
+      ++i) {
+    if(!same_dependent_expression_template_id_metadata(
+           lhs.qualifier_template_id_syntaxes[i],
+           lhs_parameters,
+           rhs.qualifier_template_id_syntaxes[i],
+           rhs_parameters)) {
+      return false;
+    }
+  }
+  for(std::size_t i = 0; i < lhs.argument_syntaxes.size(); ++i) {
+    if(!same_dependent_expression_argument_metadata(lhs.argument_syntaxes[i],
+                                                    lhs_parameters,
+                                                    rhs.argument_syntaxes[i],
+                                                    rhs_parameters)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool same_dependent_expression_metadata(
+    const CppAstNode & lhs,
+    const std::vector<TemplateParameterInfo> & lhs_parameters,
+    const CppAstNode & rhs,
+    const std::vector<TemplateParameterInfo> & rhs_parameters)
+{
+  if(lhs.kind != rhs.kind ||
+     lhs.qualifier_template_id_syntaxes.size() !=
+         rhs.qualifier_template_id_syntaxes.size() ||
+     lhs.qualifier_type_syntaxes.size() != rhs.qualifier_type_syntaxes.size() ||
+     lhs.children.size() != rhs.children.size()) {
+    return false;
+  }
+  const bool lhs_has_structure =
+      lhs.template_id_syntax ||
+      !lhs.qualifier_template_id_syntaxes.empty() ||
+      !lhs.qualifier_type_syntaxes.empty() ||
+      !lhs.children.empty();
+  const bool rhs_has_structure =
+      rhs.template_id_syntax ||
+      !rhs.qualifier_template_id_syntaxes.empty() ||
+      !rhs.qualifier_type_syntaxes.empty() ||
+      !rhs.children.empty();
+  if((!lhs_has_structure || !rhs_has_structure) &&
+     canonicalize_template_named_type_text(lhs_parameters, lhs.value) !=
+         canonicalize_template_named_type_text(rhs_parameters, rhs.value)) {
+    return false;
+  }
+  if(static_cast<bool>(lhs.template_id_syntax) !=
+     static_cast<bool>(rhs.template_id_syntax)) {
+    return false;
+  }
+  if(lhs.template_id_syntax &&
+     !same_dependent_expression_template_id_metadata(*lhs.template_id_syntax,
+                                                     lhs_parameters,
+                                                     *rhs.template_id_syntax,
+                                                     rhs_parameters)) {
+    return false;
+  }
+  for(std::size_t i = 0;
+      i < lhs.qualifier_template_id_syntaxes.size();
+      ++i) {
+    if(!same_dependent_expression_template_id_metadata(
+           lhs.qualifier_template_id_syntaxes[i],
+           lhs_parameters,
+           rhs.qualifier_template_id_syntaxes[i],
+           rhs_parameters)) {
+      return false;
+    }
+  }
+  for(std::size_t i = 0; i < lhs.qualifier_type_syntaxes.size(); ++i) {
+    if(!same_dependent_expression_metadata(lhs.qualifier_type_syntaxes[i],
+                                          lhs_parameters,
+                                          rhs.qualifier_type_syntaxes[i],
+                                          rhs_parameters)) {
+      return false;
+    }
+  }
+  for(std::size_t i = 0; i < lhs.children.size(); ++i) {
+    if(!same_dependent_expression_metadata(lhs.children[i],
+                                          lhs_parameters,
+                                          rhs.children[i],
+                                          rhs_parameters)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool same_dependent_template_argument_metadata(
     const DependentAliasTemplateArgumentSyntax & lhs,
     const std::vector<TemplateParameterInfo> & lhs_parameters,
@@ -2480,6 +2680,45 @@ bool same_dependent_template_argument_metadata(
 {
   if(lhs.syntax.pack_expansion != rhs.syntax.pack_expansion) {
     return false;
+  }
+  const bool lhs_is_non_type =
+      lhs.has_non_type_value ||
+      lhs.dependent_value ||
+      lhs.function_value ||
+      lhs.value_binding ||
+      static_cast<bool>(lhs.syntax.expression);
+  const bool rhs_is_non_type =
+      rhs.has_non_type_value ||
+      rhs.dependent_value ||
+      rhs.function_value ||
+      rhs.value_binding ||
+      static_cast<bool>(rhs.syntax.expression);
+  if(lhs_is_non_type || rhs_is_non_type) {
+    if(!lhs_is_non_type || !rhs_is_non_type) {
+      return false;
+    }
+    if(lhs.syntax.expression || rhs.syntax.expression) {
+      return lhs.syntax.expression &&
+             rhs.syntax.expression &&
+             same_dependent_expression_metadata(*lhs.syntax.expression,
+                                                lhs_parameters,
+                                                *rhs.syntax.expression,
+                                                rhs_parameters);
+    }
+    if(lhs.function_value || rhs.function_value) {
+      return lhs.function_value == rhs.function_value &&
+             lhs.function_internal_symbol == rhs.function_internal_symbol;
+    }
+    if(lhs.dependent_value || rhs.dependent_value) {
+      return lhs.dependent_value &&
+             rhs.dependent_value &&
+             canonicalize_dependent_template_argument_text(lhs_parameters,
+                                                           lhs) ==
+                 canonicalize_dependent_template_argument_text(rhs_parameters,
+                                                               rhs);
+    }
+    return lhs.has_non_type_value == rhs.has_non_type_value &&
+           (!lhs.has_non_type_value || lhs.value == rhs.value);
   }
   if(lhs.type || rhs.type) {
     return lhs.type &&
@@ -2504,10 +2743,12 @@ bool same_dependent_template_argument_metadata_list(
     return false;
   }
   for(std::size_t i = 0; i < lhs.size(); ++i) {
-    if(!same_dependent_template_argument_metadata(lhs[i],
+    const bool same =
+        same_dependent_template_argument_metadata(lhs[i],
                                                   lhs_parameters,
                                                   rhs[i],
-                                                  rhs_parameters)) {
+                                                  rhs_parameters);
+    if(!same) {
       return false;
     }
   }
@@ -2998,6 +3239,18 @@ bool same_function_template_entity_type(
                                                  rhs_type,
                                                  rhs_parameters,
                                                  false);
+}
+
+bool same_function_template_entity_result_pattern(
+    const CppAstNode & lhs,
+    const std::vector<TemplateParameterInfo> & lhs_parameters,
+    const CppAstNode & rhs,
+    const std::vector<TemplateParameterInfo> & rhs_parameters)
+{
+  return same_dependent_expression_metadata(lhs,
+                                            lhs_parameters,
+                                            rhs,
+                                            rhs_parameters);
 }
 
 struct SameFunctionTemplateEntityCacheEntry

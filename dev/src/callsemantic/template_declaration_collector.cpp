@@ -3814,6 +3814,12 @@ public:
         existing->declarator = declarator;
         existing->body = body;
         existing->ctor_initializer = ctor_initializer;
+        if(result_type_pattern.kind != CppAstKind::invalid) {
+          // ABI construction follows the definition spelling. Incoming
+          // template parameter names remain available through the merged
+          // parameter aliases above.
+          existing->result_type_pattern = result_type_pattern;
+        }
         record_definition_parameter_aliases(*existing, params);
       } else {
         if(!existing->inner) {

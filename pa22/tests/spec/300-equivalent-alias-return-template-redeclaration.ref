@@ -1,0 +1,34 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $left : i32
+  slot $right : i32
+
+  block ^entry:
+    store i32 1, $left
+    store i32 2, $right
+    %t1 = addr $left
+    %t2 = addr $right
+    call void @compat__swap(%t1, %t2)
+    %t3 = load i32 $left
+    %t4 = binary sub i32 %t3, 2
+    return i32 %t4
+}
+function @compat__swap(%left : ptr [pass=reference], %right : ptr [pass=reference]) -> void [binding=weak, object=_ZN6compat4swapIiEENS_9enable_ifIXsr6__and_INS_6__not_INS_15__is_tuple_likeIT_EEEENS_21is_move_constructibleIS4_EENS_18is_move_assignableIS4_EEEE5valueEvE4typeERS4_SD_] {
+  slot $left : ptr
+  slot $right : ptr
+  slot $tmp : i32
+
+  block ^entry:
+    store ptr %left, $left
+    store ptr %right, $right
+    %t1 = load ptr $left
+    %t2 = load i32 %t1
+    store i32 %t2, $tmp
+    %t3 = load ptr $right
+    %t4 = load i32 %t3
+    %t5 = load ptr $left
+    store i32 %t4, %t5
+    %t6 = load i32 $tmp
+    %t7 = load ptr $right
+    store i32 %t6, %t7
+    return void
+}

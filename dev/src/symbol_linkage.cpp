@@ -7823,12 +7823,10 @@ static bool try_build_template_parameter_type_text_ir(
         mangle_ctx->template_parameters->parameters;
     for(size_t i = 0; i < parameters->size(); ++i) {
       const TemplateParameterInfo & param = (*parameters)[i];
-      if(param.kind != TemplateParameterInfo::TP_TYPE ||
-         param.name.empty()) {
+      if(param.kind != TemplateParameterInfo::TP_TYPE) {
         continue;
       }
-      if(text_matches_type_parameter_name(stripped, param.name) ||
-         stripped == param.placeholder_key) {
+      if(template_parameter_identifier_matches(param, stripped)) {
         out = template_parameter_type_ir(i,
                                          param,
                                          parameters,
@@ -7850,12 +7848,10 @@ static bool try_build_template_parameter_type_text_ir(
         *mangle_ctx->owner_template_arguments;
     for(size_t i = 0; i < parameters.size() && i < arguments.size(); ++i) {
       const TemplateParameterInfo & param = parameters[i];
-      if(param.kind != TemplateParameterInfo::TP_TYPE ||
-         param.name.empty()) {
+      if(param.kind != TemplateParameterInfo::TP_TYPE) {
         continue;
       }
-      if(!text_matches_type_parameter_name(stripped, param.name) &&
-         stripped != param.placeholder_key) {
+      if(!template_parameter_identifier_matches(param, stripped)) {
         continue;
       }
       if(owner_template_argument_index_is_suppressed(mangle_ctx, i) ||
@@ -8012,8 +8008,7 @@ static bool try_build_template_parameter_type_ir(
       if(param.kind != TemplateParameterInfo::TP_TYPE) {
         continue;
       }
-      if((!param.name.empty() &&
-          text_matches_type_parameter_name(payload, param.name)) ||
+      if(template_parameter_identifier_matches(param, payload) ||
          placeholder_payload_matches(param.placeholder_key)) {
         out = template_parameter_type_ir(i,
                                          param,
@@ -8033,8 +8028,7 @@ static bool try_build_template_parameter_type_ir(
     for(size_t i = 0; i < parameters.size() && i < arguments.size(); ++i) {
       const TemplateParameterInfo & param = parameters[i];
       if(param.kind != TemplateParameterInfo::TP_TYPE ||
-         ((param.name.empty() ||
-           !text_matches_type_parameter_name(payload, param.name)) &&
+         (!template_parameter_identifier_matches(param, payload) &&
           !placeholder_payload_matches(param.placeholder_key))) {
         continue;
       }

@@ -184,6 +184,7 @@ struct ValueBinding
   std::shared_ptr<constant_eval::ConstexprValue> constexpr_value;
   bool dependent_template_value = false;
   std::string non_type_template_argument_text;
+  std::shared_ptr<CppAstNode> non_type_template_argument_expression;
   FunctionBinding * non_type_template_function_value = nullptr;
   std::string non_type_template_function_internal_symbol;
   const ValueBinding * non_type_template_value_binding = nullptr;

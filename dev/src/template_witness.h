@@ -256,6 +256,16 @@ private:
   bool active_;
 };
 
+class ScopedTemplateWitnessTypeLookupPause
+{
+public:
+  explicit ScopedTemplateWitnessTypeLookupPause(bool active = true);
+  ~ScopedTemplateWitnessTypeLookupPause();
+
+private:
+  bool active_;
+};
+
 class ScopedTemplateWitnessSourceCapturePause
 {
 public:
@@ -1426,6 +1436,12 @@ inline int & current_qualified_member_type_lookup_depth_storage()
   return depth;
 }
 
+inline int & current_type_lookup_pause_depth_storage()
+{
+  static thread_local int depth = 0;
+  return depth;
+}
+
 inline int & current_source_capture_pause_depth_storage()
 {
   static thread_local int depth = 0;
@@ -1696,6 +1712,25 @@ inline ScopedTemplateWitnessQualifiedMemberTypeLookup::
   if(active_) {
     --template_witness_detail::
         current_qualified_member_type_lookup_depth_storage();
+  }
+}
+
+inline ScopedTemplateWitnessTypeLookupPause::ScopedTemplateWitnessTypeLookupPause(
+    bool active)
+  : active_(active &&
+            (template_witness_detail::current_source_type_lookup_depth_storage() > 0 ||
+             template_witness_detail::
+                 current_qualified_member_type_lookup_depth_storage() > 0))
+{
+  if(active_) {
+    ++template_witness_detail::current_type_lookup_pause_depth_storage();
+  }
+}
+
+inline ScopedTemplateWitnessTypeLookupPause::~ScopedTemplateWitnessTypeLookupPause()
+{
+  if(active_) {
+    --template_witness_detail::current_type_lookup_pause_depth_storage();
   }
 }
 
@@ -2120,13 +2155,15 @@ inline bool template_witness_declval_call_source_capture_enabled()
 
 inline bool template_witness_source_type_lookup_active()
 {
-  return template_witness_detail::current_source_type_lookup_depth_storage() > 0;
+  return template_witness_detail::current_source_type_lookup_depth_storage() > 0 &&
+      template_witness_detail::current_type_lookup_pause_depth_storage() == 0;
 }
 
 inline bool template_witness_qualified_member_type_lookup_active()
 {
   return template_witness_detail::
-      current_qualified_member_type_lookup_depth_storage() > 0;
+             current_qualified_member_type_lookup_depth_storage() > 0 &&
+      template_witness_detail::current_type_lookup_pause_depth_storage() == 0;
 }
 
 inline std::string normalize_template_witness_source_location(

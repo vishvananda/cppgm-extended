@@ -112,7 +112,8 @@ bool substitute_type_id_node_for_template_arguments(
     const CppAstNode & node,
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
-    CppAstNode & out);
+    CppAstNode & out,
+    bool discard_stale_annotations = false);
 bool substitute_type_id_node_for_template_arguments(
     SemanticContext & ctx,
     semantic_model::Scope & scope,

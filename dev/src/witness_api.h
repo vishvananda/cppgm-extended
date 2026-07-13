@@ -36,6 +36,7 @@ using template_api::ScopedTemplateWitnessFunctionCallSourceCapturePause;
 using template_api::ScopedTemplateWitnessSession;
 using template_api::ScopedTemplateWitnessSourceCapturePause;
 using template_api::ScopedTemplateWitnessSourceTypeLookup;
+using template_api::ScopedTemplateWitnessTypeLookupPause;
 
 using SourceSelectionKind = template_api::TemplateWitnessSelectionKind;
 

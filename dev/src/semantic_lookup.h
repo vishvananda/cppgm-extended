@@ -131,6 +131,11 @@ bool same_function_template_entity_type(
     const std::vector<template_model::TemplateParameterInfo> & lhs_parameters,
     const cpp_decl::TypePtr & rhs_type,
     const std::vector<template_model::TemplateParameterInfo> & rhs_parameters);
+bool same_function_template_entity_result_pattern(
+    const CppAstNode & lhs,
+    const std::vector<template_model::TemplateParameterInfo> & lhs_parameters,
+    const CppAstNode & rhs,
+    const std::vector<template_model::TemplateParameterInfo> & rhs_parameters);
 bool same_inline_namespace_function_entity(const FunctionBinding & lhs,
                                            const FunctionBinding & rhs);
 std::string canonical_function_lookup_name(const std::string & name);
