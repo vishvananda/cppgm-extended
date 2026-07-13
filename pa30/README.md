@@ -91,6 +91,10 @@ typeinfo ns::C
 vtable ns::C
 ```
 
+The normalized builtin word `float128` denotes GNU `__float128` and uses the
+Itanium builtin type code `g`. This is an ABI fact spelling, not a requirement
+to parse `__float128` as C++ source in PA30.
+
 Structured cases introduce reusable facts before the final target:
 
 ```text

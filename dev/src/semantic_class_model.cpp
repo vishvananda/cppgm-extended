@@ -2044,12 +2044,30 @@ TypePtr try_resolve_instantiated_member_alias_type(SemanticContext & ctx,
             member_type = resolved_member;
           }
         }
-        if(member_type && !ctx.type_depends_on_template_parameter(member_type)) {
+        if(member_type) {
           return apply_cv(member_type, cv_const, cv_volatile);
         }
       }
     }
     return TypePtr();
+  }
+
+  if(owner_info == current_info && owner_info->member_scope) {
+    auto direct = owner_info->member_scope->named_types.find(member_name);
+    if(direct != owner_info->member_scope->named_types.end() &&
+       direct->second &&
+       !type_equals(direct->second, type)) {
+      TypePtr member_type = direct->second;
+      if(ctx.type_depends_on_template_parameter(member_type)) {
+        TypePtr resolved_member;
+        if(semantic_dependent_type::resolve_instantiated_dependent_type(
+               ctx, *owner_info->member_scope, member_type, resolved_member) &&
+           resolved_member) {
+          member_type = resolved_member;
+        }
+      }
+      return apply_cv(member_type, cv_const, cv_volatile);
+    }
   }
 
   MemberTypeLookupResult member =
@@ -2069,8 +2087,7 @@ TypePtr try_resolve_instantiated_member_alias_type(SemanticContext & ctx,
       member_type = resolved_member;
     }
   }
-  if(!member_type ||
-     ctx.type_depends_on_template_parameter(member_type)) {
+  if(!member_type) {
     return TypePtr();
   }
   return apply_cv(member_type, cv_const, cv_volatile);
@@ -2083,6 +2100,83 @@ TypePtr canonicalize_member_typedef_type(SemanticContext & ctx,
 {
   if(!type) {
     return type;
+  }
+
+  TypePtr canonical_inner;
+  TypePtr canonical_owner;
+  switch(type->kind) {
+  case Type::TK_CV:
+    canonical_inner =
+        canonicalize_member_typedef_type(ctx, scope, type->inner, current_info);
+    return canonical_inner == type->inner ?
+        type :
+        make_cv(canonical_inner, type->cv_const, type->cv_volatile);
+  case Type::TK_ATOMIC:
+    canonical_inner =
+        canonicalize_member_typedef_type(ctx, scope, type->inner, current_info);
+    return canonical_inner == type->inner ? type : make_atomic(canonical_inner);
+  case Type::TK_POINTER:
+    canonical_inner =
+        canonicalize_member_typedef_type(ctx, scope, type->inner, current_info);
+    return canonical_inner == type->inner ? type : make_pointer(canonical_inner);
+  case Type::TK_BLOCK_POINTER:
+    canonical_inner =
+        canonicalize_member_typedef_type(ctx, scope, type->inner, current_info);
+    return canonical_inner == type->inner ? type : make_block_pointer(canonical_inner);
+  case Type::TK_LVALUE_REFERENCE:
+    canonical_inner =
+        canonicalize_member_typedef_type(ctx, scope, type->inner, current_info);
+    return canonical_inner == type->inner ?
+        type :
+        make_lvalue_reference_raw(canonical_inner);
+  case Type::TK_RVALUE_REFERENCE:
+    canonical_inner =
+        canonicalize_member_typedef_type(ctx, scope, type->inner, current_info);
+    return canonical_inner == type->inner ?
+        type :
+        make_rvalue_reference_raw(canonical_inner);
+  case Type::TK_MEMBER_POINTER:
+    canonical_owner =
+        canonicalize_member_typedef_type(ctx, scope, type->owner, current_info);
+    canonical_inner =
+        canonicalize_member_typedef_type(ctx, scope, type->inner, current_info);
+    return canonical_owner == type->owner && canonical_inner == type->inner ?
+        type :
+        make_member_pointer(canonical_owner, canonical_inner);
+  case Type::TK_ARRAY:
+    canonical_inner =
+        canonicalize_member_typedef_type(ctx, scope, type->inner, current_info);
+    return canonical_inner == type->inner ?
+        type :
+        make_array(canonical_inner, type->has_bound, type->bound, type->bound_text);
+  case Type::TK_FUNCTION:
+  {
+    canonical_inner =
+        canonicalize_member_typedef_type(ctx, scope, type->inner, current_info);
+    std::vector<TypePtr> canonical_params;
+    canonical_params.reserve(type->params.size());
+    bool changed = canonical_inner != type->inner;
+    for(size_t i = 0; i < type->params.size(); ++i) {
+      TypePtr canonical_param =
+          canonicalize_member_typedef_type(ctx,
+                                           scope,
+                                           type->params[i],
+                                           current_info);
+      changed = changed || canonical_param != type->params[i];
+      canonical_params.push_back(canonical_param);
+    }
+    return changed ?
+        make_function(canonical_inner,
+                      canonical_params,
+                      type->variadic,
+                      type->function_const,
+                      type->function_volatile,
+                      type->prototype_relaxed,
+                      type->function_ref_qualifier) :
+        type;
+  }
+  default:
+    break;
   }
 
   TypePtr base;

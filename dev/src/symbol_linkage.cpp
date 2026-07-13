@@ -7119,31 +7119,9 @@ static bool try_build_template_entity_argument_name_ir(
     return false;
   }
 
-  const semantic_model::Scope * declaring_scope = nullptr;
   template_name = trim_space(argument.template_entity_name());
-  if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE) {
-    if(argument.template_decl) {
-      const semantic_model::ClassTemplateDecl * decl =
-          static_cast<const semantic_model::ClassTemplateDecl *>(argument.template_decl);
-      if(decl) {
-        declaring_scope = decl->declaring_scope;
-        if(template_name.empty()) {
-          template_name = trim_space(decl->name);
-        }
-      }
-    }
-  } else if(argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
-    if(argument.template_decl) {
-      const semantic_model::AliasTemplateDecl * decl =
-          static_cast<const semantic_model::AliasTemplateDecl *>(argument.template_decl);
-      if(decl) {
-        declaring_scope = decl->declaring_scope;
-        if(template_name.empty()) {
-          template_name = trim_space(decl->name);
-        }
-      }
-    }
-  } else {
+  if(argument.kind != TemplateArgument::TA_CLASS_TEMPLATE &&
+     argument.kind != TemplateArgument::TA_ALIAS_TEMPLATE) {
     return false;
   }
   if(template_name.empty()) {
@@ -7171,13 +7149,9 @@ static bool try_build_template_entity_argument_name_ir(
 
   QualifiedName prefix;
   const QualifiedName * prefix_ptr = nullptr;
-  if(declaring_scope) {
-    if(scope_prefix_syntax_for_template_decl(declaring_scope, prefix)) {
-      prefix_ptr = &prefix;
-    }
-  } else if(!argument.template_entity_name_syntax().name.empty() &&
-            argument.template_entity_name_syntax().name == template_name &&
-            !argument.template_entity_name_syntax().qualifiers.empty()) {
+  if(!argument.template_entity_name_syntax().name.empty() &&
+     argument.template_entity_name_syntax().name == template_name &&
+     !argument.template_entity_name_syntax().qualifiers.empty()) {
     prefix.rooted = argument.template_entity_name_syntax().rooted;
     prefix.qualifiers = argument.template_entity_name_syntax().qualifiers;
     prefix.name = prefix.qualifiers.back();
@@ -10102,7 +10076,29 @@ static bool try_build_dependent_qualified_member_type_ir(
   (void)leading_typename;
 
   abi_mangle::Type owner_ir;
-  if(!try_build_type_ir(owner, mangle_ctx, owner_ir)) {
+  bool have_owner_ir = try_build_type_ir(owner, mangle_ctx, owner_ir);
+  TypePtr base = strip_top_level_cv(type);
+  if(!have_owner_ir &&
+     base &&
+     base->kind == Type::TK_NAMED &&
+     base->named_dependent_qualified_owner_template_id) {
+    have_owner_ir = try_build_template_id_type_ir(
+        *base->named_dependent_qualified_owner_template_id,
+        mangle_ctx,
+        owner_ir);
+  }
+  if(!have_owner_ir) {
+    if(parser_trace::enabled("symbol.linkage")) {
+      ostringstream trace;
+      trace << "dependent-member-type owner-failed"
+            << " type=" << selected_named_type_text(type)
+            << " owner=" << selected_named_type_text(owner)
+            << " owner-template-syntax="
+            << (base && base->named_dependent_qualified_owner_template_id ?
+                    "yes" : "no")
+            << " member-count=" << members.size();
+      parser_trace::note("symbol.linkage", string(), trace.str());
+    }
     return false;
   }
   abi_mangle::Type current = owner_ir;
@@ -10122,6 +10118,14 @@ static bool try_build_dependent_qualified_member_type_ir(
       if(!try_build_template_id_type_ir(member_template_id,
                                         mangle_ctx,
                                         member_template)) {
+        if(parser_trace::enabled("symbol.linkage")) {
+          ostringstream trace;
+          trace << "dependent-member-type template-member-failed"
+                << " type=" << selected_named_type_text(type)
+                << " index=" << i
+                << " member=" << member;
+          parser_trace::note("symbol.linkage", string(), trace.str());
+        }
         return false;
       }
       member_template.name_owner.reset(new abi_mangle::Type(current));
@@ -13463,6 +13467,25 @@ static bool try_build_type_ir(const TypePtr & type,
       return true;
     }
     return try_build_wrapped_type_ir(type, mangle_ctx, out);
+  }
+  static const struct {
+    const char * semantic_key;
+    const char * abi_code;
+  } kNamedBuiltinTypes[] = {
+      {"builtin __float128", "g"},
+      {"builtin _Float16", "DF16_"},
+      {"builtin _Float32", "DF32_"},
+      {"builtin _Float32x", "DF32x"},
+      {"builtin _Float64", "DF64_"},
+      {"builtin _Float64x", "DF64x"},
+      {"builtin _Float128", "DF128_"}};
+  for(size_t i = 0;
+      i < sizeof(kNamedBuiltinTypes) / sizeof(kNamedBuiltinTypes[0]);
+      ++i) {
+    if(type->named_key == kNamedBuiltinTypes[i].semantic_key) {
+      out = abi_mangle::Type::builtin(kNamedBuiltinTypes[i].abi_code);
+      return true;
+    }
   }
   if(try_build_template_parameter_type_ir(type, mangle_ctx, out)) {
     return true;

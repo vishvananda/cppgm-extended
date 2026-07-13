@@ -22317,6 +22317,14 @@ private:
        normalized_target) {
       resolved_target = normalized_target;
     }
+    if(info.member_scope) {
+      TypePtr canonical_target =
+          semantic_class_model::resolve_instantiated_member_alias_type(
+              *this, *info.member_scope, resolved_target, &info);
+      if(canonical_target) {
+        resolved_target = canonical_target;
+      }
+    }
     const bool trace_binding = parser_trace::enabled("class.collect");
     if(trace_binding) {
       std::ostringstream trace;
@@ -22355,6 +22363,14 @@ private:
                                              normalized_candidate) &&
          normalized_candidate) {
         resolved_candidate = normalized_candidate;
+      }
+      if(info.member_scope) {
+        TypePtr canonical_candidate =
+            semantic_class_model::resolve_instantiated_member_alias_type(
+                *this, *info.member_scope, resolved_candidate, &info);
+        if(canonical_candidate) {
+          resolved_candidate = canonical_candidate;
+        }
       }
 
       const bool equivalent =

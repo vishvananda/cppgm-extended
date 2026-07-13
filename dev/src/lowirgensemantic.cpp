@@ -2038,6 +2038,29 @@ bool is_destructor_function_name(const string & qualified)
 
 string lowir_type_for(const TypePtr & type);
 
+string lowir_extended_float_type_for(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_NAMED) {
+    return string();
+  }
+  if(base->named_key == "builtin _Float16" ||
+     base->named_key == "builtin _Float32") {
+    return "f32";
+  }
+  if(base->named_key == "builtin _Float32x" ||
+     base->named_key == "builtin _Float64") {
+    return "f64";
+  }
+  if(base->named_key == "builtin _Float64x" ||
+     base->named_key == "builtin _Float128" ||
+     base->named_key == "builtin __float128" ||
+     base->named_key == "builtin __ibm128") {
+    return "f80";
+  }
+  return string();
+}
+
 LowIRGlobal make_data_global(const string & name,
                              bool readonly = false,
                              bool thread_local_storage = false)
@@ -2097,6 +2120,10 @@ string lowir_memory_type_for(const TypePtr & type)
     if(base->fundamental == FT_LONG_DOUBLE) {
       return "f80";
     }
+  }
+  const string extended_float_type = lowir_extended_float_type_for(base);
+  if(!extended_float_type.empty()) {
+    return extended_float_type;
   }
   const size_t width = type_size(type);
   const bool is_unsigned =
@@ -2859,6 +2886,10 @@ string lowir_type_for(const TypePtr & type)
     return lowir_type_for(base->inner);
   }
   if(base->kind == Type::TK_NAMED) {
+    const string extended_float_type = lowir_extended_float_type_for(base);
+    if(!extended_float_type.empty()) {
+      return extended_float_type;
+    }
     if(is_named_enum_scalar_type(base)) {
       const size_t width = type_size(type);
       if(width <= 1) {
