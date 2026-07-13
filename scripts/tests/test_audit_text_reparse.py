@@ -38,6 +38,7 @@ ZERO_LIMITS = {
     "semantic_nttp_text_rebind": 0,
     "function_result_argument_text_reparse": 0,
     "owner_member_text_reparse": 0,
+    "constructor_initializer_id_text_lookup": 0,
     "abi_template_component_text_reparse": 0,
     "semantic_argument_spelling_recovery": 0,
     "template_parameter_display_lookup": 0,
@@ -382,6 +383,33 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("evaluate_qualified_member_value_from_text", result.stdout)
             self.assertIn("split_top_level_member_expression_text", result.stdout)
             self.assertIn("collect_non_type_parameter_pack_references_from_text", result.stdout)
+
+    def test_constructor_initializer_id_text_lookup_is_counted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
+            root = Path(temp_dir)
+            src = root / "dev" / "src"
+            src.mkdir(parents=True)
+            (src / "semantic_builtins.cpp").write_text(
+                "auto a = ctx.lookup_type(scope, id->value);\n"
+                "auto b = callbacks.lookup_type(init_scope, id->value);\n"
+                "auto c = ctx.lookup_type(scope, id_value, true);\n"
+                "auto d = ctx.lookup_type_node(scope, *id, id->value);\n",
+                encoding="utf-8",
+            )
+            baseline = root / "baseline.json"
+            baseline.write_text(
+                json.dumps({"limits": ZERO_LIMITS}),
+                encoding="utf-8",
+            )
+
+            result = self.run_script(src, "--baseline", str(baseline), "--list-sites")
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("constructor_initializer_id_text_lookup", result.stdout)
+            self.assertIn("ctx.lookup_type(scope, id->value)", result.stdout)
+            self.assertIn("callbacks.lookup_type(init_scope, id->value)", result.stdout)
+            self.assertIn("ctx.lookup_type(scope, id_value, true)", result.stdout)
+            self.assertNotIn("ctx.lookup_type_node(scope, *id, id->value)", result.stdout)
 
     def test_pack_owner_member_text_scan_is_counted(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:

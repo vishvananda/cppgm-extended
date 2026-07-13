@@ -446,21 +446,21 @@ bool mem_initializer_has_single_identifier_argument(const CppAstNode & init,
 
 const BaseInfo * find_direct_base_for_mem_initializer(SemanticContext & ctx,
                                                       const ClassInfo & info,
-                                                      const std::string & id_value)
+                                                      const CppAstNode & id)
 {
   for(size_t i = 0; i < info.bases.size(); ++i) {
     const BaseInfo & base = info.bases[i];
     if(!base.type) {
       continue;
     }
-    if(id_value == base.type->name ||
-       id_value == base.type->qualified_name) {
+    if(id.value == base.type->name ||
+       id.value == base.type->qualified_name) {
       return &base;
     }
   }
 
   if(info.member_scope) {
-    TypePtr named = ctx.lookup_type(*info.member_scope, id_value, true);
+    TypePtr named = ctx.lookup_type_node(*info.member_scope, id, id.value, true);
     if(named) {
       named = strip_top_level_cv(named);
       for(size_t i = 0; i < info.bases.size(); ++i) {
@@ -511,7 +511,7 @@ bool is_passthrough_copy_ctor_for_host_abi(SemanticContext & ctx,
     if(!id) {
       return false;
     }
-    const BaseInfo * base = find_direct_base_for_mem_initializer(ctx, info, id->value);
+    const BaseInfo * base = find_direct_base_for_mem_initializer(ctx, info, *id);
     if(!base || base->is_virtual || seen_bases.count(base) != 0) {
       return false;
     }

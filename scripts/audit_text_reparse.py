@@ -190,6 +190,14 @@ CATEGORIES = [
         ),
     ),
     Category(
+        "constructor_initializer_id_text_lookup",
+        "Constructor initializer type facts recovered from an AST node's display text.",
+        re.compile(
+            r"\b(?:ctx|callbacks)\.lookup_type\s*\([^\n]*"
+            r"\b(?:id->value|id_value)\b"
+        ),
+    ),
+    Category(
         "abi_template_component_text_reparse",
         "ABI template components recovered by splitting rendered name text.",
         re.compile(

@@ -979,7 +979,7 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
         }
       }
       if(!matched) {
-        target_type = ctx.lookup_type(scope, id->value);
+        target_type = ctx.lookup_type_node(scope, *id, id->value);
         matched = static_cast<bool>(target_type);
       }
       if(!matched) {

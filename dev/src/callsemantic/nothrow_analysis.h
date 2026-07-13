@@ -30,7 +30,7 @@ struct NothrowCallbacks
   std::function<bool(semantic_model::FunctionBinding &, bool &)>
       evaluate_explicit_function_nothrow_semantically;
   std::function<cpp_decl::TypePtr(semantic_model::Scope &,
-                                  const std::string &)> lookup_type;
+                                  const CppAstNode &)> lookup_type_node;
   std::function<semantic_model::FunctionBinding *(semantic_model::ClassInfo &)>
       destructor_for;
   std::function<semantic_model::FunctionBinding *(semantic_model::ClassInfo &)>

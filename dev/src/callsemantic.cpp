@@ -3602,10 +3602,10 @@ private:
         {
           return evaluate_explicit_function_nothrow_semantically(binding, out);
         };
-    callbacks.lookup_type =
-        [this](Scope & scope, const string & name) -> TypePtr
+    callbacks.lookup_type_node =
+        [this](Scope & scope, const CppAstNode & node) -> TypePtr
         {
-          return lookup_type(scope, name);
+          return lookup_type_node(scope, node, node.value);
         };
     callbacks.destructor_for =
         [this](ClassInfo & info) -> FunctionBinding *
@@ -7800,7 +7800,20 @@ private:
        normalized_name.back() == '>' &&
        !parsed_template_id &&
        !scope_has_template_placeholders(scope)) {
-      throw logic_error(string("failed template-id parse in type lookup: ") + normalized_name);
+      const ExactTemplateTypeLookupAnchor * anchor =
+          current_exact_template_type_lookup_anchor();
+      ostringstream out;
+      out << "failed template-id parse in type lookup: " << normalized_name
+          << " [structured anchor " << (anchor ? "yes" : "no") << "]";
+      if(anchor) {
+        out << " [anchor template "
+            << (anchor->template_text.empty() ? "<empty>" : anchor->template_text)
+            << "] [anchor identifier "
+            << (anchor->identifier.empty() ? "<empty>" : anchor->identifier)
+            << "] [anchor syntax "
+            << (anchor->template_id_syntax_ref ? "yes" : "no") << "]";
+      }
+      throw logic_error(out.str());
     }
 	    if(parsed_template_id) {
 	      const auto try_fast_alias_template_id_lookup =

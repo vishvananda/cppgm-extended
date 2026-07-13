@@ -350,7 +350,7 @@ bool constructor_binding_is_implicitly_nothrow(
         }
       }
       if(!matched) {
-        TypePtr named = callbacks.lookup_type(init_scope, id->value);
+        TypePtr named = callbacks.lookup_type_node(init_scope, *id);
         if(named) {
           target_type = named;
           matched = true;
