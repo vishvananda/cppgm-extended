@@ -168,12 +168,14 @@ def append_source_set_tokens(mapping: Dict[str, List[str]], target: str, text: s
         mapping[target].extend(text.split())
 
 
-def expand_source_set_references(mapping: Dict[str, List[str]]) -> Dict[str, List[str]]:
-    reference_re = re.compile(r"^\$\(FRONTEND_OBJ_BASENAMES_([^)]+)\)$")
+def expand_source_set_references(variables: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    reference_re = re.compile(
+        r"^\$\((FRONTEND_(?:SOURCE_IDS|OBJ_BASENAMES)_[^)]+)\)$"
+    )
 
-    def expand_target(target: str, stack: Set[str]) -> List[str]:
+    def expand_variable(variable: str, stack: Set[str]) -> List[str]:
         result: List[str] = []
-        for token in mapping.get(target, []):
+        for token in variables.get(variable, []):
             match = reference_re.match(token)
             if not match:
                 result.append(token)
@@ -181,47 +183,53 @@ def expand_source_set_references(mapping: Dict[str, List[str]]) -> Dict[str, Lis
             dependency = match.group(1)
             if dependency in stack:
                 continue
-            result.extend(expand_target(dependency, {*stack, dependency}))
+            result.extend(expand_variable(dependency, {*stack, dependency}))
         return result
 
-    return {
-        target: expand_target(target, {target})
-        for target in mapping
-    }
+    mapping: Dict[str, List[str]] = {}
+    for prefix in ("FRONTEND_OBJ_BASENAMES_", "FRONTEND_SOURCE_IDS_"):
+        for variable in variables:
+            if variable.startswith(prefix):
+                target = variable[len(prefix):]
+                mapping[target] = expand_variable(variable, {variable})
+    return mapping
 
 
 def parse_frontend_source_sets(path: Path) -> Dict[str, List[str]]:
-    mapping: Dict[str, List[str]] = {}
-    current_target: Optional[str] = None
+    variables: Dict[str, List[str]] = {}
+    current_variable: Optional[str] = None
     for raw_line in path.read_text().splitlines():
         line = raw_line.rstrip()
-        if current_target is not None:
+        if current_variable is not None:
             stripped = line.strip()
             if not stripped or stripped.startswith("#"):
                 continue
             continued = stripped.endswith("\\")
             token_line = stripped[:-1].strip() if continued else stripped
-            append_source_set_tokens(mapping, current_target, token_line)
+            append_source_set_tokens(variables, current_variable, token_line)
             if not continued:
-                current_target = None
+                current_variable = None
             continue
 
-        match = re.match(r"^FRONTEND_OBJ_BASENAMES_(\S+)\s*([:+?]?=)\s*(.*)$", line)
+        match = re.match(
+            r"^(FRONTEND_(?:SOURCE_IDS|OBJ_BASENAMES)_(\S+))\s*([:+?]?=)\s*(.*)$",
+            line,
+        )
         if not match:
             continue
-        target = match.group(1)
-        operator = match.group(2)
-        remainder = match.group(3).strip()
+        variable = match.group(1)
+        operator = match.group(3)
+        remainder = match.group(4).strip()
         if operator == "+=":
-            mapping.setdefault(target, [])
+            variables.setdefault(variable, [])
         else:
-            mapping[target] = []
+            variables[variable] = []
 
         continued = remainder.endswith("\\")
         token_line = remainder[:-1].strip() if continued else remainder
-        append_source_set_tokens(mapping, target, token_line)
-        current_target = target if continued else None
-    return expand_source_set_references(mapping)
+        append_source_set_tokens(variables, variable, token_line)
+        current_variable = variable if continued else None
+    return expand_source_set_references(variables)
 
 
 def parse_inception_layout(path: Path) -> tuple[List[str], Dict[str, str]]:
@@ -551,8 +559,8 @@ def checkpoint_from_link_output_name(name: str, output_suffix: str) -> str:
 
 
 def shared_object_stem(stem: str) -> str:
-    # pa39/Makefile uses $(basename $(notdir <source>)) for shared objects.
-    return Path(stem).name
+    # PA39 preserves relative source IDs so equal basenames cannot collide.
+    return stem
 
 
 def shared_object_path(object_root: Path, stem: str) -> Path:
