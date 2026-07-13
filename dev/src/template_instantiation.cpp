@@ -10683,8 +10683,21 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
               "template-instantiation");
         }
       }
+      TypePtr structured_result_base =
+          strip_top_level_cv(remove_reference_type(result_type));
+      const bool structured_result_materialized =
+          source_result_type_was_dependent &&
+          !result_type_still_dependent &&
+          structured_result_base &&
+          structured_result_base->kind == Type::TK_NAMED &&
+          named_type_class_template_specialization_mangle_info_const(
+              structured_result_base) &&
+          ctx.class_info_for_type(structured_result_base);
+      // A materialized typed specialization no longer needs source-pattern
+      // rebinding. Unresolved and stale cached results still do.
       if((result_type_still_dependent ||
-          source_result_mentions_template_parameter) &&
+          (source_result_mentions_template_parameter &&
+           !structured_result_materialized)) &&
          source_decl->result_type_pattern.kind != CppAstKind::invalid) {
         TypePtr parsed_result;
         const bool parsed_result_type =

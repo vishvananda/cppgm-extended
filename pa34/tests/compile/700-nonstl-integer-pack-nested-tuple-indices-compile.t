@@ -1,10 +1,8 @@
 // A dependent alias-template body whose qualifier is a class template-id whose
-// first argument is a concrete type *name* (size_t) and whose second argument
-// is an unresolvable __integer_pack expansion. Because the pack keeps the
-// qualifier structurally dependent, resolving it goes through text-based scope
-// lookup, where the "size_t" argument arrives with no carried argument syntax.
-// Resolving that bare concrete type name must succeed via ordinary name lookup
-// (it is unsigned long), not fail as "failed type template argument resolution".
+// first argument is a concrete type name (size_t) and whose second argument is
+// a structured __integer_pack expansion. Substituting the scalar bounds must
+// preserve that outer expansion for builtin lowering, while the concrete type
+// argument continues through ordinary name lookup as unsigned long.
 // This mirrors libc++'s __make_indices_imp / __integer_sequence machinery used
 // by std::map::operator[] (piecewise tuple construction).
 typedef unsigned long size_t;

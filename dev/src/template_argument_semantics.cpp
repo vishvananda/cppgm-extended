@@ -16191,6 +16191,15 @@ bool substitute_template_argument_for_mangle_info(
   }
 
   if(source.kind == TemplateArgument::TA_VALUE) {
+    const TemplateParameterInfo * parameter =
+        non_type_substitution_parameter_for_argument(parameters, source);
+    if(const TemplateArgument * replacement =
+           substitution_argument_for_parameter(parameters, arguments, parameter)) {
+      if(replacement->kind == TemplateArgument::TA_VALUE) {
+        out = *replacement;
+        return true;
+      }
+    }
     if(source.dependent &&
        scope &&
        (source.expression ||
@@ -16229,15 +16238,6 @@ bool substitute_template_argument_for_mangle_info(
           out.dependent = false;
           out.source_syntax->dependent = false;
         }
-        return true;
-      }
-    }
-    const TemplateParameterInfo * parameter =
-        non_type_substitution_parameter_for_argument(parameters, source);
-    if(const TemplateArgument * replacement =
-           substitution_argument_for_parameter(parameters, arguments, parameter)) {
-      if(replacement->kind == TemplateArgument::TA_VALUE) {
-        out = *replacement;
         return true;
       }
     }
@@ -22694,6 +22694,26 @@ bool erase_parameter_pack_marker_nodes(CppAstNode & current)
   return removed;
 }
 
+const CppAstNode * structured_integer_pack_expansion_call(
+    const TemplateArgumentSyntax & syntax)
+{
+  if(!syntax.pack_expansion || !syntax.expression) {
+    return nullptr;
+  }
+
+  const CppAstNode * call = syntax.expression.get();
+  if(call->kind == CppAstKind::pack_expansion_expression &&
+     call->children.size() == 1) {
+    call = &call->children[0];
+  }
+  if(call->kind != CppAstKind::call_expression || call->children.empty()) {
+    return nullptr;
+  }
+  const CppAstNode & callee = call->children[0];
+  return callee.kind == CppAstKind::id_expression &&
+         callee.value == "__integer_pack" ? call : nullptr;
+}
+
 void consume_substituted_argument_pack_expansion(
     TemplateArgumentSyntax & argument)
 {
@@ -22827,6 +22847,7 @@ void substitute_value_pack_template_id_arguments(
       }
       consume_pack_expansion = consume_pack_expansion ||
           (argument.pack_expansion &&
+           !structured_integer_pack_expansion_call(argument) &&
            argument_syntax_mentions_pack_expansion_identifier(
                argument, it->first, true, false));
       bool argument_changed = false;
@@ -28985,6 +29006,17 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   const bool keep_local_type_placeholders_dependent =
       structured_type_mentions_local_dependent_placeholder(
           services, raw_scope, type);
+  shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization_info =
+      named_type_class_template_specialization_mangle_info_const(type);
+  const bool has_concrete_specialization_arguments =
+      specialization_info &&
+      !specialization_info->arguments.empty() &&
+      !template_arguments_are_dependent(
+          specialization_info->arguments,
+          [&type_is_dependent](const TypePtr & candidate)
+          {
+            return type_is_dependent(candidate);
+          });
   const string normalized_text = normalize_type_lookup_name(lookup_text);
   const auto normalize_bound_type_lookup_name =
       [](const string & raw) -> string
@@ -29286,7 +29318,8 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
 
   TypePtr resolved_instantiation;
 
-  if(keep_local_type_placeholders_dependent) {
+  if(keep_local_type_placeholders_dependent &&
+     !has_concrete_specialization_arguments) {
     return DependentNamedTypeResolutionStatus::KeepDependent;
   }
 
@@ -31408,17 +31441,8 @@ bool expand_integer_pack_argument_syntax(
     return false;
   }
 
-  const CppAstNode * call = syntax.expression.get();
-  if(call->kind == CppAstKind::pack_expansion_expression &&
-     call->children.size() == 1) {
-    call = &call->children[0];
-  }
-  if(call->kind != CppAstKind::call_expression || call->children.empty()) {
-    return false;
-  }
-  const CppAstNode * callee = &call->children[0];
-  if(callee->kind != CppAstKind::id_expression ||
-     callee->value != "__integer_pack") {
+  const CppAstNode * call = structured_integer_pack_expansion_call(syntax);
+  if(!call) {
     return false;
   }
   const CppAstNode * arguments =
