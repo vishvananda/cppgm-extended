@@ -303,6 +303,16 @@ bool ast_node_syntax_has_template_dependency(
     template_api::TemplateEnvironmentHandle scope,
     const CppAstNode & node);
 
+bool template_argument_syntax_has_structural_template_dependency(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax);
+
+bool template_argument_syntax_has_structural_template_dependency(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax);
+
 void compute_text_template_dependency_flags(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

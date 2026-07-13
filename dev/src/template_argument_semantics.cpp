@@ -10432,9 +10432,26 @@ bool append_leaf_function_template_instantiations_from_candidates(
     vector<TemplateArgument> explicit_arguments;
     const vector<TemplateArgument> * explicit_arguments_ptr = nullptr;
     if(template_id) {
+      bool has_dependent_argument_syntax = false;
+      const template_api::TemplateEnvironmentHandle argument_scope =
+          template_api::make_template_environment(scope);
+      for(size_t arg_index = 0;
+          arg_index < template_id->argument_syntaxes.size();
+          ++arg_index) {
+        if(template_argument_syntax_has_structural_template_dependency(
+               services,
+               argument_scope,
+               template_id->argument_syntaxes[arg_index])) {
+          has_dependent_argument_syntax = true;
+          break;
+        }
+      }
+      if(has_dependent_argument_syntax) {
+        continue;
+      }
       if(!template_api::resolve_template_arguments(
              services,
-             template_api::make_template_environment(scope),
+             argument_scope,
              function_templates[i]->parameters,
              template_id->arguments,
              &template_id->argument_syntaxes,
@@ -10443,6 +10460,10 @@ bool append_leaf_function_template_instantiations_from_candidates(
                  template_api::make_template_environment(
                      *function_templates[i]->declaring_scope) :
                  template_api::TemplateEnvironmentHandle())) {
+        continue;
+      }
+      if(template_api::template_arguments_are_dependent(
+             *services.semantic_context, explicit_arguments)) {
         continue;
       }
       explicit_arguments_ptr = &explicit_arguments;
@@ -36660,6 +36681,32 @@ static bool ast_node_syntax_mentions_template_dependency(
     }
   }
   return false;
+}
+
+bool template_argument_syntax_has_structural_template_dependency(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  return scope.valid() &&
+         template_argument_syntax_structurally_mentions_template_dependency(
+             services, scope, syntax);
+}
+
+bool template_argument_syntax_has_structural_template_dependency(
+    SemanticContext & ctx,
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  return template_api::with_template_services(
+      ctx,
+      [&](template_api::TemplateServices & services)
+      {
+        return template_argument_syntax_has_structural_template_dependency(
+            services,
+            template_api::make_template_environment(scope),
+            syntax);
+      });
 }
 
 bool ast_node_syntax_has_template_dependency(
