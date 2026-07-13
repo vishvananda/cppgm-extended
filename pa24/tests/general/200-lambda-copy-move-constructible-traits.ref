@@ -1,0 +1,25 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $captured : i32
+  slot $fn : obj<8x8>
+
+  block ^entry:
+    store i32 7, $captured
+    %t1 = addr $fn
+    %t2 = addr $captured
+    store ptr %t2, %t1
+    %t3 = addr $fn
+    %t4 = call i32 @__lambda_main_t398_400__operator__(%t3)
+    %t5 = binary sub i32 %t4, 7
+    return i32 %t5
+}
+function @__lambda_main_t398_400__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZ4mainENK3$_0clEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=reference_field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load i32 %t3
+    return i32 %t4
+}

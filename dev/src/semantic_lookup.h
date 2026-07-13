@@ -197,7 +197,8 @@ bool resolve_qualified_member_target(SemanticContext & ctx,
                                      ClassInfo & object_class,
                                      const cpp_decl::QualifiedName & member_name,
                                      QualifiedMemberTarget & out,
-                                     bool allow_dependent_class_qualifiers = true);
+                                     bool allow_dependent_class_qualifiers = true,
+                                     const CppAstNode * member_name_node = nullptr);
 
 bool function_has_friend_access(const FunctionBinding * current_function,
                                 const ClassInfo * declared_in);

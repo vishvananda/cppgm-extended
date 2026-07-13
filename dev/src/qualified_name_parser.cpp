@@ -542,6 +542,9 @@ struct QualifiedNameCursor : RecogTokenCursor
       out = UnqualifiedNameParseResult();
       out.end = pos;
       out.kind = UNQ_DESTRUCTOR;
+      out.name_component = component.name_component;
+      out.has_template_suffix = component.has_template_suffix;
+      out.template_arg_ranges = component.template_arg_ranges;
       return true;
     }
 

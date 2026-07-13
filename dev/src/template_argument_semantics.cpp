@@ -15222,10 +15222,12 @@ void collect_element_template_argument_replacements(
     const vector<TemplateParameterInfo> & parameters,
     const vector<TemplateArgument> & element_arguments,
     map<string, TypePtr> & type_replacements,
-    map<string, ValueBinding> & value_replacements)
+    map<string, ValueBinding> & value_replacements,
+    TemplateTemplateReplacementMap & template_replacements)
 {
   type_replacements.clear();
   value_replacements.clear();
+  template_replacements.clear();
   const size_t count = std::min(parameters.size(), element_arguments.size());
   for(size_t i = 0; i < count; ++i) {
     if(parameters[i].name.empty()) {
@@ -15240,6 +15242,14 @@ void collect_element_template_argument_replacements(
               argument.kind == TemplateArgument::TA_VALUE) {
       value_replacements[parameters[i].name] =
           make_value_binding_for_substitution_argument(argument);
+    } else if(parameters[i].kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+              (argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+               argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
+      const TemplateTemplateReplacement replacement =
+          template_template_argument_replacement(argument);
+      if(!replacement.text.empty()) {
+        template_replacements[parameters[i].name] = replacement;
+      }
     }
   }
 }
@@ -15264,6 +15274,7 @@ void rewrite_argument_text_with_replacements(
     string & text,
     const map<string, TypePtr> & type_replacements,
     const map<string, ValueBinding> & value_replacements,
+    const TemplateTemplateReplacementMap & template_replacements,
     bool & changed)
 {
   for(auto it = type_replacements.begin();
@@ -15283,6 +15294,15 @@ void rewrite_argument_text_with_replacements(
         it->first,
         substituted_value_pack_argument_text(it->second),
         changed);
+  }
+  for(TemplateTemplateReplacementMap::const_iterator it =
+          template_replacements.begin();
+      it != template_replacements.end();
+      ++it) {
+    text = replace_identifier_token_text(text,
+                                         it->first,
+                                         it->second.text,
+                                         changed);
   }
 }
 
@@ -15327,6 +15347,7 @@ bool substitute_dependent_argument_syntax_with_replacements(
     const TemplateArgumentSyntax & source_syntax,
     const map<string, TypePtr> & type_replacements,
     const map<string, ValueBinding> & value_replacements,
+    const TemplateTemplateReplacementMap & template_replacements,
     TemplateArgumentSyntax & syntax)
 {
   bool changed = false;
@@ -15344,6 +15365,12 @@ bool substitute_dependent_argument_syntax_with_replacements(
   if(syntax.template_id && !value_replacements.empty()) {
     substitute_value_pack_template_id_arguments(*syntax.template_id,
                                                 value_replacements);
+    changed = true;
+  }
+  if(syntax.template_id && !template_replacements.empty() &&
+     substitute_template_template_parameter_names_in_template_id_arguments(
+         *syntax.template_id,
+         template_replacements)) {
     changed = true;
   }
   if(syntax.type_id && !type_replacements.empty()) {
@@ -15372,6 +15399,12 @@ bool substitute_dependent_argument_syntax_with_replacements(
       changed = true;
     }
   }
+  if(syntax.type_id && !template_replacements.empty() &&
+     substitute_template_template_names_in_ast_template_ids(
+         *syntax.type_id,
+         template_replacements)) {
+    changed = true;
+  }
   if(syntax.expression && !type_replacements.empty()) {
     CppAstNode substituted;
     if(substitute_type_pack_expression_node(scope,
@@ -15395,6 +15428,12 @@ bool substitute_dependent_argument_syntax_with_replacements(
       syntax.expression.reset(new CppAstNode(substituted));
       changed = true;
     }
+  }
+  if(syntax.expression && !template_replacements.empty() &&
+     substitute_template_template_names_in_ast_template_ids(
+         *syntax.expression,
+         template_replacements)) {
+    changed = true;
   }
   if(thread_type_id_template_arguments_into_expression(syntax)) {
     changed = true;
@@ -15459,11 +15498,15 @@ bool expand_dependent_argument_syntax_pack(
 
     map<string, TypePtr> type_replacements;
     map<string, ValueBinding> value_replacements;
+    TemplateTemplateReplacementMap template_replacements;
     collect_element_template_argument_replacements(parameters,
                                                    element_arguments,
                                                    type_replacements,
-                                                   value_replacements);
-    if(type_replacements.empty() && value_replacements.empty()) {
+                                                   value_replacements,
+                                                   template_replacements);
+    if(type_replacements.empty() &&
+       value_replacements.empty() &&
+       template_replacements.empty()) {
       return false;
     }
 
@@ -15478,10 +15521,12 @@ bool expand_dependent_argument_syntax_pack(
     rewrite_argument_text_with_replacements(expanded.text,
                                             type_replacements,
                                             value_replacements,
+                                            template_replacements,
                                             text_changed);
     rewrite_argument_text_with_replacements(expanded.syntax.text,
                                             type_replacements,
                                             value_replacements,
+                                            template_replacements,
                                             text_changed);
     if(text_changed && expanded.syntax.source_text.empty()) {
       expanded.syntax.source_text = source_syntax.text;
@@ -15490,7 +15535,19 @@ bool expand_dependent_argument_syntax_pack(
                                                            source_syntax,
                                                            type_replacements,
                                                            value_replacements,
+                                                           template_replacements,
                                                            expanded.syntax);
+    if(source_argument.type) {
+      TypePtr substituted_type;
+      if(substitute_type_impl(source_argument.type,
+                              parameters,
+                              element_arguments,
+                              scope,
+                              substituted_type) &&
+         substituted_type) {
+        expanded.type = substituted_type;
+      }
+    }
     expanded.syntax.pack_expansion = false;
     expanded.syntax.dependent =
         argument_live_syntax_mentions_any_substitution_parameter(expanded.syntax,
@@ -16146,6 +16203,43 @@ bool substitute_template_argument_for_mangle_info(
   }
 
   if(source.kind == TemplateArgument::TA_VALUE) {
+    if(source.dependent &&
+       scope &&
+       (source.expression ||
+        (source.source_syntax && source.source_syntax->expression))) {
+      DependentAliasTemplateArgumentSyntax dependent_argument;
+      dependent_argument.text = source.text;
+      dependent_argument.type = source.type;
+      if(source.source_syntax) {
+        dependent_argument.syntax =
+            clone_argument_syntax_for_template_substitution(
+                *source.source_syntax);
+      }
+      if(!dependent_argument.syntax.expression && source.expression) {
+        dependent_argument.syntax.expression.reset(
+            new CppAstNode(clone_expression_node_for_template_substitution(
+                *source.expression)));
+      }
+      bool syntax_changed = false;
+      if(!substitute_dependent_argument_text_and_syntax(
+             scope,
+             parameters,
+             arguments,
+             dependent_argument,
+             syntax_changed)) {
+        return false;
+      }
+      if(syntax_changed) {
+        out.text = dependent_argument.text;
+        out.source_syntax.reset(
+            new TemplateArgumentSyntax(dependent_argument.syntax));
+        if(dependent_argument.syntax.expression) {
+          out.expression.reset(
+              new CppAstNode(*dependent_argument.syntax.expression));
+        }
+        return true;
+      }
+    }
     const TemplateParameterInfo * parameter =
         non_type_substitution_parameter_for_argument(parameters, source);
     if(const TemplateArgument * replacement =
@@ -16210,23 +16304,29 @@ void update_substituted_dependent_class_mangle_info(
   shared_ptr<ClassTemplateSpecializationMangleInfo> info(
       new ClassTemplateSpecializationMangleInfo(*source_info));
   bool changed = false;
-	  for(size_t i = 0; i < info->arguments.size(); ++i) {
-	    TemplateArgument substituted_argument;
-	    if(substitute_template_argument_for_mangle_info(info->arguments[i],
-	                                                    parameters,
-	                                                    arguments,
-	                                                    scope,
-	                                                    substituted_argument)) {
-	      info->arguments[i] = substituted_argument;
-	      if(substituted_argument.source_syntax) {
-	        if(info->argument_syntaxes.size() < info->arguments.size()) {
-	          info->argument_syntaxes.resize(info->arguments.size());
-	        }
-	        info->argument_syntaxes[i] = *substituted_argument.source_syntax;
-	      }
-	      changed = true;
-	    }
-	  }
+  for(size_t i = 0; i < info->arguments.size(); ++i) {
+    TemplateArgument source_argument = info->arguments[i];
+    if(!source_argument.source_syntax &&
+       i < info->argument_syntaxes.size()) {
+      source_argument.source_syntax.reset(
+          new TemplateArgumentSyntax(info->argument_syntaxes[i]));
+    }
+    TemplateArgument substituted_argument;
+    if(substitute_template_argument_for_mangle_info(source_argument,
+                                                    parameters,
+                                                    arguments,
+                                                    scope,
+                                                    substituted_argument)) {
+      info->arguments[i] = substituted_argument;
+      if(substituted_argument.source_syntax) {
+        if(info->argument_syntaxes.size() < info->arguments.size()) {
+          info->argument_syntaxes.resize(info->arguments.size());
+        }
+        info->argument_syntaxes[i] = *substituted_argument.source_syntax;
+      }
+      changed = true;
+    }
+  }
   if(changed) {
     set_named_type_class_template_specialization_mangle_info(substituted, info);
   }
@@ -16274,7 +16374,8 @@ bool dependent_class_argument_to_mangle_argument(
     if(!source.has_non_type_value &&
        !source.function_value &&
        source.function_internal_symbol.empty() &&
-       !source.value_binding) {
+       !source.value_binding &&
+       !source.syntax.expression) {
       return false;
     }
     out.kind = TemplateArgument::TA_VALUE;
@@ -16283,7 +16384,9 @@ bool dependent_class_argument_to_mangle_argument(
     out.function_internal_symbol = source.function_internal_symbol;
     out.value_binding = source.value_binding;
     out.value = source.value;
-    out.dependent = source.dependent_value || source.syntax.dependent;
+    out.dependent = source.dependent_value ||
+        source.syntax.dependent ||
+        (!source.has_non_type_value && source.syntax.expression);
     if(source.syntax.expression) {
       out.expression.reset(new CppAstNode(*source.syntax.expression));
     }
@@ -16294,15 +16397,13 @@ bool dependent_class_argument_to_mangle_argument(
   }
 }
 
-void attach_substituted_dependent_class_mangle_info_from_arguments(
+bool attach_substituted_dependent_class_mangle_info_from_arguments(
     const TypePtr & substituted,
     const ClassTemplateDecl & class_template,
     const vector<DependentAliasTemplateArgumentSyntax> & substituted_arguments)
 {
-  if(!substituted ||
-     substituted_arguments.empty() ||
-     named_type_class_template_specialization_mangle_info_const(substituted)) {
-    return;
+  if(!substituted || substituted_arguments.empty()) {
+    return false;
   }
 
   vector<TemplateArgument> mangle_arguments;
@@ -16316,14 +16417,14 @@ void attach_substituted_dependent_class_mangle_info_from_arguments(
                                                    substituted_arguments.size(),
                                                    substituted_arguments[i],
                                                    argument)) {
-      return;
+      return false;
     }
     argument_syntaxes.push_back(substituted_arguments[i].syntax);
     mangle_arguments.push_back(argument);
   }
   if(!template_arguments_fully_bind_parameters(class_template.parameters,
                                                mangle_arguments)) {
-    return;
+    return false;
   }
 
   shared_ptr<ClassTemplateSpecializationMangleInfo> info(
@@ -16355,6 +16456,7 @@ void attach_substituted_dependent_class_mangle_info_from_arguments(
   info->arguments.swap(mangle_arguments);
   info->argument_syntaxes.swap(argument_syntaxes);
   set_named_type_class_template_specialization_mangle_info(substituted, info);
+  return true;
 }
 
 bool substitute_dependent_class_type(const TypePtr & type,
@@ -16460,18 +16562,22 @@ bool substitute_dependent_class_type(const TypePtr & type,
   set_named_type_dependent_class_template(substituted,
                                           class_template_decl,
                                           substituted_arguments);
+  bool rebuilt_mangle_info = false;
   if(ClassTemplateDecl * class_template =
          static_cast<ClassTemplateDecl *>(class_template_decl)) {
-    attach_substituted_dependent_class_mangle_info_from_arguments(
-        substituted,
-        *class_template,
-        substituted_arguments);
+    rebuilt_mangle_info =
+        attach_substituted_dependent_class_mangle_info_from_arguments(
+            substituted,
+            *class_template,
+            substituted_arguments);
   }
-  update_substituted_dependent_class_mangle_info(substituted,
-                                                type,
-                                                parameters,
-                                                arguments,
-                                                scope);
+  if(!rebuilt_mangle_info) {
+    update_substituted_dependent_class_mangle_info(substituted,
+                                                  type,
+                                                  parameters,
+                                                  arguments,
+                                                  scope);
+  }
   out = substituted;
   return true;
 }
@@ -21558,6 +21664,7 @@ bool template_id_syntax_from_class_template_type(const TypePtr & type,
   out.argument_syntaxes.reserve(info->arguments.size());
   map<string, TypePtr> type_replacements;
   map<string, ValueBinding> value_replacements;
+  TemplateTemplateReplacementMap template_replacements;
   if(scope) {
     const size_t replacement_count =
         std::min(info->template_parameters.size(), info->arguments.size());
@@ -21576,6 +21683,14 @@ bool template_id_syntax_from_class_template_type(const TypePtr & type,
                 !argument.dependent) {
         value_replacements[parameter.name] =
             make_value_binding_for_substitution_argument(argument);
+      } else if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+                (argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+                 argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
+        const TemplateTemplateReplacement replacement =
+            template_template_argument_replacement(argument);
+        if(!replacement.text.empty()) {
+          template_replacements[parameter.name] = replacement;
+        }
       }
     }
   }
@@ -21595,7 +21710,9 @@ bool template_id_syntax_from_class_template_type(const TypePtr & type,
           *argument.source_syntax);
     }
     if(scope &&
-       (!type_replacements.empty() || !value_replacements.empty()) &&
+       (!type_replacements.empty() ||
+        !value_replacements.empty() ||
+        !template_replacements.empty()) &&
        argument.dependent) {
       TemplateArgumentSyntax source_syntax =
           clone_argument_syntax_for_template_substitution(syntax);
@@ -21603,6 +21720,7 @@ bool template_id_syntax_from_class_template_type(const TypePtr & type,
                                                              source_syntax,
                                                              type_replacements,
                                                              value_replacements,
+                                                             template_replacements,
                                                              syntax);
     }
 
@@ -22585,6 +22703,29 @@ bool erase_parameter_pack_marker_nodes(CppAstNode & current)
   return removed;
 }
 
+void consume_substituted_argument_pack_expansion(
+    TemplateArgumentSyntax & argument)
+{
+  argument.pack_expansion = false;
+  string text = trim_space(argument.text);
+  if(text.size() >= 3 && text.substr(text.size() - 3) == "...") {
+    argument.text = trim_space(text.substr(0, text.size() - 3));
+  }
+  const auto consume_node = [](std::shared_ptr<CppAstNode> & node)
+  {
+    if(!node) {
+      return;
+    }
+    if(node->kind == CppAstKind::pack_expansion_expression &&
+       node->children.size() == 1) {
+      *node = node->children[0];
+    }
+    erase_parameter_pack_marker_nodes(*node);
+  };
+  consume_node(argument.type_id);
+  consume_node(argument.expression);
+}
+
 string substituted_value_pack_argument_text(const ValueBinding & binding)
 {
   if(binding.has_constant_value && !binding.dependent_template_value) {
@@ -22686,12 +22827,17 @@ void substitute_value_pack_template_id_arguments(
     TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
     const string original_argument_text =
         preserve_source_syntax ? trim_space(argument.text) : string();
+    bool consume_pack_expansion = false;
     for(map<string, ValueBinding>::const_iterator it = value_replacements.begin();
         it != value_replacements.end();
         ++it) {
       if(!argument_syntax_mentions_identifier(argument, it->first)) {
         continue;
       }
+      consume_pack_expansion = consume_pack_expansion ||
+          (argument.pack_expansion &&
+           argument_syntax_mentions_pack_expansion_identifier(
+               argument, it->first, true, false));
       bool argument_changed = false;
       argument.text = replace_identifier_token_text(
           argument.text,
@@ -22730,11 +22876,17 @@ void substitute_value_pack_template_id_arguments(
       substitute_value_pack_template_id_arguments(*argument.template_id,
                                                   value_replacements);
     }
+    if(consume_pack_expansion) {
+      consume_substituted_argument_pack_expansion(argument);
+    }
   }
   for(size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
     substitute_value_pack_template_id_arguments(
         syntax.qualifier_template_id_syntaxes[i],
         value_replacements);
+  }
+  if(!syntax.argument_syntaxes.empty()) {
+    syntax.arguments = template_id_syntax_argument_texts(syntax);
   }
 }
 
@@ -22832,6 +22984,36 @@ bool substitute_template_template_parameter_names_in_template_id_arguments(
         changed = true;
       }
     }
+    if(argument.type_id &&
+       substitute_template_template_names_in_ast_template_ids(
+           *argument.type_id,
+           template_replacements)) {
+      argument.resolved_type.reset();
+      changed = true;
+    }
+    if(argument.expression &&
+       substitute_template_template_names_in_ast_template_ids(
+           *argument.expression,
+           template_replacements)) {
+      const string expression_text = trim_space(
+          callsemantic_internal::describe_expression_for_diagnostic(
+              *argument.expression));
+      if(!expression_text.empty()) {
+        argument.text = expression_text;
+      }
+      argument.resolved_type.reset();
+      changed = true;
+    }
+  }
+  for(size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
+    if(substitute_template_template_parameter_names_in_template_id_arguments(
+           syntax.qualifier_template_id_syntaxes[i],
+           template_replacements)) {
+      changed = true;
+    }
+  }
+  if(changed && !syntax.argument_syntaxes.empty()) {
+    syntax.arguments = template_id_syntax_argument_texts(syntax);
   }
   return changed;
 }
@@ -25742,6 +25924,7 @@ bool substitute_expression_node_for_template_arguments(
   map<string, TypePtr> type_replacements;
   map<string, vector<TypePtr> > type_pack_replacements;
   map<string, ValueBinding> value_replacements;
+  TemplateTemplateReplacementMap template_replacements;
   map<string, size_t> pack_size_replacements;
   collect_type_pack_replacements_for_substitution(&scope,
                                                   parameters,
@@ -25818,6 +26001,16 @@ bool substitute_expression_node_for_template_arguments(
         }
       }
       value_replacements[parameters[i].name] = binding;
+      continue;
+    }
+    if(parameters[i].kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+       (argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+        argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
+      const TemplateTemplateReplacement replacement =
+          template_template_argument_replacement(argument);
+      if(!replacement.text.empty()) {
+        template_replacements[parameters[i].name] = replacement;
+      }
     }
   }
   collect_bound_type_replacements_in_node(scope, node, type_replacements);
@@ -25865,6 +26058,10 @@ bool substitute_expression_node_for_template_arguments(
       return false;
     }
     current = substituted;
+  }
+  if(!template_replacements.empty()) {
+    substitute_template_template_names_in_ast_template_ids(
+        current, template_replacements);
   }
   (void)pack_size_changed;
   out = current;

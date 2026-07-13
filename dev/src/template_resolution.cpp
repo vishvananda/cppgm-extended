@@ -4960,6 +4960,16 @@ bool direct_identifier_argument_syntax(const TemplateArgumentSyntax * syntax,
   }
 
   if(syntax->type_id && syntax->type_id->kind == CppAstKind::type_id) {
+    const CppAstNode * declarator =
+        cppast_find_child_kind(*syntax->type_id,
+                               CppAstKind::abstract_declarator);
+    if(!declarator) {
+      declarator = cppast_find_child_kind(*syntax->type_id,
+                                         CppAstKind::declarator);
+    }
+    if(declarator) {
+      return false;
+    }
     const CppAstNode * specifiers =
         cppast_find_child_kind(*syntax->type_id, CppAstKind::type_specifier_seq);
     if(specifiers &&

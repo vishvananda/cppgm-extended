@@ -13187,17 +13187,27 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     }
 
     QualifiedMemberTarget target;
-    if(!resolve_qualified_member_target(ctx, scope, *class_info, *member_name, target)) {
+    if(!resolve_qualified_member_target(ctx,
+                                        scope,
+                                        *class_info,
+                                        *member_name,
+                                        target,
+                                        true,
+                                        &member_callee_node.children[1])) {
       throw logic_error("unsupported qualified member call");
     }
 
     const TemplateIdSyntax * member_template_id =
         cppast_template_id_syntax(member_callee_node.children[1]);
-    if(member_template_id) {
-      source_explicit_template_arg_count = member_template_id->arguments.size();
+    const TemplateIdSyntax * function_member_template_id =
+        destructor_member_call ? nullptr : member_template_id;
+    if(function_member_template_id) {
+      source_explicit_template_arg_count =
+          function_member_template_id->arguments.size();
     }
     const std::string member_lookup_name =
-        member_template_id ? member_template_id->name.name : target.lookup_name;
+        function_member_template_id ?
+            function_member_template_id->name.name : target.lookup_name;
     if(target.target_class && member_lookup_name == "operator=") {
       semantic_class_model::ensure_implicit_special_members(ctx,
                                                             *target.target_class);
@@ -13214,8 +13224,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     member_candidates.path_access =
         combine_member_access(target.path_access, member_candidates.path_access);
     member_candidates.path_offset += target.path_offset;
-    candidates = member_template_id ? vector<FunctionBinding *>() :
-                                      member_candidates.functions;
+    candidates = function_member_template_id ? vector<FunctionBinding *>() :
+                                               member_candidates.functions;
     MemberCallableLookupResult member_callable_candidates;
     if(!target.qualified) {
       member_callable_candidates =
@@ -13226,8 +13236,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           combine_member_access(target.path_access,
                                 member_callable_candidates.path_access);
       member_candidates.path_offset = target.path_offset + member_callable_candidates.path_offset;
-      candidates = member_template_id ? vector<FunctionBinding *>() :
-                                        member_callable_candidates.functions;
+      candidates = function_member_template_id ? vector<FunctionBinding *>() :
+                                                 member_callable_candidates.functions;
     } else {
       member_callable_candidates.functions = candidates;
       MemberFunctionTemplateLookupResult member_template_candidates =
@@ -13271,9 +13281,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           &direct_function_source_drops,
           &member_callee_node.children[1],
           member_name,
-          member_template_id);
+          function_member_template_id);
     }
-    if(candidates.empty() && !member_template_id) {
+    if(candidates.empty() && !function_member_template_id) {
       if(TypePtr conversion_target =
              explicit_conversion_member_target_type(ctx,
                                                     scope,

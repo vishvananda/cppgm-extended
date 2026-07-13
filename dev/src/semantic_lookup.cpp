@@ -658,7 +658,8 @@ bool same_effective_function_entity_name(const FunctionBinding & lhs,
 string normalize_destructor_member_lookup_name(SemanticContext & ctx,
                                                Scope & scope,
                                                ClassInfo & object_class,
-                                               const string & name)
+                                               const string & name,
+                                               const CppAstNode * name_node)
 {
   const string unqualified = unqualified_name_text(name);
   if(unqualified.size() <= 1 || unqualified[0] != '~' || !object_class.type) {
@@ -674,15 +675,21 @@ string normalize_destructor_member_lookup_name(SemanticContext & ctx,
   }
 
   TypePtr target_type;
-  for(Scope * current = &scope; current; current = current->parent) {
-    auto direct = current->named_types.find(target_name);
-    if(direct != current->named_types.end()) {
-      target_type = direct->second;
-      break;
+  const bool has_structured_template_id =
+      name_node && cppast_template_id_syntax(*name_node);
+  if(has_structured_template_id) {
+    target_type = ctx.lookup_type_node(scope, *name_node, target_name, true);
+  } else {
+    for(Scope * current = &scope; current; current = current->parent) {
+      auto direct = current->named_types.find(target_name);
+      if(direct != current->named_types.end()) {
+        target_type = direct->second;
+        break;
+      }
     }
-  }
-  if(!target_type) {
-    target_type = ctx.lookup_type(scope, target_name, true);
+    if(!target_type) {
+      target_type = ctx.lookup_type(scope, target_name, true);
+    }
   }
   TypePtr object_type = strip_top_level_cv(remove_reference_type(object_class.type));
   const auto target_matches_object =
@@ -709,6 +716,9 @@ string normalize_destructor_member_lookup_name(SemanticContext & ctx,
   };
 
   if(!target_matches_object(target_type)) {
+    if(has_structured_template_id) {
+      return name;
+    }
     TypePtr lookup_type = ctx.lookup_non_template_type_name(scope, target_name);
     if(!target_matches_object(lookup_type)) {
       lookup_type = ctx.lookup_type(scope, target_name, true);
@@ -3797,7 +3807,8 @@ bool resolve_qualified_member_target(SemanticContext & ctx,
                                      ClassInfo & object_class,
                                      const QualifiedName & member_name,
                                      QualifiedMemberTarget & out,
-                                     bool allow_dependent_class_qualifiers)
+                                     bool allow_dependent_class_qualifiers,
+                                     const CppAstNode * member_name_node)
 {
   out = QualifiedMemberTarget();
   out.lookup_name = member_name.name;
@@ -3805,7 +3816,11 @@ bool resolve_qualified_member_target(SemanticContext & ctx,
 
   if(!member_name.rooted && member_name.qualifiers.empty()) {
     out.lookup_name =
-        normalize_destructor_member_lookup_name(ctx, scope, *out.target_class, out.lookup_name);
+        normalize_destructor_member_lookup_name(ctx,
+                                                scope,
+                                                *out.target_class,
+                                                out.lookup_name,
+                                                member_name_node);
     return true;
   }
 
@@ -3833,7 +3848,11 @@ bool resolve_qualified_member_target(SemanticContext & ctx,
   }
 
   out.lookup_name =
-      normalize_destructor_member_lookup_name(ctx, scope, *out.target_class, out.lookup_name);
+      normalize_destructor_member_lookup_name(ctx,
+                                              scope,
+                                              *out.target_class,
+                                              out.lookup_name,
+                                              member_name_node);
 
   return true;
 }

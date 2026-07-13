@@ -10683,8 +10683,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
               "template-instantiation");
         }
       }
-      if((result_type_still_dependent ||
-          source_result_mentions_template_parameter) &&
+      if(result_type_still_dependent &&
          source_decl->result_type_pattern.kind != CppAstKind::invalid) {
         TypePtr parsed_result;
         const bool parsed_result_type =

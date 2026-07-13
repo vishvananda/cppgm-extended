@@ -5520,7 +5520,13 @@ ExprInfo analyze_member_expression(SemanticContext & ctx,
   }
 
   QualifiedMemberTarget target;
-  if(!resolve_qualified_member_target(ctx, scope, *class_info, *member_name, target)) {
+  if(!resolve_qualified_member_target(ctx,
+                                      scope,
+                                      *class_info,
+                                      *member_name,
+                                      target,
+                                      true,
+                                      &node.children[1])) {
     throw logic_error("unsupported qualified member-expression");
   }
 
