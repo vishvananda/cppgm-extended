@@ -11451,26 +11451,31 @@ bool CppAstParser::unqualified_identifier_prefers_value_name(
                nearest_name_scope_index(&template_value_parameter_scopes,
                                         inherited_template_value_parameter_scopes,
                                         atom));
-  const int type_index =
-      std::max(nearest_name_scope_index(&type_name_scopes,
-                                        inherited_type_name_scopes,
-                                        atom),
-               nearest_name_scope_index(&template_type_parameter_scopes,
-                                        inherited_template_type_parameter_scopes,
-                                        atom));
+  const int non_value_index =
+      std::max(
+          std::max(nearest_name_scope_index(&type_name_scopes,
+                                            inherited_type_name_scopes,
+                                            atom),
+                   nearest_name_scope_index(&template_type_parameter_scopes,
+                                            inherited_template_type_parameter_scopes,
+                                            atom)),
+          nearest_name_scope_index(&template_name_scopes,
+                                   inherited_template_name_scopes,
+                                   atom));
 
-  if(value_index >= 0 || type_index >= 0) {
-    return value_index >= type_index;
+  if(value_index >= 0 || non_value_index >= 0) {
+    return value_index > non_value_index;
   }
 
   const bool fallback_value =
       external_name_lookup &&
       (external_name_lookup->is_known_value_name_identifier(token) ||
        external_name_lookup->is_known_value_template_parameter_identifier(token));
-  const bool fallback_type =
+  const bool fallback_non_value =
       external_name_lookup &&
-      external_name_lookup->is_known_type_name_identifier(token);
-  return fallback_value && !fallback_type;
+      (external_name_lookup->is_known_type_name_identifier(token) ||
+       external_name_lookup->is_known_template_name_identifier(token));
+  return fallback_value && !fallback_non_value;
 }
 
 void CppAstParser::collect_signature_type_hint_names(const CppAstNode & node,

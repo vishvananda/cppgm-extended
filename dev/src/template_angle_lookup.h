@@ -293,7 +293,7 @@ struct ScopedNameLookup : template_angle::NameLookup
                                      inherited_template_name_scopes,
                                      atom));
     if(value_index >= 0 || non_value_index >= 0) {
-      return value_index >= non_value_index;
+      return value_index > non_value_index;
     }
     return fallback_lookup &&
            fallback_lookup->unqualified_identifier_prefers_value_name(token);
