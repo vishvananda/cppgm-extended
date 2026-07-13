@@ -94,6 +94,19 @@ class WatchSelfhostBuildTests(unittest.TestCase):
         self.assertEqual(processes[0].elapsed_seconds, 7)
         self.assertEqual(processes[0].argv, ["compiler", "-c", "source.cpp"])
 
+    def test_repository_root_is_inferred_from_pa39_process_cwd(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "pa39").mkdir()
+            (root / "dev").mkdir()
+            (root / "pa39" / "Makefile").touch()
+            (root / "dev" / "frontend_source_sets.mk").touch()
+
+            self.assertEqual(
+                watch.repository_root_from_working_directory(root / "pa39"),
+                root.resolve(),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

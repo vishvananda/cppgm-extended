@@ -20,6 +20,7 @@ from typing import Sequence
 from typing import Set
 
 
+REPO_ROOT_EXPLICIT = "CPPGM_WATCH_REPO_ROOT" in os.environ
 REPO_ROOT = Path(os.environ.get("CPPGM_WATCH_REPO_ROOT", Path(__file__).resolve().parent.parent)).resolve()
 INCEPTION_DIR = REPO_ROOT / "pa39"
 FRONTEND_SOURCE_SETS = REPO_ROOT / "dev" / "frontend_source_sets.mk"
@@ -140,6 +141,37 @@ def style(text: str, *codes: str, enabled: bool) -> str:
 
 def run_capture(cmd: Sequence[str]) -> str:
     return subprocess.check_output(cmd, cwd=str(REPO_ROOT), text=True)
+
+
+def configure_repo_root(repo_root: Path) -> None:
+    global REPO_ROOT
+    global INCEPTION_DIR
+    global FRONTEND_SOURCE_SETS
+    global INCEPTION_MAKEFILE
+
+    REPO_ROOT = repo_root.resolve()
+    INCEPTION_DIR = REPO_ROOT / "pa39"
+    FRONTEND_SOURCE_SETS = REPO_ROOT / "dev" / "frontend_source_sets.mk"
+    INCEPTION_MAKEFILE = INCEPTION_DIR / "Makefile"
+
+
+def process_working_directory(pid: int) -> Optional[Path]:
+    try:
+        return Path(os.readlink(f"/proc/{pid}/cwd")).resolve()
+    except OSError:
+        return None
+
+
+def repository_root_from_working_directory(cwd: Optional[Path]) -> Optional[Path]:
+    if cwd is None:
+        return None
+    candidates = [cwd.parent] if cwd.name == "pa39" else []
+    candidates.append(cwd)
+    for candidate in candidates:
+        if ((candidate / "pa39" / "Makefile").is_file() and
+                (candidate / "dev" / "frontend_source_sets.mk").is_file()):
+            return candidate.resolve()
+    return None
 
 
 def parse_elapsed_text(text: str) -> int:
@@ -1272,8 +1304,32 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def auto_configure_repo_root(args: argparse.Namespace) -> None:
+    if REPO_ROOT_EXPLICIT or args.target is not None:
+        return
+    processes = capture_processes()
+    roots: Set[Path] = set()
+    for process in discover_build_processes(processes):
+        if args.pid is not None and process.pid != args.pid:
+            continue
+        root = repository_root_from_working_directory(
+            process_working_directory(process.pid)
+        )
+        if root is not None:
+            roots.add(root)
+    if len(roots) == 1:
+        configure_repo_root(next(iter(roots)))
+    elif len(roots) > 1:
+        choices = ", ".join(str(root) for root in sorted(roots))
+        raise SystemExit(
+            "multiple active PA39 repositories detected: " + choices +
+            "; select a build with --pid or set CPPGM_WATCH_REPO_ROOT"
+        )
+
+
 def main() -> int:
     args = parse_args()
+    auto_configure_repo_root(args)
     source_sets = parse_frontend_source_sets(FRONTEND_SOURCE_SETS)
     checkpoints, stage_to_checkpoint = parse_inception_layout(INCEPTION_MAKEFILE)
     use_color = color_enabled(args.color)
