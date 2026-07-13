@@ -10459,7 +10459,8 @@ bool CppAstParser::parse_id_expression(CppAstNode & out)
         return cursor > start &&
                tokens.peek(cursor - 1).is_identifier() &&
                is_known_value_template_parameter_identifier(
-                   tokens.peek(cursor - 1));
+                   tokens.peek(cursor - 1)) &&
+               is_known_template_name_identifier(tokens.peek(cursor - 1));
       }
       if(token.is_simple(OP_COLON2) ||
          token.is_identifier() ||
