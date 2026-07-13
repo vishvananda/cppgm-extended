@@ -1444,7 +1444,13 @@ private:
     std::size_t epoch = 0;
     bool key_present = false;
   };
-  mutable std::unordered_map<const Type *, ClassInfo *> class_info_for_type_cache_;
+  struct ClassInfoForTypePointerCacheEntry
+  {
+    std::weak_ptr<Type> type;
+    ClassInfo * info = nullptr;
+  };
+  mutable std::unordered_map<const Type *, ClassInfoForTypePointerCacheEntry>
+      class_info_for_type_cache_;
   mutable std::unordered_map<std::string, ClassInfoForTypeNamedKeyCacheEntry>
       class_info_for_type_named_key_cache_;
   mutable std::unordered_map<std::string, ClassInfo *>
@@ -1593,7 +1599,8 @@ private:
       return nullptr;
     }
     auto cached = class_info_for_template_metadata_cache_.find(base->named_key);
-    if(cached != class_info_for_template_metadata_cache_.end()) {
+    if(cached != class_info_for_template_metadata_cache_.end() &&
+       cached->second && cached->second->complete) {
       return cached->second;
     }
     std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
@@ -5901,27 +5908,38 @@ private:
           state.classes_by_key_version;
     }
     const Type * cache_key = base.get();
-    std::unordered_map<const Type *, ClassInfo *>::const_iterator cached =
+    std::unordered_map<const Type *, ClassInfoForTypePointerCacheEntry>::iterator cached =
         class_info_for_type_cache_.find(cache_key);
     if(cached != class_info_for_type_cache_.end()) {
-      if(collect_metrics_) {
-        ++metrics_.class_info_for_type_pointer_cache_hits;
+      // Raw Type addresses are reusable after a temporary TypePtr dies.  The
+      // shared ownership identity remains distinct even at the same address.
+      if(!cached->second.type.owner_before(base) &&
+         !base.owner_before(cached->second.type)) {
+        if(collect_metrics_) {
+          ++metrics_.class_info_for_type_pointer_cache_hits;
+        }
+        return cached->second.info;
       }
-      return cached->second;
+      class_info_for_type_cache_.erase(cached);
     }
     std::unordered_map<std::string, std::size_t>::const_iterator epoch_found =
         state.classes_by_key_epochs.find(base->named_key);
     const bool key_present = epoch_found != state.classes_by_key_epochs.end();
     const std::size_t key_epoch = key_present ? epoch_found->second : 0;
     std::unordered_map<std::string, ClassInfoForTypeNamedKeyCacheEntry>::const_iterator
-        named_key_cached = class_info_for_type_named_key_cache_.find(base->named_key);
+        named_key_cached = key_present ?
+            class_info_for_type_named_key_cache_.find(base->named_key) :
+            class_info_for_type_named_key_cache_.end();
     if(named_key_cached != class_info_for_type_named_key_cache_.end()) {
       const ClassInfoForTypeNamedKeyCacheEntry & entry = named_key_cached->second;
       if(entry.key_present == key_present && entry.epoch == key_epoch) {
         if(collect_metrics_) {
           ++metrics_.class_info_for_type_named_key_cache_hits;
         }
-        class_info_for_type_cache_[cache_key] = entry.info;
+        ClassInfoForTypePointerCacheEntry pointer_entry;
+        pointer_entry.type = base;
+        pointer_entry.info = entry.info;
+        class_info_for_type_cache_[cache_key] = pointer_entry;
         return entry.info;
       }
     }
@@ -5945,8 +5963,14 @@ private:
     entry.info = result;
     entry.epoch = key_epoch;
     entry.key_present = key_present;
-    class_info_for_type_named_key_cache_[base->named_key] = entry;
-    class_info_for_type_cache_[cache_key] = result;
+    // Metadata fallback can change without advancing classes_by_key_version.
+    if(key_present) {
+      class_info_for_type_named_key_cache_[base->named_key] = entry;
+      ClassInfoForTypePointerCacheEntry pointer_entry;
+      pointer_entry.type = base;
+      pointer_entry.info = result;
+      class_info_for_type_cache_[cache_key] = pointer_entry;
+    }
     return result;
   }
 
