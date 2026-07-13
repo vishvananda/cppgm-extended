@@ -7123,6 +7123,14 @@ bool try_expand_alias_template_pattern_structurally(
          type_equals(argument.type, candidate)) {
         continue;
       }
+      void * nested_class_template_decl = nullptr;
+      std::vector<DependentAliasTemplateArgumentSyntax> nested_class_arguments;
+      if(!named_type_dependent_class_template(argument.type,
+                                              nested_class_template_decl,
+                                              nested_class_arguments) ||
+         !nested_class_template_decl) {
+        continue;
+      }
       TypePtr materialized_argument_type;
       if(materialize_class_template_target_type(argument.type,
                                                 materialized_argument_type) &&
@@ -10645,11 +10653,41 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
             pattern_mentions_placeholders &&
             type_pattern_has_deducible_template_parameter(type_system,
                                                           placeholder_pattern_type);
+        bool pattern_requires_concrete_expression_recheck = false;
+        if(pattern_mentions_placeholders &&
+           placeholder_pattern_type &&
+           !pattern_has_deducible_placeholders) {
+          if(partial.concrete_expression_recheck_pattern_states.size() <
+             partial.arg_texts.size()) {
+            partial.concrete_expression_recheck_pattern_states.resize(
+                partial.arg_texts.size(), 0);
+          }
+          unsigned char & concrete_expression_recheck_state =
+              partial.concrete_expression_recheck_pattern_states[i];
+          if(concrete_expression_recheck_state == 0) {
+            const bool required =
+                pattern_syntax &&
+                ((pattern_syntax->type_id &&
+                  ast_contains_kind(*pattern_syntax->type_id,
+                                    CppAstKind::decltype_specifier) &&
+                  ast_contains_kind(*pattern_syntax->type_id,
+                                    CppAstKind::call_expression)) ||
+                 (pattern_syntax->source_type_id &&
+                  ast_contains_kind(*pattern_syntax->source_type_id,
+                                    CppAstKind::decltype_specifier) &&
+                  ast_contains_kind(*pattern_syntax->source_type_id,
+                                    CppAstKind::call_expression)));
+            concrete_expression_recheck_state = required ? 2 : 1;
+          }
+          pattern_requires_concrete_expression_recheck =
+              concrete_expression_recheck_state == 2;
+        }
         TypePtr pattern_type;
         bool parsed_pattern_type = false;
         const bool reuse_placeholder_pattern =
             services.witness_context.session == nullptr &&
-            pattern_has_deducible_placeholders;
+            (pattern_has_deducible_placeholders ||
+             !pattern_requires_concrete_expression_recheck);
         if(pattern_syntax &&
            placeholder_pattern_type &&
            reuse_placeholder_pattern) {

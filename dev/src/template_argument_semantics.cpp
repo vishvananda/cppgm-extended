@@ -26103,12 +26103,13 @@ bool try_resolve_type_pack_element_template_id(
   return true;
 }
 
-bool substitute_expression_node_for_template_arguments(
+bool substitute_expression_node_for_template_arguments_impl(
     Scope & scope,
     const CppAstNode & node,
     const vector<TemplateParameterInfo> & parameters,
     const vector<TemplateArgument> & arguments,
-    CppAstNode & out)
+    CppAstNode & out,
+    bool require_change)
 {
   map<string, TypePtr> type_replacements;
   map<string, vector<TypePtr> > type_pack_replacements;
@@ -26224,6 +26225,14 @@ bool substitute_expression_node_for_template_arguments(
   remove_direct_value_expression_type_replacements(&node,
                                                    type_replacements,
                                                    value_replacements);
+  if(require_change &&
+     type_replacements.empty() &&
+     type_pack_replacements.empty() &&
+     value_replacements.empty() &&
+     template_replacements.empty() &&
+     pack_size_replacements.empty()) {
+    return false;
+  }
   CppAstNode current;
   bool pack_size_changed = false;
   if(!pack_size_replacements.empty()) {
@@ -26273,6 +26282,17 @@ bool substitute_expression_node_for_template_arguments(
   (void)pack_size_changed;
   out = current;
   return true;
+}
+
+bool substitute_expression_node_for_template_arguments(
+    Scope & scope,
+    const CppAstNode & node,
+    const vector<TemplateParameterInfo> & parameters,
+    const vector<TemplateArgument> & arguments,
+    CppAstNode & out)
+{
+  return substitute_expression_node_for_template_arguments_impl(
+      scope, node, parameters, arguments, out, false);
 }
 
 bool substitute_named_type_parameters(
@@ -39039,7 +39059,8 @@ bool substitute_type_id_node_for_template_arguments(
     const vector<TemplateParameterInfo> & parameters,
     const vector<TemplateArgument> & arguments,
     CppAstNode & out,
-    bool discard_stale_annotations)
+    bool discard_stale_annotations,
+    bool require_change)
 {
   CppAstNode expanded_before_substitution;
   const CppAstNode * current = &node;
@@ -39051,11 +39072,13 @@ bool substitute_type_id_node_for_template_arguments(
   }
 
   CppAstNode substituted;
-  if(!substitute_expression_node_for_template_arguments(scope,
-                                                        *current,
-                                                        parameters,
-                                                        arguments,
-                                                        substituted)) {
+  if(!substitute_expression_node_for_template_arguments_impl(
+         scope,
+         *current,
+         parameters,
+         arguments,
+         substituted,
+         require_change && current == &node)) {
     return false;
   }
   TemplateTemplateReplacementMap template_replacements;

@@ -1447,7 +1447,10 @@ private:
   struct ClassInfoForTypePointerCacheEntry
   {
     std::weak_ptr<Type> type;
+    std::weak_ptr<const ClassTemplateSpecializationMangleInfo> template_metadata;
     ClassInfo * info = nullptr;
+    bool key_present = false;
+    bool has_template_metadata = false;
   };
   mutable std::unordered_map<const Type *, ClassInfoForTypePointerCacheEntry>
       class_info_for_type_cache_;
@@ -5915,10 +5918,22 @@ private:
       // shared ownership identity remains distinct even at the same address.
       if(!cached->second.type.owner_before(base) &&
          !base.owner_before(cached->second.type)) {
-        if(collect_metrics_) {
-          ++metrics_.class_info_for_type_pointer_cache_hits;
+        bool valid = cached->second.key_present;
+        if(!valid &&
+           (!cached->second.info || cached->second.info->complete)) {
+          std::shared_ptr<const ClassTemplateSpecializationMangleInfo> metadata =
+              named_type_class_template_specialization_mangle_info_const(base);
+          valid = cached->second.has_template_metadata == bool(metadata) &&
+                  (!metadata ||
+                   (!cached->second.template_metadata.owner_before(metadata) &&
+                    !metadata.owner_before(cached->second.template_metadata)));
         }
-        return cached->second.info;
+        if(valid) {
+          if(collect_metrics_) {
+            ++metrics_.class_info_for_type_pointer_cache_hits;
+          }
+          return cached->second.info;
+        }
       }
       class_info_for_type_cache_.erase(cached);
     }
@@ -5926,8 +5941,14 @@ private:
         state.classes_by_key_epochs.find(base->named_key);
     const bool key_present = epoch_found != state.classes_by_key_epochs.end();
     const std::size_t key_epoch = key_present ? epoch_found->second : 0;
+    std::shared_ptr<const ClassTemplateSpecializationMangleInfo> metadata =
+        named_type_class_template_specialization_mangle_info_const(base);
+    const bool stable_negative_named_key =
+        !key_present &&
+        !metadata &&
+        class_template_declarations_complete_;
     std::unordered_map<std::string, ClassInfoForTypeNamedKeyCacheEntry>::const_iterator
-        named_key_cached = key_present ?
+        named_key_cached = (key_present || stable_negative_named_key) ?
             class_info_for_type_named_key_cache_.find(base->named_key) :
             class_info_for_type_named_key_cache_.end();
     if(named_key_cached != class_info_for_type_named_key_cache_.end()) {
@@ -5936,10 +5957,13 @@ private:
         if(collect_metrics_) {
           ++metrics_.class_info_for_type_named_key_cache_hits;
         }
-        ClassInfoForTypePointerCacheEntry pointer_entry;
-        pointer_entry.type = base;
-        pointer_entry.info = entry.info;
-        class_info_for_type_cache_[cache_key] = pointer_entry;
+        if(key_present) {
+          ClassInfoForTypePointerCacheEntry pointer_entry;
+          pointer_entry.type = base;
+          pointer_entry.info = entry.info;
+          pointer_entry.key_present = true;
+          class_info_for_type_cache_[cache_key] = pointer_entry;
+        }
         return entry.info;
       }
     }
@@ -5963,12 +5987,22 @@ private:
     entry.info = result;
     entry.epoch = key_epoch;
     entry.key_present = key_present;
-    // Metadata fallback can change without advancing classes_by_key_version.
-    if(key_present) {
+    // A shared named key does not imply shared template metadata.  An absent
+    // key is reusable only after declaration collection and only when the
+    // queried type carries no specialization metadata.
+    if(key_present ||
+       (!result && stable_negative_named_key)) {
       class_info_for_type_named_key_cache_[base->named_key] = entry;
+    }
+    if(key_present ||
+       (result && result->complete) ||
+       (!result && !metadata && class_template_declarations_complete_)) {
       ClassInfoForTypePointerCacheEntry pointer_entry;
       pointer_entry.type = base;
+      pointer_entry.template_metadata = metadata;
       pointer_entry.info = result;
+      pointer_entry.key_present = key_present;
+      pointer_entry.has_template_metadata = bool(metadata);
       class_info_for_type_cache_[cache_key] = pointer_entry;
     }
     return result;
