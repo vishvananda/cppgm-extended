@@ -48,7 +48,7 @@ function @f
     param %j -> [rbp+40] : i64
     return i64 -> rax
   frame
-    stack_size 128
+    stack_size 144
     scratch_bytes 0
     preserve r15
     param-slot %g -> [rbp-8] : i64

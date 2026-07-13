@@ -30,13 +30,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @result_type_void___result_type(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11result_typeIvEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
 function @list_int__int___operator__(%this : ptr, %__param1 : obj<1x1>, %f : ptr [pass=reference], %a2 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN4listIJiiEEclIv3fun4argsEEi11result_typeIT_ERT0_RT1_] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
@@ -59,6 +52,20 @@ function @list_int__int___operator__(%this : ptr, %__param1 : obj<1x1>, %f : ptr
     %t6 = call i32 @list_int__int___call_impl(%t1, $argobj__1, %t3, %t4, $argobj__2)
     return i32 %t6
 }
+function @result_type_void___result_type(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11result_typeIvEC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @integer_sequence_unsigned_long_int__0__1___integer_sequence(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN16integer_sequenceImJLm0ELm1EEEC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
 function @list_int__int___call_impl(%this : ptr, %__param1 : obj<1x1>, %__param2 : ptr [pass=reference], %__param3 : ptr [pass=reference], %__param4 : obj<1x1>) -> i32 [binding=weak, object=_ZN4listIJiiEE9call_implIv3fun4argsJLm0ELm1EEEEi11result_typeIT_ERT0_RT1_16integer_sequenceImJXspT2_EEE] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
@@ -73,13 +80,6 @@ function @list_int__int___call_impl(%this : ptr, %__param1 : obj<1x1>, %__param2
     %t1 = const i64 2
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
-}
-function @integer_sequence_unsigned_long_int__0__1___integer_sequence(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN16integer_sequenceImJLm0ELm1EEEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
 }
 alias object _ZN11result_typeIvEC2Ev = @result_type_void___result_type
 alias object _ZN16integer_sequenceImJLm0ELm1EEEC2Ev = @integer_sequence_unsigned_long_int__0__1___integer_sequence

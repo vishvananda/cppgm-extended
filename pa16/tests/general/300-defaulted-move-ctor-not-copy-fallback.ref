@@ -62,7 +62,7 @@ function @X__X(%this : ptr) -> void [binding=weak, object=_ZN1XC1Ev] {
     call void @Member__Member(%t2)
     return void
 }
-function @X__X__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN1XC1EOS_, trivial_lifecycle=yes] {
+function @X__X__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN1XC1EOS_] {
   slot $this : ptr
   slot $other : ptr
 

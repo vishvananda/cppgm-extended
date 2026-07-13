@@ -25,14 +25,6 @@ function @adaptor_A_int___1___adaptor__ov4(%this : ptr, %alloc : ptr [pass=refer
     call void @A_int___A__base_entry(%t2, %t5)
     return void
 }
-function @std__forward(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt7forwardIiEOT_RNSt16remove_referenceIS0_E4typeE] {
-  slot $value : ptr
-
-  block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
-    return ptr %t1
-}
 function @A_int___A__base_entry(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN1AIiEC2Ei] {
   slot $this : ptr
   slot $__param1 : i32
@@ -42,14 +34,12 @@ function @A_int___A__base_entry(%this : ptr, %__param1 : i32) -> void [binding=w
     store i32 %__param1, $__param1
     return void
 }
-function @A_int___A(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN1AIiEC1Ei] {
-  slot $this : ptr
-  slot $__param1 : i32
+function @std__forward(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt7forwardIiEOT_RNSt16remove_referenceIS0_E4typeE] {
+  slot $value : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    return void
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
 }
 alias object _ZN7adaptorI1AIiELm1EEC2IiEEOT_ = @adaptor_A_int___1___adaptor__ov4
-alias object _ZN1AIiEC2Ei = @A_int___A

@@ -90,5 +90,4 @@ function @IOS__IOS(%this : ptr) -> void [binding=weak, object=_ZN3IOSC1Ev] {
     return void
 }
 alias object _ZN6HolderC2I6StreamEERT_ = @Holder__Holder__ov3
-alias object _ZN6StreamC2Ev = @Stream__Stream
 alias object _ZN3IOSC2Ev = @IOS__IOS

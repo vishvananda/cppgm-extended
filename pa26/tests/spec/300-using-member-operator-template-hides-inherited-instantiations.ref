@@ -45,6 +45,21 @@ function @comma_base_first___operator_(%this : ptr, %np : ptr [pass=reference]) 
     call void @combine_second__first___combine(%t1, %t2, %t3)
     return obj<1x1> $retobj__1
 }
+function @combine_second__first___combine(%this : ptr, %np : ptr [pass=reference], %rest : ptr [pass=reference]) -> void [binding=weak, object=_ZN7combineI6second5firstEC1ERKS0_RKS1_] {
+  slot $this : ptr
+  slot $np : ptr
+  slot $rest : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %np, $np
+    store ptr %rest, $rest
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    return void
+}
 function @comma_base_combine_second__first____operator_(%this : ptr, %np : ptr [pass=reference]) -> obj<2x1> [binding=weak, object=_ZNK10comma_baseI7combineI6second5firstEEcmI5thirdEES0_IT_S3_ERKS7_] {
   slot $this : ptr
   slot $np : ptr
@@ -72,21 +87,6 @@ function @comma_base_combine_third__combine_second__first_____operator_(%this : 
     %t3 = load ptr $this
     call void @combine_fourth__combine_third__combine_second__first_____combine(%t1, %t2, %t3)
     return obj<3x1> $retobj__1
-}
-function @combine_second__first___combine(%this : ptr, %np : ptr [pass=reference], %rest : ptr [pass=reference]) -> void [binding=weak, object=_ZN7combineI6second5firstEC1ERKS0_RKS1_] {
-  slot $this : ptr
-  slot $np : ptr
-  slot $rest : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %np, $np
-    store ptr %rest, $rest
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
-    %t3 = load ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
-    return void
 }
 function @combine_third__combine_second__first____combine(%this : ptr, %np : ptr [pass=reference], %rest : ptr [pass=reference]) -> void [binding=weak, object=_ZN7combineI5thirdS_I6second5firstEEC1ERKS0_RKS3_] {
   slot $this : ptr

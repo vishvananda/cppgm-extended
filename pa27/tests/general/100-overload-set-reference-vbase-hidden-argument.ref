@@ -119,5 +119,3 @@ function @A__A(%this : ptr) -> void [binding=weak, object=_ZN1AC1Ev] {
     return void
 }
 alias object _ZN1VC2Ev = @V__V
-alias object _ZN1DC2Ev = @D__D
-alias object _ZN1AC2Ev = @A__A
