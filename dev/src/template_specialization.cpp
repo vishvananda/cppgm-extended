@@ -6779,7 +6779,9 @@ bool try_expand_alias_template_pattern_structurally(
     }
     return true;
   };
-  const auto materialize_class_template_target_type =
+  std::function<bool(const TypePtr &, TypePtr &)>
+      materialize_class_template_target_type;
+  materialize_class_template_target_type =
       [&](const TypePtr & candidate, TypePtr & out) -> bool
   {
     out.reset();
@@ -7113,6 +7115,21 @@ bool try_expand_alias_template_pattern_structurally(
     request.lookup.top_volatile = top_volatile;
     request.class_template = source_template;
     request.resolved_arguments = *instantiation_arguments;
+    for(std::size_t i = 0; i < request.resolved_arguments.size(); ++i) {
+      TemplateArgument & argument = request.resolved_arguments[i];
+      if(argument.kind != TemplateArgument::TA_TYPE ||
+         !argument.type ||
+         type_is_dependent(argument.type) ||
+         type_equals(argument.type, candidate)) {
+        continue;
+      }
+      TypePtr materialized_argument_type;
+      if(materialize_class_template_target_type(argument.type,
+                                                materialized_argument_type) &&
+         materialized_argument_type) {
+        argument.type = materialized_argument_type;
+      }
+    }
     if(dependent_source_template &&
        dependent_class_arg_syntaxes.size() == instantiation_arguments->size()) {
       request.source_arg_syntaxes = dependent_class_arg_syntaxes;
@@ -7660,10 +7677,21 @@ bool try_expand_alias_template_pattern_structurally(
              substituted_pattern) &&
          substituted_pattern &&
          !type_equals(substituted_pattern, pattern)) {
-        template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
-            services,
-            effective_body_scope,
-            substituted_pattern);
+        void * substituted_class_template_decl = nullptr;
+        std::vector<DependentAliasTemplateArgumentSyntax>
+            substituted_class_args;
+        const bool substituted_has_class_template_metadata =
+            named_type_dependent_class_template(
+                substituted_pattern,
+                substituted_class_template_decl,
+                substituted_class_args) &&
+            substituted_class_template_decl;
+        if(!substituted_has_class_template_metadata) {
+          template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+              services,
+              effective_body_scope,
+              substituted_pattern);
+        }
         if(substituted_pattern && !type_is_dependent(substituted_pattern)) {
           TypePtr materialized_pattern;
           if(materialize_class_template_target_type(substituted_pattern,
