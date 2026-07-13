@@ -117,6 +117,10 @@ header together with a cheat-proof anchor — a trait, `decltype`, `sizeof`, or
 `static_assert` that cannot be satisfied without genuinely compiling the header,
 so a test cannot pass by skipping or stubbing the include.
 
+Optional `x.no-exceptions` and `x.cxx-standard` sidecars disable exceptions or
+select the language mode for a compile test. The standard sidecar currently
+accepts `c++11` and `c++14`.
+
 ### Required Implementation Surface
 
 To complete PA35, support:

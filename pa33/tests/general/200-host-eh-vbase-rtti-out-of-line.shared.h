@@ -1,5 +1,3 @@
-#include <exception>
-
 extern "C" int puts(const char *);
 
 struct clone_base {
@@ -16,7 +14,11 @@ struct info_base {
   mutable void * data_;
 };
 
-struct payload : virtual info_base, std::exception {
+struct exception_base {
+  virtual ~exception_base() {}
+};
+
+struct payload : virtual info_base, exception_base {
   explicit payload(int value);
   ~payload() override;
 

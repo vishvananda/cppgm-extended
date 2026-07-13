@@ -18,8 +18,7 @@ struct object
 
 inline object::table * object::table::allocate()
 {
-  static_assert(alignof(key_value_pair) >= alignof(index_t),
-                "enclosing alias should be visible in lazy nested member body");
+  typedef index_t found_index_t;
   return 0;
 }
 

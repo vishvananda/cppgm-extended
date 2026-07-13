@@ -188,6 +188,8 @@ Optional sidecars include:
 
 - `x.env`: environment variables for one test, such as additional standard
   include paths
+- `x.no-exceptions`: compile a `tests/compile` input with `-fno-exceptions`
+- `x.cxx-standard`: compile in the named `c++11` or `c++14` language mode
 - `x.ref.impl.exit_status`, `x.ref.program.exit_status`, and
   `x.ref.program.stdout`: implementation and program-result references for
   `tests/run` host-link/run smokes

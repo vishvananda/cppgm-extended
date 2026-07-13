@@ -1,6 +1,6 @@
 // VALIDATION: compile-pass
 
-#include "300-lazy-nested-class-enclosing-alias-static-assert.h"
+#include "300-lazy-nested-class-enclosing-alias-lookup.h"
 
 int main()
 {
