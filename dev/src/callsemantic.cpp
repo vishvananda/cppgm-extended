@@ -22299,6 +22299,92 @@ private:
     }
   }
 
+  TypePtr canonicalize_current_member_alias_for_binding(
+      ClassInfo & info,
+      const TypePtr & type)
+  {
+    if(!type || !info.member_scope) {
+      return type;
+    }
+
+    TypePtr canonical_inner;
+    switch(type->kind) {
+    case Type::TK_CV:
+      canonical_inner = canonicalize_current_member_alias_for_binding(
+          info, type->inner);
+      return canonical_inner == type->inner ?
+          type :
+          make_cv(canonical_inner, type->cv_const, type->cv_volatile);
+    case Type::TK_LVALUE_REFERENCE:
+      canonical_inner = canonicalize_current_member_alias_for_binding(
+          info, type->inner);
+      return canonical_inner == type->inner ?
+          type :
+          make_lvalue_reference_raw(canonical_inner);
+    case Type::TK_RVALUE_REFERENCE:
+      canonical_inner = canonicalize_current_member_alias_for_binding(
+          info, type->inner);
+      return canonical_inner == type->inner ?
+          type :
+          make_rvalue_reference_raw(canonical_inner);
+    case Type::TK_FUNCTION:
+    {
+      canonical_inner = canonicalize_current_member_alias_for_binding(
+          info, type->inner);
+      vector<TypePtr> canonical_params;
+      canonical_params.reserve(type->params.size());
+      bool changed = canonical_inner != type->inner;
+      for(size_t i = 0; i < type->params.size(); ++i) {
+        TypePtr canonical_param = canonicalize_current_member_alias_for_binding(
+            info, type->params[i]);
+        changed = changed || canonical_param != type->params[i];
+        canonical_params.push_back(canonical_param);
+      }
+      return changed ?
+          make_function(canonical_inner,
+                        canonical_params,
+                        type->variadic,
+                        type->function_const,
+                        type->function_volatile,
+                        type->prototype_relaxed,
+                        type->function_ref_qualifier) :
+          type;
+    }
+    default:
+      break;
+    }
+
+    if(type->kind != Type::TK_NAMED) {
+      return type;
+    }
+    TypePtr alias_owner = type->named_member_owner_type;
+    string alias_name = type->named_member_name;
+    if(!alias_owner || alias_name.empty()) {
+      vector<string> members;
+      bool leading_typename = false;
+      if(!named_type_dependent_qualified_member(type,
+                                                alias_owner,
+                                                members,
+                                                leading_typename,
+                                                nullptr) ||
+         members.size() != 1) {
+        return type;
+      }
+      (void)leading_typename;
+      alias_name = members[0];
+    }
+    if(!type_equals(alias_owner, info.type)) {
+      return type;
+    }
+    const auto found =
+        info.member_scope->named_types.find(alias_name);
+    return found != info.member_scope->named_types.end() &&
+           found->second &&
+           !type_equals(found->second, type) ?
+        found->second :
+        type;
+  }
+
   FunctionBinding * find_equivalent_class_function(ClassInfo & info,
                                                    const string & name,
                                                    const TypePtr & type,
@@ -22317,14 +22403,8 @@ private:
        normalized_target) {
       resolved_target = normalized_target;
     }
-    if(info.member_scope) {
-      TypePtr canonical_target =
-          semantic_class_model::resolve_instantiated_member_alias_type(
-              *this, *info.member_scope, resolved_target, &info);
-      if(canonical_target) {
-        resolved_target = canonical_target;
-      }
-    }
+    resolved_target =
+        canonicalize_current_member_alias_for_binding(info, resolved_target);
     const bool trace_binding = parser_trace::enabled("class.collect");
     if(trace_binding) {
       std::ostringstream trace;
@@ -22364,15 +22444,8 @@ private:
          normalized_candidate) {
         resolved_candidate = normalized_candidate;
       }
-      if(info.member_scope) {
-        TypePtr canonical_candidate =
-            semantic_class_model::resolve_instantiated_member_alias_type(
-                *this, *info.member_scope, resolved_candidate, &info);
-        if(canonical_candidate) {
-          resolved_candidate = canonical_candidate;
-        }
-      }
-
+      resolved_candidate = canonicalize_current_member_alias_for_binding(
+          info, resolved_candidate);
       const bool equivalent =
           types_equivalent_for_member_binding(resolved_candidate, resolved_target);
       if(trace_binding) {

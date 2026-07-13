@@ -13625,7 +13625,10 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         if(qualified_name != nullptr &&
            (qualified_name->rooted || !qualified_name->qualifiers.empty())) {
           Scope * qualified_target =
-              resolve_qualified_scope_for_class_or_namespace(ctx, scope, *qualified_name);
+              ctx.resolve_qualified_scope_for_node(scope,
+                                                   *qualified_name,
+                                                   lookup_callee_node,
+                                                   false);
           out << " [qualified_target ";
           if(!qualified_target) {
             out << "<none>";

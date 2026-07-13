@@ -10620,7 +10620,8 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         TypePtr pattern_type;
         bool parsed_pattern_type = false;
         const bool reuse_placeholder_pattern =
-            services.witness_context.session == nullptr;
+            services.witness_context.session == nullptr &&
+            pattern_has_deducible_placeholders;
         if(pattern_syntax &&
            placeholder_pattern_type &&
            reuse_placeholder_pattern) {
