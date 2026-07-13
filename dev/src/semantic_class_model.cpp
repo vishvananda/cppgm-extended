@@ -3590,11 +3590,13 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
               nullptr;
           const std::vector<template_model::TemplateArgument> * arguments = nullptr;
           class_template_member_substitution_bindings(info, parameters, arguments);
-          const bool contains_type_pack_element =
-              class_alias_type_id_contains_type_pack_element(type_id);
-          if(parameters &&
-             arguments &&
-             contains_type_pack_element) {
+          const bool can_substitute_class_template_arguments =
+              parameters &&
+              arguments &&
+              (class_alias_type_id_contains_type_pack_element(type_id) ||
+               template_model::template_arguments_fully_bind_parameters(
+                   *parameters, *arguments));
+          if(can_substitute_class_template_arguments) {
             template_api::binding::bind_template_arguments_into_scope(
                 ctx,
                 *info.member_scope,
@@ -3603,9 +3605,7 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
                 info.has_instantiation_binding_arguments ?
                     &info.instantiation_binding_pack_sizes : nullptr);
           }
-          if(parameters &&
-             arguments &&
-             contains_type_pack_element &&
+          if(can_substitute_class_template_arguments &&
              template_argument_semantics::substitute_type_id_node_for_template_arguments(
                  services,
                  *info.member_scope,
