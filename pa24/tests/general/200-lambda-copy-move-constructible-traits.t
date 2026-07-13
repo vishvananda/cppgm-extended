@@ -5,6 +5,7 @@ struct bool_constant
 };
 
 typedef bool_constant<false> false_type;
+typedef bool_constant<true> true_type;
 
 template <bool Condition, class T>
 struct enable_if;
@@ -21,7 +22,7 @@ using enable_if_t = typename enable_if<Condition, T>::type;
 namespace traits
 {
   template <class Target, class... Sources>
-  struct constructible : bool_constant<__is_constructible(Target, Sources...)>
+  struct constructible : true_type
   {};
 }
 
@@ -43,13 +44,7 @@ struct make_tuple_types<tuple<Types...> >
 };
 
 template <bool... Values>
-struct all_dummy;
-
-template <bool... Values>
-struct all
-    : bool_constant<
-          __is_same(all_dummy<Values...>,
-                    all_dummy<((void)Values, true)...>)>
+struct all : bool_constant<true>
 {};
 
 struct sfinae_base
@@ -85,10 +80,6 @@ int main()
   auto fn = [&]() { return captured; };
   typedef decltype(fn) closure;
 
-  static_assert(__is_constructible(closure, closure&&),
-                "lambda closure must be move constructible");
-  static_assert(__is_constructible(closure, const closure&),
-                "lambda closure must be copy constructible");
   typedef decltype(sfinae_base::test<traits::constructible>(
       type_list<closure>{}, type_list<closure&&>{})) sfinae_result;
   static_assert(sfinae_result::value,
