@@ -779,6 +779,51 @@ bool member_lookup_present(const MemberVariableTemplateLookupResult & result)
   return result.variable_template != nullptr;
 }
 
+bool member_lookup_requires_unique_subobject(const MemberValueLookupResult & result)
+{
+  return result.binding && result.binding->kind == ValueBinding::VK_FIELD;
+}
+
+bool member_lookup_requires_unique_subobject(const MemberFunctionLookupResult & result)
+{
+  for(size_t i = 0; i < result.functions.size(); ++i) {
+    if(result.functions[i] && result.functions[i]->is_method) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool member_lookup_requires_unique_subobject(const MemberCallableLookupResult & result)
+{
+  for(size_t i = 0; i < result.functions.size(); ++i) {
+    if(result.functions[i] && result.functions[i]->is_method) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < result.templates.size(); ++i) {
+    if(result.templates[i] && !result.templates[i]->is_static_member) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool member_lookup_requires_unique_subobject(const MemberClassTemplateLookupResult &)
+{
+  return false;
+}
+
+bool member_lookup_requires_unique_subobject(const MemberAliasTemplateLookupResult &)
+{
+  return false;
+}
+
+bool member_lookup_requires_unique_subobject(const MemberVariableTemplateLookupResult &)
+{
+  return false;
+}
+
 bool member_functions_same_explicit_signature(const FunctionBinding & lhs,
                                               const FunctionBinding & rhs)
 {
@@ -1208,14 +1253,14 @@ Result lookup_member_in_hierarchy(ClassInfo & info,
     path_access = combine_member_access(path_access, candidate_access[i]);
   }
 
-  size_t path_offset = 0;
-  MemberAccess resolved_access = MA_PUBLIC;
-  if(!find_unique_base_path(info, declared_in, path_offset, resolved_access)) {
-    return Result();
-  }
-
   Result out = direct_lookup(*declared_in);
   if(!member_lookup_present(out)) {
+    return Result();
+  }
+  size_t path_offset = 0;
+  MemberAccess resolved_access = MA_PUBLIC;
+  if(member_lookup_requires_unique_subobject(out) &&
+     !find_unique_base_path(info, declared_in, path_offset, resolved_access)) {
     return Result();
   }
   out.declared_in = declared_in;
