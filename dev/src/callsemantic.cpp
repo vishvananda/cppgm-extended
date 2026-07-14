@@ -12339,12 +12339,16 @@ private:
 
       const TemplateIdSyntax * qualifier_template_id =
           qualifier_template_id_for_component(node, i, qualified->qualifiers[i]);
+      TypePtr qualifier_type;
       const string qualifier_lookup_text =
           qualifier_template_id ?
               template_id_syntax_text_preserving_spacing(*qualifier_template_id) :
               qualified->qualifiers[i];
-      TypePtr qualifier_type;
-      if(qualifier_template_id) {
+      if(const CppAstNode * qualifier_type_node =
+             cppast_qualifier_type_syntax(node, i)) {
+        qualifier_type = qualifier_type_node->semantic_type;
+      }
+      if(!qualifier_type && qualifier_template_id) {
         if(!qualifier_type) {
           ExactTemplateTypeLookupAnchor qualifier_anchor;
           qualifier_anchor.template_text =
@@ -12411,7 +12415,7 @@ private:
             return vector<FunctionTemplateDecl *>();
           }
         }
-      } else {
+      } else if(!qualifier_type) {
         qualifier_type = lookup_type_impl(*current_scope,
                                           qualifier_lookup_text,
                                           true,
@@ -16184,7 +16188,11 @@ private:
           qualifier_template_id ?
               template_id_syntax_text_preserving_spacing(*qualifier_template_id) :
               qualified->qualifiers[i];
-      if(qualifier_template_id) {
+      if(const CppAstNode * qualifier_type_node =
+             cppast_qualifier_type_syntax(node, i)) {
+        qualifier_type = qualifier_type_node->semantic_type;
+      }
+      if(!qualifier_type && qualifier_template_id) {
         if(!qualifier_type) {
           ExactTemplateTypeLookupAnchor qualifier_anchor;
           qualifier_anchor.template_text =
@@ -16251,7 +16259,7 @@ private:
             return vector<FunctionBinding *>();
           }
         }
-      } else {
+      } else if(!qualifier_type) {
         qualifier_type = lookup_type_impl(*current_scope,
                                           qualifier_lookup_text,
                                           true,
