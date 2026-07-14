@@ -1,3 +1,4 @@
+template<class T>
 struct holder {
   float re;
   float im;
@@ -7,5 +8,5 @@ struct holder {
 };
 
 int main() {
-  return 0;
+  return sizeof(holder<float>) == 0;
 }

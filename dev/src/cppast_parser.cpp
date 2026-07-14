@@ -1662,6 +1662,37 @@ bool match_gnu_complex_type_specifier(const IRecogTokenSequence & tokens,
   return false;
 }
 
+CppAstNode make_gnu_complex_type_specifier(
+    CppAstKind kind,
+    const IRecogTokenSequence & tokens,
+    size_t start,
+    size_t end)
+{
+  CppAstNode out =
+      make_node(kind, template_angle::token_span_text_spaced(tokens, start, end));
+  out.builtin_type_transform_name = "_Complex";
+  out.token_start = start;
+  out.token_end = end;
+  out.source_location_id = tokens.peek(start).location_id;
+
+  CppAstNode component = make_node(CppAstKind::type_specifier_seq);
+  component.token_start = start + 1;
+  component.token_end = end;
+  component.source_location_id = tokens.peek(start + 1).location_id;
+  for(size_t pos = start + 1; pos < end; ++pos) {
+    component.children.push_back(
+        make_token_node(CppAstKind::type_specifier, tokens.peek(pos)));
+  }
+
+  CppAstNode component_type_id = make_node(CppAstKind::type_id);
+  component_type_id.token_start = start + 1;
+  component_type_id.token_end = end;
+  component_type_id.source_location_id = tokens.peek(start + 1).location_id;
+  component_type_id.children.push_back(std::move(component));
+  out.base_type_syntax.reset(new CppAstNode(std::move(component_type_id)));
+  return out;
+}
+
 bool is_gnu_complex_unary_operator_name(const string & text)
 {
   return text == "__real" || text == "__real__" ||
@@ -5817,8 +5848,8 @@ bool CppAstParser::parse_type_specifier_seq(CppAstNode & out)
       size_t complex_end = pos;
       if(match_gnu_complex_type_specifier(tokens, pos, complex_end)) {
         pos = complex_end;
-        out.children.push_back(
-            make_node(CppAstKind::type_specifier, token_span_text_spaced(complex_start, pos)));
+        out.children.push_back(make_gnu_complex_type_specifier(
+            CppAstKind::type_specifier, tokens, complex_start, pos));
         matched = true;
         continue;
       }
@@ -5974,8 +6005,8 @@ bool CppAstParser::parse_decl_specifier_seq(CppAstNode & out)
       size_t complex_end = pos;
       if(match_gnu_complex_type_specifier(tokens, pos, complex_end)) {
         pos = complex_end;
-        out.children.push_back(
-            make_node(CppAstKind::decl_specifier, token_span_text_spaced(complex_start, pos)));
+        out.children.push_back(make_gnu_complex_type_specifier(
+            CppAstKind::decl_specifier, tokens, complex_start, pos));
         matched = true;
         saw_type_name = true;
         continue;

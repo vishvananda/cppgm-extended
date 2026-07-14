@@ -24,6 +24,7 @@ enum Kind
   BTK_ADD_LVALUE_REFERENCE,
   BTK_ADD_RVALUE_REFERENCE,
   BTK_REMOVE_CONST_REF,
+  BTK_GNU_COMPLEX,
   BTK_IDENTITY
 };
 
@@ -140,6 +141,9 @@ inline const AliasInfo * find_alias_template(const std::string & name)
 
 inline Kind kind_for_name(const std::string & name)
 {
+  if(name == "_Complex") {
+    return BTK_GNU_COMPLEX;
+  }
   const Info * info = find(name);
   return info ? info->kind : BTK_UNKNOWN;
 }
@@ -300,6 +304,7 @@ inline const char * canonical_dependent_transform_name_for_kind(Kind kind)
     return "__add_rvalue_reference";
   case BTK_REMOVE_CONST_REF:
     return "__remove_const_ref_t";
+  case BTK_GNU_COMPLEX:
   case BTK_IDENTITY:
   case BTK_UNKNOWN:
     return nullptr;

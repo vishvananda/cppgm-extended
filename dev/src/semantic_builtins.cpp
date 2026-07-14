@@ -1710,6 +1710,10 @@ bool apply_builtin_type_transform_kind(builtin_type_transforms::Kind kind,
     out = arg_type;
     return true;
 
+  case builtin_type_transforms::BTK_GNU_COMPLEX:
+    out = gnu_complex_type_for_component(arg_type);
+    return static_cast<bool>(out);
+
   case builtin_type_transforms::BTK_UNDERLYING_TYPE:
   case builtin_type_transforms::BTK_UNKNOWN:
     break;
