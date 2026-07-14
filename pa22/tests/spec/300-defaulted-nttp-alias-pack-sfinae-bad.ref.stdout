@@ -1,1 +1,6 @@
-
+ERROR: no viable constructor [class tuple_like<S>] [arg_count 1] [ctor-set tuple_like<S>::tuple_like:function of (pointer to struct tuple_like<S>, lvalue-reference to const struct tuple_like<S>) returning void; tuple_like<S>::tuple_like:function of (pointer to struct tuple_like<S>, rvalue-reference to struct tuple_like<S>) returning void] [rejections tuple_like<S>::tuple_like: arg 0 conversion failed param=lvalue-reference to const struct tuple_like<S> arg=struct S category=1; tuple_like<S>::tuple_like: arg 0 conversion failed param=rvalue-reference to struct tuple_like<S> arg=struct S category=1] [context constructor action] [function main] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings {values:value=struct tuple_like<S>}]
+Diagnostic context:
+analyze_function_binding_output [main]
+  analyze_statement [simple-declaration] at tests/spec/300-defaulted-nttp-alias-pack-sfinae-bad.t:101:3
+    try_argument_conversion [target rvalue-reference to struct tuple_like<S>]
+      select_constructor_from_exprs [tuple_like<S>, args=1]
