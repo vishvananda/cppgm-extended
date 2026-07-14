@@ -69,7 +69,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 
 | # | Suite | V2 status | Commit | Forced run evidence | Notes |
 |---:|---|---|---|---|---|
-| 1 | `libs/accumulators/test` | pending | `db9879223` | not run | First V2 suite. V2 does not carry forward the old pass state. |
+| 1 | `libs/accumulators/test` | frontier | `039d90613` | Forced survey run, 8 jobs, 1800s timeout, completed `mixed` with rc `1` in 491.7s; log `/tmp/boost-frontier-v2-suite-001-db9879223/libs__accumulators__test.log`. | Earliest causal failure is a declaration parse error while building Boost.Serialization; the same form blocks many Accumulators targets. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -77,14 +77,14 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#1 libs/accumulators/test`
-- focused target: pending first forced suite run
-- failure phase: pending
-- pre-fix diagnostic: pending
+- focused target: `libs/accumulators/test//count` pending low-parallelism rerun
+- failure phase: initial parse
+- pre-fix diagnostic: `ERROR: expected declaration after template-parameter-clause near KW_CLASS:class` at `boost/archive/basic_binary_iarchive.hpp:54:1`; Accumulators `count` reaches the same form at `boost/archive/basic_text_oarchive.hpp:49:1`
 - reduced repro: pending
-- owning PA/cluster: pending
-- implementation area: pending
-- performance risk: pending
-- next action: run suite 1 with a forced rebuild
+- owning PA/cluster: likely PA10 parser, pending reduction
+- implementation area: declaration parsing after a template-parameter-clause
+- performance risk: parser normal path; measure any production change against the fixed baseline
+- next action: rerun `libs/accumulators/test//count` with low parallelism and reduce the declaration form
 
 ## Fix Ledger
 
@@ -113,6 +113,10 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 - `2026-07-13`: Accepted one PA9 generated-program timeout in the full report
   as the known load-sensitive test behavior after its isolated direct-LowIR
   report passed `11 / 11` immediately.
+- `2026-07-13`: The first forced V2 Accumulators run completed `mixed` in
+  491.7s. Classified its earliest causal failure as an initial-parser frontier
+  in a Boost.Serialization dependency rather than the later parallel target
+  diagnostics.
 
 ## Next Commands
 
@@ -121,9 +125,8 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  python3 scripts/run_boost_b2_suite_survey.py \
-  --suite 1 \
-  --jobs 8 \
-  --timeout 1800 \
-  --output-dir /tmp/boost-frontier-v2-suite-001-db9879223
+  JOBS=1 \
+  /usr/local/bin/timeout 600 \
+  /Users/vishvananda/boost_1_91_0/run-cppgm-b2.sh \
+  -a libs/accumulators/test//count
 ```
