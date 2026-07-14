@@ -23,7 +23,7 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 |---|---|---|
 | Exact compiler start commit | pass | `main`, `origin/main`, and the merged PR head were verified at `db9879223` before this branch was created. |
 | PR Tests workflow | pass | GitHub Actions run `29298098410` completed successfully with all 21 checks green across GCC/libstdc++ and Clang/libc++ on Ubuntu 24.04 and 26.04. |
-| PR-triggered inception | pending | Run `29299551532` was still in `Compare cppgm++ inception` when V2 planning started. Do not credit suite 1 until this is successful. |
+| PR-triggered inception | pass | Run `29299551532` completed `Compare cppgm++ inception` successfully in `56m53s`. |
 | Warning-clean `dev/cppgm++` build | pass | Last build at the baseline head completed without warnings. Rerun before suite 1. |
 | Full direct-LowIR report | pending refresh | PR CI `test-report` passed in all four lanes. Record the V2 local baseline command before suite 1. |
 | Strict direct-LowIR report | pass, pending refresh | PR CI `test-strict` passed in all four lanes. Record the V2 local baseline command before suite 1. |
