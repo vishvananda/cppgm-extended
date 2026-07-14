@@ -6779,10 +6779,12 @@ bool try_expand_alias_template_pattern_structurally(
     }
     return true;
   };
-  std::function<bool(const TypePtr &, TypePtr &)>
+  std::function<bool(const TypePtr &, TypePtr &, ClassInfo *)>
       materialize_class_template_target_type;
   materialize_class_template_target_type =
-      [&](const TypePtr & candidate, TypePtr & out) -> bool
+      [&](const TypePtr & candidate,
+          TypePtr & out,
+          ClassInfo * known_class_info) -> bool
   {
     out.reset();
     if(!candidate ||
@@ -7014,7 +7016,8 @@ bool try_expand_alias_template_pattern_structurally(
       }
       return found_info;
     };
-    ClassInfo * class_info = find_class_info_for_type(base);
+    ClassInfo * class_info =
+        known_class_info ? known_class_info : find_class_info_for_type(base);
     if(!class_info) {
       TypePtr key_base = strip_top_level_cv(base);
       if(key_base &&
@@ -7125,15 +7128,38 @@ bool try_expand_alias_template_pattern_structurally(
       }
       void * nested_class_template_decl = nullptr;
       std::vector<DependentAliasTemplateArgumentSyntax> nested_class_arguments;
-      if(!named_type_dependent_class_template(argument.type,
+      const bool has_nested_class_template =
+          named_type_dependent_class_template(argument.type,
                                               nested_class_template_decl,
-                                              nested_class_arguments) ||
-         !nested_class_template_decl) {
+                                              nested_class_arguments) &&
+          nested_class_template_decl;
+      bool has_unresolved_member_alias_class_template = false;
+      ClassInfo * argument_class_info = nullptr;
+      const TypePtr argument_base = strip_top_level_cv(argument.type);
+      if(direct_dependent_member_alias &&
+         argument_base &&
+         argument_base->kind == Type::TK_NAMED &&
+         !argument_base->named_complete &&
+         named_type_class_template_specialization_mangle_info_const(
+             argument_base)) {
+        argument_class_info =
+            services.semantic_context ?
+                services.semantic_context->class_info_for_type(argument_base) :
+                template_api::find_named_type_class_info(type_system.model,
+                                                         argument_base);
+        has_unresolved_member_alias_class_template =
+            !argument_class_info ||
+            (!argument_class_info->complete &&
+             !argument_class_info->reference_members_collected);
+      }
+      if(!has_nested_class_template &&
+         !has_unresolved_member_alias_class_template) {
         continue;
       }
       TypePtr materialized_argument_type;
       if(materialize_class_template_target_type(argument.type,
-                                                materialized_argument_type) &&
+                                                materialized_argument_type,
+                                                argument_class_info) &&
          materialized_argument_type) {
         argument.type = materialized_argument_type;
       }
@@ -7703,7 +7729,8 @@ bool try_expand_alias_template_pattern_structurally(
         if(substituted_pattern && !type_is_dependent(substituted_pattern)) {
           TypePtr materialized_pattern;
           if(materialize_class_template_target_type(substituted_pattern,
-                                                    materialized_pattern)) {
+                                                    materialized_pattern,
+                                                    nullptr)) {
             out = materialized_pattern;
             return true;
           }
@@ -8299,7 +8326,9 @@ bool try_expand_alias_template_pattern_structurally(
   }
 
   TypePtr materialized_substituted;
-  if(materialize_class_template_target_type(substituted, materialized_substituted)) {
+  if(materialize_class_template_target_type(substituted,
+                                            materialized_substituted,
+                                            nullptr)) {
     substituted = materialized_substituted;
   }
 
