@@ -187,6 +187,9 @@ string builtin_code_from_name(const string & name)
   if(name == "double") { return "d"; }
   if(name == "longdouble") { return "e"; }
   if(name == "float128") { return "g"; }
+  if(name == "complex-float") { return "Cf"; }
+  if(name == "complex-double") { return "Cd"; }
+  if(name == "complex-longdouble") { return "Ce"; }
   if(name == "nullptr") { return "Dn"; }
   return string();
 }
@@ -1973,6 +1976,9 @@ string builtin_name_from_code(const string & code)
   if(code == "d") { return "double"; }
   if(code == "e") { return "longdouble"; }
   if(code == "g") { return "float128"; }
+  if(code == "Cf") { return "complex-float"; }
+  if(code == "Cd") { return "complex-double"; }
+  if(code == "Ce") { return "complex-longdouble"; }
   if(code == "Dn") { return "nullptr"; }
   return string();
 }

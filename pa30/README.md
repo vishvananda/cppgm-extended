@@ -95,6 +95,11 @@ The normalized builtin word `float128` denotes GNU `__float128` and uses the
 Itanium builtin type code `g`. This is an ABI fact spelling, not a requirement
 to parse `__float128` as C++ source in PA30.
 
+The normalized builtin words `complex-float`, `complex-double`, and
+`complex-longdouble` denote GNU complex floating types and use the Itanium type
+encodings `Cf`, `Cd`, and `Ce`. These are typed ABI facts; consumers must not
+construct them by appending raw mangled fragments.
+
 Structured cases introduce reusable facts before the final target:
 
 ```text

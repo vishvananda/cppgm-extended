@@ -13517,6 +13517,9 @@ static bool try_build_type_ir(const TypePtr & type,
     const char * abi_code;
   } kNamedBuiltinTypes[] = {
       {"builtin __float128", "g"},
+      {"builtin _Complex float", "Cf"},
+      {"builtin _Complex double", "Cd"},
+      {"builtin _Complex long double", "Ce"},
       {"builtin _Float16", "DF16_"},
       {"builtin _Float32", "DF32_"},
       {"builtin _Float32x", "DF32x"},
