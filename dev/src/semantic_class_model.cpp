@@ -5408,10 +5408,17 @@ CppAstNode function_declarator_without_trailing_return(const CppAstNode & declar
   return filtered;
 }
 
-bool declarator_has_direct_nested_declarator(const CppAstNode & declarator)
+bool declarator_has_complex_direct_nested_declarator(const CppAstNode & declarator)
 {
   for(size_t i = 0; i < declarator.children.size(); ++i) {
-    if(declarator.children[i].kind == CppAstKind::nested_declarator) {
+    const CppAstNode & child = declarator.children[i];
+    if(child.kind != CppAstKind::nested_declarator) {
+      continue;
+    }
+    if(child.children.size() != 1 ||
+       child.children[0].kind != CppAstKind::declarator ||
+       child.children[0].children.size() != 1 ||
+       child.children[0].children[0].kind != CppAstKind::identifier) {
       return true;
     }
   }
@@ -5807,7 +5814,7 @@ void prepare_method_parse_context(const CppAstNode * specifiers,
   analyze_method_syntax(specifiers, declarator, out.syntax);
   const bool can_use_filtered_parse =
       (!require_parameter_clause_for_filtered_parse || has_parameter_clause) &&
-      !declarator_has_direct_nested_declarator(declarator);
+      !declarator_has_complex_direct_nested_declarator(declarator);
   if(can_use_filtered_parse) {
     out.uses_filtered_parse = true;
     out.set_parse_sources(specifiers, &declarator);

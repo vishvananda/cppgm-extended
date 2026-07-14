@@ -15,9 +15,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `0 / 147`
 - current cursor: `#1 libs/accumulators/test`
-- active compiler frontier: non-template `static constexpr` member-function
-  definition collection in Boost.Random `splitmix64` while compiling
-  Accumulators `extended_p_square`
+- active compiler frontier: qualified function-template call resolution drops
+  the visible `boost::test_tools::tt_detail::check_frwd` candidate while
+  compiling Accumulators `extended_p_square`
 
 ## Baseline Gates
 
@@ -68,6 +68,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(typed-va-list ABI fix)` | Host `__builtin_va_list` function symbols | -0.11% | +0.22% | -0.03% | n/a | `/tmp/cppgm-boost-frontier-v2-va-list-typed-abi-perf.json` | pass; below hotspot threshold |
 | `(typed-member-pointer fix)` | Qualified current-specialization member-function address | -0.10% | -0.81% | +0.01% | n/a | `/tmp/cppgm-boost-frontier-v2-typed-member-pointer-perf.json` | pass; below hotspot threshold |
 | `(typed bound-template fix)` | Nested member alias template-template call result | -0.13% | -0.09% | +0.02% | n/a | `/tmp/cppgm-boost-frontier-v2-bound-template-identity-perf.json` | pass; below hotspot threshold |
+| `(parenthesized noexcept member fix)` | Parenthesized class member name with a `noexcept` definition | -0.13% | -0.31% | +0.02% | n/a | `/tmp/cppgm-boost-frontier-v2-parenthesized-member-noexcept-perf.json` | pass; below hotspot threshold |
 
 ## Suite Cursor
 
@@ -76,7 +77,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 
 | # | Suite | V2 status | Commit | Forced run evidence | Notes |
 |---:|---|---|---|---|---|
-| 1 | `libs/accumulators/test` | frontier | `(typed bound-template fix)` | Forced single-job `count` rebuild passed end to end and updated 72 targets; log `/tmp/boost-v2-acc-count-typed-member-pointer-fix.log`. Focused `covariance` passed after preserving the typed bound member-alias head and updated 72 targets; log `/tmp/boost-v2-acc-covariance-bound-template-identity-b2-j4.log`. The forced 8-job full survey then updated 154 targets, failed 28 targets, and confirmed both `covariance` and `weighted_covariance` pass; log `/tmp/boost-v2-suite-001-bound-template-identity-full.log`. | The qualified-friend parser, `mp_bool`, Boost.Test `format_report`, Boost.Regex `perl_matcher`, structured `_Complex` parsing and ABI, and nested Boost.Parameter bound-member-alias frontiers are fixed. The next ordered target is `extended_p_square`, one of 22 compile failures sharing the Boost.Random `splitmix64` member-definition diagnostic; later independent classes are one MPL non-type evaluation failure, two ambiguous-base failures, and three serialization runtime failures. |
+| 1 | `libs/accumulators/test` | frontier | `(parenthesized noexcept member fix)` | Forced single-job `count` rebuild passed end to end and updated 72 targets; log `/tmp/boost-v2-acc-count-typed-member-pointer-fix.log`. Focused `covariance` passed after preserving the typed bound member-alias head and updated 72 targets; log `/tmp/boost-v2-acc-covariance-bound-template-identity-b2-j4.log`. The bound-template full survey updated 154 targets and failed 28; log `/tmp/boost-v2-suite-001-bound-template-identity-full.log`. A forced focused `extended_p_square` run reproduced the Boost.Random member-definition failure; log `/tmp/boost-v2-acc-extended-p-square-member-definition-focused.log`. After the fix, the forced focused target cleared Boost.Random and advanced to `check_frwd`; log `/tmp/boost-v2-acc-extended-p-square-parenthesized-noexcept-fix.log`. The forced full survey reached target 200 before its 1800s harness timeout; its non-forced continuation completed the graph with 12 updated and 13 failed targets. Logs: `/tmp/boost-v2-suite-001-parenthesized-noexcept-full.log` and `/tmp/boost-v2-suite-001-parenthesized-noexcept-resume.log`. | All 22 Boost.Random `splitmix64` member-definition failures are fixed. The remaining 13 targets split into two `check_frwd` lookup failures, five MPL non-type evaluation failures, one iterator alias-template failure, two ambiguous-base failures, and three serialization base64 runtime failures. The next ordered target remains `extended_p_square`, now at the independent qualified function-template call frontier. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -85,22 +86,22 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 
 - suite: `#1 libs/accumulators/test`
 - focused target: `libs/accumulators/test//extended_p_square`
-- failure phase: non-template class member collection in Boost.Random
-  `splitmix64`
-- diagnostic: `unsupported member function definition` for the parsed
-  `static constexpr result_type max() noexcept` definition; the AST retains a
-  nested declarator for `max`, an empty parameter clause, the `noexcept`
-  qualifier, and a lazy function body
+- failure phase: qualified function-template call resolution in the
+  Boost.Test assertion path
+- diagnostic: unknown function
+  `::boost::test_tools::tt_detail::check_frwd`; the qualified target scope lists
+  `check_frwd` in `qualified_target_function_templates`, so lookup succeeds and
+  the candidate is lost downstream
 - reduced repro: pending reduction outside the assignment tree
 - owning PA/cluster: pending reduction; place at the earliest PA owning the
-  essential non-template member-definition shape
-- implementation area: class-reference member-definition collection and
-  declarator classification
-- performance risk: normal class-member collection path; inspect hotspot
+  essential qualified function-template call behavior
+- implementation area: typed qualified template-call candidate construction,
+  deduction, and viability
+- performance risk: normal call-resolution path; inspect hotspot
   counters and sample if the fix moves instructions by more than 0.25%
-- next action: force `extended_p_square` alone, reduce the exact
-  `static constexpr result_type max() noexcept` shape without Boost or the STL,
-  and compare its structured declarator with nearby accepted member definitions
+- next action: reduce the `check_frwd` call without Boost or the STL, trace the
+  typed candidate from qualified lookup through deduction and viability, and
+  fix the uncached algorithm rather than retaining a rendered-name fallback
 
 ## Fix Ledger
 
@@ -116,6 +117,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/accumulators/test//covariance` libc++ parameter collection | The initial parser recognized GNU complex types but retained only their spaced display text. When a class-template specialization later collected a member template, the structured declaration parser correctly refused to recover a multi-token type from that string and rejected the parameter clause. The parser now records `_Complex` as a typed builtin transform over the initially parsed component `type_id`; ordinary and template declaration paths consume that retained AST through the existing structured transform resolver. No semantic text lookup, reparse, cache, or libc++ spelling special case is added. | Strengthened `pa34/tests/compile/600-gnu-complex-template-constructor.t` to make the enclosing holder a class template and force specialization population | Non-STL reducer `/tmp/cppgm-v2-gnu-complex-class-template.cpp` and focused Boost `covariance.o` failed with `unsupported function template parameter-clause`; the old PA34 test did not instantiate its non-template holder and therefore never populated the member path. Clang accepts the reducer. | Warning-clean build; reducer and strengthened PA34 test pass; direct PA34 report `309/309`; all configured strict suites pass; PA34 placement audit reports zero findings and zero hygiene findings; all 23 text-reparse categories remain zero and 14 audit tests pass; forced focused `covariance` clears the parameter-clause diagnostic and advances to a typed GNU complex ABI gap. | instructions -0.04%; max RSS +0.66%; peak footprint -0.03%; pass, below hotspot threshold | `(this commit)` |
 | fixed | `libs/accumulators/test//covariance` libc++ GNU complex symbols | Semantic GNU complex types were already structured named `TypePtr`s, but the typed symbol adapter did not map them into the ABI model, so weak member symbol construction failed. The adapter now maps complex float, double, and long double to `abi_mangle::Type::builtin` with Itanium codes `Cf`, `Cd`, and `Ce`. PA30's normalized fact grammar, README, and test surface expose the same typed forms, and symbol tracing captures the resulting `AbiMangleTarget`; no raw mangled suffix or rendered-symbol recovery is added. | New `pa30/tests/abi/100-gnu-complex-types.t`; strengthened `pa34/tests/compile/600-gnu-complex-template-constructor.t` with a non-template complex-parameter member | Focused Boost failed building the weak symbol for `std::__1::complex<float>::__builtin(_Complex float)`. Clang's object symbols confirm `Cf`, `Cd`, and `Ce`; the non-STL PA34 trace failed before the map and now records `holder<float>::set_builtin` as `_ZN6holderIfE11set_builtinECf`. | Warning-clean `abimangle` and `cppgm++` builds; PA30 fact output is exactly `Cf`, `Cd`, `Ce`; PA30/PA34 report passes `390/390`; both placement audits report zero findings and zero hygiene findings; all configured strict suites pass; all 23 text-reparse categories remain zero and 14 audit tests pass; focused `covariance` clears the ABI failure and advances to Boost.Parameter result type lookup. | instructions +0.08%; max RSS +1.17%; peak footprint +0.04%; pass, below hotspot threshold | `(this commit)` |
 | fixed | `libs/accumulators/test//covariance` Boost.Parameter result type | A bound template-template parameter already retained the selected member alias declaration and its concrete owner type, but substitution replaced the semantic template-id head with the alias's rendered qualified name. Generic lookup then decomposed and re-resolved `arg_list<...>` instead of applying the bound member alias. Substitution now preserves the parameter head when a typed owner is present, bound-template resolution runs before generic template-id lookup, direct fallback lookup retains the AST node, concrete alias owners are materialized from typed specialization metadata, and already concrete declared owners are not rebound as current instantiations. No cache, text lookup, or spelling-specific recovery is added. | `pa22/tests/general/400-member-alias-template-template-call-result-owner.t`, placed at the PA22 full deduction/result-substitution owner | Exact non-STL reducer `/tmp/cppgm-v2-nested-member-alias-call.cpp` reproduced the `B<T...>` member-alias application and extractor call. Focused Boost failed resolving `arg_list<...>::binding::fn<...>` after the typed binding had already been selected; debugger stacks showed generic qualified lookup re-entering the rendered owner. Removing the concrete-owner guard also makes the reducer fail independently. | Warning-clean full compiler rebuild; reducer passes in 0.07s at 12.3 MB RSS and 301,955,485 instructions; focused PA22 neighborhood passes `3/3`; PA22 direct report passes `251/251`; all configured strict suites pass; PA22 placement audit reports zero findings and zero hygiene findings; all 23 text-reparse categories remain zero and 14 audit tests pass; forced focused `covariance` and forced full-suite `covariance`/`weighted_covariance` pass. | instructions -0.13%; max RSS -0.09%; peak footprint +0.02%; pass, below hotspot threshold | `(this commit)` |
+| fixed | `libs/accumulators/test//extended_p_square` Boost.Random dependency | The class-model method parser rejected every declarator with a direct nested declarator from its normal typed filtered path. That guard is necessary for complex returned-array/function shapes, but it also rejected a structurally simple parenthesized member name such as `int (value)() noexcept`, leaving the outer function qualifier in the declaration input. The guard now distinguishes the exact `nested-declarator -> declarator -> identifier` name shape from complex nested declarators, so the established typed filter handles its outer parameter clause and `noexcept`. No text parse, fallback lookup, or cache is added. | `pa15/tests/general/200-parenthesized-noexcept-member-definition.t`, placed with ordinary class method and `noexcept` metadata ownership | Exact Boost-shaped reducer `/tmp/cppgm-v2-static-constexpr-parenthesized-member.cpp` reproduced `static constexpr unsigned long long (max)() noexcept`; minimal reducer `/tmp/cppgm-v2-parenthesized-noexcept-member-definition.cpp` reproduced the essential form. The same parenthesized forms without `noexcept` passed before the fix, isolating the incorrectly bypassed function-qualifier filter. Clang accepts both failing reducers. | Warning-clean full compiler build; minimal and exact reducers pass; focused PA15 neighborhood passes `2/2`; PA15 direct report passes `201/201`; all configured strict suites pass; PA15 placement audit reports zero findings and zero hygiene findings; all 23 text-reparse categories remain zero; forced focused and completed full-suite graph clear all 22 `splitmix64` member-definition failures. | instructions -0.13%; max RSS -0.31%; peak footprint +0.02%; pass, below hotspot threshold | `(this commit)` |
 
 ## Decision Log
 
@@ -185,6 +187,15 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
   its Boost.Random `splitmix64` member-definition diagnostic. Later independent
   classes are one MPL constant-evaluation failure, two ambiguous-base failures,
   and three serialization runtime failures.
+- `2026-07-14`: Reduced the Boost.Random failure to a parenthesized member name
+  followed by an outer `noexcept`. The class-model guard incorrectly classified
+  the simple nested identifier as a complex returned declarator and bypassed
+  the existing typed qualifier filter. Refining that structural predicate
+  clears all 22 shared failures with instructions down 0.13% from the immutable
+  baseline. The forced survey timed out while targets were still completing;
+  a non-forced continuation completed the graph and established 13 remaining
+  targets in six independent failure classes. `extended_p_square` remains the
+  ordered target, now at visible `check_frwd` template candidate loss.
 
 ## Next Commands
 
