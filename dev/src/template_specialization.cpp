@@ -10427,6 +10427,65 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
       }
       return saw_pack_deduction && merge_non_pack_deductions(element_deduced);
     };
+    const auto make_complete_deduced_argument_list =
+        [&](std::vector<TemplateArgument> & arguments) -> bool
+    {
+      arguments.clear();
+      arguments.reserve(partial.parameters.size());
+      for(std::size_t parameter_index = 0;
+          parameter_index < partial.parameters.size();
+          ++parameter_index) {
+        const TemplateParameterInfo & parameter =
+            partial.parameters[parameter_index];
+        if(parameter.parameter_pack) {
+          return false;
+        }
+        if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
+          const auto found = deduced.types.find(parameter.name);
+          if(found == deduced.types.end() || !found->second) {
+            return false;
+          }
+          arguments.push_back(make_deduced_type_argument(found->second));
+          continue;
+        }
+        if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE) {
+          const auto found = deduced.values.find(parameter.name);
+          if(found == deduced.values.end()) {
+            return false;
+          }
+          const auto argument = deduced.value_arguments.find(parameter.name);
+          TypePtr value_type =
+              argument != deduced.value_arguments.end() ?
+                  argument->second.type :
+                  parameter.value_type;
+          arguments.push_back(
+              argument != deduced.value_arguments.end() ?
+                  make_deduced_value_argument_from(value_type,
+                                                   argument->second) :
+                  make_deduced_value_argument(value_type, found->second));
+          continue;
+        }
+        const auto template_argument =
+            deduced.template_template_arguments.find(parameter.name);
+        if(template_argument != deduced.template_template_arguments.end()) {
+          arguments.push_back(template_argument->second);
+          continue;
+        }
+        const auto class_template = deduced.class_templates.find(parameter.name);
+        const auto alias_template = deduced.alias_templates.find(parameter.name);
+        if(class_template == deduced.class_templates.end() &&
+           alias_template == deduced.alias_templates.end()) {
+          return false;
+        }
+        arguments.push_back(make_deduced_template_template_argument(
+            parameter,
+            class_template != deduced.class_templates.end() ?
+                class_template->second : nullptr,
+            alias_template != deduced.alias_templates.end() ?
+                alias_template->second : nullptr));
+      }
+      return true;
+    };
     const auto match_pack_expansion_element =
         [&](const TemplateArgument & actual) -> bool
     {
@@ -10679,6 +10738,27 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
               services,
               template_api::make_template_environment(match_scope),
               pattern_type);
+          if(pattern_mentions_placeholders &&
+             !pattern_has_deducible_placeholders &&
+             pattern_type &&
+             type_is_dependent(pattern_type)) {
+            std::vector<TemplateArgument> current_arguments;
+            TypePtr substituted_pattern;
+            if(make_complete_deduced_argument_list(current_arguments) &&
+               template_argument_semantics::substitute_type(
+                   match_scope,
+                   placeholder_pattern_type,
+                   partial.parameters,
+                   current_arguments,
+                   substituted_pattern) &&
+               substituted_pattern) {
+              pattern_type = substituted_pattern;
+              template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+                  services,
+                  template_api::make_template_environment(match_scope),
+                  pattern_type);
+            }
+          }
           parsed_pattern_type = static_cast<bool>(pattern_type);
         } else if(pattern_syntax &&
                   parse_template_argument_type_syntax(

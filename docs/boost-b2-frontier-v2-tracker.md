@@ -15,9 +15,8 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `0 / 147`
 - current cursor: `#1 libs/accumulators/test`
-- active compiler frontier: typed non-type template argument evaluation cannot
-  resolve `::boost::mpl::aux::nested_type_wknd<T1>::value` while compiling
-  Accumulators `error_of`
+- active compiler frontier: `error_of` is fixed; rerun the full Accumulators
+  suite to reclassify the remaining compile and runtime failures
 
 ## Baseline Gates
 
@@ -70,6 +69,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(typed bound-template fix)` | Nested member alias template-template call result | -0.13% | -0.09% | +0.02% | n/a | `/tmp/cppgm-boost-frontier-v2-bound-template-identity-perf.json` | pass; below hotspot threshold |
 | `(parenthesized noexcept member fix)` | Parenthesized class member name with a `noexcept` definition | -0.13% | -0.31% | +0.02% | n/a | `/tmp/cppgm-boost-frontier-v2-parenthesized-member-noexcept-perf.json` | pass; below hotspot threshold |
 | `(unused default lazy fix)` | Explicit alias argument must not instantiate an unused default | -0.27% | -0.26% | -0.06% | n/a | `/tmp/cppgm-boost-frontier-v2-unused-default-lazy-perf.json` | pass; all cumulative metrics improve |
+| `(non-deduced partial pattern fix)` | Reused non-deduced partial-specialization pattern after earlier deductions | +0.75% | -0.56% | +0.04% | eager typed substitution was +0.94%; resolver-first fast path recovered 0.19 percentage points | `/tmp/cppgm-boost-frontier-v2-nondeduced-partial-pattern-fastpath-perf.json` | pass; hard gates pass; hotspot counters and 1 ms sample show no pathological path or cache-masked correctness |
 
 ## Suite Cursor
 
@@ -78,7 +78,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 
 | # | Suite | V2 status | Commit | Forced run evidence | Notes |
 |---:|---|---|---|---|---|
-| 1 | `libs/accumulators/test` | frontier | `(unused default lazy fix)` | Forced single-job `count` rebuild passed end to end and updated 72 targets; log `/tmp/boost-v2-acc-count-typed-member-pointer-fix.log`. Focused `covariance` passed after preserving the typed bound member-alias head and updated 72 targets; log `/tmp/boost-v2-acc-covariance-bound-template-identity-b2-j4.log`. The bound-template full survey updated 154 targets and failed 28; log `/tmp/boost-v2-suite-001-bound-template-identity-full.log`. A forced focused `extended_p_square` run reproduced the Boost.Random member-definition failure; log `/tmp/boost-v2-acc-extended-p-square-member-definition-focused.log`. After the fix, the forced focused target cleared Boost.Random and advanced to the alias failure; log `/tmp/boost-v2-acc-extended-p-square-parenthesized-noexcept-fix.log`. The lazy-instantiation fix's forced focused run passed compile, link, and runtime with 72 updated targets; log `/tmp/boost-v2-acc-extended-p-square-unused-default-lazy-fix.log`. Its forced full survey reached target 200 and 34 passing tests before the 1800s harness timeout; a non-forced continuation completed the graph with 12 updated and 10 failed targets. Logs: `/tmp/boost-frontier-v2-suite-001-unused-default-lazy-fix/libs__accumulators__test.log` and `/tmp/boost-v2-suite-001-unused-default-lazy-fix-resume.log`. | The apparent `check_frwd` failures were downstream diagnostics from eager instantiation of an unused Boost.Iterator default. `extended_p_square`, `extended_p_square_quantile`, and `weighted_extended_p_square` now pass. The remaining ten targets split into five MPL non-type evaluation failures, two ambiguous-base failures, and three runtime failures. The next ordered target is `error_of`. |
+| 1 | `libs/accumulators/test` | frontier | `(non-deduced partial pattern fix)` | Forced single-job `count` rebuild passed end to end and updated 72 targets; log `/tmp/boost-v2-acc-count-typed-member-pointer-fix.log`. Focused `covariance` passed after preserving the typed bound member-alias head and updated 72 targets; log `/tmp/boost-v2-acc-covariance-bound-template-identity-b2-j4.log`. The bound-template full survey updated 154 targets and failed 28; log `/tmp/boost-v2-suite-001-bound-template-identity-full.log`. A forced focused `extended_p_square` run reproduced the Boost.Random member-definition failure; log `/tmp/boost-v2-acc-extended-p-square-member-definition-focused.log`. After the fix, the forced focused target cleared Boost.Random and advanced to the alias failure; log `/tmp/boost-v2-acc-extended-p-square-parenthesized-noexcept-fix.log`. The lazy-instantiation fix's forced focused run passed compile, link, and runtime with 72 updated targets; log `/tmp/boost-v2-acc-extended-p-square-unused-default-lazy-fix.log`. Its forced full survey reached target 200 and 34 passing tests before the 1800s harness timeout; a non-forced continuation completed the graph with 12 updated and 10 failed targets. Logs: `/tmp/boost-frontier-v2-suite-001-unused-default-lazy-fix/libs__accumulators__test.log` and `/tmp/boost-v2-suite-001-unused-default-lazy-fix-resume.log`. Forced single-job `error_of` now passes compile, link, and runtime with 72 updated targets; log `/tmp/boost-v2-acc-error-of-nondeduced-partial-pattern-fix.log`. | The apparent `check_frwd` failures were downstream diagnostics from eager instantiation of an unused Boost.Iterator default. `extended_p_square`, `extended_p_square_quantile`, `weighted_extended_p_square`, and `error_of` now pass. A forced full-suite rerun is next to determine which of the nine previously observed failures remain. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -86,22 +86,18 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#1 libs/accumulators/test`
-- focused target: `libs/accumulators/test//error_of`
-- failure phase: template resolution while evaluating a non-type template
-  argument
-- diagnostic: failed non-type template argument evaluation for
-  `::boost::mpl::aux::nested_type_wknd<T1>::value` in
-  `boost::mpl::aux::or_impl<false, ...>`
-- reduced repro: pending reduction outside the assignment tree
-- owning PA/cluster: pending reduction; place at the earliest PA owning the
-  essential member constant-evaluation behavior
-- implementation area: typed dependent member constant evaluation and class
+- focused target: full `libs/accumulators/test` resurvey
+- failure phase: pending reclassification after the `error_of` fix
+- diagnostic: pending; the previous `nested_type_wknd<T1>::value` diagnostic is
+  cleared
+- reduced repro: `pa22/tests/spec/300-nondeduced-partial-pattern-recursive-completion.t`
+- owning PA/cluster: `pa22:300`, dependent type deduction and recursive class
   completion
-- performance risk: normal template-resolution path; inspect hotspot
-  counters and sample if the fix moves instructions by more than 0.25%
-- next action: rerun `error_of` with one job, reduce
-  `nested_type_wknd<T1>::value` without Boost or the STL, and trace the typed
-  member value through substitution, class completion, and constant evaluation
+- implementation area: typed partial-specialization matching
+- performance risk: normal template-resolution path; current cumulative result
+  is +0.75% instructions, -0.56% RSS, and +0.04% footprint
+- next action: force the full Accumulators suite, classify the first remaining
+  target-local failure, and reduce it without Boost or the STL
 
 ## Fix Ledger
 
@@ -119,6 +115,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/accumulators/test//covariance` Boost.Parameter result type | A bound template-template parameter already retained the selected member alias declaration and its concrete owner type, but substitution replaced the semantic template-id head with the alias's rendered qualified name. Generic lookup then decomposed and re-resolved `arg_list<...>` instead of applying the bound member alias. Substitution now preserves the parameter head when a typed owner is present, bound-template resolution runs before generic template-id lookup, direct fallback lookup retains the AST node, concrete alias owners are materialized from typed specialization metadata, and already concrete declared owners are not rebound as current instantiations. No cache, text lookup, or spelling-specific recovery is added. | `pa22/tests/general/400-member-alias-template-template-call-result-owner.t`, placed at the PA22 full deduction/result-substitution owner | Exact non-STL reducer `/tmp/cppgm-v2-nested-member-alias-call.cpp` reproduced the `B<T...>` member-alias application and extractor call. Focused Boost failed resolving `arg_list<...>::binding::fn<...>` after the typed binding had already been selected; debugger stacks showed generic qualified lookup re-entering the rendered owner. Removing the concrete-owner guard also makes the reducer fail independently. | Warning-clean full compiler rebuild; reducer passes in 0.07s at 12.3 MB RSS and 301,955,485 instructions; focused PA22 neighborhood passes `3/3`; PA22 direct report passes `251/251`; all configured strict suites pass; PA22 placement audit reports zero findings and zero hygiene findings; all 23 text-reparse categories remain zero and 14 audit tests pass; forced focused `covariance` and forced full-suite `covariance`/`weighted_covariance` pass. | instructions -0.13%; max RSS -0.09%; peak footprint +0.02%; pass, below hotspot threshold | `(this commit)` |
 | fixed | `libs/accumulators/test//extended_p_square` Boost.Random dependency | The class-model method parser rejected every declarator with a direct nested declarator from its normal typed filtered path. That guard is necessary for complex returned-array/function shapes, but it also rejected a structurally simple parenthesized member name such as `int (value)() noexcept`, leaving the outer function qualifier in the declaration input. The guard now distinguishes the exact `nested-declarator -> declarator -> identifier` name shape from complex nested declarators, so the established typed filter handles its outer parameter clause and `noexcept`. No text parse, fallback lookup, or cache is added. | `pa15/tests/general/200-parenthesized-noexcept-member-definition.t`, placed with ordinary class method and `noexcept` metadata ownership | Exact Boost-shaped reducer `/tmp/cppgm-v2-static-constexpr-parenthesized-member.cpp` reproduced `static constexpr unsigned long long (max)() noexcept`; minimal reducer `/tmp/cppgm-v2-parenthesized-noexcept-member-definition.cpp` reproduced the essential form. The same parenthesized forms without `noexcept` passed before the fix, isolating the incorrectly bypassed function-qualifier filter. Clang accepts both failing reducers. | Warning-clean full compiler build; minimal and exact reducers pass; focused PA15 neighborhood passes `2/2`; PA15 direct report passes `201/201`; all configured strict suites pass; PA15 placement audit reports zero findings and zero hygiene findings; all 23 text-reparse categories remain zero; forced focused and completed full-suite graph clear all 22 `splitmix64` member-definition failures. | instructions -0.13%; max RSS -0.31%; peak footprint +0.02%; pass, below hotspot threshold | `(this commit)` |
 | fixed | `libs/accumulators/test//extended_p_square` Boost.Iterator dependency | Structural alias expansion recursively materialized every concrete class-template type argument before resolving the selected outer template. Boost.Iterator's `eval_if_default_t<Value, iterator_value<Base>>` therefore instantiated the unused `iterator_value<unsigned long>` default even though `Value` was explicit; the later Boost.Test `check_frwd` diagnostic was only fallout. Alias expansion now carries typed arguments without recursively completing them. Substitution first preserves source-scope dependent non-type expression metadata, then refreshes stale specialization metadata only for a fully concrete all-type argument list, which retains correct pack expansion without reviving eager completion. No cache, text parse, or spelling special case is added. | `pa22/tests/general/300-alias-explicit-argument-skips-unused-default-instantiation.t`, placed at the PA22 alias-instantiation owner | Exact Boost reducer `/tmp/cppgm-v2-boost-iterator-traversal-alias.cpp` and non-STL reducer `/tmp/cppgm-v2-inherited-deferred-alias.cpp` both failed by materializing an invalid unused default. Restoring the removed eager loop makes the checked-in regression fail. An initial unconditional metadata refresh regressed existing PA22 dependent non-type cases and was discarded. | Warning-clean build; Clang and `cppgm++` accept the new regression and both reducers; new and existing PA22 regressions plus both reducers pass with `CPPGM_DISABLE_CLASS_INFO_FOR_TYPE_CACHE=1`; PA22 direct report passes `252/252`; all configured strict direct-LowIR suites pass; PA22 placement audit reports zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass; PA35 reverse-iterator control passes; forced focused Boost compile/link/run passes and the completed suite graph clears all three alias-related failures. | instructions -0.27%; max RSS -0.26%; peak footprint -0.06%; pass, all cumulative metrics improve | `(this commit)` |
+| fixed | `libs/accumulators/test//error_of` | Partial-specialization matching cached a typed placeholder pattern for a non-deduced later argument, then reused it after an earlier argument had deduced the partial's parameters. The ordinary dependent-type resolver handled most cached patterns, but a still-dependent nested class/alias pattern retained the placeholder binding and selected the fallback specialization. Matching now builds the complete typed template argument list from the deduction state and applies the existing typed `TypePtr` substitution only when the resolver fast path leaves a non-deducible pattern dependent. The substituted pattern is then resolved in the current match scope. No source parse, text decomposition, result cache, or spelling-specific recovery is added. | `pa22/tests/spec/300-nondeduced-partial-pattern-recursive-completion.t`, a header-free reducer at the earliest dependent deduction/recursive completion owner | Exact Boost reducer `/tmp/cppgm-v2-boost-count-construction.cpp` failed with `failed non-type template argument evaluation: ::boost::mpl::aux::nested_type_wknd<T1>::value`; the reduced test failed by selecting `value_of_impl<non_iterator_tag>` after the stale `enable_if<has_fusion_tag<Sequence>>::type` pattern missed. Clang accepts both. | Warning-clean build; exact and checked-in reducers pass normally and with `CPPGM_DISABLE_CLASS_INFO_FOR_TYPE_CACHE=1` and `CPPGM_DISABLE_DEPENDENT_TYPE_RESOLUTION_CACHE=1`; focused PA22 direct check passes; PA22 direct report passes `253/253`; strict direct-LowIR PA18/19/21/22/23 passes with zero failures; PA22 placement and hygiene audits report zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass; forced single-job Boost target passes compile, link, and runtime with 72 updated targets. Hotspot counters are in `/tmp/cppgm-v2-nondeduced-hotspot.log`; temporary trace accounting on the stable benchmark saw 3,491 eligible patterns, 2,071 still dependent after the fast resolver, and 861 successful typed substitutions. The 1 ms sample `/tmp/cppgm-v2-nondeduced.sample.txt` contains 7,104 samples; the fallback substitution has fewer than five top-of-stack samples and the dependent resolver has 12, while allocation and existing ABI/type work dominate. | instructions +0.75%; max RSS -0.56%; peak footprint +0.04%; pass; optimized from the eager +0.94% version and below all hard gates | `(this commit)` |
 
 ## Decision Log
 
@@ -207,6 +204,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
   0.27%. The focused target and all three affected suite tests pass. The forced
   survey reached its 1800s bound with four active targets; its continuation
   completed with ten independent failures. `error_of` is next.
+- `2026-07-14`: The `error_of` diagnostic was downstream of a stale typed
+  partial-specialization pattern, not failed MPL constant evaluation. The first
+  argument had deduced `Sequence`, but the reused non-deduced `enable_if`
+  pattern still carried its placeholder binding and selected the wrong
+  iterator tag. The final algorithm runs the existing dependent resolver first
+  and performs complete typed substitution only when the pattern remains
+  dependent. Both semantic caches can be disabled without changing the result;
+  no correctness cache or text reparse was introduced. The focused target
+  passes compile, link, and runtime. Cumulative instructions are +0.75% after
+  improving the eager implementation's +0.94%; hotspot counters and sampling
+  show no pathological recursion or witness-only work on the normal path.
 
 ## Next Commands
 
@@ -216,7 +224,7 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  JOBS=1 \
-  /usr/local/bin/timeout 900 \
-  ./run-cppgm-b2.sh -a libs/accumulators/test//error_of
+  JOBS=8 \
+  /usr/local/bin/timeout 1800 \
+  ./run-cppgm-b2.sh -a libs/accumulators/test
 ```
