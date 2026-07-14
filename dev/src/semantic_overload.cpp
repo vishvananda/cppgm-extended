@@ -8868,8 +8868,20 @@ bool collect_overloaded_member_pointer_argument_options(SemanticContext & ctx,
     return false;
   }
 
+  const TemplateIdSyntax * template_id =
+      cppast_template_id_syntax(operand_node);
   vector<FunctionBinding *> functions =
-      ctx.lookup_qualified_functions(scope, *qualified);
+      template_id ?
+          ctx.lookup_function_template_id_node(
+              scope,
+              operand_node,
+              *template_id,
+              semantic_policy::without_body_instantiation()) :
+          ctx.lookup_functions_node(
+              scope,
+              operand_node,
+              operand_node.value,
+              semantic_policy::without_body_instantiation());
   if(functions.empty()) {
     return false;
   }

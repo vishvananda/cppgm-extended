@@ -15,8 +15,8 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `0 / 147`
 - current cursor: `#1 libs/accumulators/test`
-- active compiler frontier: structured current-specialization type lookup for
-  `perl_matcher<BidiIterator,Allocator,traits>` while compiling Boost.Regex
+- active compiler frontier: libc++ `std::__1::complex<float>` member-template
+  constructor parameter-clause while compiling Accumulators `covariance`
 
 ## Baseline Gates
 
@@ -65,6 +65,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(qualified-friend fix)` | Qualified friend class template-id initial parse | +0.17% | +1.66% | +0.00% | n/a | `/tmp/cppgm-boost-frontier-v2-qualified-friend-perf.json` | pass; instruction and memory gates remain within tolerance |
 | `(typed-qualified-call fix)` | Substituted qualified static member-template call | -0.08% | +1.15% | -0.01% | n/a | `/tmp/cppgm-boost-frontier-v2-typed-qualified-call-perf.json` | pass; below hotspot threshold |
 | `(typed-va-list ABI fix)` | Host `__builtin_va_list` function symbols | -0.11% | +0.22% | -0.03% | n/a | `/tmp/cppgm-boost-frontier-v2-va-list-typed-abi-perf.json` | pass; below hotspot threshold |
+| `(typed-member-pointer fix)` | Qualified current-specialization member-function address | -0.10% | -0.81% | +0.01% | n/a | `/tmp/cppgm-boost-frontier-v2-typed-member-pointer-perf.json` | pass; below hotspot threshold |
 
 ## Suite Cursor
 
@@ -73,7 +74,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 
 | # | Suite | V2 status | Commit | Forced run evidence | Notes |
 |---:|---|---|---|---|---|
-| 1 | `libs/accumulators/test` | frontier | `(typed-va-list ABI fix)` | Forced survey run, 8 jobs, 1800s timeout, completed `mixed` with rc `1` in 491.7s; initial log `/tmp/boost-frontier-v2-suite-001-db9879223/libs__accumulators__test.log`. Forced single-job `count` rebuild after the typed `va_list` ABI fix used a 900s timeout; log `/tmp/boost-v2-acc-count-va-list-typed-abi-fix.log`. | The qualified-friend parser, `mp_bool`, and Boost.Test `format_report` frontiers are fixed. `count.o` and the complete Boost.Test archive build; only Boost.Regex `posix_api.o` and `wide_posix_api.o` now fail on the `perl_matcher<BidiIterator,Allocator,traits>` structured-anchor lookup. |
+| 1 | `libs/accumulators/test` | frontier | `(typed-member-pointer fix)` | Forced single-job `count` rebuild passed end to end and updated 72 targets; log `/tmp/boost-v2-acc-count-typed-member-pointer-fix.log`. Forced full-suite survey with 8 jobs updated 114 targets, failed 37 compile targets, and exposed the remaining target-local frontiers; log `/tmp/boost-v2-suite-001-typed-member-pointer-full.log`. | The qualified-friend parser, `mp_bool`, Boost.Test `format_report`, and Boost.Regex `perl_matcher` frontiers are fixed. `count` passes. The next survey candidate is `covariance`, which first reports the libc++ `std::__1::complex<float>` member-template constructor parameter-clause failure; confirm with a single-job focused rerun. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -81,19 +82,19 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#1 libs/accumulators/test`
-- focused target: `libs/accumulators/test//count`
-- failure phase: semantic type lookup in an instantiated member-function body
-- diagnostic: `ERROR: failed template-id parse in type lookup:
-  perl_matcher<BidiIterator,Allocator,traits> [structured anchor no]` while
-  completing `boost::re_detail_600::perl_matcher<...>::find_imp` from
-  `boost/regex/v5/perl_matcher_common.hpp:237:4`
-- reduced repro: pending
+- focused target: `libs/accumulators/test//covariance`
+- failure phase: collection of a libc++ `std::__1::complex<float>` member-template
+  constructor
+- diagnostic: `ERROR: unsupported function template parameter-clause` for the
+  `_Complex float` converting constructor in libc++ `complex`
+- reduced repro: pending focused confirmation and reduction
 - owning PA/cluster: pending reduction
-- implementation area: typed template-id/current-specialization lookup
-- performance risk: template type lookup normal path; use hotspot counters and
-  sampling if the production fix moves instructions by more than 0.25%
-- next action: reduce the Boost.Regex `perl_matcher` failure, identify why its
-  structured anchor is absent, and remove any text fallback rather than widening it
+- implementation area: structured member-template parameter-clause collection
+- performance risk: class/member-template collection normal path; use hotspot
+  counters and sampling if the production fix moves instructions by more than 0.25%
+- next action: force `covariance` with one job, reduce the `_Complex` constructor
+  failure without hosted headers if possible, and verify whether this is an
+  existing GNU/Clang extension surface rather than a text-reparse issue
 
 ## Fix Ledger
 
@@ -105,6 +106,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/accumulators/test//count` dependency build | The initial parser treated an unknown qualified template suffix before `;` as expression-ambiguous even after an elaborated class-key. `parse_class_specifier` now selects the existing typed qualified-name mode that permits the final template-id, preserving `QualifiedName`, `TemplateIdSyntax`, qualifier template syntax, and qualifier type syntax on the AST node. | `pa21/tests/general/300-qualified-friend-class-template-id.t`, placed at the `template.friend` owner `pa21:300` | Non-STL reducer and Boost `friend class detail::interface_iarchive<Archive>;` both failed during initial parse; parser trace rejected the class member at `KW_FRIEND`. Focused pre-fix log: `/tmp/boost-v2-acc-count-parser-frontier.log`. | Warning-clean build; reducer accepted by Clang and `cppgm++`; PA10/PA21 direct LowIR report `352/352`; PA21 strict `216/216`, compared `161`, failures `0`; placement audit marks all reducer features `ok`; all 23 text-reparse categories remain zero and 14 audit tests pass; forced Boost rerun clears the parser diagnostic and builds Serialization. | instructions +0.17%; max RSS +1.66%; peak footprint +0.00%; pass | `(this commit)` |
 | fixed | `libs/accumulators/test//count` | Substitution had already attached the concrete `support::empty_list` type to `Next` through `qualifier_type_syntax`, but both qualified function lookup paths discarded that semantic type and tried to look up its fully qualified rendering as one name component. `lookup_function_templates_node` and `lookup_functions_node` now consume `cppast_qualifier_type_syntax(...)->semantic_type` first and retain the existing structured template-id/type lookup only as a fallback. This corrects the uncached algorithm; no cache, text parser, or spelling special case is added. | `pa21/tests/general/300-qualified-owner-static-template-nttp.t`, placed at the `template.member_template` owner `pa21:300` | Exact Boost-header reducer `/tmp/cppgm-boost-v2-parameter-arg-list.cpp` and non-STL reducer `/tmp/cppgm-boost-v2-qualified-dependent-static-template.cpp` failed resolving `mp_bool`/`bool_constant`. Semantic trace showed the substituted qualifier type was present while call lookup reported `template_count=0` only for the namespace-qualified concrete owner. | Warning-clean compiler build; exact Boost and non-STL reducers accepted by `cppgm++`, and the non-STL reducer accepted by Clang; focused PA21 check passes; direct PA21 report `217/217`; PA21 strict `217/217`, compared `161`, failures `0`; placement audit reports zero findings and marks all reducer features `ok`; all 23 text-reparse categories remain zero and 14 audit tests pass; forced single-job `count` rebuild compiles `count.o` and advances to Boost.Test `format_report`. | instructions -0.08%; max RSS +1.15%; peak footprint -0.01%; pass, below hotspot threshold | `(this commit)` |
 | fixed | `libs/accumulators/test//count` Boost.Test dependency | Lookup found `format_report`, deduction succeeded, and the specialization signature was concrete, but typed symbol construction could not represent the semantic `__builtin_va_list` type and discarded the only candidate. The symbol adapter now maps the builtin through `abi_mangle::Type`: on x86_64 the underlying type is typed as `__va_list_tag[1]`, with the required function-parameter adjustment to `__va_list_tag *`; supported non-x86 host forms are also selected structurally. A separate function-parameter adapter prevents the incorrect shortcut of treating every `va_list` use as a pointer. The PA30 model already provides the necessary typed array, pointer, named-type, and standard-namespace primitives, so no scaffold extension or raw mangled fragment is added. | `pa34/tests/compile/500-builtin-va-list-function-template-symbol.t`, placed in the PA34 host-builtin compile cluster | Non-STL reducer `/tmp/cppgm-v2-format-report-min.cpp` failed after successful template deduction with `failed to build ABI IR function symbol for weak function tools::format_report`; symbol trace identified the `__builtin_va_list` parameter. Clang emits `P13__va_list_tag` for a parameter and `A1_13__va_list_tag` for a template type argument on x86_64. | Warning-clean build; non-STL parameter and type-argument symbols match Clang byte-for-byte; exact Boost.Test `test_tools.cpp` compiles; focused PA34 check passes; direct PA34 report `309/309`; all configured strict suites pass; placement audit reports zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass; forced single-job `count` rebuild compiles the complete Boost.Test archive and leaves only the two Regex objects failing. | instructions -0.11%; max RSS +0.22%; peak footprint -0.03%; pass, below hotspot threshold | `(this commit)` |
+| fixed | `libs/accumulators/test//count` Boost.Regex dependency | The parsed `&matcher<A,B,C>::first` node retained its structured qualifier syntax, but two normal semantic consumers discarded the node: the eager initializer constant probe and target-aware overloaded member-pointer resolution both called legacy `lookup_qualified_functions` with the rendered `QualifiedName`. Both paths now use `lookup_functions_node` or `lookup_function_template_id_node`, preserving typed qualifier/template syntax. This corrects the uncached algorithms; no cache, text parser, or spelling special case is added. | `pa26/tests/general/300-current-specialization-qualified-member-pointer.t`, placed at the `class.member_pointer` owner `pa26:300` | Non-STL reducer `/tmp/cppgm-v2-regex-member-pointer.cpp` failed first in the opportunistic constant initializer probe and then, after that path was fixed, in actual target-aware member-pointer resolution. Debug stacks showed both calls entering `lookup_qualified_functions` and decomposing `matcher<A,B,C>` without an AST node. Exact Boost.Regex failures were `posix_api.o` and `wide_posix_api.o` in `perl_matcher::find_imp`. | Warning-clean build; reducer accepted by Clang and `cppgm++`; focused PA26 check passes; PA26 direct report `67/67`; all configured strict suites pass; placement audit reports zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass; forced single-job `count` passes and updates 72 targets; full direct-LowIR report passes `3823/3823`; forced full-suite survey advances to independent Accumulators frontiers. | instructions -0.10%; max RSS -0.81%; peak footprint +0.01%; pass, below hotspot threshold | `(this commit)` |
 
 ## Decision Log
 
@@ -152,6 +154,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
   typed model needs no new fact or scaffold primitive. The forced rebuild now
   identifies Boost.Regex current-specialization lookup as the sole ordered
   blocker.
+- `2026-07-13`: Debug stacks proved that the Regex failure was not parsing or
+  cache behavior. Two normal semantic consumers discarded the already parsed
+  member-pointer operand and used `QualifiedName`-only function lookup. Both now
+  retain the AST node through typed lookup. The forced `count` rebuild passes,
+  both Regex POSIX objects compile, and the full survey advances to independent
+  Accumulators target failures.
+- `2026-07-13`: The post-fix forced full-suite survey updated 114 targets and
+  failed 37 compile targets. The first reported target-local failure was
+  `covariance`, in libc++ `complex<float>` member-template constructor
+  collection. Treat that as the next candidate only after a focused one-job
+  rerun confirms it outside parallel scheduling.
 
 ## Next Commands
 
@@ -163,5 +176,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=1 \
   /usr/local/bin/timeout 600 \
-  ./run-cppgm-b2.sh libs/accumulators/test//count
+  ./run-cppgm-b2.sh -a libs/accumulators/test//covariance
 ```

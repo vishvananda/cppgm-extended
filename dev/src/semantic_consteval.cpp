@@ -2516,19 +2516,18 @@ bool evaluate_constexpr_function_address_expression(
 
   std::vector<FunctionBinding *> functions;
   const TemplateIdSyntax * template_id = cppast_template_id_syntax(*operand);
-  const QualifiedName * qualified = cppast_qualified_name_syntax(*operand);
   if(template_id) {
     functions = ctx.lookup_function_template_id_node(
         scope,
         *operand,
         *template_id,
         semantic_policy::without_body_instantiation());
-  } else if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
-    functions = ctx.lookup_qualified_functions(scope, *qualified);
   } else {
-    functions = ctx.lookup_functions(scope,
-                                     operand->value,
-                                     semantic_policy::without_body_instantiation());
+    functions = ctx.lookup_functions_node(
+        scope,
+        *operand,
+        operand->value,
+        semantic_policy::without_body_instantiation());
   }
   if(functions.size() != 1 || !functions[0]) {
     return false;
