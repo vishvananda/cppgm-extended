@@ -15,7 +15,8 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `0 / 147`
 - current cursor: `#1 libs/accumulators/test`
-- active compiler frontier: none; baseline bootstrap is complete
+- active compiler frontier: alias-template argument resolution for
+  `boost::mp11::mp_bool` while completing Boost.Parameter `arg_list`
 
 ## Baseline Gates
 
@@ -61,6 +62,7 @@ rolling delta only when it helps isolate the incremental cost.
 
 | Commit | Frontier | Fixed instruction delta | Max RSS delta | Footprint delta | Rolling delta | Report | Decision |
 |---|---|---:|---:|---:|---:|---|---|
+| `(qualified-friend fix)` | Qualified friend class template-id initial parse | +0.17% | +1.66% | +0.00% | n/a | `/tmp/cppgm-boost-frontier-v2-qualified-friend-perf.json` | pass; instruction and memory gates remain within tolerance |
 
 ## Suite Cursor
 
@@ -69,7 +71,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 
 | # | Suite | V2 status | Commit | Forced run evidence | Notes |
 |---:|---|---|---|---|---|
-| 1 | `libs/accumulators/test` | frontier | `039d90613` | Forced survey run, 8 jobs, 1800s timeout, completed `mixed` with rc `1` in 491.7s; log `/tmp/boost-frontier-v2-suite-001-db9879223/libs__accumulators__test.log`. | Earliest causal failure is a declaration parse error while building Boost.Serialization; the same form blocks many Accumulators targets. |
+| 1 | `libs/accumulators/test` | frontier | `(qualified-friend fix)` | Forced survey run, 8 jobs, 1800s timeout, completed `mixed` with rc `1` in 491.7s; initial log `/tmp/boost-frontier-v2-suite-001-db9879223/libs__accumulators__test.log`. Forced `count` rerun after the parser fix used 4 jobs and a 900s timeout; log `/tmp/boost-v2-acc-count-qualified-friend-fix.log`. | The qualified-friend parser frontier is fixed. `count.o` now reaches semantic alias-template resolution and fails resolving `boost::mp11::mp_bool`; parallel Boost.Test and Regex dependency builds expose separate later failures. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -77,14 +79,19 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#1 libs/accumulators/test`
-- focused target: `libs/accumulators/test//count` pending low-parallelism rerun
-- failure phase: initial parse
-- pre-fix diagnostic: `ERROR: expected declaration after template-parameter-clause near KW_CLASS:class` at `boost/archive/basic_binary_iarchive.hpp:54:1`; Accumulators `count` reaches the same form at `boost/archive/basic_text_oarchive.hpp:49:1`
+- focused target: `libs/accumulators/test//count`
+- failure phase: semantic alias-template argument resolution
+- diagnostic: `ERROR: failed alias template argument resolution for mp_bool` while
+  completing
+  `boost::parameter::aux::arg_list<boost::parameter::aux::tagged_argument<boost::accumulators::tag::sample, int const>, ...>`
+  from `boost/parameter/aux_/arg_list.hpp:359:17`
 - reduced repro: pending
-- owning PA/cluster: likely PA10 parser, pending reduction
-- implementation area: declaration parsing after a template-parameter-clause
-- performance risk: parser normal path; measure any production change against the fixed baseline
-- next action: rerun `libs/accumulators/test//count` with low parallelism and reduce the declaration form
+- owning PA/cluster: pending reduction
+- implementation area: typed alias-template binding/resolution
+- performance risk: template resolution normal path; use hotspot counters and sampling
+  if the production fix moves instructions by more than 0.25%
+- next action: reduce the `mp_bool` failure from the `arg_list` instantiation and
+  add the smallest non-STL regression at the owning PA
 
 ## Fix Ledger
 
@@ -93,6 +100,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | `libs/accumulators/test//count` dependency build | The initial parser treated an unknown qualified template suffix before `;` as expression-ambiguous even after an elaborated class-key. `parse_class_specifier` now selects the existing typed qualified-name mode that permits the final template-id, preserving `QualifiedName`, `TemplateIdSyntax`, qualifier template syntax, and qualifier type syntax on the AST node. | `pa21/tests/general/300-qualified-friend-class-template-id.t`, placed at the `template.friend` owner `pa21:300` | Non-STL reducer and Boost `friend class detail::interface_iarchive<Archive>;` both failed during initial parse; parser trace rejected the class member at `KW_FRIEND`. Focused pre-fix log: `/tmp/boost-v2-acc-count-parser-frontier.log`. | Warning-clean build; reducer accepted by Clang and `cppgm++`; PA10/PA21 direct LowIR report `352/352`; PA21 strict `216/216`, compared `161`, failures `0`; placement audit marks all reducer features `ok`; all 23 text-reparse categories remain zero and 14 audit tests pass; forced Boost rerun clears the parser diagnostic and builds Serialization. | instructions +0.17%; max RSS +1.66%; peak footprint +0.00%; pass | `(this commit)` |
 
 ## Decision Log
 
@@ -117,16 +125,26 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
   491.7s. Classified its earliest causal failure as an initial-parser frontier
   in a Boost.Serialization dependency rather than the later parallel target
   diagnostics.
+- `2026-07-13`: Reduced the first frontier to an initial-parser failure on
+  `friend class detail::interface_archive<T>;`. The typed class-specifier parse
+  now accepts the unambiguous qualified template-id without reparsing text. The
+  regression lives at the `pa21:300` template-friend owner, not PA10, under the
+  current placement rules.
+- `2026-07-13`: The forced `count` rerun cleared the parser failure and advanced
+  `count.o` to `mp_bool` alias-template resolution. The same parallel run also
+  observed independent Boost.Test `format_report` lookup and Boost.Regex
+  template-id lookup failures; these are later dependency frontiers, not the
+  earliest causal failure for the focused target.
 
 ## Next Commands
 
 ```sh
+cd /Users/vishvananda/boost_1_91_0
 env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=1 \
   /usr/local/bin/timeout 600 \
-  /Users/vishvananda/boost_1_91_0/run-cppgm-b2.sh \
-  -a libs/accumulators/test//count
+  ./run-cppgm-b2.sh libs/accumulators/test//count
 ```

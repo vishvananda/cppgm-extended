@@ -4445,6 +4445,9 @@ bool CppAstParser::parse_class_specifier(CppAstNode & out)
                                &template_id_syntax,
                                &qualifier_template_id_syntaxes,
                                &qualifier_type_syntaxes,
+                               true,
+                               false,
+                               false,
                                true)) {
     // handled by helper
   }
