@@ -844,6 +844,10 @@ static bool try_mangle_template_argument_syntax_impl(
 static bool try_build_type_ir(const TypePtr & type,
                               const TypeMangleContext * mangle_ctx,
                               abi_mangle::Type & out);
+static bool try_build_function_parameter_type_ir(
+    const TypePtr & type,
+    const TypeMangleContext * mangle_ctx,
+    abi_mangle::Type & out);
 static bool try_build_actual_owner_template_reference_type_id_ast_ir(
     const CppAstNode & node,
     const TypePtr & actual_type,
@@ -13401,7 +13405,9 @@ static bool try_build_wrapped_type_ir(const TypePtr & type,
     params.reserve(type->params.size());
     for(size_t i = 0; i < type->params.size(); ++i) {
       abi_mangle::Type param;
-      if(!try_build_type_ir(type->params[i], mangle_ctx, param)) {
+      if(!try_build_function_parameter_type_ir(type->params[i],
+                                               mangle_ctx,
+                                               param)) {
         return false;
       }
       params.push_back(std::move(param));
@@ -13445,6 +13451,47 @@ static bool try_build_wrapped_type_ir(const TypePtr & type,
   return false;
 }
 
+static bool try_build_builtin_va_list_type_ir(
+    const TypePtr & type,
+    bool function_parameter,
+    abi_mangle::Type & out)
+{
+  if(!type ||
+     type->kind != Type::TK_NAMED ||
+     type->named_key != "builtin __builtin_va_list") {
+    return false;
+  }
+
+#if defined(__x86_64__)
+  abi_mangle::Type tag = abi_mangle::Type::named_type(
+      vector<abi_mangle::Type::NameComponent>(),
+      "__va_list_tag",
+      "__va_list_tag");
+  abi_mangle::set_substitution(
+      tag,
+      abi_mangle::SubstitutionKey::named("__va_list_tag"));
+  if(function_parameter) {
+    out = abi_mangle::Type::pointer(std::move(tag));
+  } else {
+    out = abi_mangle::Type::array("1", "expr:int(1)", std::move(tag));
+  }
+#elif defined(__APPLE__)
+  out = abi_mangle::Type::pointer(abi_mangle::Type::builtin("c"));
+#elif defined(__linux__) && defined(__aarch64__)
+  vector<abi_mangle::Type::NameComponent> prefix;
+  prefix.push_back(abi_mangle::Type::NameComponent::std_namespace());
+  out = abi_mangle::Type::named_type(std::move(prefix),
+                                     "__va_list",
+                                     "std::__va_list");
+  abi_mangle::set_substitution(
+      out,
+      abi_mangle::SubstitutionKey::named("std::__va_list"));
+#else
+  out = abi_mangle::Type::pointer(abi_mangle::Type::builtin("c"));
+#endif
+  return true;
+}
+
 static bool try_build_type_ir(const TypePtr & type,
                               const TypeMangleContext * mangle_ctx,
                               abi_mangle::Type & out)
@@ -13461,6 +13508,9 @@ static bool try_build_type_ir(const TypePtr & type,
       return true;
     }
     return try_build_wrapped_type_ir(type, mangle_ctx, out);
+  }
+  if(try_build_builtin_va_list_type_ir(type, false, out)) {
+    return true;
   }
   static const struct {
     const char * semantic_key;
@@ -13563,6 +13613,38 @@ static bool try_build_type_ir_cached(
   cache[type] = candidate;
   out = candidate;
   return true;
+}
+
+static bool try_build_function_parameter_type_ir(
+    const TypePtr & type,
+    const TypeMangleContext * mangle_ctx,
+    abi_mangle::Type & out)
+{
+  if(try_build_builtin_va_list_type_ir(type, true, out)) {
+    return true;
+  }
+  return try_build_type_ir_cached(type, mangle_ctx, out);
+}
+
+static bool build_and_emit_function_parameter_type_ir(
+    const TypePtr & type,
+    const TypeMangleContext * mangle_ctx,
+    MangleSubstitutionState * state,
+    string & out,
+    abi_mangle::Type * captured_type = nullptr)
+{
+  abi_mangle::Type ir_type;
+  if(!try_build_function_parameter_type_ir(type, mangle_ctx, ir_type)) {
+    return false;
+  }
+  if(captured_type) {
+    if(!emit_type_ir(ir_type, state, out)) {
+      return false;
+    }
+    *captured_type = ir_type;
+    return true;
+  }
+  return emit_type_ir_owned(ir_type, state, out);
 }
 
 static bool try_mangle_context_free_type_ir(const TypePtr & type,
@@ -16740,9 +16822,9 @@ static bool try_mangle_plain_function_ir(const QualifiedName & qualified,
       suppress_type_substitution_keys ? &ir_only_type_ctx : nullptr;
   for(size_t i = 0; i < function_type->params.size(); ++i) {
     abi_mangle::Type param;
-    if(!try_build_type_ir_cached(function_type->params[i],
-                                 parameter_type_ctx,
-                                 param)) {
+    if(!try_build_function_parameter_type_ir(function_type->params[i],
+                                             parameter_type_ctx,
+                                             param)) {
       return false;
     }
     function.parameter_types.push_back(std::move(param));
@@ -17041,7 +17123,7 @@ static bool append_context_function_parameter_ir(
     abi_mangle::FunctionEncoding & function)
 {
   abi_mangle::Type ir_type;
-  if(!try_build_type_ir(type, mangle_ctx, ir_type)) {
+  if(!try_build_function_parameter_type_ir(type, mangle_ctx, ir_type)) {
     return false;
   }
   if(pack_expansion) {
@@ -17699,7 +17781,9 @@ static bool try_emit_itanium_function_symbol_ir(
       abi_mangle::SubstitutionKey pack_substitution_key;
       if(emit_trailing_function_parameter_pack) {
         abi_mangle::Type parameter_ir;
-        if(try_build_type_ir(hybrid_param_type, &mangle_ctx, parameter_ir)) {
+        if(try_build_function_parameter_type_ir(hybrid_param_type,
+                                                &mangle_ctx,
+                                                parameter_ir)) {
           abi_mangle::Type pack_ir =
               parameter_ir.kind == abi_mangle::Type::TK_PACK_EXPANSION ?
                   parameter_ir :
@@ -17730,11 +17814,12 @@ static bool try_emit_itanium_function_symbol_ir(
           have_captured_param_type = mangled_param;
         }
         if(!mangled_param) {
-          mangled_param = build_and_emit_type_ir(actual_param,
-                                                 &mangle_ctx,
-                                                 state,
-                                                 candidate,
-                                                 captured_param_type.get());
+          mangled_param = build_and_emit_function_parameter_type_ir(
+              actual_param,
+              &mangle_ctx,
+              state,
+              candidate,
+              captured_param_type.get());
           have_captured_param_type = mangled_param;
         }
       }
@@ -17742,22 +17827,24 @@ static bool try_emit_itanium_function_symbol_ir(
          actual_param &&
          (!type_has_dependent_mangle_state(actual_param) ||
           type_has_concrete_template_id_spelling_for_mangling(actual_param, &mangle_ctx))) {
-        mangled_param = build_and_emit_type_ir(actual_param,
-                                               &mangle_ctx,
-                                               state,
-                                               candidate,
-                                               captured_param_type.get());
+        mangled_param = build_and_emit_function_parameter_type_ir(
+            actual_param,
+            &mangle_ctx,
+            state,
+            candidate,
+            captured_param_type.get());
         have_captured_param_type = mangled_param;
       }
       if(type_has_structured_dependent_qualified_member(hybrid_param_type)) {
         const size_t structured_begin = candidate.size();
         // Prefer preserved dependent template/member state over re-reading type
         // syntax; this keeps pack, alias, and substitution handling typed.
-        mangled_param = build_and_emit_type_ir(hybrid_param_type,
-                                               &mangle_ctx,
-                                               state,
-                                               candidate,
-                                               captured_param_type.get());
+        mangled_param = build_and_emit_function_parameter_type_ir(
+            hybrid_param_type,
+            &mangle_ctx,
+            state,
+            candidate,
+            captured_param_type.get());
         if(!mangled_param) {
           candidate.resize(structured_begin);
           have_captured_param_type = false;
@@ -17769,11 +17856,12 @@ static bool try_emit_itanium_function_symbol_ir(
          type_has_dependent_class_template_nested_owner_mangle_state(
              hybrid_param_type)) {
         const size_t structured_begin = candidate.size();
-        mangled_param = build_and_emit_type_ir(hybrid_param_type,
-                                               &mangle_ctx,
-                                               state,
-                                               candidate,
-                                               captured_param_type.get());
+        mangled_param = build_and_emit_function_parameter_type_ir(
+            hybrid_param_type,
+            &mangle_ctx,
+            state,
+            candidate,
+            captured_param_type.get());
         if(!mangled_param) {
           candidate.resize(structured_begin);
           have_captured_param_type = false;
@@ -17784,11 +17872,12 @@ static bool try_emit_itanium_function_symbol_ir(
       if(!mangled_param &&
          type_is_direct_template_parameter_ir(hybrid_param_type, &mangle_ctx)) {
         mangled_param =
-            build_and_emit_type_ir(hybrid_param_type,
-                                   &mangle_ctx,
-                                   state,
-                                   candidate,
-                                   captured_param_type.get());
+            build_and_emit_function_parameter_type_ir(
+                hybrid_param_type,
+                &mangle_ctx,
+                state,
+                candidate,
+                captured_param_type.get());
         have_captured_param_type = mangled_param;
       }
       if(!mangled_param &&
@@ -17806,7 +17895,7 @@ static bool try_emit_itanium_function_symbol_ir(
         if(!mangled_param) {
           candidate.resize(structured_begin);
           if(actual_param && !type_has_dependent_mangle_state(actual_param) &&
-             build_and_emit_type_ir(
+             build_and_emit_function_parameter_type_ir(
                  actual_param,
                  &mangle_ctx,
                  state,
@@ -17825,22 +17914,24 @@ static bool try_emit_itanium_function_symbol_ir(
       }
       if(!mangled_param) {
         const size_t hybrid_begin = candidate.size();
-        if(build_and_emit_type_ir(hybrid_param_type,
-                                  &mangle_ctx,
-                                  state,
-                                  candidate,
-                                  captured_param_type.get())) {
+        if(build_and_emit_function_parameter_type_ir(
+               hybrid_param_type,
+               &mangle_ctx,
+               state,
+               candidate,
+               captured_param_type.get())) {
           mangled_param = true;
           have_captured_param_type = true;
         } else {
           candidate.resize(hybrid_begin);
           if(actual_param &&
              !type_has_dependent_mangle_state(actual_param) &&
-             build_and_emit_type_ir(actual_param,
-                                    &mangle_ctx,
-                                    state,
-                                    candidate,
-                                    captured_param_type.get())) {
+             build_and_emit_function_parameter_type_ir(
+                 actual_param,
+                 &mangle_ctx,
+                 state,
+                 candidate,
+                 captured_param_type.get())) {
             mangled_param = true;
             have_captured_param_type = true;
           } else {
@@ -17910,11 +18001,12 @@ static bool try_emit_itanium_function_symbol_ir(
 	        }
 	        continue;
 	      }
-    if(!build_and_emit_type_ir(type->params[i],
-                               &mangle_ctx,
-                               state,
-                               candidate,
-                               captured_param_type.get())) {
+    if(!build_and_emit_function_parameter_type_ir(
+           type->params[i],
+           &mangle_ctx,
+           state,
+           candidate,
+           captured_param_type.get())) {
       if(parser_trace::enabled("symbol.linkage")) {
         ostringstream trace;
         trace << "mangle-itanium-function parameter-type-failed"
