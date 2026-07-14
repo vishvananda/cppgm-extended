@@ -202,6 +202,7 @@ struct TemplateTemplateReplacement
 {
   string text;
   QualifiedName name;
+  bool preserve_bound_head = false;
 };
 typedef map<string, TemplateTemplateReplacement>
     TemplateTemplateReplacementMap;
@@ -14754,6 +14755,8 @@ TemplateTemplateReplacement template_template_argument_replacement(
   TemplateTemplateReplacement replacement;
   replacement.text = template_template_argument_replacement_text(argument);
   replacement.name = argument.template_entity_name_syntax();
+  replacement.preserve_bound_head =
+      static_cast<bool>(argument.template_owner_type);
   if(replacement.name.name.empty() &&
      replacement.text.find("::") == string::npos &&
      is_identifier_text(replacement.text)) {
@@ -23092,6 +23095,7 @@ bool substitute_template_template_parameter_names_in_template_id_arguments(
     TemplateTemplateReplacementMap::const_iterator head =
         template_replacements.find(syntax.name.name);
     if(head != template_replacements.end() &&
+       !head->second.preserve_bound_head &&
        !head->second.name.name.empty()) {
       syntax.name = head->second.name;
       changed = true;

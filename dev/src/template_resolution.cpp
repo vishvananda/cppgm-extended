@@ -12020,6 +12020,18 @@ bool resolve_template_argument(template_api::TemplateServices & services,
                                                   type_id_text);
   }
   if(!type && structured_template_id) {
+    TypePtr bound_template_id_type;
+    if(resolve_bound_template_template_id_argument_syntax(
+           services,
+           raw_argument_scope,
+           *structured_template_id,
+           bound_template_id_type) &&
+       bound_template_id_type) {
+      resolve_type_argument_if_needed(bound_template_id_type);
+      type = bound_template_id_type;
+    }
+  }
+  if(!type && structured_template_id) {
     attempted_structured_type_syntax = true;
     template_argument_semantics::resolve_template_id_syntax_type(
         services,
@@ -12055,18 +12067,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   if(!type && !has_structured_type_syntax) {
     resolve_non_dependent_direct_type_argument(
         services, argument_scope, trimmed, type);
-  }
-  if(!type && structured_template_id) {
-    TypePtr bound_template_id_type;
-    if(resolve_bound_template_template_id_argument_syntax(
-           services,
-           raw_argument_scope,
-           *structured_template_id,
-           bound_template_id_type) &&
-       bound_template_id_type) {
-      resolve_type_argument_if_needed(bound_template_id_type);
-      type = bound_template_id_type;
-    }
   }
   if(!type && !has_structured_type_syntax) {
     TypePtr exact_visible_type;

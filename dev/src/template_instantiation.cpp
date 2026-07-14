@@ -8329,6 +8329,12 @@ ClassInfo * current_instantiation_owner_for_scope(SemanticContext & ctx,
   if(!declared_owner) {
     return nullptr;
   }
+  if(declared_owner->type &&
+     !template_argument_semantics::type_depends_on_template_parameter(
+         ctx,
+         declared_owner->type)) {
+    return nullptr;
+  }
 
   const auto candidate_matches_declared_owner =
       [declared_owner](const ClassInfo * candidate) -> bool

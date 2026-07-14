@@ -13909,19 +13909,64 @@ private:
          !type_depends_on_template_parameter(structured_resolved)) {
         return restore_cv(structured_resolved);
       }
+      const std::shared_ptr<const ClassTemplateSpecializationMangleInfo>
+          specialization =
+              named_type_class_template_specialization_mangle_info_const(base);
+      ClassTemplateDecl * source_template =
+          specialization && specialization->class_template_decl ?
+              static_cast<ClassTemplateDecl *>(
+                  specialization->class_template_decl) :
+              nullptr;
+      if(!source_template ||
+         template_arguments_are_dependent(specialization->arguments) ||
+         !template_model::template_arguments_fully_bind_parameters(
+             source_template->parameters,
+             specialization->arguments)) {
+        return candidate;
+      }
+      Scope * materialization_scope =
+          source_template->declaring_scope ?
+              source_template->declaring_scope :
+              source_template->pattern_scope;
+      if(!materialization_scope) {
+        return candidate;
+      }
       const witness::ScopedTemplateWitnessSourceCapturePause
           source_capture_pause;
       const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
           class_source_capture_pause;
-      TypePtr resolved = lookup_type(use_scope,
-                                     lookup_text,
-                                     reference_class_templates_only);
-      if(!resolved ||
-         resolved.get() == candidate.get() ||
-         type_depends_on_template_parameter(resolved)) {
-        return candidate;
-      }
-      return restore_cv(resolved);
+      const string specialization_key =
+          template_instantiation::template_argument_key_for_instantiation(
+              *this,
+              specialization->arguments);
+      const template_api::specialization::ClassSpecializationSelection selection =
+          template_api::specialization::select_class_specialization(
+              *this,
+              *source_template,
+              *materialization_scope,
+              specialization_key,
+              specialization->arguments);
+      ClassInfo * resolved =
+          reference_class_templates_only ?
+              reference_selected_class_template_instantiation(
+                  *source_template,
+                  *materialization_scope,
+                  specialization->arguments,
+                  selection,
+                  nullptr,
+                  template_api::ClassTemplateSourceUseMode::SemanticLookupOnly,
+                  specialization->argument_syntaxes.empty() ?
+                      nullptr :
+                      &specialization->argument_syntaxes,
+                  &specialization_key) :
+              instantiate_selected_class_template(
+                  *source_template,
+                  *materialization_scope,
+                  specialization->arguments,
+                  selection);
+      return resolved && resolved->type ?
+          restore_cv(resolved->type) :
+          candidate;
     };
     auto refine_instantiated_alias = [&](TypePtr candidate) -> TypePtr
     {
@@ -17934,7 +17979,11 @@ private:
         return TypePtr();
       }
       if(AliasTemplateDecl * alias_template =
-             lookup_alias_template(scope, direct_template_id_syntax->name)) {
+             semantic_lookup::lookup_alias_template_node(
+                 *this,
+                 scope,
+                 direct_template_id_syntax->name,
+                 node)) {
         TypePtr alias =
             instantiate_alias_template_with_syntax(
                 *alias_template,
@@ -17947,7 +17996,11 @@ private:
         }
       }
       if(ClassTemplateDecl * class_template =
-             lookup_class_template(scope, direct_template_id_syntax->name)) {
+             semantic_lookup::lookup_class_template_node(
+                 *this,
+                 scope,
+                 direct_template_id_syntax->name,
+                 node)) {
         const bool dependent_arguments =
             class_template_id_arguments_are_dependent(
                 *class_template,

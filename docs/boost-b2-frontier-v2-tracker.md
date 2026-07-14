@@ -15,8 +15,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `0 / 147`
 - current cursor: `#1 libs/accumulators/test`
-- active compiler frontier: libc++ `std::__1::complex<float>` member-template
-  constructor parameter-clause while compiling Accumulators `covariance`
+- active compiler frontier: non-template `static constexpr` member-function
+  definition collection in Boost.Random `splitmix64` while compiling
+  Accumulators `extended_p_square`
 
 ## Baseline Gates
 
@@ -66,6 +67,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(typed-qualified-call fix)` | Substituted qualified static member-template call | -0.08% | +1.15% | -0.01% | n/a | `/tmp/cppgm-boost-frontier-v2-typed-qualified-call-perf.json` | pass; below hotspot threshold |
 | `(typed-va-list ABI fix)` | Host `__builtin_va_list` function symbols | -0.11% | +0.22% | -0.03% | n/a | `/tmp/cppgm-boost-frontier-v2-va-list-typed-abi-perf.json` | pass; below hotspot threshold |
 | `(typed-member-pointer fix)` | Qualified current-specialization member-function address | -0.10% | -0.81% | +0.01% | n/a | `/tmp/cppgm-boost-frontier-v2-typed-member-pointer-perf.json` | pass; below hotspot threshold |
+| `(typed bound-template fix)` | Nested member alias template-template call result | -0.13% | -0.09% | +0.02% | n/a | `/tmp/cppgm-boost-frontier-v2-bound-template-identity-perf.json` | pass; below hotspot threshold |
 
 ## Suite Cursor
 
@@ -74,7 +76,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 
 | # | Suite | V2 status | Commit | Forced run evidence | Notes |
 |---:|---|---|---|---|---|
-| 1 | `libs/accumulators/test` | frontier | `(typed GNU complex ABI fix)` | Forced single-job `count` rebuild passed end to end and updated 72 targets; log `/tmp/boost-v2-acc-count-typed-member-pointer-fix.log`. Forced full-suite survey with 8 jobs updated 114 targets, failed 37 compile targets, and exposed the remaining target-local frontiers; log `/tmp/boost-v2-suite-001-typed-member-pointer-full.log`. Focused single-job `covariance` confirmed the libc++ parameter-clause failure in `/tmp/boost-v2-acc-covariance-focused-pre-fix.log`; `/tmp/boost-v2-acc-covariance-structured-complex-fix.log` advanced to the GNU complex ABI gap, and `/tmp/boost-v2-acc-covariance-typed-complex-abi.log` advanced again to Boost.Parameter lookup. | The qualified-friend parser, `mp_bool`, Boost.Test `format_report`, Boost.Regex `perl_matcher`, structured `_Complex` parsing, and GNU complex ABI frontiers are fixed. `count` passes. `covariance` now reaches nested Boost.Parameter `arg_list<...>::binding::fn<...>` type lookup. |
+| 1 | `libs/accumulators/test` | frontier | `(typed bound-template fix)` | Forced single-job `count` rebuild passed end to end and updated 72 targets; log `/tmp/boost-v2-acc-count-typed-member-pointer-fix.log`. Focused `covariance` passed after preserving the typed bound member-alias head and updated 72 targets; log `/tmp/boost-v2-acc-covariance-bound-template-identity-b2-j4.log`. The forced 8-job full survey then updated 154 targets, failed 28 targets, and confirmed both `covariance` and `weighted_covariance` pass; log `/tmp/boost-v2-suite-001-bound-template-identity-full.log`. | The qualified-friend parser, `mp_bool`, Boost.Test `format_report`, Boost.Regex `perl_matcher`, structured `_Complex` parsing and ABI, and nested Boost.Parameter bound-member-alias frontiers are fixed. The next ordered target is `extended_p_square`, one of 22 compile failures sharing the Boost.Random `splitmix64` member-definition diagnostic; later independent classes are one MPL non-type evaluation failure, two ambiguous-base failures, and three serialization runtime failures. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -82,26 +84,23 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#1 libs/accumulators/test`
-- focused target: `libs/accumulators/test//covariance`
-- failure phase: template call result instantiation during Boost.Parameter
-  extractor invocation
-- diagnostic: `callee expression is not callable [callee count]`; the selected
-  `operator()` specialization fails instantiating a result type with `failed
-  template-id parse in type lookup` for
-  `arg_list<tagged_argument<sample, double const>, empty_arg_list,
-  integral_constant<bool, true>>`, while the retained structured anchor is the
-  longer nested `arg_list<...>::binding::fn<accumulator, void_, ...>`
+- focused target: `libs/accumulators/test//extended_p_square`
+- failure phase: non-template class member collection in Boost.Random
+  `splitmix64`
+- diagnostic: `unsupported member function definition` for the parsed
+  `static constexpr result_type max() noexcept` definition; the AST retains a
+  nested declarator for `max`, an empty parameter clause, the `noexcept`
+  qualifier, and a lazy function body
 - reduced repro: pending reduction outside the assignment tree
-- owning PA/cluster: pending reduction; likely structured dependent member type
-  lookup or function-template result substitution
-- implementation area: structured class-template/member-template result type
-  materialization
-- performance risk: template result resolution normal path; inspect hotspot
+- owning PA/cluster: pending reduction; place at the earliest PA owning the
+  essential non-template member-definition shape
+- implementation area: class-reference member-definition collection and
+  declarator classification
+- performance risk: normal class-member collection path; inspect hotspot
   counters and sample if the fix moves instructions by more than 0.25%
-- next action: rerun the exact covariance compile with focused template traces,
-  reduce the nested `arg_list<...>::binding::fn<...>` result type without Boost
-  if possible, and identify why the direct `arg_list<...>` prefix is parsed
-  separately despite the retained full anchor
+- next action: force `extended_p_square` alone, reduce the exact
+  `static constexpr result_type max() noexcept` shape without Boost or the STL,
+  and compare its structured declarator with nearby accepted member definitions
 
 ## Fix Ledger
 
@@ -116,6 +115,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/accumulators/test//count` Boost.Regex dependency | The parsed `&matcher<A,B,C>::first` node retained its structured qualifier syntax, but two normal semantic consumers discarded the node: the eager initializer constant probe and target-aware overloaded member-pointer resolution both called legacy `lookup_qualified_functions` with the rendered `QualifiedName`. Both paths now use `lookup_functions_node` or `lookup_function_template_id_node`, preserving typed qualifier/template syntax. This corrects the uncached algorithms; no cache, text parser, or spelling special case is added. | `pa26/tests/general/300-current-specialization-qualified-member-pointer.t`, placed at the `class.member_pointer` owner `pa26:300` | Non-STL reducer `/tmp/cppgm-v2-regex-member-pointer.cpp` failed first in the opportunistic constant initializer probe and then, after that path was fixed, in actual target-aware member-pointer resolution. Debug stacks showed both calls entering `lookup_qualified_functions` and decomposing `matcher<A,B,C>` without an AST node. Exact Boost.Regex failures were `posix_api.o` and `wide_posix_api.o` in `perl_matcher::find_imp`. | Warning-clean build; reducer accepted by Clang and `cppgm++`; focused PA26 check passes; PA26 direct report `67/67`; all configured strict suites pass; placement audit reports zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass; forced single-job `count` passes and updates 72 targets; full direct-LowIR report passes `3823/3823`; forced full-suite survey advances to independent Accumulators frontiers. | instructions -0.10%; max RSS -0.81%; peak footprint +0.01%; pass, below hotspot threshold | `(this commit)` |
 | fixed | `libs/accumulators/test//covariance` libc++ parameter collection | The initial parser recognized GNU complex types but retained only their spaced display text. When a class-template specialization later collected a member template, the structured declaration parser correctly refused to recover a multi-token type from that string and rejected the parameter clause. The parser now records `_Complex` as a typed builtin transform over the initially parsed component `type_id`; ordinary and template declaration paths consume that retained AST through the existing structured transform resolver. No semantic text lookup, reparse, cache, or libc++ spelling special case is added. | Strengthened `pa34/tests/compile/600-gnu-complex-template-constructor.t` to make the enclosing holder a class template and force specialization population | Non-STL reducer `/tmp/cppgm-v2-gnu-complex-class-template.cpp` and focused Boost `covariance.o` failed with `unsupported function template parameter-clause`; the old PA34 test did not instantiate its non-template holder and therefore never populated the member path. Clang accepts the reducer. | Warning-clean build; reducer and strengthened PA34 test pass; direct PA34 report `309/309`; all configured strict suites pass; PA34 placement audit reports zero findings and zero hygiene findings; all 23 text-reparse categories remain zero and 14 audit tests pass; forced focused `covariance` clears the parameter-clause diagnostic and advances to a typed GNU complex ABI gap. | instructions -0.04%; max RSS +0.66%; peak footprint -0.03%; pass, below hotspot threshold | `(this commit)` |
 | fixed | `libs/accumulators/test//covariance` libc++ GNU complex symbols | Semantic GNU complex types were already structured named `TypePtr`s, but the typed symbol adapter did not map them into the ABI model, so weak member symbol construction failed. The adapter now maps complex float, double, and long double to `abi_mangle::Type::builtin` with Itanium codes `Cf`, `Cd`, and `Ce`. PA30's normalized fact grammar, README, and test surface expose the same typed forms, and symbol tracing captures the resulting `AbiMangleTarget`; no raw mangled suffix or rendered-symbol recovery is added. | New `pa30/tests/abi/100-gnu-complex-types.t`; strengthened `pa34/tests/compile/600-gnu-complex-template-constructor.t` with a non-template complex-parameter member | Focused Boost failed building the weak symbol for `std::__1::complex<float>::__builtin(_Complex float)`. Clang's object symbols confirm `Cf`, `Cd`, and `Ce`; the non-STL PA34 trace failed before the map and now records `holder<float>::set_builtin` as `_ZN6holderIfE11set_builtinECf`. | Warning-clean `abimangle` and `cppgm++` builds; PA30 fact output is exactly `Cf`, `Cd`, `Ce`; PA30/PA34 report passes `390/390`; both placement audits report zero findings and zero hygiene findings; all configured strict suites pass; all 23 text-reparse categories remain zero and 14 audit tests pass; focused `covariance` clears the ABI failure and advances to Boost.Parameter result type lookup. | instructions +0.08%; max RSS +1.17%; peak footprint +0.04%; pass, below hotspot threshold | `(this commit)` |
+| fixed | `libs/accumulators/test//covariance` Boost.Parameter result type | A bound template-template parameter already retained the selected member alias declaration and its concrete owner type, but substitution replaced the semantic template-id head with the alias's rendered qualified name. Generic lookup then decomposed and re-resolved `arg_list<...>` instead of applying the bound member alias. Substitution now preserves the parameter head when a typed owner is present, bound-template resolution runs before generic template-id lookup, direct fallback lookup retains the AST node, concrete alias owners are materialized from typed specialization metadata, and already concrete declared owners are not rebound as current instantiations. No cache, text lookup, or spelling-specific recovery is added. | `pa22/tests/general/400-member-alias-template-template-call-result-owner.t`, placed at the PA22 full deduction/result-substitution owner | Exact non-STL reducer `/tmp/cppgm-v2-nested-member-alias-call.cpp` reproduced the `B<T...>` member-alias application and extractor call. Focused Boost failed resolving `arg_list<...>::binding::fn<...>` after the typed binding had already been selected; debugger stacks showed generic qualified lookup re-entering the rendered owner. Removing the concrete-owner guard also makes the reducer fail independently. | Warning-clean full compiler rebuild; reducer passes in 0.07s at 12.3 MB RSS and 301,955,485 instructions; focused PA22 neighborhood passes `3/3`; PA22 direct report passes `251/251`; all configured strict suites pass; PA22 placement audit reports zero findings and zero hygiene findings; all 23 text-reparse categories remain zero and 14 audit tests pass; forced focused `covariance` and forced full-suite `covariance`/`weighted_covariance` pass. | instructions -0.13%; max RSS -0.09%; peak footprint +0.02%; pass, below hotspot threshold | `(this commit)` |
 
 ## Decision Log
 
@@ -174,6 +174,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
   `covariance`, in libc++ `complex<float>` member-template constructor
   collection. Treat that as the next candidate only after a focused one-job
   rerun confirms it outside parallel scheduling.
+- `2026-07-14`: Traced the final `covariance` failure past successful typed
+  template-template binding. Substitution had overwritten the bound semantic
+  head with its qualified display name, causing generic lookup to re-resolve
+  the rendered owner. Preserving the typed binding fixes the uncached algorithm;
+  the non-STL reducer, focused target, and full-suite covariance targets pass,
+  with cumulative instructions down 0.13% from the immutable baseline.
+- `2026-07-14`: The forced post-fix full survey updated 154 targets and failed
+  28. The next ordered target is `extended_p_square`; 22 compile failures share
+  its Boost.Random `splitmix64` member-definition diagnostic. Later independent
+  classes are one MPL constant-evaluation failure, two ambiguous-base failures,
+  and three serialization runtime failures.
 
 ## Next Commands
 
@@ -185,5 +196,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=1 \
   /usr/local/bin/timeout 600 \
-  ./run-cppgm-b2.sh -a libs/accumulators/test//covariance
+  ./run-cppgm-b2.sh -a libs/accumulators/test//extended_p_square
 ```
