@@ -7118,52 +7118,6 @@ bool try_expand_alias_template_pattern_structurally(
     request.lookup.top_volatile = top_volatile;
     request.class_template = source_template;
     request.resolved_arguments = *instantiation_arguments;
-    for(std::size_t i = 0; i < request.resolved_arguments.size(); ++i) {
-      TemplateArgument & argument = request.resolved_arguments[i];
-      if(argument.kind != TemplateArgument::TA_TYPE ||
-         !argument.type ||
-         type_is_dependent(argument.type) ||
-         type_equals(argument.type, candidate)) {
-        continue;
-      }
-      void * nested_class_template_decl = nullptr;
-      std::vector<DependentAliasTemplateArgumentSyntax> nested_class_arguments;
-      const bool has_nested_class_template =
-          named_type_dependent_class_template(argument.type,
-                                              nested_class_template_decl,
-                                              nested_class_arguments) &&
-          nested_class_template_decl;
-      bool has_unresolved_member_alias_class_template = false;
-      ClassInfo * argument_class_info = nullptr;
-      const TypePtr argument_base = strip_top_level_cv(argument.type);
-      if(direct_dependent_member_alias &&
-         argument_base &&
-         argument_base->kind == Type::TK_NAMED &&
-         !argument_base->named_complete &&
-         named_type_class_template_specialization_mangle_info_const(
-             argument_base)) {
-        argument_class_info =
-            services.semantic_context ?
-                services.semantic_context->class_info_for_type(argument_base) :
-                template_api::find_named_type_class_info(type_system.model,
-                                                         argument_base);
-        has_unresolved_member_alias_class_template =
-            !argument_class_info ||
-            (!argument_class_info->complete &&
-             !argument_class_info->reference_members_collected);
-      }
-      if(!has_nested_class_template &&
-         !has_unresolved_member_alias_class_template) {
-        continue;
-      }
-      TypePtr materialized_argument_type;
-      if(materialize_class_template_target_type(argument.type,
-                                                materialized_argument_type,
-                                                argument_class_info) &&
-         materialized_argument_type) {
-        argument.type = materialized_argument_type;
-      }
-    }
     if(dependent_source_template &&
        dependent_class_arg_syntaxes.size() == instantiation_arguments->size()) {
       request.source_arg_syntaxes = dependent_class_arg_syntaxes;

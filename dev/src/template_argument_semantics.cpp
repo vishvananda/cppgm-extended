@@ -16704,13 +16704,6 @@ bool substitute_dependent_class_type(const TypePtr & type,
   set_named_type_dependent_class_template(substituted,
                                           class_template_decl,
                                           substituted_arguments);
-  if(ClassTemplateDecl * class_template =
-         static_cast<ClassTemplateDecl *>(class_template_decl)) {
-    attach_substituted_dependent_class_mangle_info_from_arguments(
-        substituted,
-        *class_template,
-        substituted_arguments);
-  }
   // Preserve source-scope member expressions while refreshing any arguments
   // that became concrete during this substitution.
   update_substituted_dependent_class_mangle_info(substituted,
@@ -16718,6 +16711,50 @@ bool substitute_dependent_class_type(const TypePtr & type,
                                                 parameters,
                                                 arguments,
                                                 scope);
+  if(ClassTemplateDecl * class_template =
+         static_cast<ClassTemplateDecl *>(class_template_decl)) {
+    shared_ptr<const ClassTemplateSpecializationMangleInfo> updated_info =
+        named_type_class_template_specialization_mangle_info_const(substituted);
+    const bool all_type_parameters =
+        find_if(class_template->parameters.begin(),
+                class_template->parameters.end(),
+                [](const TemplateParameterInfo & parameter)
+                {
+                  return parameter.kind != TemplateParameterInfo::TP_TYPE;
+                }) == class_template->parameters.end();
+    bool concrete_carried_type_arguments = all_type_parameters;
+    for(size_t i = 0;
+        concrete_carried_type_arguments && i < substituted_arguments.size();
+        ++i) {
+      TemplateArgument carried_argument;
+      concrete_carried_type_arguments =
+          dependent_class_argument_to_mangle_argument(
+              *class_template,
+              i,
+              substituted_arguments.size(),
+              substituted_arguments[i],
+              carried_argument) &&
+          carried_argument.kind == TemplateArgument::TA_TYPE &&
+          !carried_argument.dependent;
+    }
+    const bool updated_arguments_dependent =
+        updated_info &&
+        find_if(updated_info->arguments.begin(),
+                updated_info->arguments.end(),
+                [](const TemplateArgument & argument)
+                {
+                  return argument.dependent;
+                }) != updated_info->arguments.end();
+    if(!updated_info ||
+       (concrete_carried_type_arguments &&
+        (updated_info->arguments.size() != substituted_arguments.size() ||
+         updated_arguments_dependent))) {
+      attach_substituted_dependent_class_mangle_info_from_arguments(
+          substituted,
+          *class_template,
+          substituted_arguments);
+    }
+  }
   out = substituted;
   return true;
 }
