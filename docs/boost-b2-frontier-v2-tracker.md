@@ -15,7 +15,7 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `0 / 147`
 - current cursor: `#1 libs/accumulators/test`
-- active compiler frontier: none; baseline bootstrap is not complete
+- active compiler frontier: none; baseline bootstrap is complete
 
 ## Baseline Gates
 
@@ -24,12 +24,12 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 | Exact compiler start commit | pass | `main`, `origin/main`, and the merged PR head were verified at `db9879223` before this branch was created. |
 | PR Tests workflow | pass | GitHub Actions run `29298098410` completed successfully with all 21 checks green across GCC/libstdc++ and Clang/libc++ on Ubuntu 24.04 and 26.04. |
 | PR-triggered inception | pass | Run `29299551532` completed `Compare cppgm++ inception` successfully in `56m53s`. |
-| Warning-clean `dev/cppgm++` build | pass | Last build at the baseline head completed without warnings. Rerun before suite 1. |
-| Full direct-LowIR report | pending refresh | PR CI `test-report` passed in all four lanes. Record the V2 local baseline command before suite 1. |
-| Strict direct-LowIR report | pass, pending refresh | PR CI `test-strict` passed in all four lanes. Record the V2 local baseline command before suite 1. |
-| Strict text-reparse audit | pass | All 23 categories were zero; 14 audit unit tests passed at the baseline head. Rerun before suite 1. |
+| Warning-clean `dev/cppgm++` build | pass | `make -C dev -j8 cppgm++` relinked the compiler at `2acedcec7` without warnings; production compiler sources are unchanged from `db9879223`. |
+| Full direct-LowIR report | pass | `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ORDERED=false make test-report` passed `3818 / 3819`; the only miss was the known load-sensitive PA9 generated-program timeout. Its immediate isolated direct-LowIR rerun passed `11 / 11`, and the timeout was accepted as load noise. |
+| Strict direct-LowIR report | pass | `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-strict` passed all configured PA18, PA19, PA21, PA22, and PA23 comparisons. |
+| Strict text-reparse audit | pass | `audit_text_reparse.py --strict --list-sites` reported all 23 categories at zero; all 14 audit unit tests passed. |
 | PA placement audit | pass | PR CI placement audit passed. |
-| Fixed V2 performance baseline | pending | Record `/tmp/cppgm-boost-frontier-v2-db9879223-baseline.json` with three runs at the exact baseline commit. |
+| Fixed V2 performance baseline | pass | Three runs were recorded from the detached worktree `/tmp/cppgm-boost-v2-baseline-db9879223` at exact commit `db9879223`; medians are recorded below. |
 
 ## Environment
 
@@ -38,11 +38,11 @@ suite evidence and performance measurements.
 
 | Item | Value |
 |---|---|
-| host OS/version | pending |
-| CPU | pending |
-| host C compiler | `/usr/local/opt/llvm/bin/clang` pending version capture |
-| host C++ compiler | `/usr/local/opt/llvm/bin/clang++` pending version capture |
-| C++ standard library | libc++ pending version capture |
+| host OS/version | macOS 26.3 (25D125), Darwin 25.3.0 x86_64 |
+| CPU | Intel Core i7-9750H, 6 physical / 12 logical cores, 16 GiB memory |
+| host C compiler | `/usr/local/opt/llvm/bin/clang`, Homebrew clang 22.1.0 |
+| host C++ compiler | `/usr/local/opt/llvm/bin/clang++`, Homebrew clang 22.1.0 |
+| C++ standard library | system libc++ (`/usr/lib/libc++.1.dylib`, current version 2000.67.0; headers `_LIBCPP_VERSION=220100`) |
 | B2 wrapper | `/Users/vishvananda/boost_1_91_0/run-cppgm-b2.sh` |
 | compiler under test | `/Users/vishvananda/cppgm-extended/dev/cppgm++` |
 | default suite jobs | `8` |
@@ -52,7 +52,7 @@ suite evidence and performance measurements.
 
 | Commit | Baseline file | Instructions | Max RSS | Peak footprint | Wall time | Status |
 |---|---|---:|---:|---:|---:|---|
-| `db9879223` | `/tmp/cppgm-boost-frontier-v2-db9879223-baseline.json` | pending | pending | pending | pending | not recorded |
+| `db9879223` | `/tmp/cppgm-boost-frontier-v2-db9879223-baseline.json` | 271,651,249,439 | 1,293,901,824 B | 1,024,110,592 B | 60.43s | recorded, immutable |
 
 ## Performance Ledger
 
@@ -84,7 +84,7 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 - owning PA/cluster: pending
 - implementation area: pending
 - performance risk: pending
-- next action: complete baseline gates, then run suite 1 with a forced rebuild
+- next action: run suite 1 with a forced rebuild
 
 ## Fix Ledger
 
@@ -106,25 +106,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 - `2026-07-13`: Made the start-commit performance baseline immutable. Rolling
   baselines may characterize a fix but cannot replace the fixed cumulative
   gate.
+- `2026-07-13`: Completed the baseline bootstrap. The fixed three-run baseline
+  was measured in a detached worktree at exact commit `db9879223`; the active
+  and main branch tips at `2acedcec7` contain only V2 process documents and
+  refreshed assignment references beyond that production compiler baseline.
+- `2026-07-13`: Accepted one PA9 generated-program timeout in the full report
+  as the known load-sensitive test behavior after its isolated direct-LowIR
+  report passed `11 / 11` immediately.
 
 ## Next Commands
 
 ```sh
-make -C dev -j8 cppgm++
-
-CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ORDERED=false \
-  make test-report
-
-CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 \
-  make test-strict
-
-python3 scripts/audit_text_reparse.py --strict --list-sites
-python3 -m unittest scripts.tests.test_audit_text_reparse
-
-scripts/validate_perf_regression.py record \
-  --baseline /tmp/cppgm-boost-frontier-v2-db9879223-baseline.json \
-  --runs 3
-
 env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
