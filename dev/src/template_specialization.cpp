@@ -1523,13 +1523,14 @@ bool parse_template_argument_type_syntax(
     Scope & scope,
     const TemplateArgumentSyntax * syntax,
     TypePtr & out,
-    bool reference_class_templates_only)
+    bool reference_class_templates_only,
+    bool re_resolve_structured_syntax = false)
 {
   out.reset();
   if(!syntax) {
     return false;
   }
-  if(syntax->resolved_type) {
+  if(syntax->resolved_type && !re_resolve_structured_syntax) {
     out = syntax->resolved_type;
     return true;
   }
@@ -1602,6 +1603,31 @@ bool strip_trailing_pack_ellipsis(const std::string & text, std::string & elemen
   return !element_text.empty();
 }
 
+bool template_argument_syntax_contains_ast_kind(
+    const TemplateArgumentSyntax & syntax,
+    CppAstKind kind);
+bool ast_with_sidecars_contains_kind(const CppAstNode & node,
+                                     CppAstKind kind);
+
+bool template_id_syntax_contains_ast_kind(const TemplateIdSyntax & syntax,
+                                          CppAstKind kind)
+{
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(template_argument_syntax_contains_ast_kind(syntax.argument_syntaxes[i],
+                                                  kind)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
+    if(template_id_syntax_contains_ast_kind(
+           syntax.qualifier_template_id_syntaxes[i],
+           kind)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool ast_contains_kind(const CppAstNode & node, CppAstKind kind)
 {
   if(node.kind == kind) {
@@ -1613,6 +1639,67 @@ bool ast_contains_kind(const CppAstNode & node, CppAstKind kind)
     }
   }
   return false;
+}
+
+bool ast_with_sidecars_contains_kind(const CppAstNode & node, CppAstKind kind)
+{
+  if(node.kind == kind) {
+    return true;
+  }
+  if(node.template_id_syntax &&
+     template_id_syntax_contains_ast_kind(*node.template_id_syntax, kind)) {
+    return true;
+  }
+  if(node.conversion_type_id_syntax &&
+     ast_with_sidecars_contains_kind(*node.conversion_type_id_syntax, kind)) {
+    return true;
+  }
+  if(node.base_type_syntax &&
+     ast_with_sidecars_contains_kind(*node.base_type_syntax, kind)) {
+    return true;
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(template_id_syntax_contains_ast_kind(
+           node.qualifier_template_id_syntaxes[i],
+           kind)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(ast_with_sidecars_contains_kind(node.qualifier_type_syntaxes[i], kind)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+    if(ast_with_sidecars_contains_kind(node.exception_type_id_syntaxes[i], kind)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.alignment_specifier_nodes.size(); ++i) {
+    if(ast_with_sidecars_contains_kind(node.alignment_specifier_nodes[i], kind)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_with_sidecars_contains_kind(node.children[i], kind)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool template_argument_syntax_contains_ast_kind(
+    const TemplateArgumentSyntax & syntax,
+    CppAstKind kind)
+{
+  return (syntax.type_id &&
+          ast_with_sidecars_contains_kind(*syntax.type_id, kind)) ||
+         (syntax.source_type_id &&
+          ast_with_sidecars_contains_kind(*syntax.source_type_id, kind)) ||
+         (syntax.expression &&
+          ast_with_sidecars_contains_kind(*syntax.expression, kind)) ||
+         (syntax.template_id &&
+          template_id_syntax_contains_ast_kind(*syntax.template_id, kind));
 }
 
 const CppAstNode * direct_function_parameter_clause_from_type_syntax(
@@ -10709,16 +10796,12 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
           if(concrete_expression_recheck_state == 0) {
             const bool required =
                 pattern_syntax &&
-                ((pattern_syntax->type_id &&
-                  ast_contains_kind(*pattern_syntax->type_id,
-                                    CppAstKind::decltype_specifier) &&
-                  ast_contains_kind(*pattern_syntax->type_id,
-                                    CppAstKind::call_expression)) ||
-                 (pattern_syntax->source_type_id &&
-                  ast_contains_kind(*pattern_syntax->source_type_id,
-                                    CppAstKind::decltype_specifier) &&
-                  ast_contains_kind(*pattern_syntax->source_type_id,
-                                    CppAstKind::call_expression)));
+                template_argument_syntax_contains_ast_kind(
+                    *pattern_syntax,
+                    CppAstKind::decltype_specifier) &&
+                template_argument_syntax_contains_ast_kind(
+                    *pattern_syntax,
+                    CppAstKind::call_expression);
             concrete_expression_recheck_state = required ? 2 : 1;
           }
           pattern_requires_concrete_expression_recheck =
@@ -10762,7 +10845,12 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
           parsed_pattern_type = static_cast<bool>(pattern_type);
         } else if(pattern_syntax &&
                   parse_template_argument_type_syntax(
-                      services, match_scope, pattern_syntax, pattern_type, true)) {
+                      services,
+                      match_scope,
+                      pattern_syntax,
+                      pattern_type,
+                      true,
+                      pattern_requires_concrete_expression_recheck)) {
           parsed_pattern_type = true;
         }
         if(pattern_type &&
