@@ -13,10 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `5 / 147`
-- current cursor: `#6 libs/asio/test`
-- active compiler frontier: pending the next forced Asio survey after clearing
-  the independently observed `strand` link pair
+- completed suites: `7 / 147`
+- current cursor: `#8 libs/assign/test`
+- active compiler frontier: pending the initial forced Assign survey
 
 ## Baseline Gates
 
@@ -101,25 +100,26 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 3 | `libs/align/test` | pass | `(dependent alignof NTTP fix)` | The focused `alignment_of_test` forced four targets and passed compile, link, and runtime; log `/tmp/boost-v2-align-alignment-of-after-layout-fix.log`. The exact complete forced suite rebuilt all 60 targets and exited successfully; log `/tmp/boost-frontier-v2-suite-003-alignof-layout-fix-full.log`. | The initial forced survey passed 56 targets and had one causal compile failure plus three downstream skips: libc++ `alignment_of<Struct<bool>>` could not instantiate `integral_constant<size_t, alignof(_Tp)>`; log `/tmp/boost-frontier-v2-suite-003-initial-forced.log`. The final direct-LowIR report passes `3831 / 3831`; log `/tmp/cppgm-boost-frontier-v2-align-final-test-report.log`. |
 | 4 | `libs/any/test` | pass | `(qualified rvalue-reference parser fix)` | Forced focused `unique_move` and `no_rtti_unique_move` rebuilt eight targets and both passed compile, link, and runtime; log `/tmp/boost-v2-any-unique-move-parser-fix.log`. The exact complete forced survey updated 164 targets in 54.3s and exited successfully; log `/tmp/boost-frontier-v2-suite-004-qualified-rref-parser-fix/libs__any__test.log`. | Initial forced evidence `/tmp/boost-frontier-v2-suite-004-initial-forced.log` had eight failures from the separately committed missing-`typename` defect plus the later move-cast failure. The first fix cleared all no-RTTI failures; the final parser fix clears both remaining move targets. Final direct-LowIR report passes `3833 / 3833`; log `/tmp/cppgm-boost-v2-suite-004-qualified-rref-full-report.log`. |
 | 5 | `libs/array/test` | pass | `(three Array fixes)` | Focused constexpr aggregate access passed in `/tmp/boost-v2-array-init-cx-focused-final.log`; focused pointer-identity targets passed in `/tmp/boost-v2-array-pointer-focused-final.log`; focused `to_array_test` passed in `/tmp/boost-v2-array-to-array-fixed.log`. The exact complete forced survey rebuilt all 146 discovered targets in 56.7s and exited successfully; log `/tmp/boost-frontier-v2-suite-005-array-cv-reference-fix/libs__array__test.log`. | Initial forced evidence `/tmp/boost-frontier-v2-suite-005-initial-forced/libs__array__test.log` had six constexpr failures split between structured aggregate access and subobject pointer identity, plus one independent array cv-reference overload failure. Each cause has an earliest owner reducer and uncached proof. Final direct-LowIR report passes `3836 / 3836`; log `/tmp/cppgm-boost-frontier-v2-array-final-full-report.log`. |
-| 6 | `libs/asio/test` | frontier | `(full-expression temporary emission fix)` | The initial forced eight-job survey timed out at 1800s after recording multiple compiler families; log `/tmp/boost-frontier-v2-suite-006-initial-forced/libs__asio__test.log`. Forced focused `ip_tcp` and `ip_tcp_select` pass in `/tmp/boost-frontier-v2-asio-ip-tcp-focused-fixed.log`. A follow-on survey was manually stopped after 54 minutes because its invocation omitted the external timeout; it recorded 286 passes, the two POSIX descriptor failures, and the later independent `strand` link pair in `/tmp/boost-frontier-v2-asio-full-after-ip-tcp.log`. Both forced POSIX descriptor variants pass in `/tmp/boost-frontier-v2-asio-posix-stream-descriptor-narrowed-final.log`. Exact forced `strand` and `strand_select` rebuilds compile, link, run, and pass in `/tmp/boost-frontier-v2-asio-strand-stale-layout-exact-final.log`. | The suite remains open pending a forced continuation survey. The `strand` failure was not a missing `on_invoker_exit` definition: those destructors were emitted and referenced the missing concrete `basic_executor_type<recycling_allocator<void, default_tag>, 4>::~basic_executor_type`. Final direct-LowIR report passes `3833/3833` with PA9 explicitly omitted. |
+| 6 | `libs/asio/test` | pass | `53a73a395` | The exact eight-job forced survey rebuilt through 210 passing tests before the 1800-second external timeout, with no failures; log `/tmp/boost-frontier-v2-asio-after-strand-full-j8.log`. All eight compiler children left in flight at the timeout (`read`, `read_at`, `socket_base`, and `spawn`, normal/select) were then force-rebuilt; all eight compile, link, and run successfully in `/tmp/boost-frontier-v2-asio-after-strand-interrupted-tail-focused.log`. The non-forced full continuation updated 680 targets, ran 285 passing tests, and exited successfully; log `/tmp/boost-frontier-v2-asio-after-strand-continuation.log`. | Suite closed with no skipped or failed targets. The `strand` failure was not a missing `on_invoker_exit` definition: those destructors were emitted and referenced the missing concrete `basic_executor_type<recycling_allocator<void, default_tag>, 4>::~basic_executor_type`. The final direct-LowIR report passes `3833/3833` with PA9 explicitly omitted. The large tail `execution/mapping` compile peaked near 3 GiB and sampled primarily in LowIR hidden virtual-base argument emission; this is recorded as a separate performance lead, not attributed to the cold temporary-class lookup. |
+| 7 | `libs/assert/test` | pass | `53a73a395` | The exact forced survey rebuilt 72 targets; all 18 tests compiled, linked, ran, and passed, and B2 exited successfully. Log: `/tmp/boost-frontier-v2-suite-007-assert-full.log`. | No compiler fix or repository regression was required. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#6 libs/asio/test`
-- focused targets: pending the next failure from a forced suite continuation
+- suite: `#8 libs/assign/test`
+- focused targets: pending the initial forced suite survey
 - failure phase: pending survey
-- diagnostic: none active; `strand` and `strand_select` pass
-- reduced repro: `pa21/tests/general/300-nested-member-template-prvalue-dtor-output.t`
-- owning PA/cluster: PA21 nested class/member templates
-- implementation area: pending the next independent failure
+- diagnostic: none active
+- reduced repro: pending
+- owning PA/cluster: pending reduction audit
+- implementation area: pending the first independent failure
 - performance risk: current three-run cumulative median is +0.78% instructions,
   +0.22% RSS, and +0.03% footprint; this fix is flat to slightly better than
   the preceding checkpoint in all three primary metrics
-- next action: resume the exact Asio forced survey under the external timeout
-  and stop at the next independent compiler frontier
+- next action: force the complete Assign suite under the external timeout and
+  stop at the first independent compiler frontier
 
 ## Fix Ledger
 
@@ -159,6 +159,18 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-07-15`: Closed Assert without a compiler change. The exact forced run
+  updated 72 targets and all 18 tests passed. The cursor advances to
+  `libs/assign/test`.
+- `2026-07-15`: Closed Asio after the `strand` fix. The uninterrupted exact
+  forced prefix recorded 210 passes and no failures before its external
+  timeout. Every in-flight timeout target was separately force-rebuilt and
+  passed, then the full continuation updated 680 targets, ran 285 passing
+  tests, and exited successfully with no skips or failures. Sampling the
+  unusually large `execution/mapping` tail showed LowIR hidden virtual-base
+  argument emission as the dominant path; it is retained as a separate
+  performance lead because the fixed aggregate benchmark is flat and the
+  accepted `strand` change is not on that sampled path.
 - `2026-07-15`: The Asio `strand` link failure was an output-closure defect,
   not an initial-parse loss, text reparse, ABI spelling error, or cache-masked
   algorithm. The nested executor specialization retained a layout-free named
@@ -466,6 +478,6 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  JOBS=2 \
-  gtimeout 1800 ./run-cppgm-b2.sh -a libs/asio/test
+  JOBS=8 \
+  gtimeout 1800 ./run-cppgm-b2.sh -a libs/assign/test
 ```
