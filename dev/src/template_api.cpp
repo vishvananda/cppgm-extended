@@ -1334,7 +1334,7 @@ bool binding_is_noop_copy_constructor_for_suppressed_emission(
   return true;
 }
 
-bool binding_is_noop_weak_function_for_suppressed_emission(
+bool binding_is_noop_inline_function_for_suppressed_emission(
     const semantic_model::FunctionBinding & binding)
 {
   const bool inline_class_definition =
@@ -1342,6 +1342,8 @@ bool binding_is_noop_weak_function_for_suppressed_emission(
       binding.declaration_node &&
       binding.definition_node &&
       binding.declaration_node == binding.definition_node;
+  const bool inline_definition =
+      binding.is_inline || binding.is_constexpr || inline_class_definition;
   const bool empty_compound_body =
       binding.body &&
       binding.body->kind == CppAstKind::compound_statement &&
@@ -1352,8 +1354,7 @@ bool binding_is_noop_weak_function_for_suppressed_emission(
       binding.body->token_end <= binding.body->token_start + 2;
   return binding.owner_class &&
          !binding.is_deleted &&
-         (symbol_linkage::has_weak_linkage(binding.symbol) ||
-          inline_class_definition) &&
+         inline_definition &&
          (empty_compound_body || empty_lazy_body) &&
          !binding.ctor_initializer;
 }
@@ -2076,7 +2077,7 @@ bool function_binding_bypasses_explicit_instantiation_suppression(
     return true;
   }
   if(explicit_instantiation_suppressed &&
-     binding_is_noop_weak_function_for_suppressed_emission(binding)) {
+     binding_is_noop_inline_function_for_suppressed_emission(binding)) {
     return true;
   }
 

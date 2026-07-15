@@ -1,8 +1,14 @@
 template<class T>
 struct Box {
+  ~Box();
   int out();
   int in() { return 4; }
 };
+
+template<class T>
+Box<T>::~Box()
+{
+}
 
 template<class T>
 int Box<T>::out()
@@ -11,6 +17,11 @@ int Box<T>::out()
 }
 
 extern template struct Box<int>;
+
+void destroy(Box<int> * value)
+{
+  value->~Box();
+}
 
 int main()
 {
