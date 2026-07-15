@@ -16152,6 +16152,12 @@ void copy_direct_non_type_argument(
   out.syntax.dependent = replacement.dependent;
 }
 
+bool copy_direct_scope_bound_non_type_argument(
+    Scope * scope,
+    const vector<TemplateParameterInfo> & parameters,
+    const DependentAliasTemplateArgumentSyntax & source_argument,
+    DependentAliasTemplateArgumentSyntax & out);
+
 bool substitute_dependent_template_argument_syntaxes(
     const vector<TemplateParameterInfo> & parameters,
     const vector<TemplateArgument> & arguments,
@@ -16277,6 +16283,16 @@ bool substitute_dependent_template_argument_syntaxes(
                                     *direct_replacement,
                                     substituted);
       substituted_arguments.push_back(substituted);
+      changed = true;
+      continue;
+    }
+
+    DependentAliasTemplateArgumentSyntax scope_bound_substitution;
+    if(copy_direct_scope_bound_non_type_argument(scope,
+                                                 parameters,
+                                                 source_argument,
+                                                 scope_bound_substitution)) {
+      substituted_arguments.push_back(scope_bound_substitution);
       changed = true;
       continue;
     }
@@ -16428,7 +16444,7 @@ string direct_non_type_mangle_argument_name(const TemplateArgument & argument)
   return string();
 }
 
-const ValueBinding * lookup_template_bound_value_for_mangle_substitution(
+const ValueBinding * lookup_template_bound_value_for_substitution(
     Scope * scope,
     const string & name)
 {
@@ -16493,6 +16509,60 @@ bool template_argument_from_bound_value(const ValueBinding & binding,
       new CppAstNode(make_substituted_value_expression_node(binding)));
   out.expression.reset(new CppAstNode(*out.source_syntax->expression));
   return !out.dependent;
+}
+
+bool copy_direct_scope_bound_non_type_argument(
+    Scope * scope,
+    const vector<TemplateParameterInfo> & parameters,
+    const DependentAliasTemplateArgumentSyntax & source_argument,
+    DependentAliasTemplateArgumentSyntax & out)
+{
+  if(!source_argument.syntax.expression ||
+     source_argument.syntax.expression->kind != CppAstKind::id_expression) {
+    return false;
+  }
+  const string & name = source_argument.syntax.expression->value;
+  if(!is_identifier_text(name) ||
+     substitution_parameter_has_name(parameters, name)) {
+    return false;
+  }
+
+  const ValueBinding * binding =
+      lookup_template_bound_value_for_substitution(scope, name);
+  if(!binding) {
+    return false;
+  }
+
+  TemplateArgument source;
+  source.kind = TemplateArgument::TA_VALUE;
+  source.text = source_argument.text;
+  source.type = source_argument.type;
+  source.dependent = true;
+  source.source_defaulted = source_argument.source_defaulted;
+  source.partial_order_placeholder = source_argument.partial_order_placeholder;
+  source.source_syntax.reset(new TemplateArgumentSyntax(source_argument.syntax));
+  if(source_argument.syntax.expression) {
+    source.expression.reset(new CppAstNode(
+        clone_expression_node_for_template_substitution(
+            *source_argument.syntax.expression)));
+  }
+
+  TemplateArgument replacement;
+  if(!template_argument_from_bound_value(*binding, source, replacement)) {
+    return false;
+  }
+  copy_direct_non_type_argument(source_argument, replacement, out);
+  const string canonical_text = template_model::template_argument_text(
+      replacement,
+      [](const TypePtr & type)
+      {
+        return substituted_dependent_argument_type_text(type);
+      });
+  if(!canonical_text.empty()) {
+    out.text = canonical_text;
+    out.syntax.text = canonical_text;
+  }
+  return true;
 }
 
 static bool expression_is_literal_after_casts(const CppAstNode * expression)
@@ -16596,7 +16666,7 @@ bool substitute_template_argument_for_mangle_info(
     }
     const string bound_name = direct_non_type_mangle_argument_name(source);
     if(const ValueBinding * binding =
-           lookup_template_bound_value_for_mangle_substitution(scope, bound_name)) {
+           lookup_template_bound_value_for_substitution(scope, bound_name)) {
       return template_argument_from_bound_value(*binding, source, out);
     }
   }
