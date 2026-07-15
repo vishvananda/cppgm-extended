@@ -15,7 +15,6 @@ struct Mid : Pad, Base {
 };
 
 struct B : virtual Mid {
-  virtual ~B();
 };
 
 B & get_b();

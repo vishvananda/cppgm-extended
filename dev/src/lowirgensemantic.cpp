@@ -3787,8 +3787,7 @@ private:
   }
 
   bool dynamic_external_virtual_base_pointer_available(const TypePtr & object_type,
-                                                       const string & qualified_name,
-                                                       bool allow_reference_layout_runtime = false) const
+                                                       const string & qualified_name) const
   {
     TypePtr class_type = strip_top_level_cv(remove_reference_type(object_type));
     if(class_type && class_type->kind == Type::TK_POINTER) {
@@ -3799,8 +3798,7 @@ private:
       return false;
     }
     if(!class_uses_vtable_runtime(class_type) &&
-       !(allow_reference_layout_runtime &&
-         class_has_external_virtual_base_runtime_layout(class_type))) {
+       !class_has_external_virtual_base_runtime_layout(class_type)) {
       return false;
     }
 
@@ -3820,10 +3818,10 @@ private:
   bool try_emit_dynamic_external_virtual_base_pointer(const TypePtr & object_type,
                                                       const string & object_ptr,
                                                       const string & qualified_name,
-                                                      string & out,
-                                                      bool allow_reference_layout_runtime = false)
+                                                      string & out)
   {
     TypePtr class_type = strip_top_level_cv(remove_reference_type(object_type));
+    const bool pointer_source = class_type && class_type->kind == Type::TK_POINTER;
     if(class_type && class_type->kind == Type::TK_POINTER) {
       class_type = strip_top_level_cv(class_type->inner);
     }
@@ -3831,11 +3829,12 @@ private:
     if(class_name.empty()) {
       return false;
     }
-    if(!class_uses_vtable_runtime(class_type) &&
-       !(allow_reference_layout_runtime &&
-         class_has_external_virtual_base_runtime_layout(class_type))) {
+    const bool uses_vtable_runtime = class_uses_vtable_runtime(class_type);
+    if(!uses_vtable_runtime &&
+       !class_has_external_virtual_base_runtime_layout(class_type)) {
       return false;
     }
+    const bool preserve_null = pointer_source && !uses_vtable_runtime;
 
     map<string, vector<pair<string, unsigned long long> > >::const_iterator layout_it =
         class_virtual_base_layouts_.find(class_name);
@@ -3855,18 +3854,45 @@ private:
       return false;
     }
 
-    const string vptr = emit_temp_assignment("ptr", string("load ptr ") + object_ptr);
-    const size_t slots_from_address_point =
-        layout_it->second.size() - layout_index + 2;
-    const long long slot_offset =
-        -static_cast<long long>(slots_from_address_point * 8);
-    const string offset_slot =
-        emit_temp_assignment("ptr",
-                             string("index i8 ") + vptr + ", " + to_string(slot_offset));
-    const string runtime_offset =
-        emit_temp_assignment("i64", string("load i64 ") + offset_slot);
-    out = emit_temp_assignment("ptr",
-                               string("index i8 ") + object_ptr + ", " + runtime_offset);
+    const auto emit_adjusted_pointer = [&]() -> string
+    {
+      const string vptr = emit_temp_assignment("ptr", string("load ptr ") + object_ptr);
+      const size_t slots_from_address_point =
+          layout_it->second.size() - layout_index + 2;
+      const long long slot_offset =
+          -static_cast<long long>(slots_from_address_point * 8);
+      const string offset_slot =
+          emit_temp_assignment("ptr",
+                               string("index i8 ") + vptr + ", " + to_string(slot_offset));
+      const string runtime_offset =
+          emit_temp_assignment("i64", string("load i64 ") + offset_slot);
+      return emit_temp_assignment("ptr",
+                                  string("index i8 ") + object_ptr + ", " + runtime_offset);
+    };
+    if(!preserve_null) {
+      out = emit_adjusted_pointer();
+      return true;
+    }
+
+    const string result_slot = new_hidden_slot("ptr", "vbasecast");
+    const string null_label = new_block("vbasecast_null");
+    const string adjust_label = new_block("vbasecast_adjust");
+    const string end_label = new_block("vbasecast_end");
+    const string is_null =
+        emit_temp_assignment("i64", string("cmp eq ptr ") + object_ptr + ", 0");
+    terminate(string("branch ") + is_null + ", " + lowir_block_name(null_label) + ", " +
+              lowir_block_name(adjust_label));
+
+    start_block(null_label);
+    emit_line("store ptr 0, " + result_slot);
+    terminate(string("jump ") + lowir_block_name(end_label));
+
+    start_block(adjust_label);
+    emit_line("store ptr " + emit_adjusted_pointer() + ", " + result_slot);
+    terminate(string("jump ") + lowir_block_name(end_label));
+
+    start_block(end_label);
+    out = emit_temp_assignment("ptr", string("load ptr ") + result_slot);
     return true;
   }
 
@@ -4042,8 +4068,7 @@ private:
       if(try_emit_dynamic_external_virtual_base_pointer(object_arg.semantic_type,
                                                         base_object_ptr,
                                                         virtual_base.first,
-                                                        dynamic_external,
-                                                        true)) {
+                                                        dynamic_external)) {
         if(virtual_base.second == 0) {
           return dynamic_external;
         }
@@ -13146,17 +13171,13 @@ private:
           }
         }
         if(dynamic_external_virtual_base_pointer_available(node.children[0].semantic_type,
-                                                           virtual_base.first,
-                                                           expression_path_uses_reference_storage(
-                                                               node.children[0]))) {
+                                                           virtual_base.first)) {
           const string object_ptr = emit_pointer_operand(node.children[0]);
           string dynamic_external;
           if(!try_emit_dynamic_external_virtual_base_pointer(node.children[0].semantic_type,
                                                              object_ptr,
                                                              virtual_base.first,
-                                                             dynamic_external,
-                                                             expression_path_uses_reference_storage(
-                                                                 node.children[0]))) {
+                                                             dynamic_external)) {
             throw logic_error("failed to emit dynamic external virtual base pointer");
           }
           return address_from_parameter_hidden_virtual_base(dynamic_external,

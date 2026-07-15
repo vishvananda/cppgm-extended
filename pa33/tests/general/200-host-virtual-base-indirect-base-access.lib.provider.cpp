@@ -13,10 +13,6 @@ Pad::Pad() : p(11)
 {
 }
 
-B::~B()
-{
-}
-
 static B g_b;
 
 B & get_b()

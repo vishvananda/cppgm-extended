@@ -13,10 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `0 / 147`
-- current cursor: `#1 libs/accumulators/test`
-- active compiler frontier: typed transitive `__is_base_of` traversal and lazy
-  rolling ordering are fixed; reduce the shared persistence decode failure
+- completed suites: `1 / 147`
+- current cursor: `#2 libs/algorithm/test`
+- active compiler frontier: pending the initial forced Algorithm survey
 
 ## Baseline Gates
 
@@ -72,6 +71,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(non-deduced partial pattern fix)` | Reused non-deduced partial-specialization pattern after earlier deductions | +0.75% | -0.56% | +0.04% | eager typed substitution was +0.94%; resolver-first fast path recovered 0.19 percentage points | `/tmp/cppgm-boost-frontier-v2-nondeduced-partial-pattern-fastpath-perf.json` | pass; hard gates pass; hotspot counters and 1 ms sample show no pathological path or cache-masked correctness |
 | `(duplicate-base static lookup fix)` | Inherited non-object declaration reached through duplicate base subobjects | +0.74% | +1.05% | +0.06% | -0.01 percentage points instructions from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-duplicate-base-static-member-perf.json` | pass; all fixed cumulative gates remain within tolerance |
 | `(typed base-trait traversal fix)` | Transitive base trait across distinct specializations of the same class template | +0.73% | -0.06% | +0.10% | -0.01 percentage points instructions from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-base-of-specialization-cycle-key-perf.json` | pass; changed evaluator is absent from the 1 ms sample and semantic text-resolution counters remain zero |
+| `(external vbase layout runtime fix)` | Imported virtual-base pointer adjustment for classes without locally observed virtual functions | +0.74% | +0.50% | +0.10% | +0.01 percentage points instructions from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-external-vbase-layout-runtime-final-perf.json` | pass; below hotspot threshold and all fixed cumulative gates remain within tolerance |
 
 ## Suite Cursor
 
@@ -80,30 +80,26 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 
 | # | Suite | V2 status | Commit | Forced run evidence | Notes |
 |---:|---|---|---|---|---|
-| 1 | `libs/accumulators/test` | frontier | `(typed base-trait traversal fix)` | Forced `error_of` passes compile, link, and runtime with 72 updated targets; log `/tmp/boost-v2-acc-error-of-nondeduced-partial-pattern-fix.log`. The following forced full survey reached its 1800s bound after exercising every visible failure class and identified exactly two duplicate-base compile failures plus three persistence runtime failures; log `/tmp/boost-v2-suite-001-nondeduced-partial-pattern-full.log`. Forced focused `rolling_mean` and `rolling_variance` rebuilds compile and link both targets, update 72 targets, and expose their runtime behavior; log `/tmp/boost-v2-acc-duplicate-base-static-fix.log`. The post-fix forced full survey reached target 200, completed 42 positive tests, reproduced exactly five runtime failures, and had zero compile failures before the 1800s bound left only previously passing `weighted_tail_variate_means` active; log `/tmp/boost-v2-suite-001-duplicate-base-static-fix-full.log`. Forced focused `rolling_mean` after the typed trait fix rebuilds all 72 targets; every ordinary and lazy rolling-result assertion passes and only persistence fails, in `invalid_base64_character`; log `/tmp/boost-v2-acc-base-of-specialization-cycle-key-fix.log`. The required forced full survey reached its 1800s bound with 36 passes, exactly the five shared persistence failures, and zero compile failures; seven previously passing late targets were active at the bound. Evidence: `/tmp/boost-frontier-v2-suite-001-base-of-specialization-cycle-key`. | All previously observed compile frontiers and the lazy rolling-result failure are cleared. The shared persistence decode exception remains the next frontier. |
+| 1 | `libs/accumulators/test` | pass | `(external vbase layout runtime fix)` | Exact final forced survey rebuilt the full graph for 1800s with zero failures; all five former persistence failures (`rolling_count`, `rolling_sum`, `rolling_moment`, `rolling_variance`, and `rolling_mean`) rebuilt and passed. Log: `/tmp/boost-frontier-v2-suite-001-external-vbase-layout-runtime-final.log`. The non-forced continuation updated the remaining 12 targets, all four tests passed, and B2 exited successfully. Log: `/tmp/boost-frontier-v2-suite-001-external-vbase-layout-runtime-final-continuation.log`. The two compiler children orphaned by the forced timeout were terminated, then their affected `tail_variate_means` targets were forced cleanly; both rebuilt, passed, and B2 updated all 76 requested targets. Log: `/tmp/boost-v2-acc-external-vbase-layout-runtime-final-tail-focused.log`. | Suite closed on the exact final implementation. The final repository direct-LowIR report passed `3830 / 3830`; log `/tmp/cppgm-boost-frontier-v2-external-vbase-layout-runtime-final-test-report.log`. |
+| 2 | `libs/algorithm/test` | pending |  |  | Initial forced V2 survey is next. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#1 libs/accumulators/test`
-- focused target: `libs/accumulators/test//rolling_count`
-- failure phase: runtime
-- diagnostic: persistence throws
-  `dataflow_exception::invalid_base64_character`; debugger evidence shows the
-  decoder receives EOF while it still expects encoded bytes
-- reduced repro: pending; debugger evidence is in
-  `/tmp/cppgm-v2-persistence-lldb-value.txt` and
-  `/tmp/cppgm-v2-persistence-save-counts.txt`
-- owning PA/cluster: pending reduction
-- implementation area: pending reduction; the two archive saves receive the
-  correct 20-byte and 4-byte counts, while decode sees only the short segment,
-  pointing at range/iterator consumption rather than archive size calculation
-- performance risk: current cumulative result is +0.73% instructions, -0.06%
-  RSS, and +0.10% footprint; counters and sampling show no new hot path
-- next action: reduce the shared persistence decoder failure without Boost or
-  the STL, identify the earliest owning PA, and correct the uncached algorithm
+- suite: `#2 libs/algorithm/test`
+- focused target: pending initial survey
+- failure phase: pending initial survey
+- diagnostic: pending initial survey
+- reduced repro: pending initial survey
+- owning PA/cluster: pending initial survey
+- implementation area: pending initial survey
+- performance risk: current cumulative result is +0.74% instructions, +0.50%
+  RSS, and +0.10% footprint; the last fix added only 0.01 percentage points to
+  the cumulative instruction delta
+- next action: run the complete forced Algorithm suite, classify all failures,
+  and reduce the earliest causal frontier
 
 ## Fix Ledger
 
@@ -124,6 +120,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/accumulators/test//error_of` | Partial-specialization matching cached a typed placeholder pattern for a non-deduced later argument, then reused it after an earlier argument had deduced the partial's parameters. The ordinary dependent-type resolver handled most cached patterns, but a still-dependent nested class/alias pattern retained the placeholder binding and selected the fallback specialization. Matching now builds the complete typed template argument list from the deduction state and applies the existing typed `TypePtr` substitution only when the resolver fast path leaves a non-deducible pattern dependent. The substituted pattern is then resolved in the current match scope. No source parse, text decomposition, result cache, or spelling-specific recovery is added. | `pa22/tests/spec/300-nondeduced-partial-pattern-recursive-completion.t`, a header-free reducer at the earliest dependent deduction/recursive completion owner | Exact Boost reducer `/tmp/cppgm-v2-boost-count-construction.cpp` failed with `failed non-type template argument evaluation: ::boost::mpl::aux::nested_type_wknd<T1>::value`; the reduced test failed by selecting `value_of_impl<non_iterator_tag>` after the stale `enable_if<has_fusion_tag<Sequence>>::type` pattern missed. Clang accepts both. | Warning-clean build; exact and checked-in reducers pass normally and with `CPPGM_DISABLE_CLASS_INFO_FOR_TYPE_CACHE=1` and `CPPGM_DISABLE_DEPENDENT_TYPE_RESOLUTION_CACHE=1`; focused PA22 direct check passes; PA22 direct report passes `253/253`; strict direct-LowIR PA18/19/21/22/23 passes with zero failures; PA22 placement and hygiene audits report zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass; forced single-job Boost target passes compile, link, and runtime with 72 updated targets. Hotspot counters are in `/tmp/cppgm-v2-nondeduced-hotspot.log`; temporary trace accounting on the stable benchmark saw 3,491 eligible patterns, 2,071 still dependent after the fast resolver, and 861 successful typed substitutions. The 1 ms sample `/tmp/cppgm-v2-nondeduced.sample.txt` contains 7,104 samples; the fallback substitution has fewer than five top-of-stack samples and the dependent resolver has 12, while allocation and existing ABI/type work dominate. | instructions +0.75%; max RSS -0.56%; peak footprint +0.04%; pass; optimized from the eager +0.94% version and below all hard gates | `(this commit)` |
 | fixed | `libs/accumulators/test//rolling_mean`, `//rolling_variance` compile | Hierarchy lookup established that every path found the same declaration, then unconditionally required a unique base subobject and conflated entity lookup with object adjustment. The lookup result now states whether it needs a unique subobject: fields and callable sets containing nonstatic members retain the ambiguity check, while static data, all-static callable sets, and nested template declarations keep the shared declaration without an object offset. The same traversal and access metadata remain; no cache, source parse, text decomposition, or spelling-specific recovery is added. | `pa26/tests/general/100-duplicate-base-static-member-lookup.t`, paired with the existing `100-bad-ambiguous-member.t` negative control at the PA26 multiple-inheritance owner | Non-STL reducers `/tmp/cppgm-v2-static-object-duplicate-base.cpp` and `/tmp/cppgm-v2-static-function-duplicate-base.cpp` failed with `ambiguous base class path [current D] [target A]`, while Clang accepts both. The corresponding nonstatic-field reducer is rejected by both compilers. Boost failed looking up `tag::lazy_rolling_{mean,variance}::window_size` because `rolling_window_size_<0>` is reached through two dependency bases. | Warning-clean compiler rebuild; static data/function reducers and the expanded nested class/alias/function-template regression pass with Clang and `cppgm++`; nonstatic-field control remains rejected; PA26 direct report passes `68/68`; all configured strict direct-LowIR suites pass; PA26 placement reports zero findings and zero hygiene findings; all 23 text-reparse categories remain zero and 14 audit tests pass. Forced focused Boost rebuild compiles and links both targets, updates 72 targets, and exposes only runtime failures; log `/tmp/boost-v2-acc-duplicate-base-static-fix.log`. | instructions +0.74%; max RSS +1.05%; peak footprint +0.06%; pass | `(this commit)` |
 | fixed | `libs/accumulators/test//rolling_mean` lazy result | The transitive `__is_base_of` evaluator used the unspecialized class metadata name as its traversal key. Distinct specializations such as `depends_on<sum,count>` and `depends_on<window>` therefore appeared to be the same visited node, so MPL omitted the rolling-window dependency and materialized the accumulator update order incorrectly. The traversal now tracks typed `TypePtr` identities with `type_equals`. This corrects the traversal algorithm itself; it adds no cache, text parse, rendered identity, or symbol-path change. | `pa34/tests/compile/700-builtin-base-of-specialization-cycle-key.t`, a header-free reducer at the PA34 host builtin-trait owner | Semantic tracing showed `depends_on<window>` rejected as already visited only because a different `depends_on<sum,count>` specialization shared its metadata name. The pre-fix compiler rejects the reducer's transitive base assertion and orders `rolling_sum` before `rolling_window_plus1`, producing `4.2`/`5.4` instead of `4.0`/`5.0`. | Warning-clean build; Clang and the fixed compiler accept the regression; the exact reduced runtime returns the correct rolling results; PA34 focused and direct report pass `310/310`; all configured strict direct-LowIR suites pass; PA34 placement reports zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass. The forced focused Boost target rebuilds 72 targets and leaves only the independent persistence decoder failure; log `/tmp/boost-v2-acc-base-of-specialization-cycle-key-fix.log`. The forced full survey reaches 36 passes with only the exact five persistence failures and zero compile failures before its bound; evidence `/tmp/boost-frontier-v2-suite-001-base-of-specialization-cycle-key`. Hotspot counters are in `/tmp/cppgm-v2-base-of-hotspot.log`; the 1 ms sample `/tmp/cppgm-v2-base-of-hotspot.sample.txt` contains no frames from the changed evaluator. | instructions +0.73%; max RSS -0.06%; peak footprint +0.10%; pass | `(this commit)` |
+| fixed | `libs/accumulators/test//rolling_count`, `//rolling_sum`, `//rolling_moment`, `//rolling_variance`, `//rolling_mean` persistence | LowIR virtual-base adjustment required a class to have locally observed virtual functions or a local vtable before using its imported runtime layout. In the exact Boost.Serialization translation unit, `std::basic_ostream` had a typed external vtable candidate and precise virtual-base layout but no locally observed virtual function, so `basic_ostream *` to `basic_ios *` incorrectly fell back to a fixed `+8` adjustment. Dynamic adjustment now accepts the typed imported external-layout fact directly. Pointer conversion on this external-only fallback uses a null-preserving branch before loading the vptr; existing local-vtable paths are unchanged. This corrects the uncached lowering algorithm and adds no cache, text parse, rendered identity, or symbol-path change. | Strengthened `pa33/tests/general/200-host-virtual-base-indirect-base-access.t` by removing `B`'s explicit virtual destructor, leaving virtual inheritance as its sole reason to require the host-provided vtable. This is a header-free host ABI/runtime reducer at the earliest owning PA. | Debugger evidence in `/tmp/cppgm-v2-persistence-lldb-value.txt` and `/tmp/cppgm-v2-persistence-save-counts.txt` showed the archive wrote the correct byte counts but `ostream_iterator<char>::put_val` corrupted the stream state. Pre-fix LowIR in `/tmp/cppgm-v2-basic-text-oprimitive.lowir` used fixed `+8`; exact semantic state contained `class_virtual_base_layouts_` and an external vtable candidate but no local virtual-function mark. The fixed LowIR loads the runtime offset from the vtable `-24` slot. | Exact normal and `CPPGM_DISABLE_CLASS_INFO_FOR_TYPE_CACHE=1` LowIR are byte-identical in `/tmp/cppgm-v2-boost-basic-text-oprimitive.final.lowir` and `/tmp/cppgm-v2-boost-basic-text-oprimitive.final-nocache.lowir`; corrected Boost persistence roundtrip passes. Focused PA32 null regression, strengthened PA33 owner regression, PA27 direct report `34/34`, PA33 direct report `2256/2256`, all configured strict direct-LowIR suites, PA33 placement/hygiene audit, warning-clean build, and all 23 zero-reparse categories plus 14 audit tests pass. Exact forced Accumulators survey and continuation close the suite with zero failures; final full direct-LowIR report passes `3830/3830`. | instructions +0.74%; max RSS +0.50%; peak footprint +0.10%; pass; +0.01 instruction percentage points from the preceding frontier | `(this commit)` |
 
 ## Decision Log
 
@@ -250,6 +247,18 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
   failures before its 1800s bound. Cumulative instructions are +0.73%; the
   changed evaluator is absent from sampling and text-resolution counters stay
   at zero.
+- `2026-07-14`: Traced the apparent base64 failure back to an incorrect imported
+  virtual-base pointer adjustment in Boost.Serialization's output iterator.
+  The exact translation unit retained a typed external vtable candidate and
+  precise `basic_ostream` virtual-base layout, but lowering rejected that fact
+  because it had not locally observed a virtual function and emitted fixed
+  `+8` instead of the vtable `-24` slot lookup. The final fix admits the typed
+  external layout directly and null-preserves pointer adjustment only on that
+  fallback. Cache-disabled LowIR is byte-identical, the strengthened PA33
+  header-free host ABI reducer passes, and no text or symbol recovery is added.
+  The exact forced Accumulators survey has zero failures, its continuation exits
+  successfully, and the final direct-LowIR report passes `3830 / 3830`. Suite
+  1 is closed; the cursor advances to `libs/algorithm/test`.
 
 ## Next Commands
 
@@ -259,7 +268,7 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  JOBS=1 \
-  /usr/local/bin/timeout 900 \
-  ./run-cppgm-b2.sh -a libs/accumulators/test//rolling_count
+  JOBS=8 \
+  /usr/local/bin/timeout 1800 \
+  ./run-cppgm-b2.sh -a libs/algorithm/test
 ```
