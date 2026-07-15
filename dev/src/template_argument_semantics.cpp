@@ -30806,11 +30806,11 @@ bool evaluate_class_info_builtin_type_trait(template_api::TemplateTypeSystem & t
                info.class_kind != "union" &&
                info.class_kind != "enum";
       };
-  const std::function<bool(const TypePtr &, const TypePtr &, std::set<std::string> &)>
+  const std::function<bool(const TypePtr &, const TypePtr &, std::vector<TypePtr> &)>
       type_is_same_or_derived =
       [&](const TypePtr & derived,
           const TypePtr & base,
-          std::set<std::string> & visiting) -> bool
+          std::vector<TypePtr> & visiting) -> bool
       {
         template_api::TemplateNamedTypeMetadata derived_info;
         template_api::TemplateNamedTypeMetadata base_info;
@@ -30821,11 +30821,13 @@ bool evaluate_class_info_builtin_type_trait(template_api::TemplateTypeSystem & t
         if(type_equals(strip_top_level_cv(derived), strip_top_level_cv(base))) {
           return true;
         }
-        const std::string visit_key =
-            derived_info.name + "|" + template_argument_type_text(base);
-        if(!visiting.insert(visit_key).second) {
-          return false;
+        TypePtr derived_base = strip_top_level_cv(derived);
+        for(size_t i = 0; i < visiting.size(); ++i) {
+          if(type_equals(visiting[i], derived_base)) {
+            return false;
+          }
         }
+        visiting.push_back(derived_base);
         for(size_t i = 0; i < derived_info.direct_base_types.size(); ++i) {
           if(type_is_same_or_derived(derived_info.direct_base_types[i],
                                      base,
@@ -30837,7 +30839,7 @@ bool evaluate_class_info_builtin_type_trait(template_api::TemplateTypeSystem & t
       };
 
   if(name == "__is_base_of" && types.size() == 2) {
-    std::set<std::string> visiting;
+    std::vector<TypePtr> visiting;
     out = type_is_same_or_derived(types[1], types[0], visiting) ? 1 : 0;
     return true;
   }
