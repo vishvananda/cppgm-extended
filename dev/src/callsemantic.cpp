@@ -18429,6 +18429,8 @@ private:
       throw logic_error("missing builtin function binding " + name);
     }
     binding->is_builtin = true;
+    binding->builtin_constant_evaluation_kind =
+        name == "__builtin_expect" ? BCEK_EXPECT : BCEK_NONE;
     if(explicit_nothrow) {
       binding->explicit_function_nothrow_kind = EFNK_ALWAYS_TRUE;
       binding->explicit_function_nothrow_cached_qualifier = binding->function_qualifier;

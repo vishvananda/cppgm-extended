@@ -970,8 +970,10 @@ bool constexpr_value_truthy(const ConstexprValue & value, bool & out)
   case ConstexprValue::CV_POINTER:
     out = true;
     return true;
-  case ConstexprValue::CV_AGGREGATE:
   case ConstexprValue::CV_ARRAY:
+    out = true;
+    return true;
+  case ConstexprValue::CV_AGGREGATE:
   default:
     return false;
   }

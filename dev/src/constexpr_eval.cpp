@@ -352,6 +352,17 @@ bool Evaluator::eval_discarded_expr(const CppAstNode & node)
            eval_discarded_expr(node.children[1]);
   }
 
+  if(node.kind == CppAstKind::conditional_expression &&
+     node.children.size() == 3) {
+    ConstexprValue condition;
+    bool truthy = false;
+    if(!eval_expr(node.children[0], condition) ||
+       !constexpr_value_truthy(condition, truthy)) {
+      return false;
+    }
+    return eval_discarded_expr(node.children[truthy ? 1 : 2]);
+  }
+
   ConstexprValue ignored;
   return eval_expr(node, ignored);
 }

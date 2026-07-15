@@ -1,0 +1,44 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    call void @check()
+    return i32 0
+}
+function @check() -> void [binding=weak, object=_Z5checkIiEvv] {
+  slot $values : obj<8x4>
+  slot $flat_values : obj<16x4>
+
+  block ^entry:
+    %t1 = addr $values
+    %t2 = addr $values
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = unary decay ptr %t3
+    %t5 = index i32 [projection=array_element] %t4, 0
+    store i32 3, %t5
+    %t6 = addr $values
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = unary decay ptr %t7
+    %t9 = index i32 [projection=array_element] %t8, 1
+    store i32 5, %t9
+    %t10 = addr $flat_values
+    %t11 = addr $flat_values
+    %t12 = index i8 [projection=field] %t11, 0
+    %t13 = unary decay ptr %t12
+    %t14 = index i32 [projection=array_element] %t13, 0
+    store i32 7, %t14
+    %t15 = addr $flat_values
+    %t16 = index i8 [projection=field] %t15, 0
+    %t17 = unary decay ptr %t16
+    %t18 = index i32 [projection=array_element] %t17, 1
+    store i32 11, %t18
+    %t19 = addr $flat_values
+    %t20 = index i8 [projection=field] %t19, 0
+    %t21 = unary decay ptr %t20
+    %t22 = index i32 [projection=array_element] %t21, 2
+    store i32 13, %t22
+    %t23 = addr $flat_values
+    %t24 = index i8 [projection=field] %t23, 0
+    %t25 = unary decay ptr %t24
+    %t26 = index i32 [projection=array_element] %t25, 3
+    store i32 17, %t26
+    return void
+}

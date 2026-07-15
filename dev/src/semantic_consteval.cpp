@@ -1,5 +1,6 @@
 #include "semantic_consteval.h"
 
+#include <algorithm>
 #include <cctype>
 #include <map>
 #include <set>
@@ -16,6 +17,7 @@
 #include "semantic_declaration.h"
 #include "semantic_errors.h"
 #include "semantic_lookup.h"
+#include "semantic_lifetime.h"
 #include "semantic_overload.h"
 #include "semantic_scope_mutation.h"
 #include "semantic_template_function.h"
@@ -1373,6 +1375,32 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
     std::vector<bool> member_is_base;
     size_t arg_index = 0;
 
+    const std::size_t aggregate_count =
+        semantic_class_model::aggregate_element_count(*info);
+    std::vector<const CppAstNode *> planned_field_initializers;
+    std::vector<CppAstNode> planned_synthesized_nodes;
+    if(info->bases.empty() && args.size() > aggregate_count) {
+      if(!semantic_lifetime::build_aggregate_initializer_plan(ctx,
+                                                               scope,
+                                                               *info,
+                                                               node,
+                                                               planned_field_initializers,
+                                                               planned_synthesized_nodes)) {
+        return false;
+      }
+      while(!planned_field_initializers.empty() &&
+            !planned_field_initializers.back()) {
+        planned_field_initializers.pop_back();
+      }
+      if(std::find(planned_field_initializers.begin(),
+                   planned_field_initializers.end(),
+                   static_cast<const CppAstNode *>(nullptr)) !=
+         planned_field_initializers.end()) {
+        return false;
+      }
+      args.swap(planned_field_initializers);
+    }
+
     for(size_t i = 0; i < info->bases.size(); ++i) {
       constant_eval::ConstexprValue base_value;
       if(arg_index < args.size()) {
@@ -1396,8 +1424,6 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
       member_is_base.push_back(true);
     }
 
-    const std::size_t aggregate_count =
-        semantic_class_model::aggregate_element_count(*info);
     if(args.size() - arg_index > aggregate_count) {
       return false;
     }
@@ -2127,7 +2153,9 @@ bool evaluate_constexpr_member_call_expression(SemanticContext & ctx,
                                                Scope & scope,
                                                constant_eval::Evaluator & evaluator,
                                                const CppAstNode & expr,
-                                               constant_eval::ConstexprValue & out)
+                                               constant_eval::ConstexprValue & out,
+                                               const constant_eval::ConstexprValue *
+                                                   known_implicit_object = nullptr)
 {
   if(expr.kind != CppAstKind::call_expression || expr.children.empty()) {
     return false;
@@ -2147,7 +2175,9 @@ bool evaluate_constexpr_member_call_expression(SemanticContext & ctx,
   }
 
   constant_eval::ConstexprValue implicit_object;
-  if(!evaluator.eval_expr(callee->children[0], implicit_object)) {
+  if(known_implicit_object) {
+    implicit_object = *known_implicit_object;
+  } else if(!evaluator.eval_expr(callee->children[0], implicit_object)) {
     return false;
   }
 
@@ -2297,6 +2327,46 @@ bool evaluate_constexpr_member_call_expression(SemanticContext & ctx,
   info_out.has_implicit_object = true;
   info_out.implicit_object = implicit_object;
   return evaluator.call(info_out, final_args, out, &call_hooks);
+}
+
+bool evaluate_constexpr_subscript_member_expression(
+    SemanticContext & ctx,
+    Scope & scope,
+    constant_eval::Evaluator & evaluator,
+    const CppAstNode & expr,
+    const constant_eval::ConstexprValue & implicit_object,
+    constant_eval::ConstexprValue & out)
+{
+  CppAstNode member_callee;
+  member_callee.kind = CppAstKind::member_expression;
+  member_callee.has_token = true;
+  member_callee.token_kind = RT_SIMPLE;
+  member_callee.simple_type = OP_DOT;
+  member_callee.value = ".";
+  member_callee.children.push_back(expr.children[0]);
+
+  CppAstNode member_name;
+  member_name.kind = CppAstKind::identifier;
+  member_name.value = "operator[]";
+  QualifiedName qualified_name;
+  qualified_name.name = member_name.value;
+  set_cppast_qualified_name_syntax(member_name, qualified_name);
+  member_callee.children.push_back(member_name);
+
+  CppAstNode arguments;
+  arguments.kind = CppAstKind::paren_argument_list;
+  arguments.children.push_back(expr.children[1]);
+
+  CppAstNode call;
+  call.kind = CppAstKind::call_expression;
+  call.children.push_back(member_callee);
+  call.children.push_back(arguments);
+  return evaluate_constexpr_member_call_expression(ctx,
+                                                   scope,
+                                                   evaluator,
+                                                   call,
+                                                   out,
+                                                   &implicit_object);
 }
 
 bool evaluate_constexpr_target_conversion(SemanticContext & ctx,
@@ -2621,6 +2691,33 @@ bool evaluate_default_special_expression(SemanticContext & ctx,
     return true;
   }
 
+  if(expr.kind == CppAstKind::subscript_expression && expr.children.size() == 2) {
+    constant_eval::ConstexprValue base;
+    if(!evaluator.eval_expr(expr.children[0], base)) {
+      return false;
+    }
+    if(base.kind == constant_eval::ConstexprValue::CV_AGGREGATE) {
+      return evaluate_constexpr_subscript_member_expression(ctx,
+                                                            scope,
+                                                            evaluator,
+                                                            expr,
+                                                            base,
+                                                            value);
+    }
+    constant_eval::ConstexprValue index;
+    if(!evaluator.eval_expr(expr.children[1], index)) {
+      return false;
+    }
+    long long integral_index = 0;
+    if(!constant_eval::constexpr_value_to_integral(index, integral_index) ||
+       integral_index < 0) {
+      return false;
+    }
+    return constant_eval::array_element_value(base,
+                                              static_cast<size_t>(integral_index),
+                                              value);
+  }
+
   if(evaluate_constexpr_overloaded_operator_expression(ctx, scope, evaluator, expr, value)) {
     return true;
   }
@@ -2642,22 +2739,6 @@ bool evaluate_default_special_expression(SemanticContext & ctx,
       return false;
     }
     return constant_eval::aggregate_member_value(base, expr.children[1].value, value);
-  }
-
-  if(expr.kind == CppAstKind::subscript_expression && expr.children.size() == 2) {
-    constant_eval::ConstexprValue base;
-    constant_eval::ConstexprValue index;
-    if(!evaluator.eval_expr(expr.children[0], base) ||
-       !evaluator.eval_expr(expr.children[1], index)) {
-      return false;
-    }
-    long long integral_index = 0;
-    if(!constant_eval::constexpr_value_to_integral(index, integral_index) || integral_index < 0) {
-      return false;
-    }
-    return constant_eval::array_element_value(base,
-                                              static_cast<size_t>(integral_index),
-                                              value);
   }
 
   return false;

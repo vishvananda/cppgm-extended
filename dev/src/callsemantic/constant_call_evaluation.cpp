@@ -35,6 +35,7 @@ using semantic_conversion::can_copy_initialize;
 using semantic_lookup::MemberValueLookupResult;
 using semantic_lookup::lookup_member_value;
 using semantic_lookup::scope_qualified_name;
+using semantic_model::BCEK_EXPECT;
 using semantic_model::ClassInfo;
 using semantic_model::FunctionBinding;
 using semantic_model::FunctionTemplateDecl;
@@ -662,6 +663,12 @@ bool evaluate_constant_call_expression_value(
 
     if(viable.size() == 1) {
       FunctionBinding * binding = viable[0];
+      if(binding->builtin_constant_evaluation_kind == BCEK_EXPECT &&
+         args.size() == 2) {
+        TypePtr function_type = strip_top_level_cv(binding->type);
+        return function_type && function_type->kind == Type::TK_FUNCTION &&
+               constant_eval::constexpr_value_cast(args[0], function_type->inner, out);
+      }
       if(!binding->is_constexpr) {
         return false;
       }

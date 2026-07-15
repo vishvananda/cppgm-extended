@@ -58,6 +58,12 @@ enum ExplicitFunctionNothrowKind
   EFNK_INVALID
 };
 
+enum BuiltinConstantEvaluationKind
+{
+  BCEK_NONE,
+  BCEK_EXPECT
+};
+
 std::size_t next_scope_instance_id();
 
 enum MemberAccess : int
@@ -393,6 +399,7 @@ struct FunctionBinding
   bool is_final = false;
   bool is_c_linkage = false;
   bool is_builtin = false;
+  BuiltinConstantEvaluationKind builtin_constant_evaluation_kind = BCEK_NONE;
   bool permits_host_builtin_missing_nothrow_redeclaration = false;
   std::string object_symbol_override;
   symbol_linkage::SymbolIdentity symbol;
