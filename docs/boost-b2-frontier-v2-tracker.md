@@ -278,6 +278,15 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
   is +0.88% instructions, -0.05% RSS, and +0.06% footprint; the final direct
   report passes `3830 / 3830`. Suite 2 is closed; the cursor advances to
   `libs/align/test`.
+- `2026-07-14`: Cleared the pre-existing placement-audit finding in a separate
+  test-only follow-on. The `__exclude_from_explicit_instantiation__` attribute
+  is essential to the system-include aggregate-copy oracle, so removing it
+  would weaken the test. The complete basename-matched sidecar family moved
+  from `pa32:200` to PA36's `600` hosted header-emission/link-runtime cluster.
+  The focused test passes, the combined PA32/PA36 direct report passes
+  `176 / 176`, both placement audits report zero findings and zero hygiene
+  findings, and all 23 text-reparse categories remain zero. No production code
+  changed, so no performance measurement was required.
 
 ## Next Commands
 
