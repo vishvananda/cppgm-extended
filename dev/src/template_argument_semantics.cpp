@@ -12562,6 +12562,10 @@ constant_eval::Hooks build_leaf_constant_eval_hooks(template_api::TemplateServic
             services,
             template_api::make_template_environment(scope),
             type);
+        if(services.semantic_context) {
+          callsemantic_internal::maybe_complete_sizeof_type(
+              *services.semantic_context, type);
+        }
         return true;
       };
   hooks.evaluate_sizeof_operand =
