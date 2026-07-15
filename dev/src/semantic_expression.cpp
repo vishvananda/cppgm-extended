@@ -130,6 +130,28 @@ TemplateArgumentSyntax make_char_template_argument_syntax(
   return out;
 }
 
+bool has_cooked_numeric_literal_operator(SemanticContext & ctx,
+                                         Scope & scope,
+                                         const string & operator_name,
+                                         EFundamentalType parameter_type)
+{
+  const vector<FunctionBinding *> functions =
+      ctx.lookup_functions(scope, operator_name);
+  for(size_t i = 0; i < functions.size(); ++i) {
+    const FunctionBinding * function = functions[i];
+    if(!function || function->is_method || function->params.size() != 1) {
+      continue;
+    }
+    const TypePtr type = strip_top_level_cv(function->params[0].second);
+    if(type &&
+       type->kind == Type::TK_FUNDAMENTAL &&
+       type->fundamental == parameter_type) {
+      return true;
+    }
+  }
+  return false;
+}
+
 ExprInfo analyze_string_user_defined_literal(SemanticContext & ctx,
                                              Scope & scope,
                                              const CppAstNode & node,
@@ -206,7 +228,7 @@ ExprInfo analyze_cooked_numeric_user_defined_literal(SemanticContext & ctx,
   return ctx.analyze_call_expression(scope, call);
 }
 
-ExprInfo analyze_integer_user_defined_literal_template(SemanticContext & ctx,
+ExprInfo analyze_numeric_user_defined_literal_template(SemanticContext & ctx,
                                                        Scope & scope,
                                                        const CppAstNode & node,
                                                        const string & ud_suffix)
@@ -5722,11 +5744,15 @@ ExprInfo analyze_literal(SemanticContext & ctx, Scope & scope, const CppAstNode 
     }
     if(!ud_suffix.empty()) {
       const string operator_name = string("operator\"\"") + ud_suffix;
-      if(!ctx.lookup_functions(scope, operator_name).empty()) {
+      if(has_cooked_numeric_literal_operator(ctx,
+                                             scope,
+                                             operator_name,
+                                             FT_LONG_DOUBLE)) {
         return analyze_cooked_numeric_user_defined_literal(
             ctx, scope, node, ud_suffix, literal_without_ud_suffix(node.value, ud_suffix));
       }
-      throw logic_error("user-defined floating literal unsupported");
+      return analyze_numeric_user_defined_literal_template(
+          ctx, scope, node, ud_suffix);
     }
     result.type = make_fundamental(literal_type);
     result.category = VC_PRVALUE;
@@ -5740,11 +5766,14 @@ ExprInfo analyze_literal(SemanticContext & ctx, Scope & scope, const CppAstNode 
     EFundamentalType literal_type = classify_int(node.value, literal_value, ud_suffix);
     if(!ud_suffix.empty()) {
       const string operator_name = string("operator\"\"") + ud_suffix;
-      if(!ctx.lookup_functions(scope, operator_name).empty()) {
+      if(has_cooked_numeric_literal_operator(ctx,
+                                             scope,
+                                             operator_name,
+                                             FT_UNSIGNED_LONG_LONG_INT)) {
         return analyze_cooked_numeric_user_defined_literal(
             ctx, scope, node, ud_suffix, literal_without_ud_suffix(node.value, ud_suffix));
       }
-      return analyze_integer_user_defined_literal_template(ctx, scope, node, ud_suffix);
+      return analyze_numeric_user_defined_literal_template(ctx, scope, node, ud_suffix);
     }
     result.type = make_fundamental(literal_type);
     result.category = VC_PRVALUE;
