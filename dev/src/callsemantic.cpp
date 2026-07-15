@@ -7779,6 +7779,19 @@ private:
               matching_retained_template_id(
                   *anchor->template_id_syntax_ref) :
               nullptr;
+      if(!retained_template_id &&
+         anchor &&
+         anchor->has_argument_list &&
+         anchor->template_id_syntax_ref) {
+        const string normalized_identifier =
+            unqualified_member_name(
+                strip_trailing_top_level_template_arguments(normalized_name));
+        if(exact_template_type_lookup_anchor_matches_identifier_syntax(
+               *anchor,
+               normalized_identifier)) {
+          retained_template_id = anchor->template_id_syntax_ref;
+        }
+      }
       if(anchor &&
          anchor->has_argument_list &&
          retained_template_id) {
