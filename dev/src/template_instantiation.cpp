@@ -3987,6 +3987,87 @@ bool ast_node_mentions_identifier_token(const CppAstNode & node,
   return false;
 }
 
+bool ast_node_contains_this_expression(const CppAstNode & node);
+bool template_id_syntax_contains_this_expression(
+    const TemplateIdSyntax & syntax);
+
+bool template_argument_syntax_contains_this_expression(
+    const TemplateArgumentSyntax & syntax)
+{
+  return (syntax.template_id &&
+          template_id_syntax_contains_this_expression(*syntax.template_id)) ||
+         (syntax.type_id &&
+          ast_node_contains_this_expression(*syntax.type_id)) ||
+         (syntax.source_type_id &&
+          ast_node_contains_this_expression(*syntax.source_type_id)) ||
+         (syntax.expression &&
+          ast_node_contains_this_expression(*syntax.expression));
+}
+
+bool template_id_syntax_contains_this_expression(const TemplateIdSyntax & syntax)
+{
+  for(std::size_t i = 0;
+      i < syntax.qualifier_template_id_syntaxes.size();
+      ++i) {
+    if(template_id_syntax_contains_this_expression(
+           syntax.qualifier_template_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(template_argument_syntax_contains_this_expression(
+           syntax.argument_syntaxes[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ast_node_contains_this_expression(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::keyword_literal &&
+     node_has_simple_type(node, KW_THIS)) {
+    return true;
+  }
+  if(node.template_id_syntax &&
+     template_id_syntax_contains_this_expression(*node.template_id_syntax)) {
+    return true;
+  }
+  if((node.conversion_type_id_syntax &&
+      ast_node_contains_this_expression(*node.conversion_type_id_syntax)) ||
+     (node.base_type_syntax &&
+      ast_node_contains_this_expression(*node.base_type_syntax))) {
+    return true;
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(template_id_syntax_contains_this_expression(
+           node.qualifier_template_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(ast_node_contains_this_expression(node.qualifier_type_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+    if(ast_node_contains_this_expression(node.exception_type_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.alignment_specifier_nodes.size(); ++i) {
+    if(ast_node_contains_this_expression(node.alignment_specifier_nodes[i])) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_node_contains_this_expression(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 const CppAstNode * function_template_parameter_clause(const FunctionTemplateDecl & decl)
 {
   return decl.declarator ? find_child_kind(*decl.declarator, CppAstKind::parameter_clause) :
@@ -10156,6 +10237,49 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                   *source_decl,
                                                   instantiation_owner);
   }
+  const bool has_member_trailing_return_scope =
+      source_decl->declaring_scope &&
+      source_decl->declaring_scope->class_info &&
+      !source_decl->is_static_member &&
+      inst_scope.class_info &&
+      inst_scope.class_info->type;
+  const auto configure_member_trailing_return_scope =
+      [&](Scope & result_scope,
+          FunctionBinding & synthetic_function) -> bool
+      {
+        if(!has_member_trailing_return_scope) {
+          return false;
+        }
+        TypePtr declared_type =
+            make_function(make_fundamental(FT_VOID),
+                          std::vector<TypePtr>(),
+                          false);
+        TypePtr method_type =
+            semantic_class_model::method_function_type(
+                inst_scope.class_info->type,
+                source_decl->is_const_method,
+                source_decl->is_volatile_method,
+                declared_type);
+        if(!method_type || method_type->params.empty()) {
+          return false;
+        }
+        synthetic_function.name = "<trailing-return>";
+        synthetic_function.owner_class = inst_scope.class_info;
+        synthetic_function.lexical_access_class = inst_scope.class_info;
+        synthetic_function.is_method = true;
+        synthetic_function.is_const_method = source_decl->is_const_method;
+        synthetic_function.is_volatile_method = source_decl->is_volatile_method;
+        synthetic_function.ref_qualifier = source_decl->ref_qualifier;
+        synthetic_function.type = method_type;
+        result_scope.class_info = inst_scope.class_info;
+        result_scope.namespace_scope = inst_scope.namespace_scope;
+        result_scope.function = &synthetic_function;
+        result_scope.values["this"] =
+            ValueBinding(ValueBinding::VK_PARAMETER,
+                         "this",
+                         method_type->params[0]);
+        return true;
+      };
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
     trace << "function-instantiation-scope name=" << source_decl->name
@@ -10616,10 +10740,29 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                                          result_type);
       if(result_type_still_dependent) {
         TypePtr recovered_substituted_result;
-        if(recover_instantiation_bound_type(ctx,
-                                            inst_scope,
-                                            result_type,
-                                            recovered_substituted_result) &&
+        bool recovered_result = false;
+        if(has_member_trailing_return_scope &&
+           source_decl->result_type_pattern.kind != CppAstKind::invalid &&
+           ast_node_contains_this_expression(source_decl->result_type_pattern)) {
+          Scope result_scope(&inst_scope, "<trailing-return>", false);
+          FunctionBinding synthetic_function;
+          if(configure_member_trailing_return_scope(result_scope,
+                                                    synthetic_function)) {
+            recovered_result =
+                recover_instantiation_bound_type(ctx,
+                                                 result_scope,
+                                                 result_type,
+                                                 recovered_substituted_result);
+          }
+        }
+        if(!recovered_result) {
+          recovered_result =
+              recover_instantiation_bound_type(ctx,
+                                               inst_scope,
+                                               result_type,
+                                               recovered_substituted_result);
+        }
+        if(recovered_result &&
            recovered_substituted_result) {
           result_type = recovered_substituted_result;
           result_type_still_dependent =
@@ -10725,39 +10868,9 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                       nullptr;
                   std::vector<TemplateArgument> selected_owner_result_arguments;
                   std::map<std::string, std::size_t> selected_owner_result_pack_sizes;
-                  if(source_decl->declaring_scope &&
-                     source_decl->declaring_scope->class_info &&
-                     !source_decl->is_static_member &&
-                     inst_scope.class_info &&
-                     inst_scope.class_info->type) {
-                    TypePtr declared_type =
-                        make_function(make_fundamental(FT_VOID),
-                                      std::vector<TypePtr>(),
-                                      false);
-                    TypePtr method_type =
-                        semantic_class_model::method_function_type(
-                            inst_scope.class_info->type,
-                            source_decl->is_const_method,
-                            source_decl->is_volatile_method,
-                            declared_type);
-                    if(method_type && !method_type->params.empty()) {
-                      synthetic_function.name = "<trailing-return>";
-                      synthetic_function.owner_class = inst_scope.class_info;
-                      synthetic_function.lexical_access_class = inst_scope.class_info;
-                      synthetic_function.is_method = true;
-                      synthetic_function.is_const_method = source_decl->is_const_method;
-                      synthetic_function.is_volatile_method = source_decl->is_volatile_method;
-                      synthetic_function.ref_qualifier = source_decl->ref_qualifier;
-                      synthetic_function.type = method_type;
-                      result_scope.class_info = inst_scope.class_info;
-                      result_scope.namespace_scope = inst_scope.namespace_scope;
-                      result_scope.function = &synthetic_function;
-                      result_scope.values["this"] =
-                          ValueBinding(ValueBinding::VK_PARAMETER,
-                                       "this",
-                                       method_type->params[0]);
-                      parse_scope = &result_scope;
-                    }
+                  if(configure_member_trailing_return_scope(result_scope,
+                                                            synthetic_function)) {
+                    parse_scope = &result_scope;
                   }
                   if(instantiation_owner &&
                      instantiation_owner->source_template &&
