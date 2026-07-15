@@ -3921,6 +3921,9 @@ bool dependent_qualified_type_missing_required_typename(
 bool dependent_qualified_lookup_is_type_required_context(
     const CppAstNode & node)
 {
+  if(node.allows_implicit_typename) {
+    return false;
+  }
   switch(node.kind) {
   case CppAstKind::base_name:
   case CppAstKind::base_specifier:

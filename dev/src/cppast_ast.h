@@ -411,6 +411,7 @@ struct CppAstNode
   CppAstLazyVector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
   CppAstLazyVector<CppAstNode> qualifier_type_syntaxes;
   bool has_leading_typename = false;
+  bool allows_implicit_typename = false;
   bool has_exception_type_id_syntaxes = false;
   CppAstLazyVector<CppAstNode> exception_type_id_syntaxes;
   bool linkage_has_braces = false;

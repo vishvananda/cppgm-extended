@@ -6243,6 +6243,7 @@ CppAstNode make_value_qualifier_type_lookup_node(const CppAstNode & node,
   out.token_end = node.token_end;
   out.source_location_id = node.source_location_id;
   out.name_lookup_snapshot = node.name_lookup_snapshot;
+  out.allows_implicit_typename = true;
   if(qualified.qualifiers.empty()) {
     return out;
   }
