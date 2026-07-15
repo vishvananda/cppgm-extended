@@ -5345,7 +5345,7 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
           template_id_source_location(*source_qualifier_template_id);
       resolve_template_id_syntax_type(services,
                                       *current,
-                                      *lookup_qualifier_template_id,
+                                      *source_qualifier_template_id,
                                       true,
                                       qualifier_use_location,
                                       qualifier_type,

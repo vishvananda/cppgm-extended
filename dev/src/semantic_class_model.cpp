@@ -3467,6 +3467,45 @@ bool class_alias_type_id_contains_decltype_or_typeof(const CppAstNode & node)
   return false;
 }
 
+bool class_alias_type_id_has_qualified_template_id_syntax(
+    const CppAstNode & node)
+{
+  if(cppast_has_qualifier_template_id_syntaxes(node)) {
+    return true;
+  }
+  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(class_alias_type_id_has_qualified_template_id_syntax(
+           node.qualifier_type_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(class_alias_type_id_has_qualified_template_id_syntax(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void clear_class_alias_type_id_semantic_annotations(CppAstNode & node)
+{
+  node.semantic_type.reset();
+  if(node.conversion_type_id_syntax) {
+    clear_class_alias_type_id_semantic_annotations(
+        *node.conversion_type_id_syntax);
+  }
+  if(node.base_type_syntax) {
+    clear_class_alias_type_id_semantic_annotations(*node.base_type_syntax);
+  }
+  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    clear_class_alias_type_id_semantic_annotations(
+        node.qualifier_type_syntaxes[i]);
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    clear_class_alias_type_id_semantic_annotations(node.children[i]);
+  }
+}
+
 bool template_argument_contains_type_pack_element(
     const TemplateArgumentSyntax & argument);
 
@@ -3623,6 +3662,11 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
                  *parameters,
                  *arguments,
                  substituted_type_id)) {
+            if(class_alias_type_id_has_qualified_template_id_syntax(
+                   substituted_type_id)) {
+              clear_class_alias_type_id_semantic_annotations(
+                  substituted_type_id);
+            }
             type_id_for_parse = &substituted_type_id;
           } else if(template_argument_semantics::expand_bound_packs_in_type_id_node(
                  services,
@@ -3645,10 +3689,14 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
   }
   TypePtr alias;
   bool parsed_alias = false;
+  const bool substituted_qualified_template_id =
+      type_id_for_parse == &substituted_type_id &&
+      class_alias_type_id_has_qualified_template_id_syntax(*type_id_for_parse);
   const bool alias_needs_template_parse =
-      !type_id_text.empty() ?
+      substituted_qualified_template_id ||
+      (!type_id_text.empty() ?
           class_alias_type_id_text_mentions_decltype_or_typeof(type_id_text) :
-          class_alias_type_id_contains_decltype_or_typeof(*type_id_for_parse);
+          class_alias_type_id_contains_decltype_or_typeof(*type_id_for_parse));
   if(alias_needs_template_parse) {
     parsed_alias =
         template_api::type::parse_type_id_node_for_templates(ctx,
