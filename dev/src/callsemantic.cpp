@@ -411,6 +411,7 @@ using callsemantic::repair_compacted_template_argument_expression_spacing;
 using callsemantic::template_argument_syntax_text_preserving_spacing;
 using callsemantic::template_argument_syntax_witness_source_text;
 using callsemantic::template_id_syntax_text_preserving_spacing;
+using callsemantic::template_id_syntax_matching_lookup_text;
 using callsemantic::template_id_argument_texts_preserving_spacing;
 using callsemantic::template_id_argument_witness_source_texts;
 using callsemantic::parameter_declarations_from_clause;
@@ -7754,30 +7755,11 @@ private:
        template_lookup_name.back() == '>') {
       const ExactTemplateTypeLookupAnchor * anchor =
           current_exact_template_type_lookup_anchor();
-      const function<const TemplateIdSyntax *(const TemplateIdSyntax &)>
-          matching_retained_template_id =
-          [&](const TemplateIdSyntax & syntax) -> const TemplateIdSyntax *
-          {
-            if(compact_lookup_text(
-                   template_id_syntax_text_preserving_spacing(syntax)) ==
-               compact_lookup_text(normalized_name)) {
-              return &syntax;
-            }
-            for(size_t i = 0;
-                i < syntax.qualifier_template_id_syntaxes.size();
-                ++i) {
-              if(const TemplateIdSyntax * match =
-                     matching_retained_template_id(
-                         syntax.qualifier_template_id_syntaxes[i])) {
-                return match;
-              }
-            }
-            return nullptr;
-          };
       const TemplateIdSyntax * retained_template_id =
           anchor && anchor->template_id_syntax_ref ?
-              matching_retained_template_id(
-                  *anchor->template_id_syntax_ref) :
+              template_id_syntax_matching_lookup_text(
+                  *anchor->template_id_syntax_ref,
+                  normalized_name) :
               nullptr;
       if(!retained_template_id &&
          anchor &&

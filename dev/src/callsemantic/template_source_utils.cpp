@@ -608,6 +608,157 @@ string template_id_syntax_text_preserving_spacing(const TemplateIdSyntax & synta
   return out.str();
 }
 
+namespace {
+
+struct TemplateIdLookupTextKeys
+{
+  string exact;
+  string unqualified;
+  string identifier;
+};
+
+const TemplateIdSyntax * template_id_syntax_matching_compact_lookup_text(
+    const TemplateIdSyntax & syntax,
+    const TemplateIdLookupTextKeys & keys);
+
+const TemplateIdSyntax * template_id_syntax_matching_compact_lookup_text(
+    const CppAstNode & node,
+    const TemplateIdLookupTextKeys & keys)
+{
+  if(node.template_id_syntax) {
+    if(const TemplateIdSyntax * match =
+           template_id_syntax_matching_compact_lookup_text(
+               *node.template_id_syntax,
+               keys)) {
+      return match;
+    }
+  }
+  for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(const TemplateIdSyntax * match =
+           template_id_syntax_matching_compact_lookup_text(
+               node.qualifier_template_id_syntaxes[i],
+               keys)) {
+      return match;
+    }
+  }
+  const CppAstNode * direct_sidecars[] = {
+    node.conversion_type_id_syntax.get(),
+    node.base_type_syntax.get()
+  };
+  for(size_t i = 0; i < sizeof(direct_sidecars) / sizeof(direct_sidecars[0]); ++i) {
+    if(direct_sidecars[i]) {
+      if(const TemplateIdSyntax * match =
+             template_id_syntax_matching_compact_lookup_text(
+                 *direct_sidecars[i],
+                 keys)) {
+        return match;
+      }
+    }
+  }
+  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(const TemplateIdSyntax * match =
+           template_id_syntax_matching_compact_lookup_text(
+               node.qualifier_type_syntaxes[i],
+               keys)) {
+      return match;
+    }
+  }
+  for(size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+    if(const TemplateIdSyntax * match =
+           template_id_syntax_matching_compact_lookup_text(
+               node.exception_type_id_syntaxes[i],
+               keys)) {
+      return match;
+    }
+  }
+  for(size_t i = 0; i < node.alignment_specifier_nodes.size(); ++i) {
+    if(const TemplateIdSyntax * match =
+           template_id_syntax_matching_compact_lookup_text(
+               node.alignment_specifier_nodes[i],
+               keys)) {
+      return match;
+    }
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(const TemplateIdSyntax * match =
+           template_id_syntax_matching_compact_lookup_text(
+               node.children[i],
+               keys)) {
+      return match;
+    }
+  }
+  return nullptr;
+}
+
+const TemplateIdSyntax * template_id_syntax_matching_compact_lookup_text(
+    const TemplateIdSyntax & syntax,
+    const TemplateIdLookupTextKeys & keys)
+{
+  if(unqualified_member_name(syntax.name.name) == keys.identifier) {
+    const string syntax_text =
+        template_id_syntax_text_preserving_spacing(syntax);
+    if(compact_lookup_text(syntax_text) == keys.exact ||
+       compact_lookup_text(unqualified_member_name(syntax_text)) ==
+           keys.unqualified) {
+      return &syntax;
+    }
+  }
+  for(size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
+    if(const TemplateIdSyntax * match =
+           template_id_syntax_matching_compact_lookup_text(
+               syntax.qualifier_template_id_syntaxes[i],
+               keys)) {
+      return match;
+    }
+  }
+  for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    const TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
+    if(argument.template_id) {
+      if(const TemplateIdSyntax * match =
+             template_id_syntax_matching_compact_lookup_text(
+                 *argument.template_id,
+                 keys)) {
+        return match;
+      }
+    }
+    const CppAstNode * argument_sidecars[] = {
+      argument.type_id.get(),
+      argument.expression.get(),
+      argument.source_type_id.get()
+    };
+    for(size_t j = 0;
+        j < sizeof(argument_sidecars) / sizeof(argument_sidecars[0]);
+        ++j) {
+      if(argument_sidecars[j]) {
+        if(const TemplateIdSyntax * match =
+               template_id_syntax_matching_compact_lookup_text(
+                   *argument_sidecars[j],
+                   keys)) {
+          return match;
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+} // namespace
+
+const TemplateIdSyntax * template_id_syntax_matching_lookup_text(
+    const TemplateIdSyntax & syntax,
+    const string & lookup_text)
+{
+  TemplateIdLookupTextKeys keys;
+  keys.exact = compact_lookup_text(lookup_text);
+  keys.unqualified = compact_lookup_text(unqualified_member_name(lookup_text));
+  keys.identifier = unqualified_member_name(
+      strip_trailing_top_level_template_arguments(lookup_text));
+  if(keys.identifier.empty()) {
+    return nullptr;
+  }
+  return template_id_syntax_matching_compact_lookup_text(syntax, keys);
+}
+
 vector<string> template_id_argument_texts_preserving_spacing(
     const TemplateIdSyntax & syntax)
 {

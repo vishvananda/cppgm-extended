@@ -65,6 +65,9 @@ std::string template_argument_syntax_witness_source_text(
     const cpp_decl::TemplateArgumentSyntax & argument);
 std::string template_id_syntax_text_preserving_spacing(
     const cpp_decl::TemplateIdSyntax & syntax);
+const cpp_decl::TemplateIdSyntax * template_id_syntax_matching_lookup_text(
+    const cpp_decl::TemplateIdSyntax & syntax,
+    const std::string & lookup_text);
 std::vector<std::string> template_id_argument_texts_preserving_spacing(
     const cpp_decl::TemplateIdSyntax & syntax);
 std::vector<std::string> template_id_argument_witness_source_texts(
