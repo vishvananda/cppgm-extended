@@ -1,0 +1,51 @@
+function @select_array(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z12select_arrayRA3_Ki] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return i32 1
+}
+function @select_array__ov2(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z12select_arrayOA3_Ki] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return i32 2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $values : obj<12x4>
+  slot $const_values : obj<12x4>
+
+  block ^entry:
+    %t1 = addr $values
+    store i32 1, %t1
+    %t2 = index i8 %t1, 4
+    store i32 2, %t2
+    %t3 = index i8 %t1, 8
+    store i32 3, %t3
+    %t4 = addr $const_values
+    store i32 4, %t4
+    %t5 = index i8 %t4, 4
+    store i32 5, %t5
+    %t6 = index i8 %t4, 8
+    store i32 6, %t6
+    %t7 = addr $values
+    %t8 = call i32 @select_array(%t7)
+    %t9 = cmp ne i32 %t8, 1
+    branch %t9, ^if_then_1, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t10 = addr $const_values
+    %t11 = call i32 @select_array(%t10)
+    %t12 = cmp ne i32 %t11, 1
+    branch %t12, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    return i32 0
+}

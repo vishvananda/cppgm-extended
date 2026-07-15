@@ -356,7 +356,19 @@ bool reference_referents_are_same_ignoring_top_cv(const TypePtr & lhs,
 {
   TypePtr lhs_base = strip_top_level_cv(lhs);
   TypePtr rhs_base = strip_top_level_cv(rhs);
-  return lhs_base && rhs_base && type_equals(lhs_base, rhs_base);
+  if(!lhs_base || !rhs_base) {
+    return false;
+  }
+  if(lhs_base->kind == Type::TK_ARRAY || rhs_base->kind == Type::TK_ARRAY) {
+    return lhs_base->kind == Type::TK_ARRAY &&
+           rhs_base->kind == Type::TK_ARRAY &&
+           lhs_base->has_bound == rhs_base->has_bound &&
+           lhs_base->bound == rhs_base->bound &&
+           lhs_base->bound_text == rhs_base->bound_text &&
+           reference_referents_are_same_ignoring_top_cv(lhs_base->inner,
+                                                        rhs_base->inner);
+  }
+  return type_equals(lhs_base, rhs_base);
 }
 
 bool class_template_specialization_metadata_has_same_identity(
