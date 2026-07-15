@@ -848,6 +848,7 @@ bool template_argument_range_fragment_mode(
     }
     if(token.is_simple(OP_STAR) ||
        token.is_simple(OP_AMP) ||
+       token.is_simple(OP_LAND) ||
        token.is_simple(OP_DOTS)) {
       mode = CppAstParser::TAF_PARSE_TYPE_THEN_EXPRESSION;
     } else {

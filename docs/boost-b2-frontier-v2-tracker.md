@@ -13,10 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `3 / 147`
-- current cursor: `#4 libs/any/test`
-- active compiler frontier: explicit rvalue-reference type argument lookup for
-  `unique_move` and `no_rtti_unique_move`
+- completed suites: `4 / 147`
+- current cursor: `#5 libs/array/test`
+- active compiler frontier: pending the initial forced Array survey
 
 ## Baseline Gates
 
@@ -76,6 +75,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(extern-template out-of-class member fix)` | Suppressed out-of-class member ownership under an explicit class-instantiation declaration | +0.88% | -0.05% | +0.06% | +0.14 percentage points instructions from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-extern-template-out-of-class-member-perf-repeat.json` | pass; repeated without code changes after the first near-limit +0.95% result; incremental movement remains below the hotspot threshold |
 | `(dependent alignof NTTP fix)` | Concrete class layout for a substituted `alignof(T)` non-type template argument | +0.68% | +1.59% | +0.06% | -0.20 percentage points instructions from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-align-dependent-nttp-perf.json` | pass; all cumulative hard gates pass and instructions improve from the preceding frontier |
 | `(declarator-owner implicit typename fix)` | Nested member-template type in an out-of-class static data definition | +0.80% | +0.25% | +0.15% | +0.12 percentage points instructions from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-owner-implicit-typename-perf.json` | pass; all cumulative instruction and memory gates remain within tolerance |
+| `(qualified rvalue-reference parser fix)` | Namespace-qualified template-id followed by an `&&` abstract declarator | +0.81% | +0.99% | +0.10% | +0.01 percentage points instructions from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-qualified-rref-parser-perf.json` | pass; initial parsing retains the structured type-id and all cumulative hard gates remain within tolerance |
 
 ## Suite Cursor
 
@@ -87,27 +87,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 1 | `libs/accumulators/test` | pass | `(external vbase layout runtime fix)` | Exact final forced survey rebuilt the full graph for 1800s with zero failures; all five former persistence failures (`rolling_count`, `rolling_sum`, `rolling_moment`, `rolling_variance`, and `rolling_mean`) rebuilt and passed. Log: `/tmp/boost-frontier-v2-suite-001-external-vbase-layout-runtime-final.log`. The non-forced continuation updated the remaining 12 targets, all four tests passed, and B2 exited successfully. Log: `/tmp/boost-frontier-v2-suite-001-external-vbase-layout-runtime-final-continuation.log`. The two compiler children orphaned by the forced timeout were terminated, then their affected `tail_variate_means` targets were forced cleanly; both rebuilt, passed, and B2 updated all 76 requested targets. Log: `/tmp/boost-v2-acc-external-vbase-layout-runtime-final-tail-focused.log`. | Suite closed on the exact final implementation. The final repository direct-LowIR report passed `3830 / 3830`; log `/tmp/cppgm-boost-frontier-v2-external-vbase-layout-runtime-final-test-report.log`. |
 | 2 | `libs/algorithm/test` | pass | `(extern-template out-of-class member fix)` | The exact focused target forced 32 targets, rebuilt the Boost.Test archive, and passed compile, link, and runtime; log `/tmp/boost-v2-algorithm-apply-permutation-extern-template-fix.log`. The exact full forced suite rebuilt 218 targets and exited successfully; log `/tmp/boost-frontier-v2-suite-002-extern-template-fix-full.log`. | Initial forced evidence `/tmp/boost-frontier-v2-suite-002-initial-forced.log` had one real failure: `apply_permutation_test` linked against the otherwise redundant Boost.Test archive and reported 27 duplicate symbols. All positives and deliberate compile-fail targets pass with the fix. Final direct-LowIR report passes `3830 / 3830`; log `/tmp/cppgm-boost-frontier-v2-algorithm-extern-template-final-test-report.log`. |
 | 3 | `libs/align/test` | pass | `(dependent alignof NTTP fix)` | The focused `alignment_of_test` forced four targets and passed compile, link, and runtime; log `/tmp/boost-v2-align-alignment-of-after-layout-fix.log`. The exact complete forced suite rebuilt all 60 targets and exited successfully; log `/tmp/boost-frontier-v2-suite-003-alignof-layout-fix-full.log`. | The initial forced survey passed 56 targets and had one causal compile failure plus three downstream skips: libc++ `alignment_of<Struct<bool>>` could not instantiate `integral_constant<size_t, alignof(_Tp)>`; log `/tmp/boost-frontier-v2-suite-003-initial-forced.log`. The final direct-LowIR report passes `3831 / 3831`; log `/tmp/cppgm-boost-frontier-v2-align-final-test-report.log`. |
-| 4 | `libs/any/test` | frontier | `(declarator-owner implicit typename fix)` | Forced focused `any_test_no_rtti` rebuilt four targets and passed compile, link, and runtime; log `/tmp/boost-v2-any-no-rtti-owner-typename-fix.log`. The complete forced suite updated 156 targets in 54.8s; all eight prior no-RTTI compile failures pass, leaving only `unique_move` and `no_rtti_unique_move`; log `/tmp/boost-frontier-v2-suite-004-owner-implicit-typename-fix/libs__any__test.log`. | Initial forced evidence `/tmp/boost-frontier-v2-suite-004-initial-forced.log` had eight failures from the same incorrect missing-`typename` diagnostic plus one later `unique_move` failure. The owner fix is committed separately while the suite remains open at the independent move-cast frontier. |
+| 4 | `libs/any/test` | pass | `(qualified rvalue-reference parser fix)` | Forced focused `unique_move` and `no_rtti_unique_move` rebuilt eight targets and both passed compile, link, and runtime; log `/tmp/boost-v2-any-unique-move-parser-fix.log`. The exact complete forced survey updated 164 targets in 54.3s and exited successfully; log `/tmp/boost-frontier-v2-suite-004-qualified-rref-parser-fix/libs__any__test.log`. | Initial forced evidence `/tmp/boost-frontier-v2-suite-004-initial-forced.log` had eight failures from the separately committed missing-`typename` defect plus the later move-cast failure. The first fix cleared all no-RTTI failures; the final parser fix clears both remaining move targets. Final direct-LowIR report passes `3833 / 3833`; log `/tmp/cppgm-boost-v2-suite-004-qualified-rref-full-report.log`. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#4 libs/any/test`
-- focused targets: `libs/any/test/unique_any//unique_move` and
-  `libs/any/test/unique_any//no_rtti_unique_move`
-- failure phase: semantic explicit function-template argument lookup
-- diagnostic: `unknown function boost::any_cast<std::unique_ptr<int>&&>`
-- reduced repro: pending reduction from `libs/any/test/unique_any/move.cpp:69`
-- owning PA/cluster: pending reduction
-- implementation area: pending trace of explicit rvalue-reference type argument
-  filtering/deduction
-- performance risk: current cumulative result is +0.80% instructions, +0.25%
-  RSS, and +0.15% footprint; all fixed cumulative hard gates pass
-- next action: force one `unique_move` variant with one job, reduce the explicit
-  rvalue-reference template argument failure without hosted headers, and verify
-  the uncached typed deduction path
+- suite: `#5 libs/array/test`
+- focused targets: pending the initial forced survey
+- failure phase: none established
+- diagnostic: none established
+- reduced repro: none
+- owning PA/cluster: pending any real compiler failure
+- implementation area: pending any real compiler failure
+- performance risk: current cumulative result is +0.81% instructions, +0.99%
+  RSS, and +0.10% footprint; all fixed cumulative hard gates pass
+- next action: run the exact forced Array survey and classify its first real
+  compiler failure, if any
 
 ## Fix Ledger
 
@@ -132,9 +129,19 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/algorithm/test//apply_permutation_test` | Explicit class-instantiation suppression had a special empty-member bypass that treated every weak template member as though it were inline. An empty user-defined out-of-class destructor therefore bypassed `extern template` suppression and was emitted weakly in ordinary client translation units. The bypass now uses typed `FunctionBinding` inline/constexpr facts plus the parsed declaration/definition node identity; weak linkage alone cannot establish ownership. No cache, text parse, spelling test, or symbol-text path is added. | Strengthened `pa32/tests/general/200-host-extern-template-ooc-member-reference.t` with a header-free out-of-class destructor and explicit destructor call. Its inspect oracle requires the consumer object to leave `Box<int>::~Box()` undefined while the host provider owns the explicit instantiation; the existing in-class member remains a weak control. | Header-free reducer `/tmp/cppgm-boost-algorithm-extern-template-destructor.cpp` was accepted by Clang but cppgm emitted two weak destructor variants. In the Boost.Test archive, cppgm's weak `std::__1::basic_ios<char>::~basic_ios()` definition caused `execution_monitor.o` to be extracted to satisfy `apply_permutation_test`, producing 27 duplicate framework symbols. The test object links and runs when the redundant archive is omitted, and a host-compiled test object reproduces the duplicate-symbol behavior against the polluted archive. | Warning-clean build; reducer objects from normal and `CPPGM_DISABLE_CLASS_INFO_FOR_TYPE_CACHE=1` builds are byte-identical and match Clang's undefined destructor symbol; focused PA32 regression passes; PA32 direct report passes `108/108`; all configured strict direct-LowIR suites pass; the strengthened regression has no placement or hygiene finding, while the PA32 audit still reports the separately queued pre-existing attribute-placement violation; all 23 text-reparse categories remain zero and 14 audit tests pass. The rebuilt Boost.Test archive leaves `basic_ios<char>::~basic_ios()` undefined. Forced focused and full Algorithm runs pass, and the final full direct-LowIR report passes `3830/3830`. | instructions +0.88%; max RSS -0.05%; peak footprint +0.06%; pass after a no-code-change repeat; +0.14 instruction percentage points from the preceding frontier | `(this commit)` |
 | fixed | `libs/align/test//alignment_of_test` | The retained `alignof(T)` AST was already structurally substituted to a concrete typed operand, but the template-argument leaf constexpr hook returned that `TypePtr` without completing its class layout. The shared evaluator therefore reported `named type alignment unavailable`, after which the dependency check misclassified the concrete expression as still dependent. The hook now completes layout through the existing semantic class-completion service before the evaluator asks for alignment, matching the normal semantic constexpr path. No cache, text parse, spelling test, or symbol path is added. | `pa19/tests/general/100-dependent-alignof-nontype-template-argument.t`, a header-free reducer at the earliest integral NTTP owner `pa19:100` | Exact reducer `/tmp/cppgm-align-dependent-nttp.cpp` and the smaller `Payload` regression both failed before the fix on `constant<size_type, alignof(T)>`; Clang accepts both. The pre-fix failure is unchanged with `CPPGM_DISABLE_CLASS_INFO_FOR_TYPE_CACHE=1`, and trace evidence `/tmp/cppgm-align-dependent-nttp-eval-trace.log` shows the post-substitution operand is the concrete `struct Struct<bool>` before layout evaluation fails. | Warning-clean build; exact and owner reducers compile and run with Clang, normal cppgm, and cache-disabled cppgm; focused owner check passes; PA19 direct report passes `135/135`; all configured strict direct-LowIR suites pass; PA19 placement and hygiene audits report zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass. Forced focused and complete Align runs pass, and the final full direct-LowIR report passes `3831/3831`. | instructions +0.68%; max RSS +1.59%; peak footprint +0.06%; pass; -0.20 instruction percentage points from the preceding frontier | `(this commit)` |
 | fixed | `libs/any/test` no-RTTI compile targets | `resolve_qualified_owner_type_node` correctly retained the parsed `QualifiedName` and qualifier template-id syntax for an out-of-class declarator, but represented the owner nested-name-specifier as an ordinary synthetic `type_name`. That caused the dependent-type resolver to demand `typename` for `outer<T>::inner<D>` even though the declarator-id grammar already establishes each nested-name-specifier component as a type. The synthetic typed node now carries an explicit implicit-`typename` context fact, and the existing diagnostic predicate consumes it. No cache, text parse, source-spelling check, or broad diagnostic suppression is added. | `pa21/tests/general/300-out-of-class-nested-member-template-static-definition.t`, a header-free reducer at the earliest member-template declaration/collection owner `pa21:300` | `/tmp/cppgm-any-nested-member-template-static.cpp` failed with `dependent qualified type requires typename: outer<T,Mode>::inner<D>` both normally and with class-info and dependent-type-resolution caches disabled; Clang accepts it. Boost.Describe's `update_modifiers<T,Bm>::fn<D>::pointer` produced the same diagnostic in eight Any no-RTTI targets. | Warning-clean build; reducer and owner test pass with Clang, normal cppgm, and both relevant caches disabled; focused owner check passes; PA21 direct report passes `218/218`; all configured strict direct-LowIR suites pass; PA21 placement and hygiene audits report zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass. Forced focused Boost passes; the full forced suite clears all eight shared failures and leaves only the two independent `unique_move` variants. | instructions +0.80%; max RSS +0.25%; peak footprint +0.15%; pass; +0.12 instruction percentage points from the preceding frontier | `(this commit)` |
+| fixed | `libs/any/test/unique_any//unique_move`, `//no_rtti_unique_move` | Initial template-argument parsing already tokenized `&&` as `OP_LAND`, but the fallback fragment classifier treated only trailing `*` and `&` as possible abstract declarators. It therefore attempted `library::box<int>&&` only as an expression, failed that parse, and left a text-only `TemplateArgumentSyntax`; explicit function-template argument resolution correctly refused to reparse it. Classifying `OP_LAND` as type-then-expression preserves the initial structured qualified template-id plus rvalue-reference declarator. No semantic reparse, cache, rendered identity, or symbol-path change is added. | `pa18/tests/general/100-qualified-template-id-rvalue-reference-argument.t`, a header-free reducer at the first type-template-argument owner `pa18:100` | `/tmp/cppgm-qualified-template-id-rvalue-reference-explicit-arg.cpp` failed with `unknown function api::take<library::box<int>&&>` both normally and with class-info plus dependent-type-resolution caches disabled; Clang accepts and runs it. Trace showed the semantic boundary received `syntax=yes` but no type-id, template-id, or expression, proving loss during the initial parse rather than semantic reparsing. | Warning-clean build; the exact reducer passes with Clang, normal cppgm, and both caches disabled; the PA18 regression emits the expected LowIR; PA18 direct report passes `223/223`; all configured strict direct-LowIR suites pass; PA18 placement/hygiene reports zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass. Both focused Boost targets and the complete forced Any suite pass. Final direct-LowIR report passes `3833/3833`. | instructions +0.81%; max RSS +0.99%; peak footprint +0.10%; pass; +0.01 instruction percentage points from the preceding frontier | `(this commit)` |
 
 ## Decision Log
 
+- `2026-07-14`: The remaining Any failure was not semantic text reparsing.
+  Initial parsing classified the already-tokenized `&&` in a qualified type
+  template argument as expression-only, then carried only its display text to
+  semantics. Adding `OP_LAND` to the existing type-then-expression classifier
+  retains the structured type-id at the first parse. The non-STL PA18 reducer
+  passes with both semantic caches disabled, all validation and performance
+  gates pass, both focused move targets pass, the complete forced Any survey
+  exits successfully, and the final direct report passes `3833 / 3833`. Suite
+  4 is closed; the cursor advances to `libs/array/test`.
 - `2026-07-14`: The initial forced Any survey found eight no-RTTI failures in
   Boost.Describe out-of-class definitions of nested member-template static data
   plus a later move-cast failure. The owner prefix was already structured at
@@ -325,7 +332,9 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  JOBS=8 \
-  /usr/local/bin/timeout 1800 \
-  ./run-cppgm-b2.sh -a libs/any/test
+  python3 /Users/vishvananda/cppgm-extended/scripts/run_boost_b2_suite_survey.py \
+  --suite 5 \
+  --jobs 8 \
+  --timeout 1800 \
+  --output-dir /tmp/boost-frontier-v2-suite-005-initial-forced
 ```
