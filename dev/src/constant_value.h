@@ -52,6 +52,9 @@ ConstexprValue make_aggregate_value(
 ConstexprValue make_array_value(const cpp_decl::TypePtr & type,
                                 const std::vector<ConstexprValue> & elements,
                                 const std::string & storage_identity = std::string());
+void assign_storage_identity(ConstexprValue & value,
+                             const std::string & storage_identity,
+                             std::size_t pointer_offset = 0);
 bool aggregate_member_value(const ConstexprValue & aggregate,
                             const std::string & name,
                             ConstexprValue & out);

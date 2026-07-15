@@ -1843,6 +1843,20 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
 
   if(is_reference_type(strip_top_level_cv(target))) {
     constant_eval::ConstexprValue referred;
+    const CppAstNode * payload = unwrap_initializer_payload(node);
+    if(payload && evaluator.eval_expr(*payload, referred)) {
+      constant_eval::ConstexprValue converted;
+      if(constant_eval::constexpr_value_cast(referred, target_base, converted)) {
+        if(converted.storage_identity.empty()) {
+          converted.storage_identity = referred.storage_identity;
+          converted.pointer_offset = referred.pointer_offset;
+          converted.array_elements = referred.array_elements;
+        }
+        converted.type = target;
+        out = converted;
+        return true;
+      }
+    }
     if(!evaluate_typed_initializer_value(ctx, scope, evaluator, node, target_base, referred)) {
       return false;
     }
@@ -2385,6 +2399,14 @@ bool evaluate_constexpr_target_conversion(SemanticContext & ctx,
   catch(const std::logic_error &)
   {
     return false;
+  }
+
+  TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
+  if(analyzed.null_pointer_constant &&
+     target_base && target_base->kind == Type::TK_POINTER) {
+    out = constant_eval::make_nullptr_value();
+    out.type = target;
+    return true;
   }
 
   semantic_conversion::ExprInfo converted;

@@ -344,10 +344,19 @@ bool constexpr_pointer_add(const ConstexprValue & pointer_value,
                            const ConstexprValue & offset_value,
                            ConstexprValue & out)
 {
-  ConstexprValue pointer;
   long long offset = 0;
-  if(!constexpr_pointer_operand(pointer_value, pointer) ||
-     !constexpr_pointer_offset_operand(offset_value, offset)) {
+  if(!constexpr_pointer_offset_operand(offset_value, offset)) {
+    return false;
+  }
+  if(pointer_value.kind == ConstexprValue::CV_NULLPTR) {
+    if(offset != 0) {
+      return false;
+    }
+    out = pointer_value;
+    return true;
+  }
+  ConstexprValue pointer;
+  if(!constexpr_pointer_operand(pointer_value, pointer)) {
     return false;
   }
   if(offset < 0 &&
@@ -915,6 +924,20 @@ ConstexprValue make_array_value(const TypePtr & type,
   return out;
 }
 
+void assign_storage_identity(ConstexprValue & value,
+                             const string & storage_identity,
+                             size_t pointer_offset)
+{
+  // Pointer values use storage_identity for their pointee, not their own object.
+  if(storage_identity.empty() ||
+     value.kind == ConstexprValue::CV_POINTER ||
+     value.kind == ConstexprValue::CV_NULLPTR) {
+    return;
+  }
+  value.storage_identity = storage_identity;
+  value.pointer_offset = pointer_offset;
+}
+
 bool aggregate_member_value(const ConstexprValue & aggregate,
                             const string & name,
                             ConstexprValue & out)
@@ -928,6 +951,10 @@ bool aggregate_member_value(const ConstexprValue & aggregate,
         i < aggregate.aggregate_member_is_base.size() && aggregate.aggregate_member_is_base[i];
     if(!is_base && aggregate.aggregate_members[i].first == name) {
       out = aggregate.aggregate_members[i].second;
+      if(!aggregate.storage_identity.empty()) {
+        assign_storage_identity(out,
+                                aggregate.storage_identity + "." + name);
+      }
       return true;
     }
   }
@@ -935,9 +962,16 @@ bool aggregate_member_value(const ConstexprValue & aggregate,
   for(size_t i = 0; i < aggregate.aggregate_members.size(); ++i) {
     const bool is_base =
         i < aggregate.aggregate_member_is_base.size() && aggregate.aggregate_member_is_base[i];
-    if(is_base &&
-       aggregate_member_value(aggregate.aggregate_members[i].second, name, out)) {
-      return true;
+    if(is_base) {
+      ConstexprValue base = aggregate.aggregate_members[i].second;
+      if(!aggregate.storage_identity.empty()) {
+        assign_storage_identity(base,
+                                aggregate.storage_identity + "." +
+                                    aggregate.aggregate_members[i].first);
+      }
+      if(aggregate_member_value(base, name, out)) {
+        return true;
+      }
     }
   }
 
@@ -952,6 +986,12 @@ bool array_element_value(const ConstexprValue & array,
     return false;
   }
   out = array.array_elements[index];
+  if(!array.storage_identity.empty() &&
+     out.kind != ConstexprValue::CV_POINTER &&
+     out.kind != ConstexprValue::CV_NULLPTR) {
+    out.storage_identity = array.storage_identity;
+    out.pointer_offset = array.pointer_offset + index;
+  }
   return true;
 }
 
@@ -1161,6 +1201,19 @@ bool constexpr_value_apply_unary(ETokenType op,
     out = make_integral_value(!truthy, make_fundamental(FT_BOOL));
     return true;
 
+  case OP_AMP:
+    if(operand.storage_identity.empty() ||
+       !operand.type ||
+       operand.kind == ConstexprValue::CV_POINTER ||
+       operand.kind == ConstexprValue::CV_NULLPTR) {
+      return false;
+    }
+    out = make_pointer_value(make_pointer(remove_reference_type(operand.type)),
+                             operand.storage_identity,
+                             operand.pointer_offset);
+    out.array_elements = operand.array_elements;
+    return true;
+
   case OP_COMPL:
     if(promoted_type && is_unsigned_integral_type(promoted_type)) {
       ConstexprValue promoted_operand;
@@ -1200,13 +1253,28 @@ bool constexpr_value_apply_binary(ETokenType op,
   }
 
   if(op == OP_EQ || op == OP_NE) {
+    const bool lhs_is_pointer =
+        lhs.kind == ConstexprValue::CV_POINTER ||
+        (lhs.kind == ConstexprValue::CV_ARRAY && !lhs.storage_identity.empty());
+    const bool rhs_is_pointer =
+        rhs.kind == ConstexprValue::CV_POINTER ||
+        (rhs.kind == ConstexprValue::CV_ARRAY && !rhs.storage_identity.empty());
     if(lhs.kind == ConstexprValue::CV_NULLPTR || rhs.kind == ConstexprValue::CV_NULLPTR ||
-       lhs.kind == ConstexprValue::CV_POINTER || rhs.kind == ConstexprValue::CV_POINTER) {
+       lhs_is_pointer || rhs_is_pointer) {
+      long long lhs_integral = 1;
+      long long rhs_integral = 1;
+      const bool lhs_null =
+          lhs.kind == ConstexprValue::CV_NULLPTR ||
+          (lhs.kind == ConstexprValue::CV_INTEGRAL &&
+           constexpr_value_to_integral(lhs, lhs_integral) && lhs_integral == 0);
+      const bool rhs_null =
+          rhs.kind == ConstexprValue::CV_NULLPTR ||
+          (rhs.kind == ConstexprValue::CV_INTEGRAL &&
+           constexpr_value_to_integral(rhs, rhs_integral) && rhs_integral == 0);
       bool eq = false;
-      if(lhs.kind == ConstexprValue::CV_NULLPTR || rhs.kind == ConstexprValue::CV_NULLPTR) {
-        eq = lhs.kind == rhs.kind;
-      } else if(lhs.kind == ConstexprValue::CV_POINTER &&
-                rhs.kind == ConstexprValue::CV_POINTER) {
+      if(lhs_null || rhs_null) {
+        eq = lhs_null && rhs_null;
+      } else if(lhs_is_pointer && rhs_is_pointer) {
         eq = lhs.storage_identity == rhs.storage_identity &&
              lhs.pointer_offset == rhs.pointer_offset;
       }

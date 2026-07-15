@@ -143,8 +143,10 @@ bool Evaluator::lookup_value(const string & name,
           frame.scopes[scope_index - 1].find(name);
       if(found != frame.scopes[scope_index - 1].end()) {
         out = found->second;
-        if(out.kind == ConstexprValue::CV_ARRAY && out.storage_identity.empty()) {
-          out.storage_identity = name;
+        if((out.kind == ConstexprValue::CV_ARRAY ||
+            out.kind == ConstexprValue::CV_AGGREGATE) &&
+           out.storage_identity.empty()) {
+          assign_storage_identity(out, name);
         }
         return out.kind != ConstexprValue::CV_INVALID;
       }
@@ -152,8 +154,9 @@ bool Evaluator::lookup_value(const string & name,
   }
   if(hooks_.lookup_external_value &&
      hooks_.lookup_external_value(name, node, out)) {
-    if(out.kind == ConstexprValue::CV_ARRAY && out.storage_identity.empty()) {
-      out.storage_identity = name;
+    if(out.kind == ConstexprValue::CV_ARRAY ||
+       out.kind == ConstexprValue::CV_AGGREGATE) {
+      assign_storage_identity(out, name);
     }
     return out.kind != ConstexprValue::CV_INVALID;
   }
@@ -262,6 +265,10 @@ bool Evaluator::declare_locals(const vector<LocalDeclaration> & locals,
     if(frames_.empty() || frames_.back().scopes.empty()) {
       error = "missing constexpr frame scope";
       return false;
+    }
+    if(value.kind == ConstexprValue::CV_ARRAY ||
+       value.kind == ConstexprValue::CV_AGGREGATE) {
+      assign_storage_identity(value, locals[i].name);
     }
     frames_.back().scopes.back()[locals[i].name] = value;
     if(last_value) {
@@ -747,6 +754,12 @@ StatementResult Evaluator::exec_stmt(const CppAstNode & node, const TypePtr & re
         result.error = "failed to convert return expression";
         return result;
       }
+      if(is_reference_type(strip_top_level_cv(return_type)) &&
+         converted.storage_identity.empty()) {
+        converted.storage_identity = result.value.storage_identity;
+        converted.pointer_offset = result.value.pointer_offset;
+        converted.array_elements = result.value.array_elements;
+      }
       result.value = converted;
     }
     return result;
@@ -1059,7 +1072,13 @@ bool Evaluator::call(const FunctionInfo & function,
                 i < value.aggregate_member_is_base.size() &&
                 value.aggregate_member_is_base[i];
             if(is_base) {
-              append_visible_members(value.aggregate_members[i].second);
+              ConstexprValue base = value.aggregate_members[i].second;
+              if(!value.storage_identity.empty()) {
+                assign_storage_identity(base,
+                                        value.storage_identity + "." +
+                                            value.aggregate_members[i].first);
+              }
+              append_visible_members(base);
             }
           }
           for(size_t i = 0; i < value.aggregate_members.size(); ++i) {
@@ -1067,8 +1086,13 @@ bool Evaluator::call(const FunctionInfo & function,
                 i < value.aggregate_member_is_base.size() &&
                 value.aggregate_member_is_base[i];
             if(!is_base) {
-              frames_.back().scopes.back()[value.aggregate_members[i].first] =
-                  value.aggregate_members[i].second;
+              ConstexprValue member = value.aggregate_members[i].second;
+              if(!value.storage_identity.empty()) {
+                assign_storage_identity(member,
+                                        value.storage_identity + "." +
+                                            value.aggregate_members[i].first);
+              }
+              frames_.back().scopes.back()[value.aggregate_members[i].first] = member;
             }
           }
         };
@@ -1089,6 +1113,12 @@ bool Evaluator::call(const FunctionInfo & function,
         return false;
       }
       value = converted;
+    }
+    if((value.kind == ConstexprValue::CV_ARRAY ||
+        value.kind == ConstexprValue::CV_AGGREGATE) &&
+       function.params[i].second &&
+       !is_reference_type(strip_top_level_cv(function.params[i].second))) {
+      assign_storage_identity(value, function.params[i].first);
     }
     frames_.back().scopes.back()[function.params[i].first] = value;
   }

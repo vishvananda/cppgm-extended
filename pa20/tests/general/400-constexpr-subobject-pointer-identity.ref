@@ -1,0 +1,26 @@
+function @check() -> void [binding=strong, object=_Z5checkv] {
+  slot $values : obj<8x4>
+  slot $copied : obj<8x4>
+
+  block ^entry:
+    %t1 = addr $values
+    %t2 = addr $values
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = unary decay ptr %t3
+    %t5 = index i32 [projection=array_element] %t4, 0
+    store i32 3, %t5
+    %t6 = addr $values
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = unary decay ptr %t7
+    %t9 = index i32 [projection=array_element] %t8, 1
+    store i32 5, %t9
+    %t10 = addr $copied
+    %t11 = addr $values
+    copyobj 8x4 %t11, %t10
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    call void @check()
+    return i32 0
+}
