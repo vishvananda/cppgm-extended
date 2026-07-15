@@ -15,8 +15,8 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `5 / 147`
 - current cursor: `#6 libs/asio/test`
-- active compiler frontier: missing `async_write_some` member-template collection
-  in Asio POSIX stream descriptors
+- active compiler frontier: pending the next forced Asio survey after clearing
+  the independently observed `strand` link pair
 
 ## Baseline Gates
 
@@ -87,6 +87,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(typed numeric UDL selection fix)` | Raw numeric literal-operator template coexisting with an ordinary string literal operator | +0.92% | -0.54% | +0.10% | -0.04 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-buffer-literal-perf-r2.json` | pass on a no-code-change repeat after the first near-threshold +1.01% median; the benchmark does not exercise user-defined literals, hotspot query counts are unchanged, and neither changed helper appears in the sample |
 | `(structured template-id type-probe fix)` | Retained explicit function template-id containing a dependent member-template type in a trailing return | +0.89% | +0.29% | +0.15% | -0.03 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-ip-tcp-structured-anchor-perf.json` | pass; the cold exact-anchor mismatch branch consumes retained syntax, performs no parse or reconstruction, and cumulative instructions improve from the preceding frontier |
 | `(typed this member-result scope fix)` | Member-template trailing return containing `this` inside a functional cast and explicit template-id call | +0.79% | +0.36% | +0.14% | -0.10 instruction percentage points from the preceding frontier; the initial broad member-result hook broke the self-compile benchmark and was narrowed before acceptance | `/tmp/cppgm-boost-frontier-v2-posix-member-result-scope-perf.json` | pass; the sidecar-aware AST scan runs only for a still-dependent non-static member result and the fixed benchmark compiles successfully |
+| `(full-expression temporary emission fix)` | Nested member-template class prvalue whose retained type predates completed layout | +0.78% | +0.22% | +0.03% | -0.007% instructions, -0.14% RSS, and -0.11% footprint from the preceding checkpoint | `/tmp/cppgm-boost-frontier-v2-strand-stale-layout-perf.json` | pass; the added typed `ClassInfo` lookup is confined to layout-free named prvalues and adds no measurable aggregate cost |
 
 ## Suite Cursor
 
@@ -100,7 +101,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 3 | `libs/align/test` | pass | `(dependent alignof NTTP fix)` | The focused `alignment_of_test` forced four targets and passed compile, link, and runtime; log `/tmp/boost-v2-align-alignment-of-after-layout-fix.log`. The exact complete forced suite rebuilt all 60 targets and exited successfully; log `/tmp/boost-frontier-v2-suite-003-alignof-layout-fix-full.log`. | The initial forced survey passed 56 targets and had one causal compile failure plus three downstream skips: libc++ `alignment_of<Struct<bool>>` could not instantiate `integral_constant<size_t, alignof(_Tp)>`; log `/tmp/boost-frontier-v2-suite-003-initial-forced.log`. The final direct-LowIR report passes `3831 / 3831`; log `/tmp/cppgm-boost-frontier-v2-align-final-test-report.log`. |
 | 4 | `libs/any/test` | pass | `(qualified rvalue-reference parser fix)` | Forced focused `unique_move` and `no_rtti_unique_move` rebuilt eight targets and both passed compile, link, and runtime; log `/tmp/boost-v2-any-unique-move-parser-fix.log`. The exact complete forced survey updated 164 targets in 54.3s and exited successfully; log `/tmp/boost-frontier-v2-suite-004-qualified-rref-parser-fix/libs__any__test.log`. | Initial forced evidence `/tmp/boost-frontier-v2-suite-004-initial-forced.log` had eight failures from the separately committed missing-`typename` defect plus the later move-cast failure. The first fix cleared all no-RTTI failures; the final parser fix clears both remaining move targets. Final direct-LowIR report passes `3833 / 3833`; log `/tmp/cppgm-boost-v2-suite-004-qualified-rref-full-report.log`. |
 | 5 | `libs/array/test` | pass | `(three Array fixes)` | Focused constexpr aggregate access passed in `/tmp/boost-v2-array-init-cx-focused-final.log`; focused pointer-identity targets passed in `/tmp/boost-v2-array-pointer-focused-final.log`; focused `to_array_test` passed in `/tmp/boost-v2-array-to-array-fixed.log`. The exact complete forced survey rebuilt all 146 discovered targets in 56.7s and exited successfully; log `/tmp/boost-frontier-v2-suite-005-array-cv-reference-fix/libs__array__test.log`. | Initial forced evidence `/tmp/boost-frontier-v2-suite-005-initial-forced/libs__array__test.log` had six constexpr failures split between structured aggregate access and subobject pointer identity, plus one independent array cv-reference overload failure. Each cause has an earliest owner reducer and uncached proof. Final direct-LowIR report passes `3836 / 3836`; log `/tmp/cppgm-boost-frontier-v2-array-final-full-report.log`. |
-| 6 | `libs/asio/test` | frontier | `(typed this member-result scope fix)` | The initial forced eight-job survey timed out at 1800s after recording multiple compiler families; log `/tmp/boost-frontier-v2-suite-006-initial-forced/libs__asio__test.log`. Forced focused `ip_tcp` and `ip_tcp_select` pass in `/tmp/boost-frontier-v2-asio-ip-tcp-focused-fixed.log`. A follow-on survey was manually stopped after 54 minutes because its invocation omitted the external timeout; it recorded 286 passes, the two POSIX descriptor failures, and the later independent `strand` link pair in `/tmp/boost-frontier-v2-asio-full-after-ip-tcp.log`. Both forced POSIX descriptor variants now compile, link, run, and pass on the final narrowed implementation; log `/tmp/boost-frontier-v2-asio-posix-stream-descriptor-narrowed-final.log`. | Suite remains open at `strand` and `strand_select`. Both link failures reference missing `strand_executor_service::invoker<io_context::basic_executor_type<std::__1::allocator<void>, 0ul/4ul> const, void>::on_invoker_exit` destructors. Final direct-LowIR report passes `3832/3832` with PA9 explicitly omitted. |
+| 6 | `libs/asio/test` | frontier | `(full-expression temporary emission fix)` | The initial forced eight-job survey timed out at 1800s after recording multiple compiler families; log `/tmp/boost-frontier-v2-suite-006-initial-forced/libs__asio__test.log`. Forced focused `ip_tcp` and `ip_tcp_select` pass in `/tmp/boost-frontier-v2-asio-ip-tcp-focused-fixed.log`. A follow-on survey was manually stopped after 54 minutes because its invocation omitted the external timeout; it recorded 286 passes, the two POSIX descriptor failures, and the later independent `strand` link pair in `/tmp/boost-frontier-v2-asio-full-after-ip-tcp.log`. Both forced POSIX descriptor variants pass in `/tmp/boost-frontier-v2-asio-posix-stream-descriptor-narrowed-final.log`. Exact forced `strand` and `strand_select` rebuilds compile, link, run, and pass in `/tmp/boost-frontier-v2-asio-strand-stale-layout-exact-final.log`. | The suite remains open pending a forced continuation survey. The `strand` failure was not a missing `on_invoker_exit` definition: those destructors were emitted and referenced the missing concrete `basic_executor_type<recycling_allocator<void, default_tag>, 4>::~basic_executor_type`. Final direct-LowIR report passes `3833/3833` with PA9 explicitly omitted. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -108,21 +109,17 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#6 libs/asio/test`
-- focused targets: `libs/asio/test//strand` and
-  `libs/asio/test//strand_select`
-- failure phase: host link after successful source and object compilation
-- diagnostic: undefined nested `on_invoker_exit` destructors for
-  `strand_executor_service::invoker<io_context::basic_executor_type<allocator<void>, 0/4> const, void>`
-- reduced repro: pending focused confirmation and reduction
-- owning PA/cluster: pending reduction audit
-- implementation area: typed ownership/emission policy for a nested local RAII
-  destructor inside a class-template member path
-- performance risk: current three-run cumulative median is +0.79% instructions,
-  +0.36% RSS, and +0.14% footprint; the accepted POSIX fix improves cumulative
-  instructions by 0.10 percentage points
-- next action: force the two `strand` variants under the external timeout,
-  inspect defined/undefined object symbols through the typed ABI trace, and
-  reduce the missing destructor to the earliest non-STL owner
+- focused targets: pending the next failure from a forced suite continuation
+- failure phase: pending survey
+- diagnostic: none active; `strand` and `strand_select` pass
+- reduced repro: `pa21/tests/general/300-nested-member-template-prvalue-dtor-output.t`
+- owning PA/cluster: PA21 nested class/member templates
+- implementation area: pending the next independent failure
+- performance risk: current three-run cumulative median is +0.78% instructions,
+  +0.22% RSS, and +0.03% footprint; this fix is flat to slightly better than
+  the preceding checkpoint in all three primary metrics
+- next action: resume the exact Asio forced survey under the external timeout
+  and stop at the next independent compiler frontier
 
 ## Fix Ledger
 
@@ -158,9 +155,22 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/asio/test//buffer`, `//buffer_select` | Numeric user-defined literal handling treated the presence of any ordinary same-suffix function as proof that the cooked numeric form existed. Asio also declares the string form `operator""_buf(const char *, size_t)`, so `0x00_buf` was incorrectly constructed as a one-argument cooked call and never reached its raw `template<char...> operator""_buf()` overload. Selection now inspects the typed `FunctionBinding` parameter list and chooses the cooked integer or floating path only for an exact one-parameter `unsigned long long` or `long double` operator; otherwise it uses the existing structured character-template-argument path. This consumes typed declarations and the already-tokenized literal token spelling required for the raw character pack; it does not parse saved semantic source text. | `pa19/tests/general/200-user-defined-integer-literal-overload-set.t`, a header-free integer-and-floating raw literal reducer at the existing PA19 numeric UDL owner | The current pre-fix compiler and the merged-main compiler both call the unrelated two-parameter string operator with one argument; Clang accepts and runs the reducer. The exported PA19 binary predates UDL support and cannot generate the new golden, so the checked LowIR reference was constructed from and byte-checked against the fixed structured lowering under PA19's documented checked-golden policy. | Warning-clean build; Clang, normal cppgm, and cppgm with all nine semantic/template caches disabled pass, with byte-identical normal/cache-disabled LowIR. PA19 direct report passes `136/136`; all configured strict direct-LowIR suites pass; PA19 placement/hygiene has zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass. Forced focused buffer targets pass, the exact survey records 190 passes plus four later failures before timeout, and the final full direct report passes `3830/3830` with PA9 explicitly omitted. | instructions +0.92%; max RSS -0.54%; peak footprint +0.10%; pass on a no-code-change repeat after the first +1.01% near-threshold result; -0.04 instruction percentage points from the preceding frontier, unchanged query counts, and no changed-helper sample | `(this commit)` |
 | fixed | `libs/asio/test//ip_tcp`, `//ip_tcp_select` | During the functional-cast probe for an explicit function template-id, type lookup first tried to match the normalized display spelling against the retained `TemplateIdSyntax`. Normalization omitted the dependent `template` keyword inside one argument, so the exact full-spelling match failed and the probe rejected the call before ordinary function-template lookup. When that exact match fails, type lookup now verifies the direct template identifier against the active exact anchor and consumes the anchor's original typed template arguments and syntax. It does not parse or reconstruct text, add a cache, or change symbol construction. | `pa22/tests/general/100-dependent-trailing-return-explicit-template-id-keyword.t`, a header-free explicit function-template call with a dependent nested member-template type in a trailing return, at the earliest PA22 class-template integration owner | Both `/tmp/cppgm-ip-tcp-min.cpp` and the fuller `/tmp/cppgm-ip-tcp-explicit-signature-pack.cpp` failed before the fix while Clang accepted them. Trace instrumentation showed that initial parsing retained `::template rebind<long>::other`; rejection occurred only because the normalized type-probe spelling omitted `template`. The instrumentation was removed. | Warning-clean build; the owner regression, both reducers, and normal plus all nine relevant cache-disabled modes pass, with byte-identical LowIR. PA22 direct report passes `256/256`; all configured strict suites pass; PA22 placement/hygiene reports zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass. Focused and broad Asio runs pass both `ip_tcp` targets. The final full direct report excluding PA9 passes `3831/3831`. | instructions +0.89%; max RSS +0.29%; peak footprint +0.15%; pass; cumulative instructions improve 0.03 percentage points and the changed cold branch does not warrant hotspot escalation | `(this commit)` |
 | fixed | `libs/asio/test//posix_stream_descriptor`, `//posix_stream_descriptor_select` | Member-template result recovery used the ordinary instantiation scope, which has no active function or `this` binding. The nested `initiation(this)` functional cast in `decltype(async_initiate<...>(...))` therefore rejected every constructor and left `async_write_some` dependent. A sidecar-aware structural predicate now detects the retained `KW_THIS` node and performs only that still-dependent non-static member-result recovery in a typed synthetic method scope with the concrete owner and cv/ref facts. No text is parsed, reconstructed, or used for lookup. | `pa22/tests/general/100-member-trailing-return-this-explicit-template-id.t`, a header-free mixed explicit/deduced call reducer at the audit-approved PA22 full-deduction owner | The fresh exported-main reference binary and pre-fix compiler both reject the reducer with unknown member `start`; `/tmp/cppgm-trailing-explicit-call-this-cast.live-trace.log` shows member collection succeeds and result recovery rejects `this` outside a member function. The initial broad member-result scope hook made the self-compile benchmark fail in unrelated `make_pair`/`push_back` resolution, proving that applicability had to be structural and narrow. | Warning-clean build; Clang and cppgm compile/run the reducer; normal, all nine individual cache-disabled modes, and the all-disabled mode emit byte-identical LowIR; PA22 passes `257/257`; all configured strict suites pass; placement exits cleanly; all 23 text-reparse categories remain zero and 14 audit tests pass. The self-compile benchmark and both forced Boost targets pass on the narrowed implementation. Final direct-LowIR report excluding PA9 passes `3832/3832`. The exported-main oracle predates the fix, so the checked maintainer LowIR golden was byte-verified against all uncached modes rather than preserving its failure fixture. | instructions +0.79%; max RSS +0.36%; peak footprint +0.14%; pass; -0.10 instruction percentage points from the preceding frontier | `(this commit)` |
+| fixed | `libs/asio/test//strand`, `//strand_select` | Full-expression temporary output support classified class prvalues by `TypePtr::named_has_layout`. The nested member-class-template specialization retained a pre-layout named `TypePtr`, even though typed `ClassInfo` was already complete, so its destructor was never required for emission. The existing layout-bearing completion path is preserved; only layout-free named prvalues now use typed `class_info_for_type` lookup and require the destructor when that class is already complete. No parser, spelling match, cache, ABI construction, or symbol-trace path changes. | `pa21/tests/general/300-nested-member-template-prvalue-dtor-output.t`, a header-free nested class-template/member-template prvalue reducer at the earliest PA21 member-template owner | The controlled pre-fix compiler at `b22b02029` emits only a declaration for `context::executor<long>::~executor` and fails host link with that exact undefined symbol; Clang accepts and runs the reducer. Typed output tracing on Boost showed the concrete `basic_executor_type<recycling_allocator<void, default_tag>, 4>` class and correct typed ABI symbol, but no definition requirement. Object inspection proved both `on_invoker_exit` destructors were defined and referenced that missing concrete executor destructor. | Warning-clean build; focused owner test and PA21 direct report pass `220/220`; normal, class-info-cache-disabled, and all-nine-caches-disabled LowIR are byte-identical; PA21 placement/hygiene has zero findings; all configured strict direct-LowIR suites pass; all 23 text-reparse categories remain zero and 14 audit tests pass. Exact forced `strand` targets compile, link, run, and pass. The final full direct report excluding PA9 passes `3833/3833`. | instructions +0.78%; max RSS +0.22%; peak footprint +0.03%; pass; -0.007% instructions, -0.14% RSS, and -0.11% footprint from the preceding checkpoint | `(this commit)` |
 
 ## Decision Log
 
+- `2026-07-15`: The Asio `strand` link failure was an output-closure defect,
+  not an initial-parse loss, text reparse, ABI spelling error, or cache-masked
+  algorithm. The nested executor specialization retained a layout-free named
+  `TypePtr`, while its typed `ClassInfo` was already complete. Full-expression
+  temporary collection incorrectly used the stale layout bit as class
+  identity and omitted the concrete executor destructor definition. The
+  accepted fix preserves normal layout completion and adds only a typed class
+  lookup for layout-free named prvalues. A controlled pre-fix compiler fails
+  the PA21 reducer at host link, all cache-off modes emit identical fixed
+  LowIR, both Boost targets pass, the strict text-reparse audit remains zero,
+  and performance is flat to slightly improved. The suite remains open for a
+  forced continuation survey.
 - `2026-07-15`: The POSIX descriptor declaration was collected correctly; its
   dependent trailing result was recovered in a scope with no function or
   `this`, so the nested functional cast failed before the member became
@@ -452,11 +462,10 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
+env CPPGM_BOOST_B2_FRONTIER=1 \
+  CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  JOBS=1 \
-  ./run-cppgm-b2.sh -a \
-  libs/asio/test//strand \
-  libs/asio/test//strand_select
+  JOBS=2 \
+  gtimeout 1800 ./run-cppgm-b2.sh -a libs/asio/test
 ```

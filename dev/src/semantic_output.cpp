@@ -2051,11 +2051,17 @@ bool is_discarded_class_prvalue_materialization(const CallSemNode & node)
   return type && !is_reference_type(type);
 }
 
-bool is_full_expression_class_temporary_materialization(const CallSemNode & node)
+bool is_full_expression_class_temporary_materialization(const CallSemNode & node,
+                                                        const TypePtr & effective_type)
 {
-  if(!is_complete_class_value_type_for_output(node.semantic_type) ||
+  if(!effective_type ||
      node.value_category == CVC_LVALUE ||
-     is_reference_type(node.semantic_type)) {
+     is_reference_type(effective_type)) {
+    return false;
+  }
+
+  TypePtr object_type = strip_top_level_cv(effective_type);
+  if(!object_type || object_type->kind != Type::TK_NAMED) {
     return false;
   }
 
@@ -2382,7 +2388,7 @@ void collect_required_full_expression_temporary_support(SemanticContext & ctx,
 {
   TypePtr effective_node_type =
       resolve_output_support_type(ctx, resolution_scope, node.semantic_type);
-  if(!is_full_expression_class_temporary_materialization(node)) {
+  if(!is_full_expression_class_temporary_materialization(node, effective_node_type)) {
     return;
   }
   TypePtr function_type;
@@ -2407,8 +2413,14 @@ void collect_required_full_expression_temporary_support(SemanticContext & ctx,
     return;
   }
 
-  ClassInfo * info = ctx.complete_class_type(effective_node_type);
-  if(!info || !info->complete) {
+  TypePtr object_type = strip_top_level_cv(remove_reference_type(effective_node_type));
+  ClassInfo * info = nullptr;
+  if(is_complete_class_value_type_for_output(effective_node_type)) {
+    info = ctx.complete_class_type(effective_node_type);
+  } else if(object_type) {
+    info = ctx.class_info_for_type(object_type);
+  }
+  if(!info || !info->complete || info->class_kind == "enum") {
     return;
   }
   require_temporary_destructor_definition(ctx, *info);
