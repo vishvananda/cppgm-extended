@@ -9924,34 +9924,87 @@ bool finalize_deduced_function_template_arguments(
         TemplateArgumentSyntax prepared_default_syntax;
         const TemplateArgumentSyntax * prepared_default_syntax_ptr =
             &original_default_syntax;
+        bool have_substituted_default_syntax = false;
         if(!original_default_text.empty()) {
           std::vector<TemplateParameterInfo> prefix_parameters(
               decl.parameters.begin(),
               decl.parameters.begin() + i);
           std::vector<TemplateArgument> prefix_arguments(out.begin(), out.end());
-          if(make_substituted_default_template_argument_syntax(
-                 ctx,
-                 bound_scope,
-                 decl.parameters[i],
-                 child,
-                 original_default_text,
-                 prefix_parameters,
-                 prefix_arguments,
-                 prepared_default_syntax)) {
+          have_substituted_default_syntax =
+              make_substituted_default_template_argument_syntax(
+                  ctx,
+                  bound_scope,
+                  decl.parameters[i],
+                  child,
+                  original_default_text,
+                  prefix_parameters,
+                  prefix_arguments,
+                  prepared_default_syntax);
+          if(have_substituted_default_syntax) {
             prepared_default_text = prepared_default_syntax.text;
             prepared_default_syntax_ptr = &prepared_default_syntax;
           }
         }
         bool resolved_default = false;
+        const bool substituted_default_is_structurally_dependent =
+            !have_substituted_default_syntax ||
+            !prepared_default_syntax.type_id ||
+            template_api::with_template_services(
+                ctx,
+                [&](template_api::TemplateServices & services)
+                {
+                  return template_argument_semantics::
+                      ast_node_syntax_has_template_dependency(
+                          services,
+                          template_api::make_template_environment(bound_scope),
+                          *prepared_default_syntax.type_id);
+                });
+        const bool resolve_substituted_default_directly =
+            have_substituted_default_syntax &&
+            !substituted_default_is_structurally_dependent;
+        if(resolve_substituted_default_directly) {
+          {
+            const template_api::ScopedTemplateWitnessSourceCapturePause
+                source_capture_pause;
+            try {
+              resolved_default =
+                  !prepared_default_text.empty() &&
+                  resolve_template_argument(ctx,
+                                            bound_scope,
+                                            bound_scope,
+                                            decl.parameters[i],
+                                            prepared_default_text,
+                                            prepared_default_syntax_ptr,
+                                            arg);
+            } catch(const TemplateSubstitutionFailure &) {
+              resolved_default = false;
+            }
+          }
+          if(!resolved_default ||
+             !arg.type ||
+             template_argument_semantics::type_depends_on_template_parameter(
+                 ctx, arg.type)) {
+            trace_finalize_failure(
+                std::string("concrete-default-type-resolution-failed name=") +
+                decl.parameters[i].name +
+                " text=" + prepared_default_text);
+            return false;
+          }
+          template_argument_semantics::note_template_value_dependencies_for_witness(
+              ctx, arg.value_dependencies);
+        }
         const bool default_mentions_template_placeholders =
+            !resolve_substituted_default_directly &&
             !prepared_default_text.empty() &&
             ctx.text_mentions_template_placeholders(bound_scope,
                                                    prepared_default_text);
         const bool default_mentions_dependent_bindings =
+            !resolve_substituted_default_directly &&
             !prepared_default_text.empty() &&
             ctx.text_mentions_dependent_non_namespace_binding_names(
                 bound_scope, prepared_default_text);
         const bool default_should_defer_lookup =
+            !resolve_substituted_default_directly &&
             !prepared_default_text.empty() &&
             ctx.should_defer_unresolved_type_lookup(bound_scope,
                                                     prepared_default_text);
@@ -9962,7 +10015,8 @@ bool finalize_deduced_function_template_arguments(
              default_should_defer_lookup);
         if(parser_trace::enabled("template.resolve")) {
           std::ostringstream trace;
-          trace << "default-type-arg name=" << decl.parameters[i].name
+          trace << "default-type-arg template=" << decl.name
+                << " name=" << decl.parameters[i].name
                 << " text=" << original_default_text
                 << " prepared=" << prepared_default_text
                 << " placeholders="
@@ -10009,17 +10063,15 @@ bool finalize_deduced_function_template_arguments(
           attach_template_argument_source_syntax(prepared_default_syntax_ptr, arg);
           resolved_default = true;
         }
-        if(!original_default_text.empty()) {
+        if(!resolved_default && !original_default_text.empty()) {
           try {
-            if(!resolved_default) {
-              resolved_default = resolve_template_argument(ctx,
-                                                          bound_scope,
-                                                          bound_scope,
-                                                          decl.parameters[i],
-                                                          original_default_text,
-                                                          &original_default_syntax,
-                                                          arg);
-            }
+            resolved_default = resolve_template_argument(ctx,
+                                                        bound_scope,
+                                                        bound_scope,
+                                                        decl.parameters[i],
+                                                        original_default_text,
+                                                        &original_default_syntax,
+                                                        arg);
           } catch(const TemplateSubstitutionFailure &) {
             resolved_default = false;
           }

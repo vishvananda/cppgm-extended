@@ -12978,12 +12978,33 @@ static bool try_build_function_template_arguments_ir(
                                                 mangle_ctx,
                                                 argument)) {
       if(parser_trace::enabled("symbol.linkage")) {
+        const TemplateArgument & failed_argument = arguments[arg_index - 1];
         ostringstream trace;
         trace << "function-template-argument-ir failed"
               << " index=" << i
               << " parameter=" << parameter.name
               << " kind=" << static_cast<int>(parameter.kind)
-              << " pack=" << (parameter.parameter_pack ? "yes" : "no");
+              << " pack=" << (parameter.parameter_pack ? "yes" : "no")
+              << " argument-kind=" << static_cast<int>(failed_argument.kind)
+              << " argument-defaulted="
+              << (failed_argument.source_defaulted ? "yes" : "no")
+              << " argument-dependent="
+              << (failed_argument.dependent ? "yes" : "no")
+              << " argument-has-type="
+              << (failed_argument.type ? "yes" : "no");
+        if(failed_argument.type) {
+          trace << " argument-type-kind="
+                << static_cast<int>(failed_argument.type->kind)
+                << " argument-type-semantic-kind="
+                << static_cast<int>(failed_argument.type->named_semantic_kind)
+                << " argument-type-dependent="
+                << (type_has_dependent_mangle_state(failed_argument.type) ?
+                        "yes" : "no")
+                << " argument-type-display="
+                << failed_argument.type->named_display
+                << " argument-type-key="
+                << failed_argument.type->named_key;
+        }
         parser_trace::note("symbol.linkage", string(), trace.str());
       }
       return false;
@@ -17180,7 +17201,9 @@ static bool build_itanium_function_context_parameter_ir(
     if(!has_function_pattern && !options.is_constructor && !options.is_destructor) {
       return false;
     }
-    if(!options.is_constructor && !options.is_destructor) {
+    if(!options.is_constructor &&
+       !options.is_destructor &&
+       !options.is_conversion_operator) {
       if(!pattern_type ||
          !pattern_type->inner ||
          !function_type->inner) {
@@ -17542,7 +17565,9 @@ static bool try_emit_itanium_function_symbol_ir(
     if(!actual_function_type || actual_function_type->kind != Type::TK_FUNCTION) {
       return false;
     }
-    if(!options.is_constructor && !options.is_destructor) {
+    if(!options.is_constructor &&
+       !options.is_destructor &&
+       !options.is_conversion_operator) {
       if(!actual_function_type->inner ||
          !pattern_type ||
          !pattern_type->inner) {

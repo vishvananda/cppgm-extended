@@ -50,7 +50,7 @@ function @source_ns__view_char___view(%this : ptr, %v : i32) -> void [binding=we
     store i32 %t1, %t3
     return void
 }
-function @source_ns__view_char___operatortarget_ns__view_U_(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK9source_ns4viewIcEcvN9target_ns4viewIT_EEIcEEN9target_ns4viewIT_EEv] {
+function @source_ns__view_char___operatortarget_ns__view_U_(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK9source_ns4viewIcEcvN9target_ns4viewIT_EEIcEEv] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 

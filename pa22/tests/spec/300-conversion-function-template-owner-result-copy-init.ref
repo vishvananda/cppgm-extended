@@ -34,7 +34,7 @@ function @basic_string_view_char___basic_string_view(%this : ptr) -> void [unwin
     store ptr %this, $this
     return void
 }
-function @basic_string_view_char___operatorbasic_string_Ch_char_traits_A_(%this : ptr) -> obj<1x1> [binding=weak, object=_ZNK17basic_string_viewIcEcv12basic_stringIc11char_traitsT_EI9allocatorEE12basic_stringIc11char_traitsT_Ev] {
+function @basic_string_view_char___operatorbasic_string_Ch_char_traits_A_(%this : ptr) -> obj<1x1> [binding=weak, object=_ZNK17basic_string_viewIcEcv12basic_stringIc11char_traitsT_EI9allocatorEEv] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
 

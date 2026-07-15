@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @json_like__operatorV(%this : ptr) -> i32 [binding=weak, object=_ZNK9json_likecvT_I10value_kindTnN9enable_ifIXsr7has_getIRKS_T_EE5valueEiE4typeELi0EEES3_v] {
+function @json_like__operatorV(%this : ptr) -> i32 [binding=weak, object=_ZNK9json_likecvT_I10value_kindTnN9enable_ifIXsr7has_getIRKS_T_EE5valueEiE4typeELi0EEEv] {
   slot $this : ptr
 
   block ^entry:

@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @deduce_unique_unique_tag___operatorconstF_(%this : ptr) -> ptr [binding=weak, object=_ZNK13deduce_uniqueI10unique_tagEcvRKT_I7wrapperI12callable_tagEEERKT_v] {
+function @deduce_unique_unique_tag___operatorconstF_(%this : ptr) -> ptr [binding=weak, object=_ZNK13deduce_uniqueI10unique_tagEcvRKT_I7wrapperI12callable_tagEEEv] {
   slot $this : ptr
 
   block ^entry:

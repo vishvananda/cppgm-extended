@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = binary sub i32 %t6, 7
     return i32 %t7
 }
-function @box__operatorT(%this : ptr) -> i32 [binding=weak, object=_ZNK3boxcvT_IiEET_v] {
+function @box__operatorT(%this : ptr) -> i32 [binding=weak, object=_ZNK3boxcvT_IiEEv] {
   slot $this : ptr
 
   block ^entry:

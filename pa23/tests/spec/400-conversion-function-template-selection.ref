@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @from_int___operatorU(%this : ptr) -> i32 [binding=weak, object=_ZNK4fromIiEcvT_IiEET_v] {
+function @from_int___operatorU(%this : ptr) -> i32 [binding=weak, object=_ZNK4fromIiEcvT_IiEEv] {
   slot $this : ptr
 
   block ^entry:
