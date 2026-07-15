@@ -14373,6 +14373,190 @@ bool build_type_pack_element_replacements(
   return !out.empty();
 }
 
+bool direct_parameter_type_name(const CppAstNode & parameter,
+                                string & type_name,
+                                bool require_pack)
+{
+  type_name.clear();
+  if(parameter.kind != CppAstKind::parameter_declaration) {
+    return false;
+  }
+  const CppAstNode * specifiers =
+      find_child(parameter, CppAstKind::decl_specifier_seq);
+  const CppAstNode * declarator =
+      find_child(parameter, CppAstKind::declarator);
+  if(!declarator) {
+    declarator = find_child(parameter, CppAstKind::abstract_declarator);
+  }
+  const bool direct_pack =
+      declarator &&
+      declarator->children.size() == 1 &&
+      declarator->children[0].kind == CppAstKind::parameter_pack;
+  if(!specifiers || specifiers->children.size() != 1 ||
+     parameter.children.size() != (declarator ? 2 : 1) ||
+     (require_pack && !direct_pack) ||
+     (!require_pack && declarator && !direct_pack)) {
+    return false;
+  }
+  type_name = strip_template_parameter_type_prefix(
+      trim_space(specifiers->children[0].value));
+  return is_identifier_text(type_name);
+}
+
+CppAstNode make_expanded_type_pack_parameter(
+    const CppAstNode & source,
+    const TypePtr & type)
+{
+  const string text = reparseable_type_argument_text(type);
+  CppAstNode type_id = make_substituted_type_id_node(type, text);
+  CppAstNode parameter = source;
+  parameter.children.clear();
+
+  if(!type_id.children.empty()) {
+    CppAstNode specifiers = type_id.children[0];
+    specifiers.kind = CppAstKind::decl_specifier_seq;
+    for(size_t i = 0; i < specifiers.children.size(); ++i) {
+      if(specifiers.children[i].kind == CppAstKind::type_name ||
+         specifiers.children[i].kind == CppAstKind::type_specifier) {
+        specifiers.children[i].kind = CppAstKind::decl_specifier;
+      }
+    }
+    parameter.children.push_back(specifiers);
+  }
+  for(size_t i = 1; i < type_id.children.size(); ++i) {
+    parameter.children.push_back(type_id.children[i]);
+  }
+  parameter.semantic_type = type;
+  return parameter;
+}
+
+TypePtr direct_parameter_type_annotation(const CppAstNode & parameter)
+{
+  if(parameter.semantic_type) {
+    return parameter.semantic_type;
+  }
+  const CppAstNode * specifiers =
+      find_child(parameter, CppAstKind::decl_specifier_seq);
+  if(!specifiers) {
+    return TypePtr();
+  }
+  if(specifiers->semantic_type) {
+    return specifiers->semantic_type;
+  }
+  if(specifiers->children.size() == 1) {
+    return specifiers->children[0].semantic_type;
+  }
+  return TypePtr();
+}
+
+bool annotate_direct_function_type(CppAstNode & node,
+                                   const TypePtr & previous_type)
+{
+  if(node.kind != CppAstKind::type_id || node.children.empty()) {
+    return false;
+  }
+  TypePtr result_type = node.children[0].semantic_type;
+  if(!result_type && node.children[0].children.size() == 1) {
+    result_type = node.children[0].children[0].semantic_type;
+  }
+  if(!result_type &&
+     node.children[0].children.size() == 1 &&
+     node.children[0].children[0].has_token &&
+     node.children[0].children[0].token_kind == RT_SIMPLE &&
+     node.children[0].children[0].simple_type == KW_VOID) {
+    result_type = make_fundamental(FT_VOID);
+  }
+  TypePtr previous_base = strip_top_level_cv(previous_type);
+  if(previous_base && previous_base->kind != Type::TK_FUNCTION) {
+    return false;
+  }
+  if(!result_type && previous_base && previous_base->kind == Type::TK_FUNCTION) {
+    result_type = previous_base->inner;
+  }
+  const CppAstNode * declarator =
+      find_child(node, CppAstKind::abstract_declarator);
+  const CppAstNode * parameters =
+      declarator && declarator->children.size() == 1 &&
+              declarator->children[0].kind == CppAstKind::parameter_clause ?
+          &declarator->children[0] :
+          nullptr;
+  if(!result_type || !parameters) {
+    return false;
+  }
+
+  vector<TypePtr> parameter_types;
+  parameter_types.reserve(parameters->children.size());
+  for(size_t i = 0; i < parameters->children.size(); ++i) {
+    TypePtr parameter_type =
+        direct_parameter_type_annotation(parameters->children[i]);
+    if(!parameter_type) {
+      return false;
+    }
+    parameter_types.push_back(parameter_type);
+  }
+  node.semantic_type = make_function(result_type, parameter_types, false);
+  return true;
+}
+
+bool expand_direct_function_type_pack_parameters(
+    CppAstNode & node,
+    const map<string, vector<TypePtr> > & type_pack_replacements)
+{
+  if(node.kind != CppAstKind::type_id) {
+    return false;
+  }
+  const TypePtr previous_type = node.semantic_type;
+  CppAstNode * declarator = nullptr;
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(node.children[i].kind == CppAstKind::abstract_declarator) {
+      declarator = &node.children[i];
+      break;
+    }
+  }
+  if(!declarator || declarator->children.size() != 1 ||
+     declarator->children[0].kind != CppAstKind::parameter_clause) {
+    return false;
+  }
+
+  CppAstNode & parameters = declarator->children[0];
+  vector<CppAstNode> expanded_parameters;
+  expanded_parameters.reserve(parameters.children.size());
+  bool changed = false;
+  for(size_t i = 0; i < parameters.children.size(); ++i) {
+    const CppAstNode & parameter = parameters.children[i];
+    string pack_name;
+    if(!direct_parameter_type_name(parameter, pack_name, true)) {
+      expanded_parameters.push_back(parameter);
+      continue;
+    }
+    map<string, vector<TypePtr> >::const_iterator pack =
+        type_pack_replacements.find(pack_name);
+    if(pack == type_pack_replacements.end() ||
+       any_of(pack->second.begin(),
+              pack->second.end(),
+              [](const TypePtr & type) { return !type; })) {
+      expanded_parameters.push_back(parameter);
+      continue;
+    }
+    for(size_t pack_index = 0; pack_index < pack->second.size(); ++pack_index) {
+      expanded_parameters.push_back(
+          make_expanded_type_pack_parameter(parameter,
+                                            pack->second[pack_index]));
+    }
+    changed = true;
+  }
+  if(!changed) {
+    return false;
+  }
+
+  parameters.children.swap(expanded_parameters);
+  parameters.semantic_type.reset();
+  if(!annotate_direct_function_type(node, previous_type)) {
+    node.semantic_type.reset();
+  }
+  return true;
+}
+
 const TemplateIdSyntax * direct_template_id_syntax_from_type_id_node(
     const CppAstNode & node)
 {
@@ -14568,6 +14752,19 @@ bool expand_type_pack_template_id_syntax_arguments(
            type_pack_replacements,
            type_pack_argument_sources)) {
       argument.text = template_id_syntax_lookup_text(*argument.template_id);
+      argument.resolved_type.reset();
+      changed = true;
+    }
+    if(scope && argument.type_id &&
+       expand_direct_function_type_pack_parameters(*argument.type_id,
+                                                   type_pack_replacements)) {
+      if(argument.source_text.empty()) {
+        argument.source_text = argument.text;
+      }
+      const string rewritten_text = trim_space(node_text(*argument.type_id));
+      if(!rewritten_text.empty()) {
+        argument.text = rewritten_text;
+      }
       argument.resolved_type.reset();
       changed = true;
     }
@@ -22628,6 +22825,16 @@ bool substitute_type_pack_expression_node(
     const map<string, TypePtr> & type_replacements,
     CppAstNode & out)
 {
+  string direct_parameter_name;
+  if(direct_parameter_type_name(node, direct_parameter_name, false)) {
+    map<string, TypePtr>::const_iterator replacement =
+        type_replacements.find(direct_parameter_name);
+    if(replacement != type_replacements.end() && replacement->second) {
+      out = make_expanded_type_pack_parameter(node, replacement->second);
+      return true;
+    }
+  }
+
   out = clone_expression_node_for_template_substitution(node);
   bool replacement_mentions_node = false;
   for(auto it = type_replacements.begin();
@@ -22813,6 +23020,13 @@ bool substitute_type_pack_expression_node(
     children.push_back(child);
   }
   out.children.swap(children);
+  if(replacement_mentions_node &&
+     annotate_direct_function_type(out, node.semantic_type)) {
+    const TypePtr function_type = out.semantic_type;
+    const string function_text = reparseable_type_argument_text(function_type);
+    out = make_substituted_type_id_node(function_type, function_text);
+    return true;
+  }
   if(replacement_mentions_node) {
     if(out.kind == CppAstKind::type_id && out.semantic_type) {
       bool substituted_children_still_mention_replacement = false;

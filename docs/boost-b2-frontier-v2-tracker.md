@@ -15,7 +15,8 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `5 / 147`
 - current cursor: `#6 libs/asio/test`
-- active compiler frontier: pending the initial forced Asio survey
+- active compiler frontier: allocator converting-constructor discovery after
+  the direct function-type pack fix
 
 ## Baseline Gates
 
@@ -79,6 +80,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `7c7e7cfc9` | Constexpr flat aggregate initialization and array member access | +0.86% | +0.50% | +0.10% | the initial implementation was optimized before acceptance to avoid duplicate semantic work | `/tmp/cppgm-boost-frontier-v2-array-constexpr-final-perf.json` | pass; fixed cumulative gates remain within tolerance after the normal-path optimization |
 | `43bd0cc6b` | Constexpr array subobject pointer identity | +0.65% | +0.23% | +0.10% | -0.21 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-array-pointer-final-perf.json` | pass; cumulative instructions and memory improve from the preceding frontier |
 | `(array cv reference binding fix)` | Top-level cv comparison for array reference binding | +0.73% | +0.26% | +0.08% | +0.09 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-array-cv-reference-perf.json` | pass; counters are stable and sampling contains no frame in the changed helper |
+| `(direct function-type pack fix)` | Retained direct function-type pack substitution in alias SFINAE | +0.79% | -0.49% | +0.07% | +0.06 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-bd4dcb2fd-direct-function-pack-final-perf.json` | pass; node visits, query requests, and cache counts match the preceding checkpoint, and the changed annotator appears once in the 10-second sample |
 
 ## Suite Cursor
 
@@ -92,6 +94,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 3 | `libs/align/test` | pass | `(dependent alignof NTTP fix)` | The focused `alignment_of_test` forced four targets and passed compile, link, and runtime; log `/tmp/boost-v2-align-alignment-of-after-layout-fix.log`. The exact complete forced suite rebuilt all 60 targets and exited successfully; log `/tmp/boost-frontier-v2-suite-003-alignof-layout-fix-full.log`. | The initial forced survey passed 56 targets and had one causal compile failure plus three downstream skips: libc++ `alignment_of<Struct<bool>>` could not instantiate `integral_constant<size_t, alignof(_Tp)>`; log `/tmp/boost-frontier-v2-suite-003-initial-forced.log`. The final direct-LowIR report passes `3831 / 3831`; log `/tmp/cppgm-boost-frontier-v2-align-final-test-report.log`. |
 | 4 | `libs/any/test` | pass | `(qualified rvalue-reference parser fix)` | Forced focused `unique_move` and `no_rtti_unique_move` rebuilt eight targets and both passed compile, link, and runtime; log `/tmp/boost-v2-any-unique-move-parser-fix.log`. The exact complete forced survey updated 164 targets in 54.3s and exited successfully; log `/tmp/boost-frontier-v2-suite-004-qualified-rref-parser-fix/libs__any__test.log`. | Initial forced evidence `/tmp/boost-frontier-v2-suite-004-initial-forced.log` had eight failures from the separately committed missing-`typename` defect plus the later move-cast failure. The first fix cleared all no-RTTI failures; the final parser fix clears both remaining move targets. Final direct-LowIR report passes `3833 / 3833`; log `/tmp/cppgm-boost-v2-suite-004-qualified-rref-full-report.log`. |
 | 5 | `libs/array/test` | pass | `(three Array fixes)` | Focused constexpr aggregate access passed in `/tmp/boost-v2-array-init-cx-focused-final.log`; focused pointer-identity targets passed in `/tmp/boost-v2-array-pointer-focused-final.log`; focused `to_array_test` passed in `/tmp/boost-v2-array-to-array-fixed.log`. The exact complete forced survey rebuilt all 146 discovered targets in 56.7s and exited successfully; log `/tmp/boost-frontier-v2-suite-005-array-cv-reference-fix/libs__array__test.log`. | Initial forced evidence `/tmp/boost-frontier-v2-suite-005-initial-forced/libs__array__test.log` had six constexpr failures split between structured aggregate access and subobject pointer identity, plus one independent array cv-reference overload failure. Each cause has an earliest owner reducer and uncached proof. Final direct-LowIR report passes `3836 / 3836`; log `/tmp/cppgm-boost-frontier-v2-array-final-full-report.log`. |
+| 6 | `libs/asio/test` | frontier | `(direct function-type pack fix)` | The initial forced eight-job survey timed out at 1800s after recording multiple compiler families; log `/tmp/boost-frontier-v2-suite-006-initial-forced/libs__asio__test.log`. A forced single-job `any_completion_executor` rebuild advances past the `prefer` pack-SFINAE failure and reaches the independent allocator converting-constructor failure; log `/tmp/boost-v2-asio-any-completion-executor-fixed.log`. | Suite remains open. The first ordered `prefer` defect is fixed with an uncached PA23 reducer. The current frontier constructs `std::__1::allocator<service_registry>` from `execution_context::allocator<void>` in `boost::asio::detail::allocate_object`. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -99,16 +102,21 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#6 libs/asio/test`
-- focused targets: pending the initial forced survey
-- failure phase: none established
-- diagnostic: none established
-- reduced repro: none
-- owning PA/cluster: pending any real compiler failure
-- implementation area: pending any real compiler failure
-- performance risk: current cumulative result is +0.73% instructions, +0.26%
-  RSS, and +0.08% footprint; all fixed cumulative hard gates pass
-- next action: run the exact forced Asio survey and classify its first real
-  compiler failure, if any
+- focused targets: `libs/asio/test//any_completion_executor`
+- failure phase: semantic constructor candidate discovery/conversion
+- diagnostic: `no viable constructor` for
+  `std::__1::allocator<boost::asio::detail::service_registry>` from
+  `const boost::asio::execution_context::allocator<void>`
+- reduced repro: `/tmp/cppgm-asio-allocator-rebind.cxx11`
+- owning PA/cluster: pending reduction audit
+- implementation area: class-template converting constructors and allocator
+  rebind construction
+- performance risk: current cumulative result is +0.79% instructions, -0.49%
+  RSS, and +0.07% footprint; all fixed cumulative hard gates pass, hotspot
+  counts are stable, and sampling shows no new normal-path hotspot
+- next action: prove the allocator reducer against Clang and all relevant
+  cache-disabled modes, identify the missing typed constructor candidate, and
+  place the smallest non-STL regression in its earliest owning PA
 
 ## Fix Ledger
 
@@ -137,8 +145,21 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/array/test` constexpr initialization and access targets | Constexpr class initialization consumed flattened brace arguments as if each argument directly initialized one field, so a nested built-in array aggregate failed before member access. The evaluator now uses the shared structured aggregate-initializer plan when brace elision requires it. It also evaluates array and overloaded `operator[]` access structurally, handles the selected branch of discarded conditionals, and records `__builtin_expect` with a typed `FunctionBinding` enum consumed by constant evaluation. No name spelling is reparsed in the evaluator. | `pa20/tests/general/300-constexpr-template-aggregate-subscript-member.t`, placed at the earliest constexpr class-template evaluation owner `pa20:300` | The initial Array survey failed `array_init_test_cx`, `array_copy_test_cx`, and `array_get_test_cx` while evaluating aggregate initialization or member subscript access. The reduced template aggregate case failed with the same constant-expression diagnostic before the fix. | Warning-clean build; owner regression and PA20 direct report pass; all configured strict direct-LowIR suites, placement checks, and the strict 23-category zero-reparse audit pass. The focused `array_init_test_cx` rebuild passes, and the broader fix clears all aggregate-access failures. | instructions +0.86%; max RSS +0.50%; peak footprint +0.10%; pass after removing duplicate normal-path semantic work | `7c7e7cfc9` |
 | fixed | `libs/array/test` constexpr pointer targets | Constexpr aggregate and array values did not propagate storage provenance through member and element access, reference initialization, reference returns, or copied call arguments. Address-of therefore could not produce a stable subobject pointer, and comparisons could not distinguish copied object storage from the source. Structured constant values now carry storage identity and offsets through those operations; by-value aggregate arguments receive distinct storage, while reference operations preserve their referent. Null pointer conversions and zero offset arithmetic are handled in the same typed constant-value model. | `pa20/tests/general/400-constexpr-subobject-pointer-identity.t`, covering array/member addresses, pointer offsets, reference preservation, and by-value copy identity | After the aggregate-access fix, `array_data_test_cx`, `array_iterator_test_cx`, and `array_access_test_cx` failed constexpr pointer assertions. The reduced non-STL cases failed identically with the relevant semantic caches disabled. | Normal and cache-disabled LowIR are byte-identical; warning-clean build, focused PA20 check, PA20 direct report `73/73`, all configured strict suites, placement, and the strict zero-reparse audit pass. All three focused Boost pointer targets compile, link, and run. | instructions +0.65%; max RSS +0.23%; peak footprint +0.10%; pass; cumulative instructions improve 0.21 percentage points | `43bd0cc6b` |
 | fixed | `libs/array/test//to_array_test` | Reference binding first compares referent types while ignoring top-level cv. For arrays, that cv belongs to the element type in the semantic representation, so the scalar-only comparison incorrectly treated `int[3]` and `const int[3]` as unrelated. Conversion ranking then fell through to a non-reference qualification conversion, fabricated an array prvalue, and made the `const T (&&)[N]` overload viable for an lvalue. The typed referent comparison now recursively compares identical array shapes and ignores cv at the effective array top level. No template special case, cache, allocation, or text parse is added. | `pa14/tests/general/100-array-cv-rvalue-reference-overload.t`, placed at the earliest audit-approved reference conversion owner `pa14:100` | A non-template reducer reproduced the ambiguity for mutable and const array lvalues before the fix, proving this was a general conversion algorithm defect rather than template deduction. Clang selects the lvalue-reference overload. The pre-fix trace showed correct deduction and rejection of the mutable rvalue-reference candidate, followed by incorrect acceptance of the const rvalue-reference candidate. | The reducer passes normally and with all four relevant template/type caches disabled; the two modes emit byte-identical LowIR. PA14 owner report passes `200/200`; the existing converted-temporary rvalue-reference control passes; strict direct reports, placement, audit unit tests, and all 23 zero-reparse categories pass. Focused `to_array_test`, the complete forced Array survey, and the final direct report `3836/3836` pass. | instructions +0.73%; max RSS +0.26%; peak footprint +0.08%; pass; hotspot counters are stable and the changed helper is absent from the 1 ms sample | `(this commit)` |
+| fixed | `libs/asio/test//any_completion_executor` `prefer` substitution | Direct function-type template arguments such as `void(P0,P1,PN...)` retained their initial structured `type_id`, but pack expansion only descended through nested template-ids. One occurrence of the Asio `call_traits` signature therefore retained `PN` while the parallel result-type occurrence expanded it, and SFINAE dropped the four-property overload. The fix expands the retained direct function parameter clause from bound `TypePtr` values, rebuilds parameter declarations with typed declarators, and canonicalizes only a direct function `type_id`; it never invokes a parser. The direct-shape restriction preserves packed pointer-to-member types. | `pa23/tests/general/500-forwarding-pack-function-type-enable-if.t`, a header-free forwarding-reference and alias-SFINAE reducer at the PA23 integration owner. The pre-existing `pa26/tests/general/300-member-pointer-pack-decltype-memfn.t` is the non-direct function-type guard that caught and prevented over-broad ancestor annotation. | `/tmp/cppgm-asio-prefer-nprops-const-lvalue-decay.cpp` and the PA23 reducer failed with the expected alias-SFINAE/callee-not-callable diagnostic both normally and with all five template/type caches disabled; Clang accepts them. The initial forced Asio survey timed out with 193 compile diagnostics. After the fix, forced `any_completion_executor` advances past `prefer` to the separate allocator constructor failure. | Warning-clean build; PA23 reducer and exact Asio-shaped reducer pass normally and with all five caches disabled; PA23 and PA26 direct reports pass `397/397` and `68/68`; all configured strict suites pass; PA23 placement and hygiene report zero findings; all 23 text-reparse categories remain zero and 14 audit tests pass. The final full direct report excluding the user-exempt PA9 suite passes `3826/3826`; PA3's earlier load timeout passes `19/19` in isolation. | instructions +0.79%; max RSS -0.49%; peak footprint +0.07%; pass; only +0.06 instruction percentage points from Array, with stable hotspot counts and one sample in the changed annotator | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-15`: The initial forced Asio survey timed out after 1800 seconds and
+  exposed several independent semantic families. The first ordered focused
+  target showed that initial parsing had already retained both
+  `void(P0,P1,PN...)` type arguments; semantic pack substitution expanded only
+  one occurrence. Direct typed function-parameter expansion fixes that defect
+  with all caches disabled and no text parse. The first broad report caught an
+  over-broad pointer-to-member annotation in PA26, so the accepted algorithm is
+  restricted to direct function declarators. The focused Boost target now
+  reaches the independent allocator converting-constructor frontier. The final
+  report passes every assignment except PA9, which was not rerun per the
+  load-timeout exemption.
 
 - `2026-07-15`: Closed Array after three independent typed fixes. Structured
   constexpr aggregate access cleared the initialization/copy/get group;
