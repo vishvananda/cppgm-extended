@@ -1370,6 +1370,8 @@ private:
   vector<unique_ptr<FunctionTemplateDecl> > function_templates;
   map<string, vector<FunctionTemplateDecl *> > pending_friend_function_templates;
   vector<unique_ptr<ClassTemplateDecl> > class_templates;
+  map<const CppAstNode *, ClassTemplateDecl *>
+      class_template_deferred_definition_sources;
   vector<unique_ptr<AliasTemplateDecl> > alias_templates;
   vector<unique_ptr<VariableTemplateDecl> > variable_templates;
   vector<unique_ptr<Scope> > template_scopes;
@@ -28690,6 +28692,7 @@ private:
   {
     callsemantic::TemplateDeclarationCollectorState state = {
         class_templates,
+        class_template_deferred_definition_sources,
         alias_templates,
         function_templates,
         variable_templates};

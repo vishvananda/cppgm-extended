@@ -252,6 +252,8 @@ public:
     : ctx(ctx_in),
       callbacks(services_in),
       class_templates(state_in.class_templates),
+      class_template_deferred_definition_sources(
+          state_in.class_template_deferred_definition_sources),
       alias_templates(state_in.alias_templates),
       function_templates(state_in.function_templates),
       variable_templates(state_in.variable_templates)
@@ -395,14 +397,19 @@ public:
           if(effective_qualified_class_name->qualifiers.size() > 1) {
             owner_scope_name.qualifiers.assign(
                 effective_qualified_class_name->qualifiers.begin(),
-                effective_qualified_class_name->qualifiers.end() - 2);
+                effective_qualified_class_name->qualifiers.end() - 1);
             owner_scope_name.name =
                 effective_qualified_class_name->qualifiers[
                     effective_qualified_class_name->qualifiers.size() - 2];
           }
           owner_scope =
-              semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
-                  *this, scope, owner_scope_name);
+              ctx.resolve_qualified_scope_for_node(scope,
+                                                   owner_scope_name,
+                                                   inner,
+                                                   true);
+          if(owner_scope && owner_scope->class_info) {
+            ctx.ensure_class_reference_members(*owner_scope->class_info);
+          }
         }
 
         const size_t owner_qualifier_index =
@@ -798,6 +805,7 @@ public:
            existing->class_node->kind == CppAstKind::class_forward_declaration) {
           existing->class_node = effective_class_node;
         }
+        register_class_template_deferred_definition_source(*existing);
         if(replacing_primary_forward_declaration) {
           ++existing->specialization_epoch;
         }
@@ -822,6 +830,8 @@ public:
       decl->parameters = template_parameters;
       decl->comes_from_standard_include_path =
           ctx.node_comes_from_standard_include_path(effective_class_node);
+      inherit_equivalent_class_template_deferred_definitions(*decl);
+      register_class_template_deferred_definition_source(*decl);
       class_template_scope->class_templates[decl->name] = decl.get();
       restore_reference_reset_witness_static_member_metadata(*decl);
       if(class_template_scope->class_info &&
@@ -1141,8 +1151,10 @@ public:
                   owner_scope_name.name = qualified_member.qualifiers[qualifier_index - 2];
                 }
                 owner_lookup_scope =
-                    semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
-                        *this, pattern_scope, owner_scope_name);
+                    ctx.resolve_qualified_scope_for_node(pattern_scope,
+                                                         owner_scope_name,
+                                                         *declarator_identifier,
+                                                         true);
               }
               if(!owner_lookup_scope) {
                 continue;
@@ -1171,19 +1183,42 @@ public:
                        owner_partial_decl->pattern_scope :
                        owner_partial_decl->declaring_scope) :
                   nullptr;
-          const bool matches_owner_template_parameters =
+          const vector<TemplateParameterInfo> * matched_owner_parameters =
+              &owner_template_parameters;
+          bool matches_owner_template_parameters =
               owner_template_decl &&
               owner_template_scope &&
               out_of_class_special_member_template_parameters_match(*owner_template_scope,
                                                                    owner_template_decl->parameters,
                                                                    pattern_scope,
                                                                    owner_template_parameters);
-          const bool matches_partial_owner_template_parameters =
+          if(!matches_owner_template_parameters &&
+             owner_template_decl &&
+             owner_template_scope &&
+             out_of_class_special_member_template_parameters_match(
+                 *owner_template_scope,
+                 owner_template_decl->parameters,
+                 pattern_scope,
+                 template_parameters)) {
+            matches_owner_template_parameters = true;
+            matched_owner_parameters = &template_parameters;
+          }
+          bool matches_partial_owner_template_parameters =
               owner_partial_scope &&
               out_of_class_special_member_template_parameters_match(*owner_partial_scope,
                                                                    owner_partial_decl->parameters,
                                                                    pattern_scope,
                                                                    owner_template_parameters);
+          if(!matches_partial_owner_template_parameters &&
+             owner_partial_scope &&
+             out_of_class_special_member_template_parameters_match(
+                 *owner_partial_scope,
+                 owner_partial_decl->parameters,
+                 pattern_scope,
+                 template_parameters)) {
+            matches_partial_owner_template_parameters = true;
+            matched_owner_parameters = &template_parameters;
+          }
             if(!owner_template_decl ||
                (!matches_owner_template_parameters &&
                 !matches_partial_owner_template_parameters)) {
@@ -1192,7 +1227,7 @@ public:
 
           if(member_template_decl) {
             member_template_decl->definition_owner_parameters =
-                owner_template_parameters;
+                *matched_owner_parameters;
             std::vector<OutOfClassMemberFunctionTemplateDefinition> & stored_defs =
                 (matches_partial_owner_template_parameters && owner_partial_decl ?
                      owner_partial_decl->member_function_template_definitions[qualified_member.name] :
@@ -1210,7 +1245,7 @@ public:
                 stored_defs[stored_index].parameter_aliases_pattern =
                     member_template_decl->parameter_aliases_pattern;
                 stored_defs[stored_index].owner_parameters =
-                    owner_template_parameters;
+                    *matched_owner_parameters;
                 invalidate_out_of_class_definition_caches(*owner_template_decl);
                 return true;
               }
@@ -1224,7 +1259,7 @@ public:
             stored_def.body = find_function_body_node(inner);
             stored_def.ctor_initializer = find_child_kind(inner, CppAstKind::ctor_initializer);
             stored_def.parameter_aliases_pattern = member_template_decl->parameter_aliases_pattern;
-            stored_def.owner_parameters = owner_template_parameters;
+            stored_def.owner_parameters = *matched_owner_parameters;
             stored_defs.push_back(stored_def);
             invalidate_out_of_class_definition_caches(*owner_template_decl);
               emit_out_of_class_owner_class_use_if_needed(pattern_scope,
@@ -1232,7 +1267,7 @@ public:
                                                           inner.value,
                                                           &inner,
                                                           owner,
-                                                          &owner_template_parameters);
+                                                          matched_owner_parameters);
             return true;
           }
 
@@ -1266,7 +1301,7 @@ public:
           stored.is_volatile_method = false;
           stored.ref_qualifier = RQ_NONE;
           stored.exclude_from_explicit_instantiation = exclude_from_explicit_instantiation;
-          stored.parameters = owner_template_parameters;
+          stored.parameters = *matched_owner_parameters;
           stored_defs.push_back(stored);
           invalidate_out_of_class_definition_caches(*owner_template_decl);
             emit_out_of_class_owner_class_use_if_needed(pattern_scope,
@@ -1274,7 +1309,7 @@ public:
                                                       inner.value,
                                                       &inner,
                                                       owner,
-                                                      &owner_template_parameters);
+                                                      matched_owner_parameters);
           return true;
         };
 
@@ -2424,18 +2459,16 @@ public:
         const string owner_name = qualified_name_syntax_text(owner_name_syntax);
 
         ClassInfo * parsed_scope_owner = parse_scope->class_info;
-        const bool parsed_scope_owner_is_nested_template_member =
+        const bool parsed_scope_owner_is_nested_class =
             parsed_scope_owner &&
-            !parsed_scope_owner->source_template &&
             parsed_scope_owner->enclosing_scope &&
-            parsed_scope_owner->enclosing_scope->class_info &&
-            parsed_scope_owner->enclosing_scope->class_info->source_template;
+            parsed_scope_owner->enclosing_scope->class_info;
         ClassInfo * owner =
             resolve_qualified_owner_class_from_template_id_syntax(
                 pattern_scope,
                 qualified_member,
                 function_identifier);
-        if(!owner && parsed_scope_owner_is_nested_template_member) {
+        if(!owner && parsed_scope_owner_is_nested_class) {
           owner = parsed_scope_owner;
         }
         if(!owner) {
@@ -2505,7 +2538,7 @@ public:
 
           const bool use_parsed_scope_signature =
               owner == parsed_scope_owner &&
-              parsed_scope_owner_is_nested_template_member;
+              parsed_scope_owner_is_nested_class;
           bool owner_is_typedef = false;
           TypePtr owner_base;
           const CppAstNode filtered_owner_declarator =
@@ -2551,7 +2584,9 @@ public:
                                                        prepared_owner_method.syntax.is_volatile_method,
                                                        prepared_owner_method.syntax.ref_qualifier,
                                                        function_identifier);
-            const bool matches_owner_template_parameters =
+            const vector<TemplateParameterInfo> * matched_owner_parameters =
+                &owner_template_parameters;
+            bool matches_owner_template_parameters =
                   owner_template_decl &&
                   !partial_owner &&
                   out_of_class_special_member_template_parameters_match(
@@ -2559,13 +2594,34 @@ public:
                       owner_template_decl->parameters,
                       pattern_scope,
                       owner_template_parameters);
-            const bool matches_partial_owner_template_parameters =
+            if(!matches_owner_template_parameters &&
+               owner_template_decl &&
+               !partial_owner &&
+               out_of_class_special_member_template_parameters_match(
+                   *owner->member_scope,
+                   owner_template_decl->parameters,
+                   pattern_scope,
+                   template_parameters)) {
+              matches_owner_template_parameters = true;
+              matched_owner_parameters = &template_parameters;
+            }
+            bool matches_partial_owner_template_parameters =
                 owner_partial_scope &&
                 out_of_class_special_member_template_parameters_match(
                     *owner_partial_scope,
                     owner_partial_decl->parameters,
                     pattern_scope,
                     owner_template_parameters);
+            if(!matches_partial_owner_template_parameters &&
+               owner_partial_scope &&
+               out_of_class_special_member_template_parameters_match(
+                   *owner_partial_scope,
+                   owner_partial_decl->parameters,
+                   pattern_scope,
+                   template_parameters)) {
+              matches_partial_owner_template_parameters = true;
+              matched_owner_parameters = &template_parameters;
+            }
             if(parser_trace::enabled("template.resolve")) {
               std::ostringstream trace;
               trace << "collect-out-of-class-member qualified-name="
@@ -2630,7 +2686,7 @@ public:
                 template_decl->definition_declarator = declarator;
                 template_decl->ctor_initializer = ctor_initializer;
                 template_decl->definition_owner_parameters =
-                    owner_template_parameters;
+                    *matched_owner_parameters;
                 record_definition_parameter_aliases(*template_decl, params);
                 if(template_decl->parameter_declarations_pattern.empty() &&
                    !parameter_declarations_pattern.empty()) {
@@ -2657,7 +2713,7 @@ public:
                       stored_defs[def_index].parameter_aliases_pattern =
                           template_decl->parameter_aliases_pattern;
                       stored_defs[def_index].owner_parameters =
-                          owner_template_parameters;
+                          *matched_owner_parameters;
                       stored = true;
                       break;
                     }
@@ -2672,7 +2728,7 @@ public:
                     stored_def.ctor_initializer = ctor_initializer;
                     stored_def.parameter_aliases_pattern =
                         template_decl->parameter_aliases_pattern;
-                    stored_def.owner_parameters = owner_template_parameters;
+                    stored_def.owner_parameters = *matched_owner_parameters;
                     stored_defs.push_back(stored_def);
                   }
                   invalidate_out_of_class_definition_caches(*owner_template_decl);
@@ -2704,7 +2760,7 @@ public:
                 stored.ref_qualifier = prepared_owner_method.syntax.ref_qualifier;
                 stored.exclude_from_explicit_instantiation =
                     member_exclude_from_explicit_instantiation();
-                stored.parameters = owner_template_parameters;
+                stored.parameters = *matched_owner_parameters;
                 owner_template_decl->member_function_definitions[qualified_member.name].push_back(
                     stored);
               invalidate_out_of_class_definition_caches(*owner_template_decl);
@@ -2721,14 +2777,14 @@ public:
                                                             qualified_member_text,
                                                             &inner,
                                                             owner,
-                                                            &owner_template_parameters);
+                                                            matched_owner_parameters);
                 if(declarator) {
                   emit_out_of_class_owner_class_use_if_needed(pattern_scope,
                                                               qualified_member,
                                                               qualified_member_text,
                                                               declarator,
                                                               owner,
-                                                              &owner_template_parameters);
+                                                              matched_owner_parameters);
                 }
               return;
             }
@@ -2750,7 +2806,7 @@ public:
               stored.ref_qualifier = prepared_owner_method.syntax.ref_qualifier;
               stored.exclude_from_explicit_instantiation =
                   member_exclude_from_explicit_instantiation();
-              stored.parameters = owner_template_parameters;
+              stored.parameters = *matched_owner_parameters;
               owner_partial_decl->member_function_definitions[qualified_member.name].push_back(
                   stored);
               invalidate_out_of_class_definition_caches(*owner_template_decl);
@@ -2767,14 +2823,14 @@ public:
                                                             qualified_member_text,
                                                             &inner,
                                                             owner,
-                                                            &owner_template_parameters);
+                                                            matched_owner_parameters);
                 if(declarator) {
                   emit_out_of_class_owner_class_use_if_needed(pattern_scope,
                                                               qualified_member,
                                                               qualified_member_text,
                                                               declarator,
                                                               owner,
-                                                              &owner_template_parameters);
+                                                              matched_owner_parameters);
                 }
               return;
             }
@@ -4077,6 +4133,106 @@ public:
   }
 
 private:
+  void inherit_equivalent_class_template_deferred_definitions(
+      ClassTemplateDecl & target) const
+  {
+    if(!target.class_node ||
+       !target.declaring_scope ||
+       !target.declaring_scope->class_info) {
+      return;
+    }
+    map<const CppAstNode *, ClassTemplateDecl *>::const_iterator found =
+        class_template_deferred_definition_sources.find(target.class_node);
+    const ClassTemplateDecl * source =
+        found != class_template_deferred_definition_sources.end() ?
+            found->second : nullptr;
+    if(!source || source->name != target.name) {
+      return;
+    }
+
+    for(map<string, OutOfClassMemberClassDecl>::const_iterator it =
+            source->member_class_definitions.begin();
+        it != source->member_class_definitions.end();
+        ++it) {
+      map<string, OutOfClassMemberClassDecl>::iterator existing =
+          target.member_class_definitions.find(it->first);
+      if(existing == target.member_class_definitions.end() ||
+         (!existing->second.class_node && it->second.class_node) ||
+         (existing->second.class_node &&
+          existing->second.class_node->kind == CppAstKind::class_forward_declaration &&
+          it->second.class_node &&
+          it->second.class_node->kind != CppAstKind::class_forward_declaration)) {
+        target.member_class_definitions[it->first] = it->second;
+      }
+    }
+
+    for(map<string, vector<OutOfClassMemberFunctionDecl> >::const_iterator it =
+            source->member_function_definitions.begin();
+        it != source->member_function_definitions.end();
+        ++it) {
+      vector<OutOfClassMemberFunctionDecl> & definitions =
+          target.member_function_definitions[it->first];
+      for(size_t definition_index = 0;
+          definition_index < it->second.size();
+          ++definition_index) {
+        const OutOfClassMemberFunctionDecl & incoming =
+            it->second[definition_index];
+        bool present = false;
+        for(size_t existing_index = 0;
+            existing_index < definitions.size();
+            ++existing_index) {
+          if(definitions[existing_index].declarator == incoming.declarator) {
+            present = true;
+            break;
+          }
+        }
+        if(!present) {
+          definitions.push_back(incoming);
+        }
+      }
+    }
+
+    for(map<string, vector<OutOfClassMemberFunctionTemplateDefinition> >::
+            const_iterator it =
+            source->member_function_template_definitions.begin();
+        it != source->member_function_template_definitions.end();
+        ++it) {
+      vector<OutOfClassMemberFunctionTemplateDefinition> & definitions =
+          target.member_function_template_definitions[it->first];
+      for(size_t definition_index = 0;
+          definition_index < it->second.size();
+          ++definition_index) {
+        const OutOfClassMemberFunctionTemplateDefinition & incoming =
+            it->second[definition_index];
+        bool present = false;
+        for(size_t existing_index = 0;
+            existing_index < definitions.size();
+            ++existing_index) {
+          if(definitions[existing_index].definition_declarator ==
+                 incoming.definition_declarator &&
+             definitions[existing_index].declaration == incoming.declaration) {
+            present = true;
+            break;
+          }
+        }
+        if(!present) {
+          definitions.push_back(incoming);
+        }
+      }
+    }
+  }
+
+  void register_class_template_deferred_definition_source(
+      ClassTemplateDecl & source)
+  {
+    if(source.class_node &&
+       source.declaring_scope &&
+       source.declaring_scope->class_info &&
+       class_template_deferred_definition_sources.count(source.class_node) == 0) {
+      class_template_deferred_definition_sources[source.class_node] = &source;
+    }
+  }
+
   const CppAstNode * out_of_class_member_owner_output_node(
       const ClassInfo * owner,
       const ClassTemplateDecl * owner_template_decl) const
@@ -5685,6 +5841,8 @@ private:
   SemanticContext & ctx;
   const TemplateDeclarationCollectorServices & callbacks;
   vector<unique_ptr<ClassTemplateDecl> > & class_templates;
+  map<const CppAstNode *, ClassTemplateDecl *> &
+      class_template_deferred_definition_sources;
   vector<unique_ptr<AliasTemplateDecl> > & alias_templates;
   vector<unique_ptr<FunctionTemplateDecl> > & function_templates;
   vector<unique_ptr<VariableTemplateDecl> > & variable_templates;
