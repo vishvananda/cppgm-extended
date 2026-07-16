@@ -11908,7 +11908,7 @@ private:
       }
       if(callsem_has_token(node, OP_LNOT)) {
         const string child_type = lowir_value_type_for(node.children[0].semantic_type);
-        if(child_type == "f32" || child_type == "f64") {
+        if(child_type == "f32" || child_type == "f64" || child_type == "f80") {
           return emit_temp_assignment("i64",
                                       string("cmp eq ") + child_type + " " + child + ", " +
                                       zero_literal_for_lowir_type(child_type));
@@ -11916,7 +11916,9 @@ private:
         if(child_type == "ptr") {
           return emit_temp_assignment("i64", string("cmp eq ptr ") + child + ", 0");
         }
-        return emit_temp_assignment("i64", string("cmp eq i64 ") + child + ", 0");
+        return emit_temp_assignment("i64",
+                                    string("cmp eq ") + child_type + " " + child +
+                                    ", " + zero_literal_for_lowir_type(child_type));
       }
       if(callsem_has_token(node, OP_COMPL)) {
         return emit_temp_assignment(lowir_type_for(node.semantic_type),
@@ -14750,6 +14752,507 @@ private:
            clobbers == "\"memory\"";
   }
 
+  enum GnuAsmAtomicKind
+  {
+    GAA_NONE,
+    GAA_LOCKED_UPDATE,
+    GAA_CAS_UPDATE,
+    GAA_XADD,
+    GAA_XCHG,
+    GAA_CMPXCHG,
+    GAA_BIT_UPDATE
+  };
+
+  struct GnuAsmAtomicPattern
+  {
+    GnuAsmAtomicKind kind;
+    string op;
+
+    GnuAsmAtomicPattern() : kind(GAA_NONE) {}
+  };
+
+  static string gnu_asm_single_template(const string & instruction)
+  {
+    return string("\"") + instruction + "\"";
+  }
+
+  static string gnu_asm_locked_storage_template(const string & instruction,
+                                                bool returns_flag)
+  {
+    string out = gnu_asm_single_template(
+        string("lock; ") + instruction + " %[storage]\\n\\t");
+    if(returns_flag) {
+      out += " \"setnz %[result]\\n\\t\"";
+    }
+    return out;
+  }
+
+  static string gnu_asm_extra_cas_template(const string & suffix,
+                                           const string & move_instruction,
+                                           const string & move_result,
+                                           const string & op,
+                                           const string & op_result,
+                                           bool binary)
+  {
+    string out = "\".align 16\\n\\t\" \"1: ";
+    out += move_instruction;
+    out += binary ? " %[arg], " : " %[orig], ";
+    out += move_result + "\\n\\t\" \"" + op + "\" \" ";
+    if(binary) {
+      if(suffix == "b") {
+        out += "%%al, ";
+      } else if(suffix == "w") {
+        out += "%%ax, ";
+      } else if(suffix == "l") {
+        out += "%%eax, ";
+      } else {
+        out += "%%rax, ";
+      }
+    }
+    out += op_result + "\\n\\t\" \"lock; cmpxchg" + suffix + " " +
+           op_result + ", %[storage]\\n\\t\" \"jne 1b\"";
+    return out;
+  }
+
+  static string gnu_asm_core_cas_template(const string & suffix,
+                                          const string & move_instruction,
+                                          const string & result,
+                                          const string & op)
+  {
+    return string("\".align 16\\n\\t\" \"1: ") + move_instruction +
+           " %[arg], " + result + "\\n\\t\" \"" + op + "\" \" " +
+           (suffix == "b" ? "%%al, " :
+            suffix == "w" ? "%%ax, " :
+            suffix == "l" ? "%%eax, " : "%%rax, ") +
+           result + "\\n\\t\" \"lock; cmpxchg" + suffix + " " + result +
+           ", %[storage]\\n\\t\" \"jne 1b\"";
+  }
+
+  static bool classify_gnu_asm_atomic_template(const string & text,
+                                               GnuAsmAtomicPattern & out)
+  {
+    static const char * const suffixes[] = {"b", "w", "l", "q"};
+    for(size_t i = 0; i < 4; ++i) {
+      const string suffix = suffixes[i];
+      if(text == gnu_asm_locked_storage_template("inc" + suffix, false) ||
+         text == gnu_asm_locked_storage_template("inc" + suffix, true)) {
+        out.kind = GAA_LOCKED_UPDATE;
+        out.op = "inc";
+        return true;
+      }
+      if(text == gnu_asm_locked_storage_template("dec" + suffix, false) ||
+         text == gnu_asm_locked_storage_template("dec" + suffix, true)) {
+        out.kind = GAA_LOCKED_UPDATE;
+        out.op = "dec";
+        return true;
+      }
+      static const char * const binary_ops[] = {"add", "sub", "and", "or", "xor"};
+      for(size_t j = 0; j < 5; ++j) {
+        const string op = binary_ops[j];
+        const string instruction = op + suffix + " %[argument],";
+        if(text == gnu_asm_locked_storage_template(instruction, false) ||
+           text == gnu_asm_locked_storage_template(instruction, true)) {
+          out.kind = GAA_LOCKED_UPDATE;
+          out.op = op;
+          return true;
+        }
+      }
+      static const char * const unary_ops[] = {"neg", "not"};
+      for(size_t j = 0; j < 2; ++j) {
+        const string op = unary_ops[j];
+        if(text == gnu_asm_locked_storage_template(op + suffix, false) ||
+           text == gnu_asm_locked_storage_template(op + suffix, true)) {
+          out.kind = GAA_LOCKED_UPDATE;
+          out.op = op;
+          return true;
+        }
+      }
+
+      const string xadd = "lock; xadd" + suffix + " %0, %1";
+      if(text == gnu_asm_single_template(xadd)) {
+        out.kind = GAA_XADD;
+        out.op = "add";
+        return true;
+      }
+      const string xchg = "xchg" + suffix + " %0, %1";
+      if(text == gnu_asm_single_template(xchg)) {
+        out.kind = GAA_XCHG;
+        return true;
+      }
+      const string cmpxchg = "lock; cmpxchg" + suffix + " %3, %1";
+      if(text == gnu_asm_single_template(cmpxchg)) {
+        out.kind = GAA_CMPXCHG;
+        return true;
+      }
+
+      if(i != 0) {
+        static const char * const bit_ops[] = {"bts", "btr", "btc"};
+        for(size_t j = 0; j < 3; ++j) {
+          const string instruction =
+              string(bit_ops[j]) + suffix + " %[bit_number],";
+          string bit_template =
+              gnu_asm_locked_storage_template(instruction, false);
+          string bit_template_with_result = bit_template +
+              " \"setc %[result]\\n\\t\"";
+          if(text == bit_template || text == bit_template_with_result) {
+            out.kind = GAA_BIT_UPDATE;
+            out.op = bit_ops[j];
+            return true;
+          }
+        }
+      }
+
+      const string move_instruction =
+          suffix == "b" ? "movzbl" : suffix == "w" ? "movzwl" : "mov";
+      const string move_result =
+          suffix == "b" || suffix == "w" ? "%2" : "%[res]";
+      const string op_result =
+          suffix == "b" ? "%b2" : suffix == "w" ? "%w2" : "%[res]";
+      for(size_t j = 0; j < 2; ++j) {
+        const string op = unary_ops[j];
+        if(text == gnu_asm_extra_cas_template(suffix,
+                                              move_instruction,
+                                              move_result,
+                                              op + suffix,
+                                              op_result,
+                                              false)) {
+          out.kind = GAA_CAS_UPDATE;
+          out.op = op;
+          return true;
+        }
+      }
+      for(size_t j = 0; j < 3; ++j) {
+        const string op = binary_ops[j + 2];
+        if(text == gnu_asm_extra_cas_template(suffix,
+                                              suffix == "q" ? "mov" : "mov",
+                                              move_result,
+                                              op + suffix,
+                                              op_result,
+                                              true)) {
+          out.kind = GAA_CAS_UPDATE;
+          out.op = op;
+          return true;
+        }
+        const string core_result =
+            suffix == "b" || suffix == "w" ? "%2" : "%[new_val]";
+        if(text == gnu_asm_core_cas_template(suffix,
+                                             suffix == "q" ? "movq" : "mov",
+                                             core_result,
+                                             op + suffix)) {
+          out.kind = GAA_CAS_UPDATE;
+          out.op = op;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  static bool gnu_asm_typed_operands(const CallSemNode & node,
+                                     size_t clause_index,
+                                     vector<const CallSemNode *> & out)
+  {
+    out.clear();
+    if(clause_index >= node.children.size() ||
+       node.children[clause_index].kind != CallSemKind::asm_clause) {
+      return false;
+    }
+    const CallSemNode & clause = node.children[clause_index];
+    for(size_t i = 0; i < clause.children.size(); ++i) {
+      const CallSemNode & operand = clause.children[i];
+      if(operand.kind != CallSemKind::asm_operand || operand.children.size() != 1) {
+        return false;
+      }
+      out.push_back(&operand.children[0]);
+    }
+    return true;
+  }
+
+  void emit_gnu_asm_output_store(const CallSemNode & output,
+                                 const string & output_ptr,
+                                 const string & value,
+                                 const TypePtr & source_type,
+                                 const string & source_lowir)
+  {
+    TypePtr target_type = remove_reference_type(output.semantic_type);
+    if(!target_type) {
+      target_type = output.semantic_type;
+    }
+    const string converted =
+        emit_scalar_value_conversion(value,
+                                     source_type,
+                                     target_type,
+                                     true,
+                                     source_lowir);
+    emit_line("store " + lowir_lvalue_memory_type(output) + " " + converted +
+              ", " + output_ptr);
+  }
+
+  string emit_gnu_asm_atomic_desired(const string & value_type,
+                                     const string & old_value,
+                                     const string & argument,
+                                     const string & op)
+  {
+    const string lowir_op = op == "neg" ? "mul" : op == "not" ? "xor" : op;
+    const string rhs = (op == "neg" || op == "not") ?
+        emit_temp_assignment(value_type, "const " + value_type + " -1") :
+        argument;
+    return emit_temp_assignment(value_type,
+                                "binary " + lowir_op + " " + value_type + " " +
+                                old_value + ", " + rhs);
+  }
+
+  bool emit_gnu_asm_atomic_statement(const CallSemNode & node,
+                                     const GnuAsmAtomicPattern & pattern)
+  {
+    vector<const CallSemNode *> outputs;
+    vector<const CallSemNode *> inputs;
+    if(!gnu_asm_typed_operands(node, 1, outputs) ||
+       !gnu_asm_typed_operands(node, 2, inputs)) {
+      return false;
+    }
+
+    const string clobbers = gnu_asm_clause_text(node, 3);
+    if(clobbers != "\"memory\"" && clobbers != "\"cc\",\"memory\"") {
+      return false;
+    }
+
+    vector<string> output_ptrs;
+    for(size_t i = 0; i < outputs.size(); ++i) {
+      output_ptrs.push_back(emit_lvalue_address(*outputs[i]));
+    }
+
+    const auto storage_type_for = [&](size_t output_index) -> TypePtr
+    {
+      TypePtr type = remove_reference_type(outputs[output_index]->semantic_type);
+      return type ? strip_top_level_cv(type) : type;
+    };
+    const auto load_output = [&](size_t output_index, const string & type) -> string
+    {
+      return emit_temp_assignment(type,
+                                  "load " + type + " " + output_ptrs[output_index]);
+    };
+    const auto input_for_storage = [&](size_t input_index,
+                                       const TypePtr & storage_type) -> string
+    {
+      return emit_scalar_storage_value(storage_type, *inputs[input_index]);
+    };
+
+    if(pattern.kind == GAA_LOCKED_UPDATE) {
+      const bool unary = pattern.op == "inc" || pattern.op == "dec" ||
+                         pattern.op == "neg" || pattern.op == "not";
+      if(outputs.empty() || outputs.size() > 2 ||
+         inputs.size() != (unary ? 0u : 1u)) {
+        return false;
+      }
+      const TypePtr storage_type = storage_type_for(0);
+      if(!storage_type) {
+        return false;
+      }
+      const string value_type = lowir_lvalue_memory_type(*outputs[0]);
+      string argument;
+      if(pattern.op == "inc" || pattern.op == "dec") {
+        argument = emit_temp_assignment(value_type, "const " + value_type + " 1");
+      } else if(!unary) {
+        argument = input_for_storage(0, storage_type);
+      }
+
+      string desired;
+      if(pattern.op == "inc" || pattern.op == "dec" ||
+         pattern.op == "add" || pattern.op == "sub") {
+        string delta = argument;
+        if(pattern.op == "dec" || pattern.op == "sub") {
+          delta = emit_temp_assignment(value_type,
+                                       "unary neg " + value_type + " " + argument);
+        }
+        desired = emit_temp_assignment(
+            value_type,
+            "atomic_add_fetch " + value_type + " " + output_ptrs[0] + ", " +
+            delta + ", 5");
+      } else {
+        const string update_arg =
+            (pattern.op == "neg" || pattern.op == "not") ? string() : argument;
+        const string helper_op = pattern.op == "neg" ? "mul" :
+                                 pattern.op == "not" ? "xor" : pattern.op;
+        const string helper_arg =
+            (pattern.op == "neg" || pattern.op == "not") ?
+                emit_temp_assignment(value_type,
+                                     "const " + value_type + " -1") :
+                update_arg;
+        const string old_value =
+            emit_atomic_compare_exchange_loop(value_type,
+                                              output_ptrs[0],
+                                              helper_arg,
+                                              5,
+                                              helper_op);
+        desired = emit_gnu_asm_atomic_desired(value_type,
+                                              old_value,
+                                              update_arg,
+                                              pattern.op);
+      }
+      if(outputs.size() == 2) {
+        const string result = emit_temp_assignment(
+            "i64", "cmp ne " + value_type + " " + desired + ", 0");
+        emit_gnu_asm_output_store(*outputs[1],
+                                  output_ptrs[1],
+                                  result,
+                                  make_fundamental(FT_LONG_LONG_INT),
+                                  "i64");
+      }
+      return true;
+    }
+
+    if(pattern.kind == GAA_XADD || pattern.kind == GAA_XCHG) {
+      if(outputs.size() != 2 || !inputs.empty()) {
+        return false;
+      }
+      const TypePtr storage_type = storage_type_for(1);
+      if(!storage_type) {
+        return false;
+      }
+      const string value_type = lowir_lvalue_memory_type(*outputs[1]);
+      const string argument = load_output(0, value_type);
+      string previous;
+      if(pattern.kind == GAA_XADD) {
+        const string updated = emit_temp_assignment(
+            value_type,
+            "atomic_add_fetch " + value_type + " " + output_ptrs[1] + ", " +
+            argument + ", 5");
+        previous = emit_temp_assignment(value_type,
+                                        "binary sub " + value_type + " " +
+                                        updated + ", " + argument);
+      } else {
+        previous = emit_temp_assignment(
+            value_type,
+            "atomic_exchange " + value_type + " " + output_ptrs[1] + ", " +
+            argument + ", 5");
+      }
+      emit_gnu_asm_output_store(*outputs[0],
+                                output_ptrs[0],
+                                previous,
+                                storage_type,
+                                value_type);
+      return true;
+    }
+
+    if(pattern.kind == GAA_CMPXCHG) {
+      if(outputs.size() != 3 || inputs.size() != 1) {
+        return false;
+      }
+      const TypePtr storage_type = storage_type_for(1);
+      if(!storage_type) {
+        return false;
+      }
+      const string value_type = lowir_lvalue_memory_type(*outputs[1]);
+      const string expected = load_output(0, value_type);
+      const string desired = input_for_storage(0, storage_type);
+      const string expected_slot = new_hidden_slot(value_type, "asm_expected");
+      const string expected_ptr = emit_storage_address(expected_slot);
+      emit_line("store " + value_type + " " + expected + ", " + expected_slot);
+      const string success = emit_temp_assignment(
+          "i64",
+          "atomic_compare_exchange " + value_type + " " + output_ptrs[1] +
+          ", " + expected_ptr + ", " + desired + ", 5, 5");
+      const string actual = emit_temp_assignment(
+          value_type, "load " + value_type + " " + expected_slot);
+      emit_gnu_asm_output_store(*outputs[0],
+                                output_ptrs[0],
+                                actual,
+                                storage_type,
+                                value_type);
+      emit_gnu_asm_output_store(*outputs[2],
+                                output_ptrs[2],
+                                success,
+                                make_fundamental(FT_LONG_LONG_INT),
+                                "i64");
+      return true;
+    }
+
+    if(pattern.kind == GAA_CAS_UPDATE) {
+      const bool unary = pattern.op == "neg" || pattern.op == "not";
+      if(outputs.size() != 3 || inputs.size() != (unary ? 0u : 1u)) {
+        return false;
+      }
+      const TypePtr storage_type = storage_type_for(1);
+      if(!storage_type) {
+        return false;
+      }
+      const string value_type = lowir_lvalue_memory_type(*outputs[1]);
+      string argument;
+      string helper_op = pattern.op;
+      if(unary) {
+        argument = emit_temp_assignment(value_type,
+                                        "const " + value_type + " -1");
+        helper_op = pattern.op == "neg" ? "mul" : "xor";
+      } else {
+        argument = input_for_storage(0, storage_type);
+      }
+      const string old_value =
+          emit_atomic_compare_exchange_loop(value_type,
+                                            output_ptrs[1],
+                                            argument,
+                                            5,
+                                            helper_op);
+      const string desired = emit_gnu_asm_atomic_desired(value_type,
+                                                        old_value,
+                                                        unary ? string() : argument,
+                                                        pattern.op);
+      emit_gnu_asm_output_store(*outputs[0],
+                                output_ptrs[0],
+                                old_value,
+                                storage_type,
+                                value_type);
+      emit_gnu_asm_output_store(*outputs[2],
+                                output_ptrs[2],
+                                desired,
+                                storage_type,
+                                value_type);
+      return true;
+    }
+
+    if(pattern.kind == GAA_BIT_UPDATE) {
+      if(outputs.size() != 2 || inputs.size() != 1) {
+        return false;
+      }
+      const TypePtr storage_type = storage_type_for(0);
+      if(!storage_type) {
+        return false;
+      }
+      const string value_type = lowir_lvalue_memory_type(*outputs[0]);
+      const string bit_number = input_for_storage(0, storage_type);
+      const string one = emit_temp_assignment(value_type,
+                                              "const " + value_type + " 1");
+      const string mask = emit_temp_assignment(
+          value_type,
+          "binary shl " + value_type + " " + one + ", " + bit_number);
+      const string op = pattern.op == "bts" ? "or" :
+                        pattern.op == "btr" ? "and" : "xor";
+      string update_value = mask;
+      if(pattern.op == "btr") {
+        const string all_ones = emit_temp_assignment(
+            value_type, "const " + value_type + " -1");
+        update_value = emit_temp_assignment(
+            value_type,
+            "binary xor " + value_type + " " + mask + ", " + all_ones);
+      }
+      const string old_value = emit_atomic_compare_exchange_loop(
+          value_type, output_ptrs[0], update_value, 5, op);
+      const string old_bit = emit_temp_assignment(
+          value_type,
+          "binary and " + value_type + " " + old_value + ", " + mask);
+      const string result = emit_temp_assignment(
+          "i64", "cmp ne " + value_type + " " + old_bit + ", 0");
+      emit_gnu_asm_output_store(*outputs[1],
+                                output_ptrs[1],
+                                result,
+                                make_fundamental(FT_LONG_LONG_INT),
+                                "i64");
+      return true;
+    }
+
+    return false;
+  }
+
   bool emit_supported_gnu_asm_statement(const CallSemNode & node)
   {
     if(node.children.empty() || node.children.size() > 4) {
@@ -14763,6 +15266,11 @@ private:
     const string outputs = gnu_asm_clause_text(node, 1);
     const string inputs = gnu_asm_clause_text(node, 2);
     const string clobbers = gnu_asm_clause_text(node, 3);
+    GnuAsmAtomicPattern atomic_pattern;
+    if(classify_gnu_asm_atomic_template(asm_template, atomic_pattern) &&
+       emit_gnu_asm_atomic_statement(node, atomic_pattern)) {
+      return true;
+    }
     if(is_supported_locked_notb_fence_gnu_asm(asm_template,
                                               outputs,
                                               inputs,
@@ -21117,7 +21625,8 @@ private:
       append_local_static_guard_global(node);
       return;
     }
-    if(base && base->kind == Type::TK_NAMED) {
+    if(base && base->kind == Type::TK_NAMED &&
+       !is_named_enum_scalar_type(base)) {
       GlobalBinding & binding = global_bindings_.find(node_internal_symbol(node))->second;
       LowIRGlobal global = make_data_global(binding.storage, false, binding.thread_local_storage);
       global.data_items.push_back(string("zero ") + to_string(backend_storage_size(node.semantic_type)));

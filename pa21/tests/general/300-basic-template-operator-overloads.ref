@@ -488,7 +488,7 @@ function @operator____ov5(%a : ptr [pass=reference], %b : ptr [pass=reference]) 
     %t1 = load ptr $a
     %t2 = load ptr $b
     %t3 = call u8 @operator____ov4(%t1, %t2)
-    %t4 = cmp eq i64 %t3, 0
+    %t4 = cmp eq u8 %t3, 0
     return u8 %t4
 }
 function @Dispatcher__operator__(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK10DispatcherclI6NumberIiEEEiRKT_] {

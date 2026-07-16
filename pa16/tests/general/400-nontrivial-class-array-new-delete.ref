@@ -118,7 +118,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_24:
     %t40 = load i32 @fail
-    %t41 = cmp eq i64 %t40, 0
+    %t41 = cmp eq i32 %t40, 0
     %t42 = cmp ne i64 %t41, 0
     store i64 %t42, $land__8
     jump ^land_end_26

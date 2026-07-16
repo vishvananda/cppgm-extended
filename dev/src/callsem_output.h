@@ -26,6 +26,7 @@ enum CallValueCategory
   X(invalid, "<invalid>") \
   X(assignment_expression, "assignment-expression") \
   X(asm_clause, "asm-clause") \
+  X(asm_operand, "asm-operand") \
   X(asm_statement, "asm-statement") \
   X(binary_expression, "binary-expression") \
   X(break_statement, "break-statement") \

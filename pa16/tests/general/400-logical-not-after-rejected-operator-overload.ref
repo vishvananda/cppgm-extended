@@ -14,7 +14,7 @@ function @outer__detail__run(%s : obj<4x4>) -> i32 [binding=strong, object=_ZN5o
     copyobj 4x4 %s, %t1
     %t2 = addr $s
     %t3 = call u8 @outer__status__operatorbool(%t2)
-    %t4 = cmp eq i64 %t3, 0
+    %t4 = cmp eq u8 %t3, 0
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

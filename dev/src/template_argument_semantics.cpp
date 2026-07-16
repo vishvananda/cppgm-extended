@@ -30995,6 +30995,9 @@ bool evaluate_structural_builtin_type_trait(const string & name,
     if(evaluate_unary_array_recursive(name, base)) {
       return true;
     }
+    if(base->kind == Type::TK_NAMED && !is_named_enum_type(base)) {
+      return false;
+    }
     out = (base->kind == Type::TK_FUNDAMENTAL ||
            is_scalar_or_member_pointer_type(base)) ? 1 : 0;
     return true;
@@ -31705,6 +31708,7 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
 bool builtin_type_trait_needs_complete_class_metadata(const string & name)
 {
   return name == "__is_trivial" ||
+         name == "__is_trivially_copyable" ||
          name == "__is_trivially_constructible" ||
          name == "__has_trivial_constructor" ||
          name == "__is_trivially_destructible" ||

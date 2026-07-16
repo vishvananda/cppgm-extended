@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t5 = addr $b
     %t6 = call u8 @Flag__operatorbool(%t5)
-    %t7 = cmp eq i64 %t6, 0
+    %t7 = cmp eq u8 %t6, 0
     branch %t7, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

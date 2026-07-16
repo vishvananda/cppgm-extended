@@ -39,7 +39,7 @@ function @L__operator____ov2(%this : ptr, %y : ptr [pass=reference]) -> u8 [bind
     %t1 = load ptr $this
     %t2 = load ptr $y
     %t3 = call u8 @L__operator__(%t1, %t2)
-    %t4 = cmp eq i64 %t3, 0
+    %t4 = cmp eq u8 %t3, 0
     return u8 %t4
 }
 function @L__operator__(%this : ptr, %y : ptr [pass=reference]) -> u8 [binding=weak, object=_ZNK1LeqERKS_] {

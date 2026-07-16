@@ -1,6 +1,4 @@
-global @error_collate [binding=internal, object=_Z13error_collate] = {
-  zero 4
-}
+global @error_collate : i32 [binding=internal, object=_Z13error_collate] = 1
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

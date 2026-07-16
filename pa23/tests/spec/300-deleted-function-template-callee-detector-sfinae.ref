@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $argobj__4 : obj<1x1>
 
   block ^entry:
-    %t1 = cmp eq i64 0, 0
+    %t1 = cmp eq u8 0, 0
     branch %t1, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:

@@ -303,6 +303,9 @@ void collect_instruction_effects(const mir::Instruction & inst,
       note_address_operand(inst.operands[0], uses);
       return;
 
+    case mir::Instruction::MI_FPOP:
+      return;
+
     case mir::Instruction::MI_SITOFP:
     case mir::Instruction::MI_UITOFP:
     case mir::Instruction::MI_FPTOSI:
@@ -576,6 +579,9 @@ void rewrite_instruction_reads(mir::Instruction & inst,
 
     case mir::Instruction::MI_FSTP:
       rewrite_read_operand(inst.operands[0], reg_aliases, xmm_aliases, changed);
+      return;
+
+    case mir::Instruction::MI_FPOP:
       return;
 
     case mir::Instruction::MI_SITOFP:

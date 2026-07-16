@@ -18,6 +18,7 @@
   X(access_specifier, "access-specifier") \
   X(alias_declaration, "alias-declaration") \
   X(asm_clause, "asm-clause") \
+  X(asm_operand, "asm-operand") \
   X(asm_statement, "asm-statement") \
   X(argument_list, "argument-list") \
   X(array_delete, "array-delete") \

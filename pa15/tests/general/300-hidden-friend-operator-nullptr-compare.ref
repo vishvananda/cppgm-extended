@@ -24,7 +24,7 @@ function @operator____ov2(%a : ptr [pass=reference], %b : ptr [pass=reference]) 
     %t1 = load ptr $a
     %t2 = load ptr $b
     %t3 = call u8 @operator__(%t1, %t2)
-    %t4 = cmp eq i64 %t3, 0
+    %t4 = cmp eq u8 %t3, 0
     return u8 %t4
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

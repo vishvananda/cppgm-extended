@@ -120,7 +120,7 @@ function @operator____ov4(%a : ptr [pass=reference], %b : ptr [pass=reference]) 
     %t1 = load ptr $a
     %t2 = load ptr $b
     %t3 = call u8 @operator____ov3(%t1, %t2)
-    %t4 = cmp eq i64 %t3, 0
+    %t4 = cmp eq u8 %t3, 0
     return u8 %t4
 }
 function @operator____ov5(%stream : ptr [pass=reference], %number : ptr [pass=reference]) -> ptr [binding=strong, object=_ZlsR6StreamRK6Number] {

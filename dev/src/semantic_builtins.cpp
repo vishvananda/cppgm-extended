@@ -787,6 +787,92 @@ bool is_trivially_destructible_type(SemanticContext & ctx, const TypePtr & type)
   return true;
 }
 
+bool is_trivially_copyable_type_impl(SemanticContext & ctx,
+                                     const TypePtr & type,
+                                     std::set<ClassInfo *> & visiting)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || is_reference_type(base) || base->kind == Type::TK_FUNCTION ||
+     is_void_type(base)) {
+    return false;
+  }
+  if(is_array_type(base)) {
+    return is_trivially_copyable_type_impl(ctx, base->inner, visiting);
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     is_scalar_or_member_pointer_type(ctx, base)) {
+    return true;
+  }
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  ClassInfo * info = ctx.complete_class_type(base);
+  if(!info || !info->complete || info->is_polymorphic ||
+     !semantic_class_model::is_trivially_destructible_type_for_host_abi(ctx,
+                                                                        base)) {
+    return false;
+  }
+  if(visiting.count(info) != 0) {
+    return true;
+  }
+
+  semantic_class_model::ensure_implicit_special_members(ctx, *info);
+  FunctionBinding * special_members[] = {
+    semantic_class_model::ensure_implicit_copy_constructor(ctx, *info),
+    semantic_class_model::ensure_implicit_move_constructor(ctx, *info),
+    semantic_class_model::ensure_implicit_copy_assignment(ctx, *info),
+    semantic_class_model::ensure_implicit_move_assignment(ctx, *info)
+  };
+  bool has_eligible_copy_or_move = false;
+  for(size_t i = 0;
+      i < sizeof(special_members) / sizeof(special_members[0]);
+      ++i) {
+    const FunctionBinding * binding = special_members[i];
+    if(!binding || binding->is_deleted) {
+      continue;
+    }
+    has_eligible_copy_or_move = true;
+    if(!binding->synthesized && !binding->is_defaulted) {
+      return false;
+    }
+  }
+  if(!has_eligible_copy_or_move) {
+    return false;
+  }
+
+  visiting.insert(info);
+  for(size_t i = 0; i < info->bases.size(); ++i) {
+    if(info->bases[i].is_virtual ||
+       !is_trivially_copyable_type_impl(ctx,
+                                        info->bases[i].type->type,
+                                        visiting)) {
+      visiting.erase(info);
+      return false;
+    }
+  }
+  for(size_t i = 0; i < info->fields.size(); ++i) {
+    TypePtr field_type = strip_top_level_cv(info->fields[i].type);
+    if(field_type && is_reference_type(field_type)) {
+      continue;
+    }
+    if(!is_trivially_copyable_type_impl(ctx,
+                                        info->fields[i].type,
+                                        visiting)) {
+      visiting.erase(info);
+      return false;
+    }
+  }
+  visiting.erase(info);
+  return true;
+}
+
+bool is_trivially_copyable_type(SemanticContext & ctx, const TypePtr & type)
+{
+  std::set<ClassInfo *> visiting;
+  return is_trivially_copyable_type_impl(ctx, type, visiting);
+}
+
 bool is_literal_type(SemanticContext & ctx, const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
@@ -2346,15 +2432,7 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
   }
 
   if(name == "__is_trivially_copyable") {
-    if(base->kind == Type::TK_ARRAY) {
-      long long element_value = 0;
-      out = (base->inner &&
-             evaluate_builtin_type_trait(ctx, scope, name, base->inner, element_value) &&
-             element_value != 0) ? 1 : 0;
-      return true;
-    }
-    out = (base->kind == Type::TK_FUNDAMENTAL ||
-           is_scalar_or_member_pointer_type(ctx, base)) ? 1 : 0;
+    out = is_trivially_copyable_type(ctx, base) ? 1 : 0;
     return true;
   }
 

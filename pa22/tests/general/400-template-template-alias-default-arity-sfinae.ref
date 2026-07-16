@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_6
 
   block ^if_end_6:
-    %t1 = cmp eq i64 1, 0
+    %t1 = cmp eq u8 1, 0
     branch %t1, ^if_then_7, ^if_else_8
 
   block ^if_then_7:

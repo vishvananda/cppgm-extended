@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `8 / 147`
-- current cursor: `#9 libs/atomic/test`
-- active compiler frontier: none; Assign is closed and Atomic is the next
+- completed suites: `9 / 147`
+- current cursor: `#10 libs/beast/test`
+- active compiler frontier: none; Atomic is closed and Beast is the next
   unattempted suite
 
 ## Baseline Gates
@@ -90,6 +90,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(full-expression temporary emission fix)` | Nested member-template class prvalue whose retained type predates completed layout | +0.78% | +0.22% | +0.03% | -0.007% instructions, -0.14% RSS, and -0.11% footprint from the preceding checkpoint | `/tmp/cppgm-boost-frontier-v2-strand-stale-layout-perf.json` | pass; the added typed `ClassInfo` lookup is confined to layout-free named prvalues and adds no measurable aggregate cost |
 | `(conversion default SFINAE and ABI fix)` | Concrete defaulted SFINAE arguments and conversion-function-template symbols | +0.77% | +0.78% | +0.20% | -0.01 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-assign-default-sfinae-perf.json` | pass; substituted retained AST is resolved only after it becomes structurally concrete, all cache-disabled outputs are identical, and no text-reparse or rendered-symbol path is added |
 | `(nested structured template-id fix)` | Namespace-qualified lookup of a nested template-id retained inside another template argument | +0.82% | +1.15% | +0.14% | +0.05 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-nested-template-id-anchor-perf.json` | pass; the cold exact-anchor mismatch path prefilters by typed identifier, all cache-disabled outputs are identical, and the incremental movement is below the hotspot threshold |
+| `(Atomic typed lowering fixes)` | Structured GNU asm atomic operands plus scalar/class correctness exposed by Boost.Atomic | +0.91% | +0.19% | +0.32% | +0.09 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-atomic-final-perf.json` | pass; all fixed gates remain within tolerance and the incremental movement is below the hotspot threshold |
 
 ## Suite Cursor
 
@@ -106,23 +107,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 6 | `libs/asio/test` | pass | `53a73a395` | The exact eight-job forced survey rebuilt through 210 passing tests before the 1800-second external timeout, with no failures; log `/tmp/boost-frontier-v2-asio-after-strand-full-j8.log`. All eight compiler children left in flight at the timeout (`read`, `read_at`, `socket_base`, and `spawn`, normal/select) were then force-rebuilt; all eight compile, link, and run successfully in `/tmp/boost-frontier-v2-asio-after-strand-interrupted-tail-focused.log`. The non-forced full continuation updated 680 targets, ran 285 passing tests, and exited successfully; log `/tmp/boost-frontier-v2-asio-after-strand-continuation.log`. | Suite closed with no skipped or failed targets. The `strand` failure was not a missing `on_invoker_exit` definition: those destructors were emitted and referenced the missing concrete `basic_executor_type<recycling_allocator<void, default_tag>, 4>::~basic_executor_type`. The final direct-LowIR report passes `3833/3833` with PA9 explicitly omitted. The large tail `execution/mapping` compile peaked near 3 GiB and sampled primarily in LowIR hidden virtual-base argument emission; this is recorded as a separate performance lead, not attributed to the cold temporary-class lookup. |
 | 7 | `libs/assert/test` | pass | `53a73a395` | The exact forced survey rebuilt 72 targets; all 18 tests compiled, linked, ran, and passed, and B2 exited successfully. Log: `/tmp/boost-frontier-v2-suite-007-assert-full.log`. | No compiler fix or repository regression was required. |
 | 8 | `libs/assign/test` | pass | `(nested structured template-id fix)` | The initial exact forced survey passed the other discovered targets and isolated three compile failures: `array`, `list_of`, and `multi_index_container`; log `/tmp/boost-frontier-v2-suite-008-assign-initial-forced.log`. The conversion-template fix cleared `array` and `list_of`; the final exact forced survey rebuilt 84 targets, ran all 14 tests, and exited successfully, including `multi_index_container`; log `/tmp/boost-frontier-v2-suite-008-assign-final-forced.log`. | Both independent causes are closed. The final repository direct-LowIR report passes `3836/3836` with PA9 explicitly omitted as requested. |
+| 9 | `libs/atomic/test` | pass | `(Atomic typed lowering fixes)` | The initial forced survey exposed an incomplete `__is_trivially_copyable` class trait, zero-initialized scoped-enum globals, and unsupported x86 GNU asm atomic operations; log `/tmp/boost-frontier-v2-suite-009-atomic-after-trait-enum.log`. Focused API, reference, IPC, and wait targets passed after the fixes. The final exact forced suite rebuilt all 90 requested targets and passed every positive and expected-failure test; log `/tmp/boost-frontier-v2-suite-009-atomic-final.log`. | GNU asm operand expressions are parsed from the original token range during the initial parse and retained as typed AST/CallSem nodes; lowering classifies only exact supported instruction templates and never reparses operand text. The final direct-LowIR report passes `3840/3840` with PA9 explicitly omitted. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#9 libs/atomic/test`
+- suite: `#10 libs/beast/test`
 - focused target: none; suite not yet attempted in V2
 - failure phase: none
 - diagnostic: none
 - reduced repro: not applicable
 - owning PA/cluster: not applicable
-- implementation area: none until the first exact forced Atomic survey
-- performance risk: current three-run cumulative median is +0.82% instructions,
-  +1.15% RSS, and +0.14% footprint; the incremental instruction movement is
-  +0.05 percentage points and all fixed gates pass
-- next action: run the exact forced `libs/atomic/test` suite
+- implementation area: none until the first exact forced Beast survey
+- performance risk: current three-run cumulative median is +0.91% instructions,
+  +0.19% RSS, and +0.32% footprint; the incremental instruction movement is
+  +0.09 percentage points and all fixed gates pass
+- next action: run the exact forced `libs/beast/test` suite
 
 ## Fix Ledger
 
@@ -162,7 +164,18 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/assign/test//array`, `//list_of` | Function-template finalization substituted a defaulted type argument into retained AST, then resolved the original dependent spelling first. For the array conversion candidate this preserved a dependent `enable_if` placeholder instead of resolving `void`; for the reference-target probe it also allowed the invalid pointer-to-reference SFINAE expression to survive. Finalization now resolves the substituted `CppAstNode` directly once its retained syntax is structurally concrete, rejects failed or still-dependent results, and commits only its retained value dependencies after a speculative witness pause. Separately, typed ABI construction no longer encodes a result type for conversion-function templates. Symbol diagnostics report typed `TemplateArgument` state, and successful trace capture remains `abi_mangle::AbiMangleTarget`; no text parse or rendered-symbol fallback is added. | `pa22/tests/general/400-defaulted-sfinae-conversion-function-template-symbol.t` at the PA22 full deduction/SFINAE owner; `pa30/tests/abi/300-conversion-function-template.t` covers the existing typed ABI fact combination, so no scaffold extension was needed | The initial forced survey rejected both targets while building the weak `generic_list<int>::operatorContainer` symbol. Focused trace `/tmp/boost-frontier-v2-assign-array-symbol-trace-typed-args.log` showed defaulted dependent arguments reaching typed symbol construction. Direct trace `/tmp/boost-assign-array-direct-template-trace.stderr` showed the object target correctly finalized `<array, void, void>` only after concrete AST resolution, while the `const array&` probe substituted an invalid pointer-to-reference and had to fail. Clang emits all three template arguments but no separate conversion result in the symbol. | Warning-clean build; PA22/PA30 direct report passes `340/340`; all configured strict suites pass; PA22/PA23/PA30 placement and hygiene audits have zero findings; all 23 text-reparse categories remain zero and all 14 audit tests pass. Normal, nine individually cache-disabled, and all-disabled reducer LowIR are byte-identical. Exact Boost translation units compile, and forced focused `array`/`list_of` compile, link, run, and pass. The full direct report excluding PA9 passes `3835/3835`. | instructions +0.77%; max RSS +0.78%; peak footprint +0.20%; pass, instructions improve 0.01 percentage points from the preceding frontier | `(this commit)` |
 | fixed | `libs/assign/test//multi_index_container` | Initial parsing and template substitution had already retained the concrete nested `mp_identity<name>` as `TemplateIdSyntax` inside the outer `mp_to_bool<std::is_base_of<...>>` argument. Concrete type lookup normalized the requested name to `boost::mp11::mp_identity<name>`, but its local retained-syntax search walked only qualifier template-ids and required the source spelling to include the same namespace qualification. The shared search now descends through typed template-argument and AST sidecars and accepts exact or top-level-unqualified structured renderings after prefiltering by the typed template identifier. It consumes retained syntax only; no tokenization, parser, source scan, semantic cache, or text-derived ABI path is added. | `pa21/tests/general/200-nested-template-id-argument-pack-base-lookup.t`, a header-free alias/pack/base integration reducer at the placement-audited `pa21:200` owner | The exact Boost MP11 reducer `/tmp/cppgm-boost-mp11-nested-template-id-anchor.cpp` and the forced `multi_index_container` target fail with `failed template-id parse in type lookup: boost::mp11::mp_identity<name>` while Clang accepts the reducer. Failure-only instrumentation confirmed that the outer and nested substituted `TemplateIdSyntax` sidecars were present; only qualification-sensitive matching and missing argument traversal rejected them. The instrumentation was removed. | Warning-clean build; the PA21 reducer passes normal, witness, all nine individual cache-disabled modes, and the all-disabled mode with byte-identical LowIR; PA21 direct report passes `221/221`; all configured strict suites pass; placement/hygiene is clean; all 23 text-reparse categories remain zero and all 14 audit tests pass. The exact minimal Boost reducer and focused target pass, the complete forced Assign survey rebuilds 84 targets and passes all 14 tests, and the final direct report excluding PA9 passes `3836/3836`. | instructions +0.82%; max RSS +1.15%; peak footprint +0.14%; pass, only +0.05 instruction percentage points from the preceding checkpoint | `(this commit)` |
 
+| fixed | `libs/atomic/test` | Boost.Atomic exposed shared typed-lowering gaps plus its required x86 asm surface. Complete named classes now evaluate `__is_trivially_copyable` from typed special-member, base, field, polymorphism, and destructor facts. Scoped-enum globals use scalar constant initialization. Logical-not compares in the operand LowIR domain, signed narrow-to-i128 conversion sign-extends the low half before deriving the high mask, and dead f80 call results explicitly pop the x87 stack. GNU asm output/input expressions are parsed from the original token stream during the initial parse, analyzed into typed `asm_operand` nodes, and lowered for the exact Boost x86 locked update, exchange, compare-exchange, CAS-loop, and bit-update templates. No operand text is parsed, no cache is added, and no symbol path changes. | `pa14/tests/general/200-scoped-enum-global-constant-init.t`; strengthened header-free PA29 int128 lowering coverage; `pa29/tests/general/300-runtime-discarded-float80-call-result.t`; `pa34/tests/compile/500-builtin-trivially-copyable-class-special-members.t`; `pa34/tests/run/800-gnu-asm-atomic-update-run.t` | The initial forced suite produced false class-trait results, zero-valued scoped-enum globals, unsupported GNU asm diagnostics, twelve high-half U128 truth failures, two signed i128 widening failures, and one long-double comparison failure. LLDB showed the long-double values were initially exact but repeated dead f80 call returns overflowed the x87 stack; the i128 mismatch was a zero-extended low register paired with a sign high half. | Warning-clean build; all focused reducers and owner tests pass; normal and all-six-cache-disabled trait/asm LowIR are byte-identical; PA14/PA29/PA34 direct reports pass; all configured strict suites pass; placement audits report zero findings; all 23 reparse categories remain zero and all 14 audit tests pass; final forced Atomic suite passes all 90 rebuilt targets; final full direct report excluding PA9 passes `3840/3840`. | instructions +0.91%; max RSS +0.19%; peak footprint +0.32%; pass; +0.09 instruction percentage points from the preceding checkpoint | `(this commit)` |
+
 ## Decision Log
+
+- `2026-07-15`: Closed Atomic after fixing the shared typed behaviors exposed by
+  its API matrix and adding structured initial-parse GNU asm operands. The asm
+  lowering consumes typed operand expressions and exact instruction templates;
+  it does not recover operands from clause text. Complete-class trait results
+  and asm LowIR are byte-identical with all six relevant caches disabled. The
+  exact forced suite passes all 90 rebuilt targets, the final direct report
+  passes `3840/3840` with PA9 omitted, and the cursor advances to
+  `libs/beast/test`.
 
 - `2026-07-15`: Closed Assign after fixing the independent
   `multi_index_container` lookup. Initial parsing and substitution had retained
@@ -503,5 +516,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=8 \
-  gtimeout 1800 ./run-cppgm-b2.sh -a libs/atomic/test
+  gtimeout 1800 ./run-cppgm-b2.sh -a libs/beast/test
 ```

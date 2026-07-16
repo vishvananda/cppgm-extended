@@ -31,6 +31,16 @@ U128 make_unsigned()
   return (((U128)1) << 68) + 9;
 }
 
+bool unsigned_nonzero(U128 value)
+{
+  return !!value;
+}
+
+I128 widen_i32(int value)
+{
+  return (I128)value;
+}
+
 int main()
 {
   I128 a = make_signed();
@@ -76,6 +86,17 @@ int main()
   U128 y = w % 4;
   if(low_u128(y) != 0ULL || high_u128(y) != 0ULL) {
     return 9;
+  }
+
+  if(!unsigned_nonzero(((U128)1) << 64) || unsigned_nonzero((U128)0)) {
+    return 10;
+  }
+
+  int runtime_negative_one = -1;
+  I128 widened = widen_i32(runtime_negative_one);
+  if(low_i128(widened) != 18446744073709551615ULL ||
+     high_i128(widened) != -1LL) {
+    return 11;
   }
 
   return 0;

@@ -2249,6 +2249,9 @@ void emit_instruction(X86Assembler & out,
                            target,
                            defined_globals);
       return;
+    case mir::Instruction::MI_FPOP:
+      out.emit_fstp_st0();
+      return;
     case mir::Instruction::MI_SITOFP:
     case mir::Instruction::MI_UITOFP: {
       const size_t source_width = inst.byte_count;

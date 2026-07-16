@@ -8705,6 +8705,86 @@ bool CppAstParser::parse_asm_statement(CppAstNode & out)
     return false;
   }
 
+  const auto attach_operand_expressions = [&](CppAstNode & clause)
+  {
+    size_t cursor = clause.token_start;
+    while(cursor < clause.token_end) {
+      while(cursor < clause.token_end &&
+            tokens.peek(cursor).is_simple(OP_COMMA)) {
+        ++cursor;
+      }
+      if(cursor >= clause.token_end) {
+        break;
+      }
+
+      size_t operand_open = static_cast<size_t>(-1);
+      size_t bracket_depth = 0;
+      for(size_t i = cursor; i < clause.token_end; ++i) {
+        const RecogToken & token = tokens.peek(i);
+        if(token.is_simple(OP_LSQUARE)) {
+          ++bracket_depth;
+        } else if(token.is_simple(OP_RSQUARE) && bracket_depth != 0) {
+          --bracket_depth;
+        } else if(token.is_simple(OP_LPAREN) && bracket_depth == 0) {
+          operand_open = i;
+          break;
+        }
+      }
+      if(operand_open == static_cast<size_t>(-1)) {
+        break;
+      }
+
+      size_t operand_close = static_cast<size_t>(-1);
+      size_t operand_depth = 0;
+      for(size_t i = operand_open; i < clause.token_end; ++i) {
+        const RecogToken & token = tokens.peek(i);
+        if(token.is_simple(OP_LPAREN)) {
+          ++operand_depth;
+        } else if(token.is_simple(OP_RPAREN)) {
+          if(operand_depth == 0) {
+            break;
+          }
+          --operand_depth;
+          if(operand_depth == 0) {
+            operand_close = i;
+            break;
+          }
+        }
+      }
+      if(operand_close == static_cast<size_t>(-1)) {
+        break;
+      }
+
+      if(operand_open + 1 < operand_close) {
+        CppAstNode operand =
+            make_node(CppAstKind::asm_operand,
+                      token_span_text_spaced(cursor, operand_open));
+        operand.token_start = cursor;
+        operand.token_end = operand_close + 1;
+        RecogTokenRangeSequence fragment(tokens,
+                                         operand_open + 1,
+                                         operand_close);
+        CppAstParser parser(fragment);
+        parser.inherit_name_lookup_state_from(*this);
+        CppAstNode expression;
+        if(parser.parse_expression(expression) && parser.at_eof()) {
+          offset_node_token_spans(expression, operand_open + 1);
+          operand.children.push_back(std::move(expression));
+          clause.children.push_back(std::move(operand));
+        }
+      }
+      cursor = operand_close + 1;
+      while(cursor < clause.token_end &&
+            !tokens.peek(cursor).is_simple(OP_COMMA)) {
+        ++cursor;
+      }
+    }
+  };
+
+  for(size_t i = 1; i < out.children.size() && i <= 2; ++i) {
+    attach_operand_expressions(out.children[i]);
+  }
+
   set_span(out, start);
   return true;
 }

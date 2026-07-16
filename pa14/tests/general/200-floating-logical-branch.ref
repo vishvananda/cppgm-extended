@@ -47,7 +47,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_3:
     %t4 = call u8 @both(2.0, 1)
-    %t5 = cmp eq i64 %t4, 0
+    %t5 = cmp eq u8 %t4, 0
     branch %t5, ^if_then_5, ^if_else_6
 
   block ^if_then_5:

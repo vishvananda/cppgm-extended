@@ -771,6 +771,7 @@ string callsem_display_text(const CallSemNode & node)
   case CallSemKind::for_init_statement:
   case CallSemKind::expression_statement:
   case CallSemKind::asm_clause:
+  case CallSemKind::asm_operand:
   case CallSemKind::statement_expression:
   case CallSemKind::asm_statement:
   case CallSemKind::return_statement:

@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch 1, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t1 = cmp eq i64 0, 0
+    %t1 = cmp eq u8 0, 0
     %t2 = cmp ne i64 %t1, 0
     store i64 %t2, $land__2
     jump ^land_end_6

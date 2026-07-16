@@ -156,6 +156,7 @@ struct Instruction
     MI_FGE,
     MI_FCMP,
     MI_FSTP,
+    MI_FPOP,
     MI_SITOFP,
     MI_UITOFP,
     MI_FPTOSI,

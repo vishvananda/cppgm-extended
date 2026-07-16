@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $x
     %t3 = addr $x
     %t4 = call u8 @X__same(%t2, %t3)
-    %t5 = cmp eq i64 %t4, 0
+    %t5 = cmp eq u8 %t4, 0
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

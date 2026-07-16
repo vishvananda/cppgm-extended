@@ -4637,6 +4637,13 @@ private:
            source_type == "u32") {
           emit_zero_register(hi, out);
         } else {
+          const size_t source_size = lir::type_size(lir::LowType{source_type});
+          if(source_size < 8) {
+            mir::Instruction sext = make_instruction(mir::Instruction::MI_SEXT);
+            sext.byte_count = source_size;
+            sext.operands.push_back(reg(lo));
+            out.push_back(sext);
+          }
           emit_sign_mask_from_register(lo, hi, out);
         }
         return;
@@ -6578,6 +6585,13 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             if(inst.op == "zext") {
               emit_zero_register(XR_RDX, out);
             } else {
+              const size_t source_size = lir::type_size(inst.source_type);
+              if(source_size < 8) {
+                mi = make_instruction(mir::Instruction::MI_SEXT);
+                mi.byte_count = source_size;
+                mi.operands.push_back(reg(XR_RAX));
+                out.push_back(mi);
+              }
               emit_sign_mask_from_register(XR_RAX, XR_RDX, out);
             }
             emit_store_i128_temp(layout, inst.dest, XR_RAX, XR_RDX, out);
@@ -7130,8 +7144,17 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
               imm(static_cast<long long>(stack_payload_bytes + stack_pad)));
           out.push_back(mi);
         }
-        if(!inst.call_returns_void &&
-           layout.dead_call_result_temps.count(inst.dest) == 0) {
+        const bool dead_call_result =
+            !inst.call_returns_void &&
+            layout.dead_call_result_temps.count(inst.dest) != 0;
+        if(dead_call_result) {
+          map<string, string>::const_iterator result_type =
+              layout.storage_type.find(inst.dest);
+          if(result_type != layout.storage_type.end() &&
+             result_type->second == "f80") {
+            out.push_back(make_instruction(mir::Instruction::MI_FPOP));
+          }
+        } else if(!inst.call_returns_void) {
           const string result_type = layout.storage_type.find(inst.dest)->second;
           if(!object_abi_chunk_types(result_type).empty()) {
             emit_store_object_return_temp(layout, inst.dest, result_type, out);

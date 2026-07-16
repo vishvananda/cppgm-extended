@@ -10,7 +10,7 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
     store i32 0, $x
     store i32 1, $y
     %t1 = load i32 $x
-    %t2 = cmp eq i64 %t1, 0
+    %t2 = cmp eq i32 %t1, 0
     branch %t2, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:

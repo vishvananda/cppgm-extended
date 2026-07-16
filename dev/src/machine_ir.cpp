@@ -247,6 +247,9 @@ void dump_instruction(ostringstream & out, const Instruction & inst)
       out << "fstp." << inst.type << " "
           << operand_text(inst.operands[0]);
       break;
+    case Instruction::MI_FPOP:
+      out << "fpop";
+      break;
     case Instruction::MI_SITOFP:
       out << "sitofp." << int_width_type_text(inst.byte_count)
           << "." << inst.type << " "

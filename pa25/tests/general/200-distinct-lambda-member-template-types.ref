@@ -192,7 +192,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=reference], %qual
     %t15 = load ptr $qualified
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = load u8 %t16
-    %t18 = cmp eq i64 %t17, 0
+    %t18 = cmp eq u8 %t17, 0
     branch %t18, ^land_rhs_8, ^if_else_6
 
   block ^land_rhs_8:
@@ -320,7 +320,7 @@ function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=reference], 
     %t15 = load ptr $qualified
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = load u8 %t16
-    %t18 = cmp eq i64 %t17, 0
+    %t18 = cmp eq u8 %t17, 0
     branch %t18, ^land_rhs_8, ^if_else_6
 
   block ^land_rhs_8:

@@ -2492,9 +2492,24 @@ void analyze_statement_impl(SemanticContext & ctx,
                                                node_text(node));
     for(size_t i = 0; i < node.children.size(); ++i) {
       if(node.children[i].kind == CppAstKind::asm_clause) {
-        asm_node.children.push_back(make_located_dump_node(CallSemKind::asm_clause,
-                                                           node.children[i],
-                                                           node_text(node.children[i])));
+        DumpNode clause = make_located_dump_node(CallSemKind::asm_clause,
+                                                 node.children[i],
+                                                 node_text(node.children[i]));
+        for(size_t j = 0; j < node.children[i].children.size(); ++j) {
+          const CppAstNode & operand_ast = node.children[i].children[j];
+          if(operand_ast.kind != CppAstKind::asm_operand ||
+             operand_ast.children.size() != 1) {
+            throw logic_error("malformed GNU asm operand");
+          }
+          DumpNode operand = make_located_dump_node(CallSemKind::asm_operand,
+                                                    operand_ast,
+                                                    node_text(operand_ast));
+          ExprInfo expression = ctx.analyze_expression(scope,
+                                                       operand_ast.children[0]);
+          operand.children.push_back(std::move(expression.node));
+          clause.children.push_back(std::move(operand));
+        }
+        asm_node.children.push_back(std::move(clause));
       }
     }
     out.children.push_back(std::move(asm_node));
