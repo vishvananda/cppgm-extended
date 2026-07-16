@@ -10096,6 +10096,9 @@ static bool try_build_dependent_qualified_member_type_ir(
 
   abi_mangle::Type owner_ir;
   bool have_owner_ir = try_build_type_ir(owner, mangle_ctx, owner_ir);
+  if(have_owner_ir && !type_ir_can_be_emitted(owner_ir)) {
+    have_owner_ir = false;
+  }
   TypePtr base = strip_top_level_cv(type);
   if(!have_owner_ir &&
      base &&
