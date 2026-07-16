@@ -18639,6 +18639,9 @@ private:
                      *this, scope, *qualified, expr) :
                  lookup_value(scope, expr.value)) :
             nullptr;
+    if(!type && binding) {
+      type = binding->type;
+    }
     if(!type && expr.kind == CppAstKind::id_expression && !binding) {
       type = lookup_type(scope, expr.value);
     }

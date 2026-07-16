@@ -561,7 +561,18 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
     if(payload.kind == CppAstKind::type_id) {
       TypePtr type;
       if(!hooks_.parse_type_id || !hooks_.parse_type_id(payload, type)) {
-        return false;
+        CppAstNode recovered_operand;
+        size_t recovered_size = 0;
+        if(!cppast_recover_sizeof_type_id_expression_operand(
+               payload,
+               recovered_operand) ||
+           !hooks_.evaluate_sizeof_operand ||
+           !hooks_.evaluate_sizeof_operand(recovered_operand, recovered_size)) {
+          return false;
+        }
+        out = make_integral_value(static_cast<long long>(recovered_size),
+                                  make_fundamental(FT_UNSIGNED_LONG_INT));
+        return true;
       }
       if(hooks_.record_sizeof_type_id) {
         hooks_.record_sizeof_type_id(payload, type);

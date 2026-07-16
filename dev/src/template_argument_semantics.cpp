@@ -9557,45 +9557,79 @@ bool materialize_leaf_member_constant_binding(
     return false;
   }
 
+  ClassInfo * owner = binding.owner_class ?
+      binding.owner_class :
+      (binding.declaration_scope ? binding.declaration_scope->class_info : nullptr);
+  const string binding_name = binding.name;
+  const CppAstNode * initializer = binding.constant_initializer;
+  Scope * initializer_scope = binding.constant_initializer_scope;
+  const TypePtr initializer_type = binding.type;
+  const auto current_binding =
+      [&]() -> ValueBinding *
+      {
+        if(!owner || !owner->member_scope) {
+          return &binding;
+        }
+        map<string, ValueBinding>::iterator found =
+            owner->member_scope->values.find(binding_name);
+        return found == owner->member_scope->values.end() ? nullptr : &found->second;
+      };
+
   constant_eval::ConstexprValue value;
   binding.constant_value_in_progress = true;
   bool evaluated = false;
   try {
     evaluated =
         evaluate_constant_expression_leaf_impl(services,
-                                               *binding.constant_initializer_scope,
-                                               *binding.constant_initializer,
+                                               *initializer_scope,
+                                               *initializer,
                                                value,
-                                               binding.type);
+                                               initializer_type);
   } catch(...) {
-    binding.constant_value_in_progress = false;
+    if(ValueBinding * active = current_binding()) {
+      active->constant_value_in_progress = false;
+    }
     throw;
   }
-  binding.constant_value_in_progress = false;
+  ValueBinding * active = current_binding();
+  if(!active) {
+    return false;
+  }
+  active->constant_value_in_progress = false;
+  if(active->has_constant_value || value_binding_has_constexpr_value(*active)) {
+    out = active->has_constant_value ?
+        constant_eval::make_integral_value(active->constant_value,
+                                           active->type ? active->type :
+                                                          make_fundamental(FT_INT)) :
+        value_binding_constexpr_value(*active);
+    return out.kind != constant_eval::ConstexprValue::CV_INVALID;
+  }
   if(!evaluated) {
     return false;
   }
 
-  set_value_binding_constexpr_value(binding, value);
+  set_value_binding_constexpr_value(*active, value);
   long long integral = 0;
   if(constant_eval::constexpr_value_to_integral(value, integral)) {
-    binding.has_constant_value = true;
-    binding.constant_value = integral;
+    active->has_constant_value = true;
+    active->constant_value = integral;
   }
-  binding.dependent_template_value = false;
-  if(binding.owner_class) {
-    if(!owner_value_evaluation_incomplete) {
+  active->dependent_template_value = false;
+  const bool current_owner_value_evaluation_incomplete =
+      class_member_value_evaluation_incomplete(value_binding_owner_class(*active));
+  if(active->owner_class) {
+    if(!current_owner_value_evaluation_incomplete) {
       require_structured_bool_value_member_output_if_needed(
-          services, *binding.owner_class);
+          services, *active->owner_class);
     }
   }
-  if(services.semantic_context && !owner_value_evaluation_incomplete) {
+  if(services.semantic_context && !current_owner_value_evaluation_incomplete) {
     template_api::note_template_member_value_instantiation_if_needed(
         *services.semantic_context,
-        binding);
+        *active);
   }
-  if(!owner_value_evaluation_incomplete) {
-    note_non_bool_static_value_dependency_for_witness(services, binding);
+  if(!current_owner_value_evaluation_incomplete) {
+    note_non_bool_static_value_dependency_for_witness(services, *active);
   }
   out = value;
   return out.kind != constant_eval::ConstexprValue::CV_INVALID;

@@ -9901,97 +9901,153 @@ void finalize_class_constant_members(SemanticContext & ctx,
             template_api::TemplateLifecycleCause::TrackInstantiation,
             has_template_identity);
       };
-  for(std::map<std::string, ValueBinding>::iterator it = info.member_scope->values.begin();
-      it != info.member_scope->values.end(); ++it) {
-    ValueBinding & binding = it->second;
+  const auto find_current_binding =
+      [&](const std::string & name) -> ValueBinding *
+      {
+        if(!info.member_scope) {
+          return nullptr;
+        }
+        std::map<std::string, ValueBinding>::iterator found =
+            info.member_scope->values.find(name);
+        return found == info.member_scope->values.end() ? nullptr : &found->second;
+      };
+  std::vector<std::string> member_names;
+  for(std::map<std::string, ValueBinding>::const_iterator it =
+          info.member_scope->values.begin();
+      it != info.member_scope->values.end();
+      ++it) {
+    member_names.push_back(it->first);
+  }
+  for(std::size_t member_index = 0;
+      member_index < member_names.size();
+      ++member_index) {
+    ValueBinding * binding = find_current_binding(member_names[member_index]);
+    if(!binding) {
+      continue;
+    }
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "finalize-class-constant class=" << info.qualified_name
-            << " member=" << binding.name
-            << " has-initializer=" << (binding.constant_initializer ? "yes" : "no")
-            << " has-constant=" << (binding.has_constant_value ? "yes" : "no")
-            << " has-constexpr=" << (binding.has_constexpr_value ? "yes" : "no")
-            << " dependent=" << (binding.dependent_template_value ? "yes" : "no");
+            << " member=" << binding->name
+            << " has-initializer=" << (binding->constant_initializer ? "yes" : "no")
+            << " has-constant=" << (binding->has_constant_value ? "yes" : "no")
+            << " has-constexpr=" << (binding->has_constexpr_value ? "yes" : "no")
+            << " dependent=" << (binding->dependent_template_value ? "yes" : "no");
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
-    if(!binding.constant_initializer || !binding.constant_initializer_scope) {
+    if(!binding->constant_initializer || !binding->constant_initializer_scope) {
       continue;
     }
     if(class_instantiation_is_dependent(ctx, info)) {
-      binding.dependent_template_value = true;
-      binding.has_constant_value = false;
-      clear_value_binding_constexpr_value(binding);
+      binding->dependent_template_value = true;
+      binding->has_constant_value = false;
+      clear_value_binding_constexpr_value(*binding);
       continue;
     }
-    if(binding.has_constant_value || binding.has_constexpr_value) {
+    if(binding->has_constant_value || binding->has_constexpr_value) {
       const bool has_nested_member_type_dependency =
-          note_initializer_value_members(binding);
+          note_initializer_value_members(*binding);
+      binding = find_current_binding(member_names[member_index]);
+      if(!binding) {
+        continue;
+      }
       note_value_member_with_nested_member_type_dependency(
-          binding,
+          *binding,
           has_nested_member_type_dependency);
-      binding.dependent_template_value = false;
+      binding = find_current_binding(member_names[member_index]);
+      if(binding) {
+        binding->dependent_template_value = false;
+      }
       continue;
     }
-    if(ctx.scope_has_template_placeholders(*binding.constant_initializer_scope) ||
-       ctx.type_depends_on_template_parameter(binding.type)) {
-      binding.dependent_template_value = true;
+    if(ctx.scope_has_template_placeholders(*binding->constant_initializer_scope) ||
+       ctx.type_depends_on_template_parameter(binding->type)) {
+      binding->dependent_template_value = true;
       continue;
     }
 
+    const CppAstNode * initializer = binding->constant_initializer;
+    Scope * initializer_scope = binding->constant_initializer_scope;
+    const TypePtr initializer_type = binding->type;
     constant_eval::ConstexprValue value;
-    binding.constant_value_in_progress = true;
+    binding->constant_value_in_progress = true;
     bool evaluated = false;
     try {
       const template_api::ScopedTemplateWitnessLifecyclePause lifecycle_pause(true);
-      evaluated = ctx.evaluate_initializer_constant_value(*binding.constant_initializer_scope,
-                                                          *binding.constant_initializer,
-                                                          binding.type,
+      evaluated = ctx.evaluate_initializer_constant_value(*initializer_scope,
+                                                          *initializer,
+                                                          initializer_type,
                                                           value);
       if(!evaluated) {
-        evaluated = try_evaluate_noexcept_initializer(binding, value);
+        binding = find_current_binding(member_names[member_index]);
+        if(binding &&
+           !binding->has_constant_value &&
+           !binding->has_constexpr_value) {
+          binding->constant_value_in_progress = true;
+          evaluated = try_evaluate_noexcept_initializer(*binding, value);
+        }
       }
     } catch(...) {
-      binding.constant_value_in_progress = false;
+      binding = find_current_binding(member_names[member_index]);
+      if(binding) {
+        binding->constant_value_in_progress = false;
+      }
       throw;
     }
-    binding.constant_value_in_progress = false;
+    binding = find_current_binding(member_names[member_index]);
+    if(!binding) {
+      continue;
+    }
+    binding->constant_value_in_progress = false;
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "finalize-class-constant-eval class=" << info.qualified_name
-            << " member=" << binding.name
+            << " member=" << binding->name
             << " evaluated=" << (evaluated ? "yes" : "no");
-      if(binding.constant_initializer) {
-        trace << " initializer=" << node_text(*binding.constant_initializer);
+      if(binding->constant_initializer) {
+        trace << " initializer=" << node_text(*binding->constant_initializer);
       }
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
+    if(binding->has_constant_value || binding->has_constexpr_value) {
+      binding->dependent_template_value = false;
+      continue;
+    }
     if(evaluated) {
       const bool has_nested_member_type_dependency =
-          note_initializer_value_members(binding);
+          note_initializer_value_members(*binding);
+      binding = find_current_binding(member_names[member_index]);
+      if(!binding) {
+        continue;
+      }
       note_value_member_with_nested_member_type_dependency(
-          binding,
+          *binding,
           has_nested_member_type_dependency);
-      binding.dependent_template_value = false;
-      set_value_binding_constexpr_value(binding, value);
+      binding = find_current_binding(member_names[member_index]);
+      if(!binding) {
+        continue;
+      }
+      binding->dependent_template_value = false;
+      set_value_binding_constexpr_value(*binding, value);
       long long integral = 0;
       if(constant_eval::constexpr_value_to_integral(value, integral)) {
-        binding.has_constant_value = true;
-        binding.constant_value = integral;
+        binding->has_constant_value = true;
+        binding->constant_value = integral;
       }
       continue;
     }
 
-    if(binding.requires_constant_initializer) {
+    if(binding->requires_constant_initializer) {
       std::ostringstream message;
       message << "unsupported constexpr class member initializer";
       if(!info.name.empty()) {
         message << " [class " << info.name << "]";
       }
-      if(!binding.name.empty()) {
-        message << " [member " << binding.name << "]";
+      if(!binding->name.empty()) {
+        message << " [member " << binding->name << "]";
       }
-      if(binding.type) {
-        message << " [type " << describe_type(binding.type) << "]";
+      if(binding->type) {
+        message << " [type " << describe_type(binding->type) << "]";
       }
       throw std::logic_error(message.str());
     }

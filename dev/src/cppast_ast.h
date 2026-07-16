@@ -680,6 +680,65 @@ inline const CppAstNode * cppast_find_child_kind(const CppAstNode & node,
   return nullptr;
 }
 
+inline bool cppast_recover_sizeof_type_id_expression_operand(
+    const CppAstNode & type_id,
+    CppAstNode & out)
+{
+  if(type_id.kind != CppAstKind::type_id) {
+    return false;
+  }
+
+  const CppAstNode * specifiers =
+      cppast_find_child_kind(type_id, CppAstKind::type_specifier_seq);
+  if(!specifiers ||
+     specifiers->children.size() != 1 ||
+     specifiers->children[0].kind != CppAstKind::type_name) {
+    return false;
+  }
+
+  const CppAstNode & name = specifiers->children[0];
+  const cpp_decl::QualifiedName * qualified =
+      cppast_qualified_name_syntax(name);
+  if(name.has_leading_typename ||
+     !qualified ||
+     (!qualified->rooted && qualified->qualifiers.empty())) {
+    return false;
+  }
+
+  CppAstNode expr = name;
+  expr.kind = CppAstKind::id_expression;
+  expr.children.clear();
+
+  for(std::size_t i = 0; i < type_id.children.size(); ++i) {
+    const CppAstNode & child = type_id.children[i];
+    if(child.kind == CppAstKind::type_specifier_seq) {
+      continue;
+    }
+    if(child.kind != CppAstKind::abstract_declarator) {
+      return false;
+    }
+    for(std::size_t j = 0; j < child.children.size(); ++j) {
+      const CppAstNode & suffix = child.children[j];
+      if(suffix.kind != CppAstKind::array_suffix ||
+         suffix.children.size() != 1) {
+        return false;
+      }
+
+      CppAstNode subscript;
+      subscript.kind = CppAstKind::subscript_expression;
+      subscript.token_start = expr.token_start;
+      subscript.token_end = suffix.token_end;
+      subscript.source_location_id = expr.source_location_id;
+      subscript.children.push_back(std::move(expr));
+      subscript.children.push_back(suffix.children[0]);
+      expr = std::move(subscript);
+    }
+  }
+
+  out = std::move(expr);
+  return true;
+}
+
 inline void append_function_declaration_abi_tags(std::vector<std::string> & out,
                                                  const CppAstNode * node)
 {
