@@ -8037,7 +8037,23 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
         nullptr);
   }
 
-  ExprInfo operand = ctx.analyze_expression(scope, node.children[1]);
+  ExprInfo operand;
+  TypePtr overload_target = strip_top_level_cv(remove_reference_type(target_type));
+  TypePtr overload_target_inner =
+      overload_target && overload_target->kind == Type::TK_MEMBER_POINTER ?
+          strip_top_level_cv(overload_target->inner) :
+          TypePtr();
+  const bool selects_overloaded_member_function =
+      node.simple_type == KW_STATIC_CAST &&
+      overload_target_inner &&
+      overload_target_inner->kind == Type::TK_FUNCTION &&
+      node.children[1].kind == CppAstKind::unary_expression &&
+      node_has_simple_type(node.children[1], OP_AMP);
+  if(!selects_overloaded_member_function ||
+     !ctx.try_analyze_target_aware_expression(
+         scope, node.children[1], target_type, operand)) {
+    operand = ctx.analyze_expression(scope, node.children[1]);
+  }
   const bool direct_static_class_reference_cast =
       node.simple_type == KW_STATIC_CAST &&
       direct_static_reference_cast_preserves_object(ctx, scope, target_type, operand);
