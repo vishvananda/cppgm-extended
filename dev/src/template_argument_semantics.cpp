@@ -10808,6 +10808,9 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
         return true;
       }
 
+      const bool object_is_const =
+          semantic_conversion::is_const_object_type(
+              remove_reference_type(arg_infos[0].first));
       TypePtr object_type = strip_top_level_cv(remove_reference_type(arg_infos[0].first));
       if(object_type && object_type->kind == Type::TK_NAMED) {
         vector<FunctionBinding *> call_operators;
@@ -10829,7 +10832,7 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
                  invoke_args,
                  true,
                  object_type,
-                 semantic_conversion::is_const_object_type(object_type),
+                 object_is_const,
                  arg_infos[0].second == semantic_conversion::VC_LVALUE,
                  false,
                  selected) &&
@@ -10997,6 +11000,10 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
        leaf_function_type_call_result(callee_type, arg_infos, out, category)) {
       return true;
     }
+    const bool object_is_const =
+        callee_type &&
+        semantic_conversion::is_const_object_type(
+            remove_reference_type(callee_type));
     TypePtr object_type = callee_type ?
         strip_top_level_cv(remove_reference_type(callee_type)) :
         TypePtr();
@@ -11020,7 +11027,7 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
                arg_infos,
                true,
                object_type,
-               semantic_conversion::is_const_object_type(object_type),
+               object_is_const,
                callee_category == semantic_conversion::VC_LVALUE,
                false,
                selected) &&
@@ -11066,6 +11073,9 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
       return true;
     }
 
+    const bool object_is_const =
+        semantic_conversion::is_const_object_type(
+            remove_reference_type(callee_type));
     TypePtr object_type = strip_top_level_cv(remove_reference_type(callee_type));
     if(!object_type) {
       return false;
@@ -11093,7 +11103,7 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
            arg_infos,
            true,
            object_type,
-           semantic_conversion::is_const_object_type(object_type),
+           object_is_const,
            callee_category == semantic_conversion::VC_LVALUE,
            false,
            selected) ||
@@ -11128,6 +11138,8 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
   }
 
   const bool base_is_lvalue = base_category == semantic_conversion::VC_LVALUE;
+  const bool object_is_const =
+      semantic_conversion::is_const_object_type(remove_reference_type(base_type));
   TypePtr object_type = strip_top_level_cv(remove_reference_type(base_type));
   if(!object_type) {
     return false;
@@ -11155,7 +11167,7 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
          arg_infos,
          true,
          object_type,
-         semantic_conversion::is_const_object_type(object_type),
+         object_is_const,
          base_is_lvalue,
          false,
          selected) ||
