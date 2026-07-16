@@ -96,6 +96,7 @@ struct FunctionRegistrationRequest
   FunctionTemplateRegistrationIdentity template_identity;
   semantic_model::ClassInfo * lexical_access_class = nullptr;
   semantic_model::FunctionBinding * lexical_access_function = nullptr;
+  bool hidden_friend_only = false;
 };
 
 struct ClassTemplateInfoCreationRequest

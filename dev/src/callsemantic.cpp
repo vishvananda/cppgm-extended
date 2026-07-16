@@ -250,11 +250,14 @@ bool explicit_instantiation_binding_type_matches_target(
       target_type);
 }
 
-bool ordinary_lookup_should_drop_source_template_candidate(
-    FunctionBinding * binding)
+bool ordinary_lookup_should_drop_candidate(
+    FunctionBinding * binding,
+    bool allow_hidden_friend = false)
 {
-  return template_api::function_binding_has_source_template_identity(binding) &&
-         !function_binding_is_concrete_class_template_member_candidate(binding);
+  return binding &&
+         ((!allow_hidden_friend && binding->hidden_friend_only) ||
+          (template_api::function_binding_has_source_template_identity(binding) &&
+           !function_binding_is_concrete_class_template_member_candidate(binding)));
 }
 
 bool named_type_has_function_local_marker(const TypePtr & type)
@@ -15855,16 +15858,18 @@ private:
       bool name_has_conversion_function_syntax = false)
   {
     (void)options;
+    const bool allow_hidden_friends =
+        scope.name == "<adl>" || scope.name == "<adl-only>";
     auto filter_ordinary_candidates =
-        [](vector<FunctionBinding *> & bindings)
+        [allow_hidden_friends](vector<FunctionBinding *> & bindings)
         {
           bindings.erase(
               remove_if(bindings.begin(),
                         bindings.end(),
-                        [](FunctionBinding * binding)
+                        [allow_hidden_friends](FunctionBinding * binding)
                         {
-                          return ordinary_lookup_should_drop_source_template_candidate(
-                              binding);
+                          return ordinary_lookup_should_drop_candidate(
+                              binding, allow_hidden_friends);
                         }),
               bindings.end());
         };
@@ -16135,7 +16140,7 @@ private:
                         bindings.end(),
                         [](FunctionBinding * binding)
                         {
-                          return ordinary_lookup_should_drop_source_template_candidate(
+                          return ordinary_lookup_should_drop_candidate(
                               binding);
                         }),
               bindings.end());
@@ -18518,7 +18523,8 @@ private:
                       template_identity,
                       template_identity.prefer_overload_suffix,
                       request.lexical_access_class,
-                      request.lexical_access_function);
+                      request.lexical_access_function,
+                      request.hidden_friend_only);
     FunctionBinding * binding =
         find_exact_function(*request.scope, request.name, request.declared_type);
     if(binding && request.semantic_flags.is_deleted) {
@@ -24129,7 +24135,8 @@ private:
                              FunctionTemplateRegistrationIdentity(),
                          bool prefer_overload_suffix = false,
                          ClassInfo * lexical_access_class = nullptr,
-                         FunctionBinding * lexical_access_function = nullptr)
+                         FunctionBinding * lexical_access_function = nullptr,
+                         bool hidden_friend_only = false)
   {
     const vector<const CppAstNode *> normalized_defaults =
         normalize_default_arguments(params, default_arguments);
@@ -24363,6 +24370,9 @@ private:
       if(!existing->lexical_access_function && lexical_access_function) {
         existing->lexical_access_function = lexical_access_function;
       }
+      if(!hidden_friend_only) {
+        existing->hidden_friend_only = false;
+      }
       existing->is_constexpr = existing->is_constexpr || is_constexpr;
       apply_host_builtin_metadata(*existing, explicit_param_types);
       return;
@@ -24391,6 +24401,7 @@ private:
     binding->function_qualifier = effective_function_qualifier;
     binding->lexical_access_class = lexical_access_class;
     binding->lexical_access_function = lexical_access_function;
+    binding->hidden_friend_only = hidden_friend_only;
     binding->is_c_linkage = effective_is_c_linkage;
     binding->object_symbol_override = object_symbol_override;
     binding->symbol =
@@ -24444,13 +24455,15 @@ private:
                              FunctionTemplateRegistrationIdentity(),
                          bool prefer_overload_suffix = false,
                          ClassInfo * lexical_access_class = nullptr,
-                         FunctionBinding * lexical_access_function = nullptr)
+                         FunctionBinding * lexical_access_function = nullptr,
+                         bool hidden_friend_only = false)
   {
     register_function(scope, name, type, params, vector<const CppAstNode *>(),
                       body, declaration_node, parameter_syntax_node, is_c_linkage,
                       declaration_scope, function_qualifier,
                       is_constexpr, template_identity, prefer_overload_suffix,
-                      lexical_access_class, lexical_access_function);
+                      lexical_access_class, lexical_access_function,
+                      hidden_friend_only);
   }
 
   FunctionBinding * register_block_scope_function_declaration(

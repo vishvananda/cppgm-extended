@@ -374,6 +374,7 @@ struct FunctionBinding
   ClassInfo * owner_class = nullptr;
   ClassInfo * lexical_access_class = nullptr;
   FunctionBinding * lexical_access_function = nullptr;
+  bool hidden_friend_only = false;
   MemberAccess access = MA_PUBLIC;
   bool is_method = false;
   bool is_constexpr = false;

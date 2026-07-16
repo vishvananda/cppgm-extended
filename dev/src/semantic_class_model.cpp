@@ -7980,6 +7980,7 @@ bool register_friend_function_binding(SemanticContext & ctx,
   request.function_qualifier = function_qualifier;
   request.is_constexpr = is_constexpr;
   request.lexical_access_class = &info;
+  request.hidden_friend_only = !qualified_friend_name;
   ctx.register_function_entity(request);
   FunctionBinding * binding =
       ctx.find_exact_function(*registration_scope, registration_name, effective_friend_type);

@@ -5147,6 +5147,7 @@ void append_adl_direct_functions(Scope & scope,
     for(size_t i = 0; i < found->size(); ++i) {
       FunctionBinding * binding = (*found)[i];
       if(binding &&
+         !binding->hidden_friend_only &&
          declaration_scope_belongs_to_adl_scope(binding->declaration_scope, scope)) {
         candidates.push_back(binding);
       }
