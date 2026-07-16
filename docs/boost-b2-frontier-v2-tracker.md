@@ -15,10 +15,10 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `9 / 147`
 - current cursor: `#10 libs/beast/test`
-- active compiler frontier: `libs/beast/test/beast/core//basic_stream` now
-  compiles, links, and passes its complete runtime target after a forced
-  rebuild; a fresh full forced Beast survey is pending to establish the next
-  ordered independent failure
+- active compiler frontier: `libs/beast/test/beast/core//async_base` fails to
+  derive the typed host typeinfo-name symbol for the named local class `op`
+  inside a function-template instantiation; the preceding `basic_stream`
+  target remains compile-, link-, and runtime-clean in the full forced survey
 
 ## Baseline Gates
 
@@ -217,6 +217,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/beast/test/beast/core//basic_stream` successful async writes | `T object = T()` was recognized as an empty same-type functional constructor call, but the reconstructed typed constructor action did not retain that it value-initializes the result. LowIR's whole-variable trivial-constructor fast path then treated the zero-argument action as a no-op. Lifetime analysis now propagates the typed value-init fact and lowering zero-fills the target storage. Global collection drops only the exact trivial zero-argument action that targets the whole static object because its emitted backing data is already zero, avoiding redundant dynamic initialization. No source text, cache, symbol trace, ABI path, or witness-only logic is involved. | `pa15/tests/general/300-value-init-empty-functional-cast-aggregate.t`, a header-free aggregate reducer at the earliest value-semantics owner | LLDB showed the handlers received `ENAMETOOLONG`/`EINVAL` with zero bytes. The call into `socket_ops::send` had the correct socket, buffer, length, and flags, while host `sendmsg` saw garbage `msg_name`, `msg_namelen`, `msg_control`, and `msg_controllen` from `msghdr msg = msghdr()`. A dirty-stack non-STL reducer exits 1 and emits no zero stores before the fix; Clang exits 0. This occurs on the initial typed lifetime/lowering path. | Warning-clean build; PA15/PA20/PA21 direct reports pass `504/504`; the strict PA18/19/21/22/23 direct suites pass; placement/hygiene audits for all three touched PAs exit clean; all 23 text-reparse categories remain zero and all 14 audit tests pass. PA21's local aggregate reference now includes the required member zero store; PA20's constant global removes a redundant empty `__cppgm_init`. Normal, all ten individual cache-disabled modes, and all-disabled reducer LowIR are byte-identical with SHA-256 `fe0c1711e8be81559c618807e409715adfca3d4a395fc86b546bfceb292e67b8`. Full direct report with PA9 explicitly excluded passes `3864/3864`, including PA37 object roundtrip `7/7`. The exact final Beast target force-rebuilds 46 targets and passes compile, link, and runtime. | instructions -0.50%; max RSS -0.02%; peak footprint +0.17%; pass; versus the preceding frontier instructions are +0.068%, RSS improves 0.228%, and footprint is +0.002%; report `/tmp/cppgm-boost-frontier-v2-value-init-zero-perf.json` | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-16`: Re-ran the complete forced Beast suite at immutable commit
+  `509b7c962`. The survey completed in `782.9s` with 23 failed targets and
+  independently reconfirmed that `basic_stream` passes in the full suite. The
+  first ordered independent failure is `core//async_base`: LowIR cannot derive
+  the host typeinfo-name symbol for the named function-local class `op` inside
+  a function-template instantiation. The diagnostic is already reached through
+  `symbol_linkage::typeinfo_name_symbol_for_type`; the next step is to repair
+  missing typed ABI-mangle context, without rendered-name or source-text
+  fallback. Evidence is in
+  `/tmp/boost-frontier-v2-suite-016-value-init-zero-final/libs__beast__test.log`.
 
 - `2026-07-16`: Traced the four `basic_stream` runtime failures through the
   handler ABI and socket layer to an uninitialized host `msghdr`. The typed
