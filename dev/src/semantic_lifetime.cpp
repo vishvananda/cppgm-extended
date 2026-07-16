@@ -3348,6 +3348,12 @@ void append_target_initialization_actions(SemanticContext & ctx,
         initializer_uses_copy_initialization(initializer) &&
         payload &&
         payload->kind == CppAstKind::braced_init_list;
+    const bool empty_same_type_function_style =
+        payload &&
+        is_empty_same_type_function_style_constructor_call(ctx,
+                                                           scope,
+                                                           type,
+                                                           *payload);
     bool uses_function_style_constructor_args = false;
     vector<const CppAstNode *> args;
     const CppAstNode * direct_braced_init = nullptr;
@@ -3395,7 +3401,8 @@ void append_target_initialization_actions(SemanticContext & ctx,
                                    direct_braced_init,
                                    ctor_options,
                                    nullptr,
-                                   initializer_is_empty_value_initializer(initializer),
+                                   initializer_is_empty_value_initializer(initializer) ||
+                                       empty_same_type_function_style,
                                    out,
                                    source_witness_target_name);
     return;
@@ -4167,6 +4174,12 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
       initializer_uses_copy_initialization(initializer) &&
       payload &&
       payload->kind == CppAstKind::braced_init_list;
+  const bool empty_same_type_function_style =
+      payload &&
+      is_empty_same_type_function_style_constructor_call(ctx,
+                                                         scope,
+                                                         type,
+                                                         *payload);
   if(initializer && initializer->kind == CppAstKind::initializer &&
      initializer->children.size() == 1) {
     ExprInfo direct_init;
@@ -4237,7 +4250,8 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
                                  ctor_options,
                                  nullptr,
                                  initializer &&
-                                     initializer_is_empty_value_initializer(initializer),
+                                     (initializer_is_empty_value_initializer(initializer) ||
+                                      empty_same_type_function_style),
                                  out);
   append_destructor_action(ctx, *info, object_ptr, nullptr, true, out);
 }

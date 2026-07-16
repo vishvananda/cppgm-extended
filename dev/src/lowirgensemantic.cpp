@@ -727,6 +727,18 @@ bool constructor_call_targets_whole_variable(const CallSemNode & call,
          target.text == variable.text;
 }
 
+bool is_redundant_static_zero_initialization_action(const CallSemNode & variable,
+                                                    const CallSemNode & action)
+{
+  return action.kind == CallSemKind::constructor_action &&
+         action.trivial_lifecycle &&
+         action.children.size() == 1 &&
+         action.children[0].kind == CallSemKind::call_expression &&
+         action.children[0].children.size() == 2 &&
+         action.children[0].value_initializes_result &&
+         constructor_call_targets_whole_variable(action.children[0], variable);
+}
+
 const CallSemNode * peel_base_subobject_root_shared(const CallSemNode & node)
 {
   const CallSemNode * current = &node;
@@ -13694,7 +13706,12 @@ private:
             throw logic_error("unsupported trivial constructor action arity");
           }
           if(constructor_call_targets_whole_variable(call, variable)) {
-            if(call.children.size() == 3 &&
+            if(call.children.size() == 2 &&
+               call.value_initializes_result &&
+               !is_empty_class_storage_type(variable.semantic_type)) {
+              emit_zero_storage_bytes(target_ptr,
+                                      backend_storage_size(variable.semantic_type));
+            } else if(call.children.size() == 3 &&
                !is_empty_class_storage_type(variable.semantic_type)) {
               emit_storage_value_to_target(variable.semantic_type,
                                            call.children[2],
@@ -21639,6 +21656,9 @@ private:
             node.children[i].kind == CallSemKind::constructor_action ||
             node.children[i].kind == CallSemKind::expression_statement;
         if(initializer_action) {
+          if(is_redundant_static_zero_initialization_action(node, node.children[i])) {
+            continue;
+          }
           if(callsem_local_static_guard_symbol(node).empty()) {
             global_ctor_actions_.push_back(&node.children[i]);
           } else if(node.is_thread_local) {

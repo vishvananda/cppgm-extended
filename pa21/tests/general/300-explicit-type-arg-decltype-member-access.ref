@@ -13,10 +13,13 @@ function @impl_handler___create(%__param0 : i32) -> i32 [binding=weak, object=_Z
     %t1 = addr $d
     %t2 = addr $d
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t3, $p
-    %t4 = load ptr $p
-    %t5 = call i32 @traits_allocator___check(%t4)
-    return i32 %t5
+    store i32 0, %t3
+    %t4 = addr $d
+    %t5 = index i8 [projection=field] %t4, 0
+    store ptr %t5, $p
+    %t6 = load ptr $p
+    %t7 = call i32 @traits_allocator___check(%t6)
+    return i32 %t7
 }
 function @traits_allocator___check(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6traitsI9allocatorE5checkERS0_] {
   slot $__param0 : ptr

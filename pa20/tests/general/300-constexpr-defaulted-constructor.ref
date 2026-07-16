@@ -16,8 +16,4 @@ function @Zero__Zero(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4Z
     store ptr %this, $this
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}
 alias object _ZN4ZeroC2Ev = @Zero__Zero
