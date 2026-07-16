@@ -4,7 +4,7 @@ global @__strlit__1 [binding=internal] = {
   i8 114
   i8 0
 }
-global @saved : ptr [binding=internal, object=_Z5saved] = 0
+global @saved : ptr [binding=internal, object=_ZL5saved] = 0
 
 function @sink(%p : ptr [pass=reference]) -> void [binding=strong, object=_Z4sinkOPKc] {
   slot $p : ptr

@@ -1,5 +1,5 @@
 global @source__value : i32 [binding=strong, object=_ZN6source5valueE] = 4
-global @target__alias : ptr [binding=internal, object=_ZN6target5aliasE] = zero
+global @target__alias : ptr [binding=internal, object=_ZN6targetL5aliasE] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

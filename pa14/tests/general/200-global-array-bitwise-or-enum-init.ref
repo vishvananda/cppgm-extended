@@ -1,4 +1,4 @@
-global @masks [binding=internal, object=_Z5masks] = {
+global @masks [binding=internal, object=_ZL5masks] = {
   u32 0
   u32 1120
 }

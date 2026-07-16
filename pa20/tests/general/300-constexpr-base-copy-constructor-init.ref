@@ -1,7 +1,7 @@
-global @payload [binding=internal, object=_Z7payload] = {
+global @payload [binding=internal, object=_ZL7payload] = {
   zero 4
 }
-global @adapted [binding=internal, object=_Z7adapted] = {
+global @adapted [binding=internal, object=_ZL7adapted] = {
   zero 4
 }
 

@@ -1,4 +1,4 @@
-global @observed : i64 [binding=internal, object=_Z8observed] = 3
+global @observed : i64 [binding=internal, object=_ZL8observed] = 3
 global @bucket_array_base_true___sizes [binding=weak, object=_ZN17bucket_array_baseILb1EE5sizesE] = {
   i64 1
   i64 2

@@ -1,5 +1,5 @@
 global @forward_declared_object : ptr [binding=strong, object=_Z23forward_declared_object] = zero
-global @allocator_arg : ptr [binding=internal, object=_Z13allocator_arg] = zero
+global @allocator_arg : ptr [binding=internal, object=_ZL13allocator_arg] = zero
 global @value : i32 [binding=strong, object=_Z5value] = 7
 global @value_ref : ptr [binding=strong, object=_Z9value_ref] = zero
 

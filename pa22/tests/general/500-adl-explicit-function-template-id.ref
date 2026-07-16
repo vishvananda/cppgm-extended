@@ -1,4 +1,4 @@
-global @lib__default_alignment : i64 [binding=internal, object=_ZN3lib17default_alignmentE] = 0
+global @lib__default_alignment : i64 [binding=internal, object=_ZN3libL17default_alignmentE] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $source : obj<1x1>

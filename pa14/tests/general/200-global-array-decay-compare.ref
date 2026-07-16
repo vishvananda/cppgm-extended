@@ -1,9 +1,9 @@
-global @data [binding=internal, object=_Z4data] = {
+global @data [binding=internal, object=_ZL4data] = {
   i8 49
   i8 10
   i8 0
 }
-global @p : ptr [binding=internal, object=_Z1p] = addr @data
+global @p : ptr [binding=internal, object=_ZL1p] = addr @data
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

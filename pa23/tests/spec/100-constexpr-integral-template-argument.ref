@@ -1,4 +1,4 @@
-global @k : i32 [binding=internal, object=_Z1k] = 3
+global @k : i32 [binding=internal, object=_ZL1k] = 3
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

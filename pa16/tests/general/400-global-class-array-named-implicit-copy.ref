@@ -1,11 +1,11 @@
 global @copies : i32 [binding=strong, object=_Z6copies] = 0
-global @a [binding=internal, object=_Z1a] = {
+global @a [binding=internal, object=_ZL1a] = {
   zero 4
 }
-global @b [binding=internal, object=_Z1b] = {
+global @b [binding=internal, object=_ZL1b] = {
   zero 4
 }
-global @table [binding=internal, object=_Z5table] = {
+global @table [binding=internal, object=_ZL5table] = {
   zero 8
 }
 

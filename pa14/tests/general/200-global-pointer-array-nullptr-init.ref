@@ -2,7 +2,7 @@ global @__strlit__1 [binding=internal] = {
   i8 97
   i8 0
 }
-global @paths [binding=internal, object=_Z5paths] = {
+global @paths [binding=internal, object=_ZL5paths] = {
   ptr addr @__strlit__1
   zero 8
 }

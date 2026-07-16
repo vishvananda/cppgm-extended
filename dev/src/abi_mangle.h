@@ -271,6 +271,7 @@ struct AbiEntityFact
   AbiEntityFactKind kind = ABI_ENTITY_FACT_VARIABLE;
   std::string qualified_name;
   AbiFunctionTarget function;
+  bool internal_linkage = false;
 };
 
 struct AbiDefinitionRecord

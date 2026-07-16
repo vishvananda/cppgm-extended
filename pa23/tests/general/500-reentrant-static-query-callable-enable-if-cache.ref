@@ -36,7 +36,7 @@ function @api__execution__detail__relationship__fork_t_0___fork_t(%this : ptr) -
     store ptr %this, $this
     return void
 }
-function @api__query_fn__impl__operator__(%this : ptr, %t : ptr [pass=reference], %p : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZNK3api8query_fn4implclINS_8executorENS_9execution6detail12relationship6fork_tILi0EEEEES8_OT_OT0_] {
+function @api__query_fn__impl__operator__(%this : ptr, %t : ptr [pass=reference], %p : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZNK3api8query_fn4implclINS_8executorENS_9execution6detail12relationship6fork_tILi0EEEEEN9enable_ifIXeqsr11call_traitsIS1_T_FvT0_EEE8overloadLNS0_13overload_typeE1EENS0_11call_traitsIS1_SA_SC_vvvvE11result_typeEE4typeEOSA_OSB_] {
   slot $this : ptr
   slot $t : ptr
   slot $p : ptr

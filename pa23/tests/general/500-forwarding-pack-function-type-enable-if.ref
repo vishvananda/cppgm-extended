@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $result
     return i32 0
 }
-function @prefer_fn__operator__(%this : ptr, %value : ptr [pass=reference], %__param2 : ptr [pass=reference], %__param3 : ptr [pass=reference], %__param4 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK9prefer_fnclIR8executorRK10property_aRK10property_bJRK10property_cEEES2_OT_OT0_OT1_DpOT2_] {
+function @prefer_fn__operator__(%this : ptr, %value : ptr [pass=reference], %__param2 : ptr [pass=reference], %__param3 : ptr [pass=reference], %__param4 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK9prefer_fnclIR8executorRK10property_aRK10property_bJRK10property_cEEEN9enable_ifIXeqsr11call_traitsIT_FvT0_T1_DpT2_EEE8overloadL13overload_type0EEN11call_traitsISD_SI_E11result_typeEE4typeEOSD_OSE_OSF_DpOSG_] {
   slot $this : ptr
   slot $value : ptr
   slot $__param2 : ptr

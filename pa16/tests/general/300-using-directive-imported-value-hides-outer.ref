@@ -1,5 +1,5 @@
-global @A__i : i32 [binding=internal, object=_ZN1A1iE] = 1
-global @A__B__C__i : i32 [binding=internal, object=_ZN1A1B1C1iE] = 2
+global @A__i : i32 [binding=internal, object=_ZN1AL1iE] = 1
+global @A__B__C__i : i32 [binding=internal, object=_ZN1A1B1CL1iE] = 2
 
 function @A__B__f() -> i32 [binding=strong, object=_ZN1A1B1fEv] {
   block ^entry:

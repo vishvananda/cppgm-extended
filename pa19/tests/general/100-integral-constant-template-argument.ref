@@ -1,4 +1,4 @@
-global @K : i32 [binding=internal, object=_Z1K] = 3
+global @K : i32 [binding=internal, object=_ZL1K] = 3
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $b : obj<1x1>

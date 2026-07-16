@@ -1,10 +1,10 @@
 declare function @operator_delete__(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete_array]
 declare function @operator_new__(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new_array]
 
-global @constructed : i32 [binding=internal, object=_Z11constructed] = zero
-global @destroyed : i32 [binding=internal, object=_Z9destroyed] = zero
-global @fail : i32 [binding=internal, object=_Z4fail] = zero
-global @expected : i32 [binding=internal, object=_Z8expected] = 3
+global @constructed : i32 [binding=internal, object=_ZL11constructed] = zero
+global @destroyed : i32 [binding=internal, object=_ZL9destroyed] = zero
+global @fail : i32 [binding=internal, object=_ZL4fail] = zero
+global @expected : i32 [binding=internal, object=_ZL8expected] = 3
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $items : ptr

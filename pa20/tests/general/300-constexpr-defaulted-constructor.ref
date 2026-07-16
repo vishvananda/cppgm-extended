@@ -1,7 +1,7 @@
-global @z [binding=internal, object=_Z1z] = {
+global @z [binding=internal, object=_ZL1z] = {
   zero 4
 }
-global @e [binding=internal, object=_Z1e] = {
+global @e [binding=internal, object=_ZL1e] = {
   zero 1
 }
 

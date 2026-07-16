@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__2
     return i32 %t10
 }
-function @any_executor_prefer_only_tracked___prefer_only_untracked____any_executor__ov3(%this : ptr, %__param1 : obj<1x1>, %__param2 : ptr) -> void [binding=weak, object=_ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC1IN4pool8executorEEET_PN9enable_ifIXaaaantsr7is_sameIS9_S5_EE5valuentsr10is_base_ofI13executor_baseS9_EE5valuesr24is_valid_target_executorIS9_FvS2_EEE5valueEvE4typeE] {
+function @any_executor_prefer_only_tracked___prefer_only_untracked____any_executor__ov3(%this : ptr, %__param1 : obj<1x1>, %__param2 : ptr) -> void [binding=weak, object=_ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC1IN4pool8executorEEET_PN9enable_ifIXaaaantsr7is_sameIS9_S5_EE5valuentsr10is_base_ofI13executor_baseS9_EE5valuesr24is_valid_target_executorIS9_FvS2_S4_EEE5valueEvE4typeE] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : ptr
@@ -60,5 +60,5 @@ function @pool__executor__executor(%this : ptr) -> void [unwind=no, binding=weak
     store ptr %this, $this
     return void
 }
-alias object _ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC2IN4pool8executorEEET_PN9enable_ifIXaaaantsr7is_sameIS9_S5_EE5valuentsr10is_base_ofI13executor_baseS9_EE5valuesr24is_valid_target_executorIS9_FvS2_EEE5valueEvE4typeE = @any_executor_prefer_only_tracked___prefer_only_untracked____any_executor__ov3
+alias object _ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC2IN4pool8executorEEET_PN9enable_ifIXaaaantsr7is_sameIS9_S5_EE5valuentsr10is_base_ofI13executor_baseS9_EE5valuesr24is_valid_target_executorIS9_FvS2_S4_EEE5valueEvE4typeE = @any_executor_prefer_only_tracked___prefer_only_untracked____any_executor__ov3
 alias object _ZN4pool8executorC2Ev = @pool__executor__executor

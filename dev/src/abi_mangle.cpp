@@ -352,7 +352,8 @@ Type::ClassTemplateArgument class_arg_from_template_arg(const TemplateArgument &
 Type parse_type_spec(const ParseContext & ctx, const vector<string> & words, size_t begin);
 Type parse_single_type_token(const ParseContext & ctx, const string & text);
 DependentExpression parse_expression_fact(const ParseContext & ctx, const vector<string> & words);
-string variable_symbol(const string & qualified_name);
+string variable_symbol(const string & qualified_name,
+                       bool internal_linkage = false);
 
 void apply_local_context(FunctionEncoding::LambdaMetadata & lambda,
                          const LocalContext & context)
@@ -1011,7 +1012,7 @@ TemplateArgument parse_template_argument_fact(const ParseContext & ctx,
         throw logic_error("unable to encode ABI fact function entity");
       }
     } else if(entity.kind == ABI_ENTITY_VARIABLE) {
-      symbol = variable_symbol(entity.qualified_name);
+      symbol = variable_symbol(entity.qualified_name, entity.internal_linkage);
     }
     return TemplateArgument::external_entity_arg(symbol, kind == "entity-address");
   }
@@ -1135,7 +1136,7 @@ DependentExpression parse_expression_fact(const ParseContext & ctx,
         throw logic_error("unable to encode ABI fact function entity");
       }
     } else if(entity.kind == ABI_ENTITY_VARIABLE) {
-      symbol = variable_symbol(entity.qualified_name);
+      symbol = variable_symbol(entity.qualified_name, entity.internal_linkage);
     }
     return DependentExpression::external_entity(symbol, kind == "entity-address");
   }
@@ -1516,12 +1517,13 @@ void apply_fact_words(model::AbiFactCase & fact_case,
                             words,
                             3,
                             command);
-    } else if(words[2] == "variable") {
+    } else if(words[2] == "variable" || words[2] == "internal-variable") {
       if(words.size() != 4) {
         throw logic_error("let-entity variable requires a qualified name");
       }
       fact.entity.kind = ABI_ENTITY_VARIABLE;
       fact.entity.qualified_name = words[3];
+      fact.entity.internal_linkage = words[2] == "internal-variable";
     } else if(words[2] == "symbol") {
       if(words.size() != 4) {
         throw logic_error("let-entity symbol requires a raw symbol");
@@ -1796,13 +1798,22 @@ string function_symbol(const FunctionEncoding & function)
   return out;
 }
 
-string variable_symbol(const string & qualified_name)
+string variable_symbol(const string & qualified_name, bool internal_linkage)
 {
-  FunctionEncoding name;
-  name.name_components = function_components_for_qualified(qualified_name, true);
+  const vector<string> parts = split_qualified_name(qualified_name);
+  vector<Type::NameComponent> components;
+  components.reserve(parts.size());
+  for(size_t i = 0; i < parts.size(); ++i) {
+    components.push_back(i == 0 && parts[i] == "std" ?
+        Type::NameComponent::std_namespace() :
+        Type::NameComponent::source(parts[i], string()));
+  }
   FactSubstitutionSink sink;
   string out;
-  if(!emit_function_name_symbol(name, out, &sink)) {
+  if(!emit_variable_symbol_from_name_components(components,
+                                                internal_linkage,
+                                                out,
+                                                &sink)) {
     throw logic_error("unable to encode ABI fact variable");
   }
   return out;
@@ -2766,7 +2777,9 @@ struct FactSerializer
       add_line(words);
       return;
     }
-    words.push_back(entity.kind == ABI_ENTITY_SYMBOL ? "symbol" : "variable");
+    words.push_back(entity.kind == ABI_ENTITY_SYMBOL ?
+                        "symbol" :
+                        entity.internal_linkage ? "internal-variable" : "variable");
     words.push_back(entity.qualified_name);
     add_line(words);
   }
@@ -4220,12 +4233,16 @@ AbiFactRecord parse_fact_record_words_with_context(
       record.definition.entity.kind = ABI_ENTITY_FACT_FUNCTION;
       record.definition.entity.function =
           parse_public_function_target(words, 2, context, command);
-    } else if(words[2] == "variable" || words[2] == "symbol") {
+    } else if(words[2] == "variable" ||
+              words[2] == "internal-variable" ||
+              words[2] == "symbol") {
       if(words.size() != 4) { throw logic_error("let-entity variable/symbol requires one name"); }
-      record.definition.entity.kind = words[2] == "variable" ?
+      record.definition.entity.kind = words[2] != "symbol" ?
           ABI_ENTITY_FACT_VARIABLE :
           ABI_ENTITY_FACT_SYMBOL;
       record.definition.entity.qualified_name = words[3];
+      record.definition.entity.internal_linkage =
+          words[2] == "internal-variable";
     } else {
       throw logic_error("unknown ABI fact entity kind '" + words[2] + "'");
     }
@@ -4596,8 +4613,9 @@ vector<string> words_from_fact_record(const AbiFactRecord & record)
                                      true);
       } else {
         words.push_back(record.definition.entity.kind == ABI_ENTITY_FACT_SYMBOL ?
-                        "symbol" :
-                        "variable");
+                            "symbol" :
+                            record.definition.entity.internal_linkage ?
+                                "internal-variable" : "variable");
         words.push_back(record.definition.entity.qualified_name);
       }
       return words;

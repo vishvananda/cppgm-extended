@@ -1,4 +1,4 @@
-global @N : i64 [binding=internal, object=_Z1N] = 6
+global @N : i64 [binding=internal, object=_ZL1N] = 6
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $first : ptr

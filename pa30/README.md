@@ -100,6 +100,11 @@ The normalized builtin words `complex-float`, `complex-double`, and
 encodings `Cf`, `Cd`, and `Ce`. These are typed ABI facts; consumers must not
 construct them by appending raw mangled fragments.
 
+Integral `value` facts are interpreted according to their typed value. A
+negative stored value for an unsigned builtin type denotes that type's modulo
+bit pattern, so `value uint -1` and `value ulong -1` are emitted as the maximum
+values for their respective target widths rather than as negative ABI literals.
+
 Structured cases introduce reusable facts before the final target:
 
 ```text
@@ -195,6 +200,9 @@ of already-mangled names.
 Raw external symbols may be carried with `let-entity <id> symbol <mangled-name>`
 when a template argument or dependent expression names an entity that is already
 known by ABI symbol rather than by a source-level qualified name.
+Namespace-scope variables with internal linkage use
+`let-entity <id> internal-variable <qualified-name>`; this keeps the qualified
+entity and linkage typed until the encoder inserts the Itanium local-name marker.
 
 Template-template arguments may name either a namespace-scope template with
 `let-arg <id> template-entity <qualified-name>` or a member template of an

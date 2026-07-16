@@ -1,4 +1,4 @@
-global @header_init [binding=internal, object=_Z11header_init] = {
+global @header_init [binding=internal, object=_ZL11header_init] = {
   zero 1
 }
 global @counter : i32 [binding=strong, object=_Z7counter] = zero

@@ -1,4 +1,4 @@
-global @ns__mlf : f32 [binding=internal, object=_ZN2ns3mlfE] = 0.875f
+global @ns__mlf : f32 [binding=internal, object=_ZN2nsL3mlfE] = 0.875f
 
 function @use_mlf(%x : f32) -> f32 [binding=strong, object=_Z7use_mlff] {
   slot $x : f32

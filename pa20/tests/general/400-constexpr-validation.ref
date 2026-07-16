@@ -1,5 +1,5 @@
-global @x : i32 [binding=internal, object=_Z1x] = 720
-global @lit [binding=internal, object=_Z3lit] = {
+global @x : i32 [binding=internal, object=_ZL1x] = 720
+global @lit [binding=internal, object=_ZL3lit] = {
   zero 4
 }
 

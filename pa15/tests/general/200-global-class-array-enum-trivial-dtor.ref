@@ -1,4 +1,4 @@
-global @table [binding=internal, object=_Z5table] = {
+global @table [binding=internal, object=_ZL5table] = {
   zero 16
 }
 

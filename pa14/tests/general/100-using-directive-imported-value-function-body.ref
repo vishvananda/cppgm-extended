@@ -1,4 +1,4 @@
-global @N__K : i32 [binding=internal, object=_ZN1N1KE] = 3
+global @N__K : i32 [binding=internal, object=_ZN1NL1KE] = 3
 
 function @g() -> i32 [binding=strong, object=_Z1gv] {
   block ^entry:

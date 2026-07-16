@@ -1,4 +1,4 @@
-global @selected : ptr [binding=internal, object=_Z8selected] = zero
+global @selected : ptr [binding=internal, object=_ZL8selected] = zero
 global @static_storage_wrapper_callable_tag____value [binding=weak, object=_ZN14static_storageI7wrapperI12callable_tagEE5valueE] = {
   zero 4
 }

@@ -1,7 +1,7 @@
-global @p [binding=internal, object=_Z1p] = {
+global @p [binding=internal, object=_ZL1p] = {
   zero 8
 }
-global @arr [binding=internal, object=_Z3arr] = {
+global @arr [binding=internal, object=_ZL3arr] = {
   i32 10
   i32 20
   i32 30

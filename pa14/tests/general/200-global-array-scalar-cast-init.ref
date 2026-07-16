@@ -1,4 +1,4 @@
-global @escaped [binding=internal, object=_Z7escaped] = {
+global @escaped [binding=internal, object=_ZL7escaped] = {
   i8 40
   i8 63
 }

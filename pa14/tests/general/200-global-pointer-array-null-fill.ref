@@ -10,7 +10,7 @@ global @__strlit__2 [binding=internal] = {
   i8 98
   i8 0
 }
-global @names [binding=internal, object=_Z5names] = {
+global @names [binding=internal, object=_ZL5names] = {
   ptr addr @__strlit__1
   ptr addr @__strlit__2
   zero 8

@@ -1,4 +1,4 @@
-global @box [binding=internal, object=_Z3box] = {
+global @box [binding=internal, object=_ZL3box] = {
   zero 4
 }
 

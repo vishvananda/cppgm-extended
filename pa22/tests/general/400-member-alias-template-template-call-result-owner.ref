@@ -1,6 +1,6 @@
 declare function @extractor_requested_feature___operator__(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK9extractorI17requested_featureEclIN9parameter3aux18flat_like_arg_listIJNS4_19flat_like_arg_tupleI9other_tagNS4_15tagged_argumentIS8_KdEEN4mp117mp_trueEEENS7_I13requested_tagNS9_ISF_14requested_typeEESD_EEEEEEEN16extractor_resultIT_S0_E4typeERKSL_]
 
-global @extract [binding=internal, object=_Z7extract] = {
+global @extract [binding=internal, object=_ZL7extract] = {
   zero 1
 }
 

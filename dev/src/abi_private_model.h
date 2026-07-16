@@ -1529,6 +1529,7 @@ struct AbiEntity
   AbiEntityKind kind = ABI_ENTITY_VARIABLE;
   FunctionEncoding function;
   std::string qualified_name;
+  bool internal_linkage = false;
 };
 
 enum AbiFactKind

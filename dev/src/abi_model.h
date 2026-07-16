@@ -2127,6 +2127,102 @@ inline bool emit_external_entity_argument(const std::string & symbol,
   return true;
 }
 
+inline bool emit_variable_symbol_from_name_components(
+    const std::vector<Type::NameComponent> & components,
+    bool internal_linkage,
+    std::string & out,
+    SubstitutionSink * sink)
+{
+  if(components.empty()) {
+    return false;
+  }
+  const std::size_t begin = out.size();
+  out += "_Z";
+  const bool unscoped_std =
+      components.size() == 2 && components.front().std_abbrev;
+  const bool nested = components.size() > 1 && !unscoped_std;
+  if(nested) {
+    out += 'N';
+  }
+  for(std::size_t i = 0; i + 1 < components.size(); ++i) {
+    if(!emit_name_component(components[i], out, sink)) {
+      out.resize(begin);
+      return false;
+    }
+  }
+  if(internal_linkage) {
+    out += 'L';
+  }
+  if(!emit_name_component(components.back(), out, sink)) {
+    out.resize(begin);
+    return false;
+  }
+  if(nested) {
+    out += 'E';
+  }
+  return true;
+}
+
+inline std::size_t integral_template_value_unsigned_width(const Type * type)
+{
+  if(!type || type->kind != Type::TK_BUILTIN) {
+    return 0;
+  }
+  const std::string code(type->builtin_code);
+  if(code == "h") { return sizeof(unsigned char) * 8; }
+  if(code == "t") { return sizeof(unsigned short) * 8; }
+  if(code == "j") { return sizeof(unsigned int) * 8; }
+  if(code == "m") { return sizeof(unsigned long) * 8; }
+  if(code == "y") { return sizeof(unsigned long long) * 8; }
+  if(code == "o") { return 128; }
+  if(code == "Ds") { return 16; }
+  if(code == "Di") { return 32; }
+  return 0;
+}
+
+inline std::string unsigned_integral_template_value_text(std::size_t width,
+                                                         long long value)
+{
+  std::uint64_t low = static_cast<std::uint64_t>(value);
+  if(width < 64) {
+    low &= (std::uint64_t(1) << width) - 1;
+  }
+  if(width <= 64) {
+    return std::to_string(low);
+  }
+
+  std::uint32_t words[4] = {
+      value < 0 ? ~std::uint32_t(0) : 0,
+      value < 0 ? ~std::uint32_t(0) : 0,
+      static_cast<std::uint32_t>(low >> 32),
+      static_cast<std::uint32_t>(low)};
+  std::string reversed;
+  while(words[0] || words[1] || words[2] || words[3]) {
+    std::uint64_t remainder = 0;
+    for(std::size_t i = 0; i < 4; ++i) {
+      const std::uint64_t dividend = (remainder << 32) | words[i];
+      words[i] = static_cast<std::uint32_t>(dividend / 10);
+      remainder = dividend % 10;
+    }
+    reversed.push_back(static_cast<char>('0' + remainder));
+  }
+  if(reversed.empty()) {
+    return "0";
+  }
+  return std::string(reversed.rbegin(), reversed.rend());
+}
+
+inline std::string integral_template_value_text(const Type * type,
+                                                long long value)
+{
+  const std::size_t unsigned_width =
+      integral_template_value_unsigned_width(type);
+  if(value < 0 && unsigned_width != 0) {
+    return unsigned_integral_template_value_text(unsigned_width, value);
+  }
+  return std::to_string(value);
+}
+
 inline bool emit_integral_template_value(const Type * value_type,
                                          long long value,
                                          std::string & out,
@@ -2139,7 +2235,7 @@ inline bool emit_integral_template_value(const Type * value_type,
       out.resize(begin);
       return false;
     }
-    out += std::to_string(value);
+    out += integral_template_value_text(value_type, value);
     out += 'E';
     return true;
   }
@@ -2162,7 +2258,7 @@ inline bool emit_integral_template_value_owned(Type * value_type,
       out.resize(begin);
       return false;
     }
-    out += std::to_string(value);
+    out += integral_template_value_text(value_type, value);
     out += 'E';
     return true;
   }

@@ -1,4 +1,4 @@
-global @p [binding=internal, object=_Z1p] = {
+global @p [binding=internal, object=_ZL1p] = {
   zero 4
 }
 

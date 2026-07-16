@@ -192,8 +192,6 @@ static bool try_emit_type_encoding_ir(const TypePtr & type,
 static bool try_emit_special_type_encoding_ir(const TypePtr & type, string & out);
 static bool try_emit_qualified_name_encoding_ir(const QualifiedName & qualified,
                                                 string & out);
-static bool try_emit_qualified_name_object_symbol_ir(const QualifiedName & qualified,
-                                                     string & out);
 static bool emit_itanium_function_encoding_with_substitutions(
     const QualifiedName & qualified_name,
     const string & display_name,
@@ -939,6 +937,7 @@ struct TypeMangleContext
   const map<string, size_t> * template_argument_pack_sizes = nullptr;
   bool prefer_template_argument_values = false;
   bool prefer_concrete_non_type_values_for_dependent_parameter_types = false;
+  bool prefer_concrete_owner_non_type_expression_values = false;
   int alias_expansion_depth = 0;
   bool canonical_enable_if_result_alias_substitutions = false;
   bool suppress_current_type_id_substitution_registration = false;
@@ -8197,6 +8196,33 @@ static bool try_build_template_parameter_value_expression_ir(
      try_parameters(mangle_ctx->template_parameters->parameters)) {
     return true;
   }
+  if((mangle_ctx->prefer_concrete_non_type_values_for_dependent_parameter_types ||
+      mangle_ctx->prefer_concrete_owner_non_type_expression_values) &&
+     mangle_ctx->owner_template_parameters &&
+     mangle_ctx->owner_template_arguments) {
+    const vector<TemplateParameterInfo> & parameters =
+        *mangle_ctx->owner_template_parameters;
+    const vector<TemplateArgument> & arguments =
+        *mangle_ctx->owner_template_arguments;
+    for(size_t i = 0; i < parameters.size() && i < arguments.size(); ++i) {
+      const TemplateParameterInfo & parameter = parameters[i];
+      const TemplateArgument & argument = arguments[i];
+      if(parameter.kind != TemplateParameterInfo::TP_NON_TYPE ||
+         !template_parameter_identifier_matches(parameter, stripped) ||
+         argument.kind != TemplateArgument::TA_VALUE ||
+         argument.dependent) {
+        continue;
+      }
+      TypePtr value_type = argument.type ? argument.type : parameter.value_type;
+      abi_mangle::Type ir_type;
+      if(!value_type || !try_build_type_ir(value_type, mangle_ctx, ir_type)) {
+        return false;
+      }
+      out = abi_mangle::DependentExpression::typed_integral_value(
+          std::move(ir_type), argument.value);
+      return true;
+    }
+  }
   return try_parameters(mangle_ctx->owner_template_parameters);
 }
 
@@ -8490,6 +8516,88 @@ static bool try_build_resolved_constant_member_expression_ir(
   return true;
 }
 
+static const semantic_model::ValueBinding *
+lookup_direct_value_for_mangling(const semantic_model::Scope & scope,
+                                 const string & name)
+{
+  map<string, semantic_model::ValueBinding>::const_iterator found =
+      scope.values.find(name);
+  if(found != scope.values.end()) {
+    return &found->second;
+  }
+  for(size_t i = 0; i < scope.namespace_children.size(); ++i) {
+    const semantic_model::Scope & child = *scope.namespace_children[i];
+    if(!child.inline_namespace) {
+      continue;
+    }
+    if(const semantic_model::ValueBinding * binding =
+           lookup_direct_value_for_mangling(child, name)) {
+      return binding;
+    }
+  }
+  return nullptr;
+}
+
+static bool try_build_unqualified_variable_expression_ir(
+    const CppAstNode & node,
+    const TypeMangleContext * mangle_ctx,
+    abi_mangle::DependentExpression & out)
+{
+  if((node.kind != CppAstKind::id_expression &&
+      node.kind != CppAstKind::identifier) ||
+     !mangle_ctx ||
+     !mangle_ctx->lookup_scope) {
+    return false;
+  }
+  const QualifiedName * qualified = cppast_qualified_name_syntax(node);
+  if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
+    return false;
+  }
+  const string name = qualified && !qualified->name.empty() ?
+      qualified->name : trim_space(node.value);
+  if(name.empty()) {
+    return false;
+  }
+
+  const semantic_model::ValueBinding * binding = nullptr;
+  for(const semantic_model::Scope * current = mangle_ctx->lookup_scope;
+      current;
+      current = current->parent) {
+    binding = lookup_direct_value_for_mangling(*current, name);
+    if(binding) {
+      break;
+    }
+  }
+  if(!binding || binding->kind != semantic_model::ValueBinding::VK_VARIABLE) {
+    return false;
+  }
+
+  if(binding->declaration_node &&
+     binding->declaration_node->kind == CppAstKind::enumerator &&
+     binding->has_constant_value) {
+    abi_mangle::Type value_type;
+    if(!binding->type ||
+       !try_build_type_ir(strip_top_level_cv(binding->type),
+                          mangle_ctx,
+                          value_type)) {
+      return false;
+    }
+    out = abi_mangle::DependentExpression::typed_integral_value(
+        std::move(value_type), binding->constant_value);
+    return true;
+  }
+
+  string symbol;
+  if(!try_build_value_binding_object_symbol_ir_payload(*binding,
+                                                       mangle_ctx,
+                                                       symbol)) {
+    return false;
+  }
+  out = abi_mangle::DependentExpression::external_entity(std::move(symbol),
+                                                          false);
+  return true;
+}
+
 static void prepend_qualified_name_qualifiers(vector<string> qualifiers,
                                               QualifiedName & name)
 {
@@ -8544,6 +8652,35 @@ static bool type_template_argument_requires_syntax_ir(const TypePtr & type)
   return false;
 }
 
+static bool ast_contains_pack_expansion_for_mangling(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::parameter_pack ||
+     node.kind == CppAstKind::pack_expansion_expression) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_contains_pack_expansion_for_mangling(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool ast_contains_function_parameter_pack_for_mangling(
+    const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::parameter_clause &&
+     ast_contains_pack_expansion_for_mangling(node)) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_contains_function_parameter_pack_for_mangling(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static bool try_build_dependent_type_template_argument_ir(
     const DependentAliasTemplateArgumentSyntax & argument,
     const TemplateParameterInfo & parameter,
@@ -8553,6 +8690,9 @@ static bool try_build_dependent_type_template_argument_ir(
   if(parameter.kind != TemplateParameterInfo::TP_TYPE ||
      !argument.type ||
      argument.source_defaulted ||
+     (argument.syntax.type_id &&
+      ast_contains_function_parameter_pack_for_mangling(
+          *argument.syntax.type_id)) ||
      (type_has_dependent_mangle_state(argument.type) &&
       type_template_argument_requires_syntax_ir(argument.type) &&
       !type_has_structured_dependent_qualified_member(argument.type))) {
@@ -8695,14 +8835,7 @@ template_id_parameters_for_ir(const TemplateIdSyntax & syntax,
       return nullptr;
     }
   }
-  size_t parameter_count = syntax.argument_syntaxes.size();
-  while(parameter_count < parameters->size()) {
-    const TemplateParameterInfo & parameter = (*parameters)[parameter_count];
-    if(!parameter.default_argument) {
-      break;
-    }
-    ++parameter_count;
-  }
+  const size_t parameter_count = syntax.argument_syntaxes.size();
   explicit_parameter_storage.assign(
       parameters->begin(),
       parameters->begin() + parameter_count);
@@ -8954,7 +9087,8 @@ static bool try_build_template_id_type_ir(const TemplateIdSyntax & syntax,
       class_template ? &class_template->parameters :
                        lookup_template_parameters_for_template_id_syntax(
                            syntax, mangle_ctx);
-  if(raw_parameters &&
+  if(!suppress_current_pack_grouping &&
+     raw_parameters &&
      dependent_arguments.size() < raw_parameters->size()) {
     dependent_arguments =
         complete_dependent_alias_template_arguments_for_mangling(
@@ -10633,6 +10767,147 @@ static bool try_build_itanium_abi_lambda_closure_type_ir(
   return true;
 }
 
+static bool try_build_concrete_owner_pack_parameter_types_ir(
+    const CppAstNode & node,
+    const TypeMangleContext * mangle_ctx,
+    vector<abi_mangle::Type> & out)
+{
+  if(node.kind != CppAstKind::parameter_declaration ||
+     !ast_contains_pack_expansion_for_mangling(node) ||
+     !mangle_ctx ||
+     !mangle_ctx->owner_template_parameters ||
+     !mangle_ctx->owner_template_arguments) {
+    return false;
+  }
+
+  const CppAstNode * specifiers = nullptr;
+  const CppAstNode * declarator = nullptr;
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.kind == CppAstKind::decl_specifier_seq ||
+       child.kind == CppAstKind::type_specifier_seq) {
+      specifiers = &child;
+    } else if(child.kind == CppAstKind::declarator ||
+              child.kind == CppAstKind::abstract_declarator) {
+      declarator = &child;
+    }
+  }
+  if(!specifiers) {
+    return false;
+  }
+
+  bool cv_const = false;
+  bool cv_volatile = false;
+  for(size_t i = 0; i < specifiers->children.size(); ++i) {
+    cv_const = cv_const || specifiers->children[i].value == "const";
+    cv_volatile = cv_volatile || specifiers->children[i].value == "volatile";
+  }
+
+  const vector<TemplateParameterInfo> & parameters =
+      *mangle_ctx->owner_template_parameters;
+  const vector<TemplateArgument> & arguments =
+      *mangle_ctx->owner_template_arguments;
+  size_t argument_index = 0;
+  for(size_t i = 0; i < parameters.size(); ++i) {
+    const TemplateParameterInfo & parameter = parameters[i];
+    if(!parameter.parameter_pack) {
+      if(argument_index < arguments.size()) {
+        ++argument_index;
+      }
+      continue;
+    }
+
+    size_t trailing_nonpack = 0;
+    for(size_t j = i + 1; j < parameters.size(); ++j) {
+      if(!parameters[j].parameter_pack) {
+        ++trailing_nonpack;
+      }
+    }
+    size_t pack_count = arguments.size() >= argument_index + trailing_nonpack ?
+        arguments.size() - argument_index - trailing_nonpack :
+        static_cast<size_t>(-1);
+    if(mangle_ctx->template_argument_pack_sizes) {
+      map<string, size_t>::const_iterator found =
+          !parameter.name.empty() ?
+              mangle_ctx->template_argument_pack_sizes->find(parameter.name) :
+              mangle_ctx->template_argument_pack_sizes->end();
+      if(found == mangle_ctx->template_argument_pack_sizes->end() &&
+         !parameter.placeholder_key.empty()) {
+        found = mangle_ctx->template_argument_pack_sizes->find(
+            parameter.placeholder_key);
+      }
+      if(found != mangle_ctx->template_argument_pack_sizes->end()) {
+        pack_count = found->second;
+      }
+    }
+    if(pack_count == static_cast<size_t>(-1) ||
+       argument_index + pack_count > arguments.size()) {
+      return false;
+    }
+
+    if(!type_specifier_seq_is_template_type_parameter(*specifiers, parameter)) {
+      argument_index += pack_count;
+      continue;
+    }
+    if(owner_template_argument_index_is_suppressed(mangle_ctx, i)) {
+      return false;
+    }
+
+    vector<abi_mangle::Type> expanded;
+    expanded.reserve(pack_count);
+    for(size_t j = 0; j < pack_count; ++j) {
+      const TemplateArgument & argument = arguments[argument_index + j];
+      if(argument.kind != TemplateArgument::TA_TYPE ||
+         !argument.type ||
+         template_argument_is_self_type_parameter(argument,
+                                                  parameter,
+                                                  TypePtr(),
+                                                  parameter.name)) {
+        return false;
+      }
+      TypeMangleContext argument_ctx_storage;
+      const TypeMangleContext * argument_ctx =
+          suppress_owner_template_argument_index(mangle_ctx,
+                                                 i,
+                                                 argument_ctx_storage);
+      abi_mangle::Type concrete;
+      const auto build_base =
+          [&argument,
+           argument_ctx,
+           cv_const,
+           cv_volatile](abi_mangle::Type & type) -> bool
+          {
+            if(!try_build_template_argument_type_ir(argument.type,
+                                                    argument_ctx,
+                                                    type)) {
+              return false;
+            }
+            if(cv_const || cv_volatile) {
+              type = abi_mangle::Type::cv(cv_const,
+                                          cv_volatile,
+                                          std::move(type));
+            }
+            return true;
+          };
+      if(declarator) {
+        if(!try_build_declarator_ast_type_ir(
+               *declarator,
+               build_base,
+               argument_ctx,
+               concrete)) {
+          return false;
+        }
+      } else if(!build_base(concrete)) {
+        return false;
+      }
+      expanded.push_back(std::move(concrete));
+    }
+    out.swap(expanded);
+    return true;
+  }
+  return false;
+}
+
 static bool try_build_builtin_type_transform_ast_ir(
     const CppAstNode & node,
     const TypeMangleContext * mangle_ctx,
@@ -10680,6 +10955,15 @@ static bool try_build_parameter_clause_type_ast_ir(
       continue;
     }
     if(child.kind != CppAstKind::parameter_declaration) {
+      continue;
+    }
+    vector<abi_mangle::Type> expanded_params;
+    if(try_build_concrete_owner_pack_parameter_types_ir(child,
+                                                        mangle_ctx,
+                                                        expanded_params)) {
+      params.insert(params.end(),
+                    expanded_params.begin(),
+                    expanded_params.end());
       continue;
     }
     abi_mangle::Type param;
@@ -10907,6 +11191,8 @@ static bool try_build_parameter_declaration_ast_ir(
     } else if(child.kind == CppAstKind::declarator ||
               child.kind == CppAstKind::abstract_declarator) {
       declarator = &child;
+      pack_expansion =
+          pack_expansion || ast_contains_pack_expansion_for_mangling(child);
     } else if(child.kind == CppAstKind::parameter_pack ||
               child.kind == CppAstKind::ellipsis) {
       pack_expansion = true;
@@ -11180,6 +11466,16 @@ static bool try_build_template_argument_syntax_ir(
       !syntax.type_id &&
       !syntax.resolved_type &&
       !syntax.template_id;
+  if(known_type_parameter &&
+     syntax.type_id &&
+     ast_contains_function_parameter_pack_for_mangling(*syntax.type_id)) {
+    abi_mangle::Type type;
+    if(try_build_type_id_ast_ir(*syntax.type_id, mangle_ctx, type)) {
+      wrap_pack_expansion_type_ir_if_needed(syntax.pack_expansion, type);
+      out = abi_mangle::Type::ClassTemplateArgument::type_arg(std::move(type));
+      return true;
+    }
+  }
   if(known_type_parameter && syntax.expression) {
     abi_mangle::Type type;
     if(try_build_type_specifier_seq_ast_ir(*syntax.expression,
@@ -11771,6 +12067,11 @@ static bool try_build_dependent_expression_ir(
                                                       out)) {
     return true;
   }
+  if((node.kind == CppAstKind::id_expression ||
+      node.kind == CppAstKind::identifier) &&
+     try_build_unqualified_variable_expression_ir(node, mangle_ctx, out)) {
+    return true;
+  }
   if(node.kind == CppAstKind::literal &&
      is_signed_decimal_integer_text(node.value)) {
     out = abi_mangle::DependentExpression::literal(node.value);
@@ -12121,9 +12422,7 @@ static bool try_build_dependent_expression_ir(
           qualifier_template_id &&
           !qualifier_template_id->name.rooted &&
           qualifier_template_id->name.qualifiers.empty() &&
-          owner.name_owner &&
-          !abi_mangle::type_needs_member_expression_template_name_registration(
-              owner);
+          owner.name_owner;
       if(owner.name_owner && !member.suppress_member_owner_prefix) {
         member.close_member_owner = false;
       }
@@ -15783,6 +16082,9 @@ static void initialize_function_template_argument_mangle_context(
       options.owner_template_parameters;
   template_argument_mangle_ctx.owner_template_arguments =
       options.owner_template_arguments;
+  template_argument_mangle_ctx
+      .prefer_concrete_owner_non_type_expression_values =
+          options.owner_template_arguments != nullptr;
   template_argument_mangle_ctx.lookup_scope = options.lookup_scope;
   template_argument_mangle_ctx.lexical_scope =
       function_type_lexical_scope(qualified, options);
@@ -16211,21 +16513,6 @@ static bool try_emit_qualified_name_encoding_ir(const QualifiedName & qualified,
     return false;
   }
   out.swap(candidate);
-  return true;
-}
-
-static bool try_emit_qualified_name_object_symbol_ir(const QualifiedName & qualified,
-                                                     string & out)
-{
-  FunctionSymbolOptions options;
-  abi_mangle::FunctionEncoding function;
-  if(!build_function_name_components_ir(qualified, options, true, function)) {
-    return false;
-  }
-  MangleSubstitutionState state;
-  if(!emit_function_name_ir(function, &state, out)) {
-    return false;
-  }
   return true;
 }
 
@@ -18281,9 +18568,10 @@ static bool qualified_name_from_scoped_symbol_parts(const vector<string> & parts
 }
 
 static bool try_emit_scoped_variable_object_symbol_ir(const semantic_model::Scope & scope,
-                                                   const string & name,
-                                                   string & out,
-                                                   string * qualified_name)
+                                                       const string & name,
+                                                       SymbolLinkage linkage,
+                                                       string & out,
+                                                       string * qualified_name)
 {
   vector<string> parts;
   if(!scoped_variable_symbol_parts(scope, name, parts)) {
@@ -18293,9 +18581,27 @@ static bool try_emit_scoped_variable_object_symbol_ir(const semantic_model::Scop
     *qualified_name = scoped_symbol_qualified_name_from_parts(parts);
   }
 
-  QualifiedName qualified;
-  return qualified_name_from_scoped_symbol_parts(parts, qualified) &&
-         try_emit_qualified_name_object_symbol_ir(qualified, out);
+  vector<abi_mangle::Type::NameComponent> components;
+  components.reserve(parts.size());
+  for(size_t i = parts.size(); i > 0; --i) {
+    components.push_back(i == parts.size() && parts[i - 1] == "std" ?
+        abi_mangle::Type::NameComponent::std_namespace() :
+        abi_mangle::Type::NameComponent::source(parts[i - 1], string()));
+  }
+  MangleSubstitutionState state;
+  MangleIrSubstitutionSink sink(&state);
+  string candidate;
+  const bool has_anonymous_namespace =
+      find(parts.begin() + 1, parts.end(), "_GLOBAL__N_1") != parts.end();
+  if(!abi_mangle::emit_variable_symbol_from_name_components(
+         components,
+         linkage == SL_INTERNAL && !has_anonymous_namespace,
+         candidate,
+         &sink)) {
+    return false;
+  }
+  out.swap(candidate);
+  return true;
 }
 
 string thread_local_wrapper_object_symbol_for_scoped_variable(
@@ -18701,6 +19007,7 @@ SymbolIdentity make_scoped_variable_symbol_identity(const semantic_model::Scope 
   out.linkage = linkage;
   if(!try_emit_scoped_variable_object_symbol_ir(scope,
                                                 name,
+                                                linkage,
                                                 out.object_symbol,
                                                 &qualified_name)) {
     throw logic_error("failed to mangle scoped variable symbol from semantic scope " +

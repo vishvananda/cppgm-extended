@@ -1,4 +1,4 @@
-global @value : i32 [binding=internal, object=_Z5value] = 1
+global @value : i32 [binding=internal, object=_ZL5value] = 1
 
 function @pick(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4pickRi] {
   slot $__param0 : ptr
