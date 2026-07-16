@@ -687,7 +687,9 @@ public:
               ctx_.analyze_call_expression(scope,
                                            request.operand,
                                            semantic_policy::without_body_instantiation()) :
-              ctx_.analyze_expression(scope, request.operand);
+              ctx_.analyze_expression_without_output_materialization(
+                  scope,
+                  request.operand);
       if(!info.type) {
         return false;
       }

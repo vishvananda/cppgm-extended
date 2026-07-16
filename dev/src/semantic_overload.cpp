@@ -1890,6 +1890,71 @@ void note_function_candidate_bucket(FunctionCandidateBucketMap & buckets,
   buckets[function_candidate_bucket_key(binding)].push_back(binding);
 }
 
+struct FunctionCandidateRefreshKey
+{
+  ClassInfo * owner_class = nullptr;
+  std::string name;
+  TypePtr type;
+  RefQualifier ref_qualifier = RQ_NONE;
+  bool has_source_template = false;
+  const CppAstNode * source_template_declaration = nullptr;
+  std::string template_instantiation_key;
+};
+
+FunctionCandidateRefreshKey function_candidate_refresh_key(
+    const FunctionBinding & binding)
+{
+  FunctionCandidateRefreshKey key;
+  key.owner_class = binding.owner_class;
+  key.name = semantic_utils::unqualified_member_name(
+      canonical_function_lookup_name(binding.name));
+  key.type = binding.type;
+  key.ref_qualifier = binding.ref_qualifier;
+  key.has_source_template = binding.source_template != nullptr;
+  key.source_template_declaration =
+      binding.source_template ? binding.source_template->declaration_node : nullptr;
+  key.template_instantiation_key = binding.template_instantiation_key;
+  return key;
+}
+
+FunctionBinding * refresh_invalidated_member_candidate(
+    SemanticContext & ctx,
+    const FunctionCandidateRefreshKey & key)
+{
+  if(!key.owner_class || key.name.empty() || !key.type) {
+    return nullptr;
+  }
+
+  if(!key.has_source_template) {
+    FunctionBinding * refreshed =
+        ctx.find_equivalent_class_function(*key.owner_class,
+                                           key.name,
+                                           key.type,
+                                           key.ref_qualifier);
+    return ctx.function_binding_is_live(refreshed) ? refreshed : nullptr;
+  }
+
+  std::map<std::string, std::vector<FunctionBinding *> >::iterator found =
+      key.owner_class->methods.find(key.name);
+  if(found == key.owner_class->methods.end()) {
+    return nullptr;
+  }
+  for(std::size_t i = 0; i < found->second.size(); ++i) {
+    FunctionBinding * candidate = found->second[i];
+    if(!ctx.function_binding_is_live(candidate) ||
+       !candidate->source_template ||
+       candidate->source_template->declaration_node !=
+           key.source_template_declaration ||
+       candidate->template_instantiation_key != key.template_instantiation_key ||
+       candidate->ref_qualifier != key.ref_qualifier ||
+       !type_equals(candidate->type, key.type)) {
+      continue;
+    }
+    return candidate;
+  }
+  return nullptr;
+}
+
 bool source_template_is_in_lookup_set(const FunctionBinding * binding,
                                       const vector<FunctionTemplateDecl *> & templates)
 {
@@ -2022,7 +2087,9 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
     return false;
   }
 
-  if(template_witness_source_capture_enabled_for_calls(ctx) &&
+  if(witness::function_call_recording_enabled(
+         ctx.template_witness_context(),
+         witness::FunctionCallEmissionOrigin::DeclvalCall) &&
      template_api::template_witness_declval_call_source_capture_enabled() &&
      !ctx.type_depends_on_template_parameter(declval_type)) {
     std::string public_location =
@@ -2063,11 +2130,14 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
       public_location.clear();
     }
     if(!public_location.empty()) {
-      semantic_template_function::FunctionTemplateCallSourceUseRequest source_use;
-      source_use.use_location = public_location;
-      source_use.template_name = "declval";
-      source_use.selected = "declval";
-      source_use.selection = witness::SourceSelectionKind::Instantiation;
+      witness::FunctionCallSourceDecision decision;
+      decision.origin = witness::FunctionCallEmissionOrigin::DeclvalCall;
+      witness::set_use_anchor(decision.location,
+                              decision.use_anchor,
+                              public_location);
+      decision.template_name = "declval";
+      decision.selected = "declval";
+      decision.selection = witness::SourceSelectionKind::Instantiation;
       witness::TemplateWitnessSourceBinding binding;
       binding.param = "$1";
       binding.arg = semantic_dependent_type::lookup_type_argument_text(ctx, declval_type);
@@ -2076,8 +2146,8 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
       }
       binding.source = "explicit";
       binding.type_like = true;
-      source_use.bindings.push_back(binding);
-      semantic_template_function::emit_function_template_call_source_use(ctx, source_use);
+      decision.bindings.push_back(binding);
+      witness::emit_function_call(ctx.template_witness_context(), decision);
     }
   }
 
@@ -11542,6 +11612,8 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
                                                   const ExprInfo & lhs)
 {
   ScopedCallSemConstructionPath construction_path("overload.assignment-expression");
+  const bool instantiate_bodies =
+      ctx.current_analysis_policy().instantiate_function_bodies;
   struct AssignmentCandidate
   {
     FunctionBinding * binding = nullptr;
@@ -11782,10 +11854,16 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
     ExprInfo this_source_arg = implicit_object_arg;
     ExprInfo converted_this;
     const bool converted_this_ok =
-        try_apply_unmaterialized_inheritance_conversion(ctx,
-                                                        function_type->params[0],
-                                                        implicit_object_arg,
-                                                        converted_this);
+        instantiate_bodies ?
+            try_apply_unmaterialized_inheritance_conversion(
+                ctx,
+                function_type->params[0],
+                implicit_object_arg,
+                converted_this) :
+            try_apply_inheritance_conversion(ctx,
+                                             function_type->params[0],
+                                             implicit_object_arg,
+                                             converted_this);
     if(converted_this_ok) {
       adjusted_this = converted_this;
     }
@@ -11800,7 +11878,8 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
     match.call_args.push_back(adjusted_this);
     match.source_args.push_back(this_source_arg);
     match.params.push_back(function_type->params[0]);
-    match.needs_rematerialization.push_back(converted_this_ok);
+    match.needs_rematerialization.push_back(instantiate_bodies &&
+                                            converted_this_ok);
 
     ExprInfo rhs;
     ExprInfo source_rhs;
@@ -11933,7 +12012,8 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
             FunctionWitnessDeclLocationKind::CandidateDrop),
         "bad_conversion");
   }
-  if(!rematerialize_candidate_match_args(ctx,
+  if(instantiate_bodies &&
+     !rematerialize_candidate_match_args(ctx,
                                          scope,
                                          matches[selection.index],
                                          semantic_policy::default_argument_conversion(),
@@ -13710,6 +13790,14 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         candidate_rejections[i] = "candidate missing type";
         continue;
       }
+      const bool candidate_may_be_invalidated =
+          candidate->owner_class &&
+          candidate->owner_class->reference_members_collected &&
+          !candidate->owner_class->complete;
+      const FunctionCandidateRefreshKey candidate_refresh_key =
+          candidate_may_be_invalidated ?
+              function_candidate_refresh_key(*candidate) :
+              FunctionCandidateRefreshKey();
       TypePtr function_type = strip_top_level_cv(candidate->type);
       if(function_type->kind != Type::TK_FUNCTION) {
         candidate_rejections[i] = "candidate type is not function";
@@ -14020,11 +14108,35 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         }
       }
 
+      const auto refresh_candidate_if_needed = [&]() -> bool
+      {
+        if(ctx.function_binding_is_live(candidate)) {
+          return true;
+        }
+        candidate = refresh_invalidated_member_candidate(ctx,
+                                                         candidate_refresh_key);
+        if(!candidate) {
+          candidate_rejections[i] =
+              "candidate invalidated during class completion";
+          return false;
+        }
+        match.function = candidate;
+        return true;
+      };
+
+      if(okay && !refresh_candidate_if_needed()) {
+        okay = false;
+      }
+
       if(okay &&
          arg_nodes.size() - source_arg_begin + arg_offset < function_type->params.size() &&
          !append_default_call_arguments(match, *candidate, function_type,
                                         arg_nodes.size() - source_arg_begin + arg_offset,
                                         &candidate_rejections[i])) {
+        okay = false;
+      }
+
+      if(okay && !refresh_candidate_if_needed()) {
         okay = false;
       }
 

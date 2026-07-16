@@ -52,10 +52,10 @@ function @wrapper_basic_stream_socket_tcp__executor____async_write_some(%this : 
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr $buffer
     %t4 = load ptr $handler
-    %t5 = call i32 @basic_stream_socket_tcp__executor___async_write_some__ov2(%t2, %t3, %t4)
+    %t5 = call i32 @basic_stream_socket_tcp__executor___async_write_some(%t2, %t3, %t4)
     return i32 %t5
 }
-function @basic_stream_socket_tcp__executor___async_write_some__ov2(%this : ptr, %buffer : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN19basic_stream_socketI3tcp8executorE16async_write_someIiPFviEEEDTcl14async_initiateIT0_S4_Ecl7declvalIiEEscS6_fp0_EERKT_OS6_] {
+function @basic_stream_socket_tcp__executor___async_write_some(%this : ptr, %buffer : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN19basic_stream_socketI3tcp8executorE16async_write_someIiPFviEEEDTcl14async_initiateIT0_S4_Ecl7declvalIiEEscS6_fp0_EERKT_OS6_] {
   slot $this : ptr
   slot $buffer : ptr
   slot $token : ptr
@@ -66,10 +66,10 @@ function @basic_stream_socket_tcp__executor___async_write_some__ov2(%this : ptr,
     store ptr %token, $token
     %t1 = call ptr @declval_int_()
     %t2 = load ptr $token
-    %t3 = call i32 @async_initiate__ov3(%t1, %t2)
+    %t3 = call i32 @async_initiate__ov2(%t1, %t2)
     return i32 %t3
 }
-function @async_initiate__ov3(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
+function @async_initiate__ov2(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
   slot $initiation : ptr
   slot $token : ptr
 

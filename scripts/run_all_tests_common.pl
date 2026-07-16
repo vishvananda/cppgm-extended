@@ -472,12 +472,12 @@ sub build_wrapped_text_request
 		my $test_out = $test;
 		$test_out =~ s/\.t$/\.$suffix/;
 		my $test_input = abs_path($test) || $test;
-		return ("$test_out.stdout",
-		        "$test_out.stderr",
+		return ("$test_out.witness.stdout",
+		        "$test_out.witness.stderr",
 		        "-",
 		        {},
 		        "-o",
-		        $test_out,
+		        "$test_out.witness.lowir",
 		        "--witness",
 		        "$test_out.witness",
 		        $test_input);

@@ -7320,6 +7320,8 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
 
   bool selected_builtin_class_conversion = false;
   if(have_rhs) {
+    const bool preserve_builtin_comma_operands =
+        node_has_simple_type(node, OP_COMMA);
     ArgumentConversionOptions builtin_probe_options =
         semantic_policy::without_user_defined_body_instantiation();
     builtin_probe_options.materialize_user_defined_output = false;
@@ -7329,10 +7331,11 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
     ExprInfo builtin_rhs_probe = rhs;
     vector<ConversionRank> builtin_ranks;
     const bool builtin_probe_ok =
-        try_builtin_binary_class_conversions(builtin_lhs_probe,
-                                             builtin_rhs_probe,
-                                             &builtin_ranks,
-                                             builtin_probe_options) &&
+        (preserve_builtin_comma_operands ||
+         try_builtin_binary_class_conversions(builtin_lhs_probe,
+                                              builtin_rhs_probe,
+                                              &builtin_ranks,
+                                              builtin_probe_options)) &&
         builtin_binary_operator_supported(builtin_lhs_probe, builtin_rhs_probe);
 
     if(builtin_probe_ok) {
@@ -7370,7 +7373,8 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
                                ctx.source_location_for_node(node),
                                trace.str());
           }
-          if(!try_builtin_binary_class_conversions(
+          if(!preserve_builtin_comma_operands &&
+             !try_builtin_binary_class_conversions(
                  lhs,
                  rhs,
                  nullptr,
@@ -7388,7 +7392,8 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           return overloaded_result;
         }
       } else if(!deferred_shift_rhs) {
-        if(!try_builtin_binary_class_conversions(
+        if(!preserve_builtin_comma_operands &&
+           !try_builtin_binary_class_conversions(
                lhs,
                rhs,
                nullptr,
@@ -7414,10 +7419,13 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
     if(deferred_shift_rhs) {
       throw logic_error(deferred_shift_rhs_error);
     }
-    try_builtin_binary_class_conversions(lhs,
-                                         rhs,
-                                         nullptr,
-                                         semantic_policy::default_argument_conversion());
+    if(!node_has_simple_type(node, OP_COMMA)) {
+      try_builtin_binary_class_conversions(
+          lhs,
+          rhs,
+          nullptr,
+          semantic_policy::default_argument_conversion());
+    }
   }
 
   const auto has_non_enum_class_value_type =

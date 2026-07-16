@@ -69,6 +69,7 @@ test: $(TEST_DEPS)
 
 test-strict: $(TEST_DEPS)
 	@rm -f .test_failed
+	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@../scripts/run_witness_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
 	@../scripts/compare_witness_results.pl ref my tests
@@ -82,6 +83,7 @@ test: $(TEST_DEPS)
 
 test-strict: $(TEST_DEPS)
 	@rm -f .test_failed
+	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@../scripts/run_witness_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
 	@../scripts/compare_witness_results.pl ref my tests

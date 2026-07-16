@@ -1,4 +1,4 @@
-declare function @detail__async_initiate__ov3(%arg0 : ptr [pass=reference], %arg1 : ptr [pass=reference], %arg2 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6detail14async_initiateINS_6binderINS_7handlerEEEFviENS_10initiationEJiEEEDTclsr12async_resultINS_5decayIT_E4typeET0_EE8initiatescT1_fp_scS7_fp0_spscT2_fp1_EEOSB_RNS_13type_identityIS7_E4typeEDpOSC_]
+declare function @detail__async_initiate__ov2(%arg0 : ptr [pass=reference], %arg1 : ptr [pass=reference], %arg2 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6detail14async_initiateINS_6binderINS_7handlerEEEFviENS_10initiationEJiEEEDTclsr12async_resultINS_5decayIT_E4typeET0_EE8initiatescT1_fp_scS7_fp0_spscT2_fp1_EEOSB_RNS_13type_identityIS7_E4typeEDpOSC_]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $b : obj<1x1>
@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $b
     store i32 1, $refarg__2
     %t4 = addr $refarg__2
-    %t5 = call i32 @detail__async_initiate__ov3(%t2, %t3, %t4)
+    %t5 = call i32 @detail__async_initiate__ov2(%t2, %t3, %t4)
     return i32 0
 }
 function @detail__initiation__initiation(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6detail10initiationC1Ev, trivial_lifecycle=yes] {

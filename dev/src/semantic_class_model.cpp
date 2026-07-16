@@ -5976,6 +5976,28 @@ bool parse_class_member_declarator_type(SemanticContext & ctx,
                                         bool reference_class_templates_only)
 {
   if(has_auto) {
+    if(find_child(declarator, CppAstKind::parameter_clause) &&
+       find_child(declarator, CppAstKind::trailing_return_type)) {
+      bool is_typedef = false;
+      TypePtr trailing_base;
+      if(!ctx.parse_trailing_return_base(scope,
+                                         specifiers,
+                                         declarator,
+                                         is_typedef,
+                                         trailing_base,
+                                         reference_class_templates_only) ||
+         is_typedef || !trailing_base) {
+        return false;
+      }
+      const CppAstNode function_declarator =
+          function_declarator_without_trailing_return(declarator);
+      return ctx.parse_declarator(scope,
+                                  function_declarator,
+                                  trailing_base,
+                                  name,
+                                  type,
+                                  reference_class_templates_only);
+    }
     if(!initializer) {
       return false;
     }

@@ -37502,6 +37502,19 @@ static bool ast_node_has_member_template_call(const CppAstNode & node)
   return false;
 }
 
+static bool ast_node_has_member_access(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::member_expression) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_node_has_member_access(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool scope_contains_unqualified_identifier_binding(Scope & scope,
                                                    const string & name)
 {
@@ -38952,14 +38965,22 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
   const bool request_expr_mentions_bound_template_dependency =
       ast_subtree_text_mentions_bound_template_dependency(
           services, env, *request_expr);
+  const bool request_expr_has_declval =
+      ast_subtree_mentions_declval_identifier(*request_expr);
+  const bool request_expr_has_dependent_declval_member_access =
+      request_expr_has_declval &&
+      request_expr_mentions_structured_template_dependency &&
+      ast_node_has_member_access(*request_expr);
   const bool request_expr_text_still_depends =
       mentions_dependent_names ||
       (scope_has_placeholders && !mentions_bound_names);
   if(dependent_decltype_operand_should_defer(*request_expr) &&
-     !ast_subtree_mentions_declval_identifier(*request_expr) &&
+     (!request_expr_has_declval ||
+      request_expr_has_dependent_declval_member_access) &&
      (request_expr_mentions_bound_template_dependency ||
       (request_expr_mentions_structured_template_dependency &&
-       request_expr_text_still_depends)) &&
+       (request_expr_text_still_depends ||
+        request_expr_has_dependent_declval_member_access))) &&
      dependent_fallback(true)) {
     return true;
   }
