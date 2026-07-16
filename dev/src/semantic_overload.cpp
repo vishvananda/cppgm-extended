@@ -6454,13 +6454,41 @@ bool try_analyze_builtin_call_expression(SemanticContext & ctx,
           object_base &&
           object_base->kind == Type::TK_POINTER;
 
+      TypePtr member_owner = strip_top_level_cv(callable_type->owner);
+      TypePtr direct_object_type =
+          strip_top_level_cv(remove_reference_type(object.type));
+      bool use_direct_object =
+          member_owner &&
+          direct_object_type &&
+          same_type_with_compatible_top_cv(member_owner, direct_object_type);
+      if(!use_arrow && !use_direct_object && member_owner) {
+        ExprInfo converted_object;
+        use_direct_object =
+            try_apply_inheritance_conversion(ctx,
+                                             member_owner,
+                                             object,
+                                             converted_object);
+      }
+
+      CppAstNode member_object = *arg_nodes[1];
+      if(!use_arrow && !use_direct_object) {
+        CppAstNode dereference;
+        dereference.kind = CppAstKind::unary_expression;
+        dereference.value = "*";
+        dereference.has_token = true;
+        dereference.token_kind = RT_SIMPLE;
+        dereference.simple_type = OP_STAR;
+        dereference.children.push_back(*arg_nodes[1]);
+        member_object = dereference;
+      }
+
       CppAstNode member_access;
       member_access.kind = CppAstKind::binary_expression;
       member_access.value = use_arrow ? "->*" : ".*";
       member_access.has_token = true;
       member_access.token_kind = RT_SIMPLE;
       member_access.simple_type = use_arrow ? OP_ARROWSTAR : OP_DOTSTAR;
-      member_access.children.push_back(*arg_nodes[1]);
+      member_access.children.push_back(member_object);
       member_access.children.push_back(*arg_nodes[0]);
 
       if(is_function_type(callable_type->inner)) {

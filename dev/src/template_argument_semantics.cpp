@@ -8058,13 +8058,134 @@ TypePtr member_object_invocation_result_type(const TypePtr & member_type,
   return make_rvalue_reference_raw(adjusted);
 }
 
+bool pointer_like_dereference_result(
+    template_api::TemplateTypeSystem & type_system,
+    template_api::TemplateServices * services,
+    template_api::TemplateEnvironmentHandle scope,
+    const semantic_conversion::ExprInfo & source_arg,
+    semantic_conversion::ExprInfo & dereferenced,
+    bool & lookup_complete)
+{
+  dereferenced = semantic_conversion::ExprInfo();
+  lookup_complete = true;
+  TypePtr object_type =
+      strip_top_level_cv(remove_reference_type(source_arg.type));
+  if(!object_type || object_type->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  ClassInfo * object_info =
+      template_api::find_named_type_class_info(type_system.model, object_type);
+  if((!object_info || !object_info->member_scope) &&
+     services &&
+     scope.valid()) {
+    Scope * member_scope = nullptr;
+    const witness::ScopedTemplateWitnessSourceCapturePause pause;
+    if(prepare_concrete_type_member_scope(*services,
+                                          scope,
+                                          object_type,
+                                          member_scope) &&
+       member_scope &&
+       member_scope->class_info) {
+      object_info = member_scope->class_info;
+    }
+  }
+  if(!object_info) {
+    return false;
+  }
+
+  semantic_lookup::MemberFunctionLookupResult lookup =
+      semantic_lookup::lookup_member_functions(*object_info, "operator*");
+  if(lookup.functions.empty() &&
+     services &&
+     scope.valid()) {
+    Scope * member_scope = nullptr;
+    const witness::ScopedTemplateWitnessSourceCapturePause pause;
+    if(service_type_system(*services).complete_named_type_member_scope(
+           scope,
+           object_type,
+           member_scope) &&
+       member_scope &&
+       member_scope->class_info) {
+      object_info = member_scope->class_info;
+      lookup = semantic_lookup::lookup_member_functions(*object_info, "operator*");
+    }
+  }
+  if(lookup.functions.empty()) {
+    lookup_complete =
+        object_info->complete &&
+        !object_info->template_instantiation_in_progress &&
+        !object_info->full_member_collection_in_progress &&
+        !object_info->reference_member_collection_in_progress;
+    return false;
+  }
+
+  const bool source_is_const =
+      semantic_conversion::is_const_object_type(source_arg.type);
+  FunctionBinding * selected = nullptr;
+  int selected_cv_rank = 2;
+  bool selected_ambiguous = false;
+  for(size_t i = 0; i < lookup.functions.size(); ++i) {
+    FunctionBinding * candidate = lookup.functions[i];
+    if(!candidate ||
+       candidate->is_deleted ||
+       !candidate->is_method ||
+       candidate->is_volatile_method) {
+      continue;
+    }
+    const size_t explicit_offset =
+        function_binding_explicit_parameter_offset(*candidate);
+    if(candidate->params.size() != explicit_offset ||
+       (source_is_const && !candidate->is_const_method)) {
+      continue;
+    }
+    const TypePtr implicit_object_parameter =
+        explicit_offset != 0 ? candidate->params[0].second : TypePtr();
+    if(ref_qualifier_rejects_implicit_object(candidate->ref_qualifier,
+                                             implicit_object_parameter,
+                                             source_arg.category)) {
+      continue;
+    }
+    const int candidate_cv_rank =
+        !source_is_const && candidate->is_const_method ? 1 : 0;
+    if(!selected || candidate_cv_rank < selected_cv_rank) {
+      selected = candidate;
+      selected_cv_rank = candidate_cv_rank;
+      selected_ambiguous = false;
+    } else if(candidate_cv_rank == selected_cv_rank) {
+      selected_ambiguous = true;
+    }
+  }
+  if(!selected || selected_ambiguous) {
+    return false;
+  }
+
+  TypePtr function_type = strip_top_level_cv(selected->type);
+  if(!function_type ||
+     function_type->kind != Type::TK_FUNCTION ||
+     !function_type->inner ||
+     !semantic_conversion::result_value_category_for_function_result(
+         function_type->inner,
+         dereferenced.category)) {
+    return false;
+  }
+  dereferenced.type =
+      semantic_conversion::expression_type_for_function_result(
+          function_type->inner);
+  return dereferenced.type != nullptr;
+}
+
 bool member_pointer_structured_invocation_result(
     template_api::TemplateTypeSystem & type_system,
+    template_api::TemplateServices * services,
+    template_api::TemplateEnvironmentHandle scope,
     const TypePtr & callable_type,
     const vector<semantic_conversion::ExprInfo> & arg_exprs,
-    TypePtr & result_type)
+    TypePtr & result_type,
+    bool & lookup_complete)
 {
   result_type.reset();
+  lookup_complete = true;
   TypePtr member_pointer_type =
       strip_top_level_cv(remove_reference_type(callable_type));
   if(!member_pointer_type ||
@@ -8094,7 +8215,24 @@ bool member_pointer_structured_invocation_result(
                                       object_category,
                                       object_source_type,
                                       false)) {
-      return false;
+      semantic_conversion::ExprInfo dereferenced;
+      bool dereference_lookup_complete = true;
+      if(!pointer_like_dereference_result(type_system,
+                                          services,
+                                          scope,
+                                          arg_exprs[0],
+                                          dereferenced,
+                                          dereference_lookup_complete) ||
+         !member_pointer_owner_argument(type_system,
+                                        function_type->params[0],
+                                        dereferenced,
+                                        object_arg,
+                                        object_category,
+                                        object_source_type,
+                                        false)) {
+        lookup_complete = dereference_lookup_complete;
+        return false;
+      }
     }
 
     const RefQualifier ref_qualifier =
@@ -8135,7 +8273,25 @@ bool member_pointer_structured_invocation_result(
                                     object_category,
                                     object_source_type,
                                     true)) {
-    return false;
+    semantic_conversion::ExprInfo dereferenced;
+    bool dereference_lookup_complete = true;
+    if(!pointer_like_dereference_result(type_system,
+                                        services,
+                                        scope,
+                                        arg_exprs[0],
+                                        dereferenced,
+                                        dereference_lookup_complete) ||
+       !member_pointer_owner_argument(
+           type_system,
+           make_pointer(strip_top_level_cv(member_pointer_type->owner)),
+           dereferenced,
+           object_arg,
+           object_category,
+           object_source_type,
+           true)) {
+      lookup_complete = dereference_lookup_complete;
+      return false;
+    }
   }
   if(arg_exprs.size() != 1) {
     return false;
@@ -8355,6 +8511,46 @@ bool callable_object_structured_invocation_result(
   return saw_viable && result_type;
 }
 
+bool structured_invocation_result_for_exprs(
+    template_api::TemplateTypeSystem & type_system,
+    template_api::TemplateServices * services,
+    template_api::TemplateEnvironmentHandle scope,
+    const semantic_conversion::ExprInfo & callable_expr,
+    const vector<semantic_conversion::ExprInfo> & arg_exprs,
+    TypePtr & result_type,
+    FunctionBinding *& selected_binding,
+    bool & lookup_complete)
+{
+  result_type.reset();
+  selected_binding = nullptr;
+  lookup_complete = true;
+
+  TypePtr callable_base =
+      strip_top_level_cv(remove_reference_type(callable_expr.type));
+  if(callable_base && callable_base->kind == Type::TK_MEMBER_POINTER) {
+    return member_pointer_structured_invocation_result(type_system,
+                                                       services,
+                                                       scope,
+                                                       callable_expr.type,
+                                                       arg_exprs,
+                                                       result_type,
+                                                       lookup_complete);
+  }
+  if(function_type_structured_invocation_result(callable_expr.type,
+                                                arg_exprs,
+                                                result_type)) {
+    return true;
+  }
+  return callable_object_structured_invocation_result(type_system,
+                                                      services,
+                                                      scope,
+                                                      callable_expr,
+                                                      arg_exprs,
+                                                      result_type,
+                                                      selected_binding,
+                                                      lookup_complete);
+}
+
 bool structured_invocation_result_type(
     template_api::TemplateTypeSystem & type_system,
     template_api::TemplateServices * services,
@@ -8383,25 +8579,14 @@ bool structured_invocation_result_type(
   }
 
   FunctionBinding * selected_binding = nullptr;
-  if(member_pointer_structured_invocation_result(type_system,
-                                                 callable_expr.type,
-                                                 arg_exprs,
-                                                 result_type)) {
-    return true;
-  }
-  if(function_type_structured_invocation_result(callable_expr.type,
+  return structured_invocation_result_for_exprs(type_system,
+                                                services,
+                                                scope,
+                                                callable_expr,
                                                 arg_exprs,
-                                                result_type)) {
-    return true;
-  }
-  return callable_object_structured_invocation_result(type_system,
-                                                     services,
-                                                     scope,
-                                                     callable_expr,
-                                                     arg_exprs,
-                                                     result_type,
-                                                     selected_binding,
-                                                     lookup_complete);
+                                                result_type,
+                                                selected_binding,
+                                                lookup_complete);
 }
 
 bool evaluate_structured_invocable_r_trait(
@@ -8443,29 +8628,17 @@ bool evaluate_structured_invocable_r_trait(
 
   TypePtr result_type;
   FunctionBinding * selected_binding = nullptr;
-  const bool member_pointer_invocable =
-      member_pointer_structured_invocation_result(type_system,
-                                                  callable_expr.type,
-                                                  arg_exprs,
-                                                  result_type);
-  const bool function_type_invocable =
-      !member_pointer_invocable &&
-      function_type_structured_invocation_result(callable_expr.type,
-                                                 arg_exprs,
-                                                 result_type);
   bool callable_lookup_complete = true;
-  const bool callable_object_invocable =
-      !member_pointer_invocable &&
-      !function_type_invocable &&
-      callable_object_structured_invocation_result(type_system,
-                                                   services,
-                                                   scope,
-                                                   callable_expr,
-                                                   arg_exprs,
-                                                   result_type,
-                                                   selected_binding,
-                                                   callable_lookup_complete);
-  if(!member_pointer_invocable && !function_type_invocable && !callable_object_invocable) {
+  const bool invocable =
+      structured_invocation_result_for_exprs(type_system,
+                                             services,
+                                             scope,
+                                             callable_expr,
+                                             arg_exprs,
+                                             result_type,
+                                             selected_binding,
+                                             callable_lookup_complete);
+  if(!invocable) {
     if(!callable_lookup_complete) {
       if(evaluation_incomplete) {
         *evaluation_incomplete = true;
@@ -10799,6 +10972,37 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
       invoke_args.reserve(arg_infos.size() - 1);
       for(size_t i = 1; i < arg_infos.size(); ++i) {
         invoke_args.push_back(arg_infos[i]);
+      }
+
+      semantic_conversion::ExprInfo callable_expr;
+      callable_expr.type = arg_infos[0].first;
+      callable_expr.category = arg_infos[0].second;
+      vector<semantic_conversion::ExprInfo> structured_args;
+      structured_args.reserve(invoke_args.size());
+      for(size_t i = 0; i < invoke_args.size(); ++i) {
+        semantic_conversion::ExprInfo argument_expr;
+        argument_expr.type = invoke_args[i].first;
+        argument_expr.category = invoke_args[i].second;
+        structured_args.push_back(argument_expr);
+      }
+      FunctionBinding * selected_binding = nullptr;
+      bool structured_lookup_complete = true;
+      if(structured_invocation_result_for_exprs(
+             service_type_system(services),
+             &services,
+             template_api::make_template_environment(scope),
+             callable_expr,
+             structured_args,
+             out,
+             selected_binding,
+             structured_lookup_complete) &&
+         semantic_conversion::result_value_category_for_function_result(
+             out,
+             category)) {
+        return true;
+      }
+      if(!structured_lookup_complete) {
+        return false;
       }
 
       if(leaf_function_type_call_result(arg_infos[0].first,
