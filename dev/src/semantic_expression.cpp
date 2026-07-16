@@ -8452,9 +8452,17 @@ ExprInfo analyze_lambda_expression(SemanticContext & ctx,
 
   PreparedLambdaExpression & current = ensure_prepared();
 
+  bool has_default_arguments = false;
+  for(size_t i = 0; i < current.default_arguments.size(); ++i) {
+    if(current.default_arguments[i]) {
+      has_default_arguments = true;
+      break;
+    }
+  }
   const bool captureless_lambda_can_use_synthetic_function =
       current.introducer->value == "[]" &&
       !current.template_parameters &&
+      !has_default_arguments &&
       (!current.body ||
        !lambda_body_contains_local_class_declaration(*current.body));
   if(captureless_lambda_can_use_synthetic_function) {
