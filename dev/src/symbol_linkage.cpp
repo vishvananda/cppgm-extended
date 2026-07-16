@@ -7977,7 +7977,10 @@ static bool try_build_template_parameter_type_ir(
      type->kind != Type::TK_NAMED) {
     return false;
   }
-  if(type->named_semantic_kind != Type::NSK_TEMPLATE_PARAMETER) {
+  const bool direct_template_parameter =
+      type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER;
+  if(!direct_template_parameter &&
+     !named_type_has_dependent_semantic(type)) {
     return try_build_template_parameter_type_spelling_ir(type, mangle_ctx, out);
   }
 
@@ -8031,14 +8034,21 @@ static bool try_build_template_parameter_type_ir(
         *mangle_ctx->owner_template_arguments;
     for(size_t i = 0; i < parameters.size() && i < arguments.size(); ++i) {
       const TemplateParameterInfo & param = parameters[i];
-      if(param.kind != TemplateParameterInfo::TP_TYPE ||
-         (!template_parameter_identifier_matches(param, payload) &&
-          !placeholder_payload_matches(param.placeholder_key))) {
+      if(param.kind != TemplateParameterInfo::TP_TYPE) {
+        continue;
+      }
+      const bool matches_declared_parameter =
+          direct_template_parameter &&
+          (template_parameter_identifier_matches(param, payload) ||
+           placeholder_payload_matches(param.placeholder_key));
+      const bool matches_bound_owner_argument =
+          template_argument_is_self_type_parameter(
+              arguments[i], param, type, payload);
+      if(!matches_declared_parameter && !matches_bound_owner_argument) {
         continue;
       }
       if(owner_template_argument_index_is_suppressed(mangle_ctx, i) ||
-         template_argument_is_self_type_parameter(
-             arguments[i], param, type, payload)) {
+         matches_bound_owner_argument) {
         out = template_parameter_type_ir(i, param, &parameters, true);
         return true;
       }
@@ -8067,7 +8077,8 @@ static bool type_mentions_owner_type_template_parameter_pack(
     return false;
   }
   if(type->kind == Type::TK_NAMED &&
-     type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER) {
+     (type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER ||
+      named_type_has_dependent_semantic(type))) {
     const string payload =
         strip_named_semantic_match_prefix(type->named_semantic_payload);
     const string display =
@@ -8076,6 +8087,8 @@ static bool type_mentions_owner_type_template_parameter_pack(
         strip_named_semantic_match_prefix(type->named_key);
     const vector<TemplateParameterInfo> & parameters =
         *mangle_ctx->owner_template_parameters;
+    const vector<TemplateArgument> * arguments =
+        mangle_ctx->owner_template_arguments;
     for(size_t i = 0; i < parameters.size(); ++i) {
       const TemplateParameterInfo & parameter = parameters[i];
       if(parameter.kind != TemplateParameterInfo::TP_TYPE ||
@@ -8083,13 +8096,21 @@ static bool type_mentions_owner_type_template_parameter_pack(
          parameter.name.empty()) {
         continue;
       }
-      if(text_matches_type_parameter_name(payload, parameter.name) ||
-         text_matches_type_parameter_name(display, parameter.name) ||
-         text_matches_type_parameter_name(key, parameter.name) ||
-         (!parameter.placeholder_key.empty() &&
-          (payload == parameter.placeholder_key ||
-           display == parameter.placeholder_key ||
-           key == parameter.placeholder_key))) {
+      const bool matches_declared_parameter =
+          type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER &&
+          (text_matches_type_parameter_name(payload, parameter.name) ||
+           text_matches_type_parameter_name(display, parameter.name) ||
+           text_matches_type_parameter_name(key, parameter.name) ||
+           (!parameter.placeholder_key.empty() &&
+            (payload == parameter.placeholder_key ||
+             display == parameter.placeholder_key ||
+             key == parameter.placeholder_key)));
+      const bool matches_bound_owner_argument =
+          arguments &&
+          i < arguments->size() &&
+          template_argument_is_self_type_parameter(
+              (*arguments)[i], parameter, type, display);
+      if(matches_declared_parameter || matches_bound_owner_argument) {
         return true;
       }
     }

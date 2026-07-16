@@ -15,8 +15,8 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `9 / 147`
 - current cursor: `#10 libs/beast/test`
-- active compiler frontier: none; Atomic is closed and Beast is the next
-  unattempted suite
+- active compiler frontier: concrete `sizeof...(Bn)` evaluation in Beast's
+  nested `buffers_cat_view<Bn...>::const_iterator`
 
 ## Baseline Gates
 
@@ -91,6 +91,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(conversion default SFINAE and ABI fix)` | Concrete defaulted SFINAE arguments and conversion-function-template symbols | +0.77% | +0.78% | +0.20% | -0.01 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-assign-default-sfinae-perf.json` | pass; substituted retained AST is resolved only after it becomes structurally concrete, all cache-disabled outputs are identical, and no text-reparse or rendered-symbol path is added |
 | `(nested structured template-id fix)` | Namespace-qualified lookup of a nested template-id retained inside another template argument | +0.82% | +1.15% | +0.14% | +0.05 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-nested-template-id-anchor-perf.json` | pass; the cold exact-anchor mismatch path prefilters by typed identifier, all cache-disabled outputs are identical, and the incremental movement is below the hotspot threshold |
 | `(Atomic typed lowering fixes)` | Structured GNU asm atomic operands plus scalar/class correctness exposed by Boost.Atomic | +0.91% | +0.19% | +0.32% | +0.09 instruction percentage points from the preceding frontier | `/tmp/cppgm-boost-frontier-v2-atomic-final-perf.json` | pass; all fixed gates remain within tolerance and the incremental movement is below the hotspot threshold |
+| `(dependent owner-pack ABI fix)` | Out-of-class constructor definition whose owner pack is renamed from the primary declaration | +0.86% | -0.55% | +0.33% | +0.00 instruction percentage points and +0.00 footprint percentage points from the preceding Beast frontier | `/tmp/cppgm-boost-frontier-v2-beast-dependent-owner-pack-perf.json` | pass; the fixed cumulative gates pass and the unchanged instruction result is below the hotspot threshold |
 
 ## Suite Cursor
 
@@ -108,6 +109,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 7 | `libs/assert/test` | pass | `53a73a395` | The exact forced survey rebuilt 72 targets; all 18 tests compiled, linked, ran, and passed, and B2 exited successfully. Log: `/tmp/boost-frontier-v2-suite-007-assert-full.log`. | No compiler fix or repository regression was required. |
 | 8 | `libs/assign/test` | pass | `(nested structured template-id fix)` | The initial exact forced survey passed the other discovered targets and isolated three compile failures: `array`, `list_of`, and `multi_index_container`; log `/tmp/boost-frontier-v2-suite-008-assign-initial-forced.log`. The conversion-template fix cleared `array` and `list_of`; the final exact forced survey rebuilt 84 targets, ran all 14 tests, and exited successfully, including `multi_index_container`; log `/tmp/boost-frontier-v2-suite-008-assign-final-forced.log`. | Both independent causes are closed. The final repository direct-LowIR report passes `3836/3836` with PA9 explicitly omitted as requested. |
 | 9 | `libs/atomic/test` | pass | `(Atomic typed lowering fixes)` | The initial forced survey exposed an incomplete `__is_trivially_copyable` class trait, zero-initialized scoped-enum globals, and unsupported x86 GNU asm atomic operations; log `/tmp/boost-frontier-v2-suite-009-atomic-after-trait-enum.log`. Focused API, reference, IPC, and wait targets passed after the fixes. The final exact forced suite rebuilt all 90 requested targets and passed every positive and expected-failure test; log `/tmp/boost-frontier-v2-suite-009-atomic-final.log`. | GNU asm operand expressions are parsed from the original token range during the initial parse and retained as typed AST/CallSem nodes; lowering classifies only exact supported instruction templates and never reparses operand text. The final direct-LowIR report passes `3840/3840` with PA9 explicitly omitted. |
+| 10 | `libs/beast/test` | frontier | `(dependent owner-pack ABI fix)` | The exact forced survey after the ABI fix updated 106 targets, skipped 289 downstream targets, and failed 52 independent compile actions; log `/tmp/boost-frontier-v2-suite-010-beast-after-dependent-owner-pack.log`. The prior `buffers_cat_view` ABI-symbol diagnostic is absent. The first and dominant next diagnostic is the concrete `sizeof...(Bn) >= 2` assertion, repeated 27 times. | Beast remains open. The survey also inventories later independent failures, but the ordered frontier is the first shared concrete-pack assertion failure. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -117,21 +119,21 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 - suite: `#10 libs/beast/test`
 - focused target: shared `boost/beast/core/impl/buffers_cat.hpp` dependency,
   reproduced by `libs/beast/test//beast/http`
-- failure phase: typed ABI construction while collecting an out-of-class
-  nested constructor template definition
-- diagnostic: `failed to build ABI IR function symbol for weak function
-  boost::beast::buffers_cat_view<Bn>::buffers_cat_view` at
-  `boost/beast/core/impl/buffers_cat.hpp:335`
+- failure phase: constant evaluation while completing the concrete nested
+  `buffers_cat_view<Bn...>::const_iterator`
+- diagnostic: `static_assert unevaluated: sizeof...(Bn) >= 2` at
+  `boost/beast/core/impl/buffers_cat.hpp:110`, even when the enclosing typed
+  binding records three concrete `Bn` arguments
 - reduced repro: pending
-- owning PA/cluster: pending reduction; any symbol coverage must use the typed
-  `abimangle` path and update the PA30 assignment/scaffold if a fact is missing
-- implementation area: typed function-template ABI target construction for a
-  variadic primary owner with a nested class
+- owning PA/cluster: pending reduction; place a header-free reducer in the
+  earliest assignment that owns the failing concrete pack expression
+- implementation area: structured `sizeof...` evaluation under a renamed
+  nested owner pack binding
 - performance risk: current three-run cumulative median is +0.86% instructions,
-  +1.16% RSS, and +0.33% footprint; instructions improve 0.05 percentage
-  points from the Atomic checkpoint and all fixed gates pass
-- next action: capture typed symbol trace for the line 335 constructor, reduce
-  it without hosted headers, and identify the missing semantic ABI fact
+  -0.55% RSS, and +0.33% footprint; instructions and footprint are unchanged
+  from the preceding Beast frontier and all fixed gates pass
+- next action: trace the concrete pack binding consumed by the line 110
+  assertion and reduce the failed structured evaluation without hosted headers
 
 ## Fix Ledger
 
@@ -174,8 +176,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/atomic/test` | Boost.Atomic exposed shared typed-lowering gaps plus its required x86 asm surface. Complete named classes now evaluate `__is_trivially_copyable` from typed special-member, base, field, polymorphism, and destructor facts. Scoped-enum globals use scalar constant initialization. Logical-not compares in the operand LowIR domain, signed narrow-to-i128 conversion sign-extends the low half before deriving the high mask, and dead f80 call results explicitly pop the x87 stack. GNU asm output/input expressions are parsed from the original token stream during the initial parse, analyzed into typed `asm_operand` nodes, and lowered for the exact Boost x86 locked update, exchange, compare-exchange, CAS-loop, and bit-update templates. No operand text is parsed, no cache is added, and no symbol path changes. | `pa14/tests/general/200-scoped-enum-global-constant-init.t`; strengthened header-free PA29 int128 lowering coverage; `pa29/tests/general/300-runtime-discarded-float80-call-result.t`; `pa34/tests/compile/500-builtin-trivially-copyable-class-special-members.t`; `pa34/tests/run/800-gnu-asm-atomic-update-run.t` | The initial forced suite produced false class-trait results, zero-valued scoped-enum globals, unsupported GNU asm diagnostics, twelve high-half U128 truth failures, two signed i128 widening failures, and one long-double comparison failure. LLDB showed the long-double values were initially exact but repeated dead f80 call returns overflowed the x87 stack; the i128 mismatch was a zero-extended low register paired with a sign high half. | Warning-clean build; all focused reducers and owner tests pass; normal and all-six-cache-disabled trait/asm LowIR are byte-identical; PA14/PA29/PA34 direct reports pass; all configured strict suites pass; placement audits report zero findings; all 23 reparse categories remain zero and all 14 audit tests pass; final forced Atomic suite passes all 90 rebuilt targets; final full direct report excluding PA9 passes `3840/3840`. | instructions +0.91%; max RSS +0.19%; peak footprint +0.32%; pass; +0.09 instruction percentage points from the preceding checkpoint | `(this commit)` |
 
 | fixed | `libs/beast/test` shared `buffers_cat.hpp:362` dependency | Class partial-specialization selection treated the unresolved structured argument pack `T...` as one argument and eagerly selected the fixed-arity partial `outer<T>`. Selection now defers to the primary for a dependent `TemplateArgumentSyntax::pack_expansion`, after preserving the existing exact-dependent-partial match used by partial definitions. Completing the nested class from its owner definition now runs the standard nested finalizer before returning, and stored member definitions use the owner template's retained out-of-class nested-class AST anchor instead of a transient forward-declaration node. This fixes the uncached algorithm; no cache, semantic text parse, or symbol fallback is added. | `pa21/tests/general/100-dependent-pack-owner-skips-fixed-partial-nested-definition.t`, a header-free reducer at the placement-audited PA21 partial-specialization owner | The current pre-fix compiler rejected `/tmp/cppgm-beast-nested-iterator-operator.cpp` with `unsupported template declarator`; Clang accepted it. Typed trace showed `outer<T...>` selecting the one-argument partial with `deferred=no`; after correcting selection, replay found the stored definition but skipped it first because nested completion returned before finalization and then because reference/concrete owners used different AST nodes for the same retained nested definition. Initial Beast log `/tmp/boost-frontier-v2-suite-010-beast-initial-forced.log` repeated the same declarator failure at line 362. | Warning-clean build; Clang and `cppgm++` compile and run the reducer; normal, all six individual cache-disabled modes, and all-disabled mode emit byte-identical LowIR. Focused PA21 check and direct report pass `222/222`; all configured strict suites pass; PA21 placement audit has zero findings; all 23 text-reparse categories remain zero and all 14 audit tests pass. The exact forced Beast rerun rebuilds 104 targets with zero `unsupported template declarator` diagnostics and advances to the independent typed ABI failure at line 335; log `/tmp/boost-frontier-v2-suite-010-beast-after-pack-owner.log`. | instructions +0.86%; max RSS +1.16%; peak footprint +0.33%; pass; instructions improve 0.05 percentage points from the Atomic checkpoint; report `/tmp/cppgm-boost-frontier-v2-beast-pack-owner-final-perf.json` | `(this commit)` |
+| fixed | `libs/beast/test` shared `buffers_cat.hpp:335` dependency | Typed ABI construction recognized only the primary owner's declared type-parameter identity. In an out-of-class definition the retained owner argument instead carries the renamed dependent `Bound` pack as a typed `TemplateArgument::type`, so the reference parameter could not become `pack(ref(const(template-param 0)))`. The adapter now maps that retained typed owner argument to its corresponding parameter index and marks the same typed node as the owner pack before emitting the existing `abi_mangle::Type` facts. No source or rendered symbol is parsed, no string is converted back into an ABI target, and no cache is added. | `pa19/tests/general/200-out-of-class-owner-parameter-pack-rename.t`, a header-free source reducer at the earliest pack owner; `pa30/tests/abi/600-template-parameter-pack-reference-constructor.t` directly covers the existing typed fact combination, so the assignment/scaffold needed no extension | The exact typed trace reported a failed lvalue-reference parameter with `owner-pack=no`; retained owner-argument inspection showed the current dependent `Bn` type and `TemplateArgument::type` were the same `TypePtr`. The pre-fix header-free reducer failed identically while Clang accepted it. | Warning-clean build; Clang and fixed cppgm accept the reducer; normal and all six relevant cache-disabled modes emit byte-identical LowIR. PA19 and PA30 focused checks and direct report pass `220/220`; both placement audits have zero findings; all configured strict direct-LowIR suites pass; all 23 text-reparse categories remain zero and all 14 audit tests pass. Direct replay advances to the independent concrete-pack assertion. The exact forced Beast survey updates 106 targets with zero remaining `buffers_cat_view` ABI failures and records the next frontier in `/tmp/boost-frontier-v2-suite-010-beast-after-dependent-owner-pack.log`. | instructions +0.86%; max RSS -0.55%; peak footprint +0.33%; pass; instructions and footprint are unchanged from the preceding frontier; report `/tmp/cppgm-boost-frontier-v2-beast-dependent-owner-pack-perf.json` | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-15`: Fixed the Beast nested-constructor symbol through the typed ABI
+  path. The retained renamed owner argument is mapped by its `TypePtr` to the
+  primary parameter index, then represented with the existing typed template
+  parameter and pack-expansion facts. No ABI fact, scaffold extension, text
+  parse, rendered-symbol fallback, or cache was needed. The exact forced survey
+  contains no remaining `buffers_cat_view` symbol failures and moves the ordered
+  frontier to concrete `sizeof...(Bn)` evaluation at `buffers_cat.hpp:110`.
 
 - `2026-07-15`: Corrected Beast's first shared failure without a cache. A
   dependent argument pack no longer masquerades as a fixed one-argument class
