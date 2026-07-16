@@ -86,6 +86,10 @@ void analyze_function_body_for_witness_semantics(SemanticContext & ctx,
                                                  semantic_model::Scope & scope,
                                                  semantic_model::FunctionBinding & binding);
 
+void validate_function_body_and_cache_output(SemanticContext & ctx,
+                                             semantic_model::Scope & scope,
+                                             semantic_model::FunctionBinding & binding);
+
 void analyze_class_output_from_info(SemanticContext & ctx,
                                     OutputState & state,
                                     semantic_model::ClassInfo & info,

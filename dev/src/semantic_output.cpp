@@ -1,6 +1,7 @@
 #include "semantic_output.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <iomanip>
 #include <iterator>
 #include <map>
@@ -56,6 +57,16 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
                                                   FunctionBinding * binding);
 
 namespace {
+
+bool static_assert_body_output_cache_enabled()
+{
+  static const bool enabled = []() -> bool
+  {
+    const char * value = std::getenv("CPPGM_DISABLE_STATIC_ASSERT_BODY_OUTPUT_CACHE");
+    return value == nullptr || *value == '\0' || std::string(value) == "0";
+  }();
+  return enabled;
+}
 
 class ScopedTemplateUseLocation
 {
@@ -3986,9 +3997,29 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
                                      bool is_c_linkage,
                                      bool linkage_has_braces = false);
 
+void analyze_function_body_semantics_impl(SemanticContext & ctx,
+                                          Scope & scope,
+                                          FunctionBinding & binding,
+                                          bool cache_body_output,
+                                          bool note_witness_closures);
+
 void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
                                                       Scope & scope,
                                                       FunctionBinding & binding);
+
+bool function_body_semantics_available(SemanticContext & ctx,
+                                       const FunctionBinding & binding)
+{
+  return binding.body &&
+         !binding.is_constructor &&
+         !binding.is_destructor &&
+         !binding.is_copy_assignment &&
+         !binding.is_move_assignment &&
+         !binding.definition_output_in_progress &&
+         !binding.definition_output_emitted &&
+         semantic_template_output_policy::function_instantiation_arguments_complete(
+             ctx, binding);
+}
 
 void note_witness_body_constructor_closures(SemanticContext & ctx,
                                             const CallSemNode & node);
@@ -4576,19 +4607,13 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
   }
 }
 
-void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
-                                                      Scope & scope,
-                                                      FunctionBinding & binding)
+void analyze_function_body_semantics_impl(SemanticContext & ctx,
+                                          Scope & scope,
+                                          FunctionBinding & binding,
+                                          bool cache_body_output,
+                                          bool note_witness_closures)
 {
-  if(!witness::source_capture_enabled(ctx.template_witness_context()) ||
-     !binding.body ||
-     binding.is_constructor ||
-     binding.is_destructor ||
-     binding.is_copy_assignment ||
-     binding.is_move_assignment ||
-     binding.definition_output_in_progress ||
-     binding.definition_output_emitted ||
-     !semantic_template_output_policy::function_instantiation_arguments_complete(ctx, binding)) {
+  if(!function_body_semantics_available(ctx, binding)) {
     return;
   }
 
@@ -4628,8 +4653,6 @@ void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
   bind_function_parameter_value_packs(ctx, function_scope, binding);
 
   DumpNode body_node = make_dump_node(CallSemKind::compound_statement);
-  const template_api::ScopedTemplateWitnessEntryContext entry_context =
-      template_api::maybe_enter_function_body_materialization_context(ctx, &binding);
   if(binding.body->kind == CppAstKind::lazy_function_body) {
     binding.body = ctx.materialize_lazy_function_body(*binding.body);
   }
@@ -4641,7 +4664,12 @@ void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
                                             binding.body->children[i],
                                             body_node);
     }
-    note_witness_body_constructor_closures(ctx, body_node);
+    if(note_witness_closures) {
+      note_witness_body_constructor_closures(ctx, body_node);
+    }
+    if(cache_body_output) {
+      binding.cached_body_output.reset(new CallSemNode(std::move(body_node)));
+    }
     return;
   }
 
@@ -4650,7 +4678,25 @@ void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
                                         function_type->inner,
                                         *binding.body,
                                         body_node);
-  note_witness_body_constructor_closures(ctx, body_node);
+  if(note_witness_closures) {
+    note_witness_body_constructor_closures(ctx, body_node);
+  }
+  if(cache_body_output) {
+    binding.cached_body_output.reset(new CallSemNode(std::move(body_node)));
+  }
+}
+
+void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
+                                                      Scope & scope,
+                                                      FunctionBinding & binding)
+{
+  if(!witness::source_capture_enabled(ctx.template_witness_context()) ||
+     !function_body_semantics_available(ctx, binding)) {
+    return;
+  }
+  const template_api::ScopedTemplateWitnessEntryContext entry_context =
+      template_api::maybe_enter_function_body_materialization_context(ctx, &binding);
+  analyze_function_body_semantics_impl(ctx, scope, binding, false, true);
 }
 
 void analyze_class_simple_declaration_output(SemanticContext & ctx,
@@ -6013,6 +6059,20 @@ void analyze_function_body_for_witness_semantics(SemanticContext & ctx,
                                                  FunctionBinding & binding)
 {
   analyze_function_body_for_witness_semantics_impl(ctx, scope, binding);
+}
+
+void validate_function_body_and_cache_output(SemanticContext & ctx,
+                                             Scope & scope,
+                                             FunctionBinding & binding)
+{
+  const bool cache_body_output = static_assert_body_output_cache_enabled();
+  if(cache_body_output && binding.cached_body_output) {
+    return;
+  }
+  if(!cache_body_output) {
+    binding.cached_body_output.reset();
+  }
+  analyze_function_body_semantics_impl(ctx, scope, binding, cache_body_output, false);
 }
 
 void analyze_class_output_from_info(SemanticContext & ctx,

@@ -26,6 +26,7 @@
 #include "semantic_hotspot.h"
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
+#include "semantic_output.h"
 #include "semantic_scope_mutation.h"
 #include "semantic_template_class.h"
 #include "semantic_template_function.h"
@@ -7791,22 +7792,6 @@ FunctionBinding * register_class_function(
   return ctx.register_function_entity(request);
 }
 
-void bind_static_assert_validation_parameter(Scope & function_scope,
-                                             const FunctionBinding & binding,
-                                             std::size_t index)
-{
-  if(index >= binding.params.size() || binding.params[index].first.empty()) {
-    return;
-  }
-  ValueBinding parameter(ValueBinding::VK_PARAMETER,
-                         binding.params[index].first,
-                         binding.params[index].second);
-  semantic_scope_mutation::bind_value_aliases(function_scope,
-                                              binding.params[index].first,
-                                              std::string(),
-                                              parameter);
-}
-
 bool body_contains_static_assert_declaration(const CppAstNode & node)
 {
   if(node.kind == CppAstKind::static_assert_declaration) {
@@ -7826,25 +7811,6 @@ bool body_contains_static_assert_declaration(const CppAstNode & node)
   return false;
 }
 
-void analyze_static_asserts_in_member_function_body(SemanticContext & ctx,
-                                                    Scope & function_scope,
-                                                    const CppAstNode & node)
-{
-  if(node.kind == CppAstKind::static_assert_declaration) {
-    semantic_declaration::analyze_static_assert_declaration(ctx, function_scope, node);
-    return;
-  }
-  if(node.kind == CppAstKind::class_specifier ||
-     node.kind == CppAstKind::class_forward_declaration ||
-     node.kind == CppAstKind::function_definition ||
-     node.kind == CppAstKind::template_declaration) {
-    return;
-  }
-  for(std::size_t i = 0; i < node.children.size(); ++i) {
-    analyze_static_asserts_in_member_function_body(ctx, function_scope, node.children[i]);
-  }
-}
-
 void validate_member_function_static_asserts(SemanticContext & ctx,
                                              FunctionBinding * binding)
 {
@@ -7858,13 +7824,8 @@ void validate_member_function_static_asserts(SemanticContext & ctx,
     return;
   }
 
-  Scope function_scope(binding->owner_class->member_scope.get());
-  function_scope.class_info = binding->owner_class;
-  function_scope.function = binding;
-  for(std::size_t i = 0; i < binding->params.size(); ++i) {
-    bind_static_assert_validation_parameter(function_scope, *binding, i);
-  }
-  analyze_static_asserts_in_member_function_body(ctx, function_scope, *binding->body);
+  semantic_output::validate_function_body_and_cache_output(
+      ctx, *binding->owner_class->member_scope, *binding);
 }
 
 bool class_definition_has_member_function_static_assert(const CppAstNode & node)

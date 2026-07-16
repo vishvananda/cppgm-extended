@@ -701,11 +701,26 @@ bool template_argument_range_fragment_mode(
   };
 
   const RecogToken & first = tokens.peek(range.first);
+  if(token_is_decltype_or_typeof_specifier_start(first)) {
+    qualified_name_parser::QualifiedNameParseResult parsed_name;
+    const bool qualified_id =
+        qualified_name_parser::parse_qualified_name(
+            tokens,
+            range.first,
+            lookup,
+            qualified_name_parser::UnqualifiedNameOptions(),
+            parsed_name) &&
+        parsed_name.end == effective_end &&
+        !parsed_name.qualifiers.empty();
+    mode = qualified_id ?
+        CppAstParser::TAF_PARSE_BOTH :
+        CppAstParser::TAF_PARSE_TYPE_ONLY;
+    return true;
+  }
   if(is_cv_qualifier(first) ||
          is_simple_type_specifier(first) ||
          is_class_key(first) ||
          first.is_simple(KW_ENUM) ||
-         token_is_decltype_or_typeof_specifier_start(first) ||
          first.is_simple(KW_TYPENAME)) {
     mode = has_function_style_type_cast() ?
         CppAstParser::TAF_PARSE_BOTH :
@@ -1102,28 +1117,20 @@ void build_template_argument_syntax_from_range(
     }
   }
 
-  CppAstNode qualified_id_expression;
-  if(build_qualified_id_expression_syntax_from_range(tokens,
-                                                     lookup,
-                                                     range,
-                                                     qualified_id_expression,
-                                                     parser_context)) {
-    argument.expression.reset(
-        new CppAstNode(std::move(qualified_id_expression)));
-  }
-
-  if(argument.type_id || argument.expression) {
-    return;
-  }
-
   CppAstParser::TemplateArgumentFragmentMode fragment_mode =
       CppAstParser::TAF_PARSE_BOTH;
-  if(parser_context &&
-     template_argument_range_fragment_mode(tokens,
-                                           lookup,
-                                           range,
-                                           parser_context,
-                                           fragment_mode)) {
+  const bool has_fragment_mode =
+      parser_context &&
+      template_argument_range_fragment_mode(tokens,
+                                            lookup,
+                                            range,
+                                            parser_context,
+                                            fragment_mode);
+  const auto parse_fragment = [&]() -> bool
+  {
+    if(!has_fragment_mode) {
+      return false;
+    }
     cpp_decl::TemplateArgumentSyntax parsed_argument;
     if(parser_context->parse_template_argument_fragment_syntax(range.first,
                                                                range.second,
@@ -1134,8 +1141,35 @@ void build_template_argument_syntax_from_range(
       parsed_argument.source_token_start = argument.source_token_start;
       parsed_argument.source_location_id = argument.source_location_id;
       argument = std::move(parsed_argument);
+      return true;
     }
+    return false;
+  };
+
+  const bool prefer_qualified_decltype_fragment =
+      has_fragment_mode &&
+      token_is_decltype_or_typeof_specifier_start(tokens.peek(range.first)) &&
+      fragment_mode == CppAstParser::TAF_PARSE_BOTH;
+  if(prefer_qualified_decltype_fragment && parse_fragment()) {
+    return;
   }
+
+  CppAstNode qualified_id_expression;
+  if(build_qualified_id_expression_syntax_from_range(tokens,
+                                                     lookup,
+                                                     range,
+                                                     qualified_id_expression,
+                                                     parser_context)) {
+    argument.expression.reset(
+        new CppAstNode(std::move(qualified_id_expression)));
+  }
+
+  if(argument.type_id || argument.expression ||
+     prefer_qualified_decltype_fragment) {
+    return;
+  }
+
+  parse_fragment();
 }
 
 struct TemplateArgumentFragmentNameLookup : template_angle::NameLookup
