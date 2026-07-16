@@ -2842,6 +2842,26 @@ void note_function_call_source_event(
   for(std::size_t i = 0; i < matches.size(); ++i) {
     viable_bindings.insert(matches[i].function);
   }
+  const auto implicit_assignment_drop_is_represented_by_selected_owner =
+      [&](FunctionBinding * binding, const std::string & reason) -> bool
+  {
+    if(!binding ||
+       !binding->synthesized ||
+       (!binding->is_copy_assignment && !binding->is_move_assignment) ||
+       !binding->owner_class ||
+       !chosen->source_template ||
+       !chosen->owner_class ||
+       !type_equals(binding->owner_class->type, chosen->owner_class->type)) {
+      return false;
+    }
+    for(std::size_t i = 0; i < source_use.drops.size(); ++i) {
+      if(source_use.drops[i].candidate == selected_name &&
+         source_use.drops[i].reason == reason) {
+        return true;
+      }
+    }
+    return false;
+  };
   for(std::size_t i = 0;
       i < built_candidates.size() && i < candidate_rejections.size();
       ++i) {
@@ -2853,6 +2873,10 @@ void note_function_call_source_event(
     }
     const std::string reason =
         function_candidate_rejection_drop_reason(candidate_rejections[i]);
+    if(implicit_assignment_drop_is_represented_by_selected_owner(
+           built_candidates[i], reason)) {
+      continue;
+    }
     if(suppress_source_drops &&
        !source_drop_survives_out_of_class_member_definition_suppression(
            reason)) {
@@ -2900,6 +2924,10 @@ void note_function_call_source_event(
         function_candidate_rank_drop_reason(matches[match_index],
                                             ctx,
                                             matches[selection.index]);
+    if(implicit_assignment_drop_is_represented_by_selected_owner(
+           matches[match_index].function, reason)) {
+      continue;
+    }
     if(suppress_source_drops &&
        !source_drop_survives_out_of_class_member_definition_suppression(
            reason)) {

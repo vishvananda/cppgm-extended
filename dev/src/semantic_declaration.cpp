@@ -698,6 +698,11 @@ vector<FunctionBinding *> lookup_using_target_functions(SemanticContext & ctx,
   if(ClassInfo * target_class = known_target_class ?
          known_target_class :
          lookup_using_target_class(ctx, scope, qualified, target)) {
+    if(qualified.name == "operator=") {
+      semantic_class_model::ensure_implicit_special_members(ctx, *target_class);
+      semantic_class_model::ensure_implicit_copy_assignment(ctx, *target_class);
+      semantic_class_model::ensure_implicit_move_assignment(ctx, *target_class);
+    }
     vector<FunctionBinding *> functions =
         semantic_lookup::lookup_visible_member_functions(*target_class,
                                                          qualified.name).functions;
