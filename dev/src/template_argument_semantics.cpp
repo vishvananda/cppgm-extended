@@ -8922,8 +8922,14 @@ bool leaf_value_binding_visible_from_node(const ValueBinding * binding,
   }
   const CppAstNode * declaration_node =
       binding->declaration_node ? binding->declaration_node : binding->definition_node;
-  if(!declaration_node ||
-     declaration_node->token_end <= declaration_node->token_start ||
+  if(!declaration_node) {
+    return true;
+  }
+  if(declaration_node->source_location_id != 0 &&
+     use_node->source_location_id != 0) {
+    return declaration_node->source_location_id <= use_node->source_location_id;
+  }
+  if(declaration_node->token_end <= declaration_node->token_start ||
      use_node->token_end <= use_node->token_start) {
     return true;
   }
@@ -11205,11 +11211,15 @@ bool lookup_leaf_expression_type_category(template_api::TemplateServices & servi
   if(expr.kind == CppAstKind::id_expression) {
     const ValueBinding * binding = nullptr;
     const QualifiedName * qualified = qualified_syntax_if_qualified(expr);
-    if((lookup_leaf_value_binding(scope, expr.value, binding) ||
+    const bool found_value =
+        lookup_leaf_value_binding(scope, expr.value, binding) ||
         (qualified &&
          lookup_leaf_qualified_value_binding(
-             services, scope, *qualified, &expr, binding))) &&
-       binding && binding->type) {
+             services, scope, *qualified, &expr, binding));
+    if(found_value &&
+       binding &&
+       leaf_value_binding_visible_from_node(binding, &expr) &&
+       binding->type) {
       out = binding->type;
       category = semantic_conversion::VC_LVALUE;
       return true;
