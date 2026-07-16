@@ -2958,6 +2958,7 @@ bool CppAstParser::can_start_named_decl_specifier_seq() const
   const RecogToken & after = tokens.peek(end);
   const bool result = after.is_identifier() ||
       is_cv_qualifier(after) ||
+      is_decl_specifier_keyword(after) ||
       after.is_simple(OP_STAR) ||
       after.is_simple(OP_AMP) ||
       after.is_simple(OP_LAND);
