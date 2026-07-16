@@ -3707,6 +3707,7 @@ void apply_stored_out_of_class_member_function_definitions_map(
         }
         refresh_definition_parameter_names(*binding, effective_params);
         binding->body = stored.body;
+        binding->declaration_scope = &binding_scope;
         record_definition_parameter_aliases(*binding, effective_params);
         binding->ctor_initializer = stored.ctor_initializer;
         binding->has_definition = true;
