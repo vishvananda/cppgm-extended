@@ -12,6 +12,7 @@
 #include "cpp_decl_ast.h"
 #include "cpp_decl_bridge.h"
 #include "callsemantic/function_registry.h"
+#include "callsemantic/template_source_utils.h"
 #include "callsemantic_internal.h"
 #include "callsemantic/source_location_utils.h"
 #include "parser_trace.h"
@@ -3760,6 +3761,12 @@ void maybe_apply_stored_out_of_class_member_function_template_definition(
        !stored_def.body ||
        (!equivalent && !same_source && !semantic_match)) {
       continue;
+    }
+    std::vector<TemplateParameterInfo> merged_parameters = candidate.parameters;
+    if(callsemantic::merge_template_parameter_redeclarations(
+           merged_parameters,
+           stored_def.declaration->parameters)) {
+      candidate.parameters.swap(merged_parameters);
     }
     if(candidate.params_pattern.size() == stored_def.declaration->params_pattern.size()) {
       for(std::size_t param_index = 0;

@@ -959,6 +959,8 @@ public:
                                                    syntax.ref_qualifier,
                                                    conversion_identifier);
           if(template_decl) {
+            merge_function_template_definition_parameters(*template_decl,
+                                                          template_parameters);
             if(inner.kind == CppAstKind::special_member_definition) {
               if(template_decl->body) {
                 throw logic_error(string("duplicate templated conversion-operator definition") +
@@ -1286,6 +1288,8 @@ public:
                                                                declarator_identifier) :
                   nullptr;
         if(template_decl) {
+          merge_function_template_definition_parameters(*template_decl,
+                                                        template_parameters);
           if(parser_trace::enabled("template.resolve")) {
             std::ostringstream trace;
             trace << "record-out-of-class-special-member-template name=" << inner.value
@@ -2596,6 +2600,8 @@ public:
                          resolved_member_declaration->exclude_from_explicit_instantiation;
                 };
             if(template_decl) {
+              merge_function_template_definition_parameters(*template_decl,
+                                                            template_parameters);
               if(body) {
                 if(template_decl->body) {
                   const bool same_body_location =
@@ -4657,6 +4663,17 @@ private:
       const vector<TemplateParameterInfo> & incoming)
   {
     callsemantic::prefer_incoming_template_parameter_spellings(target, incoming);
+  }
+
+  void merge_function_template_definition_parameters(
+      FunctionTemplateDecl & declaration,
+      const vector<TemplateParameterInfo> & definition_parameters)
+  {
+    vector<TemplateParameterInfo> merged_parameters = declaration.parameters;
+    if(merge_template_parameter_redeclarations(merged_parameters,
+                                               definition_parameters)) {
+      declaration.parameters.swap(merged_parameters);
+    }
   }
 
   bool merge_partial_class_template_specialization(
