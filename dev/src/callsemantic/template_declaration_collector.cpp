@@ -371,7 +371,7 @@ public:
       }
       const auto owner_template_member_class_definition =
           [&](Scope & current_scope,
-              const string & class_name) -> const CppAstNode *
+              const string & class_name) -> const OutOfClassMemberClassDecl *
       {
         if(!current_scope.class_info || !current_scope.class_info->source_template) {
           return nullptr;
@@ -383,7 +383,7 @@ public:
            found->second.class_node->kind == CppAstKind::class_forward_declaration) {
           return nullptr;
         }
-        return found->second.class_node;
+        return &found->second;
       };
       const QualifiedName * qualified_class_name = cppast_qualified_name_syntax(inner);
       const QualifiedName * effective_qualified_class_name = qualified_class_name;
@@ -707,10 +707,20 @@ public:
       const CppAstNode * effective_class_node = &inner;
       if(inner.kind == CppAstKind::class_forward_declaration) {
         if(class_template_scope == &scope) {
-          const CppAstNode * member_definition =
+          const OutOfClassMemberClassDecl * member_definition =
               owner_template_member_class_definition(scope, inner.value);
           if(member_definition) {
-            effective_class_node = member_definition;
+            effective_class_node = member_definition->class_node;
+            if(!merge_template_parameter_redeclarations(
+                   template_parameters,
+                   member_definition->parameters)) {
+              throw logic_error(string("conflicting out-of-class member template definition") +
+                                semantic_trace::current_location_note(*this, &inner) +
+                                semantic_trace::node_location_note(
+                                    *this,
+                                    "definition",
+                                    member_definition->class_node));
+            }
           }
         }
       }
