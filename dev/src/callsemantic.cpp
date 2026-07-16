@@ -26639,7 +26639,7 @@ private:
            find_partial_specialization_decl(*info.source_template, &info)) {
       owner_parameter_count = partial->parameters.size();
     }
-    return template_parameters.size() > owner_parameter_count ?
+    return template_parameters.size() >= owner_parameter_count ?
         owner_parameter_count :
         0;
   }
