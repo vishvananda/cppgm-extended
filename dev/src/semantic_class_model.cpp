@@ -7828,6 +7828,14 @@ void validate_member_function_static_asserts(SemanticContext & ctx,
       ctx, *binding->owner_class->member_scope, *binding);
 }
 
+void validate_class_member_function_static_asserts(SemanticContext & ctx,
+                                                    ClassInfo & info)
+{
+  for(std::size_t i = 0; i < info.method_declaration_order.size(); ++i) {
+    validate_member_function_static_asserts(ctx, info.method_declaration_order[i]);
+  }
+}
+
 bool class_definition_has_member_function_static_assert(const CppAstNode & node)
 {
   for(std::size_t i = 0; i < node.children.size(); ++i) {
@@ -10448,20 +10456,18 @@ void collect_class_method_definition(SemanticContext & ctx,
     request.semantic_flags.is_constexpr = prepared.is_constexpr_member;
     request.semantic_flags.is_inline = prepared.is_inline_member;
     request.is_static_member = true;
-    validate_member_function_static_asserts(ctx, ctx.register_function_entity(request));
+    ctx.register_function_entity(request);
   } else {
-    validate_member_function_static_asserts(
-        ctx,
-        register_class_function(ctx,
-                                info,
-                                prepared.name,
-                                prepared.declared_type,
-                                params,
-                                default_args,
-                                prepared.body,
-                                nullptr,
-                                method_flags,
-                                &node));
+    register_class_function(ctx,
+                            info,
+                            prepared.name,
+                            prepared.declared_type,
+                            params,
+                            default_args,
+                            prepared.body,
+                            nullptr,
+                            method_flags,
+                            &node);
   }
   trace_class_collection_event(ctx,
                                "method-definition-done",
@@ -11312,6 +11318,7 @@ void populate_class_info(SemanticContext & ctx,
         semantic_metrics::CDK_CLASS_LAYOUT);
     finalize_class_layout(ctx, info);
   }
+  validate_class_member_function_static_asserts(ctx, info);
   info.reference_members_collected = true;
   template_api::note_anonymous_member_class_events_if_owner_logged(ctx, info);
   trace_class_collection_event(ctx, "populate-class-done", info, node);
