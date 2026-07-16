@@ -15,10 +15,10 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `9 / 147`
 - current cursor: `#10 libs/beast/test`
-- active compiler frontier: `libs/beast/test/beast/core//async_base` now passes
-  compile, link, and runtime after repairing its typed local-class RTTI owner;
-  a fresh full forced Beast survey is pending to establish the next ordered
-  independent failure
+- active compiler frontier: `libs/beast/test/beast/core//detect_ssl` rejects
+  same-enum equality in Boost.Tribool because overload resolution omits the
+  exact built-in enum candidate and reports three worse user-defined overloads
+  as ambiguous
 
 ## Baseline Gates
 
@@ -130,7 +130,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 7 | `libs/assert/test` | pass | `53a73a395` | The exact forced survey rebuilt 72 targets; all 18 tests compiled, linked, ran, and passed, and B2 exited successfully. Log: `/tmp/boost-frontier-v2-suite-007-assert-full.log`. | No compiler fix or repository regression was required. |
 | 8 | `libs/assign/test` | pass | `(nested structured template-id fix)` | The initial exact forced survey passed the other discovered targets and isolated three compile failures: `array`, `list_of`, and `multi_index_container`; log `/tmp/boost-frontier-v2-suite-008-assign-initial-forced.log`. The conversion-template fix cleared `array` and `list_of`; the final exact forced survey rebuilt 84 targets, ran all 14 tests, and exited successfully, including `multi_index_container`; log `/tmp/boost-frontier-v2-suite-008-assign-final-forced.log`. | Both independent causes are closed. The final repository direct-LowIR report passes `3836/3836` with PA9 explicitly omitted as requested. |
 | 9 | `libs/atomic/test` | pass | `(Atomic typed lowering fixes)` | The initial forced survey exposed an incomplete `__is_trivially_copyable` class trait, zero-initialized scoped-enum globals, and unsupported x86 GNU asm atomic operations; log `/tmp/boost-frontier-v2-suite-009-atomic-after-trait-enum.log`. Focused API, reference, IPC, and wait targets passed after the fixes. The final exact forced suite rebuilt all 90 requested targets and passed every positive and expected-failure test; log `/tmp/boost-frontier-v2-suite-009-atomic-final.log`. | GNU asm operand expressions are parsed from the original token range during the initial parse and retained as typed AST/CallSem nodes; lowering classifies only exact supported instruction templates and never reparses operand text. The final direct-LowIR report passes `3840/3840` with PA9 explicitly omitted. |
-| 10 | `libs/beast/test` | frontier | `(typed local-class RTTI owner fix)` | The exact final focused `async_base` run force-rebuilt all 46 requested targets, compiled, linked, ran, and passed. The preceding full forced survey at `509b7c962` completed in 782.9s with 23 failed targets and independently reconfirmed `basic_stream`; log `/tmp/boost-frontier-v2-suite-016-value-init-zero-final/libs__beast__test.log`. | `async_base` is closed on the initial typed `abi_mangle` path with no rendered-symbol or source-text fallback. A fresh full forced survey is pending after this coherent fix is committed to establish the next ordered independent failure. |
+| 10 | `libs/beast/test` | frontier | `0a9a22d6d` | The exact final focused `async_base` run force-rebuilt all 46 requested targets, compiled, linked, ran, and passed. The subsequent full forced survey at `0a9a22d6d` found 7384 targets, attempted 447, updated 369, skipped 56, failed 22, and completed in 737.2s with 81 passing tests; log `/tmp/boost-frontier-v2-suite-017-local-rtti-owner-final/libs__beast__test.log`. | The Jamfile source order establishes `detect_ssl` as the next independent frontier, before the later `file_posix`, `flat_buffer`, `span`, and HTTP failures. `async_base` and `basic_stream` both pass in the full forced survey. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -138,20 +138,21 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#10 libs/beast/test`
-- focused target: pending fresh full forced survey
-- failure phase: pending
-- diagnostic: `async_base` now compiles, links, runs, and passes after a forced
-  rebuild of all 46 requested targets
-- source location: pending
-- reduced repro: `pa33/tests/general/200-host-local-class-dependent-result-rtti-mangling.t`
-- owning PA/cluster: PA33 host RTTI and local-class mangling
-- implementation area: typed `abi_mangle` construction for a dependent
-  qualified member type used in an enclosing function-template signature
+- focused target: `libs/beast/test/beast/core//detect_ssl`
+- failure phase: overload resolution in the initial function-body analysis
+- diagnostic: `tribool::value_t == tribool::value_t` is reported ambiguous
+  among `operator==(tribool, tribool)`, `operator==(tribool, bool)`, and
+  `operator==(bool, tribool)`; the exact built-in enum equality is absent
+- source location: `boost/logic/tribool.hpp:141`
+- reduced repro: pending header-free same-enum equality reducer
+- owning PA/cluster: pending placement audit of enum built-in operator ranking
+- implementation area: structured built-in equality candidate formation for
+  enum operands in ordinary overload resolution
 - performance risk: current cumulative result is -0.47% instructions, -0.61%
   RSS, and +0.12% footprint; rolling movement from the preceding frontier is
   +0.03 instruction percentage points with both memory measures improving
-- next action: commit the coherent fix and run the complete forced Beast suite
-  to select the next ordered independent failure
+- next action: reduce the missing built-in candidate, identify the earliest PA
+  owner, and correct the uncached typed overload algorithm
 
 ## Fix Ledger
 
@@ -217,6 +218,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/beast/test/beast/core//async_base` typed host RTTI for a named local class | The enclosing function-template signature contains the dependent qualified result `result<T0>::type`. Typed ABI construction returned a nominal class-template owner IR for `result<T0>`, but that IR had no template name and could not be emitted; treating construction alone as success suppressed the retained typed owner `TemplateIdSyntax`. Dependent qualified member construction now accepts the first owner IR only when the existing typed `abi_mangle` emitter can encode it, allowing the retained typed template-id owner to supply the valid IR. There is no source or semantic text parse, rendered-symbol fallback, symbol-string deduction, or cache. | `pa33/tests/general/200-host-local-class-dependent-result-rtti-mangling.t`, a header-free local polymorphic class inside a function template with a dependent result and named local template argument, at PA33's host RTTI/local-class mangling owner | Before the fix the exact target reports `failed to derive host typeinfo-name symbol` for `op`. The reducer's ordinary function symbol is already correct, while its `_ZTI` and `_ZTS` symbols fail because the result type cannot be emitted in the typed enclosing context. Clang emits `_ZTIZN4test4readI6streamZNS_3runEvE7handlerEEN6resultIT0_E4typeERT_OS4_E2op` and the corresponding `_ZTS`; cppgm now matches both exactly. Existing PA30 typed `local-type` and dependent-template facts cover the ABI shape, so no assignment or scaffold extension is needed. | Warning-clean build; focused PA33 regression and PA33 direct report pass `81/81`; strict PA18/19/21/22/23 direct suites pass; PA33 placement/hygiene report zero findings; all 23 text-reparse categories remain zero and all 14 audit tests pass. Normal, all ten individual cache-disabled modes, and all-disabled mode emit byte-identical Mach-O objects with SHA-256 `f395fcc868826d4f31a4a451b4896d2e6324ed4ecbc6dec11cb676455100cafb`, proving the initial typed algorithm independently of caches. Full direct report with PA9 explicitly excluded passes `3865/3865`, including PA37 object roundtrip `7/7`. The exact final Beast target force-rebuilds 46 targets and passes compile, link, and runtime. | instructions -0.47%; max RSS -0.61%; peak footprint +0.12%; pass; versus the preceding frontier instructions move only +0.03 percentage points while both memory measures improve; report `/tmp/cppgm-boost-frontier-v2-local-rtti-owner-perf.json` | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-16`: The full forced Beast survey at immutable commit `0a9a22d6d`
+  completed in `737.2s`: 7384 targets found, 447 attempted, 369 updated, 56
+  skipped, 22 failed, and 81 tests passed. Both `async_base` and `basic_stream`
+  pass independently in this full run. Eight-worker completion order exposed
+  `span` first in the live tail, but the checked-in Beast core Jamfile places
+  `detect_ssl` first among the remaining failures. Its header-level expression
+  compares two values of the same enum type; cppgm omits the exact built-in
+  equality candidate and reports only three worse user-defined conversions.
+  The next step is a header-free reducer and earliest-owner placement. Evidence
+  is in `/tmp/boost-frontier-v2-suite-017-local-rtti-owner-final`.
 
 - `2026-07-16`: Closed `core//async_base` through the typed `abi_mangle` path.
   The malformed but nominally constructed semantic owner for
