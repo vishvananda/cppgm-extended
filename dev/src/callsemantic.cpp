@@ -31398,6 +31398,9 @@ private:
                                                                           request);
       if(result.completed) {
         note_complete_class_materialization(info);
+        template_api::finalize_nested_member_class_instantiation_from_owner(*this,
+                                                                           info,
+                                                                           true);
         return info;
       }
     }

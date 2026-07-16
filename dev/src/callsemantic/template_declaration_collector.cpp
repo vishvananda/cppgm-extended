@@ -1252,10 +1252,8 @@ public:
           stored.owner_output_node =
               matches_partial_owner_template_parameters && owner_partial_decl ?
                   owner_partial_decl->class_node :
-                  (owner && owner->template_output_node ?
-                       owner->template_output_node :
-                       (owner && owner->class_node ? owner->class_node :
-                                                    owner_template_decl->class_node));
+                  out_of_class_member_owner_output_node(owner,
+                                                        owner_template_decl);
           stored.specifiers = find_child_kind(inner, CppAstKind::decl_specifier_seq);
           stored.declarator = declarator;
           stored.body = find_function_body_node(inner);
@@ -2678,9 +2676,8 @@ public:
               stored.qualified_name = qualified_member_text;
               stored.qualified_name_syntax = qualified_member;
               stored.owner_output_node =
-                  owner->template_output_node ? owner->template_output_node :
-                  (owner->class_node ? owner->class_node :
-                                       owner_template_decl->class_node);
+                  out_of_class_member_owner_output_node(owner,
+                                                        owner_template_decl);
               stored.specifiers = specifiers;
               stored.declarator = declarator;
               stored.body = body;
@@ -2777,9 +2774,8 @@ public:
               stored.qualified_name = qualified_member_text;
               stored.qualified_name_syntax = qualified_member;
               stored.owner_output_node =
-                  owner && owner->template_output_node ? owner->template_output_node :
-                  (owner && owner->class_node ? owner->class_node :
-                                               owner_template_decl->class_node);
+                  out_of_class_member_owner_output_node(owner,
+                                                        owner_template_decl);
               stored.specifiers = specifiers;
               stored.declarator = declarator;
               stored.body = body;
@@ -4019,8 +4015,7 @@ public:
     stored.qualified_name = qualified_name_syntax_text(*qualified_member);
     stored.qualified_name_syntax = *qualified_member;
     stored.owner_output_node =
-        owner->template_output_node ? owner->template_output_node :
-        (owner->class_node ? owner->class_node : owner_template_decl->class_node);
+        out_of_class_member_owner_output_node(owner, owner_template_decl);
     stored.specifiers = specifiers;
     stored.declarator = &declarator;
     stored.body = body;
@@ -4048,6 +4043,26 @@ public:
   }
 
 private:
+  const CppAstNode * out_of_class_member_owner_output_node(
+      const ClassInfo * owner,
+      const ClassTemplateDecl * owner_template_decl) const
+  {
+    if(owner &&
+       owner_template_decl &&
+       owner->enclosing_scope &&
+       owner->enclosing_scope->class_info) {
+      map<string, OutOfClassMemberClassDecl>::const_iterator found =
+          owner_template_decl->member_class_definitions.find(owner->name);
+      if(found != owner_template_decl->member_class_definitions.end() &&
+         found->second.class_node) {
+        return found->second.class_node;
+      }
+    }
+    return owner && owner->template_output_node ? owner->template_output_node :
+           (owner && owner->class_node ? owner->class_node :
+            (owner_template_decl ? owner_template_decl->class_node : nullptr));
+  }
+
   string source_location_for_node(const CppAstNode & node) const
   {
     return ctx.source_location_for_node(node);

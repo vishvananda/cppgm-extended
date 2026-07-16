@@ -616,6 +616,27 @@ ClassSpecializationSelection select_class_specialization(
     return selection;
   }
 
+  const bool has_unresolved_argument_pack_expansion =
+      std::any_of(arguments.begin(),
+                  arguments.end(),
+                  [](const TemplateArgument & argument)
+                  {
+                    return argument.dependent &&
+                           argument.source_syntax &&
+                           argument.source_syntax->pack_expansion;
+                  });
+  if(has_unresolved_argument_pack_expansion) {
+    selection.reentrant_primary = true;
+    if(parser_trace::enabled("template.resolve")) {
+      std::ostringstream trace;
+      trace << "class-specialization name=" << decl.name
+            << " kind=deferred-primary-pack-expansion"
+            << " key=" << key;
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+    return selection;
+  }
+
   ScopedSelectionGuard<std::set<SpecializationSelectionKey> > guard(
       class_selection_in_progress,
       SpecializationSelectionKey(&decl, key));
