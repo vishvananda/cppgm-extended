@@ -2210,18 +2210,27 @@ public:
               prepared_template_method.parse_declarator_node(),
               false);
       if(!parsed_result.ok()) {
+        const bool can_defer_nested_trailing_return =
+            parsed_result.status ==
+                template_api::FunctionTemplateSignatureParseStatus::
+                    UnsupportedDeclSpecifiers &&
+            cpp_decl::find_child(
+                prepared_template_method.parse_declarator_node(),
+                CppAstKind::trailing_return_type);
         const bool can_defer_out_of_class_member_signature =
             parsed_result.status ==
                 template_api::FunctionTemplateSignatureParseStatus::
                     UnsupportedDeclarator ||
             parsed_result.status ==
                 template_api::FunctionTemplateSignatureParseStatus::
-                    UnsupportedParameterClause;
+                    UnsupportedParameterClause ||
+            can_defer_nested_trailing_return;
         if(body &&
            can_defer_out_of_class_member_signature &&
            store_deferred_out_of_class_member_function_definition(
                scope,
                pattern_scope,
+               *parse_scope,
                owner_template_parameters,
                inner,
                specifiers,
@@ -3955,6 +3964,7 @@ public:
   bool store_deferred_out_of_class_member_function_definition(
       Scope & scope,
       Scope & pattern_scope,
+      Scope & parse_scope,
       const vector<TemplateParameterInfo> & owner_template_parameters,
       const CppAstNode & inner,
       const CppAstNode * specifiers,
@@ -3977,10 +3987,28 @@ public:
                                         qualified_member->qualifiers.end() - 1);
     owner_name_syntax.name = qualified_member->qualifiers.back();
     const string owner_name = qualified_name_syntax_text(owner_name_syntax);
+    ClassInfo * parsed_scope_owner = parse_scope.class_info;
+    const bool parsed_scope_owner_is_nested_template_member =
+        parsed_scope_owner &&
+        !parsed_scope_owner->source_template &&
+        parsed_scope_owner->enclosing_scope &&
+        parsed_scope_owner->enclosing_scope->class_info &&
+        parsed_scope_owner->enclosing_scope->class_info->source_template;
     ClassInfo * owner =
-        resolve_qualified_owner_class(pattern_scope,
-                                      owner_name,
-                                      QualifiedOwnerClassResolution::ReferenceMembers);
+        resolve_qualified_owner_class_from_template_id_syntax(
+            pattern_scope,
+            *qualified_member,
+            function_identifier,
+            QualifiedOwnerClassResolution::ReferenceMembers);
+    if(!owner && parsed_scope_owner_is_nested_template_member) {
+      owner = parsed_scope_owner;
+    }
+    if(!owner) {
+      owner = resolve_qualified_owner_class(
+          pattern_scope,
+          owner_name,
+          QualifiedOwnerClassResolution::ReferenceMembers);
+    }
     if(!owner || !owner->member_scope) {
       return false;
     }
