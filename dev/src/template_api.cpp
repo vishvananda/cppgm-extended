@@ -6185,6 +6185,17 @@ TemplateNestedMemberClassCompletionResult complete_nested_member_class_from_owne
     nested->class_node = member_def->second.class_node;
     nested->is_final = member_def->second.class_node->is_final_specifier;
   }
+  semantic_model::ClassInfo * owner = nested->enclosing_scope->class_info;
+  if(!nested->complete &&
+     nested->member_scope &&
+     owner &&
+     owner->has_instantiation_binding_arguments) {
+    template_api::binding::bind_template_arguments_into_scope(
+        ctx,
+        *nested->member_scope,
+        member_def->second.parameters,
+        owner->instantiation_binding_arguments);
+  }
   if(!nested->complete) {
     ctx.populate_class_info(*nested, *member_def->second.class_node);
   }
