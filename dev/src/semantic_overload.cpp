@@ -8688,6 +8688,7 @@ ExprInfo analyze_adl_only_call_expression(SemanticContext & ctx,
   call.children.push_back(args);
 
   CallAnalysisHints adl_hints = options.hints ? *options.hints : CallAnalysisHints();
+  adl_hints.adl_candidates_precollected = true;
   adl_hints.args.assign(arg_values.size(), nullptr);
   for(size_t i = 0; i < arg_values.size(); ++i) {
     adl_hints.args[i] = &arg_values[i];
@@ -13591,6 +13592,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         (qualified_name->rooted || !qualified_name->qualifiers.empty());
     suppress_virtual_dispatch_for_qualified_id = is_qualified_lookup_name;
     const bool suppress_adl =
+        (effective_hints && effective_hints->adl_candidates_precollected) ||
         callee_name_was_parenthesized ||
         (!is_qualified_lookup_name &&
          ordinary_lookup_suppresses_adl(lookup_callee_node.value));

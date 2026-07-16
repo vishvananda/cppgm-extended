@@ -2292,6 +2292,7 @@ bool try_overloaded_unary_operator(SemanticContext & ctx,
       operator_templates);
   semantic_overload::CallAnalysisHints hints;
   hints.use_location = ctx.source_location_for_node(node.children[0]);
+  hints.adl_candidates_precollected = true;
   const auto handle_unresolved_operator =
       [&](const logic_error & error) -> bool
       {
@@ -6759,6 +6760,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
         hints.explicit_member_path_access = member_path_access;
         hints.selected_ranks_out = selected_ranks_out;
         hints.suppress_user_defined_output_materialization = !instantiate_bodies;
+        hints.adl_candidates_precollected = true;
         hints.args.push_back(&lhs);
         hints.args.push_back(rhs_expr);
         try
@@ -8658,6 +8660,7 @@ ExprInfo analyze_assignment_expression(SemanticContext & ctx,
 
         semantic_overload::CallAnalysisHints hints;
         hints.use_location = ctx.source_location_for_node(node.children[1]);
+        hints.adl_candidates_precollected = true;
         hints.args.push_back(&lhs);
         hints.args.push_back(&rhs_expr);
         const auto handle_unresolved_operator =

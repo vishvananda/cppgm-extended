@@ -38,6 +38,7 @@ struct CallAnalysisHints
   semantic_model::MemberAccess explicit_member_path_access =
       static_cast<semantic_model::MemberAccess>(0);
   bool suppress_user_defined_output_materialization = false;
+  bool adl_candidates_precollected = false;
 };
 
 struct CallAnalysisOptions
