@@ -5417,6 +5417,17 @@ bool collect_associated_namespace_scopes_for_type_impl(
     return cacheable;
   }
 
+  if(!info->complete &&
+     !info->reference_members_collected &&
+     !info->full_member_collection_in_progress &&
+     !info->reference_member_collection_in_progress &&
+     !info->template_instantiation_in_progress &&
+     !ctx.type_depends_on_template_parameter(base)) {
+    semantic_metrics::ScopedClassDemand class_demand(
+        semantic_metrics::CDK_BASE_CLASS_COLLECTION);
+    ctx.ensure_class_reference_members(*info);
+  }
+
   if(info->template_instantiation_in_progress ||
      info->full_member_collection_in_progress ||
      info->reference_member_collection_in_progress ||
