@@ -5818,16 +5818,22 @@ bool CppAstParser::parse_type_specifier_seq(CppAstNode & out)
         pos = start;
         return false;
       }
-      CppAstNode decltype_spec =
-          make_node(CppAstKind::decltype_specifier, token_span_text_spaced(decltype_start, pos));
-      decltype_spec.is_typeof_specifier = is_typeof;
-      CppAstNode operand;
-      if(parse_decltype_or_typeof_operand_node(decltype_start, pos, is_typeof, operand)) {
-        decltype_spec.children.push_back(std::move(operand));
+      if(peek().is_simple(OP_COLON2)) {
+        pos = decltype_start;
+      } else {
+        CppAstNode decltype_spec = make_node(
+            CppAstKind::decltype_specifier,
+            token_span_text_spaced(decltype_start, pos));
+        decltype_spec.is_typeof_specifier = is_typeof;
+        CppAstNode operand;
+        if(parse_decltype_or_typeof_operand_node(
+               decltype_start, pos, is_typeof, operand)) {
+          decltype_spec.children.push_back(std::move(operand));
+        }
+        out.children.push_back(std::move(decltype_spec));
+        matched = true;
+        continue;
       }
-      out.children.push_back(std::move(decltype_spec));
-      matched = true;
-      continue;
     }
 
     if(token.is_identifier() &&
@@ -5949,18 +5955,24 @@ bool CppAstParser::parse_decl_specifier_seq(CppAstNode & out)
         pos = start;
         return false;
       }
-      CppAstNode decltype_spec =
-          make_node(CppAstKind::decl_specifier, token_span_text_spaced(decltype_start, pos));
-      decltype_spec.is_typeof_specifier = is_typeof;
-      CppAstNode operand;
-      if(parse_decltype_or_typeof_operand_node(decltype_start, pos, is_typeof, operand)) {
-        decltype_spec.children.push_back(std::move(operand));
+      if(peek().is_simple(OP_COLON2)) {
+        pos = decltype_start;
+      } else {
+        CppAstNode decltype_spec = make_node(
+            CppAstKind::decl_specifier,
+            token_span_text_spaced(decltype_start, pos));
+        decltype_spec.is_typeof_specifier = is_typeof;
+        CppAstNode operand;
+        if(parse_decltype_or_typeof_operand_node(
+               decltype_start, pos, is_typeof, operand)) {
+          decltype_spec.children.push_back(std::move(operand));
+        }
+        set_span(decltype_spec, decltype_start);
+        out.children.push_back(std::move(decltype_spec));
+        matched = true;
+        saw_type_name = true;
+        continue;
       }
-      set_span(decltype_spec, decltype_start);
-      out.children.push_back(std::move(decltype_spec));
-      matched = true;
-      saw_type_name = true;
-      continue;
     }
     if(!saw_type_name &&
        token.is_identifier() &&
@@ -6065,7 +6077,9 @@ bool CppAstParser::parse_decl_specifier_seq(CppAstNode & out)
       continue;
     }
     if(!saw_type_name &&
-       (token.is_simple(OP_COLON2) ||
+       (is_decltype_token(token) ||
+        (is_gnu_typeof_token(token) && peek(1).is_simple(OP_LPAREN)) ||
+        token.is_simple(OP_COLON2) ||
         token.is_simple(KW_TEMPLATE) ||
         token.is_identifier())) {
       size_t type_name_start = pos;
