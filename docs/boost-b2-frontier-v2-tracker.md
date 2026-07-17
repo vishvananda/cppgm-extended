@@ -15,11 +15,12 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `9 / 147`
 - current cursor: `#10 libs/beast/test`
-- active compiler frontier: `http//type_traits` is closed. Structured lookup of
-  its out-of-class nested iterator now completes the prepared concrete class
-  before the final member-type lookup, with the text-reparse audit still at zero
-- next independent lead: rerun the complete forced Beast suite at the committed
-  checkpoint to establish the next remaining survey failure
+- active compiler frontier: Beast Zlib `deflate_stream` compiles but fails to
+  link four concrete forwarding `suite::except` specializations for local
+  lambdas; `inflate_stream` has the same likely cause
+- next independent leads: the parser benchmark's unsupported namespace-scope
+  embedded class definition, its separate `basic_fields::prepare` lookup, and
+  the WebSocket load benchmark's unsupported decorator member remain isolated
 
 ## Baseline Gates
 
@@ -143,7 +144,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 7 | `libs/assert/test` | pass | `53a73a395` | The exact forced survey rebuilt 72 targets; all 18 tests compiled, linked, ran, and passed, and B2 exited successfully. Log: `/tmp/boost-frontier-v2-suite-007-assert-full.log`. | No compiler fix or repository regression was required. |
 | 8 | `libs/assign/test` | pass | `(nested structured template-id fix)` | The initial exact forced survey passed the other discovered targets and isolated three compile failures: `array`, `list_of`, and `multi_index_container`; log `/tmp/boost-frontier-v2-suite-008-assign-initial-forced.log`. The conversion-template fix cleared `array` and `list_of`; the final exact forced survey rebuilt 84 targets, ran all 14 tests, and exited successfully, including `multi_index_container`; log `/tmp/boost-frontier-v2-suite-008-assign-final-forced.log`. | Both independent causes are closed. The final repository direct-LowIR report passes `3836/3836` with PA9 explicitly omitted as requested. |
 | 9 | `libs/atomic/test` | pass | `(Atomic typed lowering fixes)` | The initial forced survey exposed an incomplete `__is_trivially_copyable` class trait, zero-initialized scoped-enum globals, and unsupported x86 GNU asm atomic operations; log `/tmp/boost-frontier-v2-suite-009-atomic-after-trait-enum.log`. Focused API, reference, IPC, and wait targets passed after the fixes. The final exact forced suite rebuilt all 90 requested targets and passed every positive and expected-failure test; log `/tmp/boost-frontier-v2-suite-009-atomic-final.log`. | GNU asm operand expressions are parsed from the original token range during the initial parse and retained as typed AST/CallSem nodes; lowering classifies only exact supported instruction templates and never reparses operand text. The final direct-LowIR report passes `3840/3840` with PA9 explicitly omitted. |
-| 10 | `libs/beast/test` | frontier | `(direct nested-member completion fix)` | The immutable full forced survey at `37d54feea` found 7384 targets, attempted all 447 updates, passed 96 tests, and finished in 1231.4s with seven substantive failed actions plus seven downstream skips; results `/tmp/boost-frontier-v2-suite-010-37d54feea/results.json`, log `/tmp/boost-frontier-v2-suite-010-37d54feea/libs__beast__test.log`. The final forced exact `http//type_traits` replay rebuilds all 46 targets, compiles, links, runs, and passes; log `/tmp/boost-frontier-v2-suite-010-beast-after-direct-nested-member-completion.log`. | `async_base`, `basic_stream`, `detect_ssl`, `file_posix`, `file_stdio`, `flat_buffer`, `multi_buffer`, `span`, `static_string`, `basic_parser`, `file_body`, `message`, and `type_traits` are closed independently. A complete forced survey at the new checkpoint will establish the next remaining lead. |
+| 10 | `libs/beast/test` | frontier | `(direct nested-member completion fix)` | The final forced exact `http//type_traits` replay rebuilds all 46 targets, compiles, links, runs, and passes; log `/tmp/boost-frontier-v2-suite-010-beast-after-direct-nested-member-completion.log`. The complete forced survey at `31270cc14` finds 7384 targets, attempts all 447 updates, updates 435, passes 98 tests, and finishes with five failed actions plus seven downstream skips; log `/tmp/boost-frontier-v2-suite-010-31270cc14-full-forced.log`. | `async_base`, `basic_stream`, `detect_ssl`, `file_posix`, `file_stdio`, `flat_buffer`, `multi_buffer`, `span`, `static_string`, `basic_parser`, `file_body`, `message`, and `type_traits` are closed independently. Remaining failures are the related `deflate_stream`/`inflate_stream` links plus three independent benchmark compile actions. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -151,15 +152,20 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#10 libs/beast/test`
-- focused target: pending complete forced survey
+- focused target: `libs/beast/test/beast/zlib//deflate_stream`
 - last closed target: `libs/beast/test/beast/http//type_traits`
-- reduced repro: `pa18/tests/general/300-direct-member-type-completes-out-of-class-nested-definition.t`
-- owning PA/cluster: `pa18:300`
-- implementation area: typed concrete nested-class member lookup
+- failure phase: native link after successful compilation
+- diagnostic: four undefined concrete `suite::except<std::invalid_argument,
+  local-lambda&, char[1]>` specializations referenced by its forwarding wrapper
+- reduced repro: pending
+- owning PA/cluster: pending reduction
+- implementation area: typed function-template specialization definition
+  ownership for forwarded local lambda arguments
 - performance risk: preserve the current -3.27% fixed instruction delta and
   continue the rolling early-warning policy for the next compiler change
-- next action: commit and push this checkpoint, then rerun the complete forced
-  Beast suite to establish the next remaining failure
+- next action: reproduce the focused link serially, compare emitted object
+  symbols with Clang, and reduce the missing specialization without changing
+  production code first
 
 ## Fix Ledger
 
@@ -237,6 +243,16 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/beast/test/beast/http//type_traits` direct nested iterator member type | The structured qualifier walker prepared the concrete outer specialization and nested `const_iterator` reference, but its final concrete member lookup did not request class completion on a miss. That left an out-of-class nested definition unpopulated unless unrelated earlier use had completed it. The final lookup now uses the same `complete_class_on_miss` behavior already used by the parallel typed bound-owner path. It consumes the retained qualifier AST and concrete class scope; no retry, cache, text parse, spelling recovery, or symbol path is added. | `pa18/tests/general/300-direct-member-type-completes-out-of-class-nested-definition.t`, a header-free explicit type-argument reducer at the earliest PA18 class-template instantiation owner | The isolated parent compiler rejects the reduced `holder<adaptor<int>::iterator::value_type>` alias while Clang accepts it. Typed Beast trace shows the three-part `buffers_suffix` outer aliases resolving correctly, then the fresh nested iterator's final `value_type` lookup returning no match; an unrelated two-part specialization worked only because an earlier `begin()` expression had populated its iterator. | Warning-clean Clang build and isolated GCC 15 build; PA18 direct report passes `230/230`; all configured strict direct-LowIR suites pass; PA18 placement/hygiene exits clean; all 23 text-reparse categories remain zero and all 14 audit tests pass. Normal, all ten individual cache-disabled modes, and all-disabled mode emit byte-identical LowIR with SHA-256 `415531a392849ab88a2bdd853f5d3708915e2d825cef9639330f966787f493f8`, proving the uncached algorithm. The full direct report with PA9 explicitly excluded passes `3886/3886`, including PA37 object roundtrip `7/7`; PA9 was not run. The exact forced target rebuilds all 46 targets and passes compile, link, and runtime. | instructions -3.27%; max RSS -0.63%; peak footprint -0.96% versus the fixed baseline; rolling deltas are -0.06, -0.23, and +0.03 percentage points; report `/tmp/cppgm-boost-frontier-v2-direct-nested-member-completion-perf.json` | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-16`: The complete forced Beast survey at `31270cc14` confirms
+  `http//type_traits` and all other independently closed targets pass. It finds
+  7384 targets, attempts all 447 updates, updates 435, and passes 98 tests. Five
+  actions fail with seven downstream skips: `deflate_stream` and
+  `inflate_stream` compile but miss concrete forwarding `suite::except`
+  specializations at link, while `nodejs_parser`, `bench_parser`, and
+  `wsload-compile` have three separate semantic diagnostics. The first observed
+  failure, Zlib `deflate_stream`, is the next focused frontier; the other
+  actions remain independent leads.
 
 - `2026-07-16`: Closed `http//type_traits` without a cache or text retry. The
   structured qualifier walk already prepared the concrete outer and nested
@@ -943,8 +959,8 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   ./b2 --user-config=/Users/vishvananda/boost_1_91_0/cppgm-user-config.jam \
-    -j8 toolset=gcc-cppgm cxxstd=11 variant=debug link=static \
+    -j1 toolset=gcc-cppgm cxxstd=11 variant=debug link=static \
     runtime-link=shared threading=multi \
     --build-dir=/Users/vishvananda/boost_1_91_0/bin.cppgm \
-    -a libs/beast/test
+    -a libs/beast/test/beast/zlib//deflate_stream
 ```
