@@ -5519,7 +5519,8 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
         services,
         template_api::make_template_environment(scope),
         *current,
-        qualified.name);
+        qualified.name,
+        true);
     return out ? StructuredTypeLookupResult::Resolved :
                  StructuredTypeLookupResult::NoMatch;
   }
