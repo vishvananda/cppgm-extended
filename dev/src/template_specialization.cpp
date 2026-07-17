@@ -907,6 +907,68 @@ bool type_pattern_has_deducible_template_parameter(
   return false;
 }
 
+bool type_pattern_is_placeholder_cache_safe(const TypePtr & type,
+                                            int depth = 0)
+{
+  if(depth > 32) {
+    return false;
+  }
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return true;
+  }
+
+  if(base->kind == Type::TK_NAMED) {
+    TypePtr qualified_owner;
+    std::vector<std::string> qualified_members;
+    bool leading_typename = false;
+    if(named_type_dependent_qualified_member(base,
+                                             qualified_owner,
+                                             qualified_members,
+                                             leading_typename,
+                                             nullptr)) {
+      return false;
+    }
+    const auto arguments_are_safe =
+        [&](const std::vector<DependentAliasTemplateArgumentSyntax> & arguments)
+            -> bool
+        {
+          for(std::size_t i = 0; i < arguments.size(); ++i) {
+            if(!type_pattern_is_placeholder_cache_safe(arguments[i].type,
+                                                       depth + 1) ||
+               !type_pattern_is_placeholder_cache_safe(
+                   arguments[i].syntax.resolved_type,
+                   depth + 1)) {
+              return false;
+            }
+          }
+          return true;
+        };
+    if(!arguments_are_safe(base->named_dependent_alias_arguments) ||
+       !arguments_are_safe(base->named_dependent_class_arguments) ||
+       !arguments_are_safe(
+           base->named_dependent_template_template_arguments) ||
+       !type_pattern_is_placeholder_cache_safe(
+           base->named_dependent_qualified_owner,
+           depth + 1) ||
+       !type_pattern_is_placeholder_cache_safe(base->named_member_owner_type,
+                                               depth + 1)) {
+      return false;
+    }
+  }
+
+  if(!type_pattern_is_placeholder_cache_safe(base->inner, depth + 1) ||
+     !type_pattern_is_placeholder_cache_safe(base->owner, depth + 1)) {
+    return false;
+  }
+  for(std::size_t i = 0; i < base->params.size(); ++i) {
+    if(!type_pattern_is_placeholder_cache_safe(base->params[i], depth + 1)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void promote_single_deduced_type_to_pack(DeducedState & deduced,
                                          const std::string & parameter_name)
 {
@@ -10764,6 +10826,8 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                             placeholder_pattern_type,
                             true) &&
                         placeholder_pattern_type &&
+                        type_pattern_is_placeholder_cache_safe(
+                            placeholder_pattern_type) &&
                         i < partial.placeholder_arg_type_patterns.size()) {
                 partial.placeholder_arg_type_patterns[i] =
                     placeholder_pattern_type;
