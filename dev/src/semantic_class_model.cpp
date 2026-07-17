@@ -2091,6 +2091,7 @@ TypePtr canonicalize_member_typedef_type(SemanticContext & ctx,
   bool cv_volatile = false;
   if(current_info &&
      current_info->member_scope &&
+     ctx.type_depends_on_template_parameter(type) &&
      top_level_cv_flags(type, base, cv_const, cv_volatile) &&
     base &&
     base->kind == Type::TK_NAMED) {
