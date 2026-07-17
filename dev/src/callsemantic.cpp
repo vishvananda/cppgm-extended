@@ -4260,6 +4260,14 @@ private:
       return false;
     }
     const CppAstNode * operand = node.children.empty() ? nullptr : &node.children[0];
+    CppAstNode reduced_operand;
+    if(operand &&
+       semantic_consteval::reduce_bound_fold_expressions(*this,
+                                                         scope,
+                                                         *operand,
+                                                         reduced_operand)) {
+      operand = &reduced_operand;
+    }
 
     const bool mentions_template_placeholders =
         text_mentions_template_placeholders(scope, inner);

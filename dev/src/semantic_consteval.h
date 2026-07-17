@@ -41,6 +41,14 @@ bool evaluate_expression_integral(SemanticContext & ctx,
                                   semantic_model::Scope & scope,
                                   const CppAstNode & node,
                                   long long & out);
+bool reduce_fold_expression(SemanticContext & ctx,
+                            semantic_model::Scope & scope,
+                            const CppAstNode & node,
+                            CppAstNode & out);
+bool reduce_bound_fold_expressions(SemanticContext & ctx,
+                                   semantic_model::Scope & scope,
+                                   const CppAstNode & node,
+                                   CppAstNode & out);
 bool evaluate_initializer_value(SemanticContext & ctx,
                                 semantic_model::Scope & scope,
                                 const CppAstNode & initializer,

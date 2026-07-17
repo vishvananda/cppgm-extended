@@ -2768,6 +2768,52 @@ bool evaluate_default_special_expression(SemanticContext & ctx,
 
 }  // namespace
 
+bool reduce_fold_expression(SemanticContext & ctx,
+                            Scope & scope,
+                            const CppAstNode & node,
+                            CppAstNode & out)
+{
+  return reduce_fold_expression_node(ctx, scope, node, out);
+}
+
+bool reduce_bound_fold_expressions(SemanticContext & ctx,
+                                   Scope & scope,
+                                   const CppAstNode & node,
+                                   CppAstNode & out)
+{
+  if(node.kind == CppAstKind::fold_expression) {
+    CppAstNode reduced;
+    if(reduce_fold_expression_node(ctx, scope, node, reduced)) {
+      CppAstNode nested;
+      if(reduce_bound_fold_expressions(ctx, scope, reduced, nested)) {
+        out = nested;
+      } else {
+        out = reduced;
+      }
+      return true;
+    }
+  }
+
+  bool changed = false;
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    CppAstNode reduced_child;
+    if(reduce_bound_fold_expressions(ctx,
+                                     scope,
+                                     node.children[i],
+                                     reduced_child)) {
+      if(!changed) {
+        out = node;
+      }
+      out.children[i] = reduced_child;
+      changed = true;
+    }
+  }
+  if(changed) {
+    out.semantic_type.reset();
+  }
+  return changed;
+}
+
 Scope make_constexpr_call_scope(Scope & parent,
                                 FunctionBinding * binding,
                                 bool bind_parameters)

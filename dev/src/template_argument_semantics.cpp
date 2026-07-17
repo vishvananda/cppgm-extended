@@ -23810,6 +23810,7 @@ bool expand_bound_packs_in_expression_node(
     CppAstNode & node);
 
 bool expand_pack_expressions_in_decltype_operand(Scope & scope,
+                                                 template_api::TemplateServices & services,
                                                  const CppAstNode & node,
                                                  CppAstNode & out,
                                                  bool & changed);
@@ -24031,7 +24032,11 @@ bool expand_bound_packs_in_expression_node(
   }
   CppAstNode expanded;
   bool expanded_changed = false;
-  if(expand_pack_expressions_in_decltype_operand(scope, node, expanded, expanded_changed) &&
+  if(expand_pack_expressions_in_decltype_operand(scope,
+                                                 services,
+                                                 node,
+                                                 expanded,
+                                                 expanded_changed) &&
      expanded_changed) {
     node = expanded;
     changed = true;
@@ -25052,10 +25057,25 @@ bool expand_bound_pack_expression_children(
 }
 
 bool expand_pack_expressions_in_decltype_operand(Scope & scope,
+                                                 template_api::TemplateServices & services,
                                                  const CppAstNode & node,
                                                  CppAstNode & out,
                                                  bool & changed)
 {
+  if(node.kind == CppAstKind::fold_expression && services.semantic_context) {
+    CppAstNode reduced;
+    if(semantic_consteval::reduce_fold_expression(*services.semantic_context,
+                                                 scope,
+                                                 node,
+                                                 reduced)) {
+      changed = true;
+      return expand_pack_expressions_in_decltype_operand(scope,
+                                                         services,
+                                                         reduced,
+                                                         out,
+                                                         changed);
+    }
+  }
   if(node.kind == CppAstKind::pack_expansion_expression &&
      node.children.size() == 1) {
     return false;
@@ -25121,6 +25141,7 @@ bool expand_pack_expressions_in_decltype_operand(Scope & scope,
         }
         CppAstNode expanded;
         if(!expand_pack_expressions_in_decltype_operand(scope,
+                                                        services,
                                                         substituted,
                                                         expanded,
                                                         changed)) {
@@ -25134,6 +25155,7 @@ bool expand_pack_expressions_in_decltype_operand(Scope & scope,
 
     CppAstNode expanded_child;
     if(!expand_pack_expressions_in_decltype_operand(scope,
+                                                    services,
                                                     child,
                                                     expanded_child,
                                                     changed)) {
@@ -39207,6 +39229,7 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
   const CppAstNode * request_expr = &expr;
   bool expanded_expr_changed = false;
   if(expand_pack_expressions_in_decltype_operand(scope,
+                                                 services,
                                                  expr,
                                                  expanded_expr,
                                                  expanded_expr_changed) &&
