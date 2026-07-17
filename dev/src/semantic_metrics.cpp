@@ -292,6 +292,10 @@ void AnalyzerCounters::dump(std::ostream & out) const
       << " overload-candidate-sets=" << overload_candidate_sets
       << " overload-candidate-attempts=" << overload_candidate_attempts
       << " overload-viable-candidates=" << overload_viable_candidates
+      << " overload-candidate-refresh-attempts="
+      << overload_candidate_refresh_attempts
+      << " overload-candidate-refresh-successes="
+      << overload_candidate_refresh_successes
       << " conversion-attempts=" << conversion_attempts
       << " adl-associated-collections=" << adl_associated_collections
       << " adl-associated-type-visits=" << adl_associated_type_visits

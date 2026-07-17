@@ -104,6 +104,8 @@ struct AnalyzerCounters
   std::size_t overload_candidate_sets = 0;
   std::size_t overload_candidate_attempts = 0;
   std::size_t overload_viable_candidates = 0;
+  std::size_t overload_candidate_refresh_attempts = 0;
+  std::size_t overload_candidate_refresh_successes = 0;
   std::size_t conversion_attempts = 0;
   std::size_t adl_associated_collections = 0;
   std::size_t adl_associated_type_visits = 0;

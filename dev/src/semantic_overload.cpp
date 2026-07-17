@@ -400,6 +400,16 @@ void note_overload_viable_candidate(SemanticContext & ctx)
   }
 }
 
+void note_overload_candidate_refresh(SemanticContext & ctx, bool succeeded)
+{
+  if(semantic_metrics::AnalyzerCounters * counters = performance_counters(ctx)) {
+    ++counters->overload_candidate_refresh_attempts;
+    if(succeeded) {
+      ++counters->overload_candidate_refresh_successes;
+    }
+  }
+}
+
 ClassInfo * complete_class_type_for_lookup(SemanticContext & ctx,
                                            const TypePtr & type)
 {
@@ -1953,6 +1963,27 @@ FunctionBinding * refresh_invalidated_member_candidate(
     return candidate;
   }
   return nullptr;
+}
+
+bool function_candidate_matches_refresh_key(
+    SemanticContext & ctx,
+    FunctionBinding * candidate,
+    const FunctionCandidateRefreshKey & key)
+{
+  if(!key.owner_class ||
+     !ctx.function_binding_is_live(candidate) ||
+     candidate->owner_class != key.owner_class ||
+     semantic_utils::unqualified_member_name(
+         canonical_function_lookup_name(candidate->name)) != key.name ||
+     candidate->ref_qualifier != key.ref_qualifier ||
+     (candidate->source_template != nullptr) != key.has_source_template ||
+     candidate->template_instantiation_key != key.template_instantiation_key ||
+     !type_equals(candidate->type, key.type)) {
+    return false;
+  }
+  return !key.has_source_template ||
+         candidate->source_template->declaration_node ==
+             key.source_template_declaration;
 }
 
 bool source_template_is_in_lookup_set(const FunctionBinding * binding,
@@ -13874,26 +13905,58 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
 
     note_overload_candidate_set(ctx);
     vector<CandidateMatch> matches;
+    vector<size_t> match_candidate_indices;
     vector<string> candidate_rejections(candidates.size());
+    vector<FunctionCandidateRefreshKey> candidate_refresh_keys(candidates.size());
+    for(size_t i = 0; i < candidates.size(); ++i) {
+      FunctionBinding * candidate = candidates[i];
+      if(!ctx.function_binding_is_live(candidate)) {
+        candidates[i] = nullptr;
+        continue;
+      }
+      if(candidate->owner_class &&
+         candidate->owner_class->reference_members_collected &&
+         !candidate->owner_class->complete) {
+        candidate_refresh_keys[i] = function_candidate_refresh_key(*candidate);
+      }
+    }
+    const auto refresh_candidate_at = [&](size_t index) -> FunctionBinding *
+    {
+      FunctionBinding * candidate = candidates[index];
+      const FunctionCandidateRefreshKey & key = candidate_refresh_keys[index];
+      if(key.owner_class) {
+        if(!function_candidate_matches_refresh_key(ctx, candidate, key)) {
+          candidate = refresh_invalidated_member_candidate(ctx, key);
+          if(!function_candidate_matches_refresh_key(ctx, candidate, key)) {
+            candidate = nullptr;
+          }
+          candidates[index] = candidate;
+          note_overload_candidate_refresh(ctx, candidate != nullptr);
+          if(parser_trace::enabled("overload.refresh")) {
+            std::ostringstream trace;
+            trace << "candidate-refresh index=" << index
+                  << " owner=" << key.owner_class->qualified_name
+                  << " name=" << key.name
+                  << " template=" << (key.has_source_template ? "yes" : "no")
+                  << " result=" << (candidate ? "reacquired" : "missing");
+            parser_trace::note("overload.refresh", std::string(), trace.str());
+          }
+        }
+        return candidate;
+      }
+      return ctx.function_binding_is_live(candidate) ? candidate : nullptr;
+    };
     map<string, CachedConstructorConversionResult> ctor_conversion_cache;
     unordered_map<CachedArgumentConversionKey,
                   CachedArgumentConversionResult,
                   CachedArgumentConversionKeyHash> conversion_cache;
     for(size_t i = 0; i < candidates.size(); ++i) {
-      FunctionBinding * candidate = candidates[i];
+      FunctionBinding * candidate = refresh_candidate_at(i);
       note_overload_candidate_attempt(ctx);
       if(!candidate || !candidate->type) {
         candidate_rejections[i] = "candidate missing type";
         continue;
       }
-      const bool candidate_may_be_invalidated =
-          candidate->owner_class &&
-          candidate->owner_class->reference_members_collected &&
-          !candidate->owner_class->complete;
-      const FunctionCandidateRefreshKey candidate_refresh_key =
-          candidate_may_be_invalidated ?
-              function_candidate_refresh_key(*candidate) :
-              FunctionCandidateRefreshKey();
       TypePtr function_type = strip_top_level_cv(candidate->type);
       if(function_type->kind != Type::TK_FUNCTION) {
         candidate_rejections[i] = "candidate type is not function";
@@ -14209,11 +14272,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
 
       const auto refresh_candidate_if_needed = [&]() -> bool
       {
-        if(ctx.function_binding_is_live(candidate)) {
-          return true;
-        }
-        candidate = refresh_invalidated_member_candidate(ctx,
-                                                         candidate_refresh_key);
+        candidate = refresh_candidate_at(i);
         if(!candidate) {
           candidate_rejections[i] =
               "candidate invalidated during class completion";
@@ -14248,6 +14307,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           parser_trace::note("template.resolve", std::string(), trace.str());
         }
         matches.push_back(std::move(match));
+        match_candidate_indices.push_back(i);
         note_overload_viable_candidate(ctx);
       } else if(candidate_rejections[i].empty()) {
         candidate_rejections[i] = "rejected";
@@ -14267,17 +14327,39 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       }
     }
 
+    vector<CandidateMatch> refreshed_matches;
+    vector<size_t> refreshed_match_candidate_indices;
+    refreshed_matches.reserve(matches.size());
+    refreshed_match_candidate_indices.reserve(matches.size());
+    for(size_t i = 0; i < matches.size(); ++i) {
+      const size_t candidate_index = match_candidate_indices[i];
+      FunctionBinding * candidate = refresh_candidate_at(candidate_index);
+      if(!candidate) {
+        candidate_rejections[candidate_index] =
+            "candidate invalidated during class completion";
+        continue;
+      }
+      matches[i].function = candidate;
+      refreshed_matches.push_back(std::move(matches[i]));
+      refreshed_match_candidate_indices.push_back(candidate_index);
+    }
+    matches.swap(refreshed_matches);
+    match_candidate_indices.swap(refreshed_match_candidate_indices);
+
     FunctionCandidateBucketMap deduped_match_buckets;
     vector<CandidateMatch> deduped_matches;
+    vector<size_t> deduped_match_candidate_indices;
     for(size_t i = 0; i < matches.size(); ++i) {
       if(!contains_equivalent_function_candidate(deduped_match_buckets,
                                                  matches[i].function)) {
         FunctionBinding * function = matches[i].function;
         deduped_matches.push_back(std::move(matches[i]));
+        deduped_match_candidate_indices.push_back(match_candidate_indices[i]);
         note_function_candidate_bucket(deduped_match_buckets, function);
       }
     }
     matches.swap(deduped_matches);
+    match_candidate_indices.swap(deduped_match_candidate_indices);
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "call-match-summary callee=" << lookup_callee_node.value
@@ -14299,32 +14381,33 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       outmsg << " [candidates";
       bool any_candidate = false;
       for(size_t i = 0; i < candidates.size(); ++i) {
-        if(!candidates[i] || !candidates[i]->type) {
+        FunctionBinding * candidate = refresh_candidate_at(i);
+        if(!candidate || !candidate->type) {
           continue;
         }
         outmsg << (any_candidate ? "; " : " ");
         any_candidate = true;
-        outmsg << candidates[i]->name << ":" << describe_type(candidates[i]->type);
-        if(candidates[i]->owner_class) {
-          outmsg << " owner=" << candidates[i]->owner_class->qualified_name;
+        outmsg << candidate->name << ":" << describe_type(candidate->type);
+        if(candidate->owner_class) {
+          outmsg << " owner=" << candidate->owner_class->qualified_name;
         }
-        outmsg << " method=" << (candidates[i]->is_method ? "yes" : "no");
+        outmsg << " method=" << (candidate->is_method ? "yes" : "no");
         outmsg << " params={";
-        for(size_t j = 0; j < candidates[i]->params.size(); ++j) {
+        for(size_t j = 0; j < candidate->params.size(); ++j) {
           if(j != 0) {
             outmsg << ", ";
           }
-          outmsg << candidates[i]->params[j].first << ":" <<
-                    describe_type(candidates[i]->params[j].second);
+          outmsg << candidate->params[j].first << ":" <<
+                    describe_type(candidate->params[j].second);
         }
         outmsg << "}";
         outmsg << " defaults={";
-        for(size_t j = 0; j < candidates[i]->default_arguments.size(); ++j) {
+        for(size_t j = 0; j < candidate->default_arguments.size(); ++j) {
           if(j != 0) {
             outmsg << ", ";
           }
-          outmsg << (candidates[i]->default_arguments[j] ?
-                        node_text(*candidates[i]->default_arguments[j]) :
+          outmsg << (candidate->default_arguments[j] ?
+                        node_text(*candidate->default_arguments[j]) :
                         string("<none>"));
         }
         outmsg << "}";
@@ -14367,11 +14450,17 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     }
 
     CandidateMatch & selected_match = matches[selection.index];
+    const size_t selected_candidate_index =
+        match_candidate_indices[selection.index];
     if(hints && hints->selected_ranks_out) {
       *hints->selected_ranks_out = selected_match.ranks;
     }
 
-    FunctionBinding * chosen = selected_match.function;
+    FunctionBinding * chosen = refresh_candidate_at(selected_candidate_index);
+    if(!chosen) {
+      throw logic_error("selected candidate invalidated during class completion");
+    }
+    selected_match.function = chosen;
     if(chosen->is_deleted) {
       ostringstream outmsg;
       outmsg << "use of deleted " << chosen->name;
@@ -14392,6 +14481,11 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       throw logic_error("failed to rematerialize selected call conversions");
     }
     if(instantiate_bodies) {
+      chosen = refresh_candidate_at(selected_candidate_index);
+      if(!chosen) {
+        throw logic_error("selected candidate invalidated during call rematerialization");
+      }
+      selected_match.function = chosen;
       chosen = semantic_template_function::acquire_function_definition_binding(
           ctx, chosen, scope);
     }
