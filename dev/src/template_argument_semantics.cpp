@@ -39339,7 +39339,8 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
     return true;
   }
 
-  return dependent_fallback();
+  return dependent_fallback(
+      request_expr_mentions_structured_template_dependency);
 }
 
 // Masks the operands of sizeof... expressions so a pack that only appears as a
