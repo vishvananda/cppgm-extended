@@ -2533,6 +2533,10 @@ CppAstParser::SeededClassNameScopes CppAstParser::push_class_member_name_hints(
       continue;
     }
 
+    if(!found->template_value_names.empty()) {
+      template_value_parameter_scopes.push_back(found->template_value_names);
+      ++seeded.template_value_names;
+    }
     if(!found->template_names.empty()) {
       template_name_scopes.push_back(found->template_names);
       ++seeded.template_names;
@@ -2559,6 +2563,9 @@ void CppAstParser::pop_class_member_name_hints(const SeededClassNameScopes & see
   }
   for(size_t i = 0; i < seeded.template_names; ++i) {
     template_name_scopes.pop_back();
+  }
+  for(size_t i = 0; i < seeded.template_value_names; ++i) {
+    template_value_parameter_scopes.pop_back();
   }
 }
 
@@ -4568,6 +4575,7 @@ bool CppAstParser::parse_class_specifier(CppAstNode & out)
     return false;
   }
 
+  template_value_parameter_scopes.push_back(NameSet());
   template_name_scopes.push_back(NameSet());
   type_name_scopes.push_back(NameSet());
   value_name_scopes.push_back(NameSet());
@@ -4611,9 +4619,11 @@ bool CppAstParser::parse_class_specifier(CppAstNode & out)
       value_name_scopes.pop_back();
       type_name_scopes.pop_back();
       template_name_scopes.pop_back();
+      template_value_parameter_scopes.pop_back();
       pos = start;
       return false;
     }
+    note_declared_template_value_names(member);
     note_declared_template_names(member);
     note_declared_type_names(member);
     note_declared_value_names(member);
@@ -4627,11 +4637,13 @@ bool CppAstParser::parse_class_specifier(CppAstNode & out)
     value_name_scopes.pop_back();
     type_name_scopes.pop_back();
     template_name_scopes.pop_back();
+    template_value_parameter_scopes.pop_back();
     pos = start;
     return false;
   }
   if(!class_key.empty()) {
     ClassMemberNameScopes & stored = class_member_name_scopes[class_key];
+    stored.template_value_names = template_value_parameter_scopes.back();
     stored.template_names = template_name_scopes.back();
     stored.type_names = type_name_scopes.back();
     stored.value_names = value_name_scopes.back();
@@ -4643,6 +4655,7 @@ bool CppAstParser::parse_class_specifier(CppAstNode & out)
   value_name_scopes.pop_back();
   type_name_scopes.pop_back();
   template_name_scopes.pop_back();
+  template_value_parameter_scopes.pop_back();
   set_span(out, start);
   return true;
 }
@@ -11629,7 +11642,13 @@ bool CppAstParser::unqualified_identifier_prefers_value_name(
                                    atom));
 
   if(value_index >= 0 || non_value_index >= 0) {
-    return value_index > non_value_index;
+    const int value_template_index =
+        nearest_name_scope_index(&template_value_parameter_scopes,
+                                 inherited_template_value_parameter_scopes,
+                                 atom);
+    return value_index > non_value_index ||
+           (value_template_index >= 0 &&
+            value_template_index == non_value_index);
   }
 
   const bool fallback_value =
@@ -11785,6 +11804,11 @@ void CppAstParser::collect_declared_value_names(const CppAstNode & node,
     return;
   }
 
+  if(node.kind == CppAstKind::function_definition) {
+    collect_visible_declarator_identifiers(node, out);
+    return;
+  }
+
   if(node.kind == CppAstKind::simple_declaration ||
      node.kind == CppAstKind::bit_field_declaration) {
     bool has_typedef = false;
@@ -11875,13 +11899,17 @@ void CppAstParser::refresh_lazy_function_body_snapshots_for_class(
       return filtered;
     };
 
+    NameSet template_value_names = filter_used_names(scopes.template_value_names);
     NameSet template_names = filter_used_names(scopes.template_names);
     NameSet type_names = filter_used_names(scopes.type_names);
     NameSet value_names = filter_used_names(scopes.value_names);
-    if(!template_names.empty() || !type_names.empty() || !value_names.empty()) {
+    if(!template_value_names.empty() || !template_names.empty() ||
+       !type_names.empty() || !value_names.empty()) {
       if(parser_trace::enabled("parser.decl")) {
         std::ostringstream trace;
         trace << "lazy body class snapshot refresh"
+              << " template-value-names="
+              << format_name_set_for_trace(template_value_names)
               << " template-names=" << format_name_set_for_trace(template_names)
               << " type-names=" << format_name_set_for_trace(type_names)
               << " value-names=" << format_name_set_for_trace(value_names);
@@ -11891,6 +11919,7 @@ void CppAstParser::refresh_lazy_function_body_snapshots_for_class(
           new CppAstNameLookupSnapshot(
               node.name_lookup_snapshot ? *node.name_lookup_snapshot :
                                            CppAstNameLookupSnapshot()));
+      refreshed->template_value_parameter_scopes.push_back(template_value_names);
       refreshed->template_name_scopes.push_back(template_names);
       refreshed->type_name_scopes.push_back(type_names);
       refreshed->value_name_scopes.push_back(value_names);
