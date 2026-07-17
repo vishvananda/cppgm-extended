@@ -40639,6 +40639,14 @@ ExpandedTemplateArgumentInputs expand_template_argument_inputs(
           } else if(k < expr_expanded_syntaxes.size()) {
             out.syntaxes.push_back(
                 add_owned_expanded_argument_syntax(out, expr_expanded_syntaxes[k]));
+          } else if(expression_unchanged &&
+                    expanded_argument_type &&
+                    source_syntax) {
+            out.syntaxes.push_back(add_owned_expanded_argument_syntax(
+                out,
+                make_expanded_type_pack_argument_syntax(*source_syntax,
+                                                        expanded_argument_type,
+                                                        nullptr)));
           } else if(unchanged) {
             out.syntaxes.push_back(source_syntax);
           } else {
