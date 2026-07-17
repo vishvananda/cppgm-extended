@@ -15,11 +15,13 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `9 / 147`
 - current cursor: `#10 libs/beast/test`
-- active compiler frontier: `flat_buffer`, `multi_buffer`, and `span` now
-  compile, link, run, and pass; `span` is closed through retained typed template
-  arguments and `abi_mangle`, with the text-reparse audit still at zero
-- next independent lead: exact forced `static_string` replay, whose previously
-  observed overload diagnostic must be reconfirmed before reduction
+- active compiler frontier: `core//static_string` and the first full-survey
+  `http//basic_parser` lambda failure are closed. The exact forced parser target
+  now reaches libc++ `__clamp_to_integral` and reports an ambiguous qualified
+  `nextafter(double, float)` call, with the text-reparse audit still at zero
+- next independent lead: reduce the `nextafter` overload ambiguity from
+  `http//basic_parser` and determine whether duplicate declaration identity or
+  overload ordering is the first typed defect
 
 ## Baseline Gates
 
@@ -119,6 +121,8 @@ rolling delta only when it helps isolate the incremental cost.
 | `(post-layout member static-assert validation fix)` | Inherited member-template calls in a non-template method whose body contains `static_assert` | -4.05% | +0.26% | -0.96% | +0.17 instruction percentage points, +1.63 RSS percentage points, and +0.09 footprint percentage points from the preceding measurement | `/tmp/cppgm-boost-frontier-v2-postlayout-static-assert-perf.json` | pass; validation now iterates the existing binding declaration order after finalized layout, normal and cache-disabled outputs are byte-identical, and the incremental instruction movement remains below the hotspot threshold |
 | `(out-of-class copy-assignment head fix)` | Same-type assignment definition adjacent to a matching member-template overload | -4.03% | +0.34% | -0.95% | +0.026% instructions, +0.083% RSS, and +0.011% footprint from the preceding checkpoint | `/tmp/cppgm-boost-frontier-v2-ooc-copyassign-template-head-perf.json` | pass; the one-condition typed template-head partition change is below the hotspot threshold |
 | `(dependent constructor ABI expression fix)` | Concrete class-owner NTTPs, namespace constants, and function packs in a dependent constructor symbol | -3.95% | -0.11% | -0.93% | +0.080% instructions, -0.445% RSS, and +0.020% footprint from the preceding checkpoint | `/tmp/cppgm-boost-frontier-v2-span-dependent-abi-final-perf.json` | pass; rolling instructions are below the hotspot threshold, so no sampling escalation is required |
+| `a9f116ad6` | Static-string source ownership, expression identity, list ranking, and definition attachment | -3.04% | -1.17% | -0.83% | +0.95% instructions, -1.07% RSS, and +0.10% footprint against the preceding extracted checkpoint | `/tmp/cppgm-boost-frontier-v2-static-string-final-perf.json` | pass; typed result comparison is off the unique-match path and targeted sampling found no dominant changed helper |
+| `(structured lambda capture fix)` | Implicit `this` capture for an unqualified explicit member-template call | -3.01% | -0.61% | -0.82% | +0.029% instructions, +0.574% RSS, and +0.013% footprint from `a9f116ad6` | `/tmp/cppgm-boost-frontier-v2-basic-parser-lambda-capture-perf.json` | pass; the initial-AST capture scan adds only a structured template-id identifier lookup and rolling instructions remain below the hotspot threshold |
 
 ## Suite Cursor
 
@@ -136,7 +140,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 7 | `libs/assert/test` | pass | `53a73a395` | The exact forced survey rebuilt 72 targets; all 18 tests compiled, linked, ran, and passed, and B2 exited successfully. Log: `/tmp/boost-frontier-v2-suite-007-assert-full.log`. | No compiler fix or repository regression was required. |
 | 8 | `libs/assign/test` | pass | `(nested structured template-id fix)` | The initial exact forced survey passed the other discovered targets and isolated three compile failures: `array`, `list_of`, and `multi_index_container`; log `/tmp/boost-frontier-v2-suite-008-assign-initial-forced.log`. The conversion-template fix cleared `array` and `list_of`; the final exact forced survey rebuilt 84 targets, ran all 14 tests, and exited successfully, including `multi_index_container`; log `/tmp/boost-frontier-v2-suite-008-assign-final-forced.log`. | Both independent causes are closed. The final repository direct-LowIR report passes `3836/3836` with PA9 explicitly omitted as requested. |
 | 9 | `libs/atomic/test` | pass | `(Atomic typed lowering fixes)` | The initial forced survey exposed an incomplete `__is_trivially_copyable` class trait, zero-initialized scoped-enum globals, and unsupported x86 GNU asm atomic operations; log `/tmp/boost-frontier-v2-suite-009-atomic-after-trait-enum.log`. Focused API, reference, IPC, and wait targets passed after the fixes. The final exact forced suite rebuilt all 90 requested targets and passed every positive and expected-failure test; log `/tmp/boost-frontier-v2-suite-009-atomic-final.log`. | GNU asm operand expressions are parsed from the original token range during the initial parse and retained as typed AST/CallSem nodes; lowering classifies only exact supported instruction templates and never reparses operand text. The final direct-LowIR report passes `3840/3840` with PA9 explicitly omitted. |
-| 10 | `libs/beast/test` | frontier | `(dependent constructor ABI expression fix)` | The complete forced survey at `55e666c62` found 7384 targets, attempted 447, updated 373, skipped 53, failed 21, and completed in 766.4s with 81 passing tests; log `/tmp/boost-frontier-v2-suite-018-detect-ssl-adl-final/libs__beast__test.log`. Subsequent exact forced targets close `file_posix`, `file_stdio`, `flat_buffer`, `multi_buffer`, and now `span`; the final `span` replay force-rebuilt 46 targets, linked, executed, and passed. | `async_base`, `basic_stream`, `detect_ssl`, `file_posix`, `file_stdio`, `flat_buffer`, `multi_buffer`, and `span` are closed independently. Reconfirm and reduce the next known independent lead, `core//static_string`. |
+| 10 | `libs/beast/test` | frontier | `(structured lambda capture fix)` | The exact full forced survey at `a9f116ad6` found 7384 targets, attempted 447, updated 401, skipped 32, failed 14, and completed in 1059.0s with 89 passing tests; log `/tmp/boost-frontier-v2-suite-010-a9f116ad6/libs__beast__test.log`. It established `http//basic_parser` as the first observed compiler failure. Serial and final four-job forced replays rebuild the exact 46-target graph; the final log has no `parsegrind`/implicit-object diagnostic and advances to libc++ `nextafter`; log `/tmp/boost-v2-beast-basic-parser-structured-capture-final-forced.log`. | `async_base`, `basic_stream`, `detect_ssl`, `file_posix`, `file_stdio`, `flat_buffer`, `multi_buffer`, `span`, and `static_string` are closed independently. The first `basic_parser` lambda defect is closed; reduce its newly exposed `nextafter` overload ambiguity next. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -144,28 +148,25 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#10 libs/beast/test`
-- focused target: `core//static_string`; fixed and validated
-- failure phase: dependent class-template source-owner selection, overload
-  ranking, and out-of-class member-template definition attachment
-- diagnostic: contextual `pair` conversion failure, then ambiguous braced-list
-  `assign`, then missing `basic_static_string::insert` and libc++
-  `__tree::__find_equal` definitions as each preceding defect was removed
-- source location: Boost.Container `static_string.hpp` and libc++ `__tree`
-- reduced repro: `/tmp/cppgm-source-owner-pair-sfinae.cpp`,
-  `/tmp/cppgm-boost-static-string-insert.cpp`, and
-  `/tmp/cppgm-set-emplace.cpp`; checked-in non-STL PA22/PA25 regressions cover
-  return-SFINAE body identity and initializer-list preference
-- owning PA/cluster: `pa22:300` member-template SFINAE and `pa25:200`
-  list initialization/overload resolution
-- implementation area: typed class-template source ownership, retained
-  dependent-expression identity, overload ranking, and typed declaration to
-  definition matching
-- performance risk: rolling gate passes at +0.95% instructions, -1.07% RSS,
-  and +0.10% footprint; result comparison is deferred until parameter matches
-  are genuinely ambiguous, and sampling shows the changed source-owner
-  predicate at 11 top-of-stack samples while the other changed paths have none
-- next action: commit and push this checkpoint, then resume the ordered Beast
-  survey from the next exact failure
+- focused target: `beast/http//basic_parser`
+- failure phase: qualified ordinary overload resolution in a concrete libc++
+  function-template instantiation
+- diagnostic: ambiguous `::nextafter(double, float)` between the SDK
+  `nextafter(double, double)` and libc++ `std::__1::__math` float, double, and
+  long-double overloads; the SDK and libc++ double candidates have identical
+  parameter types and ranks
+- source location: libc++ `__random/clamp_to_integral.h:47` and
+  `__math/rounding_functions.h`
+- reduced repro: pending; reduce outside the PA tree and prefer a header-free
+  duplicate-declaration/overload reducer before choosing an owner
+- owning PA/cluster: pending reduction
+- implementation area: typed qualified lookup, declaration identity, and
+  overload candidate coalescing/ranking
+- performance risk: unknown until reduced; preserve the current -3.01% fixed
+  instruction delta and inspect hotspot counters before accepting any broad
+  candidate scan
+- next action: commit and push the structured lambda-capture checkpoint, then
+  reduce the exact `nextafter` failure
 
 ## Fix Ledger
 
@@ -235,9 +236,22 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/beast/test/beast/core//flat_buffer` and `//multi_buffer` same-type copy assignment | Out-of-class member-definition collection partitions the surrounding template heads into the class-template owner prefix and an optional member-template suffix. The typed prefix counter recognized the owner only when the incoming head was larger than the owner head. With equal arity it offered the owner parameter to member-template lookup, so `operator=(basic_flat_buffer const&)` was attached to the adjacent `template<class OtherAlloc> operator=(basic_flat_buffer<OtherAlloc> const&)` declaration after matching `OtherAlloc = Allocator`; the real copy-assignment binding remained declaration-only. Equal arity now means the complete head is the owner prefix, leaving an empty member-template suffix. Nested member-template definitions retain their larger combined head and continue through the same structured matcher. No source text, rendered signature, cache, symbol, ABI, or witness-only path is added. | `pa21/tests/spec/300-out-of-class-copy-assignment-before-member-template-overload.t`, a header-free runtime reducer at the earliest PA21 member-template owner; it places a same-type copy assignment before a cross-type assignment member template, defines both out of class, and executes both selected overloads | The preserved pre-fix compiler emits only `declare function @box_int___operator_` and `lowir2native` rejects the unresolved symbol; trace classifies both retained definitions as `method-template=yes`. The fixed trace classifies the same-type definition as `method-template=no`, records it in the ordinary out-of-class definition map, and attaches a body to the selected copy-assignment binding. Clang and the fixed compiler execute the reducer with exit 0. Exact Beast objects previously contained move and cross-allocator assignment definitions but left the same-type symbol undefined. | Warning-clean build; focused PA21 check and direct report pass `227/227`; all configured strict direct-LowIR suites pass; PA21 placement/hygiene exits clean; all 23 text-reparse categories remain zero and all 14 audit tests pass. Normal, all ten individual cache-disabled modes, and all-disabled mode emit byte-identical reducer LowIR with SHA-256 `8e9cdf995696d2e239e4c3d300e21b94f91d965b2a3dbb8258635d5acf7fefb2`. Exact forced `flat_buffer` and `multi_buffer` targets compile, link, run, and pass. The full direct report with PA9 explicitly excluded passes `3870/3870`, including PA37 object roundtrip `7/7`. | instructions -4.03%; max RSS +0.34%; peak footprint -0.95%; pass; +0.026% instructions, +0.083% RSS, and +0.011% footprint from the preceding checkpoint; report `/tmp/cppgm-boost-frontier-v2-ooc-copyassign-template-head-perf.json` | `(this commit)` |
 | fixed | `libs/beast/test/beast/core//span` dependent constructor symbol | The constructor ABI adapter retained the parsed template argument and expression AST, but did not substitute a concrete enclosing class NTTP into the dependent function-template expression type and could not resolve an unqualified namespace constant as a typed variable entity. The same exact-symbol comparison exposed related structured cases: concrete owner type packs in function types, source-written default omission, dependent member-expression owner suppression, enumerator values, unsigned modulo-width values, internal-linkage namespace variables, and standard/inline namespace variable names. These paths now consume `TemplateParameterInfo`, `TemplateArgument`, `ValueBinding`, retained declarator/type-id AST, and `abi_mangle::Type`/`DependentExpression`; scoped variables use the typed `emit_variable_symbol_from_name_components` API. No source or semantic text is reparsed, no rendered symbol is decomposed, and no cache or witness-only path is added. | `pa22/tests/general/500-constructor-sfinae-namespace-constant-symbol.t`, a header-free constructor-SFINAE reducer at the earliest full-deduction/SFINAE owner; PA30 adds direct typed facts for `uint`/`ulong` modulo values, internal variables, `std` variables, and inline namespaces. Existing PA22/PA23 dependent ABI reducers were strengthened through their exact LowIR references. | The exported assignment reference compiler fails the new PA22 reducer with the same `failed to build ABI IR function symbol for weak function span<char const, -1>::span` diagnostic, so its new LowIR reference was generated from the fixed compiler only after byte-for-byte Clang symbol verification; no witness reference came from cppgm. Clang and cppgm now agree on the exact Boost C1/C2 symbol, including `Lm18446744073709551615E`, `L_ZN5boostL14dynamic_extentEE`, and the dependent `enable_if` expression. Clang controls also establish `_ZL7extract`, `_ZN3libL17default_alignmentE`, `_ZSt7nothrow`, `_ZNSt3__14cerrE`, and unchanged anonymous-namespace encoding. Fifty-four existing LowIR references were corrected from the old missing internal-linkage marker after these controls. | Warning-clean Clang build and isolated GCC build; focused affected report passes `1859/1859`, final PA30 passes `88/88`, all configured strict suites pass, placement/hygiene has zero findings, all 23 text-reparse categories remain zero, and all 14 audit tests pass. Normal, all ten individual cache-disabled modes, and all-disabled mode emit byte-identical reducer LowIR with SHA-256 `47ad2284407d9fb51998d9a2b0bef6be441b151890e38a7eadd4538fd24c7434`, proving the initial typed algorithm independently of caches. The exact `span` target force-rebuilds 46 targets, links, executes, and passes. The complete direct report with PA9 explicitly excluded passes `3876/3876`, including PA37 object roundtrip `7/7`; PA9 was not rerun. | instructions -3.95%; max RSS -0.11%; peak footprint -0.93%; pass; rolling deltas are +0.080% instructions, -0.445% RSS, and +0.020% footprint, below the hotspot threshold; report `/tmp/cppgm-boost-frontier-v2-span-dependent-abi-final-perf.json` | `(this commit)` |
 | fixed | `libs/beast/test/beast/core//static_string` | Three typed defects surfaced in sequence. Class-template instantiation replay accepted any dependent specialization as a canonical source owner, so a contextual `pair` specialization could supply the wrong member set; ownership now requires the exact primary parameter placeholders for type, value, and template-template parameters. Dependent expression comparison ignored operator payload whenever a node had children, making `condition` and `!condition` equivalent; non-wrapper nodes now compare their retained operator/value metadata. Overload ranking now applies the standard initializer-list preference for braced-list arguments. Finally, out-of-class member-template definitions are matched by typed parameter identity, use typed result identity only to distinguish ambiguous return-SFINAE overloads, and accept a unique parameter match without forcing alias normalization. No source text, rendered signature, cache, symbol, ABI, or witness-only path is added. | `pa22/tests/spec/300-out-of-class-return-sfinae-overload-definitions.t`, a header-free complementary return-SFINAE/body-identity reducer at the PA22 member-template owner; `pa25/tests/general/200-braced-list-prefers-initializer-list-exact-rank.t`, a header-free list-initialization overload reducer at PA25 | The original exact target first failed converting contextual `pair` instantiations; all caches disabled reproduced it, proving the source-owner algorithm itself was wrong. After that fix, the PA25 reducer and Boost `assign({'1','2','3'})` were ambiguous. The PA22 reducer selected the wrong body before typed result matching. Once those were fixed, `/tmp/cppgm-set-emplace.cpp` linked with an undefined libc++ `__tree::__find_equal`; trace showed the unique declaration could not be attached when its unqualified member-alias result and qualified dependent definition result were not normalized identically. Clang accepts all reducers. | Warning-clean Clang build and isolated GCC 15 build; exact Boost target passes compile, link, and runtime; PA22/PA25 direct report passes `333/333`; all configured strict direct-LowIR suites pass; placement/hygiene reports zero findings; all 23 text-reparse categories remain zero and all 14 audit tests pass. Normal, all ten individual cache-disabled modes, and all-disabled mode emit byte-identical reducer LowIR with SHA-256 `e5a3c04a5d08833e3a050bcd9fb70d8229f79761d8c1efe86c90b5328e88ed2e` and `f2e31e665b2cdd6c7325abf3c8365e4dc33f482d6bc7e7e1bcb0f11430d5ed50`. Full direct report with PA9 explicitly excluded passes `3878/3878`, including PA37 object roundtrip `7/7`; PA9 was not rerun. Hotspot counters record 113146 node visits and 475073 semantic queries; a 1 ms sample puts the new source-owner predicate at 11 top-of-stack samples, with no top samples in the member resolver or dependent-expression comparator. | instructions +0.95%; max RSS -1.07%; peak footprint +0.10%; pass; result-type comparison was moved off the unique-match path; report `/tmp/cppgm-boost-frontier-v2-static-string-final-perf.json` | `(this commit)` |
+| fixed | `libs/beast/test/beast/http//basic_parser` default-capturing lambda | The implicit-capture scan handled an unqualified id-expression only through `CppAstNode::value`. An explicit template-id keeps its identifier in the initially parsed `TemplateIdSyntax`, so `parse<int>(...)` did not record the enclosing `this` capture and later tried to call `parser_test::parse` on the lambda closure object. Capture discovery now reads the retained structured template identifier and uses that name for value, member, and member-template lookup. Explicit `this->` calls and ordinary unqualified member calls retain their existing paths. No tokenization, source scan, semantic text parse, rendered name recovery, cache, symbol trace, ABI path, or witness-only behavior is added. | `pa24/tests/general/200-default-capture-unqualified-member-template-call.t`, a header-free runtime reducer in the PA24 lambda cluster; it combines default `&` capture, an unqualified explicit member-template call, a nested lambda argument, and a defaulted trailing function parameter | The current head and the all-cache-disabled mode reject the reducer with `implicit object conversion failed`, while Clang executes it successfully. An explicit `this->parse<int>` control and an implicit non-template member-call control both pass, isolating capture discovery for the structured template-id. Serial forced Beast replay reproduces the same `parsegrind` diagnostic before the fix. | Warning-clean Clang build and isolated GCC 15 build; Clang and cppgm execute the reducer; PA24 focused check and direct report pass `106/106`; all configured strict direct-LowIR suites pass; PA24 placement/hygiene reports zero findings; all 23 text-reparse categories remain zero and all 14 audit tests pass. Normal, all ten individual cache-disabled modes, and all-disabled mode emit byte-identical LowIR with SHA-256 `ef07873fe2af6d7c17487591172c4efbbd018c21f09df6a75fdda86469df81f6`. The final full direct report with PA9 explicitly excluded passes `3879/3879`, including PA37 object roundtrip `7/7`; PA9 was not rerun. A first two-assignment report had one PA33 compiler process exit `139` under load; the exact PA33 case and the complete one-assignment rerun pass. Final forced exact Beast replay has no `parsegrind`/implicit-object diagnostic and advances to the independent libc++ `nextafter` ambiguity. | instructions -3.01%; max RSS -0.61%; peak footprint -0.82% versus the fixed baseline; rolling instructions +0.029%, below hotspot threshold; report `/tmp/cppgm-boost-frontier-v2-basic-parser-lambda-capture-perf.json` | `(this commit)` |
 
 ## Decision Log
 
+- `2026-07-16`: The exact full Beast survey at `a9f116ad6` completed without a
+  timeout after 1059 seconds, passing 89 tests and leaving 14 failed actions.
+  Its first observed failure was an unqualified explicit member-template call
+  inside a default-capturing lambda. A header-free PA24 reducer proved that the
+  uncached algorithm missed `this` only for a retained `TemplateIdSyntax`;
+  explicit `this->` and non-template controls already passed. Capture discovery
+  now consumes that initial structured identifier. Every cache-disabled LowIR
+  is byte-identical, the reparse and placement audits stay at zero, strict
+  passes, and the PA9-excluded direct report passes `3879 / 3879`. PA9 was not
+  rerun. Fixed perf is -3.01% instructions and rolling movement is +0.029%.
+  The forced exact target clears the lambda failure and advances to a separate
+  libc++ `nextafter(double, float)` overload ambiguity.
 - `2026-07-16`: Closed `core//static_string` through typed primary-placeholder
   source ownership, retained operator identity, initializer-list ranking, and
   declaration/result identity for out-of-class member-template definitions.
@@ -870,6 +884,7 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  JOBS=8 \
-  gtimeout 1800 ./run-cppgm-b2.sh -a libs/beast/test
+  JOBS=1 \
+  gtimeout 900 ./run-cppgm-b2.sh -a \
+    libs/beast/test/beast/http//basic_parser
 ```

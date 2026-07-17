@@ -2906,14 +2906,19 @@ void collect_implicit_lambda_capture_names(SemanticContext & ctx,
   if(node.kind == CppAstKind::id_expression) {
     const QualifiedName * qualified = cppast_qualified_name_syntax(node);
     if(!qualified || (!qualified->rooted && qualified->qualifiers.empty())) {
-      if(declared_names.count(node.value) == 0) {
-        const ValueBinding * binding = ctx.lookup_value(scope, node.value);
+      const TemplateIdSyntax * template_id = cppast_template_id_syntax(node);
+      const std::string & lookup_name =
+          template_id && !template_id->name.name.empty() ?
+              template_id->name.name :
+              node.value;
+      if(declared_names.count(lookup_name) == 0) {
+        const ValueBinding * binding = ctx.lookup_value(scope, lookup_name);
         if(binding) {
           if(!binding_requires_lambda_capture(*binding)) {
             return;
           }
           const std::vector<ValueBinding> * value_pack =
-              lookup_named_value_pack_for_capture(scope, node.value);
+              lookup_named_value_pack_for_capture(scope, lookup_name);
           if(value_pack) {
             for(size_t i = 0; i < value_pack->size(); ++i) {
               if(binding_requires_lambda_capture((*value_pack)[i])) {
@@ -2931,11 +2936,11 @@ void collect_implicit_lambda_capture_names(SemanticContext & ctx,
               append_capture_name("this", out, seen);
             }
           } else {
-            append_capture_name(node.value, out, seen);
+            append_capture_name(lookup_name, out, seen);
           }
         } else {
           MemberValueLookupResult member;
-          if(lookup_member_value_in_scope_chain(scope, node.value, member) &&
+          if(lookup_member_value_in_scope_chain(scope, lookup_name, member) &&
              member.binding) {
             append_capture_name("this", out, seen);
           } else {
@@ -2943,9 +2948,9 @@ void collect_implicit_lambda_capture_names(SemanticContext & ctx,
               if(!current->class_info) {
                 continue;
               }
-              if(!lookup_visible_member_functions(*current->class_info, node.value)
+              if(!lookup_visible_member_functions(*current->class_info, lookup_name)
                       .functions.empty() ||
-                 !lookup_visible_member_function_templates(*current->class_info, node.value)
+                 !lookup_visible_member_function_templates(*current->class_info, lookup_name)
                       .templates.empty()) {
                 append_capture_name("this", out, seen);
                 break;
