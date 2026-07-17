@@ -26645,12 +26645,22 @@ private:
       ClassInfo & info,
       const vector<TemplateParameterInfo> & template_parameters)
   {
-    if(!info.dependent_instantiation || !info.source_template) {
+    ClassInfo * template_owner = &info;
+    if(!template_owner->source_template &&
+       template_owner->enclosing_scope &&
+       template_owner->enclosing_scope->class_info &&
+       template_owner->enclosing_scope->class_info->source_template) {
+      template_owner = template_owner->enclosing_scope->class_info;
+    }
+    if(!template_owner->dependent_instantiation ||
+       !template_owner->source_template) {
       return 0;
     }
-    size_t owner_parameter_count = info.source_template->parameters.size();
+    size_t owner_parameter_count =
+        template_owner->source_template->parameters.size();
     if(PartialClassTemplateSpecializationDecl * partial =
-           find_partial_specialization_decl(*info.source_template, &info)) {
+           find_partial_specialization_decl(*template_owner->source_template,
+                                            template_owner)) {
       owner_parameter_count = partial->parameters.size();
     }
     return template_parameters.size() >= owner_parameter_count ?
