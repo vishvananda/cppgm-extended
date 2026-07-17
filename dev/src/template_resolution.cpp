@@ -12026,7 +12026,12 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       attempted_structured_type_syntax = true;
       try {
         template_argument_semantics::parse_type_id_node_for_templates(
-            services, raw_argument_scope, *syntax->type_id, type, true);
+            services,
+            raw_argument_scope,
+            *syntax->type_id,
+            type,
+            true,
+            syntax->has_source_token_start ? syntax->source_token_start : 0);
       } catch(const semantic_fallback_audit::SemanticFallbackError &) {
         if(!type_argument_can_remain_dependent_after_structured_failure(
                syntax)) {

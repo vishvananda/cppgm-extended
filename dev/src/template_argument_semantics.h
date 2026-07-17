@@ -382,7 +382,8 @@ bool try_resolve_type_pack_element_template_id(
 bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
                                    semantic_model::Scope & scope,
                                    const CppAstNode & node,
-                                   cpp_decl::TypePtr & out);
+                                   cpp_decl::TypePtr & out,
+                                   std::size_t source_token_anchor = 0);
 
 bool evaluate_dependent_type_expression_leaf(
     template_api::TemplateServices & services,
@@ -416,7 +417,8 @@ bool parse_type_id_node_for_templates(template_api::TemplateServices & services,
                                       semantic_model::Scope & scope,
                                       const CppAstNode & type_id,
                                       cpp_decl::TypePtr & out,
-                                      bool reference_class_templates_only = false);
+                                      bool reference_class_templates_only = false,
+                                      std::size_t source_token_anchor = 0);
 
 bool resolve_type_argument_expression_syntax(
     template_api::TemplateServices & services,

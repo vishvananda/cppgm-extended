@@ -1144,7 +1144,8 @@ bool parse_type_id_node_for_templates(template_api::TemplateServices & services,
                                       Scope & scope,
                                       const CppAstNode & type_id,
                                       TypePtr & out,
-                                      bool reference_class_templates_only)
+                                      bool reference_class_templates_only,
+                                      size_t source_token_anchor)
 {
   out.reset();
   if(type_id.kind != CppAstKind::type_id) {
@@ -1365,7 +1366,7 @@ bool parse_type_id_node_for_templates(template_api::TemplateServices & services,
       [&](const CppAstNode & decltype_node, TypePtr & type) -> bool
       {
         return template_argument_semantics::parse_decltype_or_typeof_node(
-            services, scope, decltype_node, type);
+            services, scope, decltype_node, type, source_token_anchor);
       };
   hooks.evaluate_constant_expression =
       [&](const CppAstNode & node, long long & value) -> bool
@@ -39146,7 +39147,8 @@ bool evaluate_dependent_type_expression_leaf(
 bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
                                    Scope & scope,
                                    const CppAstNode & node,
-                                   TypePtr & out)
+                                   TypePtr & out,
+                                   size_t explicit_source_token_anchor)
 {
   out.reset();
   if((node.kind != CppAstKind::decltype_specifier &&
@@ -39155,7 +39157,9 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
   }
   CppAstNode rebased_node;
   const CppAstNode * effective_node = &node;
-  const size_t source_token_anchor = current_argument_source_token_anchor();
+  const size_t source_token_anchor = explicit_source_token_anchor != 0 ?
+      explicit_source_token_anchor :
+      current_argument_source_token_anchor();
   if(source_token_anchor != 0 &&
      expression_node_has_token_before(node, source_token_anchor)) {
     rebased_node = clone_expression_node_for_template_substitution(node);
