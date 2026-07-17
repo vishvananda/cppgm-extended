@@ -19744,7 +19744,9 @@ private:
         }
         const CppAstNode & init_decl = declarators->children[0];
         if(init_decl.kind != CppAstKind::init_declarator || init_decl.children.empty() ||
-           !declarator_is_plain_identifier(init_decl.children[0], effective_name)) {
+           !declarator_declared_identifier(init_decl.children[0], effective_name) ||
+           find_descendant_kind(init_decl.children[0],
+                                CppAstKind::parameter_clause)) {
           return false;
         }
       }
@@ -19762,6 +19764,7 @@ private:
         ClassInfo * existing_info = class_info_for_type(existing);
         if(existing_info && existing_info->complete) {
           child.value = effective_name;
+          child.semantic_type = existing;
           continue;
         }
       }
@@ -19786,6 +19789,9 @@ private:
       }
 
       child.value = effective_name;
+      if(synthesized_embedded_name) {
+        child.semantic_type = direct_named_type(scope, effective_name);
+      }
     }
     return true;
   }

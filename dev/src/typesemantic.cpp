@@ -938,15 +938,50 @@ private:
       throw logic_error("simple-declaration missing decl-specifier-seq");
     }
 
+    CppAstNode resolved_specifiers = *specifiers;
+    for(size_t i = 0; i < resolved_specifiers.children.size(); ++i) {
+      CppAstNode & child = resolved_specifiers.children[i];
+      if((child.kind != CppAstKind::class_specifier &&
+          child.kind != CppAstKind::enum_specifier) ||
+         !child.value.empty()) {
+        continue;
+      }
+      if(!declarators || declarators->children.size() != 1) {
+        throw logic_error("unsupported namespace-scope embedded type-specifier");
+      }
+      const CppAstNode & init_decl = declarators->children[0];
+      const CppAstNode * declarator =
+          find_child_kind(init_decl, CppAstKind::declarator);
+      const CppAstNode * identifier =
+          declarator ? find_descendant_kind(*declarator, CppAstKind::identifier) : nullptr;
+      if(!declarator || !identifier || identifier->value.empty() ||
+         find_descendant_kind(*declarator, CppAstKind::parameter_clause)) {
+        throw logic_error("unsupported namespace-scope embedded type-specifier");
+      }
+
+      CppAstNode named_child = child;
+      named_child.value = identifier->value;
+      const CppAstNode * durable_named_child =
+          own_synthetic_ast(std::move(named_child));
+      if(child.kind == CppAstKind::enum_specifier) {
+        analyze_enum_declaration(scope, *durable_named_child);
+      } else {
+        analyze_class_declaration(scope, *durable_named_child);
+      }
+      child.value = identifier->value;
+      child.semantic_type = lookup_type(scope, identifier->value);
+    }
+
     bool is_typedef = false;
     TypePtr base;
-    if(!parse_decl_spec(*specifiers, scope, is_typedef, base)) {
+    if(!parse_decl_spec(resolved_specifiers, scope, is_typedef, base)) {
       throw logic_error("unsupported decl-specifier-seq");
     }
 
-    const bool is_constexpr_object = decl_spec_contains_token(*specifiers, KW_CONSTEXPR);
+    const bool is_constexpr_object =
+        decl_spec_contains_token(resolved_specifiers, KW_CONSTEXPR);
     const bool is_const_object =
-        decl_spec_contains_token(*specifiers, KW_CONST) ||
+        decl_spec_contains_token(resolved_specifiers, KW_CONST) ||
         is_constexpr_object;
 
     if(!declarators) {
