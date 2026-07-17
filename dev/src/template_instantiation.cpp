@@ -3031,6 +3031,70 @@ QualifiedName class_info_qualified_name_syntax(const ClassInfo & info)
   return name;
 }
 
+bool template_argument_is_primary_parameter_placeholder(
+    const ClassTemplateDecl & decl,
+    std::size_t parameter_index,
+    const TemplateArgument & argument)
+{
+  if(parameter_index >= decl.parameters.size()) {
+    return false;
+  }
+  const TemplateParameterInfo & parameter = decl.parameters[parameter_index];
+  switch(parameter.kind) {
+  case TemplateParameterInfo::TP_TYPE:
+    return argument.kind == TemplateArgument::TA_TYPE &&
+           template_model::find_template_parameter(decl.parameters,
+                                                   argument.type) == &parameter;
+
+  case TemplateParameterInfo::TP_NON_TYPE: {
+    if(argument.kind != TemplateArgument::TA_VALUE ||
+       !argument.dependent ||
+       !argument.value_binding ||
+       !decl.pattern_scope) {
+      return false;
+    }
+    std::map<std::string, ValueBinding>::const_iterator found =
+        decl.pattern_scope->values.find(parameter.name);
+    return found != decl.pattern_scope->values.end() &&
+           argument.value_binding == &found->second;
+  }
+
+  case TemplateParameterInfo::TP_TEMPLATE_TEMPLATE:
+    if((argument.kind != TemplateArgument::TA_CLASS_TEMPLATE &&
+        argument.kind != TemplateArgument::TA_ALIAS_TEMPLATE) ||
+       !argument.dependent ||
+       argument.template_decl) {
+      return false;
+    }
+    if(argument.template_entity_name() == parameter.name) {
+      return true;
+    }
+    for(std::size_t i = 0; i < parameter.alternate_names.size(); ++i) {
+      if(argument.template_entity_name() == parameter.alternate_names[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return false;
+}
+
+bool class_template_primary_placeholder_instantiation(
+    const ClassTemplateDecl & decl,
+    const ClassInfo & candidate)
+{
+  if(candidate.instantiation_arguments.size() != decl.parameters.size()) {
+    return false;
+  }
+  for(std::size_t i = 0; i < decl.parameters.size(); ++i) {
+    if(!template_argument_is_primary_parameter_placeholder(
+           decl, i, candidate.instantiation_arguments[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 ClassInfo * class_template_dependent_reference_source_owner(
     const std::map<std::string, ClassInfo *> & instantiations,
     ClassTemplateDecl & decl)
@@ -3044,7 +3108,8 @@ ClassInfo * class_template_dependent_reference_source_owner(
     if(!candidate ||
        candidate->source_template != &decl ||
        !candidate->member_scope ||
-       candidate->template_output_node != decl.class_node) {
+       candidate->template_output_node != decl.class_node ||
+       !class_template_primary_placeholder_instantiation(decl, *candidate)) {
       continue;
     }
     if(candidate->dependent_instantiation) {
@@ -6270,6 +6335,32 @@ bool member_function_template_decl_semantic_signature_matches(
       return false;
     }
   }
+
+  const bool have_result_patterns =
+      lhs->result_type_pattern.kind != CppAstKind::invalid &&
+      rhs->result_type_pattern.kind != CppAstKind::invalid;
+  const bool result_patterns_match =
+      have_result_patterns &&
+      semantic_lookup::same_function_template_entity_result_pattern(
+          lhs->result_type_pattern,
+          lhs->parameters,
+          rhs->result_type_pattern,
+          rhs->parameters);
+  const TypePtr lhs_function_type = strip_top_level_cv(lhs->type_pattern);
+  const TypePtr rhs_function_type = strip_top_level_cv(rhs->type_pattern);
+  const bool have_result_types =
+      lhs_function_type && lhs_function_type->kind == Type::TK_FUNCTION &&
+      rhs_function_type && rhs_function_type->kind == Type::TK_FUNCTION;
+  const bool result_types_match =
+      have_result_types &&
+      semantic_lookup::same_function_template_entity_type(
+          lhs_function_type->inner,
+          lhs->parameters,
+          rhs_function_type->inner,
+          rhs->parameters);
+  if(have_result_patterns || have_result_types) {
+    return result_patterns_match || result_types_match;
+  }
   return true;
 }
 
@@ -6352,12 +6443,7 @@ ClassInfo * source_owner_class_for_instantiation(SemanticContext & ctx,
        candidate->template_output_node != decl.class_node) {
       return false;
     }
-    if(candidate->dependent_instantiation ||
-       candidate->instantiation_arguments.empty()) {
-      return true;
-    }
-    return template_arguments_are_dependent_for_instantiation(
-        ctx, candidate->instantiation_arguments);
+    return class_template_primary_placeholder_instantiation(decl, *candidate);
   };
 
   ClassInfo * source_owner =

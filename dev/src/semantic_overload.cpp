@@ -2400,6 +2400,7 @@ struct CandidateMatch
   vector<ExprInfo> source_args;
   vector<string> source_arg_locations;
   vector<TypePtr> params;
+  vector<bool> list_initialization_args;
   vector<bool> needs_rematerialization;
   size_t explicit_arg_count = static_cast<size_t>(-1);
 };
@@ -5696,50 +5697,73 @@ int compare_candidate_match_preference(SemanticContext & ctx,
       } else if(current.ranks[j] > best.ranks[j]) {
         best_better = true;
       } else {
-        int ref_pref = compare_reference_binding_preference(current.params[j],
-                                                            current_compare_arg,
-                                                            best.params[j],
-                                                            best_compare_arg);
-        if(ref_pref < 0) {
+        int list_pref = 0;
+        if(j < current.list_initialization_args.size() &&
+           j < best.list_initialization_args.size() &&
+           current.list_initialization_args[j] &&
+           best.list_initialization_args[j]) {
+          const TypePtr current_param =
+              strip_top_level_cv(remove_reference_type(current.params[j]));
+          const TypePtr best_param =
+              strip_top_level_cv(remove_reference_type(best.params[j]));
+          const bool current_initializer_list =
+              ctx.is_initializer_list_type(current_param, nullptr, nullptr);
+          const bool best_initializer_list =
+              ctx.is_initializer_list_type(best_param, nullptr, nullptr);
+          if(current_initializer_list != best_initializer_list) {
+            list_pref = current_initializer_list ? -1 : 1;
+          }
+        }
+        if(list_pref < 0) {
           current_better = true;
-        } else if(ref_pref > 0) {
+        } else if(list_pref > 0) {
           best_better = true;
         } else {
-          int qual_pref = compare_qualification_conversion_preference(current.params[j],
-                                                                      current_compare_arg,
-                                                                      best.params[j],
-                                                                      best_compare_arg);
-          if(qual_pref < 0) {
+          int ref_pref = compare_reference_binding_preference(current.params[j],
+                                                              current_compare_arg,
+                                                              best.params[j],
+                                                              best_compare_arg);
+          if(ref_pref < 0) {
             current_better = true;
-          } else if(qual_pref > 0) {
+          } else if(ref_pref > 0) {
             best_better = true;
           } else {
-            int std_pref = compare_standard_conversion_preference(current.params[j],
-                                                                  current_compare_arg,
-                                                                  best.params[j],
-                                                                  best_compare_arg);
-            if(std_pref == 0 &&
-               (current.ranks[j] == CR_CONVERSION ||
-                compare_second_standard_conversion)) {
-              std_pref = compare_class_base_conversion_target_preference(
-                  ctx,
-                  current.params[j],
-                  current_compare_arg,
-                  best.params[j],
-                  best_compare_arg);
-            }
-            if(std_pref == 0 && j < current.args.size() && j < best.args.size()) {
-              std_pref = compare_pointer_base_over_void_preference(
-                  ctx,
-                  current.params[j],
-                  current_compare_arg,
-                  best.params[j],
-                  best_compare_arg);
-            }
-            if(std_pref < 0) {
+            int qual_pref = compare_qualification_conversion_preference(current.params[j],
+                                                                        current_compare_arg,
+                                                                        best.params[j],
+                                                                        best_compare_arg);
+            if(qual_pref < 0) {
               current_better = true;
-            } else if(std_pref > 0) {
+            } else if(qual_pref > 0) {
               best_better = true;
+            } else {
+              int std_pref = compare_standard_conversion_preference(current.params[j],
+                                                                    current_compare_arg,
+                                                                    best.params[j],
+                                                                    best_compare_arg);
+              if(std_pref == 0 &&
+                 (current.ranks[j] == CR_CONVERSION ||
+                  compare_second_standard_conversion)) {
+                std_pref = compare_class_base_conversion_target_preference(
+                    ctx,
+                    current.params[j],
+                    current_compare_arg,
+                    best.params[j],
+                    best_compare_arg);
+              }
+              if(std_pref == 0 && j < current.args.size() && j < best.args.size()) {
+                std_pref = compare_pointer_base_over_void_preference(
+                    ctx,
+                    current.params[j],
+                    current_compare_arg,
+                    best.params[j],
+                    best_compare_arg);
+              }
+              if(std_pref < 0) {
+                current_better = true;
+              } else if(std_pref > 0) {
+                best_better = true;
+              }
             }
           }
         }
@@ -14010,7 +14034,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           match.source_arg_locations.push_back(std::string());
           match.params.push_back(function_type->params[0]);
           match.needs_rematerialization.push_back(instantiate_bodies &&
-                                                  converted_this_ok);
+                                                    converted_this_ok);
+          match.list_initialization_args.push_back(false);
           arg_offset = 1;
         }
       } else {
@@ -14159,6 +14184,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         match.source_args.push_back(source_arg);
         match.source_arg_locations.push_back(
             ctx.source_location_for_node(*arg_nodes[j]));
+        match.list_initialization_args.push_back(
+            arg_nodes[j]->kind == CppAstKind::braced_init_list);
         if(explicit_index + arg_offset < function_type->params.size()) {
           match.params.push_back(function_type->params[explicit_index + arg_offset]);
         } else {

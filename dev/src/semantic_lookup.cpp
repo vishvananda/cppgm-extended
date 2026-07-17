@@ -2661,17 +2661,15 @@ bool same_dependent_expression_metadata(
      lhs.children.size() != rhs.children.size()) {
     return false;
   }
-  const bool lhs_has_structure =
-      lhs.template_id_syntax ||
-      !lhs.qualifier_template_id_syntaxes.empty() ||
-      !lhs.qualifier_type_syntaxes.empty() ||
-      !lhs.children.empty();
-  const bool rhs_has_structure =
-      rhs.template_id_syntax ||
-      !rhs.qualifier_template_id_syntaxes.empty() ||
-      !rhs.qualifier_type_syntaxes.empty() ||
-      !rhs.children.empty();
-  if((!lhs_has_structure || !rhs_has_structure) &&
+  const bool wrapper_value =
+      lhs.kind == CppAstKind::type_id ||
+      lhs.kind == CppAstKind::decl_specifier ||
+      lhs.kind == CppAstKind::decl_specifier_seq ||
+      lhs.kind == CppAstKind::type_specifier_seq ||
+      lhs.kind == CppAstKind::abstract_declarator ||
+      lhs.kind == CppAstKind::declarator ||
+      lhs.kind == CppAstKind::nested_declarator;
+  if(!wrapper_value && lhs.value != rhs.value &&
      canonicalize_template_named_type_text(lhs_parameters, lhs.value) !=
          canonicalize_template_named_type_text(rhs_parameters, rhs.value)) {
     return false;

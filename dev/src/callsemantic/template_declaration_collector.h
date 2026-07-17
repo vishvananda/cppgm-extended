@@ -120,6 +120,7 @@ struct OutOfClassMemberResolutionServices
       const std::vector<template_model::TemplateParameterInfo> &
           template_parameters,
       const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
+      const cpp_decl::TypePtr & declared_type,
       bool is_const_method,
       bool is_volatile_method,
       semantic_model::RefQualifier ref_qualifier,

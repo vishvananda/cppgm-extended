@@ -26800,6 +26800,7 @@ private:
       const QualifiedName & qualified,
       const vector<TemplateParameterInfo> & template_parameters,
       const vector<pair<string, TypePtr> > & params,
+      const TypePtr & declared_type,
       bool is_const_method,
       bool is_volatile_method,
       RefQualifier ref_qualifier,
@@ -26821,6 +26822,8 @@ private:
     }
     vector<FunctionTemplateDecl *> templates =
         lookup_direct_function_templates(*info->member_scope, qualified.name);
+    vector<FunctionTemplateDecl *> parameter_matches;
+    vector<vector<TemplateParameterInfo> > match_type_parameters;
     for(size_t i = 0; i < templates.size(); ++i) {
       FunctionTemplateDecl * decl = templates[i];
       if(decl->is_const_method != is_const_method ||
@@ -26856,25 +26859,28 @@ private:
             }
             return true;
           };
+      bool parameter_signature_match = false;
+      vector<TemplateParameterInfo> lhs_type_parameters;
       if(template_parameters_include_owner_prefix) {
         const size_t suffix_start = owner_template_prefix_count;
         vector<TemplateParameterInfo> suffix_parameters(template_parameters.begin() + suffix_start,
                                                         template_parameters.end());
-        vector<TemplateParameterInfo> lhs_type_parameters(template_parameters.begin(),
-                                                          template_parameters.begin() +
-                                                              suffix_start);
+        lhs_type_parameters.assign(template_parameters.begin(),
+                                   template_parameters.begin() + suffix_start);
         lhs_type_parameters.insert(lhs_type_parameters.end(),
                                    decl->parameters.begin(),
                                    decl->parameters.end());
-        if(matches_signature(suffix_parameters, lhs_type_parameters, template_parameters)) {
-          return decl;
-        }
-      } else if(matches_signature(template_parameters,
-                                  decl->parameters,
-                                  template_parameters)) {
-        return decl;
+        parameter_signature_match = matches_signature(suffix_parameters,
+                                                      lhs_type_parameters,
+                                                      template_parameters);
+      } else {
+        lhs_type_parameters = decl->parameters;
+        parameter_signature_match = matches_signature(template_parameters,
+                                                      lhs_type_parameters,
+                                                      template_parameters);
       }
-      if(template_parameters.size() > decl->parameters.size()) {
+      if(!parameter_signature_match &&
+         template_parameters.size() > decl->parameters.size()) {
         const size_t suffix_start = template_parameters.size() - decl->parameters.size();
         if(template_parameters_include_owner_prefix &&
            suffix_start < owner_template_prefix_count) {
@@ -26882,19 +26888,48 @@ private:
         }
         vector<TemplateParameterInfo> suffix_parameters(template_parameters.begin() + suffix_start,
                                                         template_parameters.end());
-        vector<TemplateParameterInfo> lhs_type_parameters(template_parameters.begin(),
-                                                          template_parameters.begin() +
-                                                              suffix_start);
+        lhs_type_parameters.assign(template_parameters.begin(),
+                                   template_parameters.begin() + suffix_start);
         lhs_type_parameters.insert(lhs_type_parameters.end(),
                                    decl->parameters.begin(),
                                    decl->parameters.end());
-        if(matches_signature(suffix_parameters, lhs_type_parameters, template_parameters)) {
-          return decl;
-        }
+        parameter_signature_match = matches_signature(suffix_parameters,
+                                                      lhs_type_parameters,
+                                                      template_parameters);
+      }
+      if(parameter_signature_match) {
+        parameter_matches.push_back(decl);
+        match_type_parameters.push_back(lhs_type_parameters);
       }
     }
 
-    return nullptr;
+    if(parameter_matches.size() == 1) {
+      return parameter_matches[0];
+    }
+    const TypePtr definition_function_type = strip_top_level_cv(declared_type);
+    if(!definition_function_type ||
+       definition_function_type->kind != Type::TK_FUNCTION) {
+      return nullptr;
+    }
+    FunctionTemplateDecl * result_match = nullptr;
+    for(size_t i = 0; i < parameter_matches.size(); ++i) {
+      const TypePtr declaration_function_type =
+          strip_top_level_cv(parameter_matches[i]->type_pattern);
+      if(!declaration_function_type ||
+         declaration_function_type->kind != Type::TK_FUNCTION ||
+         !semantic_lookup::same_function_template_entity_type(
+             declaration_function_type->inner,
+             match_type_parameters[i],
+             definition_function_type->inner,
+             template_parameters)) {
+        continue;
+      }
+      if(result_match && result_match != parameter_matches[i]) {
+        return nullptr;
+      }
+      result_match = parameter_matches[i];
+    }
+    return result_match;
   }
 
   string describe_out_of_class_special_member_template_lookup(
