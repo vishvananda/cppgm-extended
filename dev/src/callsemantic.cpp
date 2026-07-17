@@ -26790,7 +26790,8 @@ private:
                                   template_parameters)) {
         return decl;
       }
-      if(template_parameters.size() > decl->parameters.size()) {
+      if(template_parameters_include_owner_prefix &&
+         template_parameters.size() > decl->parameters.size()) {
         const size_t suffix_start = template_parameters.size() - decl->parameters.size();
         if(template_parameters_include_owner_prefix &&
            suffix_start < owner_template_prefix_count) {
@@ -26898,6 +26899,7 @@ private:
                                                       template_parameters);
       }
       if(!parameter_signature_match &&
+         template_parameters_include_owner_prefix &&
          template_parameters.size() > decl->parameters.size()) {
         const size_t suffix_start = template_parameters.size() - decl->parameters.size();
         if(template_parameters_include_owner_prefix &&
