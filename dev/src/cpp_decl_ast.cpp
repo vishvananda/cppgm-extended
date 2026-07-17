@@ -751,6 +751,15 @@ bool parse_declarator_core(const CppAstNode & node,
       continue;
     }
 
+    if(child.kind == CppAstKind::function_qualifier) {
+      if(suffixes.empty() ||
+         suffixes.back().kind != DeclaratorSuffix::SK_FUNCTION) {
+        return false;
+      }
+      // C++11 exception specifications do not change the function type.
+      continue;
+    }
+
     if(child.kind == CppAstKind::nullability_qualifier) {
       if(prefixes.empty()) {
         return false;
