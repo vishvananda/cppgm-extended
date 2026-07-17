@@ -23309,6 +23309,19 @@ bool substitute_type_pack_expression_node(
   for(auto it = type_replacements.begin();
       it != type_replacements.end();
       ++it) {
+    if(out.kind == CppAstKind::ptr_operator &&
+       !out.has_token &&
+       out.qualified_name_syntax &&
+       out.qualified_name_syntax->qualifiers.empty() &&
+       out.qualified_name_syntax->name == it->first) {
+      const string replacement_text =
+          reparseable_type_argument_text(it->second);
+      if(!replacement_text.empty()) {
+        out.value = replacement_text + "::*";
+        out.semantic_type = it->second;
+        return true;
+      }
+    }
     bool replaced_qualified_component = false;
     if(out.qualified_name_syntax) {
       const std::vector<std::string> qualifiers =

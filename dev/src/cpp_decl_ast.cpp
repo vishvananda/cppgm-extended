@@ -672,16 +672,10 @@ bool parse_declarator_core(const CppAstNode & node,
           return false;
         }
         const string owner_text = trim_space_copy(text.substr(0, text.size() - 3));
-        TypePtr owner_type;
-        if(hooks.lookup_type_node) {
-          CppAstNode owner_node = child;
-          owner_node.kind = CppAstKind::type_name;
-          owner_node.value = owner_text;
-          owner_type = hooks.lookup_type_node(owner_node);
-        }
-        if(!owner_type) {
-          owner_type = hooks.lookup_type(owner_text);
-        }
+        CppAstNode owner_node = child;
+        owner_node.kind = CppAstKind::type_name;
+        owner_node.value = owner_text;
+        TypePtr owner_type = lookup_type_from_ast_node(hooks, owner_node);
         if(!owner_type) {
           return false;
         }
