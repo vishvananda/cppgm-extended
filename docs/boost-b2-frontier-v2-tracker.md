@@ -15,7 +15,8 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `11 / 147`
 - current cursor: `#12 libs/bind/test`
-- active compiler frontier: pending the first exact forced Bind survey
+- active compiler frontier: `libs/bind/test//apply_rv_test` overload resolution
+  for invoking a forwarded function-pointer result in `boost::apply`
 
 ## Baseline Gates
 
@@ -133,6 +134,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(nested cv partial identity fix)` | Nested cv-pointer deduction and ordering in a class partial-specialization template-id | -3.46% | -1.46% | -1.83% | aggregate from the preserved pre-Bimap typed-pack checkpoint: -0.39% instructions, -2.28% RSS, and -1.00% footprint | `/tmp/cppgm-boost-frontier-v2-nested-cv-fixed-perf.log`, `/tmp/cppgm-boost-frontier-v2-nested-cv-rolling-perf.log` | pass; the matcher uses typed template-parameter identity, and normal, all-cache-disabled, witness/cache-off, and trace/selection-cache-off LowIR are byte-identical |
 | `(qualified declval fallback fix)` | Qualified `declval` template-id dependency in a trailing-return operator probe | -3.52% | -1.09% | -1.83% | aggregate from the preserved pre-Bimap typed-pack checkpoint: -0.53% instructions, -1.54% RSS, and -0.87% footprint | `/tmp/cppgm-boost-frontier-v2-qualified-declval-fixed-perf.json`, `/tmp/cppgm-boost-frontier-v2-qualified-declval-rolling-perf.json` | pass; the final fallback consumes the already retained structured dependency signal, every cache-disabled mode is byte-identical, and both fixed and rolling hardware-work metrics improve |
 | `(typed overload-candidate refresh fix)` | Member overload candidates invalidated by implicit-object class completion | -3.06% | -1.09% | -1.86% | aggregate from the preserved pre-Bimap typed-pack checkpoint: -0.25% instructions, -0.89% RSS, and -0.87% footprint | `/tmp/cppgm-boost-frontier-v2-bimap-candidate-refresh-fixed-perf.json`, `/tmp/cppgm-boost-frontier-v2-bimap-candidate-refresh-rolling-perf.json` | pass; the +0.28 instruction percentage-point movement from the preceding aggregate exceeds the documentation threshold but remains below the hotspot trigger; snapshot and liveness work is confined to member candidates on incomplete classes whose reference members have been collected |
+| `(visible value shadows function-id fix)` | Function parameter shadowing a namespace function during target-aware function-pointer resolution | -3.33% | -0.96% | -1.75% | -0.282% instructions, +0.127% RSS, and +0.119% footprint from the typed overload-candidate refresh checkpoint | `/tmp/cppgm-boost-frontier-v2-bind-function-shadow-fixed-perf.json` | pass; target-aware overload-set resolution now defers to the already retained visible value binding, fixed hardware work improves, and all rolling increases remain below the early-warning threshold |
 
 ## Suite Cursor
 
@@ -152,6 +154,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 9 | `libs/atomic/test` | pass | `(Atomic typed lowering fixes)` | The initial forced survey exposed an incomplete `__is_trivially_copyable` class trait, zero-initialized scoped-enum globals, and unsupported x86 GNU asm atomic operations; log `/tmp/boost-frontier-v2-suite-009-atomic-after-trait-enum.log`. Focused API, reference, IPC, and wait targets passed after the fixes. The final exact forced suite rebuilt all 90 requested targets and passed every positive and expected-failure test; log `/tmp/boost-frontier-v2-suite-009-atomic-final.log`. | GNU asm operand expressions are parsed from the original token range during the initial parse and retained as typed AST/CallSem nodes; lowering classifies only exact supported instruction templates and never reparses operand text. The final direct-LowIR report passes `3840/3840` with PA9 explicitly omitted. |
 | 10 | `libs/beast/test` | pass | `(inline nested-owner template-prefix fix)` | The final exact forced survey finds 7384 targets, updates all 447 requested targets, records 103 passing test actions with no failed actions or downstream skips, and exits successfully in 1228.8s; log `/tmp/boost-frontier-v2-suite-010-inline-nested-owner-final-full-forced-r2/libs__beast__test.log`. The previously failing `tcp_stream` and `basic_stream` objects both compile, link, run, and pass in that full run. | All independently observed Beast frontiers are closed on the final compiler. The final direct-LowIR report passes `3893/3893`, including PA37 object roundtrip `7/7`, with PA9 explicitly omitted as requested. |
 | 11 | `libs/bimap/test` | pass | `(typed overload-candidate refresh fix)` | The final exact eight-job forced survey finds 6965 targets, updates all 205 requested targets, and records 40 passing test outcomes, including all six deliberate compile failures as failed-as-expected. Xpressive compiles, links, runs, and passes inside that concurrent full graph; log `/tmp/boost-frontier-v2-suite-011-candidate-refresh-final-full-forced.log`. The preceding focused forced Xpressive replay also passes compile, link, and runtime; log `/tmp/boost-frontier-v2-suite-011-candidate-refresh-xpressive-forced.log`. | The earlier no-diagnostic Xpressive miss was a stale `FunctionBinding *` use after class completion, not an external memory-pressure kill. The PA22 liveness reducer deterministically records one refresh attempt and one successful typed reacquisition normally and with all semantic caches disabled; both emit byte-identical LowIR. The final PA9-excluded direct report passes `3898/3898`, including PA37 object roundtrip `7/7`; strict, placement, and all 23 text-reparse categories remain clean. |
+| 12 | `libs/bind/test` | frontier | `(visible value shadows function-id fix)` | The initial exact eight-job forced survey finds 1207 targets, updates 291 of 303 requested targets, records 73 passing test outcomes and the deliberate `arg_copy_fail` as failed-as-expected, then exits with four unexpected failures and eight downstream skips; log `/tmp/boost-frontier-v2-suite-012-initial-forced.log`. After the function-shadowing fix, the exact full forced replay updates 295 targets and records 75 passing test outcomes plus the expected compile failure. Both runtime targets pass; only `apply_rv_test` and `apply_rv_test2` fail compilation, with six downstream skips; log `/tmp/boost-frontier-v2-suite-012-function-shadow-full-forced.log`. | `bind_function_test` and `bind_and_or_test` were one latent baseline defect: target-aware function-id resolution ignored a visible function-parameter binding and lowered every dependent `f` reference as namespace function `@f`. The remaining ordered frontier is `apply_rv_test`, where the forwarded callable expression has type `F (*)()` and overload resolution rejects `f(std::forward<A>(a)...)` at `boost/bind/apply.hpp:23`. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
@@ -159,17 +162,23 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 ## Active Frontier
 
 - suite: `#12 libs/bind/test`
-- focused target: pending the initial forced survey
+- focused target: `libs/bind/test//apply_rv_test`
 - last closed suite: `#11 libs/bimap/test`
-- failure phase: intake pending
-- diagnostic: pending
-- reduced repro: pending
-- owning PA/cluster: pending
-- implementation area: pending
-- performance risk: preserve the current -3.06% fixed instruction delta and
-  the -0.25% aggregate instruction delta from the pre-Bimap typed-pack checkpoint
-- next action: run the exact forced Bind suite and take the first ordered causal
-  failure from that immutable survey
+- failure phase: compile, overload resolution
+- diagnostic: `no viable overload` at `boost/bind/apply.hpp:23:16` while
+  instantiating `boost::apply<int>::operator()` with `F=F (*)()` and
+  `A=[int&]`; the rejected expression is `f(std::forward<A>(a)...)`
+- reduced repro: pending exact baseline comparison and semantic reduction
+- owning PA/cluster: pending reduction; likely callable-result invocation and
+  forwarding-reference overload analysis
+- implementation area: semantic call analysis for a function pointer returning
+  a callable class object
+- performance risk: preserve the current -3.33% fixed instruction delta;
+  rolling deltas from the preceding checkpoint are -0.282% instructions,
+  +0.127% RSS, and +0.119% footprint
+- next action: compare both exact `apply_rv` sources against the immutable V2
+  baseline, inspect the historical V1 fix at `3e805a2e6`, and reduce the first
+  incorrect typed call-analysis decision before editing production code
 
 ## Fix Ledger
 
@@ -257,8 +266,35 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | `libs/bimap/test//xpressive` source-character deduction | Nested partial matching parsed `box<const T*>` to a typed pointer/cv graph, but `type_pattern_template_parameter` looked up only the graph's semantic payload (`T#0`). It therefore failed to deduce the nested parameter even though the existing typed lookup could recover the source identity `T`; the less-specialized `box<T*>` pattern alone remained viable. The helper now passes the retained `TypePtr` to the shared typed parameter-identity lookup, which checks canonical key, semantic payload, and source identity without rendering or parsing text. | `pa21/tests/spec/100-nested-cv-pointer-partial-specialization-ordering.t`, a header-free nested template-id ordering reducer at the PA21 class partial-specialization owner | Clang selects `box<const T*>`; the controlled pre-fix compiler selects `box<T*>` and emits a comparison against `1`. The Boost header reducer selected `stream_char_common<boost::iterator_range<Char*>>` with `Char=const char`, producing `src_char_t=void`; the fix selects the strictly more specialized const-pointer pattern and produces `src_char_t=char`. The remaining target-side `void` is independent. | Warning-clean Clang and GCC 15 compiles; focused PA21 check and direct report pass `233/233`; all configured strict PA18/19/21/22/23 direct-LowIR suites pass; PA21 placement/hygiene has zero findings; all 23 text-reparse categories remain zero and all 14 audit tests pass. Normal, all-cache-disabled, witness/cache-off, and trace/selection-cache-off LowIR are byte-identical with SHA-256 `4cf5916d88601180f714f2a34b0cde9226a369a703b5d4acf47d29050d578470`. The full direct report with PA9 excluded passes `3896/3896`, including PA37 object roundtrip `7/7`; PA9 was not run. The exact forced Xpressive replay reaches only the independent `widest_char<void, char>` target probe; log `/tmp/boost-frontier-v2-suite-011-xpressive-nested-cv-fix.log`. | instructions -3.46%; max RSS -1.46%; peak footprint -1.83%; pass; aggregate rolling deltas from the preserved pre-Bimap checkpoint are -0.39% instructions, -2.28% RSS, and -1.00% footprint; logs `/tmp/cppgm-boost-frontier-v2-nested-cv-fixed-perf.log` and `/tmp/cppgm-boost-frontier-v2-nested-cv-rolling-perf.log` | `(this commit)` |
 | fixed | `libs/bimap/test//xpressive` target-character deduction | Initial parsing retained both qualified `local::declval<...>` template-ids and the dependent `U&` type argument in the expression AST. When ordinary operator analysis correctly found the definition-time overload set inconclusive, the final `decltype` fallback consulted only unqualified placeholder/name flags; those flags cannot see a dependent type stored inside a qualified `TemplateIdSyntax`, so both trailing-return candidates were discarded before substitution. The final fallback now also consumes the already computed structured AST dependency result. After substitution that result becomes concrete, so the positive `int` probe resolves to `char` and the invalid control still fails by SFINAE. No source or semantic text is parsed, no rendered name or ABI path is involved, and no cache is added. | `pa22/tests/spec/300-qualified-declval-dependent-operator-probe.t`, a header-free positive/negative operator-probe reducer at the PA22 expression-SFINAE substitution owner | The controlled parent rejects the positive assertion by producing `void`; Clang 22 and GCC 15 accept both assertions. Targeted temporary tracing showed `structured=yes` with every legacy spelling/name dependency flag false at definition time, then `structured=no` after concrete substitution. The exact Boost reducer reaches the same qualified `declval` operator shape. | Warning-clean Clang and GCC 15 compiles; PA22 direct report passes `266/266`; all configured strict PA18/19/21/22/23 direct-LowIR suites pass; PA22 placement/hygiene has zero findings; all 23 text-reparse categories remain zero and all 14 audit tests pass. Normal, all-cache-disabled, witness/cache-off, and trace/selection-cache-off LowIR are byte-identical with SHA-256 `485fc8e3251fe7b25d56cc0db4e5cc73da7486c3984948de64f662839846898f`. The full direct report with PA9 excluded passes `3897/3897`, including PA37 object roundtrip `7/7`; PA9 was not run. The full forced Bimap graph passes all other 39 test actions and six expected compile failures; single-job forced Xpressive passes compile, link, and runtime, and the final full continuation exits successfully. | instructions -3.52%; max RSS -1.09%; peak footprint -1.83%; pass; aggregate rolling deltas from the preserved pre-Bimap checkpoint are -0.53% instructions, -1.54% RSS, and -0.87% footprint; reports `/tmp/cppgm-boost-frontier-v2-qualified-declval-fixed-perf.json` and `/tmp/cppgm-boost-frontier-v2-qualified-declval-rolling-perf.json` | `(this commit)` |
 | fixed | `libs/bimap/test//xpressive` overload-candidate lifetime under class completion | Member lookup collected raw `FunctionBinding *` candidates from an incomplete `lexical_stream` specialization whose reference members had been collected. The implicit-object inheritance conversion for an early candidate completed the class, reset its instantiated metadata, and discarded every reference-only member binding. The old loop then dereferenced the stale later candidate before its current-candidate-only refresh could run. At-risk candidates now snapshot typed owner, canonical member name, function type, ref qualifier, source-template declaration identity, and template-instantiation key; every later dereference first checks the live-binding set and reacquires only an exactly matching binding through the existing typed lookup path. Candidate indices remain stable through viability filtering, deduplication, diagnostics, selection, and conversion rematerialization. No parse, source scan, text, cache, symbol, ABI, or witness path is involved. | `pa22/tests/spec/300-member-overload-set-survives-class-completion.t`, a header-free two-overload trailing-return SFINAE reducer at the PA22 complete overload/substitution owner | LLDB allocation history traced invalidation through `try_apply_inheritance_conversion_impl` -> `complete_class_type` -> `reset_instantiated_class_info` -> `discard_class_function_bindings` -> `discard_function_binding`. The release compiler's authoritative live-binding check deterministically observes candidate index 1 as stale and reacquires it. Normal and all-ten-cache-disabled runs each report `overload-candidate-refresh-attempts=1` and `overload-candidate-refresh-successes=1`, and their LowIR is byte-identical with SHA-256 `485fc8e3251fe7b25d56cc0db4e5cc73da7486c3984948de64f662839846898f`. | Warning-clean repository build and changed translation units under Clang and GCC 15; focused regression and PA22 direct report pass `267/267`; all configured strict direct-LowIR suites pass; PA22 placement/hygiene has zero findings; all 23 text-reparse categories remain zero and all 14 audit tests pass. The PA9-excluded broad direct report passes `3898/3898`, including PA37 object roundtrip `7/7`. Forced focused Xpressive and the final full eight-job Bimap graph both pass compile, link, and runtime; the full graph updates 205 targets with no unexpected failure or skip. | instructions -3.06%; max RSS -1.09%; peak footprint -1.86%; pass; aggregate rolling deltas from the preserved pre-Bimap checkpoint are -0.25% instructions, -0.89% RSS, and -0.87% footprint; the +0.28 instruction percentage-point movement from the preceding aggregate is documented and remains below the hotspot trigger; reports `/tmp/cppgm-boost-frontier-v2-bimap-candidate-refresh-fixed-perf.json` and `/tmp/cppgm-boost-frontier-v2-bimap-candidate-refresh-rolling-perf.json` | `(this commit)` |
+| fixed | `libs/bind/test//bind_function_test` and `//bind_and_or_test` free-function target identity | Target-aware function-pointer resolution treated an unqualified id-expression as a namespace function overload set even when ordinary lookup had a visible value binding for a same-named function parameter. In Boost.Bind's `bind(F f, A1)` body, every dependent use of parameter `f` was therefore lowered as `addr @f`; passing namespace function `g` still constructed a binder for `f`. `resolve_function_id_for_target` now first uses the existing structured, visibility-aware value lookup and declines overload-set resolution when a value shadows the function name. Generic expression analysis then consumes the retained parameter binding. No source parsing, text lookup, cache, ABI, or symbol policy is added. | `pa18/tests/spec/100-function-parameter-shadows-function-pointer-target.t`, a header-free runtime reducer at the earliest class-template/function-pointer lowering owner | Clang accepts the reducer. The immutable `db9879223` V2 baseline and the pre-fix frontier both reject it at runtime and emit `addr @f` for `preserve_target(g)`; the fixed compiler loads the `%f` parameter and returns `g`. The same baseline reproduces all three direct `bind_function_test` runtime assertions, proving a latent baseline gap rather than a V2 regression. | Warning-clean compiler build; focused PA18 LowIR and witness checks pass; PA18 direct report passes `231/231`; all configured strict PA18/19/21/22/23 suites pass; placement/hygiene has zero findings; all 23 text-reparse categories remain zero. Direct exact `bind_function_test` and `bind_and_or_test` pass, as does their focused forced B2 replay. The exact full eight-job Bind graph records 75 passing test actions and the expected compile failure, leaving only the two independent `apply_rv` compile failures. | instructions -3.33%; max RSS -0.96%; peak footprint -1.75%; pass; rolling deltas from the preceding candidate-refresh checkpoint are -0.282% instructions, +0.127% RSS, and +0.119% footprint; report `/tmp/cppgm-boost-frontier-v2-bind-function-shadow-fixed-perf.json` | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-17`: Cleared Bind's two runtime failures and advanced the ordered
+  cursor to `apply_rv_test`. Both the current frontier and immutable V2 baseline
+  lowered the parameter reference in `template<class F> bind(F f, ...)` as the
+  same-named namespace function `@f`, so `bind(g, 1)` retained `f`. The
+  target-aware function-id resolver now defers when the existing structured
+  lookup finds a visible value binding, allowing ordinary typed expression
+  analysis to load the function parameter. The PA18 reducer fails on the
+  baseline and passes with the fix; Clang agrees. PA18 direct, strict, witness,
+  placement, and all 23 zero-reparse gates pass. Fixed performance is -3.33%
+  instructions, -0.96% RSS, and -1.75% footprint; every rolling increase is
+  below the early-warning threshold. Both runtime targets pass directly and in
+  focused B2, and the full forced graph now records 75 passing actions, one
+  expected compile failure, two independent compile failures, and six skips.
+  PA9 was not run.
+
+- `2026-07-17`: Opened Bind from the exact forced V2 survey at commit
+  `9e8630d5a`. The graph updates 291 targets and records 73 passing test actions,
+  one expected compile failure, four unexpected failures, and eight downstream
+  skips. The ordered frontier is `bind_function_test`: a wrapper constructed
+  from `bind(f, 1)` compares equal to `bind(g, 1)`, and after assignment from
+  `bind(g, 1)` it still calls `f`. All eight `bind_and_or_test` misses likewise
+  require `g` to differ from `f`. Two later `apply_rv` targets independently
+  fail overload resolution in `boost/bind/apply.hpp:23`. A direct templated
+  function-pointer holder passes and is retained as a control, so reduction and
+  first-bad-commit isolation precede any compiler change. PA9 was not run.
 
 - `2026-07-17`: Closed Bimap and advanced the V2 cursor to Bind after correcting
   the last Xpressive failure classification. The earlier eight-job child miss
@@ -1122,7 +1158,7 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  JOBS=8 \
-  /usr/local/bin/timeout 1800 \
-  ./run-cppgm-b2.sh -a libs/bind/test
+  JOBS=1 \
+  /usr/local/bin/timeout 600 \
+  ./run-cppgm-b2.sh -a libs/bind/test//apply_rv_test
 ```

@@ -8776,6 +8776,11 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
                                     const CppAstNode * name_node,
                                     bool require_output_definition)
 {
+  if(name_node &&
+     lookup_id_expression_value_binding_for_call(ctx, scope, *name_node)) {
+    return false;
+  }
+
   TypePtr function_target = target_function_type(target);
   if(!function_target) {
     return false;
