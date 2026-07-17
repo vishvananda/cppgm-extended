@@ -1791,17 +1791,187 @@ Scope * lookup_namespace_from_using_directives_in_scope(Scope & scope,
   return ambiguous ? nullptr : value;
 }
 
+Scope * using_directive_injection_scope(Scope & origin_scope,
+                                        Scope & target_scope)
+{
+  for(Scope * current = &origin_scope; current; current = current->parent) {
+    if(!current->namespace_scope) {
+      continue;
+    }
+    for(Scope * target = &target_scope; target; target = target->parent) {
+      if(target == current) {
+        return current;
+      }
+    }
+  }
+  return &origin_scope;
+}
+
+template<typename Visitor>
+void visit_using_directives_at_injection_scope(
+    Scope & origin_scope,
+    Scope & current_scope,
+    Scope & lookup_scope,
+    set<const Scope *> & visited,
+    const Visitor & visitor)
+{
+  if(!visited.insert(&current_scope).second) {
+    return;
+  }
+  for(size_t i = 0; i < current_scope.using_directives.size(); ++i) {
+    Scope & imported = *current_scope.using_directives[i];
+    if(using_directive_injection_scope(origin_scope, imported) == &lookup_scope) {
+      visitor(imported);
+    }
+    visit_using_directives_at_injection_scope(origin_scope,
+                                              imported,
+                                              lookup_scope,
+                                              visited,
+                                              visitor);
+  }
+}
+
+struct InjectedNamespaceLookup
+{
+  Scope * scope = nullptr;
+  bool ambiguous = false;
+};
+
+InjectedNamespaceLookup lookup_injected_namespace(
+    Scope & origin_scope,
+    Scope & lookup_scope,
+    const string & name)
+{
+  InjectedNamespaceLookup result;
+  for(Scope * origin = &origin_scope; origin; origin = origin->parent) {
+    if(origin->using_directives.empty()) {
+      if(origin == &lookup_scope) {
+        break;
+      }
+      continue;
+    }
+    set<const Scope *> visited;
+    visit_using_directives_at_injection_scope(
+        *origin,
+        *origin,
+        lookup_scope,
+        visited,
+        [&](Scope & imported)
+        {
+          Scope * candidate = resolve_direct_namespace(imported, name);
+          if(!candidate) {
+            return;
+          }
+          if(result.scope && result.scope != candidate) {
+            result.ambiguous = true;
+            return;
+          }
+          result.scope = candidate;
+        });
+    if(result.ambiguous) {
+      return result;
+    }
+    if(origin == &lookup_scope) {
+      break;
+    }
+  }
+  return result;
+}
+
 Scope * lookup_namespace_from_scope(Scope & scope, const string & name)
 {
+  bool using_directives_seen = false;
   for(Scope * current = &scope; current; current = current->parent) {
-    if(Scope * direct = resolve_direct_namespace(*current, name)) {
+    using_directives_seen =
+        using_directives_seen || !current->using_directives.empty();
+    Scope * direct = resolve_direct_namespace(*current, name);
+    if(direct && (!current->namespace_scope || !using_directives_seen)) {
       return direct;
     }
-    if(Scope * imported = lookup_namespace_from_using_directives_in_scope(*current, name)) {
-      return imported;
+    if(current->namespace_scope && using_directives_seen) {
+      const InjectedNamespaceLookup imported =
+          lookup_injected_namespace(scope, *current, name);
+      if(imported.ambiguous) {
+        return nullptr;
+      }
+      if(direct && imported.scope && direct != imported.scope) {
+        return nullptr;
+      }
+      if(direct) {
+        return direct;
+      }
+      if(imported.scope) {
+        return imported.scope;
+      }
     }
   }
   return nullptr;
+}
+
+struct InjectedQualifierLookup
+{
+  Scope * namespace_scope = nullptr;
+  TypePtr type;
+  bool ambiguous = false;
+};
+
+InjectedQualifierLookup lookup_injected_qualifier(
+    SemanticContext & ctx,
+    Scope & lookup_scope,
+    Scope & origin_scope,
+    Scope & injection_scope,
+    const string & name)
+{
+  InjectedQualifierLookup result;
+  for(Scope * origin = &origin_scope; origin; origin = origin->parent) {
+    if(origin->using_directives.empty()) {
+      if(origin == &injection_scope) {
+        break;
+      }
+      continue;
+    }
+    set<const Scope *> visited;
+    visit_using_directives_at_injection_scope(
+        *origin,
+        *origin,
+        injection_scope,
+        visited,
+        [&](Scope & imported)
+        {
+          Scope * namespace_candidate = resolve_direct_namespace(imported, name);
+          TypePtr type_candidate =
+              resolve_direct_type_qualifier_impl(ctx,
+                                                 imported,
+                                                 lookup_scope,
+                                                 name,
+                                                 nullptr,
+                                                 nullptr);
+          if(namespace_candidate) {
+            if((result.namespace_scope &&
+                result.namespace_scope != namespace_candidate) ||
+               result.type) {
+              result.ambiguous = true;
+              return;
+            }
+            result.namespace_scope = namespace_candidate;
+          }
+          if(type_candidate) {
+            if(result.namespace_scope ||
+               (result.type && !type_equals(result.type, type_candidate))) {
+              result.ambiguous = true;
+              return;
+            }
+            result.type = type_candidate;
+          }
+        });
+    if(result.ambiguous) {
+      return result;
+    }
+    if(origin == &injection_scope) {
+      break;
+    }
+  }
+  return result;
 }
 
 Scope * lookup_namespace_member_in_qualified_scope(Scope & scope,
@@ -2000,8 +2170,13 @@ Scope * resolve_type_qualifier_scope(SemanticContext & ctx,
                                      const string & name,
                                      bool allow_dependent_class_qualifiers)
 {
+  bool using_directives_seen = false;
   for(Scope * current = &scope; current; current = current->parent) {
-    if(Scope * direct_namespace = resolve_direct_namespace(*current, name)) {
+    using_directives_seen =
+        using_directives_seen || !current->using_directives.empty();
+    Scope * direct_namespace = resolve_direct_namespace(*current, name);
+    if(direct_namespace &&
+       (!current->namespace_scope || !using_directives_seen)) {
       return direct_namespace;
     }
 
@@ -2011,25 +2186,71 @@ Scope * resolve_type_qualifier_scope(SemanticContext & ctx,
       const template_api::ScopedTemplateWitnessSourceCapturePause
           source_capture_pause;
       direct_type =
-          resolve_type_qualifier_in_qualified_scope(ctx, *current, lookup_scope, name);
+          resolve_direct_type_qualifier_impl(ctx,
+                                             *current,
+                                             lookup_scope,
+                                             name,
+                                             nullptr,
+                                             nullptr);
     }
-    Scope * type_scope =
-        scope_for_resolved_type_qualifier(ctx,
-                                          scope,
-                                          lookup_scope,
-                                          name,
-                                          direct_type,
-                                          allow_dependent_class_qualifiers,
-                                          "defer-dependent-qualifier",
-                                          "resolve-qualifier-scope",
-                                          deferred);
-    if(type_scope || deferred) {
-      return type_scope;
+    Scope * type_scope = nullptr;
+    if(!current->namespace_scope || !using_directives_seen) {
+      type_scope =
+          scope_for_resolved_type_qualifier(ctx,
+                                            scope,
+                                            lookup_scope,
+                                            name,
+                                            direct_type,
+                                            allow_dependent_class_qualifiers,
+                                            "defer-dependent-qualifier",
+                                            "resolve-qualifier-scope",
+                                            deferred);
+      if(type_scope || deferred) {
+        return type_scope;
+      }
     }
 
-    if(Scope * imported_namespace =
-           lookup_namespace_from_using_directives_in_scope(*current, name)) {
-      return imported_namespace;
+    if(current->namespace_scope && using_directives_seen) {
+      InjectedQualifierLookup imported;
+      {
+        const template_api::ScopedTemplateWitnessSourceCapturePause
+            source_capture_pause;
+        imported = lookup_injected_qualifier(ctx,
+                                             lookup_scope,
+                                             scope,
+                                             *current,
+                                             name);
+      }
+      if(imported.ambiguous) {
+        return nullptr;
+      }
+      if((direct_namespace && imported.type) ||
+         (direct_type && imported.namespace_scope) ||
+         (direct_namespace && imported.namespace_scope &&
+          direct_namespace != imported.namespace_scope) ||
+         (direct_type && imported.type &&
+          !type_equals(direct_type, imported.type))) {
+        return nullptr;
+      }
+      if(direct_namespace) {
+        return direct_namespace;
+      }
+      if(imported.namespace_scope) {
+        return imported.namespace_scope;
+      }
+      type_scope =
+          scope_for_resolved_type_qualifier(ctx,
+                                            scope,
+                                            lookup_scope,
+                                            name,
+                                            direct_type ? direct_type : imported.type,
+                                            allow_dependent_class_qualifiers,
+                                            "defer-dependent-qualifier",
+                                            "resolve-qualifier-scope",
+                                            deferred);
+      if(type_scope || deferred) {
+        return type_scope;
+      }
     }
   }
 
