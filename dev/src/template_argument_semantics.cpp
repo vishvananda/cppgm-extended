@@ -13704,6 +13704,27 @@ bool build_pack_element_substitution_arguments(
   return true;
 }
 
+bool substitute_type_with_pack_element_arguments(
+    const TypePtr & type,
+    const vector<TemplateParameterInfo> & parameters,
+    const vector<TemplateArgument> & element_arguments,
+    Scope * scope,
+    TypePtr & out)
+{
+  // The pack element has already been selected into one argument slot per
+  // parameter.  Do not reapply the enclosing scope's aggregate pack size while
+  // substituting that scalar view.
+  vector<TemplateParameterInfo> element_parameters = parameters;
+  for(size_t i = 0; i < element_parameters.size(); ++i) {
+    element_parameters[i].parameter_pack = false;
+  }
+  return substitute_type_impl(type,
+                              element_parameters,
+                              element_arguments,
+                              scope,
+                              out);
+}
+
 void collect_bound_pack_size_replacements_in_scope(
     Scope * scope,
     map<string, size_t> & out)
@@ -16137,11 +16158,30 @@ bool expand_dependent_argument_syntax_pack(
                                                            value_replacements,
                                                            template_replacements,
                                                            expanded.syntax);
-    expanded.syntax.pack_expansion = false;
-    expanded.syntax.dependent =
-        argument_live_syntax_mentions_any_substitution_parameter(expanded.syntax,
-                                                                parameters);
-    expanded.syntax.resolved_type.reset();
+    const bool source_is_type_argument =
+        source_argument.type &&
+        !source_argument.has_non_type_value &&
+        !source_argument.dependent_value &&
+        !source_argument.syntax.expression;
+    if(source_is_type_argument) {
+      TypePtr substituted_type;
+      if(!substitute_type_with_pack_element_arguments(source_argument.type,
+                                                       parameters,
+                                                       element_arguments,
+                                                       scope,
+                                                       substituted_type) ||
+         !substituted_type) {
+        return false;
+      }
+      update_dependent_argument_with_type(expanded, substituted_type);
+    } else {
+      expanded.syntax.pack_expansion = false;
+      expanded.syntax.dependent =
+          argument_live_syntax_mentions_any_substitution_parameter(
+              expanded.syntax,
+              parameters);
+      expanded.syntax.resolved_type.reset();
+    }
     const string structured_text = current_structured_argument_text(expanded.syntax);
     if(!structured_text.empty()) {
       expanded.text = structured_text;
