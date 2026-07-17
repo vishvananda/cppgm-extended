@@ -2481,7 +2481,11 @@ inline bool emit_type_body(const Type & type, std::string & out, SubstitutionSin
       return false;
     }
     if(!type.lambda->source_name.empty()) {
-      if(!emit_source_name(type.lambda->source_name, out)) {
+      if(is_unnamed_local_type_source_name(type.lambda->source_name)) {
+        out += "Ut";
+        out += type.lambda->discriminator;
+        out += '_';
+      } else if(!emit_source_name(type.lambda->source_name, out)) {
         return false;
       }
     } else {
@@ -2680,7 +2684,11 @@ inline bool emit_type_body_owned(Type & type, std::string & out, SubstitutionSin
       return false;
     }
     if(!type.lambda->source_name.empty()) {
-      if(!emit_source_name(type.lambda->source_name, out)) {
+      if(is_unnamed_local_type_source_name(type.lambda->source_name)) {
+        out += "Ut";
+        out += type.lambda->discriminator;
+        out += '_';
+      } else if(!emit_source_name(type.lambda->source_name, out)) {
         return false;
       }
     } else {
@@ -3973,7 +3981,11 @@ inline bool emit_function_name(const FunctionEncoding & function,
          !emit_source_name_sequence(lambda.namespace_qualifiers, out)) {
         return false;
       }
-      if(!emit_source_name(lambda.source_name, out)) {
+      if(is_unnamed_local_type_source_name(lambda.source_name)) {
+        out += "Ut";
+        out += lambda.discriminator;
+        out += '_';
+      } else if(!emit_source_name(lambda.source_name, out)) {
         return false;
       }
     } else {

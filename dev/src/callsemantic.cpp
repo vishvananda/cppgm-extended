@@ -6061,10 +6061,23 @@ private:
                                         class_kind,
                                         name,
                                         class_node);
+    const bool unnamed_function_local_class =
+        info &&
+        (info->source_is_unnamed_class ||
+         name.rfind("__local_type", 0) == 0) &&
+        current_function_scope(scope);
     if(info &&
-       info->source_is_named_function_local_class &&
-       !info->is_lambda_closure) {
-      assign_local_class_itanium_metadata(*info, scope, name);
+       !info->is_lambda_closure &&
+       info->type &&
+       (info->source_is_named_function_local_class ||
+        unnamed_function_local_class) &&
+       !info->type->named_lambda_mangle()) {
+      assign_local_class_itanium_metadata(
+          *info,
+          scope,
+          unnamed_function_local_class ?
+              abi_mangle::unnamed_local_type_source_name() :
+              name);
     }
     return info;
   }
@@ -29526,6 +29539,14 @@ private:
     return out.str();
   }
 
+  string unnamed_local_type_count_key(const FunctionBinding & current) const
+  {
+    ostringstream out;
+    out << "function@" << static_cast<const void *>(&current);
+    out << "|unnamed-local-type";
+    return out.str();
+  }
+
   string namespace_lambda_source_name_count_key(Scope & scope) const
   {
     const Scope * owner = &scope;
@@ -29704,6 +29725,12 @@ private:
         symbol_linkage::make_lambda_context_function_symbol_options(
             context_options);
     metadata->local_source_name = source_name;
+    if(abi_mangle::is_unnamed_local_type_source_name(source_name)) {
+      size_t & count =
+          lambda_itanium_signature_counts[unnamed_local_type_count_key(*current)];
+      metadata->discriminator = count > 0 ? to_string(count - 1) : string();
+      ++count;
+    }
     info.type->set_named_lambda_mangle(metadata);
   }
 

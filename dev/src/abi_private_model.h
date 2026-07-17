@@ -1597,6 +1597,16 @@ struct AbiFactFile
 
 }  // namespace model
 
+inline const char * unnamed_local_type_source_name()
+{
+  return "__cppgm_unnamed_local_type";
+}
+
+inline bool is_unnamed_local_type_source_name(const std::string & name)
+{
+  return name == unnamed_local_type_source_name();
+}
+
 using model::SubstitutionKey;
 using model::SubstitutionSlot;
 using model::OptionalSubstitutionKey;

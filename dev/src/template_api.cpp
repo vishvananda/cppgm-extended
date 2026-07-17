@@ -2188,9 +2188,16 @@ void apply_function_template_symbol_options(
      owner_class->type) {
     options.lambda_closure_type = owner_class->type;
   }
+  const bool function_local_owner =
+      owner_class &&
+      (owner_class->source_is_named_function_local_class ||
+       owner_class->source_is_unnamed_class ||
+       owner_class->name.rfind("__local_type", 0) == 0);
   if(owner_class &&
-     owner_class->source_is_named_function_local_class &&
-     owner_class->type) {
+     !owner_class->is_lambda_closure &&
+     owner_class->type &&
+     function_local_owner &&
+     owner_class->type->named_lambda_mangle()) {
     options.local_class_type = owner_class->type;
   }
   const std::vector<template_model::TemplateParameterInfo> *

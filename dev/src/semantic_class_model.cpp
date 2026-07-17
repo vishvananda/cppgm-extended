@@ -6803,7 +6803,9 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.type->named_alignment = 1;
   info.type->named_size = 0;
   info.type->named_is_empty = false;
-  if(was_lambda_closure || info.source_is_named_function_local_class) {
+  if(was_lambda_closure ||
+     info.source_is_named_function_local_class ||
+     lambda_mangle) {
     info.type->set_named_lambda_mangle(lambda_mangle);
   } else {
     info.type->set_named_lambda_mangle(
