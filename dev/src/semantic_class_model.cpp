@@ -6983,6 +6983,17 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
   info.out_of_class_static_member_definitions_applied = false;
 }
 
+void invalidate_forward_class_reference_members(
+    SemanticContext & ctx,
+    ClassInfo & info)
+{
+  if(!info.reference_members_collected || info.complete) {
+    return;
+  }
+  ctx.discard_class_function_bindings_for_reset(info);
+  reset_reference_member_state_for_full_collection(info);
+}
+
 void finalize_class_virtuals(SemanticContext & ctx, ClassInfo & info)
 {
   ClassInfo * primary_base = primary_polymorphic_base(info);

@@ -5965,6 +5965,9 @@ bool member_function_template_decl_equivalent(FunctionTemplateDecl * lhs,
   if(!lhs_owner || !rhs_owner || lhs_owner->name != rhs_owner->name) {
     return false;
   }
+  if(lhs_owner->class_node && lhs_owner->class_node == rhs_owner->class_node) {
+    return true;
+  }
   return lhs_owner->source_template &&
          lhs_owner->source_template == rhs_owner->source_template;
 }

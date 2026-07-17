@@ -269,6 +269,12 @@ TemplateInstantiationResult finalize_nested_member_class_instantiation(
     SemanticContext & ctx,
     const TemplateNestedMemberClassFinalizationRequest & request);
 
+bool prepare_nested_member_class_reference_from_owner_definition(
+    SemanticContext & ctx,
+    semantic_model::ClassInfo * nested,
+    std::size_t incoming_template_parameter_count,
+    std::size_t & owner_template_parameter_count);
+
 TemplateNestedMemberClassCompletionResult complete_nested_member_class_from_owner_definition(
     SemanticContext & ctx,
     const TemplateNestedMemberClassCompletionRequest & request);

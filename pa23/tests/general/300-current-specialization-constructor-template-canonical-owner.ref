@@ -36,10 +36,10 @@ function @duration_like_int___cast(%other : ptr [pass=reference]) -> obj<4x4> [b
     store ptr %other, $other
     %t1 = addr $retobj__1
     %t2 = load ptr $other
-    call void @duration_like_int___duration_like__ov4(%t1, %t2)
+    call void @duration_like_int___duration_like__ov3(%t1, %t2)
     return obj<4x4> $retobj__1
 }
-function @duration_like_int___duration_like__ov4(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IxvEERKS_IT_E] {
+function @duration_like_int___duration_like__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IxvEERKS_IT_E] {
   slot $this : ptr
   slot $other : ptr
 
@@ -56,4 +56,4 @@ function @duration_like_int___duration_like__ov4(%this : ptr, %other : ptr [pass
     return void
 }
 alias object _ZN13duration_likeIxEC2IxEET_ = @duration_like_long_long_int___duration_like__ov3
-alias object _ZN13duration_likeIiEC2IxvEERKS_IT_E = @duration_like_int___duration_like__ov4
+alias object _ZN13duration_likeIiEC2IxvEERKS_IT_E = @duration_like_int___duration_like__ov3

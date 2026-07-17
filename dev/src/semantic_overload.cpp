@@ -10186,6 +10186,13 @@ void append_constructor_template_candidates(
     if(!constructor_templates[i]) {
       continue;
     }
+    if(constructor_templates[i]->is_explicit && !options.allow_explicit) {
+      append_template_function_candidate_drop(ctx,
+                                              constructor_templates[i],
+                                              "explicit_constructor_not_allowed",
+                                              &source_drops);
+      continue;
+    }
     if(options.initializer_list_only &&
        !constructor_template_pattern_is_initializer_list_candidate(
            ctx, *constructor_templates[i])) {
@@ -10342,6 +10349,13 @@ void append_constructor_template_node_candidates(
       continue;
     }
     if(!constructor_template) {
+      continue;
+    }
+    if(constructor_template->is_explicit && !options.allow_explicit) {
+      append_template_function_candidate_drop(ctx,
+                                              constructor_template,
+                                              "explicit_constructor_not_allowed",
+                                              &source_drops);
       continue;
     }
     if(options.initializer_list_only &&

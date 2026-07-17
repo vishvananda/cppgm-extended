@@ -26671,12 +26671,22 @@ private:
     if(!info) {
       return nullptr;
     }
+    size_t prepared_nested_owner_prefix_count = 0;
+    const bool prepared_nested_owner =
+        template_api::prepare_nested_member_class_reference_from_owner_definition(
+            *this,
+            info,
+            template_parameters.size(),
+            prepared_nested_owner_prefix_count);
     vector<FunctionTemplateDecl *> templates =
         lookup_direct_function_templates(*info->member_scope, qualified.name);
     for(size_t i = 0; i < templates.size(); ++i) {
       FunctionTemplateDecl * decl = templates[i];
       const size_t owner_template_prefix_count =
-          out_of_class_owner_template_prefix_count(*info, template_parameters);
+          prepared_nested_owner ?
+              prepared_nested_owner_prefix_count :
+              out_of_class_owner_template_prefix_count(*info,
+                                                        template_parameters);
       const bool template_parameters_include_owner_prefix =
           owner_template_prefix_count != 0;
       Scope & decl_scope = decl->pattern_scope ? *decl->pattern_scope : scope;

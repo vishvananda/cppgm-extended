@@ -145,6 +145,9 @@ cpp_decl::TypePtr resolve_instantiated_member_alias_type(
 void reset_instantiated_class_info(semantic_model::ClassInfo & info,
                                    const std::string & template_name,
                                    const CppAstNode * output_node);
+void invalidate_forward_class_reference_members(
+    SemanticContext & ctx,
+    semantic_model::ClassInfo & info);
 
 void finalize_class_virtuals(SemanticContext & ctx,
                              semantic_model::ClassInfo & info);

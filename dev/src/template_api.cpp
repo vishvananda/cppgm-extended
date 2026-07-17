@@ -14,6 +14,7 @@
 #include "template_specialization.h"
 #include "template_scope.h"
 #include "semantic_hotspot.h"
+#include "semantic_class_model.h"
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
 #include "semantic_trace.h"
@@ -6151,6 +6152,52 @@ TemplateInstantiationResult finalize_nested_member_class_instantiation(
       request.emit_track_instantiation);
   result.class_finalized = request.nested_info->complete && !was_complete;
   return result;
+}
+
+bool prepare_nested_member_class_reference_from_owner_definition(
+    SemanticContext & ctx,
+    semantic_model::ClassInfo * nested,
+    std::size_t incoming_template_parameter_count,
+    std::size_t & owner_template_parameter_count)
+{
+  owner_template_parameter_count = 0;
+  if(!(nested &&
+       !nested->source_template &&
+       nested->enclosing_scope &&
+       nested->enclosing_scope->class_info &&
+       nested->enclosing_scope->class_info->source_template)) {
+    return false;
+  }
+
+  semantic_model::ClassInfo * owner = nested->enclosing_scope->class_info;
+  semantic_model::ClassTemplateDecl * owner_template = owner->source_template;
+  std::map<std::string, semantic_model::OutOfClassMemberClassDecl>::const_iterator
+      member_def = owner_template->member_class_definitions.find(nested->name);
+  if(member_def == owner_template->member_class_definitions.end() ||
+     !member_def->second.class_node ||
+     member_def->second.class_node->kind == CppAstKind::class_forward_declaration ||
+     incoming_template_parameter_count <= member_def->second.parameters.size()) {
+    return false;
+  }
+  owner_template_parameter_count = member_def->second.parameters.size();
+
+  if(!nested->class_node ||
+     nested->class_node->kind == CppAstKind::class_forward_declaration) {
+    semantic_class_model::invalidate_forward_class_reference_members(ctx, *nested);
+    nested->class_node = member_def->second.class_node;
+    nested->is_final = member_def->second.class_node->is_final_specifier;
+  }
+  if(nested->member_scope && owner->has_instantiation_binding_arguments) {
+    template_api::binding::bind_template_arguments_into_scope(
+        ctx,
+        *nested->member_scope,
+        member_def->second.parameters,
+        owner->instantiation_binding_arguments);
+  }
+  if(!nested->complete) {
+    ctx.ensure_class_reference_members(*nested);
+  }
+  return true;
 }
 
 TemplateNestedMemberClassCompletionResult complete_nested_member_class_from_owner_definition(
