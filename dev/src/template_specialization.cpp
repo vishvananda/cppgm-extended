@@ -532,7 +532,7 @@ const TemplateParameterInfo * type_pattern_template_parameter(
     return nullptr;
   }
   const TemplateParameterInfo * parameter =
-      find_template_parameter(parameters, base->named_semantic_payload);
+      find_template_parameter(parameters, base);
   return parameter && parameter->kind == TemplateParameterInfo::TP_TYPE ?
              parameter :
              nullptr;
