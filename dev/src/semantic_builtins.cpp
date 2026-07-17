@@ -2457,7 +2457,7 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
       return false;
     }
     FunctionBinding * ctor = ctx.select_default_constructor_for_builtin_trait(scope, *info);
-    if(!ctor) {
+    if(!ctor || ctor->is_deleted) {
       out = 0;
       return true;
     }

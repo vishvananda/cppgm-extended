@@ -4636,6 +4636,32 @@ bool implicit_default_constructor_is_deleted(SemanticContext & ctx,
   return implicit_default_constructor_is_deleted_impl(ctx, info, visiting);
 }
 
+void refresh_defaulted_default_constructor_state(SemanticContext & ctx,
+                                                  ClassInfo & info)
+{
+  if(!info.complete) {
+    return;
+  }
+  const std::string ctor_name = constructor_member_name_for_class(ctx, info);
+  std::map<std::string, std::vector<FunctionBinding *> >::iterator methods =
+      info.methods.find(ctor_name);
+  if(methods == info.methods.end()) {
+    return;
+  }
+  for(size_t i = 0; i < methods->second.size(); ++i) {
+    FunctionBinding * binding = methods->second[i];
+    if(!binding ||
+       !binding->is_constructor ||
+       !binding->is_defaulted ||
+       binding->synthesized ||
+       binding->params.size() != 1) {
+      continue;
+    }
+    binding->is_deleted = implicit_default_constructor_is_deleted(ctx, info);
+    binding->has_definition = !binding->is_deleted;
+  }
+}
+
 bool is_same_class_reference_parameter(const TypePtr & class_type,
                                        const TypePtr & param_type,
                                        Type::Kind ref_kind)
@@ -11401,6 +11427,7 @@ void ensure_implicit_special_members(SemanticContext & ctx,
     semantic_hotspot::note_semantic_query("ensure_implicit_special_members", query.str());
   }
   if(info.implicit_special_members_ensured) {
+    refresh_defaulted_default_constructor_state(ctx, info);
     refresh_defaulted_copy_assignment_state(ctx, info);
     refresh_defaulted_move_assignment_state(ctx, info);
     return;
@@ -11466,6 +11493,8 @@ void ensure_implicit_special_members(SemanticContext & ctx,
       ctor->has_definition = !ctor->is_deleted;
     }
   }
+
+  refresh_defaulted_default_constructor_state(ctx, info);
 
   const std::string dtor_name = destructor_member_name_for_class(ctx, info);
   if(info.methods.find(dtor_name) == info.methods.end()) {
