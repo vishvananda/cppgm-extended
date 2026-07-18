@@ -52,12 +52,27 @@ suite evidence and performance measurements.
 
 | Commit | Baseline file | Instructions | Max RSS | Peak footprint | Wall time | Status |
 |---|---|---:|---:|---:|---:|---|
-| `db9879223` | `/tmp/cppgm-boost-frontier-v2-db9879223-baseline.json` | 271,651,249,439 | 1,293,901,824 B | 1,024,110,592 B | 60.43s | recorded, immutable |
+| `db9879223` | `/tmp/cppgm-boost-frontier-v2-db9879223-baseline.json` | 271,651,249,439 | 1,293,901,824 B | 1,024,110,592 B | 60.43s | recorded, immutable; legacy live-project-header epoch through suite 21 |
+
+## Performance Workload Epochs
+
+The original gate froze `semantic_overload.cpp` but selected live `dev/src`
+headers. That made its source stable while allowing the project-header workload
+to drift. Those results remain valid within their original epoch, including the
+Config candidate/parent comparison, but must not be compared with the corrected
+frozen-header epoch.
+
+| Epoch | Compiler baseline | Project workload | Report | Instructions | Max RSS | Peak footprint | Status |
+|---|---|---|---|---:|---:|---:|---|
+| legacy live headers | `db9879223` | frozen source plus live `dev/src` headers | `/tmp/cppgm-boost-frontier-v2-db9879223-baseline.json` | 271,651,249,439 | 1,293,901,824 B | 1,024,110,592 B | historical through suite 21; immutable within its epoch |
+| frozen project headers | `9764b3835` | frozen source plus the 51-file closure under `benchmarks/self_compile/stable/include` | `/tmp/cppgm-boost-frontier-v2-frozen-header-epoch-9764b3835.json` | 263,559,800,479 | 1,292,648,448 B | 1,009,885,184 B | current immutable epoch baseline; candidate-only record, no parent rerun |
 
 ## Performance Ledger
 
-Every production compiler commit gets a row against the fixed baseline. Add a
-rolling delta only when it helps isolate the incremental cost.
+Every production compiler commit gets a row against the immutable baseline for
+its workload epoch. Add a rolling delta only when it helps isolate the
+incremental cost. Never compare metrics across epochs; the gate rejects command
+differences other than the output path.
 
 | Commit | Frontier | Fixed instruction delta | Max RSS delta | Footprint delta | Rolling delta | Report | Decision |
 |---|---|---:|---:|---:|---:|---|---|
@@ -201,7 +216,7 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 - reduced repro: none
 - owning PA/cluster: pending survey evidence
 - implementation area: pending survey evidence
-- performance risk: the Config candidate is +0.160% instructions, -1.196% RSS, and +0.050% footprint against its saved parent; all gates pass and the parent was not rerun
+- performance risk: the Config candidate passed its legacy-epoch fixed and saved-parent gates; future candidates reuse the immutable frozen-header baseline at `9764b3835`, and no parent was rerun
 - next action: run the exact forced Container suite and classify any first failure
 
 ## Fix Ledger
@@ -323,6 +338,18 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-07-18`: Corrected the primary performance workload after closing
+  Config. The old default froze `semantic_overload.cpp` but still selected live
+  `dev/src` headers. The gate now selects a checked-in, verified 51-file project
+  header closure, documents its `56afe87c1` provenance, and rejects baseline
+  and candidate commands that differ anywhere except the output path. Unit
+  checks cover the default include path, closure completeness, output-path
+  normalization, and rejection of a changed header path; an actual compile
+  using only the frozen project include directory passes. The old live-header
+  results remain historical within their epoch. A clean candidate-only baseline
+  at exact commit `9764b3835` records medians of `263559800479` instructions,
+  `1292648448` RSS, and `1009885184` footprint. It is the immutable baseline for
+  future frozen-header comparisons. No parent command was run.
 - `2026-07-18`: Closed Config and advanced the ordered cursor to suite 22,
   `libs/container/test`. Constant lookup now gives named variable values their
   typed storage identity, and exact cv-compatible reference casts preserve it;
