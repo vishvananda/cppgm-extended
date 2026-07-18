@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `16 / 147`
-- current cursor: `#17 libs/circular_buffer/test`
-- active compiler frontier: Circular Buffer intake
+- completed suites: `17 / 147`
+- current cursor: `#18 libs/compat/test`
+- active compiler frontier: Compat intake
 
 ## Baseline Gates
 
@@ -173,23 +173,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 14 | `libs/callable_traits/test` | pass | `733e3f182` intake + `0a04194b6` + `6ac60d65e` + `f70bdfadd` + `9290640fa` + `3433e1bcc` + `(member-pointer ref-qualifier fix)` | The initial exact eight-job forced survey finds 1348 targets, updates 994, fails 34 compile actions, and skips 102 downstream targets; log `/tmp/boost-frontier-v2-suite-014-initial-forced.log`. The failures are 17 eager/lazy test pairs. The packed-owner, qualified member-address, and structured member-pointer-argument replays reduce that frontier to four eager/lazy pairs; logs `/tmp/boost-frontier-v2-suite-014-member-pointer-owner-full-forced.log`, `/tmp/boost-frontier-v2-suite-014-member-address-qualifier-full-forced.log`, and `/tmp/boost-frontier-v2-suite-014-apply-member-pointer-full-forced.log`. The lambda-identity replay leaves only eager/lazy `is_invocable` and `is_invocable_r`; log `/tmp/boost-frontier-v2-suite-014-captureless-lambda-identity-full-forced.log`. Focused invocation replays advance through the class-conversion and ref-qualifier causes, with the final eager targets passing in `/tmp/boost-frontier-v2-suite-014-invocable-ref-qualifier-focused-final.log`. The exact final eight-job graph finds 1348 targets, requests and updates all 376 remaining targets, and exits successfully after the shared-rule refactor; log `/tmp/boost-frontier-v2-suite-014-invocable-final-shared-helper-full-forced.log`. | All 17 eager/lazy pairs are closed. The final two causes were generic constexpr class-to-scalar conversion and the C++11 object-category rules for invoking ref-qualified member-function pointers through `.*`/`->*`. The normal semantic call path and the structured invocation helper now consume the same typed function ref-qualifier and object value category through one shared rule. The final PA9-excluded direct report passes `3907/3907`, including PA37 object roundtrip `7/7`; strict, placement, reparse, cache-independence, and fixed/rolling performance gates pass. |
 | 15 | `libs/charconv/test` | pass | `149cff9a3` + `(concrete structured qualifier constexpr fix)` | The initial exact eight-job forced survey finds 730 targets, requests 150 updates, updates 39, fails one compile action, and skips 110 downstream targets; `to_chars.o` cannot evaluate inherited `policy_holder::return_has_sign` as a non-type template argument. Log: `/tmp/boost-frontier-v2-suite-015-initial-forced.log`. After preserving exact base-pack element types, the exact forced replay compiles and archives Charconv, updates 105 targets, and advances to 15 link failures with 30 downstream skips. Log: `/tmp/boost-frontier-v2-suite-015-typed-base-pack-full-forced.log`. The focused `to_chars_float` replay then compiles, links, runs, and passes in `/tmp/boost-frontier-v2-suite-015-concrete-qualifier-focused-to-chars-float.log`. The exact final eight-job forced graph updates all 150 requested targets and exits successfully in `/tmp/boost-frontier-v2-suite-015-concrete-qualifier-full-forced.log`. | Both independent causes are closed. Direct `Policies...` base expansion now preserves exact bound type identities. Structured qualified value lookup now folds a static constexpr member only when its retained qualifier resolves to a concrete non-dependent type, eliminating the erroneous undefined symbols for `nearest_to_even::tag`, `uint_with_known_number_of_digits<...>::digits`, and `uconst<...>::value`. The final PA9-excluded direct report passes `3909/3909`, including PA37 `7/7`; strict, placement, reparse, cache-independence, GCC 15, and fixed/rolling performance gates pass. |
 | 16 | `libs/chrono/test` | pass | `(defaulted non-type declaring-scope fix)` + `(overloaded unary constexpr fallback fix)` + `(nested catch active-cleanup fix)` + `(dependent result active-scope fix)` | The initial exact forced survey finds 2997 targets, requests 420 updates, updates 304, fails 32 actions, and skips 84 downstream targets; log `/tmp/boost-frontier-v2-suite-016-initial-forced.log`. The first three fixes advance through 30, 25, and 6 failures in `/tmp/boost-frontier-v2-suite-016-after-default-scope-forced.log`, `/tmp/boost-frontier-v2-suite-016-after-unary-constexpr-forced.log`, and `/tmp/boost-frontier-v2-suite-016-after-active-catch-forced.log`. The focused `v1_io_ex1_s` target then passes compile, link, and runtime. The exact final forced graph finds 2997 targets, updates all 420 requested targets, and exits successfully with no failed actions or downstream skips; log `/tmp/boost-frontier-v2-suite-016-dependent-result-scope-final-forced.log`. | All four independent causes are closed. The final link family was not an ABI spelling defect: the out-of-class `ratio_string<Ratio, Char>::prefix()` result retained direct owner parameter `Char` after its metadata resolver discarded the active owner binding scope, so the definition did not attach to the concrete declaration. Direct carried owner parameters now use the active typed scope; compound-only metadata stays conservative. The final PA9-excluded direct report passes `3913/3913`, including PA37 `7/7`; strict, placement, reparse, cache-independence, GCC 15, and fixed/rolling performance gates pass. |
+| 17 | `libs/circular_buffer/test` | pass | `7836d6a18` | The exact four-job forced graph finds 1540 targets, updates all 34 requested targets, rebuilds and passes all seven test actions, and exits successfully; log `/tmp/boost-frontier-v2-suite-017-initial-forced.log`. | The current compiler passes `constant_erase_test`, `soft_iterator_invalidation`, both base variants, both space-optimized variants, and `bounded_buffer_comparison` without a repository change. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#17 libs/circular_buffer/test`
+- suite: `#18 libs/compat/test`
 - focused target: pending initial forced survey
-- last closed suite: `#16 libs/chrono/test`
+- last closed suite: `#17 libs/circular_buffer/test`
 - failure phase: intake
 - diagnostic: pending initial forced survey
 - reduced repro: pending
 - owning PA/cluster: pending
 - implementation area: pending
-- performance risk: preserve the current -3.31% fixed instruction delta and
+- performance risk: no production change; preserve the current -3.31% fixed instruction delta and
   +0.615% rolling instruction result
-- next action: run the exact initial forced Circular Buffer graph and classify
+- next action: run the exact initial forced Compat graph and classify
   the first causal failure
 
 ## Fix Ledger
@@ -297,6 +298,10 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-07-18`: The exact forced Circular Buffer graph updates all 34 requested
+  targets and passes all seven tests on `7836d6a18`. No repository change or
+  performance measurement is required. Suite 17 is closed and the cursor
+  advances to `libs/compat/test`.
 - `2026-07-18`: Closed Chrono's fourth and final cause. The result type of an
   out-of-class member definition lost its concrete owner binding because the
   mangle-metadata resolver always parented its argument scope at the result
@@ -1383,5 +1388,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=4 \
   /usr/local/bin/timeout 900 \
-  ./run-cppgm-b2.sh -a libs/circular_buffer/test
+  ./run-cppgm-b2.sh -a libs/compat/test
 ```
