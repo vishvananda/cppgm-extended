@@ -105,6 +105,30 @@ bool type_is_volatile_object(const TypePtr & type)
   return false;
 }
 
+bool reference_top_level_cv_compatible(const TypePtr & target,
+                                       const TypePtr & source)
+{
+  const auto flags = [](TypePtr type, bool & cv_const, bool & cv_volatile)
+  {
+    cv_const = false;
+    cv_volatile = false;
+    while(type && type->kind == Type::TK_CV) {
+      cv_const = cv_const || type->cv_const;
+      cv_volatile = cv_volatile || type->cv_volatile;
+      type = type->inner;
+    }
+  };
+
+  bool target_const = false;
+  bool target_volatile = false;
+  bool source_const = false;
+  bool source_volatile = false;
+  flags(remove_reference_type(target), target_const, target_volatile);
+  flags(remove_reference_type(source), source_const, source_volatile);
+  return (!source_const || target_const) &&
+         (!source_volatile || target_volatile);
+}
+
 TypePtr promoted_integral_type(const TypePtr & type)
 {
   if(!type) {
@@ -1100,6 +1124,18 @@ bool constexpr_value_cast(const ConstexprValue & value,
   }
   if(value.kind == ConstexprValue::CV_INVALID) {
     return false;
+  }
+  TypePtr target_type = strip_top_level_cv(target);
+  TypePtr source_type = strip_top_level_cv(remove_reference_type(value.type));
+  if(target_type &&
+     (target_type->kind == Type::TK_LVALUE_REFERENCE ||
+      target_type->kind == Type::TK_RVALUE_REFERENCE) &&
+     source_type &&
+     type_equals(source_type, base) &&
+     reference_top_level_cv_compatible(target, value.type)) {
+    out = value;
+    out.type = target;
+    return true;
   }
   if(value.kind == ConstexprValue::CV_AGGREGATE) {
     TypePtr source = strip_top_level_cv(remove_reference_type(value.type));

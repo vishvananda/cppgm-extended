@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `20 / 147`
-- current cursor: `#21 libs/config/test`
-- active compiler frontier: Config exact forced intake
+- completed suites: `21 / 147`
+- current cursor: `#22 libs/container/test`
+- active compiler frontier: Container exact forced intake
 
 ## Baseline Gates
 
@@ -156,6 +156,7 @@ rolling delta only when it helps isolate the incremental cost.
 | `(structured member-pointer NTTP deduction fix)` | Member-pointer non-type template arguments retained only their scalar placeholder during function-template deduction; repeated member-address analysis, forwarding-reference binding, and template-template partial matching then lost or misclassified the structured value. Deduction now carries the exact `TemplateArgument`, qualified member-address analysis consumes typed field ownership, named non-type template parameters use the existing typed prvalue hooks, and template-template parameters retain recursively parsed kind/type descriptors checked on every structured deduction path. | -2.84% | -0.17% | -1.42% | +0.027% instructions, +0.229% RSS, and +0.254% footprint from immutable saved `9c12bf798` parent medians | `/tmp/cppgm-boost-frontier-v2-function-ref-nttp-candidate-perf.json` | pass; only the candidate was measured, all fixed and rolling gates pass, and no hotspot threshold is crossed |
 | `(Compat final closure)` | Explicit initializer-list casts, global placement new, repeated named local-class ABI entities, shadow-safe resolved default alias types, function-designator trait categories, and cv-aware class transfer | -3.32% | -0.64% | -1.49% | -0.495% instructions, -0.464% RSS, and -0.064% footprint from immutable saved `a61937ef0` parent medians | `/tmp/cppgm-boost-frontier-v2-compat-final-candidate.json` | pass; only the exact final candidate was measured, all fixed and rolling metrics improve, and no parent command was run |
 | `(function-valued NTTP semantic validation fix)` | Semantic validation of a selected function-valued non-type template argument and its called function bodies | -3.05% | -1.13% | -1.45% | -0.216% instructions, -0.960% RSS, and -0.024% footprint from immutable saved `768ee5f44` parent medians | `/tmp/cppgm-boost-frontier-v2-concept-check-semantic-validation-candidate.json` | pass; only the candidate was measured, all fixed and rolling metrics improve, and no parent command was run |
+| `(constexpr reference storage identity fix)` | Constant-evaluated references passed through a constexpr function while retaining their named object's storage identity | -2.89% | -2.31% | -1.40% | +0.160% instructions, -1.196% RSS, and +0.050% footprint from immutable saved `56afe87c1` parent medians | `/tmp/cppgm-boost-frontier-v2-config-constexpr-reference-candidate.json` | pass; only the candidate was measured, every fixed and rolling gate passes, and no parent command was run |
 
 ## Suite Cursor
 
@@ -184,23 +185,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 18 | `libs/compat/test` | pass | `(Compat final closure)` | The initial exact four-job forced graph finds 941 targets, requests 664 updates, updates 614, fails 20 actions, and skips 30 downstream targets. The member-data, function-designator, member-pointer, implicit-object ranking, contained-object virtual-base, structured member-pointer NTTP, initializer-list, global placement-new, local-class ABI, alias identity, function-designator trait, and cv-aware transfer repairs close the graph in sequence. The exact minimal final replay without the discarded consteval guard finds 941 targets, rebuilds all 220 requested targets, and exits successfully; log `/tmp/boost-frontier-v2-suite-018-without-consteval-guard-full-forced.log`. | Every Compat target passes, including `move_only_function_test` and `to_array_rvalue_test`. The PA9-excluded direct report passes `3928/3928`, including PA37 object roundtrip `7/7`; strict, placement, all 23 zero-reparse categories, twelve cache configurations, Clang/GCC warning gates, and candidate-only performance pass. |
 | 19 | `libs/compute/test` | pass | `cef8c677f` | The exact forced four-job graph performs its configuration checks, reports both OpenCL variants unavailable, finds the two bookkeeping targets, and exits successfully; log `/tmp/boost-frontier-v2-suite-019-initial-forced.log`. An immediate exact rerun independently records exit status 0. | This matches the inventory and prior-frontier behavior for this host configuration. No compiler or repository change was required. |
 | 20 | `libs/concept_check/test` | pass | `(function-valued NTTP semantic validation fix)` | The initial forced graph exposed seven deliberate compile-fail targets that incorrectly succeeded because their selected function-address non-type template arguments did not trigger body validation. The final exact four-job forced graph finds 428 targets, updates all 44 requested targets, passes every positive test, and reports every negative test as failed-as-expected; log `/tmp/boost-frontier-v2-suite-020-final-forced.log`. | The PA21/PA23/PA26 affected report passes `710/710`; all configured strict suites, twelve cache configurations, Clang/GCC warning checks, PA23 placement, all 23 zero-reparse categories, and all 23 audit unit tests pass. The PA9-excluded broad report accounts for all `3929/3929` tests after the sole load-sensitive PA3 timeout passes `19/19` in isolation, including PA37 `7/7`. |
-| 21 | `libs/config/test` | pending | `(intake)` | Not yet surveyed in V2. | Run the exact forced suite next. |
+| 21 | `libs/config/test` | pass | `(constexpr reference storage identity fix)` | The initial exact four-job forced graph finds 1391 targets, updates 112, and exposes four compile failures with twelve downstream skips. All four failures share `boost_no_constexpr.ipp`: the address of a named static object passed through a constexpr reference parameter could not initialize a constexpr pointer. The final exact graph rebuilds all 128 requested targets, passes every positive test and deliberate compile failure, and exits successfully; log `/tmp/boost-frontier-v2-suite-021-final-forced.log`. | PA20 passes `79/79`; all configured strict suites, thirteen positive and thirteen negative cache configurations, Clang/GCC warning checks, PA20 placement, all 23 zero-reparse categories, and all 23 audit unit tests pass. The PA9-excluded broad report passes `3931/3931`, including PA37 `7/7`. |
+| 22 | `libs/container/test` | pending | `(intake)` | Not yet surveyed in V2. | Run the exact forced suite next. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#21 libs/config/test`
+- suite: `#22 libs/container/test`
 - focused target: full exact forced intake
-- last closed suite: `#20 libs/concept_check/test`
+- last closed suite: `#21 libs/config/test`
 - failure phase: pending initial survey
 - diagnostic: none yet
 - reduced repro: none
 - owning PA/cluster: pending survey evidence
 - implementation area: pending survey evidence
-- performance risk: the Concept Check candidate improves every saved-parent metric; its immutable medians are `263372489936` instructions, `1279246336` RSS, and `1009299456` footprint
-- next action: run the exact forced Config suite and classify any first failure
+- performance risk: the Config candidate is +0.160% instructions, -1.196% RSS, and +0.050% footprint against its saved parent; all gates pass and the parent was not rerun
+- next action: run the exact forced Container suite and classify any first failure
 
 ## Fix Ledger
 
@@ -317,9 +319,20 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Compat constructibility traits with function-type arguments | Builtin trait argument synthesis classified an unreferenced function type as a prvalue. A function designator expression is an lvalue, so constructibility checks against a function lvalue-reference constructor incorrectly failed. The typed trait adapter now assigns `VC_LVALUE` to `TK_FUNCTION`, retaining the exact function type. | `pa34/tests/compile/700-builtin-constructible-function-type-lvalue-ref.t`, at PA34's hosted builtin-trait owner | Removing only this branch makes the new static assertion fail. The exact `move_only_function_test` previously compiled but failed four trait predicates, including the in-place function-type case at line 747. | Focused PA34 and full affected-owner reports pass; controlled pre-fix replay fails; placement, strict, twelve cache modes, zero-reparse, warning, PA9-excluded `3928/3928`, and exact Compat gates pass. | instructions -3.32%; max RSS -0.64%; peak footprint -1.49%; pass | `(this commit)` |
 | fixed | Compat `to_array_rvalue_test` const-xvalue element transfer | LowIR and output-dependency selection treated every class xvalue as a request for the non-const move constructor. A `const T&&` cannot bind `T&&` and must use `T const&`, but the old lowering moved from it and mutated the source array. A shared typed transfer rule now preserves source object/referent cv and chooses non-const move only for a non-lvalue compatible with the target; return, conditional, throw, local, aggregate, and hidden-transfer paths all use the same rule. | `pa16/tests/general/300-const-xvalue-return-uses-copy-constructor.t`, alongside the existing non-const xvalue move control at PA16's copy/move owner | Controlled pre-fix LowIR selects `item(item&&)` and the source is modified; fixed LowIR selects `item(item const&)`. The exact rvalue `to_array` runtime target exited 1 before the repair and passes afterward. | Focused PA16 and full affected-owner reports pass; placement, strict, twelve cache modes, zero-reparse, warning, PA9-excluded `3928/3928`, and exact final Compat `220/220` gates pass. | instructions -3.32%; max RSS -0.64%; peak footprint -1.49%; pass | `(this commit)` |
 | fixed | Concept Check function-address non-type template arguments | Binding a concrete function as a non-type template argument recorded the selected function identity but did not require semantic validation of its definition. Boost's concept wrapper takes the address of `requirement_<Model>::failed`, whose body calls `Model`'s destructor; skipping both bodies made invalid models compile successfully. Selected function-valued arguments now enter a deferred semantic-only validation queue after template collection. The queue validates explicit special-member bodies and recursively follows called functions without requesting output closure, materialization, class output, or emitted-function ordering. No source text, rendered symbol, cache recovery, or Boost-specific path is used. | `pa23/tests/general/300-function-address-nttp-instantiates-member-body-bad.t`, at PA23's integrated non-type-template instantiation owner, mirrors the standard wrapper/destructor shape and requires a compile failure when the model lacks its requested member | Before the fix seven Concept Check negative targets were unexpected successes. Immediate validation was insufficient because a speculative reference pass could consume the diagnostic and a later cached class selection could bypass revalidation; the deferred post-collection queue makes validation deterministic. Clang 22 and GCC 15 reject the owner reducer. | Warning-clean production build and isolated Clang/GCC translation-unit checks; PA21/PA23/PA26 report `710/710`; all configured strict suites pass; PA23 placement has zero findings; all 23 text-reparse categories and all 23 audit tests pass. Normal, each of nine cache-disable modes, raw class-cache-off, and all-off modes produce byte-identical valid output and identical negative diagnostics. The PA9-excluded broad report accounts for `3929/3929` after one load timeout passes in isolation, including PA37 `7/7`. The final exact forced graph finds 428 targets, updates 44, and exits 0 with every negative failed-as-expected. | instructions -3.05%; max RSS -1.13%; peak footprint -1.45%; pass; candidate-only medians are `263372489936` instructions, `1279246336` RSS, and `1009299456` footprint. Arithmetic against saved `768ee5f44` parent medians is -0.216% instructions, -0.960% RSS, and -0.024% footprint; the parent was not rerun. Report `/tmp/cppgm-boost-frontier-v2-concept-check-semantic-validation-candidate.json` | `(this commit)` |
+| fixed | Config constexpr reference parameter address identity | Named scalar constant lookup materialized the value of a real variable without attaching its storage identity. The exact-underlying-type reference cast then treated that value as an ordinary scalar cast and discarded identity again, so taking the address of the reference parameter could not form a constant pointer. Constant lookup now attaches typed storage identity only for real variable definitions, and an exact reference cast preserves the value and identity when it does not drop top-level cv. Temporary values remain identity-free and are rejected. No source text, symbol spelling recovery, cache, ABI, or Boost-specific path is added. | `pa20/tests/general/400-constexpr-reference-parameter-address-identity.t` covers a named static object passed through `constexpr const int &`; `400-constexpr-reference-parameter-temporary-address-bad.t` proves that a temporary still cannot escape through the same address-taking function | The initial Config graph rejects `constexpr const int* xp = addr(x)` in four targets as an unsupported initializer. The header-free positive fails before the fix while Clang 22 and GCC 15 accept it; both host compilers reject the negative temporary case. | Warning-clean changed production units; PA20 direct report passes `79/79`; all configured strict suites pass; PA20 placement/hygiene has zero findings; all 23 text-reparse categories and all 23 audit tests pass. Thirteen positive and thirteen negative cache configurations are respectively byte-identical. The PA9-excluded broad report passes `3931/3931`, including PA37 `7/7`. The final exact Config graph finds 1391 targets, updates all 128 requested targets, and exits successfully. | instructions -2.89%; max RSS -2.31%; peak footprint -1.40%; pass; candidate-only medians are `263793932710` instructions, `1263951872` RSS, and `1009807360` footprint. Arithmetic against saved `56afe87c1` parent medians is +0.160% instructions, -1.196% RSS, and +0.050% footprint; the parent was not rerun. Report `/tmp/cppgm-boost-frontier-v2-config-constexpr-reference-candidate.json` | `(this commit)` |
 
 ## Decision Log
 
+- `2026-07-18`: Closed Config and advanced the ordered cursor to suite 22,
+  `libs/container/test`. Constant lookup now gives named variable values their
+  typed storage identity, and exact cv-compatible reference casts preserve it;
+  temporaries remain identity-free. The PA20 positive and negative reducers,
+  `79/79` focused report, strict suites, thirteen positive and negative cache
+  configurations, Clang/GCC warnings, placement, all 23 zero-reparse
+  categories, and all 23 audit tests pass. The PA9-excluded broad report passes
+  `3931/3931`. The final exact graph finds 1391 targets, updates all 128
+  requested targets, and exits 0. Only the candidate was measured; every fixed
+  and saved-parent performance gate passes, and no parent command was run.
 - `2026-07-18`: Closed Concept Check and advanced the ordered cursor to suite
   21, `libs/config/test`. Function-valued non-type template arguments now queue
   semantic-only body validation after collection and recursively validate
@@ -1516,6 +1529,6 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=4 \
-  /usr/local/bin/timeout 900 \
-  ./run-cppgm-b2.sh -a libs/concept_check/test
+  /usr/local/bin/timeout 1800 \
+  ./run-cppgm-b2.sh -a libs/container/test
 ```

@@ -44,6 +44,32 @@ using semantic_utils::strip_trailing_top_level_template_arguments;
 using semantic_utils::trim_space;
 using semantic_utils::unqualified_member_name;
 
+void attach_constant_object_storage_identity(
+    const ValueBinding & binding,
+    constant_eval::ConstexprValue & value)
+{
+  if(binding.kind != ValueBinding::VK_VARIABLE ||
+     !binding.has_storage_definition ||
+     !value.storage_identity.empty()) {
+    return;
+  }
+
+  std::string identity = binding.symbol.object_symbol;
+  if(identity.empty()) {
+    identity = binding.symbol.internal_symbol;
+  }
+  if(identity.empty() && binding.declaration_scope) {
+    identity = semantic_lookup::scope_qualified_name(*binding.declaration_scope,
+                                                     binding.name);
+  }
+  if(identity.empty()) {
+    identity = binding.name;
+  }
+  if(!identity.empty()) {
+    constant_eval::assign_storage_identity(value, identity);
+  }
+}
+
 class ConstantValueLookup
 {
 public:
@@ -77,6 +103,7 @@ public:
           *this,
           binding);
       value = value_binding_constexpr_value(binding);
+      attach_constant_object_storage_identity(binding, value);
       return true;
     }
     if(binding.has_constant_value) {
@@ -84,6 +111,7 @@ public:
           *this,
           binding);
       value = constant_eval::make_integral_value(binding.constant_value, binding.type);
+      attach_constant_object_storage_identity(binding, value);
       return true;
     }
     if(binding.dependent_template_value ||
@@ -97,6 +125,7 @@ public:
       value = constant_eval::make_array_value(binding.type,
                                               vector<constant_eval::ConstexprValue>(),
                                               binding.name);
+      attach_constant_object_storage_identity(binding, value);
       return true;
     }
     if(!binding.constant_initializer ||
@@ -145,6 +174,7 @@ public:
     template_api::note_template_member_value_instantiation_if_needed(
         *this,
         binding);
+    attach_constant_object_storage_identity(binding, value);
     return true;
   }
 

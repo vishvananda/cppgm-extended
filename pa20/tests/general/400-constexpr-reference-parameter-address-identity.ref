@@ -1,0 +1,22 @@
+global @stored : i32 [binding=internal, object=_ZL6stored] = 5
+global @address : ptr [binding=internal, object=_ZL7address] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}
+function @address_of(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z10address_ofRKi] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @stored
+    %t2 = call ptr @address_of(%t1)
+    store ptr %t2, @address
+    return void
+}
