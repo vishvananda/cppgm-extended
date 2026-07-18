@@ -384,7 +384,11 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
     if(lookup_value(node.value, &node, out)) {
       return true;
     }
-    return node.value == "this" && current_this_object(out);
+    if(node.value == "this" && current_this_object(out)) {
+      return true;
+    }
+    return hooks_.evaluate_special_expression &&
+           hooks_.evaluate_special_expression(*this, node, out);
   }
 
   if(node.kind == CppAstKind::parenthesized_expression && node.children.size() == 1) {

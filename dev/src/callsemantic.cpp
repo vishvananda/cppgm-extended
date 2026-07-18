@@ -15202,7 +15202,9 @@ private:
   CppAstNode make_pack_value_expression_node(const ValueBinding & binding) const
   {
     CppAstNode node;
-    if(binding.has_constant_value && !binding.dependent_template_value) {
+    if(binding.kind != ValueBinding::VK_PARAMETER &&
+       binding.has_constant_value &&
+       !binding.dependent_template_value) {
       if(is_bool_type(binding.type)) {
         node.kind = CppAstKind::keyword_literal;
         node.value = binding.constant_value != 0 ? "true" : "false";
@@ -15244,6 +15246,7 @@ private:
 
     node.kind = CppAstKind::id_expression;
     node.value = binding.name;
+    node.semantic_type = binding.type;
     return node;
   }
 

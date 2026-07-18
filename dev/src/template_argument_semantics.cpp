@@ -11725,7 +11725,10 @@ bool evaluate_leaf_constexpr_function_call(template_api::TemplateServices & serv
         return false;
       }
       arg_infos.push_back(
-          make_pair(args[i].type, semantic_conversion::VC_PRVALUE));
+          make_pair(args[i].type,
+                    args[i].kind == constant_eval::ConstexprValue::CV_FUNCTION ?
+                        semantic_conversion::VC_LVALUE :
+                        semantic_conversion::VC_PRVALUE));
     }
     append_leaf_function_template_instantiations(services,
                                                 scope,

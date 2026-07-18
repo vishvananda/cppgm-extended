@@ -30,6 +30,7 @@ using cpp_decl::strip_top_level_cv;
 using cpp_decl::type_equals;
 using cpp_decl::type_size;
 using semantic_conversion::ExprInfo;
+using semantic_conversion::VC_LVALUE;
 using semantic_conversion::VC_PRVALUE;
 using semantic_conversion::can_copy_initialize;
 using semantic_lookup::MemberValueLookupResult;
@@ -619,6 +620,7 @@ bool evaluate_constant_call_expression_value(
       FunctionBinding * candidate = candidates[i];
       TypePtr function_type = strip_top_level_cv(candidate->type);
       if(!function_type || function_type->kind != Type::TK_FUNCTION ||
+         ctx.type_depends_on_template_parameter(function_type) ||
          function_type->variadic || function_type->prototype_relaxed ||
          candidate->is_method) {
         continue;
@@ -645,7 +647,10 @@ bool evaluate_constant_call_expression_value(
           expr.type = args[arg_index].kind == constant_eval::ConstexprValue::CV_FLOATING ?
               make_fundamental(FT_DOUBLE) : make_fundamental(FT_INT);
         }
-        expr.category = VC_PRVALUE;
+        expr.category =
+            args[arg_index].kind == constant_eval::ConstexprValue::CV_FUNCTION ?
+                VC_LVALUE :
+                VC_PRVALUE;
         long long integral_value = 0;
         expr.null_pointer_constant =
             args[arg_index].kind == constant_eval::ConstexprValue::CV_NULLPTR ||
@@ -748,25 +753,38 @@ bool evaluate_constant_call_expression_value(
   }
   if(analyzed.node.kind != CallSemKind::call_expression ||
      analyzed.node.children.empty() ||
-     analyzed.node.children[0].kind != CallSemKind::callee ||
      !analyzed.node.children[0].semantic_type) {
     return false;
   }
 
   const CallSemNode & resolved_callee = analyzed.node.children[0];
   FunctionBinding * binding = nullptr;
-  const symbol_linkage::SymbolIdentity & resolved_symbol =
-      callsem_symbol(resolved_callee);
-  if(!resolved_symbol.internal_symbol.empty()) {
-    binding = ctx.first_function_by_internal_symbol(resolved_symbol.internal_symbol);
+  if(resolved_callee.kind == CallSemKind::callee) {
+    const symbol_linkage::SymbolIdentity & resolved_symbol =
+        callsem_symbol(resolved_callee);
+    if(!resolved_symbol.internal_symbol.empty()) {
+      binding = ctx.first_function_by_internal_symbol(resolved_symbol.internal_symbol);
+    }
+    for(std::size_t i = 0; i < state.functions.size(); ++i) {
+      const bool legacy_match =
+          state.functions[i]->name == resolved_callee.text &&
+          type_equals(state.functions[i]->type, resolved_callee.semantic_type);
+      if(!binding && legacy_match) {
+        binding = state.functions[i].get();
+        break;
+      }
+    }
   }
-  for(std::size_t i = 0; i < state.functions.size(); ++i) {
-    const bool legacy_match =
-        state.functions[i]->name == resolved_callee.text &&
-        type_equals(state.functions[i]->type, resolved_callee.semantic_type);
-    if(!binding && legacy_match) {
-      binding = state.functions[i].get();
-      break;
+  if(!binding) {
+    constant_eval::ConstexprValue callable;
+    if(evaluator.eval_expr(callee, callable) &&
+       (callable.kind == constant_eval::ConstexprValue::CV_POINTER ||
+        callable.kind == constant_eval::ConstexprValue::CV_FUNCTION) &&
+       !callable.storage_identity.empty()) {
+      binding = ctx.first_function_by_object_symbol(callable.storage_identity);
+      if(!binding) {
+        binding = ctx.first_function_by_internal_symbol(callable.storage_identity);
+      }
     }
   }
   if(!binding) {

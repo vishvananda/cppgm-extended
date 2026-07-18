@@ -2637,10 +2637,12 @@ bool evaluate_constexpr_function_address_expression(
     bool allow_implicit_decay = false)
 {
   const CppAstNode * operand = nullptr;
+  bool take_address = false;
   if(expr.kind == CppAstKind::unary_expression &&
      expr.children.size() == 1 &&
      node_has_simple_type(expr, OP_AMP)) {
     operand = &expr.children[0];
+    take_address = true;
   } else if(allow_implicit_decay) {
     operand = &expr;
   } else {
@@ -2690,7 +2692,9 @@ bool evaluate_constexpr_function_address_expression(
   if(identity.empty()) {
     identity = function_binding_qualified_name_for_symbol(*function);
   }
-  out = constant_eval::make_pointer_value(make_pointer(function_type), identity, 0);
+  out = take_address ?
+      constant_eval::make_pointer_value(make_pointer(function_type), identity, 0) :
+      constant_eval::make_function_value(function_type, identity);
   return true;
 }
 
@@ -2758,7 +2762,11 @@ bool evaluate_default_special_expression(SemanticContext & ctx,
     return true;
   }
 
-  if(evaluate_constexpr_function_address_expression(ctx, scope, expr, value)) {
+  if(evaluate_constexpr_function_address_expression(ctx,
+                                                    scope,
+                                                    expr,
+                                                    value,
+                                                    true)) {
     return true;
   }
 
