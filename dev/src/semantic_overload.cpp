@@ -5699,6 +5699,28 @@ int compare_implicit_object_cv_preference(const CandidateMatch & current,
   return current_added_cv < best_added_cv ? -1 : 1;
 }
 
+int compare_implicit_object_ref_qualifier_preference(
+    const CandidateMatch & current,
+    const CandidateMatch & best)
+{
+  if(!current.function ||
+     !best.function ||
+     !current.function->is_method ||
+     !best.function->is_method ||
+     current.function->ref_qualifier == best.function->ref_qualifier) {
+    return 0;
+  }
+  if(current.function->ref_qualifier == RQ_RVALUE &&
+     best.function->ref_qualifier == RQ_LVALUE) {
+    return -1;
+  }
+  if(current.function->ref_qualifier == RQ_LVALUE &&
+     best.function->ref_qualifier == RQ_RVALUE) {
+    return 1;
+  }
+  return 0;
+}
+
 int compare_candidate_match_preference(SemanticContext & ctx,
                                        const CandidateMatch & current,
                                        const CandidateMatch & best)
@@ -5826,6 +5848,13 @@ int compare_candidate_match_preference(SemanticContext & ctx,
       return object_cv_pref;
     }
     compare_slots(0, 1, current_better, best_better);
+    if(!current_better && !best_better) {
+      const int object_ref_pref =
+          compare_implicit_object_ref_qualifier_preference(current, best);
+      if(object_ref_pref != 0) {
+        return object_ref_pref;
+      }
+    }
   }
 
   if(current_better && !best_better) {
