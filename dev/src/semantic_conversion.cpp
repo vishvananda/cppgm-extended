@@ -974,6 +974,19 @@ bool try_builtin_pointer_operand_conversion(SemanticContext & ctx,
         target_pointer_types.push_back(result_base);
       };
 
+  if(source_class->is_lambda_closure && source_class->fields.empty()) {
+    map<string, vector<FunctionBinding *> >::const_iterator call_operator =
+        source_class->methods.find("operator()");
+    if(call_operator != source_class->methods.end()) {
+      for(size_t i = 0; i < call_operator->second.size(); ++i) {
+        FunctionBinding * binding = call_operator->second[i];
+        if(binding && binding->declared_type) {
+          append_target(make_pointer(binding->declared_type));
+        }
+      }
+    }
+  }
+
   vector<MemberFunctionLookupResult> conversion_sets =
       collect_visible_conversion_functions(ctx, *source_class);
   for(size_t set_index = 0; set_index < conversion_sets.size(); ++set_index) {
@@ -2307,6 +2320,76 @@ bool try_apply_unmaterialized_inheritance_conversion(SemanticContext & ctx,
   return try_apply_inheritance_conversion_impl(ctx, target, expr, out, false);
 }
 
+static FunctionBinding * ensure_captureless_lambda_conversion_target(
+    SemanticContext & ctx,
+    Scope & use_scope,
+    ClassInfo & closure,
+    const TypePtr & target)
+{
+  TypePtr target_base = strip_top_level_cv(target);
+  if(!closure.is_lambda_closure ||
+     !closure.fields.empty() ||
+     !target_base ||
+     target_base->kind != Type::TK_POINTER ||
+     !is_function_type(target_base->inner)) {
+    return nullptr;
+  }
+
+  FunctionBinding * call_operator = nullptr;
+  map<string, vector<FunctionBinding *> >::const_iterator found =
+      closure.methods.find("operator()");
+  if(found != closure.methods.end()) {
+    for(size_t i = 0; i < found->second.size(); ++i) {
+      FunctionBinding * candidate = found->second[i];
+      if(candidate &&
+         candidate->declared_type &&
+         type_equals(strip_top_level_cv(candidate->declared_type),
+                     strip_top_level_cv(target_base->inner))) {
+        call_operator = candidate;
+        break;
+      }
+    }
+  }
+  if(!call_operator) {
+    return nullptr;
+  }
+
+  if(closure.captureless_lambda_conversion_target) {
+    return closure.captureless_lambda_conversion_target;
+  }
+
+  vector<pair<string, TypePtr> > params;
+  vector<const CppAstNode *> default_arguments;
+  for(size_t i = 1; i < call_operator->params.size(); ++i) {
+    params.push_back(call_operator->params[i]);
+    default_arguments.push_back(
+        i < call_operator->default_arguments.size() ?
+            call_operator->default_arguments[i] : nullptr);
+  }
+  Scope & lambda_scope = closure.enclosing_scope ?
+      *closure.enclosing_scope : use_scope;
+  closure.captureless_lambda_conversion_target =
+      ctx.create_synthetic_lambda_function(lambda_scope,
+                                           call_operator->declared_type,
+                                           params,
+                                           default_arguments,
+                                           call_operator->declaration_node,
+                                           call_operator->body);
+  return closure.captureless_lambda_conversion_target;
+}
+
+static ExprInfo make_captureless_lambda_conversion_result(
+    SemanticContext & ctx,
+    FunctionBinding & target)
+{
+  ExprInfo result;
+  result.type = target.type;
+  result.category = VC_LVALUE;
+  result.node = make_dump_node(CallSemKind::id_expression, target.name);
+  ctx.set_expr_info_metadata(result, result.type, result.category);
+  return result;
+}
+
 bool try_argument_conversion(SemanticContext & ctx,
                              Scope & scope,
                              const TypePtr & target,
@@ -2540,6 +2623,25 @@ bool try_argument_conversion(SemanticContext & ctx,
 
   TypePtr source_class_type = strip_top_level_cv(remove_reference_type(expr.type));
   if(ClassInfo * source_class = ensure_complete_class_info(ctx, source_class_type)) {
+    FunctionBinding * lambda_target =
+        ensure_captureless_lambda_conversion_target(ctx,
+                                                    scope,
+                                                    *source_class,
+                                                    target);
+    if(lambda_target) {
+      ExprInfo lambda_result =
+          make_captureless_lambda_conversion_result(ctx, *lambda_target);
+      ConversionRank second = standard_conversion_rank(target, lambda_result);
+      if(second != CR_BAD) {
+        UserDefinedCandidate lambda_candidate;
+        lambda_candidate.kind = UserDefinedCandidate::PREMATERIALIZED;
+        lambda_candidate.expr = lambda_result;
+        lambda_candidate.source_expr = expr;
+        lambda_candidate.second_rank = second;
+        candidates.push_back(lambda_candidate);
+      }
+    }
+
     ExprInfo conversion_function_implicit_object_arg;
     bool conversion_function_implicit_object_ready = false;
     const auto get_conversion_function_implicit_object_arg = [&]() -> const ExprInfo &

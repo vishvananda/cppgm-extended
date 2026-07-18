@@ -548,6 +548,7 @@ struct ClassInfo
   bool is_initializer_list = false;
   cpp_decl::TypePtr initializer_list_element_type;
   bool is_lambda_closure = false;
+  FunctionBinding * captureless_lambda_conversion_target = nullptr;
   bool source_is_unnamed_class = false;
   const CppAstNode * source_unnamed_class_node = nullptr;
   bool source_is_named_function_local_class = false;

@@ -20256,6 +20256,15 @@ private:
     return static_cast<bool>(out);
   }
 
+  ExprInfo analyze_auto_deduction_operand(Scope & scope,
+                                          const CppAstNode & node)
+  {
+    return node.kind == CppAstKind::lambda_expression ?
+        semantic_expression::analyze_lambda_expression_as_closure(
+            *this, scope, node) :
+        analyze_expression(scope, node);
+  }
+
   bool analyze_auto_copy_list_initializer(Scope & scope,
                                           const CppAstNode & initializer,
                                           TypePtr & type,
@@ -20283,7 +20292,7 @@ private:
       first_element = &first_expanded_elements[0];
     }
 
-    ExprInfo first = analyze_expression(scope, *first_element);
+    ExprInfo first = analyze_auto_deduction_operand(scope, *first_element);
     TypePtr element_type = value_conversion_type(first);
     if(!element_type || is_void_type(element_type)) {
       return false;
@@ -20324,7 +20333,7 @@ private:
         return false;
       }
       if(payload.children.size() == 1) {
-        ExprInfo expr = analyze_expression(scope, payload.children[0]);
+        ExprInfo expr = analyze_auto_deduction_operand(scope, payload.children[0]);
         out = value_conversion_type(expr);
         return static_cast<bool>(out);
       }
@@ -20336,12 +20345,12 @@ private:
       if(payload.children.size() != 1) {
         return false;
       }
-      ExprInfo expr = analyze_expression(scope, payload.children[0]);
+      ExprInfo expr = analyze_auto_deduction_operand(scope, payload.children[0]);
       out = value_conversion_type(expr);
       return static_cast<bool>(out);
     }
 
-    ExprInfo expr = analyze_expression(scope, payload);
+    ExprInfo expr = analyze_auto_deduction_operand(scope, payload);
     out = value_conversion_type(expr);
     return static_cast<bool>(out);
   }
@@ -20365,7 +20374,7 @@ private:
         return false;
       }
       if(payload.children.size() == 1) {
-        out = analyze_expression(scope, payload.children[0]);
+        out = analyze_auto_deduction_operand(scope, payload.children[0]);
         return static_cast<bool>(out.type);
       }
       out = analyze_braced_init_list_expression(scope, payload);
@@ -20375,11 +20384,11 @@ private:
       if(payload.children.size() != 1) {
         return false;
       }
-      out = analyze_expression(scope, payload.children[0]);
+      out = analyze_auto_deduction_operand(scope, payload.children[0]);
       return static_cast<bool>(out.type);
     }
 
-    out = analyze_expression(scope, payload);
+    out = analyze_auto_deduction_operand(scope, payload);
     return static_cast<bool>(out.type);
   }
 

@@ -1,6 +1,6 @@
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $range : obj<8x4>
-  slot $first : ptr
+  slot $first : obj<1x1>
   slot $cond__1 : i32
 
   block ^entry:
@@ -15,14 +15,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = unary decay ptr %t7
     %t9 = index i32 [projection=array_element] %t8, 1
     store i32 9, %t9
-    %t10 = addr @__lambda_main_t132_137
-    %t11 = unary decay ptr %t10
-    store ptr %t11, $first
+    %t10 = addr $first
+    %t11 = addr $first
     %t12 = addr $range
-    %t13 = load ptr $first
-    %t14 = call i32 %t13(%t12) as (%arg0 : ptr [pass=reference]) -> i32
-    %t15 = cmp eq i32 %t14, 7
-    branch %t15, ^cond_then_1, ^cond_else_2
+    %t13 = call i32 @__lambda_main_t132_137__operator__(%t11, %t12)
+    %t14 = cmp eq i32 %t13, 7
+    branch %t14, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -33,10 +31,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t16 = load i32 $cond__1
-    return i32 %t16
+    %t15 = load i32 $cond__1
+    return i32 %t15
 }
-function @__lambda_main_t132_137(%r : ptr [pass=reference]) -> i32 [binding=internal] {
+function @__lambda_main_t132_137__operator__(%this : ptr, %r : ptr [pass=reference]) -> i32 [binding=weak, object=_ZZ4mainENK3$_0clER5Range] {
+  slot $this : ptr
   slot $r : ptr
   slot $__begin1 : obj<8x8>
   slot $__end2 : obj<8x8>
@@ -44,6 +43,7 @@ function @__lambda_main_t132_137(%r : ptr [pass=reference]) -> i32 [binding=inte
   slot $value : i32
 
   block ^entry:
+    store ptr %this, $this
     store ptr %r, $r
     %t1 = addr $__begin1
     %t2 = load ptr $r

@@ -1331,6 +1331,21 @@ bool try_builtin_unary_class_conversion(SemanticContext & ctx,
   };
 
   std::vector<Candidate> candidates;
+  if(node_has_simple_type(node, OP_PLUS)) {
+    ExprInfo converted;
+    TypePtr pointer_type;
+    if(try_builtin_pointer_operand_conversion(ctx,
+                                              scope,
+                                              operand,
+                                              converted,
+                                              pointer_type,
+                                              options)) {
+      Candidate candidate;
+      candidate.expr = converted;
+      candidate.rank = CR_USER_DEFINED;
+      candidates.push_back(candidate);
+    }
+  }
   const std::vector<TypePtr> targets = builtin_numeric_conversion_targets();
   for(size_t i = 0; i < targets.size(); ++i) {
     ExprInfo converted;

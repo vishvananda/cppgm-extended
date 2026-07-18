@@ -1,12 +1,22 @@
-global @g : ptr [binding=strong, object=_Z1g] = addr @__lambda_t5_9
+global @g [binding=strong, object=_Z1g] = {
+  zero 1
+}
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = load ptr @g
-    %t2 = call i32 %t1() as () -> i32
+    %t1 = addr @g
+    %t2 = call i32 @__0__operator__(%t1)
     return i32 %t2
 }
-function @__lambda_t5_9() -> i32 [binding=internal] {
+function @__0__operator__(%this : ptr) -> i32 [binding=weak, object=_ZNK3$_0clEv] {
+  slot $this : ptr
+
   block ^entry:
+    store ptr %this, $this
     return i32 7
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @g
+    return void
 }
