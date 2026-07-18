@@ -5000,6 +5000,15 @@ bool try_analyze_reference_binding_source_expression_impl(SemanticContext & ctx,
   if(!binding || pure_constant_only_value_binding(*binding)) {
     return false;
   }
+  if(try_analyze_non_type_template_function_value(ctx, *binding, out)) {
+    return true;
+  }
+  if(try_analyze_non_type_template_object_pointer_value(ctx,
+                                                        scope,
+                                                        *binding,
+                                                        out)) {
+    return true;
+  }
   if(binding->non_type_template_value_binding &&
      binding->type &&
      (binding->type->kind == Type::TK_LVALUE_REFERENCE ||

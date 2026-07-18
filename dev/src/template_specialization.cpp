@@ -62,6 +62,105 @@ struct DeducedState
   std::map<std::string, TemplateArgument> template_template_arguments;
 };
 
+bool template_template_parameter_accepts_parameters(
+    const TemplateParameterInfo & parameter,
+    const std::vector<TemplateParameterInfo> & actual_parameters);
+
+bool template_template_parameter_element_matches(
+    const TemplateParameterInfo & expected,
+    const std::vector<TemplateParameterInfo> & expected_parameters,
+    const TemplateParameterInfo & actual,
+    const std::vector<TemplateParameterInfo> & actual_parameters)
+{
+  if(expected.kind != actual.kind) {
+    return false;
+  }
+  if(expected.kind == TemplateParameterInfo::TP_NON_TYPE) {
+    return expected.value_type &&
+           actual.value_type &&
+           semantic_lookup::same_function_template_entity_type(
+               expected.value_type,
+               expected_parameters,
+               actual.value_type,
+               actual_parameters);
+  }
+  if(expected.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+    if(expected.template_parameters && actual.template_parameters) {
+      return template_template_parameter_accepts_parameters(
+          expected,
+          *actual.template_parameters);
+    }
+    return expected.template_parameter_count == static_cast<std::size_t>(-1) ||
+           expected.template_parameter_count == actual.template_parameter_count;
+  }
+  return true;
+}
+
+bool template_template_parameter_accepts_parameters(
+    const TemplateParameterInfo & parameter,
+    const std::vector<TemplateParameterInfo> & actual_parameters)
+{
+  if(!parameter.template_parameters) {
+    return parameter.template_parameter_count == 0 ||
+           parameter.template_parameter_count == static_cast<std::size_t>(-1) ||
+           parameter.template_parameter_count == actual_parameters.size();
+  }
+
+  const std::vector<TemplateParameterInfo> & expected_parameters =
+      *parameter.template_parameters;
+  std::size_t expected_index = 0;
+  std::size_t actual_index = 0;
+  while(expected_index < expected_parameters.size() &&
+        actual_index < actual_parameters.size()) {
+    const TemplateParameterInfo & expected = expected_parameters[expected_index];
+    const TemplateParameterInfo & actual = actual_parameters[actual_index];
+    if(expected.parameter_pack) {
+      for(; actual_index < actual_parameters.size(); ++actual_index) {
+        if(!template_template_parameter_element_matches(expected,
+                                                        expected_parameters,
+                                                        actual_parameters[actual_index],
+                                                        actual_parameters)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if(actual.parameter_pack) {
+      for(; expected_index < expected_parameters.size(); ++expected_index) {
+        if(!template_template_parameter_element_matches(
+               expected_parameters[expected_index],
+               expected_parameters,
+               actual,
+               actual_parameters)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if(!template_template_parameter_element_matches(expected,
+                                                    expected_parameters,
+                                                    actual,
+                                                    actual_parameters)) {
+      return false;
+    }
+    ++expected_index;
+    ++actual_index;
+  }
+
+  if(expected_index < expected_parameters.size()) {
+    return expected_index + 1 == expected_parameters.size() &&
+           expected_parameters[expected_index].parameter_pack;
+  }
+  for(; actual_index < actual_parameters.size(); ++actual_index) {
+    if(actual_parameters[actual_index].parameter_pack ||
+       actual_parameters[actual_index].default_argument) {
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+
 bool scope_is_boost_mp11_namespace_or_inline_child(const Scope * scope)
 {
   const Scope * current = scope;
@@ -626,11 +725,9 @@ bool deduce_type_pattern_to_state(
          !actual_metadata.source_template) {
         return false;
       }
-      if(template_template_parameter->template_parameter_count != 0 &&
-         template_template_parameter->template_parameter_count !=
-             static_cast<std::size_t>(-1) &&
-         template_template_parameter->template_parameter_count !=
-             actual_metadata.source_template->parameters.size()) {
+      if(!template_template_parameter_accepts_parameters(
+             *template_template_parameter,
+             actual_metadata.source_template->parameters)) {
         return false;
       }
       if(template_template_parameter_arity != static_cast<std::size_t>(-1) &&
@@ -8860,12 +8957,28 @@ TypePtr resolved_non_type_parameter_value_type(
   return value_type;
 }
 
-bool deduce_template_template_parameter_from_argument(DeducedState & deduced,
-                                                      const std::string & parameter_name,
-                                                      const TemplateArgument & actual)
+bool deduce_template_template_parameter_from_argument(
+    DeducedState & deduced,
+    const TemplateParameterInfo & parameter,
+    const TemplateArgument & actual)
 {
+  const std::vector<TemplateParameterInfo> * actual_parameters = nullptr;
+  if(actual.kind == TemplateArgument::TA_CLASS_TEMPLATE &&
+     actual.template_decl) {
+    actual_parameters =
+        &static_cast<ClassTemplateDecl *>(actual.template_decl)->parameters;
+  } else if(actual.kind == TemplateArgument::TA_ALIAS_TEMPLATE &&
+            actual.template_decl) {
+    actual_parameters =
+        &static_cast<AliasTemplateDecl *>(actual.template_decl)->parameters;
+  }
+  if(actual_parameters &&
+     !template_template_parameter_accepts_parameters(parameter,
+                                                     *actual_parameters)) {
+    return false;
+  }
   return store_deduced_template_template_argument(deduced,
-                                                 parameter_name,
+                                                 parameter.name,
                                                  actual);
 }
 
@@ -9716,7 +9829,7 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
           actual_alias_template);
     }
     if(!deduce_template_template_parameter_from_argument(
-           deduced, template_name_parameter.parameter->name, resolved)) {
+           deduced, *template_name_parameter.parameter, resolved)) {
       return false;
     }
   }
@@ -10051,7 +10164,7 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
     }
     if(resolved_template_argument &&
        deduce_template_template_parameter_from_argument(
-           deduced, direct_parameter->name, resolved)) {
+           deduced, *direct_parameter, resolved)) {
       continue;
     }
 
@@ -10720,7 +10833,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
           return false;
         }
       } else if(!deduce_template_template_parameter_from_argument(
-                    deduced, direct_parameter->name, actual)) {
+                    deduced, *direct_parameter, actual)) {
         return false;
       }
     }
@@ -10760,7 +10873,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
       if(direct_parameter &&
          direct_parameter->kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
         if(deduce_template_template_parameter_from_argument(
-               deduced, direct_parameter->name, actual)) {
+               deduced, *direct_parameter, actual)) {
           continue;
         }
         return false;
@@ -11064,7 +11177,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
           return false;
         }
         if(!deduce_template_template_parameter_from_argument(
-               deduced, direct_parameter->name, actual)) {
+               deduced, *direct_parameter, actual)) {
           return false;
         }
         continue;

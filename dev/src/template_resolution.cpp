@@ -8354,11 +8354,87 @@ bool is_partial_order_dependent_non_type_argument(const TemplateArgument & argum
   return argument.partial_order_placeholder;
 }
 
+bool non_type_argument_needs_structured_deduction(
+    const TemplateArgument & argument)
+{
+  const TypePtr base =
+      strip_top_level_cv(remove_reference_type(argument.type));
+  const bool named_enum =
+      base && base->kind == Type::TK_NAMED &&
+      (base->named_key.compare(0, 5, "enum ") == 0 ||
+       base->named_display.compare(0, 5, "enum ") == 0);
+  if(base && (is_integral_type(base) || is_bool_type(base) || named_enum)) {
+    return false;
+  }
+  return !argument.text.empty() ||
+         argument.function_value ||
+         !argument.function_internal_symbol.empty() ||
+         argument.value_binding ||
+         argument.expression;
+}
+
+bool deduced_non_type_arguments_equivalent(const TemplateArgument & lhs,
+                                           const TemplateArgument & rhs)
+{
+  const bool types_match =
+      (!lhs.type && !rhs.type) ||
+      (lhs.type && rhs.type && type_equals(lhs.type, rhs.type));
+  if(!types_match) {
+    return false;
+  }
+  if(lhs.function_value && rhs.function_value) {
+    return lhs.function_value == rhs.function_value;
+  }
+  if(!lhs.function_internal_symbol.empty() &&
+     !rhs.function_internal_symbol.empty()) {
+    return lhs.function_internal_symbol == rhs.function_internal_symbol;
+  }
+  if(lhs.value_binding && rhs.value_binding) {
+    return lhs.value_binding == rhs.value_binding;
+  }
+  return lhs.value == rhs.value && lhs.text == rhs.text;
+}
+
+bool record_structured_deduced_non_type_argument(
+    const std::string & name,
+    const TemplateArgument & argument,
+    DeducedPackArgumentMap * deduced_arguments)
+{
+  if(!deduced_arguments ||
+     !non_type_argument_needs_structured_deduction(argument)) {
+    return true;
+  }
+  std::vector<TemplateArgument> & slot = (*deduced_arguments)[name];
+  if(slot.empty()) {
+    slot.push_back(argument);
+    return true;
+  }
+  return slot.size() == 1 &&
+         deduced_non_type_arguments_equivalent(slot[0], argument);
+}
+
+const TemplateArgument * structured_deduced_non_type_argument(
+    const DeducedPackArgumentMap * deduced_arguments,
+    const std::string & name)
+{
+  if(!deduced_arguments) {
+    return nullptr;
+  }
+  DeducedPackArgumentMap::const_iterator found = deduced_arguments->find(name);
+  if(found == deduced_arguments->end() ||
+     found->second.size() != 1 ||
+     found->second[0].kind != TemplateArgument::TA_VALUE) {
+    return nullptr;
+  }
+  return &found->second[0];
+}
+
 bool record_deduced_non_type_argument(
     const std::vector<TemplateParameterInfo> & parameters,
     const std::string & text,
     const TemplateArgument & argument,
-    DeducedValueMap & deduced_values)
+    DeducedValueMap & deduced_values,
+    DeducedPackArgumentMap * deduced_arguments = nullptr)
 {
   const TemplateParameterInfo * parameter =
       find_template_parameter_for_text(parameters, text);
@@ -8375,7 +8451,10 @@ bool record_deduced_non_type_argument(
   return record_deduced_non_type_value(parameters,
                                        text,
                                        argument.value,
-                                       deduced_values);
+                                       deduced_values) &&
+         record_structured_deduced_non_type_argument(parameter->name,
+                                                     argument,
+                                                     deduced_arguments);
 }
 
 bool try_resolve_non_type_template_parameter_type(
@@ -10147,10 +10226,23 @@ bool finalize_deduced_function_template_arguments(
       }
       DeducedValueMap::const_iterator found = deduced_values.find(decl.parameters[i].name);
       if(found != deduced_values.end()) {
-        arg.kind = TemplateArgument::TA_VALUE;
+        const TemplateArgument * structured =
+            structured_deduced_non_type_argument(
+                &deduced_pack_arguments,
+                decl.parameters[i].name);
+        if(structured) {
+          arg = *structured;
+        } else {
+          arg.kind = TemplateArgument::TA_VALUE;
+          arg.value = found->second;
+        }
         arg.type = bound_value_type;
-        arg.value = found->second;
-        arg.text = typed_non_type_template_argument_text(ctx, bound_value_type, found->second);
+        if(arg.text.empty()) {
+          arg.text =
+              typed_non_type_template_argument_text(ctx,
+                                                    bound_value_type,
+                                                    found->second);
+        }
       } else {
         if(!decl.parameters[i].default_argument ||
            decl.parameters[i].default_argument->children.empty()) {
@@ -10321,7 +10413,8 @@ void bind_known_deductions_into_scope(SemanticContext & ctx,
                                       Scope & scope,
                                       const std::vector<TemplateParameterInfo> & parameters,
                                       const DeducedTypeMap & deduced_types,
-                                      const DeducedValueMap & deduced_values)
+                                      const DeducedValueMap & deduced_values,
+                                      const DeducedPackArgumentMap * deduced_arguments = nullptr)
 {
   for(std::size_t i = 0; i < parameters.size(); ++i) {
     const TemplateParameterInfo & parameter = parameters[i];
@@ -10382,10 +10475,21 @@ void bind_known_deductions_into_scope(SemanticContext & ctx,
     }
 
     TemplateArgument argument;
-    argument.kind = TemplateArgument::TA_VALUE;
+    const TemplateArgument * structured =
+        structured_deduced_non_type_argument(deduced_arguments, parameter.name);
+    if(structured) {
+      argument = *structured;
+    } else {
+      argument.kind = TemplateArgument::TA_VALUE;
+      argument.value = found->second;
+    }
     argument.type = bound_value_type;
-    argument.value = found->second;
-    argument.text = typed_non_type_template_argument_text(ctx, bound_value_type, found->second);
+    if(argument.text.empty()) {
+      argument.text =
+          typed_non_type_template_argument_text(ctx,
+                                                bound_value_type,
+                                                found->second);
+    }
     ctx.bind_single_template_argument_into_scope(scope, parameter, argument);
   }
 }
@@ -15025,7 +15129,8 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
             } else if(!record_deduced_non_type_argument(parameters,
                                                         direct_match.parameter->name,
                                                         actual_direct_argument,
-                                                        deduced_values)) {
+                                                        deduced_values,
+                                                        deduced_pack_arguments)) {
               return false;
             }
             ++actual_index;
@@ -15854,8 +15959,12 @@ bool deduce_function_template_arguments_uncached(
     const std::size_t deduction_count =
         function_template_deduction_parameter_count(decl, args.size());
     for(std::size_t i = 0; i < deduction_count; ++i) {
-      bind_known_deductions_into_scope(
-          ctx, bound_scope, decl.parameters, deduced_types, deduced_values);
+      bind_known_deductions_into_scope(ctx,
+                                       bound_scope,
+                                       decl.parameters,
+                                       deduced_types,
+                                       deduced_values,
+                                       &deduced_pack_arguments);
       bind_resolvable_default_non_type_template_arguments_into_scope(
           ctx, bound_scope, decl.parameters);
       const bool deducing_pack_element =
@@ -16120,8 +16229,12 @@ bool deduce_function_template_arguments_uncached(
                                                       parameter_scope_pattern);
     }
 
-    bind_known_deductions_into_scope(
-        ctx, bound_scope, decl.parameters, deduced_types, deduced_values);
+    bind_known_deductions_into_scope(ctx,
+                                     bound_scope,
+                                     decl.parameters,
+                                     deduced_types,
+                                     deduced_values,
+                                     &deduced_pack_arguments);
     bind_resolvable_default_non_type_template_arguments_into_scope(
         ctx, bound_scope, decl.parameters);
     const bool finalized = finalize_deduced_function_template_arguments(
@@ -16240,8 +16353,12 @@ bool deduce_function_template_arguments_from_target_type(
     bind_resolvable_default_non_type_template_arguments_into_scope(
         ctx, bound_scope, decl.parameters);
 
-    bind_known_deductions_into_scope(
-        ctx, bound_scope, decl.parameters, deduced_types, deduced_values);
+    bind_known_deductions_into_scope(ctx,
+                                     bound_scope,
+                                     decl.parameters,
+                                     deduced_types,
+                                     deduced_values,
+                                     &deduced_pack_arguments);
     TypePtr pattern = prepare_function_template_deduction_pattern(
         ctx, decl.parameters, bound_scope, decl.type_pattern);
     if(!deduce_function_template_target_pattern(ctx,
@@ -16256,8 +16373,12 @@ bool deduce_function_template_arguments_from_target_type(
       return false;
     }
 
-    bind_known_deductions_into_scope(
-        ctx, bound_scope, decl.parameters, deduced_types, deduced_values);
+    bind_known_deductions_into_scope(ctx,
+                                     bound_scope,
+                                     decl.parameters,
+                                     deduced_types,
+                                     deduced_values,
+                                     &deduced_pack_arguments);
     bind_resolvable_default_non_type_template_arguments_into_scope(
         ctx, bound_scope, decl.parameters);
     return finalize_deduced_function_template_arguments(ctx,
@@ -16349,6 +16470,9 @@ bool deduce_function_template_arguments_from_target_type_with_explicit(
          argument.kind == TemplateArgument::TA_VALUE &&
          !argument.dependent) {
         deduced_values[parameter.name] = argument.value;
+        record_structured_deduced_non_type_argument(parameter.name,
+                                                    argument,
+                                                    &deduced_pack_arguments);
       }
       ctx.bind_single_template_argument_into_scope(bound_scope, parameter, argument);
     }
@@ -16361,8 +16485,12 @@ bool deduce_function_template_arguments_from_target_type_with_explicit(
     bind_resolvable_default_non_type_template_arguments_into_scope(
         ctx, bound_scope, decl.parameters);
 
-    bind_known_deductions_into_scope(
-        ctx, bound_scope, decl.parameters, deduced_types, deduced_values);
+    bind_known_deductions_into_scope(ctx,
+                                     bound_scope,
+                                     decl.parameters,
+                                     deduced_types,
+                                     deduced_values,
+                                     &deduced_pack_arguments);
     TypePtr pattern = prepare_function_template_deduction_pattern(
         ctx, decl.parameters, bound_scope, decl.type_pattern);
     if(!deducible_parameters.empty() &&
@@ -16380,8 +16508,12 @@ bool deduce_function_template_arguments_from_target_type_with_explicit(
       return false;
     }
 
-    bind_known_deductions_into_scope(
-        ctx, bound_scope, decl.parameters, deduced_types, deduced_values);
+    bind_known_deductions_into_scope(ctx,
+                                     bound_scope,
+                                     decl.parameters,
+                                     deduced_types,
+                                     deduced_values,
+                                     &deduced_pack_arguments);
     bind_resolvable_default_non_type_template_arguments_into_scope(
         ctx, bound_scope, decl.parameters);
     return finalize_deduced_function_template_arguments(
@@ -16484,6 +16616,10 @@ bool deduce_function_template_arguments_with_explicit(
          explicit_argument_bindings.fixed_arguments[i].kind == TemplateArgument::TA_VALUE &&
          !explicit_argument_bindings.fixed_arguments[i].dependent) {
         deduced_values[parameter.name] = explicit_argument_bindings.fixed_arguments[i].value;
+        record_structured_deduced_non_type_argument(
+            parameter.name,
+            explicit_argument_bindings.fixed_arguments[i],
+            &deduced_pack_arguments);
       }
       ctx.bind_single_template_argument_into_scope(bound_scope,
                                                    parameter,
@@ -16502,8 +16638,12 @@ bool deduce_function_template_arguments_with_explicit(
     const std::size_t deduction_count =
         function_template_deduction_parameter_count(decl, args.size());
     for(std::size_t i = 0; i < deduction_count; ++i) {
-      bind_known_deductions_into_scope(
-          ctx, bound_scope, decl.parameters, deduced_types, deduced_values);
+      bind_known_deductions_into_scope(ctx,
+                                       bound_scope,
+                                       decl.parameters,
+                                       deduced_types,
+                                       deduced_values,
+                                       &deduced_pack_arguments);
       bind_resolvable_default_non_type_template_arguments_into_scope(
           ctx, bound_scope, decl.parameters);
       const bool deducing_pack_element =
@@ -16700,8 +16840,12 @@ bool deduce_function_template_arguments_with_explicit(
                                                       parameter_scope_pattern);
     }
 
-    bind_known_deductions_into_scope(
-        ctx, bound_scope, decl.parameters, deduced_types, deduced_values);
+    bind_known_deductions_into_scope(ctx,
+                                     bound_scope,
+                                     decl.parameters,
+                                     deduced_types,
+                                     deduced_values,
+                                     &deduced_pack_arguments);
     bind_resolvable_default_non_type_template_arguments_into_scope(
         ctx, bound_scope, decl.parameters);
     return finalize_deduced_function_template_arguments(

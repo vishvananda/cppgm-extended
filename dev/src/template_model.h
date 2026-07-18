@@ -52,6 +52,7 @@ struct TemplateParameterInfo
   std::vector<std::string> alternate_names;
   bool parameter_pack = false;
   std::size_t template_parameter_count = 0;
+  std::unique_ptr<std::vector<TemplateParameterInfo> > template_parameters;
   std::string placeholder_key;
   cpp_decl::TypePtr value_type;
   std::shared_ptr<TemplateParameterOwnedSyntax> owned_syntax;
@@ -199,6 +200,10 @@ inline void copy_template_parameter_info(
   target.alternate_names = source.alternate_names;
   target.parameter_pack = source.parameter_pack;
   target.template_parameter_count = source.template_parameter_count;
+  target.template_parameters.reset(
+      source.template_parameters ?
+          new std::vector<TemplateParameterInfo>(*source.template_parameters) :
+          nullptr);
   target.placeholder_key = source.placeholder_key;
   target.value_type = source.value_type;
   target.owned_syntax.reset();
@@ -223,6 +228,7 @@ inline void move_template_parameter_info(
   target.alternate_names = std::move(source.alternate_names);
   target.parameter_pack = source.parameter_pack;
   target.template_parameter_count = source.template_parameter_count;
+  target.template_parameters = std::move(source.template_parameters);
   target.placeholder_key = std::move(source.placeholder_key);
   target.value_type = std::move(source.value_type);
   target.owned_syntax = std::move(source.owned_syntax);

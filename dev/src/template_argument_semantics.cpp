@@ -10200,19 +10200,38 @@ TypePtr leaf_member_pointer_function_type(const FunctionBinding & binding)
   return member_function_type;
 }
 
-bool resolve_leaf_qualified_member_function_pointer_type(
+bool resolve_leaf_qualified_member_pointer_type(
     template_api::TemplateServices & services,
     Scope & scope,
     const CppAstNode & operand,
-    TypePtr & out)
+    TypePtr & out,
+    bool & recognized_nonstatic_member)
 {
   out.reset();
+  recognized_nonstatic_member = false;
   if(operand.kind != CppAstKind::id_expression) {
     return false;
   }
   const QualifiedName * member_name = qualified_syntax_if_qualified(operand);
   if(!member_name) {
     return false;
+  }
+
+  const ValueBinding * value_binding = nullptr;
+  if(lookup_leaf_qualified_value_binding(
+         services, scope, *member_name, &operand, value_binding) &&
+     value_binding &&
+     value_binding->kind == ValueBinding::VK_FIELD &&
+     value_binding->owner_class) {
+    recognized_nonstatic_member = true;
+    if(value_binding->is_bit_field ||
+       !value_binding->owner_class->type ||
+       !value_binding->type) {
+      return false;
+    }
+    out = make_member_pointer(value_binding->owner_class->type,
+                              value_binding->type);
+    return out != nullptr;
   }
 
   QualifiedName owner_name;
@@ -10298,6 +10317,7 @@ bool resolve_leaf_qualified_member_function_pointer_type(
        candidate->is_destructor) {
       continue;
     }
+    recognized_nonstatic_member = true;
     if(selected) {
       return false;
     }
@@ -11563,12 +11583,20 @@ bool lookup_leaf_expression_type_category(template_api::TemplateServices & servi
 
     if(node_has_simple_type(expr, OP_AMP)) {
       TypePtr member_pointer_type;
-      if(resolve_leaf_qualified_member_function_pointer_type(
-             services, scope, expr.children[0], member_pointer_type) &&
+      bool recognized_nonstatic_member = false;
+      if(resolve_leaf_qualified_member_pointer_type(
+             services,
+             scope,
+             expr.children[0],
+             member_pointer_type,
+             recognized_nonstatic_member) &&
          member_pointer_type) {
         out = member_pointer_type;
         category = semantic_conversion::VC_PRVALUE;
         return true;
+      }
+      if(recognized_nonstatic_member) {
+        return false;
       }
       if(operand_category != semantic_conversion::VC_LVALUE) {
         return false;

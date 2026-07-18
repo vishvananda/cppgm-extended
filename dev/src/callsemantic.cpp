@@ -16761,6 +16761,18 @@ private:
           const CppAstNode * inner_list =
               inner_clause ? find_child_kind(*inner_clause, CppAstKind::template_parameter_list) :
                              nullptr;
+          if(inner_clause) {
+            vector<TemplateParameterInfo> inner_parameters;
+            Scope inner_placeholder_scope(placeholder_scope, "", false);
+            if(!parse_template_parameters(*inner_clause,
+                                          inner_parameters,
+                                          &inner_placeholder_scope,
+                                          failure_reason)) {
+              return false;
+            }
+            info.template_parameters.reset(
+                new vector<TemplateParameterInfo>(std::move(inner_parameters)));
+          }
           bool accepts_any_arity = false;
           if(inner_list && !inner_list->children.empty()) {
             const CppAstNode & trailing = inner_list->children.back();
