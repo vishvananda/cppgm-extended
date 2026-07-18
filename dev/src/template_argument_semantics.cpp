@@ -28612,11 +28612,30 @@ bool try_resolve_dependent_class_instantiation_from_mangle_info(
   vector<TemplateArgument> resolved_arguments;
   resolved_arguments.reserve(source_arguments->size());
   bool changed = false;
-  Scope argument_scope(class_template->declaring_scope ?
-                           class_template->declaring_scope :
-                           &scope.require(),
-                       "",
-                       false);
+  bool has_direct_type_parameter_dependency = false;
+  for(size_t i = 0; i < source_arguments->size(); ++i) {
+    const TemplateArgument & argument = (*source_arguments)[i];
+    if(argument.kind == TemplateArgument::TA_TYPE &&
+       argument.type &&
+       service_type_depends_on_template_parameter(services, argument.type) &&
+       unresolved_mangle_argument_has_only_direct_type_parameter_dependency(
+           services,
+           argument)) {
+      has_direct_type_parameter_dependency = true;
+      break;
+    }
+  }
+  // A direct carried owner parameter must be rebound from the active
+  // instantiation scope.  Purely compound dependent metadata stays on the
+  // conservative declaration-scope path and lets the structured fallback
+  // resolve aliases and partial-specialization patterns.
+  Scope * argument_scope_parent =
+      has_direct_type_parameter_dependency ?
+          &scope.require() :
+          (class_template->declaring_scope ?
+               class_template->declaring_scope :
+               &scope.require());
+  Scope argument_scope(argument_scope_parent, "", false);
   for(size_t i = 0; i < source_arguments->size(); ++i) {
     const TemplateArgument & source_arg = (*source_arguments)[i];
     TemplateArgument resolved_arg;
