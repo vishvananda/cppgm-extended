@@ -1,0 +1,48 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : i32
+  slot $allocator : obj<4x4>
+
+  block ^entry:
+    store i32 0, $value
+    %t1 = addr $allocator
+    %t2 = addr $allocator
+    %t3 = addr $value
+    call void @allocator_adaptor_int___construct(%t2, %t3)
+    %t4 = load i32 $value
+    return i32 %t4
+}
+function @allocator_adaptor_int___construct(%this : ptr, %output : ptr) -> void [binding=weak, object=_ZN17allocator_adaptorIJiEE9constructIiJEEEvPT_DpT0_] {
+  slot $this : ptr
+  slot $output : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %output, $output
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = call ptr @detail__adaptor_base_int___outer_allocator(%t2)
+    %t4 = load i32 %t3
+    %t5 = load ptr $output
+    call void @detail__dispatch(%t4, 0, %t5)
+    return void
+}
+function @detail__adaptor_base_int___outer_allocator(%this : ptr) -> ptr [binding=weak, object=_ZN6detail12adaptor_baseIiJEE15outer_allocatorEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}
+function @detail__dispatch(%__param0 : i32, %__param1 : i32, %__param2 : ptr) -> void [binding=weak, object=_ZN6detail8dispatchIiiiJEEEvT_T0_PT1_DpT2_] {
+  slot $__param0 : i32
+  slot $__param1 : i32
+  slot $__param2 : ptr
+
+  block ^entry:
+    store i32 %__param0, $__param0
+    store i32 %__param1, $__param1
+    store ptr %__param2, $__param2
+    return void
+}

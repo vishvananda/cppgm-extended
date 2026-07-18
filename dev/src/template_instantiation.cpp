@@ -9082,6 +9082,47 @@ Scope & bind_class_template_arguments_for_instantiation(
   return scope;
 }
 
+Scope & bind_function_template_arguments_for_instantiation(
+    SemanticContext & ctx,
+    Scope & declaring_scope,
+    Scope & use_scope,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::vector<TemplateArgument> & arguments,
+    const std::map<std::string, std::size_t> * pack_sizes,
+    ClassInfo * active_owner)
+{
+  if(declaring_scope.class_info ||
+     template_arguments_are_dependent_for_instantiation(ctx, arguments)) {
+    return bind_template_arguments_for_instantiation(ctx,
+                                                     declaring_scope,
+                                                     use_scope,
+                                                     parameters,
+                                                     arguments,
+                                                     pack_sizes,
+                                                     active_owner);
+  }
+
+  Scope & scope =
+      bind_template_arguments(ctx,
+                              declaring_scope,
+                              parameters,
+                              arguments,
+                              pack_sizes);
+  const std::set<std::string> excluded_names =
+      collect_template_parameter_names(parameters);
+  // A concrete namespace function template cannot name template-bound
+  // entities from its caller. Preserve only function-local types carried by
+  // its typed arguments; importing unrelated caller placeholders can make a
+  // concrete return-type member lookup spuriously dependent.
+  overlay_instantiation_local_named_types(ctx,
+                                          scope,
+                                          use_scope,
+                                          &declaring_scope,
+                                          arguments,
+                                          &excluded_names);
+  return scope;
+}
+
 ClassInfo * instantiate_builtin_initializer_list_template(
     SemanticContext & ctx,
     ClassTemplateDecl & decl,
@@ -10091,13 +10132,14 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                        arguments,
                                                        effective_pack_sizes,
                                                        instantiation_owner) :
-               bind_template_arguments_for_instantiation(ctx,
-                                                        *cache_instantiation_context_scope,
-                                                        *use_scope,
-                                                        cache_source_decl->parameters,
-                                                        arguments,
-                                                        effective_pack_sizes,
-                                                        instantiation_owner));
+               bind_function_template_arguments_for_instantiation(
+                   ctx,
+                   *cache_instantiation_context_scope,
+                   *use_scope,
+                   cache_source_decl->parameters,
+                   arguments,
+                   effective_pack_sizes,
+                   instantiation_owner));
       if(use_owner_scope_for_member_template) {
         refreshed_scope.class_info = instantiation_owner;
         bind_active_owner_instantiation_context(ctx,
@@ -10300,13 +10342,14 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                           arguments,
                                                           effective_pack_sizes,
                                                           instantiation_owner) :
-                bind_template_arguments_for_instantiation(ctx,
-                                                          *instantiation_context_scope,
-                                                          *use_scope,
-                                                          source_decl->parameters,
-                                                          arguments,
-                                                          effective_pack_sizes,
-                                                          instantiation_owner))) :
+                bind_function_template_arguments_for_instantiation(
+                    ctx,
+                    *instantiation_context_scope,
+                    *use_scope,
+                    source_decl->parameters,
+                    arguments,
+                    effective_pack_sizes,
+                    instantiation_owner))) :
           bind_template_arguments(ctx,
                                   *instantiation_context_scope,
                                   source_decl->parameters,
