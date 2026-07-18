@@ -360,6 +360,7 @@ const ValueBinding * lookup_qualified_value_binding_node(
     SemanticContext & ctx,
     Scope & scope,
     const cpp_decl::QualifiedName & qualified,
-    const CppAstNode & node);
+    const CppAstNode & node,
+    cpp_decl::TypePtr * qualifier_type_out = nullptr);
 
 }  // namespace semantic_lookup

@@ -1,6 +1,3 @@
-global @integral_constant_bool__true___value : u8 [binding=weak, object=_ZN17integral_constantIbLb1EE5valueE] = 1
-global @integral_constant_bool__false___value : u8 [binding=weak, object=_ZN17integral_constantIbLb0EE5valueE] = 0
-
 function @make_options(%a : u8, %b : u8) -> obj<2x1> [binding=strong, object=_Z12make_optionsbb] {
   slot $a : u8
   slot $b : u8
@@ -83,10 +80,8 @@ function @make_options__ov2(%__param0 : obj<1x1>) -> obj<2x1> [binding=weak, obj
 
   block ^entry:
     %t1 = addr $retobj__1
-    %t2 = load u8 @integral_constant_bool__true___value
-    %t3 = load u8 @integral_constant_bool__false___value
-    %t4 = call obj<2x1> @make_options(%t2, %t3)
-    copyobj 2x1 %t4, %t1
+    %t2 = call obj<2x1> @make_options(1, 0)
+    copyobj 2x1 %t2, %t1
     return obj<2x1> $retobj__1
 }
 alias object _ZN4listIJ17integral_constantIbLb1EES0_IbLb0EEEEC2Ev = @list_integral_constant_bool__true___integral_constant_bool__false____list

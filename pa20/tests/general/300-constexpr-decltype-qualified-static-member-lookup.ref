@@ -1,5 +1,3 @@
-declare global @S__value : u8 [binding=strong, object=_ZN1S5valueE]
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
@@ -24,8 +22,7 @@ function @f() -> i32 [binding=weak, object=_Z1fv] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = load u8 @S__value
-    branch %t1, ^cond_then_1, ^cond_else_2
+    branch 1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 1, $cond__1
@@ -36,6 +33,6 @@ function @f() -> i32 [binding=weak, object=_Z1fv] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t2 = load i32 $cond__1
-    return i32 %t2
+    %t1 = load i32 $cond__1
+    return i32 %t1
 }

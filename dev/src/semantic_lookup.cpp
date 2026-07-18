@@ -6835,8 +6835,12 @@ const ValueBinding * lookup_qualified_value_binding(SemanticContext & ctx,
 const ValueBinding * lookup_qualified_value_binding_node(SemanticContext & ctx,
                                                          Scope & scope,
                                                          const QualifiedName & qualified,
-                                                         const CppAstNode & node)
+                                                         const CppAstNode & node,
+                                                         TypePtr * qualifier_type_out)
 {
+  if(qualifier_type_out) {
+    qualifier_type_out->reset();
+  }
   if(!node_has_structured_qualifier_syntax(node)) {
     return lookup_qualified_value_binding(ctx, scope, qualified);
   }
@@ -6853,6 +6857,9 @@ const ValueBinding * lookup_qualified_value_binding_node(SemanticContext & ctx,
       TypePtr qualifier_type = qualifier->semantic_type;
       if(qualifier_type ||
          ctx.parse_decltype_specifier(scope, *qualifier, qualifier_type)) {
+        if(qualifier_type_out) {
+          *qualifier_type_out = qualifier_type;
+        }
         return lookup_value_binding_in_type_scope(ctx, scope, qualified, qualifier_type);
       }
     }
@@ -6862,6 +6869,9 @@ const ValueBinding * lookup_qualified_value_binding_node(SemanticContext & ctx,
       make_value_qualifier_type_lookup_node(node, qualified, qualifier_name);
   TypePtr qualifier_type =
       ctx.lookup_type_node(scope, qualifier_node, qualifier_name, false);
+  if(qualifier_type_out) {
+    *qualifier_type_out = qualifier_type;
+  }
   return lookup_value_binding_in_type_scope(ctx, scope, qualified, qualifier_type);
 }
 

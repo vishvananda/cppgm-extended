@@ -4388,16 +4388,25 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
   }
 
   if(structured_qualified_lookup) {
+    TypePtr structured_qualifier_type;
     const ValueBinding * structured_binding =
-        lookup_qualified_value_binding_node(ctx, scope, *qualified, node);
+        lookup_qualified_value_binding_node(ctx,
+                                            scope,
+                                            *qualified,
+                                            node,
+                                            &structured_qualifier_type);
     if(structured_binding) {
       emit_structured_qualified_value_class_use(ctx,
                                                 scope,
                                                 node,
                                                 *qualified,
                                                 *structured_binding);
+      const bool concrete_structured_qualifier =
+          structured_qualifier_type &&
+          !ctx.type_depends_on_template_parameter(structured_qualifier_type);
       allow_constant_fold =
-          node.qualifier_type_syntaxes.empty() &&
+          (node.qualifier_type_syntaxes.empty() ||
+           concrete_structured_qualifier) &&
           id_expression_binding_allows_constant_fold(*structured_binding);
       return structured_binding;
     }
