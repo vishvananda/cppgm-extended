@@ -421,6 +421,11 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
     }
     ConstexprValue operand;
     if(!eval_expr(node.children[0], operand)) {
+      if(node.simple_type == OP_AMP &&
+         hooks_.evaluate_special_expression &&
+         hooks_.evaluate_special_expression(*this, node, out)) {
+        return true;
+      }
       return false;
     }
     if(node.simple_type == OP_STAR &&

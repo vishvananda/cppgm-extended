@@ -19,6 +19,7 @@ struct ConstexprValue
     CV_NULLPTR,
     CV_POINTER,
     CV_FUNCTION,
+    CV_MEMBER_POINTER,
     CV_AGGREGATE,
     CV_ARRAY
   };
@@ -48,6 +49,9 @@ ConstexprValue make_pointer_value(const cpp_decl::TypePtr & type,
                                   std::size_t pointer_offset = 0);
 ConstexprValue make_function_value(const cpp_decl::TypePtr & type,
                                    const std::string & storage_identity);
+ConstexprValue make_member_pointer_value(const cpp_decl::TypePtr & type,
+                                         const std::string & member_identity,
+                                         std::size_t member_offset = 0);
 ConstexprValue make_aggregate_value(
     const cpp_decl::TypePtr & type,
     const std::vector<std::pair<std::string, ConstexprValue> > & members,

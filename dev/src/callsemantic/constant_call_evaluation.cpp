@@ -26,6 +26,7 @@ using cpp_decl::TypePtr;
 using cpp_decl::describe_type;
 using cpp_decl::is_integral_type;
 using cpp_decl::make_fundamental;
+using cpp_decl::remove_reference_type;
 using cpp_decl::strip_top_level_cv;
 using cpp_decl::type_equals;
 using cpp_decl::type_size;
@@ -205,6 +206,37 @@ bool evaluate_method_call_implicit_object(
   }
 
   return evaluator.eval_expr(callee, out);
+}
+
+bool constexpr_template_specialization_matches_argument_types(
+    const FunctionBinding & binding,
+    const std::vector<constant_eval::ConstexprValue> & args)
+{
+  TypePtr function_type = strip_top_level_cv(binding.type);
+  if(!function_type ||
+     function_type->kind != Type::TK_FUNCTION ||
+     args.size() > function_type->params.size()) {
+    return false;
+  }
+  for(std::size_t i = 0; i < args.size(); ++i) {
+    TypePtr parameter_type =
+        strip_top_level_cv(remove_reference_type(function_type->params[i]));
+    TypePtr argument_type =
+        strip_top_level_cv(remove_reference_type(args[i].type));
+    if(!parameter_type || !argument_type) {
+      return false;
+    }
+    if(type_equals(parameter_type, argument_type)) {
+      continue;
+    }
+    if((parameter_type->kind == Type::TK_POINTER &&
+        argument_type->kind == Type::TK_POINTER) ||
+       (parameter_type->kind == Type::TK_MEMBER_POINTER &&
+        argument_type->kind == Type::TK_MEMBER_POINTER)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace
@@ -620,6 +652,11 @@ bool evaluate_constant_call_expression_value(
       FunctionBinding * candidate = candidates[i];
       TypePtr function_type = strip_top_level_cv(candidate->type);
       if(!function_type || function_type->kind != Type::TK_FUNCTION ||
+         (!template_id &&
+          candidate->source_template &&
+          !candidate->is_explicit_specialization &&
+          !constexpr_template_specialization_matches_argument_types(*candidate,
+                                                                     args)) ||
          ctx.type_depends_on_template_parameter(function_type) ||
          function_type->variadic || function_type->prototype_relaxed ||
          candidate->is_method) {
@@ -764,6 +801,10 @@ bool evaluate_constant_call_expression_value(
         callsem_symbol(resolved_callee);
     if(!resolved_symbol.internal_symbol.empty()) {
       binding = ctx.first_function_by_internal_symbol(resolved_symbol.internal_symbol);
+    }
+    if(!resolved_symbol.object_symbol.empty() &&
+       (!binding || binding->symbol.object_symbol != resolved_symbol.object_symbol)) {
+      binding = ctx.first_function_by_object_symbol(resolved_symbol.object_symbol);
     }
     for(std::size_t i = 0; i < state.functions.size(); ++i) {
       const bool legacy_match =

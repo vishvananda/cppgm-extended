@@ -2212,6 +2212,186 @@ bool constexpr_base_expression_is_lvalue(const CppAstNode & expr)
          current->kind == CppAstKind::subscript_expression;
 }
 
+bool evaluate_constexpr_member_pointer_object(
+    constant_eval::Evaluator & evaluator,
+    const CppAstNode & member_access,
+    constant_eval::ConstexprValue & out)
+{
+  if(member_access.kind != CppAstKind::binary_expression ||
+     member_access.children.size() != 2 ||
+     (!node_has_simple_type(member_access, OP_DOTSTAR) &&
+      !node_has_simple_type(member_access, OP_ARROWSTAR))) {
+    return false;
+  }
+  if(node_has_simple_type(member_access, OP_DOTSTAR)) {
+    return evaluator.eval_expr(member_access.children[0], out);
+  }
+
+  CppAstNode dereference;
+  dereference.kind = CppAstKind::unary_expression;
+  dereference.has_token = true;
+  dereference.token_kind = RT_SIMPLE;
+  dereference.simple_type = OP_STAR;
+  dereference.value = "*";
+  dereference.children.push_back(member_access.children[0]);
+  return evaluator.eval_expr(dereference, out);
+}
+
+bool evaluate_constexpr_member_pointer_access_expression(
+    constant_eval::Evaluator & evaluator,
+    const CppAstNode & expr,
+    constant_eval::ConstexprValue & out)
+{
+  if(expr.kind != CppAstKind::binary_expression ||
+     expr.children.size() != 2 ||
+     (!node_has_simple_type(expr, OP_DOTSTAR) &&
+      !node_has_simple_type(expr, OP_ARROWSTAR))) {
+    return false;
+  }
+
+  constant_eval::ConstexprValue member_pointer;
+  if(!evaluator.eval_expr(expr.children[1], member_pointer) ||
+     member_pointer.kind != constant_eval::ConstexprValue::CV_MEMBER_POINTER) {
+    return false;
+  }
+  TypePtr member_pointer_type =
+      strip_top_level_cv(remove_reference_type(member_pointer.type));
+  if(!member_pointer_type ||
+     member_pointer_type->kind != Type::TK_MEMBER_POINTER ||
+     !member_pointer_type->owner ||
+     !member_pointer_type->inner ||
+     is_function_type(member_pointer_type->inner) ||
+     member_pointer.storage_identity.empty()) {
+    return false;
+  }
+
+  constant_eval::ConstexprValue object;
+  constant_eval::ConstexprValue owner_object;
+  return evaluate_constexpr_member_pointer_object(evaluator, expr, object) &&
+         constant_eval::constexpr_value_cast(object,
+                                             member_pointer_type->owner,
+                                             owner_object) &&
+         constant_eval::aggregate_member_value(owner_object,
+                                               member_pointer.storage_identity,
+                                               out);
+}
+
+bool evaluate_constexpr_member_pointer_call_expression(
+    SemanticContext & ctx,
+    Scope & scope,
+    constant_eval::Evaluator & evaluator,
+    const CppAstNode & expr,
+    constant_eval::ConstexprValue & out)
+{
+  if(expr.kind != CppAstKind::call_expression || expr.children.empty()) {
+    return false;
+  }
+
+  const CppAstNode * callee = &expr.children[0];
+  while(callee->kind == CppAstKind::parenthesized_expression &&
+        callee->children.size() == 1) {
+    callee = &callee->children[0];
+  }
+  if(callee->kind != CppAstKind::binary_expression ||
+     callee->children.size() != 2 ||
+     (!node_has_simple_type(*callee, OP_DOTSTAR) &&
+      !node_has_simple_type(*callee, OP_ARROWSTAR))) {
+    return false;
+  }
+
+  constant_eval::ConstexprValue member_pointer;
+  if(!evaluator.eval_expr(callee->children[1], member_pointer) ||
+     member_pointer.kind != constant_eval::ConstexprValue::CV_MEMBER_POINTER ||
+     member_pointer.storage_identity.empty()) {
+    return false;
+  }
+  TypePtr member_pointer_type =
+      strip_top_level_cv(remove_reference_type(member_pointer.type));
+  if(!member_pointer_type ||
+     member_pointer_type->kind != Type::TK_MEMBER_POINTER ||
+     !member_pointer_type->owner ||
+     !member_pointer_type->inner ||
+     !is_function_type(member_pointer_type->inner)) {
+    return false;
+  }
+
+  FunctionBinding * binding =
+      ctx.first_function_by_object_symbol(member_pointer.storage_identity);
+  if(!binding) {
+    binding = ctx.first_function_by_internal_symbol(member_pointer.storage_identity);
+  }
+  if(!binding ||
+     !binding->is_method ||
+     !binding->is_constexpr ||
+     !binding->owner_class) {
+    return false;
+  }
+
+  constant_eval::ConstexprValue object;
+  if(!evaluate_constexpr_member_pointer_object(evaluator, *callee, object)) {
+    return false;
+  }
+  TypePtr object_type = remove_reference_type(object.type);
+  const bool object_is_const =
+      object_type && object_type->kind == Type::TK_CV && object_type->cv_const;
+  if(object_is_const && !binding->is_const_method) {
+    return false;
+  }
+
+  constant_eval::ConstexprValue owner_object;
+  if(!constant_eval::constexpr_value_cast(object,
+                                          member_pointer_type->owner,
+                                          owner_object)) {
+    return false;
+  }
+
+  const CppAstNode * argument_list =
+      find_child_kind(expr, CppAstKind::argument_list);
+  if(!argument_list) {
+    argument_list = find_child_kind(expr, CppAstKind::paren_argument_list);
+  }
+  std::vector<constant_eval::ConstexprValue> args;
+  if(argument_list) {
+    args.reserve(argument_list->children.size());
+    for(size_t i = 0; i < argument_list->children.size(); ++i) {
+      constant_eval::ConstexprValue value;
+      if(!evaluator.eval_expr(argument_list->children[i], value)) {
+        return false;
+      }
+      args.push_back(value);
+    }
+  }
+
+  binding = ensure_constexpr_function_definition(ctx, binding, scope);
+  if(!binding) {
+    return false;
+  }
+  TypePtr function_type = strip_top_level_cv(binding->type);
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    return false;
+  }
+
+  Scope & call_scope = binding->declaration_scope ? *binding->declaration_scope : scope;
+  Scope constexpr_call_scope = make_constexpr_call_scope(call_scope, binding);
+  const constant_eval::Hooks call_hooks = build_hooks(ctx, constexpr_call_scope);
+
+  constant_eval::FunctionInfo info;
+  info.name = binding->name;
+  info.return_type = function_type->inner;
+  const std::vector<std::pair<std::string, TypePtr> > all_params =
+      constexpr_function_parameters_impl(*binding);
+  if(all_params.empty()) {
+    return false;
+  }
+  info.params.assign(all_params.begin() + 1, all_params.end());
+  info.body = constexpr_function_body(ctx, *binding);
+  info.variadic = function_type->variadic || function_type->prototype_relaxed;
+  info.is_method = true;
+  info.has_implicit_object = true;
+  info.implicit_object = owner_object;
+  return evaluator.call(info, args, out, &call_hooks);
+}
+
 bool evaluate_constexpr_member_call_expression(SemanticContext & ctx,
                                                Scope & scope,
                                                constant_eval::Evaluator & evaluator,
@@ -2672,29 +2852,75 @@ bool evaluate_constexpr_function_address_expression(
         operand->value,
         semantic_policy::without_body_instantiation());
   }
-  if(functions.size() != 1 || !functions[0]) {
-    return false;
+  if(functions.size() == 1 && functions[0]) {
+    FunctionBinding * function = functions[0];
+    TypePtr function_type = strip_top_level_cv(function->type);
+    if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+      return false;
+    }
+
+    std::string identity = function->symbol.object_symbol;
+    if(identity.empty()) {
+      identity = function->symbol.internal_symbol;
+    }
+    if(identity.empty()) {
+      identity = function_binding_qualified_name_for_symbol(*function);
+    }
+    if(function->is_method) {
+      if(!take_address ||
+         !function->owner_class ||
+         !function->owner_class->type ||
+         function->is_constructor ||
+         function->is_destructor ||
+         identity.empty()) {
+        return false;
+      }
+      TypePtr member_function_type = strip_top_level_cv(function->declared_type);
+      if(!member_function_type || member_function_type->kind != Type::TK_FUNCTION) {
+        return false;
+      }
+      if(member_function_type->function_const != function->is_const_method ||
+         member_function_type->function_volatile != function->is_volatile_method) {
+        member_function_type =
+            make_function(member_function_type->inner,
+                          member_function_type->params,
+                          member_function_type->variadic,
+                          function->is_const_method,
+                          function->is_volatile_method,
+                          member_function_type->prototype_relaxed,
+                          member_function_type->function_ref_qualifier);
+      }
+      out = constant_eval::make_member_pointer_value(
+          make_member_pointer(function->owner_class->type, member_function_type),
+          identity);
+      return true;
+    }
+    out = take_address ?
+        constant_eval::make_pointer_value(make_pointer(function_type), identity, 0) :
+        constant_eval::make_function_value(function_type, identity);
+    return true;
   }
 
-  FunctionBinding * function = functions[0];
-  if(function->is_method) {
+  const QualifiedName * qualified = cppast_qualified_name_syntax(*operand);
+  if(!take_address ||
+     !qualified ||
+     (!qualified->rooted && qualified->qualifiers.empty())) {
     return false;
   }
-  TypePtr function_type = strip_top_level_cv(function->type);
-  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+  const ValueBinding * member =
+      lookup_qualified_value_binding_node(ctx, scope, *qualified, *operand);
+  if(!member ||
+     member->kind != ValueBinding::VK_FIELD ||
+     !member->owner_class ||
+     !member->owner_class->type ||
+     member->is_bit_field ||
+     member->name.empty()) {
     return false;
   }
-
-  std::string identity = function->symbol.object_symbol;
-  if(identity.empty()) {
-    identity = function->symbol.internal_symbol;
-  }
-  if(identity.empty()) {
-    identity = function_binding_qualified_name_for_symbol(*function);
-  }
-  out = take_address ?
-      constant_eval::make_pointer_value(make_pointer(function_type), identity, 0) :
-      constant_eval::make_function_value(function_type, identity);
+  out = constant_eval::make_member_pointer_value(
+      make_member_pointer(member->owner_class->type, member->type),
+      member->name,
+      member->field_offset);
   return true;
 }
 
@@ -2797,7 +3023,19 @@ bool evaluate_default_special_expression(SemanticContext & ctx,
                                               value);
   }
 
+  if(evaluate_constexpr_member_pointer_access_expression(evaluator, expr, value)) {
+    return true;
+  }
+
   if(evaluate_constexpr_overloaded_operator_expression(ctx, scope, evaluator, expr, value)) {
+    return true;
+  }
+
+  if(evaluate_constexpr_member_pointer_call_expression(ctx,
+                                                       scope,
+                                                       evaluator,
+                                                       expr,
+                                                       value)) {
     return true;
   }
 
