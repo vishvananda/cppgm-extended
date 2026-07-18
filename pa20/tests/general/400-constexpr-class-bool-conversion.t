@@ -26,3 +26,5 @@ sink<__and_<int>{}> and_sink;
 
 static_assert(box_value, "box conversion should constant-evaluate");
 static_assert(and_value, "trait conversion should constant-evaluate");
+static_assert(true == __and_<int>{},
+              "built-in comparison should apply the constexpr conversion");

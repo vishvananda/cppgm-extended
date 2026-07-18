@@ -1995,6 +1995,52 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
     return false;
   }
 
+  if(expr.kind == CppAstKind::binary_expression && expr.children.size() == 2) {
+    constant_eval::ConstexprValue lhs;
+    constant_eval::ConstexprValue rhs;
+    if(evaluator.eval_expr(expr.children[0], lhs) &&
+       evaluator.eval_expr(expr.children[1], rhs)) {
+      const auto try_builtin_class_conversion =
+          [&](const CppAstNode & source_expr,
+              const constant_eval::ConstexprValue & source_value,
+              const constant_eval::ConstexprValue & target_value,
+              bool source_is_lhs) -> bool
+          {
+            TypePtr source_type =
+                strip_top_level_cv(remove_reference_type(source_value.type));
+            TypePtr target_type =
+                strip_top_level_cv(remove_reference_type(target_value.type));
+            if(!source_type ||
+               !target_type ||
+               !ctx.class_info_for_type(source_type) ||
+               ctx.class_info_for_type(target_type)) {
+              return false;
+            }
+
+            constant_eval::ConstexprValue converted;
+            if(!evaluate_constexpr_target_conversion(ctx,
+                                                     scope,
+                                                     evaluator,
+                                                     source_expr,
+                                                     source_value,
+                                                     target_type,
+                                                     converted)) {
+              return false;
+            }
+            return source_is_lhs ?
+                constant_eval::constexpr_value_apply_binary(
+                    expr.simple_type, converted, target_value, out) :
+                constant_eval::constexpr_value_apply_binary(
+                    expr.simple_type, target_value, converted, out);
+          };
+
+      if(try_builtin_class_conversion(expr.children[0], lhs, rhs, true) ||
+         try_builtin_class_conversion(expr.children[1], rhs, lhs, false)) {
+        return true;
+      }
+    }
+  }
+
   const auto try_synthetic_call =
       [&](const CppAstNode & synthetic_call,
           bool treat_first_operand_as_implicit_object) -> bool
