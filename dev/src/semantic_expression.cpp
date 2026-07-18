@@ -1120,6 +1120,10 @@ bool try_analyze_member_pointer_data_access(SemanticContext & ctx,
     throw logic_error("invalid member-object pointer owner");
   }
 
+  const TypePtr cv_qualified_owner_type =
+      apply_member_object_cv(owner_type,
+                             member_object_cv_source_type(object_expr));
+
   ExprInfo adjusted_object = object_expr;
   if(node_has_simple_type(node, OP_DOTSTAR)) {
     TypePtr object_type = strip_top_level_cv(remove_reference_type(object_expr.type));
@@ -1129,7 +1133,7 @@ bool try_analyze_member_pointer_data_access(SemanticContext & ctx,
 
     ExprInfo converted;
     if(semantic_conversion::try_apply_inheritance_conversion(ctx,
-                                                             owner_type,
+                                                             cv_qualified_owner_type,
                                                              object_expr,
                                                              converted)) {
       adjusted_object = converted;
@@ -1143,7 +1147,7 @@ bool try_analyze_member_pointer_data_access(SemanticContext & ctx,
     }
 
     ExprInfo converted;
-    TypePtr target_pointer = make_pointer(owner_type);
+    TypePtr target_pointer = make_pointer(cv_qualified_owner_type);
     if(semantic_conversion::try_apply_inheritance_conversion(ctx,
                                                              target_pointer,
                                                              object_expr,

@@ -7501,7 +7501,8 @@ private:
       return emit_rvalue(value_node);
     }
     if(is_reference_type(value_node.semantic_type) ||
-       value_node.value_category == CVC_LVALUE) {
+       value_node.value_category == CVC_LVALUE ||
+       value_node.value_category == CVC_XVALUE) {
       return emit_lvalue_address(value_node);
     }
 
