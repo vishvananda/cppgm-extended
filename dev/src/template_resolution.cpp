@@ -10569,6 +10569,98 @@ bool is_dependent_qualified_nondeduced_type_context(
   }
 }
 
+bool alias_type_id_has_dependent_qualified_nondeduced_context(
+    const CppAstNode & node,
+    const std::vector<TemplateParameterInfo> & parameters)
+{
+  const QualifiedName * qualified = cppast_qualified_name_syntax(node);
+  if(qualified && !qualified->qualifiers.empty()) {
+    for(std::size_t parameter_index = 0;
+        parameter_index < parameters.size();
+        ++parameter_index) {
+      const std::string & parameter_name = parameters[parameter_index].name;
+      if(parameter_name.empty()) {
+        continue;
+      }
+      for(std::size_t qualifier_index = 0;
+          qualifier_index < qualified->qualifiers.size();
+          ++qualifier_index) {
+        if(name_matches_parameter_or_pack_spelling(
+               qualified->qualifiers[qualifier_index], parameter_name)) {
+          return true;
+        }
+        const TemplateIdSyntax * qualifier_template_id =
+            cppast_qualifier_template_id_syntax(node, qualifier_index);
+        if(qualifier_template_id &&
+           template_id_syntax_mentions_parameter_name(*qualifier_template_id,
+                                                      parameter_name)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(alias_type_id_has_dependent_qualified_nondeduced_context(
+           node.children[i], parameters)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+AliasTemplateDecl * direct_function_parameter_alias_template(
+    SemanticContext & ctx,
+    const FunctionTemplateDecl & decl,
+    std::size_t parameter_index)
+{
+  if(parameter_index >= decl.parameter_declarations_pattern.size() ||
+     !decl.parameter_declarations_pattern[parameter_index]) {
+    return nullptr;
+  }
+
+  const CppAstNode & parameter =
+      *decl.parameter_declarations_pattern[parameter_index];
+  const CppAstNode * specifiers =
+      find_child(parameter, CppAstKind::decl_specifier_seq);
+  if(!specifiers) {
+    return nullptr;
+  }
+
+  Scope * lookup_scope = decl.pattern_scope ? decl.pattern_scope :
+                          decl.declaring_scope;
+  if(!lookup_scope) {
+    return nullptr;
+  }
+
+  for(std::size_t i = 0; i < specifiers->children.size(); ++i) {
+    const CppAstNode & specifier = specifiers->children[i];
+    const TemplateIdSyntax * syntax = cppast_template_id_syntax(specifier);
+    if(!syntax || syntax->name.name.empty()) {
+      continue;
+    }
+    if(AliasTemplateDecl * alias =
+           semantic_lookup::lookup_alias_template_node(
+               ctx, *lookup_scope, syntax->name, specifier)) {
+      return alias;
+    }
+  }
+  return nullptr;
+}
+
+bool direct_function_parameter_alias_is_nondeduced(
+    SemanticContext & ctx,
+    const FunctionTemplateDecl & decl,
+    std::size_t parameter_index)
+{
+  AliasTemplateDecl * alias =
+      direct_function_parameter_alias_template(ctx, decl, parameter_index);
+  return alias &&
+         alias->type_id &&
+         alias_type_id_has_dependent_qualified_nondeduced_context(
+             *alias->type_id, alias->parameters);
+}
+
 bool is_dependent_qualified_nondeduced_type_context(
     SemanticContext & ctx,
     const std::vector<TemplateParameterInfo> & parameters,
@@ -11116,9 +11208,18 @@ bool can_skip_resolved_non_dependent_pattern_check(
   }
 
   if(type_mentions_function_template_parameter(ctx, decl.parameters, original_pattern)) {
-    if(type_mentions_function_template_parameter(ctx, decl.parameters, resolved_pattern) ||
-       type_mentions_unbound_function_template_parameter(
+    if(direct_function_parameter_alias_is_nondeduced(ctx, decl, param_index)) {
+      return true;
+    }
+
+    if(type_mentions_unbound_function_template_parameter(
            ctx, decl.parameters, scope, original_pattern)) {
+      return false;
+    }
+
+    if(type_mentions_function_template_parameter(ctx,
+                                                 decl.parameters,
+                                                 resolved_pattern)) {
       return false;
     }
 
