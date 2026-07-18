@@ -2246,10 +2246,14 @@ std::vector<std::string> expand_base_name_pack_texts(
     Scope & scope,
     const CppAstNode & base_name,
     std::vector<std::vector<TemplateArgumentSyntax> > * expanded_arg_syntaxes = nullptr,
+    std::vector<TypePtr> * expanded_base_types = nullptr,
     bool * expanded_pack = nullptr)
 {
   if(expanded_arg_syntaxes) {
     expanded_arg_syntaxes->clear();
+  }
+  if(expanded_base_types) {
+    expanded_base_types->clear();
   }
   if(expanded_pack) {
     *expanded_pack = false;
@@ -2271,6 +2275,15 @@ std::vector<std::string> expand_base_name_pack_texts(
 
   for(std::size_t i = 0; i < expanded.size(); ++i) {
     expanded[i] = semantic_utils::trim_space(expanded[i]);
+  }
+  if(expanded_base_types &&
+     callsemantic_internal::is_identifier_text(trimmed)) {
+    if(const std::vector<TypePtr> * pack =
+           lookup_bound_type_pack(scope, trimmed)) {
+      if(pack->size() == expanded.size()) {
+        *expanded_base_types = *pack;
+      }
+    }
   }
   if(expanded_arg_syntaxes) {
     if(const TemplateIdSyntax * base_template_syntax =
@@ -6501,12 +6514,14 @@ void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode
 
     std::vector<std::string> base_names;
     std::vector<std::vector<TemplateArgumentSyntax> > expanded_base_arg_syntaxes;
+    std::vector<TypePtr> expanded_base_types;
     bool expanded_base_pack = false;
     if(is_pack_expansion) {
       base_names = expand_base_name_pack_texts(ctx,
                                                *info.member_scope,
                                                *base_name,
                                                &expanded_base_arg_syntaxes,
+                                               &expanded_base_types,
                                                &expanded_base_pack);
     }
     if(base_names.empty()) {
@@ -6568,18 +6583,23 @@ void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode
                 *expanded_arg_syntaxes);
         base_node_for_lookup = &expanded_base_node;
       }
-      TypePtr base_type =
-          base_node_for_lookup != base_name || base_names[i] == base_name->value ?
-              resolve_base_type_node(ctx,
-                                     *info.member_scope,
-                                     *base_node_for_lookup,
-                                     false,
-                                     &info) :
-              lookup_base_type_name(ctx,
-                                    *info.member_scope,
-                                    base_names[i],
-                                    false,
-                                    &info);
+      TypePtr base_type;
+      if(i < expanded_base_types.size() && expanded_base_types[i]) {
+        base_type = expanded_base_types[i];
+      } else if(base_node_for_lookup != base_name ||
+                base_names[i] == base_name->value) {
+        base_type = resolve_base_type_node(ctx,
+                                           *info.member_scope,
+                                           *base_node_for_lookup,
+                                           false,
+                                           &info);
+      } else {
+        base_type = lookup_base_type_name(ctx,
+                                         *info.member_scope,
+                                         base_names[i],
+                                         false,
+                                         &info);
+      }
       semantic_template_class::append_base_clause_template_value_dependencies(
           ctx,
           *info.member_scope,
@@ -6655,12 +6675,14 @@ void parse_reference_base_clause(SemanticContext & ctx, ClassInfo & info, const 
 
     std::vector<std::string> base_names;
     std::vector<std::vector<TemplateArgumentSyntax> > expanded_base_arg_syntaxes;
+    std::vector<TypePtr> expanded_base_types;
     bool expanded_base_pack = false;
     if(is_pack_expansion) {
       base_names = expand_base_name_pack_texts(ctx,
                                                *info.member_scope,
                                                *base_name,
                                                &expanded_base_arg_syntaxes,
+                                               &expanded_base_types,
                                                &expanded_base_pack);
     }
     if(base_names.empty()) {
@@ -6722,18 +6744,23 @@ void parse_reference_base_clause(SemanticContext & ctx, ClassInfo & info, const 
                 *expanded_arg_syntaxes);
         base_node_for_lookup = &expanded_base_node;
       }
-      TypePtr base_type =
-          base_node_for_lookup != base_name || base_names[i] == base_name->value ?
-              resolve_base_type_node(ctx,
-                                     *info.member_scope,
-                                     *base_node_for_lookup,
-                                     true,
-                                     &info) :
-              lookup_base_type_name(ctx,
-                                    *info.member_scope,
-                                    base_names[i],
-                                    true,
-                                    &info);
+      TypePtr base_type;
+      if(i < expanded_base_types.size() && expanded_base_types[i]) {
+        base_type = expanded_base_types[i];
+      } else if(base_node_for_lookup != base_name ||
+                base_names[i] == base_name->value) {
+        base_type = resolve_base_type_node(ctx,
+                                           *info.member_scope,
+                                           *base_node_for_lookup,
+                                           true,
+                                           &info);
+      } else {
+        base_type = lookup_base_type_name(ctx,
+                                         *info.member_scope,
+                                         base_names[i],
+                                         true,
+                                         &info);
+      }
       semantic_template_class::append_base_clause_template_value_dependencies(
           ctx,
           *info.member_scope,
