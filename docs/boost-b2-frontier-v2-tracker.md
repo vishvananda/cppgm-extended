@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `18 / 147`
-- current cursor: `#19 libs/compute/test`
-- active compiler frontier: Compute exact forced intake
+- completed suites: `19 / 147`
+- current cursor: `#20 libs/concept_check/test`
+- active compiler frontier: Concept Check exact forced intake
 
 ## Baseline Gates
 
@@ -181,23 +181,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 16 | `libs/chrono/test` | pass | `(defaulted non-type declaring-scope fix)` + `(overloaded unary constexpr fallback fix)` + `(nested catch active-cleanup fix)` + `(dependent result active-scope fix)` | The initial exact forced survey finds 2997 targets, requests 420 updates, updates 304, fails 32 actions, and skips 84 downstream targets; log `/tmp/boost-frontier-v2-suite-016-initial-forced.log`. The first three fixes advance through 30, 25, and 6 failures in `/tmp/boost-frontier-v2-suite-016-after-default-scope-forced.log`, `/tmp/boost-frontier-v2-suite-016-after-unary-constexpr-forced.log`, and `/tmp/boost-frontier-v2-suite-016-after-active-catch-forced.log`. The focused `v1_io_ex1_s` target then passes compile, link, and runtime. The exact final forced graph finds 2997 targets, updates all 420 requested targets, and exits successfully with no failed actions or downstream skips; log `/tmp/boost-frontier-v2-suite-016-dependent-result-scope-final-forced.log`. | All four independent causes are closed. The final link family was not an ABI spelling defect: the out-of-class `ratio_string<Ratio, Char>::prefix()` result retained direct owner parameter `Char` after its metadata resolver discarded the active owner binding scope, so the definition did not attach to the concrete declaration. Direct carried owner parameters now use the active typed scope; compound-only metadata stays conservative. The final PA9-excluded direct report passes `3913/3913`, including PA37 `7/7`; strict, placement, reparse, cache-independence, GCC 15, and fixed/rolling performance gates pass. |
 | 17 | `libs/circular_buffer/test` | pass | `7836d6a18` | The exact four-job forced graph finds 1540 targets, updates all 34 requested targets, rebuilds and passes all seven test actions, and exits successfully; log `/tmp/boost-frontier-v2-suite-017-initial-forced.log`. | The current compiler passes `constant_erase_test`, `soft_iterator_invalidation`, both base variants, both space-optimized variants, and `bounded_buffer_comparison` without a repository change. |
 | 18 | `libs/compat/test` | pass | `(Compat final closure)` | The initial exact four-job forced graph finds 941 targets, requests 664 updates, updates 614, fails 20 actions, and skips 30 downstream targets. The member-data, function-designator, member-pointer, implicit-object ranking, contained-object virtual-base, structured member-pointer NTTP, initializer-list, global placement-new, local-class ABI, alias identity, function-designator trait, and cv-aware transfer repairs close the graph in sequence. The exact minimal final replay without the discarded consteval guard finds 941 targets, rebuilds all 220 requested targets, and exits successfully; log `/tmp/boost-frontier-v2-suite-018-without-consteval-guard-full-forced.log`. | Every Compat target passes, including `move_only_function_test` and `to_array_rvalue_test`. The PA9-excluded direct report passes `3928/3928`, including PA37 object roundtrip `7/7`; strict, placement, all 23 zero-reparse categories, twelve cache configurations, Clang/GCC warning gates, and candidate-only performance pass. |
-| 19 | `libs/compute/test` | pending | `(intake)` | Not yet surveyed in V2. | Run the exact forced suite next. |
+| 19 | `libs/compute/test` | pass | `cef8c677f` | The exact forced four-job graph performs its configuration checks, reports both OpenCL variants unavailable, finds the two bookkeeping targets, and exits successfully; log `/tmp/boost-frontier-v2-suite-019-initial-forced.log`. An immediate exact rerun independently records exit status 0. | This matches the inventory and prior-frontier behavior for this host configuration. No compiler or repository change was required. |
+| 20 | `libs/concept_check/test` | pending | `(intake)` | Not yet surveyed in V2. | Run the exact forced suite next. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#19 libs/compute/test`
+- suite: `#20 libs/concept_check/test`
 - focused target: full exact forced intake
-- last closed suite: `#18 libs/compat/test`
+- last closed suite: `#19 libs/compute/test`
 - failure phase: pending initial survey
 - diagnostic: none yet
 - reduced repro: none
 - owning PA/cluster: pending survey evidence
 - implementation area: pending survey evidence
 - performance risk: the exact Compat closure candidate improves every saved-parent metric; its immutable medians are `262633785323` instructions, `1285660672` RSS, and `1008902144` footprint
-- next action: run the exact forced Compute suite and classify any first failure
+- next action: run the exact forced Concept Check suite and classify any first failure
 
 ## Fix Ledger
 
@@ -316,6 +317,12 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-07-18`: Closed Compute and advanced the ordered cursor to suite 20,
+  `libs/concept_check/test`. The exact forced graph exits 0 after finding its
+  two bookkeeping targets; both OpenCL configurations are unavailable on this
+  host, matching the inventory and the established frontier convention. No
+  compiler or repository change was required, so no regression or performance
+  gate was triggered.
 - `2026-07-18`: Closed Compat and advanced the ordered cursor to suite 19,
   `libs/compute/test`. The final `move_only_function_test` path required five
   typed fixes: explicit initializer-list functional casts use the retained
@@ -1496,5 +1503,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=4 \
   /usr/local/bin/timeout 900 \
-  ./run-cppgm-b2.sh -a libs/compute/test
+  ./run-cppgm-b2.sh -a libs/concept_check/test
 ```
