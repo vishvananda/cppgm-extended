@@ -4002,20 +4002,23 @@ void analyze_function_body_semantics_impl(SemanticContext & ctx,
                                           Scope & scope,
                                           FunctionBinding & binding,
                                           bool cache_body_output,
-                                          bool note_witness_closures);
+                                          bool note_witness_closures,
+                                          bool include_special_members);
 
 void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
                                                       Scope & scope,
                                                       FunctionBinding & binding);
 
 bool function_body_semantics_available(SemanticContext & ctx,
-                                       const FunctionBinding & binding)
+                                       const FunctionBinding & binding,
+                                       bool include_special_members)
 {
   return binding.body &&
-         !binding.is_constructor &&
-         !binding.is_destructor &&
-         !binding.is_copy_assignment &&
-         !binding.is_move_assignment &&
+         (include_special_members ||
+          (!binding.is_constructor &&
+           !binding.is_destructor &&
+           !binding.is_copy_assignment &&
+           !binding.is_move_assignment)) &&
          !binding.definition_output_in_progress &&
          !binding.definition_output_emitted &&
          semantic_template_output_policy::function_instantiation_arguments_complete(
@@ -4612,9 +4615,10 @@ void analyze_function_body_semantics_impl(SemanticContext & ctx,
                                           Scope & scope,
                                           FunctionBinding & binding,
                                           bool cache_body_output,
-                                          bool note_witness_closures)
+                                          bool note_witness_closures,
+                                          bool include_special_members)
 {
-  if(!function_body_semantics_available(ctx, binding)) {
+  if(!function_body_semantics_available(ctx, binding, include_special_members)) {
     return;
   }
 
@@ -4692,12 +4696,12 @@ void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
                                                       FunctionBinding & binding)
 {
   if(!witness::source_capture_enabled(ctx.template_witness_context()) ||
-     !function_body_semantics_available(ctx, binding)) {
+     !function_body_semantics_available(ctx, binding, false)) {
     return;
   }
   const template_api::ScopedTemplateWitnessEntryContext entry_context =
       template_api::maybe_enter_function_body_materialization_context(ctx, &binding);
-  analyze_function_body_semantics_impl(ctx, scope, binding, false, true);
+  analyze_function_body_semantics_impl(ctx, scope, binding, false, true, false);
 }
 
 void analyze_class_simple_declaration_output(SemanticContext & ctx,
@@ -6073,7 +6077,23 @@ void validate_function_body_and_cache_output(SemanticContext & ctx,
   if(!cache_body_output) {
     binding.cached_body_output.reset();
   }
-  analyze_function_body_semantics_impl(ctx, scope, binding, cache_body_output, false);
+  analyze_function_body_semantics_impl(ctx,
+                                       scope,
+                                       binding,
+                                       cache_body_output,
+                                       false,
+                                       false);
+}
+
+bool validate_function_body_for_semantic_use(SemanticContext & ctx,
+                                             Scope & scope,
+                                             FunctionBinding & binding)
+{
+  if(!function_body_semantics_available(ctx, binding, true)) {
+    return false;
+  }
+  analyze_function_body_semantics_impl(ctx, scope, binding, false, false, true);
+  return true;
 }
 
 void analyze_class_output_from_info(SemanticContext & ctx,

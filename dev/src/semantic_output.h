@@ -90,6 +90,11 @@ void validate_function_body_and_cache_output(SemanticContext & ctx,
                                              semantic_model::Scope & scope,
                                              semantic_model::FunctionBinding & binding);
 
+bool validate_function_body_for_semantic_use(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    semantic_model::FunctionBinding & binding);
+
 void analyze_class_output_from_info(SemanticContext & ctx,
                                     OutputState & state,
                                     semantic_model::ClassInfo & info,

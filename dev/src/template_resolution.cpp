@@ -1565,9 +1565,12 @@ bool bind_non_type_function_argument(SemanticContext * semantic_context,
   if(!function) {
     return false;
   }
-  if(semantic_context && function->symbol.object_symbol.empty()) {
-    semantic_context->upgrade_function_symbol_linkage(function,
-                                                      function->symbol.linkage);
+  if(semantic_context) {
+    semantic_context->request_function_definition_semantic_validation(function);
+    if(function->symbol.object_symbol.empty()) {
+      semantic_context->upgrade_function_symbol_linkage(function,
+                                                        function->symbol.linkage);
+    }
   }
   out.kind = TemplateArgument::TA_VALUE;
   out.type = target_type;

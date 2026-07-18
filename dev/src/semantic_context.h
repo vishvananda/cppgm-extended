@@ -208,6 +208,8 @@ public:
   virtual bool should_materialize_direct_call_output(
       const semantic_model::FunctionBinding & binding) const = 0;
   virtual const AnalysisPolicy & current_analysis_policy() const = 0;
+  virtual void request_function_definition_semantic_validation(
+      semantic_model::FunctionBinding * binding) = 0;
   virtual bool expand_output_closure_enabled() const = 0;
   virtual bool emit_all_source_function_definitions() const = 0;
   virtual semantic_metrics::AnalyzerCounters * performance_counters() = 0;

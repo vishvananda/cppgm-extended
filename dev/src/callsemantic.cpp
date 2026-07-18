@@ -706,6 +706,11 @@ public:
       semantic_metrics::ScopedPhaseTimer phase("semantic.determine_virtual_abi_mode");
       determine_virtual_abi_mode();
     }
+    {
+      semantic_metrics::ScopedPhaseTimer phase(
+          "semantic.validate_function_non_type_arguments");
+      drain_function_semantic_validations();
+    }
     DumpNode out;
     {
       ScopedCallSemConstructionPath construction_path("semantic.translation-unit");
@@ -767,6 +772,7 @@ public:
         }
       }
     }
+    drain_function_semantic_validations();
     bool pending_output_changed = false;
     do {
       if(semantic_metrics::AnalyzerCounters * counters = performance_counters()) {
@@ -850,6 +856,7 @@ public:
             "semantic.fixpoint.callee_closure");
         semantic_output::expand_emitted_output_callee_closure(*this, state, out);
       }
+      drain_function_semantic_validations();
 
       pending_output_changed =
           out.children.size() != previous_output_count ||
@@ -1440,6 +1447,11 @@ private:
   map<string, string> exported_symbol_owners;
   map<string, string> exported_symbol_internals;
   AnalysisPolicy analysis_policy_;
+  bool function_semantic_validation_active_ = false;
+  vector<FunctionBinding *> pending_function_semantic_validation_;
+  unordered_set<FunctionBinding *> queued_function_semantic_validation_;
+  unordered_set<FunctionBinding *> completed_function_semantic_validation_;
+  size_t function_semantic_validation_index_ = 0;
   const bool collect_metrics_ = semantic_metrics::enabled();
   mutable semantic_cache::SemanticCache cache_state_;
   mutable semantic_metrics::AnalyzerCounters metrics_;
@@ -3223,6 +3235,10 @@ private:
                                    OutputReason reason,
                                    bool enabled = true) override
   {
+    if(function_semantic_validation_active_) {
+      enqueue_function_semantic_validation(binding);
+      return;
+    }
     CallableEmissionDecision decision =
         decide_callable_emission(binding, reason, enabled);
     if(!decision.should_seed_definition) {
@@ -3348,6 +3364,9 @@ private:
       FunctionBinding * binding,
       InstantiatedFunctionOutputMode mode = InstantiatedFunctionOutputMode::TrackOnly) override
   {
+    if(function_semantic_validation_active_) {
+      return;
+    }
     output_requirement_engine::State state = make_output_requirement_state();
     output_requirement_engine::Hooks hooks = make_output_requirement_hooks();
     output_requirement_engine::note_instantiation(state, hooks, binding, mode);
@@ -3432,6 +3451,100 @@ private:
   const AnalysisPolicy & current_analysis_policy() const override
   {
     return analysis_policy_;
+  }
+
+  void enqueue_function_semantic_validation(FunctionBinding * binding)
+  {
+    if(!binding ||
+       binding->is_deleted ||
+       !function_binding_is_live(binding) ||
+       completed_function_semantic_validation_.count(binding) != 0 ||
+       !queued_function_semantic_validation_.insert(binding).second) {
+      return;
+    }
+    pending_function_semantic_validation_.push_back(binding);
+  }
+
+  void request_function_definition_semantic_validation(
+      FunctionBinding * binding) override
+  {
+    if(!binding ||
+       binding->is_deleted ||
+       !analysis_policy_.instantiate_function_bodies ||
+       !function_binding_is_live(binding)) {
+      return;
+    }
+    enqueue_function_semantic_validation(binding);
+  }
+
+  void drain_function_semantic_validations()
+  {
+    if(function_semantic_validation_active_ ||
+       function_semantic_validation_index_ >=
+           pending_function_semantic_validation_.size()) {
+      return;
+    }
+
+    struct ScopedFunctionSemanticValidation
+    {
+      explicit ScopedFunctionSemanticValidation(Analyzer & analyzer_in)
+        : analyzer(analyzer_in)
+      {
+        analyzer.function_semantic_validation_active_ = true;
+      }
+
+      ~ScopedFunctionSemanticValidation()
+      {
+        analyzer.function_semantic_validation_active_ = false;
+      }
+
+      Analyzer & analyzer;
+    } validation_scope(*this);
+
+    AnalysisPolicy validation_policy = analysis_policy_;
+    validation_policy.expand_output_closure = false;
+    validation_policy.materialize_direct_call_output = false;
+    validation_policy.materialize_user_defined_output = false;
+    ScopedAnalysisPolicyOverride policy_scope(*this, validation_policy);
+
+    while(function_semantic_validation_index_ <
+          pending_function_semantic_validation_.size()) {
+      FunctionBinding * current =
+          pending_function_semantic_validation_[function_semantic_validation_index_++];
+      if(!current ||
+         current->is_deleted ||
+         !function_binding_is_live(current)) {
+        continue;
+      }
+
+      Scope * validation_parent =
+          current->owner_class && current->owner_class->member_scope ?
+              current->owner_class->member_scope.get() :
+              current->declaration_scope;
+      if(validation_parent &&
+         (!current->has_definition || !current->body)) {
+        FunctionBinding * upgraded =
+            ensure_function_template_definition(current, *validation_parent);
+        if(upgraded && upgraded != current) {
+          enqueue_function_semantic_validation(upgraded);
+          continue;
+        }
+        current = upgraded ? upgraded : current;
+      }
+      if(!validation_parent) {
+        validation_parent = current->declaration_scope;
+      }
+      if(!validation_parent ||
+         completed_function_semantic_validation_.count(current) != 0) {
+        continue;
+      }
+      if(semantic_output::validate_function_body_for_semantic_use(
+             *this, *validation_parent, *current)) {
+        completed_function_semantic_validation_.insert(current);
+      } else {
+        queued_function_semantic_validation_.erase(current);
+      }
+    }
   }
 
   bool emit_all_source_function_definitions() const override
@@ -18642,6 +18755,9 @@ private:
 
   void track_instantiated_class(ClassInfo * info) override
   {
+    if(function_semantic_validation_active_) {
+      return;
+    }
     callsemantic::TypeRegistryState state = type_registry_state();
     callsemantic::track_instantiated_class(state, info);
   }
