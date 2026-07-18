@@ -9,8 +9,18 @@ Why these files exist:
   source text changes as the compiler evolves
 - that makes before/after timing comparisons noisy, because the benchmark
   input changes at the same time as the compiler
-- these snapshots keep the benchmark source text fixed while still compiling
-  against the current `dev/src` headers and implementation
+- these snapshots keep the benchmark source text fixed
+- the primary `semantic_overload.cpp` regression gate also freezes its
+  project-header closure, so compiler implementation changes are its only
+  repository-side workload variable
+
+The `stable/include/` tree is specifically the frozen project-header closure
+for `stable/semantic_overload.cpp`. It must be selected instead of `dev/src`
+for that regression gate. The other corpus entries remain source-only snapshots
+unless their command explicitly selects a separately verified frozen closure.
+See `stable/FROZEN_HEADERS.md` for provenance and refresh policy. Host
+standard-library headers remain a machine/toolchain input, so comparisons still
+require the same host environment.
 
 Per-slice frozen corpus:
 

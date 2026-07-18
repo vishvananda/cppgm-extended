@@ -25,7 +25,8 @@ workers will compare against.
 scripts/validate_perf_regression.py record \
   --baseline /tmp/cppgm-semantic-overload-baseline.json \
   --runs 3 \
-  -- ./dev/cppgm++ -I dev/src -c -o /tmp/cppgm-baseline.o \
+  -- ./dev/cppgm++ -I benchmarks/self_compile/stable/include \
+     -c -o /tmp/cppgm-baseline.o \
      benchmarks/self_compile/stable/semantic_overload.cpp
 ```
 
@@ -47,7 +48,8 @@ median and fails if instruction count or memory rises past tolerance.
 ```sh
 scripts/validate_perf_regression.py check \
   --baseline /tmp/cppgm-semantic-overload-baseline.json \
-  -- ./dev/cppgm++ -I dev/src -c -o /tmp/cppgm-candidate.o \
+  -- ./dev/cppgm++ -I benchmarks/self_compile/stable/include \
+     -c -o /tmp/cppgm-candidate.o \
      benchmarks/self_compile/stable/semantic_overload.cpp
 ```
 
@@ -64,7 +66,13 @@ Do not relax tolerances to keep a change unless the delta has been explained.
 
 - Run from the repository root after building the compiler under test.
 - Keep the baseline command and candidate command equivalent. Changing only the
-  `-o` path is fine.
+  `-o` path is fine. The checker rejects other command differences, including a
+  changed project include path, before accepting metric deltas.
+- The default self-compile workload uses the checked-in project headers under
+  `benchmarks/self_compile/stable/include`; do not substitute live `dev/src`
+  headers. Changing the frozen source or header closure starts a new benchmark
+  epoch and requires a new baseline. Host standard-library headers are not
+  vendored, so keep the host compiler configuration and standard library fixed.
 - The script uses `/usr/bin/time -lp`, including macOS hardware-counter fields.
   If those fields are missing, the check fails instead of silently passing.
 - Store shared project baselines outside the worktree or in a deliberately

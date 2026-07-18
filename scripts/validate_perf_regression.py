@@ -18,7 +18,7 @@ import sys
 DEFAULT_COMMAND = [
     "./dev/cppgm++",
     "-I",
-    "dev/src",
+    "benchmarks/self_compile/stable/include",
     "-c",
     "-o",
     "/tmp/cppgm-perf-check.o",
@@ -126,6 +126,25 @@ def clean_command(command):
     if cleaned and cleaned[0] == "--":
         cleaned = cleaned[1:]
     return cleaned or list(DEFAULT_COMMAND)
+
+
+def normalized_workload_command(command):
+    normalized = []
+    skip_output = False
+    for arg in command:
+        if skip_output:
+            normalized.append("<output>")
+            skip_output = False
+            continue
+        if arg == "-o":
+            normalized.append(arg)
+            skip_output = True
+            continue
+        if arg.startswith("-o") and len(arg) > 2:
+            normalized.append("-o<output>")
+            continue
+        normalized.append(arg)
+    return normalized
 
 
 def run_once(time_binary, repo_root, command, timeout_sec):
@@ -263,6 +282,13 @@ def compare_reports(baseline, candidate, args):
     baseline_summary = baseline.get("summary", {})
     candidate_summary = candidate.get("summary", {})
     failures = []
+    baseline_command = normalized_workload_command(baseline.get("command", []))
+    candidate_command = normalized_workload_command(candidate.get("command", []))
+    if baseline_command != candidate_command:
+        failures.append(
+            "benchmark workload command differs: baseline=%s candidate=%s"
+            % (" ".join(baseline_command), " ".join(candidate_command))
+        )
     rows = []
 
     for key, label, tolerance_attr in CHECKS:
