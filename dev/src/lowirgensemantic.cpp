@@ -8014,6 +8014,52 @@ private:
     return use_host_eh_runtime() && !host_eh_dispatch_labels_.empty();
   }
 
+  size_t active_host_cleanup_scope_index() const
+  {
+    for(size_t i = cleanup_scope_host_unwind_cleanup_.size(); i-- > 0;) {
+      if(cleanup_scope_host_unwind_cleanup_[i]) {
+        return i;
+      }
+    }
+    throw logic_error("active host cleanup scope missing");
+  }
+
+  bool should_route_to_active_host_cleanup() const
+  {
+    if(active_host_cleanup_labels_.empty()) {
+      return false;
+    }
+    const size_t cleanup_index = active_host_cleanup_scope_index();
+    for(size_t i = cleanup_scopes_.size(); i > cleanup_index + 1; --i) {
+      const vector<CleanupAction> & scope = cleanup_scopes_[i - 1];
+      if(any_of(scope.begin(),
+                scope.end(),
+                [](const CleanupAction & cleanup)
+                {
+                  return cleanup.kind == CleanupAction::CK_EH_END;
+                })) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void emit_throw_cleanups_to_active_host_cleanup(
+      const string & excluded_destroy_ptr = string())
+  {
+    close_shared_host_call_unwind_region();
+    const size_t cleanup_index = active_host_cleanup_scope_index();
+    for(size_t i = cleanup_scopes_.size(); i > cleanup_index + 1; --i) {
+      if(excluded_destroy_ptr.empty()) {
+        emit_scope_cleanups(cleanup_scopes_[i - 1], true);
+      } else {
+        emit_scope_cleanups_excluding_destroy_at_ptr(cleanup_scopes_[i - 1],
+                                                     excluded_destroy_ptr,
+                                                     true);
+      }
+    }
+  }
+
   void emit_host_eh_unwind_to_depth(size_t current_depth, size_t target_depth)
   {
     close_shared_host_call_unwind_region();
@@ -8032,6 +8078,37 @@ private:
       terminate("jump " + lowir_block_name(host_eh_dispatch_labels_.back()));
     } else {
       emit_host_eh_unwind_to_depth(current_depth, 0);
+      terminate("resume");
+    }
+  }
+
+  void terminate_through_active_host_cleanup(
+      bool close_current_landingpad_region,
+      bool include_constructor_unwind_cleanups = false,
+      const string & excluded_destroy_ptr = string())
+  {
+    if(!should_route_to_active_host_cleanup()) {
+      throw logic_error("host cleanup propagation target missing");
+    }
+    emit_throw_cleanups_to_active_host_cleanup(excluded_destroy_ptr);
+    if(close_current_landingpad_region) {
+      emit_line("eh_end");
+    }
+    const size_t cleanup_index = active_host_cleanup_scope_index();
+    if(excluded_destroy_ptr.empty()) {
+      emit_scope_cleanups(cleanup_scopes_[cleanup_index]);
+    } else {
+      emit_scope_cleanups_excluding_destroy_at_ptr(cleanup_scopes_[cleanup_index],
+                                                   excluded_destroy_ptr);
+    }
+    emit_line("eh_end");
+    if(has_host_eh_dispatch_target()) {
+      terminate("jump " + lowir_block_name(host_eh_dispatch_labels_.back()));
+    } else if(include_constructor_unwind_cleanups &&
+              !constructor_function_try_dispatch_labels_.empty()) {
+      terminate("jump " +
+                lowir_block_name(constructor_function_try_dispatch_labels_.back()));
+    } else {
       terminate("resume");
     }
   }
@@ -8064,17 +8141,23 @@ private:
       emit_host_eh_handler_metadata(*host_eh_handler_nodes_.back());
       emit_line("eh_cleanup");
     }
-    emit_call_unwind_dispatch_cleanups(include_constructor_unwind_cleanups,
-                                       excluded_destroy_ptr);
-    if(has_host_eh_dispatch_target()) {
-      terminate_host_eh_dispatch_or_resume(host_dispatch_depth);
-    } else if(include_constructor_unwind_cleanups &&
-              !constructor_function_try_dispatch_labels_.empty()) {
-      emit_line("eh_end");
-      terminate("jump " +
-                lowir_block_name(constructor_function_try_dispatch_labels_.back()));
+    if(should_route_to_active_host_cleanup()) {
+      terminate_through_active_host_cleanup(true,
+                                            include_constructor_unwind_cleanups,
+                                            excluded_destroy_ptr);
     } else {
-      terminate("resume");
+      emit_call_unwind_dispatch_cleanups(include_constructor_unwind_cleanups,
+                                         excluded_destroy_ptr);
+      if(has_host_eh_dispatch_target()) {
+        terminate_host_eh_dispatch_or_resume(host_dispatch_depth);
+      } else if(include_constructor_unwind_cleanups &&
+                !constructor_function_try_dispatch_labels_.empty()) {
+        emit_line("eh_end");
+        terminate("jump " +
+                  lowir_block_name(constructor_function_try_dispatch_labels_.back()));
+      } else {
+        terminate("resume");
+      }
     }
   }
 
@@ -15616,6 +15699,14 @@ private:
 
       start_block(dispatch_label);
       emit_host_eh_handler_metadata(node);
+      if(should_route_to_active_host_cleanup()) {
+        emit_line("eh_cleanup");
+        if(has_host_eh_dispatch_target() &&
+           !host_eh_handler_nodes_.empty() &&
+           host_eh_handler_nodes_.back()) {
+          emit_host_eh_handler_metadata(*host_eh_handler_nodes_.back());
+        }
+      }
       if(handler_entry_label != dispatch_label) {
         terminate("jump " + lowir_block_name(handler_entry_label));
         start_block(handler_entry_label);
@@ -15842,15 +15933,25 @@ private:
             emit_host_eh_handler_metadata(*host_eh_handler_nodes_.back());
           }
           emit_scope_cleanups(body_cleanups);
-          terminate_host_eh_dispatch_or_resume(catch_cleanup_depth);
           if(active_host_cleanup_labels_.empty() ||
              active_host_cleanup_labels_.back() != cleanup_label) {
             throw logic_error("host EH cleanup label stack mismatch");
           }
           active_host_cleanup_labels_.pop_back();
+          pop_cleanup_scope();
+          pop_binding_scope();
+          if(should_route_to_active_host_cleanup()) {
+            terminate_through_active_host_cleanup(true);
+          } else {
+            if(catch_cleanup_depth == 0) {
+              throw logic_error("host catch cleanup depth underflow");
+            }
+            terminate_host_eh_dispatch_or_resume(catch_cleanup_depth);
+          }
+        } else {
+          pop_cleanup_scope();
+          pop_binding_scope();
         }
-        pop_cleanup_scope();
-        pop_binding_scope();
 
         next_label = miss_label;
       }
@@ -15865,15 +15966,20 @@ private:
             is_constructor_function_ &&
             throw_will_escape_current_function() &&
             !constructor_unwind_cleanups_.empty();
-        emit_call_unwind_dispatch_cleanups(include_constructor_cleanups);
-        if(has_host_eh_dispatch_target()) {
-          terminate("jump " + lowir_block_name(host_eh_dispatch_labels_.back()));
-        } else if(include_constructor_cleanups &&
-                  !constructor_function_try_dispatch_labels_.empty()) {
-          terminate("jump " +
-                    lowir_block_name(constructor_function_try_dispatch_labels_.back()));
+        if(should_route_to_active_host_cleanup()) {
+          terminate_through_active_host_cleanup(false,
+                                                include_constructor_cleanups);
         } else {
-          terminate("resume");
+          emit_call_unwind_dispatch_cleanups(include_constructor_cleanups);
+          if(has_host_eh_dispatch_target()) {
+            terminate("jump " + lowir_block_name(host_eh_dispatch_labels_.back()));
+          } else if(include_constructor_cleanups &&
+                    !constructor_function_try_dispatch_labels_.empty()) {
+            terminate("jump " +
+                      lowir_block_name(constructor_function_try_dispatch_labels_.back()));
+          } else {
+            terminate("resume");
+          }
         }
       } else {
         terminate("resume");
