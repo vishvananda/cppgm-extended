@@ -1105,6 +1105,18 @@ bool ref_qualifier_accepts_implicit_object(RefQualifier ref_qualifier,
   return false;
 }
 
+bool member_pointer_ref_qualifier_rejects_object(
+    FunctionTypeRefQualifier qualifier,
+    ValueCategory category)
+{
+  switch(qualifier) {
+  case FTRQ_NONE: return false;
+  case FTRQ_LVALUE: return category != VC_LVALUE;
+  case FTRQ_RVALUE: return category == VC_LVALUE;
+  }
+  return false;
+}
+
 TypePtr value_conversion_type(const ExprInfo & expr)
 {
   if(!expr.type) {

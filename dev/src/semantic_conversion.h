@@ -55,6 +55,9 @@ bool try_semantic_exact_reference_binding(SemanticContext & ctx,
 bool ref_qualifier_accepts_implicit_object(semantic_model::RefQualifier ref_qualifier,
                                            const cpp_decl::TypePtr & implicit_object_parameter,
                                            ValueCategory category);
+bool member_pointer_ref_qualifier_rejects_object(
+    cpp_decl::FunctionTypeRefQualifier qualifier,
+    ValueCategory category);
 void apply_standard_conversion_result_metadata(SemanticContext & ctx,
                                                const cpp_decl::TypePtr & target,
                                                const ExprInfo & expr,

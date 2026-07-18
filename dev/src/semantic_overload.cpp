@@ -13218,6 +13218,16 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       throw logic_error("invalid member function pointer call type");
     }
 
+    const ValueCategory implicit_object_category =
+        node_has_simple_type(*bound_member_pointer_callee, OP_DOTSTAR) ?
+            object_expr.category :
+            VC_LVALUE;
+    if(semantic_conversion::member_pointer_ref_qualifier_rejects_object(
+           callable_function_type->function_ref_qualifier,
+           implicit_object_category)) {
+      throw logic_error("pointer-to-member call object ref-qualifier mismatch");
+    }
+
     ExprInfo implicit_object_expr;
     if(node_has_simple_type(*bound_member_pointer_callee, OP_DOTSTAR)) {
       {

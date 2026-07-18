@@ -7925,16 +7925,6 @@ TypePtr callable_function_type_for_member_pointer_trait(
                        base->inner->function_ref_qualifier);
 }
 
-RefQualifier trait_ref_qualifier_for_function_type(FunctionTypeRefQualifier qualifier)
-{
-  switch(qualifier) {
-  case FTRQ_NONE: return RQ_NONE;
-  case FTRQ_LVALUE: return RQ_LVALUE;
-  case FTRQ_RVALUE: return RQ_RVALUE;
-  }
-  return RQ_NONE;
-}
-
 bool pointer_to_member_owner_conversion_compatible(
     template_api::TemplateTypeSystem & type_system,
     const TypePtr & target_pointer,
@@ -8237,11 +8227,9 @@ bool member_pointer_structured_invocation_result(
       }
     }
 
-    const RefQualifier ref_qualifier =
-        trait_ref_qualifier_for_function_type(function_type->function_ref_qualifier);
-    if(ref_qualifier_rejects_implicit_object(ref_qualifier,
-                                             function_type->params[0],
-                                             object_category)) {
+    if(semantic_conversion::member_pointer_ref_qualifier_rejects_object(
+           function_type->function_ref_qualifier,
+           object_category)) {
       return false;
     }
 
