@@ -10190,17 +10190,24 @@ TypePtr leaf_member_pointer_function_type(const FunctionBinding & binding)
   TypePtr member_function_type = binding.declared_type ? binding.declared_type :
                                                          binding.type;
   TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
+  FunctionTypeRefQualifier ref_qualifier = FTRQ_NONE;
+  if(binding.ref_qualifier == RQ_LVALUE) {
+    ref_qualifier = FTRQ_LVALUE;
+  } else if(binding.ref_qualifier == RQ_RVALUE) {
+    ref_qualifier = FTRQ_RVALUE;
+  }
   if(stripped_function_type &&
      stripped_function_type->kind == Type::TK_FUNCTION &&
      (stripped_function_type->function_const != binding.is_const_method ||
-      stripped_function_type->function_volatile != binding.is_volatile_method)) {
+      stripped_function_type->function_volatile != binding.is_volatile_method ||
+      stripped_function_type->function_ref_qualifier != ref_qualifier)) {
     member_function_type = make_function(stripped_function_type->inner,
                                          stripped_function_type->params,
                                          stripped_function_type->variadic,
                                          binding.is_const_method,
                                          binding.is_volatile_method,
                                          stripped_function_type->prototype_relaxed,
-                                         stripped_function_type->function_ref_qualifier);
+                                         ref_qualifier);
   }
   return member_function_type;
 }
@@ -10226,31 +10233,44 @@ bool resolve_leaf_qualified_member_function_pointer_type(
   }
 
   TypePtr owner_type;
+  const size_t owner_component_index = owner_name.qualifiers.size();
+  if(const CppAstNode * retained_owner_type =
+         cppast_qualifier_type_syntax(operand, owner_component_index)) {
+    owner_type = retained_owner_type->semantic_type;
+  }
   CppAstNode owner_node;
   copy_qualified_owner_syntax(operand, owner_name, owner_node);
   const string owner_lookup_text = template_api::qualified_name_text(owner_name);
-  const StructuredTypeLookupResult qualified_template_result =
-      resolve_qualified_template_type_lookup_node(services,
-                                                  scope,
-                                                  owner_lookup_text,
-                                                  owner_node,
-                                                  false,
-                                                  string(),
-                                                  owner_type);
-  if(qualified_template_result == StructuredTypeLookupResult::NoMatch) {
-    return false;
+  if(!owner_type && services.semantic_context) {
+    owner_type = services.semantic_context->lookup_type_node(scope,
+                                                             owner_node,
+                                                             owner_lookup_text,
+                                                             false);
   }
-  if(qualified_template_result != StructuredTypeLookupResult::Resolved ||
-     !owner_type) {
-    const StructuredTypeLookupResult structured_result =
-        resolve_structured_type_lookup_node(services,
-                                            scope,
-                                            owner_node,
-                                            false,
-                                            string(),
-                                            owner_type);
-    if(structured_result == StructuredTypeLookupResult::NoMatch) {
+  if(!owner_type) {
+    const StructuredTypeLookupResult qualified_template_result =
+        resolve_qualified_template_type_lookup_node(services,
+                                                    scope,
+                                                    owner_lookup_text,
+                                                    owner_node,
+                                                    false,
+                                                    string(),
+                                                    owner_type);
+    if(qualified_template_result == StructuredTypeLookupResult::NoMatch) {
       return false;
+    }
+    if(qualified_template_result != StructuredTypeLookupResult::Resolved ||
+       !owner_type) {
+      const StructuredTypeLookupResult structured_result =
+          resolve_structured_type_lookup_node(services,
+                                              scope,
+                                              owner_node,
+                                              false,
+                                              string(),
+                                              owner_type);
+      if(structured_result == StructuredTypeLookupResult::NoMatch) {
+        return false;
+      }
     }
   }
   if(!owner_type) {
