@@ -23276,7 +23276,8 @@ bool substitute_type_pack_expression_node(
           out.children[1].kind == CppAstKind::abstract_declarator) &&
          out.children[1].children.size() == 1 &&
          (out.children[1].children[0].kind == CppAstKind::parameter_pack ||
-          out.children[1].children[0].kind == CppAstKind::ptr_operator));
+          (out.children[1].children[0].kind == CppAstKind::ptr_operator &&
+           out.children[1].children[0].has_token)));
     const string direct_type_name =
         type_name ? strip_template_parameter_type_prefix(type_name->value) :
                     string();
