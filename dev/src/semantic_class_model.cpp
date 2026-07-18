@@ -6823,6 +6823,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.nonvirtual_size = 0;
   info.nonvirtual_alignment = 1;
   info.complete = false;
+  info.concrete_layout_deferred = false;
   info.reference_reset_witness_class_templates.clear();
   info.reentrant_primary_selection = false;
   info.type->named_complete = false;
@@ -6998,6 +6999,7 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
   info.nonvirtual_size = 0;
   info.nonvirtual_alignment = 1;
   info.complete = false;
+  info.concrete_layout_deferred = false;
   if(info.type) {
     info.type->named_complete = false;
     info.type->named_has_layout = false;
@@ -7487,6 +7489,7 @@ void finalize_class_layout(SemanticContext & ctx,
     info.type->named_is_empty = ctx.is_empty_class_info(&info);
     info.type->named_host_abi_chunks.clear();
     info.complete = true;
+    info.concrete_layout_deferred = false;
     sync_anonymous_storage_member_bindings(ctx, info);
     return;
   }
@@ -7827,6 +7830,7 @@ void finalize_class_layout(SemanticContext & ctx,
   info.type->named_size = class_size;
   info.type->named_is_empty = ctx.is_empty_class_info(&info);
   info.complete = true;
+  info.concrete_layout_deferred = false;
   info.type->named_host_abi_chunks.clear();
   collect_host_direct_integer_abi_chunks(ctx, info.type, info.type->named_host_abi_chunks);
   sync_anonymous_storage_member_bindings(ctx, info);
@@ -11344,6 +11348,7 @@ void populate_class_info(SemanticContext & ctx,
 
   if(dependent_class) {
     info.reference_members_collected = true;
+    info.concrete_layout_deferred = false;
     ctx.finalize_dependent_class_shape(info);
     trace_class_collection_event(ctx, "populate-class-dependent-finalized", info, node);
     full_collection_finished = true;
@@ -11374,6 +11379,7 @@ void populate_class_info(SemanticContext & ctx,
   }
   if(ctx.class_layout_depends_on_template_parameters(info)) {
     info.reference_members_collected = true;
+    info.concrete_layout_deferred = !info.dependent_instantiation;
     ctx.finalize_dependent_class_shape(info);
     trace_class_collection_event(ctx, "populate-class-dependent-layout", info, node);
     full_collection_finished = true;

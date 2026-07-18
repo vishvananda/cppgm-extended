@@ -31610,6 +31610,22 @@ private:
       note_performance_counter(&semantic_metrics::AnalyzerCounters::complete_class_type_no_class);
       return nullptr;
     }
+    if(info->complete &&
+       info->concrete_layout_deferred &&
+       info->type &&
+       !info->type->named_has_layout &&
+       info->source_template &&
+       info->template_output_node &&
+       !info->dependent_instantiation &&
+       !info->template_instantiation_in_progress &&
+       !info->full_member_collection_in_progress &&
+       !info->reference_member_collection_in_progress) {
+      // This typed provenance means an earlier concrete completion stopped at
+      // a recursively unavailable layout. Retry only when a later explicit
+      // layout demand can rematerialize that same specialization.
+      reset_instantiated_class_info(
+          *info, info->source_template->name, info->template_output_node);
+    }
     if(info->complete) {
       note_performance_counter(
           &semantic_metrics::AnalyzerCounters::complete_class_type_already_complete);

@@ -9366,6 +9366,7 @@ ClassInfo * instantiate_selected_class_template(
       ctx.reset_instantiated_class_info(*info, decl.name, class_node);
     } else if(info->reference_members_collected && !info->complete) {
       if(info->dependent_instantiation && current_arguments_dependent) {
+        info->concrete_layout_deferred = false;
         ctx.finalize_dependent_class_shape(*info);
         trace_class_instantiation("reuse-dependent", info, "reference-members-only");
         return info;

@@ -579,6 +579,10 @@ struct ClassInfo
   std::size_t nonvirtual_size = 0;
   std::size_t nonvirtual_alignment = 1;
   bool complete = false;
+  // A concrete specialization can be structurally complete before a
+  // recursively referenced concrete type has a layout. A later explicit
+  // completion may rematerialize only specializations with this provenance.
+  bool concrete_layout_deferred = false;
   MemberAccess default_access = MA_PRIVATE;
   ClassTemplateDecl * source_template = nullptr;
   std::map<std::string, ClassTemplateDecl *>
