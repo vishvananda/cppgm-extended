@@ -2182,6 +2182,9 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
   CppAstNode member_name;
   member_name.kind = CppAstKind::identifier;
   member_name.value = overloaded_operator_name;
+  QualifiedName qualified_member_name;
+  qualified_member_name.name = overloaded_operator_name;
+  set_cppast_qualified_name_syntax(member_name, qualified_member_name);
   member_callee.children.push_back(member_name);
 
   CppAstNode member_args;

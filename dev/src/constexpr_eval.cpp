@@ -434,7 +434,14 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
         return true;
       }
     }
-    return constexpr_value_apply_unary(node.simple_type, operand, out);
+    if(constexpr_value_apply_unary(node.simple_type, operand, out)) {
+      return true;
+    }
+    if(hooks_.evaluate_special_expression &&
+       hooks_.evaluate_special_expression(*this, node, out)) {
+      return true;
+    }
+    return false;
   }
 
   if(node.kind == CppAstKind::binary_expression && node.children.size() == 2 && node.has_token) {
