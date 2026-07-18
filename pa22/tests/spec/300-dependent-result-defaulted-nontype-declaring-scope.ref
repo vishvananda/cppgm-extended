@@ -1,0 +1,73 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $input : obj<8x8>
+  slot $result : obj<8x8>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $input
+    call void @units__box_long_int___box(%t1, 6)
+    %t2 = addr $result
+    %t3 = addr $input
+    call void @units__operator_(%t2, %t3, 2.0)
+    %t4 = addr $result
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = load f64 %t5
+    %t7 = cmp eq f64 %t6, 3.0
+    branch %t7, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t8 = load i32 $cond__1
+    return i32 %t8
+}
+function @units__box_long_int___box(%this : ptr, %input : i64) -> void [binding=weak, object=_ZN5units3boxIlEC1El] {
+  slot $this : ptr
+  slot $input : i64
+
+  block ^entry:
+    store ptr %this, $this
+    store i64 %input, $input
+    %t1 = load i64 $input
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i64 %t1, %t3
+    return void
+}
+function @units__operator_(%ret : ptr [pass=indirect_result], %input : ptr [pass=reference], %scalar : f64) -> void [binding=weak, object=_ZN5unitsdvIldEENS_6detail13divide_resultINS_3boxIT_EET0_Xsr6is_boxIS6_EE5valueEE4typeERKS5_S6_] {
+  slot $input : ptr
+  slot $scalar : f64
+
+  block ^entry:
+    store ptr %input, $input
+    store f64 %scalar, $scalar
+    %t1 = load ptr $input
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i64 %t2
+    %t4 = convert sitofp f64 i64 %t3
+    %t5 = load f64 $scalar
+    %t6 = binary div f64 %t4, %t5
+    call void @units__box_double___box(%ret, %t6)
+    return void
+}
+function @units__box_double___box(%this : ptr, %input : f64) -> void [binding=weak, object=_ZN5units3boxIdEC1Ed] {
+  slot $this : ptr
+  slot $input : f64
+
+  block ^entry:
+    store ptr %this, $this
+    store f64 %input, $input
+    %t1 = load f64 $input
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store f64 %t1, %t3
+    return void
+}
+alias object _ZN5units3boxIlEC2El = @units__box_long_int___box
+alias object _ZN5units3boxIdEC2Ed = @units__box_double___box

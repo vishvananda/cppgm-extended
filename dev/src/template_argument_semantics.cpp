@@ -29529,7 +29529,12 @@ DependentNamedTypeResolutionStatus resolve_structured_dependent_qualified_member
         template_id.arguments.reserve(dependent_arguments.size());
         template_id.argument_syntaxes.reserve(dependent_arguments.size());
         argument_scopes.reserve(dependent_arguments.size());
-        for(size_t i = 0; i < dependent_arguments.size(); ++i) {
+        size_t explicit_argument_count = dependent_arguments.size();
+        while(explicit_argument_count > 0 &&
+              dependent_arguments[explicit_argument_count - 1].source_defaulted) {
+          --explicit_argument_count;
+        }
+        for(size_t i = 0; i < explicit_argument_count; ++i) {
           const DependentAliasTemplateArgumentSyntax & dependent_argument =
               dependent_arguments[i];
           string argument_text = substituted_template_argument_text(dependent_argument);
