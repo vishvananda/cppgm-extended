@@ -1,0 +1,17 @@
+#include <tuple>
+
+struct X
+{
+  int value() { return 7; }
+};
+
+struct Y : virtual X
+{
+};
+
+int main()
+{
+  std::tuple<Y> values((Y()));
+  Y && y = std::get<0>(static_cast<std::tuple<Y> &&>(values));
+  return (y.*&X::value)() == 7 ? 0 : 1;
+}

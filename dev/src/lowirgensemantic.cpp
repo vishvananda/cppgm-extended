@@ -3798,6 +3798,59 @@ private:
     return false;
   }
 
+  bool try_emit_contained_object_virtual_base_pointer(
+      const CallSemNode & node,
+      const pair<string, unsigned long long> & virtual_base,
+      string & out)
+  {
+    const CallSemNode * current = &node;
+    const CallSemNode * layout_node = nullptr;
+    unsigned long long layout_offset = 0;
+    bool crosses_contained_object = false;
+    size_t guard = 0;
+    while(current && guard++ < 64) {
+      if(!layout_node) {
+        const CallSemVirtualBaseLayout & layout =
+            callsem_virtual_base_layout(*current);
+        for(size_t i = 0; i < layout.size(); ++i) {
+          if(layout[i].first == virtual_base.first) {
+            layout_node = current;
+            layout_offset = layout[i].second;
+            break;
+          }
+        }
+      }
+      if(current->kind == CallSemKind::member_expression &&
+         !current->is_base_subobject &&
+         !current->is_virtual_base_subobject &&
+         !(current->is_reference_storage &&
+           !current->is_reference_storage_target)) {
+        TypePtr member_type =
+            strip_top_level_cv(remove_reference_type(current->semantic_type));
+        crosses_contained_object =
+            crosses_contained_object ||
+            (member_type && member_type->kind == Type::TK_NAMED);
+      }
+      if(current->children.empty()) {
+        break;
+      }
+      current = &current->children[0];
+    }
+
+    if(!crosses_contained_object || !layout_node) {
+      return false;
+    }
+
+    // A by-value class member is a complete object.  Its virtual-base layout
+    // is fixed even when the enclosing expression is rooted in reference
+    // storage, so use the structured subobject layout instead of the
+    // enclosing reference's host-vtable adjustment.
+    out = adjust_hidden_virtual_base_pointer(
+        emit_pointer_operand(*layout_node),
+        layout_offset + virtual_base.second);
+    return true;
+  }
+
   bool dynamic_external_virtual_base_pointer_available(const TypePtr & object_type,
                                                        const string & qualified_name) const
   {
@@ -4074,6 +4127,14 @@ private:
 
     const string base_object_ptr =
         object_ptr ? *object_ptr : emit_pointer_operand(object_arg);
+
+    string contained_object_virtual_base;
+    if(try_emit_contained_object_virtual_base_pointer(
+           object_arg,
+           virtual_base,
+           contained_object_virtual_base)) {
+      return contained_object_virtual_base;
+    }
 
     if(expression_path_uses_reference_storage(object_arg)) {
       string dynamic_external;
