@@ -1988,7 +1988,11 @@ void collect_required_return_statement_support(SemanticContext & ctx,
   FunctionBinding * ctor = nullptr;
   if(is_indirect_class_reference_type_for_output(expr.semantic_type)) {
     info = ctx.complete_class_type(return_type);
-    if(info && expr.value_category == CVC_XVALUE) {
+    if(info &&
+       semantic_conversion::class_value_transfer_prefers_nonconst_move(
+           return_type,
+           expr.semantic_type,
+           expr.value_category)) {
       ctor = find_or_ensure_move_constructor_binding(ctx, *info);
     }
     if(!ctor) {
@@ -1996,7 +2000,11 @@ void collect_required_return_statement_support(SemanticContext & ctx,
     }
   } else if(is_complete_class_value_type_for_output(expr.semantic_type)) {
     info = ctx.complete_class_type(expr.semantic_type);
-    if(should_implicitly_move_return_object_for_output(expr)) {
+    if(should_implicitly_move_return_object_for_output(expr) &&
+       semantic_conversion::class_value_transfer_prefers_nonconst_move(
+           return_type,
+           expr.semantic_type,
+           CVC_XVALUE)) {
       ctor = info ? find_or_ensure_move_constructor_binding(ctx, *info) : nullptr;
     }
     if(!ctor) {
@@ -2093,17 +2101,10 @@ bool hidden_class_target_prefers_move_constructor_for_output(
     const TypePtr & source_type,
     CallValueCategory source_value_category)
 {
-  if(source_value_category == CVC_LVALUE) {
-    return false;
-  }
-
-  TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
-  TypePtr source_base = strip_top_level_cv(remove_reference_type(source_type));
-  if(!target_base || !source_base) {
-    return false;
-  }
-
-  return semantic_conversion::same_type_with_compatible_top_cv(target_base, source_base);
+  return semantic_conversion::class_value_transfer_prefers_nonconst_move(
+      target_type,
+      source_type,
+      source_value_category);
 }
 
 void require_hidden_class_transfer_constructor_for_output(SemanticContext & ctx,

@@ -5941,15 +5941,21 @@ private:
     }
     if(is_indirect_class_reference_type(node.semantic_type)) {
       const string source_ptr = emit_rvalue(node);
-      if(node.value_category == CVC_XVALUE) {
+      if(semantic_conversion::class_value_transfer_prefers_nonconst_move(
+             target_type,
+             node.semantic_type,
+             node.value_category)) {
         emit_move_construct_to_target(target_type, target_ptr, source_ptr);
       } else {
         emit_copy_construct_to_target(target_type, target_ptr, source_ptr);
       }
       return;
     }
-    if(node.value_category == CVC_XVALUE &&
-       is_complete_class_value_type(target_type)) {
+    if(is_complete_class_value_type(target_type) &&
+       semantic_conversion::class_value_transfer_prefers_nonconst_move(
+           target_type,
+           node.semantic_type,
+           node.value_category)) {
       emit_move_construct_to_target(target_type, target_ptr, emit_lvalue_address(node));
       return;
     }
@@ -6904,7 +6910,10 @@ private:
           return;
         }
         if(is_indirect_class_reference_type(branch.semantic_type)) {
-          if(branch.value_category == CVC_XVALUE) {
+          if(semantic_conversion::class_value_transfer_prefers_nonconst_move(
+                 node.semantic_type,
+                 branch.semantic_type,
+                 branch.value_category)) {
             emit_move_construct_to_target(node.semantic_type,
                                           target_ptr,
                                           emit_rvalue(branch));
@@ -7617,7 +7626,10 @@ private:
       return;
     }
     if(is_indirect_class_reference_type(value_node.semantic_type)) {
-      if(value_node.value_category == CVC_XVALUE) {
+      if(semantic_conversion::class_value_transfer_prefers_nonconst_move(
+             function_result_type_,
+             value_node.semantic_type,
+             value_node.value_category)) {
         emit_move_construct_to_target(function_result_type_, target_ptr, emit_rvalue(value_node));
       } else {
         emit_copy_construct_to_target(function_result_type_, target_ptr, emit_rvalue(value_node));
@@ -7631,9 +7643,16 @@ private:
       return;
     }
     const string source_ptr = emit_lvalue_address(value_node);
-    if(value_node.value_category == CVC_XVALUE) {
+    if(semantic_conversion::class_value_transfer_prefers_nonconst_move(
+           function_result_type_,
+           value_node.semantic_type,
+           value_node.value_category)) {
       emit_move_construct_to_target(function_result_type_, target_ptr, source_ptr);
-    } else if(should_implicitly_move_return_object(value_node)) {
+    } else if(should_implicitly_move_return_object(value_node) &&
+              semantic_conversion::class_value_transfer_prefers_nonconst_move(
+                  function_result_type_,
+                  value_node.semantic_type,
+                  CVC_XVALUE)) {
       emit_move_construct_to_target(function_result_type_, target_ptr, source_ptr);
     } else {
       emit_copy_construct_to_target(function_result_type_, target_ptr, source_ptr);
@@ -11055,7 +11074,10 @@ private:
          node.kind == CallSemKind::initializer_list_object) {
         emit_special_class_value_to_target(node, storage_ptr);
       } else if(is_indirect_class_reference_type(node.semantic_type)) {
-        if(node.value_category == CVC_XVALUE) {
+        if(semantic_conversion::class_value_transfer_prefers_nonconst_move(
+               throw_type,
+               node.semantic_type,
+               node.value_category)) {
           emit_move_construct_to_target(throw_type, storage_ptr, emit_rvalue(node));
         } else {
           emit_copy_construct_to_target(throw_type, storage_ptr, emit_rvalue(node));
@@ -13887,7 +13909,10 @@ private:
         }
       } else if(is_indirect_class_reference_type(child.semantic_type)) {
         push_cleanup_scope(true);
-        if(child.value_category == CVC_XVALUE) {
+        if(semantic_conversion::class_value_transfer_prefers_nonconst_move(
+               variable.semantic_type,
+               child.semantic_type,
+               child.value_category)) {
           emit_move_construct_to_target(variable.semantic_type,
                                         target_ptr,
                                         emit_rvalue(child));

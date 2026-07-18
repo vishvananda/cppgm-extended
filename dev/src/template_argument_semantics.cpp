@@ -247,6 +247,11 @@ bool template_id_syntax_mentions_template_template_parameter_name(
 bool argument_syntax_mentions_unqualified_template_bound_type_name(
     const Scope & scope,
     const TemplateArgumentSyntax & syntax);
+bool argument_syntax_has_concrete_substituted_resolved_type(
+    template_api::TemplateServices & services,
+    const TemplateArgumentSyntax & syntax);
+bool argument_syntax_carries_substituted_resolved_type(
+    const TemplateArgumentSyntax & syntax);
 
 string base_specifier_type_lookup_key(const string & text)
 {
@@ -3772,8 +3777,9 @@ bool resolve_type_argument_syntax_type(template_api::TemplateServices & services
         return true;
       };
   if(syntax.resolved_type &&
-     !argument_syntax_mentions_current_template_bound_name(scope.require(),
-                                                           syntax)) {
+     (argument_syntax_carries_substituted_resolved_type(syntax) ||
+      !argument_syntax_mentions_current_template_bound_name(scope.require(),
+                                                            syntax))) {
     TypePtr carried = syntax.resolved_type;
     resolve_if_instantiated(carried);
     if(type_is_dependent(carried) &&
@@ -14510,6 +14516,12 @@ void thread_type_replacements_into_template_argument_syntax(
     if(replacement != type_replacements.end() && replacement->second) {
       const string replacement_text =
           reparseable_type_argument_text(replacement->second);
+      if(target_arg.source_text.empty() &&
+         compact_source_argument_key(source_arg.text) !=
+             compact_source_argument_key(replacement_text)) {
+        target_arg.source_text = source_arg.source_text.empty() ?
+            source_arg.text : source_arg.source_text;
+      }
       target_arg.text = replacement_text;
       target_arg.pack_expansion = false;
       target_arg.dependent = false;
@@ -24155,6 +24167,19 @@ bool historical_argument_text_still_applies(const string & current,
              compact_source_argument_key(trimmed_historical);
 }
 
+bool argument_syntax_carries_substituted_resolved_type(
+    const TemplateArgumentSyntax & syntax)
+{
+  if(!syntax.resolved_type) {
+    return false;
+  }
+  const string text = trim_space(syntax.text);
+  const string source_text = trim_space(syntax.source_text);
+  return !source_text.empty() &&
+         compact_source_argument_key(source_text) !=
+             compact_source_argument_key(text);
+}
+
 void substitute_type_pack_template_id_arguments(
     TemplateIdSyntax & syntax,
     Scope & scope,
@@ -24224,6 +24249,9 @@ void substitute_type_pack_template_id_arguments(
   }
   for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
     TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
+    if(argument_syntax_carries_substituted_resolved_type(argument)) {
+      continue;
+    }
     bool resolved_type_maybe_stale = false;
     bool pack_expansion_consumed = false;
     const string original_argument_text = trim_space(argument.text);
@@ -33672,8 +33700,9 @@ bool resolve_structured_type_trait_argument(
     return false;
   }
   if(syntax.resolved_type &&
-     !argument_syntax_mentions_current_template_bound_name(scope.require(),
-                                                           syntax)) {
+     (argument_syntax_carries_substituted_resolved_type(syntax) ||
+      !argument_syntax_mentions_current_template_bound_name(scope.require(),
+                                                            syntax))) {
     out = syntax.resolved_type;
   } else if(syntax.type_id) {
     if(!parse_type_id_node_for_templates(
@@ -39024,7 +39053,9 @@ void clear_template_id_syntax_dependent_flags(TemplateIdSyntax & syntax)
 void clear_template_argument_syntax_dependent_flags(TemplateArgumentSyntax & syntax)
 {
   syntax.dependent = false;
-  syntax.resolved_type.reset();
+  if(!argument_syntax_carries_substituted_resolved_type(syntax)) {
+    syntax.resolved_type.reset();
+  }
   if(syntax.template_id) {
     clear_template_id_syntax_dependent_flags(*syntax.template_id);
   }

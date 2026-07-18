@@ -989,6 +989,9 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
     std::string & out,
     SubstitutionSink * sink);
 inline bool emit_source_name(const std::string & name, std::string & out);
+inline bool emit_named_local_entity_discriminator(
+    const std::string & ordinal,
+    std::string & out);
 inline bool emit_source_name_sequence(const std::vector<std::string> & names,
                                       std::string & out);
 inline bool emit_function_operator_terminal(
@@ -2485,7 +2488,10 @@ inline bool emit_type_body(const Type & type, std::string & out, SubstitutionSin
         out += "Ut";
         out += type.lambda->discriminator;
         out += '_';
-      } else if(!emit_source_name(type.lambda->source_name, out)) {
+      } else if(!emit_source_name(type.lambda->source_name, out) ||
+                !emit_named_local_entity_discriminator(
+                    type.lambda->discriminator,
+                    out)) {
         return false;
       }
     } else {
@@ -2688,7 +2694,10 @@ inline bool emit_type_body_owned(Type & type, std::string & out, SubstitutionSin
         out += "Ut";
         out += type.lambda->discriminator;
         out += '_';
-      } else if(!emit_source_name(type.lambda->source_name, out)) {
+      } else if(!emit_source_name(type.lambda->source_name, out) ||
+                !emit_named_local_entity_discriminator(
+                    type.lambda->discriminator,
+                    out)) {
         return false;
       }
     } else {
@@ -3248,6 +3257,45 @@ inline bool emit_source_name(const std::string & name, std::string & out)
   }
   out += std::to_string(name.size());
   out += name;
+  return true;
+}
+
+inline bool emit_named_local_entity_discriminator(
+    const std::string & ordinal,
+    std::string & out)
+{
+  if(ordinal.empty()) {
+    return true;
+  }
+  for(std::size_t i = 0; i < ordinal.size(); ++i) {
+    if(ordinal[i] < '0' || ordinal[i] > '9') {
+      return false;
+    }
+  }
+
+  std::size_t first = ordinal.find_first_not_of('0');
+  if(first == std::string::npos) {
+    return true;
+  }
+  std::string encoded = ordinal.substr(first);
+  for(std::size_t i = encoded.size(); i > 0; --i) {
+    if(encoded[i - 1] != '0') {
+      --encoded[i - 1];
+      break;
+    }
+    encoded[i - 1] = '9';
+  }
+  first = encoded.find_first_not_of('0');
+  encoded = first == std::string::npos ? std::string("0") : encoded.substr(first);
+
+  if(encoded.size() == 1) {
+    out += '_';
+    out += encoded;
+  } else {
+    out += "__";
+    out += encoded;
+    out += '_';
+  }
   return true;
 }
 
@@ -3985,8 +4033,14 @@ inline bool emit_function_name(const FunctionEncoding & function,
         out += "Ut";
         out += lambda.discriminator;
         out += '_';
-      } else if(!emit_source_name(lambda.source_name, out)) {
-        return false;
+      } else {
+        if(!emit_source_name(lambda.source_name, out)) {
+          return false;
+        }
+        if(has_local_context &&
+           !emit_named_local_entity_discriminator(lambda.discriminator, out)) {
+          return false;
+        }
       }
     } else {
       out += "Ul";

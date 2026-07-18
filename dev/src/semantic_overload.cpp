@@ -7451,6 +7451,14 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
       class_info = complete_class_type_for_lookup(ctx, target_base);
     }
   }
+  if(direct_braced_init &&
+     class_info &&
+     ctx.is_initializer_list_type(target_base, nullptr, nullptr)) {
+    return semantic_expression::make_initializer_list_expression(ctx,
+                                                                 scope,
+                                                                 callee_type,
+                                                                 *direct_braced_init);
+  }
   if(class_info) {
     const ConstructorSelectionOptions ctor_options =
         constructor_lifecycle_service::selection_options_for(

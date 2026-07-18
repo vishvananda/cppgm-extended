@@ -29571,6 +29571,15 @@ private:
     return out.str();
   }
 
+  string named_local_type_count_key(const FunctionBinding & current,
+                                    const string & source_name) const
+  {
+    ostringstream out;
+    out << "function@" << static_cast<const void *>(&current);
+    out << "|named-local-type|" << source_name;
+    return out.str();
+  }
+
   string namespace_lambda_source_name_count_key(Scope & scope) const
   {
     const Scope * owner = &scope;
@@ -29754,6 +29763,11 @@ private:
           lambda_itanium_signature_counts[unnamed_local_type_count_key(*current)];
       metadata->discriminator = count > 0 ? to_string(count - 1) : string();
       ++count;
+    } else {
+      size_t & count =
+          lambda_itanium_signature_counts[
+              named_local_type_count_key(*current, source_name)];
+      metadata->discriminator = to_string(count++);
     }
     info.type->set_named_lambda_mangle(metadata);
   }

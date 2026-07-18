@@ -81,6 +81,10 @@ bool top_level_cv_flags(const cpp_decl::TypePtr & type,
                         bool & cv_volatile);
 bool same_type_with_compatible_top_cv(const cpp_decl::TypePtr & target,
                                       const cpp_decl::TypePtr & source);
+bool class_value_transfer_prefers_nonconst_move(
+    const cpp_decl::TypePtr & target,
+    const cpp_decl::TypePtr & source,
+    CallValueCategory source_category);
 bool is_const_object_type(const cpp_decl::TypePtr & type);
 bool is_unscoped_enum_type(const cpp_decl::TypePtr & type);
 bool is_integral_or_unscoped_enum_type(const cpp_decl::TypePtr & type);

@@ -1754,6 +1754,25 @@ bool same_type_with_compatible_top_cv(const TypePtr & target, const TypePtr & so
   return false;
 }
 
+bool class_value_transfer_prefers_nonconst_move(
+    const TypePtr & target,
+    const TypePtr & source,
+    CallValueCategory source_category)
+{
+  if(source_category == CVC_NONE || source_category == CVC_LVALUE) {
+    return false;
+  }
+
+  TypePtr target_object = strip_top_level_cv(remove_reference_type(target));
+  TypePtr source_outer = strip_top_level_cv(source);
+  TypePtr source_object =
+      source_outer && is_reference_type(source_outer) ?
+          remove_reference_type(source_outer) : source;
+  return target_object &&
+         source_object &&
+         same_type_with_compatible_top_cv(target_object, source_object);
+}
+
 bool is_const_object_type(const TypePtr & type)
 {
   TypePtr base;

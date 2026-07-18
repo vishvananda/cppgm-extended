@@ -53,6 +53,9 @@ ExprInfo make_builtin_trait_expr_info(const TypePtr & source)
   } else if(source_base->kind == Type::TK_RVALUE_REFERENCE) {
     expr.type = source_base->inner;
     expr.category = VC_XVALUE;
+  } else if(source_base->kind == Type::TK_FUNCTION) {
+    expr.type = source;
+    expr.category = VC_LVALUE;
   } else {
     expr.type = source;
     TypePtr object_base = strip_top_level_cv(remove_reference_type(source));

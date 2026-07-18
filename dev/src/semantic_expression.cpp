@@ -3597,7 +3597,9 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
   callee.kind = CppAstKind::id_expression;
   const string allocation_name = is_array_new ? "operator new[]" : "operator new";
   callee.value = allocation_name;
-  if(allocation_class && allocation_class->member_scope) {
+  const bool globally_qualified_new =
+      find_child(node, CppAstKind::global_scope) != nullptr;
+  if(!globally_qualified_new && allocation_class && allocation_class->member_scope) {
     MemberFunctionLookupResult class_allocation =
         lookup_visible_member_functions(*allocation_class, allocation_name);
     if(!class_allocation.functions.empty()) {
