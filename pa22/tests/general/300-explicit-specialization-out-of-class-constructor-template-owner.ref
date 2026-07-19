@@ -1,0 +1,63 @@
+function @explicit_specialization_constructor_owner__target(%value : ptr [pass=reference]) -> void [binding=strong, object=_ZN41explicit_specialization_constructor_owner6targetERi] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    store i32 7, %t1
+    return void
+}
+function @explicit_specialization_constructor_owner__run() -> i32 [binding=strong, object=_ZN41explicit_specialization_constructor_owner3runEv] {
+  slot $value : obj<4x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = addr @explicit_specialization_constructor_owner__target
+    call void @explicit_specialization_constructor_owner__box_void___box__ov3(%t1, %t2)
+    %t3 = addr $value
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    %t6 = cmp eq i32 %t5, 7
+    branch %t6, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load i32 $cond__1
+    return i32 %t7
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @explicit_specialization_constructor_owner__run()
+    return i32 %t1
+}
+function @explicit_specialization_constructor_owner__box_void___box__ov3(%this : ptr, %fn : ptr [pass=reference]) -> void [binding=weak, object=_ZN41explicit_specialization_constructor_owner3boxIvEC1IRFvRiEEEOT_] {
+  slot $this : ptr
+  slot $fn : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %fn, $fn
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    store i32 0, $value
+    %t3 = addr $value
+    %t4 = load ptr $fn
+    %t5 = unary decay ptr %t4
+    call void %t5(%t3) as (%arg0 : ptr [pass=reference]) -> void
+    %t6 = load i32 $value
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 0
+    store i32 %t6, %t8
+    return void
+}
+alias object _ZN41explicit_specialization_constructor_owner3boxIvEC2IRFvRiEEEOT_ = @explicit_specialization_constructor_owner__box_void___box__ov3

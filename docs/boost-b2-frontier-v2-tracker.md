@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `28 / 147`
-- current cursor: `#29 libs/coroutine/test`
-- active compiler frontier: pending exact Coroutine survey
+- completed suites: `29 / 147`
+- current cursor: `#30 libs/crc/test`
+- active compiler frontier: pending exact CRC survey
 
 ## Baseline Gates
 
@@ -182,6 +182,7 @@ differences other than the output path.
 | `(callable-object ranking and dependent result rebinding fixes)` | Structured `operator()` result selection by typed conversion rank plus declaration-scope rebinding of source-dependent non-type result arguments | +0.10% | -3.07% | -2.49% | n/a; compared only within the frozen-project-header epoch | `/tmp/cppgm-boost-frontier-v2-container-hash-candidate.json` | pass; only the combined candidate was measured against immutable compiler-and-51-header baseline `9764b3835`, using the checked-in 51-header closure rather than live `dev/src`; no parent command was run |
 | `(Contract typed semantic and lowering closure)` | Functional-cast lookup, captureless-lambda identity, destructor lifetime/unwind, elision access, member-pointer access, literal control flow, virtual receiver adjustment, i128 call ABI, using-declaration filtering, and local-lambda RTTI | +0.52% | -1.38% | -2.43% | n/a; compared only within the frozen-project-header epoch | exact candidate-only check against `/tmp/cppgm-boost-frontier-v2-frozen-header-epoch-9764b3835.json`; diagnostic sample `/tmp/cppgm-contract-self-compile.sample.txt` | pass; only the candidate was measured against immutable compiler-and-51-header baseline `9764b3835`; the threshold diagnostic found no changed helper in a hotspot, and no parent or live project header was measured |
 | `(Core typed constexpr and access closure)` | Address-only constant values and `this` base references, deleted-constructor selection, private-base `static_cast` access, and lazy class-scope `static_assert` evaluation | +0.80% | -1.21% | -2.35% | n/a; compared only within the frozen-project-header epoch | `/tmp/cppgm-boost-frontier-v2-core-candidate.json`; diagnostic sample `/tmp/cppgm-boost-frontier-v2-core.sample.txt` and hotspot log `/tmp/cppgm-boost-frontier-v2-core-hotspot.log` | pass; only the candidate was measured against immutable compiler-and-51-header baseline `9764b3835`, using `benchmarks/self_compile/stable/include`; the threshold diagnostic found no changed helper in a hotspot, and no parent or live project header was measured |
+| `(explicit-specialization member-template owner fix)` | Out-of-class member and constructor templates of an explicit class specialization | +0.77% | -1.27% | -2.30% | -0.03 instruction percentage points from the Core checkpoint | `/tmp/cppgm-boost-frontier-v2-coroutine-candidate.json`; diagnostic sample `/tmp/cppgm-boost-frontier-v2-coroutine.sample.txt` and hotspot log `/tmp/cppgm-boost-frontier-v2-coroutine-hotspot.log` | pass; candidate-only measurement against immutable compiler-and-51-header baseline `9764b3835`, using `benchmarks/self_compile/stable/include`. The collector is an existing hot semantic function, but the new explicit-specialization path adds only a typed flag check and empty owner-binding selection, with no loop, lookup, allocation, or cache; fragment requests remain zero. No parent or live project header was measured. |
 
 ## Suite Cursor
 
@@ -218,22 +219,23 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 26 | `libs/conversion/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 364 targets, updates all 18 requested targets, reports `implicit_cast_fail` and `implicit_cast_fail2` as failed-as-expected, passes all three positive compile/link/runtime tests, and exits successfully; log `/tmp/boost-frontier-v2-suite-026-initial-forced.log`. | The historical mixed inventory is clean on the current compiler. No compiler change, regression update, or performance measurement was required. |
 | 27 | `libs/convert/test` | pass | `(no compiler change)` | The exact four-job forced graph completes its feature and dependency configuration checks, finds the single bookkeeping target, and exits successfully; log `/tmp/boost-frontier-v2-suite-027-initial-forced.log`. | Configuration-only pass on this host. No compiler change, regression update, or performance measurement was required. |
 | 28 | `libs/core/test` | pass | `(Core typed constexpr and access closure)` | The initial exact four-job forced graph exposed independent constexpr address/reference, deleted-constructor, inheritance-access, and deferred class-scope assertion failures. The exact final forced graph finds 6233 targets, updates all 1137 requested targets, reports every deliberate compile failure as failed-as-expected, passes every positive compile/link/runtime action, and exits successfully; log `/tmp/boost-frontier-v2-suite-028-final-forced-r4.log`. | Suite closed with no unexpected failure or downstream skip. The affected PA15, PA16, PA19, and PA20 direct report passes `606/606`; all configured strict suites pass; the PA9-excluded broad report passes `3963/3963`, including PA37 `7/7`. Placement/hygiene, all 23 zero-reparse categories, all 14 audit tests, twelve cache modes, Clang/GCC warning gates, and candidate-only frozen compiler-and-51-header performance pass. |
+| 29 | `libs/coroutine/test` | pass | `(explicit-specialization member-template owner fix)` | The initial exact four-job forced graph finds 3227 targets, updates 66, and exposes one compile failure in `test_asymmetric_coroutine`, with three downstream skips; log `/tmp/boost-frontier-v2-suite-029-initial-forced.log`. The exact final forced graph updates all 70 requested targets, passes both asymmetric and symmetric compile/link/runtime actions, and exits successfully; log `/tmp/boost-frontier-v2-suite-029-explicit-owner-full-forced-r1.log`. | Suite closed with no failed action or downstream skip. The PA21/PA22 owner report passes `513/513`; all configured strict suites pass; the PA9-excluded broad report passes `3965/3965`, including PA37 `7/7`. Placement/hygiene, all 23 zero-reparse categories, all 14 audit tests, twelve cache modes across both reducers, Clang/GCC warning gates, and candidate-only frozen compiler-and-51-header performance pass. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#29 libs/coroutine/test`
+- suite: `#30 libs/crc/test`
 - focused target: pending exact survey
-- last closed suite: `#28 libs/core/test`
+- last closed suite: `#29 libs/coroutine/test`
 - failure phase: intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: pending first causal failure
 - implementation area: pending first causal failure
-- performance risk: the completed Core checkpoint passes the immutable frozen compiler-and-51-header epoch at +0.80% instructions, -1.21% RSS, and -2.35% footprint; the threshold diagnostic found no changed helper in a hotspot, the workload uses `benchmarks/self_compile/stable/include`, and no parent or live project header was measured
-- next action: run the exact four-job forced `libs/coroutine/test` graph and classify its first causal failure, if any
+- performance risk: the completed Coroutine checkpoint passes the immutable frozen compiler-and-51-header epoch at +0.77% instructions, -1.27% RSS, and -2.30% footprint, improving instructions by 0.03 percentage points from Core. The threshold diagnostic finds the edited collector in the established semantic collection path, while the new branch itself performs only a typed flag check and empty owner-binding selection; the workload uses `benchmarks/self_compile/stable/include`, and no parent or live project header was measured
+- next action: run the exact four-job forced `libs/crc/test` graph and classify its first causal failure, if any
 
 ## Fix Ledger
 
@@ -242,6 +244,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | Coroutine `test_asymmetric_coroutine` forwarding constructor | For an out-of-class member-template definition of an explicit class specialization, the collector treated the sole member-template head as though it described the already-specialized owner primary. Owner binding then paired the owner's explicit `void` argument with member parameter `Fn`, overwriting the correctly deduced function-reference type and producing `void&&`. An explicit-specialization owner now contributes zero typed owner template parameters, leaving the definition's head exclusively attached to the member template. No source text, cache, spelling rule, ABI path, or Boost-specific behavior is added. | `pa21/tests/general/300-explicit-specialization-out-of-class-member-template-owner.t` covers an ordinary member template; `pa22/tests/general/300-explicit-specialization-out-of-class-constructor-template-owner.t` covers forwarding-constructor deduction | `/tmp/boost-frontier-v2-suite-029-asymmetric-template-trace.log` records correct deduction of `void (&)(pull_coroutine<void>&)` followed by the erroneous owner rebinding `Fn=void`; the initial exact graph fails `test_asymmetric_coroutine` at `push_coroutine<void> coro(f12)`. Clang 22 and GCC 15 accept and run both reducers warning-clean. | Focused regressions and the PA21/PA22 `513/513` report pass; all configured strict suites pass; placement/hygiene, all 23 zero-reparse categories, all 14 audit tests, twelve cache configurations with byte-identical output, Clang/GCC warning checks, and the PA9-excluded `3965/3965` report pass. The focused and exact full forced Coroutine graphs pass compile, link, and runtime. | +0.77% instructions, -1.27% RSS, and -2.30% footprint against frozen compiler-and-51-header epoch `9764b3835`; candidate-only report `/tmp/cppgm-boost-frontier-v2-coroutine-candidate.json`; no parent or live-header command was run | `(this commit)` |
 | fixed | Core constexpr object address and `this` base references | Constant lookup conflated an object's stored scalar value with the independently valid constant address of its storage, so mutable static objects were either read illegally or rejected when only their address was needed. The constant domain now has an explicit addressable value, direct constexpr calls preserve its lvalue category, and `this` plus `*this` use the same typed object identity. Failed built-in scalar operations on address-only operands no longer speculatively enter overloaded-operator resolution unless a class or enum operand can actually select one. | `pa20/tests/general/400-constexpr-mutable-static-object-address.t`, `400-constexpr-mutable-static-object-read-bad.t`, `400-constexpr-derived-this-base-reference.t`, and `400-constexpr-derived-this-runtime-base-reference.t`; the corrected existing `400-constexpr-local-default-object-member-call.t` oracle also passes | Core rejected valid address-only mutable-object and derived-`this` cases, while speculative `p != 0` fallback could mutate semantic state and runtime base-reference materialization could recurse. The negative mutable-object read remains rejected. | PA20 and the combined owner report pass; all twelve cache modes emit byte-identical output for the positive reducers and reject the negative reducer; strict, reparse, placement, GCC 15, broad, focused, and exact full-Core gates pass. | measured with the combined Core closure: +0.80% instructions, -1.21% RSS, -2.35% footprint against frozen compiler-and-51-header epoch `9764b3835` | `(this commit)` |
 | fixed | Core deleted-constructor overload selection | Constructor candidate collection discarded deleted constructors before ranking, allowing a worse viable constructor to win. Deleted constructors now participate in normal typed ranking and are rejected only when the selected best candidate is finalized. | `pa16/tests/general/200-deleted-constructor-selected-over-viable-bad.t` | The pre-fix compiler accepted a construction whose best overload was deleted; Clang and GCC reject it. | PA16 and the combined owner report pass; the negative reducer is rejected in all twelve cache modes; strict, reparse, placement, GCC 15, broad, focused, and exact full-Core gates pass. | measured with the combined Core closure | `(this commit)` |
 | fixed | Core private-base `static_cast` access | Typed inheritance conversion validated that the source and target were related but did not enforce base accessibility for explicit `static_cast`. The cast path now applies the semantic class model's access result, while member context retains access to its own private base. | `pa15/tests/general/200-private-base-static-cast-bad.t` and `200-private-base-static-cast-member.t` | The pre-fix compiler accepted an external cast through a private base; host compilers reject it while accepting the same conversion in member context. | PA15 and the combined owner report pass; positive output is byte-identical and the negative reducer is rejected in all twelve cache modes; strict, reparse, placement, GCC 15, broad, focused, and exact full-Core gates pass. | measured with the combined Core closure | `(this commit)` |
@@ -385,6 +388,24 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Container `devector_test` initializer-list `regular_elem` lifetime | LowIR constructed nontrivial `std::initializer_list<T>` backing-array elements in a hidden slot but never registered their destructors. All 41 `regular_elem` initializer-list elements in `test_insert_init_list` therefore remained live and made nine later checkpoints fail. Each successfully constructed backing element now enters the existing full-expression cleanup stack immediately, providing reverse destruction and constructor-unwind safety. When the list initializes a named automatic `initializer_list` object, those exact cleanup actions transfer to the enclosing lexical scope so the backing array remains alive with the list. No semantic text, parser, cache, type spelling, or Boost-specific path is added. | `pa25/tests/general/200-initializer-list-backing-array-lifetime.t`, at PA25's initializer-list and EH cleanup owner | The exact runtime count was zero before `test_insert_init_list` and 41 afterward, exactly matching the 41 nontrivial list elements in that function. The reducer checks three call-argument elements are destroyed at the full-expression boundary, two named-list elements stay alive until lexical scope exit, and successful earlier elements are represented on later-constructor unwind paths. Clang 22 and the fixed compiler both return zero. | PA25 direct report passes `74/74`; all configured strict suites pass; PA25 placement/hygiene is clean; all 23 text-reparse categories and all 14 audit tests pass. Normal, all ten individual cache-disabled, and all-disabled reducer LowIR are byte-identical with SHA-256 `fad25179310d67817521e50e03eaadb60d8e02eb6a503af55e8024b2ddfe31da`. The PA9-excluded broad report passes `3940/3940`, including PA37 `7/7`. Focused `devector_test` passes, and the exact final Container graph updates all 325 requested targets and exits successfully. | instructions +0.02%; max RSS -3.63%; peak footprint -2.57%; pass against immutable compiler-and-51-header baseline `9764b3835`; candidate-only report `/tmp/cppgm-boost-frontier-v2-container-default-owner-initlist-candidate.json`; no parent or live-header command was run | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-19`: Closed Coroutine and advanced the ordered cursor to suite 30,
+  `libs/crc/test`. An out-of-class member-template definition of an explicit
+  class specialization incorrectly exposed its sole template head as owner
+  parameters, so owner binding overwrote the correctly deduced function
+  reference with the owner's explicit `void` argument. Explicit-specialization
+  owners now contribute zero typed owner template parameters. The exact final
+  forced graph finds 3227 targets, updates all 70 requested targets, passes both
+  compile/link/runtime actions, and exits successfully. The PA21/PA22 report
+  passes `513/513`; strict, placement, all 23 zero-reparse categories, all 14
+  audit tests, twelve cache modes, Clang/GCC warning gates, and the PA9-excluded
+  `3965/3965` report pass. Candidate-only performance against the immutable
+  compiler-and-51-header epoch is +0.77% instructions, -1.27% RSS, and -2.30%
+  footprint, a 0.03 percentage-point instruction improvement from Core. The
+  threshold profile shows the collector on the established semantic collection
+  path, while the new branch adds no loop, lookup, allocation, or cache. The
+  measurement uses only `benchmarks/self_compile/stable/include`; no parent
+  compiler or live project header was measured.
 
 - `2026-07-19`: Closed Core and advanced the ordered cursor to suite 29,
   `libs/coroutine/test`. Four typed semantic causes covered address-only
@@ -1779,5 +1800,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=4 \
   /usr/local/bin/timeout 1800 \
-  ./run-cppgm-b2.sh -a libs/coroutine/test
+  ./run-cppgm-b2.sh -a libs/crc/test
 ```

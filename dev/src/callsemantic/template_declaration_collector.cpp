@@ -1194,16 +1194,24 @@ public:
                        owner_partial_decl->pattern_scope :
                        owner_partial_decl->declaring_scope) :
                   nullptr;
+          const vector<TemplateParameterInfo> no_owner_template_parameters;
+          const bool explicit_specialization_owner =
+              owner && owner->is_explicit_specialization;
           const vector<TemplateParameterInfo> * matched_owner_parameters =
-              &owner_template_parameters;
+              explicit_specialization_owner ?
+                  &no_owner_template_parameters :
+                  &owner_template_parameters;
           bool matches_owner_template_parameters =
               owner_template_decl &&
               owner_template_scope &&
-              out_of_class_special_member_template_parameters_match(*owner_template_scope,
-                                                                   owner_template_decl->parameters,
-                                                                   pattern_scope,
-                                                                   owner_template_parameters);
+              (explicit_specialization_owner ||
+               out_of_class_special_member_template_parameters_match(
+                   *owner_template_scope,
+                   owner_template_decl->parameters,
+                   pattern_scope,
+                   owner_template_parameters));
           if(!matches_owner_template_parameters &&
+             !explicit_specialization_owner &&
              owner_template_decl &&
              owner_template_scope &&
              out_of_class_special_member_template_parameters_match(
@@ -2596,17 +2604,24 @@ public:
                                                        prepared_owner_method.syntax.is_volatile_method,
                                                        prepared_owner_method.syntax.ref_qualifier,
                                                        function_identifier);
+            const vector<TemplateParameterInfo> no_owner_template_parameters;
+            const bool explicit_specialization_owner =
+                owner->is_explicit_specialization;
             const vector<TemplateParameterInfo> * matched_owner_parameters =
-                &owner_template_parameters;
+                explicit_specialization_owner ?
+                    &no_owner_template_parameters :
+                    &owner_template_parameters;
             bool matches_owner_template_parameters =
                   owner_template_decl &&
                   !partial_owner &&
-                  out_of_class_special_member_template_parameters_match(
-                      *owner->member_scope,
-                      owner_template_decl->parameters,
-                      pattern_scope,
-                      owner_template_parameters);
+                  (explicit_specialization_owner ||
+                   out_of_class_special_member_template_parameters_match(
+                       *owner->member_scope,
+                       owner_template_decl->parameters,
+                       pattern_scope,
+                       owner_template_parameters));
             if(!matches_owner_template_parameters &&
+               !explicit_specialization_owner &&
                owner_template_decl &&
                !partial_owner &&
                out_of_class_special_member_template_parameters_match(
