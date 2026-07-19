@@ -9385,6 +9385,84 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
   return 0;
 }
 
+bool direct_template_template_id_default_omissions(
+    template_api::TemplateServices & services,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TemplateArgumentSyntax & pattern_syntax,
+    const TemplateArgument & actual,
+    std::size_t & omissions)
+{
+  omissions = 0;
+  if(actual.kind != TemplateArgument::TA_TYPE || !actual.type) {
+    return false;
+  }
+
+  const TemplateIdSyntax * pattern_id =
+      template_argument_template_id_syntax(pattern_syntax);
+  if(!pattern_id || pattern_id->name.rooted ||
+     !pattern_id->name.qualifiers.empty()) {
+    return false;
+  }
+  const TemplateParameterInfo * head =
+      find_template_parameter_by_name(parameters, pattern_id->name.name);
+  if(!head || head->kind != TemplateParameterInfo::TP_TEMPLATE_TEMPLATE ||
+     head->parameter_pack) {
+    return false;
+  }
+
+  std::size_t actual_argument_count = 0;
+  const std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
+      named_type_class_template_specialization_mangle_info_const(actual.type);
+  if(mangle_info && mangle_info->class_template_decl) {
+    actual_argument_count = mangle_info->arguments.size();
+  } else {
+    template_api::TemplateNamedTypeMetadata metadata;
+    if(!template_api::describe_named_type_metadata(
+           service_type_system(services).model, actual.type, metadata) ||
+       !metadata.source_template) {
+      return false;
+    }
+    actual_argument_count = metadata.instantiation_arguments.size();
+  }
+
+  std::size_t fixed_count = 0;
+  if(template_id_trailing_pack_suffix(*pattern_id, fixed_count)) {
+    return fixed_count <= actual_argument_count;
+  }
+  if(pattern_id->arguments.size() > actual_argument_count) {
+    return false;
+  }
+  omissions = actual_argument_count - pattern_id->arguments.size();
+  return true;
+}
+
+template <typename PartialDecl>
+bool partial_default_argument_omissions(
+    template_api::TemplateServices & services,
+    const PartialDecl & partial,
+    const std::vector<TemplateArgument> & actual_arguments,
+    std::size_t & omissions)
+{
+  omissions = 0;
+  bool matched_direct_template_head = false;
+  const std::size_t limit =
+      std::min(partial.arg_syntaxes.size(), actual_arguments.size());
+  for(std::size_t i = 0; i < limit; ++i) {
+    std::size_t argument_omissions = 0;
+    if(!direct_template_template_id_default_omissions(
+           services,
+           partial.parameters,
+           partial.arg_syntaxes[i],
+           actual_arguments[i],
+           argument_omissions)) {
+      continue;
+    }
+    matched_direct_template_head = true;
+    omissions += argument_omissions;
+  }
+  return matched_direct_template_head;
+}
+
 template <typename PartialDecl>
 bool deduce_from_named_template_id_syntax(template_api::TemplateServices & services,
                                         const PartialDecl & partial,
@@ -11453,8 +11531,22 @@ bool match_partial_variable_specialization(
 int compare_partial_class_specialization_preference(
     template_api::TemplateServices & services,
     const PartialClassTemplateSpecializationDecl & current,
-    const PartialClassTemplateSpecializationDecl & best)
+    const PartialClassTemplateSpecializationDecl & best,
+    const std::vector<TemplateArgument> & actual_arguments)
 {
+  std::size_t current_omissions = 0;
+  std::size_t best_omissions = 0;
+  // Relaxed template-template matching can make a fixed pattern viable by
+  // omitting canonical arguments that equal source defaults. A pattern that
+  // consumes more of those exact arguments is more specialized; equal
+  // coverage retains the ordinary bidirectional partial-ordering rules.
+  if(partial_default_argument_omissions(
+         services, current, actual_arguments, current_omissions) &&
+     partial_default_argument_omissions(
+         services, best, actual_arguments, best_omissions) &&
+     current_omissions != best_omissions) {
+    return current_omissions < best_omissions ? -1 : 1;
+  }
   return compare_partial_specialization_preference_impl(
       services,
       current,

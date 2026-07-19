@@ -100,7 +100,8 @@ bool match_partial_variable_specialization(
 int compare_partial_class_specialization_preference(
     template_api::TemplateServices & services,
     const semantic_model::PartialClassTemplateSpecializationDecl & current,
-    const semantic_model::PartialClassTemplateSpecializationDecl & best);
+    const semantic_model::PartialClassTemplateSpecializationDecl & best,
+    const std::vector<template_model::TemplateArgument> & actual_arguments);
 
 int compare_partial_variable_specialization_preference(
     template_api::TemplateServices & services,

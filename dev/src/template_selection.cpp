@@ -700,7 +700,7 @@ ClassSpecializationSelection select_class_specialization(
               const PartialClassTemplateSpecializationDecl & best) -> int
           {
             return template_specialization::compare_partial_class_specialization_preference(
-                services, current, best);
+                services, current, best, arguments);
           },
           partial_arguments,
           partial_pack_sizes,
