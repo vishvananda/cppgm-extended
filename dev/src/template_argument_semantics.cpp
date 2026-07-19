@@ -8340,6 +8340,74 @@ bool append_leaf_member_function_template_instantiations_from_candidates(
     const vector<pair<TypePtr, semantic_conversion::ValueCategory> > & arg_infos,
     vector<FunctionBinding *> & functions);
 
+int compare_callable_object_invocation_candidates(
+    const FunctionBinding & current,
+    const FunctionBinding & best,
+    const semantic_conversion::ExprInfo & callable_expr,
+    const vector<semantic_conversion::ExprInfo> & arg_exprs)
+{
+  const size_t current_offset =
+      current.is_method &&
+              !current.params.empty() &&
+              current.params[0].first == "this" ?
+          1 :
+          0;
+  const size_t best_offset =
+      best.is_method &&
+              !best.params.empty() &&
+              best.params[0].first == "this" ?
+          1 :
+          0;
+  bool current_better = false;
+  bool best_better = false;
+  for(size_t i = 0; i < arg_exprs.size(); ++i) {
+    const TypePtr & current_param = current.params[current_offset + i].second;
+    const TypePtr & best_param = best.params[best_offset + i].second;
+    const semantic_conversion::ConversionRank current_rank =
+        semantic_conversion::standard_conversion_rank(current_param,
+                                                      arg_exprs[i]);
+    const semantic_conversion::ConversionRank best_rank =
+        semantic_conversion::standard_conversion_rank(best_param,
+                                                      arg_exprs[i]);
+    if(current_rank < best_rank) {
+      current_better = true;
+      continue;
+    }
+    if(current_rank > best_rank) {
+      best_better = true;
+      continue;
+    }
+
+    int preference =
+        semantic_conversion::compare_reference_binding_preference(
+            current_param, arg_exprs[i], best_param, arg_exprs[i]);
+    if(preference == 0) {
+      preference =
+          semantic_conversion::compare_qualification_conversion_preference(
+              current_param, arg_exprs[i], best_param, arg_exprs[i]);
+    }
+    if(preference == 0) {
+      preference = semantic_conversion::compare_standard_conversion_preference(
+          current_param, arg_exprs[i], best_param, arg_exprs[i]);
+    }
+    if(preference < 0) {
+      current_better = true;
+    } else if(preference > 0) {
+      best_better = true;
+    }
+  }
+
+  if(current_better != best_better) {
+    return current_better ? -1 : 1;
+  }
+  if(!current_better &&
+     !semantic_conversion::is_const_object_type(callable_expr.type) &&
+     current.is_const_method != best.is_const_method) {
+    return current.is_const_method ? 1 : -1;
+  }
+  return 0;
+}
+
 bool callable_object_structured_invocation_result(
     template_api::TemplateTypeSystem & type_system,
     template_api::TemplateServices * services,
@@ -8497,12 +8565,16 @@ bool callable_object_structured_invocation_result(
        !binding_type->inner) {
       continue;
     }
-    if(saw_viable) {
-      continue;
+    if(!saw_viable ||
+       (selected_binding &&
+        compare_callable_object_invocation_candidates(*binding,
+                                                      *selected_binding,
+                                                      callable_expr,
+                                                      arg_exprs) < 0)) {
+      saw_viable = true;
+      selected_binding = binding;
+      result_type = binding_type->inner;
     }
-    saw_viable = true;
-    selected_binding = binding;
-    result_type = binding_type->inner;
   }
   return saw_viable && result_type;
 }

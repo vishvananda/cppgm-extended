@@ -1784,6 +1784,74 @@ bool template_argument_syntax_mentions_template_parameter_name(
          ast_mentions_template_parameter_name(*syntax.expression, parameters);
 }
 
+bool ast_has_dependent_non_type_template_argument(
+    const CppAstNode & node,
+    const std::vector<TemplateParameterInfo> & parameters);
+
+bool template_id_has_dependent_non_type_argument(
+    const TemplateIdSyntax & syntax,
+    const std::vector<TemplateParameterInfo> & parameters)
+{
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    const TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
+    if(argument.expression &&
+       ast_mentions_template_parameter_name(*argument.expression, parameters)) {
+      return true;
+    }
+    if(argument.template_id &&
+       template_id_has_dependent_non_type_argument(*argument.template_id,
+                                                   parameters)) {
+      return true;
+    }
+    if(argument.type_id &&
+       ast_has_dependent_non_type_template_argument(*argument.type_id,
+                                                    parameters)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ast_has_dependent_non_type_template_argument(
+    const CppAstNode & node,
+    const std::vector<TemplateParameterInfo> & parameters)
+{
+  if(node.template_id_syntax &&
+     template_id_has_dependent_non_type_argument(*node.template_id_syntax,
+                                                 parameters)) {
+    return true;
+  }
+  if(node.conversion_type_id_syntax &&
+     ast_has_dependent_non_type_template_argument(
+         *node.conversion_type_id_syntax, parameters)) {
+    return true;
+  }
+  if(node.base_type_syntax &&
+     ast_has_dependent_non_type_template_argument(*node.base_type_syntax,
+                                                  parameters)) {
+    return true;
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(template_id_has_dependent_non_type_argument(
+           node.qualifier_template_id_syntaxes[i], parameters)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(ast_has_dependent_non_type_template_argument(
+           node.qualifier_type_syntaxes[i], parameters)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_has_dependent_non_type_template_argument(node.children[i],
+                                                    parameters)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool dependent_alias_argument_list_has_pack_expansion(
     const std::vector<DependentAliasTemplateArgumentSyntax> & arguments)
 {
@@ -10983,11 +11051,17 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           named_type_class_template_specialization_mangle_info_const(
               structured_result_base) &&
           ctx.class_info_for_type(structured_result_base);
+      const bool source_result_has_dependent_non_type_argument =
+          source_decl->result_type_pattern.kind != CppAstKind::invalid &&
+          ast_has_dependent_non_type_template_argument(
+              source_decl->result_type_pattern, source_decl->parameters);
       // A materialized typed specialization no longer needs source-pattern
-      // rebinding. Unresolved and stale cached results still do.
+      // rebinding unless one of its non-type arguments came from a dependent
+      // expression. Unresolved and stale cached results still do as well.
       if((result_type_still_dependent ||
           (source_result_mentions_template_parameter &&
-           !structured_result_materialized)) &&
+           (!structured_result_materialized ||
+            source_result_has_dependent_non_type_argument))) &&
          source_decl->result_type_pattern.kind != CppAstKind::invalid) {
         TypePtr parsed_result;
         const bool parsed_result_type =
