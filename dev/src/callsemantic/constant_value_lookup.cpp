@@ -81,6 +81,25 @@ public:
   operator SemanticContext &() { return ctx; }
   operator const SemanticContext &() const { return ctx; }
 
+  bool materialize_addressable_binding_value(
+      ValueBinding & binding,
+      constant_eval::ConstexprValue & value)
+  {
+    if(binding.kind != ValueBinding::VK_VARIABLE ||
+       !binding.has_storage_definition) {
+      return false;
+    }
+    if(!binding.requires_constant_initializer) {
+      if(!binding.declaration_scope ||
+         semantic_lookup::current_function_scope(*binding.declaration_scope)) {
+        return false;
+      }
+    }
+    value = constant_eval::make_addressable_value(binding.type, std::string());
+    attach_constant_object_storage_identity(binding, value);
+    return !value.storage_identity.empty();
+  }
+
   bool materialize_constant_binding_value(ValueBinding & binding,
                                           constant_eval::ConstexprValue & value)
   {
@@ -131,6 +150,9 @@ public:
     if(!binding.constant_initializer ||
        !binding.constant_initializer_scope ||
        binding.constant_value_in_progress) {
+      if(materialize_addressable_binding_value(binding, value)) {
+        return true;
+      }
       return false;
     }
 
@@ -162,6 +184,9 @@ public:
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
     if(!evaluated) {
+      if(materialize_addressable_binding_value(binding, value)) {
+        return true;
+      }
       return false;
     }
 

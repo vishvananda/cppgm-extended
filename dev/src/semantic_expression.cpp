@@ -728,6 +728,70 @@ bool direct_static_reference_cast_preserves_object(SemanticContext & ctx,
              normalized_target_object_type, normalized_operand_object_type);
 }
 
+void enforce_static_inheritance_cast_access(SemanticContext & ctx,
+                                            Scope & scope,
+                                            const TypePtr & target_type,
+                                            const ExprInfo & operand)
+{
+  TypePtr target_form = strip_top_level_cv(target_type);
+  TypePtr source_form = value_conversion_type(operand);
+  if(!target_form || !source_form) {
+    return;
+  }
+
+  TypePtr target_object_type;
+  TypePtr source_object_type;
+  if(target_form->kind == Type::TK_POINTER &&
+     source_form->kind == Type::TK_POINTER) {
+    target_object_type = strip_top_level_cv(target_form->inner);
+    source_object_type = strip_top_level_cv(source_form->inner);
+  } else if(target_form->kind == Type::TK_LVALUE_REFERENCE ||
+            target_form->kind == Type::TK_RVALUE_REFERENCE) {
+    target_object_type = strip_top_level_cv(target_form->inner);
+    source_object_type =
+        strip_top_level_cv(remove_reference_type(operand.type));
+  } else {
+    return;
+  }
+
+  ClassInfo * target_class =
+      target_object_type ? complete_class_type_for_lookup(ctx, target_object_type) : nullptr;
+  if(!target_class && target_object_type) {
+    target_class = ctx.class_info_for_type(target_object_type);
+  }
+  ClassInfo * source_class =
+      source_object_type ? complete_class_type_for_lookup(ctx, source_object_type) : nullptr;
+  if(!source_class && source_object_type) {
+    source_class = ctx.class_info_for_type(source_object_type);
+  }
+  if(!target_class || !source_class || target_class == source_class) {
+    return;
+  }
+
+  size_t offset = 0;
+  MemberAccess path_access = MA_PUBLIC;
+  ClassInfo * derived_class = nullptr;
+  if(find_unique_base_path(*source_class, target_class, offset, path_access)) {
+    derived_class = source_class;
+  } else if(find_unique_base_path(*target_class,
+                                  source_class,
+                                  offset,
+                                  path_access)) {
+    derived_class = target_class;
+  } else {
+    return;
+  }
+
+  if(!member_access_allowed(&scope,
+                            current_class_scope(scope),
+                            current_function_scope(scope),
+                            derived_class,
+                            MA_PUBLIC,
+                            path_access)) {
+    throw logic_error("inaccessible base class conversion");
+  }
+}
+
 bool try_apply_static_reference_base_cast(SemanticContext & ctx,
                                           const TypePtr & target_type,
                                           const ExprInfo & operand,
@@ -8167,6 +8231,9 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
       is_reference_type(target_type) &&
       !is_void_type(reinterpret_reference_target) &&
       !is_function_type(reinterpret_reference_target);
+  if(node.simple_type == KW_STATIC_CAST) {
+    enforce_static_inheritance_cast_access(ctx, scope, target_type, operand);
+  }
   bool applied_direct_static_reference_cast = false;
   if(node.simple_type == KW_STATIC_CAST || c_style_cast) {
     TypePtr explicit_target = strip_top_level_cv(remove_reference_type(target_type));

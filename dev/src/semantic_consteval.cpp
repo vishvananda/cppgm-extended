@@ -1856,6 +1856,9 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
         out = converted;
         return true;
       }
+      if(referred.kind == constant_eval::ConstexprValue::CV_ADDRESSABLE) {
+        return false;
+      }
     }
     if(!evaluate_typed_initializer_value(ctx, scope, evaluator, node, target_base, referred)) {
       return false;

@@ -10130,6 +10130,14 @@ struct ConstructorSelectionState
   }
 };
 
+void reject_deleted_selected_constructor(FunctionBinding * chosen)
+{
+  if(!chosen || !chosen->is_deleted) {
+    return;
+  }
+  throw logic_error("use of deleted " + chosen->name);
+}
+
 template <typename AppendCandidate>
 void append_constructor_method_candidates(ClassInfo & info,
                                           AppendCandidate append_candidate)
@@ -10879,10 +10887,6 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
       candidate_rejection = candidate->name + ": explicit constructor not allowed";
       return;
     }
-    if(candidate->is_deleted) {
-      candidate_rejection = candidate->name + ": deleted";
-      return;
-    }
     if(!member_access_allowed(&scope, current_class_scope(scope), current_function_scope(scope),
                               &target_info, candidate->access, MA_PUBLIC)) {
       candidate_rejection = candidate->name + ": member access not allowed";
@@ -11050,6 +11054,7 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
         chosen = semantic_template_function::acquire_function_definition_binding(
             ctx, chosen, scope);
       }
+      reject_deleted_selected_constructor(chosen);
       if(!constructor_selection_is_speculative_user_defined_conversion_probe(options) &&
          template_witness_source_capture_enabled_for_calls(ctx)) {
         const std::string witness_use_location =
@@ -11148,6 +11153,7 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
     chosen = semantic_template_function::acquire_function_definition_binding(
         ctx, chosen, scope);
   }
+  reject_deleted_selected_constructor(chosen);
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
     trace << "select-constructor-chosen class=" << target_info.qualified_name
@@ -11272,17 +11278,6 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
         trace << "ctor-action-skip class=" << target_info.qualified_name
               << " candidate=" << candidate->name
               << " reason=explicit-constructor-not-allowed";
-        parser_trace::note("overload", std::string(), trace.str());
-      }
-      return;
-    }
-    if(candidate->is_deleted) {
-      candidate_rejection = candidate->name + ": deleted";
-      if(parser_trace::enabled("overload")) {
-        ostringstream trace;
-        trace << "ctor-action-skip class=" << target_info.qualified_name
-              << " candidate=" << candidate->name
-              << " reason=deleted";
         parser_trace::note("overload", std::string(), trace.str());
       }
       return;
@@ -11573,6 +11568,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
               ctx,
               state.matches[exact_selection.index].function,
               scope);
+      reject_deleted_selected_constructor(chosen);
       if(!rematerialize_candidate_match_args(ctx,
                                              scope,
                                              state.matches[exact_selection.index],
@@ -11703,6 +11699,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
   FunctionBinding * chosen =
       semantic_template_function::acquire_function_definition_binding(
           ctx, state.matches[selection.index].function, scope);
+  reject_deleted_selected_constructor(chosen);
   if(!rematerialize_candidate_match_args(ctx,
                                          scope,
                                          state.matches[selection.index],

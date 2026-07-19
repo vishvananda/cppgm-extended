@@ -9487,9 +9487,7 @@ void populate_class_reference_members(SemanticContext & ctx,
       continue;
     }
     if(child.kind == CppAstKind::static_assert_declaration) {
-      if(witness::source_capture_enabled(ctx.template_witness_context())) {
-        semantic_declaration::analyze_static_assert_declaration(ctx, *info.member_scope, child);
-      }
+      semantic_declaration::analyze_static_assert_declaration(ctx, *info.member_scope, child);
       continue;
     }
     if(child.kind == CppAstKind::special_member_definition) {
@@ -9569,10 +9567,8 @@ void populate_class_reference_members(SemanticContext & ctx,
             continue;
           }
           if(member.kind == CppAstKind::static_assert_declaration) {
-            if(witness::source_capture_enabled(ctx.template_witness_context())) {
-              semantic_declaration::analyze_static_assert_declaration(
-                  ctx, *info.member_scope, member);
-            }
+            semantic_declaration::analyze_static_assert_declaration(
+                ctx, *info.member_scope, member);
             continue;
           }
           if(member.kind == CppAstKind::special_member_definition) {

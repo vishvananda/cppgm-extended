@@ -11865,7 +11865,8 @@ bool evaluate_leaf_constexpr_function_call(template_api::TemplateServices & serv
       }
       arg_infos.push_back(
           make_pair(args[i].type,
-                    args[i].kind == constant_eval::ConstexprValue::CV_FUNCTION ?
+                    (args[i].kind == constant_eval::ConstexprValue::CV_FUNCTION ||
+                     args[i].kind == constant_eval::ConstexprValue::CV_ADDRESSABLE) ?
                         semantic_conversion::VC_LVALUE :
                         semantic_conversion::VC_PRVALUE));
     }

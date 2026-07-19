@@ -942,6 +942,16 @@ ConstexprValue make_member_pointer_value(const TypePtr & type,
   return out;
 }
 
+ConstexprValue make_addressable_value(const TypePtr & type,
+                                      const string & storage_identity)
+{
+  ConstexprValue out;
+  out.kind = ConstexprValue::CV_ADDRESSABLE;
+  out.type = type;
+  out.storage_identity = storage_identity;
+  return out;
+}
+
 ConstexprValue make_aggregate_value(
     const TypePtr & type,
     const vector<pair<string, ConstexprValue> > & members,
@@ -1065,6 +1075,7 @@ bool constexpr_value_truthy(const ConstexprValue & value, bool & out)
   case ConstexprValue::CV_ARRAY:
     out = true;
     return true;
+  case ConstexprValue::CV_ADDRESSABLE:
   case ConstexprValue::CV_AGGREGATE:
   default:
     return false;
@@ -1085,6 +1096,7 @@ bool constexpr_value_to_integral(const ConstexprValue & value, long long & out)
   case ConstexprValue::CV_POINTER:
   case ConstexprValue::CV_FUNCTION:
   case ConstexprValue::CV_MEMBER_POINTER:
+  case ConstexprValue::CV_ADDRESSABLE:
   case ConstexprValue::CV_AGGREGATE:
   case ConstexprValue::CV_ARRAY:
   default:
@@ -1107,6 +1119,7 @@ bool constexpr_value_to_unsigned_integral(const ConstexprValue & value,
   case ConstexprValue::CV_POINTER:
   case ConstexprValue::CV_FUNCTION:
   case ConstexprValue::CV_MEMBER_POINTER:
+  case ConstexprValue::CV_ADDRESSABLE:
   case ConstexprValue::CV_AGGREGATE:
   case ConstexprValue::CV_ARRAY:
   default:
@@ -1274,6 +1287,9 @@ bool constexpr_value_apply_unary(ETokenType op,
   TypePtr promoted_type = promoted_integral_or_self(operand.type);
   switch(op) {
   case OP_PLUS:
+    if(operand.kind == ConstexprValue::CV_ADDRESSABLE) {
+      return false;
+    }
     if(operand.kind == ConstexprValue::CV_INTEGRAL && promoted_type) {
       return constexpr_value_cast(operand, promoted_type, out);
     }

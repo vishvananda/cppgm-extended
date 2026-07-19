@@ -685,7 +685,8 @@ bool evaluate_constant_call_expression_value(
               make_fundamental(FT_DOUBLE) : make_fundamental(FT_INT);
         }
         expr.category =
-            args[arg_index].kind == constant_eval::ConstexprValue::CV_FUNCTION ?
+            (args[arg_index].kind == constant_eval::ConstexprValue::CV_FUNCTION ||
+             args[arg_index].kind == constant_eval::ConstexprValue::CV_ADDRESSABLE) ?
                 VC_LVALUE :
                 VC_PRVALUE;
         long long integral_value = 0;

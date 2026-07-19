@@ -126,6 +126,26 @@ const CppAstNode * find_child_kind(const CppAstNode & node, CppAstKind kind)
   return find_child(node, kind);
 }
 
+bool is_this_expression(const CppAstNode & node)
+{
+  const CppAstNode * current = &node;
+  while(current->kind == CppAstKind::parenthesized_expression &&
+        current->children.size() == 1) {
+    current = &current->children[0];
+  }
+  return (current->kind == CppAstKind::id_expression &&
+          current->value == "this") ||
+         (current->kind == CppAstKind::keyword_literal &&
+          current->has_token &&
+          current->simple_type == KW_THIS);
+}
+
+bool type_can_select_overloaded_operator(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  return base && base->kind == Type::TK_NAMED;
+}
+
 }  // namespace
 
 Evaluator::Evaluator(Hooks hooks)
@@ -380,11 +400,12 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
     return true;
   }
 
+  if(is_this_expression(node) && current_this_object(out)) {
+    return true;
+  }
+
   if(node.kind == CppAstKind::id_expression) {
     if(lookup_value(node.value, &node, out)) {
-      return true;
-    }
-    if(node.value == "this" && current_this_object(out)) {
       return true;
     }
     return hooks_.evaluate_special_expression &&
@@ -396,6 +417,11 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
   }
 
   if(node.kind == CppAstKind::unary_expression && node.children.size() == 1 && node.has_token) {
+    if(node.simple_type == OP_STAR &&
+       is_this_expression(node.children[0]) &&
+       current_this_object(out)) {
+      return true;
+    }
     if(hooks_.evaluate_special_expression &&
        node.simple_type == OP_AMP &&
        hooks_.evaluate_special_expression(*this, node, out)) {
@@ -497,6 +523,12 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
     }
     if(constexpr_value_apply_binary(node.simple_type, lhs, rhs, out)) {
       return true;
+    }
+    if((lhs.kind == ConstexprValue::CV_ADDRESSABLE ||
+        rhs.kind == ConstexprValue::CV_ADDRESSABLE) &&
+       !type_can_select_overloaded_operator(lhs.type) &&
+       !type_can_select_overloaded_operator(rhs.type)) {
+      return false;
     }
     if(hooks_.evaluate_special_expression &&
        hooks_.evaluate_special_expression(*this, node, out)) {

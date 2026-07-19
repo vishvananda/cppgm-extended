@@ -1,0 +1,41 @@
+function @test() -> void [binding=strong, object=_Z4testv] {
+  slot $d : obj<4x1>
+
+  block ^entry:
+    %t1 = addr $d
+    call void @Digest__Digest(%t1)
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    call void @test()
+    return i32 0
+}
+function @Digest__Digest(%this : ptr) -> void [binding=weak, object=_ZN6DigestC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = unary decay ptr %t2
+    %t4 = index u8 [projection=array_element] %t3, 0
+    store u8 0, %t4
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = unary decay ptr %t6
+    %t8 = index u8 [projection=array_element] %t7, 1
+    store u8 0, %t8
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = unary decay ptr %t10
+    %t12 = index u8 [projection=array_element] %t11, 2
+    store u8 0, %t12
+    %t13 = load ptr $this
+    %t14 = index i8 [projection=field] %t13, 0
+    %t15 = unary decay ptr %t14
+    %t16 = index u8 [projection=array_element] %t15, 3
+    store u8 0, %t16
+    return void
+}
+alias object _ZN6DigestC2Ev = @Digest__Digest
