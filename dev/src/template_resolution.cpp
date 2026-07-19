@@ -14308,7 +14308,17 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                  *argument.source_syntax,
                  syntax_type) &&
              syntax_type) {
-            out = syntax_type;
+            // Instantiated partial-specialization members can retain source
+            // syntax for an owner pack after the carried argument has become
+            // concrete. Do not replace that exact typed argument with the
+            // older dependent placeholder during deduction.
+            const bool downgrades_concrete_type =
+                out &&
+                !deduction_ops.type_depends(out) &&
+                deduction_ops.type_depends(syntax_type);
+            if(!downgrades_concrete_type) {
+              out = syntax_type;
+            }
           }
           out = apply_top_level_cv_from_syntax(*argument.source_syntax, out);
         }
