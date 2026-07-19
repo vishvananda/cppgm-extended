@@ -39,6 +39,9 @@ jobs:
           fi
           exit "$status"
 
+      - name: Check exported dev Makefile relink stability
+        run: python3 scripts/tests/test_exported_dev_makefile.py
+
   build:
     name: build / ${{ matrix.name }}
     runs-on: ubuntu-24.04
