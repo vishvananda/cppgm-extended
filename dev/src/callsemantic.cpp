@@ -25062,7 +25062,29 @@ private:
       return nullptr;
     }
     const string class_name = qualified_owner_name_text(qualified);
-    return resolve_qualified_owner_class(scope, class_name, resolution);
+    ClassInfo * resolved =
+        resolve_qualified_owner_class(scope, class_name, resolution);
+    if(resolved || qualified.qualifiers.size() < 2) {
+      return resolved;
+    }
+
+    QualifiedName reduced = qualified;
+    const string injected_name =
+        unqualified_member_name(strip_trailing_top_level_template_arguments(
+            reduced.qualifiers.back()));
+    const string preceding_name =
+        unqualified_member_name(strip_trailing_top_level_template_arguments(
+            reduced.qualifiers[reduced.qualifiers.size() - 2]));
+    if(injected_name != preceding_name) {
+      return nullptr;
+    }
+    reduced.qualifiers.pop_back();
+    ClassInfo * injected_owner =
+        resolve_qualified_owner_class(scope,
+                                      qualified_owner_name_text(reduced),
+                                      resolution);
+    return injected_owner && injected_owner->name == injected_name ?
+        injected_owner : nullptr;
   }
 
   ClassInfo * resolve_out_of_class_owner_class_from_template_id_syntax(

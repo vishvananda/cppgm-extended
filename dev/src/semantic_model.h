@@ -1040,6 +1040,8 @@ struct OutOfClassMemberFunctionDecl
   bool is_const_method = false;
   bool is_volatile_method = false;
   semantic_model::RefQualifier ref_qualifier = semantic_model::RQ_NONE;
+  bool is_defaulted = false;
+  bool is_deleted = false;
   bool exclude_from_explicit_instantiation = false;
   std::vector<template_model::TemplateParameterInfo> parameters;
 };

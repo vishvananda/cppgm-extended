@@ -3857,6 +3857,29 @@ void apply_stored_out_of_class_member_function_definitions_map(
             binding->exclude_from_explicit_instantiation ||
             stored.exclude_from_explicit_instantiation;
         ctx.upgrade_function_symbol_linkage(binding, binding->symbol.linkage);
+      } else if(stored.is_defaulted || stored.is_deleted) {
+        if(binding->has_definition || binding->is_deleted) {
+          continue;
+        }
+        refresh_definition_parameter_names(*binding, effective_params);
+        record_definition_parameter_aliases(*binding, effective_params);
+        binding->declaration_scope = &binding_scope;
+        binding->definition_node = stored.declarator;
+        binding->definition_abi_tags.clear();
+        append_function_specifier_and_declarator_abi_tags(binding->definition_abi_tags,
+                                                          stored.specifiers,
+                                                          stored.declarator);
+        binding->is_defaulted = binding->is_defaulted || stored.is_defaulted;
+        binding->is_deleted = binding->is_deleted || stored.is_deleted;
+        if(stored.is_defaulted) {
+          binding->body = nullptr;
+          binding->ctor_initializer = nullptr;
+          binding->has_definition = true;
+        }
+        binding->exclude_from_explicit_instantiation =
+            binding->exclude_from_explicit_instantiation ||
+            stored.exclude_from_explicit_instantiation;
+        ctx.upgrade_function_symbol_linkage(binding, binding->symbol.linkage);
       } else if(!binding->declaration_node) {
         binding->declaration_node = stored.declarator;
         append_function_specifier_and_declarator_abi_tags(binding->declaration_abi_tags,

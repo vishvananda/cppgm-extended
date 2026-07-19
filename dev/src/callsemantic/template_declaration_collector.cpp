@@ -1036,16 +1036,30 @@ public:
           ClassInfo * owner = binding->owner_class;
           if(owner && owner->member_scope) {
             ClassTemplateDecl * owner_template_decl = owner->source_template;
+            if(!owner_template_decl &&
+               owner->enclosing_scope &&
+               owner->enclosing_scope->class_info) {
+              owner_template_decl =
+                  owner->enclosing_scope->class_info->source_template;
+            }
             if(!owner_template_decl && owner->enclosing_scope) {
               owner_template_decl =
                   lookup_class_template(*owner->enclosing_scope, owner->name);
             }
-            if(owner_template_decl &&
-               out_of_class_special_member_template_parameters_match(*owner->member_scope,
-                                                                    owner_template_decl->parameters,
-                                                                    pattern_scope,
-                                                                    owner_template_parameters)) {
-              const QualifiedName * qualified_member = cppast_qualified_name_syntax(inner);
+            const bool matches_owner_template_parameters =
+                owner_template_decl &&
+                (out_of_class_special_member_template_parameters_match(
+                     *owner->member_scope,
+                     owner_template_decl->parameters,
+                     pattern_scope,
+                     owner_template_parameters) ||
+                 out_of_class_special_member_template_parameters_match(
+                     *owner->member_scope,
+                     owner_template_decl->parameters,
+                     pattern_scope,
+                     template_parameters));
+            if(owner_template_decl && matches_owner_template_parameters) {
+              const QualifiedName * qualified_member = conversion_qualified_name;
               if(qualified_member && qualified_member->qualifiers.size() > 0) {
                 vector<OutOfClassMemberFunctionDecl> & stored_defs =
                     owner_template_decl->member_function_definitions[qualified_member->name];
@@ -1062,6 +1076,9 @@ public:
                   stored.pattern_scope = &pattern_scope;
                   stored.qualified_name = inner.value;
                   stored.qualified_name_syntax = *qualified_member;
+                  stored.owner_output_node =
+                      out_of_class_member_owner_output_node(owner,
+                                                            owner_template_decl);
                   stored.specifiers = find_child_kind(inner, CppAstKind::decl_specifier_seq);
                   stored.declarator = declarator;
                   stored.body = find_function_body_node(inner);
@@ -1319,6 +1336,11 @@ public:
           stored.is_const_method = false;
           stored.is_volatile_method = false;
           stored.ref_qualifier = RQ_NONE;
+          if(const CppAstNode * special_definition =
+                 find_child_kind(inner, CppAstKind::special_definition)) {
+            stored.is_defaulted = special_definition->value == "default";
+            stored.is_deleted = special_definition->value == "delete";
+          }
           stored.exclude_from_explicit_instantiation = exclude_from_explicit_instantiation;
           stored.parameters = *matched_owner_parameters;
           stored_defs.push_back(stored);
@@ -2482,12 +2504,20 @@ public:
             parsed_scope_owner &&
             parsed_scope_owner->enclosing_scope &&
             parsed_scope_owner->enclosing_scope->class_info;
+        const bool parsed_scope_owner_is_repeated_injected_class =
+            parsed_scope_owner &&
+            qualified_member.qualifiers.size() >= 2 &&
+            unqualified_member_name(
+                strip_trailing_top_level_template_arguments(
+                    qualified_member.qualifiers.back())) == parsed_scope_owner->name;
         ClassInfo * owner =
             resolve_qualified_owner_class_from_template_id_syntax(
                 pattern_scope,
                 qualified_member,
                 function_identifier);
-        if(!owner && parsed_scope_owner_is_nested_class) {
+        if(!owner &&
+           (parsed_scope_owner_is_nested_class ||
+            parsed_scope_owner_is_repeated_injected_class)) {
           owner = parsed_scope_owner;
         }
         if(!owner) {
@@ -4083,13 +4113,21 @@ public:
         parsed_scope_owner->enclosing_scope &&
         parsed_scope_owner->enclosing_scope->class_info &&
         parsed_scope_owner->enclosing_scope->class_info->source_template;
+    const bool parsed_scope_owner_is_repeated_injected_class =
+        parsed_scope_owner &&
+        qualified_member->qualifiers.size() >= 2 &&
+        unqualified_member_name(
+            strip_trailing_top_level_template_arguments(
+                qualified_member->qualifiers.back())) == parsed_scope_owner->name;
     ClassInfo * owner =
         resolve_qualified_owner_class_from_template_id_syntax(
             pattern_scope,
             *qualified_member,
             function_identifier,
             QualifiedOwnerClassResolution::ReferenceMembers);
-    if(!owner && parsed_scope_owner_is_nested_template_member) {
+    if(!owner &&
+       (parsed_scope_owner_is_nested_template_member ||
+        parsed_scope_owner_is_repeated_injected_class)) {
       owner = parsed_scope_owner;
     }
     if(!owner) {
