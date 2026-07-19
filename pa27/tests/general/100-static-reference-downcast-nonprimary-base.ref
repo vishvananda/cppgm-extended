@@ -133,12 +133,23 @@ function @downcast_leaf___downcast_leaf__deleting_entry(%this : ptr) -> void [bi
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @downcast_leaf__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    eh_end
     %t4 = load ptr $this
     call void @operator_delete(%t4)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t5 = load ptr $this
+    call void @operator_delete(%t5)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @downcast_leaf___downcast_leaf(%this : ptr) -> void [binding=weak, object=_ZN13downcast_leafD1Ev] {

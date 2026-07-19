@@ -332,6 +332,7 @@ struct CleanupAction
     CK_DESTROY_CLASS_OBJECT,
     CK_DESTROY_CLASS_AT_NODE,
     CK_DESTROY_CLASS_AT_PTR,
+    CK_STATEMENT_NODE,
     CK_EH_END,
     CK_CLEAR_EXCEPTION
   } kind = CK_NODE;
@@ -443,6 +444,17 @@ bool try_get_integral_literal_value(const CallSemNode & node, long long & out)
     }
   }
   return false;
+}
+
+bool try_get_direct_integral_literal_value(const CallSemNode & node,
+                                           long long & out)
+{
+  if(node.kind != CallSemKind::literal &&
+     !callsem_has_token(node, KW_TRUE) &&
+     !callsem_has_token(node, KW_FALSE)) {
+    return false;
+  }
+  return try_get_integral_literal_value(node, out);
 }
 
 bool string_literal_type_matches(const TypePtr & type,
@@ -6777,6 +6789,15 @@ private:
         throw logic_error("binary-expression arity");
       }
       const bool is_land = callsem_has_token(node, OP_LAND);
+      long long literal_lhs = 0;
+      if(try_get_direct_integral_literal_value(node.children[0], literal_lhs)) {
+        const bool lhs_truthy = literal_lhs != 0;
+        if((is_land && !lhs_truthy) || (!is_land && lhs_truthy)) {
+          return;
+        }
+        emit_discarded_expression(node.children[1]);
+        return;
+      }
       const string rhs_label = new_block(is_land ? "land_rhs" : "lor_rhs");
       const string short_label = new_block(is_land ? "land_short" : "lor_short");
       const string end_label = new_block(is_land ? "land_end" : "lor_end");
@@ -7725,6 +7746,7 @@ private:
     case CleanupAction::CK_DESTROY_CLASS_OBJECT:
     case CleanupAction::CK_DESTROY_CLASS_AT_NODE:
     case CleanupAction::CK_DESTROY_CLASS_AT_PTR:
+    case CleanupAction::CK_STATEMENT_NODE:
       return true;
     case CleanupAction::CK_EH_END:
     case CleanupAction::CK_CLEAR_EXCEPTION:
@@ -9897,6 +9919,14 @@ private:
     append_cleanup_action(cleanup);
   }
 
+  void register_statement_cleanup(const CallSemNode & statement)
+  {
+    CleanupAction cleanup;
+    cleanup.kind = CleanupAction::CK_STATEMENT_NODE;
+    cleanup.node = &statement;
+    append_cleanup_action(cleanup);
+  }
+
   void register_bound_local_cleanup(const CallSemNode & action,
                                     const string & local_name,
                                     const string & storage_slot)
@@ -10086,6 +10116,11 @@ private:
     case CleanupAction::CK_DESTROY_CLASS_AT_PTR:
       emit_destroy_complete_class_temporary(cleanup.object_type, cleanup.storage_slot);
       return;
+    case CleanupAction::CK_STATEMENT_NODE:
+      if(cleanup.node) {
+        emit_statement(*cleanup.node);
+      }
+      return;
     case CleanupAction::CK_EH_END:
       if(!for_throw) {
         emit_line("eh_end");
@@ -10119,6 +10154,20 @@ private:
     --cleanup_emission_depth_;
   }
 
+  void emit_scope_cleanup_prefix(const vector<CleanupAction> & scope,
+                                 size_t cleanup_count,
+                                 bool for_throw)
+  {
+    if(cleanup_count > scope.size()) {
+      throw logic_error("cleanup prefix exceeds scope");
+    }
+    ++cleanup_emission_depth_;
+    for(size_t i = cleanup_count; i-- > 0;) {
+      emit_cleanup_action(scope[i], for_throw);
+    }
+    --cleanup_emission_depth_;
+  }
+
   void emit_scope_cleanups_excluding_destroy_at_ptr(const vector<CleanupAction> & scope,
                                                     const string & excluded_destroy_ptr,
                                                     bool for_throw = false)
@@ -10133,6 +10182,63 @@ private:
     --cleanup_emission_depth_;
   }
 
+  bool has_generated_destructor_statement_cleanups(
+      const vector<CleanupAction> & scope) const
+  {
+    return any_of(scope.begin(),
+                  scope.end(),
+                  [](const CleanupAction & cleanup)
+                  {
+                    return cleanup.kind == CleanupAction::CK_STATEMENT_NODE;
+                  });
+  }
+
+  void emit_normal_generated_destructor_cleanups(
+      const vector<CleanupAction> & scope,
+      size_t cleanup_count)
+  {
+    if(cleanup_count == 0) {
+      return;
+    }
+
+    const CleanupAction & current = scope[cleanup_count - 1];
+    if(cleanup_count == 1) {
+      ++cleanup_emission_depth_;
+      emit_cleanup_action(current, false);
+      --cleanup_emission_depth_;
+      return;
+    }
+
+    const string cleanup_label = new_block("destructor_suffix_cleanup");
+    const string continuation_label = new_block("destructor_suffix_next");
+    const size_t cleanup_depth = host_eh_region_depth_ + 1;
+    emit_line("eh_cleanup " + lowir_block_name(cleanup_label));
+    ++cleanup_emission_depth_;
+    emit_cleanup_action(current, false);
+    --cleanup_emission_depth_;
+    const bool action_fallthrough = current_block_ != nullptr;
+    if(action_fallthrough) {
+      emit_line("eh_end");
+      terminate("jump " + lowir_block_name(continuation_label));
+    }
+
+    start_block(cleanup_label);
+    if(!host_eh_handler_nodes_.empty() && host_eh_handler_nodes_.back()) {
+      emit_host_eh_handler_metadata(*host_eh_handler_nodes_.back());
+    }
+    emit_scope_cleanup_prefix(scope, cleanup_count - 1, true);
+    if(should_route_to_active_host_cleanup()) {
+      terminate_through_active_host_cleanup(true);
+    } else {
+      terminate_host_eh_dispatch_or_resume(cleanup_depth);
+    }
+
+    if(action_fallthrough) {
+      start_block(continuation_label);
+      emit_normal_generated_destructor_cleanups(scope, cleanup_count - 1);
+    }
+  }
+
   void emit_normal_scope_cleanups(const vector<CleanupAction> & scope,
                                   size_t normal_eh_end_count)
   {
@@ -10140,7 +10246,27 @@ private:
     for(size_t i = 0; i < normal_eh_end_count; ++i) {
       emit_line("eh_end");
     }
-    emit_scope_cleanups(scope, false);
+    if(use_host_eh_runtime() &&
+       normal_eh_end_count != 0 &&
+       has_generated_destructor_statement_cleanups(scope)) {
+      if(active_host_cleanup_labels_.empty()) {
+        throw logic_error("generated destructor cleanup label missing");
+      }
+      const size_t cleanup_index = active_host_cleanup_scope_index();
+      const string suspended_label = active_host_cleanup_labels_.back();
+      active_host_cleanup_labels_.pop_back();
+      cleanup_scope_host_unwind_cleanup_[cleanup_index] = false;
+      // Emitting a generated destructor statement may register temporaries in
+      // the active cleanup scope.  Keep the suffix plan independent of that
+      // vector so registration cannot invalidate this traversal.
+      const vector<CleanupAction> stable_scope = scope;
+      emit_normal_generated_destructor_cleanups(stable_scope,
+                                                stable_scope.size());
+      cleanup_scope_host_unwind_cleanup_[cleanup_index] = true;
+      active_host_cleanup_labels_.push_back(suspended_label);
+    } else {
+      emit_scope_cleanups(scope, false);
+    }
   }
 
   void emit_cleanups_to_depth(size_t target_cleanup_depth)
@@ -12214,6 +12340,20 @@ private:
       }
       if(callsem_has_token(node, OP_LAND) || callsem_has_token(node, OP_LOR)) {
         const bool is_land = callsem_has_token(node, OP_LAND);
+        long long literal_lhs = 0;
+        if(try_get_direct_integral_literal_value(node.children[0], literal_lhs)) {
+          const bool lhs_truthy = literal_lhs != 0;
+          if((is_land && !lhs_truthy) || (!is_land && lhs_truthy)) {
+            return is_land ? "0" : "1";
+          }
+          push_cleanup_scope(true);
+          const string rhs = emit_normalized_truthy(node.children[1]);
+          if(current_block_) {
+            emit_scope_cleanups(cleanup_scopes_.back());
+          }
+          pop_cleanup_scope();
+          return rhs;
+        }
         const string result_slot = new_hidden_slot("i64", is_land ? "land" : "lor");
         const string rhs_label = new_block(is_land ? "land_rhs" : "lor_rhs");
         const string short_label = new_block(is_land ? "land_short" : "lor_short");
@@ -14231,6 +14371,18 @@ private:
        node.children.size() == 2 &&
        (callsem_has_token(node, OP_LAND) || callsem_has_token(node, OP_LOR))) {
       const bool is_land = callsem_has_token(node, OP_LAND);
+      long long literal_lhs = 0;
+      if(try_get_direct_integral_literal_value(node.children[0], literal_lhs)) {
+        const bool lhs_truthy = literal_lhs != 0;
+        if((is_land && !lhs_truthy) || (!is_land && lhs_truthy)) {
+          terminate("jump " + lowir_block_name(lhs_truthy ? true_label : false_label));
+        } else if(is_short_circuit_truthy_expression(node.children[1])) {
+          emit_truthy_branch(node.children[1], true_label, false_label);
+        } else {
+          emit_simple_condition_branch(node.children[1], true_label, false_label);
+        }
+        return;
+      }
       const string rhs_label = new_block(is_land ? "land_rhs" : "lor_rhs");
       emit_truthy_branch(node.children[0],
                          is_land ? rhs_label : true_label,
@@ -14261,6 +14413,12 @@ private:
                                     const string & true_label,
                                     const string & false_label)
   {
+    long long literal_value = 0;
+    if(try_get_direct_integral_literal_value(node, literal_value)) {
+      terminate("jump " +
+                lowir_block_name(literal_value != 0 ? true_label : false_label));
+      return;
+    }
     push_cleanup_scope(true);
     const string cond_value = emit_branch_condition_value(node);
     if(!current_block_) {
@@ -15570,8 +15728,71 @@ private:
        node.kind == CallSemKind::else_node) {
       push_cleanup_scope();
       push_binding_scope();
-      for(size_t i = 0; i < node.children.size(); ++i) {
+      size_t destructor_body_index = node.children.size();
+      if(node.kind == CallSemKind::compound_statement) {
+        for(size_t i = 0; i < node.children.size(); ++i) {
+          if(node.children[i].kind == CallSemKind::compound_statement &&
+             node.children[i].is_destructor_body_scope) {
+            destructor_body_index = i;
+            break;
+          }
+        }
+      }
+      if(destructor_body_index != node.children.size()) {
+        for(size_t i = node.children.size(); i-- > destructor_body_index + 1;) {
+          register_statement_cleanup(node.children[i]);
+        }
+      }
+      const size_t statement_count =
+          destructor_body_index == node.children.size() ?
+              node.children.size() : destructor_body_index + 1;
+      const bool host_destructor_cleanup =
+          use_host_eh_runtime() &&
+          destructor_body_index != node.children.size() &&
+          destructor_body_index + 1 < node.children.size();
+      string destructor_cleanup_label;
+      string destructor_end_label;
+      size_t destructor_cleanup_depth = 0;
+      if(host_destructor_cleanup) {
+        destructor_cleanup_label = new_block("destructor_cleanup");
+        destructor_end_label = new_block("destructor_end");
+        destructor_cleanup_depth = host_eh_region_depth_ + 1;
+        emit_line("eh_cleanup " + lowir_block_name(destructor_cleanup_label));
+        active_host_cleanup_labels_.push_back(destructor_cleanup_label);
+        mark_current_cleanup_scope_host_unwind_cleanup();
+        register_pre_scope_eh_end_cleanup();
+      }
+      for(size_t i = 0; i < statement_count; ++i) {
         emit_statement(node.children[i]);
+      }
+      if(host_destructor_cleanup) {
+        const bool body_fallthrough = current_block_ != nullptr;
+        const vector<CleanupAction> body_cleanups = cleanup_scopes_.back();
+        const size_t body_normal_eh_end_count =
+            cleanup_scope_normal_eh_end_counts_.back();
+        if(body_fallthrough) {
+          emit_normal_scope_cleanups(body_cleanups, body_normal_eh_end_count);
+          terminate("jump " + lowir_block_name(destructor_end_label));
+        }
+        start_block(destructor_cleanup_label);
+        if(!host_eh_handler_nodes_.empty() && host_eh_handler_nodes_.back()) {
+          emit_host_eh_handler_metadata(*host_eh_handler_nodes_.back());
+        }
+        emit_scope_cleanups(body_cleanups);
+        if(active_host_cleanup_labels_.empty() ||
+           active_host_cleanup_labels_.back() != destructor_cleanup_label) {
+          throw logic_error("destructor cleanup label stack mismatch");
+        }
+        active_host_cleanup_labels_.pop_back();
+        pop_cleanup_scope();
+        pop_binding_scope();
+        if(should_route_to_active_host_cleanup()) {
+          terminate_through_active_host_cleanup(true);
+        } else {
+          terminate_host_eh_dispatch_or_resume(destructor_cleanup_depth);
+        }
+        start_block(destructor_end_label);
+        return;
       }
       if(current_block_) {
         emit_scope_cleanups(cleanup_scopes_.back());
@@ -18626,9 +18847,6 @@ private:
   string ensure_host_typeinfo_name_global(const TypePtr & type)
   {
     const string object_symbol = host_typeinfo_name_symbol_for_type(type);
-    if(object_symbol.empty()) {
-      throw logic_error("failed to derive host typeinfo name symbol for " + describe_type(type));
-    }
     const string structural_symbol =
         lowir_type_encoding_name("__typeinfo_name_type", type);
     const string internal_symbol =
@@ -18637,7 +18855,10 @@ private:
             structural_symbol;
     if(!has_global_name(internal_symbol)) {
       LowIRGlobal global = make_data_global(internal_symbol, true);
-      const string encoded_name = object_symbol.substr(4);
+      const string encoded_name =
+          object_symbol.empty() ?
+              string("__cppgm_internal_") + describe_type(type) :
+              object_symbol.substr(4);
       for(size_t i = 0; i < encoded_name.size(); ++i) {
         global.data_items.push_back(
             string("i8 ") +
@@ -18646,12 +18867,15 @@ private:
       global.data_items.push_back("i8 0");
       globals_.push_back(global);
     }
-    set_exported_symbol(internal_symbol,
-                        symbol_linkage::make_object_symbol_identity(internal_symbol,
-                                                                    object_symbol,
-                                                                    symbol_linkage::SL_WEAK),
-                        "rtti-name",
-                        describe_type(type));
+    if(!object_symbol.empty()) {
+      set_exported_symbol(internal_symbol,
+                          symbol_linkage::make_object_symbol_identity(
+                              internal_symbol,
+                              object_symbol,
+                              symbol_linkage::SL_WEAK),
+                          "rtti-name",
+                          describe_type(type));
+    }
     return internal_symbol;
   }
 

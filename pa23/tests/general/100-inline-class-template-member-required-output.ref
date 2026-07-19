@@ -54,10 +54,10 @@ function @allocator_int___allocate_at_least(%this : ptr, %n : i64) -> obj<16x8> 
     store i64 %n, $n
     %t1 = addr $retobj__1
     %t2 = load i64 $n
-    call void @allocation_result_int____unsigned_long_int___allocation_result__ov2(%t1, 0, %t2)
+    call void @allocation_result_int____unsigned_long_int___allocation_result__ov4(%t1, 0, %t2)
     return obj<16x8> $retobj__1
 }
-function @allocation_result_int____unsigned_long_int___allocation_result__ov2(%this : ptr, %ptr : ptr, %count : i64) -> void [unwind=no, binding=weak, object=_ZN17allocation_resultIPimEC1ES0_m] {
+function @allocation_result_int____unsigned_long_int___allocation_result__ov4(%this : ptr, %ptr : ptr, %count : i64) -> void [unwind=no, binding=weak, object=_ZN17allocation_resultIPimEC1ES0_m] {
   slot $this : ptr
   slot $ptr : ptr
   slot $count : i64
@@ -76,4 +76,4 @@ function @allocation_result_int____unsigned_long_int___allocation_result__ov2(%t
     store i64 %t4, %t6
     return void
 }
-alias object _ZN17allocation_resultIPimEC2ES0_m = @allocation_result_int____unsigned_long_int___allocation_result__ov2
+alias object _ZN17allocation_resultIPimEC2ES0_m = @allocation_result_int____unsigned_long_int___allocation_result__ov4

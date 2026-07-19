@@ -30169,10 +30169,7 @@ private:
                                               FunctionBinding *& call_operator) override
   {
     const CppAstNode * lambda_anchor = declarator ? declarator : body;
-    const string class_name =
-        captures.empty() ?
-            next_lambda_class_name_base(scope, lambda_anchor) :
-            next_available_lambda_class_name(scope, lambda_anchor);
+    const string class_name = next_available_lambda_class_name(scope, lambda_anchor);
     ClassInfo * info = create_class_info(scope, "class", class_name);
     info->is_lambda_closure = true;
 

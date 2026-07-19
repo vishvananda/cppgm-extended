@@ -84,15 +84,60 @@ function @E___E(%this : ptr) -> void [binding=weak, object=_ZN1ED1Ev] {
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 2
     call void @S___S(%t2)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t3 = load ptr $this
     %t4 = index i8 [projection=field] %t3, 1
     call void @S___S(%t4)
     %t5 = load ptr $this
     %t6 = index i8 [projection=field] %t5, 0
     call void @S___S(%t6)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    eh_cleanup ^destructor_suffix_cleanup_5
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 1
+    call void @S___S(%t8)
+    eh_end
+    jump ^destructor_suffix_next_6
+
+  block ^destructor_suffix_cleanup_5:
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    call void @S___S(%t10)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_6:
+    %t11 = load ptr $this
+    %t12 = index i8 [projection=field] %t11, 0
+    call void @S___S(%t12)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t13 = load ptr $this
+    %t14 = index i8 [projection=field] %t13, 2
+    call void @S___S(%t14)
+    %t15 = load ptr $this
+    %t16 = index i8 [projection=field] %t15, 1
+    call void @S___S(%t16)
+    %t17 = load ptr $this
+    %t18 = index i8 [projection=field] %t17, 0
+    call void @S___S(%t18)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 alias object _ZN1ED2Ev = @E___E

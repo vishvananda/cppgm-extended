@@ -53,10 +53,10 @@ function @convert(%value : u32, %exponent : i32, %first : ptr, %last : ptr) -> o
     %t6 = load i32 $exponent
     %t7 = convert sext i64 i32 %t6
     %t8 = index i8 %t5, %t7
-    call void @result__result__ov2(%t1, %t8, 0)
+    call void @result__result__ov4(%t1, %t8, 0)
     return obj<16x8> $retobj__1
 }
-function @result__result__ov2(%this : ptr, %ptr : ptr, %ec : i32) -> void [unwind=no, binding=weak, object=_ZN6resultC1EPci] {
+function @result__result__ov4(%this : ptr, %ptr : ptr, %ec : i32) -> void [unwind=no, binding=weak, object=_ZN6resultC1EPci] {
   slot $this : ptr
   slot $ptr : ptr
   slot $ec : i32
@@ -75,4 +75,4 @@ function @result__result__ov2(%this : ptr, %ptr : ptr, %ec : i32) -> void [unwin
     store i32 %t4, %t6
     return void
 }
-alias object _ZN6resultC2EPci = @result__result__ov2
+alias object _ZN6resultC2EPci = @result__result__ov4

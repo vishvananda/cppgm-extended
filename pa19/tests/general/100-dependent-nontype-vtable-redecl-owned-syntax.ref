@@ -65,12 +65,23 @@ function @Control_int__7____Control__deleting_entry(%this : ptr) -> void [unwind
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @Control_int__7___vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    eh_end
     %t4 = load ptr $this
     call void @operator_delete(%t4)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t5 = load ptr $this
+    call void @operator_delete(%t5)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @Control_int__7____Control(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7ControlIiLi7EED1Ev] {

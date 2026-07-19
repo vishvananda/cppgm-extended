@@ -26,9 +26,21 @@ function @YB___YB(%this : ptr) -> void [binding=weak, object=_ZN2YBD1Ev] {
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @YA___YA(%t2)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    call void @YA___YA(%t4)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @YA__YA(%this : ptr) -> void [binding=weak, object=_ZN2YAC1Ev] {

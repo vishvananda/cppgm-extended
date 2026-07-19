@@ -59,10 +59,10 @@ function @allocate_at_least(%ptr : ptr, %n : i64) -> obj<16x8> [binding=weak, ob
     %t1 = addr $retobj__1
     %t2 = load ptr $ptr
     %t3 = load i64 $n
-    call void @allocation_result_int___allocation_result__ov2(%t1, %t2, %t3)
+    call void @allocation_result_int___allocation_result__ov4(%t1, %t2, %t3)
     return obj<16x8> $retobj__1
 }
-function @allocation_result_int___allocation_result__ov2(%this : ptr, %ptr : ptr, %count : i64) -> void [unwind=no, binding=weak, object=_ZN17allocation_resultIiEC1EPim] {
+function @allocation_result_int___allocation_result__ov4(%this : ptr, %ptr : ptr, %count : i64) -> void [unwind=no, binding=weak, object=_ZN17allocation_resultIiEC1EPim] {
   slot $this : ptr
   slot $ptr : ptr
   slot $count : i64
@@ -81,4 +81,4 @@ function @allocation_result_int___allocation_result__ov2(%this : ptr, %ptr : ptr
     store i64 %t4, %t6
     return void
 }
-alias object _ZN17allocation_resultIiEC2EPim = @allocation_result_int___allocation_result__ov2
+alias object _ZN17allocation_resultIiEC2EPim = @allocation_result_int___allocation_result__ov4

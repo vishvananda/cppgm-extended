@@ -364,7 +364,8 @@ struct CallSemNode
       has_special_member_entry_point_kind(false),
       uses_vtt_parameter(false),
       has_vtt_slice_offset(false),
-      has_vtt_entry_index(false)
+      has_vtt_entry_index(false),
+      is_destructor_body_scope(false)
   {}
   CallSemNode(CallSemKind kind,
               const std::string & text,
@@ -430,6 +431,7 @@ struct CallSemNode
   std::uint64_t uses_vtt_parameter : 1;
   std::uint64_t has_vtt_slice_offset : 1;
   std::uint64_t has_vtt_entry_index : 1;
+  std::uint64_t is_destructor_body_scope : 1;
 
   bool has_source_location() const;
 };

@@ -1226,7 +1226,8 @@ bool callsem_flags_equal(const CallSemNode & lhs, const CallSemNode & rhs)
          lhs.has_special_member_entry_point_kind == rhs.has_special_member_entry_point_kind &&
          lhs.uses_vtt_parameter == rhs.uses_vtt_parameter &&
          lhs.has_vtt_slice_offset == rhs.has_vtt_slice_offset &&
-         lhs.has_vtt_entry_index == rhs.has_vtt_entry_index;
+         lhs.has_vtt_entry_index == rhs.has_vtt_entry_index &&
+         lhs.is_destructor_body_scope == rhs.is_destructor_body_scope;
 }
 
 uint64_t hash_callsem_flags(const CallSemNode & node)
@@ -1271,6 +1272,7 @@ uint64_t hash_callsem_flags(const CallSemNode & node)
   hash = hash_mix(hash, node.uses_vtt_parameter ? 1 : 0);
   hash = hash_mix(hash, node.has_vtt_slice_offset ? 1 : 0);
   hash = hash_mix(hash, node.has_vtt_entry_index ? 1 : 0);
+  hash = hash_mix(hash, node.is_destructor_body_scope ? 1 : 0);
   return hash;
 }
 

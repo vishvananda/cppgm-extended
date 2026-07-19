@@ -1434,6 +1434,44 @@ ConstructorSelectionOptions class_initializer_constructor_options(
       constructor_lifecycle_service::direct_initialization_profile());
 }
 
+void validate_elided_direct_materialization_constructor(
+    SemanticContext & ctx,
+    Scope & scope,
+    ClassInfo & info,
+    const CppAstNode & initializer,
+    const ExprInfo & direct_init)
+{
+  FunctionBinding * direct_ctor =
+      direct_init.category == VC_LVALUE ? copy_constructor_for(info) :
+                                          move_constructor_for(info);
+  if(!direct_ctor) {
+    direct_ctor = copy_constructor_for(info);
+  }
+  if(direct_ctor && direct_ctor->access == MA_PUBLIC && !direct_ctor->is_deleted) {
+    return;
+  }
+
+  std::vector<ExprInfo> source_args(1, direct_init);
+  ConstructorSelectionOptions ctor_options =
+      constructor_lifecycle_service::selection_options_for(
+          initializer.uses_assignment_form ?
+              constructor_lifecycle_service::non_explicit_construction_profile(
+                  "elided copy-initialization") :
+              constructor_lifecycle_service::direct_initialization_profile(
+                  "elided direct-initialization"));
+  ctor_options.instantiate_bodies = false;
+  ctor_options.use_location = ctx.source_location_for_node(initializer);
+
+  constructor_lifecycle_service::ConstructorSelectionResult selection;
+  constructor_lifecycle_service::select_constructor_from_exprs_into(
+      ctx,
+      scope,
+      info,
+      source_args,
+      selection,
+      ctor_options);
+}
+
 void note_elided_direct_materialization_constructor_witness(
     SemanticContext & ctx,
     Scope & scope,
@@ -3365,6 +3403,11 @@ void append_target_initialization_actions(SemanticContext & ctx,
                                                           type,
                                                           initializer,
                                                           direct_init)) {
+        validate_elided_direct_materialization_constructor(ctx,
+                                                           scope,
+                                                           *info,
+                                                           *initializer,
+                                                           direct_init);
         note_elided_direct_materialization_constructor_witness(ctx,
                                                               scope,
                                                               *info,
@@ -4189,6 +4232,11 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
                                                         type,
                                                         initializer,
                                                         direct_init)) {
+      validate_elided_direct_materialization_constructor(ctx,
+                                                         scope,
+                                                         *info,
+                                                         *initializer,
+                                                         direct_init);
       note_elided_direct_materialization_constructor_witness(ctx,
                                                             scope,
                                                             *info,
@@ -4863,9 +4911,21 @@ void append_destructor_generated_statements(SemanticContext & ctx,
     return;
   }
 
+  DumpNode body_scope;
+  const bool has_compound_body =
+      function_node.kind == CallSemKind::compound_statement;
+  if(has_compound_body) {
+    body_scope = std::move(function_node);
+    body_scope.is_destructor_body_scope = true;
+    function_node = make_dump_node(CallSemKind::compound_statement);
+  }
+
   ExprInfo this_expr = analyze_generated_this_expr(ctx, scope);
   ClassInfo & info = *binding.owner_class;
   if(info.class_kind == "union") {
+    if(has_compound_body) {
+      function_node.children.push_back(std::move(body_scope));
+    }
     return;
   }
   DumpNode vptr_prefix = make_dump_node(CallSemKind::compound_statement);
@@ -4874,6 +4934,9 @@ void append_destructor_generated_statements(SemanticContext & ctx,
     function_node.children.insert(function_node.children.begin(),
                                   vptr_prefix.children.begin(),
                                   vptr_prefix.children.end());
+  }
+  if(has_compound_body) {
+    function_node.children.push_back(std::move(body_scope));
   }
   for(size_t i = info.fields.size(); i-- > 0;) {
     if(info.fields[i].is_bit_field ||

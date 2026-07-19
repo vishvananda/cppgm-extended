@@ -124,6 +124,7 @@ function @D___D__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN1D
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @D__vtable
     %t3 = index i8 %t2, 16
@@ -133,14 +134,55 @@ function @D___D__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN1D
     %t6 = addr @D____view__B2__8__vtable
     %t7 = index i8 %t6, 16
     store ptr %t7, %t5
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t8 = load ptr $this
     %t9 = index i8 [projection=base_subobject] %t8, 8
     call void @B2___B2__base_entry(%t9)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t10 = load ptr $this
     %t11 = index i8 [projection=base_subobject] %t10, 0
     call void @B1___B1__base_entry(%t11)
     %t12 = load ptr $this
     call void @operator_delete(%t12)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    eh_cleanup ^destructor_suffix_cleanup_5
+    %t13 = load ptr $this
+    %t14 = index i8 [projection=base_subobject] %t13, 0
+    call void @B1___B1__base_entry(%t14)
+    eh_end
+    jump ^destructor_suffix_next_6
+
+  block ^destructor_suffix_cleanup_5:
+    %t15 = load ptr $this
+    call void @operator_delete(%t15)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_6:
+    %t16 = load ptr $this
+    call void @operator_delete(%t16)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t17 = load ptr $this
+    %t18 = index i8 [projection=base_subobject] %t17, 8
+    call void @B2___B2__base_entry(%t18)
+    %t19 = load ptr $this
+    %t20 = index i8 [projection=base_subobject] %t19, 0
+    call void @B1___B1__base_entry(%t20)
+    %t21 = load ptr $this
+    call void @operator_delete(%t21)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @D___D(%this : ptr) -> void [binding=weak, object=_ZN1DD1Ev] {
@@ -148,6 +190,7 @@ function @D___D(%this : ptr) -> void [binding=weak, object=_ZN1DD1Ev] {
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @D__vtable
     %t3 = index i8 %t2, 16
@@ -157,12 +200,38 @@ function @D___D(%this : ptr) -> void [binding=weak, object=_ZN1DD1Ev] {
     %t6 = addr @D____view__B2__8__vtable
     %t7 = index i8 %t6, 16
     store ptr %t7, %t5
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t8 = load ptr $this
     %t9 = index i8 [projection=base_subobject] %t8, 8
     call void @B2___B2__base_entry(%t9)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t10 = load ptr $this
     %t11 = index i8 [projection=base_subobject] %t10, 0
     call void @B1___B1__base_entry(%t11)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t12 = load ptr $this
+    %t13 = index i8 [projection=base_subobject] %t12, 0
+    call void @B1___B1__base_entry(%t13)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t14 = load ptr $this
+    %t15 = index i8 [projection=base_subobject] %t14, 8
+    call void @B2___B2__base_entry(%t15)
+    %t16 = load ptr $this
+    %t17 = index i8 [projection=base_subobject] %t16, 0
+    call void @B1___B1__base_entry(%t17)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @B1__B1__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN2B1C2Ev] {
@@ -198,13 +267,25 @@ function @B2___B2__base_entry(%this : ptr) -> void [binding=weak, object=_ZN2B2D
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @B2__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    eh_end
     %t4 = load ptr $this
     %t5 = index i8 [projection=base_subobject] %t4, 0
     call void @B0___B0__base_entry(%t5)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t6 = load ptr $this
+    %t7 = index i8 [projection=base_subobject] %t6, 0
+    call void @B0___B0__base_entry(%t7)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @B2___B2__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN2B2D0Ev] {
@@ -212,15 +293,40 @@ function @B2___B2__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @B2__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t4 = load ptr $this
     %t5 = index i8 [projection=base_subobject] %t4, 0
     call void @B0___B0__base_entry(%t5)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t6 = load ptr $this
     call void @operator_delete(%t6)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t7 = load ptr $this
+    call void @operator_delete(%t7)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=base_subobject] %t8, 0
+    call void @B0___B0__base_entry(%t9)
+    %t10 = load ptr $this
+    call void @operator_delete(%t10)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @B2___B2(%this : ptr) -> void [binding=weak, object=_ZN2B2D1Ev] {
@@ -228,13 +334,25 @@ function @B2___B2(%this : ptr) -> void [binding=weak, object=_ZN2B2D1Ev] {
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @B2__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    eh_end
     %t4 = load ptr $this
     %t5 = index i8 [projection=base_subobject] %t4, 0
     call void @B0___B0__base_entry(%t5)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t6 = load ptr $this
+    %t7 = index i8 [projection=base_subobject] %t6, 0
+    call void @B0___B0__base_entry(%t7)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @B1___B1__base_entry(%this : ptr) -> void [binding=weak, object=_ZN2B1D2Ev] {
@@ -242,13 +360,25 @@ function @B1___B1__base_entry(%this : ptr) -> void [binding=weak, object=_ZN2B1D
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @B1__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    eh_end
     %t4 = load ptr $this
     %t5 = index i8 [projection=base_subobject] %t4, 0
     call void @B0___B0__base_entry(%t5)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t6 = load ptr $this
+    %t7 = index i8 [projection=base_subobject] %t6, 0
+    call void @B0___B0__base_entry(%t7)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @B1___B1__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN2B1D0Ev] {
@@ -256,15 +386,40 @@ function @B1___B1__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @B1__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t4 = load ptr $this
     %t5 = index i8 [projection=base_subobject] %t4, 0
     call void @B0___B0__base_entry(%t5)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t6 = load ptr $this
     call void @operator_delete(%t6)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t7 = load ptr $this
+    call void @operator_delete(%t7)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=base_subobject] %t8, 0
+    call void @B0___B0__base_entry(%t9)
+    %t10 = load ptr $this
+    call void @operator_delete(%t10)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @B1___B1(%this : ptr) -> void [binding=weak, object=_ZN2B1D1Ev] {
@@ -272,13 +427,25 @@ function @B1___B1(%this : ptr) -> void [binding=weak, object=_ZN2B1D1Ev] {
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @B1__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    eh_end
     %t4 = load ptr $this
     %t5 = index i8 [projection=base_subobject] %t4, 0
     call void @B0___B0__base_entry(%t5)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t6 = load ptr $this
+    %t7 = index i8 [projection=base_subobject] %t6, 0
+    call void @B0___B0__base_entry(%t7)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @B0__B0__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN2B0C2Ev] {
@@ -308,12 +475,23 @@ function @B0___B0__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @B0__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    eh_end
     %t4 = load ptr $this
     call void @operator_delete(%t4)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t5 = load ptr $this
+    call void @operator_delete(%t5)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @B0___B0(%this : ptr) -> void [binding=weak, object=_ZN2B0D1Ev] {

@@ -62,7 +62,7 @@ function @build(%ret : ptr [pass=indirect_result], %u : ptr [pass=reference], %v
     %t2 = call ptr @forward(%t1)
     %t3 = load ptr $v
     %t4 = call ptr @forward(%t3)
-    call void @pair_movable__movable___pair__ov2(%ret, %t2, %t4)
+    call void @pair_movable__movable___pair__ov4(%ret, %t2, %t4)
     return void
 }
 function @forward(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7forwardI7movableEOT_RN16remove_referenceIS1_E4typeE] {
@@ -73,7 +73,7 @@ function @forward(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z
     %t1 = load ptr $value
     return ptr %t1
 }
-function @pair_movable__movable___pair__ov2(%this : ptr, %u : ptr [pass=reference], %v : ptr [pass=reference]) -> void [binding=weak, object=_ZN4pairI7movableS0_EC1IS0_S0_EEOT_OT0_] {
+function @pair_movable__movable___pair__ov4(%this : ptr, %u : ptr [pass=reference], %v : ptr [pass=reference]) -> void [binding=weak, object=_ZN4pairI7movableS0_EC1IS0_S0_EEOT_OT0_] {
   slot $this : ptr
   slot $u : ptr
   slot $v : ptr
@@ -126,6 +126,6 @@ function @movable__movable__ov3(%this : ptr, %other : ptr [pass=reference]) -> v
     store i32 %t6, %t8
     return void
 }
-alias object _ZN4pairI7movableS0_EC2IS0_S0_EEOT_OT0_ = @pair_movable__movable___pair__ov2
+alias object _ZN4pairI7movableS0_EC2IS0_S0_EEOT_OT0_ = @pair_movable__movable___pair__ov4
 alias object _ZN7movableC2Ei = @movable__movable
 alias object _ZN7movableC2EOS_ = @movable__movable__ov3

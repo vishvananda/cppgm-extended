@@ -213,6 +213,13 @@ bool member_access_allowed(const Scope * lexical_scope,
                            const ClassInfo * declared_in,
                            MemberAccess member_access,
                            MemberAccess path_access);
+bool member_pointer_access_allowed(const Scope * lexical_scope,
+                                   const ClassInfo * current_class,
+                                   const FunctionBinding * current_function,
+                                   const ClassInfo * naming_class,
+                                   const ClassInfo * declared_in,
+                                   MemberAccess member_access,
+                                   MemberAccess path_access);
 bool member_access_allowed_through_object(const Scope * lexical_scope,
                                           const ClassInfo * current_class,
                                           const FunctionBinding * current_function,

@@ -202,12 +202,39 @@ function @AssignRange_Iterator__int____AssignRange(%this : ptr) -> void [unwind=
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 1
     call void @Iterator___Iterator(%t2)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t3 = load ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     call void @Iterator___Iterator(%t4)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    call void @Iterator___Iterator(%t6)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 1
+    call void @Iterator___Iterator(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    call void @Iterator___Iterator(%t10)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 alias object _ZN11AssignRangeI8IteratoriEC2ERKS0_S3_Ri = @AssignRange_Iterator__int___AssignRange

@@ -1757,6 +1757,57 @@ bool lookup_member_pointer_callable_candidates_node(
   return !functions.empty() || !templates.empty();
 }
 
+bool selected_member_pointer_function_access_allowed(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const QualifiedName & qualified,
+    const CppAstNode & node,
+    const TypePtr & owner_type,
+    FunctionBinding * function)
+{
+  if(!services.semantic_context || !function || !function->owner_class) {
+    return false;
+  }
+
+  Scope * naming_scope =
+      services.semantic_context->resolve_qualified_scope_for_node(scope,
+                                                                  qualified,
+                                                                  node,
+                                                                  false);
+  ClassInfo * naming_class = naming_scope ? naming_scope->class_info : nullptr;
+  if(!naming_class && owner_type) {
+    naming_class = template_api::find_named_type_class_info(
+        service_type_system(services).model,
+        strip_top_level_cv(remove_reference_type(owner_type)));
+  }
+
+  MemberAccess member_access = function->access;
+  if(function->owner_class->member_scope) {
+    member_access = semantic_lookup::effective_direct_function_access(
+        *function->owner_class->member_scope,
+        function->name,
+        *function);
+  }
+  MemberAccess path_access = MA_PUBLIC;
+  if(naming_class && naming_class != function->owner_class) {
+    size_t path_offset = 0;
+    if(!semantic_lookup::find_unique_base_path(*naming_class,
+                                              function->owner_class,
+                                              path_offset,
+                                              path_access)) {
+      return false;
+    }
+  }
+  return semantic_lookup::member_pointer_access_allowed(
+      &scope,
+      semantic_lookup::current_class_scope(scope),
+      semantic_lookup::current_function_scope(scope),
+      naming_class,
+      function->owner_class,
+      member_access,
+      path_access);
+}
+
 bool try_resolve_function_non_type_template_argument_syntax(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -1846,6 +1897,14 @@ bool try_resolve_function_non_type_template_argument_syntax(
                                                                   templates,
                                                                   owner_type,
                                                                   member_function_type);
+          }
+          if(!selected_member_pointer_function_access_allowed(services,
+                                                              scope,
+                                                              *qualified,
+                                                              *operand,
+                                                              owner_type,
+                                                              selected)) {
+            return false;
           }
           if(!bind_non_type_function_argument(services.semantic_context,
                                               target_type,

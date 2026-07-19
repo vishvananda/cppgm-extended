@@ -42,12 +42,23 @@ function @std__ios_base___ios_base__deleting_entry(%this : ptr) -> void [binding
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @std__ios_base__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    eh_end
     %t4 = load ptr $this
     call void @operator_delete(%t4)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t5 = load ptr $this
+    call void @operator_delete(%t5)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @std__ios_base___ios_base(%this : ptr) -> void [binding=strong, object=_ZNSt8ios_baseD1Ev] {

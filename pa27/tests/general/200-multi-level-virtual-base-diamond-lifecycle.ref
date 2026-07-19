@@ -458,6 +458,7 @@ function @_GLOBAL__N_1__D___D__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 :
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = load ptr %__vtt
     store ptr %t2, %t1
@@ -473,10 +474,22 @@ function @_GLOBAL__N_1__D___D__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 :
     %t10 = load i32 @_GLOBAL__N_1__live
     %t11 = binary sub i32 %t10, 1
     store i32 %t11, @_GLOBAL__N_1__live
+    eh_end
     %t12 = load ptr $this
     %t13 = index i8 [projection=base_subobject] %t12, 0
     %t14 = index i8 %__vtt, 8
     call void @_GLOBAL__N_1__AB___AB__base_entry(%t13, %t14, %__vbptr0)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t15 = load ptr $this
+    %t16 = index i8 [projection=base_subobject] %t15, 0
+    %t17 = index i8 %__vtt, 8
+    call void @_GLOBAL__N_1__AB___AB__base_entry(%t16, %t17, %__vbptr0)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__D___D__deleting_entry(%this : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_11DD0Ev] {
@@ -484,6 +497,7 @@ function @_GLOBAL__N_1__D___D__deleting_entry(%this : ptr) -> void [unwind=no, b
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @_GLOBAL__N_1__D__vtable
     %t3 = index i8 %t2, 24
@@ -505,6 +519,8 @@ function @_GLOBAL__N_1__D___D__deleting_entry(%this : ptr) -> void [unwind=no, b
     %t16 = load i32 @_GLOBAL__N_1__live
     %t17 = binary sub i32 %t16, 1
     store i32 %t17, @_GLOBAL__N_1__live
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t18 = load ptr $this
     %t19 = index i8 [projection=base_subobject] %t18, 0
     %t20 = addr @_GLOBAL__N_1__D____vtt
@@ -512,8 +528,34 @@ function @_GLOBAL__N_1__D___D__deleting_entry(%this : ptr) -> void [unwind=no, b
     %t22 = load ptr $this
     %t23 = index i8 %t22, 16
     call void @_GLOBAL__N_1__AB___AB__base_entry(%t19, %t21, %t23)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t24 = load ptr $this
     call void @operator_delete(%t24)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t25 = load ptr $this
+    call void @operator_delete(%t25)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t26 = load ptr $this
+    %t27 = index i8 [projection=base_subobject] %t26, 0
+    %t28 = addr @_GLOBAL__N_1__D____vtt
+    %t29 = index i8 %t28, 8
+    %t30 = load ptr $this
+    %t31 = index i8 %t30, 16
+    call void @_GLOBAL__N_1__AB___AB__base_entry(%t27, %t29, %t31)
+    %t32 = load ptr $this
+    call void @operator_delete(%t32)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__D___D(%this : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_11DD1Ev] {
@@ -521,6 +563,7 @@ function @_GLOBAL__N_1__D___D(%this : ptr) -> void [unwind=no, binding=internal,
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @_GLOBAL__N_1__D__vtable
     %t3 = index i8 %t2, 24
@@ -542,6 +585,8 @@ function @_GLOBAL__N_1__D___D(%this : ptr) -> void [unwind=no, binding=internal,
     %t16 = load i32 @_GLOBAL__N_1__live
     %t17 = binary sub i32 %t16, 1
     store i32 %t17, @_GLOBAL__N_1__live
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t18 = load ptr $this
     %t19 = index i8 [projection=base_subobject] %t18, 0
     %t20 = addr @_GLOBAL__N_1__D____vtt
@@ -549,9 +594,37 @@ function @_GLOBAL__N_1__D___D(%this : ptr) -> void [unwind=no, binding=internal,
     %t22 = load ptr $this
     %t23 = index i8 %t22, 16
     call void @_GLOBAL__N_1__AB___AB__base_entry(%t19, %t21, %t23)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t24 = load ptr $this
     %t25 = index i8 [projection=base_subobject] %t24, 16
     call void @_GLOBAL__N_1__V___V__base_entry(%t25)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t26 = load ptr $this
+    %t27 = index i8 [projection=base_subobject] %t26, 16
+    call void @_GLOBAL__N_1__V___V__base_entry(%t27)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t28 = load ptr $this
+    %t29 = index i8 [projection=base_subobject] %t28, 0
+    %t30 = addr @_GLOBAL__N_1__D____vtt
+    %t31 = index i8 %t30, 8
+    %t32 = load ptr $this
+    %t33 = index i8 %t32, 16
+    call void @_GLOBAL__N_1__AB___AB__base_entry(%t29, %t31, %t33)
+    %t34 = load ptr $this
+    %t35 = index i8 [projection=base_subobject] %t34, 16
+    call void @_GLOBAL__N_1__V___V__base_entry(%t35)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__AB__mark(%this : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_12AB4markEv] {
@@ -566,6 +639,7 @@ function @_GLOBAL__N_1__AB___AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = load ptr %__vtt
     store ptr %t2, %t1
@@ -581,14 +655,43 @@ function @_GLOBAL__N_1__AB___AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0
     %t10 = load i32 @_GLOBAL__N_1__live
     %t11 = binary sub i32 %t10, 1
     store i32 %t11, @_GLOBAL__N_1__live
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t12 = load ptr $this
     %t13 = index i8 [projection=base_subobject] %t12, 8
     %t14 = index i8 %__vtt, 24
     call void @_GLOBAL__N_1__B___B__base_entry(%t13, %t14, %__vbptr0)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t15 = load ptr $this
     %t16 = index i8 [projection=base_subobject] %t15, 0
     %t17 = index i8 %__vtt, 8
     call void @_GLOBAL__N_1__A___A__base_entry(%t16, %t17, %__vbptr0)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t18 = load ptr $this
+    %t19 = index i8 [projection=base_subobject] %t18, 0
+    %t20 = index i8 %__vtt, 8
+    call void @_GLOBAL__N_1__A___A__base_entry(%t19, %t20, %__vbptr0)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t21 = load ptr $this
+    %t22 = index i8 [projection=base_subobject] %t21, 8
+    %t23 = index i8 %__vtt, 24
+    call void @_GLOBAL__N_1__B___B__base_entry(%t22, %t23, %__vbptr0)
+    %t24 = load ptr $this
+    %t25 = index i8 [projection=base_subobject] %t24, 0
+    %t26 = index i8 %__vtt, 8
+    call void @_GLOBAL__N_1__A___A__base_entry(%t25, %t26, %__vbptr0)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__AB___AB__deleting_entry(%this : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_12ABD0Ev] {
@@ -596,6 +699,7 @@ function @_GLOBAL__N_1__AB___AB__deleting_entry(%this : ptr) -> void [unwind=no,
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @_GLOBAL__N_1__AB__vtable
     %t3 = index i8 %t2, 24
@@ -617,6 +721,8 @@ function @_GLOBAL__N_1__AB___AB__deleting_entry(%this : ptr) -> void [unwind=no,
     %t16 = load i32 @_GLOBAL__N_1__live
     %t17 = binary sub i32 %t16, 1
     store i32 %t17, @_GLOBAL__N_1__live
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t18 = load ptr $this
     %t19 = index i8 [projection=base_subobject] %t18, 8
     %t20 = addr @_GLOBAL__N_1__AB____vtt
@@ -624,6 +730,10 @@ function @_GLOBAL__N_1__AB___AB__deleting_entry(%this : ptr) -> void [unwind=no,
     %t22 = load ptr $this
     %t23 = index i8 %t22, 16
     call void @_GLOBAL__N_1__B___B__base_entry(%t19, %t21, %t23)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t24 = load ptr $this
     %t25 = index i8 [projection=base_subobject] %t24, 0
     %t26 = addr @_GLOBAL__N_1__AB____vtt
@@ -633,6 +743,53 @@ function @_GLOBAL__N_1__AB___AB__deleting_entry(%this : ptr) -> void [unwind=no,
     call void @_GLOBAL__N_1__A___A__base_entry(%t25, %t27, %t29)
     %t30 = load ptr $this
     call void @operator_delete(%t30)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    eh_cleanup ^destructor_suffix_cleanup_5
+    %t31 = load ptr $this
+    %t32 = index i8 [projection=base_subobject] %t31, 0
+    %t33 = addr @_GLOBAL__N_1__AB____vtt
+    %t34 = index i8 %t33, 8
+    %t35 = load ptr $this
+    %t36 = index i8 %t35, 16
+    call void @_GLOBAL__N_1__A___A__base_entry(%t32, %t34, %t36)
+    eh_end
+    jump ^destructor_suffix_next_6
+
+  block ^destructor_suffix_cleanup_5:
+    %t37 = load ptr $this
+    call void @operator_delete(%t37)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_6:
+    %t38 = load ptr $this
+    call void @operator_delete(%t38)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t39 = load ptr $this
+    %t40 = index i8 [projection=base_subobject] %t39, 8
+    %t41 = addr @_GLOBAL__N_1__AB____vtt
+    %t42 = index i8 %t41, 24
+    %t43 = load ptr $this
+    %t44 = index i8 %t43, 16
+    call void @_GLOBAL__N_1__B___B__base_entry(%t40, %t42, %t44)
+    %t45 = load ptr $this
+    %t46 = index i8 [projection=base_subobject] %t45, 0
+    %t47 = addr @_GLOBAL__N_1__AB____vtt
+    %t48 = index i8 %t47, 8
+    %t49 = load ptr $this
+    %t50 = index i8 %t49, 16
+    call void @_GLOBAL__N_1__A___A__base_entry(%t46, %t48, %t50)
+    %t51 = load ptr $this
+    call void @operator_delete(%t51)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__AB___AB(%this : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_12ABD1Ev] {
@@ -640,6 +797,7 @@ function @_GLOBAL__N_1__AB___AB(%this : ptr) -> void [unwind=no, binding=interna
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @_GLOBAL__N_1__AB__vtable
     %t3 = index i8 %t2, 24
@@ -661,6 +819,8 @@ function @_GLOBAL__N_1__AB___AB(%this : ptr) -> void [unwind=no, binding=interna
     %t16 = load i32 @_GLOBAL__N_1__live
     %t17 = binary sub i32 %t16, 1
     store i32 %t17, @_GLOBAL__N_1__live
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
     %t18 = load ptr $this
     %t19 = index i8 [projection=base_subobject] %t18, 8
     %t20 = addr @_GLOBAL__N_1__AB____vtt
@@ -668,6 +828,10 @@ function @_GLOBAL__N_1__AB___AB(%this : ptr) -> void [unwind=no, binding=interna
     %t22 = load ptr $this
     %t23 = index i8 %t22, 16
     call void @_GLOBAL__N_1__B___B__base_entry(%t19, %t21, %t23)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
     %t24 = load ptr $this
     %t25 = index i8 [projection=base_subobject] %t24, 0
     %t26 = addr @_GLOBAL__N_1__AB____vtt
@@ -678,6 +842,56 @@ function @_GLOBAL__N_1__AB___AB(%this : ptr) -> void [unwind=no, binding=interna
     %t30 = load ptr $this
     %t31 = index i8 [projection=base_subobject] %t30, 16
     call void @_GLOBAL__N_1__V___V__base_entry(%t31)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    eh_cleanup ^destructor_suffix_cleanup_5
+    %t32 = load ptr $this
+    %t33 = index i8 [projection=base_subobject] %t32, 0
+    %t34 = addr @_GLOBAL__N_1__AB____vtt
+    %t35 = index i8 %t34, 8
+    %t36 = load ptr $this
+    %t37 = index i8 %t36, 16
+    call void @_GLOBAL__N_1__A___A__base_entry(%t33, %t35, %t37)
+    eh_end
+    jump ^destructor_suffix_next_6
+
+  block ^destructor_suffix_cleanup_5:
+    %t38 = load ptr $this
+    %t39 = index i8 [projection=base_subobject] %t38, 16
+    call void @_GLOBAL__N_1__V___V__base_entry(%t39)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_6:
+    %t40 = load ptr $this
+    %t41 = index i8 [projection=base_subobject] %t40, 16
+    call void @_GLOBAL__N_1__V___V__base_entry(%t41)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t42 = load ptr $this
+    %t43 = index i8 [projection=base_subobject] %t42, 8
+    %t44 = addr @_GLOBAL__N_1__AB____vtt
+    %t45 = index i8 %t44, 24
+    %t46 = load ptr $this
+    %t47 = index i8 %t46, 16
+    call void @_GLOBAL__N_1__B___B__base_entry(%t43, %t45, %t47)
+    %t48 = load ptr $this
+    %t49 = index i8 [projection=base_subobject] %t48, 0
+    %t50 = addr @_GLOBAL__N_1__AB____vtt
+    %t51 = index i8 %t50, 8
+    %t52 = load ptr $this
+    %t53 = index i8 %t52, 16
+    call void @_GLOBAL__N_1__A___A__base_entry(%t49, %t51, %t53)
+    %t54 = load ptr $this
+    %t55 = index i8 [projection=base_subobject] %t54, 16
+    call void @_GLOBAL__N_1__V___V__base_entry(%t55)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__A___A__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_11AD2Ev] {
@@ -702,6 +916,7 @@ function @_GLOBAL__N_1__A___A__deleting_entry(%this : ptr) -> void [unwind=no, b
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @_GLOBAL__N_1__A__vtable
     %t3 = index i8 %t2, 24
@@ -718,8 +933,18 @@ function @_GLOBAL__N_1__A___A__deleting_entry(%this : ptr) -> void [unwind=no, b
     %t12 = load i32 @_GLOBAL__N_1__live
     %t13 = binary sub i32 %t12, 1
     store i32 %t13, @_GLOBAL__N_1__live
+    eh_end
     %t14 = load ptr $this
     call void @operator_delete(%t14)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t15 = load ptr $this
+    call void @operator_delete(%t15)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__A___A(%this : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_11AD1Ev] {
@@ -727,6 +952,7 @@ function @_GLOBAL__N_1__A___A(%this : ptr) -> void [unwind=no, binding=internal,
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @_GLOBAL__N_1__A__vtable
     %t3 = index i8 %t2, 24
@@ -743,9 +969,20 @@ function @_GLOBAL__N_1__A___A(%this : ptr) -> void [unwind=no, binding=internal,
     %t12 = load i32 @_GLOBAL__N_1__live
     %t13 = binary sub i32 %t12, 1
     store i32 %t13, @_GLOBAL__N_1__live
+    eh_end
     %t14 = load ptr $this
     %t15 = index i8 [projection=base_subobject] %t14, 8
     call void @_GLOBAL__N_1__V___V__base_entry(%t15)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t16 = load ptr $this
+    %t17 = index i8 [projection=base_subobject] %t16, 8
+    call void @_GLOBAL__N_1__V___V__base_entry(%t17)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__B___B__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_11BD2Ev] {
@@ -770,6 +1007,7 @@ function @_GLOBAL__N_1__B___B__deleting_entry(%this : ptr) -> void [unwind=no, b
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @_GLOBAL__N_1__B__vtable
     %t3 = index i8 %t2, 24
@@ -786,8 +1024,18 @@ function @_GLOBAL__N_1__B___B__deleting_entry(%this : ptr) -> void [unwind=no, b
     %t12 = load i32 @_GLOBAL__N_1__live
     %t13 = binary sub i32 %t12, 1
     store i32 %t13, @_GLOBAL__N_1__live
+    eh_end
     %t14 = load ptr $this
     call void @operator_delete(%t14)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t15 = load ptr $this
+    call void @operator_delete(%t15)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__B___B(%this : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_11BD1Ev] {
@@ -795,6 +1043,7 @@ function @_GLOBAL__N_1__B___B(%this : ptr) -> void [unwind=no, binding=internal,
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @_GLOBAL__N_1__B__vtable
     %t3 = index i8 %t2, 24
@@ -811,9 +1060,20 @@ function @_GLOBAL__N_1__B___B(%this : ptr) -> void [unwind=no, binding=internal,
     %t12 = load i32 @_GLOBAL__N_1__live
     %t13 = binary sub i32 %t12, 1
     store i32 %t13, @_GLOBAL__N_1__live
+    eh_end
     %t14 = load ptr $this
     %t15 = index i8 [projection=base_subobject] %t14, 8
     call void @_GLOBAL__N_1__V___V__base_entry(%t15)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t16 = load ptr $this
+    %t17 = index i8 [projection=base_subobject] %t16, 8
+    call void @_GLOBAL__N_1__V___V__base_entry(%t17)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__AB__AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_12ABC2Ev] {
@@ -944,6 +1204,7 @@ function @_GLOBAL__N_1__V___V__deleting_entry(%this : ptr) -> void [unwind=no, b
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
     %t2 = addr @_GLOBAL__N_1__V__vtable
     %t3 = index i8 %t2, 16
@@ -951,8 +1212,18 @@ function @_GLOBAL__N_1__V___V__deleting_entry(%this : ptr) -> void [unwind=no, b
     %t4 = load i32 @_GLOBAL__N_1__live
     %t5 = binary sub i32 %t4, 1
     store i32 %t5, @_GLOBAL__N_1__live
+    eh_end
     %t6 = load ptr $this
     call void @operator_delete(%t6)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t7 = load ptr $this
+    call void @operator_delete(%t7)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @_GLOBAL__N_1__V___V(%this : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_11VD1Ev] {

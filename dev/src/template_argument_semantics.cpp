@@ -10405,6 +10405,39 @@ bool resolve_leaf_qualified_member_pointer_type(
     return false;
   }
 
+  if(services.semantic_context) {
+    ClassInfo * naming_class =
+        services.semantic_context->class_info_for_type(
+            strip_top_level_cv(remove_reference_type(owner_type)));
+    MemberAccess member_access = selected->access;
+    if(selected->owner_class->member_scope) {
+      member_access = semantic_lookup::effective_direct_function_access(
+          *selected->owner_class->member_scope,
+          selected->name,
+          *selected);
+    }
+    MemberAccess path_access = MA_PUBLIC;
+    if(naming_class && naming_class != selected->owner_class) {
+      size_t path_offset = 0;
+      if(!semantic_lookup::find_unique_base_path(*naming_class,
+                                                selected->owner_class,
+                                                path_offset,
+                                                path_access)) {
+        return false;
+      }
+    }
+    if(!semantic_lookup::member_pointer_access_allowed(
+           &scope,
+           semantic_lookup::current_class_scope(scope),
+           semantic_lookup::current_function_scope(scope),
+           naming_class,
+           selected->owner_class,
+           member_access,
+           path_access)) {
+      return false;
+    }
+  }
+
   out = make_member_pointer(selected->owner_class->type,
                             leaf_member_pointer_function_type(*selected));
   return out != nullptr;

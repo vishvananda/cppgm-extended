@@ -6115,6 +6115,18 @@ CallSemNode make_resolved_callee_node(SemanticContext & ctx,
       throw logic_error("missing virtual dispatch object class for " +
                         function_output_name(emitted));
     }
+    size_t dispatch_object_offset = 0;
+    ClassInfo * dispatch_object_class =
+        call_args.empty() ? nullptr : class_for_dispatch_object_type(call_args[0].type);
+    if(dispatch_object_class && dispatch_object_class != object_class) {
+      if(!find_actual_subobject_offset(*object_class,
+                                       dispatch_object_class,
+                                       dispatch_object_offset)) {
+        throw logic_error("missing virtual dispatch receiver path from " +
+                          object_class->qualified_name + " to " +
+                          dispatch_object_class->qualified_name);
+      }
+    }
     bool found_dispatch_view = false;
     for(size_t i = 0; i < object_class->vtables.size(); ++i) {
       const VTableInfo & table = object_class->vtables[i];
@@ -6127,7 +6139,8 @@ CallSemNode make_resolved_callee_node(SemanticContext & ctx,
       resolved_callee.has_virtual_dispatch_view_offset = true;
       set_callsem_virtual_dispatch_view_offset(
           resolved_callee,
-          static_cast<long long>(table.view_offset));
+          static_cast<long long>(table.view_offset) -
+              static_cast<long long>(dispatch_object_offset));
       resolved_callee.uses_extended_vtable_layout = table.use_extended_layout;
       found_dispatch_view = true;
       break;
@@ -8133,6 +8146,27 @@ bool unqualified_functional_cast_type_hides_outer_functions(
   }
   return resolved_functional_cast_type_declares_direct_name(
       ctx, name, deferred_functional_cast_type);
+}
+
+bool unqualified_functional_cast_type_lookup_needed_for_value(
+    Scope & scope,
+    const std::string & name,
+    const ValueBinding & value)
+{
+  for(Scope * current = &scope; current; current = current->parent) {
+    const ValueBinding * direct_value =
+        semantic_lookup::lookup_direct_value(*current, name);
+    if(direct_value && semantic_lookup::same_value_binding_entity(direct_value, &value)) {
+      return false;
+    }
+    if(scope_has_direct_callable_name(*current, name)) {
+      return false;
+    }
+    if(scope_has_direct_type_name(*current, name)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 int compare_function_template_partial_order_preference(SemanticContext & ctx,
@@ -13629,7 +13663,21 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     value_callee = lookup_id_expression_value_binding_for_call(ctx,
                                                                scope,
                                                                lookup_callee_node);
-    if(!value_callee) {
+    const QualifiedName * functional_cast_type_name =
+        cppast_qualified_name_syntax(lookup_callee_node);
+    const TemplateIdSyntax * functional_cast_template_id =
+        cppast_template_id_syntax(lookup_callee_node);
+    const QualifiedName * functional_cast_lookup_name =
+        functional_cast_template_id ? &functional_cast_template_id->name :
+                                      functional_cast_type_name;
+    const bool unqualified_functional_cast_type_lookup_needed =
+        value_callee &&
+        functional_cast_lookup_name &&
+        !functional_cast_lookup_name->rooted &&
+        functional_cast_lookup_name->qualifiers.empty() &&
+        unqualified_functional_cast_type_lookup_needed_for_value(
+            scope, functional_cast_lookup_name->name, *value_callee);
+    if(!value_callee || unqualified_functional_cast_type_lookup_needed) {
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "call-id-type-lookup callee=" << lookup_callee_node.value
@@ -13639,13 +13687,6 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
               << semantic_trace::scope_bindings_for_diagnostic(scope);
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
-      const QualifiedName * functional_cast_type_name =
-          cppast_qualified_name_syntax(lookup_callee_node);
-      const TemplateIdSyntax * functional_cast_template_id =
-          cppast_template_id_syntax(lookup_callee_node);
-      const QualifiedName * functional_cast_lookup_name =
-          functional_cast_template_id ? &functional_cast_template_id->name :
-                                        functional_cast_type_name;
       deferred_functional_cast_type = lookup_callee_node.semantic_type;
       if(!deferred_functional_cast_type) {
         try {

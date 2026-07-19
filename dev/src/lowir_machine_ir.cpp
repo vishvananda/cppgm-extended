@@ -4736,6 +4736,18 @@ private:
                               X64Register dst,
                               vector<mir::Instruction> & out) const
   {
+    if(operand.kind == lir::Operand::OP_INTEGER) {
+      if(chunk_offset != 0 && chunk_offset != 8) {
+        throw logic_error("invalid integer ABI chunk offset");
+      }
+      const bool negative_text = !operand.text.empty() && operand.text[0] == '-';
+      mir::Instruction inst = make_instruction(mir::Instruction::MI_MOV);
+      inst.operands.push_back(reg(dst));
+      inst.operands.push_back(
+          imm(chunk_offset == 0 ? operand.int_value : (negative_text ? -1 : 0)));
+      out.push_back(inst);
+      return;
+    }
     emit_load_address(layout, operand, XR_R11, out);
     mir::Instruction inst = make_instruction(mir::Instruction::MI_LOAD);
     inst.type = chunk_type;

@@ -1439,6 +1439,18 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
     return false;
   }
 
+  TypePtr qualifier_type;
+  const ValueBinding * value_binding =
+      lookup_qualified_value_binding_node(ctx,
+                                          scope,
+                                          *qualified,
+                                          operand_node,
+                                          &qualifier_type);
+  ClassInfo * naming_class =
+      qualifier_type ?
+          ctx.class_info_for_type(strip_top_level_cv(remove_reference_type(qualifier_type))) :
+          nullptr;
+
   const TemplateIdSyntax * template_id = cppast_template_id_syntax(operand_node);
   vector<FunctionBinding *> functions =
       template_id ?
@@ -1456,6 +1468,32 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
     FunctionBinding * binding = functions[0];
     if(binding && binding->is_method && binding->owner_class &&
        !binding->is_constructor && !binding->is_destructor) {
+      MemberAccess member_access = binding->access;
+      if(binding->owner_class->member_scope) {
+        member_access = effective_direct_function_access(
+            *binding->owner_class->member_scope,
+            binding->name,
+            *binding);
+      }
+      MemberAccess path_access = MA_PUBLIC;
+      if(naming_class && naming_class != binding->owner_class) {
+        size_t path_offset = 0;
+        if(!find_unique_base_path(*naming_class,
+                                  binding->owner_class,
+                                  path_offset,
+                                  path_access)) {
+          return false;
+        }
+      }
+      if(!member_pointer_access_allowed(&scope,
+                                        current_class_scope(scope),
+                                        current_function_scope(scope),
+                                        naming_class,
+                                        binding->owner_class,
+                                        member_access,
+                                        path_access)) {
+        throw logic_error("inaccessible member function pointer target");
+      }
       TypePtr member_function_type = binding->declared_type;
       TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
       if(stripped_function_type &&
@@ -1497,14 +1535,31 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
     }
   }
 
-  const ValueBinding * value_binding =
-      lookup_qualified_value_binding_node(ctx, scope, *qualified, operand_node);
   if(!value_binding || value_binding->kind != ValueBinding::VK_FIELD ||
      !value_binding->owner_class) {
     return false;
   }
   if(value_binding->is_bit_field) {
     throw logic_error("address-of bit-field member unsupported");
+  }
+  MemberAccess path_access = MA_PUBLIC;
+  if(naming_class && naming_class != value_binding->owner_class) {
+    size_t path_offset = 0;
+    if(!find_unique_base_path(*naming_class,
+                              value_binding->owner_class,
+                              path_offset,
+                              path_access)) {
+      return false;
+    }
+  }
+  if(!member_pointer_access_allowed(&scope,
+                                    current_class_scope(scope),
+                                    current_function_scope(scope),
+                                    naming_class,
+                                    value_binding->owner_class,
+                                    value_binding->access,
+                                    path_access)) {
+    throw logic_error("inaccessible data member pointer target");
   }
 
   out.type = make_member_pointer(value_binding->owner_class->type, value_binding->type);

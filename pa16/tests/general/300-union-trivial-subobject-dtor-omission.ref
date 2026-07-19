@@ -14,9 +14,21 @@ function @Wrapper___Wrapper(%this : ptr) -> void [binding=weak, object=_ZN7Wrapp
 
   block ^entry:
     store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 8
     call void @Sink___Sink(%t2)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 8
+    call void @Sink___Sink(%t4)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
     return void
 }
 function @Sink___Sink(%this : ptr) -> void [binding=weak, object=_ZN4SinkD1Ev] {

@@ -1,0 +1,52 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @accept
+  abi
+    param %value -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    param-slot %value -> [rbp-16] : i128
+
+  block ^entry
+    store.i64 [rbp-16], rdi
+    store.i64 [rbp-8], rsi
+    lea r11, [rbp-16]
+    load.i64 rax, [r11]
+    load.i64 rdx, [r11+8]
+    mov rcx, 0
+    mov rsi, 0
+    cmp.i64 rdx, rsi
+    sete r10
+    movzx r10, r10
+    cmp.i64 rax, rcx
+    sete r11
+    movzx r11, r11
+    and r10, r11
+    mov r8, r10
+    mov rdx, 0
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
+    mov rax, r8
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+
+  block ^entry
+    mov rdi, 0
+    mov rsi, 0
+    call @accept
+    ret rax

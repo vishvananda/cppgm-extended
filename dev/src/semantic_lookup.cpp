@@ -4159,6 +4159,8 @@ MemberFunctionLookupResult lookup_class_scoped_functions(ClassInfo & info,
         }
         MemberFunctionLookupResult result;
         result.functions = *found;
+        remove_hidden_using_base_member_function_candidates_impl(result.functions,
+                                                                 current);
         result.declared_in = &current;
         return result;
       });
@@ -4899,6 +4901,53 @@ bool context_has_friend_access_to_class(const Scope * lexical_scope,
     return true;
   }
   return scope_has_friend_class_access(lexical_scope, access_class);
+}
+
+bool member_pointer_access_allowed(const Scope * lexical_scope,
+                                   const ClassInfo * current_class,
+                                   const FunctionBinding * current_function,
+                                   const ClassInfo * naming_class,
+                                   const ClassInfo * declared_in,
+                                   MemberAccess member_access,
+                                   MemberAccess path_access)
+{
+  if(!member_access_allowed(lexical_scope,
+                            current_class,
+                            current_function,
+                            declared_in,
+                            member_access,
+                            path_access)) {
+    return false;
+  }
+  if(member_access != MA_PROTECTED || !naming_class || !declared_in) {
+    return true;
+  }
+  if(context_has_friend_access_to_class(lexical_scope,
+                                        current_class,
+                                        current_function,
+                                        declared_in)) {
+    return true;
+  }
+
+  const auto protected_qualifier_allowed =
+      [naming_class, declared_in](const ClassInfo * access_class) -> bool
+  {
+    return access_class &&
+           is_same_or_derived(access_class, declared_in) &&
+           is_same_or_derived(naming_class, access_class);
+  };
+  if(protected_qualifier_allowed(current_class) ||
+     (current_function &&
+      (protected_qualifier_allowed(current_function->owner_class) ||
+       protected_qualifier_allowed(current_function->lexical_access_class)))) {
+    return true;
+  }
+  for(const Scope * current = lexical_scope; current; current = current->parent) {
+    if(protected_qualifier_allowed(current->class_info)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool protected_object_access_via_public_intermediate_base(

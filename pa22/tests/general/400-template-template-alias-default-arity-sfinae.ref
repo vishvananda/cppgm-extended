@@ -1,6 +1,6 @@
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    branch 0, ^if_then_1, ^if_else_2
+    jump ^if_else_2
 
   block ^if_then_1:
     return i32 1
@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_3
 
   block ^if_end_3:
-    branch 0, ^if_then_4, ^if_else_5
+    jump ^if_else_5
 
   block ^if_then_4:
     return i32 2

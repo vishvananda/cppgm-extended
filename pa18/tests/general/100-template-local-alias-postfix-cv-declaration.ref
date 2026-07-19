@@ -9,7 +9,7 @@ function @f(%t : i32) -> i32 [binding=weak, object=_Z1fIiEiT_] {
 
   block ^entry:
     store i32 %t, $t
-    branch 1, ^if_then_1, ^if_else_2
+    jump ^if_then_1
 
   block ^if_then_1:
     %t1 = load i32 $t
