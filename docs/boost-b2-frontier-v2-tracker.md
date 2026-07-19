@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `25 / 147`
-- current cursor: `#26 libs/conversion/test`
-- active compiler frontier: pending exact Conversion survey
+- completed suites: `27 / 147`
+- current cursor: `#28 libs/core/test`
+- active compiler frontier: pending exact Core survey
 
 ## Baseline Gates
 
@@ -214,22 +214,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 23 | `libs/container_hash/test` | pass | `(callable-object ranking and dependent result rebinding fixes)` | The initial exact four-job forced graph finds 3199 targets, requests 357 updates, and reaches four runtime failures with no compile failures: `hash_deque_test`, `hash_list_test`, `hash_set_test`, and `is_range_test4`; log `/tmp/boost-frontier-v2-suite-023-initial-forced.log`. Typed callable-object candidate ranking closes the three sequence-container hash failures. Typed source-pattern rebinding for dependent non-type result arguments closes `is_range_test4`. The exact final forced graph finds 3199 targets, updates all 341 then-outdated targets, passes every test and example action, and exits successfully; log `/tmp/boost-frontier-v2-suite-023-final-forced.log`. | Suite closed with no failed actions or downstream skips. PA22 passes `275/275`; all configured strict suites, placement/hygiene, all 23 zero-reparse categories, all 14 audit tests, eleven cache-disabled configurations for both reducers, Clang/GCC controls, and GCC 15 production builds pass. The final PA9-excluded direct report passes `3942/3942`, including PA37 `7/7`. |
 | 24 | `libs/context/test` | pass | `(no compiler change)` | The exact four-job forced graph performs the host configuration checks, finds the single bookkeeping target, and exits successfully; log `/tmp/boost-frontier-v2-suite-024-initial-forced.log`. | Configuration-only pass on this host. No compiler change, regression update, or performance measurement was required. |
 | 25 | `libs/contract/test` | pass | `(Contract typed semantic and lowering closure)` | The initial exact four-job forced graph exposed independent compile, link, and runtime failures; log `/tmp/boost-frontier-v2-suite-025-initial-forced.log`. The exact final forced graph runs 214 tests, updates all 877 requested targets, and exits successfully; log `/tmp/boost-frontier-v2-suite-025-full-final-candidate.log`. After the final cleanup refactor, forced rechecks of `public_function-throwing_body`, `throwing_body_virtual`, `virtual_sparse`, `virtual_access_multi`, and `max_bases` all pass. | Suite closed with no failed action or downstream skip. The affected direct report passes `1365/1365`; all configured strict suites pass; the final PA9-excluded direct report passes `3955/3955`, including PA37 `7/7`. Placement/hygiene, all 23 zero-reparse categories, all 23 audit tests, eleven cache modes across six reducers, host controls, and GCC 15 production builds pass. Candidate-only frozen compiler-and-51-header performance passes at +0.52% instructions, -1.38% RSS, and -2.43% footprint; the threshold sample finds no changed helper in a hotspot. |
+| 26 | `libs/conversion/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 364 targets, updates all 18 requested targets, reports `implicit_cast_fail` and `implicit_cast_fail2` as failed-as-expected, passes all three positive compile/link/runtime tests, and exits successfully; log `/tmp/boost-frontier-v2-suite-026-initial-forced.log`. | The historical mixed inventory is clean on the current compiler. No compiler change, regression update, or performance measurement was required. |
+| 27 | `libs/convert/test` | pass | `(no compiler change)` | The exact four-job forced graph completes its feature and dependency configuration checks, finds the single bookkeeping target, and exits successfully; log `/tmp/boost-frontier-v2-suite-027-initial-forced.log`. | Configuration-only pass on this host. No compiler change, regression update, or performance measurement was required. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#26 libs/conversion/test`
+- suite: `#28 libs/core/test`
 - focused target: pending exact survey
-- last closed suite: `#25 libs/contract/test`
+- last closed suite: `#27 libs/convert/test`
 - failure phase: intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: pending first causal failure
 - implementation area: pending first causal failure
 - performance risk: the completed Contract checkpoint passes the immutable frozen compiler-and-51-header epoch at +0.52% instructions, -1.38% RSS, and -2.43% footprint; the threshold diagnostic found no changed helper in a hotspot, the workload uses the checked-in 51-header closure, and no parent or live project header was measured
-- next action: run the exact four-job forced `libs/conversion/test` graph and classify its first causal failure, if any
+- next action: run the exact four-job forced `libs/core/test` graph and classify its first causal failure, if any
 
 ## Fix Ledger
 
@@ -377,6 +379,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Container `devector_test` initializer-list `regular_elem` lifetime | LowIR constructed nontrivial `std::initializer_list<T>` backing-array elements in a hidden slot but never registered their destructors. All 41 `regular_elem` initializer-list elements in `test_insert_init_list` therefore remained live and made nine later checkpoints fail. Each successfully constructed backing element now enters the existing full-expression cleanup stack immediately, providing reverse destruction and constructor-unwind safety. When the list initializes a named automatic `initializer_list` object, those exact cleanup actions transfer to the enclosing lexical scope so the backing array remains alive with the list. No semantic text, parser, cache, type spelling, or Boost-specific path is added. | `pa25/tests/general/200-initializer-list-backing-array-lifetime.t`, at PA25's initializer-list and EH cleanup owner | The exact runtime count was zero before `test_insert_init_list` and 41 afterward, exactly matching the 41 nontrivial list elements in that function. The reducer checks three call-argument elements are destroyed at the full-expression boundary, two named-list elements stay alive until lexical scope exit, and successful earlier elements are represented on later-constructor unwind paths. Clang 22 and the fixed compiler both return zero. | PA25 direct report passes `74/74`; all configured strict suites pass; PA25 placement/hygiene is clean; all 23 text-reparse categories and all 14 audit tests pass. Normal, all ten individual cache-disabled, and all-disabled reducer LowIR are byte-identical with SHA-256 `fad25179310d67817521e50e03eaadb60d8e02eb6a503af55e8024b2ddfe31da`. The PA9-excluded broad report passes `3940/3940`, including PA37 `7/7`. Focused `devector_test` passes, and the exact final Container graph updates all 325 requested targets and exits successfully. | instructions +0.02%; max RSS -3.63%; peak footprint -2.57%; pass against immutable compiler-and-51-header baseline `9764b3835`; candidate-only report `/tmp/cppgm-boost-frontier-v2-container-default-owner-initlist-candidate.json`; no parent or live-header command was run | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-19`: Closed Convert without a compiler change and advanced the
+  ordered cursor to suite 28, `libs/core/test`. The exact four-job forced graph
+  completes its configuration checks, finds one bookkeeping target, and exits
+  successfully. No regression or performance measurement was required.
+
+- `2026-07-19`: Closed Conversion without a compiler change and advanced the
+  ordered cursor to suite 27, `libs/convert/test`. The exact four-job forced
+  graph finds 364 targets, updates all 18 requested targets, reports both
+  negative tests as failed-as-expected, passes all three positive tests, and
+  exits successfully. No regression or performance measurement was required.
 
 - `2026-07-19`: Closed Contract and advanced the ordered cursor to suite 26,
   `libs/conversion/test`. The suite exposed ten independent typed causes across
@@ -1745,5 +1758,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=4 \
   /usr/local/bin/timeout 1800 \
-  ./run-cppgm-b2.sh -a libs/context/test
+  ./run-cppgm-b2.sh -a libs/core/test
 ```
