@@ -10388,7 +10388,10 @@ void append_constructor_template_candidates(
       TypePtr binding_type = binding ? strip_top_level_cv(binding->type) : TypePtr();
       if(!binding_type || binding_type->kind != Type::TK_FUNCTION ||
          binding_type->params.size() <= 1 ||
-         !ctx.is_initializer_list_type(binding_type->params[1], nullptr, nullptr)) {
+         !ctx.is_initializer_list_type(
+             strip_top_level_cv(remove_reference_type(binding_type->params[1])),
+             nullptr,
+             nullptr)) {
         continue;
       }
     }
@@ -10589,7 +10592,10 @@ void append_constructor_template_node_candidates(
       TypePtr binding_type = binding ? strip_top_level_cv(binding->type) : TypePtr();
       if(!binding_type || binding_type->kind != Type::TK_FUNCTION ||
          binding_type->params.size() <= 1 ||
-         !ctx.is_initializer_list_type(binding_type->params[1], nullptr, nullptr)) {
+         !ctx.is_initializer_list_type(
+             strip_top_level_cv(remove_reference_type(binding_type->params[1])),
+             nullptr,
+             nullptr)) {
         continue;
       }
     }
@@ -11289,9 +11295,11 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
     const size_t explicit_param_offset = 1;
     if(options.initializer_list_only &&
        (function_type->params.size() <= explicit_param_offset ||
-        !ctx.is_initializer_list_type(function_type->params[explicit_param_offset],
-                                      nullptr,
-                                      nullptr))) {
+        !ctx.is_initializer_list_type(
+            strip_top_level_cv(remove_reference_type(
+                function_type->params[explicit_param_offset])),
+            nullptr,
+            nullptr))) {
       candidate_rejection = candidate->name + ": not initializer_list ctor";
       if(parser_trace::enabled("overload")) {
         ostringstream trace;
