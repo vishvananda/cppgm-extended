@@ -17079,12 +17079,26 @@ void update_substituted_dependent_class_mangle_info(
       source_argument.source_syntax.reset(
           new TemplateArgumentSyntax(info->argument_syntaxes[i]));
     }
+    // Defaults belong to the template that declared them.  Rematerialize a
+    // default from that template's already-substituted prefix arguments so a
+    // same-named binding in the enclosing use scope cannot capture it.
+    const bool rematerialize_default =
+        source_argument.source_defaulted &&
+        source_argument.kind == TemplateArgument::TA_VALUE &&
+        !source_info->template_parameters.empty();
+    const vector<TemplateParameterInfo> & substitution_parameters =
+        rematerialize_default ? source_info->template_parameters : parameters;
+    const vector<TemplateArgument> & substitution_arguments =
+        rematerialize_default ? info->arguments : arguments;
     TemplateArgument substituted_argument;
     if(substitute_template_argument_for_mangle_info(source_argument,
-                                                    parameters,
-                                                    arguments,
+                                                    substitution_parameters,
+                                                    substitution_arguments,
                                                     scope,
                                                     substituted_argument)) {
+      if(rematerialize_default) {
+        substituted_argument.source_defaulted = true;
+      }
       info->arguments[i] = substituted_argument;
       if(substituted_argument.source_syntax) {
         if(info->argument_syntaxes.size() < info->arguments.size()) {

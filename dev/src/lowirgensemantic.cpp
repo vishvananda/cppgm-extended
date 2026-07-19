@@ -4584,6 +4584,7 @@ private:
   vector<size_t> cleanup_scope_normal_eh_end_counts_;
   vector<bool> cleanup_scope_host_unwind_cleanup_;
   vector<bool> cleanup_scope_is_full_expression_;
+  vector<string> * extended_initializer_list_cleanup_slots_ = nullptr;
   map<string, string> shared_call_unwind_dispatch_labels_;
   vector<string> active_host_cleanup_labels_;
   vector<vector<BindingScopeEntry> > binding_scopes_;
@@ -7030,6 +7031,8 @@ private:
                                             element_ptr,
                                             emit_lvalue_address(element));
             }
+            register_initializer_list_backing_cleanup(element_object_type,
+                                                      element_ptr);
           }
         } else {
           const string element_type =
@@ -9988,6 +9991,42 @@ private:
     if(refresh_shared_host_region && current_scope_has_host_unwind_cleanups()) {
       open_shared_host_call_unwind_region();
     }
+  }
+
+  void register_initializer_list_backing_cleanup(const TypePtr & type,
+                                                  const string & object_ptr)
+  {
+    const size_t cleanup_count = cleanup_scopes_.empty() ?
+        0 : cleanup_scopes_.back().size();
+    register_materialized_temporary_cleanup_live(type, object_ptr);
+    if(extended_initializer_list_cleanup_slots_ &&
+       !cleanup_scopes_.empty() &&
+       cleanup_scopes_.back().size() != cleanup_count) {
+      extended_initializer_list_cleanup_slots_->push_back(object_ptr);
+    }
+  }
+
+  vector<CleanupAction> take_initializer_list_backing_cleanups(
+      const vector<string> & storage_slots)
+  {
+    vector<CleanupAction> taken;
+    if(cleanup_scopes_.empty() || storage_slots.empty()) {
+      return taken;
+    }
+    const set<string> selected(storage_slots.begin(), storage_slots.end());
+    vector<CleanupAction> remaining;
+    vector<CleanupAction> & scope = cleanup_scopes_.back();
+    remaining.reserve(scope.size());
+    for(size_t i = 0; i < scope.size(); ++i) {
+      if(scope[i].kind == CleanupAction::CK_DESTROY_CLASS_AT_PTR &&
+         selected.count(scope[i].storage_slot) != 0) {
+        taken.push_back(scope[i]);
+      } else {
+        remaining.push_back(scope[i]);
+      }
+    }
+    scope.swap(remaining);
+    return taken;
   }
 
   CallSemNode bind_cleanup_local_node(const CallSemNode & node,
@@ -13849,11 +13888,25 @@ private:
       if(is_complete_class_value_type(variable.semantic_type) &&
          is_special_class_materialization_node(child)) {
         push_cleanup_scope(true);
+        vector<string> extended_cleanup_slots;
+        vector<string> * const saved_extended_cleanup_slots =
+            extended_initializer_list_cleanup_slots_;
+        if(child.kind == CallSemKind::initializer_list_object) {
+          extended_initializer_list_cleanup_slots_ = &extended_cleanup_slots;
+        }
         emit_special_class_value_to_target(child, target_ptr);
+        extended_initializer_list_cleanup_slots_ = saved_extended_cleanup_slots;
+        vector<CleanupAction> extended_cleanups =
+            take_initializer_list_backing_cleanups(extended_cleanup_slots);
         if(current_block_) {
           emit_scope_cleanups(cleanup_scopes_.back());
         }
         pop_cleanup_scope();
+        for(size_t cleanup_index = 0;
+            cleanup_index < extended_cleanups.size();
+            ++cleanup_index) {
+          append_cleanup_action(extended_cleanups[cleanup_index]);
+        }
       } else if(is_complete_class_value_type(variable.semantic_type) &&
                 child.kind == CallSemKind::expression_statement) {
         emit_action(child);

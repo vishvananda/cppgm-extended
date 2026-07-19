@@ -1,0 +1,206 @@
+global @Item__live : i32 [binding=strong, object=_ZN4Item4liveE] = 0
+
+function @observe(%__param0 : obj<16x8>) -> i32 [binding=strong, object=_Z7observeSt16initializer_listI4ItemE] {
+  slot $__param0 : obj<16x8>
+
+  block ^entry:
+    %t1 = addr $__param0
+    copyobj 16x8 %__param0, %t1
+    %t2 = load i32 @Item__live
+    return i32 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $call__1 : i32
+  slot $argobj__2 : obj<16x8>
+  slot $initlist__3 : obj<3x1>
+  slot $held : obj<16x8>
+  slot $initlist__4 : obj<2x1>
+  slot $call__5 : i64
+  slot $cond__6 : i32
+
+  block ^entry:
+    eh_try ^call_unwind_dispatch_4
+    %t1 = addr $argobj__2
+    %t2 = addr $initlist__3
+    call void @Item__Item(%t2, 1)
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^call_unwind_dispatch_4:
+    resume
+
+  block ^call_unwind_end_5:
+    eh_try ^call_unwind_dispatch_6
+    %t3 = index i8 %t2, 1
+    call void @Item__Item(%t3, 2)
+    eh_end
+    jump ^call_unwind_end_7
+
+  block ^call_unwind_dispatch_6:
+    call void @Item___Item(%t2)
+    resume
+
+  block ^call_unwind_end_7:
+    eh_try ^call_unwind_dispatch_8
+    %t4 = index i8 %t2, 2
+    call void @Item__Item(%t4, 3)
+    eh_end
+    jump ^call_unwind_end_9
+
+  block ^call_unwind_dispatch_8:
+    call void @Item___Item(%t3)
+    call void @Item___Item(%t2)
+    resume
+
+  block ^call_unwind_end_9:
+    eh_try ^call_unwind_dispatch_10
+    store ptr %t2, %t1
+    %t5 = index i8 %t1, 8
+    store i64 3, %t5
+    %t6 = call i32 @observe($argobj__2)
+    store i32 %t6, $call__1
+    %t7 = load i32 $call__1
+    %t8 = cmp ne i32 %t7, 3
+    eh_end
+    jump ^call_unwind_end_11
+
+  block ^call_unwind_dispatch_10:
+    call void @Item___Item(%t4)
+    call void @Item___Item(%t3)
+    call void @Item___Item(%t2)
+    resume
+
+  block ^call_unwind_end_11:
+    branch %t8, ^cond_true_cleanup_12, ^cond_false_cleanup_13
+
+  block ^cond_true_cleanup_12:
+    call void @Item___Item(%t4)
+    call void @Item___Item(%t3)
+    call void @Item___Item(%t2)
+    jump ^if_then_1
+
+  block ^cond_false_cleanup_13:
+    call void @Item___Item(%t4)
+    call void @Item___Item(%t3)
+    call void @Item___Item(%t2)
+    jump ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t9 = load i32 @Item__live
+    %t10 = cmp ne i32 %t9, 0
+    branch %t10, ^if_then_14, ^if_else_15
+
+  block ^if_then_14:
+    return i32 2
+
+  block ^if_else_15:
+    jump ^if_end_16
+
+  block ^if_end_16:
+    %t11 = addr $held
+    %t12 = addr $initlist__4
+    call void @Item__Item(%t12, 4)
+    %t13 = index i8 %t12, 1
+    eh_try ^call_unwind_dispatch_17
+    call void @Item__Item(%t13, 5)
+    eh_end
+    jump ^call_unwind_end_18
+
+  block ^call_unwind_dispatch_17:
+    call void @Item___Item(%t12)
+    resume
+
+  block ^call_unwind_end_18:
+    eh_try ^call_unwind_dispatch_19
+    store ptr %t12, %t11
+    %t14 = index i8 %t11, 8
+    store i64 2, %t14
+    eh_end
+    jump ^call_unwind_end_20
+
+  block ^call_unwind_dispatch_19:
+    resume
+
+  block ^call_unwind_end_20:
+    eh_try ^call_unwind_dispatch_19
+    %t15 = addr $held
+    %t16 = call i64 @std__initializer_list_Item___size(%t15)
+    store i64 %t16, $call__5
+    %t17 = load i64 $call__5
+    %t18 = convert sext i64 i32 2
+    %t19 = cmp ne i64 %t17, %t18
+    eh_end
+    branch %t19, ^if_then_21, ^lor_rhs_24
+
+  block ^lor_rhs_24:
+    %t20 = load i32 @Item__live
+    %t21 = cmp ne i32 %t20, 2
+    branch %t21, ^if_then_21, ^if_else_22
+
+  block ^if_then_21:
+    call void @Item___Item(%t13)
+    call void @Item___Item(%t12)
+    return i32 3
+
+  block ^if_else_22:
+    jump ^if_end_23
+
+  block ^if_end_23:
+    call void @Item___Item(%t13)
+    call void @Item___Item(%t12)
+    %t22 = load i32 @Item__live
+    %t23 = cmp eq i32 %t22, 0
+    branch %t23, ^cond_then_25, ^cond_else_26
+
+  block ^cond_then_25:
+    store i32 0, $cond__6
+    jump ^cond_end_27
+
+  block ^cond_else_26:
+    store i32 4, $cond__6
+    jump ^cond_end_27
+
+  block ^cond_end_27:
+    %t24 = load i32 $cond__6
+    return i32 %t24
+}
+function @std__initializer_list_Item___size(%this : ptr) -> i64 [binding=weak, object=_ZNKSt16initializer_listI4ItemE4sizeEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load i64 %t2
+    return i64 %t3
+}
+function @Item__Item(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN4ItemC1Ei] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %__param1, $__param1
+    %t1 = load i32 @Item__live
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @Item__live
+    return void
+}
+function @Item___Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @Item__live
+    %t2 = binary sub i32 %t1, 1
+    store i32 %t2, @Item__live
+    return void
+}
+alias object _ZN4ItemC2Ei = @Item__Item
+alias object _ZN4ItemD2Ev = @Item___Item
