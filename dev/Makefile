@@ -119,12 +119,12 @@ all: $(TARGETS)
 debug-build: $(DEBUG_TARGETS)
 
 define DEV_FRONTEND_RULES
-$(1): $(OBJ)/release $(1).cpp $(call frontend_link_objs,release,$(1)) $(call runner_state_stamp,release)
+$(1): $(1).cpp $(call frontend_link_objs,release,$(1)) $(call runner_state_stamp,release) | $(OBJ)/release
 	$(call quiet,LINK,$$@)
 	$(Q)$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $$@.tmp $$@.cpp $(call frontend_link_objs,release,$(1))
 	@if ! cmp -s $$@.tmp $$@ 2>/dev/null; then mv -f $$@.tmp $$@; else rm -f $$@.tmp; fi
 
-$(1)-debug: $(OBJ)/debug $(1).cpp $(call frontend_link_objs,debug,$(1)) $(call runner_state_stamp,debug)
+$(1)-debug: $(1).cpp $(call frontend_link_objs,debug,$(1)) $(call runner_state_stamp,debug) | $(OBJ)/debug
 	$(call quiet,LINK,$$@)
 	$(Q)$(CXX) $(ENTRY_DEBUG_CC_FLAGS) $(INC) -o $$@.tmp $(1).cpp $(call frontend_link_objs,debug,$(1))
 	@if ! cmp -s $$@.tmp $$@ 2>/dev/null; then mv -f $$@.tmp $$@; else rm -f $$@.tmp; fi

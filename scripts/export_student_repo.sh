@@ -447,9 +447,10 @@ RUNNER_STATE_STAMP = $(OBJDIR)/.test_runner_mode
 all: $(TARGETS)
 
 define FRONTEND_RULES
-$(1): $(OBJDIR) $(call link_objs,$(1)) $(RUNNER_STATE_STAMP)
+$(1): $(call link_objs,$(1)) $(RUNNER_STATE_STAMP) | $(OBJDIR)
 	$(call quiet,LINK,$$@)
-	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o $$@ $(call link_objs,$(1))
+	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o $$@.tmp $(call link_objs,$(1))
+	@if ! cmp -s $$@.tmp $$@ 2>/dev/null; then mv -f $$@.tmp $$@; else rm -f $$@.tmp; fi
 
 $(call entry_obj,$(1)): $(1).cpp $(COMPILE_CONFIG_STAMP)
 	@mkdir -p $$(@D) $(DEPDIR)/entry
