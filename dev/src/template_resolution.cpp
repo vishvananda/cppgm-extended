@@ -206,26 +206,75 @@ bool try_resolve_non_type_template_parameter_type(
     TypePtr & out,
     bool * can_remain_dependent = nullptr);
 
+CppAstNode * declarator_declared_identifier_node(CppAstNode & node)
+{
+  if(node.kind != CppAstKind::declarator &&
+     node.kind != CppAstKind::abstract_declarator) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    CppAstNode & child = node.children[i];
+    if(child.kind == CppAstKind::identifier) {
+      return &child;
+    }
+    if(child.kind == CppAstKind::nested_declarator &&
+       child.children.size() == 1) {
+      CppAstNode * nested =
+          declarator_declared_identifier_node(child.children[0]);
+      if(nested) {
+        return nested;
+      }
+    }
+  }
+  return nullptr;
+}
+
 bool substitute_bound_non_type_parameter_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const CppAstNode & syntax,
-    CppAstNode & out)
+    CppAstNode & out,
+    bool preserve_declared_identifier = false)
 {
   if(!scope.valid()) {
     return false;
   }
+
+  CppAstNode masked_syntax;
+  CppAstNode saved_identifier;
+  const CppAstNode * input = &syntax;
+  if(preserve_declared_identifier) {
+    masked_syntax = syntax;
+    CppAstNode * identifier =
+        declarator_declared_identifier_node(masked_syntax);
+    if(identifier) {
+      saved_identifier = *identifier;
+      identifier->value.clear();
+      identifier->qualified_name_syntax.reset();
+      input = &masked_syntax;
+    }
+  }
+
   const std::vector<TemplateParameterInfo> no_parameters;
   const std::vector<TemplateArgument> no_arguments;
-  return template_argument_semantics::substitute_type_id_node_for_template_arguments(
+  if(!template_argument_semantics::substitute_type_id_node_for_template_arguments(
       services,
       scope.require(),
-      syntax,
+      *input,
       no_parameters,
       no_arguments,
       out,
       false,
-      true);
+      true)) {
+    return false;
+  }
+  if(input == &masked_syntax) {
+    CppAstNode * identifier = declarator_declared_identifier_node(out);
+    if(identifier) {
+      *identifier = saved_identifier;
+    }
+  }
+  return true;
 }
 
 TypePtr adjusted_non_type_template_parameter_type_for_resolution(
@@ -11123,7 +11172,7 @@ bool try_resolve_non_type_template_parameter_type_from_syntax(
     CppAstNode substituted_declarator;
     const CppAstNode * declarator = parameter.non_type_declarator;
     if(substitute_bound_non_type_parameter_syntax(
-           services, scope, *declarator, substituted_declarator)) {
+           services, scope, *declarator, substituted_declarator, true)) {
       declarator = &substituted_declarator;
     }
     std::string ignored_name;
@@ -11149,7 +11198,7 @@ bool try_resolve_non_type_template_parameter_type_from_syntax(
     CppAstNode substituted_declarator;
     const CppAstNode * declarator = parameter.non_type_abstract_declarator;
     if(substitute_bound_non_type_parameter_syntax(
-           services, scope, *declarator, substituted_declarator)) {
+           services, scope, *declarator, substituted_declarator, true)) {
       declarator = &substituted_declarator;
     }
     if(!template_decl_ast::parse_abstract_declarator(
