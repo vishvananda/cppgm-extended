@@ -295,6 +295,12 @@ vector<string> scalar_abi_chunk_types(const string & type)
   return object_abi_chunk_types(type);
 }
 
+bool is_memory_class_object_abi_type(const string & type)
+{
+  return is_object_type(type) &&
+         lir::type_size(lir::LowType{type}) > 16;
+}
+
 size_t frame_storage_size_text(const string & type)
 {
   const size_t logical_size = lir::type_size(lir::LowType{type});
@@ -2006,6 +2012,18 @@ vector<mir::ParamBinding> collect_param_bindings(const lir::Function & function)
   size_t next_stack = 16;
   for(size_t i = 0; i < function.params.size(); ++i) {
     const string & param_type = function.params[i].type.text;
+    if(is_memory_class_object_abi_type(param_type)) {
+      const size_t alignment = min<size_t>(16, lir::type_alignment(lir::LowType{param_type}));
+      next_stack = align_up_size(next_stack, max<size_t>(8, alignment));
+      mir::ParamBinding param;
+      param.name = function.params[i].name;
+      param.type = param_type;
+      param.location = mir::ParamBinding::PL_STACK;
+      param.stack_offset = static_cast<long long>(next_stack);
+      next_stack += align_up_size(lir::type_size(lir::LowType{param_type}), 8);
+      out.push_back(param);
+      continue;
+    }
     const vector<string> chunk_types = scalar_abi_chunk_types(param_type);
     if(!chunk_types.empty()) {
       size_t chunk_offset = 0;
@@ -3923,6 +3941,8 @@ private:
     out.name = global.name;
     out.readonly = global.storage == lir::GSM_READONLY;
     out.thread_local_storage = global.storage == lir::GSM_THREAD_LOCAL;
+    out.section_segment = global.metadata.section_segment;
+    out.section_name = global.metadata.section_name;
     if(out.thread_local_storage) {
       out.thread_local_wrapper_symbol =
           thread_local_wrapper_symbol_for_global(global.name);
@@ -4348,6 +4368,30 @@ private:
       }
       preinitialized_param_slots.insert(param.name);
       const long long local_offset = slot_offset(layout, param.name) + param.chunk_offset;
+      if(param.location == mir::ParamBinding::PL_STACK &&
+         is_memory_class_object_abi_type(param.type)) {
+        size_t copied = 0;
+        const size_t byte_count = lir::type_size(lir::LowType{param.type});
+        while(copied < byte_count) {
+          const size_t chunk_size = min<size_t>(8, byte_count - copied);
+          const string chunk_type = integer_chunk_type_for_size(chunk_size);
+          mir::Instruction inst = make_instruction(mir::Instruction::MI_LOAD);
+          inst.type = chunk_type;
+          inst.operands.push_back(reg(XR_RAX));
+          inst.operands.push_back(
+              deref_offset(XR_RBP, param.stack_offset + static_cast<long long>(copied)));
+          out.push_back(inst);
+
+          inst = make_instruction(mir::Instruction::MI_STORE);
+          inst.type = chunk_type;
+          inst.operands.push_back(
+              deref_offset(XR_RBP, local_offset + static_cast<long long>(copied)));
+          inst.operands.push_back(reg(XR_RAX));
+          out.push_back(inst);
+          copied += chunk_size;
+        }
+        continue;
+      }
       if(param.location == mir::ParamBinding::PL_REG) {
         mir::Instruction inst = make_instruction(mir::Instruction::MI_STORE);
         inst.type = param.type;
@@ -5217,6 +5261,7 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
         {
           lir::Operand operand;
           string type;
+          bool memory_object = false;
           bool direct_call_index = false;
           lir::Operand direct_call_index_base;
           long long direct_call_index_offset = 0;
@@ -5227,6 +5272,14 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
         for(size_t i = 0; i < inst.args.size(); ++i) {
           const string param_type =
               i < call_params.size() ? call_params[i].type.text : operand_type(layout, inst.args[i]);
+          if(is_memory_class_object_abi_type(param_type)) {
+            CallArgPiece piece;
+            piece.operand = inst.args[i];
+            piece.type = param_type;
+            piece.memory_object = true;
+            pieces.push_back(piece);
+            continue;
+          }
           const vector<string> chunk_types = scalar_abi_chunk_types(param_type);
           if(!chunk_types.empty()) {
             for(size_t chunk_index = 0; chunk_index < chunk_types.size(); ++chunk_index) {
@@ -5269,7 +5322,9 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
         size_t next_xmm = 0;
         for(size_t i = 0; i < pieces.size(); ++i) {
           const string & arg_type = pieces[i].type;
-          if((arg_type == "f32" || arg_type == "f64") && next_xmm < 8) {
+          if(pieces[i].memory_object) {
+            continue;
+          } else if((arg_type == "f32" || arg_type == "f64") && next_xmm < 8) {
             ++next_xmm;
           } else if(!is_float_type(arg_type) && next_reg < 6) {
             arg_in_reg[i] = true;
@@ -6769,6 +6824,7 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
           string type;
           size_t source_offset = 0;
           bool object_chunk = false;
+          bool memory_object = false;
           bool direct_call_index = false;
           lir::Operand direct_call_index_base;
           long long direct_call_index_offset = 0;
@@ -6788,6 +6844,14 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
         for(size_t i = 0; i < inst.args.size(); ++i) {
           const string param_type =
               i < call_params.size() ? call_params[i].type.text : operand_type(layout, inst.args[i]);
+          if(is_memory_class_object_abi_type(param_type)) {
+            CallArgPiece piece;
+            piece.operand = inst.args[i];
+            piece.type = param_type;
+            piece.memory_object = true;
+            pieces.push_back(piece);
+            continue;
+          }
           const vector<string> chunk_types = scalar_abi_chunk_types(param_type);
           if(!chunk_types.empty()) {
             size_t chunk_offset = 0;
@@ -6837,7 +6901,13 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
         size_t stack_bytes = 0;
         for(size_t i = 0; i < pieces.size(); ++i) {
           const string & arg_type = pieces[i].type;
-          if((arg_type == "f32" || arg_type == "f64") && next_xmm < 8) {
+          if(pieces[i].memory_object) {
+            const size_t alignment =
+                min<size_t>(16, lir::type_alignment(lir::LowType{arg_type}));
+            stack_bytes = align_up_size(stack_bytes, max<size_t>(8, alignment));
+            arg_stack_offset[i] = stack_bytes;
+            stack_bytes += align_up_size(lir::type_size(lir::LowType{arg_type}), 8);
+          } else if((arg_type == "f32" || arg_type == "f64") && next_xmm < 8) {
             arg_in_xmm[i] = true;
             arg_xmm_index[i] = next_xmm++;
           } else if(!is_float_type(arg_type) && next_reg < 6) {
@@ -6943,7 +7013,27 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
           }
         }
         for(size_t i = 0; i < pieces.size(); ++i) {
+          if(!pieces[i].memory_object) {
+            continue;
+          }
+          emit_load_storage_address_value(layout, pieces[i].operand, XR_RSI, out);
+          mi = make_instruction(mir::Instruction::MI_LEA);
+          mi.operands.push_back(reg(XR_RDI));
+          mi.operands.push_back(
+              deref_offset(XR_RSP, static_cast<long long>(arg_stack_offset[i])));
+          out.push_back(mi);
+          mi = make_instruction(mir::Instruction::MI_COPY_BYTES);
+          mi.byte_count = lir::type_size(lir::LowType{pieces[i].type});
+          mi.byte_alignment = lir::type_alignment(lir::LowType{pieces[i].type});
+          mi.operands.push_back(reg(XR_RDI));
+          mi.operands.push_back(reg(XR_RSI));
+          out.push_back(mi);
+        }
+        for(size_t i = 0; i < pieces.size(); ++i) {
           const string & arg_type = pieces[i].type;
+          if(pieces[i].memory_object) {
+            continue;
+          }
           const bool rematerialize_direct_call_index = pieces[i].direct_call_index;
           if(arg_in_reg[i]) {
             if(pieces[i].object_chunk) {

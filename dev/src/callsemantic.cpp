@@ -8896,7 +8896,8 @@ private:
                                                          scope,
                                                          qualified.name,
                                                          qualified_member_arg_syntaxes,
-                                                         qualified_member_template_id_syntax);
+                                                         qualified_member_template_id_syntax,
+                                                         true);
       if(trace_node_traits_pointer_lookup) {
         std::ostringstream trace;
         trace << "qualified-lookup-direct name=" << normalized_name
@@ -15260,6 +15261,23 @@ private:
             break;
           }
         }
+        if(!type_id_rewritten) {
+          CppAstNode substituted_type_id;
+          if(substitute_pack_argument_node_ast(scope,
+                                               *argument.type_id,
+                                               type_replacements,
+                                               value_replacements,
+                                               substituted_type_id)) {
+            if(argument.source_text.empty()) {
+              argument.source_text = original_text;
+            }
+            if(!argument.source_type_id) {
+              argument.source_type_id = argument.type_id;
+            }
+            argument.type_id.reset(new CppAstNode(substituted_type_id));
+            argument.resolved_type.reset();
+          }
+        }
       }
       if(type_id_rewritten) {
         continue;
@@ -18076,6 +18094,32 @@ private:
             qualified_lookup &&
             !qualified_lookup->qualifiers.empty() &&
             unqualified_member_name(qualified_lookup->name) == "type");
+    if(qualified_lookup &&
+       !qualified_lookup->qualifiers.empty() &&
+       node.token_start != 0 &&
+       !cppast_template_id_syntax(node) &&
+       !cppast_has_qualifier_template_id_syntaxes(node) &&
+       node.qualifier_type_syntaxes.empty() &&
+       semantic_lookup::qualified_namespace_lookup_needs_source_point_filter(
+           scope, *qualified_lookup, node.token_start)) {
+      Scope * source_point_namespace =
+          semantic_lookup::resolve_qualified_namespace_scope_at_token(
+              scope, *qualified_lookup, node.token_start);
+      if(source_point_namespace) {
+        TypePtr source_point_type =
+            template_api::lookup_direct_named_type_in_inline_namespaces(
+                *source_point_namespace, qualified_lookup->name);
+        if(source_point_type) {
+          return source_point_type;
+        }
+        Scope * eager_namespace =
+            semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
+                *this, scope, *qualified_lookup, false);
+        if(eager_namespace && eager_namespace != source_point_namespace) {
+          return TypePtr();
+        }
+      }
+    }
     if((qualified_lookup &&
         (qualified_lookup->rooted || !qualified_lookup->qualifiers.empty())) ||
        !node.builtin_type_transform_name.empty() ||
@@ -23372,6 +23416,28 @@ private:
     return declaration_specifiers_contain_token(declaration_node, KW_EXTERN);
   }
 
+  bool declaration_marks_weak(const CppAstNode * declaration_node) const
+  {
+    if(!declaration_node) {
+      return false;
+    }
+    if(declaration_node->has_weak_attribute) {
+      return true;
+    }
+    for(size_t i = 0; i < declaration_node->children.size(); ++i) {
+      const CppAstNode & child = declaration_node->children[i];
+      if(child.kind == CppAstKind::initializer ||
+         child.kind == CppAstKind::compound_statement ||
+         child.kind == CppAstKind::lazy_function_body) {
+        continue;
+      }
+      if(declaration_marks_weak(&child)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool declaration_marks_friend(const CppAstNode * declaration_node) const
   {
     return declaration_specifiers_contain_token(declaration_node, KW_FRIEND);
@@ -23590,6 +23656,9 @@ private:
        (!scope.class_info && declaration_marks_static(declaration_node))) {
       return symbol_linkage::SL_INTERNAL;
     }
+    if(declaration_marks_weak(declaration_node)) {
+      return symbol_linkage::SL_WEAK;
+    }
     if((template_identity.decl &&
         (template_identity.has_arguments() || !template_identity.key.empty())) ||
        template_api::scope_has_linkage_template_owner_identity(&scope) ||
@@ -23616,6 +23685,9 @@ private:
                                                         bool is_c_linkage,
                                                         const ClassInfo * owner_class = nullptr) const
   {
+    if(declaration_marks_weak(declaration_node)) {
+      return symbol_linkage::SL_WEAK;
+    }
     if(is_c_linkage) {
       return symbol_linkage::SL_EXTERNAL;
     }
@@ -24701,6 +24773,12 @@ private:
     const string qualified_name = scope_symbol_qualified_name(scope, name);
     map<string, ValueBinding>::iterator existing = scope.values.find(name);
     if(existing != scope.values.end()) {
+      const bool inherits_existing_c_linkage =
+          existing->second.is_c_linkage &&
+          !is_c_linkage &&
+          !declaration_marks_static(symbol_linkage_node);
+      const bool effective_is_c_linkage =
+          is_c_linkage || inherits_existing_c_linkage;
       TypePtr merged = merge_types(existing->second.type, type);
       if(!merged) {
         throw logic_error(string("mismatched variable declaration") +
@@ -24709,7 +24787,7 @@ private:
                               *this, "previous declaration", &existing->second));
       }
       existing->second.type = merged;
-      if(existing->second.is_c_linkage != is_c_linkage) {
+      if(existing->second.is_c_linkage != effective_is_c_linkage) {
         throw logic_error(string("mismatched variable linkage") +
                           semantic_trace::current_location_note(*this, declaration_node) +
                           semantic_trace::previous_value_location_note(
@@ -24736,8 +24814,12 @@ private:
       symbol_linkage::SymbolLinkage linkage =
           variable_symbol_linkage(scope,
                                   symbol_linkage_node,
-                                  is_c_linkage,
+                                  effective_is_c_linkage,
                                   existing->second.owner_class);
+      if(linkage != symbol_linkage::SL_INTERNAL &&
+         declaration_marks_weak(declaration_node)) {
+        linkage = symbol_linkage::SL_WEAK;
+      }
       if(linkage == symbol_linkage::SL_INTERNAL &&
          !existing->second.has_storage_definition &&
          existing->second.symbol.linkage != symbol_linkage::SL_INTERNAL) {
@@ -24762,15 +24844,21 @@ private:
     binding.declaration_scope = &scope;
     binding.declaration_node = declaration_node;
     binding.definition_node = is_definition ? declaration_node : nullptr;
+    symbol_linkage::SymbolLinkage linkage =
+        variable_symbol_linkage(scope,
+                                symbol_linkage_node,
+                                is_c_linkage,
+                                binding.owner_class);
+    if(linkage != symbol_linkage::SL_INTERNAL &&
+       declaration_marks_weak(declaration_node)) {
+      linkage = symbol_linkage::SL_WEAK;
+    }
     binding.symbol =
         make_registered_variable_symbol(scope,
                                         name,
                                         type,
                                         is_c_linkage,
-                                        variable_symbol_linkage(scope,
-                                                                symbol_linkage_node,
-                                                                is_c_linkage,
-                                                                binding.owner_class));
+                                        linkage);
     note_thread_local_wrapper_object_symbol(binding);
     map<string, ValueBinding>::iterator inserted =
         scope.values.insert(make_pair(name, binding)).first;

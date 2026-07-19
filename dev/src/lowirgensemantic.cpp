@@ -173,6 +173,8 @@ struct GlobalBinding
   string thread_local_guard_symbol;
   string thread_local_init_symbol;
   bool is_definition = true;
+  string section_segment;
+  string section_name;
   symbol_linkage::SymbolIdentity symbol;
 };
 
@@ -2219,6 +2221,25 @@ string lowir_direct_object_type(const TypePtr & type)
   return out.str();
 }
 
+string lowir_host_memory_parameter_object_type(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  if(!base ||
+     base->kind != Type::TK_NAMED ||
+     is_reference_type(type) ||
+     !base->named_has_layout ||
+     base->named_size <= 16 ||
+     base->named_host_abi_chunks.size() != 1 ||
+     base->named_host_abi_chunks[0].kind != Type::HostAbiChunk::HC_MEMORY ||
+     base->named_host_abi_chunks[0].size != base->named_size) {
+    return string();
+  }
+  const size_t alignment = max<size_t>(1, min<size_t>(16, base->named_alignment));
+  ostringstream out;
+  out << "obj<" << base->named_size << "x" << alignment << ">";
+  return out.str();
+}
+
 bool lowir_uses_indirect_result_boundary(const TypePtr & result_type)
 {
   return lowir_direct_object_type(result_type).empty() &&
@@ -2246,6 +2267,11 @@ vector<string> lowir_parameter_abi_type_texts(const TypePtr & type)
   const string direct_object_type = lowir_direct_object_type(lowered_param_type);
   if(!direct_object_type.empty()) {
     return vector<string>(1, direct_object_type);
+  }
+  const string memory_object_type =
+      lowir_host_memory_parameter_object_type(lowered_param_type);
+  if(!memory_object_type.empty()) {
+    return vector<string>(1, memory_object_type);
   }
   const vector<string> direct_chunk_types =
       lowir_direct_value_chunk_types(lowered_param_type);
@@ -2285,6 +2311,9 @@ lowir_internal::ParamPassingMode lowir_parameter_passing_mode(const TypePtr & or
   if(param_base &&
      (param_base->kind == Type::TK_ARRAY || param_base->kind == Type::TK_FUNCTION)) {
     return lowir_internal::PPM_DECAY;
+  }
+  if(!lowir_host_memory_parameter_object_type(lowered_param_type).empty()) {
+    return lowir_internal::PPM_DIRECT;
   }
   if(is_indirect_value_type(lowered_param_type)) {
     return lowir_internal::PPM_BY_ADDRESS;
@@ -3216,6 +3245,8 @@ public:
         }
         ParamAbiPlan abi_plan;
         const string direct_object_type = lowir_direct_object_type(lowered_param_type);
+        const string memory_object_type =
+            lowir_host_memory_parameter_object_type(lowered_param_type);
         const lowir_internal::ParamPassingMode param_passing =
             !direct_object_type.empty() ?
                 lowir_internal::PPM_DIRECT :
@@ -3225,6 +3256,11 @@ public:
           function_.params.push_back(
               make_lowir_parameter_text(param_temp, direct_object_type, param_passing));
           abi_plan.inputs.push_back(make_pair(param_temp, direct_object_type));
+        } else if(!memory_object_type.empty()) {
+          abi_plan.kind = ParamAbiPlan::PAK_DIRECT_OBJECT;
+          function_.params.push_back(
+              make_lowir_parameter_text(param_temp, memory_object_type, param_passing));
+          abi_plan.inputs.push_back(make_pair(param_temp, memory_object_type));
         } else if(is_indirect_value_type(lowered_param_type)) {
           abi_plan.kind = ParamAbiPlan::PAK_INDIRECT;
           function_.params.push_back(
@@ -7549,6 +7585,17 @@ private:
     const TypePtr lowered_param_type = lowir_parameter_type_for(param_type);
     const string direct_object_type = lowir_direct_object_type(lowered_param_type);
     if(!direct_object_type.empty()) {
+      const TypePtr object_type =
+          strip_top_level_cv(remove_reference_type(lowered_param_type));
+      const vector<string> object_slots = new_hidden_object_slots(object_type, "argobj");
+      emit_storage_value_to_target(object_type, arg, emit_storage_address(object_slots[0]));
+      args.push_back(object_slots[0]);
+      return;
+    }
+
+    const string memory_object_type =
+        lowir_host_memory_parameter_object_type(lowered_param_type);
+    if(!memory_object_type.empty()) {
       const TypePtr object_type =
           strip_top_level_cv(remove_reference_type(lowered_param_type));
       const vector<string> object_slots = new_hidden_object_slots(object_type, "argobj");
@@ -16732,6 +16779,7 @@ public:
     synthesize_referenced_internal_global_definitions();
     emit_runtime_bridge_support_functions();
     register_external_symbol_aliases();
+    apply_global_section_metadata();
     if(validate_closure_) {
       validate_symbol_closure();
     }
@@ -16751,6 +16799,8 @@ public:
           binding_for_defined_symbol(global.name));
       out.metadata.object_output_root =
           global.metadata.object_output_root;
+      out.metadata.section_segment = global.metadata.section_segment;
+      out.metadata.section_name = global.metadata.section_name;
       if(global.kind == LowIRGlobal::LG_DATA) {
         out.structured = true;
         for(size_t j = 0; j < global.data_items.size(); ++j) {
@@ -21609,6 +21659,8 @@ private:
       }
     }
     binding.is_definition = !node.is_extern_declaration;
+    binding.section_segment = callsem_section_segment(node);
+    binding.section_name = callsem_section_name(node);
     global_bindings_[binding.storage] = binding;
     if(node.is_c_linkage) {
       c_linkage_global_symbols_.insert(binding.storage);
@@ -21673,6 +21725,19 @@ private:
       if(should_synthesize_referenced_internal_global_definition(it->second)) {
         synthesize_referenced_internal_global_definition(it->second);
       }
+    }
+  }
+
+  void apply_global_section_metadata()
+  {
+    for(size_t i = 0; i < globals_.size(); ++i) {
+      map<string, GlobalBinding>::const_iterator binding =
+          global_bindings_.find(globals_[i].name);
+      if(binding == global_bindings_.end() || binding->second.section_name.empty()) {
+        continue;
+      }
+      globals_[i].metadata.section_segment = binding->second.section_segment;
+      globals_[i].metadata.section_name = binding->second.section_name;
     }
   }
 

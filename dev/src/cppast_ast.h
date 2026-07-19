@@ -419,6 +419,9 @@ struct CppAstNode
   bool has_no_unique_address = false;
   bool has_using_if_exists = false;
   bool has_exclude_from_explicit_instantiation = false;
+  bool has_weak_attribute = false;
+  std::string gnu_section_segment;
+  std::string gnu_section_name;
   std::string asm_label;
   CppAstLazyVector<std::string> abi_tags;
   CppAstLazyVector<std::string> alignment_specifiers;

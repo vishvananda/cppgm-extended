@@ -89,6 +89,14 @@ struct MemberTypeLookupResult
 };
 
 Scope * resolve_direct_namespace(Scope & scope, const std::string & name);
+Scope * resolve_qualified_namespace_scope_at_token(
+    Scope & scope,
+    const cpp_decl::QualifiedName & qualified,
+    std::size_t source_token_start);
+bool qualified_namespace_lookup_needs_source_point_filter(
+    Scope & scope,
+    const cpp_decl::QualifiedName & qualified,
+    std::size_t source_token_start);
 cpp_decl::TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,
                                                 Scope & scope,
                                                 Scope & lookup_scope,
@@ -96,7 +104,8 @@ cpp_decl::TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,
                                                 const std::vector<cpp_decl::TemplateArgumentSyntax> *
                                                     arg_syntaxes = nullptr,
                                                 const cpp_decl::TemplateIdSyntax *
-                                                    template_id_syntax = nullptr);
+                                                    template_id_syntax = nullptr,
+                                                bool include_namespace_using_directives = false);
 cpp_decl::TypePtr resolve_qualified_owner_type_node(
     SemanticContext & ctx,
     Scope & scope,

@@ -1375,9 +1375,11 @@ bool analyze_direct_class_materialization_initializer(SemanticContext & ctx,
   if(!payload) {
     return false;
   }
+  // A braced initializer in a declaration constructs the target object
+  // directly.  It is not a separate class prvalue whose move/copy constructor
+  // must be validated for an elided materialization.
   if(payload->kind != CppAstKind::call_expression &&
-     payload->kind != CppAstKind::lambda_expression &&
-     payload->kind != CppAstKind::braced_init_list) {
+     payload->kind != CppAstKind::lambda_expression) {
     return false;
   }
 

@@ -2037,11 +2037,11 @@ inline bool emit_external_member_entity_symbol(
   }
 
   out += "_ZN";
-  if(function_const) {
-    out += 'K';
-  }
   if(function_volatile) {
     out += 'V';
+  }
+  if(function_const) {
+    out += 'K';
   }
   if(function_lvalue_ref) {
     out += 'R';
@@ -4013,11 +4013,11 @@ inline bool emit_function_name(const FunctionEncoding & function,
       }
     }
     out += 'N';
-    if(function.nested_const) {
-      out += 'K';
-    }
     if(function.nested_volatile) {
       out += 'V';
+    }
+    if(function.nested_const) {
+      out += 'K';
     }
     if(function.nested_lvalue_ref) {
       out += 'R';
@@ -4114,11 +4114,11 @@ inline bool emit_function_name(const FunctionEncoding & function,
     const bool nested = function.name_components.size() > 1 && !direct_std_prefix;
     if(nested) {
       out += 'N';
-      if(function.nested_const) {
-        out += 'K';
-      }
       if(function.nested_volatile) {
         out += 'V';
+      }
+      if(function.nested_const) {
+        out += 'K';
       }
       if(function.nested_lvalue_ref) {
         out += 'R';

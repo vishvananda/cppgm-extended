@@ -890,15 +890,17 @@ bool collect_host_direct_integer_abi_chunks(SemanticContext & ctx,
   }
 
   ClassInfo * info = ctx.complete_class_type(base);
-  if(!info || !info->complete ||
-     !base->named_has_layout ||
-     !is_trivially_copy_constructible_type_for_host_abi_local(ctx, base) ||
-     !is_trivially_destructible_type_for_host_abi_local(ctx, base)) {
+  if(!info || !info->complete || !base->named_has_layout) {
     return false;
   }
 
   const std::size_t size = type_size(base);
   if(size == 0 || size > 16) {
+    return false;
+  }
+
+  if(!is_trivially_copy_constructible_type_for_host_abi_local(ctx, base) ||
+     !is_trivially_destructible_type_for_host_abi_local(ctx, base)) {
     return false;
   }
 
@@ -959,6 +961,29 @@ bool collect_host_direct_integer_abi_chunks(SemanticContext & ctx,
 
   append_host_integer_abi_chunks_for_size(size, out);
   return true;
+}
+
+void refresh_host_abi_chunks(SemanticContext & ctx, ClassInfo & info)
+{
+  info.type->named_host_abi_chunks.clear();
+  if(info.type->named_has_layout && info.type->named_size > 16) {
+    if(!is_trivially_copy_constructible_type_for_host_abi_local(ctx, info.type) ||
+       !is_trivially_destructible_type_for_host_abi_local(ctx, info.type)) {
+      return;
+    }
+    Type::HostAbiChunk chunk;
+    chunk.kind = Type::HostAbiChunk::HC_MEMORY;
+    chunk.size = info.type->named_size;
+    info.type->named_host_abi_chunks.push_back(chunk);
+    return;
+  }
+
+  if(collect_host_direct_integer_abi_chunks(ctx,
+                                            info.type,
+                                            info.type->named_host_abi_chunks)) {
+    return;
+  }
+  info.type->named_host_abi_chunks.clear();
 }
 
 bool is_trivially_destructible_type_for_host_abi_local(SemanticContext & ctx,
@@ -7487,9 +7512,9 @@ void finalize_class_layout(SemanticContext & ctx,
     info.type->named_alignment = class_alignment;
     info.type->named_size = class_size;
     info.type->named_is_empty = ctx.is_empty_class_info(&info);
-    info.type->named_host_abi_chunks.clear();
     info.complete = true;
     info.concrete_layout_deferred = false;
+    refresh_host_abi_chunks(ctx, info);
     sync_anonymous_storage_member_bindings(ctx, info);
     return;
   }
@@ -7831,8 +7856,7 @@ void finalize_class_layout(SemanticContext & ctx,
   info.type->named_is_empty = ctx.is_empty_class_info(&info);
   info.complete = true;
   info.concrete_layout_deferred = false;
-  info.type->named_host_abi_chunks.clear();
-  collect_host_direct_integer_abi_chunks(ctx, info.type, info.type->named_host_abi_chunks);
+  refresh_host_abi_chunks(ctx, info);
   sync_anonymous_storage_member_bindings(ctx, info);
 }
 

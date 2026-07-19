@@ -3102,6 +3102,10 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
     var_node.is_extern_declaration = !binding.has_storage_definition;
     var_node.is_thread_local = binding.is_thread_local;
     var_node.is_static_storage = binding.is_thread_local;
+    if(binding.definition_node) {
+      set_callsem_section_segment(var_node, binding.definition_node->gnu_section_segment);
+      set_callsem_section_name(var_node, binding.definition_node->gnu_section_name);
+    }
     if(info.member_scope) {
       set_callsem_qualified_name_syntax(
           var_node,
@@ -5891,6 +5895,8 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
         var_node.is_extern_declaration = !is_definition;
         var_node.is_thread_local = binding && binding->is_thread_local;
         var_node.is_static_storage = var_node.is_thread_local;
+        set_callsem_section_segment(var_node, init_decl.gnu_section_segment);
+        set_callsem_section_name(var_node, init_decl.gnu_section_name);
         set_dump_qualified_name_syntax_from_scope(
             var_node,
             binding_scope ? binding_scope : &scope,

@@ -1763,6 +1763,13 @@ void apply_leading_declaration_attributes(CppAstNode & node,
   if(attributes.has_exclude_from_explicit_instantiation) {
     node.has_exclude_from_explicit_instantiation = true;
   }
+  if(attributes.has_weak_attribute) {
+    node.has_weak_attribute = true;
+  }
+  if(!attributes.gnu_section_name.empty()) {
+    node.gnu_section_segment = attributes.gnu_section_segment;
+    node.gnu_section_name = attributes.gnu_section_name;
+  }
   append_cppast_abi_tags(node.abi_tags, attributes);
   append_cppast_alignment_specifiers(node, attributes);
 
@@ -1783,6 +1790,13 @@ void apply_leading_declaration_attributes(CppAstNode & node,
         if(attributes.has_exclude_from_explicit_instantiation) {
           child.children[j].has_exclude_from_explicit_instantiation = true;
         }
+        if(attributes.has_weak_attribute) {
+          child.children[j].has_weak_attribute = true;
+        }
+        if(!attributes.gnu_section_name.empty()) {
+          child.children[j].gnu_section_segment = attributes.gnu_section_segment;
+          child.children[j].gnu_section_name = attributes.gnu_section_name;
+        }
         append_cppast_abi_tags(child.children[j].abi_tags, attributes);
         append_cppast_alignment_specifiers(child.children[j], attributes);
       }
@@ -1801,6 +1815,152 @@ bool is_abi_tag_attribute_name(const RecogToken & token)
 bool is_string_literal_attribute_token(const RecogToken & token)
 {
   return token.is_literal() && token.source.find('"') != std::string::npos;
+}
+
+bool is_gnu_weak_attribute_name(const RecogToken & token)
+{
+  return token.is_identifier() &&
+         (token.source == "weak" ||
+          token.source == "__weak" ||
+          token.source == "__weak__");
+}
+
+bool gnu_attribute_specifier_has_weak(const IRecogTokenSequence & tokens,
+                                      std::size_t start,
+                                      std::size_t end)
+{
+  if(start >= end ||
+     !tokens.peek(start).is_identifier() ||
+     (tokens.peek(start).source != "__attribute__" &&
+      tokens.peek(start).source != "__attribute")) {
+    return false;
+  }
+
+  int paren_depth = 0;
+  bool expecting_attribute_name = false;
+  for(std::size_t i = start + 1; i < end; ++i) {
+    const RecogToken & token = tokens.peek(i);
+    if(token.is_simple(OP_LPAREN)) {
+      ++paren_depth;
+      if(paren_depth == 2) {
+        expecting_attribute_name = true;
+      }
+      continue;
+    }
+    if(token.is_simple(OP_RPAREN)) {
+      if(paren_depth > 0) {
+        --paren_depth;
+      }
+      continue;
+    }
+    if(paren_depth == 2 && token.is_simple(OP_COMMA)) {
+      expecting_attribute_name = true;
+      continue;
+    }
+    if(paren_depth == 2 && expecting_attribute_name && token.is_identifier()) {
+      if(is_gnu_weak_attribute_name(token)) {
+        return true;
+      }
+      expecting_attribute_name = false;
+    }
+  }
+  return false;
+}
+
+bool is_gnu_section_attribute_name(const RecogToken & token)
+{
+  return token.is_identifier() &&
+         (token.source == "section" ||
+          token.source == "__section" ||
+          token.source == "__section__");
+}
+
+bool append_attribute_string_literal(const RecogToken & token, string & out)
+{
+  if(!token.is_literal()) {
+    return false;
+  }
+  QuoteLiteralData literal;
+  try {
+    parse_quote_literal(token.source, literal);
+  } catch(const logic_error &) {
+    return false;
+  }
+  if(literal.quote != '"' || literal.enc != '"') {
+    return false;
+  }
+  for(size_t i = 0; i < literal.contents.size(); ++i) {
+    if(literal.contents[i] == 0 || literal.contents[i] > 0x7f) {
+      return false;
+    }
+    out.push_back(static_cast<char>(literal.contents[i]));
+  }
+  return true;
+}
+
+bool gnu_attribute_specifier_section(const IRecogTokenSequence & tokens,
+                                     std::size_t start,
+                                     std::size_t end,
+                                     string & segment,
+                                     string & section)
+{
+  if(start >= end ||
+     !tokens.peek(start).is_identifier() ||
+     (tokens.peek(start).source != "__attribute__" &&
+      tokens.peek(start).source != "__attribute")) {
+    return false;
+  }
+
+  int paren_depth = 0;
+  bool expecting_attribute_name = false;
+  bool collecting_section = false;
+  string raw_name;
+  for(std::size_t i = start + 1; i < end; ++i) {
+    const RecogToken & token = tokens.peek(i);
+    if(token.is_simple(OP_LPAREN)) {
+      ++paren_depth;
+      if(paren_depth == 2) {
+        expecting_attribute_name = true;
+      }
+      continue;
+    }
+    if(token.is_simple(OP_RPAREN)) {
+      if(collecting_section && paren_depth == 3) {
+        break;
+      }
+      if(paren_depth > 0) {
+        --paren_depth;
+      }
+      continue;
+    }
+    if(paren_depth == 2 && token.is_simple(OP_COMMA)) {
+      expecting_attribute_name = true;
+      collecting_section = false;
+      continue;
+    }
+    if(paren_depth == 2 && expecting_attribute_name && token.is_identifier()) {
+      collecting_section = is_gnu_section_attribute_name(token);
+      expecting_attribute_name = false;
+      continue;
+    }
+    if(collecting_section && paren_depth == 3 && token.is_literal()) {
+      if(!append_attribute_string_literal(token, raw_name)) {
+        return false;
+      }
+    }
+  }
+  if(raw_name.empty()) {
+    return false;
+  }
+  const size_t comma = raw_name.find(',');
+  if(comma == string::npos) {
+    segment.clear();
+    section = raw_name;
+  } else {
+    segment = raw_name.substr(0, comma);
+    section = raw_name.substr(comma + 1);
+  }
+  return !section.empty();
 }
 
 std::string abi_tag_literal_value(const std::string & source)
@@ -3132,6 +3292,9 @@ bool CppAstParser::qualified_name_span_prefers_expression(std::size_t begin,
 
   if(!parsed.rooted && parsed.qualifiers.empty()) {
     const RecogToken & token = tokens.peek(name_range.first);
+    if(unqualified_identifier_prefers_value_name(token)) {
+      return true;
+    }
     const bool known_type =
         is_known_type_name_identifier(token) ||
         is_template_type_parameter_name(token);
@@ -4046,6 +4209,19 @@ void CppAstParser::note_attribute_specifier(CppAstNode * annotated,
   }
   if(text.find("no_unique_address") != std::string::npos) {
     annotated->has_no_unique_address = true;
+  }
+  if(gnu_attribute_specifier_has_weak(tokens, start, end)) {
+    annotated->has_weak_attribute = true;
+  }
+  string section_segment;
+  string section_name;
+  if(gnu_attribute_specifier_section(tokens,
+                                     start,
+                                     end,
+                                     section_segment,
+                                     section_name)) {
+    annotated->gnu_section_segment = section_segment;
+    annotated->gnu_section_name = section_name;
   }
 
   bool collecting_abi_tag = false;
@@ -9724,6 +9900,8 @@ bool CppAstParser::parse_postfix_suffixes(CppAstNode & out, size_t start)
                                     &member_template_id_syntax,
                                     &member_qualifier_template_id_syntaxes,
                                     &member_qualifier_type_syntaxes,
+                                    false,
+                                    true,
                                     false,
                                     true)) {
         pos = start;

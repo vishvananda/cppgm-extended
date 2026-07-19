@@ -514,6 +514,8 @@ struct ObjectLayout
   map<string, size_t> thread_local_wrapper_offsets;
   map<string, size_t> global_offsets;
   map<string, size_t> readonly_global_offsets;
+  map<string, size_t> custom_global_offsets;
+  map<pair<string, string>, size_t> custom_section_sizes;
   map<string, size_t> thread_local_template_offsets;
   map<string, size_t> thread_local_descriptor_offsets;
   size_t code_size = 0;
@@ -1020,6 +1022,17 @@ size_t global_size(const mir::GlobalDefinition & global)
     offset += width;
   }
   return offset;
+}
+
+pair<string, string> custom_section_key(const mir::GlobalDefinition & global,
+                                        const string & target)
+{
+  if(global.section_name.empty()) {
+    return make_pair(string(), string());
+  }
+  const string segment = !global.section_segment.empty() ? global.section_segment :
+      (target == "macos" ? "__DATA" : ".elf");
+  return make_pair(segment, global.section_name);
 }
 
 size_t thread_local_wrapper_size(const string & target)
@@ -3142,6 +3155,17 @@ ObjectLayout layout_object(const mir::Program & program)
   size_t thread_local_descriptor_offset = 0;
   for(size_t i = 0; i < program.globals.size(); ++i) {
     const mir::GlobalDefinition & global = program.globals[i];
+    if(!global.section_name.empty()) {
+      if(global.thread_local_storage) {
+        throw logic_error("custom sections for thread_local globals are unsupported");
+      }
+      const pair<string, string> key = custom_section_key(global, program.target);
+      size_t & section_size = layout.custom_section_sizes[key];
+      section_size = align_up(section_size, global_alignment(global));
+      layout.custom_global_offsets[global.name] = section_size;
+      section_size += global_size(global);
+      continue;
+    }
     if(global.thread_local_storage) {
       if(tls_info.abi == ThreadLocalSectionInfo::ABI_DIRECT_NATIVE) {
         data_offset = align_up(data_offset, global_alignment(global));
@@ -3581,6 +3605,9 @@ vector<unsigned char> build_data_bytes(const mir::Program & program,
   vector<unsigned char> data(layout.data_size, 0);
   for(size_t i = 0; i < program.globals.size(); ++i) {
     const mir::GlobalDefinition & global = program.globals[i];
+    if(!global.section_name.empty()) {
+      continue;
+    }
     if(global.thread_local_storage) {
       if(tls_info.abi == ThreadLocalSectionInfo::ABI_EMUTLS) {
         const size_t cursor = layout.thread_local_descriptor_offsets.find(global.name)->second;
@@ -3659,6 +3686,98 @@ vector<unsigned char> build_data_bytes(const mir::Program & program,
     }
   }
   return data;
+}
+
+void append_global_to_extra_section(mobj::ExtraSection & section,
+                                    const mir::GlobalDefinition & global,
+                                    size_t cursor)
+{
+  if(global.storage_kind == mir::GlobalDefinition::GS_SCALAR) {
+    const size_t width = type_size_text(global.type);
+    if(global.init_kind == mir::GlobalDefinition::GI_INTEGER) {
+      const vector<unsigned char> bytes =
+          integer_literal_storage_bytes(global.int_value, width);
+      copy(bytes.begin(), bytes.end(), section.bytes.begin() + cursor);
+    } else if(global.init_kind == mir::GlobalDefinition::GI_FLOAT) {
+      const vector<unsigned char> bytes =
+          float_literal_storage_bytes(global.type, global.float_value, global.literal_text);
+      copy(bytes.begin(), bytes.end(), section.bytes.begin() + cursor);
+    } else if(global.init_kind == mir::GlobalDefinition::GI_ADDR) {
+      const vector<unsigned char> bytes =
+          cy86_internal::encode_uint64(static_cast<uint64_t>(global.addr_addend), width);
+      copy(bytes.begin(), bytes.end(), section.bytes.begin() + cursor);
+      append_extra_abs64_symbol_relocation(section,
+                                           cursor,
+                                           global.symbol,
+                                           global.addr_addend);
+    }
+    return;
+  }
+
+  for(size_t di = 0; di < global.data_items.size(); ++di) {
+    const mir::GlobalDefinition::DataItem & item = global.data_items[di];
+    if(item.kind == mir::GlobalDefinition::DataItem::ITEM_ZERO) {
+      cursor += item.zero_bytes;
+      continue;
+    }
+    const size_t width = item.kind == mir::GlobalDefinition::DataItem::ITEM_ADDR
+        ? 8
+        : type_size_text(item.type);
+    const size_t alignment = item.kind == mir::GlobalDefinition::DataItem::ITEM_ADDR
+        ? 8
+        : type_alignment_text(item.type);
+    cursor = align_up(cursor, alignment);
+    if(item.kind == mir::GlobalDefinition::DataItem::ITEM_INTEGER) {
+      const vector<unsigned char> bytes =
+          integer_literal_storage_bytes(item.int_value, width);
+      copy(bytes.begin(), bytes.end(), section.bytes.begin() + cursor);
+    } else if(item.kind == mir::GlobalDefinition::DataItem::ITEM_FLOAT) {
+      const vector<unsigned char> bytes =
+          float_literal_storage_bytes(item.type, item.float_value, item.literal_text);
+      copy(bytes.begin(), bytes.end(), section.bytes.begin() + cursor);
+    } else {
+      const vector<unsigned char> bytes =
+          cy86_internal::encode_uint64(static_cast<uint64_t>(item.addr_addend), width);
+      copy(bytes.begin(), bytes.end(), section.bytes.begin() + cursor);
+      append_extra_abs64_symbol_relocation(section,
+                                           cursor,
+                                           item.symbol,
+                                           item.addr_addend);
+    }
+    cursor += width;
+  }
+}
+
+vector<mobj::ExtraSection> build_custom_global_sections(const mir::Program & program,
+                                                        const ObjectLayout & layout)
+{
+  vector<mobj::ExtraSection> sections;
+  for(map<pair<string, string>, size_t>::const_iterator it =
+          layout.custom_section_sizes.begin();
+      it != layout.custom_section_sizes.end();
+      ++it) {
+    mobj::ExtraSection section;
+    section.segment_name = it->first.first;
+    section.section_name = it->first.second;
+    section.bytes.resize(it->second, 0);
+    size_t max_alignment = 1;
+    for(size_t i = 0; i < program.globals.size(); ++i) {
+      const mir::GlobalDefinition & global = program.globals[i];
+      if(custom_section_key(global, program.target) != it->first) {
+        continue;
+      }
+      max_alignment = max(max_alignment, global_alignment(global));
+      append_global_to_extra_section(
+          section,
+          global,
+          layout.custom_global_offsets.find(global.name)->second);
+    }
+    while((size_t(1) << section.macho_align_pow2) < max_alignment) {
+      ++section.macho_align_pow2;
+    }
+    sections.push_back(section);
+  }
+  return sections;
 }
 
 mobj::ExtraSection build_thread_local_template_section(const mir::Program & program,
@@ -3802,7 +3921,7 @@ mobj::ExtraSection build_readonly_data_section(const mir::Program & program,
   size_t max_alignment = 1;
   for(size_t i = 0; i < program.globals.size(); ++i) {
     const mir::GlobalDefinition & global = program.globals[i];
-    if(!global.readonly || global.thread_local_storage) {
+    if(!global.readonly || global.thread_local_storage || !global.section_name.empty()) {
       continue;
     }
     max_alignment = max(max_alignment, global_alignment(global));
@@ -5329,6 +5448,13 @@ machine_object::ObjectFile build_machine_object(const mir_model::MirProgram & pr
                                  object.relocations,
                                  &host_eh_functions);
   object.data = build_data_bytes(program, layout, object.relocations);
+  if(!layout.custom_section_sizes.empty()) {
+    const vector<mobj::ExtraSection> custom_sections =
+        build_custom_global_sections(program, layout);
+    object.extra_sections.insert(object.extra_sections.end(),
+                                 custom_sections.begin(),
+                                 custom_sections.end());
+  }
   if(layout.thread_local_template_data_size != 0 ||
      layout.thread_local_template_bss_size != 0) {
     const vector<mobj::ExtraSection> tls_sections =
@@ -5512,7 +5638,8 @@ machine_object::ObjectFile build_machine_object(const mir_model::MirProgram & pr
         machine_object::Symbol::SB_GLOBAL :
         machine_object::Symbol::SB_LOCAL;
     const bool is_thread_local = program.globals[i].thread_local_storage;
-    symbol.section = is_thread_local
+    const bool is_custom_section = !program.globals[i].section_name.empty();
+    symbol.section = is_custom_section ? machine_object::Symbol::SS_EXTRA : is_thread_local
         ? ((tls_info.abi == ThreadLocalSectionInfo::ABI_MACHO_TLV ||
             tls_info.abi == ThreadLocalSectionInfo::ABI_ELF) ?
                machine_object::Symbol::SS_EXTRA :
@@ -5532,7 +5659,12 @@ machine_object::ObjectFile build_machine_object(const mir_model::MirProgram & pr
         symbol.name = linux_tls_name;
       }
     }
-    if(is_thread_local) {
+    if(is_custom_section) {
+      const pair<string, string> key =
+          custom_section_key(program.globals[i], program.target);
+      symbol.extra_section = key.first + "," + key.second;
+      symbol.offset = layout.custom_global_offsets.find(program.globals[i].name)->second;
+    } else if(is_thread_local) {
       if(tls_info.abi == ThreadLocalSectionInfo::ABI_MACHO_TLV ||
          tls_info.abi == ThreadLocalSectionInfo::ABI_EMUTLS) {
         if(tls_info.abi == ThreadLocalSectionInfo::ABI_EMUTLS) {

@@ -470,6 +470,8 @@ void parse_global_metadata(GlobalStorageMode & storage,
   bool saw_keep_alias = false;
   bool saw_prefer_local = false;
   bool saw_object_root = false;
+  bool saw_section_segment = false;
+  bool saw_section_name = false;
   for(;;) {
     if(stream.eof()) {
       fail(line, "unterminated global metadata");
@@ -549,6 +551,21 @@ void parse_global_metadata(GlobalStorageMode & storage,
         fail(line, "unknown object_root mode '" + value + "'");
       }
       saw_object_root = true;
+    } else if(key == "section_segment") {
+      if(saw_section_segment) {
+        fail(line, "duplicate section_segment metadata");
+      }
+      metadata.section_segment = value;
+      saw_section_segment = true;
+    } else if(key == "section_name") {
+      if(saw_section_name) {
+        fail(line, "duplicate section_name metadata");
+      }
+      metadata.section_name = value;
+      if(metadata.section_name.empty()) {
+        fail(line, "section_name metadata requires non-empty name");
+      }
+      saw_section_name = true;
     } else {
       fail(line, "unknown global metadata key '" + key + "'");
     }
@@ -2672,8 +2689,11 @@ void dump_global_metadata(GlobalStorageMode storage,
   const bool has_keep_alias = metadata.keep_internal_alias;
   const bool has_prefer_local = metadata.prefer_local_object_binding;
   const bool has_object_root = metadata.object_output_root;
+  const bool has_section_segment = !metadata.section_segment.empty();
+  const bool has_section_name = !metadata.section_name.empty();
   if(!has_storage && !has_role && !has_linkage && !has_binding &&
-     !has_object && !has_keep_alias && !has_prefer_local && !has_object_root) {
+     !has_object && !has_keep_alias && !has_prefer_local && !has_object_root &&
+     !has_section_segment && !has_section_name) {
     return;
   }
   out << " [";
@@ -2729,6 +2749,20 @@ void dump_global_metadata(GlobalStorageMode storage,
       out << ", ";
     }
     out << "object_root=yes";
+    need_comma = true;
+  }
+  if(has_section_segment) {
+    if(need_comma) {
+      out << ", ";
+    }
+    out << "section_segment=" << metadata.section_segment;
+    need_comma = true;
+  }
+  if(has_section_name) {
+    if(need_comma) {
+      out << ", ";
+    }
+    out << "section_name=" << metadata.section_name;
   }
   out << "]";
 }

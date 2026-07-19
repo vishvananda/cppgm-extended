@@ -66,13 +66,21 @@ Do not relax tolerances to keep a change unless the delta has been explained.
 
 - Run from the repository root after building the compiler under test.
 - Keep the baseline command and candidate command equivalent. Changing only the
-  `-o` path is fine. The checker rejects other command differences, including a
-  changed project include path, before accepting metric deltas.
+  `-o` path is fine. The gate rejects any other command difference, including a
+  changed project include path or added compile flag, before running the
+  measurement.
 - The default self-compile workload uses the checked-in project headers under
   `benchmarks/self_compile/stable/include`; do not substitute live `dev/src`
   headers. Changing the frozen source or header closure starts a new benchmark
   epoch and requires a new baseline. Host standard-library headers are not
   vendored, so keep the host compiler configuration and standard library fixed.
+- `benchmarks/self_compile/stable/PERF_EPOCH.json` pins epoch `9764b3835`, the
+  source digest, exact 51-header membership, every header digest, and the
+  aggregate closure digest. Both `record` and `check` verify it before invoking
+  the compiler, so source drift and missing, added, changed, or symlinked headers
+  cannot silently alter the gate. The pre-manifest baseline recorded at that
+  exact epoch remains compatible; no parent remeasurement or rebaseline is
+  required.
 - The script uses `/usr/bin/time -lp`, including macOS hardware-counter fields.
   If those fields are missing, the check fails instead of silently passing.
 - Store shared project baselines outside the worktree or in a deliberately

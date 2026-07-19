@@ -34,7 +34,8 @@ void bind_template_named_type_with_access(semantic_model::Scope & scope,
 
 void bind_namespace(semantic_model::Scope & scope,
                     const std::string & name,
-                    semantic_model::Scope * target);
+                    semantic_model::Scope * target,
+                    std::size_t source_token_start = 0);
 
 void add_using_directive_if_needed(semantic_model::Scope & scope,
                                    semantic_model::Scope & target);

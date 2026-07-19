@@ -238,6 +238,13 @@ bool ast_node_mentions_pack_identifier(const CppAstNode & node,
   if(ast_node_value_names_pack_identifier(node, name)) {
     return true;
   }
+  if(const QualifiedName * qualified = cppast_qualified_name_syntax(node)) {
+    for(std::size_t i = 0; i < qualified->qualifiers.size(); ++i) {
+      if(semantic_utils::trim_space(qualified->qualifiers[i]) == name) {
+        return true;
+      }
+    }
+  }
   if(node.template_id_syntax &&
      template_id_syntax_mentions_pack_identifier(*node.template_id_syntax, name)) {
     return true;
@@ -249,6 +256,12 @@ bool ast_node_mentions_pack_identifier(const CppAstNode & node,
       return true;
     }
   }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(ast_node_mentions_pack_identifier(node.qualifier_type_syntaxes[i], name)) {
+      return true;
+    }
+  }
+
   for(std::size_t i = 0; i < node.children.size(); ++i) {
     if(ast_node_mentions_pack_identifier(node.children[i], name)) {
       return true;
@@ -424,6 +437,38 @@ bool substitute_type_pack_node_ast(
         type_system,
         out.qualifier_template_id_syntaxes[i],
         type_replacements);
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    CppAstNode qualifier;
+    if(!substitute_type_pack_node_ast(type_system,
+                                      node.qualifier_type_syntaxes[i],
+                                      type_replacements,
+                                      qualifier)) {
+      return false;
+    }
+    out.qualifier_type_syntaxes[i] = qualifier;
+  }
+  if(out.qualified_name_syntax) {
+    const std::vector<std::string> & qualifiers =
+        out.qualified_name_syntax->qualifiers;
+    for(std::size_t i = 0; i < qualifiers.size(); ++i) {
+      for(auto replacement = type_replacements.begin();
+          replacement != type_replacements.end();
+          ++replacement) {
+        if(semantic_utils::trim_space(qualifiers[i]) != replacement->first) {
+          continue;
+        }
+        if(out.qualifier_type_syntaxes.size() < qualifiers.size()) {
+          out.qualifier_type_syntaxes.mutable_vector().resize(qualifiers.size());
+        }
+        CppAstNode qualifier;
+        qualifier.kind = CppAstKind::type_name;
+        qualifier.value =
+            format_pack_type_argument_text(type_system, replacement->second);
+        qualifier.semantic_type = replacement->second;
+        out.qualifier_type_syntaxes[i] = qualifier;
+      }
+    }
   }
 
   for(auto it = type_replacements.begin();

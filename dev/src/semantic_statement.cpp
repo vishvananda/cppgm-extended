@@ -1663,11 +1663,12 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
                                            is_typedef);
     const bool parsed_as_function =
         parsed_as_variable && type && strip_top_level_cv(type)->kind == Type::TK_FUNCTION;
+    const bool declares_function = parsed_as_function && !is_typedef;
     const bool recover_function_style_initializer =
-        parsed_as_function &&
+        declares_function &&
         !initializer &&
         should_recover_function_style_local_initializer(scope, init_decl.children[0]);
-    if(parsed_as_function && !initializer && !recover_function_style_initializer) {
+    if(declares_function && !initializer && !recover_function_style_initializer) {
       vector<pair<string, TypePtr> > params;
       vector<const CppAstNode *> default_args;
       const CppAstNode * parameter_clause =
@@ -1695,7 +1696,7 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
       decl_node.children.push_back(std::move(fn_node));
       continue;
     }
-    if((!parsed_as_variable || parsed_as_function) &&
+    if((!parsed_as_variable || declares_function) &&
        !try_recover_function_style_local_initializer(init_decl.children[0], name, type,
                                                      is_typedef, synthesized_initializer)) {
       ostringstream outmsg;
@@ -1746,7 +1747,7 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
       type = resolve_local_declaration_type(ctx, scope, type);
     }
 
-    if(type && strip_top_level_cv(type)->kind == Type::TK_FUNCTION) {
+    if(!is_typedef && type && strip_top_level_cv(type)->kind == Type::TK_FUNCTION) {
       throw logic_error("local function declarations unsupported");
     }
 

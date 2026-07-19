@@ -88,7 +88,8 @@ struct Type
     enum Kind
     {
       HC_INTEGER,
-      HC_SSE
+      HC_SSE,
+      HC_MEMORY
     } kind = HC_INTEGER;
 
     std::size_t size = 0;

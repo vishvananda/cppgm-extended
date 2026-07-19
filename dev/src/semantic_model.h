@@ -274,6 +274,13 @@ struct Scope
     template_bound_template_arguments = other.template_bound_template_arguments;
     values = other.values;
     namespace_bindings = other.namespace_bindings;
+    if(other.namespace_binding_first_token_starts) {
+      namespace_binding_first_token_starts.reset(
+          new std::map<std::string, std::size_t>(
+              *other.namespace_binding_first_token_starts));
+    } else {
+      namespace_binding_first_token_starts.reset();
+    }
     function_sets = other.function_sets;
     function_set_access_overrides = other.function_set_access_overrides;
     cached_direct_function_lookups.clear();
@@ -323,6 +330,13 @@ struct Scope
   std::map<std::string, template_model::TemplateArgument> template_bound_template_arguments;
   std::map<std::string, ValueBinding> values;
   std::map<std::string, Scope *> namespace_bindings;
+  // Namespace collection is intentionally eager so later declarations are
+  // available when deferred class bodies are completed.  Keep the first token
+  // at which each spelling became visible so source-point qualified lookup can
+  // avoid being shadowed by a namespace declared later in the translation
+  // unit.
+  std::unique_ptr<std::map<std::string, std::size_t> >
+      namespace_binding_first_token_starts;
   std::map<std::string, std::vector<FunctionBinding *> > function_sets;
   std::map<std::string, std::map<const FunctionBinding *, MemberAccess> >
       function_set_access_overrides;

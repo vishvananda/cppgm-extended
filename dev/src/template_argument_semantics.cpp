@@ -3952,6 +3952,7 @@ bool dependent_qualified_lookup_is_type_required_context(
 StructuredTypeLookupResult resolve_bound_owner_qualified_name_syntax_type(
     template_api::TemplateServices & services,
     Scope & scope,
+    const CppAstNode * node,
     const QualifiedName & name,
     bool has_leading_typename,
     const string & lookup_text,
@@ -3963,8 +3964,17 @@ StructuredTypeLookupResult resolve_bound_owner_qualified_name_syntax_type(
     return StructuredTypeLookupResult::NotApplicable;
   }
 
-  TypePtr owner_type =
-      lookup_exact_bound_type_name(scope, strip_elaborated_type_prefix(name.qualifiers[0]));
+  TypePtr owner_type;
+  if(node) {
+    if(const CppAstNode * qualifier_type =
+           cppast_qualifier_type_syntax(*node, 0)) {
+      owner_type = qualifier_type->semantic_type;
+    }
+  }
+  if(!owner_type) {
+    owner_type = lookup_exact_bound_type_name(
+        scope, strip_elaborated_type_prefix(name.qualifiers[0]));
+  }
   if(!owner_type) {
     owner_type = lookup_local_dependent_type_placeholder(scope, name.qualifiers[0]);
   }
@@ -4130,6 +4140,7 @@ StructuredTypeLookupResult resolve_qualified_name_syntax_type(
   const StructuredTypeLookupResult bound_owner_result =
       resolve_bound_owner_qualified_name_syntax_type(services,
                                                      scope,
+                                                     &node,
                                                      name,
                                                      node.has_leading_typename,
                                                      lookup_text,
@@ -7867,6 +7878,8 @@ semantic_conversion::ExprInfo make_declval_trait_expr_info(const TypePtr & sourc
 }
 
 bool function_type_structured_invocation_result(
+    template_api::TemplateServices * services,
+    template_api::TemplateEnvironmentHandle scope,
     const TypePtr & callable_type,
     const vector<semantic_conversion::ExprInfo> & arg_exprs,
     TypePtr & result_type)
@@ -7892,8 +7905,39 @@ bool function_type_structured_invocation_result(
   }
   for(size_t i = 0; i < stripped->params.size(); ++i) {
     if(semantic_conversion::standard_conversion_rank(stripped->params[i],
-                                                     arg_exprs[i]) ==
+                                                     arg_exprs[i]) !=
        semantic_conversion::CR_BAD) {
+      continue;
+    }
+
+    TypePtr param_base = strip_top_level_cv(remove_reference_type(stripped->params[i]));
+    TypePtr arg_base = strip_top_level_cv(remove_reference_type(arg_exprs[i].type));
+    if(!services ||
+       !services->semantic_context ||
+       !scope.valid() ||
+       ((!param_base || param_base->kind != Type::TK_NAMED) &&
+        (!arg_base || arg_base->kind != Type::TK_NAMED))) {
+      return false;
+    }
+
+    semantic_conversion::ExprInfo converted;
+    semantic_conversion::ConversionRank rank = semantic_conversion::CR_BAD;
+    ArgumentConversionOptions conversion_options =
+        semantic_policy::without_user_defined_body_instantiation();
+    conversion_options.materialize_user_defined_output = false;
+    try {
+      if(!semantic_conversion::try_argument_conversion(
+             *services->semantic_context,
+             scope.require(),
+             stripped->params[i],
+             arg_exprs[i],
+             converted,
+             rank,
+             conversion_options) ||
+         rank == semantic_conversion::CR_BAD) {
+        return false;
+      }
+    } catch(const logic_error &) {
       return false;
     }
   }
@@ -8604,7 +8648,9 @@ bool structured_invocation_result_for_exprs(
                                                        result_type,
                                                        lookup_complete);
   }
-  if(function_type_structured_invocation_result(callable_expr.type,
+  if(function_type_structured_invocation_result(services,
+                                                scope,
+                                                callable_expr.type,
                                                 arg_exprs,
                                                 result_type)) {
     return true;

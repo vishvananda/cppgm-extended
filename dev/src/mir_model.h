@@ -55,6 +55,8 @@ struct GlobalDefinition
   bool readonly = false;
   bool thread_local_storage = false;
   std::string thread_local_wrapper_symbol;
+  std::string section_segment;
+  std::string section_name;
   std::string type;
   long long int_value = 0;
   long double float_value = 0.0L;

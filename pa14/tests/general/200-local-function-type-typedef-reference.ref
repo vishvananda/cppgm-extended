@@ -1,0 +1,23 @@
+function @target(%value : ptr [pass=reference]) -> i32 [binding=strong, object=_Z6targetRi] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    %t2 = load i32 %t1
+    return i32 %t2
+}
+function @invoke(%value : ptr [pass=reference]) -> i32 [binding=strong, object=_Z6invokeRi] {
+  slot $value : ptr
+  slot $function : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = addr @target
+    store ptr %t1, $function
+    %t2 = load ptr $value
+    %t3 = load ptr $function
+    %t4 = unary decay ptr %t3
+    %t5 = call i32 %t4(%t2) as (%arg0 : ptr [pass=reference]) -> i32
+    return i32 %t5
+}

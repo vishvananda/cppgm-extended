@@ -1223,12 +1223,15 @@ ConversionRank standard_conversion_rank_non_reference(const TypePtr & target,
       }
     }
     if(converted_base && converted_base->kind == Type::TK_POINTER) {
-      TypePtr target_pointee = strip_top_level_cv(target_base->inner);
-      TypePtr actual_pointee = strip_top_level_cv(converted_base->inner);
       if(same_type_with_compatible_top_cv(target_base, converted_base)) {
         return CR_EXACT;
       }
-      if(target_pointee && actual_pointee &&
+      TypePtr target_pointee;
+      TypePtr actual_pointee;
+      if(pointer_pointee_cv_allows_base_conversion(target_base,
+                                                   converted_base,
+                                                   &target_pointee,
+                                                   &actual_pointee) &&
          is_void_type(target_pointee) &&
          actual_pointee->kind != Type::TK_FUNCTION) {
         return CR_CONVERSION;

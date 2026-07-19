@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @A__test(%this : ptr, %__param1 : i32) -> u8 [binding=weak, object=_ZNKV1A4testEi] {
+function @A__test(%this : ptr, %__param1 : i32) -> u8 [binding=weak, object=_ZNVK1A4testEi] {
   slot $this : ptr
   slot $__param1 : i32
 

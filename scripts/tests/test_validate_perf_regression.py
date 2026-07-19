@@ -1,8 +1,10 @@
 import contextlib
 import importlib.util
 import io
+import shutil
 from pathlib import Path
 import re
+import tempfile
 from types import SimpleNamespace
 import unittest
 
@@ -39,6 +41,69 @@ class ValidatePerfRegressionTest(unittest.TestCase):
                     missing.append(f"{path.name}: {match.group(1)}")
 
         self.assertEqual(missing, [])
+
+    def test_frozen_manifest_matches_source_and_all_headers(self):
+        identity = MODULE.validate_frozen_workload(
+            REPO_ROOT, MODULE.DEFAULT_COMMAND
+        )
+        self.assertEqual(
+            identity["epoch_commit"],
+            "9764b3835e3c6996b6b80803054f80e1cf50f98e",
+        )
+        self.assertEqual(identity["header_count"], 51)
+        self.assertEqual(
+            identity["header_closure_sha256"],
+            "7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8",
+        )
+
+    def test_frozen_manifest_rejects_header_content_drift(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_root = Path(temporary)
+            source_root = REPO_ROOT / "benchmarks/self_compile/stable"
+            target_root = temporary_root / "benchmarks/self_compile/stable"
+            shutil.copytree(source_root, target_root)
+            changed = target_root / "include/semantic_model.h"
+            changed.write_text(changed.read_text() + "\n// drift\n")
+
+            with self.assertRaisesRegex(
+                MODULE.FrozenWorkloadError,
+                "frozen header digests differ: semantic_model.h",
+            ):
+                MODULE.validate_frozen_workload(
+                    temporary_root, MODULE.DEFAULT_COMMAND
+                )
+
+    def test_frozen_manifest_rejects_header_membership_drift(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_root = Path(temporary)
+            source_root = REPO_ROOT / "benchmarks/self_compile/stable"
+            target_root = temporary_root / "benchmarks/self_compile/stable"
+            shutil.copytree(source_root, target_root)
+            (target_root / "include/extra.h").write_text("// extra\n")
+
+            with self.assertRaisesRegex(
+                MODULE.FrozenWorkloadError,
+                "extra=extra.h",
+            ):
+                MODULE.validate_frozen_workload(
+                    temporary_root, MODULE.DEFAULT_COMMAND
+                )
+
+    def test_perf_gate_rejects_live_or_modified_workload_commands(self):
+        live_headers = [
+            "./dev/cppgm++",
+            "-I",
+            "dev/src",
+            "-c",
+            "-o",
+            "/tmp/candidate.o",
+            "benchmarks/self_compile/stable/semantic_overload.cpp",
+        ]
+        with self.assertRaisesRegex(
+            MODULE.FrozenWorkloadError,
+            "command is not the frozen semantic-overload workload",
+        ):
+            MODULE.validate_frozen_workload(REPO_ROOT, live_headers)
 
     def test_workload_comparison_ignores_only_output_path(self):
         baseline = ["./dev/cppgm++", "-I", "frozen", "-c", "-o", "/tmp/a.o", "input.cpp"]
@@ -77,6 +142,45 @@ class ValidatePerfRegressionTest(unittest.TestCase):
             )
         self.assertTrue(
             any("benchmark workload command differs" in failure for failure in failures)
+        )
+
+    def test_epoch_head_legacy_baseline_remains_compatible(self):
+        identity = MODULE.validate_frozen_workload(
+            REPO_ROOT, MODULE.DEFAULT_COMMAND
+        )
+        summary = {
+            key: {"median": 1}
+            for key in (
+                "instructions_retired",
+                "maximum_resident_set_size",
+                "peak_memory_footprint",
+            )
+        }
+        args = SimpleNamespace(
+            instruction_tolerance=0.01,
+            rss_tolerance=0.03,
+            footprint_tolerance=0.03,
+        )
+        baseline = {
+            "head": identity["epoch_commit"],
+            "command": MODULE.DEFAULT_COMMAND,
+            "summary": summary,
+        }
+        candidate = {
+            "head": "candidate",
+            "command": MODULE.DEFAULT_COMMAND,
+            "workload": identity,
+            "summary": summary,
+        }
+        with contextlib.redirect_stdout(io.StringIO()):
+            failures = MODULE.compare_reports(baseline, candidate, args)
+        self.assertEqual(failures, [])
+
+        baseline["head"] = "not-the-frozen-epoch"
+        with contextlib.redirect_stdout(io.StringIO()):
+            failures = MODULE.compare_reports(baseline, candidate, args)
+        self.assertTrue(
+            any("lacks frozen workload identity" in failure for failure in failures)
         )
 
 

@@ -4,28 +4,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $ioc
-    eh_try ^call_unwind_dispatch_1
     %t2 = addr $tmpobj__1
     call void @maker__maker(%t2)
-    eh_end
-    jump ^call_unwind_end_2
-
-  block ^call_unwind_dispatch_1:
-    resume
-
-  block ^call_unwind_end_2:
-    eh_try ^call_unwind_dispatch_3
     %t3 = index i8 [projection=base_subobject] %t2, 0
     call void @io_context__io_context(%t1, %t3)
     call void @maker___maker(%t2)
-    eh_end
-    jump ^call_unwind_end_4
-
-  block ^call_unwind_dispatch_3:
-    call void @maker___maker(%t2)
-    resume
-
-  block ^call_unwind_end_4:
     return i32 0
 }
 function @maker__maker(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5makerC1Ev] {

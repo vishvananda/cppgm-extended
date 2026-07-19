@@ -2325,14 +2325,30 @@ TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,
                                       const string & name,
                                       const vector<TemplateArgumentSyntax> *
                                           arg_syntaxes,
-                                      const TemplateIdSyntax * template_id_syntax)
+                                      const TemplateIdSyntax * template_id_syntax,
+                                      bool include_namespace_using_directives)
 {
-  return resolve_direct_type_qualifier_impl(ctx,
-                                            scope,
-                                            lookup_scope,
-                                            name,
-                                            arg_syntaxes,
-                                            template_id_syntax);
+  TypePtr direct =
+      resolve_direct_type_qualifier_impl(ctx,
+                                         scope,
+                                         lookup_scope,
+                                         name,
+                                         arg_syntaxes,
+                                         template_id_syntax);
+  if(direct ||
+     !include_namespace_using_directives ||
+     arg_syntaxes ||
+     template_id_syntax) {
+    return direct;
+  }
+
+  // Qualified lookup in a namespace also considers namespaces nominated by
+  // using-directives.  Keep template-id lookup on the syntax-aware direct
+  // path above; this fallback is for an ordinary qualified type name.
+  return lookup_type_from_using_directives_in_scope(ctx,
+                                                    scope,
+                                                    lookup_scope,
+                                                    name);
 }
 
 bool resolve_qualified_namespace_entity_target(SemanticContext & ctx,
@@ -2456,6 +2472,148 @@ Scope * resolve_direct_namespace(Scope & scope, const string & name)
       {
         return result != nullptr;
       });
+}
+
+namespace {
+
+Scope * resolve_direct_namespace_at_token(Scope & scope,
+                                          const string & name,
+                                          size_t source_token_start)
+{
+  map<string, Scope *>::iterator found = scope.namespace_bindings.find(name);
+  if(found != scope.namespace_bindings.end()) {
+    const map<string, size_t>::const_iterator first =
+        scope.namespace_binding_first_token_starts ?
+            scope.namespace_binding_first_token_starts->find(name) :
+            map<string, size_t>::const_iterator();
+    if(!scope.namespace_binding_first_token_starts ||
+       first == scope.namespace_binding_first_token_starts->end() ||
+       first->second == 0 ||
+       source_token_start == 0 ||
+       first->second <= source_token_start) {
+      return found->second;
+    }
+  }
+
+  Scope * result = nullptr;
+  for(size_t i = 0; i < scope.namespace_children.size(); ++i) {
+    Scope * child = scope.namespace_children[i].get();
+    if(!child || (!child->inline_namespace && child->name != "<unnamed>")) {
+      continue;
+    }
+    Scope * candidate =
+        resolve_direct_namespace_at_token(*child, name, source_token_start);
+    if(candidate && result && candidate != result) {
+      return nullptr;
+    }
+    if(candidate) {
+      result = candidate;
+    }
+  }
+  return result;
+}
+
+}  // namespace
+
+bool qualified_namespace_lookup_needs_source_point_filter(
+    Scope & scope,
+    const QualifiedName & qualified,
+    size_t source_token_start)
+{
+  if(qualified.rooted ||
+     qualified.qualifiers.empty() ||
+     source_token_start == 0) {
+    return false;
+  }
+
+  const string & first_name = qualified.qualifiers[0];
+  for(Scope * lexical = &scope; lexical; lexical = lexical->parent) {
+    if(lexical->named_types.count(first_name) != 0) {
+      return false;
+    }
+    map<string, Scope *>::const_iterator found =
+        lexical->namespace_bindings.find(first_name);
+    if(found == lexical->namespace_bindings.end()) {
+      continue;
+    }
+    if(!lexical->namespace_binding_first_token_starts) {
+      return false;
+    }
+    map<string, size_t>::const_iterator first =
+        lexical->namespace_binding_first_token_starts->find(first_name);
+    if(first != lexical->namespace_binding_first_token_starts->end() &&
+       first->second != 0 &&
+       first->second > source_token_start) {
+      return true;
+    }
+
+    Scope * current = found->second;
+    for(size_t i = 1; current && i < qualified.qualifiers.size(); ++i) {
+      map<string, Scope *>::const_iterator nested =
+          current->namespace_bindings.find(qualified.qualifiers[i]);
+      if(nested == current->namespace_bindings.end()) {
+        break;
+      }
+      if(current->namespace_binding_first_token_starts) {
+        map<string, size_t>::const_iterator nested_first =
+            current->namespace_binding_first_token_starts->find(
+                qualified.qualifiers[i]);
+        if(nested_first != current->namespace_binding_first_token_starts->end() &&
+           nested_first->second != 0 &&
+           nested_first->second > source_token_start) {
+          return true;
+        }
+      }
+      current = nested->second;
+    }
+    return false;
+  }
+  return false;
+}
+
+Scope * resolve_qualified_namespace_scope_at_token(
+    Scope & scope,
+    const QualifiedName & qualified,
+    size_t source_token_start)
+{
+  if(qualified.qualifiers.empty()) {
+    return nullptr;
+  }
+
+  Scope * current = nullptr;
+  size_t next = 0;
+  if(qualified.rooted) {
+    current = root_scope(scope);
+  } else {
+    for(Scope * lexical = &scope; lexical; lexical = lexical->parent) {
+      // A directly bound type used as the first qualifier wins ordinary
+      // unqualified lookup over a namespace with the same spelling in an
+      // enclosing scope.  The source-point namespace path exists only to
+      // disregard eagerly collected *namespace* declarations that occur
+      // later; it must not bypass an already selected class/member type.
+      if(lexical->named_types.count(qualified.qualifiers[0]) != 0) {
+        return nullptr;
+      }
+      current = resolve_direct_namespace_at_token(
+          *lexical, qualified.qualifiers[0], source_token_start);
+      if(current) {
+        break;
+      }
+    }
+    next = 1;
+  }
+  if(!current) {
+    return nullptr;
+  }
+
+  for(; next < qualified.qualifiers.size(); ++next) {
+    current = resolve_direct_namespace_at_token(
+        *current, qualified.qualifiers[next], source_token_start);
+    if(!current) {
+      return nullptr;
+    }
+  }
+  return current;
 }
 
 string scope_qualified_name(const Scope & scope, const string & name)

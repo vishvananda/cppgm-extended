@@ -1,0 +1,64 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $input : obj<1x1>
+  slot $value : obj<4x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $input
+    %t2 = addr $value
+    %t3 = addr $input
+    %t4 = call obj<4x4> @factory_definition_int__long_int____make(%t3, 0)
+    copyobj 4x4 %t4, %t2
+    %t5 = addr $value
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load i32 %t6
+    %t8 = cmp eq i32 %t7, 0
+    branch %t8, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t9 = load i32 $cond__1
+    return i32 %t9
+}
+function @factory_definition_int__long_int____make(%input : ptr [pass=reference], %__param1 : ptr) -> obj<4x4> [binding=weak, object=_ZN7factoryIJ10definitionIilEEE4makeIJS1_EEE5tupleIJDpN6resultINT_10class_typeENS6_9func_typeEE4typeEEER8providerPS4_IJDpS6_EE] {
+  slot $input : ptr
+  slot $__param1 : ptr
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store ptr %input, $input
+    store ptr %__param1, $__param1
+    %t1 = addr $retobj__1
+    %t2 = load ptr $input
+    %t3 = call i32 @provider__get(%t2)
+    call void @tuple_int___tuple(%t1, %t3)
+    return obj<4x4> $retobj__1
+}
+function @provider__get(%this : ptr) -> i32 [binding=weak, object=_ZN8provider3getIilEEN6resultIT_T0_E4typeEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 0
+}
+function @tuple_int___tuple(%this : ptr, %input : i32) -> void [binding=weak, object=_ZN5tupleIJiEEC1Ei] {
+  slot $this : ptr
+  slot $input : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %input, $input
+    %t1 = load i32 $input
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+alias object _ZN5tupleIJiEEC2Ei = @tuple_int___tuple

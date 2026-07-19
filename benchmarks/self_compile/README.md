@@ -22,6 +22,11 @@ See `stable/FROZEN_HEADERS.md` for provenance and refresh policy. Host
 standard-library headers remain a machine/toolchain input, so comparisons still
 require the same host environment.
 
+The primary gate validates `stable/PERF_EPOCH.json` before executing. The
+manifest pins the source, exact 51-header membership, individual SHA-256
+digests, and aggregate closure digest for epoch `9764b3835`. Live `dev/src`
+headers and unmanifested changes are rejected before measurement.
+
 Per-slice frozen corpus:
 
 - `stable/constant_value.cpp`

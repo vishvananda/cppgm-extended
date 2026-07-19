@@ -279,6 +279,8 @@ struct CallSemRareStrings
   std::string vtt_object_symbol;
   std::string runtime_bridge_symbol;
   std::string local_static_guard_symbol;
+  std::string section_segment;
+  std::string section_name;
 };
 
 struct CallSemRarePayload
@@ -900,6 +902,36 @@ inline void set_callsem_local_static_guard_symbol(CallSemNode & node,
     return;
   }
   ensure_callsem_rare_strings(node).local_static_guard_symbol = value;
+}
+
+inline const std::string & callsem_section_segment(const CallSemNode & node)
+{
+  return node.extra && node.extra->rare_strings ?
+      node.extra->rare_strings->section_segment :
+      callsem_empty_extra_string();
+}
+
+inline void set_callsem_section_segment(CallSemNode & node, const std::string & value)
+{
+  if(value.empty() && (!node.extra || !node.extra->rare_strings)) {
+    return;
+  }
+  ensure_callsem_rare_strings(node).section_segment = value;
+}
+
+inline const std::string & callsem_section_name(const CallSemNode & node)
+{
+  return node.extra && node.extra->rare_strings ?
+      node.extra->rare_strings->section_name :
+      callsem_empty_extra_string();
+}
+
+inline void set_callsem_section_name(CallSemNode & node, const std::string & value)
+{
+  if(value.empty() && (!node.extra || !node.extra->rare_strings)) {
+    return;
+  }
+  ensure_callsem_rare_strings(node).section_name = value;
 }
 
 inline const cpp_decl::TypePtr & callsem_vtt_owner_type(const CallSemNode & node)

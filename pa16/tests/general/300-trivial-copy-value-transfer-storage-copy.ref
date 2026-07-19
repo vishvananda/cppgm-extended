@@ -1,15 +1,18 @@
-function @forward(%ret : ptr [pass=indirect_result], %it : ptr [pass=by_address]) -> void [binding=strong, object=_Z7forward8PairIter] {
+function @forward(%ret : ptr [pass=indirect_result], %it : obj<24x8>) -> void [binding=strong, object=_Z7forward8PairIter] {
   slot $it : obj<24x8>
 
   block ^entry:
-    copyobj 24x8 %it, %ret
+    %t1 = addr $it
+    copyobj 24x8 %it, %t1
+    %t2 = addr $it
+    copyobj 24x8 %t2, %ret
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $x : i32
   slot $a : obj<24x8>
   slot $b : obj<24x8>
-  slot $arg__1 : obj<24x8>
+  slot $argobj__1 : obj<24x8>
   slot $cond__2 : i32
   slot $land__3 : i64
   slot $land__4 : i64
@@ -29,10 +32,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = index i8 [projection=field] %t8, 16
     store i64 7, %t9
     %t10 = addr $b
-    %t11 = addr $arg__1
+    %t11 = addr $argobj__1
     %t12 = addr $a
     copyobj 24x8 %t12, %t11
-    call void @forward(%t10, %t11)
+    call void @forward(%t10, $argobj__1)
     %t13 = addr $b
     %t14 = index i8 [projection=field] %t13, 0
     %t15 = load ptr %t14

@@ -118,6 +118,11 @@ Scope::Scope(const Scope & other)
     template_bound_template_arguments(other.template_bound_template_arguments),
     values(other.values),
     namespace_bindings(other.namespace_bindings),
+    namespace_binding_first_token_starts(
+        other.namespace_binding_first_token_starts ?
+            new std::map<std::string, std::size_t>(
+                *other.namespace_binding_first_token_starts) :
+            nullptr),
     function_sets(other.function_sets),
     function_set_access_overrides(other.function_set_access_overrides),
     class_templates(other.class_templates),
@@ -151,6 +156,8 @@ Scope::Scope(Scope && other)
     template_bound_template_arguments(std::move(other.template_bound_template_arguments)),
     values(std::move(other.values)),
     namespace_bindings(std::move(other.namespace_bindings)),
+    namespace_binding_first_token_starts(
+        std::move(other.namespace_binding_first_token_starts)),
     function_sets(std::move(other.function_sets)),
     function_set_access_overrides(std::move(other.function_set_access_overrides)),
     class_templates(std::move(other.class_templates)),
@@ -190,6 +197,8 @@ Scope & Scope::operator=(Scope && other)
   template_bound_template_arguments = std::move(other.template_bound_template_arguments);
   values = std::move(other.values);
   namespace_bindings = std::move(other.namespace_bindings);
+  namespace_binding_first_token_starts =
+      std::move(other.namespace_binding_first_token_starts);
   function_sets = std::move(other.function_sets);
   function_set_access_overrides = std::move(other.function_set_access_overrides);
   cached_direct_function_lookups.clear();
@@ -409,28 +418,34 @@ std::string predefined_pretty_function_parameter_list(
 std::string predefined_pretty_function_template_arguments(
     const FunctionBinding & binding)
 {
-  if(!binding.source_template ||
-     !binding.has_instantiation_arguments ||
-     binding.instantiation_arguments.empty()) {
-    return "";
-  }
+  std::string out;
+  const auto append_arguments =
+      [&](const std::vector<template_model::TemplateParameterInfo> & parameters,
+          const std::vector<template_model::TemplateArgument> & arguments)
+      {
+        const std::size_t count = std::min(parameters.size(), arguments.size());
+        for(std::size_t i = 0; i < count; ++i) {
+          out += out.empty() ? " [" : ", ";
+          out += parameters[i].name.empty() ?
+              std::string("<anonymous>") :
+              parameters[i].name;
+          out += " = ";
+          out += template_model::template_argument_text(
+              arguments[i],
+              cpp_decl::template_argument_type_text);
+        }
+      };
 
-  std::string out = " [";
-  const std::size_t count = std::min(binding.source_template->parameters.size(),
-                                     binding.instantiation_arguments.size());
-  for(std::size_t i = 0; i < count; ++i) {
-    if(i != 0) {
-      out += ", ";
-    }
-    const std::string parameter_name =
-        binding.source_template->parameters[i].name.empty() ?
-            std::string("<anonymous>") :
-            binding.source_template->parameters[i].name;
-    out += parameter_name;
-    out += " = ";
-    out += template_model::template_argument_text(
-        binding.instantiation_arguments[i],
-        cpp_decl::template_argument_type_text);
+  if(binding.owner_class && binding.owner_class->source_template) {
+    append_arguments(binding.owner_class->source_template->parameters,
+                     binding.owner_class->instantiation_arguments);
+  }
+  if(binding.source_template && binding.has_instantiation_arguments) {
+    append_arguments(binding.source_template->parameters,
+                     binding.instantiation_arguments);
+  }
+  if(out.empty()) {
+    return out;
   }
   out += "]";
   return out;

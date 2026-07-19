@@ -3958,7 +3958,28 @@ ExprInfo analyze_delete_expression(SemanticContext & ctx,
   arguments.kind = CppAstKind::paren_argument_list;
   arguments.children.push_back(*operand);
   call.children.push_back(arguments);
-  ExprInfo result = ctx.analyze_call_expression(scope, call);
+
+  // The first argument passed to a usual deallocation function is the address
+  // of the deleted storage, not an ordinary conversion of the source operand.
+  // In particular, deleting through pointer-to-const is valid even though an
+  // ordinary pointer-to-const object cannot convert to mutable void*.
+  ExprInfo deallocation_address = pointer;
+  deallocation_address.type = make_pointer(make_fundamental(FT_VOID));
+  deallocation_address.category = VC_PRVALUE;
+  deallocation_address.null_pointer_constant = false;
+  ctx.set_expr_info_metadata(deallocation_address,
+                             deallocation_address.type,
+                             deallocation_address.category);
+  semantic_overload::CallAnalysisHints call_hints;
+  call_hints.args.push_back(&deallocation_address);
+  ExprInfo result = ctx.analyze_call_expression(
+      scope,
+      call,
+      semantic_overload::CallAnalysisOptions(true, &call_hints));
+  if(result.node.children.size() != 2) {
+    throw logic_error("delete-expression deallocation call shape");
+  }
+  result.node.children[1] = std::move(pointer.node);
 
   TypePtr pointee_type = strip_top_level_cv(pointer_type->inner);
   if(ClassInfo * info = ctx.complete_class_type(pointee_type)) {

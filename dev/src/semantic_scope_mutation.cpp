@@ -79,9 +79,20 @@ void bind_template_named_type_with_access(semantic_model::Scope & scope,
 
 void bind_namespace(semantic_model::Scope & scope,
                     const std::string & name,
-                    semantic_model::Scope * target)
+                    semantic_model::Scope * target,
+                    std::size_t source_token_start)
 {
   scope.namespace_bindings[name] = target;
+  if(source_token_start != 0) {
+    if(!scope.namespace_binding_first_token_starts) {
+      scope.namespace_binding_first_token_starts.reset(
+          new std::map<std::string, std::size_t>());
+    }
+    std::size_t & first = (*scope.namespace_binding_first_token_starts)[name];
+    if(first == 0 || source_token_start < first) {
+      first = source_token_start;
+    }
+  }
   note_binding_mutation(scope);
 }
 
@@ -101,6 +112,21 @@ void import_inline_namespace_members(semantic_model::Scope & scope,
           target.namespace_bindings.begin();
       it != target.namespace_bindings.end(); ++it) {
     scope.namespace_bindings[it->first] = it->second;
+    if(target.namespace_binding_first_token_starts) {
+      const auto first =
+          target.namespace_binding_first_token_starts->find(it->first);
+      if(first != target.namespace_binding_first_token_starts->end()) {
+        if(!scope.namespace_binding_first_token_starts) {
+          scope.namespace_binding_first_token_starts.reset(
+              new std::map<std::string, std::size_t>());
+        }
+        std::size_t & destination =
+            (*scope.namespace_binding_first_token_starts)[it->first];
+        if(destination == 0 || first->second < destination) {
+          destination = first->second;
+        }
+      }
+    }
     changed = true;
   }
 

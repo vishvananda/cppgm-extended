@@ -793,7 +793,8 @@ void collect_namespace_alias_definition(SemanticContext & ctx,
     throw logic_error("unknown namespace alias target");
   }
 
-  semantic_scope_mutation::bind_namespace(scope, node.value, target_namespace);
+  semantic_scope_mutation::bind_namespace(
+      scope, node.value, target_namespace, node.token_start);
 }
 
 void collect_using_directive(SemanticContext & ctx,
@@ -902,7 +903,8 @@ void collect_using_declaration(SemanticContext & ctx,
   Scope * target_namespace = using_target_class ?
       nullptr : semantic_lookup::lookup_namespace_name(scope, qualified);
   if(target_namespace) {
-    semantic_scope_mutation::bind_namespace(scope, qualified.name, target_namespace);
+    semantic_scope_mutation::bind_namespace(
+        scope, qualified.name, target_namespace, node.token_start);
     return;
   }
 
@@ -1081,13 +1083,15 @@ void collect_namespace_definition(SemanticContext & ctx,
     if(!target) {
       target = &ctx.append_namespace_scope(scope, node.value);
     }
-    semantic_scope_mutation::bind_namespace(scope, "_GLOBAL__N_1", target);
+    semantic_scope_mutation::bind_namespace(
+        scope, "_GLOBAL__N_1", target, node.token_start);
   } else {
     target = ctx.find_named_namespace_child(scope, node.value);
     if(!target) {
       target = &ctx.append_namespace_scope(scope, node.value);
     }
-    semantic_scope_mutation::bind_namespace(scope, node.value, target);
+    semantic_scope_mutation::bind_namespace(
+        scope, node.value, target, node.token_start);
   }
 
   for(size_t i = 0; i < node.children.size(); ++i) {

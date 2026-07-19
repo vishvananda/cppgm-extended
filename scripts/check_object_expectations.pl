@@ -799,6 +799,17 @@ while (my $line = <$spec>)
 		next;
 	}
 
+	if ($kind eq 'custom_section')
+	{
+		my ($section_name) = @fields;
+		die "Invalid custom_section expectation in $spec_file: $line\n"
+			if !defined($section_name) || scalar(@fields) != 1;
+		my $ok = has_section_named($os, $obj, $section_name);
+		die "Expected section '$section_name' in object $obj_index\n" if !$ok;
+		print "custom_section $obj_index $section_name 1\n";
+		next;
+	}
+
 	if ($kind eq 'thread_local_import_surface_canonical')
 	{
 		my ($wrapper_symbol, $darwin_global_symbol, $linux_global_symbol) = @fields;

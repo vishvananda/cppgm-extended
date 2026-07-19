@@ -7,6 +7,7 @@ context, but it is not used to fail a candidate.
 
 import argparse
 import datetime as _datetime
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -24,6 +25,12 @@ DEFAULT_COMMAND = [
     "/tmp/cppgm-perf-check.o",
     "benchmarks/self_compile/stable/semantic_overload.cpp",
 ]
+
+FROZEN_WORKLOAD_MANIFEST = Path(
+    "benchmarks/self_compile/stable/PERF_EPOCH.json"
+)
+FROZEN_WORKLOAD_SOURCE = "benchmarks/self_compile/stable/semantic_overload.cpp"
+FROZEN_WORKLOAD_INCLUDE_ROOT = "benchmarks/self_compile/stable/include"
 
 TIME_VALUE_LABEL_RE = re.compile(r"^\s*([0-9]+(?:\.[0-9]+)?)\s+(.+?)\s*$")
 TIME_LABEL_VALUE_RE = re.compile(
@@ -68,6 +75,10 @@ CHECKS = [
     ("maximum_resident_set_size", "max rss", "rss_tolerance"),
     ("peak_memory_footprint", "peak footprint", "footprint_tolerance"),
 ]
+
+
+class FrozenWorkloadError(RuntimeError):
+    pass
 
 
 def normalize_metric_name(label):
@@ -147,6 +158,164 @@ def normalized_workload_command(command):
     return normalized
 
 
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def header_closure_digest(file_hashes):
+    digest = hashlib.sha256()
+    for relative_path in sorted(file_hashes):
+        digest.update(relative_path.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(file_hashes[relative_path].encode("ascii"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def validate_frozen_workload(repo_root, command):
+    canonical_command = normalized_workload_command(DEFAULT_COMMAND)
+    actual_command = normalized_workload_command(command)
+    if actual_command != canonical_command:
+        raise FrozenWorkloadError(
+            "command is not the frozen semantic-overload workload: expected=%s actual=%s"
+            % (" ".join(canonical_command), " ".join(actual_command))
+        )
+
+    repo_root = Path(repo_root).resolve()
+    manifest_path = repo_root / FROZEN_WORKLOAD_MANIFEST
+    try:
+        manifest = load_json(manifest_path)
+    except (OSError, ValueError) as exc:
+        raise FrozenWorkloadError(
+            "cannot read frozen workload manifest %s: %s" % (manifest_path, exc)
+        )
+
+    required_fields = {
+        "schema_version",
+        "epoch_commit",
+        "source_snapshot_commit",
+        "source",
+        "source_sha256",
+        "include_root",
+        "header_closure_sha256",
+        "headers",
+    }
+    missing_fields = sorted(required_fields - set(manifest))
+    if missing_fields:
+        raise FrozenWorkloadError(
+            "manifest is missing fields: %s" % ", ".join(missing_fields)
+        )
+    if manifest["schema_version"] != 1:
+        raise FrozenWorkloadError(
+            "unsupported frozen workload manifest schema %r"
+            % manifest["schema_version"]
+        )
+    if manifest["source"] != FROZEN_WORKLOAD_SOURCE:
+        raise FrozenWorkloadError(
+            "manifest source changed: %s" % manifest["source"]
+        )
+    if manifest["include_root"] != FROZEN_WORKLOAD_INCLUDE_ROOT:
+        raise FrozenWorkloadError(
+            "manifest include root changed: %s" % manifest["include_root"]
+        )
+    if not isinstance(manifest["headers"], dict) or not manifest["headers"]:
+        raise FrozenWorkloadError("manifest header closure is empty or invalid")
+
+    source_path = repo_root / manifest["source"]
+    if not source_path.is_file() or source_path.is_symlink():
+        raise FrozenWorkloadError(
+            "frozen workload source is missing or is a symlink: %s" % source_path
+        )
+    actual_source_hash = sha256_file(source_path)
+    if actual_source_hash != manifest["source_sha256"]:
+        raise FrozenWorkloadError(
+            "frozen workload source digest differs: expected=%s actual=%s"
+            % (manifest["source_sha256"], actual_source_hash)
+        )
+
+    include_root = repo_root / manifest["include_root"]
+    if not include_root.is_dir() or include_root.is_symlink():
+        raise FrozenWorkloadError(
+            "frozen include root is missing or is a symlink: %s" % include_root
+        )
+
+    expected_headers = manifest["headers"]
+    invalid_header_names = sorted(
+        name
+        for name in expected_headers
+        if not isinstance(name, str)
+        or not name
+        or Path(name).is_absolute()
+        or ".." in Path(name).parts
+    )
+    if invalid_header_names:
+        raise FrozenWorkloadError(
+            "manifest has invalid header paths: %s" % ", ".join(invalid_header_names)
+        )
+
+    actual_header_paths = {}
+    symlinks = []
+    for path in sorted(include_root.rglob("*")):
+        relative_path = path.relative_to(include_root).as_posix()
+        if path.is_symlink():
+            symlinks.append(relative_path)
+        elif path.is_file():
+            actual_header_paths[relative_path] = path
+    if symlinks:
+        raise FrozenWorkloadError(
+            "frozen header closure contains symlinks: %s" % ", ".join(symlinks)
+        )
+
+    expected_names = set(expected_headers)
+    actual_names = set(actual_header_paths)
+    missing_headers = sorted(expected_names - actual_names)
+    extra_headers = sorted(actual_names - expected_names)
+    if missing_headers or extra_headers:
+        details = []
+        if missing_headers:
+            details.append("missing=%s" % ",".join(missing_headers))
+        if extra_headers:
+            details.append("extra=%s" % ",".join(extra_headers))
+        raise FrozenWorkloadError(
+            "frozen header closure membership differs: %s" % " ".join(details)
+        )
+
+    actual_header_hashes = {
+        name: sha256_file(actual_header_paths[name]) for name in sorted(actual_names)
+    }
+    changed_headers = sorted(
+        name
+        for name in expected_names
+        if actual_header_hashes[name] != expected_headers[name]
+    )
+    if changed_headers:
+        raise FrozenWorkloadError(
+            "frozen header digests differ: %s" % ", ".join(changed_headers)
+        )
+
+    actual_closure_digest = header_closure_digest(actual_header_hashes)
+    if actual_closure_digest != manifest["header_closure_sha256"]:
+        raise FrozenWorkloadError(
+            "frozen header closure digest differs: expected=%s actual=%s"
+            % (manifest["header_closure_sha256"], actual_closure_digest)
+        )
+
+    return {
+        "schema_version": manifest["schema_version"],
+        "epoch_commit": manifest["epoch_commit"],
+        "source_snapshot_commit": manifest["source_snapshot_commit"],
+        "source": manifest["source"],
+        "source_sha256": actual_source_hash,
+        "include_root": manifest["include_root"],
+        "header_count": len(actual_header_hashes),
+        "header_closure_sha256": actual_closure_digest,
+    }
+
+
 def run_once(time_binary, repo_root, command, timeout_sec):
     timed_command = [time_binary, "-lp"] + command
     try:
@@ -214,7 +383,7 @@ def summarize_runs(runs):
     return summary
 
 
-def make_report(args, command, runs):
+def make_report(args, command, runs, workload):
     repo_root = Path(args.repo_root).resolve()
     return {
         "created_at": _datetime.datetime.now(
@@ -223,6 +392,7 @@ def make_report(args, command, runs):
         "repo_root": str(repo_root),
         "head": repo_head(repo_root),
         "command": command,
+        "workload": workload,
         "runs": runs,
         "summary": summarize_runs(runs),
     }
@@ -265,6 +435,15 @@ def print_record_summary(report):
     print("Recorded baseline")
     print("  head: %s" % (report.get("head") or "unknown"))
     print("  command: %s" % " ".join(report["command"]))
+    if report.get("workload"):
+        print("  workload epoch: %s" % report["workload"]["epoch_commit"])
+        print(
+            "  frozen headers: %d (%s)"
+            % (
+                report["workload"]["header_count"],
+                report["workload"]["header_closure_sha256"],
+            )
+        )
     for key in [
         "instructions_retired",
         "maximum_resident_set_size",
@@ -289,6 +468,26 @@ def compare_reports(baseline, candidate, args):
             "benchmark workload command differs: baseline=%s candidate=%s"
             % (" ".join(baseline_command), " ".join(candidate_command))
         )
+    baseline_workload = baseline.get("workload")
+    candidate_workload = candidate.get("workload")
+    if baseline_workload and candidate_workload:
+        if baseline_workload != candidate_workload:
+            failures.append(
+                "frozen benchmark workload identity differs: baseline=%s candidate=%s"
+                % (
+                    json.dumps(baseline_workload, sort_keys=True),
+                    json.dumps(candidate_workload, sort_keys=True),
+                )
+            )
+    elif candidate_workload and not baseline_workload:
+        legacy_epoch = candidate_workload.get("epoch_commit")
+        if baseline.get("head") != legacy_epoch:
+            failures.append(
+                "baseline lacks frozen workload identity and was not recorded at epoch %s"
+                % legacy_epoch
+            )
+    elif baseline_workload and not candidate_workload:
+        failures.append("candidate lacks frozen benchmark workload identity")
     rows = []
 
     for key, label, tolerance_attr in CHECKS:
@@ -314,6 +513,15 @@ def compare_reports(baseline, candidate, args):
     print("Performance check")
     print("  baseline head: %s" % (baseline.get("head") or "unknown"))
     print("  candidate head: %s" % (candidate.get("head") or "unknown"))
+    if candidate_workload:
+        print("  workload epoch: %s" % candidate_workload.get("epoch_commit", "unknown"))
+        print(
+            "  frozen headers: %s (%s)"
+            % (
+                candidate_workload.get("header_count", "unknown"),
+                candidate_workload.get("header_closure_sha256", "unknown"),
+            )
+        )
     print("")
     print("%-16s %-28s %-28s %-10s %-10s" % ("metric", "baseline", "candidate", "delta", "status"))
     for label, key, baseline_value, candidate_value, tolerance, delta, passed in rows:
@@ -354,8 +562,13 @@ def command_record(args):
     if args.runs < 1:
         raise SystemExit("--runs must be at least 1")
     command = clean_command(args.command)
+    try:
+        workload = validate_frozen_workload(args.repo_root, command)
+    except FrozenWorkloadError as exc:
+        print("FAIL: %s" % exc, file=sys.stderr)
+        return 2
     runs = collect_runs(args, command)
-    report = make_report(args, command, runs)
+    report = make_report(args, command, runs, workload)
     write_json(args.baseline, report)
     print_record_summary(report)
     print("  wrote: %s" % args.baseline)
@@ -366,9 +579,14 @@ def command_check(args):
     if args.runs < 1:
         raise SystemExit("--runs must be at least 1")
     command = clean_command(args.command)
+    try:
+        workload = validate_frozen_workload(args.repo_root, command)
+    except FrozenWorkloadError as exc:
+        print("FAIL: %s" % exc, file=sys.stderr)
+        return 2
     baseline = load_json(args.baseline)
     runs = collect_runs(args, command)
-    candidate = make_report(args, command, runs)
+    candidate = make_report(args, command, runs, workload)
     failures = compare_reports(baseline, candidate, args)
     if args.report:
         payload = {
