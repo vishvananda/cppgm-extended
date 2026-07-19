@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `33 / 147`
-- current cursor: `#34 libs/detail/test`
-- active compiler frontier: pending exact Detail survey
+- completed suites: `34 / 147`
+- current cursor: `#35 libs/dll/test`
+- active compiler frontier: pending exact DLL survey
 
 ## Baseline Gates
 
@@ -225,22 +225,23 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 31 | `libs/date_time/test` | pass | `(no compiler change)` | The exact four-job forced graph performs the wide-stream configuration check, finds 2323 targets, updates all 272 requested targets, passes 59 positive compile/link/runtime actions, reports all four deliberate special-value compile failures as failed-as-expected, and exits successfully; log `/tmp/boost-frontier-v2-suite-031-initial-forced.log`. | The current compiler passes the full calendar, duration, parsing, facet, serialization, clock, and local-time graph. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 | 32 | `libs/decimal/test` | pass | `(no compiler change)` | The exact four-job forced graph reports both C++14 `decltype(auto)` configurations unavailable in the C++11 lane, finds the single bookkeeping target, and exits successfully; log `/tmp/boost-frontier-v2-suite-032-initial-forced.log`. | Configuration-only pass on this host and language mode. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 | 33 | `libs/describe/test` | pass | `(no compiler change)` | The exact four-job forced graph reports both C++14 Describe configurations unavailable in the C++11 lane, finds 856 targets, updates all 182 requested targets, passes 49 positive compile/link/runtime actions, reports all four deliberate C++14-only compile failures as failed-as-expected, and exits successfully; log `/tmp/boost-frontier-v2-suite-033-initial-forced.log`. | The current compiler passes the complete C++11 preprocessor, enum, member, base, overload, union, and pedantic Describe graph. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
+| 34 | `libs/detail/test` | pass | `(no compiler change)` | The exact four-job forced graph passes both scoped-enum configuration checks, finds 544 targets, updates all 48 requested targets, passes all 12 compile/link/runtime actions, and exits successfully; log `/tmp/boost-frontier-v2-suite-034-initial-forced.log`. | The current compiler passes the full Detail utility, numeric, codecvt, allocator, and container-forwarding graph. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#34 libs/detail/test`
+- suite: `#35 libs/dll/test`
 - focused target: pending exact survey
-- last closed suite: `#33 libs/describe/test`
+- last closed suite: `#34 libs/detail/test`
 - failure phase: intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: pending first causal failure
 - implementation area: pending first causal failure
 - performance risk: the completed CRC checkpoint passes the immutable frozen compiler-and-51-header epoch at +0.82% instructions, -1.53% RSS, and -2.31% footprint, moving instructions by only 0.05 percentage points from Coroutine. The existing substitution helper falls from 25 to 22 top-stack samples; the new path adds no lookup, parse, cache, or semantic scope allocation. The workload uses `benchmarks/self_compile/stable/include`, and no parent or live project header was measured
-- next action: run the exact four-job forced `libs/detail/test` graph and classify its first causal failure, if any
+- next action: run the exact four-job forced `libs/dll/test` graph and classify its first causal failure, if any
 
 ## Fix Ledger
 
@@ -394,6 +395,12 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Container `devector_test` initializer-list `regular_elem` lifetime | LowIR constructed nontrivial `std::initializer_list<T>` backing-array elements in a hidden slot but never registered their destructors. All 41 `regular_elem` initializer-list elements in `test_insert_init_list` therefore remained live and made nine later checkpoints fail. Each successfully constructed backing element now enters the existing full-expression cleanup stack immediately, providing reverse destruction and constructor-unwind safety. When the list initializes a named automatic `initializer_list` object, those exact cleanup actions transfer to the enclosing lexical scope so the backing array remains alive with the list. No semantic text, parser, cache, type spelling, or Boost-specific path is added. | `pa25/tests/general/200-initializer-list-backing-array-lifetime.t`, at PA25's initializer-list and EH cleanup owner | The exact runtime count was zero before `test_insert_init_list` and 41 afterward, exactly matching the 41 nontrivial list elements in that function. The reducer checks three call-argument elements are destroyed at the full-expression boundary, two named-list elements stay alive until lexical scope exit, and successful earlier elements are represented on later-constructor unwind paths. Clang 22 and the fixed compiler both return zero. | PA25 direct report passes `74/74`; all configured strict suites pass; PA25 placement/hygiene is clean; all 23 text-reparse categories and all 14 audit tests pass. Normal, all ten individual cache-disabled, and all-disabled reducer LowIR are byte-identical with SHA-256 `fad25179310d67817521e50e03eaadb60d8e02eb6a503af55e8024b2ddfe31da`. The PA9-excluded broad report passes `3940/3940`, including PA37 `7/7`. Focused `devector_test` passes, and the exact final Container graph updates all 325 requested targets and exits successfully. | instructions +0.02%; max RSS -3.63%; peak footprint -2.57%; pass against immutable compiler-and-51-header baseline `9764b3835`; candidate-only report `/tmp/cppgm-boost-frontier-v2-container-default-owner-initlist-candidate.json`; no parent or live-header command was run | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-19`: Closed Detail without a compiler change and advanced the
+  ordered cursor to suite 35, `libs/dll/test`. The exact forced graph finds 544
+  targets, updates all 48 requested targets, passes all 12 actions, and exits
+  successfully. No production code, regression, broad repository gate, or
+  performance measurement was needed.
 
 - `2026-07-19`: Closed Describe without a compiler change and advanced the
   ordered cursor to suite 34, `libs/detail/test`. The exact forced graph finds
@@ -1846,5 +1853,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=4 \
   /usr/local/bin/timeout 1800 \
-  ./run-cppgm-b2.sh -a libs/detail/test
+  ./run-cppgm-b2.sh -a libs/dll/test
 ```
