@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `42 / 147`
-- current cursor: `#43 libs/format/test`
-- active compiler frontier: pending exact Format survey
+- completed suites: `43 / 147`
+- current cursor: `#44 libs/function/test`
+- active compiler frontier: pending exact Function survey
 
 ## Baseline Gates
 
@@ -239,22 +239,23 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 40 | `libs/filesystem/test` | pass | `(Filesystem typed lookup and range closure)` | The initial exact forced graph finds 3521 targets, requests 420 updates, updates 384, fails nine compile actions, and skips 27 downstream targets; log `/tmp/boost-frontier-v2-suite-040-initial-forced.log`. The final exact graph finds the same 3521 targets, updates all 168 requested targets, handles the deliberate `cf_path_nullptr_test` failure as failed-as-expected, and exits successfully; log `/tmp/boost-frontier-v2-suite-040-final-forced.log`. | Six earliest-owner reducers cover qualified overload-set arguments, source-point-aware ADL imports, range-for lookup and copy deduction, and return-SFINAE template identity across PA12, PA15, PA22, and PA24. The PA9-excluded broad report passes `3995/3995`, including PA37 `7/7`; configured strict suites, placement/hygiene, all 23 zero-reparse categories, all 14 audit tests, twelve cache modes per reducer, Clang/GCC controls, and warning-clean production builds pass. Candidate-only frozen performance passes at -1.30% instructions, +1.50% RSS, and +2.24% footprint; no parent or live header was measured. |
 | 41 | `libs/flyweight/test` | pass | `(Flyweight overload and constexpr termination fixes)` | The initial exact four-job graph finds 3307 targets, requests 111 updates, fails three compile actions, and skips their downstream targets; log `/tmp/boost-frontier-v2-suite-041-initial-forced.log`. The exact final four-job graph finds the same 3307 targets, updates all 111 requested targets, records 11 passing test actions, and exits successfully in 191s; log `/tmp/boost-frontier-v2-suite-041-final-forced.log`. | Two earliest-owner header-free reducers cover initializer-list element conversion ranking and no-progress recursion during typed initializer constant evaluation. PA20/PA25 pass `161/161`; configured strict suites, placement/hygiene, all 23 zero-reparse categories, all 22 audit/perf unit tests, twelve byte-identical cache modes per reducer, Clang/GCC controls, GCC 15 warning checks, and the PA9-excluded `3997/3997` report pass. Candidate-only frozen performance passes at -1.46% instructions, +1.39% RSS, and +2.18% footprint; no parent or live header was measured. |
 | 42 | `libs/foreach/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 875 targets, updates all 98 requested targets, records 25 passing compile/link/runtime actions, and exits successfully in 55s; log `/tmp/boost-frontier-v2-suite-042-initial-forced.log`. | The current compiler passes the complete STL, array, C-string, pair, user-defined, call-once, rvalue, dependent-type, miscellaneous, and noncopyable Foreach graph. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
+| 43 | `libs/format/test` | pass | `(no compiler change)` | The exact four-job forced graph reports ICU unavailable for this lane, finds 1360 targets, updates all 43 requested targets, records nine passing compile/link/runtime actions, and exits successfully in 46s; log `/tmp/boost-frontier-v2-suite-043-initial-forced.log`. | The current compiler passes all ordinary, Windows-header, enum, exception, and wide-string Format tests available in the C++11 configuration. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#43 libs/format/test`
+- suite: `#44 libs/function/test`
 - focused target: pending exact survey
-- last closed suite: `#42 libs/foreach/test`
+- last closed suite: `#43 libs/format/test`
 - failure phase: intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: pending first causal failure
 - implementation area: pending first causal failure
 - performance risk: the completed Flyweight checkpoint passes the immutable frozen compiler-and-51-header epoch at -1.46% instructions, +1.39% RSS, and +2.18% footprint. The gate validates exact epoch source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before running; no parent or live project header was measured
-- next action: run the exact four-job forced `libs/format/test` graph and classify its first causal failure, if any
+- next action: run the exact four-job forced `libs/function/test` graph and classify its first causal failure, if any
 
 ## Fix Ledger
 
@@ -437,6 +438,13 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Container `devector_test` initializer-list `regular_elem` lifetime | LowIR constructed nontrivial `std::initializer_list<T>` backing-array elements in a hidden slot but never registered their destructors. All 41 `regular_elem` initializer-list elements in `test_insert_init_list` therefore remained live and made nine later checkpoints fail. Each successfully constructed backing element now enters the existing full-expression cleanup stack immediately, providing reverse destruction and constructor-unwind safety. When the list initializes a named automatic `initializer_list` object, those exact cleanup actions transfer to the enclosing lexical scope so the backing array remains alive with the list. No semantic text, parser, cache, type spelling, or Boost-specific path is added. | `pa25/tests/general/200-initializer-list-backing-array-lifetime.t`, at PA25's initializer-list and EH cleanup owner | The exact runtime count was zero before `test_insert_init_list` and 41 afterward, exactly matching the 41 nontrivial list elements in that function. The reducer checks three call-argument elements are destroyed at the full-expression boundary, two named-list elements stay alive until lexical scope exit, and successful earlier elements are represented on later-constructor unwind paths. Clang 22 and the fixed compiler both return zero. | PA25 direct report passes `74/74`; all configured strict suites pass; PA25 placement/hygiene is clean; all 23 text-reparse categories and all 14 audit tests pass. Normal, all ten individual cache-disabled, and all-disabled reducer LowIR are byte-identical with SHA-256 `fad25179310d67817521e50e03eaadb60d8e02eb6a503af55e8024b2ddfe31da`. The PA9-excluded broad report passes `3940/3940`, including PA37 `7/7`. Focused `devector_test` passes, and the exact final Container graph updates all 325 requested targets and exits successfully. | instructions +0.02%; max RSS -3.63%; peak footprint -2.57%; pass against immutable compiler-and-51-header baseline `9764b3835`; candidate-only report `/tmp/cppgm-boost-frontier-v2-container-default-owner-initlist-candidate.json`; no parent or live-header command was run | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-19`: Closed Format without a compiler change and advanced the
+  ordered cursor to suite 44, `libs/function/test`. The exact four-job forced
+  graph reports ICU unavailable for this lane, finds 1360 targets, updates all
+  43 requested targets, records nine passing compile/link/runtime actions, and
+  exits successfully in 46s. No regression, broad repository rerun, or
+  performance measurement was required.
 
 - `2026-07-19`: Closed Foreach without a compiler change and advanced the
   ordered cursor to suite 43, `libs/format/test`. The exact four-job forced
@@ -2003,5 +2011,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=4 \
   /usr/local/bin/timeout 1800 \
-  ./run-cppgm-b2.sh -a libs/format/test
+  ./run-cppgm-b2.sh -a libs/function/test
 ```
