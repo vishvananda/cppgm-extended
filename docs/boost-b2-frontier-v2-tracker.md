@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `45 / 147`
-- current cursor: `#46 libs/functional/test`
-- active compiler frontier: pending exact Functional survey
+- completed suites: `46 / 147`
+- current cursor: `#47 libs/fusion/test`
+- active compiler frontier: pending exact Fusion survey
 
 ## Baseline Gates
 
@@ -243,22 +243,23 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 43 | `libs/format/test` | pass | `(no compiler change)` | The exact four-job forced graph reports ICU unavailable for this lane, finds 1360 targets, updates all 43 requested targets, records nine passing compile/link/runtime actions, and exits successfully in 46s; log `/tmp/boost-frontier-v2-suite-043-initial-forced.log`. | The current compiler passes all ordinary, Windows-header, enum, exception, and wide-string Format tests available in the C++11 configuration. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 | 44 | `libs/function/test` | pass | `(implicit-static class allocation function fix)` | The initial exact four-job forced graph finds 1350 targets, requests 214 updates, fails `stateless_test` compilation, and skips its three downstream targets; log `/tmp/boost-frontier-v2-suite-044-initial-forced.log`. The exact final forced graph finds the same 1350 targets, updates all 214 requested targets, passes every positive compile/link/runtime action, handles both deliberate compile failures as failed-as-expected, and exits successfully; log `/tmp/boost-frontier-v2-suite-044-final-forced.log`. | Class-scope `operator new`, `operator new[]`, `operator delete`, and `operator delete[]` are now classified as static even when the redundant `static` specifier is omitted. PA16 passes `172/172`; configured strict suites, placement/hygiene, all 23 zero-reparse categories, all 22 audit/perf unit tests, twelve byte-identical cache modes, Clang/GCC controls, GCC 15 warning checks, and the PA9-excluded `3997/3997` report pass. Candidate-only frozen performance passes at -1.26% instructions, +1.71% RSS, and +2.23% footprint; no parent or live header was measured. |
 | 45 | `libs/function_types/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 2580 targets, updates all 89 requested targets, records 43 passing test actions, handles all three negative decomposition tests as failed-as-expected, and exits successfully; log `/tmp/boost-frontier-v2-suite-045-initial-forced.log`. | The current compiler passes the full property, decomposition, synthesis, calling-convention, preprocessing-mode, and example graph. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
+| 46 | `libs/functional/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 174 targets, updates all four requested targets, compiles, links, and runs `function_test`, and exits successfully; log `/tmp/boost-frontier-v2-suite-046-initial-forced.log`. | The current compiler passes the complete Functional graph. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#46 libs/functional/test`
+- suite: `#47 libs/fusion/test`
 - focused target: pending exact survey
-- last closed suite: `#45 libs/function_types/test`
+- last closed suite: `#46 libs/functional/test`
 - failure phase: intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: pending first causal failure
 - implementation area: pending first causal failure
 - performance risk: the completed Function checkpoint passes the immutable frozen compiler-and-51-header epoch at -1.26% instructions, +1.71% RSS, and +2.23% footprint. The gate validates exact epoch source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before running; no parent or live project header was measured
-- next action: run the exact four-job forced `libs/functional/test` graph and classify its first causal failure, if any
+- next action: run the exact four-job forced `libs/fusion/test` graph and classify its first causal failure, if any
 
 ## Fix Ledger
 
@@ -442,6 +443,13 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Container `devector_test` initializer-list `regular_elem` lifetime | LowIR constructed nontrivial `std::initializer_list<T>` backing-array elements in a hidden slot but never registered their destructors. All 41 `regular_elem` initializer-list elements in `test_insert_init_list` therefore remained live and made nine later checkpoints fail. Each successfully constructed backing element now enters the existing full-expression cleanup stack immediately, providing reverse destruction and constructor-unwind safety. When the list initializes a named automatic `initializer_list` object, those exact cleanup actions transfer to the enclosing lexical scope so the backing array remains alive with the list. No semantic text, parser, cache, type spelling, or Boost-specific path is added. | `pa25/tests/general/200-initializer-list-backing-array-lifetime.t`, at PA25's initializer-list and EH cleanup owner | The exact runtime count was zero before `test_insert_init_list` and 41 afterward, exactly matching the 41 nontrivial list elements in that function. The reducer checks three call-argument elements are destroyed at the full-expression boundary, two named-list elements stay alive until lexical scope exit, and successful earlier elements are represented on later-constructor unwind paths. Clang 22 and the fixed compiler both return zero. | PA25 direct report passes `74/74`; all configured strict suites pass; PA25 placement/hygiene is clean; all 23 text-reparse categories and all 14 audit tests pass. Normal, all ten individual cache-disabled, and all-disabled reducer LowIR are byte-identical with SHA-256 `fad25179310d67817521e50e03eaadb60d8e02eb6a503af55e8024b2ddfe31da`. The PA9-excluded broad report passes `3940/3940`, including PA37 `7/7`. Focused `devector_test` passes, and the exact final Container graph updates all 325 requested targets and exits successfully. | instructions +0.02%; max RSS -3.63%; peak footprint -2.57%; pass against immutable compiler-and-51-header baseline `9764b3835`; candidate-only report `/tmp/cppgm-boost-frontier-v2-container-default-owner-initlist-candidate.json`; no parent or live-header command was run | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-19`: Closed Functional without a compiler change and advanced the
+  ordered cursor to suite 47, `libs/fusion/test`. The exact four-job forced
+  graph finds 174 targets, updates all four requested targets, compiles, links,
+  and runs `function_test`, and exits successfully. No regression, broad
+  repository rerun, or performance measurement was required; the immutable
+  Function compiler-and-51-header checkpoint remains current.
 
 - `2026-07-19`: Closed Function Types without a compiler change and advanced
   the ordered cursor to suite 46, `libs/functional/test`. The exact four-job
