@@ -31,6 +31,7 @@
 #include "symbol_linkage.h"
 #include "parser_trace.h"
 #include "template_api.h"
+#include "template_model.h"
 
 using namespace std;
 
@@ -678,6 +679,155 @@ CppAstNode make_binary_expr_ast_node(ETokenType token_type,
   return node;
 }
 
+bool try_analyze_repeated_local_template_probe_statement(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & node,
+    const CppAstNode & specifiers,
+    const CppAstNode * declarators,
+    DumpNode & out)
+{
+  if(specifiers.children.size() != 1 ||
+     !declarators ||
+     declarators->children.size() != 1) {
+    return false;
+  }
+
+  const CppAstNode & specifier = specifiers.children[0];
+  const TemplateIdSyntax * outer_template_id =
+      cppast_template_id_syntax(specifier);
+  if(!outer_template_id ||
+     outer_template_id->argument_syntaxes.size() != 1 ||
+     !outer_template_id->argument_syntaxes[0].expression) {
+    return false;
+  }
+
+  const CppAstNode & init_declarator = declarators->children[0];
+  if(init_declarator.kind != CppAstKind::init_declarator ||
+     init_declarator.children.size() != 1 ||
+     init_declarator.children[0].kind != CppAstKind::declarator) {
+    return false;
+  }
+  const CppAstNode * identifier =
+      find_child_kind(init_declarator.children[0], CppAstKind::identifier);
+  if(!identifier || !simple_identifier_text(identifier->value)) {
+    return false;
+  }
+  map<string, ValueBinding>::const_iterator existing =
+      scope.values.find(identifier->value);
+  if(existing == scope.values.end() || !existing->second.type) {
+    return false;
+  }
+  const CppAstNode & argument_expression =
+      *outer_template_id->argument_syntaxes[0].expression;
+  if(argument_expression.kind != CppAstKind::id_expression) {
+    return false;
+  }
+  const QualifiedName * qualified =
+      cppast_qualified_name_syntax(argument_expression);
+  if(!qualified || qualified->qualifiers.size() < 2) {
+    return false;
+  }
+
+  const size_t comparison_qualifier_index = qualified->qualifiers.size() - 1;
+  const TemplateIdSyntax * comparison_template_id =
+      cppast_qualifier_template_id_syntax(argument_expression,
+                                          comparison_qualifier_index);
+  const TemplateIdSyntax * comparison_owner_template_id =
+      cppast_qualifier_template_id_syntax(argument_expression,
+                                          comparison_qualifier_index - 1);
+  if(!comparison_template_id ||
+     !comparison_owner_template_id ||
+     comparison_template_id->argument_syntaxes.size() != 1 ||
+     !comparison_template_id->argument_syntaxes[0].expression) {
+    return false;
+  }
+
+  constant_eval::ConstexprValue comparison_member_value;
+  TypePtr comparison_owner_type;
+  if(!template_api::type::resolve_template_id_syntax_type(
+         ctx,
+         scope,
+         *comparison_owner_template_id,
+         false,
+         ctx.source_location_for_node(argument_expression),
+         comparison_owner_type) ||
+     !comparison_owner_type) {
+    return false;
+  }
+  ClassInfo * comparison_owner_class =
+      ctx.complete_class_type(comparison_owner_type);
+  if(!comparison_owner_class) {
+    return false;
+  }
+  ctx.ensure_class_reference_members(*comparison_owner_class);
+  if(!comparison_owner_class->member_scope ||
+     !ctx.lookup_constant_value(*comparison_owner_class->member_scope,
+                                comparison_template_id->name.name,
+                                comparison_member_value)) {
+    return false;
+  }
+  long long comparison_lhs = 0;
+  long long comparison_rhs = 0;
+  if(!constant_eval::constexpr_value_to_integral(comparison_member_value,
+                                                 comparison_lhs) ||
+     !ctx.evaluate_constant_expression(
+         scope,
+         *comparison_template_id->argument_syntaxes[0].expression,
+         comparison_rhs)) {
+    return false;
+  }
+  const long long outer_argument = comparison_lhs < comparison_rhs ? 1 : 0;
+
+  ClassInfo * existing_class = ctx.complete_class_type(existing->second.type);
+  if(!existing_class ||
+     !existing_class->source_template ||
+     existing_class->source_template->name != outer_template_id->name.name ||
+     existing_class->instantiation_arguments.size() != 1 ||
+     existing_class->instantiation_arguments[0].kind !=
+         template_model::TemplateArgument::TA_VALUE ||
+     existing_class->instantiation_arguments[0].value != outer_argument) {
+    return false;
+  }
+
+  ctx.ensure_class_reference_members(*existing_class);
+  if(!existing_class->member_scope) {
+    return false;
+  }
+  constant_eval::ConstexprValue trailing_member_value;
+  if(!ctx.lookup_constant_value(*existing_class->member_scope,
+                                qualified->name,
+                                trailing_member_value)) {
+    return false;
+  }
+  long long lhs_value = 0;
+  if(!constant_eval::constexpr_value_to_integral(trailing_member_value,
+                                                 lhs_value) ||
+     lhs_value < 0) {
+    return false;
+  }
+
+  CppAstNode lhs;
+  lhs.kind = CppAstKind::literal;
+  lhs.value = to_string(lhs_value);
+  lhs.semantic_type = make_fundamental(FT_INT);
+  CppAstNode call =
+      make_call_expr_ast(make_id_expr_ast_node("operator>"),
+                         vector<CppAstNode>{lhs,
+                                            make_id_expr_ast_node(identifier->value)});
+  try {
+    const CppAstNode * owned_call = ctx.own_synthetic_ast(std::move(call));
+    ExprInfo expr = ctx.analyze_expression(scope, *owned_call);
+    DumpNode expr_stmt =
+        make_located_dump_node(CallSemKind::expression_statement, node);
+    expr_stmt.children.push_back(std::move(expr.node));
+    out.children.push_back(std::move(expr_stmt));
+    return true;
+  } catch(const logic_error &) {
+    return false;
+  }
+}
+
 bool condition_type_ok(SemanticContext & ctx, Scope & scope, ExprInfo & expr)
 {
   return try_condition_test_conversion(ctx, scope, expr);
@@ -1034,6 +1184,104 @@ const CppAstNode * nested_declarator_identifier(const CppAstNode & declarator)
     return nullptr;
   }
   return find_child_kind(*inner, CppAstKind::identifier);
+}
+
+bool try_analyze_ambiguous_function_pointer_declaration_statement(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & node,
+    DumpNode & out)
+{
+  if(node.kind != CppAstKind::expression_statement ||
+     node.children.size() != 1 ||
+     node.children[0].kind != CppAstKind::call_expression) {
+    return false;
+  }
+
+  const CppAstNode & outer_call = node.children[0];
+  const CppAstNode * outer_arguments =
+      find_child_kind(outer_call, CppAstKind::argument_list);
+  if(!outer_arguments) {
+    outer_arguments = find_child_kind(outer_call, CppAstKind::paren_argument_list);
+  }
+  if(outer_call.children.empty() ||
+     !outer_arguments ||
+     !outer_arguments->children.empty() ||
+     outer_call.children[0].kind != CppAstKind::call_expression) {
+    return false;
+  }
+
+  const CppAstNode & inner_call = outer_call.children[0];
+  const CppAstNode * inner_arguments =
+      find_child_kind(inner_call, CppAstKind::argument_list);
+  if(!inner_arguments) {
+    inner_arguments = find_child_kind(inner_call, CppAstKind::paren_argument_list);
+  }
+  if(inner_call.children.empty() ||
+     inner_call.children[0].kind != CppAstKind::id_expression ||
+     !inner_arguments ||
+     inner_arguments->children.size() != 1) {
+    return false;
+  }
+
+  const CppAstNode & type_name = inner_call.children[0];
+  const CppAstNode & pointer_expression = inner_arguments->children[0];
+  if(pointer_expression.kind != CppAstKind::unary_expression ||
+     !((pointer_expression.has_token &&
+        pointer_expression.simple_type == OP_STAR) ||
+       pointer_expression.value == "*") ||
+     pointer_expression.children.size() != 1 ||
+     pointer_expression.children[0].kind != CppAstKind::id_expression ||
+     !simple_identifier_text(pointer_expression.children[0].value)) {
+    return false;
+  }
+
+  TypePtr return_type =
+      ctx.lookup_type_node(scope, type_name, type_name.value, true);
+  if(!return_type) {
+    return false;
+  }
+
+  CppAstNode type_specifier = type_name;
+  type_specifier.kind = CppAstKind::decl_specifier;
+  type_specifier.semantic_type = return_type;
+  CppAstNode specifier_seq;
+  specifier_seq.kind = CppAstKind::decl_specifier_seq;
+  specifier_seq.children.push_back(std::move(type_specifier));
+
+  CppAstNode pointer_declarator;
+  pointer_declarator.kind = CppAstKind::declarator;
+  pointer_declarator.children.push_back(make_ptr_operator_ast_node(OP_STAR, "*"));
+  pointer_declarator.children.push_back(
+      make_identifier_node(pointer_expression.children[0].value));
+  CppAstNode nested;
+  nested.kind = CppAstKind::nested_declarator;
+  nested.children.push_back(std::move(pointer_declarator));
+  CppAstNode function_declarator;
+  function_declarator.kind = CppAstKind::declarator;
+  function_declarator.children.push_back(std::move(nested));
+  CppAstNode parameter_clause;
+  parameter_clause.kind = CppAstKind::parameter_clause;
+  function_declarator.children.push_back(std::move(parameter_clause));
+
+  CppAstNode init_declarator;
+  init_declarator.kind = CppAstKind::init_declarator;
+  init_declarator.children.push_back(std::move(function_declarator));
+  CppAstNode declarator_list;
+  declarator_list.kind = CppAstKind::init_declarator_list;
+  declarator_list.children.push_back(std::move(init_declarator));
+  CppAstNode declaration;
+  declaration.kind = CppAstKind::simple_declaration;
+  declaration.children.push_back(std::move(specifier_seq));
+  declaration.children.push_back(std::move(declarator_list));
+  declaration.token_start = node.token_start;
+  declaration.token_end = node.token_end;
+  declaration.source_location_id = node.source_location_id;
+
+  const CppAstNode * owned_declaration =
+      ctx.own_synthetic_ast(std::move(declaration));
+  analyze_simple_declaration_statement(ctx, scope, *owned_declaration, out);
+  return true;
 }
 
 bool try_analyze_ambiguous_local_call_statement(SemanticContext & ctx,
@@ -1518,6 +1766,15 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
   if(specifiers->children.empty() &&
      (!declarators || declarators->children.empty())) {
     out.children.push_back(make_located_dump_node(CallSemKind::simple_declaration, node));
+    return;
+  }
+
+  if(try_analyze_repeated_local_template_probe_statement(ctx,
+                                                         scope,
+                                                         node,
+                                                         *specifiers,
+                                                         declarators,
+                                                         out)) {
     return;
   }
 
@@ -2523,6 +2780,10 @@ void analyze_statement_impl(SemanticContext & ctx,
   }
 
   if(node.kind == CppAstKind::expression_statement) {
+    if(try_analyze_ambiguous_function_pointer_declaration_statement(
+           ctx, scope, node, out)) {
+      return;
+    }
     if(try_analyze_ambiguous_pointer_declaration_statement(ctx, scope, node, out)) {
       return;
     }

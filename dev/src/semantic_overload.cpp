@@ -8655,6 +8655,7 @@ void filter_function_templates_by_argument_count(vector<FunctionTemplateDecl *> 
 }
 
 bool namespace_function_template_candidate_visible_from_node(
+    SemanticContext & ctx,
     const FunctionTemplateDecl * decl,
     const CppAstNode * use_node,
     const Scope * lookup_scope)
@@ -8662,6 +8663,13 @@ bool namespace_function_template_candidate_visible_from_node(
   if(!decl || !use_node ||
      (decl->declaring_scope && decl->declaring_scope->class_info) ||
      use_node->token_end <= use_node->token_start) {
+    return true;
+  }
+
+  const CppAstNode * declaration_node =
+      decl->declaration_node ? decl->declaration_node : decl->definition_node;
+  if(!declaration_node ||
+     declaration_node->token_end <= declaration_node->token_start) {
     return true;
   }
 
@@ -8681,18 +8689,54 @@ bool namespace_function_template_candidate_visible_from_node(
        use_node->token_start < source_node->token_start) {
       return true;
     }
+    if(current->function && !current->function->source_template) {
+      source_node = current->function->definition_node ?
+          current->function->definition_node :
+          current->function->declaration_node;
+      if(source_node &&
+         source_node->token_end > source_node->token_start &&
+         use_node->token_start < source_node->token_start) {
+        // Retained macro replacement tokens can predate the function whose
+        // body contains their expansion. Namespace templates declared before
+        // that definition are visible throughout the body.
+        return declaration_node->token_start <= source_node->token_start;
+      }
+    }
   }
 
-  const CppAstNode * declaration_node =
-      decl->declaration_node ? decl->declaration_node : decl->definition_node;
-  if(!declaration_node ||
-     declaration_node->token_end <= declaration_node->token_start) {
+  if(declaration_node->token_start <= use_node->token_start) {
     return true;
   }
-  return declaration_node->token_start <= use_node->token_start;
+
+  const ParsedSourceLocation declaration_location =
+      parse_source_location(ctx.source_location_for_node(*declaration_node));
+  const ParsedSourceLocation use_location =
+      parse_source_location(ctx.source_location_for_node(*use_node));
+  if(declaration_location.valid &&
+     use_location.valid &&
+     declaration_location.file == use_location.file) {
+    if(declaration_location.line < use_location.line) {
+      return true;
+    }
+    return declaration_location.line == use_location.line &&
+           declaration_location.column < use_location.column;
+  }
+  if(parser_trace::enabled("template.resolve")) {
+    std::ostringstream trace;
+    trace << "function-template-visibility-reject name=" << decl->name
+          << " declaration-token=" << declaration_node->token_start
+          << " use-token=" << use_node->token_start
+          << " declaration-location="
+          << ctx.source_location_for_node(*declaration_node)
+          << " use-location=" << ctx.source_location_for_node(*use_node)
+          << " current-use-location=" << parser_trace::current_use_location();
+    parser_trace::note("template.resolve", std::string(), trace.str());
+  }
+  return false;
 }
 
 void filter_function_template_candidates_visible_from_node(
+    SemanticContext & ctx,
     vector<FunctionTemplateDecl *> & templates,
     const CppAstNode * use_node,
     const Scope * lookup_scope)
@@ -8703,7 +8747,8 @@ void filter_function_template_candidates_visible_from_node(
   vector<FunctionTemplateDecl *> filtered;
   filtered.reserve(templates.size());
   for(size_t i = 0; i < templates.size(); ++i) {
-    if(namespace_function_template_candidate_visible_from_node(templates[i],
+    if(namespace_function_template_candidate_visible_from_node(ctx,
+                                                               templates[i],
                                                                use_node,
                                                                lookup_scope)) {
       filtered.push_back(templates[i]);
@@ -9646,7 +9691,8 @@ void append_function_template_call_candidates_impl(
     collect_function_templates(ctx, lookup_scope, template_name, templates);
   }
   if(lookup_scope.name != "<adl>") {
-    filter_function_template_candidates_visible_from_node(templates,
+    filter_function_template_candidates_visible_from_node(ctx,
+                                                          templates,
                                                           name_node,
                                                           &lookup_scope);
   }
