@@ -3116,7 +3116,7 @@ ConversionRank implicit_object_conversion_rank(SemanticContext & ctx,
       return CR_EXACT;
     }
     if(same_type_with_compatible_top_cv(target_base->inner, converted_base->inner)) {
-      return CR_CONVERSION;
+      return CR_EXACT;
     }
   }
   return conversion_rank(ctx, target, arg);

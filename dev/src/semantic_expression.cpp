@@ -5489,7 +5489,7 @@ bool try_analyze_array_braced_init_list_expression(SemanticContext & ctx,
                                                    ExprInfo & out)
 {
   TypePtr expr_base = strip_top_level_cv(remove_reference_type(expr_type));
-  if(!expr_base || expr_base->kind != Type::TK_ARRAY || !expr_base->has_bound ||
+  if(!expr_base || expr_base->kind != Type::TK_ARRAY ||
      node.kind != CppAstKind::braced_init_list ||
      semantic_lifetime::has_designated_braced_init(node)) {
     return false;
@@ -5498,9 +5498,11 @@ bool try_analyze_array_braced_init_list_expression(SemanticContext & ctx,
   vector<unique_ptr<CppAstNode> > expanded_storage;
   vector<const CppAstNode *> elements =
       expand_braced_init_list_elements(ctx, scope, node, expanded_storage);
-  if(elements.size() > expr_base->bound) {
+  if((expr_base->has_bound && elements.size() > expr_base->bound) ||
+     (!expr_base->has_bound && elements.empty())) {
     return false;
   }
+  const size_t bound = expr_base->has_bound ? expr_base->bound : elements.size();
 
   TypePtr direct_expr_base = strip_top_level_cv(expr_type);
   const bool reference_target =
@@ -5509,14 +5511,16 @@ bool try_analyze_array_braced_init_list_expression(SemanticContext & ctx,
        direct_expr_base->kind == Type::TK_RVALUE_REFERENCE);
 
   ExprInfo result;
-  result.type = expr_type;
+  result.type = expr_base->has_bound ?
+                    expr_type :
+                    make_array(expr_base->inner, true, bound);
   result.category = reference_target ? VC_XVALUE : VC_LVALUE;
   result.node = make_dump_node(CallSemKind::braced_init_list);
   set_expr_metadata(result.node, result.type, result.category);
 
   try
   {
-    for(size_t i = 0; i < expr_base->bound; ++i) {
+    for(size_t i = 0; i < bound; ++i) {
       ExprInfo element;
       if(i < elements.size()) {
         element = ctx.analyze_expression_for_target(scope, *elements[i], expr_base->inner);

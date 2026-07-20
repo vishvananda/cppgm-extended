@@ -3226,6 +3226,7 @@ public:
             stored.initializer = initializer;
             stored.parameters = template_parameters;
             stored.has_storage_definition = has_storage_definition;
+            invalidate_out_of_class_definition_caches(*owner_template);
             if(parser_trace::enabled("template.resolve")) {
               std::ostringstream trace;
               trace << "record-out-of-class-static-member template=" << owner_template->name
@@ -3725,19 +3726,25 @@ public:
               !function_template_name_syntax->qualifiers.empty())) ?
                 lookup_function_templates(scope, *function_template_name_syntax) :
                 lookup_function_templates(scope, name);
-        vector<ExprInfo> deduction_args = build_function_template_deduction_args();
         for(size_t i = 0; i < templates.size(); ++i) {
-          vector<TemplateArgument> arguments;
-          map<string, size_t> pack_sizes;
-          if(!deduce_function_template_arguments(
-                 *templates[i], deduction_args, arguments, &scope, &pack_sizes)) {
+          template_api::TemplateFunctionDeductionRequest deduction_request;
+          deduction_request.decl = templates[i];
+          deduction_request.target_type = type;
+          deduction_request.use_scope = &scope;
+          deduction_request.resolution_scope = &scope;
+          template_api::TemplateFunctionDeductionResult deduction_result;
+          if(!template_api::deduce_function_template(ctx,
+                                                     deduction_request,
+                                                     deduction_result)) {
             continue;
           }
           record_explicit_function_specialization_binding(
               acquire_function_template(*templates[i],
-                                        arguments,
+                                        deduction_result.arguments,
                                         nullptr,
-                                        &pack_sizes,
+                                        deduction_result.pack_sizes.empty() ?
+                                            nullptr :
+                                            &deduction_result.pack_sizes,
                                         true,
                                         true,
                                         body,

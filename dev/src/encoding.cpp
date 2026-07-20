@@ -210,7 +210,7 @@ void append_utf8_bytes(char32_t value, string& result) {
     result.push_back(static_cast<char>(0xE0 | (value >> 12)));
     result.push_back(static_cast<char>(0x80 | ((value >> 6) & 0x3F)));
     result.push_back(static_cast<char>(0x80 | (value & 0x3F)));
-  } else if (value < 0x0010FFFF) {
+  } else if (value <= 0x0010FFFF) {
     result.push_back(static_cast<char>(0xF0 | (value >> 18)));
     result.push_back(static_cast<char>(0x80 | ((value >> 12) & 0x3F)));
     result.push_back(static_cast<char>(0x80 | ((value >> 6) & 0x3F)));

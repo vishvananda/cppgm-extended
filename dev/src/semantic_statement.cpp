@@ -617,6 +617,27 @@ ExprInfo analyze_range_helper_expression(SemanticContext & ctx,
   return ctx.analyze_expression(scope, *owned_expr);
 }
 
+ExprInfo convert_range_element_for_loop_variable(SemanticContext & ctx,
+                                                 Scope & scope,
+                                                 const TypePtr & loop_type,
+                                                 const ExprInfo & element)
+{
+  ExprInfo converted;
+  ConversionRank rank = CR_BAD;
+  if(!ctx.try_argument_conversion(scope,
+                                  loop_type,
+                                  element,
+                                  converted,
+                                  rank)) {
+    ostringstream err;
+    err << "invalid range-for element initialization";
+    err << " [target " << describe_type(loop_type) << "]";
+    err << " [source " << describe_type(element.type) << "]";
+    throw logic_error(err.str());
+  }
+  return converted;
+}
+
 CppAstNode make_member_expr_ast(const CppAstNode & base,
                                 const string & member_name)
 {
@@ -2375,6 +2396,10 @@ void analyze_range_for_statement(SemanticContext & ctx,
     if(loop_name.empty()) {
       throw logic_error("unsupported range declaration type");
     }
+    element_expr = convert_range_element_for_loop_variable(ctx,
+                                                           body_scope,
+                                                           loop_type,
+                                                           element_expr);
     semantic_scope_mutation::bind_value(
         body_scope, loop_name, ValueBinding(ValueBinding::VK_VARIABLE, loop_name, loop_type));
 
@@ -2504,10 +2529,18 @@ void analyze_range_for_statement(SemanticContext & ctx,
     range_base_expr.node = range_base;
     element_base = ctx.make_field_expr(range_base_expr, range_initlist_info->fields[0]).node;
   }
-  loop_var.children.push_back(
+  ExprInfo element_expr;
+  element_expr.type = element_type;
+  element_expr.category = VC_LVALUE;
+  element_expr.node =
       make_subscript_expr_node(element_base,
                                make_id_expr_node(index_name, make_fundamental(FT_INT)),
-                               element_type));
+                               element_type);
+  element_expr = convert_range_element_for_loop_variable(ctx,
+                                                         body_scope,
+                                                         loop_type,
+                                                         element_expr);
+  loop_var.children.push_back(std::move(element_expr.node));
   loop_var_decl.children.push_back(std::move(loop_var));
   body_node.children.push_back(std::move(loop_var_decl));
   analyze_statement_impl(ctx,

@@ -669,14 +669,10 @@ string runtime_bridge_symbol_for_function_name_and_type(const string & name,
     return "";
   }
   const string put_suffix = "::put";
-  const string do_put_suffix = "::do_put";
   const bool matches_put =
       name.size() >= put_suffix.size() &&
       name.compare(name.size() - put_suffix.size(), put_suffix.size(), put_suffix) == 0;
-  const bool matches_do_put =
-      name.size() >= do_put_suffix.size() &&
-      name.compare(name.size() - do_put_suffix.size(), do_put_suffix.size(), do_put_suffix) == 0;
-  if(!matches_put && !matches_do_put) {
+  if(!matches_put) {
     return "";
   }
   return runtime_bridge_symbol_for_function_type(function_type);
@@ -699,8 +695,7 @@ string runtime_bridge_symbol_for_bound_function(const string & qualified_name,
   const size_t member_sep = qualified_name.rfind("::");
   const string member_name =
       member_sep == string::npos ? qualified_name : qualified_name.substr(member_sep);
-  if(member_name != "::put" && member_name != "::do_put" &&
-     qualified_name != "put" && qualified_name != "do_put") {
+  if(member_name != "::put" && qualified_name != "put") {
     return "";
   }
 
