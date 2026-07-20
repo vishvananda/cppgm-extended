@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `53 / 147`
-- current cursor: `#54 libs/heap/test`
-- active compiler frontier: pending exact Heap survey
+- completed suites: `54 / 147`
+- current cursor: `#55 libs/iterator/test`
+- active compiler frontier: pending exact Iterator survey
 
 ## Baseline Gates
 
@@ -252,22 +252,23 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 51 | `libs/graph_parallel/test` | blocked-external | `(no compiler change)` | The exact four-job forced intake stops during B2 target selection before invoking the compiler: neither `/boost/graph_parallel//boost_graph_parallel` nor `/boost/mpi//boost_mpi` has a build alternative, and the example graph cannot resolve `/python//python`; log `/tmp/boost-frontier-v2-suite-051-initial-forced.log`. | This checkout has no configured MPI toolchain (`mpic++` and `mpirun` are absent), and the suite Jamfiles unconditionally require the Python library target for both tests and examples. This matches the historical non-compiler setup classification. No compiler result can be credited, and no compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 | 52 | `libs/hana/test` | pass | `(no compiler change)` | The exact four-job forced graph checks C++14 constexpr support, finds the single bookkeeping target, and exits successfully; log `/tmp/boost-frontier-v2-suite-052-initial-forced.log`. | Configuration-only pass in the C++11 lane because both Hana C++14 constexpr configurations are unavailable. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 | 53 | `libs/hash2/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 2144 targets, updates all 506 requested targets, records 130 passing test actions, handles the deliberate `append_tag_invoke_4` compile failure as failed-as-expected, and exits successfully; log `/tmp/boost-frontier-v2-suite-053-initial-forced.log`. | The current compiler passes the complete Hash2 trait, append, digest, keyed-hash, constexpr, legacy, quality, concept, buffer, and seeded-hash graph. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
+| 54 | `libs/heap/test` | pass | `(no compiler change)` | The exact four-job forced graph completes its compiler and ICU configuration checks, finds 3066 targets, updates all 69 requested targets, passes all eight compile/link/runtime test actions, and exits successfully; log `/tmp/boost-frontier-v2-suite-054-initial-forced.log`. | The current compiler passes the priority queue, mutable, skew, move-only, pairing, Fibonacci, binomial, and d-ary heap graph with no failure, skip, or error marker. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#54 libs/heap/test`
+- suite: `#55 libs/iterator/test`
 - focused target: pending exact survey
-- last closed suite: `#53 libs/hash2/test`
+- last closed suite: `#54 libs/heap/test`
 - failure phase: intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: pending first causal failure
 - implementation area: pending first causal failure
 - performance risk: the completed Fusion checkpoint passes the immutable frozen compiler-and-51-header epoch at -1.49% instructions, +0.84% RSS, and +2.23% footprint. The gate validates exact epoch source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before running; no parent or live project header was measured
-- next action: run the exact four-job forced `libs/heap/test` graph and classify its first causal failure, if any
+- next action: run the exact four-job forced `libs/iterator/test` graph and classify its first causal failure, if any
 
 ## Fix Ledger
 
@@ -454,6 +455,13 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Fusion `is_sequence` and `is_view` qualified result-SFINAE | A substituted function-template result already carried a concrete semantic type, but the dependency fallback still scanned its display text and treated an ordinary `incomplete` identifier as dependent merely because a surrounding namespace scope contained template names. That retained the invalid `ok_tag<sizeof(incomplete)>` result instead of dropping the candidate by SFINAE. Dependency classification now suppresses only the textual unresolved-identifier fallback when the relevant type-id or expression AST node already has a concrete nondependent semantic type; structured placeholder, bound-name, pack, and dependent-type checks remain active. No text is parsed, no candidate retry or cache is added, and dependent nodes retain the established path. | `pa22/tests/general/500-qualified-dependent-result-sizeof-sfinae.t`, beside the existing unqualified `500-dependent-result-sizeof-sfinae-base.t` control at PA22's integrated result-SFINAE owner | The reduced qualified `detail::check_complete<T>(0)` probe retained `ok_tag<sizeof(incomplete)>` before the fix instead of selecting the ellipsis fallback. The exact Boost traits use the same incomplete-type probe in `is_sequence` and `is_view`; both final focused targets and the uninterrupted full graph pass. Clang 22 and GCC 15 accept the reducer warning-clean. | The qualified reducer and existing unqualified control pass. PA22, strict, placement, reparse, audit/perf, host-warning, PA9-excluded broad, and exact Fusion gates pass. Normal, all ten individual cache-disabled, and all-disabled reducer LowIR are byte-identical with SHA-256 `41be34202d3c92843e6c4a85111139a9ae83cfa84c9e4a1bd1afe16bd2a78565`. An experimental lightweight ellipsis shortcut was rejected before acceptance because `tuple_traits__maybe_variadic` exposed eleven false constructibility results; the final typed dependency fix leaves both variadic and nonvariadic tuple-trait paths passing. | measured with the complete Fusion closure; candidate-only frozen report `/tmp/cppgm-boost-frontier-v2-fusion-candidate.json`; no parent or live-header command was run | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-20`: Closed Heap without a compiler change and advanced the ordered
+  cursor to suite 55, `libs/iterator/test`. The exact four-job forced graph
+  finds 3066 targets, updates all 69 requested targets, passes all eight
+  compile/link/runtime actions, and exits successfully with no failure, skip,
+  or error marker. No regression, broad repository rerun, or performance
+  measurement was required.
 
 - `2026-07-20`: Closed Hash2 without a compiler change and advanced the
   ordered cursor to suite 54, `libs/heap/test`. The exact four-job forced graph
