@@ -10273,7 +10273,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       cached_validation_scope = &validation_scope;
     }
     if(found->second->source_template &&
-       found->second->symbol.linkage == symbol_linkage::SL_WEAK) {
+       found->second->symbol.linkage == symbol_linkage::SL_WEAK &&
+       (include_body ||
+        explicit_specialization ||
+        !found->second->symbol.object_symbol.empty())) {
       ctx.upgrade_function_symbol_linkage(found->second, found->second->symbol.linkage);
     }
     const bool source_template_body_bypasses_owner_suppression =
@@ -10833,9 +10836,15 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   }
   const bool dependent_template_arguments =
       template_arguments_are_dependent_for_instantiation(ctx, arguments);
+  const bool concrete_instantiation_owner =
+      instantiation_owner && !instantiation_owner->dependent_instantiation;
+  // A member-template instantiation can retain the primary class scope as its
+  // lexical parent while its active owner is already a concrete specialization.
+  // Those primary-scope placeholders must not suppress final SFINAE validation.
   const bool non_dependent_instantiation =
       !dependent_template_arguments &&
-      !instantiation_scope_had_template_placeholders;
+      (!instantiation_scope_had_template_placeholders ||
+       concrete_instantiation_owner);
   std::vector<TypePtr> signature_param_types;
   signature_param_types.reserve(params.size());
   for(std::size_t i = 0; i < params.size(); ++i) {
@@ -11392,6 +11401,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     request.semantic_flags.is_deleted = source_decl->is_deleted;
     attach_function_template_registration_identity(
         request, *source_decl, arguments, key, prefer_overload_suffix);
+    request.template_identity.defer_weak_object_symbol = !include_body;
     request.is_static_member =
         source_decl->is_static_member &&
         !source_decl->is_constructor &&
@@ -11421,6 +11431,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     request.semantic_flags.is_deleted = source_decl->is_deleted;
     attach_function_template_registration_identity(
         request, *source_decl, arguments, key, prefer_overload_suffix);
+    request.template_identity.defer_weak_object_symbol = !include_body;
     ctx.register_function_entity(request);
     const std::vector<FunctionBinding *> * slot_found =
         semantic_lookup::find_direct_function_set(*source_decl->declaring_scope, name);
@@ -11514,7 +11525,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         function_template_definition_should_suppress_declaration_abi_tags(ctx, *source_decl);
   }
   if(binding->source_template &&
-     binding->symbol.linkage == symbol_linkage::SL_WEAK) {
+     binding->symbol.linkage == symbol_linkage::SL_WEAK &&
+     (include_body ||
+      explicit_specialization ||
+      !binding->symbol.object_symbol.empty())) {
     ctx.upgrade_function_symbol_linkage(binding, binding->symbol.linkage);
   }
   binding->declaration_scope = &inst_scope;

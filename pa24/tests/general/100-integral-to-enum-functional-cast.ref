@@ -4,6 +4,5 @@ function @f(%n : i64) -> i64 [binding=strong, object=_Z1fm] {
   block ^entry:
     store i64 %n, $n
     %t1 = load i64 $n
-    %t2 = copy i64 %t1
-    return i64 %t2
+    return i64 %t1
 }

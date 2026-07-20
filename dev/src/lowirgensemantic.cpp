@@ -1871,6 +1871,19 @@ bool is_named_enum_scalar_type(const TypePtr & type)
          base->named_key.compare(0, 5, "enum ") == 0;
 }
 
+bool is_lowir_unsigned_integral_scalar_type_impl(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  if(is_named_enum_scalar_type(base)) {
+    base = strip_top_level_cv(base->named_enum_underlying_type);
+  }
+  return base && base->kind == Type::TK_FUNDAMENTAL &&
+         is_unsigned_integral_type(base);
+}
+
 bool is_nullptr_scalar_type(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(remove_reference_type(type));
@@ -2152,8 +2165,7 @@ string lowir_memory_type_for(const TypePtr & type)
     return extended_float_type;
   }
   const size_t width = type_size(type);
-  const bool is_unsigned =
-      base->kind == Type::TK_FUNDAMENTAL && is_unsigned_integral_type(base);
+  const bool is_unsigned = is_lowir_unsigned_integral_scalar_type_impl(base);
   if(width <= 1) {
     return is_unsigned ? "u8" : "i8";
   }
@@ -2945,17 +2957,19 @@ string lowir_type_for(const TypePtr & type)
     }
     if(is_named_enum_scalar_type(base)) {
       const size_t width = type_size(type);
+      const bool is_unsigned =
+          is_lowir_unsigned_integral_scalar_type_impl(base);
       if(width <= 1) {
-        return "i8";
+        return is_unsigned ? "u8" : "i8";
       }
       if(width == 2) {
-        return "i16";
+        return is_unsigned ? "u16" : "i16";
       }
       if(width == 4) {
-        return "i32";
+        return is_unsigned ? "u32" : "i32";
       }
       if(width == 16) {
-        return "i128";
+        return is_unsigned ? "u128" : "i128";
       }
       return "i64";
     }
@@ -2990,8 +3004,7 @@ string lowir_type_for(const TypePtr & type)
     }
   }
   const size_t width = type_size(type);
-  const bool is_unsigned =
-      base->kind == Type::TK_FUNDAMENTAL && is_unsigned_integral_type(base);
+  const bool is_unsigned = is_lowir_unsigned_integral_scalar_type_impl(base);
   if(width <= 1) {
     return is_unsigned ? "u8" : "i8";
   }
@@ -8786,7 +8799,7 @@ private:
 
   bool is_lowir_unsigned_integral_scalar_type(const TypePtr & type) const
   {
-    return type && !is_named_enum_scalar_type(type) && is_unsigned_integral_type(type);
+    return is_lowir_unsigned_integral_scalar_type_impl(type);
   }
 
   static bool is_explicit_lowir_integer_type_text(const string & type)
@@ -8814,7 +8827,7 @@ private:
     const string source_lowir = lowir_type_for(source_type);
     const string target_lowir = lowir_type_for(target_type);
     const bool source_unsigned =
-        !is_named_enum_scalar_type(source_type) && is_unsigned_integral_type(source_type);
+        is_lowir_unsigned_integral_scalar_type(source_type);
 
     if(source_lowir == "i32" && target_lowir == "f32") {
       return source_unsigned ? "__floatunsisf" : "__floatsisf";
@@ -8837,7 +8850,7 @@ private:
     const string source_lowir = lowir_type_for(source_type);
     const string target_lowir = lowir_type_for(target_type);
     const bool target_unsigned =
-        !is_named_enum_scalar_type(target_type) && is_unsigned_integral_type(target_type);
+        is_lowir_unsigned_integral_scalar_type(target_type);
 
     if(source_lowir == "f32" && target_lowir == "i32") {
       return target_unsigned ? "__fixunssfsi" : "__fixsfsi";

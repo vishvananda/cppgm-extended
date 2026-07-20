@@ -18,6 +18,7 @@ struct FunctionTemplateRegistrationIdentity
   bool arguments_present = false;
   std::string key;
   bool prefer_overload_suffix = false;
+  bool defer_weak_object_symbol = false;
 
   bool has_decl() const { return decl != nullptr; }
   bool has_arguments() const { return arguments_present || arguments != nullptr; }

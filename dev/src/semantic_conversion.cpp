@@ -2848,7 +2848,7 @@ bool try_argument_conversion(SemanticContext & ctx,
                 result.arguments,
                 &template_use_scope,
                 result.pack_sizes.empty() ? nullptr : &result.pack_sizes,
-                options.instantiate_user_defined_bodies);
+                false);
           }
           catch(const TemplateSubstitutionFailure &)
           {
@@ -2962,6 +2962,8 @@ bool try_argument_conversion(SemanticContext & ctx,
   }
 
   const UserDefinedCandidate & selected = candidates[best];
+  FunctionBinding * selected_conversion_function =
+      selected.conversion_function;
   out = selected.expr;
   if(selected.kind == UserDefinedCandidate::CONSTRUCTOR) {
     if(!selected.constructor || !selected.constructor_target_class) {
@@ -2984,6 +2986,16 @@ bool try_argument_conversion(SemanticContext & ctx,
     if(!selected.conversion_function) {
       return false;
     }
+    if(options.instantiate_user_defined_bodies) {
+      selected_conversion_function =
+          semantic_template_function::acquire_function_definition_binding(
+              ctx,
+              selected_conversion_function,
+              scope);
+      if(!selected_conversion_function) {
+        return false;
+      }
+    }
     if(options.instantiate_user_defined_bodies &&
        ctx.expand_output_closure_enabled() &&
        ctx.template_witness_context().session != nullptr &&
@@ -2991,7 +3003,7 @@ bool try_argument_conversion(SemanticContext & ctx,
       semantic_template_function::
           note_ensured_function_definition_materialized_by_lifecycle(
               ctx,
-              selected.conversion_function);
+              selected_conversion_function);
     }
     ExprInfo implicit_object_arg = ctx.make_address_of_expr(selected.source_expr);
     ExprInfo adjusted_this = implicit_object_arg;
@@ -3011,7 +3023,7 @@ bool try_argument_conversion(SemanticContext & ctx,
     }
     vector<ExprInfo> call_args(1, adjusted_this);
     ExprInfo call_expr =
-        ctx.make_direct_call_expr(*selected.conversion_function,
+        ctx.make_direct_call_expr(*selected_conversion_function,
                                   call_args,
                                   options.materialize_user_defined_output);
     out = call_expr;
@@ -3026,7 +3038,7 @@ bool try_argument_conversion(SemanticContext & ctx,
   if(options.instantiate_user_defined_bodies) {
     record_conversion_function_source_use(ctx,
                                           selected.source_expr,
-                                          selected.conversion_function,
+                                          selected_conversion_function,
                                           options.source_use_location);
   }
   rank = CR_USER_DEFINED;

@@ -3815,12 +3815,30 @@ std::string stable_alias_expansion_argument_text(
 }
 
 bool stable_alias_expansion_argument_key(
+    template_api::TemplateTypeSystem & type_system,
     const TemplateArgument & argument,
     AliasTemplateDecl::StableAliasExpansionArgumentKey & out)
 {
   out = AliasTemplateDecl::StableAliasExpansionArgumentKey();
   out.kind = static_cast<int>(argument.kind);
-  out.dependent = argument.dependent;
+  const bool source_syntax_dependent =
+      argument.source_syntax && argument.source_syntax->dependent;
+  out.dependent =
+      argument.dependent ||
+      (source_syntax_dependent &&
+       argument.kind == TemplateArgument::TA_TYPE &&
+       argument.type &&
+       template_argument_semantics::type_depends_on_template_parameter(
+           type_system,
+           argument.type)) ||
+      (source_syntax_dependent &&
+       (argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+        argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) &&
+       (!argument.template_decl ||
+        (argument.template_owner_type &&
+         template_argument_semantics::type_depends_on_template_parameter(
+             type_system,
+             argument.template_owner_type))));
   out.source_defaulted = argument.source_defaulted;
   out.function_value = argument.function_value;
   out.function_internal_symbol = argument.function_internal_symbol;
@@ -3839,7 +3857,7 @@ bool stable_alias_expansion_argument_key(
     if(!argument.type) {
       return false;
     }
-    if(argument.dependent) {
+    if(out.dependent) {
       out.text = stable_alias_expansion_argument_text(argument);
     }
     return true;
@@ -3854,7 +3872,7 @@ bool stable_alias_expansion_argument_key(
 
   case TemplateArgument::TA_CLASS_TEMPLATE:
   case TemplateArgument::TA_ALIAS_TEMPLATE:
-    if(argument.dependent || !argument.template_decl) {
+    if(out.dependent || !argument.template_decl) {
       out.text = stable_alias_expansion_argument_text(argument);
       return !out.text.empty();
     }
@@ -3874,6 +3892,7 @@ AliasTemplateDecl::StableAliasExpansionScopeKey stable_alias_expansion_scope_key
 }
 
 bool stable_alias_expansion_key_for_arguments(
+    template_api::TemplateTypeSystem & type_system,
     const Scope & match_scope,
     const Scope & argument_scope,
     const std::vector<TemplateArgument> & arguments,
@@ -3887,7 +3906,9 @@ bool stable_alias_expansion_key_for_arguments(
   out.arguments.reserve(arguments.size());
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     AliasTemplateDecl::StableAliasExpansionArgumentKey argument_key;
-    if(!stable_alias_expansion_argument_key(arguments[i], argument_key)) {
+    if(!stable_alias_expansion_argument_key(type_system,
+                                            arguments[i],
+                                            argument_key)) {
       out.arguments.clear();
       return false;
     }
@@ -3986,6 +4007,28 @@ bool alias_template_target_mentions_parameters(
   return false;
 }
 
+bool alias_template_target_mentions_parameter(
+    const CppAstNode & node,
+    const TemplateParameterInfo & parameter)
+{
+  if(!parameter.name.empty()) {
+    const std::string value = node_text(node);
+    const bool mentions =
+        parameter.parameter_pack ?
+            text_mentions_pack_parameter_reference(value, parameter.name) :
+            text_mentions_identifier_token(value, parameter.name);
+    if(mentions) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(alias_template_target_mentions_parameter(node.children[i], parameter)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool alias_template_type_pattern_mentions_parameters(
     const TypePtr & type,
     const std::vector<TemplateParameterInfo> & parameters)
@@ -4033,6 +4076,86 @@ bool alias_template_type_pattern_mentions_parameters(
     }
   }
   return false;
+}
+
+bool alias_template_type_pattern_mentions_parameter(
+    const TypePtr & type,
+    const TemplateParameterInfo & parameter)
+{
+  if(!type) {
+    return false;
+  }
+  const auto text_mentions_parameter =
+      [&parameter](const std::string & text) -> bool
+      {
+        return parameter.parameter_pack ?
+            text_mentions_pack_parameter_reference(text, parameter.name) :
+            text_mentions_identifier_token(text, parameter.name);
+      };
+  if(type->kind == Type::TK_NAMED) {
+    if(text_mentions_parameter(type->named_key) ||
+       text_mentions_parameter(type->named_display) ||
+       text_mentions_parameter(named_type_semantic_payload(type))) {
+      return true;
+    }
+    for(std::size_t i = 0; i < type->named_dependent_alias_arguments.size(); ++i) {
+      const DependentAliasTemplateArgumentSyntax & argument =
+          type->named_dependent_alias_arguments[i];
+      if(text_mentions_parameter(argument.text) ||
+         alias_template_type_pattern_mentions_parameter(argument.type,
+                                                        parameter)) {
+        return true;
+      }
+    }
+    for(std::size_t i = 0; i < type->named_dependent_class_arguments.size(); ++i) {
+      const DependentAliasTemplateArgumentSyntax & argument =
+          type->named_dependent_class_arguments[i];
+      if(text_mentions_parameter(argument.text) ||
+         alias_template_type_pattern_mentions_parameter(argument.type,
+                                                        parameter)) {
+        return true;
+      }
+    }
+    if(alias_template_type_pattern_mentions_parameter(
+           type->named_dependent_qualified_owner,
+           parameter)) {
+      return true;
+    }
+  }
+  if(alias_template_type_pattern_mentions_parameter(type->inner, parameter) ||
+     alias_template_type_pattern_mentions_parameter(type->owner, parameter)) {
+    return true;
+  }
+  for(std::size_t i = 0; i < type->params.size(); ++i) {
+    if(alias_template_type_pattern_mentions_parameter(type->params[i],
+                                                      parameter)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool alias_template_type_pattern_preserves_target_parameter_dependencies(
+    const CppAstNode & target,
+    const TypePtr & pattern,
+    const std::vector<TemplateParameterInfo> & parameters)
+{
+  if(!alias_template_target_mentions_parameters(target, parameters)) {
+    return true;
+  }
+  if(!alias_template_type_pattern_mentions_parameters(pattern, parameters)) {
+    return false;
+  }
+  if(parameters.size() == 1) {
+    return true;
+  }
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    if(alias_template_target_mentions_parameter(target, parameters[i]) &&
+       !alias_template_type_pattern_mentions_parameter(pattern, parameters[i])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool template_arguments_include_non_type_parameter(
@@ -4851,9 +4974,8 @@ bool try_expand_alias_template_pattern_structurally(
     return false;
   }
   if(alias_template.type_id &&
-     alias_template_target_mentions_parameters(*alias_template.type_id,
-                                                alias_template.parameters) &&
-     !alias_template_type_pattern_mentions_parameters(
+     !alias_template_type_pattern_preserves_target_parameter_dependencies(
+         *alias_template.type_id,
          alias_template.resolved_type_pattern,
          alias_template.parameters)) {
     if(parser_trace::enabled("template.resolve")) {
@@ -5105,6 +5227,7 @@ bool try_expand_alias_template_pattern_structurally(
       !materialize_class_template_targets &&
       !witness::source_capture_enabled(services.witness_context) &&
       stable_alias_expansion_key_for_arguments(
+          type_system,
           match_scope.require(),
           effective_argument_scope.require(),
           arguments,
@@ -8746,9 +8869,17 @@ bool expand_alias_template_pattern_id_impl(template_api::TemplateServices & serv
         if(!arg_syntax) {
           continue;
         }
+        const bool re_resolve_structured_syntax =
+            arg_syntax->resolved_type &&
+            named_type_is_dependent_alias(arg_syntax->resolved_type);
         const bool resolved =
             parse_template_argument_type_syntax(
-                services, arg_scope, arg_syntax, resolved_type, true);
+                services,
+                arg_scope,
+                arg_syntax,
+                resolved_type,
+                true,
+                re_resolve_structured_syntax);
         if(resolved &&
            resolved_type &&
            !type_is_dependent(resolved_type)) {
@@ -11049,14 +11180,26 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
           unsigned char & concrete_expression_recheck_state =
               partial.concrete_expression_recheck_pattern_states[i];
           if(concrete_expression_recheck_state == 0) {
+            bool has_template_template_parameter = false;
+            for(std::size_t parameter_index = 0;
+                parameter_index < partial.parameters.size();
+                ++parameter_index) {
+              if(partial.parameters[parameter_index].kind ==
+                 TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+                has_template_template_parameter = true;
+                break;
+              }
+            }
             const bool required =
-                pattern_syntax &&
-                template_argument_syntax_contains_ast_kind(
-                    *pattern_syntax,
-                    CppAstKind::decltype_specifier) &&
-                template_argument_syntax_contains_ast_kind(
-                    *pattern_syntax,
-                    CppAstKind::call_expression);
+                (has_template_template_parameter &&
+                 named_type_is_dependent_alias(placeholder_pattern_type)) ||
+                (pattern_syntax &&
+                 template_argument_syntax_contains_ast_kind(
+                     *pattern_syntax,
+                     CppAstKind::decltype_specifier) &&
+                 template_argument_syntax_contains_ast_kind(
+                     *pattern_syntax,
+                     CppAstKind::call_expression));
             concrete_expression_recheck_state = required ? 2 : 1;
           }
           pattern_requires_concrete_expression_recheck =

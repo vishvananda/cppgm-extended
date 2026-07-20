@@ -30,8 +30,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @push(%t3)
     %t4 = load ptr @saved
     %t5 = addr @object
-    %t6 = cmp eq ptr %t4, %t5
-    branch %t6, ^cond_then_1, ^cond_else_2
+    %t6 = index i8 [projection=base_subobject] %t5, 0
+    %t7 = cmp eq ptr %t4, %t6
+    branch %t7, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__2
@@ -42,8 +43,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__2
-    return i32 %t7
+    %t8 = load i32 $cond__2
+    return i32 %t8
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:

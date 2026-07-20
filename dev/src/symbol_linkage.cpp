@@ -18940,18 +18940,22 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
     out.keep_internal_alias = true;
   } else if(!uses_builtin_runtime_override(display_name) &&
             (linkage == SL_WEAK || linkage == SL_EXTERNAL)) {
-    emitted_object_symbol =
-        try_emit_itanium_function_symbol_ir(qualified,
-                                            qualified_name,
-                                            display_name,
-                                            type,
-                                            options,
-                                            out.object_symbol,
-                                            nullptr,
-                                            linkage != SL_WEAK,
-                                            capture_abi_fact ? &emitted_abi_target :
-                                                               nullptr);
-    if(!emitted_object_symbol && linkage == SL_WEAK) {
+    if(!(linkage == SL_WEAK && options.defer_weak_object_symbol)) {
+      emitted_object_symbol =
+          try_emit_itanium_function_symbol_ir(qualified,
+                                              qualified_name,
+                                              display_name,
+                                              type,
+                                              options,
+                                              out.object_symbol,
+                                              nullptr,
+                                              linkage != SL_WEAK,
+                                              capture_abi_fact ? &emitted_abi_target :
+                                                                 nullptr);
+    }
+    if(!emitted_object_symbol &&
+       linkage == SL_WEAK &&
+       !options.defer_weak_object_symbol) {
       throw logic_error("failed to build ABI IR function symbol for weak function " +
                         qualified_name);
     }

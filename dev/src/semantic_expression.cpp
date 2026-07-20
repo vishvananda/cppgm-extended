@@ -577,6 +577,84 @@ bool pointer_class_hierarchy_equality_compatible(SemanticContext & ctx,
          access == MA_PUBLIC;
 }
 
+bool try_apply_pointer_class_hierarchy_comparison_conversion(
+    SemanticContext & ctx,
+    ExprInfo & lhs,
+    ExprInfo & rhs)
+{
+  TypePtr lhs_pointer = strip_top_level_cv(value_conversion_type(lhs));
+  TypePtr rhs_pointer = strip_top_level_cv(value_conversion_type(rhs));
+  if(!lhs_pointer || !rhs_pointer ||
+     lhs_pointer->kind != Type::TK_POINTER ||
+     rhs_pointer->kind != Type::TK_POINTER) {
+    return false;
+  }
+
+  TypePtr lhs_pointee;
+  TypePtr rhs_pointee;
+  bool lhs_const = false;
+  bool lhs_volatile = false;
+  bool rhs_const = false;
+  bool rhs_volatile = false;
+  if(!top_level_cv_flags(lhs_pointer->inner,
+                         lhs_pointee,
+                         lhs_const,
+                         lhs_volatile) ||
+     !top_level_cv_flags(rhs_pointer->inner,
+                         rhs_pointee,
+                         rhs_const,
+                         rhs_volatile)) {
+    return false;
+  }
+
+  ClassInfo * lhs_class = complete_class_type_for_lookup(ctx, lhs_pointee);
+  if(!lhs_class) {
+    lhs_class = ctx.class_info_for_type(lhs_pointee);
+  }
+  ClassInfo * rhs_class = complete_class_type_for_lookup(ctx, rhs_pointee);
+  if(!rhs_class) {
+    rhs_class = ctx.class_info_for_type(rhs_pointee);
+  }
+  if(!lhs_class || !rhs_class || lhs_class == rhs_class) {
+    return false;
+  }
+
+  const bool combined_const = lhs_const || rhs_const;
+  const bool combined_volatile = lhs_volatile || rhs_volatile;
+  size_t offset = 0;
+  MemberAccess access = MA_PUBLIC;
+  if(find_unique_base_path(*lhs_class, rhs_class, offset, access) &&
+     access == MA_PUBLIC) {
+    const TypePtr target =
+        make_pointer(make_cv(rhs_pointee, combined_const, combined_volatile));
+    ExprInfo converted;
+    if(semantic_conversion::try_apply_inheritance_conversion(ctx,
+                                                             target,
+                                                             lhs,
+                                                             converted)) {
+      lhs = converted;
+      return true;
+    }
+  }
+
+  offset = 0;
+  access = MA_PUBLIC;
+  if(find_unique_base_path(*rhs_class, lhs_class, offset, access) &&
+     access == MA_PUBLIC) {
+    const TypePtr target =
+        make_pointer(make_cv(lhs_pointee, combined_const, combined_volatile));
+    ExprInfo converted;
+    if(semantic_conversion::try_apply_inheritance_conversion(ctx,
+                                                             target,
+                                                             rhs,
+                                                             converted)) {
+      rhs = converted;
+      return true;
+    }
+  }
+  return false;
+}
+
 bool const_cast_similar_object_types(const TypePtr & lhs, const TypePtr & rhs)
 {
   TypePtr lhs_base = strip_top_level_cv(lhs);
@@ -7650,6 +7728,14 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
       rhs.node.kind == CallSemKind::typeid_expression;
   const bool pointer_class_hierarchy_comparison =
       pointer_class_hierarchy_equality_compatible(ctx, lhs_type, rhs_type);
+  if(pointer_class_hierarchy_comparison &&
+     !try_apply_pointer_class_hierarchy_comparison_conversion(ctx, lhs, rhs)) {
+    throw logic_error("failed pointer class hierarchy comparison conversion");
+  }
+  if(pointer_class_hierarchy_comparison) {
+    lhs_type = value_conversion_type(lhs);
+    rhs_type = value_conversion_type(rhs);
+  }
 
   if(node_has_simple_type(node, OP_MINUS) &&
      pointer_subtraction_operands_compatible(lhs_type, rhs_type)) {

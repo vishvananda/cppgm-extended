@@ -56,8 +56,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load ptr %t5
     %t7 = call ptr %t6(%t4) as (%arg0 : ptr) -> ptr
     %t8 = addr $d
-    %t9 = cmp eq ptr %t7, %t8
-    branch %t9, ^cond_then_1, ^cond_else_2
+    %t9 = index i8 [projection=base_subobject] %t8, 0
+    %t10 = cmp eq ptr %t7, %t9
+    branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -68,8 +69,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
-    return i32 %t10
+    %t11 = load i32 $cond__1
+    return i32 %t11
 }
 function @Base__clone(%this : ptr) -> ptr [binding=weak, object=_ZN4Base5cloneEv] {
   slot $this : ptr

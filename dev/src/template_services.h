@@ -36,12 +36,12 @@ inline std::string qualified_name_text(const cpp_decl::QualifiedName & qualified
 inline const char * elaborated_type_keyword_text(TemplateElaboratedTypeKind kind)
 {
   switch(kind) {
-  case TETK_CLASS: return "class ";
-  case TETK_STRUCT: return "struct ";
-  case TETK_UNION: return "union ";
-  case TETK_ENUM: return "enum ";
-  case TETK_ENUM_CLASS: return "enum class ";
-  case TETK_ENUM_STRUCT: return "enum struct ";
+  case TETK_CLASS: return "class";
+  case TETK_STRUCT: return "struct";
+  case TETK_UNION: return "union";
+  case TETK_ENUM: return "enum";
+  case TETK_ENUM_CLASS: return "enum class";
+  case TETK_ENUM_STRUCT: return "enum struct";
   case TETK_NONE: break;
   }
   return "";

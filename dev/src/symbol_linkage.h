@@ -76,6 +76,7 @@ struct FunctionSymbolOptions
   const std::vector<const CppAstNode *> * parameter_declarations_pattern = nullptr;
   bool has_trailing_function_parameter_pack = false;
   bool suppress_template_argument_pack_grouping = false;
+  bool defer_weak_object_symbol = false;
   const semantic_model::Scope * lookup_scope = nullptr;
   cpp_decl::TypePtr lambda_closure_type;
   cpp_decl::TypePtr local_class_type;

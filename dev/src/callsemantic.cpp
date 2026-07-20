@@ -23786,6 +23786,8 @@ private:
                                        definition_node);
 	    options.is_constructor = is_constructor;
 	    options.is_destructor = is_destructor;
+	    options.defer_weak_object_symbol =
+	        template_identity.defer_weak_object_symbol;
 	    options.lookup_scope = declaration_scope;
 	    rehydrate_owner_template_argument_function_values(owner_class);
 	    template_api::apply_function_template_symbol_options(template_identity.decl,
