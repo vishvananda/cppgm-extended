@@ -2432,6 +2432,7 @@ struct CandidateMatch
   vector<string> source_arg_locations;
   vector<TypePtr> params;
   vector<bool> list_initialization_args;
+  vector<vector<ConversionRank> > list_initialization_element_ranks;
   vector<bool> needs_rematerialization;
   size_t explicit_arg_count = static_cast<size_t>(-1);
 };
@@ -2441,6 +2442,77 @@ struct BestCandidateSelection
   size_t index = 0;
   bool ambiguous = false;
 };
+
+bool collect_initializer_list_element_conversion_ranks(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & argument,
+    const TypePtr & target,
+    vector<ConversionRank> & out)
+{
+  out.clear();
+  TypePtr element_type;
+  TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
+  if(argument.kind != CppAstKind::braced_init_list ||
+     !ctx.is_initializer_list_type(target_base, &element_type, nullptr) ||
+     !element_type) {
+    return false;
+  }
+
+  vector<unique_ptr<CppAstNode> > expanded_storage;
+  vector<const CppAstNode *> elements;
+  for(size_t i = 0; i < argument.children.size(); ++i) {
+    const CppAstNode & child = argument.children[i];
+    if(child.kind != CppAstKind::pack_expansion_expression) {
+      elements.push_back(&child);
+      continue;
+    }
+    vector<CppAstNode> expanded;
+    if(!ctx.expand_pack_argument_node(scope, child, expanded)) {
+      out.clear();
+      return false;
+    }
+    for(size_t j = 0; j < expanded.size(); ++j) {
+      expanded_storage.emplace_back(new CppAstNode(expanded[j]));
+      elements.push_back(expanded_storage.back().get());
+    }
+  }
+
+  for(size_t i = 0; i < elements.size(); ++i) {
+    ExprInfo source;
+    try
+    {
+      if(!should_use_target_aware_argument_analysis(*elements[i], element_type) ||
+         !ctx.try_analyze_target_aware_expression(scope,
+                                                  *elements[i],
+                                                  element_type,
+                                                  source)) {
+        source = ctx.analyze_expression(scope, *elements[i]);
+      }
+      ExprInfo converted;
+      ConversionRank rank = CR_BAD;
+      ArgumentConversionOptions options =
+          semantic_policy::without_user_defined_body_instantiation();
+      options.materialize_standard_adjustments = false;
+      if(!ctx.try_argument_conversion(scope,
+                                      element_type,
+                                      source,
+                                      converted,
+                                      rank,
+                                      options)) {
+        out.clear();
+        return false;
+      }
+      out.push_back(rank);
+    }
+    catch(const logic_error &)
+    {
+      out.clear();
+      return false;
+    }
+  }
+  return true;
+}
 
 int compare_candidate_match_preference(SemanticContext & ctx,
                                        const CandidateMatch & current,
@@ -5721,6 +5793,38 @@ int compare_implicit_object_ref_qualifier_preference(
   return 0;
 }
 
+int compare_initializer_list_element_rank_preference(
+    const CandidateMatch & current,
+    const CandidateMatch & best,
+    size_t index)
+{
+  if(index >= current.list_initialization_element_ranks.size() ||
+     index >= best.list_initialization_element_ranks.size()) {
+    return 0;
+  }
+  const vector<ConversionRank> & current_ranks =
+      current.list_initialization_element_ranks[index];
+  const vector<ConversionRank> & best_ranks =
+      best.list_initialization_element_ranks[index];
+  if(current_ranks.size() != best_ranks.size()) {
+    return 0;
+  }
+
+  bool current_better = false;
+  bool best_better = false;
+  for(size_t i = 0; i < current_ranks.size(); ++i) {
+    if(current_ranks[i] < best_ranks[i]) {
+      current_better = true;
+    } else if(current_ranks[i] > best_ranks[i]) {
+      best_better = true;
+    }
+  }
+  if(current_better == best_better) {
+    return 0;
+  }
+  return current_better ? -1 : 1;
+}
+
 int compare_candidate_match_preference(SemanticContext & ctx,
                                        const CandidateMatch & current,
                                        const CandidateMatch & best)
@@ -5765,6 +5869,9 @@ int compare_candidate_match_preference(SemanticContext & ctx,
               ctx.is_initializer_list_type(best_param, nullptr, nullptr);
           if(current_initializer_list != best_initializer_list) {
             list_pref = current_initializer_list ? -1 : 1;
+          } else if(current_initializer_list) {
+            list_pref = compare_initializer_list_element_rank_preference(
+                current, best, j);
           }
         }
         if(list_pref < 0) {
@@ -12121,6 +12228,9 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
     match.call_args.push_back(adjusted_this);
     match.source_args.push_back(this_source_arg);
     match.params.push_back(function_type->params[0]);
+    match.list_initialization_args.push_back(false);
+    match.list_initialization_element_ranks.push_back(
+        vector<ConversionRank>());
     match.needs_rematerialization.push_back(instantiate_bodies &&
                                             converted_this_ok);
 
@@ -12160,6 +12270,16 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
     match.call_args.push_back(rhs);
     match.source_args.push_back(source_rhs);
     match.params.push_back(function_type->params[1]);
+    match.list_initialization_args.push_back(
+        node.children[1].kind == CppAstKind::braced_init_list);
+    vector<ConversionRank> element_ranks;
+    collect_initializer_list_element_conversion_ranks(ctx,
+                                                      scope,
+                                                      node.children[1],
+                                                      function_type->params[1],
+                                                      element_ranks);
+    match.list_initialization_element_ranks.push_back(
+        std::move(element_ranks));
     matches.push_back(std::move(match));
     note_overload_viable_candidate(ctx);
   }
@@ -14247,6 +14367,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           match.needs_rematerialization.push_back(instantiate_bodies &&
                                                     converted_this_ok);
           match.list_initialization_args.push_back(false);
+          match.list_initialization_element_ranks.push_back(
+              vector<ConversionRank>());
           arg_offset = 1;
         }
       } else {
@@ -14398,9 +14520,21 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         match.list_initialization_args.push_back(
             arg_nodes[j]->kind == CppAstKind::braced_init_list);
         if(explicit_index + arg_offset < function_type->params.size()) {
-          match.params.push_back(function_type->params[explicit_index + arg_offset]);
+          const TypePtr target =
+              function_type->params[explicit_index + arg_offset];
+          match.params.push_back(target);
+          vector<ConversionRank> element_ranks;
+          collect_initializer_list_element_conversion_ranks(ctx,
+                                                            scope,
+                                                            *arg_nodes[j],
+                                                            target,
+                                                            element_ranks);
+          match.list_initialization_element_ranks.push_back(
+              std::move(element_ranks));
         } else {
           match.params.push_back(TypePtr());
+          match.list_initialization_element_ranks.push_back(
+              vector<ConversionRank>());
         }
       }
 

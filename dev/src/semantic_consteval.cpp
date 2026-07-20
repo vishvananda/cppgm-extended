@@ -89,6 +89,55 @@ private:
   bool active_ = false;
 };
 
+struct TypedInitializerRecursionKey
+{
+  const CppAstNode * node = nullptr;
+  const Type * target = nullptr;
+};
+
+std::vector<TypedInitializerRecursionKey> & typed_initializer_recursion_stack()
+{
+  static thread_local std::vector<TypedInitializerRecursionKey> stack;
+  return stack;
+}
+
+struct TypedInitializerRecursionGuard
+{
+  TypedInitializerRecursionGuard(const CppAstNode & node,
+                                 const TypePtr & target)
+      : stack(typed_initializer_recursion_stack())
+  {
+    for(size_t i = 0; i < stack.size(); ++i) {
+      if(stack[i].node == &node && stack[i].target == target.get()) {
+        return;
+      }
+    }
+    TypedInitializerRecursionKey key;
+    key.node = &node;
+    key.target = target.get();
+    stack.push_back(key);
+    active = true;
+  }
+
+  ~TypedInitializerRecursionGuard()
+  {
+    if(active) {
+      stack.pop_back();
+    }
+  }
+
+  TypedInitializerRecursionGuard(const TypedInitializerRecursionGuard &) =
+      delete;
+  TypedInitializerRecursionGuard & operator=(
+      const TypedInitializerRecursionGuard &) = delete;
+
+  bool entered() const { return active; }
+
+private:
+  std::vector<TypedInitializerRecursionKey> & stack;
+  bool active = false;
+};
+
 const semantic_model::FieldInfo * first_aggregate_field(const semantic_model::ClassInfo & info)
 {
   return info.fields.empty() ? nullptr : &info.fields[0];
@@ -1838,6 +1887,13 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
 
   TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
   if(!target_base) {
+    return false;
+  }
+  TypedInitializerRecursionGuard recursion_guard(node, target_base);
+  if(!recursion_guard.entered()) {
+    // Speculative constructor-argument evaluation can ask the constexpr
+    // evaluator to reconstruct the same braced initializer as the same type.
+    // That probe cannot make semantic progress and must remain a soft failure.
     return false;
   }
 
