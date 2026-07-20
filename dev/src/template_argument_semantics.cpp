@@ -37690,7 +37690,12 @@ static bool type_id_ast_mentions_template_dependency(
   if(ast_has_parameter_pack_node(node)) {
     return true;
   }
+  const bool has_concrete_semantic_type =
+      node.semantic_type &&
+      !service_type_depends_on_template_parameter(services,
+                                                  node.semantic_type);
   if(check_node_text &&
+     !has_concrete_semantic_type &&
      ast_subtree_text_mentions_template_dependency(services, scope, node)) {
     return true;
   }
@@ -38311,11 +38316,14 @@ static bool expression_ast_mentions_template_dependency(
   const string node_dependency_text =
       check_node_text ? dependency_check_text_for_ast_value(node) : string();
   if(!node_dependency_text.empty()) {
+    const bool has_concrete_semantic_type =
+        node.semantic_type && !type_is_dependent(node.semantic_type);
     if(text_mentions_template_placeholders(services, scope, node_dependency_text) ||
        text_mentions_dependent_non_namespace_binding_names(
            services, scope, node_dependency_text) ||
-       unresolved_identifier_argument_may_depend_on_template_context(
-           services, scope, node_dependency_text)) {
+       (!has_concrete_semantic_type &&
+        unresolved_identifier_argument_may_depend_on_template_context(
+            services, scope, node_dependency_text))) {
       return true;
     }
   }

@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `46 / 147`
-- current cursor: `#47 libs/fusion/test`
-- active compiler frontier: pending exact Fusion survey
+- completed suites: `47 / 147`
+- current cursor: `#48 libs/geometry/test`
+- active compiler frontier: pending exact Geometry survey
 
 ## Baseline Gates
 
@@ -190,6 +190,7 @@ differences other than the output path.
 | `(Filesystem typed lookup and range closure)` | Qualified overload-set arguments, source-point-aware ADL imports, range-for lookup and auto deduction, and parameter-aware return-SFINAE identity | -1.30% | +1.50% | +2.24% | n/a; one final three-run candidate measurement for the complete Filesystem closure | `/tmp/cppgm-boost-frontier-v2-filesystem-candidate.json` | pass; candidate-only measurement against immutable compiler-and-51-header baseline `9764b3835`. The gate verified the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent or live project header was measured. |
 | `(Flyweight overload and constexpr termination fixes)` | Element-wise conversion ranking between initializer-list overloads plus a no-progress recursion guard for typed initializer constant evaluation | -1.46% | +1.39% | +2.18% | n/a; one final three-run candidate measurement for the complete Flyweight closure | `/tmp/cppgm-boost-frontier-v2-flyweight-candidate.json` | pass; candidate-only measurement against immutable compiler-and-51-header baseline `9764b3835`. The gate verified the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent or live project header was measured. |
 | `(Function implicit-static allocation function fix)` | Language-mandated static classification for class-scope allocation and deallocation functions across declarations, definitions, templates, and output lookup | -1.26% | +1.71% | +2.23% | n/a; one final three-run candidate measurement for the complete Function closure | `/tmp/cppgm-boost-frontier-v2-function-candidate.json` | pass; candidate-only measurement against immutable compiler-and-51-header baseline `9764b3835`. The gate verified the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent or live project header was measured. |
+| `(Fusion qualified value-pack and concrete dependency fixes)` | Initial parsing of qualified-id expression pack expansions plus concrete typed SFINAE-result dependency classification | -1.49% | +0.84% | +2.23% | n/a; one final three-run candidate measurement for the complete Fusion closure | `/tmp/cppgm-boost-frontier-v2-fusion-candidate.json` | pass; candidate-only measurement against immutable compiler-and-51-header baseline `9764b3835`. The gate verified the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent or live project header was measured. |
 
 ## Suite Cursor
 
@@ -244,22 +245,23 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 44 | `libs/function/test` | pass | `(implicit-static class allocation function fix)` | The initial exact four-job forced graph finds 1350 targets, requests 214 updates, fails `stateless_test` compilation, and skips its three downstream targets; log `/tmp/boost-frontier-v2-suite-044-initial-forced.log`. The exact final forced graph finds the same 1350 targets, updates all 214 requested targets, passes every positive compile/link/runtime action, handles both deliberate compile failures as failed-as-expected, and exits successfully; log `/tmp/boost-frontier-v2-suite-044-final-forced.log`. | Class-scope `operator new`, `operator new[]`, `operator delete`, and `operator delete[]` are now classified as static even when the redundant `static` specifier is omitted. PA16 passes `172/172`; configured strict suites, placement/hygiene, all 23 zero-reparse categories, all 22 audit/perf unit tests, twelve byte-identical cache modes, Clang/GCC controls, GCC 15 warning checks, and the PA9-excluded `3997/3997` report pass. Candidate-only frozen performance passes at -1.26% instructions, +1.71% RSS, and +2.23% footprint; no parent or live header was measured. |
 | 45 | `libs/function_types/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 2580 targets, updates all 89 requested targets, records 43 passing test actions, handles all three negative decomposition tests as failed-as-expected, and exits successfully; log `/tmp/boost-frontier-v2-suite-045-initial-forced.log`. | The current compiler passes the full property, decomposition, synthesis, calling-convention, preprocessing-mode, and example graph. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 | 46 | `libs/functional/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 174 targets, updates all four requested targets, compiles, links, and runs `function_test`, and exits successfully; log `/tmp/boost-frontier-v2-suite-046-initial-forced.log`. | The current compiler passes the complete Functional graph. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
+| 47 | `libs/fusion/test` | pass | `(qualified value-pack and concrete dependency fixes)` | The initial exact graph finds 6952 targets and exposes both a local Boost metadata collision and the causal `fold` compile failure; log `/tmp/boost-frontier-v2-suite-047-initial-forced.log`. After correcting the external fixtures and both compiler defects, the authoritative exact two-job forced graph finds 6963 targets, updates all 844 requested targets, records 220 passing test actions, and exits successfully; log `/tmp/boost-frontier-v2-suite-047-forced-closure-final.log`. | The external Boost 1.91 tree had an obsolete unconditional `make_pair_r-value` compile-fail target alongside the current guarded positive target, plus a malformed local source fixture that also failed under host Clang. The Jamfile now has only the guarded positive target (current SHA-256 `86458665c2c3b574df0321bd0960b205a1c3d0d85fd7f47e70db3d37339c6110`), and `support/make_pair_r-value.cpp` was synchronized from malformed SHA-256 `64a644954dacd1eaabd195238f5c7ba0bc562a3475827111b4aac14bf36ae8c4` to upstream SHA-256 `00e4c6ba0605a7bff778f5aaa0f63b32e321dd98435a060208b3f019ca4fed3f`; its Clang and cppgm controls pass. Two PA22 reducers cover qualified static-value pack expansion and qualified dependent-result SFINAE. PA22 passes `286/286`; configured strict suites, placement/hygiene, all 23 zero-reparse categories, all 22 audit/perf unit tests, twelve byte-identical cache modes per reducer, Clang/GCC controls, warning-clean production units, and the PA9-excluded `3999/3999` report pass. Candidate-only frozen performance passes at -1.49% instructions, +0.84% RSS, and +2.23% footprint; no parent or live header was measured. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#47 libs/fusion/test`
+- suite: `#48 libs/geometry/test`
 - focused target: pending exact survey
-- last closed suite: `#46 libs/functional/test`
+- last closed suite: `#47 libs/fusion/test`
 - failure phase: intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: pending first causal failure
 - implementation area: pending first causal failure
-- performance risk: the completed Function checkpoint passes the immutable frozen compiler-and-51-header epoch at -1.26% instructions, +1.71% RSS, and +2.23% footprint. The gate validates exact epoch source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before running; no parent or live project header was measured
-- next action: run the exact four-job forced `libs/fusion/test` graph and classify its first causal failure, if any
+- performance risk: the completed Fusion checkpoint passes the immutable frozen compiler-and-51-header epoch at -1.49% instructions, +0.84% RSS, and +2.23% footprint. The gate validates exact epoch source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before running; no parent or live project header was measured
+- next action: run the exact four-job forced `libs/geometry/test` graph and classify its first causal failure, if any
 
 ## Fix Ledger
 
@@ -442,7 +444,28 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | fixed | Container `devector_test` initializer-list `regular_elem` lifetime | LowIR constructed nontrivial `std::initializer_list<T>` backing-array elements in a hidden slot but never registered their destructors. All 41 `regular_elem` initializer-list elements in `test_insert_init_list` therefore remained live and made nine later checkpoints fail. Each successfully constructed backing element now enters the existing full-expression cleanup stack immediately, providing reverse destruction and constructor-unwind safety. When the list initializes a named automatic `initializer_list` object, those exact cleanup actions transfer to the enclosing lexical scope so the backing array remains alive with the list. No semantic text, parser, cache, type spelling, or Boost-specific path is added. | `pa25/tests/general/200-initializer-list-backing-array-lifetime.t`, at PA25's initializer-list and EH cleanup owner | The exact runtime count was zero before `test_insert_init_list` and 41 afterward, exactly matching the 41 nontrivial list elements in that function. The reducer checks three call-argument elements are destroyed at the full-expression boundary, two named-list elements stay alive until lexical scope exit, and successful earlier elements are represented on later-constructor unwind paths. Clang 22 and the fixed compiler both return zero. | PA25 direct report passes `74/74`; all configured strict suites pass; PA25 placement/hygiene is clean; all 23 text-reparse categories and all 14 audit tests pass. Normal, all ten individual cache-disabled, and all-disabled reducer LowIR are byte-identical with SHA-256 `fad25179310d67817521e50e03eaadb60d8e02eb6a503af55e8024b2ddfe31da`. The PA9-excluded broad report passes `3940/3940`, including PA37 `7/7`. Focused `devector_test` passes, and the exact final Container graph updates all 325 requested targets and exits successfully. | instructions +0.02%; max RSS -3.63%; peak footprint -2.57%; pass against immutable compiler-and-51-header baseline `9764b3835`; candidate-only report `/tmp/cppgm-boost-frontier-v2-container-default-owner-initlist-candidate.json`; no parent or live-header command was run | `(this commit)` |
 
+| fixed | Fusion `fold` qualified static-value pack expansion | Initial template-argument parsing recognized `Conditions::value...` as a type-id but failed to retain the parallel qualified-id expression because the expression parser received the trailing ellipsis. The parser now strips the ellipsis only when the remaining original token range is a complete qualified name with at least one qualifier, builds the structured expression, and marks that template argument as a pack expansion. Direct type packs such as `T...` retain the established type path. No semantic reparse, source scan, cache, spelling rule, ABI path, or Boost-specific branch is added. | `pa22/tests/general/500-inherited-static-value-pack-base.t`, at PA22's integrated variadic substitution owner | The initial exact Fusion graph reaches `and_impl1<Cond::value...>`, evaluates `and_<is_convertible<int,int>>::value` false, omits the forwarding constructor, and rejects `boost::fusion::vector<int>(1)`. The header-free reducer checks the same inherited static member-value expansion, while Clang 22 and GCC 15 accept it warning-clean. | PA22 passes `286/286`; configured strict suites pass; PA22 placement/hygiene has zero findings; all 23 reparse categories remain zero and all 22 audit/perf tests pass. Normal, all ten individual cache-disabled, and all-disabled LowIR are byte-identical with SHA-256 `b0c078f4a398ac0f1053d6ffed463b987556a95e0e807229598f8eb895b70bcd`. Both production units are warning-clean under Clang 22 and GCC 15. The PA9-excluded broad report passes `3999/3999`, including PA37 `7/7`; the exact final Fusion graph passes. | measured with the complete Fusion closure: -1.49% instructions, +0.84% RSS, +2.23% footprint against immutable frozen compiler-and-51-header epoch `9764b3835`; report `/tmp/cppgm-boost-frontier-v2-fusion-candidate.json`; no parent or live-header command was run | `(this commit)` |
+| fixed | Fusion `is_sequence` and `is_view` qualified result-SFINAE | A substituted function-template result already carried a concrete semantic type, but the dependency fallback still scanned its display text and treated an ordinary `incomplete` identifier as dependent merely because a surrounding namespace scope contained template names. That retained the invalid `ok_tag<sizeof(incomplete)>` result instead of dropping the candidate by SFINAE. Dependency classification now suppresses only the textual unresolved-identifier fallback when the relevant type-id or expression AST node already has a concrete nondependent semantic type; structured placeholder, bound-name, pack, and dependent-type checks remain active. No text is parsed, no candidate retry or cache is added, and dependent nodes retain the established path. | `pa22/tests/general/500-qualified-dependent-result-sizeof-sfinae.t`, beside the existing unqualified `500-dependent-result-sizeof-sfinae-base.t` control at PA22's integrated result-SFINAE owner | The reduced qualified `detail::check_complete<T>(0)` probe retained `ok_tag<sizeof(incomplete)>` before the fix instead of selecting the ellipsis fallback. The exact Boost traits use the same incomplete-type probe in `is_sequence` and `is_view`; both final focused targets and the uninterrupted full graph pass. Clang 22 and GCC 15 accept the reducer warning-clean. | The qualified reducer and existing unqualified control pass. PA22, strict, placement, reparse, audit/perf, host-warning, PA9-excluded broad, and exact Fusion gates pass. Normal, all ten individual cache-disabled, and all-disabled reducer LowIR are byte-identical with SHA-256 `41be34202d3c92843e6c4a85111139a9ae83cfa84c9e4a1bd1afe16bd2a78565`. An experimental lightweight ellipsis shortcut was rejected before acceptance because `tuple_traits__maybe_variadic` exposed eleven false constructibility results; the final typed dependency fix leaves both variadic and nonvariadic tuple-trait paths passing. | measured with the complete Fusion closure; candidate-only frozen report `/tmp/cppgm-boost-frontier-v2-fusion-candidate.json`; no parent or live-header command was run | `(this commit)` |
+
 ## Decision Log
+
+- `2026-07-20`: Closed Fusion and advanced the ordered cursor to suite 48,
+  `libs/geometry/test`. The initial exact graph exposed an obsolete duplicated
+  `make_pair_r-value` target in the external Boost Jamfile and the first causal
+  compiler failure in `fold`. The external metadata now matches the guarded
+  positive upstream target, and its locally malformed source fixture was also
+  synchronized to current upstream after host Clang independently rejected it.
+  Two typed fixes retain qualified static-value expression packs during the
+  initial parse and stop concrete semantic result nodes from being relabeled
+  dependent by a textual unresolved-identifier fallback. No semantic text is
+  reparsed and no cache or ABI path is added. Both PA22 reducers are identical
+  in all twelve cache configurations; PA22 `286/286`, strict, placement,
+  reparse, 22 audit/perf unit tests, Clang/GCC, warning, and PA9-excluded
+  `3999/3999` gates pass. The final exact graph updates all 844 requested
+  targets, records 220 passing test actions, and exits successfully. The
+  candidate-only frozen performance gate passes at -1.49% instructions,
+  +0.84% RSS, and +2.23% footprint after verifying the exact 51-header closure;
+  no parent or live-header measurement was run.
 
 - `2026-07-19`: Closed Functional without a compiler change and advanced the
   ordered cursor to suite 47, `libs/fusion/test`. The exact four-job forced
@@ -2047,5 +2070,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=4 \
   /usr/local/bin/timeout 1800 \
-  ./run-cppgm-b2.sh -a libs/function/test
+  ./run-cppgm-b2.sh -a libs/geometry/test
 ```

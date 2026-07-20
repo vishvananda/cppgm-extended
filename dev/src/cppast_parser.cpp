@@ -1154,14 +1154,35 @@ void build_template_argument_syntax_from_range(
     return;
   }
 
+  std::pair<std::size_t, std::size_t> qualified_id_range = range;
+  bool qualified_id_pack_expansion = false;
+  if(qualified_id_range.second > qualified_id_range.first &&
+     tokens.peek(qualified_id_range.second - 1).is_simple(OP_DOTS)) {
+    --qualified_id_range.second;
+    qualified_name_parser::QualifiedNameParseResult parsed_qualified;
+    qualified_id_pack_expansion =
+        qualified_name_parser::parse_qualified_name(
+            tokens,
+            qualified_id_range.first,
+            lookup,
+            qualified_name_parser::UnqualifiedNameOptions(),
+            parsed_qualified) &&
+        parsed_qualified.end == qualified_id_range.second &&
+        !parsed_qualified.qualifiers.empty();
+    if(!qualified_id_pack_expansion) {
+      qualified_id_range = range;
+    }
+  }
+
   CppAstNode qualified_id_expression;
   if(build_qualified_id_expression_syntax_from_range(tokens,
                                                      lookup,
-                                                     range,
+                                                     qualified_id_range,
                                                      qualified_id_expression,
                                                      parser_context)) {
     argument.expression.reset(
         new CppAstNode(std::move(qualified_id_expression)));
+    argument.pack_expansion = qualified_id_pack_expansion;
   }
 
   if(argument.type_id || argument.expression ||
