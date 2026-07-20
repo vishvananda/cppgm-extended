@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `38 / 147`
-- current cursor: `#39 libs/fiber/test`
-- active compiler frontier: pending exact Fiber survey
+- completed suites: `39 / 147`
+- current cursor: `#40 libs/filesystem/test`
+- active compiler frontier: pending exact Filesystem survey
 
 ## Baseline Gates
 
@@ -233,22 +233,23 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 36 | `libs/dynamic_bitset/test` | pass | `(Dynamic Bitset deferred member-definition replay fix)` | The initial exact four-job forced graph finds 3137 targets, requests 130 updates, updates 115, fails five link actions, and skips ten downstream targets; all five links lack deferred nested or injected-owner member definitions. Log `/tmp/boost-frontier-v2-suite-036-initial-forced.log`. The exact final forced graph finds 3137 targets, updates all 90 requested targets, passes nine positive compile/link/runtime actions, reports `test_std_hash_disabled` as failed-as-expected and passed, and exits successfully; log `/tmp/boost-frontier-v2-suite-036-final-forced.log`. | The PA18 owner regression retains and emits a nested defaulted copy constructor, a nested conversion operator, and `Iter<T>::Iter::operator++`. PA18 passes `235/235`; configured strict suites, template hygiene, all 23 zero-reparse categories, all 22 audit/perf unit tests, twelve byte-identical cache modes, Clang/GCC host controls, GCC 15 warning checks, and the PA9-excluded `3982/3982` report pass. Candidate-only frozen performance passes; no parent or live header was measured. |
 | 37 | `libs/endian/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 793 targets, updates all 184 requested targets, passes all 47 compile/link/runtime actions, and exits successfully; log `/tmp/boost-frontier-v2-suite-037-initial-forced.log`. | The current compiler passes the complete intrinsic/non-intrinsic Endian graph, including buffer, arithmetic, load/store, conversion, constexpr reverse, packed, data, and convenience tests. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 | 38 | `libs/exception/test` | pass | `(Exception typed semantic and lazy conversion closure)` | The initial exact four-job forced graph finds 4583 targets, requests 249 updates, updates 232, fails six targets, and skips eleven; the three causal compile failures are Boost.JSON, `boost_json_test`, and `nlohmann_json_test`, while all four deliberate compile failures are handled as failed-as-expected. Log `/tmp/boost-frontier-v2-suite-038-initial-forced.log`. The final exact graph finds the same 4583 targets, updates all 217 requested targets, records 54 passing test actions, handles all four deliberate failures as failed-as-expected, and exits successfully in 782.16s; log `/tmp/boost-frontier-v2-suite-038-final-forced-current.log`. The independently forced nlohmann target also compiles, links, and runs in 678.91s; log `/tmp/boost-frontier-v2-suite-038-nlohmann-final-clang-lane.log`. | Seven earliest-owner reducers cover six coherent typed fixes across PA14, PA22, PA26, and PA34. The owner report passes `760/760`; all configured strict suites pass; the PA9-excluded broad report passes `3989/3989`, including PA37 `7/7`. Placement/hygiene, all 23 zero-reparse categories, all 22 audit/perf unit tests, twelve byte-identical cache modes for every reducer, and an isolated GCC 15 production build pass. Final candidate-only frozen performance passes at -1.44% instructions, +1.76% RSS, and +2.19% footprint; no parent or live header was measured. |
+| 39 | `libs/fiber/test` | pass | `(no compiler change)` | The exact four-job forced graph completes architecture, C++11, threading, ICU, atomic, and host capability checks, finds the single bookkeeping target, and exits successfully in 22.91s; log `/tmp/boost-frontier-v2-suite-039-initial-forced.log`. | Configuration-only pass on this host. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#39 libs/fiber/test`
+- suite: `#40 libs/filesystem/test`
 - focused target: pending exact survey
-- last closed suite: `#38 libs/exception/test`
+- last closed suite: `#39 libs/fiber/test`
 - failure phase: intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: pending first causal failure
 - implementation area: pending first causal failure
 - performance risk: the completed Exception checkpoint passes the immutable frozen compiler-and-51-header epoch at -1.44% instructions, +1.76% RSS, and +2.19% footprint. The gate validates exact epoch source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before running; no parent or live project header was measured
-- next action: run the exact four-job forced `libs/fiber/test` graph and classify its first causal failure, if any
+- next action: run the exact four-job forced `libs/filesystem/test` graph and classify its first causal failure, if any
 
 ## Fix Ledger
 
@@ -424,6 +425,13 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Container `devector_test` initializer-list `regular_elem` lifetime | LowIR constructed nontrivial `std::initializer_list<T>` backing-array elements in a hidden slot but never registered their destructors. All 41 `regular_elem` initializer-list elements in `test_insert_init_list` therefore remained live and made nine later checkpoints fail. Each successfully constructed backing element now enters the existing full-expression cleanup stack immediately, providing reverse destruction and constructor-unwind safety. When the list initializes a named automatic `initializer_list` object, those exact cleanup actions transfer to the enclosing lexical scope so the backing array remains alive with the list. No semantic text, parser, cache, type spelling, or Boost-specific path is added. | `pa25/tests/general/200-initializer-list-backing-array-lifetime.t`, at PA25's initializer-list and EH cleanup owner | The exact runtime count was zero before `test_insert_init_list` and 41 afterward, exactly matching the 41 nontrivial list elements in that function. The reducer checks three call-argument elements are destroyed at the full-expression boundary, two named-list elements stay alive until lexical scope exit, and successful earlier elements are represented on later-constructor unwind paths. Clang 22 and the fixed compiler both return zero. | PA25 direct report passes `74/74`; all configured strict suites pass; PA25 placement/hygiene is clean; all 23 text-reparse categories and all 14 audit tests pass. Normal, all ten individual cache-disabled, and all-disabled reducer LowIR are byte-identical with SHA-256 `fad25179310d67817521e50e03eaadb60d8e02eb6a503af55e8024b2ddfe31da`. The PA9-excluded broad report passes `3940/3940`, including PA37 `7/7`. Focused `devector_test` passes, and the exact final Container graph updates all 325 requested targets and exits successfully. | instructions +0.02%; max RSS -3.63%; peak footprint -2.57%; pass against immutable compiler-and-51-header baseline `9764b3835`; candidate-only report `/tmp/cppgm-boost-frontier-v2-container-default-owner-initlist-candidate.json`; no parent or live-header command was run | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-19`: Closed Fiber without a compiler change and advanced the ordered
+  cursor to suite 40, `libs/filesystem/test`. The exact forced graph completes
+  its architecture, language, threading, ICU, atomic, and host capability
+  checks, finds the single bookkeeping target, and exits successfully in
+  22.91s. No regression or performance gate was required; the immutable
+  compiler-and-51-header checkpoint remains Exception.
 
 - `2026-07-19`: Closed Exception and advanced the ordered cursor to suite 39,
   `libs/fiber/test`. The initial exact graph had three causal compile failures
@@ -1937,5 +1945,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=4 \
   /usr/local/bin/timeout 1800 \
-  ./run-cppgm-b2.sh -a libs/fiber/test
+  ./run-cppgm-b2.sh -a libs/filesystem/test
 ```
