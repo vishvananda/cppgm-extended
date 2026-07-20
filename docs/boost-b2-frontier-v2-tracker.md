@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `49 / 147`
-- current cursor: `#50 libs/graph/test`
-- active compiler frontier: pending exact Graph survey
+- completed suites: `50 / 147`
+- current cursor: `#51 libs/graph_parallel/test`
+- active compiler frontier: pending exact Graph Parallel survey
 
 ## Baseline Gates
 
@@ -248,22 +248,23 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 47 | `libs/fusion/test` | pass | `(qualified value-pack and concrete dependency fixes)` | The initial exact graph finds 6952 targets and exposes both a local Boost metadata collision and the causal `fold` compile failure; log `/tmp/boost-frontier-v2-suite-047-initial-forced.log`. After correcting the external fixtures and both compiler defects, the authoritative exact two-job forced graph finds 6963 targets, updates all 844 requested targets, records 220 passing test actions, and exits successfully; log `/tmp/boost-frontier-v2-suite-047-forced-closure-final.log`. | The external Boost 1.91 tree had an obsolete unconditional `make_pair_r-value` compile-fail target alongside the current guarded positive target, plus a malformed local source fixture that also failed under host Clang. The Jamfile now has only the guarded positive target (current SHA-256 `86458665c2c3b574df0321bd0960b205a1c3d0d85fd7f47e70db3d37339c6110`), and `support/make_pair_r-value.cpp` was synchronized from malformed SHA-256 `64a644954dacd1eaabd195238f5c7ba0bc562a3475827111b4aac14bf36ae8c4` to upstream SHA-256 `00e4c6ba0605a7bff778f5aaa0f63b32e321dd98435a060208b3f019ca4fed3f`; its Clang and cppgm controls pass. Two PA22 reducers cover qualified static-value pack expansion and qualified dependent-result SFINAE. PA22 passes `286/286`; configured strict suites, placement/hygiene, all 23 zero-reparse categories, all 22 audit/perf unit tests, twelve byte-identical cache modes per reducer, Clang/GCC controls, warning-clean production units, and the PA9-excluded `3999/3999` report pass. Candidate-only frozen performance passes at -1.49% instructions, +0.84% RSS, and +2.23% footprint; no parent or live header was measured. |
 | 48 | `libs/geometry/test` | pass | `(no compiler change)` | The exact four-job forced graph completes its host and C++14 constexpr configuration checks, finds the single bookkeeping target, and exits successfully; log `/tmp/boost-frontier-v2-suite-048-initial-forced.log`. | Configuration-only pass in the C++11 lane because both Geometry C++14 constexpr configurations are unavailable. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 | 49 | `libs/gil/test` | pass | `(external Jamfile correction; no compiler change)` | The initial exact graph reports `No best alternative` for `core/io/path_spec` because the Boost 1.91 Jamfile declares both compile-only and run actions with the same implicit target name; log `/tmp/boost-frontier-v2-suite-049-initial-forced.log`. After removing the redundant compile-only action, the exact four-job forced graph completes its C++11/C++14 configuration checks, finds the single bookkeeping target, and exits successfully; log `/tmp/boost-frontier-v2-suite-049-corrected-forced.log`. | The duplicate target is present in both the authoritative Boost 1.91 tag and current GIL `develop`, so this is an upstream setup defect rather than local drift or a compiler failure. The retained run action subsumes compilation and is the stronger test. External Jamfile SHA-256 changed from `778b6ec39d56880e48dd0239173828b2cd366dc1de19b284431e584dba06a55e` to `6cd3346ead45b2f9fb4ef6175d680049de6a2f8f6ed4c6b7c0eedea6ce88d97f`. The corrected C++11 lane is configuration-only because C++14 constexpr is unavailable. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
+| 50 | `libs/graph/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 12539 targets and requests 1035 updates. Its 30-minute wrapper deadline expires after 163 explicit passes with no failure, skip, or error marker; log `/tmp/boost-frontier-v2-suite-050-initial-forced.log`. After terminating the four compiler children orphaned by that external deadline, an exact continuation updates the remaining 18 targets, records six further passes, and exits successfully; log `/tmp/boost-frontier-v2-suite-050-continuation.log`. A final exact current-state rerun finds the complete 12547-target closure with nothing left to update and exits successfully; log `/tmp/boost-frontier-v2-suite-050-final-current.log`. | The timeout was only intermediate evidence, not the pass criterion. The successful continuation plus zero-update current-state proof closes the full Graph graph with 169 explicit passing test actions and no failed action or downstream skip. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#50 libs/graph/test`
+- suite: `#51 libs/graph_parallel/test`
 - focused target: pending exact survey
-- last closed suite: `#49 libs/gil/test`
+- last closed suite: `#50 libs/graph/test`
 - failure phase: intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: pending first causal failure
 - implementation area: pending first causal failure
 - performance risk: the completed Fusion checkpoint passes the immutable frozen compiler-and-51-header epoch at -1.49% instructions, +0.84% RSS, and +2.23% footprint. The gate validates exact epoch source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before running; no parent or live project header was measured
-- next action: run the exact four-job forced `libs/graph/test` graph and classify its first causal failure, if any
+- next action: run the exact four-job forced `libs/graph_parallel/test` graph and classify its first causal failure or external setup dependency, if any
 
 ## Fix Ledger
 
@@ -450,6 +451,16 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Fusion `is_sequence` and `is_view` qualified result-SFINAE | A substituted function-template result already carried a concrete semantic type, but the dependency fallback still scanned its display text and treated an ordinary `incomplete` identifier as dependent merely because a surrounding namespace scope contained template names. That retained the invalid `ok_tag<sizeof(incomplete)>` result instead of dropping the candidate by SFINAE. Dependency classification now suppresses only the textual unresolved-identifier fallback when the relevant type-id or expression AST node already has a concrete nondependent semantic type; structured placeholder, bound-name, pack, and dependent-type checks remain active. No text is parsed, no candidate retry or cache is added, and dependent nodes retain the established path. | `pa22/tests/general/500-qualified-dependent-result-sizeof-sfinae.t`, beside the existing unqualified `500-dependent-result-sizeof-sfinae-base.t` control at PA22's integrated result-SFINAE owner | The reduced qualified `detail::check_complete<T>(0)` probe retained `ok_tag<sizeof(incomplete)>` before the fix instead of selecting the ellipsis fallback. The exact Boost traits use the same incomplete-type probe in `is_sequence` and `is_view`; both final focused targets and the uninterrupted full graph pass. Clang 22 and GCC 15 accept the reducer warning-clean. | The qualified reducer and existing unqualified control pass. PA22, strict, placement, reparse, audit/perf, host-warning, PA9-excluded broad, and exact Fusion gates pass. Normal, all ten individual cache-disabled, and all-disabled reducer LowIR are byte-identical with SHA-256 `41be34202d3c92843e6c4a85111139a9ae83cfa84c9e4a1bd1afe16bd2a78565`. An experimental lightweight ellipsis shortcut was rejected before acceptance because `tuple_traits__maybe_variadic` exposed eleven false constructibility results; the final typed dependency fix leaves both variadic and nonvariadic tuple-trait paths passing. | measured with the complete Fusion closure; candidate-only frozen report `/tmp/cppgm-boost-frontier-v2-fusion-candidate.json`; no parent or live-header command was run | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-20`: Closed Graph without a compiler change and advanced the
+  ordered cursor to suite 51, `libs/graph_parallel/test`. The initial exact
+  forced graph reached its 30-minute wrapper deadline after 163 explicit
+  passes with no failure, skip, or error marker. After terminating the four
+  compiler processes orphaned by that external deadline, the exact
+  continuation updated the remaining 18 targets, recorded six further passes,
+  and exited successfully. A final exact rerun found the complete 12547-target
+  closure with nothing left to update and exited successfully. No regression,
+  broad repository rerun, or performance measurement was required.
 
 - `2026-07-20`: Closed GIL after correcting an upstream Boost 1.91 Jamfile
   collision and advanced the ordered cursor to suite 50, `libs/graph/test`.
