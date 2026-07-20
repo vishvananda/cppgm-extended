@@ -282,6 +282,14 @@ struct Scope
       namespace_binding_first_token_starts.reset();
     }
     function_sets = other.function_sets;
+    if(other.function_binding_first_token_starts) {
+      function_binding_first_token_starts.reset(
+          new std::map<std::string,
+                       std::map<const FunctionBinding *, std::size_t> >(
+              *other.function_binding_first_token_starts));
+    } else {
+      function_binding_first_token_starts.reset();
+    }
     function_set_access_overrides = other.function_set_access_overrides;
     cached_direct_function_lookups.clear();
     direct_function_lookup_cache_epoch = other.direct_function_lookup_cache_epoch;
@@ -338,6 +346,13 @@ struct Scope
   std::unique_ptr<std::map<std::string, std::size_t> >
       namespace_binding_first_token_starts;
   std::map<std::string, std::vector<FunctionBinding *> > function_sets;
+  // Namespace collection is eager, including using-declarations that occur
+  // after deferred bodies.  Imported bindings retain the point at which each
+  // using-declaration made them visible so ADL can honor point-of-declaration.
+  std::unique_ptr<
+      std::map<std::string,
+               std::map<const FunctionBinding *, std::size_t> > >
+      function_binding_first_token_starts;
   std::map<std::string, std::map<const FunctionBinding *, MemberAccess> >
       function_set_access_overrides;
   std::map<std::string, ClassTemplateDecl *> class_templates;

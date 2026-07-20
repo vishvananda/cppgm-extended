@@ -63,6 +63,22 @@ function @member_template_cast_arg__check_stream(%tests : ptr [pass=reference]) 
     %t16 = load i64 $land__1
     return u8 %t16
 }
+function @member_template_cast_arg__suite__expect(%this : ptr, %condition : ptr [pass=reference], %__param2 : ptr, %__param3 : i32) -> u8 [binding=weak, object=_ZN24member_template_cast_arg5suite6expectIMNS_6streamEFiRKNS_6bufferEEEEbRKT_PKci] {
+  slot $this : ptr
+  slot $condition : ptr
+  slot $__param2 : ptr
+  slot $__param3 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %condition, $condition
+    store ptr %__param2, $__param2
+    store i32 %__param3, $__param3
+    %t1 = load ptr $condition
+    %t2 = load i128 %t1
+    %t3 = cmp ne i128 %t2, 0
+    return u8 %t3
+}
 function @member_template_cast_arg__stream__read_some__ov3(%this : ptr, %buffer : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN24member_template_cast_arg6stream9read_someINS_6bufferEEEiRKT_] {
   slot $this : ptr
   slot $buffer : ptr
@@ -89,22 +105,6 @@ function @member_template_cast_arg__stream__read_some__ov4(%this : ptr, %buffer 
     %t3 = load i32 %t2
     %t4 = binary add i32 %t3, 1
     return i32 %t4
-}
-function @member_template_cast_arg__suite__expect(%this : ptr, %condition : ptr [pass=reference], %__param2 : ptr, %__param3 : i32) -> u8 [binding=weak, object=_ZN24member_template_cast_arg5suite6expectIMNS_6streamEFiRKNS_6bufferEEEEbRKT_PKci] {
-  slot $this : ptr
-  slot $condition : ptr
-  slot $__param2 : ptr
-  slot $__param3 : i32
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %condition, $condition
-    store ptr %__param2, $__param2
-    store i32 %__param3, $__param3
-    %t1 = load ptr $condition
-    %t2 = load i128 %t1
-    %t3 = cmp ne i128 %t2, 0
-    return u8 %t3
 }
 function @member_template_cast_arg__suite__expect__ov2(%this : ptr, %condition : ptr [pass=reference], %__param2 : ptr, %__param3 : i32) -> u8 [binding=weak, object=_ZN24member_template_cast_arg5suite6expectIMNS_6streamEFiRKNS_6bufferERNS_10error_codeEEEEbRKT_PKci] {
   slot $this : ptr

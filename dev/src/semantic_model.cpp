@@ -124,6 +124,12 @@ Scope::Scope(const Scope & other)
                 *other.namespace_binding_first_token_starts) :
             nullptr),
     function_sets(other.function_sets),
+    function_binding_first_token_starts(
+        other.function_binding_first_token_starts ?
+            new std::map<std::string,
+                         std::map<const FunctionBinding *, std::size_t> >(
+                *other.function_binding_first_token_starts) :
+            nullptr),
     function_set_access_overrides(other.function_set_access_overrides),
     class_templates(other.class_templates),
     function_templates(other.function_templates),
@@ -159,6 +165,8 @@ Scope::Scope(Scope && other)
     namespace_binding_first_token_starts(
         std::move(other.namespace_binding_first_token_starts)),
     function_sets(std::move(other.function_sets)),
+    function_binding_first_token_starts(
+        std::move(other.function_binding_first_token_starts)),
     function_set_access_overrides(std::move(other.function_set_access_overrides)),
     class_templates(std::move(other.class_templates)),
     function_templates(std::move(other.function_templates)),
@@ -200,6 +208,8 @@ Scope & Scope::operator=(Scope && other)
   namespace_binding_first_token_starts =
       std::move(other.namespace_binding_first_token_starts);
   function_sets = std::move(other.function_sets);
+  function_binding_first_token_starts =
+      std::move(other.function_binding_first_token_starts);
   function_set_access_overrides = std::move(other.function_set_access_overrides);
   cached_direct_function_lookups.clear();
   direct_function_lookup_cache_epoch = other.direct_function_lookup_cache_epoch;

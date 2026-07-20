@@ -943,7 +943,8 @@ void collect_using_declaration(SemanticContext & ctx,
   }
 
   if(!functions.empty()) {
-    semantic_scope_mutation::append_function_bindings(scope, qualified.name, functions, access);
+    semantic_scope_mutation::append_function_bindings(
+        scope, qualified.name, functions, access, node.token_start);
   }
   if(!function_templates.empty()) {
     semantic_scope_mutation::append_unique_function_templates(scope,

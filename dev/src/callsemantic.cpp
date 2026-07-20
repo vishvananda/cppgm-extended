@@ -22159,7 +22159,10 @@ private:
           }
           if(node.kind == CppAstKind::decl_specifier &&
              (node.value.compare(0, 8, "decltype") == 0 ||
-              node.value.compare(0, 10, "__decltype") == 0)) {
+              node.value.compare(0, 10, "__decltype") == 0 ||
+              node.value.find("enable_if") != string::npos ||
+              node.value.find("disable_if") != string::npos ||
+              node.value.find("void_t") != string::npos)) {
             return true;
           }
           if(optional_template_id_has_sfinae_discriminator(
@@ -22198,127 +22201,11 @@ private:
          !detector.node_has_sfinae_discriminator(rhs)) {
         return true;
       }
-      struct Comparer
-      {
-        bool qualified_names_equal(const QualifiedName & lhs,
-                                   const QualifiedName & rhs) const
-        {
-          return lhs.rooted == rhs.rooted &&
-                 lhs.qualifiers == rhs.qualifiers &&
-                 lhs.name == rhs.name;
-        }
-
-        bool template_argument_syntax_equal(const TemplateArgumentSyntax & lhs,
-                                            const TemplateArgumentSyntax & rhs) const
-        {
-          return lhs.pack_expansion == rhs.pack_expansion &&
-                 lhs.dependent == rhs.dependent &&
-                 optional_template_id_equal(lhs.template_id, rhs.template_id) &&
-                 optional_node_equal(lhs.type_id, rhs.type_id) &&
-                 optional_node_equal(lhs.source_type_id, rhs.source_type_id) &&
-                 optional_node_equal(lhs.expression, rhs.expression) &&
-                 type_equals(lhs.resolved_type, rhs.resolved_type);
-        }
-
-        bool optional_template_id_equal(
-            const std::shared_ptr<TemplateIdSyntax> & lhs,
-            const std::shared_ptr<TemplateIdSyntax> & rhs) const
-        {
-          if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
-            return false;
-          }
-          return !lhs || template_id_equal(*lhs, *rhs);
-        }
-
-        bool optional_node_equal(const std::shared_ptr<CppAstNode> & lhs,
-                                 const std::shared_ptr<CppAstNode> & rhs) const
-        {
-          if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
-            return false;
-          }
-          return !lhs || node_equal(*lhs, *rhs);
-        }
-
-        bool template_id_equal(const TemplateIdSyntax & lhs,
-                               const TemplateIdSyntax & rhs) const
-        {
-          if(!qualified_names_equal(lhs.name, rhs.name) ||
-             lhs.qualifier_template_id_syntaxes.size() !=
-                 rhs.qualifier_template_id_syntaxes.size() ||
-             lhs.arguments.size() != rhs.arguments.size() ||
-             lhs.argument_syntaxes.size() != rhs.argument_syntaxes.size()) {
-            return false;
-          }
-          for(size_t i = 0; i < lhs.qualifier_template_id_syntaxes.size(); ++i) {
-            if(!template_id_equal(lhs.qualifier_template_id_syntaxes[i],
-                                  rhs.qualifier_template_id_syntaxes[i])) {
-              return false;
-            }
-          }
-          for(size_t i = 0; i < lhs.argument_syntaxes.size(); ++i) {
-            if(!template_argument_syntax_equal(lhs.argument_syntaxes[i],
-                                               rhs.argument_syntaxes[i])) {
-              return false;
-            }
-          }
-          return true;
-        }
-
-        bool node_value_equal(const CppAstNode & lhs,
-                              const CppAstNode & rhs) const
-        {
-          switch(lhs.kind) {
-          case CppAstKind::type_id:
-          case CppAstKind::decl_specifier:
-          case CppAstKind::decl_specifier_seq:
-          case CppAstKind::type_specifier_seq:
-          case CppAstKind::abstract_declarator:
-          case CppAstKind::declarator:
-          case CppAstKind::nested_declarator:
-            return true;
-          default:
-            return lhs.value == rhs.value;
-          }
-        }
-
-        bool node_equal(const CppAstNode & lhs, const CppAstNode & rhs) const
-        {
-          if(lhs.kind != rhs.kind ||
-             !node_value_equal(lhs, rhs) ||
-             lhs.has_token != rhs.has_token ||
-             lhs.simple_type != rhs.simple_type ||
-             !type_equals(lhs.semantic_type, rhs.semantic_type) ||
-             !optional_template_id_equal(lhs.template_id_syntax,
-                                         rhs.template_id_syntax) ||
-             lhs.qualifier_template_id_syntaxes.size() !=
-                 rhs.qualifier_template_id_syntaxes.size() ||
-             lhs.qualifier_type_syntaxes.size() !=
-                 rhs.qualifier_type_syntaxes.size() ||
-             lhs.children.size() != rhs.children.size()) {
-            return false;
-          }
-          for(size_t i = 0; i < lhs.qualifier_template_id_syntaxes.size(); ++i) {
-            if(!template_id_equal(lhs.qualifier_template_id_syntaxes[i],
-                                  rhs.qualifier_template_id_syntaxes[i])) {
-              return false;
-            }
-          }
-          for(size_t i = 0; i < lhs.qualifier_type_syntaxes.size(); ++i) {
-            if(!node_equal(lhs.qualifier_type_syntaxes[i],
-                           rhs.qualifier_type_syntaxes[i])) {
-              return false;
-            }
-          }
-          for(size_t i = 0; i < lhs.children.size(); ++i) {
-            if(!node_equal(lhs.children[i], rhs.children[i])) {
-              return false;
-            }
-          }
-          return true;
-        }
-      };
-      Comparer comparer;
-      if(comparer.node_equal(lhs, rhs)) {
+      if(semantic_lookup::same_function_template_entity_result_pattern(
+             lhs,
+             lhs_parameters,
+             rhs,
+             rhs_parameters)) {
         return true;
       }
 

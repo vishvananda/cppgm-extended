@@ -86,7 +86,8 @@ void bind_dependent_template_value(semantic_model::Scope & scope,
 void append_function_bindings(semantic_model::Scope & scope,
                               const std::string & name,
                               const std::vector<semantic_model::FunctionBinding *> & functions,
-                              semantic_model::MemberAccess access);
+                              semantic_model::MemberAccess access,
+                              std::size_t source_token_start = 0);
 
 void append_unique_function_templates(
     semantic_model::Scope & scope,

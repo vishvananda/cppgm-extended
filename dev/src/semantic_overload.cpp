@@ -8786,13 +8786,24 @@ ExprInfo analyze_adl_only_call_expression(SemanticContext & ctx,
                                                    associated_scopes,
                                                    associated_functions,
                                                    associated_templates);
-  lookup_adl_functions_in_scopes(associated_scopes, name, associated_functions);
+  lookup_adl_functions_in_scopes(
+      associated_scopes,
+      name,
+      associated_functions,
+      arg_nodes.empty() ? nullptr : arg_nodes[0]);
   lookup_adl_function_templates_in_scopes(associated_scopes,
                                           name,
                                           associated_templates);
 
   Scope adl_scope(nullptr, "<adl-only>", false);
   overlay_adl_argument_lookup_bindings(adl_scope, scope);
+  // Range-for's synthesized begin/end calls perform ADL without ordinary
+  // unqualified lookup.  Keep lexical bindings available for analyzing
+  // template arguments and candidate signatures, but do not let an
+  // unrelated local object with the synthesized callee name turn the call
+  // into an object-call expression.
+  adl_scope.values.erase(name);
+  adl_scope.variable_templates.erase(name);
   if(!associated_functions.empty()) {
     direct_function_set_slot(adl_scope, name) = associated_functions;
   }
@@ -8867,12 +8878,6 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
       name_template_id_syntax && !name_template_id_syntax->name.name.empty() ?
           name_template_id_syntax->name.name :
           name;
-  const bool has_structured_qualified_name_node =
-      name_node &&
-      has_qualified_name_syntax &&
-      (!name_node->qualifier_template_id_syntaxes.empty() ||
-       !name_node->qualifier_type_syntaxes.empty());
-
   vector<FunctionBinding *> overloads =
       name_template_id_syntax ?
           (name_node ?
@@ -8885,7 +8890,7 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
                    scope,
                    *name_template_id_syntax,
                    semantic_policy::without_body_instantiation())) :
-          (has_structured_qualified_name_node ?
+          (name_node && has_qualified_name_syntax ?
                ctx.lookup_functions_node(
                    scope,
                    *name_node,
@@ -9235,6 +9240,9 @@ bool collect_overloaded_function_id_argument_options(SemanticContext & ctx,
   }
 
   const TemplateIdSyntax * template_id = cppast_template_id_syntax(id_node);
+  const QualifiedName * qualified = cppast_qualified_name_syntax(id_node);
+  const bool has_qualified_name =
+      qualified && (qualified->rooted || !qualified->qualifiers.empty());
   vector<FunctionBinding *> overloads =
       template_id ?
           ctx.lookup_function_template_id_node(
@@ -9242,9 +9250,16 @@ bool collect_overloaded_function_id_argument_options(SemanticContext & ctx,
               id_node,
               *template_id,
               semantic_policy::without_body_instantiation()) :
-          ctx.lookup_functions(scope,
-                               id_node.value,
-                               semantic_policy::without_body_instantiation());
+          (has_qualified_name ?
+               ctx.lookup_functions_node(
+                   scope,
+                   id_node,
+                   id_node.value,
+                   semantic_policy::without_body_instantiation()) :
+               ctx.lookup_functions(
+                   scope,
+                   id_node.value,
+                   semantic_policy::without_body_instantiation()));
   if(overloads.empty()) {
     return false;
   }
@@ -9270,6 +9285,9 @@ bool id_expression_names_function_or_template_set(SemanticContext & ctx,
   }
 
   const TemplateIdSyntax * template_id = cppast_template_id_syntax(id_node);
+  const QualifiedName * qualified = cppast_qualified_name_syntax(id_node);
+  const bool has_qualified_name =
+      qualified && (qualified->rooted || !qualified->qualifiers.empty());
   try {
     vector<FunctionBinding *> functions =
         template_id ?
@@ -9278,9 +9296,16 @@ bool id_expression_names_function_or_template_set(SemanticContext & ctx,
                 id_node,
                 *template_id,
                 semantic_policy::without_body_instantiation()) :
-            ctx.lookup_functions(scope,
-                                 id_node.value,
-                                 semantic_policy::without_body_instantiation());
+            (has_qualified_name ?
+                 ctx.lookup_functions_node(
+                     scope,
+                     id_node,
+                     id_node.value,
+                     semantic_policy::without_body_instantiation()) :
+                 ctx.lookup_functions(
+                     scope,
+                     id_node.value,
+                     semantic_policy::without_body_instantiation()));
     if(!functions.empty()) {
       return true;
     }
@@ -9292,10 +9317,18 @@ bool id_expression_names_function_or_template_set(SemanticContext & ctx,
 
   vector<FunctionTemplateDecl *> templates;
   try {
-    if(template_id) {
-      collect_function_templates(ctx, scope, template_id->name, templates);
+    if(has_qualified_name) {
+      templates = ctx.lookup_function_templates_node(
+          scope,
+          id_node,
+          template_id && !template_id->name.name.empty() ?
+              template_id->name.name : id_node.value);
     } else {
-      collect_function_templates(ctx, scope, id_node.value, templates);
+      collect_function_templates(
+          ctx,
+          scope,
+          template_id ? template_id->name.name : id_node.value,
+          templates);
     }
   } catch(const TemplateSubstitutionFailure &) {
     templates.clear();
@@ -10048,7 +10081,10 @@ bool append_ordinary_call_adl_candidates(
     return false;
   }
 
-  lookup_adl_functions_in_scopes(associated_scopes, lookup_name, associated_functions);
+  lookup_adl_functions_in_scopes(associated_scopes,
+                                 lookup_name,
+                                 associated_functions,
+                                 &lookup_callee_node);
   lookup_adl_function_templates_in_scopes(associated_scopes,
                                           lookup_name,
                                           associated_templates);

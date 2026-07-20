@@ -316,7 +316,8 @@ void bind_dependent_template_value(semantic_model::Scope & scope,
 void append_function_bindings(semantic_model::Scope & scope,
                               const std::string & name,
                               const std::vector<semantic_model::FunctionBinding *> & functions,
-                              semantic_model::MemberAccess access)
+                              semantic_model::MemberAccess access,
+                              std::size_t source_token_start)
 {
   if(functions.empty()) {
     return;
@@ -324,6 +325,22 @@ void append_function_bindings(semantic_model::Scope & scope,
   std::vector<semantic_model::FunctionBinding *> & slot =
       semantic_lookup::direct_function_set_slot(scope, name);
   slot.insert(slot.end(), functions.begin(), functions.end());
+  if(source_token_start != 0) {
+    if(!scope.function_binding_first_token_starts) {
+      scope.function_binding_first_token_starts.reset(
+          new std::map<
+              std::string,
+              std::map<const semantic_model::FunctionBinding *, std::size_t> >());
+    }
+    std::map<const semantic_model::FunctionBinding *, std::size_t> & starts =
+        (*scope.function_binding_first_token_starts)[name];
+    for(std::size_t i = 0; i < functions.size(); ++i) {
+      std::size_t & first = starts[functions[i]];
+      if(first == 0 || source_token_start < first) {
+        first = source_token_start;
+      }
+    }
+  }
   if(scope.class_info) {
     for(std::size_t i = 0; i < functions.size(); ++i) {
       semantic_lookup::set_direct_function_access_override(scope, name, functions[i], access);

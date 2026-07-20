@@ -2950,9 +2950,11 @@ bool same_dependent_expression_argument_metadata(
                                            *rhs.type_id,
                                            rhs_parameters);
     return result ||
-           canonicalize_template_type_argument_text(lhs_parameters, lhs.text) ==
-               canonicalize_template_type_argument_text(rhs_parameters,
-                                                        rhs.text);
+           (!lhs.text.empty() &&
+            !rhs.text.empty() &&
+            canonicalize_template_type_argument_text(lhs_parameters, lhs.text) ==
+                canonicalize_template_type_argument_text(rhs_parameters,
+                                                         rhs.text));
   }
   if(lhs.expression || rhs.expression) {
     const bool result = lhs.expression &&
@@ -3048,7 +3050,7 @@ bool same_dependent_expression_metadata(
       lhs.kind == CppAstKind::abstract_declarator ||
       lhs.kind == CppAstKind::declarator ||
       lhs.kind == CppAstKind::nested_declarator;
-  if(!wrapper_value && lhs.value != rhs.value &&
+  if((!wrapper_value || lhs.children.empty()) &&
      canonicalize_template_named_type_text(lhs_parameters, lhs.value) !=
          canonicalize_template_named_type_text(rhs_parameters, rhs.value)) {
     return false;
@@ -3669,6 +3671,11 @@ bool same_function_template_entity_result_pattern(
     const CppAstNode & rhs,
     const std::vector<TemplateParameterInfo> & rhs_parameters)
 {
+  if(!lhs.value.empty() && !rhs.value.empty() &&
+     canonicalize_template_named_type_text(lhs_parameters, lhs.value) !=
+         canonicalize_template_named_type_text(rhs_parameters, rhs.value)) {
+    return false;
+  }
   return same_dependent_expression_metadata(lhs,
                                             lhs_parameters,
                                             rhs,
@@ -3971,7 +3978,10 @@ bool cppast_node_has_result_sfinae_discriminator(const CppAstNode & node)
   }
   if(node.kind == CppAstKind::decl_specifier &&
      (node.value.compare(0, 8, "decltype") == 0 ||
-      node.value.compare(0, 10, "__decltype") == 0)) {
+      node.value.compare(0, 10, "__decltype") == 0 ||
+      node.value.find("enable_if") != string::npos ||
+      node.value.find("disable_if") != string::npos ||
+      node.value.find("void_t") != string::npos)) {
     return true;
   }
   if(optional_template_id_has_result_sfinae_discriminator(
@@ -4020,8 +4030,10 @@ bool function_template_result_type_patterns_match(
      !cppast_node_has_result_sfinae_discriminator(rhs->result_type_pattern)) {
     return true;
   }
-  return cppast_node_shape_equal(lhs->result_type_pattern,
-                                 rhs->result_type_pattern);
+  return same_function_template_entity_result_pattern(lhs->result_type_pattern,
+                                                      lhs->parameters,
+                                                      rhs->result_type_pattern,
+                                                      rhs->parameters);
 }
 
 bool same_inline_namespace_function_template_entity(const FunctionTemplateDecl * lhs,
@@ -5555,17 +5567,36 @@ void lookup_function_templates_in_scopes(const vector<Scope *> & scopes,
 
 namespace {
 
-bool declaration_scope_belongs_to_adl_scope(const Scope * declaration_scope,
-                                            const Scope & associated_scope)
+bool function_binding_visible_to_adl_from_node(
+    const Scope & associated_scope,
+    const string & name,
+    const FunctionBinding & binding,
+    const CppAstNode * use_node)
 {
-  return declaration_scope &&
-         inline_namespace_collapsed_scope_name(declaration_scope) ==
-             inline_namespace_collapsed_scope_name(&associated_scope);
+  if(binding.declaration_scope &&
+     inline_namespace_collapsed_scope_name(binding.declaration_scope) ==
+         inline_namespace_collapsed_scope_name(&associated_scope)) {
+    return true;
+  }
+  if(!use_node ||
+     use_node->token_end <= use_node->token_start ||
+     !associated_scope.function_binding_first_token_starts) {
+    return false;
+  }
+  const auto by_name =
+      associated_scope.function_binding_first_token_starts->find(name);
+  if(by_name == associated_scope.function_binding_first_token_starts->end()) {
+    return false;
+  }
+  const auto first = by_name->second.find(&binding);
+  return first != by_name->second.end() &&
+         first->second <= use_node->token_start;
 }
 
 void append_adl_direct_functions(Scope & scope,
                                  const string & name,
-                                 vector<FunctionBinding *> & out)
+                                 vector<FunctionBinding *> & out,
+                                 const CppAstNode * use_node)
 {
   const vector<FunctionBinding *> * found = find_direct_function_set(scope, name);
   vector<FunctionBinding *> candidates;
@@ -5574,7 +5605,8 @@ void append_adl_direct_functions(Scope & scope,
       FunctionBinding * binding = (*found)[i];
       if(binding &&
          !binding->hidden_friend_only &&
-         declaration_scope_belongs_to_adl_scope(binding->declaration_scope, scope)) {
+         function_binding_visible_to_adl_from_node(
+             scope, name, *binding, use_node)) {
         candidates.push_back(binding);
       }
     }
@@ -5584,7 +5616,7 @@ void append_adl_direct_functions(Scope & scope,
   for(size_t i = 0; i < scope.namespace_children.size(); ++i) {
     Scope & child = *scope.namespace_children[i];
     if(child.inline_namespace) {
-      append_adl_direct_functions(child, name, out);
+      append_adl_direct_functions(child, name, out, use_node);
     }
   }
 }
@@ -5611,11 +5643,12 @@ void append_adl_direct_function_templates(Scope & scope,
 
 void lookup_adl_functions_in_scopes(const vector<Scope *> & scopes,
                                     const string & name,
-                                    vector<FunctionBinding *> & out)
+                                    vector<FunctionBinding *> & out,
+                                    const CppAstNode * use_node)
 {
   for(size_t i = 0; i < scopes.size(); ++i) {
     if(scopes[i]) {
-      append_adl_direct_functions(*scopes[i], name, out);
+      append_adl_direct_functions(*scopes[i], name, out, use_node);
     }
   }
 }

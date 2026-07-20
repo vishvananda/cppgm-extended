@@ -2073,16 +2073,21 @@ void analyze_range_for_statement(SemanticContext & ctx,
     }
     const string begin_name = ctx.next_synthetic_local_name("begin");
     const string end_name = ctx.next_synthetic_local_name("end");
+    // [stmt.ranged] declares these as `auto begin = begin-expr` and
+    // `auto end = end-expr`.  In particular, a helper returning `const I&`
+    // still initializes a mutable iterator copy.
+    TypePtr begin_type = value_conversion_type(begin_expr);
+    TypePtr end_type = value_conversion_type(end_expr);
     std::vector<ValueBinding> iterator_bindings;
     iterator_bindings.push_back(
-        ValueBinding(ValueBinding::VK_VARIABLE, begin_name, begin_expr.type));
+        ValueBinding(ValueBinding::VK_VARIABLE, begin_name, begin_type));
     iterator_bindings.push_back(
-        ValueBinding(ValueBinding::VK_VARIABLE, end_name, end_expr.type));
+        ValueBinding(ValueBinding::VK_VARIABLE, end_name, end_type));
     semantic_scope_mutation::bind_values(body_scope, iterator_bindings);
     append_hidden_variable_declaration(
-        outer, begin_name, begin_expr.type, std::move(begin_expr.node));
+        outer, begin_name, begin_type, std::move(begin_expr.node));
     append_hidden_variable_declaration(
-        outer, end_name, end_expr.type, std::move(end_expr.node));
+        outer, end_name, end_type, std::move(end_expr.node));
 
     ExprInfo element_expr =
         analyze_range_helper_expression(ctx,

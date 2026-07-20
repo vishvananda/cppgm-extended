@@ -296,7 +296,8 @@ void lookup_function_templates_in_scopes(const std::vector<Scope *> & scopes,
                                          std::vector<FunctionTemplateDecl *> & out);
 void lookup_adl_functions_in_scopes(const std::vector<Scope *> & scopes,
                                     const std::string & name,
-                                    std::vector<FunctionBinding *> & out);
+                                    std::vector<FunctionBinding *> & out,
+                                    const CppAstNode * use_node = nullptr);
 void lookup_adl_function_templates_in_scopes(
     const std::vector<Scope *> & scopes,
     const std::string & name,
