@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `57 / 147`
-- current cursor: `#58 libs/lexical_cast/test`
-- active compiler frontier: pending exact Lexical Cast survey
+- completed suites: `58 / 147`
+- current cursor: `#59 libs/local_function/test`
+- active compiler frontier: pending exact Local Function survey
 
 ## Baseline Gates
 
@@ -192,6 +192,7 @@ differences other than the output path.
 | `(Function implicit-static allocation function fix)` | Language-mandated static classification for class-scope allocation and deallocation functions across declarations, definitions, templates, and output lookup | -1.26% | +1.71% | +2.23% | n/a; one final three-run candidate measurement for the complete Function closure | `/tmp/cppgm-boost-frontier-v2-function-candidate.json` | pass; candidate-only measurement against immutable compiler-and-51-header baseline `9764b3835`. The gate verified the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent or live project header was measured. |
 | `(Fusion qualified value-pack and concrete dependency fixes)` | Initial parsing of qualified-id expression pack expansions plus concrete typed SFINAE-result dependency classification | -1.49% | +0.84% | +2.23% | n/a; one final three-run candidate measurement for the complete Fusion closure | `/tmp/cppgm-boost-frontier-v2-fusion-candidate.json` | pass; candidate-only measurement against immutable compiler-and-51-header baseline `9764b3835`. The gate verified the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent or live project header was measured. |
 | `(LEAF typed semantic and dispatch closure)` | Dependent non-type packs and qualified `sizeof` results, conversion-function deduction/ranking, concrete alias materialization, injected-class lookup, same-type RTTI conversion, inline-namespace pretty-function spelling, and base-view virtual dispatch | -2.22% | +1.27% | +2.44% | n/a; one final three-run candidate measurement for the complete LEAF closure | `/tmp/cppgm-boost-frontier-v2-leaf-candidate.json` | pass; candidate-only measurement against immutable compiler-and-51-header baseline `9764b3835`. The gate verified the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent or live project header was measured. |
+| `(parenthesized qualified-call parse fix)` | Parenthesized qualified zero-argument call immediately followed by multiplication | -2.00% | +1.20% | +2.35% | n/a; one final three-run candidate measurement for the complete Lexical Cast closure | `/tmp/cppgm-boost-frontier-v2-lexical-cast-candidate.json` | pass; candidate-only measurement against immutable compiler-and-51-header baseline `9764b3835`. The gate verified the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent or live project header was measured. |
 
 ## Suite Cursor
 
@@ -257,22 +258,23 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 55 | `libs/iterator/test` | pass | `(no compiler change)` | The exact four-job forced graph completes its ICU configuration check, finds 4492 targets, updates all 175 requested targets, records 46 passing test actions, handles all eight deliberate compile failures as failed-as-expected, and exits successfully; log `/tmp/boost-frontier-v2-suite-055-initial-forced.log`. | All positive zip, archetype, concept, adaptor, transform, indirect, filter, reverse, permutation, function, category, advance, distance, and shared-iterator actions pass. There is no unexpected skip or failed update. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 | 56 | `libs/lambda/test` | pass | `(no compiler change)` | The exact four-job forced graph finds 1437 targets, updates all 79 requested targets, records 20 passing compile/link/runtime test actions, and exits successfully; log `/tmp/boost-frontier-v2-suite-056-initial-forced.log`. | The current compiler passes the complete algorithm, bind, cast, constructor, control-flow, result-trait, member-pointer, exception, operator, rvalue, result-of, issue, and switch graph with no failure, skip, or error marker. No compiler change, regression update, repository-wide rerun, or performance measurement was required. |
 | 57 | `libs/leaf/test` | blocked-external | `(this commit)` | The final exact four-job forced graph finds 3229 targets, requests 482 updates, updates 478, records 122 passing actions, and handles all 22 deliberate failures as failed-as-expected. The sole failed positive update is `nlohmann_json_encoder_test.o`, whose requested external `nlohmann/json.hpp` is absent; its executable, run, and aggregate test are the only three skipped targets. Log: `/tmp/boost-frontier-v2-suite-057-leaf-final-after-validation-forced.log`. | Nine earliest-owner reducers close the compiler-owned dependent-NTTP, qualified-type/SFINAE, conversion ranking, alias materialization, injected-name lookup, RTTI, pretty-function, and virtual-dispatch failures. The repaired `error_code_test`, `print_file_leaf_result`, and `print_file_system_result` compile and link. Configured strict suites, all PA9-excluded direct-LowIR tests (`4008/4008`), placement/hygiene, all 23 zero-reparse categories, audit tests, cache-disabled proofs, and GCC 15 warning checks pass. The suite remains uncreditable as a compiler pass only because the positive nlohmann target has no dependency to compile. |
+| 58 | `libs/lexical_cast/test` | pass | `(this commit)` | The initial exact four-job forced graph finds 4096 targets, requests 166 updates, and exposes the same parser failure in `lexical_cast_test.o` and `float_types_test.o`, with six downstream skips; log `/tmp/boost-frontier-v2-suite-058-initial-forced.log`. The final exact graph finds the same 4096 targets, updates all 158 requested targets, records 30 passing test actions, handles both deliberate failures as failed-as-expected, and exits successfully with no skip or failed update; log `/tmp/boost-frontier-v2-suite-058-final-forced.log`. | The PA10 AST reducer covers a parenthesized qualified zero-argument call before multiplication. PA10 passes `137/137`; configured strict suites, the PA9-excluded broad report (`4009/4009`), all 23 zero-reparse categories, 14 audit tests, twelve byte-identical cache modes, Clang/GCC controls, and GCC 15 warning checks pass. The new reducer has no placement finding; PA10's full conservative audit retains its pre-existing 492-item syntax-suite review backlog. Candidate-only frozen performance passes at -2.00% instructions, +1.20% RSS, and +2.35% footprint; no parent or live header was measured. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`, and
 `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#58 libs/lexical_cast/test`
+- suite: `#59 libs/local_function/test`
 - focused target: pending exact survey
-- last closed suite: `#57 libs/leaf/test` (`blocked-external`)
+- last closed suite: `#58 libs/lexical_cast/test`
 - failure phase: intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: pending first causal failure
 - implementation area: pending first causal failure
-- performance risk: the completed LEAF closure passes the immutable frozen compiler-and-51-header epoch at -2.22% instructions, +1.27% RSS, and +2.44% footprint. The gate validates exact epoch source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before running; no parent or live project header was measured
-- next action: run the exact four-job forced `libs/lexical_cast/test` graph and classify its first causal failure, if any
+- performance risk: the completed Lexical Cast closure passes the immutable frozen compiler-and-51-header epoch at -2.00% instructions, +1.20% RSS, and +2.35% footprint. The gate validates exact epoch source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before running; no parent or live project header was measured
+- next action: run the exact four-job forced `libs/local_function/test` graph and classify its first causal failure, if any
 
 ## Fix Ledger
 
@@ -466,8 +468,23 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | LEAF concrete alias target with nested conversion template | Direct alias expansion could leave a concrete class alias represented by its dependent source pattern, hiding nested conversion templates of the selected specialization. Blindly materializing every alias changed unrelated witness lifecycles, so the final path materializes only a structurally direct class-template target whose dependent leaves are the alias's own type parameters, and regenerates stale concrete argument display from typed structure. | `pa23/tests/spec/400-concrete-alias-target-nested-conversion-template.t` | `print_file_leaf_result` could not convert a nested `error_result` through `operator result<U>()` when `result` was reached through the outer alias. Blind materialization fixed LEAF but changed two existing PA21 witnesses; the narrowed typed predicate preserves both. | Focused regression and exact example pass. Normal plus ten individual cache-off modes plus all-off are byte-identical with SHA-256 `d3c2b595ed9d983148f8696192056bc4a7d3bd5cb0a88d6497a910ac80cadeec`; PA23, configured strict witnesses, placement, zero-reparse/audit, warning, broad, and final LEAF gates pass. | measured with the complete LEAF closure; candidate-only frozen report; no parent or live header was measured | `(this commit)` |
 | fixed | LEAF injected class template hides later outer alias | Deferred unqualified template-name lookup allowed a later outer alias template to replace the nearer injected class-template name inside an already declared class member template. Both context-aware and direct typed lookup now reject that alias when a nearer class template or source-template class supplies the injected name. | `pa23/tests/spec/400-injected-class-template-hides-later-outer-alias.t` | LEAF's nested `error_result::operator result<U>()` and `move_from(result<U>&&)` rebound `result` to the later global alias instead of the enclosing injected class template. | Focused regression and exact LEAF nested-result targets pass. Normal plus ten individual cache-off modes plus all-off are byte-identical with SHA-256 `9cfe76dd776677d5bf5204fb78ba75d7d7ae23a12dc6ea16da8c8ccc67de6edb`; PA23, strict, placement, zero-reparse/audit, warning, broad, and final LEAF gates pass. | measured with the complete LEAF closure; candidate-only frozen report; no parent or live header was measured | `(this commit)` |
 | fixed | LEAF base-subobject virtual receiver view | Virtual-call lowering first searched only the receiver's static vtable view, which fixes ordinary base-subobject dispatch but can discard construction-time or owner-specific VTT tables; using only the emitted declaration has the opposite failure. The final typed selection first preserves an exact emitted-function slot from the active table and falls back to the receiver's static view only when no exact slot exists. | `pa27/tests/general/100-base-subobject-cast-virtual-dispatch.t` | The reducer casts a derived object to `base const&` and requires the derived override. Intermediate static-view logic broke PA29 separate-object VTT retention and two PA32 virtual-base construction/dispatch controls; the ordered exact-slot fallback passes all four cases. | Focused PA27 runtime, PA29/PA32 VTT controls, owner checks, placement, cache, strict, zero-reparse/audit, warning, the PA9-excluded `4008/4008` report, and final LEAF replay pass. | measured with the complete LEAF closure; candidate-only frozen report; no parent or live header was measured | `(this commit)` |
+| fixed | Lexical Cast parenthesized qualified call before multiplication | The unary C-style-cast probe asked the shared parenthesized type-id/expression disambiguator not to attempt an expression parse. A qualified zero-argument call such as `(limits::epsilon()) * 2` can also parse syntactically as a type-id with a function-style abstract declarator, leaving `* 2` to look like the cast operand. That malformed cast survived until semantics rejected its function target. The unary probe now enables the disambiguator's existing structured expression preference; genuine type-ids retain the cast path, while the complete qualified call becomes the parenthesized expression before postfix/binary parsing. No text reparse, semantic retry, cache, name spelling rule, or Boost-specific path is added. | `pa10/tests/general/100-parenthesized-qualified-call-before-multiply.t`, a pure AST oracle at the initial parser owner | The initial `lexical_cast_test` and `float_types_test` builds both report `unsupported cast target type` whose AST is `type-name std::numeric_limits<T>::epsilon` plus an abstract `parameter-clause`. A header-free executable reducer fails identically before the change and returns zero under Clang 22, GCC 15, and the fixed compiler. | The focused AST check and complete PA10 report pass `137/137`; configured strict suites pass; all 23 text-reparse categories and all 14 audit tests pass. Normal, all ten individual cache-disabled, and all-disabled LowIR are byte-identical with SHA-256 `24ef12525c6eed99673044a5dc99c45bd0f1640c94358c5cf30b5063009fc8b8`. The new test has no placement finding despite PA10's pre-existing conservative audit backlog. `cppast_parser.cpp` compiles warning-clean under GCC 15. The PA9-excluded broad report passes `4009/4009`, focused Boost targets pass, and the exact final Lexical Cast graph passes. | -2.00% instructions, +1.20% RSS, +2.35% footprint against immutable frozen compiler-and-51-header epoch `9764b3835`; report `/tmp/cppgm-boost-frontier-v2-lexical-cast-candidate.json`; no parent or live-header command was run | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-20`: Closed Lexical Cast after one initial-parser fix and advanced
+  the ordered cursor to suite 59, `libs/local_function/test`. The initial exact
+  graph misparsed `(std::numeric_limits<T>::epsilon()) * 2` in both
+  `lexical_cast_test` and `float_types_test`; the final exact four-job forced
+  graph finds 4096 targets, updates all 158 requested targets, records 30
+  passing test actions, handles both deliberate failures as expected, and
+  exits successfully with no skip or failed update. PA10 passes `137/137`, the
+  configured strict suites and PA9-excluded `4009/4009` report pass, and all
+  cache, text-reparse/unit-audit, new-test placement, host-control, and warning
+  checks are clean. The
+  candidate-only immutable 51-header performance gate passes at -2.00%
+  instructions, +1.20% RSS, and +2.35% footprint. No parent compiler or live
+  project header was measured.
 
 - `2026-07-20`: Classified LEAF as `blocked-external` after closing all nine
   compiler-owned frontiers and advanced the ordered cursor to suite 58,
@@ -2176,5 +2193,5 @@ env CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   JOBS=4 \
   /usr/local/bin/timeout 1800 \
-  ./run-cppgm-b2.sh -a libs/lexical_cast/test
+  ./run-cppgm-b2.sh -a libs/local_function/test
 ```

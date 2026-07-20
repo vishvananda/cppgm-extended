@@ -9699,9 +9699,11 @@ bool CppAstParser::parse_unary_expression(CppAstNode & out)
   if(peek().is_simple(OP_LPAREN)) {
     CppAstNode type_id;
     bool is_type_id = false;
+    // A function-style abstract declarator can instead be a complete qualified
+    // call, as in `(limits::epsilon()) * 2`; let the shared probe disambiguate.
     if(parse_parenthesized_type_id_or_expression(type_id,
                                                  is_type_id,
-                                                 false) &&
+                                                 true) &&
        is_type_id) {
       const bool postfix_after_parenthesized_functional_cast =
           type_id_has_function_style_abstract_declarator(type_id) &&
