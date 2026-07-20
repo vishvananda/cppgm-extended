@@ -5214,6 +5214,19 @@ MemberAccess default_access_for_class_kind(const std::string & class_kind)
   return (class_kind == "struct" || class_kind == "union") ? MA_PUBLIC : MA_PRIVATE;
 }
 
+bool class_function_name_is_implicitly_static(const std::string & name)
+{
+  const std::string simple_name = semantic_utils::unqualified_member_name(name);
+  return simple_name == "operator new" ||
+         simple_name == "operatornew" ||
+         simple_name == "operator new[]" ||
+         simple_name == "operatornew[]" ||
+         simple_name == "operator delete" ||
+         simple_name == "operatordelete" ||
+         simple_name == "operator delete[]" ||
+         simple_name == "operatordelete[]";
+}
+
 bool is_anonymous_union_specifier(const CppAstNode & node)
 {
   return find_anonymous_union_specifier(node) != nullptr;
@@ -6013,13 +6026,18 @@ bool prepare_class_member_function_definition(
   const CppAstNode function_declarator =
       function_declarator_without_trailing_return(
           out.method.parse_declarator_node());
-  return ctx.parse_declarator(*info.member_scope,
-                              function_declarator,
-                              out.base,
-                              out.name,
-                              out.declared_type,
-                              reference_class_templates_only) &&
-         !out.name.empty();
+  if(!ctx.parse_declarator(*info.member_scope,
+                           function_declarator,
+                           out.base,
+                           out.name,
+                           out.declared_type,
+                           reference_class_templates_only) ||
+     out.name.empty()) {
+    return false;
+  }
+  out.is_static_member =
+      out.is_static_member || class_function_name_is_implicitly_static(out.name);
+  return true;
 }
 
 const CppAstNode * class_member_initializer(const CppAstNode & init_decl)
@@ -8741,7 +8759,7 @@ void collect_class_simple_declaration(SemanticContext & ctx,
         throw std::logic_error("unsupported member parameter-clause" +
                                diagnostic_location_for_member(ctx, init_decl, &node));
       }
-      if(is_static_member) {
+      if(is_static_member || class_function_name_is_implicitly_static(member_name)) {
         FunctionRegistrationRequest request;
         request.owner_class = &info;
         request.name = member_name;
@@ -9147,7 +9165,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
         continue;
       }
 
-      if(is_static_member) {
+      if(is_static_member || class_function_name_is_implicitly_static(member_name)) {
         FunctionRegistrationRequest request;
         request.owner_class = &info;
         request.name = member_name;
@@ -10302,7 +10320,7 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
              *info.member_scope, *parameter_clause, params, &default_args, true)) {
         throw std::logic_error("unsupported dependent member parameter-clause");
       }
-      if(is_static_member) {
+      if(is_static_member || class_function_name_is_implicitly_static(member_name)) {
         FunctionRegistrationRequest request;
         request.owner_class = &info;
         request.name = member_name;

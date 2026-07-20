@@ -3757,8 +3757,10 @@ public:
 
     const bool candidate_is_static_member =
         special_member_template ? false :
-        (method_like_template ? decl_spec_contains_token(*specifiers, KW_STATIC) :
-                                false);
+        (method_like_template ?
+             (decl_spec_contains_token(*specifiers, KW_STATIC) ||
+              semantic_class_model::class_function_name_is_implicitly_static(name)) :
+             false);
     struct FunctionTemplateDeclTraits
     {
       MemberAccess access = MA_PUBLIC;

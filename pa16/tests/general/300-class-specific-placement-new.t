@@ -3,7 +3,7 @@ typedef decltype(sizeof(0)) size_t;
 struct Holder {
   int value;
 
-  static void *operator new(size_t bytes, size_t extra);
+  void *operator new(size_t bytes, size_t extra);
 
   Holder() : value(7) {}
 };

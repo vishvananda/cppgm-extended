@@ -80,6 +80,7 @@ struct PreparedClassMemberFunctionDefinition
 };
 
 semantic_model::MemberAccess default_access_for_class_kind(const std::string & class_kind);
+bool class_function_name_is_implicitly_static(const std::string & name);
 bool class_member_specifiers_supported(const CppAstNode & specifiers,
                                        bool allow_inline_virtual);
 bool declarator_is_const_method(const CppAstNode & declarator);
