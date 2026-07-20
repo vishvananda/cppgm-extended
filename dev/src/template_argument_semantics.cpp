@@ -22328,6 +22328,10 @@ CppAstNode make_substituted_type_id_node(const TypePtr & type,
   type_name.kind = CppAstKind::type_name;
   type_name.value = text;
   type_name.semantic_type = type;
+  QualifiedName qualified;
+  if(qualified_name_for_resolved_type_annotation(type, qualified)) {
+    type_name.qualified_name_syntax.reset(new QualifiedName(qualified));
+  }
 
   specifiers.children.push_back(type_name);
   type_id.children.push_back(specifiers);

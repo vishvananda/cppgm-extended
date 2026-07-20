@@ -13,6 +13,118 @@ namespace semantic_model {
 
 namespace {
 
+std::string namespace_prefix(const Scope * scope)
+{
+  std::vector<std::string> parts;
+  for(const Scope * current = scope; current; current = current->parent) {
+    if(current->namespace_scope &&
+       !current->name.empty() &&
+       current->name != "<global>" &&
+       current->name != "<unnamed>") {
+      parts.push_back(current->name);
+    }
+  }
+  std::string out;
+  for(std::size_t i = parts.size(); i > 0; --i) {
+    out += parts[i - 1];
+    out += "::";
+  }
+  return out;
+}
+
+void collect_inline_namespace_prefix_replacements(
+    const Scope & scope,
+    std::vector<std::pair<std::string, std::string> > & out)
+{
+  for(std::size_t i = 0; i < scope.namespace_children.size(); ++i) {
+    const Scope * child = scope.namespace_children[i].get();
+    if(!child) {
+      continue;
+    }
+    if(child->inline_namespace) {
+      const std::string before = namespace_prefix(child);
+      const std::string after = namespace_prefix(child->parent);
+      if(!before.empty() && before != after) {
+        out.push_back(std::make_pair(before, after));
+      }
+    }
+    collect_inline_namespace_prefix_replacements(*child, out);
+  }
+}
+
+const Scope * pretty_function_scope_anchor(const FunctionBinding & binding)
+{
+  if(binding.declaration_scope) {
+    return binding.declaration_scope;
+  }
+  if(binding.source_template && binding.source_template->declaring_scope) {
+    return binding.source_template->declaring_scope;
+  }
+  if(binding.owner_class && binding.owner_class->enclosing_scope) {
+    return binding.owner_class->enclosing_scope;
+  }
+  return nullptr;
+}
+
+std::string collapse_pretty_function_inline_namespaces(
+    const FunctionBinding & binding,
+    std::string text)
+{
+  const Scope * root = pretty_function_scope_anchor(binding);
+  if(!root) {
+    return text;
+  }
+  while(root->parent) {
+    root = root->parent;
+  }
+
+  std::vector<std::pair<std::string, std::string> > replacements;
+  collect_inline_namespace_prefix_replacements(*root, replacements);
+  std::sort(
+      replacements.begin(),
+      replacements.end(),
+      [](const std::pair<std::string, std::string> & lhs,
+         const std::pair<std::string, std::string> & rhs)
+      {
+        return lhs.first.size() > rhs.first.size();
+      });
+  for(std::size_t i = 0; i < replacements.size(); ++i) {
+    std::size_t pos = 0;
+    while((pos = text.find(replacements[i].first, pos)) != std::string::npos) {
+      text.replace(pos,
+                   replacements[i].first.size(),
+                   replacements[i].second);
+      pos += replacements[i].second.size();
+    }
+  }
+  return text;
+}
+
+std::string predefined_pretty_function_type_text(
+    const cpp_decl::TypePtr & type)
+{
+  std::string text = cpp_decl::template_argument_type_text(type);
+  cpp_decl::TypePtr base = cpp_decl::strip_top_level_cv(type);
+  if(!base ||
+     base->kind != cpp_decl::Type::TK_NAMED ||
+     (base->named_key.compare(0, 5, "enum ") != 0 &&
+      base->named_key.compare(0, 11, "enum class ") != 0 &&
+      base->named_key.compare(0, 12, "enum struct ") != 0)) {
+    return text;
+  }
+
+  const std::string display =
+      semantic_utils::strip_elaborated_type_prefix(base->named_display);
+  const std::string qualified =
+      semantic_utils::strip_elaborated_type_prefix(base->named_key);
+  if(!display.empty() &&
+     qualified.find("::") != std::string::npos &&
+     text.compare(0, display.size(), display) == 0) {
+    text.replace(0, display.size(), qualified);
+  }
+  return text;
+}
+
 Scope * nonmember_hidden_friend_entity_scope(const FunctionBinding & binding)
 {
   if(binding.owner_class ||
@@ -440,9 +552,14 @@ std::string predefined_pretty_function_template_arguments(
               std::string("<anonymous>") :
               parameters[i].name;
           out += " = ";
-          out += template_model::template_argument_text(
-              arguments[i],
-              cpp_decl::template_argument_type_text);
+          if(arguments[i].kind == template_model::TemplateArgument::TA_TYPE &&
+             arguments[i].type) {
+            out += predefined_pretty_function_type_text(arguments[i].type);
+          } else {
+            out += template_model::template_argument_text(
+                arguments[i],
+                predefined_pretty_function_type_text);
+          }
         }
       };
 
@@ -475,9 +592,11 @@ std::string predefined_pretty_function_text(const FunctionBinding & binding)
       !binding.name.empty() ? binding.name :
       !binding.display_name.empty() ? binding.display_name :
       function_binding_display_name_for_symbol(binding);
-  return return_text + " " + function_name + "(" +
-         predefined_pretty_function_parameter_list(function_type) + ")" +
-         predefined_pretty_function_template_arguments(binding);
+  return collapse_pretty_function_inline_namespaces(
+      binding,
+      return_text + " " + function_name + "(" +
+          predefined_pretty_function_parameter_list(function_type) + ")" +
+          predefined_pretty_function_template_arguments(binding));
 }
 
 std::string function_binding_qualified_name_for_symbol(const FunctionBinding & binding)

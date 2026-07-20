@@ -1490,6 +1490,26 @@ AliasTemplateDecl * lookup_alias_template_in_scope_or_inherited_members(
       });
 }
 
+bool nearer_class_template_hides_unqualified_alias_template(
+    SemanticContext & ctx,
+    Scope & scope,
+    const string & name)
+{
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(lookup_alias_template_in_scope_or_inherited_members(ctx,
+                                                          *current,
+                                                          name)) {
+      return false;
+    }
+    if(lookup_class_template_in_scope_or_inherited_members(ctx,
+                                                          *current,
+                                                          name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 template<typename DeclT, typename DirectLookup, typename SameEntity>
 DeclT * lookup_qualified_decl_with_using_directives(
     Scope & scope,
@@ -6326,6 +6346,11 @@ AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
                                           const QualifiedName & qualified)
 {
   if(!qualified.rooted && qualified.qualifiers.empty()) {
+    if(nearer_class_template_hides_unqualified_alias_template(ctx,
+                                                              scope,
+                                                              qualified.name)) {
+      return nullptr;
+    }
     return lookup_unqualified_decl_with_entity_equivalence<AliasTemplateDecl>(
         scope,
         qualified.name,
@@ -6364,6 +6389,9 @@ AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
                                           Scope & scope,
                                           const string & name)
 {
+  if(nearer_class_template_hides_unqualified_alias_template(ctx, scope, name)) {
+    return nullptr;
+  }
   return lookup_unqualified_decl_with_entity_equivalence<AliasTemplateDecl>(
       scope, name,
       [&ctx](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
@@ -6409,6 +6437,21 @@ AliasTemplateDecl * lookup_alias_template_node(
 AliasTemplateDecl * lookup_unqualified_alias_template(Scope & scope,
                                                       const string & name)
 {
+  for(Scope * current = &scope; current; current = current->parent) {
+    map<string, AliasTemplateDecl *>::const_iterator alias_found =
+        current->alias_templates.find(name);
+    if(alias_found != current->alias_templates.end() && alias_found->second) {
+      break;
+    }
+    map<string, ClassTemplateDecl *>::const_iterator class_found =
+        current->class_templates.find(name);
+    if((class_found != current->class_templates.end() && class_found->second) ||
+       (current->class_info &&
+        current->class_info->source_template &&
+        current->class_info->source_template->name == name)) {
+      return nullptr;
+    }
+  }
   return lookup_unqualified_decl_with_entity_equivalence<AliasTemplateDecl>(
       scope, name,
       [](Scope & target, const string & lookup_name) -> AliasTemplateDecl *

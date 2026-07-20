@@ -1,0 +1,68 @@
+function @make_error() -> obj<4x4> [binding=strong, object=_Z10make_errorv] {
+  slot $retobj__1 : obj<4x4>
+  slot $arg__2 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $retobj__1
+    %t2 = addr $arg__2
+    call void @error_id__error_id__ov2(%t2, 7)
+    call void @result_payload___result__ov3(%t1, %t2)
+    return obj<4x4> $retobj__1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<4x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = call obj<4x4> @make_error()
+    copyobj 4x4 %t2, %t1
+    %t3 = addr $value
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    %t6 = cmp eq i32 %t5, 7
+    branch %t6, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load i32 $cond__1
+    return i32 %t7
+}
+function @result_payload___result__ov3(%this : ptr, %error : ptr [pass=reference]) -> void [binding=weak, object=_ZN6resultI7payloadEC1I8error_idEEOT_] {
+  slot $this : ptr
+  slot $error : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %error, $error
+    %t1 = load ptr $error
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = binary add i32 %t3, 0
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    store i32 %t4, %t6
+    return void
+}
+function @error_id__error_id__ov2(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN8error_idC1Ei] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+alias object _ZN6resultI7payloadEC2I8error_idEEOT_ = @result_payload___result__ov3
+alias object _ZN8error_idC2Ei = @error_id__error_id__ov2

@@ -14175,6 +14175,80 @@ private:
 	      QualifiedName alias_name;
 	      alias_name.name = decl.name;
 	      TypePtr structural_alias;
+	      std::function<bool(const TypePtr &)> direct_alias_target_type_shape;
+	      direct_alias_target_type_shape =
+	          [&](const TypePtr & type) -> bool
+	          {
+	            if(!type) {
+	              return false;
+	            }
+	            switch(type->kind) {
+	            case Type::TK_FUNDAMENTAL:
+	              return true;
+	            case Type::TK_NAMED:
+	              if(!type_depends_on_template_parameter(type)) {
+	                return true;
+	              }
+	              if(!named_type_is_template_parameter(type)) {
+	                return false;
+	              }
+	              for(std::size_t i = 0; i < decl.parameters.size(); ++i) {
+	                const TemplateParameterInfo & parameter = decl.parameters[i];
+	                if(parameter.kind == TemplateParameterInfo::TP_TYPE &&
+	                   type->named_key == parameter.placeholder_key) {
+	                  return true;
+	                }
+	              }
+	              return false;
+	            case Type::TK_CV:
+	            case Type::TK_ATOMIC:
+	            case Type::TK_POINTER:
+	            case Type::TK_BLOCK_POINTER:
+	            case Type::TK_LVALUE_REFERENCE:
+	            case Type::TK_RVALUE_REFERENCE:
+	            case Type::TK_ARRAY:
+	              return direct_alias_target_type_shape(type->inner);
+	            case Type::TK_MEMBER_POINTER:
+	              return direct_alias_target_type_shape(type->owner) &&
+	                     direct_alias_target_type_shape(type->inner);
+	            case Type::TK_FUNCTION:
+	              for(std::size_t i = 0; i < type->params.size(); ++i) {
+	                if(!direct_alias_target_type_shape(type->params[i])) {
+	                  return false;
+	                }
+	              }
+	              return true;
+	            }
+	            return false;
+	          };
+	      const auto materialize_direct_class_alias_target = [&]() -> bool
+	      {
+	        void * target_template = nullptr;
+	        std::vector<DependentAliasTemplateArgumentSyntax> target_arguments;
+	        if(!decl.resolved_type_pattern ||
+	           !named_type_dependent_class_template(decl.resolved_type_pattern,
+	                                                target_template,
+	                                                target_arguments) ||
+	           !target_template) {
+	          return false;
+	        }
+	        for(std::size_t i = 0; i < target_arguments.size(); ++i) {
+	          const DependentAliasTemplateArgumentSyntax & argument =
+	              target_arguments[i];
+	          TypePtr argument_type = argument.type ?
+	              argument.type : argument.syntax.resolved_type;
+	          if(argument_type) {
+	            if(!direct_alias_target_type_shape(argument_type)) {
+	              return false;
+	            }
+	            continue;
+	          }
+	          if(argument.dependent_value || argument.syntax.dependent) {
+	            return false;
+	          }
+	        }
+	        return true;
+	      };
 	      const bool structural_expanded =
 	          !alias_has_nontype_value_parameter &&
 	          !member_alias_pattern_needs_instantiated_member_scope &&
@@ -14191,7 +14265,8 @@ private:
 	                   structural_alias,
 	                   &structural_arg_syntaxes,
 	                   template_api::make_template_environment(*inst_scope),
-	                   dependent_arguments);
+	                   dependent_arguments,
+	                   materialize_direct_class_alias_target());
 	             });
 	      if(parser_trace::enabled("template.resolve")) {
 	        std::ostringstream trace;

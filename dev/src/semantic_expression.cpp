@@ -5984,7 +5984,14 @@ ExprInfo analyze_literal(SemanticContext & ctx, Scope & scope, const CppAstNode 
       }
       return analyze_numeric_user_defined_literal_template(ctx, scope, node, ud_suffix);
     }
-    result.type = make_fundamental(literal_type);
+    TypePtr annotated_type = strip_top_level_cv(node.semantic_type);
+    const bool annotated_integral_or_enum =
+        annotated_type &&
+        (is_integral_type(annotated_type) ||
+         is_named_enum_type(ctx, annotated_type));
+    result.type = annotated_integral_or_enum ?
+        annotated_type :
+        make_fundamental(literal_type);
     result.category = VC_PRVALUE;
     set_expr_metadata(result.node, result.type, result.category);
     set_callsem_uint_value(result.node, literal_value);
@@ -8456,11 +8463,15 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
       source_object_type = operand_base;
     }
 
-    ClassInfo * source_class = ctx.class_info_for_type(source_object_type);
-    if(!source_class || !source_class->is_polymorphic) {
-      throw logic_error("dynamic_cast requires polymorphic class pointers/references");
+    ClassInfo * source_class =
+        complete_class_type_for_lookup(ctx, source_object_type);
+    if(!source_class) {
+      throw logic_error("dynamic_cast requires class pointers/references");
     }
     if(target_pointer_form && is_void_type(target_base->inner)) {
+      if(!source_class->is_polymorphic) {
+        throw logic_error("dynamic_cast requires polymorphic class pointers/references");
+      }
       ctx.note_rtti_use(source_class->type, true);
 
       ExprInfo result;
@@ -8474,7 +8485,8 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
       return result;
     }
 
-    ClassInfo * target_class = ctx.class_info_for_type(target_base->inner);
+    ClassInfo * target_class =
+        complete_class_type_for_lookup(ctx, target_base->inner);
     if(!target_class) {
       throw logic_error("dynamic_cast requires class target");
     }
@@ -8488,6 +8500,9 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
                                             operand,
                                             base_conversion)) {
       return base_conversion;
+    }
+    if(!source_class->is_polymorphic) {
+      throw logic_error("dynamic_cast requires polymorphic class pointers/references");
     }
     if(!ctx.has_dynamic_cast_candidate(source_class, target_class)) {
       throw logic_error("unsupported dynamic_cast relationship");

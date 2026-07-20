@@ -838,7 +838,7 @@ TypePtr conversion_function_template_deduction_target_type(const TypePtr & targe
       base->kind == Type::TK_RVALUE_REFERENCE)) {
     return target;
   }
-  return target;
+  return base ? base : target;
 }
 
 vector<TypePtr> conversion_function_template_deduction_target_types(
@@ -2561,8 +2561,10 @@ bool try_argument_conversion(SemanticContext & ctx,
     const ClassInfo * conversion_declared_in = nullptr;
     std::size_t conversion_path_offset = 0;
     TypePtr conversion_implicit_object_param;
+    TypePtr initial_parameter;
+    ExprInfo initial_argument;
+    ConversionRank initial_rank = CR_EXACT;
     bool direct_reference_binding = false;
-    ConversionRank implicit_object_rank = CR_EXACT;
     ConversionRank second_rank = CR_BAD;
   };
 
@@ -2648,6 +2650,20 @@ bool try_argument_conversion(SemanticContext & ctx,
         candidate.constructor_target_class = target_class;
         candidate.constructor = ctor;
         candidate.constructor_args = ctor_call_args;
+        const std::size_t explicit_offset =
+            function_binding_explicit_parameter_offset(*ctor);
+        TypePtr ctor_function_type = strip_top_level_cv(ctor->type);
+        if(ctor_function_type &&
+           ctor_function_type->kind == Type::TK_FUNCTION &&
+           explicit_offset < ctor_function_type->params.size()) {
+          candidate.initial_parameter = ctor_function_type->params[explicit_offset];
+        }
+        candidate.initial_argument = expr;
+        candidate.initial_rank = !ctor_param_ranks.empty() ?
+            ctor_param_ranks[0] :
+            (candidate.initial_parameter ?
+                 conversion_rank(ctx, candidate.initial_parameter, expr) :
+                 CR_EXACT);
         candidate.second_rank = second;
         candidates.push_back(candidate);
       }
@@ -2671,6 +2687,9 @@ bool try_argument_conversion(SemanticContext & ctx,
         lambda_candidate.kind = UserDefinedCandidate::PREMATERIALIZED;
         lambda_candidate.expr = lambda_result;
         lambda_candidate.source_expr = expr;
+        lambda_candidate.initial_parameter = expr.type;
+        lambda_candidate.initial_argument = expr;
+        lambda_candidate.initial_rank = CR_EXACT;
         lambda_candidate.second_rank = second;
         candidates.push_back(lambda_candidate);
       }
@@ -2768,9 +2787,19 @@ bool try_argument_conversion(SemanticContext & ctx,
         ud_candidate.conversion_declared_in = declared_in;
         ud_candidate.conversion_path_offset = path_offset;
         ud_candidate.conversion_implicit_object_param = function_type->params[0];
+        TypePtr object_param = strip_top_level_cv(function_type->params[0]);
+        if(object_param && object_param->kind == Type::TK_POINTER) {
+          ud_candidate.initial_parameter =
+              expr.category == VC_LVALUE ?
+                  make_lvalue_reference_raw(object_param->inner) :
+                  make_rvalue_reference_raw(object_param->inner);
+        } else {
+          ud_candidate.initial_parameter = function_type->params[0];
+        }
+        ud_candidate.initial_argument = expr;
+        ud_candidate.initial_rank = implicit_object_rank;
         ud_candidate.direct_reference_binding =
             target_is_reference && conversion_result_category != VC_PRVALUE;
-        ud_candidate.implicit_object_rank = implicit_object_rank;
         ud_candidate.second_rank = second;
         candidates.push_back(ud_candidate);
       }
@@ -2881,15 +2910,46 @@ bool try_argument_conversion(SemanticContext & ctx,
   for(size_t i = 1; i < candidates.size(); ++i) {
     bool current_better = false;
     bool best_better = false;
-    if(candidates[i].direct_reference_binding !=
+    if(candidates[i].initial_rank < candidates[best].initial_rank) {
+      current_better = true;
+    } else if(candidates[i].initial_rank > candidates[best].initial_rank) {
+      best_better = true;
+    } else {
+      int initial_ref_pref =
+          compare_reference_binding_preference(candidates[i].initial_parameter,
+                                               candidates[i].initial_argument,
+                                               candidates[best].initial_parameter,
+                                               candidates[best].initial_argument);
+      if(initial_ref_pref < 0) {
+        current_better = true;
+      } else if(initial_ref_pref > 0) {
+        best_better = true;
+      } else {
+        int initial_qual_pref =
+            compare_qualification_conversion_preference(
+                candidates[i].initial_parameter,
+                candidates[i].initial_argument,
+                candidates[best].initial_parameter,
+                candidates[best].initial_argument);
+        if(initial_qual_pref < 0) {
+          current_better = true;
+        } else if(initial_qual_pref > 0) {
+          best_better = true;
+        }
+      }
+    }
+    if(!current_better && !best_better &&
+       candidates[i].direct_reference_binding !=
        candidates[best].direct_reference_binding) {
       current_better = candidates[i].direct_reference_binding;
       best_better = candidates[best].direct_reference_binding;
-    } else if(candidates[i].second_rank < candidates[best].second_rank) {
+    } else if(!current_better && !best_better &&
+              candidates[i].second_rank < candidates[best].second_rank) {
       current_better = true;
-    } else if(candidates[i].second_rank > candidates[best].second_rank) {
+    } else if(!current_better && !best_better &&
+              candidates[i].second_rank > candidates[best].second_rank) {
       best_better = true;
-    } else {
+    } else if(!current_better && !best_better) {
       int ref_pref = compare_reference_binding_preference(target, candidates[i].expr,
                                                           target, candidates[best].expr);
       if(ref_pref < 0) {
@@ -2904,16 +2964,6 @@ bool try_argument_conversion(SemanticContext & ctx,
         if(qual_pref < 0) {
           current_better = true;
         } else if(qual_pref > 0) {
-          best_better = true;
-        } else if(candidates[i].conversion_function &&
-                  candidates[best].conversion_function &&
-                  candidates[i].implicit_object_rank <
-                      candidates[best].implicit_object_rank) {
-          current_better = true;
-        } else if(candidates[i].conversion_function &&
-                  candidates[best].conversion_function &&
-                  candidates[i].implicit_object_rank >
-                      candidates[best].implicit_object_rank) {
           best_better = true;
         } else if(candidates[i].conversion_function &&
                   candidates[best].conversion_function) {

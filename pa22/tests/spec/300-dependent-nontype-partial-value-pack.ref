@@ -1,0 +1,37 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @match_condition_code__code____code_0___code_1___run()
+    return i32 %t1
+}
+function @match_condition_code__code____code_0___code_1___run() -> i32 [binding=weak, object=_ZN5matchI9conditionI4codeS1_ELS1_0EJLS1_1EEE3runEv] {
+  block ^entry:
+    %t1 = call i32 @compare_pack(0, 0, 1)
+    return i32 %t1
+}
+function @compare_pack(%match : i32, %value : i32, %rest : i32) -> i32 [binding=weak, object=_Z12compare_packIi4codeJS0_EEiT_T0_DpT1_] {
+  slot $match : i32
+  slot $value : i32
+  slot $rest : i32
+
+  block ^entry:
+    store i32 %match, $match
+    store i32 %value, $value
+    store i32 %rest, $rest
+    %t1 = load i32 $match
+    %t2 = load i32 $value
+    %t3 = call i32 @compare_pack__ov2(%t1, %t2)
+    %t4 = load i32 $match
+    %t5 = load i32 $rest
+    %t6 = call i32 @compare_pack__ov2(%t4, %t5)
+    %t7 = binary add i32 %t3, %t6
+    return i32 %t7
+}
+function @compare_pack__ov2(%__param0 : i32, %__param1 : i32) -> i32 [binding=weak, object=_Z12compare_packIi4codeEiT_T0_] {
+  slot $__param0 : i32
+  slot $__param1 : i32
+
+  block ^entry:
+    store i32 %__param0, $__param0
+    store i32 %__param1, $__param1
+    return i32 0
+}

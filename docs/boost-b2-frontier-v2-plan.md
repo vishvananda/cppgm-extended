@@ -47,7 +47,8 @@ Complete these gates before crediting suite 1:
 3. Build `dev/cppgm++` without warnings.
 4. Confirm the full direct-LowIR report and strict report pass.
 5. Confirm the strict text-reparse audit is zero.
-6. Record a fresh three-run performance baseline at the exact V2 start commit.
+6. Record a three-run performance baseline at the exact V2 start commit. This
+   was completed for the historical live-header epoch; do not rerun it.
 7. Confirm the PR-triggered inception comparison for the baseline commit
    succeeds.
 
@@ -63,13 +64,18 @@ CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 \
 python3 scripts/audit_text_reparse.py --strict --list-sites
 python3 -m unittest scripts.tests.test_audit_text_reparse
 
-scripts/validate_perf_regression.py record \
-  --baseline /tmp/cppgm-boost-frontier-v2-db9879223-baseline.json \
-  --runs 3
+scripts/validate_perf_regression.py check \
+  --baseline /tmp/cppgm-boost-frontier-v2-frozen-header-epoch-9764b3835.json \
+  --runs 3 \
+  --report /tmp/cppgm-boost-frontier-v2-candidate.json
 ```
 
-If the `/tmp` baseline is lost, recreate it from a clean worktree checked out
-at exactly `db9879223`. Do not recreate it from the current frontier head.
+The original `db9879223` measurement is historical evidence for the former
+live-project-header epoch. The current immutable baseline was recorded once
+from exact compiler commit `9764b3835` against the checked-in 51-header closure
+under `benchmarks/self_compile/stable/include`. If either baseline file is lost,
+do not remeasure a parent or bless the current frontier head; restore the
+recorded baseline or treat the performance gate as blocked.
 
 ## Suite Intake
 
@@ -200,18 +206,26 @@ run, but they still require placement and focused test validation.
 The immutable baseline is:
 
 ```text
-/tmp/cppgm-boost-frontier-v2-db9879223-baseline.json
+/tmp/cppgm-boost-frontier-v2-frozen-header-epoch-9764b3835.json
 ```
 
 Every production compiler commit is checked against that file:
 
 ```sh
-sha=$(git rev-parse --short=9 HEAD)
 scripts/validate_perf_regression.py check \
-  --baseline /tmp/cppgm-boost-frontier-v2-db9879223-baseline.json \
+  --baseline /tmp/cppgm-boost-frontier-v2-frozen-header-epoch-9764b3835.json \
   --runs 3 \
-  --report /tmp/cppgm-boost-frontier-v2-${sha}-perf.json
+  --report /tmp/cppgm-boost-frontier-v2-candidate.json
 ```
+
+The workload is the frozen `semantic_overload.cpp` plus the exact 51-header
+closure under `benchmarks/self_compile/stable/include`. The checked-in epoch
+manifest pins the source digest, header membership, every header digest, and
+closure hash
+`7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`.
+The gate verifies that manifest before invoking the compiler. Never substitute
+live `dev/src` headers, and never rerun the parent compiler for a candidate
+comparison.
 
 Hardware instruction count is the primary gate. Maximum RSS and peak footprint
 are co-primary memory guards. Wall time and elapsed cycles are diagnostic only.
@@ -221,11 +235,10 @@ Use the script defaults unless the user explicitly approves another budget:
 - maximum RSS: at most `+3.00%`;
 - peak footprint: at most `+3.00%`.
 
-Do not refresh the fixed baseline after an accepted fix. A rolling checkpoint
-may be recorded to isolate the incremental cost of a change, but the tracker
-must report both rolling and fixed-baseline deltas. Environment changes require
-paired measurements from clean worktrees, not blessing the current head as a
-new baseline.
+Do not refresh the fixed baseline after an accepted fix. A rolling delta may be
+calculated only from already recorded immutable medians; do not remeasure its
+parent. Environment or workload changes require an explicitly approved new
+epoch, not blessing the current head as a new baseline.
 
 ### Early warning and optimization
 

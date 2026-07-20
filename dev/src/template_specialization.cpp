@@ -8437,6 +8437,20 @@ bool try_expand_alias_template_pattern_structurally(
       const bool materialize_selected_class_template =
           materialize_class_template_targets ||
           selected_arguments_need_alias_target_scope;
+
+      if(materialize_selected_class_template) {
+        for(std::size_t i = 0; i < substituted_arguments.size(); ++i) {
+          TemplateArgument & argument = substituted_arguments[i];
+          if(argument.dependent ||
+             !alias_template_target_mentions_parameters(argument.text,
+                                                        alias_template.parameters)) {
+            continue;
+          }
+          argument.text.clear();
+          argument.text = argument_text(argument);
+        }
+      }
+
       request.lookup.scope = &selected_scope;
       request.argument_scope = &selected_scope;
       request.lookup.name.name = source_template->name;
@@ -9081,6 +9095,15 @@ TypePtr resolved_non_type_parameter_value_type(
   }
 
   Scope eval_scope = make_partial_match_scope(parameters, pattern_scope, deduced);
+  TypePtr resolved_from_syntax;
+  if(template_resolution::resolve_non_type_template_parameter_type(
+         services,
+         template_api::make_template_environment(eval_scope),
+         parameter,
+         resolved_from_syntax) &&
+     resolved_from_syntax) {
+    return resolved_from_syntax;
+  }
   template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
       services,
       template_api::make_template_environment(eval_scope),
@@ -11034,6 +11057,9 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                                                    *partial.pattern_scope,
                                                    deduced,
                                                    *direct_parameter);
+        if(!expected_value_type || type_is_dependent(expected_value_type)) {
+          continue;
+        }
         if(actual.kind != TemplateArgument::TA_VALUE ||
            actual.dependent ||
            !type_equals(actual.type, expected_value_type) ||

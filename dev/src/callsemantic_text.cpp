@@ -1216,6 +1216,10 @@ string describe_expression_for_diagnostic(const CppAstNode & node)
        node.children.size() == 1) {
       return "sizeof...(" + describe_expression_for_diagnostic(node.children[0]) + ")";
     }
+    if(node.kind == CppAstKind::sizeof_expression &&
+       node.children.size() == 1) {
+      return "sizeof(" + describe_expression_for_diagnostic(node.children[0]) + ")";
+    }
     if(node.kind == CppAstKind::braced_init_list) {
       ostringstream out;
       out << "{";

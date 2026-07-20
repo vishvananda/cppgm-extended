@@ -6237,10 +6237,8 @@ CallSemNode make_resolved_callee_node(SemanticContext & ctx,
     bool found_dispatch_view = false;
     for(size_t i = 0; i < object_class->vtables.size(); ++i) {
       const VTableInfo & table = object_class->vtables[i];
-      if(emitted.virtual_slot >= table.slots.size()) {
-        continue;
-      }
-      if(table.slots[emitted.virtual_slot].function != &emitted) {
+      if(emitted.virtual_slot >= table.slots.size() ||
+         table.slots[emitted.virtual_slot].function != &emitted) {
         continue;
       }
       resolved_callee.has_virtual_dispatch_view_offset = true;
@@ -6251,6 +6249,23 @@ CallSemNode make_resolved_callee_node(SemanticContext & ctx,
       resolved_callee.uses_extended_vtable_layout = table.use_extended_layout;
       found_dispatch_view = true;
       break;
+    }
+    if(!found_dispatch_view) {
+      for(size_t i = 0; i < object_class->vtables.size(); ++i) {
+        const VTableInfo & table = object_class->vtables[i];
+        if(table.view_offset != dispatch_object_offset ||
+           emitted.virtual_slot >= table.slots.size()) {
+          continue;
+        }
+        resolved_callee.has_virtual_dispatch_view_offset = true;
+        set_callsem_virtual_dispatch_view_offset(
+            resolved_callee,
+            static_cast<long long>(table.view_offset) -
+                static_cast<long long>(dispatch_object_offset));
+        resolved_callee.uses_extended_vtable_layout = table.use_extended_layout;
+        found_dispatch_view = true;
+        break;
+      }
     }
     if(!found_dispatch_view) {
       throw logic_error("missing virtual dispatch vtable view for " +
