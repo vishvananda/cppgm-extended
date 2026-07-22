@@ -15102,6 +15102,80 @@ private:
     return false;
   }
 
+  bool template_id_syntax_mentions_pack_identifier_in_current_expansion(
+      const TemplateIdSyntax & syntax,
+      const string & name) const
+  {
+    if(syntax.argument_syntaxes.empty()) {
+      for(size_t i = 0; i < syntax.arguments.size(); ++i) {
+        if(contains_identifier_token(syntax.arguments[i], name)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+      const TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
+      if(argument.pack_expansion) {
+        continue;
+      }
+      if(contains_identifier_token(argument.text, name)) {
+        return true;
+      }
+      if(argument.template_id &&
+         template_id_syntax_mentions_pack_identifier_in_current_expansion(
+             *argument.template_id,
+             name)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool ast_node_mentions_pack_identifier_in_current_expansion(
+      const CppAstNode & node,
+      const string & name) const
+  {
+    if(node.kind == CppAstKind::pack_expansion_expression ||
+       node.kind == CppAstKind::sizeof_pack_expression) {
+      return false;
+    }
+    if(ast_node_value_names_pack_identifier(node, name)) {
+      return true;
+    }
+    if(!node.value.empty() && contains_identifier_token(node.value, name)) {
+      return true;
+    }
+    if(node.template_id_syntax &&
+       template_id_syntax_mentions_pack_identifier_in_current_expansion(
+           *node.template_id_syntax,
+           name)) {
+      return true;
+    }
+    for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+      if(template_id_syntax_mentions_pack_identifier_in_current_expansion(
+             node.qualifier_template_id_syntaxes[i],
+             name)) {
+        return true;
+      }
+    }
+    for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+      if(ast_node_mentions_pack_identifier_in_current_expansion(
+             node.qualifier_type_syntaxes[i],
+             name)) {
+        return true;
+      }
+    }
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(ast_node_mentions_pack_identifier_in_current_expansion(
+             node.children[i],
+             name)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   string typed_value_binding_pack_text(const ValueBinding & binding) const
   {
     return binding.has_constant_value && !binding.dependent_template_value ?
@@ -15319,7 +15393,8 @@ private:
       TemplateIdSyntax & syntax,
       Scope & scope,
       const map<string, TypePtr> & type_replacements,
-      const map<string, ValueBinding> & value_replacements) const
+      const map<string, ValueBinding> & value_replacements,
+      bool preserve_nested_pack_expansions = false) const
   {
     const auto rewrite_text =
         [&](string text) -> string
@@ -15375,10 +15450,18 @@ private:
     }
 
     for(size_t i = 0; i < syntax.arguments.size(); ++i) {
+      if(preserve_nested_pack_expansions &&
+         i < syntax.argument_syntaxes.size() &&
+         syntax.argument_syntaxes[i].pack_expansion) {
+        continue;
+      }
       syntax.arguments[i] = rewrite_text(syntax.arguments[i]);
     }
     for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
       TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
+      if(preserve_nested_pack_expansions && argument.pack_expansion) {
+        continue;
+      }
       const string original_text = trim_space(argument.source_text.empty() ?
                                                  argument.text :
                                                  argument.source_text);
@@ -15429,7 +15512,8 @@ private:
                                                *argument.type_id,
                                                type_replacements,
                                                value_replacements,
-                                               substituted_type_id)) {
+                                               substituted_type_id,
+                                               preserve_nested_pack_expansions)) {
             if(argument.source_text.empty()) {
               argument.source_text = original_text;
             }
@@ -15479,7 +15563,8 @@ private:
                                              *argument.expression,
                                              type_replacements,
                                              value_replacements,
-                                             substituted_expression)) {
+                                             substituted_expression,
+                                             preserve_nested_pack_expansions)) {
           argument.expression.reset(new CppAstNode(substituted_expression));
         }
       }
@@ -15487,7 +15572,8 @@ private:
         rewrite_template_id_syntax_pack_arguments(*argument.template_id,
                                                   scope,
                                                   type_replacements,
-                                                  value_replacements);
+                                                  value_replacements,
+                                                  preserve_nested_pack_expansions);
       }
     }
   }
@@ -15607,8 +15693,14 @@ private:
       const CppAstNode & node,
       const map<string, TypePtr> & type_replacements,
       const map<string, ValueBinding> & value_replacements,
-      CppAstNode & out) const
+      CppAstNode & out,
+      bool preserve_nested_pack_expansions = false) const
   {
+    if(preserve_nested_pack_expansions &&
+       node.kind == CppAstKind::pack_expansion_expression) {
+      out = clone_pack_substitution_node(node);
+      return true;
+    }
     if(node.kind == CppAstKind::id_expression) {
       for(map<string, ValueBinding>::const_iterator it = value_replacements.begin();
           it != value_replacements.end();
@@ -15655,14 +15747,16 @@ private:
       rewrite_template_id_syntax_pack_arguments(*out.template_id_syntax,
                                                 scope,
                                                 type_replacements,
-                                                value_replacements);
+                                                value_replacements,
+                                                preserve_nested_pack_expansions);
       out.value = template_id_syntax_text_preserving_spacing(*out.template_id_syntax);
     }
     for(size_t i = 0; i < out.qualifier_template_id_syntaxes.size(); ++i) {
       rewrite_template_id_syntax_pack_arguments(out.qualifier_template_id_syntaxes[i],
                                                 scope,
                                                 type_replacements,
-                                                value_replacements);
+                                                value_replacements,
+                                                preserve_nested_pack_expansions);
     }
     for(size_t i = 0; i < out.qualifier_type_syntaxes.size(); ++i) {
       CppAstNode qualifier;
@@ -15670,7 +15764,8 @@ private:
                                             out.qualifier_type_syntaxes[i],
                                             type_replacements,
                                             value_replacements,
-                                            qualifier)) {
+                                            qualifier,
+                                            preserve_nested_pack_expansions)) {
         return false;
       }
       out.qualifier_type_syntaxes[i] = qualifier;
@@ -15698,7 +15793,8 @@ private:
                                             node.children[i],
                                             type_replacements,
                                             value_replacements,
-                                            child)) {
+                                            child,
+                                            preserve_nested_pack_expansions)) {
         return false;
       }
       children.push_back(child);
@@ -15756,7 +15852,9 @@ private:
         const string & pack_name = pack.first;
         if(pack_name.empty() ||
            seen_type_pack_names.count(pack_name) != 0 ||
-           !ast_node_mentions_pack_identifier(node.children[0], pack_name)) {
+           !ast_node_mentions_pack_identifier_in_current_expansion(
+               node.children[0],
+               pack_name)) {
           continue;
         }
         seen_type_pack_names.insert(pack_name);
@@ -15766,7 +15864,9 @@ private:
         const string & pack_name = pack.first;
         if(pack_name.empty() ||
            seen_value_pack_names.count(pack_name) != 0 ||
-           !ast_node_mentions_pack_identifier(node.children[0], pack_name)) {
+           !ast_node_mentions_pack_identifier_in_current_expansion(
+               node.children[0],
+               pack_name)) {
           continue;
         }
         seen_value_pack_names.insert(pack_name);
@@ -15807,7 +15907,8 @@ private:
                                             node.children[0],
                                             type_replacements,
                                             value_replacements,
-                                            expr)) {
+                                            expr,
+                                            true)) {
         trace_pack_failure("structured-substitution-failed", pattern);
         return false;
       }

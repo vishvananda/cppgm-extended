@@ -16454,8 +16454,6 @@ bool deduce_function_template_arguments_uncached(
       remove_shadowing_template_parameter_bindings(bound_scope, decl.parameters);
     }
     trace_template_parameter_bindings("post-shadow-cleanup", decl, bound_scope, use_scope);
-    bind_resolvable_default_non_type_template_arguments_into_scope(
-        ctx, bound_scope, decl.parameters);
     Scope initial_bound_scope = bound_scope;
     const std::size_t deduction_count =
         function_template_deduction_parameter_count(decl, args.size());
@@ -16466,8 +16464,6 @@ bool deduce_function_template_arguments_uncached(
                                        deduced_types,
                                        deduced_values,
                                        &deduced_pack_arguments);
-      bind_resolvable_default_non_type_template_arguments_into_scope(
-          ctx, bound_scope, decl.parameters);
       const bool deducing_pack_element =
           uses_trailing_function_parameter_pack(decl) &&
           !decl.params_pattern.empty() &&
