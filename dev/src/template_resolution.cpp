@@ -946,6 +946,27 @@ bool object_pointer_value_binding_compatible_with_non_type_target(
                                           binding_object_type);
 }
 
+bool array_decay_value_binding_compatible_with_non_type_target(
+    const TypePtr & target_base,
+    const ValueBinding & binding)
+{
+  if(!target_base ||
+     target_base->kind != Type::TK_POINTER ||
+     !target_base->inner ||
+     !binding.type ||
+     binding.kind == ValueBinding::VK_FIELD ||
+     binding.is_bit_field) {
+    return false;
+  }
+
+  TypePtr array_type = strip_top_level_cv(remove_reference_type(binding.type));
+  return array_type &&
+         array_type->kind == Type::TK_ARRAY &&
+         array_type->inner &&
+         same_type_with_compatible_top_cv(target_base->inner,
+                                          array_type->inner);
+}
+
 bool bind_object_pointer_non_type_template_argument(
     const std::string & text,
     const TypePtr & target_type,
@@ -1032,10 +1053,14 @@ bool bind_value_binding_non_type_template_argument(
   }
 
   TypePtr binding_base = strip_top_level_cv(remove_reference_type(binding.type));
+  const bool array_decay_compatible =
+      array_decay_value_binding_compatible_with_non_type_target(target_base,
+                                                                 binding);
   const bool compatible =
       (!target_base || !binding_base) ?
           type_equals(binding.type, target_type) :
           type_equals(binding_base, target_base) ||
+          array_decay_compatible ||
           integral_value_binding_compatible_with_non_type_target(
               target_base,
               binding_base,
@@ -1044,6 +1069,21 @@ bool bind_value_binding_non_type_template_argument(
            semantic_conversion::is_unscoped_enum_type(binding_base));
   if(!compatible) {
     return false;
+  }
+
+  if(array_decay_compatible) {
+    if(out_binding) {
+      *out_binding = &binding;
+    }
+    out.kind = TemplateArgument::TA_VALUE;
+    out.type = target_type;
+    out.value = 0;
+    out.function_value = nullptr;
+    out.function_internal_symbol.clear();
+    out.value_binding = &binding;
+    out.text = fallback_text;
+    out.dependent = false;
+    return true;
   }
 
   if(binding.non_type_template_value_binding) {

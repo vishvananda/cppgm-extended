@@ -71,6 +71,16 @@ bool parse_literal_value(const CppAstNode & node, ConstexprValue & out)
       if(literal.quote != '\'' || !literal.ud_suffix.empty() || literal.contents.empty()) {
         return false;
       }
+      unsigned int multicharacter_value = 0;
+      if(ordinary_multicharacter_literal_value(literal,
+                                               multicharacter_value)) {
+        out = make_integral_value(static_cast<long long>(multicharacter_value),
+                                  make_fundamental(FT_INT));
+        return true;
+      }
+      if(literal.contents.size() != 1) {
+        return false;
+      }
       out = make_integral_value(static_cast<long long>(literal.contents[0]),
                                 make_fundamental(character_literal_type(literal)));
       return true;

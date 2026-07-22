@@ -455,7 +455,8 @@ vector<CallSemNode> analyze_cpp_sources(const vector<string> & srcfiles,
     PostTokenizer posttokenizer(preprocessor,
                                 &source_locations,
                                 &preprocessor,
-                                file_only_source_locations);
+                                file_only_source_locations,
+                                true);
     RecogTokenizer tokenizer(posttokenizer);
     RecogTokenBuffer tokens(tokenizer, srcfiles[i], &source_locations);
     witness::TemplateWitnessSession * witness_session = nullptr;

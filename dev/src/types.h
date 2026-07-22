@@ -88,6 +88,10 @@ EFundamentalType string_literal_element_type(const QuoteLiteralData & literal);
 
 EFundamentalType character_literal_type(const QuoteLiteralData & literal);
 
+bool ordinary_multicharacter_literal_value(
+    const QuoteLiteralData & literal,
+    unsigned int & value);
+
 const std::vector<unsigned long long> &
 quote_literal_string_units(const QuoteLiteralData & literal);
 

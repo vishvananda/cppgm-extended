@@ -299,12 +299,14 @@ struct PostTokenizer : IPostTokenSource
   uint16_t cached_location_file_index;
   bool cached_location_file_valid;
   bool file_only_source_locations;
+  bool allow_ordinary_multicharacter_literals;
   bool previous_token_was_operator_keyword;
 
   PostTokenizer(IPPTokenSource & input,
                 SourceLocationTable * location_table = nullptr,
                 const ISourceLocationProvider * location_provider = nullptr,
-                bool file_only_source_locations = false);
+                bool file_only_source_locations = false,
+                bool allow_ordinary_multicharacter_literals = false);
   PostToken get() override;
   void get_many(std::vector<PostToken> & out, std::size_t max_tokens) override;
 protected:

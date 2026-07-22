@@ -751,6 +751,33 @@ EFundamentalType character_literal_type(const QuoteLiteralData & literal)
   }
 }
 
+bool ordinary_multicharacter_literal_value(const QuoteLiteralData & literal,
+                                           unsigned int & value)
+{
+  if(literal.quote != '\'' ||
+     literal.enc != '\'' ||
+     !literal.ud_suffix.empty() ||
+     literal.contents.size() <= 1 ||
+     literal.string_units.size() <= 1) {
+    return false;
+  }
+
+  const size_t first =
+      literal.string_units.size() > sizeof(int)
+          ? literal.string_units.size() - sizeof(int)
+          : 0;
+  unsigned int packed = 0;
+  for(size_t i = first; i < literal.string_units.size(); ++i) {
+    if(literal.string_units[i] > UCHAR_MAX) {
+      return false;
+    }
+    packed = (packed << CHAR_BIT) |
+             static_cast<unsigned int>(literal.string_units[i]);
+  }
+  value = packed;
+  return true;
+}
+
 const vector<unsigned long long> &
 quote_literal_string_units(const QuoteLiteralData & literal)
 {

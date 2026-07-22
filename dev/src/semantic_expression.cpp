@@ -5031,7 +5031,16 @@ bool try_analyze_non_type_template_object_pointer_value(
   }
 
   TypePtr target_object_type = remove_reference_type(target_binding->type);
-  if(!same_type_with_compatible_top_cv(binding_base->inner, target_object_type)) {
+  TypePtr target_object_base = strip_top_level_cv(target_object_type);
+  const bool array_decay_binding =
+      target_object_base &&
+      target_object_base->kind == Type::TK_ARRAY &&
+      target_object_base->inner &&
+      same_type_with_compatible_top_cv(binding_base->inner,
+                                       target_object_base->inner);
+  if(!array_decay_binding &&
+     !same_type_with_compatible_top_cv(binding_base->inner,
+                                       target_object_type)) {
     return false;
   }
 
@@ -6044,11 +6053,23 @@ ExprInfo analyze_literal(SemanticContext & ctx, Scope & scope, const CppAstNode 
     if(literal.contents.empty()) {
       throw logic_error("empty character literal");
     }
-    result.type = make_fundamental(character_literal_type(literal));
+    unsigned int multicharacter_value = 0;
+    const bool is_multicharacter =
+        ordinary_multicharacter_literal_value(literal,
+                                              multicharacter_value);
+    if(!is_multicharacter && literal.contents.size() != 1) {
+      throw logic_error("invalid multicharacter literal");
+    }
+    result.type = make_fundamental(
+        is_multicharacter ? FT_INT : character_literal_type(literal));
     result.category = VC_PRVALUE;
     set_expr_metadata(result.node, result.type, result.category);
     set_callsem_uint_value(result.node,
-                           static_cast<unsigned long long>(literal.contents[0]));
+                           is_multicharacter
+                               ? static_cast<unsigned long long>(
+                                     multicharacter_value)
+                               : static_cast<unsigned long long>(
+                                     literal.contents[0]));
     return result;
   }
 

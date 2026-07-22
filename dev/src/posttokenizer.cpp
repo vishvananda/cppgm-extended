@@ -520,7 +520,8 @@ bool file_only_source_locations_enabled()
 PostTokenizer::PostTokenizer(IPPTokenSource & input,
                              SourceLocationTable * location_table,
                              const ISourceLocationProvider * location_provider,
-                             bool file_only_source_locations) :
+                             bool file_only_source_locations,
+                             bool allow_ordinary_multicharacter_literals) :
   input(input),
   n_encoding('"'),
   n_valid(true),
@@ -530,6 +531,8 @@ PostTokenizer::PostTokenizer(IPPTokenSource & input,
   cached_location_file_index(0),
   cached_location_file_valid(false),
   file_only_source_locations(file_only_source_locations),
+  allow_ordinary_multicharacter_literals(
+      allow_ordinary_multicharacter_literals),
   previous_token_was_operator_keyword(false)
 {}
 
@@ -831,8 +834,15 @@ inline void PostTokenizer::emit_quote_literal(const string& data)
   QuoteLiteralData qdata;
   parse_quote_literal(data, qdata);
   if(qdata.quote == '\'') {
-    if(qdata.contents.size() != 1)
+    if(qdata.contents.size() != 1) {
+      unsigned int value = 0;
+      if(allow_ordinary_multicharacter_literals &&
+         ordinary_multicharacter_literal_value(qdata, value)) {
+        emit_next_string();
+        return push_literal(data, FT_INT, &value, sizeof(value));
+      }
       return push_invalid(data);
+    }
     auto c = qdata.contents[0];
     if(c < 0 || c >= 0x110000 || (c >= 0xD800 && c < 0xE000))
       return push_invalid(data);
