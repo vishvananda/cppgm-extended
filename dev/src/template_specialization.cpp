@@ -11383,6 +11383,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                 template_api::make_template_environment(placeholder_match_scope),
                 pattern_text);
         TypePtr placeholder_pattern_type;
+        bool deduced_through_identity_alias_pattern = false;
         if(pattern_mentions_placeholders) {
           const TemplateArgumentSyntax * placeholder_syntax =
               pattern_syntax;
@@ -11419,6 +11420,31 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                   placeholder_syntax,
                   placeholder_pattern_type,
                   true);
+            }
+          }
+          void * dependent_alias_template_decl = nullptr;
+          std::vector<DependentAliasTemplateArgumentSyntax>
+              dependent_alias_arguments;
+          if(named_type_dependent_alias_template(
+                 placeholder_pattern_type,
+                 dependent_alias_template_decl,
+                 dependent_alias_arguments) &&
+             dependent_alias_template_decl) {
+            AliasTemplateDecl * alias_template =
+                static_cast<AliasTemplateDecl *>(dependent_alias_template_decl);
+            const TemplateParameterInfo * result_parameter =
+                type_pattern_template_parameter(
+                    alias_template->parameters,
+                    alias_template->resolved_type_pattern);
+            const std::size_t result_index = result_parameter ?
+                static_cast<std::size_t>(
+                    result_parameter - &alias_template->parameters[0]) :
+                alias_template->parameters.size();
+            if(result_index < dependent_alias_arguments.size() &&
+               dependent_alias_arguments[result_index].type) {
+              placeholder_pattern_type =
+                  dependent_alias_arguments[result_index].type;
+              deduced_through_identity_alias_pattern = true;
             }
           }
         }
@@ -11663,6 +11689,37 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
               matched_by_type = true;
             }
           }
+        }
+        if(matched_by_type &&
+           deduced_through_identity_alias_pattern &&
+           pattern_syntax) {
+          Scope validation_scope =
+              make_partial_match_scope(partial.parameters,
+                                       *partial.pattern_scope,
+                                       deduced);
+          TypePtr validated_pattern_type;
+          if(!parse_template_argument_type_syntax(
+                 services,
+                 validation_scope,
+                 pattern_syntax,
+                 validated_pattern_type,
+                 true,
+                 true) ||
+             !validated_pattern_type) {
+            return false;
+          }
+          template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+              services,
+              template_api::make_template_environment(validation_scope),
+              validated_pattern_type);
+          if(!validated_pattern_type ||
+             type_is_dependent(validated_pattern_type) ||
+             !partial_specialization_top_cv_matches(validated_pattern_type,
+                                                    actual.type) ||
+             !type_equals(validated_pattern_type, actual.type)) {
+            return false;
+          }
+          pattern_type = validated_pattern_type;
         }
         if(!matched_by_type) {
           return false;
