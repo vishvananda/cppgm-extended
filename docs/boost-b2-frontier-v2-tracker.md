@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `67 / 147`
-- current cursor: `#68 libs/mpi/test`
-- active compiler frontier: exact MPI suite intake pending; the host currently has no `mpic++` or `mpirun`
+- completed suites: `68 / 147`
+- current cursor: `#69 libs/mpl/test`
+- active compiler frontier: exact MPL C++03 suite intake pending
 
 ## Baseline Gates
 
@@ -286,24 +286,25 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 65 | `libs/metaparse/test` | pass | `(this commit)` | The initial exact serialized forced graph exposed three compile fronts and one exponential compile-time path. After the structured fixes, the exact full forced graph finds 3623 targets, updates all 241 requested targets, passes every positive action, handles `too_long_string` as failed-as-expected, and exits successfully in 910.13s. A post-refactor forced replay of `all_headers` and `string` also passes in 258.60s at 593,928,192 B maximum RSS with zero swaps. | Three compact C++11 reducers cover dependent `T()` constant initialization at PA20, nested member-class-template explicit-specialization lookup at PA21, and the repeated dependent-reference typedef progression at PA18. PA18 passes `238/238`; PA21 passes its specialization owner; configured strict suites pass PA18 `186/186`, PA19 `115/115`, PA21 `162/162`, PA22 `158/158`, and PA23 `338/338`; the PA9-excluded direct report passes `4051/4051`, including PA37 `7/7`. All 23 zero-reparse categories, 14 audit tests, twelve byte-identical cache modes, and Clang/GCC warning controls pass. The full graph's isolated 1.16 GiB maximum is consistent with the deliberately extreme 128-argument expected-failure unit; ordinary units do not accumulate memory and swap remains unchanged. The final frozen gate records -4.34% instructions, -8.42% RSS, and -9.08% footprint. |
 | 66 | `libs/move/test` | pass | `(this commit)` | The initial exact serialized graph finds 882 targets, requests 121 updates, updates 109, fails four targets, and skips eight in 208.28s; its maximum RSS is 534,925,312 B with zero swaps. After the three C++11 repairs, the final exact graph finds the same 882 targets, updates all 121 requested targets, passes every compile/link/runtime action including both benchmarks, and exits successfully in 215.65s. Final maximum RSS is 515,858,432 B with zero swaps. | Three minimal header-free owners cover a deleted-copy class trait (15 lines / 415 bytes), non-class member-pointer substitution (21 lines / 430 bytes), and the same-name type/function call ambiguity used by the benchmark clock helper (19 source lines / 242 bytes). PA26/PA34 pass `408/408`; configured strict suites have zero failures; the PA9-excluded direct report passes `4054/4054`, including PA37 `7/7`. Normal, ten individual cache-off modes, and all-off output are byte-identical for all three reducers. PA26/PA34 placement and hygiene are clean; all 23 text-reparse categories, 28 audit/perf unit tests, Clang 22 and GCC 15 warning builds, and `git diff --check` pass. Serial monitoring shows one compiler child, full per-unit release, and unchanged 208.75 MiB system swap. The final immutable gate retains -4.23% instructions while improving RSS by 8.30% and footprint by 9.04%. |
 | 67 | `libs/mp11/test` | pass | `(this commit)` | The final exact two-job forced C++11 graph finds 3857 targets, updates all 922 requested targets, and exits successfully with no failure or skip in 1188.32s; log `/tmp/boost-frontier-v2-suite-067-final-forced.log`. The repaired `mp_partial_sum` target separately compiles, links, runs, and passes in 14.28s at 272,891,904 B maximum RSS with zero swaps; log `/tmp/boost-frontier-v2-suite-067-mp-partial-sum-fixed.log`. | The suite closes all 13 initial failures with compact earliest-owner C++11 regressions. The full graph peaks at 1,634,521,088 B during finite `mp_fold` stress over every size from 0 through 37, then releases fully; two live samples show active structured alias/class-template expansion rather than deadlock or source-text reparsing, and system swap remains unchanged at 551.75 MB. Configured strict suites, all 23 zero-reparse categories, audit tests, cache parity, placement, Clang/GCC warning controls, and the PA9-excluded broad report (`4077/4077`, including PA37 `7/7`) pass. The final immutable compiler/source/51-header gate records -10.91% instructions, -10.47% RSS, and -11.42% footprint. |
-| 68 | `libs/mpi/test` | pending | — | Exact forced suite intake has not yet run. | Boost.MPI declares C++03 and is in the supported language lane. The host currently has neither `mpic++` nor `mpirun`; the exact B2 graph must determine whether the suite is externally unconfigured before classification. |
+| 68 | `libs/mpi/test` | blocked-external | `(no compiler change)` | The exact forced two-job graph finds only one bookkeeping target and exits successfully without creating any compile, link, or runtime action in 3.00s at 39,317,504 B maximum RSS and zero process swaps; log `/tmp/boost-frontier-v2-suite-068-mpi-initial-forced.log`. | Boost.MPI declares C++03, but its Jamfile creates the test suite only when `mpi.configured` is true. This host has neither `mpic++` nor `mpirun`, so the empty successful B2 graph is external-configuration evidence, not a compiler pass. System swap remains unchanged at 551.75 MB. |
+| 69 | `libs/mpl/test` | pending | — | Exact forced suite intake has not yet run. | Boost.MPL declares C++03 and has a substantive compile/run graph, so it is in the supported language lane. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#68 libs/mpi/test`
-- focused target: exact full-suite configuration intake
-- last closed suite: `#67 libs/mp11/test` (`pass`)
-- failure phase: pending exact B2 configuration result
-- diagnostic: the host currently has neither `mpic++` nor `mpirun`; Boost.MPI's Jamfile creates its test graph only when MPI is configured, so the exact run must establish the external boundary
+- suite: `#69 libs/mpl/test`
+- focused target: exact full-suite intake
+- last closed suite: `#68 libs/mpi/test` (`blocked-external`)
+- failure phase: pending initial forced graph
+- diagnostic: no current MPL failure evidence; the historical survey was mixed and is intake guidance only
 - reduced repro: not applicable until a compiler-owned failure is observed
 - owning PA/cluster: not applicable until a compiler-owned failure is observed
-- implementation area: Boost.Build MPI configuration and external dependency intake
-- performance risk: no compiler process is expected until MPI configures; the prior suite's finite `mp_fold` RSS outlier remains recorded for later performance work
-- language lane: Boost.MPI declares C++03 in `libs/mpi/meta/libraries.json`, so it is supported and must be attempted
-- next action: run the exact forced two-job MPI graph and classify the result from B2's configuration evidence
+- implementation area: pending exact failure classification
+- performance risk: MPL is template-heavy; use two B2 jobs and monitor compiler-child RSS, aggregate system memory, and swap throughout the graph
+- language lane: Boost.MPL declares C++03 in `libs/mpl/meta/libraries.json`, so it is supported and must run
+- next action: run and monitor the exact forced two-job MPL graph, then reduce the first compiler-owned failure if any
 
 ## Fix Ledger
 
@@ -539,6 +540,16 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Dependent-type resolution cache input lifetime | The nested dependent-type cache keyed entries by a raw `Type *` while retaining only the resolved output. Recursive resolution could release an ephemeral input and allocate an unrelated type at the same address before the outermost query cleared the cache, producing a stale hit such as `const wrap_iter<size_t*>& -> int`. Each key now owns its input `TypePtr` for the cache entry's bounded lifetime; lookup ordering remains pointer-based and the cache is still cleared after the outermost query. | `pa22/tests/general/300-dependent-type-resolution-cache-input-lifetime.t`, reduced to 21 lines / 851 bytes of header-free C++11 with a local three-line `enable` stand-in | The saved pre-fix compiler fails 43 of 256 concurrent compilations of the reduced declaration graph. Trace evidence showed the same address first stored for a resolved `enable_t<..., int>` input and then reused by an unrelated `const W&` input. The hosted `<algorithm>` form reproduced 9 of 16 times; disabling the cache passed 16 of 16. | Clang 22 and GCC 15 accept the reducer warning-clean. The focused PA22 check, cache-on/off byte parity, and 48 concurrent fixed-compiler repetitions pass with zero swaps and at most 10,137,600 B RSS per process. The frozen self-compile gate completes three fresh compiler processes, each releases fully between runs, and records zero process swaps. | included in the same final three-run result: -11.08% instructions, -10.45% RSS, and -11.43% footprint; the cache ownership fix retains both the instruction win and recovered memory | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-22`: Classified suite `#68 libs/mpi/test` as
+  `blocked-external`. Its exact forced two-job graph finds one bookkeeping
+  target and exits successfully in 3.00s at 39,317,504 B maximum RSS with zero
+  swaps, but performs no compile, link, or runtime action. Boost.MPI is in the
+  supported C++03 lane; however, its Jamfile creates tests only when
+  `mpi.configured` is true, and this host has neither `mpic++` nor `mpirun`.
+  The empty graph therefore cannot be credited as a compiler pass. System swap
+  remains unchanged at 551.75 MB. No compiler or test change is required, and
+  the cursor advances to `#69 libs/mpl/test`.
 
 - `2026-07-22`: Closed MP11 `mp_partial_sum` and credited suite `#67` as a
   pass. Defaulted member-alias arguments now preserve every template binding
