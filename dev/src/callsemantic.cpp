@@ -1628,24 +1628,39 @@ private:
     }
     std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
         named_type_class_template_specialization_mangle_info_const(base);
-    if(!mangle_info ||
-       !mangle_info->class_template_decl ||
-       mangle_info->arguments.empty()) {
+    void * structured_template_decl = nullptr;
+    std::vector<DependentAliasTemplateArgumentSyntax> structured_arguments;
+    const bool structured_empty_specialization =
+        named_type_dependent_class_template(base,
+                                            structured_template_decl,
+                                            structured_arguments) &&
+        structured_template_decl &&
+        structured_arguments.empty();
+    if((!mangle_info || !mangle_info->class_template_decl) &&
+       !structured_empty_specialization) {
       return nullptr;
     }
     ClassTemplateDecl * decl =
-        static_cast<ClassTemplateDecl *>(mangle_info->class_template_decl);
+        static_cast<ClassTemplateDecl *>(
+            structured_empty_specialization ?
+                structured_template_decl : mangle_info->class_template_decl);
+    const std::vector<TemplateArgument> empty_arguments;
+    const std::vector<TemplateArgument> & metadata_arguments =
+        structured_empty_specialization ?
+            empty_arguments : mangle_info->arguments;
+    if(!template_model::template_arguments_fully_bind_parameters(
+           decl->parameters,
+           metadata_arguments)) {
+      return nullptr;
+    }
     const std::string key =
         template_instantiation::template_argument_key_for_instantiation(
             *const_cast<Analyzer *>(this),
-            mangle_info->arguments);
-    const auto materialize_from_mangle_arguments =
+            metadata_arguments);
+    const auto materialize_from_metadata_arguments =
         [&]() -> ClassInfo *
     {
-      if(template_arguments_are_dependent(mangle_info->arguments) ||
-         !template_model::template_arguments_fully_bind_parameters(
-             decl->parameters,
-             mangle_info->arguments)) {
+      if(template_arguments_are_dependent(metadata_arguments)) {
         return nullptr;
       }
       Scope * use_scope = decl->declaring_scope ? decl->declaring_scope :
@@ -1660,12 +1675,12 @@ private:
               *decl,
               *use_scope,
               key,
-              mangle_info->arguments);
+              metadata_arguments);
       ClassInfo * materialized =
           self->reference_selected_class_template_instantiation(
               *decl,
               *use_scope,
-              mangle_info->arguments,
+              metadata_arguments,
               selection,
               nullptr,
               template_api::ClassTemplateSourceUseMode::SemanticLookupOnly,
@@ -1684,7 +1699,7 @@ private:
     found = decl->reference_instantiations.find(key);
     if(found != decl->reference_instantiations.end()) {
       ClassInfo * refreshed = found->second && !found->second->complete ?
-          materialize_from_mangle_arguments() :
+          materialize_from_metadata_arguments() :
           nullptr;
       ClassInfo * result = refreshed ? refreshed : found->second;
       if(result) {
@@ -1692,7 +1707,7 @@ private:
       }
       return result;
     }
-    ClassInfo * materialized = materialize_from_mangle_arguments();
+    ClassInfo * materialized = materialize_from_metadata_arguments();
     if(!materialized) {
       return nullptr;
     }
@@ -6010,6 +6025,18 @@ private:
     }
     if(!base || base->kind != Type::TK_NAMED) {
       return nullptr;
+    }
+    void * structured_template_decl = nullptr;
+    std::vector<DependentAliasTemplateArgumentSyntax> structured_arguments;
+    if(named_type_dependent_class_template(base,
+                                           structured_template_decl,
+                                           structured_arguments) &&
+       structured_template_decl &&
+       structured_arguments.empty()) {
+      if(ClassInfo * specialization =
+             class_info_for_template_specialization_metadata(base)) {
+        return specialization;
+      }
     }
     callsemantic::TypeRegistryState state =
         const_cast<Analyzer *>(this)->type_registry_state();
@@ -13606,7 +13633,7 @@ private:
                     {
                       return template_argument_semantics::
                           expand_template_argument_inputs(services,
-                                                          *inst_scope,
+                                                          use_scope,
                                                           *source_arg_texts,
                                                           source_arg_syntaxes);
                     });
