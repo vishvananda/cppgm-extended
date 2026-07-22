@@ -159,10 +159,20 @@ bool transformed_function_template_parameter_types(
     return false;
   }
 
+  // A transformed function template has one unique synthesized entity for
+  // each template parameter, including each parameter pack.  Present that
+  // scalar view to substitution so two independent packs cannot compete for
+  // ownership of the flat placeholder vector.
+  std::vector<template_model::TemplateParameterInfo> scalar_parameters =
+      decl.parameters;
+  for(std::size_t i = 0; i < scalar_parameters.size(); ++i) {
+    scalar_parameters[i].parameter_pack = false;
+  }
+
   for(std::size_t i = 0; i < decl.params_pattern.size(); ++i) {
     cpp_decl::TypePtr transformed;
     if(!template_api::type::substitute_type(decl.params_pattern[i].second,
-                                            decl.parameters,
+                                            scalar_parameters,
                                             placeholders,
                                             transformed)) {
       return false;

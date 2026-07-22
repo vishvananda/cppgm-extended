@@ -132,8 +132,9 @@ TypePtr make_dependent_class_member_type_placeholder(
                  true);
   TypePtr base = strip_top_level_cv(out);
   if(base && base->kind == Type::TK_NAMED && info.type) {
-    base->named_member_owner_type = info.type;
-    base->named_member_name = member_name;
+    Type::NamedRareMetadata & rare = base->mutable_named_rare_metadata();
+    rare.named_member_owner_type = info.type;
+    rare.named_member_name = member_name;
   }
   return out;
 }
@@ -905,6 +906,7 @@ public:
       analyze_unemitted_member_bodies_for_witness_semantics();
     }
     if(memory_census_enabled()) {
+      callsemantic::dump_source_ast_memory_census(std::cerr, ast);
       dump_memory_census(std::cerr, out);
     }
     if(callsem_duplicate_hash_enabled()) {
@@ -1755,13 +1757,13 @@ private:
           if(ClassInfo * info = analyzer.class_info_for_type_probe(base)) {
             mark_class(info);
           }
-          mark_type(base->named_member_owner_type);
-          mark_type(base->named_dependent_qualified_owner);
-          for(size_t i = 0; i < base->named_dependent_alias_arguments.size(); ++i) {
-            mark_type(base->named_dependent_alias_arguments[i].type);
+          mark_type(base->named_rare().named_member_owner_type);
+          mark_type(base->named_rare().named_dependent_qualified_owner);
+          for(size_t i = 0; i < base->named_rare().named_dependent_alias_arguments.size(); ++i) {
+            mark_type(base->named_rare().named_dependent_alias_arguments[i].type);
           }
-          for(size_t i = 0; i < base->named_dependent_class_arguments.size(); ++i) {
-            mark_type(base->named_dependent_class_arguments[i].type);
+          for(size_t i = 0; i < base->named_rare().named_dependent_class_arguments.size(); ++i) {
+            mark_type(base->named_rare().named_dependent_class_arguments[i].type);
           }
           return;
         }
@@ -4011,7 +4013,7 @@ private:
       }
 
       if(type_pattern_references_dependent_non_type_template_argument(
-             base->named_dependent_qualified_owner,
+             base->named_rare().named_dependent_qualified_owner,
              depth + 1)) {
         return true;
       }
@@ -10561,8 +10563,9 @@ private:
     if(durable_scope.class_info && durable_scope.class_info->type) {
       TypePtr base = strip_top_level_cv(enum_type);
       if(base && base->kind == Type::TK_NAMED) {
-        base->named_member_owner_type = durable_scope.class_info->type;
-        base->named_member_name = enum_name;
+        Type::NamedRareMetadata & rare = base->mutable_named_rare_metadata();
+        rare.named_member_owner_type = durable_scope.class_info->type;
+        rare.named_member_name = enum_name;
       }
     }
 
@@ -13406,7 +13409,7 @@ private:
         }
         if(base->kind == Type::TK_NAMED) {
           const vector<DependentAliasTemplateArgumentSyntax> & alias_args =
-              base->named_dependent_alias_arguments;
+              base->named_rare().named_dependent_alias_arguments;
           for(size_t i = 0; i < alias_args.size(); ++i) {
             if(mentions_alias_parameter(alias_args[i].type, depth + 1) ||
                mentions_alias_parameter(alias_args[i].syntax.resolved_type,
@@ -13415,7 +13418,7 @@ private:
             }
           }
           const vector<DependentAliasTemplateArgumentSyntax> & class_args =
-              base->named_dependent_class_arguments;
+              base->named_rare().named_dependent_class_arguments;
           for(size_t i = 0; i < class_args.size(); ++i) {
             if(mentions_alias_parameter(class_args[i].type, depth + 1) ||
                mentions_alias_parameter(class_args[i].syntax.resolved_type,
@@ -13423,7 +13426,7 @@ private:
               return true;
             }
           }
-          if(mentions_alias_parameter(base->named_dependent_qualified_owner,
+          if(mentions_alias_parameter(base->named_rare().named_dependent_qualified_owner,
                                       depth + 1)) {
             return true;
           }
@@ -13453,16 +13456,16 @@ private:
 
         if(base->kind == Type::TK_NAMED) {
           if(base->named_semantic_kind == Type::NSK_DEPENDENT_TYPE &&
-             base->named_dependent_qualified_owner &&
-             !base->named_dependent_qualified_members.empty()) {
+             base->named_rare().named_dependent_qualified_owner &&
+             !base->named_rare().named_dependent_qualified_members.empty()) {
             return !mentions_alias_parameter(
-                base->named_dependent_qualified_owner);
+                base->named_rare().named_dependent_qualified_owner);
           }
 
           if(base->named_semantic_kind == Type::NSK_DEPENDENT_ALIAS &&
-             base->named_dependent_alias_template_decl) {
+             base->named_rare().named_dependent_alias_template_decl) {
             const vector<DependentAliasTemplateArgumentSyntax> & alias_args =
-                base->named_dependent_alias_arguments;
+                base->named_rare().named_dependent_alias_arguments;
             for(size_t i = 0; i < alias_args.size(); ++i) {
               if(contains_scope_sensitive_member(alias_args[i].type,
                                                  depth + 1) ||
@@ -13474,9 +13477,9 @@ private:
             }
           }
 
-          if(base->named_dependent_class_template_decl) {
+          if(base->named_rare().named_dependent_class_template_decl) {
             const vector<DependentAliasTemplateArgumentSyntax> & class_args =
-                base->named_dependent_class_arguments;
+                base->named_rare().named_dependent_class_arguments;
             for(size_t i = 0; i < class_args.size(); ++i) {
               if(contains_scope_sensitive_member(class_args[i].type,
                                                  depth + 1) ||
@@ -13489,7 +13492,7 @@ private:
           }
 
           if(contains_scope_sensitive_member(
-                 base->named_dependent_qualified_owner,
+                 base->named_rare().named_dependent_qualified_owner,
                  depth + 1) ||
              contains_scope_sensitive_member(base->inner, depth + 1) ||
              contains_scope_sensitive_member(base->owner, depth + 1)) {
@@ -14135,6 +14138,7 @@ private:
 	             text_mentions_dependent_non_namespace_binding_names(*inst_scope,
 	                                                                 alias_text);
 	    };
+	    bool invalid_structural_alias_type_formation = false;
 	    auto parse_instantiated_alias_type_id_ast =
 	        [&](TypePtr & out) -> bool
 	    {
@@ -14249,8 +14253,10 @@ private:
 	        }
 	        return true;
 	      };
-	      const bool structural_expanded =
-	          !alias_has_nontype_value_parameter &&
+	      template_specialization::AliasSubstitutionFailure
+	          structural_substitution_failure;
+		      const bool structural_expanded =
+		          !alias_has_nontype_value_parameter &&
 	          !member_alias_pattern_needs_instantiated_member_scope &&
 	          decl.declaring_scope &&
 	          template_api::with_template_services(
@@ -14266,8 +14272,13 @@ private:
 	                   &structural_arg_syntaxes,
 	                   template_api::make_template_environment(*inst_scope),
 	                   dependent_arguments,
-	                   materialize_direct_class_alias_target());
+	                   materialize_direct_class_alias_target(),
+	                   &structural_substitution_failure);
 	             });
+	      invalid_structural_alias_type_formation =
+	          structural_substitution_failure.kind ==
+	              template_specialization::AliasSubstitutionFailure::
+	                  SF_INVALID_TYPE_FORMATION;
 	      if(parser_trace::enabled("template.resolve")) {
 	        std::ostringstream trace;
 	        trace << "parse-instantiated-alias-structural"
@@ -14278,6 +14289,9 @@ private:
 	              << " member-alias-needs-scope="
 	              << (member_alias_pattern_needs_instantiated_member_scope ? "yes" : "no");
 	        parser_trace::note("template.resolve", std::string(), trace.str());
+	      }
+	      if(invalid_structural_alias_type_formation) {
+	        return false;
 	      }
 	      if(structural_expanded && structural_alias) {
 	        out = refine_instantiated_alias(structural_alias);
@@ -14299,6 +14313,9 @@ private:
 	    const bool resolved_alias_pattern_is_dependent =
 	        decl.resolved_type_pattern &&
 	        type_depends_on_template_parameter(decl.resolved_type_pattern);
+    const bool resolved_alias_pattern_is_dependent_alias =
+        decl.resolved_type_pattern &&
+        named_type_is_dependent_alias(decl.resolved_type_pattern);
     TypePtr alias_pattern_owner;
     std::vector<std::string> alias_pattern_members;
     bool alias_pattern_leading_typename = false;
@@ -14317,6 +14334,28 @@ private:
 	        type_pattern_references_dependent_non_type_template_argument(
 	            decl.resolved_type_pattern);
 	    if(!dependent_arguments && !alias_has_parameter_pack && decl.resolved_type_pattern) {
+	      if(resolved_alias_pattern_is_dependent_alias) {
+	        TypePtr structural_alias = decl.resolved_type_pattern;
+	        {
+	          const witness::ScopedTemplateWitnessSourceCapturePause
+	              source_capture_pause;
+	          TypePtr resolved_structural_alias;
+	          if(resolve_instantiated_dependent_type(*inst_scope,
+	                                                 structural_alias,
+	                                                 resolved_structural_alias) &&
+	             resolved_structural_alias) {
+	            structural_alias = resolved_structural_alias;
+	          }
+	          structural_alias = refine_instantiated_alias(structural_alias);
+	        }
+	        if(structural_alias &&
+	           !type_depends_on_template_parameter(structural_alias) &&
+	           !alias_mentions_instantiation_bindings(structural_alias)) {
+	          instantiations[key] = structural_alias;
+	          note_alias_use(structural_alias);
+	          return structural_alias;
+	        }
+	      }
 	      TypePtr direct_syntax_alias;
 	      if(resolve_direct_alias_type_id_syntax(direct_syntax_alias)) {
 	        instantiations[key] = direct_syntax_alias;
@@ -14345,6 +14384,9 @@ private:
 	        }
 	        note_alias_use(ast_alias);
 	        return ast_alias;
+	      }
+	      if(invalid_structural_alias_type_formation) {
+	        return TypePtr();
 	      }
 	      TypePtr structural_alias = decl.resolved_type_pattern;
 	      {
@@ -14416,6 +14458,7 @@ private:
         (!reference_class_templates_only ||
          alias_has_non_type_parameter ||
          alias_has_parameter_pack ||
+         resolved_alias_pattern_is_dependent_alias ||
          alias_pattern_is_dependent_member ||
          alias_type_id_preserves_qualified_member ||
          resolved_alias_pattern_has_dependent_non_type_argument ||
@@ -21797,8 +21840,8 @@ private:
 
     TypePtr base = strip_top_level_cv(type);
     if(base && base->kind == Type::TK_NAMED) {
-      if(base->named_class_template_specialization_mangle_info &&
-         base->named_class_template_specialization_mangle_info->class_template_decl ==
+      if(base->named_rare().named_class_template_specialization_mangle_info &&
+         base->named_rare().named_class_template_specialization_mangle_info->class_template_decl ==
              &source_template) {
         return true;
       }
@@ -21848,9 +21891,9 @@ private:
         return true;
       }
 
-      return type_references_class_template_source(base->named_member_owner_type,
+      return type_references_class_template_source(base->named_rare().named_member_owner_type,
                                                   source_template) ||
-             type_references_class_template_source(base->named_dependent_qualified_owner,
+             type_references_class_template_source(base->named_rare().named_dependent_qualified_owner,
                                                   source_template);
     }
 
@@ -23115,8 +23158,8 @@ private:
     if(type->kind != Type::TK_NAMED) {
       return type;
     }
-    TypePtr alias_owner = type->named_member_owner_type;
-    string alias_name = type->named_member_name;
+    TypePtr alias_owner = type->named_rare().named_member_owner_type;
+    string alias_name = type->named_rare().named_member_name;
     if(!alias_owner || alias_name.empty()) {
       vector<string> members;
       bool leading_typename = false;
@@ -23439,8 +23482,8 @@ private:
     if(!node) {
       return string();
     }
-    if(!node->asm_label.empty()) {
-      return node->asm_label;
+    if(!cppast_asm_label(*node).empty()) {
+      return cppast_asm_label(*node);
     }
     for(size_t i = 0; i < node->children.size(); ++i) {
       string label = declaration_object_symbol_override(&node->children[i]);
@@ -27444,12 +27487,26 @@ private:
          find_child_kind(init_decl.children[0], CppAstKind::parameter_clause)) {
         bool function_typedef = prepared_specifiers.declaration_is_typedef;
         TypePtr function_base;
-        if(parse_trailing_return_base(*parse_scope,
-                                     *specifiers,
-                                     init_decl.children[0],
-                                     function_typedef,
-                                     function_base,
-                                     reference_function_parameter_types_only)) {
+        bool parsed_function_base =
+            parse_trailing_return_base(*parse_scope,
+                                       *specifiers,
+                                       init_decl.children[0],
+                                       function_typedef,
+                                       function_base,
+                                       reference_function_parameter_types_only);
+        const CppAstNode * special_initializer =
+            single_special_initializer(initializer);
+        if(!parsed_function_base &&
+           prepared_specifiers.has_auto &&
+           !function_typedef &&
+           special_initializer &&
+           special_initializer->value == "delete" &&
+           !find_child_kind(init_decl.children[0],
+                            CppAstKind::trailing_return_type)) {
+          function_base = make_fundamental(FT_VOID);
+          parsed_function_base = true;
+        }
+        if(parsed_function_base) {
           const CppAstNode filtered_declarator =
               filtered_function_declarator(init_decl.children[0]);
           TypePtr function_type;
@@ -27489,8 +27546,19 @@ private:
       } else {
         declaration_target.name = name;
       }
+      const bool has_structured_declaration_scope =
+          !is_typedef &&
+          declaration_name_syntax &&
+          (declaration_name_syntax->rooted ||
+           !declaration_name_syntax->qualifiers.empty()) &&
+          parse_scope != &scope;
+      if(has_structured_declaration_scope) {
+        declaration_scope = parse_scope;
+        declaration_name = declaration_target.name;
+      }
       const bool declaration_target_resolved =
           is_typedef ||
+          has_structured_declaration_scope ||
           semantic_lookup::resolve_qualified_namespace_entity_target(*this,
                                                                      scope,
                                                                      declaration_target,
@@ -27580,6 +27648,18 @@ private:
                           declarator_function_qualifier(init_decl.children[0]),
                           decl_spec_contains_token(prepared_specifiers.resolved_specifiers,
                                                    KW_CONSTEXPR));
+        const CppAstNode * special_initializer =
+            single_special_initializer(initializer);
+        if(special_initializer && special_initializer->value == "delete") {
+          FunctionBinding * registered =
+              find_matching_function(*declaration_scope,
+                                     declaration_name,
+                                     type);
+          if(!registered) {
+            throw logic_error("missing deleted namespace function binding");
+          }
+          registered->is_deleted = true;
+        }
       } else {
         const bool is_thread_local_variable =
             decl_spec_contains_token(prepared_specifiers.resolved_specifiers,
@@ -30381,7 +30461,7 @@ private:
       CppAstNode synthetic_specifiers;
       synthetic_specifiers.kind = CppAstKind::decl_specifier_seq;
       CppAstNode auto_kw;
-      auto_kw.kind = CppAstKind::keyword_literal;
+      auto_kw.kind = CppAstKind::decl_specifier;
       auto_kw.has_token = true;
       auto_kw.token_kind = RT_SIMPLE;
       auto_kw.simple_type = KW_AUTO;
@@ -31655,8 +31735,9 @@ private:
       base_type->named_host_abi_chunks = completed->type->named_host_abi_chunks;
       base_type->set_named_lambda_mangle(
           completed->type->named_lambda_mangle());
-      base_type->named_class_template_specialization_mangle_info =
-          completed->type->named_class_template_specialization_mangle_info;
+      base_type->mutable_named_rare_metadata()
+          .named_class_template_specialization_mangle_info =
+          completed->type->named_rare().named_class_template_specialization_mangle_info;
     };
 
     ClassInfo * info = class_info_for_type(type);

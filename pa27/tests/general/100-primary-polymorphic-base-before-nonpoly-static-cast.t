@@ -1,30 +1,14 @@
-struct sink {
-  int value;
-  void accept(int const & x) { value = x; }
-};
+struct Data { int value; };
+struct Interface { virtual int read() const = 0; };
 
-struct matcher {
-  int x;
-  matcher(int v = 0) : x(v) {}
-};
-
-struct iface {
-  virtual ~iface() {}
-  virtual void peek(sink &) const = 0;
-};
-
-template<typename M>
-struct dynamic : M, iface {
-  int tail;
-  dynamic(M const & m) : M(m), tail(9) {}
-  void peek(sink & out) const { out.accept(static_cast<M const *>(this)->x); }
+struct Derived : Data, Interface {
+  int read() const { return static_cast<Data const *>(this)->value; }
 };
 
 int main()
 {
-  dynamic<matcher> d(matcher(42));
-  iface const * p = &d;
-  sink out = {0};
-  p->peek(out);
-  return out.value == 42 ? 0 : 1;
+  Derived value;
+  value.value = 7;
+  Interface const * view = &value;
+  return view->read() == 7 ? 0 : 1;
 }

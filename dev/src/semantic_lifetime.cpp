@@ -358,6 +358,29 @@ CppAstNode synthetic_identifier_node(const string & name)
   return id;
 }
 
+bool class_delete_uses_sized_deallocation(SemanticContext & ctx, Scope & scope)
+{
+  const vector<FunctionBinding *> candidates =
+      ctx.lookup_functions(scope, "operator delete");
+  const TypePtr size_type = make_fundamental(FT_UNSIGNED_LONG_INT);
+  bool has_unsized = false;
+  bool has_sized = false;
+  for(size_t i = 0; i < candidates.size(); ++i) {
+    const FunctionBinding * binding = candidates[i];
+    if(!binding || !binding->owner_class || binding->is_deleted) {
+      continue;
+    }
+    if(binding->params.size() == 1) {
+      has_unsized = true;
+    } else if(binding->params.size() == 2 &&
+              type_equals(strip_top_level_cv(binding->params[1].second),
+                          size_type)) {
+      has_sized = true;
+    }
+  }
+  return !has_unsized && has_sized;
+}
+
 ExprInfo analyze_generated_this_expr(SemanticContext & ctx,
                                      Scope & scope)
 {
@@ -1774,6 +1797,42 @@ void append_value_initialization_actions(SemanticContext & ctx,
                                          const ExprInfo & target,
                                          DumpNode & out);
 
+const size_t max_expanded_array_lifecycle_actions = 16;
+
+bool lifecycle_target_is_this_subobject(const DumpNode & node)
+{
+  if(node.kind == CallSemKind::id_expression) {
+    return node.text == "this";
+  }
+  return node.kind == CallSemKind::member_expression &&
+         node.children.size() == 1 &&
+         lifecycle_target_is_this_subobject(node.children[0]);
+}
+
+bool append_compact_array_constructor_action(const TypePtr & array_type,
+                                             const ExprInfo & target,
+                                             DumpNode & prototype_actions,
+                                             DumpNode & out)
+{
+  TypePtr base = strip_top_level_cv(array_type);
+  if(!base || base->kind != Type::TK_ARRAY || !base->has_bound ||
+     base->bound <= max_expanded_array_lifecycle_actions ||
+     !lifecycle_target_is_this_subobject(target.node) ||
+     prototype_actions.children.size() != 1 ||
+     prototype_actions.children[0].kind != CallSemKind::constructor_action) {
+    return false;
+  }
+
+  DumpNode action = make_dump_node(CallSemKind::array_constructor_action);
+  action.semantic_type = array_type;
+  action.value_category = CVC_NONE;
+  action.trivial_lifecycle = prototype_actions.children[0].trivial_lifecycle;
+  set_callsem_uint_value(action, base->bound);
+  action.children.push_back(std::move(prototype_actions.children[0]));
+  out.children.push_back(std::move(action));
+  return true;
+}
+
 void ensure_bit_field_storage_zeroed(SemanticContext & ctx,
                                      const ExprInfo & base,
                                      const FieldInfo & field,
@@ -3132,6 +3191,24 @@ void append_value_initialization_actions(SemanticContext & ctx,
     if(!base->has_bound) {
       throw logic_error("value initialization requires bounded array");
     }
+    if(base->bound > max_expanded_array_lifecycle_actions) {
+      DumpNode prototype_actions;
+      append_value_initialization_actions(
+          ctx,
+          scope,
+          base->inner,
+          ctx.make_subscript_expr(target, 0, base->inner),
+          prototype_actions);
+      if(prototype_actions.children.empty()) {
+        return;
+      }
+      if(append_compact_array_constructor_action(type,
+                                                 target,
+                                                 prototype_actions,
+                                                 out)) {
+        return;
+      }
+    }
     for(size_t i = 0; i < base->bound; ++i) {
       append_value_initialization_actions(ctx, scope, base->inner,
                                           ctx.make_subscript_expr(target, i, base->inner), out);
@@ -3196,6 +3273,24 @@ void append_default_subobject_initialization_actions(SemanticContext & ctx,
   if(base->kind == Type::TK_ARRAY) {
     if(!base->has_bound) {
       throw logic_error("default initialization requires bounded array");
+    }
+    if(base->bound > max_expanded_array_lifecycle_actions) {
+      DumpNode prototype_actions;
+      append_default_subobject_initialization_actions(
+          ctx,
+          scope,
+          base->inner,
+          ctx.make_subscript_expr(target, 0, base->inner),
+          prototype_actions);
+      if(prototype_actions.children.empty()) {
+        return;
+      }
+      if(append_compact_array_constructor_action(type,
+                                                 target,
+                                                 prototype_actions,
+                                                 out)) {
+        return;
+      }
     }
     for(size_t i = 0; i < base->bound; ++i) {
       append_default_subobject_initialization_actions(
@@ -3722,7 +3817,8 @@ void append_destructor_actions_for_subobject(SemanticContext & ctx,
                                              const ExprInfo & object_expr,
                                              ClassInfo * vtt_owner_info,
                                              bool allow_host_abi_skip,
-                                             DumpNode & out)
+                                             DumpNode & out,
+                                             bool allow_compact_array = false)
 {
   TypePtr base = strip_top_level_cv(type);
   if(!base) {
@@ -3732,6 +3828,33 @@ void append_destructor_actions_for_subobject(SemanticContext & ctx,
     if(!base->has_bound) {
       return;
     }
+    if(allow_compact_array &&
+       base->bound > max_expanded_array_lifecycle_actions &&
+       lifecycle_target_is_this_subobject(object_expr.node)) {
+      DumpNode prototype_actions;
+      append_destructor_actions_for_subobject(
+          ctx,
+          base->inner,
+          ctx.make_subscript_expr(object_expr, 0, base->inner),
+          vtt_owner_info,
+          allow_host_abi_skip,
+          prototype_actions,
+          true);
+      if(prototype_actions.children.empty()) {
+        return;
+      }
+      if(prototype_actions.children.size() == 1 &&
+         prototype_actions.children[0].kind == CallSemKind::destructor_action) {
+        DumpNode action = make_dump_node(CallSemKind::array_destructor_action);
+        action.semantic_type = type;
+        action.value_category = CVC_NONE;
+        action.trivial_lifecycle = prototype_actions.children[0].trivial_lifecycle;
+        set_callsem_uint_value(action, base->bound);
+        action.children.push_back(std::move(prototype_actions.children[0]));
+        out.children.push_back(std::move(action));
+        return;
+      }
+    }
     for(size_t i = base->bound; i-- > 0;) {
       append_destructor_actions_for_subobject(
           ctx,
@@ -3739,7 +3862,8 @@ void append_destructor_actions_for_subobject(SemanticContext & ctx,
           ctx.make_subscript_expr(object_expr, i, base->inner),
           vtt_owner_info,
           allow_host_abi_skip,
-          out);
+          out,
+          allow_compact_array);
     }
     return;
   }
@@ -4951,7 +5075,10 @@ void append_destructor_generated_statements(SemanticContext & ctx,
         ctx.make_field_expr(this_expr, info.fields[i]),
         &info,
         true,
-        function_node);
+        function_node,
+        info.fields.size() == 1 &&
+            info.bases.empty() &&
+            info.virtual_base_subobjects.empty());
   }
   for(size_t i = info.bases.size(); i-- > 0;) {
     if(info.bases[i].is_virtual) {
@@ -4993,6 +5120,13 @@ void append_destructor_generated_statements(SemanticContext & ctx,
     CppAstNode arguments;
     arguments.kind = CppAstKind::paren_argument_list;
     arguments.children.push_back(synthetic_identifier_node("this"));
+    if(class_delete_uses_sized_deallocation(ctx, scope)) {
+      CppAstNode size;
+      size.kind = CppAstKind::literal;
+      size.value = to_string(type_size(info.type));
+      size.semantic_type = make_fundamental(FT_UNSIGNED_LONG_INT);
+      arguments.children.push_back(size);
+    }
     call.children.push_back(arguments);
 
     DumpNode stmt = make_dump_node(CallSemKind::expression_statement);

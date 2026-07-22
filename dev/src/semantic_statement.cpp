@@ -269,28 +269,39 @@ string symbol_discriminator_text(const string & text)
   return out;
 }
 
+const FunctionBinding * local_static_enclosing_function(const Scope & scope)
+{
+  for(const Scope * current = &scope; current; current = current->parent) {
+    if(current->function) {
+      return current->function;
+    }
+  }
+  return nullptr;
+}
+
 string local_static_function_owner_name(const Scope & scope,
                                         const string & fallback_name)
 {
-  if(scope.function && !scope.function->name.empty()) {
-    if(scope.function->has_instantiation_arguments) {
-      string discriminator = scope.function->symbol.object_symbol;
+  const FunctionBinding * function = local_static_enclosing_function(scope);
+  if(function && !function->name.empty()) {
+    if(function->has_instantiation_arguments) {
+      string discriminator = function->symbol.object_symbol;
       if(discriminator.empty()) {
-        discriminator = scope.function->symbol.internal_symbol;
+        discriminator = function->symbol.internal_symbol;
       }
       if(discriminator.empty()) {
-        discriminator = scope.function->template_instantiation_key;
+        discriminator = function->template_instantiation_key;
       }
       if(!discriminator.empty()) {
         return string("function_symbol_") + symbol_discriminator_text(discriminator);
       }
     }
-    if(scope.function->declaration_scope) {
+    if(function->declaration_scope) {
       return semantic_lookup::scope_symbol_qualified_name(
-          *scope.function->declaration_scope,
-          scope.function->name);
+          *function->declaration_scope,
+          function->name);
     }
-    return scope.function->name;
+    return function->name;
   }
   return semantic_lookup::scope_symbol_qualified_name(scope, fallback_name);
 }
@@ -326,7 +337,7 @@ bool scope_has_internal_namespace_linkage(const Scope * scope)
 
 symbol_linkage::SymbolLinkage local_static_storage_linkage(const Scope & scope)
 {
-  const FunctionBinding * function = scope.function;
+  const FunctionBinding * function = local_static_enclosing_function(scope);
   if(!function) {
     return symbol_linkage::SL_INTERNAL;
   }
@@ -1194,17 +1205,33 @@ bool try_analyze_structured_binding_as_subscript_assignment(SemanticContext & ct
   }
 }
 
-const CppAstNode * nested_declarator_identifier(const CppAstNode & declarator)
+bool nested_declarator_call_argument(const CppAstNode & declarator,
+                                     CppAstNode & out)
 {
   const CppAstNode * nested = find_child_kind(declarator, CppAstKind::nested_declarator);
   if(!nested) {
-    return nullptr;
+    return false;
   }
   const CppAstNode * inner = find_child_kind(*nested, CppAstKind::declarator);
   if(!inner) {
-    return nullptr;
+    return false;
   }
-  return find_child_kind(*inner, CppAstKind::identifier);
+  const CppAstNode * identifier = find_child_kind(*inner, CppAstKind::identifier);
+  if(!identifier || identifier->value.empty()) {
+    return false;
+  }
+  out = make_id_expr_ast_node(identifier->value);
+  if(const CppAstNode * pointer_operator =
+         find_child_kind(*inner, CppAstKind::ptr_operator)) {
+    if((pointer_operator->has_token && pointer_operator->simple_type == OP_AMP) ||
+       pointer_operator->value == "&") {
+      out = make_unary_expr_ast_node(OP_AMP, "&", out);
+    } else if((pointer_operator->has_token && pointer_operator->simple_type == OP_STAR) ||
+              pointer_operator->value == "*") {
+      out = make_unary_expr_ast_node(OP_STAR, "*", out);
+    }
+  }
+  return true;
 }
 
 bool try_analyze_ambiguous_function_pointer_declaration_statement(
@@ -1328,14 +1355,14 @@ bool try_analyze_ambiguous_local_call_statement(SemanticContext & ctx,
   if(!declarator) {
     return false;
   }
-  const CppAstNode * argument = nested_declarator_identifier(*declarator);
-  if(!argument || argument->value.empty()) {
+  CppAstNode argument;
+  if(!nested_declarator_call_argument(*declarator, argument)) {
     return false;
   }
 
   CppAstNode call =
       make_call_expr_ast(make_id_expr_ast_node(callee_name),
-                         vector<CppAstNode>(1, make_id_expr_ast_node(argument->value)));
+                         vector<CppAstNode>(1, argument));
   try
   {
     const CppAstNode * owned_call = ctx.own_synthetic_ast(std::move(call));
@@ -1796,6 +1823,15 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
                                                          *specifiers,
                                                          declarators,
                                                          out)) {
+    return;
+  }
+
+  if(try_analyze_ambiguous_local_call_statement(ctx,
+                                                scope,
+                                                node,
+                                                *specifiers,
+                                                declarators,
+                                                out)) {
     return;
   }
 

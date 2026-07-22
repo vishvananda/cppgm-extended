@@ -2407,6 +2407,7 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
     FunctionBinding * ctor = ctx.select_default_constructor_for_builtin_trait(scope, *info);
     out = (ctor &&
            (ctor->is_defaulted || ctor->synthesized || ctor->is_aggregate_constructor) &&
+           is_trivially_copyable_type(ctx, base) &&
            is_trivially_destructible_type(ctx, base)) ? 1 : 0;
     return true;
   }

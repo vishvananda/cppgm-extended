@@ -798,6 +798,10 @@ string callsem_display_text(const CallSemNode & node)
   case CallSemKind::destructor_action:
     return visible_node_text(node);
 
+  case CallSemKind::array_constructor_action:
+  case CallSemKind::array_destructor_action:
+    return node.has_uint_value ? to_string(callsem_uint_value(node)) : string();
+
   case CallSemKind::namespace_definition:
     return node.text;
 

@@ -20,7 +20,8 @@ struct AliasSubstitutionFailure
   {
     SF_NONE,
     SF_MISSING_NONDEPENDENT_QUALIFIED_MEMBER_TYPE,
-    SF_DEPENDENT_CONDITION
+    SF_DEPENDENT_CONDITION,
+    SF_INVALID_TYPE_FORMATION
   };
 
   AliasSubstitutionFailure()

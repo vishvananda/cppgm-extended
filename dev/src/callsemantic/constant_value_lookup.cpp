@@ -1306,8 +1306,12 @@ public:
       const CppAstNode * qualifier_type_syntax =
           cppast_qualifier_type_syntax(node, i);
       if(qualifier_type_syntax) {
-        template_api::type::parse_decltype_or_typeof_node(
-            *this, *current, *qualifier_type_syntax, qualifier_type);
+        if(qualifier_type_syntax->semantic_type_is_resolved_qualifier) {
+          qualifier_type = qualifier_type_syntax->semantic_type;
+        } else {
+          template_api::type::parse_decltype_or_typeof_node(
+              *this, *current, *qualifier_type_syntax, qualifier_type);
+        }
       }
       const TemplateIdSyntax * qualifier_template_id =
           cppast_qualifier_template_id_syntax(node, i);

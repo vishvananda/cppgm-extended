@@ -1,7 +1,6 @@
 declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
-declare function @operator_delete(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
-declare function @__cxa_pure_virtual(%arg0 : ptr) -> i32 [effects=readnone, unwind=no, return=noreturn, binding=strong]
+declare function @__cxa_pure_virtual(%arg0 : ptr) -> obj<4x4> [effects=readnone, unwind=no, return=noreturn, binding=strong]
 
 global @__typeinfo_name__struct_D [storage=readonly, binding=weak, object=_ZTS1D] = {
   i8 49
@@ -41,30 +40,22 @@ global @__rtti_struct_D [storage=readonly, binding=weak, object=_ZTI1D] = {
 global @D__vtable [storage=readonly, binding=weak, object=_ZTV1D] = {
   i64 0
   ptr addr @__rtti_struct_D
-  ptr addr @D__get
-  ptr addr @D___D
-  ptr addr @D___D__deleting_entry
+  ptr addr @B1__anchor
 }
 global @D____view__B2__8__vtable [storage=readonly, binding=weak, object=@D____view__B2__8__vtable] = {
   i64 -8
   ptr addr @__rtti_struct_D
   ptr addr @_D__current__vtable_return_adjust__this_neg8__return_pos0
-  ptr addr @_D___D__vtable_return_adjust__this_neg8__return_pos0
-  ptr addr @_D___D__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @B1__vtable [storage=readonly, binding=weak, object=_ZTV2B1] = {
   i64 0
   ptr addr @__rtti_struct_B1
-  ptr addr @__cxa_pure_virtual
-  ptr addr @B1___B1
-  ptr addr @B1___B1__deleting_entry
+  ptr addr @B1__anchor
 }
 global @B2__vtable [storage=readonly, binding=weak, object=_ZTV2B2] = {
   i64 0
   ptr addr @__rtti_struct_B2
   ptr addr @__cxa_pure_virtual
-  ptr addr @B2___B2
-  ptr addr @B2___B2__deleting_entry
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -79,29 +70,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = index i8 [projection=base_subobject] %t2, 8
     store ptr %t3, $b
     %t4 = addr $tmpobj__1
-    eh_try ^call_unwind_dispatch_1
     %t5 = load ptr $b
     %t6 = load ptr %t5
     %t7 = load ptr %t6
     %t8 = call obj<4x4> %t7(%t5) as (%arg0 : ptr) -> obj<4x4>
     copyobj 4x4 %t8, %t4
-    eh_end
-    jump ^call_unwind_end_2
-
-  block ^call_unwind_dispatch_1:
-    %t9 = addr $d
-    call void @D___D(%t9)
-    resume
-
-  block ^call_unwind_end_2:
-    eh_try ^call_unwind_dispatch_1
-    %t10 = index i8 [projection=field] %t4, 0
-    %t11 = load i32 %t10
-    %t12 = binary sub i32 %t11, 7
-    eh_end
-    %t13 = addr $d
-    call void @D___D(%t13)
-    return i32 %t12
+    %t9 = index i8 [projection=field] %t4, 0
+    %t10 = load i32 %t9
+    %t11 = binary sub i32 %t10, 7
+    return i32 %t11
 }
 function @D__D(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev] {
   slot $this : ptr
@@ -141,126 +118,11 @@ function @D__current(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK1D7curre
     copyobj 4x4 %t5, %t4
     return obj<4x4> $retobj__1
 }
-function @D__get(%this : ptr) -> i32 [binding=weak, object=_ZN1D3getEv] {
+function @B1__anchor(%this : ptr) -> void [binding=weak, object=_ZN2B16anchorEv] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
-    return i32 0
-}
-function @D___D__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN1DD0Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
-    %t2 = addr @D__vtable
-    %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
-    %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 8
-    %t6 = addr @D____view__B2__8__vtable
-    %t7 = index i8 %t6, 16
-    store ptr %t7, %t5
-    eh_end
-    eh_cleanup ^destructor_suffix_cleanup_3
-    %t8 = load ptr $this
-    %t9 = index i8 [projection=base_subobject] %t8, 8
-    call void @B2___B2__base_entry(%t9)
-    eh_end
-    jump ^destructor_suffix_next_4
-
-  block ^destructor_suffix_cleanup_3:
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=base_subobject] %t10, 0
-    call void @B1___B1__base_entry(%t11)
-    %t12 = load ptr $this
-    call void @operator_delete(%t12)
-    eh_end
-    resume
-
-  block ^destructor_suffix_next_4:
-    eh_cleanup ^destructor_suffix_cleanup_5
-    %t13 = load ptr $this
-    %t14 = index i8 [projection=base_subobject] %t13, 0
-    call void @B1___B1__base_entry(%t14)
-    eh_end
-    jump ^destructor_suffix_next_6
-
-  block ^destructor_suffix_cleanup_5:
-    %t15 = load ptr $this
-    call void @operator_delete(%t15)
-    eh_end
-    resume
-
-  block ^destructor_suffix_next_6:
-    %t16 = load ptr $this
-    call void @operator_delete(%t16)
-    jump ^destructor_end_2
-
-  block ^destructor_cleanup_1:
-    %t17 = load ptr $this
-    %t18 = index i8 [projection=base_subobject] %t17, 8
-    call void @B2___B2__base_entry(%t18)
-    %t19 = load ptr $this
-    %t20 = index i8 [projection=base_subobject] %t19, 0
-    call void @B1___B1__base_entry(%t20)
-    %t21 = load ptr $this
-    call void @operator_delete(%t21)
-    eh_end
-    resume
-
-  block ^destructor_end_2:
-    return void
-}
-function @D___D(%this : ptr) -> void [binding=weak, object=_ZN1DD1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
-    %t2 = addr @D__vtable
-    %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
-    %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 8
-    %t6 = addr @D____view__B2__8__vtable
-    %t7 = index i8 %t6, 16
-    store ptr %t7, %t5
-    eh_end
-    eh_cleanup ^destructor_suffix_cleanup_3
-    %t8 = load ptr $this
-    %t9 = index i8 [projection=base_subobject] %t8, 8
-    call void @B2___B2__base_entry(%t9)
-    eh_end
-    jump ^destructor_suffix_next_4
-
-  block ^destructor_suffix_cleanup_3:
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=base_subobject] %t10, 0
-    call void @B1___B1__base_entry(%t11)
-    eh_end
-    resume
-
-  block ^destructor_suffix_next_4:
-    %t12 = load ptr $this
-    %t13 = index i8 [projection=base_subobject] %t12, 0
-    call void @B1___B1__base_entry(%t13)
-    jump ^destructor_end_2
-
-  block ^destructor_cleanup_1:
-    %t14 = load ptr $this
-    %t15 = index i8 [projection=base_subobject] %t14, 8
-    call void @B2___B2__base_entry(%t15)
-    %t16 = load ptr $this
-    %t17 = index i8 [projection=base_subobject] %t16, 0
-    call void @B1___B1__base_entry(%t17)
-    eh_end
-    resume
-
-  block ^destructor_end_2:
     return void
 }
 function @B1__B1__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN2B1C2Ev] {
@@ -285,110 +147,6 @@ function @B2__B2__base_entry(%this : ptr) -> void [unwind=no, binding=weak, obje
     store ptr %t3, %t1
     return void
 }
-function @B2___B2__base_entry(%this : ptr) -> void [binding=weak, object=_ZN2B2D2Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = addr @B2__vtable
-    %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
-    return void
-}
-function @B2___B2__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN2B2D0Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
-    %t2 = addr @B2__vtable
-    %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
-    eh_end
-    %t4 = load ptr $this
-    call void @operator_delete(%t4)
-    jump ^destructor_end_2
-
-  block ^destructor_cleanup_1:
-    %t5 = load ptr $this
-    call void @operator_delete(%t5)
-    eh_end
-    resume
-
-  block ^destructor_end_2:
-    return void
-}
-function @B2___B2(%this : ptr) -> void [binding=weak, object=_ZN2B2D1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = addr @B2__vtable
-    %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
-    return void
-}
-function @B1___B1__base_entry(%this : ptr) -> void [binding=weak, object=_ZN2B1D2Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = addr @B1__vtable
-    %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
-    return void
-}
-function @B1___B1__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN2B1D0Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
-    %t2 = addr @B1__vtable
-    %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
-    eh_end
-    %t4 = load ptr $this
-    call void @operator_delete(%t4)
-    jump ^destructor_end_2
-
-  block ^destructor_cleanup_1:
-    %t5 = load ptr $this
-    call void @operator_delete(%t5)
-    eh_end
-    resume
-
-  block ^destructor_end_2:
-    return void
-}
-function @B1___B1(%this : ptr) -> void [binding=weak, object=_ZN2B1D1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = addr @B1__vtable
-    %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
-    return void
-}
-function @_D___D__deleting_entry__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N1DD0Ev] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    call void @D___D__deleting_entry(%t1)
-    return void
-}
-function @_D___D__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N1DD1Ev] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    call void @D___D(%t1)
-    return void
-}
 function @_D__current__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> obj<4x4> [binding=weak, object=_ZThn8_NK1D7currentEv] {
   block ^entry:
     %t1 = index i8 %arg0, -8
@@ -396,6 +154,3 @@ function @_D__current__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr)
     return obj<4x4> %t2
 }
 alias object _ZN1DC2Ev = @D__D
-alias object _ZN1DD2Ev = @D___D
-alias object _ZN2B2D2Ev = @B2___B2
-alias object _ZN2B1D2Ev = @B1___B1

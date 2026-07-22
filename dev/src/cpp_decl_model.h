@@ -112,7 +112,30 @@ struct Type
     QualifiedName qualified_name;
     std::string source_name;
     std::shared_ptr<LambdaMangleMetadata> lambda_mangle;
+    std::shared_ptr<CppAstNode> named_dependent_type_expression_node;
+    void * named_dependent_alias_template_decl = nullptr;
+    std::vector<DependentAliasTemplateArgumentSyntax>
+        named_dependent_alias_arguments;
+    void * named_dependent_class_template_decl = nullptr;
+    std::vector<DependentAliasTemplateArgumentSyntax>
+        named_dependent_class_arguments;
+    std::string named_dependent_template_template_parameter_name;
+    std::size_t named_dependent_template_template_parameter_arity =
+        static_cast<std::size_t>(-1);
+    std::vector<DependentAliasTemplateArgumentSyntax>
+        named_dependent_template_template_arguments;
+    std::shared_ptr<ClassTemplateSpecializationMangleInfo>
+        named_class_template_specialization_mangle_info;
+    TypePtr named_member_owner_type;
+    std::string named_member_name;
+    TypePtr named_dependent_qualified_owner;
+    std::shared_ptr<TemplateIdSyntax>
+        named_dependent_qualified_owner_template_id;
+    std::vector<std::string> named_dependent_qualified_members;
+    std::vector<TemplateIdSyntax>
+        named_dependent_qualified_member_template_ids;
     bool dependent_type_expression_formed_with_placeholders = false;
+    bool named_dependent_qualified_leading_typename = false;
   };
 
   enum Kind
@@ -159,9 +182,7 @@ struct Type
       prototype_relaxed(false),
       function_const(false),
       function_volatile(false),
-      function_ref_qualifier(FTRQ_NONE),
-      named_dependent_template_template_parameter_arity(static_cast<std::size_t>(-1)),
-      named_dependent_qualified_leading_typename(false)
+      function_ref_qualifier(FTRQ_NONE)
   {}
 
   const QualifiedName & named_qualified_name_syntax() const;
@@ -173,6 +194,11 @@ struct Type
   void set_named_lambda_mangle(
       const std::shared_ptr<LambdaMangleMetadata> & metadata);
   void set_dependent_type_expression_formed_with_placeholders(bool formed);
+  const NamedRareMetadata & named_rare() const
+  {
+    static const NamedRareMetadata empty;
+    return named_rare_metadata ? *named_rare_metadata : empty;
+  }
   NamedRareMetadata & mutable_named_rare_metadata();
 
   Kind kind;
@@ -203,24 +229,6 @@ struct Type
   std::vector<TypePtr> params;
   TypePtr inner;
   TypePtr owner;
-  std::shared_ptr<CppAstNode> named_dependent_type_expression_node;
-  void * named_dependent_alias_template_decl = nullptr;
-  std::vector<DependentAliasTemplateArgumentSyntax> named_dependent_alias_arguments;
-  void * named_dependent_class_template_decl = nullptr;
-  std::vector<DependentAliasTemplateArgumentSyntax> named_dependent_class_arguments;
-  std::string named_dependent_template_template_parameter_name;
-  std::size_t named_dependent_template_template_parameter_arity;
-  std::vector<DependentAliasTemplateArgumentSyntax>
-      named_dependent_template_template_arguments;
-  std::shared_ptr<ClassTemplateSpecializationMangleInfo>
-      named_class_template_specialization_mangle_info;
-  TypePtr named_member_owner_type;
-  std::string named_member_name;
-  TypePtr named_dependent_qualified_owner;
-  std::shared_ptr<TemplateIdSyntax> named_dependent_qualified_owner_template_id;
-  std::vector<std::string> named_dependent_qualified_members;
-  std::vector<TemplateIdSyntax> named_dependent_qualified_member_template_ids;
-  bool named_dependent_qualified_leading_typename;
 };
 
 TypePtr make_fundamental(EFundamentalType type);
@@ -337,6 +345,9 @@ bool is_bool_type(const TypePtr & type);
 bool is_unsigned_integral_type(const TypePtr & type);
 bool resolve_callable_function_type(const TypePtr & type, TypePtr & out);
 bool is_void_type(const TypePtr & type);
+bool type_can_be_pointer_target(const TypePtr & type);
+bool type_can_be_reference_target(const TypePtr & type);
+bool type_can_be_array_element(const TypePtr & type);
 bool type_is_const_object(const TypePtr & type);
 TypePtr sizeof_operand_type(const TypePtr & type);
 bool type_is_valid_sizeof_operand(const TypePtr & type);

@@ -13,6 +13,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -1094,12 +1095,12 @@ bool rewrite_trivial_identity_object_wrapper_calls(
 {
   bool changed = false;
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
-    vector<lowir_internal::Instruction> rewritten;
-    rewritten.reserve(function.blocks[bi].instructions.size());
-    bool block_changed = false;
-    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+    vector<lowir_internal::Instruction> & instructions =
+        function.blocks[bi].instructions;
+    size_t write_index = 0;
+    for(size_t ii = 0; ii < instructions.size(); ++ii) {
       const lowir_internal::Instruction & instruction =
-          function.blocks[bi].instructions[ii];
+          instructions[ii];
       const map<string, IdentityWrapperInfo>::const_iterator identity_wrapper =
           instruction.first.kind == lowir_internal::Operand::OP_GLOBAL
               ? identity_wrappers.find(instruction.first.text)
@@ -1117,23 +1118,26 @@ bool rewrite_trivial_identity_object_wrapper_calls(
             instruction.args[identity_wrapper->second.arg_index];
         if(replacement.kind == lowir_internal::Operand::OP_TEMP &&
            replacement.text == instruction.dest) {
-          block_changed = true;
           changed = true;
           continue;
         }
-        rewritten.push_back(make_lowir_copy_instruction(instruction.dest,
-                                                        instruction.type.text,
-                                                        replacement,
-                                                        instruction));
-        block_changed = true;
+        lowir_internal::Instruction rewritten =
+            make_lowir_copy_instruction(instruction.dest,
+                                        instruction.type.text,
+                                        replacement,
+                                        instruction);
+        instructions[write_index++] = std::move(rewritten);
         changed = true;
         continue;
       }
 
-      rewritten.push_back(instruction);
+      if(write_index != ii) {
+        instructions[write_index] = std::move(instructions[ii]);
+      }
+      ++write_index;
     }
-    if(block_changed) {
-      function.blocks[bi].instructions.swap(rewritten);
+    if(write_index != instructions.size()) {
+      instructions.resize(write_index);
     }
   }
   return changed;
@@ -1145,12 +1149,10 @@ bool rewrite_constant_object_wrapper_calls(
 {
   bool changed = false;
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
-    vector<lowir_internal::Instruction> rewritten;
-    rewritten.reserve(function.blocks[bi].instructions.size());
-    bool block_changed = false;
-    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
-      const lowir_internal::Instruction & instruction =
-          function.blocks[bi].instructions[ii];
+    vector<lowir_internal::Instruction> & instructions =
+        function.blocks[bi].instructions;
+    for(size_t ii = 0; ii < instructions.size(); ++ii) {
+      const lowir_internal::Instruction & instruction = instructions[ii];
       const map<string, ConstantWrapperInfo>::const_iterator constant_wrapper =
           instruction.first.kind == lowir_internal::Operand::OP_GLOBAL
               ? constant_wrappers.find(instruction.first.text)
@@ -1162,19 +1164,14 @@ bool rewrite_constant_object_wrapper_calls(
          constant_wrapper != constant_wrappers.end() &&
          instruction.type.text == constant_wrapper->second.return_type &&
          instruction.args.empty()) {
-        rewritten.push_back(make_lowir_copy_instruction(instruction.dest,
-                                                        instruction.type.text,
-                                                        constant_wrapper->second.value,
-                                                        instruction));
-        block_changed = true;
+        lowir_internal::Instruction rewritten =
+            make_lowir_copy_instruction(instruction.dest,
+                                        instruction.type.text,
+                                        constant_wrapper->second.value,
+                                        instruction);
+        instructions[ii] = std::move(rewritten);
         changed = true;
-        continue;
       }
-
-      rewritten.push_back(instruction);
-    }
-    if(block_changed) {
-      function.blocks[bi].instructions.swap(rewritten);
     }
   }
   return changed;
@@ -1186,12 +1183,10 @@ bool rewrite_compare_object_wrapper_calls(
 {
   bool changed = false;
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
-    vector<lowir_internal::Instruction> rewritten;
-    rewritten.reserve(function.blocks[bi].instructions.size());
-    bool block_changed = false;
-    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
-      const lowir_internal::Instruction & instruction =
-          function.blocks[bi].instructions[ii];
+    vector<lowir_internal::Instruction> & instructions =
+        function.blocks[bi].instructions;
+    for(size_t ii = 0; ii < instructions.size(); ++ii) {
+      const lowir_internal::Instruction & instruction = instructions[ii];
       const map<string, CompareWrapperInfo>::const_iterator compare_wrapper =
           instruction.first.kind == lowir_internal::Operand::OP_GLOBAL
               ? compare_wrappers.find(instruction.first.text)
@@ -1216,16 +1211,9 @@ bool rewrite_compare_object_wrapper_calls(
         cmp.first = instruction.args[compare_wrapper->second.lhs_arg_index];
         cmp.second = instruction.args[compare_wrapper->second.rhs_arg_index];
         cmp.debug_location = instruction.debug_location;
-        rewritten.push_back(cmp);
-        block_changed = true;
+        instructions[ii] = std::move(cmp);
         changed = true;
-        continue;
       }
-
-      rewritten.push_back(instruction);
-    }
-    if(block_changed) {
-      function.blocks[bi].instructions.swap(rewritten);
     }
   }
   return changed;
@@ -1237,12 +1225,12 @@ bool remove_noop_void_object_wrapper_calls(
 {
   bool changed = false;
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
-    vector<lowir_internal::Instruction> rewritten;
-    rewritten.reserve(function.blocks[bi].instructions.size());
-    bool block_changed = false;
-    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+    vector<lowir_internal::Instruction> & instructions =
+        function.blocks[bi].instructions;
+    size_t write_index = 0;
+    for(size_t ii = 0; ii < instructions.size(); ++ii) {
       const lowir_internal::Instruction & instruction =
-          function.blocks[bi].instructions[ii];
+          instructions[ii];
       const map<string, size_t>::const_iterator noop_wrapper =
           instruction.first.kind == lowir_internal::Operand::OP_GLOBAL
               ? noop_wrapper_param_counts.find(instruction.first.text)
@@ -1253,15 +1241,17 @@ bool remove_noop_void_object_wrapper_calls(
          !instruction.has_call_signature &&
          noop_wrapper != noop_wrapper_param_counts.end() &&
          instruction.args.size() == noop_wrapper->second) {
-        block_changed = true;
         changed = true;
         continue;
       }
 
-      rewritten.push_back(instruction);
+      if(write_index != ii) {
+        instructions[write_index] = std::move(instructions[ii]);
+      }
+      ++write_index;
     }
-    if(block_changed) {
-      function.blocks[bi].instructions.swap(rewritten);
+    if(write_index != instructions.size()) {
+      instructions.resize(write_index);
     }
   }
   return changed;
@@ -1269,7 +1259,7 @@ bool remove_noop_void_object_wrapper_calls(
 
 bool inline_simple_void_object_wrapper_calls(
     lowir_internal::Function & function,
-    const map<string, const lowir_internal::Function *> & inline_candidates,
+    const map<string, lowir_internal::Function> & inline_candidates,
     size_t & next_inline_site_id)
 {
   bool changed = false;
@@ -1280,7 +1270,7 @@ bool inline_simple_void_object_wrapper_calls(
     for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
       const lowir_internal::Instruction & instruction =
           function.blocks[bi].instructions[ii];
-      const map<string, const lowir_internal::Function *>::const_iterator found =
+      const map<string, lowir_internal::Function>::const_iterator found =
           instruction.first.kind == lowir_internal::Operand::OP_GLOBAL
               ? inline_candidates.find(instruction.first.text)
               : inline_candidates.end();
@@ -1289,18 +1279,17 @@ bool inline_simple_void_object_wrapper_calls(
          instruction.dest.empty() &&
          !instruction.has_call_signature &&
          found != inline_candidates.end() &&
-         found->second != nullptr &&
-         found->second->name != function.name &&
-         instruction.args.size() == found->second->params.size()) {
+         found->second.name != function.name &&
+         instruction.args.size() == found->second.params.size()) {
         const size_t inline_site_id = next_inline_site_id++;
-        for(size_t si = 0; si < found->second->slots.size(); ++si) {
+        for(size_t si = 0; si < found->second.slots.size(); ++si) {
           function.slots.push_back(
-              make_pair(make_object_inline_name(found->second->slots[si].first,
+              make_pair(make_object_inline_name(found->second.slots[si].first,
                                                 inline_site_id),
-                        found->second->slots[si].second));
+                        found->second.slots[si].second));
         }
         const vector<lowir_internal::Instruction> inlined =
-            simple_object_inlined_body(*found->second,
+            simple_object_inlined_body(found->second,
                                        instruction.args,
                                        inline_site_id);
         rewritten.insert(rewritten.end(), inlined.begin(), inlined.end());
@@ -1318,8 +1307,7 @@ bool inline_simple_void_object_wrapper_calls(
   return changed;
 }
 
-lowir_internal::Program inline_trivial_identity_object_wrappers(
-    const lowir_internal::Program & program)
+void inline_trivial_identity_object_wrappers(lowir_internal::Program & program)
 {
   map<string, IdentityWrapperInfo> identity_wrappers;
   for(size_t i = 0; i < program.functions.size(); ++i) {
@@ -1329,22 +1317,16 @@ lowir_internal::Program inline_trivial_identity_object_wrappers(
     }
   }
   if(identity_wrappers.empty()) {
-    return program;
+    return;
   }
 
-  lowir_internal::Program rewritten = program;
-  bool changed = false;
-  for(size_t i = 0; i < rewritten.functions.size(); ++i) {
-    if(rewrite_trivial_identity_object_wrapper_calls(rewritten.functions[i],
-                                                     identity_wrappers)) {
-      changed = true;
-    }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    rewrite_trivial_identity_object_wrapper_calls(program.functions[i],
+                                                  identity_wrappers);
   }
-  return changed ? rewritten : program;
 }
 
-lowir_internal::Program inline_constant_object_wrappers(
-    const lowir_internal::Program & program)
+void inline_constant_object_wrappers(lowir_internal::Program & program)
 {
   map<string, ConstantWrapperInfo> constant_wrappers;
   for(size_t i = 0; i < program.functions.size(); ++i) {
@@ -1354,22 +1336,16 @@ lowir_internal::Program inline_constant_object_wrappers(
     }
   }
   if(constant_wrappers.empty()) {
-    return program;
+    return;
   }
 
-  lowir_internal::Program rewritten = program;
-  bool changed = false;
-  for(size_t i = 0; i < rewritten.functions.size(); ++i) {
-    if(rewrite_constant_object_wrapper_calls(rewritten.functions[i],
-                                             constant_wrappers)) {
-      changed = true;
-    }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    rewrite_constant_object_wrapper_calls(program.functions[i],
+                                          constant_wrappers);
   }
-  return changed ? rewritten : program;
 }
 
-lowir_internal::Program inline_compare_object_wrappers(
-    const lowir_internal::Program & program)
+void inline_compare_object_wrappers(lowir_internal::Program & program)
 {
   map<string, CompareWrapperInfo> compare_wrappers;
   for(size_t i = 0; i < program.functions.size(); ++i) {
@@ -1379,48 +1355,36 @@ lowir_internal::Program inline_compare_object_wrappers(
     }
   }
   if(compare_wrappers.empty()) {
-    return program;
+    return;
   }
 
-  lowir_internal::Program rewritten = program;
-  bool changed = false;
-  for(size_t i = 0; i < rewritten.functions.size(); ++i) {
-    if(rewrite_compare_object_wrapper_calls(rewritten.functions[i],
-                                            compare_wrappers)) {
-      changed = true;
-    }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    rewrite_compare_object_wrapper_calls(program.functions[i],
+                                         compare_wrappers);
   }
-  return changed ? rewritten : program;
 }
 
-lowir_internal::Program inline_simple_void_object_wrappers(
-    const lowir_internal::Program & program)
+void inline_simple_void_object_wrappers(lowir_internal::Program & program)
 {
-  map<string, const lowir_internal::Function *> inline_candidates;
+  map<string, lowir_internal::Function> inline_candidates;
   for(size_t i = 0; i < program.functions.size(); ++i) {
     if(object_function_is_simple_void_inline_candidate(program.functions[i])) {
-      inline_candidates[program.functions[i].name] = &program.functions[i];
+      inline_candidates[program.functions[i].name] = program.functions[i];
     }
   }
   if(inline_candidates.empty()) {
-    return program;
+    return;
   }
 
-  lowir_internal::Program rewritten = program;
-  bool changed = false;
   size_t next_inline_site_id = 1;
-  for(size_t i = 0; i < rewritten.functions.size(); ++i) {
-    if(inline_simple_void_object_wrapper_calls(rewritten.functions[i],
-                                               inline_candidates,
-                                               next_inline_site_id)) {
-      changed = true;
-    }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    inline_simple_void_object_wrapper_calls(program.functions[i],
+                                            inline_candidates,
+                                            next_inline_site_id);
   }
-  return changed ? rewritten : program;
 }
 
-lowir_internal::Program remove_noop_void_object_wrappers(
-    const lowir_internal::Program & program)
+void remove_noop_void_object_wrappers(lowir_internal::Program & program)
 {
   map<string, size_t> noop_wrapper_param_counts;
   for(size_t i = 0; i < program.functions.size(); ++i) {
@@ -1430,22 +1394,16 @@ lowir_internal::Program remove_noop_void_object_wrappers(
     }
   }
   if(noop_wrapper_param_counts.empty()) {
-    return program;
+    return;
   }
 
-  lowir_internal::Program rewritten = program;
-  bool changed = false;
-  for(size_t i = 0; i < rewritten.functions.size(); ++i) {
-    if(remove_noop_void_object_wrapper_calls(rewritten.functions[i],
-                                             noop_wrapper_param_counts)) {
-      changed = true;
-    }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    remove_noop_void_object_wrapper_calls(program.functions[i],
+                                          noop_wrapper_param_counts);
   }
-  return changed ? rewritten : program;
 }
 
-lowir_internal::Program remove_trivial_lifecycle_object_wrappers(
-    const lowir_internal::Program & program)
+void remove_trivial_lifecycle_object_wrappers(lowir_internal::Program & program)
 {
   map<string, size_t> noop_wrapper_param_counts;
   for(size_t i = 0; i < program.functions.size(); ++i) {
@@ -1455,18 +1413,13 @@ lowir_internal::Program remove_trivial_lifecycle_object_wrappers(
     }
   }
   if(noop_wrapper_param_counts.empty()) {
-    return program;
+    return;
   }
 
-  lowir_internal::Program rewritten = program;
-  bool changed = false;
-  for(size_t i = 0; i < rewritten.functions.size(); ++i) {
-    if(remove_noop_void_object_wrapper_calls(rewritten.functions[i],
-                                             noop_wrapper_param_counts)) {
-      changed = true;
-    }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    remove_noop_void_object_wrapper_calls(program.functions[i],
+                                          noop_wrapper_param_counts);
   }
-  return changed ? rewritten : program;
 }
 
 void note_live_symbol_name(const string & symbol,
@@ -1578,8 +1531,8 @@ void note_live_symbol_references(const lowir_internal::GlobalDefinition & global
   }
 }
 
-lowir_internal::Program prune_unreferenced_object_symbol_definitions(
-    const lowir_internal::Program & program)
+void prune_unreferenced_object_symbol_definitions(
+    lowir_internal::Program & program)
 {
   set<string> function_names;
   set<string> global_names;
@@ -1649,19 +1602,13 @@ lowir_internal::Program prune_unreferenced_object_symbol_definitions(
     }
   }
 
-  lowir_internal::Program pruned = program;
-  pruned.globals.clear();
-  pruned.function_declarations.clear();
-  pruned.functions.clear();
   set<string> removed_globals;
   set<string> removed_functions;
   for(size_t i = 0; i < program.globals.size(); ++i) {
     if(object_symbol_definition_is_prunable(program.globals[i].metadata) &&
        live_globals.count(program.globals[i].name) == 0) {
       removed_globals.insert(program.globals[i].name);
-      continue;
     }
-    pruned.globals.push_back(program.globals[i]);
   }
   for(size_t i = 0; i < program.functions.size(); ++i) {
     const lowir_internal::Function & function = program.functions[i];
@@ -1672,31 +1619,55 @@ lowir_internal::Program prune_unreferenced_object_symbol_definitions(
        (object_symbol_definition_is_prunable(function.metadata) &&
         live_functions.count(function.name) == 0)) {
       removed_functions.insert(program.functions[i].name);
-      continue;
     }
-    pruned.functions.push_back(program.functions[i]);
   }
 
   if(removed_globals.empty() && removed_functions.empty()) {
-    return program;
+    return;
   }
 
-  pruned.exported_symbols.clear();
+  vector<lowir_internal::GlobalDefinition> kept_globals;
+  kept_globals.reserve(program.globals.size() - removed_globals.size());
+  for(size_t i = 0; i < program.globals.size(); ++i) {
+    if(removed_globals.count(program.globals[i].name) == 0) {
+      kept_globals.push_back(std::move(program.globals[i]));
+    }
+  }
+  program.globals.swap(kept_globals);
+
+  vector<lowir_internal::Function> kept_functions;
+  kept_functions.reserve(program.functions.size() - removed_functions.size());
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    if(removed_functions.count(program.functions[i].name) == 0) {
+      kept_functions.push_back(std::move(program.functions[i]));
+    }
+  }
+  program.functions.swap(kept_functions);
+
+  vector<ir_model::ExportedSymbol> kept_exported_symbols;
+  kept_exported_symbols.reserve(program.exported_symbols.size());
   for(size_t i = 0; i < program.exported_symbols.size(); ++i) {
     if(removed_functions.count(program.exported_symbols[i].internal_symbol) != 0 ||
        removed_globals.count(program.exported_symbols[i].internal_symbol) != 0) {
       continue;
     }
-    pruned.exported_symbols.push_back(program.exported_symbols[i]);
+    kept_exported_symbols.push_back(std::move(program.exported_symbols[i]));
   }
-  pruned.object_aliases.clear();
+  program.exported_symbols.swap(kept_exported_symbols);
+
+  vector<lowir_internal::ObjectAlias> kept_object_aliases;
+  kept_object_aliases.reserve(program.object_aliases.size());
   for(size_t i = 0; i < program.object_aliases.size(); ++i) {
     if(removed_functions.count(program.object_aliases[i].target) != 0 ||
        removed_globals.count(program.object_aliases[i].target) != 0) {
       continue;
     }
-    pruned.object_aliases.push_back(program.object_aliases[i]);
+    kept_object_aliases.push_back(std::move(program.object_aliases[i]));
   }
+  program.object_aliases.swap(kept_object_aliases);
+
+  vector<lowir_internal::FunctionDeclaration> kept_function_declarations;
+  kept_function_declarations.reserve(program.function_declarations.size());
   for(size_t i = 0; i < program.function_declarations.size(); ++i) {
     const lowir_internal::FunctionDeclaration & declaration =
         program.function_declarations[i];
@@ -1704,9 +1675,10 @@ lowir_internal::Program prune_unreferenced_object_symbol_definitions(
        removed_globals.count(declaration.metadata.tls_for_symbol) != 0) {
       continue;
     }
-    pruned.function_declarations.push_back(declaration);
+    kept_function_declarations.push_back(
+        std::move(program.function_declarations[i]));
   }
-  return pruned;
+  program.function_declarations.swap(kept_function_declarations);
 }
 
 string generate_lowir_from_cpp_sources(const vector<string> & srcfiles,
@@ -1735,7 +1707,7 @@ string generate_lowir_from_translation_units(const vector<CallSemNode> & transla
   lowir_internal::Program program =
       build_lowir_program(translation_units, true, true, debug_info_level >= 1);
   if(normalize_optimization_level(optimization_level) > 0) {
-    program = optimize_lowir_program(program, optimization_level);
+    program = optimize_lowir_program(std::move(program), optimization_level);
   }
   if(debug_info_level < 1) {
     clear_lowir_program_debug_locations(program);
@@ -1766,18 +1738,42 @@ lowir_internal::Program prepare_object_lowir_program(lowir_internal::Program pro
   if(debug_info_level < 1) {
     clear_lowir_program_debug_locations(program);
   }
-  program = optimize_lowir_program(program, optimization_level);
-  program = inline_trivial_identity_object_wrappers(program);
-  program = inline_constant_object_wrappers(program);
-  program = inline_compare_object_wrappers(program);
+  program = optimize_lowir_program(std::move(program), optimization_level);
+  inline_trivial_identity_object_wrappers(program);
+  inline_constant_object_wrappers(program);
+  inline_compare_object_wrappers(program);
   if(normalize_optimization_level(optimization_level) > 0) {
-    program = remove_noop_void_object_wrappers(program);
+    remove_noop_void_object_wrappers(program);
   }
-  program = remove_trivial_lifecycle_object_wrappers(program);
+  remove_trivial_lifecycle_object_wrappers(program);
   if(normalize_optimization_level(optimization_level) > 0) {
-    program = inline_simple_void_object_wrappers(program);
+    inline_simple_void_object_wrappers(program);
   }
-  return prune_unreferenced_object_symbol_definitions(program);
+  prune_unreferenced_object_symbol_definitions(program);
+  if(phase_timing_enabled()) {
+    size_t instruction_count = 0;
+    size_t max_function_instruction_count = 0;
+    string max_function_name;
+    for(size_t fi = 0; fi < program.functions.size(); ++fi) {
+      size_t function_instruction_count = 0;
+      for(size_t bi = 0; bi < program.functions[fi].blocks.size(); ++bi) {
+        function_instruction_count +=
+            program.functions[fi].blocks[bi].instructions.size();
+      }
+      instruction_count += function_instruction_count;
+      if(function_instruction_count > max_function_instruction_count) {
+        max_function_instruction_count = function_instruction_count;
+        max_function_name = program.functions[fi].name;
+      }
+    }
+    cerr << "phase-timing name=object-lowir-size"
+         << " functions=" << program.functions.size()
+         << " instructions=" << instruction_count
+         << " max-function=" << max_function_name
+         << " max-function-instructions=" << max_function_instruction_count
+         << "\n";
+  }
+  return program;
 }
 
 machine_object::ObjectFile build_cpp_object_file(const vector<string> & srcfiles,

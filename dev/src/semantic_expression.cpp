@@ -3481,20 +3481,12 @@ PreparedLambdaExpression prepare_lambda_expression(SemanticContext & ctx,
       if(!type_id || !ctx.parse_type_id(lambda_analysis_scope, *type_id, prepared.result_type)) {
         throw logic_error("unsupported lambda trailing return type");
       }
-    } else if(prepared.template_parameters && !prepared.body->children.empty()) {
-      if(prepared.body->children.size() == 1 &&
-         prepared.body->children[0].kind == CppAstKind::return_statement &&
-         prepared.body->children[0].children.size() == 1) {
-        prepared.result_type =
-            value_conversion_type(
-                ctx.analyze_expression(lambda_analysis_scope,
-                                       prepared.body->children[0].children[0]));
-        if(!prepared.result_type) {
-          throw logic_error("unsupported templated lambda implicit return type");
-        }
-      } else {
-        throw logic_error("unsupported templated lambda implicit return type");
-      }
+    } else if(prepared.template_parameters) {
+      // A generic lambda's parameter types are still dependent here.  Deduce
+      // its implicit auto result when operator() is instantiated with concrete
+      // template arguments instead of analyzing the body in an empty lambda
+      // parameter scope.
+      prepared.result_type = make_fundamental(FT_VOID);
     } else if(!prepared.body->children.empty()) {
       if(!lambda_body_contains_outer_return_statement(*prepared.body)) {
         prepared.result_type = make_fundamental(FT_VOID);
@@ -3805,6 +3797,33 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
                                       allocation_name);
       set_cppast_qualified_name_syntax(callee, qualified_allocation);
       callee.value = allocation_class->qualified_name + "::" + allocation_name;
+      if(!qualified_allocation.qualifiers.empty()) {
+        vector<CppAstNode> qualifier_types(qualified_allocation.qualifiers.size());
+        size_t qualifier_index = qualified_allocation.qualifiers.size();
+        for(const Scope * current = allocation_class->member_scope.get();
+            current && qualifier_index != 0;
+            current = current->parent) {
+          const bool named_class_scope =
+              current->class_info &&
+              current->class_info->member_scope.get() == current &&
+              current->name != "<unnamed>";
+          if(!current->namespace_scope && !named_class_scope) {
+            continue;
+          }
+          --qualifier_index;
+          if(!named_class_scope) {
+            continue;
+          }
+          CppAstNode & class_qualifier = qualifier_types[qualifier_index];
+          class_qualifier.kind = CppAstKind::type_name;
+          class_qualifier.value = qualified_allocation.qualifiers[qualifier_index];
+          class_qualifier.semantic_type = current->class_info->type;
+          class_qualifier.semantic_type_is_resolved_qualifier = true;
+          class_qualifier.source_location_id = adjusted_type_id.source_location_id;
+          class_qualifier.name_lookup_snapshot = adjusted_type_id.name_lookup_snapshot;
+        }
+        set_cppast_qualifier_type_syntaxes(callee, std::move(qualifier_types));
+      }
     }
   }
   allocation_call.children.push_back(callee);

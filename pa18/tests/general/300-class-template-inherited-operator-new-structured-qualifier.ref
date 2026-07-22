@@ -1,0 +1,34 @@
+declare function @allocation__operatornew(%arg0 : i64) -> ptr [binding=strong, object=_ZN10allocationnwEm]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $pointer : ptr
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = convert sext i64 i32 1
+    %t2 = call ptr @allocation__operatornew(%t1)
+    call void @box_int___item__item(%t2)
+    store ptr %t2, $pointer
+    %t3 = load ptr $pointer
+    branch %t3, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t4 = load i32 $cond__1
+    return i32 %t4
+}
+function @box_int___item__item(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3boxIiE4itemC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+alias object _ZN3boxIiE4itemC2Ev = @box_int___item__item

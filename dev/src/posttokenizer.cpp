@@ -529,7 +529,8 @@ PostTokenizer::PostTokenizer(IPPTokenSource & input,
   current_location_id(0),
   cached_location_file_index(0),
   cached_location_file_valid(false),
-  file_only_source_locations(file_only_source_locations)
+  file_only_source_locations(file_only_source_locations),
+  previous_token_was_operator_keyword(false)
 {}
 
 PostToken PostTokenizer::get()
@@ -647,6 +648,7 @@ inline void PostTokenizer::push_invalid(const std::string& data)
   PostToken token{PT_INVALID, data};
   token.location_id = current_location_id;
   ready.push_back(std::move(token));
+  previous_token_was_operator_keyword = false;
 }
 
 inline void PostTokenizer::push_simple(const std::string& data,
@@ -656,6 +658,7 @@ inline void PostTokenizer::push_simple(const std::string& data,
   token.token_type = token_type;
   token.location_id = current_location_id;
   ready.push_back(std::move(token));
+  previous_token_was_operator_keyword = token_type == KW_OPERATOR;
 }
 
 inline void PostTokenizer::push_identifier(const std::string& data)
@@ -663,6 +666,7 @@ inline void PostTokenizer::push_identifier(const std::string& data)
   PostToken token{PT_IDENTIFIER, data};
   token.location_id = current_location_id;
   ready.push_back(std::move(token));
+  previous_token_was_operator_keyword = false;
 }
 
 inline void PostTokenizer::push_literal(const std::string& data,
@@ -675,6 +679,7 @@ inline void PostTokenizer::push_literal(const std::string& data,
   token.data = copy_bytes(result, size);
   token.location_id = current_location_id;
   ready.push_back(std::move(token));
+  previous_token_was_operator_keyword = false;
 }
 
 inline void PostTokenizer::push_literal_array(const std::string& data,
@@ -689,6 +694,7 @@ inline void PostTokenizer::push_literal_array(const std::string& data,
   token.data = copy_bytes(result, size);
   token.location_id = current_location_id;
   ready.push_back(std::move(token));
+  previous_token_was_operator_keyword = false;
 }
 
 inline void PostTokenizer::push_ud_character(const std::string& data,
@@ -703,6 +709,7 @@ inline void PostTokenizer::push_ud_character(const std::string& data,
   token.data = copy_bytes(result, size);
   token.location_id = current_location_id;
   ready.push_back(std::move(token));
+  previous_token_was_operator_keyword = false;
 }
 
 inline void PostTokenizer::push_ud_string_array(const std::string& data,
@@ -719,6 +726,7 @@ inline void PostTokenizer::push_ud_string_array(const std::string& data,
   token.data = copy_bytes(result, size);
   token.location_id = current_location_id;
   ready.push_back(std::move(token));
+  previous_token_was_operator_keyword = false;
 }
 
 inline void PostTokenizer::push_ud_integer(const std::string& data,
@@ -730,6 +738,7 @@ inline void PostTokenizer::push_ud_integer(const std::string& data,
   token.prefix = prefix;
   token.location_id = current_location_id;
   ready.push_back(std::move(token));
+  previous_token_was_operator_keyword = false;
 }
 
 inline void PostTokenizer::push_ud_floating(const std::string& data,
@@ -741,6 +750,7 @@ inline void PostTokenizer::push_ud_floating(const std::string& data,
   token.prefix = prefix;
   token.location_id = current_location_id;
   ready.push_back(std::move(token));
+  previous_token_was_operator_keyword = false;
 }
 
 //protected:
@@ -873,13 +883,31 @@ inline void PostTokenizer::emit_eof()
 {
   emit_next_string();
   ready.push_back(PostToken(PT_EOF, string()));
+  previous_token_was_operator_keyword = false;
 }
 
 inline void PostTokenizer::emit_next_string()
 {
   if(!n_data.size())
     return;
-  if(!n_valid) {
+  const bool reserved_literal_operator_suffix =
+      previous_token_was_operator_keyword &&
+      n_valid &&
+      n_encoding == '"' &&
+      !n_suffix.empty() &&
+      n_suffix[0] != '_' &&
+      n_contents.empty() &&
+      n_data.size() == n_suffix.size() + 2 &&
+      n_data.compare(0, 2, "\"\"") == 0;
+  if(reserved_literal_operator_suffix) {
+    const char terminator = '\0';
+    push_literal_array("\"\"",
+                       1,
+                       FundamentalTypeOf<char>(),
+                       &terminator,
+                       sizeof(terminator));
+    push_identifier(n_suffix);
+  } else if(!n_valid) {
     push_invalid(n_data);
   } else {
     emit_encoded(n_data, '"', n_encoding, n_contents, n_suffix);

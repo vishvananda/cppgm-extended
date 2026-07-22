@@ -6028,10 +6028,9 @@ void run_o2_slot_promotion_pipeline(lir::Function & function,
 
 }  // namespace
 
-lowir::LowirProgram optimize_lowir_program(const lowir::LowirProgram & program,
+lowir::LowirProgram optimize_lowir_program(lowir::LowirProgram optimized,
                                            int optimization_level)
 {
-  lowir::LowirProgram optimized = program;
   const int level = normalize_optimization_level(optimization_level);
   if(level <= 0) {
     return optimized;

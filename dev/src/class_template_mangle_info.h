@@ -36,7 +36,8 @@ inline void set_named_type_class_template_specialization_mangle_info(
 {
   TypePtr base = named_mangle_base(type);
   if(base) {
-    base->named_class_template_specialization_mangle_info = info;
+    base->mutable_named_rare_metadata()
+        .named_class_template_specialization_mangle_info = info;
   }
 }
 
@@ -44,7 +45,8 @@ inline std::shared_ptr<ClassTemplateSpecializationMangleInfo>
 named_type_class_template_specialization_mangle_info(const TypePtr & type)
 {
   TypePtr base = named_mangle_base(type);
-  return base ? base->named_class_template_specialization_mangle_info :
+  return base ?
+      base->named_rare().named_class_template_specialization_mangle_info :
                 std::shared_ptr<ClassTemplateSpecializationMangleInfo>();
 }
 

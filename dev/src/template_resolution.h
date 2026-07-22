@@ -18,6 +18,12 @@ bool resolve_non_type_template_parameter_type(
     const template_model::TemplateParameterInfo & parameter,
     cpp_decl::TypePtr & out);
 
+bool make_shallow_bound_alias_template_id_type(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const cpp_decl::TemplateIdSyntax & syntax,
+    cpp_decl::TypePtr & out);
+
 bool resolve_template_argument(template_api::TemplateServices & services,
                                template_api::TemplateEnvironmentHandle argument_scope,
                                template_api::TemplateEnvironmentHandle parameter_scope,

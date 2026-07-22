@@ -1,0 +1,39 @@
+global @holder_value___instance : ptr [binding=weak, object=_ZN6holderI5valueE8instanceE] = zero
+global @__local_static__function_symbol_5f5a33676574493576616c75654552545f76__stored__tokens21_26 [binding=weak, object=@__local_static__function_symbol_5f5a33676574493576616c75654552545f76__stored__tokens21_26] = {
+  zero 4
+}
+global @__local_static__function_symbol_5f5a33676574493576616c75654552545f76__stored__tokens21_26__guard : i64 [binding=internal] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load ptr @holder_value___instance
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = cmp ne i32 %t3, 7
+    %t5 = convert zext i32 u8 %t4
+    return i32 %t5
+}
+function @get__ov2() -> ptr [binding=weak, object=_Z3getI5valueERT_v] {
+  block ^entry:
+    %t1 = load i64 @__local_static__function_symbol_5f5a33676574493576616c75654552545f76__stored__tokens21_26__guard
+    %t2 = cmp ne i64 %t1, 0
+    branch %t2, ^local_static_ready_1, ^local_static_init_2
+
+  block ^local_static_init_2:
+    %t3 = addr @__local_static__function_symbol_5f5a33676574493576616c75654552545f76__stored__tokens21_26
+    %t4 = addr @__local_static__function_symbol_5f5a33676574493576616c75654552545f76__stored__tokens21_26
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 7, %t5
+    store i64 1, @__local_static__function_symbol_5f5a33676574493576616c75654552545f76__stored__tokens21_26__guard
+    jump ^local_static_ready_1
+
+  block ^local_static_ready_1:
+    %t6 = addr @__local_static__function_symbol_5f5a33676574493576616c75654552545f76__stored__tokens21_26
+    return ptr %t6
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = call ptr @get__ov2()
+    store ptr %t1, @holder_value___instance
+    return void
+}

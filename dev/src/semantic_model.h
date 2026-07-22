@@ -995,6 +995,8 @@ struct AliasTemplateDecl
   std::string name;
   const CppAstNode * type_id = nullptr;
   cpp_decl::TypePtr resolved_type_pattern;
+  std::size_t gnu_ext_vector_type_parameter_index =
+      static_cast<std::size_t>(-1);
   std::vector<template_model::TemplateParameterInfo> parameters;
   std::map<std::string, cpp_decl::TypePtr> instantiations;
   std::map<std::string, cpp_decl::TypePtr> reference_instantiations;

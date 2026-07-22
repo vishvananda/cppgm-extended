@@ -334,6 +334,7 @@ struct CleanupAction
     CK_DESTROY_CLASS_OBJECT,
     CK_DESTROY_CLASS_AT_NODE,
     CK_DESTROY_CLASS_AT_PTR,
+    CK_DESTROY_CLASS_ARRAY_AT_NODE,
     CK_STATEMENT_NODE,
     CK_EH_END,
     CK_CLEAR_EXCEPTION
@@ -1786,6 +1787,15 @@ bool is_class_like_value_type(const TypePtr & type)
          base->named_key.compare(0, 6, "union ") == 0;
 }
 
+bool is_incomplete_class_value_type(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  return base &&
+         base->kind == Type::TK_NAMED &&
+         is_class_like_value_type(base) &&
+         !is_complete_class_value_type(base);
+}
+
 bool is_synthetic_subobject_pointer_node(const CallSemNode & node)
 {
   TypePtr base = strip_top_level_cv(node.semantic_type);
@@ -2724,13 +2734,20 @@ LowIRFunctionSignatureText lowir_function_signature_text(
   LowIRFunctionSignatureText out;
   TypePtr base = strip_top_level_cv(function_type);
   if(!base || base->kind != Type::TK_FUNCTION) {
-    throw logic_error("LowIR function signature requires function type");
+    throw logic_error("LowIR function signature requires function type [type " +
+                      describe_type(function_type) + "] [symbol " +
+                      (symbol.empty() ? string("<none>") : symbol) + "]");
   }
   out.boundary_metadata.arity = lowir_call_arity_for(base);
   apply_known_function_boundary_metadata(out.boundary_metadata, symbol);
   TypePtr result_type = base->inner;
-  const bool indirect_result = lowir_uses_indirect_result_boundary(result_type);
-  out.return_type = indirect_result ? "void" : lowir_result_type_text(result_type);
+  const bool incomplete_class_result = is_incomplete_class_value_type(result_type);
+  const bool indirect_result =
+      !incomplete_class_result && lowir_uses_indirect_result_boundary(result_type);
+  out.return_type =
+      (incomplete_class_result || indirect_result) ?
+          "void" :
+          lowir_result_type_text(result_type);
   if(indirect_result) {
     out.params.push_back(
         make_lowir_parameter_text("%ret", "ptr", lowir_internal::PPM_INDIRECT_RESULT));
@@ -2772,8 +2789,13 @@ LowIRFunctionSignatureText lowir_function_signature_text_for_callsem_node(
   out.boundary_metadata.arity = lowir_call_arity_for(base);
   apply_known_function_boundary_metadata(out.boundary_metadata, symbol);
   TypePtr result_type = base->inner;
-  const bool indirect_result = lowir_uses_indirect_result_boundary(result_type);
-  out.return_type = indirect_result ? "void" : lowir_result_type_text(result_type);
+  const bool incomplete_class_result = is_incomplete_class_value_type(result_type);
+  const bool indirect_result =
+      !incomplete_class_result && lowir_uses_indirect_result_boundary(result_type);
+  out.return_type =
+      (incomplete_class_result || indirect_result) ?
+          "void" :
+          lowir_result_type_text(result_type);
   if(indirect_result) {
     out.params.push_back(
         make_lowir_parameter_text("%ret", "ptr", lowir_internal::PPM_INDIRECT_RESULT));
@@ -3021,6 +3043,32 @@ string lowir_type_for(const TypePtr & type)
     return is_unsigned ? "u128" : "i128";
   }
   return "i64";
+}
+
+string lowir_atomic_value_type_for(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(base && base->kind == Type::TK_ATOMIC) {
+    base = strip_top_level_cv(base->inner);
+  }
+  if(is_complete_class_value_type(base)) {
+    switch(backend_storage_size(base)) {
+    case 1:
+      return "i8";
+    case 2:
+      return "i16";
+    case 4:
+      return "i32";
+    case 8:
+      return "i64";
+    case 16:
+      return "i128";
+    default:
+      throw logic_error("unsupported class atomic storage width [type " +
+                        describe_type(base) + "]");
+    }
+  }
+  return lowir_type_for(base);
 }
 
 string lowir_value_type_for(const TypePtr & type)
@@ -4271,7 +4319,7 @@ private:
     const CallSemNode & callee = call.children[0];
     const vector<pair<string, unsigned long long> > * virtual_base_layout =
         &callsem_virtual_base_layout(callee);
-    if(virtual_base_layout->empty()) {
+    if(virtual_base_layout->empty() && callee.kind == CallSemKind::callee) {
       const string callee_symbol = lookup_function_symbol(callee);
       map<string, vector<pair<string, unsigned long long> > >::const_iterator layout_it =
           function_virtual_base_layouts_.find(callee_symbol);
@@ -6085,6 +6133,41 @@ private:
     return true;
   }
 
+  bool emit_string_literal_array_initializer(const TypePtr & array_type,
+                                             const CallSemNode & init,
+                                             const string & target_ptr)
+  {
+    TypePtr base = strip_top_level_cv(array_type);
+    QuoteLiteralData string_literal;
+    if(!base ||
+       base->kind != Type::TK_ARRAY ||
+       !try_parse_string_literal_node(init, string_literal) ||
+       !string_literal_type_matches(base, string_literal)) {
+      return false;
+    }
+
+    const vector<unsigned long long> units =
+        string_literal_code_units(string_literal);
+    if(units.size() > base->bound) {
+      throw logic_error("too many string literal array initializer elements");
+    }
+
+    const TypePtr element_type = base->inner;
+    const string memory_type = lowir_memory_type_for(element_type);
+    const size_t element_stride = backend_storage_size(element_type);
+    for(size_t i = 0; i < base->bound; ++i) {
+      const string element_ptr =
+          emit_byte_offset_address(target_ptr, i * element_stride);
+      if(i < units.size()) {
+        emit_line("store " + memory_type + " " + to_string(units[i]) +
+                  ", " + element_ptr);
+      } else {
+        emit_zero_storage_bytes(element_ptr, element_stride);
+      }
+    }
+    return true;
+  }
+
   void emit_local_array_initializer(const TypePtr & array_type,
                                     const CallSemNode & init,
                                     const string & target_ptr)
@@ -6116,6 +6199,11 @@ private:
       if(element_base && element_base->kind == Type::TK_ARRAY) {
         if(is_zero_storage_initializer(child)) {
           emit_zero_storage_bytes(element_ptr, element_stride);
+          continue;
+        }
+        if(emit_string_literal_array_initializer(element_type,
+                                                 child,
+                                                 element_ptr)) {
           continue;
         }
         if(child.kind != CallSemKind::braced_init_list) {
@@ -6401,16 +6489,92 @@ private:
     if(node.kind == CallSemKind::id_expression) {
       return node.text == "this";
     }
-    return node.kind == CallSemKind::member_expression &&
-           node.children.size() == 1 &&
+    return (node.kind == CallSemKind::member_expression ||
+            node.kind == CallSemKind::subscript_expression) &&
+           !node.children.empty() &&
            node_references_constructor_this_subobject(node.children[0]);
+  }
+
+  bool compact_array_lifecycle_action_shape(
+      const CallSemNode & action,
+      const CallSemNode *& prototype,
+      const CallSemNode *& call,
+      const CallSemNode *& base,
+      TypePtr & element_type,
+      size_t & element_count) const
+  {
+    prototype = nullptr;
+    call = nullptr;
+    base = nullptr;
+    element_type = TypePtr();
+    element_count = 0;
+    if((action.kind != CallSemKind::array_constructor_action &&
+        action.kind != CallSemKind::array_destructor_action) ||
+       action.children.size() != 1 || !action.has_uint_value) {
+      return false;
+    }
+
+    TypePtr array_type = strip_top_level_cv(remove_reference_type(action.semantic_type));
+    if(!array_type || array_type->kind != Type::TK_ARRAY || !array_type->inner) {
+      return false;
+    }
+    const CallSemNode & candidate_prototype = action.children[0];
+    if(candidate_prototype.children.size() != 1 ||
+       candidate_prototype.children[0].kind != CallSemKind::call_expression) {
+      return false;
+    }
+    const CallSemNode & candidate_call = candidate_prototype.children[0];
+    if(candidate_call.children.size() < 2 ||
+       candidate_call.children[0].kind != CallSemKind::callee) {
+      return false;
+    }
+    const CallSemNode & target_arg = candidate_call.children[1];
+    if(target_arg.kind != CallSemKind::unary_expression ||
+       !callsem_has_token(target_arg, OP_AMP) ||
+       target_arg.children.size() != 1 ||
+       target_arg.children[0].kind != CallSemKind::subscript_expression ||
+       target_arg.children[0].children.size() != 2) {
+      return false;
+    }
+
+    prototype = &candidate_prototype;
+    call = &candidate_call;
+    base = &target_arg.children[0].children[0];
+    element_type = strip_top_level_cv(array_type->inner);
+    element_count = static_cast<size_t>(callsem_uint_value(action));
+    return element_type && element_count != 0;
   }
 
   bool try_make_constructor_unwind_cleanup(const CallSemNode & action,
                                            CleanupAction & cleanup) const
   {
-    if(!is_constructor_function_ ||
-       action.kind != CallSemKind::constructor_action ||
+    if(!is_constructor_function_) {
+      return false;
+    }
+
+    if(action.kind == CallSemKind::array_constructor_action) {
+      const CallSemNode * prototype = nullptr;
+      const CallSemNode * call = nullptr;
+      const CallSemNode * base = nullptr;
+      TypePtr element_type;
+      size_t element_count = 0;
+      if(!compact_array_lifecycle_action_shape(action,
+                                               prototype,
+                                               call,
+                                               base,
+                                               element_type,
+                                               element_count) ||
+         !node_references_constructor_this_subobject(*base) ||
+         !destructor_runtime_call_required(element_type)) {
+        return false;
+      }
+      cleanup.kind = CleanupAction::CK_DESTROY_CLASS_ARRAY_AT_NODE;
+      cleanup.node = &action;
+      cleanup.object_type = element_type;
+      return true;
+    }
+
+    if(action.kind != CallSemKind::constructor_action ||
        action.children.size() != 1) {
       return false;
     }
@@ -6459,6 +6623,267 @@ private:
       return;
     }
     emit_line("call void " + dtor + "(" + object_ptr + ")");
+  }
+
+  void emit_compact_array_lifecycle_call(const CallSemNode & call,
+                                         const string & element_ptr)
+  {
+    if(call.kind != CallSemKind::call_expression || call.children.size() < 2 ||
+       call.children[0].kind != CallSemKind::callee) {
+      throw logic_error("compact array lifecycle call shape");
+    }
+    TypePtr function_type = strip_top_level_cv(call.children[0].semantic_type);
+    if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+      throw logic_error("compact array lifecycle callee type");
+    }
+
+    vector<string> args;
+    args.push_back(element_ptr);
+    for(size_t i = 2; i < call.children.size(); ++i) {
+      const size_t param_index = i - 1;
+      if(param_index < function_type->params.size()) {
+        append_call_argument_values(args,
+                                    function_type->params[param_index],
+                                    call.children[i]);
+      } else {
+        append_variadic_call_argument_value(args, call.children[i]);
+      }
+    }
+
+    ostringstream op;
+    op << "call void " << lookup_function_symbol(call.children[0]) << "(";
+    for(size_t i = 0; i < args.size(); ++i) {
+      if(i != 0) {
+        op << ", ";
+      }
+      op << args[i];
+    }
+    op << ")";
+    emit_line(op.str());
+  }
+
+  string emit_compact_array_element_pointer(const string & base_ptr,
+                                            const string & index,
+                                            size_t element_size)
+  {
+    if(element_size == 0) {
+      return base_ptr;
+    }
+    const string byte_offset =
+        emit_temp_assignment("i64",
+                             string("binary mul i64 ") + index + ", " +
+                                 to_string(element_size));
+    return emit_temp_assignment("ptr",
+                                string("index i8 ") + base_ptr + ", " + byte_offset);
+  }
+
+  void emit_compact_array_destructor_loop(const TypePtr & element_type,
+                                          const string & base_ptr,
+                                          const string & initial_count,
+                                          const CallSemNode * destructor_call,
+                                          bool wrap_throwing_calls)
+  {
+    const string destructor_symbol = destructor_call ?
+        lookup_function_symbol(destructor_call->children[0]) :
+        destructor_symbol_for_runtime_call(element_type);
+    if(destructor_symbol.empty()) {
+      return;
+    }
+
+    const size_t element_size = backend_storage_size(element_type);
+    const string index_slot = new_hidden_slot("i64", "array_dtor_index");
+    const string cond_label = new_block("array_dtor_cond");
+    const string body_label = new_block("array_dtor_body");
+    const string end_label = new_block("array_dtor_end");
+    const string cleanup_label =
+        wrap_throwing_calls ? new_block("array_dtor_cleanup") : string();
+    const string continuation_label =
+        wrap_throwing_calls ? new_block("array_dtor_cont") : string();
+    if(wrap_throwing_calls) {
+      close_shared_host_call_unwind_region();
+    }
+    emit_line("store i64 " + initial_count + ", " + index_slot);
+    terminate("jump " + lowir_block_name(cond_label));
+
+    start_block(cond_label);
+    const string index = emit_temp_assignment("i64", string("load i64 ") + index_slot);
+    const string keep_going =
+        emit_temp_assignment("i64", string("cmp ne i64 ") + index + ", 0");
+    terminate("branch " + keep_going + ", " + lowir_block_name(body_label) + ", " +
+              lowir_block_name(end_label));
+
+    start_block(body_label);
+    const string next =
+        emit_temp_assignment("i64", string("binary sub i64 ") + index + ", 1");
+    emit_line("store i64 " + next + ", " + index_slot);
+    const string element_ptr =
+        emit_compact_array_element_pointer(base_ptr, next, element_size);
+    if(wrap_throwing_calls) {
+      emit_line("eh_cleanup " + lowir_block_name(cleanup_label));
+    }
+    if(destructor_call) {
+      emit_compact_array_lifecycle_call(*destructor_call, element_ptr);
+    } else {
+      emit_line("call void " + destructor_symbol + "(" + element_ptr + ")");
+    }
+    if(wrap_throwing_calls) {
+      emit_line("eh_end");
+    }
+    terminate("jump " + lowir_block_name(cond_label));
+    start_block(end_label);
+    if(wrap_throwing_calls) {
+      terminate("jump " + lowir_block_name(continuation_label));
+
+      start_block(cleanup_label);
+      if(!host_eh_handler_nodes_.empty() && host_eh_handler_nodes_.back()) {
+        emit_host_eh_handler_metadata(*host_eh_handler_nodes_.back());
+      }
+      const string remaining_count =
+          emit_temp_assignment("i64", string("load i64 ") + index_slot);
+      emit_compact_array_destructor_loop(element_type,
+                                         base_ptr,
+                                         remaining_count,
+                                         destructor_call,
+                                         false);
+      if(has_host_eh_dispatch_target()) {
+        emit_line("eh_end");
+        terminate("jump " + lowir_block_name(host_eh_dispatch_labels_.back()));
+      } else {
+        terminate("resume");
+      }
+
+      start_block(continuation_label);
+    }
+  }
+
+  void emit_compact_array_lifecycle_action(const CallSemNode & action)
+  {
+    const CallSemNode * prototype = nullptr;
+    const CallSemNode * call = nullptr;
+    const CallSemNode * base = nullptr;
+    TypePtr element_type;
+    size_t element_count = 0;
+    if(!compact_array_lifecycle_action_shape(action,
+                                             prototype,
+                                             call,
+                                             base,
+                                             element_type,
+                                             element_count)) {
+      throw logic_error("invalid compact array lifecycle action");
+    }
+
+    const string base_ptr = emit_lvalue_address(*base);
+    if(action.kind == CallSemKind::array_destructor_action) {
+      if(!prototype->trivial_lifecycle) {
+        emit_compact_array_destructor_loop(element_type,
+                                           base_ptr,
+                                           to_string(element_count),
+                                           call,
+                                           !call_expression_is_known_nothrow(*call));
+      }
+      return;
+    }
+
+    if(prototype->trivial_lifecycle) {
+      if(call->value_initializes_result) {
+        emit_zero_storage_bytes(base_ptr,
+                                backend_storage_size(element_type) * element_count);
+      }
+      register_constructor_unwind_cleanup(action);
+      return;
+    }
+
+    const size_t element_size = backend_storage_size(element_type);
+    const string index_slot = new_hidden_slot("i64", "array_ctor_index");
+    const string cond_label = new_block("array_ctor_cond");
+    const string body_label = new_block("array_ctor_body");
+    const string end_label = new_block("array_ctor_end");
+    const bool call_can_throw = !call_expression_is_known_nothrow(*call);
+    const string cleanup_label =
+        call_can_throw ? new_block("array_ctor_cleanup") : string();
+    const string continuation_label =
+        call_can_throw ? new_block("array_ctor_cont") : string();
+    if(call_can_throw) {
+      close_shared_host_call_unwind_region();
+    }
+    emit_line("store i64 0, " + index_slot);
+    terminate("jump " + lowir_block_name(cond_label));
+
+    start_block(cond_label);
+    const string index = emit_temp_assignment("i64", string("load i64 ") + index_slot);
+    const string keep_going =
+        emit_temp_assignment("i64",
+                             string("cmp ult i64 ") + index + ", " +
+                                 to_string(element_count));
+    terminate("branch " + keep_going + ", " + lowir_block_name(body_label) + ", " +
+              lowir_block_name(end_label));
+
+    start_block(body_label);
+    const string element_ptr =
+        emit_compact_array_element_pointer(base_ptr, index, element_size);
+    if(call_can_throw) {
+      emit_line("eh_try " + lowir_block_name(cleanup_label));
+    }
+    emit_compact_array_lifecycle_call(*call, element_ptr);
+    if(call_can_throw) {
+      emit_line("eh_end");
+    }
+    const string next =
+        emit_temp_assignment("i64", string("binary add i64 ") + index + ", 1");
+    emit_line("store i64 " + next + ", " + index_slot);
+    terminate("jump " + lowir_block_name(cond_label));
+
+    start_block(end_label);
+    if(call_can_throw) {
+      terminate("jump " + lowir_block_name(continuation_label));
+
+      start_block(cleanup_label);
+      const string constructed_count =
+          emit_temp_assignment("i64", string("load i64 ") + index_slot);
+      emit_compact_array_destructor_loop(element_type,
+                                         base_ptr,
+                                         constructed_count,
+                                         nullptr,
+                                         false);
+      emit_constructor_unwind_cleanups();
+      if(!constructor_function_try_dispatch_labels_.empty()) {
+        emit_line("eh_end");
+        terminate("jump " +
+                  lowir_block_name(constructor_function_try_dispatch_labels_.back()));
+      } else {
+        terminate("resume");
+      }
+
+      start_block(continuation_label);
+    }
+    register_constructor_unwind_cleanup(action);
+  }
+
+  void emit_compact_array_constructor_unwind_cleanup(
+      const CleanupAction & cleanup)
+  {
+    if(!cleanup.node ||
+       cleanup.node->kind != CallSemKind::array_constructor_action) {
+      return;
+    }
+    const CallSemNode * prototype = nullptr;
+    const CallSemNode * call = nullptr;
+    const CallSemNode * base = nullptr;
+    TypePtr element_type;
+    size_t element_count = 0;
+    if(!compact_array_lifecycle_action_shape(*cleanup.node,
+                                             prototype,
+                                             call,
+                                             base,
+                                             element_type,
+                                             element_count)) {
+      throw logic_error("invalid compact array constructor cleanup");
+    }
+    emit_compact_array_destructor_loop(element_type,
+                                       emit_lvalue_address(*base),
+                                       to_string(element_count),
+                                       nullptr,
+                                       false);
   }
 
   bool is_operator_delete_array_callee(const CallSemNode & callee) const
@@ -7806,6 +8231,7 @@ private:
     case CleanupAction::CK_DESTROY_CLASS_OBJECT:
     case CleanupAction::CK_DESTROY_CLASS_AT_NODE:
     case CleanupAction::CK_DESTROY_CLASS_AT_PTR:
+    case CleanupAction::CK_DESTROY_CLASS_ARRAY_AT_NODE:
     case CleanupAction::CK_STATEMENT_NODE:
       return true;
     case CleanupAction::CK_EH_END:
@@ -8394,6 +8820,49 @@ private:
                                string("index i8 ") + target_ptr + ", " +
                                to_string(imag_offset));
       emit_line("store " + component_memory_type + " " + imag_value + ", " + imag_ptr);
+      return;
+    }
+    if(node.children[0].kind == CallSemKind::callee &&
+       (node.children[0].text == "__c11_atomic_load" ||
+        node.children[0].text == "__c11_atomic_exchange") &&
+       is_complete_class_value_type(node.semantic_type)) {
+      const bool is_exchange =
+          node.children[0].text == "__c11_atomic_exchange";
+      const size_t expected_children = is_exchange ? 4 : 3;
+      if(node.children.size() != expected_children) {
+        throw logic_error(node.children[0].text + " child count");
+      }
+      TypePtr ptr_type = strip_top_level_cv(
+          remove_reference_type(node.children[1].semantic_type));
+      if(!ptr_type || ptr_type->kind != Type::TK_POINTER) {
+        throw logic_error(node.children[0].text + " requires pointer argument");
+      }
+      const string value_type =
+          lowir_atomic_value_type_for(ptr_type->inner);
+      const string ptr = emit_rvalue(node.children[1]);
+      long long order = 5;
+      const size_t order_index = is_exchange ? 3 : 2;
+      long long parsed_order = 0;
+      if(try_get_integral_literal_value(node.children[order_index],
+                                        parsed_order)) {
+        order = parsed_order;
+      }
+      string loaded;
+      if(is_exchange) {
+        const string source_ptr = emit_rvalue(node.children[2]);
+        const string value = emit_temp_assignment(
+            value_type, string("load ") + value_type + " " + source_ptr);
+        loaded = emit_temp_assignment(
+            value_type,
+            string("atomic_exchange ") + value_type + " " + ptr + ", " +
+                value + ", " + to_string(order));
+      } else {
+        loaded = emit_temp_assignment(
+            value_type,
+            string("atomic_load ") + value_type + " " + ptr + ", " +
+                to_string(order));
+      }
+      emit_line("store " + value_type + " " + loaded + ", " + target_ptr);
       return;
     }
     TypePtr function_type;
@@ -10176,6 +10645,9 @@ private:
     case CleanupAction::CK_DESTROY_CLASS_AT_PTR:
       emit_destroy_complete_class_temporary(cleanup.object_type, cleanup.storage_slot);
       return;
+    case CleanupAction::CK_DESTROY_CLASS_ARRAY_AT_NODE:
+      emit_compact_array_constructor_unwind_cleanup(cleanup);
+      return;
     case CleanupAction::CK_STATEMENT_NODE:
       if(cleanup.node) {
         emit_statement(*cleanup.node);
@@ -10253,7 +10725,7 @@ private:
                   });
   }
 
-  void emit_normal_generated_destructor_cleanups(
+  void emit_small_normal_generated_destructor_cleanups(
       const vector<CleanupAction> & scope,
       size_t cleanup_count)
   {
@@ -10295,8 +10767,82 @@ private:
 
     if(action_fallthrough) {
       start_block(continuation_label);
-      emit_normal_generated_destructor_cleanups(scope, cleanup_count - 1);
+      emit_small_normal_generated_destructor_cleanups(scope,
+                                                      cleanup_count - 1);
     }
+  }
+
+  void emit_normal_generated_destructor_cleanups(
+      const vector<CleanupAction> & scope,
+      size_t cleanup_count)
+  {
+    // Preserve the established compact LowIR shape for ordinary classes.  The
+    // triangular suffix expansion is bounded here; larger generated cleanup
+    // sets use the shared chain below so compile memory remains linear.
+    const size_t max_small_cleanup_count = 16;
+    if(cleanup_count <= max_small_cleanup_count) {
+      emit_small_normal_generated_destructor_cleanups(scope, cleanup_count);
+      return;
+    }
+
+    if(cleanup_count == 0) {
+      return;
+    }
+
+    if(cleanup_count == 1) {
+      ++cleanup_emission_depth_;
+      emit_cleanup_action(scope[0], false);
+      --cleanup_emission_depth_;
+      return;
+    }
+
+    vector<string> cleanup_labels(cleanup_count);
+    vector<string> continuation_labels(cleanup_count);
+    for(size_t i = cleanup_count; i-- > 1;) {
+      cleanup_labels[i] = new_block("destructor_suffix_cleanup");
+      continuation_labels[i] = new_block("destructor_suffix_next");
+    }
+
+    const size_t cleanup_depth = host_eh_region_depth_ + 1;
+    for(size_t i = cleanup_count; i-- > 1;) {
+      emit_line("eh_cleanup " + lowir_block_name(cleanup_labels[i]));
+      ++cleanup_emission_depth_;
+      emit_cleanup_action(scope[i], false);
+      --cleanup_emission_depth_;
+      const bool action_fallthrough = current_block_ != nullptr;
+      if(action_fallthrough) {
+        emit_line("eh_end");
+        terminate("jump " + lowir_block_name(continuation_labels[i]));
+      }
+
+      start_block(cleanup_labels[i]);
+      if(!host_eh_handler_nodes_.empty() && host_eh_handler_nodes_.back()) {
+        emit_host_eh_handler_metadata(*host_eh_handler_nodes_.back());
+      }
+      ++cleanup_emission_depth_;
+      emit_cleanup_action(scope[i - 1], true);
+      --cleanup_emission_depth_;
+      if(current_block_) {
+        if(i == 1) {
+          if(should_route_to_active_host_cleanup()) {
+            terminate_through_active_host_cleanup(true);
+          } else {
+            terminate_host_eh_dispatch_or_resume(cleanup_depth);
+          }
+        } else {
+          terminate("jump " + lowir_block_name(cleanup_labels[i - 1]));
+        }
+      }
+
+      if(!action_fallthrough) {
+        return;
+      }
+      start_block(continuation_labels[i]);
+    }
+
+    ++cleanup_emission_depth_;
+    emit_cleanup_action(scope[0], false);
+    --cleanup_emission_depth_;
   }
 
   void emit_normal_scope_cleanups(const vector<CleanupAction> & scope,
@@ -12049,9 +12595,24 @@ private:
         }
         TypePtr lhs_type = remove_reference_type(node.children[0].semantic_type);
         TypePtr lhs_base = strip_top_level_cv(lhs_type);
+        TypePtr lhs_storage_value_type =
+            lhs_base && lhs_base->kind == Type::TK_ATOMIC ?
+                strip_top_level_cv(lhs_base->inner) :
+                lhs_type;
         if(lhs_base && lhs_base->kind == Type::TK_ARRAY) {
           const string target_ptr = emit_lvalue_address(node.children[0]);
           emit_storage_value_to_target(lhs_type, node.children[1], target_ptr);
+          return target_ptr;
+        }
+        if(is_complete_class_value_type(lhs_storage_value_type)) {
+          const string target_ptr = emit_lvalue_address(node.children[0]);
+          if(!emit_trivial_class_storage_copy_to_target(lhs_storage_value_type,
+                                                        node.children[1],
+                                                        target_ptr)) {
+            emit_storage_value_to_target(lhs_storage_value_type,
+                                         node.children[1],
+                                         target_ptr);
+          }
           return target_ptr;
         }
         const string rhs = emit_scalar_storage_value(lhs_type, node.children[1]);
@@ -12826,7 +13387,19 @@ private:
               if(!value_type) {
                 throw logic_error(diagnostic_name + " requires pointed value type");
               }
-              return lowir_type_for(value_type);
+              return lowir_atomic_value_type_for(value_type);
+            };
+        const auto emit_atomic_value =
+            [&](size_t child_index, const string & value_type) -> string
+            {
+              const CallSemNode & value_node = node.children[child_index];
+              if(is_indirect_value_type(value_node.semantic_type)) {
+                const string source_ptr = emit_rvalue(value_node);
+                return emit_temp_assignment(
+                    value_type,
+                    string("load ") + value_type + " " + source_ptr);
+              }
+              return emit_rvalue(value_node);
             };
         if(builtin_name == "__atomic_load_n") {
           if(node.children.size() != 3) {
@@ -12961,7 +13534,7 @@ private:
           const string value_type =
               atomic_value_type_for_pointer(1, "__c11_atomic_init");
           const string dst = emit_rvalue(node.children[1]);
-          const string src = emit_rvalue(node.children[2]);
+          const string src = emit_atomic_value(2, value_type);
           emit_line(string("store ") + value_type + " " + src + ", " + dst);
           return "0";
         }
@@ -12984,7 +13557,7 @@ private:
           const string value_type =
               atomic_value_type_for_pointer(1, "__c11_atomic_store");
           const string dst = emit_rvalue(node.children[1]);
-          const string src = emit_rvalue(node.children[2]);
+          const string src = emit_atomic_value(2, value_type);
           const long long order = atomic_order_value(3);
           emit_line(string("atomic_store ") + value_type + " " + src + ", " +
                     dst + ", " + to_string(order));
@@ -13004,7 +13577,7 @@ private:
           const string value_type =
               atomic_value_type_for_pointer(1, "__c11_atomic_exchange");
           const string ptr = emit_rvalue(node.children[1]);
-          const string value = emit_rvalue(node.children[2]);
+          const string value = emit_atomic_value(2, value_type);
           const long long order = atomic_order_value(3);
           return emit_temp_assignment(value_type,
                                       string("atomic_exchange ") + value_type +
@@ -13020,7 +13593,7 @@ private:
               atomic_value_type_for_pointer(1, builtin_name);
           const string ptr = emit_rvalue(node.children[1]);
           const string expected_ptr = emit_rvalue(node.children[2]);
-          const string desired = emit_rvalue(node.children[3]);
+          const string desired = emit_atomic_value(3, value_type);
           const long long success_order = atomic_order_value(4);
           const long long failure_order = atomic_order_value(5);
           return emit_temp_assignment("i64",
@@ -14805,6 +15378,11 @@ private:
 
   void emit_action(const CallSemNode & action)
   {
+    if(action.kind == CallSemKind::array_constructor_action ||
+       action.kind == CallSemKind::array_destructor_action) {
+      emit_compact_array_lifecycle_action(action);
+      return;
+    }
     if(action.children.size() != 1) {
       throw logic_error("invalid lifetime action");
     }
@@ -15809,7 +16387,10 @@ private:
       const bool host_destructor_cleanup =
           use_host_eh_runtime() &&
           destructor_body_index != node.children.size() &&
-          destructor_body_index + 1 < node.children.size();
+          destructor_body_index + 1 < node.children.size() &&
+          !(destructor_body_index + 2 == node.children.size() &&
+            node.children[destructor_body_index + 1].kind ==
+                CallSemKind::array_destructor_action);
       string destructor_cleanup_label;
       string destructor_end_label;
       size_t destructor_cleanup_depth = 0;
@@ -15912,7 +16493,9 @@ private:
       throw logic_error(gnu_asm_unsupported_message(node));
     }
 
-    if(node.kind == CallSemKind::constructor_action ||
+    if(node.kind == CallSemKind::array_constructor_action ||
+       node.kind == CallSemKind::array_destructor_action ||
+       node.kind == CallSemKind::constructor_action ||
        node.kind == CallSemKind::destructor_action ||
        node.kind == CallSemKind::vptr_action) {
       emit_action(node);
@@ -16868,8 +17451,9 @@ public:
         block.label = function.blocks[bi].label;
         for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
           block.instructions.push_back(
-              lowir_internal::parse_instruction_text(function.blocks[bi].instructions[ii],
-                                                     function.name + ":" + block.label));
+              lowir_internal::parse_instruction_text(
+                  function.blocks[bi].instructions[ii],
+                  function.name + ":" + block.label));
         }
         out.blocks.push_back(block);
       }
@@ -18207,6 +18791,35 @@ private:
 
       const CallSemNode & child = init.children[i];
       if(element_base && element_base->kind == Type::TK_ARRAY) {
+        QuoteLiteralData string_literal;
+        if(try_parse_string_literal_node(child, string_literal) &&
+           string_literal_type_matches(element_type, string_literal)) {
+          const vector<unsigned long long> units =
+              string_literal_code_units(string_literal);
+          if(units.size() > element_base->bound) {
+            return false;
+          }
+          const TypePtr literal_element_type = element_base->inner;
+          const string literal_item_type =
+              lowir_memory_type_for(literal_element_type);
+          for(size_t unit = 0; unit < units.size(); ++unit) {
+            data_items.push_back(literal_item_type + " " +
+                                 to_string(units[unit]));
+          }
+          size_t initialized = units.size();
+          if(initialized < element_base->bound) {
+            data_items.push_back(literal_item_type + " 0");
+            ++initialized;
+          }
+          if(initialized < element_base->bound) {
+            const size_t remaining_bytes =
+                (element_base->bound - initialized) *
+                backend_storage_size(literal_element_type);
+            data_items.push_back(string("zero ") +
+                                 to_string(remaining_bytes));
+          }
+          continue;
+        }
         if(child.kind == CallSemKind::literal &&
            ((child.has_int_value && callsem_int_value(child) == 0) ||
             (child.has_uint_value && callsem_uint_value(child) == 0) ||
@@ -18408,6 +19021,135 @@ private:
     out.size = item_size;
     out.text = item_text;
     return true;
+  }
+
+  bool global_object_lvalue_offset(const CallSemNode & expr,
+                                   const CallSemNode & variable,
+                                   size_t & out) const
+  {
+    if(expr.kind == CallSemKind::id_expression) {
+      if(node_internal_symbol(expr) != node_internal_symbol(variable)) {
+        return false;
+      }
+      out = 0;
+      return true;
+    }
+
+    if(expr.kind == CallSemKind::member_expression &&
+       expr.children.size() == 1 &&
+       expr.has_uint_value &&
+       callsem_bit_field_width(expr) == 0) {
+      size_t base_offset = 0;
+      if(!global_object_lvalue_offset(expr.children[0], variable, base_offset)) {
+        return false;
+      }
+      const unsigned long long field_offset = callsem_uint_value(expr);
+      if(field_offset > numeric_limits<size_t>::max() - base_offset) {
+        return false;
+      }
+      out = base_offset + static_cast<size_t>(field_offset);
+      return true;
+    }
+
+    if(expr.kind == CallSemKind::subscript_expression &&
+       expr.children.size() == 2 &&
+       expr.children[1].has_uint_value) {
+      size_t base_offset = 0;
+      if(!global_object_lvalue_offset(expr.children[0], variable, base_offset)) {
+        return false;
+      }
+      TypePtr item_type = remove_reference_type(expr.semantic_type);
+      if(!item_type) {
+        return false;
+      }
+      const size_t item_size = backend_storage_size(item_type);
+      const unsigned long long raw_index = callsem_uint_value(expr.children[1]);
+      if(raw_index > numeric_limits<size_t>::max() / item_size) {
+        return false;
+      }
+      const size_t element_offset = static_cast<size_t>(raw_index) * item_size;
+      if(element_offset > numeric_limits<size_t>::max() - base_offset) {
+        return false;
+      }
+      out = base_offset + element_offset;
+      return true;
+    }
+
+    return false;
+  }
+
+  bool collect_global_aggregate_object_assignment(
+      const CallSemNode & variable,
+      const CallSemNode & statement,
+      GlobalAggregateArrayDataItem & out)
+  {
+    if(statement.kind != CallSemKind::expression_statement ||
+       statement.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & assignment = statement.children[0];
+    if(assignment.kind != CallSemKind::assignment_expression ||
+       assignment.children.size() != 2 ||
+       !callsem_has_token(assignment, OP_ASS)) {
+      return false;
+    }
+
+    const CallSemNode & lhs = assignment.children[0];
+    TypePtr item_type = remove_reference_type(lhs.semantic_type);
+    TypePtr item_base = strip_top_level_cv(item_type);
+    if(!item_type ||
+       (item_base &&
+        (item_base->kind == Type::TK_ARRAY ||
+         is_complete_class_value_type(item_base)))) {
+      return false;
+    }
+
+    size_t offset = 0;
+    if(!global_object_lvalue_offset(lhs, variable, offset)) {
+      return false;
+    }
+    const size_t total_size = backend_storage_size(variable.semantic_type);
+    const size_t item_size = backend_storage_size(item_type);
+    if(offset > total_size || item_size > total_size - offset) {
+      return false;
+    }
+
+    string item_text;
+    if(!format_global_data_item_for_value(item_type,
+                                          assignment.children[1],
+                                          item_text)) {
+      return false;
+    }
+
+    out.offset = offset;
+    out.size = item_size;
+    out.text = item_text;
+    return true;
+  }
+
+  bool append_global_aggregate_object_assignment_items(
+      vector<string> & data_items,
+      const CallSemNode & variable)
+  {
+    TypePtr base = strip_top_level_cv(variable.semantic_type);
+    if(!is_complete_class_value_type(base) || variable.children.empty()) {
+      return false;
+    }
+
+    vector<GlobalAggregateArrayDataItem> items;
+    items.reserve(variable.children.size());
+    for(size_t i = 0; i < variable.children.size(); ++i) {
+      GlobalAggregateArrayDataItem item;
+      if(!collect_global_aggregate_object_assignment(variable,
+                                                     variable.children[i],
+                                                     item)) {
+        return false;
+      }
+      items.push_back(item);
+    }
+    return append_sorted_global_data_items(data_items,
+                                           items,
+                                           backend_storage_size(variable.semantic_type));
   }
 
   bool global_array_element_address_index(const CallSemNode & expr,
@@ -22181,9 +22923,34 @@ private:
         global.data_items.push_back(
             string("zero ") + to_string(backend_storage_size(node.semantic_type)));
       } else {
-        if(!append_global_class_array_action_items(global.data_items, node, base) &&
-           !append_global_aggregate_array_assignment_items(global.data_items, node, base)) {
-          throw logic_error("unsupported global array initializer for " + node.text);
+        vector<string> constant_data_items;
+        bool constant_initializer =
+            append_global_class_array_action_items(constant_data_items, node, base);
+        if(!constant_initializer) {
+          constant_data_items.clear();
+          constant_initializer =
+              append_global_aggregate_array_assignment_items(constant_data_items,
+                                                             node,
+                                                             base);
+        }
+        if(constant_initializer) {
+          global.data_items.swap(constant_data_items);
+        } else {
+          global.data_items.push_back(
+              string("zero ") + to_string(backend_storage_size(node.semantic_type)));
+          for(size_t i = 0; i < node.children.size(); ++i) {
+            const CallSemNode & action = node.children[i];
+            if(action.kind == CallSemKind::constructor_action ||
+               action.kind == CallSemKind::expression_statement) {
+              global_ctor_actions_.push_back(&action);
+            } else if(action.kind == CallSemKind::destructor_action) {
+              if(!action.trivial_lifecycle) {
+                global_dtor_actions_.push_back(&action);
+              }
+            } else {
+              throw logic_error("unsupported global array initializer for " + node.text);
+            }
+          }
         }
       }
       globals_.push_back(global);
@@ -22194,10 +22961,20 @@ private:
        !is_named_enum_scalar_type(base)) {
       GlobalBinding & binding = global_bindings_.find(node_internal_symbol(node))->second;
       LowIRGlobal global = make_data_global(binding.storage, false, binding.thread_local_storage);
-      global.data_items.push_back(string("zero ") + to_string(backend_storage_size(node.semantic_type)));
+      const bool constant_aggregate_initializer =
+          callsem_local_static_guard_symbol(node).empty() &&
+          !node.is_thread_local &&
+          append_global_aggregate_object_assignment_items(global.data_items, node);
+      if(!constant_aggregate_initializer) {
+        global.data_items.push_back(
+            string("zero ") + to_string(backend_storage_size(node.semantic_type)));
+      }
       globals_.push_back(global);
       if(!callsem_local_static_guard_symbol(node).empty()) {
         append_local_static_guard_global(node);
+      }
+      if(constant_aggregate_initializer) {
+        return;
       }
       for(size_t i = 0; i < node.children.size(); ++i) {
         const bool initializer_action =
@@ -22339,6 +23116,16 @@ private:
           value = strtoll(text.c_str(), &end, 10);
           return end && *end == 0;
         };
+    if(base && (is_integral_type(base) || is_named_enum_scalar_type(base))) {
+      if(node.has_int_value) {
+        out = to_string(callsem_int_value(node));
+        return true;
+      }
+      if(node.has_uint_value) {
+        out = to_string(callsem_uint_value(node));
+        return true;
+      }
+    }
     TypePtr arithmetic_result_base =
         strip_top_level_cv(remove_reference_type(node.semantic_type));
     const bool arithmetic_result_is_128 =
@@ -22346,6 +23133,27 @@ private:
         arithmetic_result_base->kind == Type::TK_FUNDAMENTAL &&
         (arithmetic_result_base->fundamental == FT_INT128 ||
          arithmetic_result_base->fundamental == FT_UINT128);
+    if(node.kind == CallSemKind::conditional_expression &&
+       node.children.size() == 3) {
+      string condition;
+      bool condition_is_addr = false;
+      long long condition_addend = 0;
+      long long condition_value = 0;
+      if(!evaluate_global_initializer(node.children[0],
+                                      condition,
+                                      condition_is_addr,
+                                      condition_addend) ||
+         condition_is_addr ||
+         condition_addend != 0 ||
+         !parse_integer_text(condition, condition_value)) {
+        return false;
+      }
+      return evaluate_global_initializer(
+          node.children[condition_value != 0 ? 1 : 2],
+          out,
+          is_addr,
+          addr_addend);
+    }
     if(node.kind == CallSemKind::id_expression &&
        node.value_category == CVC_LVALUE &&
        base &&

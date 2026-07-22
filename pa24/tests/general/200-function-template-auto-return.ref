@@ -1,0 +1,13 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @identity(0)
+    return i32 %t1
+}
+function @identity(%value : i32) -> i32 [binding=weak, object=_Z8identityIiEvT_] {
+  slot $value : i32
+
+  block ^entry:
+    store i32 %value, $value
+    %t1 = load i32 $value
+    return i32 %t1
+}

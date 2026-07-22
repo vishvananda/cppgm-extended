@@ -155,10 +155,3 @@ function @model__iterator__operator__(%this : ptr) -> ptr [binding=weak, object=
     %t6 = load ptr $this
     return ptr %t6
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    %t1 = addr @model__saved_begin
-    %t2 = index i8 [projection=field] %t1, 0
-    store ptr 0, %t2
-    return void
-}

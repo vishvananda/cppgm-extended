@@ -1970,6 +1970,7 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
   }
 
   if(payload->kind == CppAstKind::paren_initializer ||
+     payload->kind == CppAstKind::argument_list ||
      payload->kind == CppAstKind::paren_argument_list ||
      payload->kind == CppAstKind::braced_init_list) {
     if(payload->children.empty()) {
@@ -2030,6 +2031,8 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
       if(node_has_simple_type(expr, OP_BOR)) return "operator|";
       if(node_has_simple_type(expr, OP_XOR)) return "operator^";
       if(node_has_simple_type(expr, OP_AMP)) return "operator&";
+      if(node_has_simple_type(expr, OP_LAND)) return "operator&&";
+      if(node_has_simple_type(expr, OP_LOR)) return "operator||";
       if(node_has_simple_type(expr, OP_LSHIFT)) return "operator<<";
       if(node_has_simple_type(expr, OP_RSHIFT)) return "operator>>";
       if(node_has_simple_type(expr, OP_EQ)) return "operator==";
@@ -2704,12 +2707,24 @@ bool evaluate_constexpr_target_conversion(SemanticContext & ctx,
       true,
       false,
       false);
-  if(!ctx.try_argument_conversion(scope,
-                                  target,
-                                  analyzed,
-                                  converted,
-                                  rank,
-                                  conversion_options) ||
+  const bool contextual_bool_target =
+      target_base->kind == Type::TK_FUNDAMENTAL &&
+      target_base->fundamental == FT_BOOL;
+  bool converted_ok = false;
+  if(contextual_bool_target) {
+    converted = analyzed;
+    converted_ok = semantic_conversion::try_condition_test_conversion(ctx,
+                                                                       scope,
+                                                                       converted);
+  } else {
+    converted_ok = ctx.try_argument_conversion(scope,
+                                               target,
+                                               analyzed,
+                                               converted,
+                                               rank,
+                                               conversion_options);
+  }
+  if(!converted_ok ||
      converted.node.kind != CallSemKind::call_expression ||
      converted.node.children.empty() ||
      converted.node.children[0].kind != CallSemKind::callee ||
@@ -3368,8 +3383,10 @@ constant_eval::Hooks build_hooks(SemanticContext & ctx,
         base->named_is_empty = info->type->named_is_empty;
         base->named_host_abi_chunks = info->type->named_host_abi_chunks;
         base->set_named_lambda_mangle(info->type->named_lambda_mangle());
-        base->named_class_template_specialization_mangle_info =
-            info->type->named_class_template_specialization_mangle_info;
+        base->mutable_named_rare_metadata()
+            .named_class_template_specialization_mangle_info =
+                info->type->named_rare()
+                    .named_class_template_specialization_mangle_info;
       }
     }
     return true;
@@ -3394,8 +3411,18 @@ constant_eval::Hooks build_hooks(SemanticContext & ctx,
                      const CppAstNode & expr,
                      constant_eval::ConstexprValue & out)
       {
+        if(evaluator.probing_overloaded_operator_operand()) {
+          try {
+            const ExprInfo operand = ctx.analyze_expression(scope, expr);
+            TypePtr type = strip_top_level_cv(remove_reference_type(operand.type));
+            return type && type->kind == Type::TK_NAMED;
+          } catch(const std::logic_error &) {
+            return false;
+          }
+        }
         return evaluate_default_special_expression(ctx, scope, evaluator, expr, out);
       };
+  hooks.supports_overloaded_operator_operand_probe = true;
   hooks.evaluate_typed_initializer =
       [&ctx, &scope](constant_eval::Evaluator & evaluator,
                      const CppAstNode & node,

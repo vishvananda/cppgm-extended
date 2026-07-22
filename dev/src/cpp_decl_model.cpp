@@ -534,7 +534,9 @@ TypePtr make_dependent_type_expression_type(const string & display_name,
   if(base && base->kind == Type::TK_NAMED &&
      (semantic_kind == Type::NSK_DEPENDENT_DECLTYPE ||
       semantic_kind == Type::NSK_DEPENDENT_TYPEOF)) {
-    base->named_dependent_type_expression_node.reset(new CppAstNode(expression_node));
+    base->mutable_named_rare_metadata()
+        .named_dependent_type_expression_node.reset(
+            new CppAstNode(expression_node));
     base->set_dependent_type_expression_formed_with_placeholders(
         formed_with_placeholders);
   }
@@ -553,8 +555,9 @@ TypePtr make_dependent_alias_type(
                                        true);
   TypePtr base = strip_top_level_cv(result);
   if(base && base->kind == Type::TK_NAMED) {
-    base->named_dependent_alias_template_decl = alias_template_decl;
-    base->named_dependent_alias_arguments = arguments;
+    Type::NamedRareMetadata & rare = base->mutable_named_rare_metadata();
+    rare.named_dependent_alias_template_decl = alias_template_decl;
+    rare.named_dependent_alias_arguments = arguments;
   }
   return result;
 }
@@ -612,14 +615,15 @@ TypePtr make_dependent_qualified_member_type(
   if(base && base->kind == Type::TK_NAMED) {
     base->named_semantic_kind = Type::NSK_DEPENDENT_TYPE;
     base->named_semantic_payload = key.str();
-    base->named_dependent_qualified_owner = owner;
+    Type::NamedRareMetadata & rare = base->mutable_named_rare_metadata();
+    rare.named_dependent_qualified_owner = owner;
     if(template_id_syntax_has_metadata_payload(owner_template_id)) {
-      base->named_dependent_qualified_owner_template_id.reset(
+      rare.named_dependent_qualified_owner_template_id.reset(
           new TemplateIdSyntax(owner_template_id));
     }
-    base->named_dependent_qualified_members = members;
-    base->named_dependent_qualified_member_template_ids = member_template_ids;
-    base->named_dependent_qualified_leading_typename = leading_typename;
+    rare.named_dependent_qualified_members = members;
+    rare.named_dependent_qualified_member_template_ids = member_template_ids;
+    rare.named_dependent_qualified_leading_typename = leading_typename;
   }
   return result;
 }
@@ -698,7 +702,7 @@ const CppAstNode * named_type_dependent_type_expression_node(const TypePtr & typ
       base->named_semantic_kind != Type::NSK_DEPENDENT_TYPEOF)) {
     return nullptr;
   }
-  return base->named_dependent_type_expression_node.get();
+  return base->named_rare().named_dependent_type_expression_node.get();
 }
 
 bool named_type_dependent_type_expression_formed_with_placeholders(
@@ -721,13 +725,14 @@ bool named_type_dependent_alias_template(
   TypePtr base = named_base(type);
   if(!base ||
      base->named_semantic_kind != Type::NSK_DEPENDENT_ALIAS ||
-     !base->named_dependent_alias_template_decl) {
+     !base->named_rare().named_dependent_alias_template_decl) {
     alias_template_decl = nullptr;
     arguments.clear();
     return false;
   }
-  alias_template_decl = base->named_dependent_alias_template_decl;
-  arguments = base->named_dependent_alias_arguments;
+  alias_template_decl =
+      base->named_rare().named_dependent_alias_template_decl;
+  arguments = base->named_rare().named_dependent_alias_arguments;
   return true;
 }
 
@@ -740,8 +745,9 @@ void set_named_type_dependent_class_template(
   if(!base) {
     return;
   }
-  base->named_dependent_class_template_decl = class_template_decl;
-  base->named_dependent_class_arguments =
+  Type::NamedRareMetadata & rare = base->mutable_named_rare_metadata();
+  rare.named_dependent_class_template_decl = class_template_decl;
+  rare.named_dependent_class_arguments =
       class_template_decl ? arguments :
                             vector<DependentAliasTemplateArgumentSyntax>();
 }
@@ -752,13 +758,14 @@ bool named_type_dependent_class_template(
     vector<DependentAliasTemplateArgumentSyntax> & arguments)
 {
   TypePtr base = named_base(type);
-  if(!base || !base->named_dependent_class_template_decl) {
+  if(!base || !base->named_rare().named_dependent_class_template_decl) {
     class_template_decl = nullptr;
     arguments.clear();
     return false;
   }
-  class_template_decl = base->named_dependent_class_template_decl;
-  arguments = base->named_dependent_class_arguments;
+  class_template_decl =
+      base->named_rare().named_dependent_class_template_decl;
+  arguments = base->named_rare().named_dependent_class_arguments;
   return true;
 }
 
@@ -772,10 +779,11 @@ void set_named_type_dependent_template_template_parameter(
   if(!base) {
     return;
   }
-  base->named_dependent_template_template_parameter_name = parameter_name;
-  base->named_dependent_template_template_parameter_arity =
+  Type::NamedRareMetadata & rare = base->mutable_named_rare_metadata();
+  rare.named_dependent_template_template_parameter_name = parameter_name;
+  rare.named_dependent_template_template_parameter_arity =
       parameter_name.empty() ? static_cast<size_t>(-1) : parameter_arity;
-  base->named_dependent_template_template_arguments =
+  rare.named_dependent_template_template_arguments =
       parameter_name.empty() ? vector<DependentAliasTemplateArgumentSyntax>() :
                                arguments;
 }
@@ -787,15 +795,18 @@ bool named_type_dependent_template_template_parameter(
     vector<DependentAliasTemplateArgumentSyntax> & arguments)
 {
   TypePtr base = named_base(type);
-  if(!base || base->named_dependent_template_template_parameter_name.empty()) {
+  if(!base ||
+     base->named_rare()
+         .named_dependent_template_template_parameter_name.empty()) {
     parameter_name.clear();
     parameter_arity = static_cast<size_t>(-1);
     arguments.clear();
     return false;
   }
-  parameter_name = base->named_dependent_template_template_parameter_name;
-  parameter_arity = base->named_dependent_template_template_parameter_arity;
-  arguments = base->named_dependent_template_template_arguments;
+  const Type::NamedRareMetadata & rare = base->named_rare();
+  parameter_name = rare.named_dependent_template_template_parameter_name;
+  parameter_arity = rare.named_dependent_template_template_parameter_arity;
+  arguments = rare.named_dependent_template_template_arguments;
   return true;
 }
 
@@ -815,16 +826,17 @@ bool named_type_dependent_qualified_member(
   TypePtr base = named_base(type);
   if(!base ||
      base->named_semantic_kind != Type::NSK_DEPENDENT_TYPE ||
-     !base->named_dependent_qualified_owner ||
-     base->named_dependent_qualified_members.empty()) {
+     !base->named_rare().named_dependent_qualified_owner ||
+     base->named_rare().named_dependent_qualified_members.empty()) {
     return false;
   }
-  owner = base->named_dependent_qualified_owner;
-  members = base->named_dependent_qualified_members;
+  const Type::NamedRareMetadata & rare = base->named_rare();
+  owner = rare.named_dependent_qualified_owner;
+  members = rare.named_dependent_qualified_members;
   if(member_template_ids) {
-    *member_template_ids = base->named_dependent_qualified_member_template_ids;
+    *member_template_ids = rare.named_dependent_qualified_member_template_ids;
   }
-  leading_typename = base->named_dependent_qualified_leading_typename;
+  leading_typename = rare.named_dependent_qualified_leading_typename;
   return true;
 }
 
@@ -1280,6 +1292,25 @@ bool is_void_type(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
   return base->kind == Type::TK_FUNDAMENTAL && base->fundamental == FT_VOID;
+}
+
+bool type_can_be_pointer_target(const TypePtr & type)
+{
+  return type && !is_reference_type(type);
+}
+
+bool type_can_be_reference_target(const TypePtr & type)
+{
+  return type && !is_void_type(type);
+}
+
+bool type_can_be_array_element(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  return base &&
+         !is_reference_type(base) &&
+         !is_void_type(base) &&
+         base->kind != Type::TK_FUNCTION;
 }
 
 bool type_is_const_object(const TypePtr & type)

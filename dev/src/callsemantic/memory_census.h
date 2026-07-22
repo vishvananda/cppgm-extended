@@ -39,6 +39,8 @@ struct MemoryCensusInput
 };
 
 void dump_memory_census(std::ostream & out, const MemoryCensusInput & input);
+void dump_source_ast_memory_census(std::ostream & out,
+                                   const CppAstNode & source_ast);
 void dump_callsem_duplicate_hash_census(std::ostream & out,
                                         const MemoryCensusInput & input);
 void dump_callsem_provenance_census(std::ostream & out,

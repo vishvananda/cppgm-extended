@@ -1097,7 +1097,8 @@ public:
     visiting.insert(raw);
 
     switch(type->kind) {
-    case Type::TK_NAMED:
+    case Type::TK_NAMED: {
+      const Type::NamedRareMetadata & rare = type->named_rare();
       if(type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER) {
         add_inferred_dependent_mangle_parameter(
             parameters,
@@ -1110,9 +1111,9 @@ public:
         visiting.erase(raw);
         return;
       }
-      if(type->named_class_template_specialization_mangle_info) {
+      if(rare.named_class_template_specialization_mangle_info) {
         const ClassTemplateSpecializationMangleInfo & info =
-            *type->named_class_template_specialization_mangle_info;
+            *rare.named_class_template_specialization_mangle_info;
         for(std::size_t i = 0; i < info.arguments.size(); ++i) {
           const TemplateArgumentSyntax * syntax =
               i < info.argument_syntaxes.size() ? &info.argument_syntaxes[i] :
@@ -1125,40 +1126,45 @@ public:
               visiting);
         }
       }
-      for(std::size_t i = 0; i < type->named_dependent_alias_arguments.size(); ++i) {
+      for(std::size_t i = 0;
+          i < rare.named_dependent_alias_arguments.size();
+          ++i) {
         collect_inferred_dependent_mangle_parameters_from_dependent_argument(
-            type->named_dependent_alias_arguments[i],
-            parameters,
-            seen_names,
-            visiting);
-      }
-      for(std::size_t i = 0; i < type->named_dependent_class_arguments.size(); ++i) {
-        collect_inferred_dependent_mangle_parameters_from_dependent_argument(
-            type->named_dependent_class_arguments[i],
+            rare.named_dependent_alias_arguments[i],
             parameters,
             seen_names,
             visiting);
       }
       for(std::size_t i = 0;
-          i < type->named_dependent_template_template_arguments.size();
+          i < rare.named_dependent_class_arguments.size();
           ++i) {
         collect_inferred_dependent_mangle_parameters_from_dependent_argument(
-            type->named_dependent_template_template_arguments[i],
+            rare.named_dependent_class_arguments[i],
+            parameters,
+            seen_names,
+            visiting);
+      }
+      for(std::size_t i = 0;
+          i < rare.named_dependent_template_template_arguments.size();
+          ++i) {
+        collect_inferred_dependent_mangle_parameters_from_dependent_argument(
+            rare.named_dependent_template_template_arguments[i],
             parameters,
             seen_names,
             visiting);
       }
       collect_inferred_dependent_mangle_parameters_from_type(
-          type->named_dependent_qualified_owner,
+          rare.named_dependent_qualified_owner,
           parameters,
           seen_names,
           visiting);
       collect_inferred_dependent_mangle_parameters_from_type(
-          type->named_member_owner_type,
+          rare.named_member_owner_type,
           parameters,
           seen_names,
           visiting);
       break;
+    }
 
     case Type::TK_CV:
     case Type::TK_ATOMIC:
@@ -2104,11 +2110,14 @@ public:
                                                              arguments,
                                                              arg_syntaxes,
                                                              *info);
+    const bool fast_existing_requires_dependency_refresh =
+        info && info->dependent_instantiation && !dependent_arguments;
     if(fast_existing &&
        info &&
        fast_existing_class_template_output_usable(decl, *info) &&
        fast_existing_class_template_selection_current(decl, key, *info) &&
        !fast_existing_requires_mangle_refresh &&
+       !fast_existing_requires_dependency_refresh &&
        !parser_trace::enabled("template.resolve") &&
        !witness::source_capture_enabled(template_witness_context())) {
       remember_raw_reference_cache(decl, raw_cache_key, info);
@@ -3317,6 +3326,27 @@ public:
       }
       template_audit::set_creation_context(
           *info, "reference_class_template_instantiation [" + decl.name + "]");
+      const bool upgrades_dependent_reference =
+          info->dependent_instantiation && !dependent_arguments;
+      if(upgrades_dependent_reference) {
+        if(semantic_hotspot::enabled()) {
+          semantic_hotspot::note_semantic_query(
+              "reference_class_template_instantiation_reset",
+              ensure_specialization_name());
+        }
+        note_performance_counter(
+            &semantic_metrics::AnalyzerCounters::class_template_resets);
+        reset_instantiated_class_info(*info, decl.name, class_node);
+        bind_declaring_owner_template_arguments_into_scope(ctx,
+                                                           *info->member_scope,
+                                                           binding_scope);
+        template_api::binding::bind_template_arguments_into_scope(
+            *this,
+            *info->member_scope,
+            *bound_parameters,
+            *bound_arguments,
+            bound_pack_sizes);
+      }
       if(info->template_output_node != class_node) {
         const bool existing_is_forward =
             info->template_output_node &&

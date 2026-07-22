@@ -83,6 +83,39 @@ string trim_whitespace(const string & text)
   return text.substr(start, end - start);
 }
 
+string cplusplus_macro_value_for_language_standard(const string & standard)
+{
+  if(standard.empty() || standard == "c++11" || standard == "gnu++11" ||
+     standard == "c++0x" || standard == "gnu++0x") {
+    return "201103L";
+  }
+  if(standard == "c++98" || standard == "gnu++98" ||
+     standard == "c++03" || standard == "gnu++03") {
+    return "199711L";
+  }
+  if(standard == "c++14" || standard == "gnu++14" ||
+     standard == "c++1y" || standard == "gnu++1y") {
+    return "201402L";
+  }
+  if(standard == "c++17" || standard == "gnu++17" ||
+     standard == "c++1z" || standard == "gnu++1z") {
+    return "201703L";
+  }
+  if(standard == "c++20" || standard == "gnu++20" ||
+     standard == "c++2a" || standard == "gnu++2a") {
+    return "202002L";
+  }
+  if(standard == "c++23" || standard == "gnu++23" ||
+     standard == "c++2b" || standard == "gnu++2b") {
+    return "202302L";
+  }
+  if(standard == "c++26" || standard == "gnu++26" ||
+     standard == "c++2c" || standard == "gnu++2c") {
+    return "202400L";
+  }
+  throw logic_error("unsupported language standard: " + standard);
+}
+
 bool is_identifier_like_preprocessing_operator(const string & text)
 {
   switch(text.size()) {
@@ -1175,7 +1208,10 @@ Preprocessor::Preprocessor(const string & file,
                             this->current_file_is_system_header()};
   });
   macroizer.macro_add("__CPPGM__", PP_INT_LITERAL, "201303L");
-  macroizer.macro_add("__cplusplus", PP_INT_LITERAL, "201103L");
+  macroizer.macro_add(
+      "__cplusplus",
+      PP_INT_LITERAL,
+      cplusplus_macro_value_for_language_standard(options.language_standard));
   macroizer.macro_add("__STDC_HOSTED__", PP_INT_LITERAL, "1");
   macroizer.macro_add("__ORDER_LITTLE_ENDIAN__", PP_INT_LITERAL, "1234");
   macroizer.macro_add("__ORDER_BIG_ENDIAN__", PP_INT_LITERAL, "4321");

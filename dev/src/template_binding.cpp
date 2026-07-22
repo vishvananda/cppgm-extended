@@ -36,6 +36,14 @@ bool is_primary_parameter_name(
   return false;
 }
 
+string pack_element_binding_name(const string & pack_name, size_t index)
+{
+  if(index == 0) {
+    return pack_name;
+  }
+  return pack_name + "__pack" + std::to_string(index + 1);
+}
+
 }  // namespace
 
 void bind_arguments(const vector<template_model::TemplateParameterInfo> & parameters,
@@ -158,6 +166,18 @@ void bind_arguments(const vector<template_model::TemplateParameterInfo> & parame
             {
               bind_non_type_pack_name(name, value_type, bound_pack);
             });
+      } else if(parameter.kind ==
+                    template_model::TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+        for_each_parameter_name(
+            parameter,
+            [&](const std::string & name)
+            {
+              for(size_t j = 0; j < pack_count; ++j) {
+                bind_template_name(pack_element_binding_name(name, j),
+                                   arguments[arg_index + j]);
+              }
+            });
+        arg_index += pack_count;
       } else {
         arg_index += pack_count;
       }

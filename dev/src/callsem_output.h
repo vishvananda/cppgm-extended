@@ -28,6 +28,8 @@ enum CallValueCategory
   X(asm_clause, "asm-clause") \
   X(asm_operand, "asm-operand") \
   X(asm_statement, "asm-statement") \
+  X(array_constructor_action, "array-constructor-action") \
+  X(array_destructor_action, "array-destructor-action") \
   X(binary_expression, "binary-expression") \
   X(break_statement, "break-statement") \
   X(braced_init_list, "braced-init-list") \

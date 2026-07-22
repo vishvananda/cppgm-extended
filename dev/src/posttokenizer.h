@@ -299,6 +299,7 @@ struct PostTokenizer : IPostTokenSource
   uint16_t cached_location_file_index;
   bool cached_location_file_valid;
   bool file_only_source_locations;
+  bool previous_token_was_operator_keyword;
 
   PostTokenizer(IPPTokenSource & input,
                 SourceLocationTable * location_table = nullptr,

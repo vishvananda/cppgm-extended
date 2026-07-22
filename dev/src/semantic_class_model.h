@@ -70,6 +70,7 @@ struct PreparedClassMemberFunctionDefinition
   const CppAstNode * specifiers = nullptr;
   const CppAstNode * declarator = nullptr;
   const CppAstNode * body = nullptr;
+  CppAstNode expanded_declarator;
   PreparedMethodParseContext method;
   std::string name;
   cpp_decl::TypePtr base;

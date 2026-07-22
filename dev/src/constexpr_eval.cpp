@@ -142,7 +142,15 @@ bool is_this_expression(const CppAstNode & node)
 
 bool type_can_select_overloaded_operator(const TypePtr & type)
 {
-  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  const Type * base = type.get();
+  if(base &&
+     (base->kind == Type::TK_LVALUE_REFERENCE ||
+      base->kind == Type::TK_RVALUE_REFERENCE)) {
+    base = base->inner.get();
+  }
+  if(base && base->kind == Type::TK_CV) {
+    base = base->inner.get();
+  }
   return base && base->kind == Type::TK_NAMED;
 }
 
@@ -193,6 +201,29 @@ bool Evaluator::current_this_object(ConstexprValue & out) const
     }
   }
   return false;
+}
+
+bool Evaluator::probing_overloaded_operator_operand() const
+{
+  return overloaded_operator_operand_probe_;
+}
+
+bool Evaluator::may_select_overloaded_operator(const CppAstNode & node)
+{
+  if(!hooks_.supports_overloaded_operator_operand_probe ||
+     !hooks_.evaluate_special_expression) {
+    return false;
+  }
+  overloaded_operator_operand_probe_ = true;
+  ConstexprValue ignored;
+  try {
+    const bool result = hooks_.evaluate_special_expression(*this, node, ignored);
+    overloaded_operator_operand_probe_ = false;
+    return result;
+  } catch(...) {
+    overloaded_operator_operand_probe_ = false;
+    throw;
+  }
 }
 
 bool Evaluator::assign_local(const string & name, const ConstexprValue & value)
@@ -357,6 +388,22 @@ bool Evaluator::eval_expr(const CppAstNode & node, ConstexprValue & out)
   return eval_expr_inner(node, out);
 }
 
+bool Evaluator::eval_condition_expr(const CppAstNode & node, bool & truthy)
+{
+  ConstexprValue value;
+  if(eval_expr(node, value) && constexpr_value_truthy(value, truthy)) {
+    return true;
+  }
+  if(!hooks_.evaluate_typed_initializer ||
+     !hooks_.evaluate_typed_initializer(*this,
+                                        node,
+                                        make_fundamental(FT_BOOL),
+                                        value)) {
+    return false;
+  }
+  return constexpr_value_truthy(value, truthy);
+}
+
 bool Evaluator::eval_discarded_expr(const CppAstNode & node)
 {
   if(node.kind == CppAstKind::parenthesized_expression && node.children.size() == 1) {
@@ -381,10 +428,8 @@ bool Evaluator::eval_discarded_expr(const CppAstNode & node)
 
   if(node.kind == CppAstKind::conditional_expression &&
      node.children.size() == 3) {
-    ConstexprValue condition;
     bool truthy = false;
-    if(!eval_expr(node.children[0], condition) ||
-       !constexpr_value_truthy(condition, truthy)) {
+    if(!eval_condition_expr(node.children[0], truthy)) {
       return false;
     }
     return eval_discarded_expr(node.children[truthy ? 1 : 2]);
@@ -492,21 +537,41 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
       if(!eval_expr(node.children[0], lhs)) {
         return false;
       }
+      if(type_can_select_overloaded_operator(lhs.type) &&
+         hooks_.evaluate_special_expression &&
+         hooks_.evaluate_special_expression(*this, node, out)) {
+        return true;
+      }
       bool lhs_truthy = false;
       if(!constexpr_value_truthy(lhs, lhs_truthy)) {
         return false;
       }
       if(node.simple_type == OP_LAND && !lhs_truthy) {
+        if(may_select_overloaded_operator(node.children[1]) &&
+           hooks_.evaluate_special_expression &&
+           hooks_.evaluate_special_expression(*this, node, out)) {
+          return true;
+        }
         out = make_integral_value(0, make_fundamental(FT_BOOL));
         return true;
       }
       if(node.simple_type == OP_LOR && lhs_truthy) {
+        if(may_select_overloaded_operator(node.children[1]) &&
+           hooks_.evaluate_special_expression &&
+           hooks_.evaluate_special_expression(*this, node, out)) {
+          return true;
+        }
         out = make_integral_value(1, make_fundamental(FT_BOOL));
         return true;
       }
       ConstexprValue rhs;
       if(!eval_expr(node.children[1], rhs)) {
         return false;
+      }
+      if(type_can_select_overloaded_operator(rhs.type) &&
+         hooks_.evaluate_special_expression &&
+         hooks_.evaluate_special_expression(*this, node, out)) {
+        return true;
       }
       bool rhs_truthy = false;
       if(!constexpr_value_truthy(rhs, rhs_truthy)) {
@@ -538,10 +603,8 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
   }
 
   if(node.kind == CppAstKind::conditional_expression && node.children.size() == 3) {
-    ConstexprValue condition;
     bool truthy = false;
-    if(!eval_expr(node.children[0], condition) ||
-       !constexpr_value_truthy(condition, truthy)) {
+    if(!eval_condition_expr(node.children[0], truthy)) {
       return false;
     }
     return eval_expr(node.children[truthy ? 1 : 2], out);
@@ -551,12 +614,19 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
      node.children[0].kind == CppAstKind::type_id) {
     ConstexprValue value;
     TypePtr target;
-    if(!eval_expr(node.children[1], value) ||
-       !hooks_.parse_type_id ||
+    if(!hooks_.parse_type_id ||
        !hooks_.parse_type_id(node.children[0], target)) {
       return false;
     }
-    return constexpr_value_cast(value, target, out);
+    if(eval_expr(node.children[1], value) &&
+       constexpr_value_cast(value, target, out)) {
+      return true;
+    }
+    return hooks_.evaluate_typed_initializer &&
+           hooks_.evaluate_typed_initializer(*this,
+                                              node.children[1],
+                                              target,
+                                              out);
   }
 
   if(node.kind == CppAstKind::assignment_expression && node.children.size() == 2 && node.has_token) {

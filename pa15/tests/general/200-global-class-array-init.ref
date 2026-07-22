@@ -7,7 +7,12 @@ global @__strlit__2 [binding=internal] = {
   i8 0
 }
 global @table [binding=strong, object=_Z5table] = {
-  zero 32
+  ptr addr @__strlit__1
+  i32 1
+  zero 4
+  ptr addr @__strlit__2
+  i32 2
+  zero 4
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -73,22 +78,6 @@ function @Entry__Entry(%this : ptr, %name_ : ptr, %value_ : i32) -> void [bindin
     %t5 = load ptr $this
     %t6 = index i8 [projection=field] %t5, 8
     store i32 %t4, %t6
-    return void
-}
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    %t1 = addr @table
-    %t2 = unary decay ptr %t1
-    %t3 = binary mul i64 0, 16
-    %t4 = index i8 [projection=array_element] %t2, %t3
-    %t5 = addr @__strlit__1
-    call void @Entry__Entry(%t4, %t5, 1)
-    %t6 = addr @table
-    %t7 = unary decay ptr %t6
-    %t8 = binary mul i64 1, 16
-    %t9 = index i8 [projection=array_element] %t7, %t8
-    %t10 = addr @__strlit__2
-    call void @Entry__Entry(%t9, %t10, 2)
     return void
 }
 alias object _ZN5EntryC2EPKci = @Entry__Entry

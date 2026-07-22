@@ -5867,8 +5867,19 @@ bool collect_associated_namespace_scopes_for_type_impl(
       break;
     case Type::TK_NAMED:
       if(is_named_enum_type(ctx, base)) {
-        append_associated_namespace_scope_for_declaration_scope(
-            ctx.scope_for_type(base), out);
+        if(base->named_rare().named_member_owner_type) {
+          cacheable =
+              collect_associated_namespace_scopes_for_type_impl(
+                  ctx,
+                  base->named_rare().named_member_owner_type,
+                  visited_types,
+                  visited_classes,
+                  out) &&
+              cacheable;
+        } else {
+          append_associated_namespace_scope_for_declaration_scope(
+              ctx.scope_for_type(base), out);
+        }
       }
       if(shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
              named_type_class_template_specialization_mangle_info_const(base)) {
@@ -6178,6 +6189,15 @@ void lookup_associated_friend_candidates_for_type(
   case Type::TK_FUNDAMENTAL:
   case Type::TK_NAMED:
     break;
+  }
+
+  if(base->kind == Type::TK_NAMED &&
+     is_named_enum_type(ctx, base) &&
+     base->named_rare().named_member_owner_type) {
+    base = strip_top_level_cv(base->named_rare().named_member_owner_type);
+    if(!base) {
+      return;
+    }
   }
 
   ClassInfo * info = ctx.complete_class_type(base);

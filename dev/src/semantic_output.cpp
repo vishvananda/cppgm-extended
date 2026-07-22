@@ -2787,7 +2787,14 @@ void emit_embedded_class_specifier_output(SemanticContext & ctx,
 const CppAstNode * function_binding_decl_specifiers(const FunctionBinding & binding)
 {
   const CppAstNode * source = binding.definition_node ? binding.definition_node : binding.declaration_node;
-  return source ? find_child_kind(*source, CppAstKind::decl_specifier_seq) : nullptr;
+  if(!source) {
+    return nullptr;
+  }
+  const CppAstNode * specifiers =
+      find_child_kind(*source, CppAstKind::decl_specifier_seq);
+  return specifiers ?
+      specifiers :
+      find_child_kind(*source, CppAstKind::member_specifiers);
 }
 
 bool function_binding_is_inline(const FunctionBinding & binding)
@@ -2877,9 +2884,8 @@ symbol_linkage::SymbolLinkage output_function_symbol_linkage(const FunctionBindi
       (linkage_template_identity || !explicit_specialization_binding)) ||
      binding_defines_inline_like_class_member(binding) ||
      binding_defines_inline_like_friend(binding) ||
-     binding.is_inline ||
+     function_binding_is_inline(binding) ||
      binding.is_constexpr ||
-     node_decl_spec_contains_token(declaration, KW_INLINE) ||
      node_decl_spec_contains_token(declaration, KW_CONSTEXPR)) {
     return symbol_linkage::SL_WEAK;
   }
@@ -3103,8 +3109,10 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
     var_node.is_thread_local = binding.is_thread_local;
     var_node.is_static_storage = binding.is_thread_local;
     if(binding.definition_node) {
-      set_callsem_section_segment(var_node, binding.definition_node->gnu_section_segment);
-      set_callsem_section_name(var_node, binding.definition_node->gnu_section_name);
+      set_callsem_section_segment(
+          var_node, cppast_gnu_section_segment(*binding.definition_node));
+      set_callsem_section_name(
+          var_node, cppast_gnu_section_name(*binding.definition_node));
     }
     if(info.member_scope) {
       set_callsem_qualified_name_syntax(
@@ -3134,7 +3142,7 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
     }
     if(binding.is_thread_local &&
        !var_node.is_extern_declaration &&
-       ctx.complete_class_type(binding.type) &&
+       namespace_variable_type_has_class_lifetime(ctx, binding.type) &&
        !symbol.internal_symbol.empty()) {
       set_callsem_local_static_guard_symbol(
           var_node,
@@ -3201,7 +3209,10 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
 bool namespace_variable_type_has_class_lifetime(SemanticContext & ctx,
                                                 const TypePtr & type)
 {
-  TypePtr direct_type = strip_top_level_cv(remove_reference_type(type));
+  TypePtr direct_type = strip_top_level_cv(type);
+  if(is_reference_type(direct_type)) {
+    return false;
+  }
   while(direct_type && direct_type->kind == Type::TK_ARRAY) {
     direct_type = strip_top_level_cv(direct_type->inner);
   }
@@ -3887,20 +3898,20 @@ void set_dump_qualified_name_syntax_from_function_binding(DumpNode & node,
   }
 }
 
-const ValueBinding * find_namespace_value_binding_by_node(Scope & scope,
-                                                          const CppAstNode & init_decl)
+ValueBinding * find_namespace_value_binding_by_node(Scope & scope,
+                                                    const CppAstNode & init_decl)
 {
-  for(map<string, ValueBinding>::const_iterator it = scope.values.begin();
+  for(map<string, ValueBinding>::iterator it = scope.values.begin();
       it != scope.values.end();
       ++it) {
-    const ValueBinding & binding = it->second;
+    ValueBinding & binding = it->second;
     if(binding.declaration_node == &init_decl || binding.definition_node == &init_decl) {
       return &binding;
     }
   }
 
   for(size_t i = 0; i < scope.namespace_children.size(); ++i) {
-    const ValueBinding * nested =
+    ValueBinding * nested =
         find_namespace_value_binding_by_node(*scope.namespace_children[i], init_decl);
     if(nested) {
       return nested;
@@ -5742,12 +5753,30 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
       bool is_typedef = prepared_specifiers.declaration_is_typedef;
       FunctionBinding * rebound_function_binding =
           find_namespace_function_binding_by_node_recursive(scope, init_decl);
-      const ValueBinding * rebound_value_binding =
+      ValueBinding * mutable_rebound_value_binding =
           find_namespace_value_binding_by_node(scope, init_decl);
+      const ValueBinding * rebound_value_binding = mutable_rebound_value_binding;
       Scope * parse_scope =
           semantic_lookup::resolve_qualified_variable_parse_scope(ctx,
                                                                   scope,
                                                                   init_decl.children[0]);
+      if(!rebound_value_binding && parse_scope != &scope) {
+        const CppAstNode * declared_identifier =
+            find_descendant_kind(init_decl.children[0], CppAstKind::identifier);
+        const QualifiedName * qualified_name =
+            declared_identifier ?
+                cppast_qualified_name_syntax(*declared_identifier) :
+                nullptr;
+        if(qualified_name &&
+           (qualified_name->rooted || !qualified_name->qualifiers.empty())) {
+          map<string, ValueBinding>::iterator direct =
+              parse_scope->values.find(qualified_name->name);
+          if(direct != parse_scope->values.end()) {
+            mutable_rebound_value_binding = &direct->second;
+            rebound_value_binding = mutable_rebound_value_binding;
+          }
+        }
+      }
       CppAstNode stripped_function_style_declarator;
       CppAstNode synthesized_function_style_initializer;
       const CppAstNode * effective_declarator = &init_decl.children[0];
@@ -5895,8 +5924,10 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
         var_node.is_extern_declaration = !is_definition;
         var_node.is_thread_local = binding && binding->is_thread_local;
         var_node.is_static_storage = var_node.is_thread_local;
-        set_callsem_section_segment(var_node, init_decl.gnu_section_segment);
-        set_callsem_section_name(var_node, init_decl.gnu_section_name);
+        set_callsem_section_segment(var_node,
+                                    cppast_gnu_section_segment(init_decl));
+        set_callsem_section_name(var_node,
+                                 cppast_gnu_section_name(init_decl));
         set_dump_qualified_name_syntax_from_scope(
             var_node,
             binding_scope ? binding_scope : &scope,
@@ -5923,7 +5954,7 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
           set_dump_symbol(var_node, symbol);
           if(binding->is_thread_local &&
              is_definition &&
-             ctx.complete_class_type(emitted_type) &&
+             namespace_variable_type_has_class_lifetime(ctx, emitted_type) &&
              !symbol.internal_symbol.empty()) {
             set_callsem_local_static_guard_symbol(
                 var_node,
@@ -5951,7 +5982,7 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
                                                  literal_node);
           if(has_constant_initializer) {
             var_node.children.push_back(std::move(literal_node));
-          } else if(ctx.complete_class_type(emitted_type)) {
+          } else if(namespace_variable_type_has_class_lifetime(ctx, emitted_type)) {
             semantic_lifetime::analyze_object_lifetime_actions(
                 ctx,
                 *initializer_scope,
@@ -5967,6 +5998,9 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
         }
         apply_local_static_guard_to_lifetime_actions(var_node);
         out.children.push_back(std::move(var_node));
+        if(is_definition && mutable_rebound_value_binding) {
+          mutable_rebound_value_binding->definition_output_emitted = true;
+        }
       }
     }
     return;
@@ -6336,6 +6370,27 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
   const bool class_method_binding =
       binding->owner_class &&
       (binding->is_method || binding->is_constructor || binding->is_destructor);
+  const bool source_template_binding =
+      template_api::function_binding_has_source_template_identity(binding);
+  bool template_type_collides_with_non_template = false;
+  if(source_template_binding &&
+     class_method_binding &&
+     !lookup_name.empty()) {
+    const map<string, vector<FunctionBinding *> >::const_iterator found =
+        binding->owner_class->methods.find(lookup_name);
+    if(found != binding->owner_class->methods.end()) {
+      for(size_t i = 0; i < found->second.size(); ++i) {
+        FunctionBinding * candidate = found->second[i];
+        if(candidate &&
+           !template_api::function_binding_has_source_template_identity(candidate) &&
+           candidate->ref_qualifier == binding->ref_qualifier &&
+           type_equals(candidate->type, binding->type)) {
+          template_type_collides_with_non_template = true;
+          break;
+        }
+      }
+    }
+  }
 
   FunctionBinding * resolved = nullptr;
   if(class_method_binding && !lookup_name.empty()) {
@@ -6343,6 +6398,28 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
                                              lookup_name,
                                              binding->type,
                                              binding->ref_qualifier);
+  }
+  if(source_template_binding && !lookup_name.empty()) {
+    const FunctionTemplateRegistrationIdentity identity =
+        template_api::function_binding_registration_identity(*binding);
+    if(!resolved ||
+       (template_type_collides_with_non_template &&
+        !template_api::function_binding_matches_instantiation_identity(
+            *resolved, identity))) {
+      if(class_method_binding) {
+        resolved = template_api::find_defined_class_function_matching_template_identity(
+            ctx,
+            *binding->owner_class,
+            lookup_name,
+            *binding);
+      } else if(binding->declaration_scope) {
+        resolved = template_api::find_defined_function_matching_template_identity(
+            ctx,
+            *binding->declaration_scope,
+            lookup_name,
+            *binding);
+      }
+    }
   }
   if(!resolved) {
     resolved = ctx.find_function_by_symbol(binding->symbol, binding->name, binding->type);
@@ -6440,7 +6517,15 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
         ctx.find_function_by_symbol(symbol_linkage::SymbolIdentity(),
                                     resolved->name,
                                     resolved->type);
+    const bool matching_template_identity =
+        !template_api::function_binding_has_source_template_identity(resolved) ||
+        !template_type_collides_with_non_template ||
+        (exported &&
+         template_api::function_binding_matches_instantiation_identity(
+             *exported,
+             template_api::function_binding_registration_identity(*resolved)));
     if(exported &&
+       matching_template_identity &&
        !exported->symbol.object_symbol.empty() &&
        (resolved->owner_class == nullptr || exported->owner_class == resolved->owner_class)) {
       resolved = exported;
@@ -7332,10 +7417,12 @@ void synchronize_output_named_type_layout(const TypePtr & type,
   base->named_is_empty = info_base->named_is_empty;
   base->named_host_abi_chunks = info_base->named_host_abi_chunks;
   base->set_named_lambda_mangle(info_base->named_lambda_mangle());
-  base->named_class_template_specialization_mangle_info =
-      info_base->named_class_template_specialization_mangle_info;
-  base->named_member_owner_type = info_base->named_member_owner_type;
-  base->named_member_name = info_base->named_member_name;
+  Type::NamedRareMetadata & rare = base->mutable_named_rare_metadata();
+  rare.named_class_template_specialization_mangle_info =
+      info_base->named_rare().named_class_template_specialization_mangle_info;
+  rare.named_member_owner_type =
+      info_base->named_rare().named_member_owner_type;
+  rare.named_member_name = info_base->named_rare().named_member_name;
 }
 
 void complete_output_object_layout_type(SemanticContext & ctx,

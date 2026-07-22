@@ -98,6 +98,64 @@ bool is_bare_parameter_pack_abstract_declarator(const CppAstNode & node)
          node.children[0].kind == CppAstKind::parameter_pack;
 }
 
+struct QualifiedTypeComponentLookup : template_angle::NameLookup
+{
+  QualifiedTypeComponentLookup(const template_angle::NameLookup & inner,
+                               const RecogToken * component_head) :
+    inner(inner),
+    component_head(component_head)
+  {}
+
+  bool is_component_head(const RecogToken & token) const
+  {
+    return component_head == &token;
+  }
+
+  virtual bool is_known_template_name_identifier(const RecogToken & token) const
+  {
+    return inner.is_known_template_name_identifier(token);
+  }
+
+  virtual bool is_known_type_name_identifier(const RecogToken & token) const
+  {
+    return inner.is_known_type_name_identifier(token);
+  }
+
+  virtual bool is_known_value_template_parameter_identifier(
+      const RecogToken & token) const
+  {
+    return !is_component_head(token) &&
+           inner.is_known_value_template_parameter_identifier(token);
+  }
+
+  virtual bool is_known_value_name_identifier(const RecogToken & token) const
+  {
+    return !is_component_head(token) &&
+           inner.is_known_value_name_identifier(token);
+  }
+
+  virtual bool is_template_type_parameter_identifier(
+      const RecogToken & token) const
+  {
+    return inner.is_template_type_parameter_identifier(token);
+  }
+
+  virtual bool unqualified_identifier_prefers_value_name(
+      const RecogToken & token) const
+  {
+    return !is_component_head(token) &&
+           inner.unqualified_identifier_prefers_value_name(token);
+  }
+
+  virtual bool prefer_template_id_for_unknown_identifiers() const
+  {
+    return inner.prefer_template_id_for_unknown_identifiers();
+  }
+
+  const template_angle::NameLookup & inner;
+  const RecogToken * component_head;
+};
+
 struct RecogTokenRangeSequence : IRecogTokenSequence
 {
   RecogTokenRangeSequence(const IRecogTokenSequence & tokens,
@@ -1136,6 +1194,16 @@ void build_template_argument_syntax_from_range(
                                                                range.second,
                                                                parsed_argument,
                                                                fragment_mode)) {
+      if(parser_trace::enabled("parser.fragment")) {
+        std::ostringstream trace;
+        trace << "template-argument fragment mode="
+              << static_cast<int>(fragment_mode)
+              << " type=" << (parsed_argument.type_id ? "yes" : "no")
+              << " expression="
+              << (parsed_argument.expression ? "yes" : "no")
+              << " text={" << argument.text << "}";
+        parser_trace::note("parser.fragment", tokens, range.first, trace.str());
+      }
       parsed_argument.text = argument.text;
       parsed_argument.has_source_token_start = true;
       parsed_argument.source_token_start = argument.source_token_start;
@@ -1787,9 +1855,11 @@ void apply_leading_declaration_attributes(CppAstNode & node,
   if(attributes.has_weak_attribute) {
     node.has_weak_attribute = true;
   }
-  if(!attributes.gnu_section_name.empty()) {
-    node.gnu_section_segment = attributes.gnu_section_segment;
-    node.gnu_section_name = attributes.gnu_section_name;
+  if(!cppast_gnu_section_name(attributes).empty()) {
+    mutable_cppast_gnu_section_segment(node) =
+        cppast_gnu_section_segment(attributes);
+    mutable_cppast_gnu_section_name(node) =
+        cppast_gnu_section_name(attributes);
   }
   append_cppast_abi_tags(node.abi_tags, attributes);
   append_cppast_alignment_specifiers(node, attributes);
@@ -1814,9 +1884,11 @@ void apply_leading_declaration_attributes(CppAstNode & node,
         if(attributes.has_weak_attribute) {
           child.children[j].has_weak_attribute = true;
         }
-        if(!attributes.gnu_section_name.empty()) {
-          child.children[j].gnu_section_segment = attributes.gnu_section_segment;
-          child.children[j].gnu_section_name = attributes.gnu_section_name;
+        if(!cppast_gnu_section_name(attributes).empty()) {
+          mutable_cppast_gnu_section_segment(child.children[j]) =
+              cppast_gnu_section_segment(attributes);
+          mutable_cppast_gnu_section_name(child.children[j]) =
+              cppast_gnu_section_name(attributes);
         }
         append_cppast_abi_tags(child.children[j].abi_tags, attributes);
         append_cppast_alignment_specifiers(child.children[j], attributes);
@@ -4234,6 +4306,26 @@ void CppAstParser::note_attribute_specifier(CppAstNode * annotated,
   if(gnu_attribute_specifier_has_weak(tokens, start, end)) {
     annotated->has_weak_attribute = true;
   }
+  for(std::size_t i = start; i < end; ++i) {
+    const RecogToken & token = tokens.peek(i);
+    if(!token.is_identifier() ||
+       (token.source != "__ext_vector_type__" &&
+        token.source != "ext_vector_type")) {
+      continue;
+    }
+    for(std::size_t j = i + 1; j + 1 < end; ++j) {
+      if(!tokens.peek(j).is_simple(OP_LPAREN)) {
+        continue;
+      }
+      const RecogToken & argument = tokens.peek(j + 1);
+      if(argument.is_identifier()) {
+        mutable_cppast_gnu_ext_vector_type_argument_identifier(*annotated) =
+            argument.source;
+      }
+      break;
+    }
+    break;
+  }
   string section_segment;
   string section_name;
   if(gnu_attribute_specifier_section(tokens,
@@ -4241,8 +4333,8 @@ void CppAstParser::note_attribute_specifier(CppAstNode * annotated,
                                      end,
                                      section_segment,
                                      section_name)) {
-    annotated->gnu_section_segment = section_segment;
-    annotated->gnu_section_name = section_name;
+    mutable_cppast_gnu_section_segment(*annotated) = section_segment;
+    mutable_cppast_gnu_section_name(*annotated) = section_name;
   }
 
   bool collecting_abi_tag = false;
@@ -4385,7 +4477,7 @@ bool CppAstParser::skip_trailing_declarator_extensions(CppAstNode * annotated)
         const std::string label =
             gnu_asm_label_literal_value(tokens, asm_start, pos);
         if(!label.empty()) {
-          annotated->asm_label = label;
+          mutable_cppast_asm_label(*annotated) = label;
         }
       }
       continue;
@@ -4400,8 +4492,8 @@ bool CppAstParser::skip_trailing_declarator_extensions(CppAstNode * annotated)
 void apply_trailing_declarator_extensions(CppAstNode & target,
                                           const CppAstNode & extensions)
 {
-  if(!extensions.asm_label.empty()) {
-    target.asm_label = extensions.asm_label;
+  if(!cppast_asm_label(extensions).empty()) {
+    mutable_cppast_asm_label(target) = cppast_asm_label(extensions);
   }
   append_cppast_abi_tags(target.abi_tags, extensions);
   append_cppast_alignment_specifiers(target, extensions);
@@ -4567,7 +4659,8 @@ bool CppAstParser::parse_using_or_alias_declaration(CppAstNode & out)
   if(peek().is_identifier()) {
     string alias = peek().source;
     ++pos;
-    if(!skip_attribute_specifier_seq()) {
+    CppAstNode attributes = make_node(CppAstKind::specifier);
+    if(!skip_attribute_specifier_seq(&attributes)) {
       pos = start;
       return false;
     }
@@ -4578,6 +4671,12 @@ bool CppAstParser::parse_using_or_alias_declaration(CppAstNode & out)
         return false;
       }
       out = make_node(CppAstKind::alias_declaration, alias);
+      const string & gnu_ext_vector_type_argument_identifier =
+          cppast_gnu_ext_vector_type_argument_identifier(attributes);
+      if(!gnu_ext_vector_type_argument_identifier.empty()) {
+        mutable_cppast_gnu_ext_vector_type_argument_identifier(out) =
+            gnu_ext_vector_type_argument_identifier;
+      }
       out.children.push_back(std::move(type_id));
       set_span(out, start);
       return true;
@@ -5942,8 +6041,8 @@ bool CppAstParser::parse_init_declarator_after_declarator(
     pos = start;
     return false;
   }
-  if(!out.asm_label.empty() && !out.children.empty()) {
-    out.children[0].asm_label = out.asm_label;
+  if(!cppast_asm_label(out).empty() && !out.children.empty()) {
+    mutable_cppast_asm_label(out.children[0]) = cppast_asm_label(out);
   }
 
   if(peek().is_simple(OP_ASS) || peek().is_simple(OP_LBRACE) ||
@@ -10437,6 +10536,16 @@ bool CppAstParser::parse_lambda_declarator(CppAstNode & out)
     return false;
   }
 
+  if(!skip_attribute_specifier_seq(&out)) {
+    if(saw_template_parameter_clause) {
+      value_name_scopes.pop_back();
+      template_value_parameter_scopes.pop_back();
+      template_type_parameter_scopes.pop_back();
+    }
+    pos = start;
+    return false;
+  }
+
   if(consume_simple(KW_MUTABLE)) {
     out.children.push_back(make_token_node(CppAstKind::lambda_specifier, tokens[pos - 1]));
   }
@@ -11397,7 +11506,8 @@ bool CppAstParser::parse_type_name_component_text(string & out)
   }
 
   string template_suffix;
-  parse_angle_clause_text(template_suffix);
+  parse_angle_clause_text(template_suffix,
+                          qualified_component ? &identifier : nullptr);
 
   if(peek().is_simple(OP_LPAREN) &&
      is_builtin_type_transform_identifier(identifier)) {
@@ -11603,11 +11713,24 @@ void CppAstParser::attach_qualified_name_syntax_from_span(CppAstNode & node,
 
       template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup();
       lookup.prefer_unknown_template_ids = true;
+      const RecogToken * qualified_type_component =
+          open >= start + 2 &&
+          tokens.peek(open - 1).is_identifier() &&
+          tokens.peek(open - 2).is_simple(OP_COLON2) ?
+              &tokens.peek(open - 1) :
+              nullptr;
+      const QualifiedTypeComponentLookup qualified_lookup(
+          lookup,
+          qualified_type_component);
+      const template_angle::NameLookup & effective_lookup =
+          qualified_type_component ?
+              static_cast<const template_angle::NameLookup &>(qualified_lookup) :
+              static_cast<const template_angle::NameLookup &>(lookup);
       size_t suffix_end = open;
       vector<pair<size_t, size_t> > arg_ranges;
       if(!template_angle::parse_template_id_suffix_ranges(tokens,
                                                           open,
-                                                          lookup,
+                                                          effective_lookup,
                                                           suffix_end,
                                                           arg_ranges) ||
          suffix_end != end) {
@@ -11687,7 +11810,9 @@ void CppAstParser::attach_qualified_name_syntax_from_span(CppAstNode & node,
   }
 }
 
-bool CppAstParser::parse_angle_clause_text(string & out)
+bool CppAstParser::parse_angle_clause_text(
+    string & out,
+    const RecogToken * qualified_type_component)
 {
   size_t start = pos;
   if(!peek().is_simple(OP_LT)) {
@@ -11696,12 +11821,18 @@ bool CppAstParser::parse_angle_clause_text(string & out)
   }
 
   const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup(true);
+  const QualifiedTypeComponentLookup qualified_lookup(lookup,
+                                                      qualified_type_component);
+  const template_angle::NameLookup & effective_lookup =
+      qualified_type_component ?
+          static_cast<const template_angle::NameLookup &>(qualified_lookup) :
+          static_cast<const template_angle::NameLookup &>(lookup);
 
   std::size_t end = start;
   std::vector<std::pair<std::size_t, std::size_t> > arg_ranges;
   if(!template_angle::parse_template_id_suffix_ranges(tokens,
                                                       start,
-                                                      lookup,
+                                                      effective_lookup,
                                                       end,
                                                       arg_ranges)) {
     pos = start;

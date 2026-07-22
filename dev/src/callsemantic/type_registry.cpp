@@ -323,8 +323,9 @@ ClassInfo * create_class_info(TypeRegistryState & state,
   if(durable_scope.class_info && durable_scope.class_info->type) {
     TypePtr base = strip_top_level_cv(info->type);
     if(base && base->kind == Type::TK_NAMED) {
-      base->named_member_owner_type = durable_scope.class_info->type;
-      base->named_member_name = canonical_name;
+      Type::NamedRareMetadata & rare = base->mutable_named_rare_metadata();
+      rare.named_member_owner_type = durable_scope.class_info->type;
+      rare.named_member_name = canonical_name;
     }
   }
   info->member_scope.reset(new Scope(&durable_scope, canonical_name, false));
@@ -414,8 +415,9 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
   if(durable_scope.class_info && durable_scope.class_info->type) {
     TypePtr base = strip_top_level_cv(info->type);
     if(base && base->kind == Type::TK_NAMED) {
-      base->named_member_owner_type = durable_scope.class_info->type;
-      base->named_member_name = template_name;
+      Type::NamedRareMetadata & rare = base->mutable_named_rare_metadata();
+      rare.named_member_owner_type = durable_scope.class_info->type;
+      rare.named_member_name = template_name;
     }
   }
   info->member_scope.reset(

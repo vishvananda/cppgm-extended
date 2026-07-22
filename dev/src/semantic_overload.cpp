@@ -3972,19 +3972,19 @@ void collect_partial_order_placeholder_keys(const TypePtr & type,
     if(base->named_key.find("partial-order ") == 0) {
       out.insert(base->named_key);
     }
-    for(size_t i = 0; i < base->named_dependent_alias_arguments.size(); ++i) {
+    for(size_t i = 0; i < base->named_rare().named_dependent_alias_arguments.size(); ++i) {
       collect_partial_order_placeholder_keys(
-          base->named_dependent_alias_arguments[i].type, out);
+          base->named_rare().named_dependent_alias_arguments[i].type, out);
     }
-    for(size_t i = 0; i < base->named_dependent_class_arguments.size(); ++i) {
+    for(size_t i = 0; i < base->named_rare().named_dependent_class_arguments.size(); ++i) {
       collect_partial_order_placeholder_keys(
-          base->named_dependent_class_arguments[i].type, out);
+          base->named_rare().named_dependent_class_arguments[i].type, out);
     }
     for(size_t i = 0;
-        i < base->named_dependent_template_template_arguments.size();
+        i < base->named_rare().named_dependent_template_template_arguments.size();
         ++i) {
       collect_partial_order_placeholder_keys(
-          base->named_dependent_template_template_arguments[i].type, out);
+          base->named_rare().named_dependent_template_template_arguments[i].type, out);
     }
     return;
   case Type::TK_FUNCTION:
@@ -4133,19 +4133,19 @@ void collect_type_parameter_pack_references(const vector<TemplateParameterInfo> 
     if(direct) {
       out.insert(direct);
     }
-    for(size_t i = 0; i < base->named_dependent_alias_arguments.size(); ++i) {
+    for(size_t i = 0; i < base->named_rare().named_dependent_alias_arguments.size(); ++i) {
       collect_type_parameter_pack_references(
-          parameters, base->named_dependent_alias_arguments[i].type, out);
+          parameters, base->named_rare().named_dependent_alias_arguments[i].type, out);
     }
-    for(size_t i = 0; i < base->named_dependent_class_arguments.size(); ++i) {
+    for(size_t i = 0; i < base->named_rare().named_dependent_class_arguments.size(); ++i) {
       collect_type_parameter_pack_references(
-          parameters, base->named_dependent_class_arguments[i].type, out);
+          parameters, base->named_rare().named_dependent_class_arguments[i].type, out);
     }
     for(size_t i = 0;
-        i < base->named_dependent_template_template_arguments.size();
+        i < base->named_rare().named_dependent_template_template_arguments.size();
         ++i) {
       collect_type_parameter_pack_references(
-          parameters, base->named_dependent_template_template_arguments[i].type, out);
+          parameters, base->named_rare().named_dependent_template_template_arguments[i].type, out);
     }
     return;
   }
@@ -4204,32 +4204,32 @@ void collect_non_type_parameter_pack_references(
         }
       }
     }
-    for(size_t i = 0; i < base->named_dependent_alias_arguments.size(); ++i) {
+    for(size_t i = 0; i < base->named_rare().named_dependent_alias_arguments.size(); ++i) {
       collect_non_type_parameter_pack_references(
-          parameters, base->named_dependent_alias_arguments[i].type, out);
+          parameters, base->named_rare().named_dependent_alias_arguments[i].type, out);
       if(const TemplateParameterInfo * direct =
              direct_non_type_parameter_pack_reference_syntax(
-                 parameters, base->named_dependent_alias_arguments[i].syntax)) {
+                 parameters, base->named_rare().named_dependent_alias_arguments[i].syntax)) {
         out.insert(direct);
       }
     }
-    for(size_t i = 0; i < base->named_dependent_class_arguments.size(); ++i) {
+    for(size_t i = 0; i < base->named_rare().named_dependent_class_arguments.size(); ++i) {
       collect_non_type_parameter_pack_references(
-          parameters, base->named_dependent_class_arguments[i].type, out);
+          parameters, base->named_rare().named_dependent_class_arguments[i].type, out);
       if(const TemplateParameterInfo * direct =
              direct_non_type_parameter_pack_reference_syntax(
-                 parameters, base->named_dependent_class_arguments[i].syntax)) {
+                 parameters, base->named_rare().named_dependent_class_arguments[i].syntax)) {
         out.insert(direct);
       }
     }
     for(size_t i = 0;
-        i < base->named_dependent_template_template_arguments.size();
+        i < base->named_rare().named_dependent_template_template_arguments.size();
         ++i) {
       collect_non_type_parameter_pack_references(
-          parameters, base->named_dependent_template_template_arguments[i].type, out);
+          parameters, base->named_rare().named_dependent_template_template_arguments[i].type, out);
       if(const TemplateParameterInfo * direct =
              direct_non_type_parameter_pack_reference_syntax(
-                 parameters, base->named_dependent_template_template_arguments[i].syntax)) {
+                 parameters, base->named_rare().named_dependent_template_template_arguments[i].syntax)) {
         out.insert(direct);
       }
     }
@@ -4471,24 +4471,24 @@ int partial_order_template_structure_score(const TypePtr & type)
             info->arguments[i]);
       }
     }
-    if(base->named_dependent_alias_template_decl) {
+    if(base->named_rare().named_dependent_alias_template_decl) {
       ++score;
       score += partial_order_dependent_argument_structure_score(
-          base->named_dependent_alias_arguments);
+          base->named_rare().named_dependent_alias_arguments);
     }
-    if(base->named_dependent_class_template_decl) {
+    if(base->named_rare().named_dependent_class_template_decl) {
       ++score;
       score += partial_order_dependent_argument_structure_score(
-          base->named_dependent_class_arguments);
+          base->named_rare().named_dependent_class_arguments);
     }
-    if(!base->named_dependent_template_template_parameter_name.empty()) {
+    if(!base->named_rare().named_dependent_template_template_parameter_name.empty()) {
       ++score;
       score += partial_order_dependent_argument_structure_score(
-          base->named_dependent_template_template_arguments);
+          base->named_rare().named_dependent_template_template_arguments);
     }
-    if(base->named_dependent_qualified_owner) {
+    if(base->named_rare().named_dependent_qualified_owner) {
       score += partial_order_template_structure_score(
-          base->named_dependent_qualified_owner);
+          base->named_rare().named_dependent_qualified_owner);
     }
     return score;
   }
@@ -6653,6 +6653,68 @@ bool try_analyze_builtin_call_expression(SemanticContext & ctx,
     return false;
   }
 
+  if(builtin_name == "__builtin_convertvector") {
+    if(arg_nodes.size() != 2) {
+      throw logic_error("__builtin_convertvector arity");
+    }
+    TypePtr target_type;
+    if(!ctx.try_parse_builtin_type_trait_call_arg(scope,
+                                                  *arg_nodes[1],
+                                                  target_type) ||
+       !target_type) {
+      throw logic_error("__builtin_convertvector requires target type");
+    }
+    out = ctx.analyze_expression_for_target(scope, *arg_nodes[0], target_type);
+    return true;
+  }
+
+  if(builtin_name == "__builtin_bit_cast") {
+    if(arg_nodes.size() != 2) {
+      throw logic_error("__builtin_bit_cast arity");
+    }
+    TypePtr target_type;
+    if(!ctx.try_parse_builtin_type_trait_call_arg(scope,
+                                                  *arg_nodes[0],
+                                                  target_type) ||
+       !target_type) {
+      throw logic_error("__builtin_bit_cast requires target type");
+    }
+    ExprInfo source = ctx.analyze_expression(scope, *arg_nodes[1]);
+    TypePtr source_type = value_conversion_type(source);
+    TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
+    if(!source_type ||
+       !target_base ||
+       !is_integral_type(source_type) ||
+       !is_integral_type(target_base) ||
+       type_size(source_type) != type_size(target_base)) {
+      throw logic_error("unsupported __builtin_bit_cast representation");
+    }
+    // GNU vector attributes are scalarized to their one-lane element type.
+    // Preserve the bits of that supported integral representation instead of
+    // accepting an ordinary value conversion for unrelated bit-cast forms.
+    out.type = target_type;
+    out.category = VC_PRVALUE;
+    out.node = make_dump_node(CallSemKind::cast_expression,
+                              "__builtin_bit_cast");
+    set_dump_token(out.node, *arg_nodes[1]);
+    callsemantic_internal::set_expr_metadata(out.node,
+                                             out.type,
+                                             out.category);
+    out.node.children.push_back(std::move(source.node));
+    return true;
+  }
+
+  if(builtin_name == "__builtin_reduce_and" ||
+     builtin_name == "__builtin_reduce_or") {
+    if(arg_nodes.size() != 1) {
+      throw logic_error(builtin_name + " arity");
+    }
+    out = ctx.analyze_expression_for_target(scope,
+                                            *arg_nodes[0],
+                                            make_fundamental(FT_BOOL));
+    return true;
+  }
+
   if(builtin_name == "__builtin_invoke") {
     if(arg_nodes.empty()) {
       throw logic_error("__builtin_invoke arity");
@@ -7653,7 +7715,13 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
       }
       throw logic_error("invalid array braced-init-list");
     }
-    if(direct_braced_init->children.empty()) {
+    vector<unique_ptr<CppAstNode> > expanded_storage;
+    vector<const CppAstNode *> elements =
+        expand_functional_braced_init_elements(ctx,
+                                               scope,
+                                               *direct_braced_init,
+                                               expanded_storage);
+    if(elements.empty()) {
       return ctx.make_value_initialized_expr(callee_type);
     }
     TypePtr target_array = strip_top_level_cv(remove_reference_type(callee_type));
@@ -7665,15 +7733,15 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
                                                   callee_type,
                                                   *direct_braced_init);
     }
-    if(direct_braced_init->children.size() != 1) {
+    if(elements.size() != 1) {
       throw logic_error("non-class braced-init-list requires one element");
     }
     return finalize_functional_cast_result(
         ctx,
         scope,
         callee_type,
-        ctx.analyze_expression_for_target(scope, direct_braced_init->children[0], callee_type),
-        direct_braced_init->children[0]);
+        ctx.analyze_expression_for_target(scope, *elements[0], callee_type),
+        *elements[0]);
   }
   if(arg_nodes.empty()) {
     return ctx.make_value_initialized_expr(callee_type);
@@ -8346,7 +8414,7 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
           best_transformed_params,
           best.function->source_template->pattern_scope ?
               best.function->source_template->pattern_scope :
-              best.function->source_template->declaring_scope,
+          best.function->source_template->declaring_scope,
           true);
 
   if(current_more_specialized && !best_more_specialized) {
@@ -13860,8 +13928,12 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                         "] [available " + join_string_list(available_methods, ",") + "]");
     }
   } else if(lookup_callee_node.kind == CppAstKind::id_expression) {
+    const bool operator_function_call =
+        looks_like_operator_function_name(
+            semantic_utils::unqualified_member_name(lookup_callee_node.value));
     ExprInfo standard_char_traits_result;
-    if(try_analyze_standard_char_traits_call(ctx,
+    if(!operator_function_call &&
+       try_analyze_standard_char_traits_call(ctx,
                                              scope,
                                              lookup_callee_node,
                                              arg_nodes,
@@ -13874,9 +13946,11 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                            builtin_result)) {
       return builtin_result;
     }
-    value_callee = lookup_id_expression_value_binding_for_call(ctx,
-                                                               scope,
-                                                               lookup_callee_node);
+    value_callee = operator_function_call ?
+                       nullptr :
+                       lookup_id_expression_value_binding_for_call(ctx,
+                                                                   scope,
+                                                                   lookup_callee_node);
     const QualifiedName * functional_cast_type_name =
         cppast_qualified_name_syntax(lookup_callee_node);
     const TemplateIdSyntax * functional_cast_template_id =
@@ -13891,7 +13965,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         functional_cast_lookup_name->qualifiers.empty() &&
         unqualified_functional_cast_type_lookup_needed_for_value(
             scope, functional_cast_lookup_name->name, *value_callee);
-    if(!value_callee || unqualified_functional_cast_type_lookup_needed) {
+    if((!value_callee || unqualified_functional_cast_type_lookup_needed) &&
+       !operator_function_call) {
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "call-id-type-lookup callee=" << lookup_callee_node.value
@@ -13939,7 +14014,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       }
     }
     use_function_lookup =
-        !value_callee || id_call_prefers_function_lookup(lookup_callee_node.value);
+        !value_callee ||
+        operator_function_call ||
+        id_call_prefers_function_lookup(lookup_callee_node.value);
     member_access_lookup_name = lookup_callee_node.value;
   }
 

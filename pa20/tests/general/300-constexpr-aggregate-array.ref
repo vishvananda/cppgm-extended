@@ -1,5 +1,6 @@
 global @p [binding=internal, object=_ZL1p] = {
-  zero 8
+  i32 3
+  i32 4
 }
 global @arr [binding=internal, object=_ZL3arr] = {
   i32 10
@@ -10,14 +11,4 @@ global @arr [binding=internal, object=_ZL3arr] = {
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
-}
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    %t1 = addr @p
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 3, %t2
-    %t3 = addr @p
-    %t4 = index i8 [projection=field] %t3, 4
-    store i32 4, %t4
-    return void
 }

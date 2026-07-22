@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -3761,7 +3762,9 @@ static CppAstNode clone_ast_node_for_mangling(const CppAstNode & source)
   out.has_using_if_exists = source.has_using_if_exists;
   out.has_exclude_from_explicit_instantiation =
       source.has_exclude_from_explicit_instantiation;
-  out.asm_label = source.asm_label;
+  if(!cppast_asm_label(source).empty()) {
+    mutable_cppast_asm_label(out) = cppast_asm_label(source);
+  }
   out.abi_tags = source.abi_tags;
   out.alignment_specifiers = source.alignment_specifiers;
   out.is_final_specifier = source.is_final_specifier;
@@ -7050,21 +7053,23 @@ static bool try_build_typed_member_named_type_ir(
     abi_mangle::Type & out)
 {
   TypePtr base = strip_top_level_cv(type);
+  const Type::NamedRareMetadata & rare = base ? base->named_rare() :
+                                                Type::NamedRareMetadata();
   if(!base ||
      base->kind != Type::TK_NAMED ||
-     !base->named_member_owner_type ||
-     base->named_member_name.empty()) {
+     !rare.named_member_owner_type ||
+     rare.named_member_name.empty()) {
     return false;
   }
 
   abi_mangle::Type owner;
-  if(!try_build_type_ir(base->named_member_owner_type, mangle_ctx, owner)) {
+  if(!try_build_type_ir(rare.named_member_owner_type, mangle_ctx, owner)) {
     return false;
   }
 
   abi_mangle::Type ir_type =
       abi_mangle::Type::member_named_type(std::move(owner),
-                                          base->named_member_name,
+                                          rare.named_member_name,
                                           string());
   if(!attach_member_type_ir_substitution(ir_type, string())) {
     return false;
@@ -10234,12 +10239,13 @@ static bool try_build_dependent_qualified_member_type_ir(
     have_owner_ir = false;
   }
   TypePtr base = strip_top_level_cv(type);
+  const Type::NamedRareMetadata * rare = base ? &base->named_rare() : nullptr;
   if(!have_owner_ir &&
      base &&
      base->kind == Type::TK_NAMED &&
-     base->named_dependent_qualified_owner_template_id) {
+     rare->named_dependent_qualified_owner_template_id) {
     have_owner_ir = try_build_template_id_type_ir(
-        *base->named_dependent_qualified_owner_template_id,
+        *rare->named_dependent_qualified_owner_template_id,
         mangle_ctx,
         owner_ir);
   }
@@ -10250,7 +10256,7 @@ static bool try_build_dependent_qualified_member_type_ir(
             << " type=" << selected_named_type_text(type)
             << " owner=" << selected_named_type_text(owner)
             << " owner-template-syntax="
-            << (base && base->named_dependent_qualified_owner_template_id ?
+            << (rare && rare->named_dependent_qualified_owner_template_id ?
                     "yes" : "no")
             << " member-count=" << members.size();
       parser_trace::note("symbol.linkage", string(), trace.str());
@@ -10347,7 +10353,7 @@ static bool try_build_dependent_alias_type_ir(
   if(base &&
      base->kind == Type::TK_NAMED &&
      base->named_semantic_kind == Type::NSK_DEPENDENT_ALIAS &&
-     base->named_dependent_type_expression_node) {
+     base->named_rare().named_dependent_type_expression_node) {
     TypeMangleContext alias_ctx_storage;
     const TypeMangleContext * alias_ctx = mangle_ctx;
     if(mangle_ctx) {
@@ -10356,7 +10362,8 @@ static bool try_build_dependent_alias_type_ir(
       alias_ctx_storage.suppress_current_type_id_substitution_registration = true;
       alias_ctx = &alias_ctx_storage;
     }
-    return try_build_type_id_ast_ir(*base->named_dependent_type_expression_node,
+    return try_build_type_id_ast_ir(
+        *base->named_rare().named_dependent_type_expression_node,
                                     alias_ctx,
                                     out);
   }
@@ -10373,7 +10380,7 @@ static bool try_build_dependent_decltype_type_ir(
   if(!base ||
      base->kind != Type::TK_NAMED ||
      base->named_semantic_kind != Type::NSK_DEPENDENT_DECLTYPE ||
-     !base->named_dependent_type_expression_node) {
+     !base->named_rare().named_dependent_type_expression_node) {
     return false;
   }
   TypeMangleContext decltype_ctx_storage;
@@ -10385,7 +10392,7 @@ static bool try_build_dependent_decltype_type_ir(
   decltype_ctx = &decltype_ctx_storage;
   abi_mangle::DependentExpression expression;
   if(!try_build_dependent_expression_ir(
-         *base->named_dependent_type_expression_node,
+         *base->named_rare().named_dependent_type_expression_node,
          decltype_ctx,
          expression)) {
     return false;
@@ -13351,8 +13358,9 @@ static bool try_build_class_template_specialization_type_ir(
 
   shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization =
       named_type_class_template_specialization_mangle_info_const(base);
+  const Type::NamedRareMetadata & rare = base->named_rare();
   const bool has_typed_member_owner =
-      base->named_member_owner_type && !base->named_member_name.empty();
+      rare.named_member_owner_type && !rare.named_member_name.empty();
   if(!specialization ||
      trim_space(specialization->template_name).empty() ||
      (!has_typed_member_owner &&
@@ -13421,16 +13429,17 @@ static bool try_build_class_template_specialization_type_ir(
 
   if(has_typed_member_owner) {
     abi_mangle::Type owner;
-    if(!try_build_type_ir(base->named_member_owner_type,
+    if(!try_build_type_ir(rare.named_member_owner_type,
                           specialization_ctx,
                           owner)) {
       return false;
     }
-    const string owner_text = selected_named_type_text(base->named_member_owner_type);
+    const string owner_text =
+        selected_named_type_text(rare.named_member_owner_type);
 	    const string member_template_name_substitution =
 	        owner_text.empty() ?
 	            string() :
-	            append_qualified_component_text(owner_text, base->named_member_name);
+	            append_qualified_component_text(owner_text, rare.named_member_name);
 	    vector<abi_mangle::SubstitutionKey> argument_keys;
 	    if(!(mangle_ctx && mangle_ctx->suppress_type_substitution_keys) &&
 	       !build_class_template_argument_ir_substitution_keys(arguments,
@@ -13440,7 +13449,7 @@ static bool try_build_class_template_specialization_type_ir(
 	    abi_mangle::Type ir_type =
 	        abi_mangle::Type::member_class_template_specialization(
 	            std::move(owner),
-	            base->named_member_name,
+	            rare.named_member_name,
 	            member_template_name_substitution,
 	            std::move(arguments));
 	    abi_mangle::Type::ensure_name_metadata(ir_type)
@@ -13516,27 +13525,29 @@ static bool try_build_named_type_ir(const TypePtr & type,
                                     const TypeMangleContext * mangle_ctx,
                                     abi_mangle::Type & out)
 {
+  const Type::NamedRareMetadata & rare = type ? type->named_rare() :
+                                                Type::NamedRareMetadata();
   if(!type ||
      type->kind != Type::TK_NAMED ||
      type->named_semantic_kind != Type::NSK_ORDINARY ||
-     type->named_dependent_qualified_owner ||
-     !type->named_dependent_qualified_members.empty() ||
-     !type->named_dependent_qualified_member_template_ids.empty() ||
+     rare.named_dependent_qualified_owner ||
+     !rare.named_dependent_qualified_members.empty() ||
+     !rare.named_dependent_qualified_member_template_ids.empty() ||
      named_type_lambda_mangle_metadata(type) ||
      should_prefer_unqualified_lexical_named_type(type, mangle_ctx)) {
     return false;
   }
 
-  if(type->named_member_owner_type && !type->named_member_name.empty()) {
+  if(rare.named_member_owner_type && !rare.named_member_name.empty()) {
     abi_mangle::Type owner;
-    if(!try_build_type_ir(type->named_member_owner_type, mangle_ctx, owner)) {
+    if(!try_build_type_ir(rare.named_member_owner_type, mangle_ctx, owner)) {
       return false;
     }
     const string selected_text = preferred_named_type_text(type, mangle_ctx);
     if(selected_text.empty()) {
       return false;
     }
-    string member_name = type->named_member_name;
+    string member_name = rare.named_member_name;
 	    abi_mangle::Type ir_type =
 	        abi_mangle::Type::member_named_type(std::move(owner),
 	                                            std::move(member_name),
@@ -14760,9 +14771,62 @@ static TypePtr hybridize_pattern_type_with_actual(const TypePtr & pattern_type,
   }
 }
 
-static bool type_has_dependent_mangle_state(const TypePtr & type)
+class DependentMangleTypeVisitState
+{
+public:
+  DependentMangleTypeVisitState()
+      : inline_size_(0)
+  {
+  }
+
+  bool mark_visited(const Type * type)
+  {
+    if(overflow_) {
+      return overflow_->insert(type).second;
+    }
+
+    for(size_t i = 0; i < inline_size_; ++i) {
+      if(inline_visited_[i] == type) {
+        return false;
+      }
+    }
+
+    if(inline_size_ < inline_visited_.size()) {
+      inline_visited_[inline_size_++] = type;
+      return true;
+    }
+
+    overflow_.reset(new unordered_set<const Type *>);
+    overflow_->reserve(inline_visited_.size() * 2);
+    overflow_->insert(inline_visited_.begin(), inline_visited_.end());
+    return overflow_->insert(type).second;
+  }
+
+private:
+  array<const Type *, 32> inline_visited_;
+  size_t inline_size_;
+  unique_ptr<unordered_set<const Type *> > overflow_;
+};
+
+static bool type_has_dependent_mangle_state_impl(
+    const TypePtr & type,
+    DependentMangleTypeVisitState & visited);
+static bool template_argument_has_dependent_mangle_state_impl(
+    const TemplateArgument & argument,
+    DependentMangleTypeVisitState & visited);
+static bool template_arguments_have_dependent_mangle_state_impl(
+    const vector<TemplateArgument> & arguments,
+    DependentMangleTypeVisitState & visited);
+
+static bool type_has_dependent_mangle_state_impl(
+    const TypePtr & type,
+    DependentMangleTypeVisitState & visited)
 {
   if(!type) {
+    return false;
+  }
+
+  if(!visited.mark_visited(type.get())) {
     return false;
   }
 
@@ -14775,21 +14839,21 @@ static bool type_has_dependent_mangle_state(const TypePtr & type)
     shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization =
         named_type_class_template_specialization_mangle_info_const(type);
     if(specialization &&
-       (template_arguments_have_dependent_mangle_state(
-            specialization->arguments) ||
-        template_arguments_have_dependent_mangle_state(
-            specialization->mangle_arguments))) {
+       (template_arguments_have_dependent_mangle_state_impl(
+            specialization->arguments, visited) ||
+        template_arguments_have_dependent_mangle_state_impl(
+            specialization->mangle_arguments, visited))) {
       return true;
     }
   }
 
-  if(type_has_dependent_mangle_state(type->owner) ||
-     type_has_dependent_mangle_state(type->inner)) {
+  if(type_has_dependent_mangle_state_impl(type->owner, visited) ||
+     type_has_dependent_mangle_state_impl(type->inner, visited)) {
     return true;
   }
 
   for(size_t i = 0; i < type->params.size(); ++i) {
-    if(type_has_dependent_mangle_state(type->params[i])) {
+    if(type_has_dependent_mangle_state_impl(type->params[i], visited)) {
       return true;
     }
   }
@@ -14797,8 +14861,15 @@ static bool type_has_dependent_mangle_state(const TypePtr & type)
   return false;
 }
 
-static bool template_argument_has_dependent_mangle_state(
-    const TemplateArgument & argument)
+static bool type_has_dependent_mangle_state(const TypePtr & type)
+{
+  DependentMangleTypeVisitState visited;
+  return type_has_dependent_mangle_state_impl(type, visited);
+}
+
+static bool template_argument_has_dependent_mangle_state_impl(
+    const TemplateArgument & argument,
+    DependentMangleTypeVisitState & visited)
 {
   if(argument.dependent) {
     return true;
@@ -14806,29 +14877,40 @@ static bool template_argument_has_dependent_mangle_state(
 
   switch(argument.kind) {
   case TemplateArgument::TA_TYPE:
-    return type_has_dependent_mangle_state(argument.type);
+    return type_has_dependent_mangle_state_impl(argument.type, visited);
 
   case TemplateArgument::TA_VALUE:
-    return type_has_dependent_mangle_state(argument.type);
+    return type_has_dependent_mangle_state_impl(argument.type, visited);
 
   case TemplateArgument::TA_CLASS_TEMPLATE:
   case TemplateArgument::TA_ALIAS_TEMPLATE:
     return argument.template_decl == nullptr ||
-           type_has_dependent_mangle_state(argument.template_owner_type);
+           type_has_dependent_mangle_state_impl(argument.template_owner_type,
+                                                visited);
   }
 
+  return false;
+}
+
+static bool template_arguments_have_dependent_mangle_state_impl(
+    const vector<TemplateArgument> & arguments,
+    DependentMangleTypeVisitState & visited)
+{
+  for(size_t i = 0; i < arguments.size(); ++i) {
+    if(template_argument_has_dependent_mangle_state_impl(arguments[i],
+                                                         visited)) {
+      return true;
+    }
+  }
   return false;
 }
 
 static bool template_arguments_have_dependent_mangle_state(
     const vector<TemplateArgument> & arguments)
 {
-  for(size_t i = 0; i < arguments.size(); ++i) {
-    if(template_argument_has_dependent_mangle_state(arguments[i])) {
-      return true;
-    }
-  }
-  return false;
+  DependentMangleTypeVisitState visited;
+  return template_arguments_have_dependent_mangle_state_impl(arguments,
+                                                              visited);
 }
 
 static bool template_arguments_have_entity_value(

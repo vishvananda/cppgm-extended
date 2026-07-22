@@ -59,6 +59,7 @@ struct Hooks
   std::function<bool(const CppAstNode &, std::size_t &)> evaluate_sizeof_operand;
   std::function<bool(const std::string &, std::size_t &)> lookup_pack_size;
   std::function<bool(Evaluator &, const CppAstNode &, ConstexprValue &)> evaluate_special_expression;
+  bool supports_overloaded_operator_operand_probe = false;
   std::function<bool(Evaluator &,
                      const CppAstNode &,
                      const cpp_decl::TypePtr &,
@@ -88,6 +89,7 @@ public:
             ConstexprValue & out,
             const Hooks * override_hooks = nullptr);
   bool current_this_object(ConstexprValue & out) const;
+  bool probing_overloaded_operator_operand() const;
 
 private:
   struct Frame
@@ -100,9 +102,12 @@ private:
   Hooks hooks_;
   std::vector<Frame> frames_;
   std::size_t call_depth_ = 0;
+  bool overloaded_operator_operand_probe_ = false;
 
   bool eval_expr_inner(const CppAstNode & node, ConstexprValue & out);
   bool eval_discarded_expr(const CppAstNode & node);
+  bool eval_condition_expr(const CppAstNode & node, bool & truthy);
+  bool may_select_overloaded_operator(const CppAstNode & node);
   bool declare_locals(const std::vector<LocalDeclaration> & locals,
                       std::string & error,
                       ConstexprValue * last_value = nullptr);

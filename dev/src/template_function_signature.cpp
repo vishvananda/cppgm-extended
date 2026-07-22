@@ -3,6 +3,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "cpp_decl_ast.h"
 #include "cpp_decl_bridge.h"
 #include "semantic_errors.h"
 #include "semantic_utils.h"
@@ -368,9 +369,17 @@ FunctionTemplateSignatureParseResult try_parse_function_template_signature(
 
   bool is_typedef = false;
   TypePtr base;
-  if(!template_decl_ast::parse_trailing_return_base(
-         services, scope_ref, parse_specifiers, parse_declarator, is_typedef, base, true) ||
-     is_typedef) {
+  const bool parsed_base =
+      template_decl_ast::parse_trailing_return_base(
+          services, scope_ref, parse_specifiers, parse_declarator, is_typedef, base, true);
+  const bool deferred_auto_result =
+      !parsed_base &&
+      !is_typedef &&
+      cpp_decl::decl_spec_contains_token(parse_specifiers, KW_AUTO) &&
+      !cpp_decl::find_child(parse_declarator, CppAstKind::trailing_return_type);
+  if(deferred_auto_result) {
+    base = make_fundamental(FT_VOID);
+  } else if(!parsed_base || is_typedef) {
     std::ostringstream msg;
     msg << "unsupported function template decl-specifier-seq";
     msg << " [name " << template_name << "]";

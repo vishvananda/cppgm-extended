@@ -1,26 +1,15 @@
-struct tag {
-  char c;
-  tag(char v = 'x') : c(v) {}
-};
+struct Tag { int value; };
+struct Base { virtual int f() const = 0; };
+struct Mid : Base { virtual int g() const { return 1; } };
 
-struct base {
-  virtual ~base() {}
-  virtual int f() const = 0;
-};
-
-struct mid : base {
-  virtual int g() const { return 1; }
-};
-
-struct derived : tag, mid {
-  derived() : tag('q') {}
+struct Derived : Tag, Mid {
   int f() const { return 2; }
   int g() const { return 7; }
 };
 
 int main()
 {
-  derived d;
-  mid * p = &d;
-  return p->g() == 7 ? 0 : 1;
+  Derived value;
+  Mid * view = &value;
+  return view->g() == 7 ? 0 : 1;
 }

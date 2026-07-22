@@ -158,8 +158,10 @@ void sync_named_layout_from_class_info(TypePtr type, ClassInfo * info)
   base->named_is_empty = info->type->named_is_empty;
   base->named_host_abi_chunks = info->type->named_host_abi_chunks;
   base->set_named_lambda_mangle(info->type->named_lambda_mangle());
-  base->named_class_template_specialization_mangle_info =
-      info->type->named_class_template_specialization_mangle_info;
+  base->mutable_named_rare_metadata()
+      .named_class_template_specialization_mangle_info =
+          info->type->named_rare()
+              .named_class_template_specialization_mangle_info;
 }
 
 const CppAstNode * type_id_type_name_witness_anchor(const CppAstNode & type_id)

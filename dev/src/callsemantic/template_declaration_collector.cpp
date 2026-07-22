@@ -457,10 +457,23 @@ public:
         }
         specialization_name = class_template_id->name;
         arg_texts = template_id_argument_texts_preserving_spacing(*class_template_id);
-        ClassTemplateDecl * primary =
-            specialization_name.rooted || !specialization_name.qualifiers.empty() ?
-                semantic_lookup::lookup_class_template(*this, scope, specialization_name) :
-                lookup_class_template(scope, specialization_name.name);
+        ClassTemplateDecl * primary = nullptr;
+        if(specialization_name.rooted || !specialization_name.qualifiers.empty()) {
+          ClassInfo * owner_reference =
+              resolve_qualified_owner_class_from_template_id_syntax(
+                  scope,
+                  specialization_name,
+                  &inner,
+                  QualifiedOwnerClassResolution::ReferenceMembers);
+          if(owner_reference && owner_reference->member_scope) {
+            primary = lookup_class_template(*owner_reference->member_scope,
+                                            specialization_name.name);
+          }
+        }
+        if(!primary) {
+          primary = semantic_lookup::lookup_class_template_node(
+              *this, scope, specialization_name, inner);
+        }
         if(!primary) {
           throw logic_error("unknown class template explicit specialization");
         }
@@ -881,6 +894,18 @@ public:
       decl->name = inner.value;
       decl->type_id = type_id;
       decl->parameters = template_parameters;
+      const string & gnu_ext_vector_type_argument_identifier =
+          cppast_gnu_ext_vector_type_argument_identifier(inner);
+      if(!gnu_ext_vector_type_argument_identifier.empty()) {
+        for(size_t i = 0; i < decl->parameters.size(); ++i) {
+          if(decl->parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE &&
+             decl->parameters[i].name ==
+                 gnu_ext_vector_type_argument_identifier) {
+            decl->gnu_ext_vector_type_parameter_index = i;
+            break;
+          }
+        }
+      }
       map<string, AliasTemplateDecl *>::iterator previous_alias =
           scope.alias_templates.find(decl->name);
       const bool had_previous_alias =
@@ -3559,6 +3584,18 @@ public:
           TypePtr instantiated_type;
           Scope & substitution_scope =
               decl.declaring_scope ? *decl.declaring_scope : scope;
+          Scope specialization_scope(&substitution_scope,
+                                     "<explicit-specialization-match>",
+                                     false);
+          template_api::binding::overlay_instantiation_use_scope_bindings(
+              specialization_scope,
+              scope,
+              &substitution_scope);
+          template_api::binding::bind_template_arguments_into_scope(
+              ctx,
+              specialization_scope,
+              decl.parameters,
+              arguments);
           if(!decl.type_pattern ||
              !template_argument_semantics::substitute_type(substitution_scope,
                                                            decl.type_pattern,
@@ -3570,7 +3607,7 @@ public:
           }
           TypePtr resolved_instantiated_type;
           if(template_api::type::resolve_instantiated_dependent_type(ctx,
-                                                                     scope,
+                                                                     specialization_scope,
                                                                      instantiated_type,
                                                                      resolved_instantiated_type) &&
              resolved_instantiated_type) {
@@ -3726,6 +3763,8 @@ public:
               !function_template_name_syntax->qualifiers.empty())) ?
                 lookup_function_templates(scope, *function_template_name_syntax) :
                 lookup_function_templates(scope, name);
+        const vector<ExprInfo> deduction_args =
+            build_function_template_deduction_args();
         for(size_t i = 0; i < templates.size(); ++i) {
           template_api::TemplateFunctionDeductionRequest deduction_request;
           deduction_request.decl = templates[i];
@@ -3733,9 +3772,25 @@ public:
           deduction_request.use_scope = &scope;
           deduction_request.resolution_scope = &scope;
           template_api::TemplateFunctionDeductionResult deduction_result;
+          bool used_parameter_deduction = false;
           if(!template_api::deduce_function_template(ctx,
                                                      deduction_request,
                                                      deduction_result)) {
+            template_api::TemplateFunctionDeductionRequest parameter_request;
+            parameter_request.decl = templates[i];
+            parameter_request.args = &deduction_args;
+            parameter_request.use_scope = &scope;
+            parameter_request.resolution_scope = &scope;
+            if(!template_api::deduce_function_template(ctx,
+                                                       parameter_request,
+                                                       deduction_result)) {
+              continue;
+            }
+            used_parameter_deduction = true;
+          }
+          if(used_parameter_deduction &&
+             !function_template_specialization_type_matches(
+                 *templates[i], deduction_result.arguments)) {
             continue;
           }
           record_explicit_function_specialization_binding(

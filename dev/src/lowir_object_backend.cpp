@@ -2874,13 +2874,10 @@ set<string> collect_defined_symbols(const mir::Program & program)
   return out;
 }
 
-vector<size_t> host_eh_successors(const mir::Function & function, size_t block_index)
+vector<size_t> host_eh_successors(const mir::Function & function,
+                                  size_t block_index,
+                                  const map<string, size_t> & block_indices)
 {
-  map<string, size_t> block_indices;
-  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
-    block_indices[function.blocks[bi].label] = bi;
-  }
-
   vector<size_t> out;
   const mir::Block & block = function.blocks[block_index];
   if(block.instructions.empty()) {
@@ -2940,6 +2937,10 @@ map<string, vector<string> > compute_host_eh_entry_stacks(const mir::Function & 
   if(function.blocks.empty()) {
     return entry_stacks;
   }
+  map<string, size_t> block_indices;
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    block_indices[function.blocks[bi].label] = bi;
+  }
   set<string> landingpad_block_labels;
   map<string, string> landingpad_block_symbols;
   map<string, string> landingpad_entry_symbols;
@@ -2965,7 +2966,8 @@ map<string, vector<string> > compute_host_eh_entry_stacks(const mir::Function & 
     if(landingpad == landingpad_block_symbols.end()) {
       continue;
     }
-    const vector<size_t> successors = host_eh_successors(function, bi);
+    const vector<size_t> successors =
+        host_eh_successors(function, bi, block_indices);
     if(successors.size() == 1) {
       landingpad_entry_symbols[function.blocks[successors[0]].label] = landingpad->second;
     }
@@ -2977,11 +2979,10 @@ map<string, vector<string> > compute_host_eh_entry_stacks(const mir::Function & 
     map<string, vector<string> >::iterator found = entry_stacks.find(label);
     if(found == entry_stacks.end()) {
       entry_stacks[label] = stack;
-      for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
-        if(function.blocks[bi].label == label) {
-          worklist.push_back(bi);
-          return;
-        }
+      map<string, size_t>::const_iterator block_index = block_indices.find(label);
+      if(block_index != block_indices.end()) {
+        worklist.push_back(block_index->second);
+        return;
       }
       throw logic_error("unknown host EH block " + function.name + "$" + label);
     }
@@ -3031,7 +3032,8 @@ map<string, vector<string> > compute_host_eh_entry_stacks(const mir::Function & 
         }
       }
     }
-    const vector<size_t> successors = host_eh_successors(function, bi);
+    const vector<size_t> successors =
+        host_eh_successors(function, bi, block_indices);
     for(size_t si = 0; si < successors.size(); ++si) {
       const string & successor_label = function.blocks[successors[si]].label;
       vector<string> successor_stack = exit_stack;

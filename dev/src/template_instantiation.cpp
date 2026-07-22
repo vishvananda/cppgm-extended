@@ -150,18 +150,57 @@ bool type_forms_array_of_abstract_class(SemanticContext & ctx, const TypePtr & t
   }
 }
 
+bool type_contains_invalid_member_pointer_owner(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  switch(base->kind) {
+  case Type::TK_MEMBER_POINTER:
+    return type_is_definitely_not_class(base->owner) ||
+           type_contains_invalid_member_pointer_owner(base->owner) ||
+           type_contains_invalid_member_pointer_owner(base->inner);
+  case Type::TK_ATOMIC:
+  case Type::TK_POINTER:
+  case Type::TK_BLOCK_POINTER:
+  case Type::TK_LVALUE_REFERENCE:
+  case Type::TK_RVALUE_REFERENCE:
+  case Type::TK_ARRAY:
+    return type_contains_invalid_member_pointer_owner(base->inner);
+  case Type::TK_FUNCTION:
+    if(type_contains_invalid_member_pointer_owner(base->inner)) {
+      return true;
+    }
+    for(std::size_t i = 0; i < base->params.size(); ++i) {
+      if(type_contains_invalid_member_pointer_owner(base->params[i])) {
+        return true;
+      }
+    }
+    return false;
+  default:
+    return false;
+  }
+}
+
 void reject_invalid_instantiated_function_parameter_type(SemanticContext & ctx,
                                                         const FunctionTemplateDecl & decl,
                                                         const TypePtr & type)
 {
-  if(!type_forms_array_of_abstract_class(ctx, type)) {
-    return;
+  if(type_forms_array_of_abstract_class(ctx, type)) {
+    std::ostringstream out;
+    out << "instantiated function template parameter forms array of abstract class";
+    out << " [template " << decl.name << "]";
+    out << " [type " << describe_type(type) << "]";
+    throw TemplateSubstitutionFailure(out.str());
   }
-  std::ostringstream out;
-  out << "instantiated function template parameter forms array of abstract class";
-  out << " [template " << decl.name << "]";
-  out << " [type " << describe_type(type) << "]";
-  throw TemplateSubstitutionFailure(out.str());
+  if(type_contains_invalid_member_pointer_owner(type)) {
+    std::ostringstream out;
+    out << "instantiated function template parameter has non-class member-pointer owner";
+    out << " [template " << decl.name << "]";
+    out << " [type " << describe_type(type) << "]";
+    throw TemplateSubstitutionFailure(out.str());
+  }
 }
 
 // template-boundary-audit: begin semantic_service_access
@@ -451,24 +490,29 @@ void validate_instantiated_result_template_arguments(SemanticContext & ctx,
                                                      resolved_arguments);
     }
 
-    for(std::size_t i = 0; i < type->named_dependent_class_arguments.size(); ++i) {
+    const Type::NamedRareMetadata & rare = type->named_rare();
+    for(std::size_t i = 0;
+        i < rare.named_dependent_class_arguments.size();
+        ++i) {
       validate_instantiated_result_template_arguments(
           ctx,
           scope,
-          type->named_dependent_class_arguments[i].type);
+          rare.named_dependent_class_arguments[i].type);
     }
-    for(std::size_t i = 0; i < type->named_dependent_alias_arguments.size(); ++i) {
+    for(std::size_t i = 0;
+        i < rare.named_dependent_alias_arguments.size();
+        ++i) {
       validate_instantiated_result_template_arguments(
           ctx,
           scope,
-          type->named_dependent_alias_arguments[i].type);
+          rare.named_dependent_alias_arguments[i].type);
     }
     validate_instantiated_result_template_arguments(ctx, scope, type->owner);
     validate_instantiated_result_template_arguments(ctx, scope, type->inner);
     validate_instantiated_result_template_arguments(
         ctx,
         scope,
-        type->named_dependent_qualified_owner);
+        rare.named_dependent_qualified_owner);
     return;
   }
 
@@ -978,9 +1022,11 @@ bool substitute_owner_arguments_in_class_type(
          !type_equals(owner_substituted, dependent_qualified_owner)) {
         TemplateIdSyntax owner_template_id;
         if(TypePtr base = strip_top_level_cv(type)) {
-          if(base->named_dependent_qualified_owner_template_id) {
+          if(base->named_rare()
+                 .named_dependent_qualified_owner_template_id) {
             owner_template_id =
-                *base->named_dependent_qualified_owner_template_id;
+                *base->named_rare()
+                     .named_dependent_qualified_owner_template_id;
           }
         }
         std::string display =
@@ -1405,14 +1451,15 @@ bool type_has_dependent_alias_pack_expansion(const TypePtr & type)
     return false;
   }
   if(type->kind == Type::TK_NAMED) {
+    const Type::NamedRareMetadata & rare = type->named_rare();
     if(dependent_alias_argument_list_has_pack_expansion(
-           type->named_dependent_alias_arguments) ||
+           rare.named_dependent_alias_arguments) ||
        dependent_alias_argument_list_has_pack_expansion(
-           type->named_dependent_class_arguments)) {
+           rare.named_dependent_class_arguments)) {
       return true;
     }
     if(type_has_dependent_alias_pack_expansion(
-           type->named_dependent_qualified_owner)) {
+           rare.named_dependent_qualified_owner)) {
       return true;
     }
   }
@@ -1481,9 +1528,10 @@ bool type_mentions_template_parameter_name(
   }
 
   if(type->kind == Type::TK_NAMED) {
+    const Type::NamedRareMetadata & rare = type->named_rare();
     const bool dependent_named_type =
         named_type_has_dependent_semantic(type) ||
-        type->named_dependent_class_template_decl != nullptr;
+        rare.named_dependent_class_template_decl != nullptr;
     if(dependent_named_type &&
        (text_mentions_template_parameter_name(type->named_key, parameters) ||
         text_mentions_template_parameter_name(type->named_display, parameters) ||
@@ -1491,21 +1539,25 @@ bool type_mentions_template_parameter_name(
                                               parameters))) {
       return true;
     }
-    for(std::size_t i = 0; i < type->named_dependent_alias_arguments.size(); ++i) {
+    for(std::size_t i = 0;
+        i < rare.named_dependent_alias_arguments.size();
+        ++i) {
       if(dependent_template_argument_mentions_template_parameter_name(
-             type->named_dependent_alias_arguments[i],
+             rare.named_dependent_alias_arguments[i],
              parameters)) {
         return true;
       }
     }
-    for(std::size_t i = 0; i < type->named_dependent_class_arguments.size(); ++i) {
+    for(std::size_t i = 0;
+        i < rare.named_dependent_class_arguments.size();
+        ++i) {
       if(dependent_template_argument_mentions_template_parameter_name(
-             type->named_dependent_class_arguments[i],
+             rare.named_dependent_class_arguments[i],
              parameters)) {
         return true;
       }
     }
-    if(type_mentions_template_parameter_name(type->named_dependent_qualified_owner,
+    if(type_mentions_template_parameter_name(rare.named_dependent_qualified_owner,
                                              parameters)) {
       return true;
     }
@@ -2689,15 +2741,17 @@ TypePtr rebind_out_of_class_member_nested_self_type(
   }
 
   QualifiedName current_qualified = unqualified->named_qualified_name_syntax();
+  const Type::NamedRareMetadata & unqualified_rare = unqualified->named_rare();
   if(current_qualified.name.empty() &&
-     unqualified->named_member_owner_type &&
-     !unqualified->named_member_name.empty()) {
-    TypePtr owner = strip_top_level_cv(unqualified->named_member_owner_type);
+     unqualified_rare.named_member_owner_type &&
+     !unqualified_rare.named_member_name.empty()) {
+    TypePtr owner =
+        strip_top_level_cv(unqualified_rare.named_member_owner_type);
     if(owner && owner->kind == Type::TK_NAMED) {
       current_qualified = owner->named_qualified_name_syntax();
       if(!current_qualified.name.empty()) {
         current_qualified.qualifiers.push_back(current_qualified.name);
-        current_qualified.name = unqualified->named_member_name;
+        current_qualified.name = unqualified_rare.named_member_name;
       }
     }
   }
@@ -2726,10 +2780,10 @@ TypePtr rebind_out_of_class_member_nested_self_type(
       nested_info && nested_info->enclosing_scope ?
           nested_info->enclosing_scope->class_info :
           nullptr;
-  if(!nested_owner_info && unqualified->named_member_owner_type) {
+  if(!nested_owner_info && unqualified_rare.named_member_owner_type) {
     nested_owner_info =
         ctx.class_info_for_type(
-            strip_top_level_cv(unqualified->named_member_owner_type));
+            strip_top_level_cv(unqualified_rare.named_member_owner_type));
   }
   const bool same_template_owner =
       nested_owner_info &&
@@ -4330,6 +4384,43 @@ std::string template_argument_text_for_diagnostic(template_api::TemplateTypeSyst
       });
 }
 
+std::string template_template_argument_identity_text(
+    SemanticContext & ctx,
+    const TemplateArgument & argument)
+{
+  if((argument.kind != TemplateArgument::TA_CLASS_TEMPLATE &&
+      argument.kind != TemplateArgument::TA_ALIAS_TEMPLATE) ||
+     !argument.template_owner_type) {
+    return template_model::template_argument_text(
+        argument,
+        [&ctx](const TypePtr & type)
+        {
+          return ctx.instantiation_identity_text_for_type_argument(type);
+        });
+  }
+
+  const std::string owner =
+      ctx.instantiation_identity_text_for_type_argument(
+          argument.template_owner_type);
+  std::string member = argument.template_entity_name();
+  if(member.empty() && argument.template_decl) {
+    if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE) {
+      member = static_cast<ClassTemplateDecl *>(argument.template_decl)->name;
+    } else {
+      member = static_cast<AliasTemplateDecl *>(argument.template_decl)->name;
+    }
+  }
+  if(owner.empty() || member.empty()) {
+    return template_model::template_argument_text(
+        argument,
+        [&ctx](const TypePtr & type)
+        {
+          return ctx.instantiation_identity_text_for_type_argument(type);
+        });
+  }
+  return owner + "::" + member;
+}
+
 std::string template_argument_key_for_instantiation_impl(
     SemanticContext & ctx,
     const std::vector<TemplateArgument> & arguments)
@@ -4343,12 +4434,7 @@ std::string template_argument_key_for_instantiation_impl(
       out += ctx.instantiation_identity_text_for_type_argument(arguments[i].type);
       continue;
     }
-    out += template_model::template_argument_text(
-        arguments[i],
-        [&ctx](const TypePtr & type)
-        {
-          return ctx.instantiation_identity_text_for_type_argument(type);
-        });
+    out += template_template_argument_identity_text(ctx, arguments[i]);
   }
   return out;
 }
@@ -4466,12 +4552,18 @@ std::string function_template_argument_key_for_instantiation(
       out += function_template_instantiation_type_argument_key(ctx, arguments[i].type);
       continue;
     }
-    out += template_model::template_argument_text(
-        arguments[i],
-        [&ctx](const TypePtr & type)
-        {
-          return function_template_instantiation_type_argument_key(ctx, type);
-        });
+    if((arguments[i].kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+        arguments[i].kind == TemplateArgument::TA_ALIAS_TEMPLATE) &&
+       arguments[i].template_owner_type) {
+      out += template_template_argument_identity_text(ctx, arguments[i]);
+    } else {
+      out += template_model::template_argument_text(
+          arguments[i],
+          [&ctx](const TypePtr & type)
+          {
+            return function_template_instantiation_type_argument_key(ctx, type);
+          });
+    }
   }
   return out;
 }
@@ -4493,6 +4585,10 @@ std::string canonical_instantiation_arg_text_impl(
 {
   if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
     return ctx.instantiation_identity_text_for_type_argument(argument.type);
+  }
+  if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+     argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
+    return template_template_argument_identity_text(ctx, argument);
   }
   return template_model::template_argument_text(
       argument,
@@ -5525,12 +5621,7 @@ std::string specialization_name_for_instantiation_impl(
       out += ctx.instantiation_identity_text_for_type_argument(arguments[i].type);
       continue;
     }
-    out += template_model::template_argument_text(
-        arguments[i],
-        [&ctx](const TypePtr & type)
-        {
-          return ctx.instantiation_identity_text_for_type_argument(type);
-        });
+    out += template_template_argument_identity_text(ctx, arguments[i]);
   }
   out += ">";
   return out;
@@ -9868,6 +9959,12 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     if(!function_base || function_base->kind != Type::TK_FUNCTION) {
       return;
     }
+    if(pattern_has_pack &&
+       !template_argument_semantics::type_depends_on_template_parameter(
+           ctx,
+           function_base->inner)) {
+      return;
+    }
 
     TypePtr parsed_result;
     const bool parsed_result_type =
@@ -10834,6 +10931,52 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                        *source_decl,
                                                        params[i].second);
   }
+  if(source_decl->specifiers &&
+     source_decl->declarator &&
+     effective_template_body(*source_decl) &&
+     decl_spec_contains_token(*source_decl->specifiers, KW_AUTO) &&
+     !cpp_decl::find_child(*source_decl->declarator,
+                          CppAstKind::trailing_return_type)) {
+    bool is_typedef = false;
+    TypePtr deduced_result;
+    if(!ctx.parse_function_definition_base(inst_scope,
+                                           *source_decl->specifiers,
+                                           *source_decl->declarator,
+                                           *effective_template_body(*source_decl),
+                                           source_decl->is_const_method,
+                                           source_decl->is_volatile_method,
+                                           is_typedef,
+                                           deduced_result,
+                                           false) ||
+       is_typedef ||
+       !deduced_result) {
+      throw_substitution_failure(
+          source_decl->is_lambda_call_operator_template ?
+              "failed generic lambda implicit return type deduction" :
+              "failed function template implicit return type deduction",
+          std::string(),
+          "template-instantiation");
+    }
+    TypePtr function_pattern = strip_top_level_cv(type);
+    std::vector<TypePtr> resolved_param_types;
+    resolved_param_types.reserve(params.size());
+    for(std::size_t i = 0; i < params.size(); ++i) {
+      resolved_param_types.push_back(params[i].second);
+    }
+    type = make_function(
+        deduced_result,
+        resolved_param_types,
+        function_pattern && function_pattern->kind == Type::TK_FUNCTION ?
+            function_pattern->variadic : false,
+        function_pattern && function_pattern->kind == Type::TK_FUNCTION ?
+            function_pattern->function_const : false,
+        function_pattern && function_pattern->kind == Type::TK_FUNCTION ?
+            function_pattern->function_volatile : false,
+        function_pattern && function_pattern->kind == Type::TK_FUNCTION ?
+            function_pattern->prototype_relaxed : false,
+        function_pattern && function_pattern->kind == Type::TK_FUNCTION ?
+            function_pattern->function_ref_qualifier : FTRQ_NONE);
+  }
   const bool dependent_template_arguments =
       template_arguments_are_dependent_for_instantiation(ctx, arguments);
   const bool concrete_instantiation_owner =
@@ -10920,6 +11063,32 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           source_decl->result_type_pattern.kind != CppAstKind::invalid &&
           ast_mentions_template_parameter_name(source_decl->result_type_pattern,
                                                source_decl->parameters);
+      const bool source_result_has_template_parameter_pack =
+          any_of(source_decl->parameters.begin(),
+                 source_decl->parameters.end(),
+                 [](const TemplateParameterInfo & parameter)
+                 {
+                   return parameter.parameter_pack;
+                 });
+      const bool can_rebind_result_pattern_after_recovery_failure =
+          source_result_mentions_template_parameter &&
+          source_result_has_template_parameter_pack;
+      const auto recover_result_without_preempting_pattern_rebind =
+          [&](Scope & recovery_scope, TypePtr & recovered) -> bool
+          {
+            try {
+              return recover_instantiation_bound_type(ctx,
+                                                      recovery_scope,
+                                                      result_type,
+                                                      recovered);
+            } catch(const std::logic_error &) {
+              if(!can_rebind_result_pattern_after_recovery_failure) {
+                throw;
+              }
+              recovered.reset();
+              return false;
+            }
+          };
       if(source_result_type_was_dependent ||
          source_result_mentions_template_parameter) {
         TypePtr substituted;
@@ -10990,18 +11159,16 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           if(configure_member_trailing_return_scope(result_scope,
                                                     synthetic_function)) {
             recovered_result =
-                recover_instantiation_bound_type(ctx,
-                                                 result_scope,
-                                                 result_type,
-                                                 recovered_substituted_result);
+                recover_result_without_preempting_pattern_rebind(
+                    result_scope,
+                    recovered_substituted_result);
           }
         }
         if(!recovered_result) {
           recovered_result =
-              recover_instantiation_bound_type(ctx,
-                                               inst_scope,
-                                               result_type,
-                                               recovered_substituted_result);
+              recover_result_without_preempting_pattern_rebind(
+                  inst_scope,
+                  recovered_substituted_result);
         }
         if(recovered_result &&
            recovered_substituted_result) {
@@ -11016,10 +11183,9 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
          instantiation_owner &&
          instantiation_owner->member_scope) {
         TypePtr owner_scope_result;
-        if(recover_instantiation_bound_type(ctx,
-                                            *instantiation_owner->member_scope,
-                                            result_type,
-                                            owner_scope_result) &&
+        if(recover_result_without_preempting_pattern_rebind(
+               *instantiation_owner->member_scope,
+               owner_scope_result) &&
            owner_scope_result) {
           result_type = owner_scope_result;
           result_type_still_dependent =
@@ -11031,10 +11197,20 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       if(result_type_still_dependent &&
          instantiation_owner) {
         TypePtr owner_member_result;
-        if(recover_instantiation_owner_member_type(ctx,
-                                                   instantiation_owner,
-                                                   result_type,
-                                                   owner_member_result) &&
+        bool recovered_owner_member = false;
+        try {
+          recovered_owner_member =
+              recover_instantiation_owner_member_type(ctx,
+                                                      instantiation_owner,
+                                                      result_type,
+                                                      owner_member_result);
+        } catch(const std::logic_error &) {
+          if(!can_rebind_result_pattern_after_recovery_failure) {
+            throw;
+          }
+          owner_member_result.reset();
+        }
+        if(recovered_owner_member &&
            owner_member_result) {
           result_type = owner_member_result;
           result_type_still_dependent =
@@ -11172,13 +11348,15 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                   CppAstNode parse_pattern = source_decl->result_type_pattern;
                   clear_cached_semantic_types(parse_pattern);
                   CppAstNode substituted_pattern;
-                  if(template_argument_semantics::substitute_type_id_node_for_template_arguments(
+                  const bool substituted_result_pattern =
+                      template_argument_semantics::substitute_type_id_node_for_template_arguments(
                          services,
                          *parse_scope,
                          parse_pattern,
                          source_decl->parameters,
                          arguments,
-                         substituted_pattern)) {
+                         substituted_pattern);
+                  if(substituted_result_pattern) {
                     parse_pattern = substituted_pattern;
                   }
                   if(owner_result_parameters && owner_result_arguments) {
@@ -11532,7 +11710,6 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     ctx.upgrade_function_symbol_linkage(binding, binding->symbol.linkage);
   }
   binding->declaration_scope = &inst_scope;
-  refresh_pack_dependent_result_type(*source_decl, inst_scope, *binding, false);
   binding->is_explicit_specialization =
       binding->is_explicit_specialization || explicit_specialization;
   if(explicit_specialization) {

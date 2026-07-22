@@ -1,0 +1,43 @@
+function @operator_(%left : i32, %right : i32) -> i32 [binding=weak, object=_ZorN7options5flagsES0_] {
+  slot $left : i32
+  slot $right : i32
+
+  block ^entry:
+    store i32 %left, $left
+    store i32 %right, $right
+    %t1 = load i32 $left
+    %t2 = copy u32 %t1
+    %t3 = load i32 $right
+    %t4 = copy u32 %t3
+    %t5 = binary or u32 %t2, %t4
+    %t6 = copy i32 %t5
+    return i32 %t6
+}
+function @take(%value : i32) -> i32 [binding=strong, object=_Z4takeN7options5flagsE] {
+  slot $value : i32
+  slot $cond__1 : i32
+
+  block ^entry:
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = cmp eq i32 %t1, 3
+    branch %t2, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t3 = load i32 $cond__1
+    return i32 %t3
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @operator_(1, 2)
+    %t2 = call i32 @take(%t1)
+    return i32 %t2
+}

@@ -61,8 +61,7 @@ bool is_benign_driver_flag(const string & arg)
       arg == "-pedantic-errors" ||
       starts_with(arg, "-W") ||
       starts_with(arg, "-f") ||
-      starts_with(arg, "-m") ||
-      starts_with(arg, "-std=");
+      starts_with(arg, "-m");
 }
 
 logic_error missing_option_argument(const string & option,
@@ -296,7 +295,15 @@ bool consume_toolchain_flag(CppToolInvocation & invocation,
     if(i + 1 >= args.size()) {
       throw missing_option_argument("-std", "language standard");
     }
-    ++i;
+    invocation.preprocess_options.language_standard = args[++i];
+    return true;
+  }
+  if(starts_with(args[i], "-std=")) {
+    const string standard = args[i].substr(string("-std=").size());
+    if(standard.empty()) {
+      throw missing_option_argument("-std", "language standard");
+    }
+    invocation.preprocess_options.language_standard = standard;
     return true;
   }
   if(args[i] == "-stdlib") {

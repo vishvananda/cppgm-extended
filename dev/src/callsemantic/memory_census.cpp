@@ -2165,6 +2165,14 @@ void dump_memory_census(ostream & out, const MemoryCensusInput & input)
   census.dump(out);
 }
 
+void dump_source_ast_memory_census(ostream & out,
+                                   const CppAstNode & source_ast)
+{
+  MemoryCensus census;
+  census_cpp_ast_node(source_ast, "cppast.source", census);
+  census.dump(out);
+}
+
 void dump_callsem_duplicate_hash_census(ostream & out, const MemoryCensusInput & input)
 {
   CallSemDuplicateHashCensus census;

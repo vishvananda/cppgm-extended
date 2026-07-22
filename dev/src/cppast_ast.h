@@ -399,6 +399,14 @@ struct CppAstNameLookupSnapshot
   std::vector<bool> namespace_inline_stack;
 };
 
+struct CppAstRareStrings
+{
+  std::string gnu_ext_vector_type_argument_identifier;
+  std::string gnu_section_segment;
+  std::string gnu_section_name;
+  std::string asm_label;
+};
+
 struct CppAstNode
 {
   CppAstKind kind = CppAstKind::invalid;
@@ -413,6 +421,7 @@ struct CppAstNode
   CppAstLazyVector<CppAstNode> qualifier_type_syntaxes;
   bool has_leading_typename = false;
   bool allows_implicit_typename = false;
+  bool semantic_type_is_resolved_qualifier = false;
   bool has_exception_type_id_syntaxes = false;
   CppAstLazyVector<CppAstNode> exception_type_id_syntaxes;
   bool linkage_has_braces = false;
@@ -420,9 +429,7 @@ struct CppAstNode
   bool has_using_if_exists = false;
   bool has_exclude_from_explicit_instantiation = false;
   bool has_weak_attribute = false;
-  std::string gnu_section_segment;
-  std::string gnu_section_name;
-  std::string asm_label;
+  std::shared_ptr<CppAstRareStrings> rare_strings;
   CppAstLazyVector<std::string> abi_tags;
   CppAstLazyVector<std::string> alignment_specifiers;
   CppAstLazyVector<CppAstNode> alignment_specifier_nodes;
@@ -439,6 +446,73 @@ struct CppAstNode
   std::shared_ptr<const CppAstNameLookupSnapshot> name_lookup_snapshot;
   std::vector<CppAstNode> children;
 };
+
+inline const std::string & cppast_empty_rare_string()
+{
+  static const std::string value;
+  return value;
+}
+
+inline CppAstRareStrings & mutable_cppast_rare_strings(CppAstNode & node)
+{
+  if(!node.rare_strings) {
+    node.rare_strings.reset(new CppAstRareStrings());
+  } else if(!node.rare_strings.unique()) {
+    node.rare_strings.reset(new CppAstRareStrings(*node.rare_strings));
+  }
+  return *node.rare_strings;
+}
+
+inline const std::string & cppast_gnu_ext_vector_type_argument_identifier(
+    const CppAstNode & node)
+{
+  return node.rare_strings ?
+      node.rare_strings->gnu_ext_vector_type_argument_identifier :
+      cppast_empty_rare_string();
+}
+
+inline std::string & mutable_cppast_gnu_ext_vector_type_argument_identifier(
+    CppAstNode & node)
+{
+  return mutable_cppast_rare_strings(node)
+      .gnu_ext_vector_type_argument_identifier;
+}
+
+inline const std::string & cppast_gnu_section_segment(const CppAstNode & node)
+{
+  return node.rare_strings ?
+      node.rare_strings->gnu_section_segment :
+      cppast_empty_rare_string();
+}
+
+inline std::string & mutable_cppast_gnu_section_segment(CppAstNode & node)
+{
+  return mutable_cppast_rare_strings(node).gnu_section_segment;
+}
+
+inline const std::string & cppast_gnu_section_name(const CppAstNode & node)
+{
+  return node.rare_strings ?
+      node.rare_strings->gnu_section_name :
+      cppast_empty_rare_string();
+}
+
+inline std::string & mutable_cppast_gnu_section_name(CppAstNode & node)
+{
+  return mutable_cppast_rare_strings(node).gnu_section_name;
+}
+
+inline const std::string & cppast_asm_label(const CppAstNode & node)
+{
+  return node.rare_strings ?
+      node.rare_strings->asm_label :
+      cppast_empty_rare_string();
+}
+
+inline std::string & mutable_cppast_asm_label(CppAstNode & node)
+{
+  return mutable_cppast_rare_strings(node).asm_label;
+}
 
 inline bool node_has_simple_type(const CppAstNode & node, ETokenType type)
 {
