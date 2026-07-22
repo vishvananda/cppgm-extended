@@ -13340,13 +13340,30 @@ private:
           }
         }
       }
-      const bool primary_owner =
-          !owner.source_template->class_node ||
-          !owner.template_output_node ||
-          owner.template_output_node == owner.source_template->class_node;
-      for(size_t i = 0; i < owner.source_template->parameters.size(); ++i) {
+      const vector<TemplateParameterInfo> * owner_parameters =
+          &owner.source_template->parameters;
+      const vector<TemplateArgument> * owner_arguments =
+          &owner.instantiation_arguments;
+      if(owner.has_instantiation_binding_arguments) {
+        owner_arguments = &owner.instantiation_binding_arguments;
+        if(owner.template_output_node &&
+           owner.source_template->class_node &&
+           owner.template_output_node != owner.source_template->class_node) {
+          for(size_t i = 0;
+              i < owner.source_template->partial_specializations.size();
+              ++i) {
+            const PartialClassTemplateSpecializationDecl & partial =
+                owner.source_template->partial_specializations[i];
+            if(partial.class_node == owner.template_output_node) {
+              owner_parameters = &partial.parameters;
+              break;
+            }
+          }
+        }
+      }
+      for(size_t i = 0; i < owner_parameters->size(); ++i) {
         const TemplateParameterInfo & parameter =
-            owner.source_template->parameters[i];
+            (*owner_parameters)[i];
         if(alias_parameter_names.count(parameter.name) != 0 &&
            scope_has_template_bound_name(*inst_scope, parameter.name)) {
           return;
@@ -13359,9 +13376,9 @@ private:
           }
         }
       }
-      for(size_t i = 0; i < owner.source_template->parameters.size(); ++i) {
+      for(size_t i = 0; i < owner_parameters->size(); ++i) {
         const TemplateParameterInfo & parameter =
-            owner.source_template->parameters[i];
+            (*owner_parameters)[i];
         template_scope::erase_template_parameter_binding(*inst_scope,
                                                          parameter.name);
         for(size_t j = 0; j < parameter.alternate_names.size(); ++j) {
@@ -13370,10 +13387,10 @@ private:
               parameter.alternate_names[j]);
         }
       }
-      if(primary_owner) {
+      if(!owner_arguments->empty()) {
         bind_template_arguments_into_scope(*inst_scope,
-                                           owner.source_template->parameters,
-                                           owner.instantiation_arguments);
+                                           *owner_parameters,
+                                           *owner_arguments);
       }
     };
     bind_enclosing_class_template_arguments();

@@ -24581,6 +24581,7 @@ bool substitute_direct_template_template_names_in_ast(
     TemplateTemplateReplacementMap::const_iterator replacement =
         template_replacements.find(qualified->name);
     if(replacement != template_replacements.end() &&
+       !replacement->second.preserve_bound_head &&
        !replacement->second.name.name.empty()) {
       set_cppast_qualified_name_syntax(node, replacement->second.name);
       node.value = replacement->second.text;
@@ -24593,6 +24594,7 @@ bool substitute_direct_template_template_names_in_ast(
     TemplateTemplateReplacementMap::const_iterator replacement =
         template_replacements.find(node.value);
     if(replacement != template_replacements.end() &&
+       !replacement->second.preserve_bound_head &&
        !replacement->second.name.name.empty()) {
       set_cppast_qualified_name_syntax(node, replacement->second.name);
       node.value = replacement->second.text;
