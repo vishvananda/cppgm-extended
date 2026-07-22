@@ -4084,6 +4084,14 @@ ResolveTemplateArgumentsCacheEntry make_resolve_template_arguments_cache_entry(
   return entry;
 }
 
+void append_declaring_scope_template_bound_names(const Scope * scope,
+                                                 std::set<std::string> & names);
+
+void overlay_default_argument_use_scope_bindings(
+    Scope & target,
+    const Scope & use_scope,
+    const Scope * declaring_scope);
+
 void reattach_template_argument_source_syntaxes_from_inputs(
     const template_argument_semantics::ExpandedTemplateArgumentInputs & inputs,
     std::vector<TemplateArgument> & arguments)
@@ -4119,10 +4127,10 @@ void rehydrate_cached_defaulted_non_type_argument_witness_dependencies(
      default_argument_declaring_scope.scope != &raw_scope) {
     default_argument_overlay.reset(
         new Scope(default_argument_declaring_scope.scope, "", false));
-    template_scope::overlay_ancestor_scope_bindings(*default_argument_overlay,
-                                                    raw_scope,
-                                                    default_argument_declaring_scope.scope,
-                                                    template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
+    overlay_default_argument_use_scope_bindings(
+        *default_argument_overlay,
+        raw_scope,
+        default_argument_declaring_scope.scope);
     default_argument_scope = default_argument_overlay.get();
   }
 
@@ -4237,10 +4245,10 @@ bool refresh_dependent_defaulted_non_type_template_arguments_impl(
      default_argument_declaring_scope.scope != &raw_scope) {
     default_argument_overlay.reset(
         new Scope(default_argument_declaring_scope.scope, "", false));
-    template_scope::overlay_ancestor_scope_bindings(*default_argument_overlay,
-                                                    raw_scope,
-                                                    default_argument_declaring_scope.scope,
-                                                    template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
+    overlay_default_argument_use_scope_bindings(
+        *default_argument_overlay,
+        raw_scope,
+        default_argument_declaring_scope.scope);
     default_argument_scope = default_argument_overlay.get();
   }
 
@@ -5014,6 +5022,29 @@ void append_declaring_scope_template_bound_names(const Scope * scope,
     names.insert(current->template_bound_template_names.begin(),
                  current->template_bound_template_names.end());
   }
+}
+
+void overlay_default_argument_use_scope_bindings(
+    Scope & target,
+    const Scope & use_scope,
+    const Scope * declaring_scope)
+{
+  std::set<std::string> excluded_names;
+  append_declaring_scope_template_bound_names(declaring_scope, excluded_names);
+  if(excluded_names.empty()) {
+    template_scope::overlay_ancestor_scope_bindings(
+        target,
+        use_scope,
+        declaring_scope,
+        template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
+    return;
+  }
+  template_scope::overlay_ancestor_scope_bindings_excluding_names(
+      target,
+      use_scope,
+      declaring_scope,
+      template_scope::OVERLAY_TEMPLATE_BOUND_ONLY,
+      excluded_names);
 }
 
 Scope * function_template_deduction_parent_scope(const FunctionTemplateDecl & decl)
@@ -11807,10 +11838,10 @@ bool complete_template_arguments_with_default_arguments(
      default_argument_declaring_scope.scope != &raw_scope) {
     default_argument_overlay.reset(
         new Scope(default_argument_declaring_scope.scope, "", false));
-    template_scope::overlay_ancestor_scope_bindings(*default_argument_overlay,
-                                                    raw_scope,
-                                                    default_argument_declaring_scope.scope,
-                                                    template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
+    overlay_default_argument_use_scope_bindings(
+        *default_argument_overlay,
+        raw_scope,
+        default_argument_declaring_scope.scope);
     default_argument_scope = default_argument_overlay.get();
   }
   template_api::TemplateEnvironmentHandle default_argument_env =
@@ -13193,10 +13224,10 @@ bool resolve_template_arguments(
      default_argument_declaring_scope.scope != &raw_scope) {
     default_argument_overlay.reset(
         new Scope(default_argument_declaring_scope.scope, "", false));
-    template_scope::overlay_ancestor_scope_bindings(*default_argument_overlay,
-                                                    raw_scope,
-                                                    default_argument_declaring_scope.scope,
-                                                    template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
+    overlay_default_argument_use_scope_bindings(
+        *default_argument_overlay,
+        raw_scope,
+        default_argument_declaring_scope.scope);
     default_argument_scope = default_argument_overlay.get();
   }
   std::size_t text_index = 0;
