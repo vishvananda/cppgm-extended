@@ -3250,12 +3250,53 @@ bool CppAstParser::can_start_named_decl_specifier_seq() const
   }
 
   const RecogToken & after = tokens.peek(end);
+  const auto has_parenthesized_member_pointer_declarator = [&]() -> bool
+  {
+    if(!after.is_simple(OP_LPAREN)) {
+      return false;
+    }
+
+    std::size_t cursor = end + 1;
+    if(tokens.peek(cursor).is_simple(OP_COLON2)) {
+      ++cursor;
+    }
+    const template_angle_lookup::ScopedNameLookup lookup =
+        make_template_angle_lookup(true);
+    std::vector<std::pair<std::size_t, std::size_t> > arg_ranges;
+    while(true) {
+      if(tokens.peek(cursor).is_simple(KW_TEMPLATE)) {
+        ++cursor;
+      }
+      if(!tokens.peek(cursor).is_identifier()) {
+        return false;
+      }
+      ++cursor;
+      if(tokens.peek(cursor).is_simple(OP_LT)) {
+        arg_ranges.clear();
+        if(!template_angle::parse_template_id_suffix_ranges(tokens,
+                                                            cursor,
+                                                            lookup,
+                                                            cursor,
+                                                            arg_ranges)) {
+          return false;
+        }
+      }
+      if(!tokens.peek(cursor).is_simple(OP_COLON2)) {
+        return false;
+      }
+      ++cursor;
+      if(tokens.peek(cursor).is_simple(OP_STAR)) {
+        return tokens.peek(cursor + 1).is_identifier();
+      }
+    }
+  };
   const bool result = after.is_identifier() ||
       is_cv_qualifier(after) ||
       is_decl_specifier_keyword(after) ||
       after.is_simple(OP_STAR) ||
       after.is_simple(OP_AMP) ||
-      after.is_simple(OP_LAND);
+      after.is_simple(OP_LAND) ||
+      has_parenthesized_member_pointer_declarator();
   named_decl_specifier_seq_cache[cache_key] = result;
   return result;
 }

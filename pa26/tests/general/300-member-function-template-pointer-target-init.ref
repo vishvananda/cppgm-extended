@@ -1,0 +1,20 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $setter : i128
+
+  block ^entry:
+    %t1 = addr @member_template_pointer_target__C__set
+    %t2 = copy i64 %t1
+    %t3 = convert zext i128 i64 %t2
+    store i128 %t3, $setter
+    %t4 = load i128 $setter
+    return i32 0
+}
+function @member_template_pointer_target__C__set(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN30member_template_pointer_target1C3setIiEEvT_] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %__param1, $__param1
+    return void
+}

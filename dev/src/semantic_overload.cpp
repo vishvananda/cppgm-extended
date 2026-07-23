@@ -9351,10 +9351,12 @@ ExprInfo make_member_pointer_function_id_expr(SemanticContext & ctx,
   return out;
 }
 
-bool collect_overloaded_member_pointer_argument_options(SemanticContext & ctx,
-                                                        Scope & scope,
-                                                        const CppAstNode & unary_node,
-                                                        vector<ExprInfo> & out)
+bool collect_overloaded_member_pointer_argument_options(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & unary_node,
+    vector<ExprInfo> & out,
+    const TypePtr & target_member_pointer = TypePtr())
 {
   if(!node_has_simple_type(unary_node, OP_AMP) ||
      unary_node.children.size() != 1) {
@@ -9380,6 +9382,88 @@ bool collect_overloaded_member_pointer_argument_options(SemanticContext & ctx,
               operand_node,
               operand_node.value,
               semantic_policy::without_body_instantiation());
+
+  if(target_member_pointer) {
+    TypePtr function_target = strip_top_level_cv(target_member_pointer->inner);
+    vector<FunctionTemplateDecl *> templates;
+    try
+    {
+      templates = ctx.lookup_function_templates_node(scope,
+                                                     operand_node,
+                                                     template_id &&
+                                                             !template_id->name.name.empty() ?
+                                                         template_id->name.name :
+                                                         operand_node.value);
+    }
+    catch(const TemplateSubstitutionFailure &)
+    {
+      templates.clear();
+    }
+    for(size_t i = 0; i < templates.size(); ++i) {
+      vector<TemplateArgument> explicit_arguments;
+      const vector<TemplateArgument> * explicit_arguments_ptr = nullptr;
+      if(template_id) {
+        try
+        {
+          if(!semantic_template_function::resolve_call_explicit_function_template_arguments(
+                 ctx,
+                 *templates[i],
+                 scope,
+                 template_id->arguments,
+                 explicit_arguments,
+                 &template_id->argument_syntaxes)) {
+            continue;
+          }
+        }
+        catch(const TemplateSubstitutionFailure &)
+        {
+          continue;
+        }
+        explicit_arguments_ptr = &explicit_arguments;
+      }
+
+      semantic_template_function::FunctionTemplateDeduction result;
+      bool deduced =
+          semantic_template_function::deduce_function_template_from_target_type(
+              ctx,
+              *templates[i],
+              function_target,
+              &scope,
+              result,
+              &scope,
+              explicit_arguments_ptr);
+      if(!deduced && !explicit_arguments_ptr) {
+        deduced = deduce_function_template_from_target_parameter_types(ctx,
+                                                                      *templates[i],
+                                                                      scope,
+                                                                      function_target,
+                                                                      result);
+      }
+      if(!deduced) {
+        continue;
+      }
+
+      FunctionBinding * binding = nullptr;
+      try
+      {
+        binding = semantic_template_function::acquire_function_template_binding(
+            ctx,
+            *templates[i],
+            result.arguments,
+            &scope,
+            &result.pack_sizes,
+            false);
+      }
+      catch(const TemplateSubstitutionFailure &)
+      {
+        continue;
+      }
+      if(binding &&
+         find(functions.begin(), functions.end(), binding) == functions.end()) {
+        functions.push_back(binding);
+      }
+    }
+  }
   if(functions.empty()) {
     return false;
   }
@@ -9419,7 +9503,8 @@ bool resolve_member_function_id_for_target(SemanticContext & ctx,
   if(!collect_overloaded_member_pointer_argument_options(ctx,
                                                          scope,
                                                          unary_node,
-                                                         options)) {
+                                                         options,
+                                                         target_member_pointer)) {
     return false;
   }
 

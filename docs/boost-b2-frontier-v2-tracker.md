@@ -15,7 +15,7 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `70 / 147`
 - current cursor: `#71 libs/msm/test`
-- active compiler frontier: exact MSM C++03 suite intake pending
+- active compiler frontier: MSM qualified template-template identity collision in `AnonymousAndGuard`
 
 ## Baseline Gates
 
@@ -212,6 +212,7 @@ differences other than the output path.
 | `(MP11 tuple-transform nested expansion and default deduction)` | Expand only packs owned by the current expansion layer, preserve nested pack-expansion AST until its own layer, and apply default non-type function-template arguments only after deduction | -11.12% | -10.49% | -11.41% | versus the preceding set checkpoint, instructions improve by 13,315,349 while RSS moves +1.49 MiB and footprint +0.37 MiB; all three cumulative signals remain substantially improved | `/tmp/cppgm-boost-frontier-v2-mp11-tuple-transform-perf.json` | pass; candidate medians are 234,244,021,260 instructions, 1,157,058,560 B RSS, and 894,676,992 B footprint. The three-run candidate-only gate verified frozen source epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent compiler or live project header was measured. |
 | `(MP11 default member-alias declaration-scope binding)` | Protect declaration-owned template parameter names while overlaying the use scope for defaulted member-alias arguments | -10.91% | -10.47% | -11.42% | versus the tuple-transform checkpoint, instructions move +557,308,654, RSS +249,856 B, and footprint -90,112 B; the small movement retains the substantial cumulative wins | `/tmp/cppgm-boost-frontier-v2-mp11-partial-sum-perf.json` | pass; candidate medians are 234,801,329,914 instructions, 1,157,308,416 B RSS, and 894,586,880 B footprint. The three-run candidate-only gate verified frozen source epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent compiler or live project header was measured, and all runs recorded zero swaps. |
 | `(MPL literal and array-pointer NTTP closure)` | Full-compiler ordinary multicharacter constant evaluation plus qualified static-array decay and retained-symbol lowering for pointer non-type template arguments | -11.16% | -10.72% | -11.37% | versus the final MP11 checkpoint, instructions improve by 663,791,277 and RSS by 3,244,032 B while footprint moves only +479,232 B; the instruction win and recovered RSS are both retained | `/tmp/cppgm-boost-frontier-v2-mpl-candidate.json` | pass; candidate medians are 234,137,538,637 instructions, 1,154,064,384 B RSS, and 895,066,112 B footprint. The candidate-only gate verified frozen source epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent compiler or live project header was measured; all three fresh processes released before the next and recorded zero swaps. |
+| `(MSM initial semantic closure)` | Inherited and dependent member-template lookup, deleting-destructor deallocation overload analysis, qualified-result parenthesized member-pointer declarations, and target-aware member-function-template address resolution | -11.08% | -10.42% | -11.38% | versus the MPL checkpoint, instructions move +208,710,543 while RSS moves +3,911,680 B and footprint improves by 98,304 B; all cumulative signals remain substantially improved | `/tmp/cppgm-msm-initial-closure-perf.json` | pass; three candidate-only runs have medians of 234,346,249,180 instructions, 1,157,976,064 B RSS, and 894,967,808 B footprint. The gate used immutable frozen source epoch `9764b3835` and its checked-in 51-header closure; no parent compiler or live project header was measured. An initially broad parser predicate was rejected after it misclassified libc++'s `std::__destroy_at(...)` expression and failed the workload; the accepted structural scan requires an actual parenthesized member-pointer declarator. |
 
 ## Suite Cursor
 
@@ -544,6 +545,35 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Dependent-type resolution cache input lifetime | The nested dependent-type cache keyed entries by a raw `Type *` while retaining only the resolved output. Recursive resolution could release an ephemeral input and allocate an unrelated type at the same address before the outermost query cleared the cache, producing a stale hit such as `const wrap_iter<size_t*>& -> int`. Each key now owns its input `TypePtr` for the cache entry's bounded lifetime; lookup ordering remains pointer-based and the cache is still cleared after the outermost query. | `pa22/tests/general/300-dependent-type-resolution-cache-input-lifetime.t`, reduced to 21 lines / 851 bytes of header-free C++11 with a local three-line `enable` stand-in | The saved pre-fix compiler fails 43 of 256 concurrent compilations of the reduced declaration graph. Trace evidence showed the same address first stored for a resolved `enable_t<..., int>` input and then reused by an unrelated `const W&` input. The hosted `<algorithm>` form reproduced 9 of 16 times; disabling the cache passed 16 of 16. | Clang 22 and GCC 15 accept the reducer warning-clean. The focused PA22 check, cache-on/off byte parity, and 48 concurrent fixed-compiler repetitions pass with zero swaps and at most 10,137,600 B RSS per process. The frozen self-compile gate completes three fresh compiler processes, each releases fully between runs, and records zero process swaps. | included in the same final three-run result: -11.08% instructions, -10.45% RSS, and -11.43% footprint; the cache ownership fix retains both the instruction win and recovered memory | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-22`: Advanced the initial MSM intake through four independent C++11
+  semantic fronts without adding a cache. Context-aware lookup now finds an
+  inherited enclosing member template and retains a dependent qualified member
+  template-template argument; deleting-destructor overload analysis supplies
+  its already known `void *` argument type instead of bringing the complete
+  destroyed class into ADL; the parser recognizes a qualified return followed
+  by an actual parenthesized member-pointer declarator; and target-aware
+  member-pointer initialization now deduces member-function-template
+  specializations. Minimal header-free owners live at PA10, PA21, and PA26. The
+  first parser predicate was too broad and broke the frozen self-compile at
+  libc++'s `std::__destroy_at(...)`; it was replaced with a structural scan for
+  the `qualified-owner::*identifier` declarator itself. A proposed non-type
+  template-argument terminal-failure change was also discarded after it broke
+  the existing PA23 dependent-bool strict case. Focused owners and all
+  configured PA18/PA19/PA21/PA23 strict comparisons pass. The PA9-excluded
+  broad run passes every test except the intentionally red next-frontier PA22
+  reducer and one pre-existing nondeterministic PA33 RTTI-mangling SIGSEGV. The
+  PA33 test passes fresh and in a complete replay; repeated invocations
+  reproduce the same dangling-scope crash with both the current compiler and
+  the saved pre-fix debug compiler, so it is not attributed to this patch set.
+  The three-run frozen candidate gate records -11.08% instructions, -10.42%
+  RSS, and -11.38% footprint. A bounded exact MSM replay reaches the next
+  distinct cause: MPL's `end` and Fusion's `end` template-template arguments
+  collapse to the same leaf-only specialization/reference key. The wrong MPL
+  helper is reused for Fusion, producing 3,494 invalid end-iterator resets
+  among 3,771 resolutions. This is an entity-identity collision, not evidence
+  for a failure cache; no cache change has been made. The suite remains open at
+  a collision-driven qualified identity fix.
 
 - `2026-07-22`: Classified suite `#70 libs/mqtt5/test` as
   `skipped-language`. Boost 1.91 declares C++17 in

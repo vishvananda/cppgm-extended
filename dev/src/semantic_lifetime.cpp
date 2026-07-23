@@ -5129,8 +5129,24 @@ void append_destructor_generated_statements(SemanticContext & ctx,
     }
     call.children.push_back(arguments);
 
+    ExprInfo deallocation_address = this_expr;
+    deallocation_address.type = make_pointer(make_fundamental(FT_VOID));
+    deallocation_address.category = VC_PRVALUE;
+    deallocation_address.null_pointer_constant = false;
+    ctx.set_expr_info_metadata(deallocation_address,
+                               deallocation_address.type,
+                               deallocation_address.category);
+    semantic_overload::CallAnalysisHints call_hints;
+    call_hints.args.push_back(&deallocation_address);
     DumpNode stmt = make_dump_node(CallSemKind::expression_statement);
-    ExprInfo delete_call = ctx.analyze_call_expression(scope, call);
+    ExprInfo delete_call = ctx.analyze_call_expression(
+        scope,
+        call,
+        semantic_overload::CallAnalysisOptions(true, &call_hints));
+    if(delete_call.node.children.size() != arguments.children.size() + 1) {
+      throw logic_error("deleting destructor deallocation call shape");
+    }
+    delete_call.node.children[1] = std::move(this_expr.node);
     stmt.children.push_back(std::move(delete_call.node));
     function_node.children.push_back(std::move(stmt));
   }

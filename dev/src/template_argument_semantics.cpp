@@ -26714,7 +26714,7 @@ DeclT * lookup_direct_or_inline_namespace_template(Scope & scope,
   return nullptr;
 }
 
-ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices &,
+ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices & services,
                                                Scope & scope,
                                                const string & name)
 {
@@ -26722,6 +26722,11 @@ ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices &,
     return nullptr;
   }
 
+  if(services.semantic_context) {
+    return semantic_lookup::lookup_class_template(*services.semantic_context,
+                                                  scope,
+                                                  name);
+  }
   return semantic_lookup::lookup_unqualified_class_template(scope, name);
 }
 
@@ -26730,6 +26735,11 @@ ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices & 
                                                const QualifiedName & name)
 {
   if(!name.rooted && name.qualifiers.empty()) {
+    if(services.semantic_context) {
+      return semantic_lookup::lookup_class_template(*services.semantic_context,
+                                                    scope,
+                                                    name);
+    }
     return semantic_lookup::lookup_unqualified_class_template(scope, name.name);
   }
   QualifiedName owner = name;
@@ -32163,6 +32173,7 @@ bool resolve_member_template_template_argument_syntax(
     const string & text,
     const TemplateArgumentSyntax & syntax,
     size_t expected_parameter_count,
+    bool allow_dependent_placeholders,
     TemplateArgument & out)
 {
   if(!scope.valid() || !services.semantic_context || !syntax.expression) {
@@ -32250,6 +32261,26 @@ bool resolve_member_template_template_argument_syntax(
     resolve_instantiated_dependent_type_if_needed(services, scope, qualifier_type);
     if(!qualifier_type ||
        service_type_depends_on_template_parameter(services, qualifier_type)) {
+      if(allow_dependent_placeholders &&
+         qualifier_type &&
+         service_type_depends_on_template_parameter(services, qualifier_type)) {
+        out.kind = TemplateArgument::TA_CLASS_TEMPLATE;
+        out.template_owner_type = qualifier_type;
+        out.text = normalize_template_template_argument_lookup_text(text);
+        out.source_syntax.reset(new TemplateArgumentSyntax(syntax));
+        out.dependent = true;
+        set_template_argument_entity_identity(out, string(), member_name);
+        QualifiedName member_syntax = *qualified;
+        member_syntax.name = member_name;
+        set_template_argument_entity_name_syntax(out, member_syntax);
+        note_template_trace_if_enabled(
+            [&](ostringstream & trace)
+            {
+              trace << "template-template-arg text=" << trim_space(text)
+                    << " resolved=dependent-member-template-syntax";
+            });
+        return true;
+      }
       return false;
     }
 
@@ -32359,6 +32390,7 @@ bool resolve_template_template_argument_syntax(
                                                       trimmed,
                                                       syntax,
                                                       expected_parameter_count,
+                                                      allow_dependent_placeholders,
                                                       out)) {
     return true;
   }
