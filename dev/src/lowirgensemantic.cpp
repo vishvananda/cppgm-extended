@@ -4430,7 +4430,9 @@ private:
         out_layout = layout_it->second;
         return true;
       }
-      return false;
+      if(!call.children[0].is_virtual_dispatch) {
+        return false;
+      }
     }
 
     return infer_function_type_reference_parameter_virtual_base_layout(

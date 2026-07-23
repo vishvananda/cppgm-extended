@@ -5267,6 +5267,14 @@ private:
        mangle_info->arguments.empty()) {
       return false;
     }
+    auto exact_class = classes_by_key.find(type->named_key);
+    if(exact_class != classes_by_key.end() &&
+       exact_class->second &&
+       !exact_class->second->instantiation_key.empty()) {
+      out = collapse_reparseable_scope_operators(
+          strip_elaborated_type_prefix(type->named_key));
+      return !out.empty();
+    }
     for(size_t i = 0; i < mangle_info->arguments.size(); ++i) {
       if(!template_argument_has_concrete_instantiation_identity(
              mangle_info->arguments[i],

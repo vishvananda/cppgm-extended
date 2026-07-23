@@ -150,6 +150,10 @@ void reset_instantiated_class_info(semantic_model::ClassInfo & info,
 void invalidate_forward_class_reference_members(
     SemanticContext & ctx,
     semantic_model::ClassInfo & info);
+bool collect_indirect_parameter_virtual_base_layout(
+    SemanticContext & ctx,
+    const cpp_decl::TypePtr & type,
+    std::vector<std::pair<std::string, unsigned long long> > & out);
 
 void finalize_class_virtuals(SemanticContext & ctx,
                              semantic_model::ClassInfo & info);

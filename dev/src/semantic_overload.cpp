@@ -6282,6 +6282,40 @@ ExprInfo make_call_result(SemanticContext & ctx,
                           CallSemNode callee,
                           vector<ExprInfo> call_args)
 {
+  if(callee.is_virtual_dispatch) {
+    TypePtr function_type = strip_top_level_cv(callee.semantic_type);
+    if(function_type && function_type->kind == Type::TK_POINTER) {
+      function_type = strip_top_level_cv(function_type->inner);
+    }
+    if(function_type && function_type->kind == Type::TK_FUNCTION) {
+      const size_t parameter_count =
+          std::min(function_type->params.size(), call_args.size());
+      for(size_t i = 0; i < parameter_count; ++i) {
+        CallSemVirtualBaseLayout parameter_layout;
+        if(!semantic_class_model::collect_indirect_parameter_virtual_base_layout(
+               ctx,
+               function_type->params[i],
+               parameter_layout)) {
+          continue;
+        }
+        CallSemVirtualBaseLayout & argument_layout =
+            mutable_callsem_virtual_base_layout(call_args[i].node);
+        for(size_t j = 0; j < parameter_layout.size(); ++j) {
+          bool found = false;
+          for(size_t k = 0; k < argument_layout.size(); ++k) {
+            if(argument_layout[k].first == parameter_layout[j].first) {
+              found = true;
+              break;
+            }
+          }
+          if(!found) {
+            argument_layout.push_back(parameter_layout[j]);
+          }
+        }
+      }
+    }
+  }
+
   ExprInfo result;
   TypePtr expression_type = expression_type_for_function_result(result_type);
   result.type = expression_type;

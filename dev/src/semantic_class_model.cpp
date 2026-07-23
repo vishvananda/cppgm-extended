@@ -6909,7 +6909,14 @@ void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode
   }
 }
 
-void parse_reference_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode & node)
+void collect_reference_base_graph(SemanticContext & ctx,
+                                  ClassInfo & info,
+                                  std::set<ClassInfo *> & visited);
+
+void parse_reference_base_clause(SemanticContext & ctx,
+                                 ClassInfo & info,
+                                 const CppAstNode & node,
+                                 std::set<ClassInfo *> * base_graph = nullptr)
 {
   const CppAstNode * clause = find_child(node, CppAstKind::base_clause);
   if(!clause) {
@@ -7032,7 +7039,11 @@ void parse_reference_base_clause(SemanticContext & ctx, ClassInfo & info, const 
       if(!base_class) {
         continue;
       }
-      ctx.ensure_class_reference_members(*base_class);
+      if(base_graph) {
+        collect_reference_base_graph(ctx, *base_class, *base_graph);
+      } else {
+        ctx.ensure_class_reference_members(*base_class);
+      }
       const bool source_dependent =
           callsemantic::template_argument_texts_mention_enclosing_source_template_parameters(
               *info.member_scope,
@@ -7042,6 +7053,29 @@ void parse_reference_base_clause(SemanticContext & ctx, ClassInfo & info, const 
                          access_node ? access_from_node(*access_node) : info.default_access,
                          is_virtual,
                          source_dependent);
+    }
+  }
+}
+
+void collect_reference_base_graph(SemanticContext & ctx,
+                                  ClassInfo & info,
+                                  std::set<ClassInfo *> & visited)
+{
+  if(!visited.insert(&info).second) {
+    return;
+  }
+  if(info.template_output_node &&
+     info.template_output_node->kind == CppAstKind::class_forward_declaration) {
+    template_api::refresh_forward_class_template_selection(ctx, info);
+  }
+  const CppAstNode * reference_node =
+      info.template_output_node ? info.template_output_node : info.class_node;
+  if(!info.complete && !info.reference_members_collected && reference_node) {
+    parse_reference_base_clause(ctx, info, *reference_node, &visited);
+  }
+  for(size_t i = 0; i < info.bases.size(); ++i) {
+    if(info.bases[i].type) {
+      collect_reference_base_graph(ctx, *info.bases[i].type, visited);
     }
   }
 }
@@ -10041,6 +10075,51 @@ void ensure_class_reference_members(SemanticContext & ctx,
     }
   } guard{info, reference_member_collection_depth};
   populate_class_reference_members(ctx, info, *reference_node);
+}
+
+bool collect_indirect_parameter_virtual_base_layout(
+    SemanticContext & ctx,
+    const TypePtr & type,
+    std::vector<std::pair<std::string, unsigned long long> > & out)
+{
+  out.clear();
+  TypePtr base = strip_top_level_cv(type);
+  const bool indirect = is_reference_type(base) ||
+                        (base && base->kind == Type::TK_POINTER);
+  base = strip_top_level_cv(remove_reference_type(base));
+  if(base && base->kind == Type::TK_POINTER) {
+    base = strip_top_level_cv(base->inner);
+  }
+  if(!indirect || !base) {
+    return false;
+  }
+
+  ClassInfo * info = ctx.class_info_for_type(base);
+  if(!info) {
+    return false;
+  }
+  if(info->complete) {
+    for(size_t i = 0; i < info->virtual_base_subobjects.size(); ++i) {
+      const SubobjectInfo & subobject = info->virtual_base_subobjects[i];
+      if(subobject.type) {
+        out.push_back(make_pair(subobject.type->qualified_name,
+                                static_cast<unsigned long long>(subobject.offset)));
+      }
+    }
+    return !out.empty();
+  }
+
+  std::set<ClassInfo *> visited;
+  collect_reference_base_graph(ctx, *info, visited);
+  std::vector<ClassInfo *> virtual_bases;
+  std::set<ClassInfo *> seen_virtual_bases;
+  collect_unique_virtual_bases(*info, virtual_bases, seen_virtual_bases);
+  for(size_t i = 0; i < virtual_bases.size(); ++i) {
+    if(virtual_bases[i]) {
+      out.push_back(make_pair(virtual_bases[i]->qualified_name, 0ULL));
+    }
+  }
+  return !out.empty();
 }
 
 bool resolve_deferred_class_alias(SemanticContext & ctx,

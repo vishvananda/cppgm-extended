@@ -592,8 +592,8 @@ public:
     }
     template_api::TemplateServices bundle = this->bundle();
     const std::string key =
-        template_instantiation::template_argument_key_for_instantiation(
-            ctx_, request.resolved_arguments);
+        template_instantiation::class_template_argument_key_for_instantiation(
+            ctx_, *request.class_template, request.resolved_arguments);
     const bool forward_only_class_template =
         !request.class_template->class_node ||
         request.class_template->class_node->kind == CppAstKind::class_forward_declaration;
