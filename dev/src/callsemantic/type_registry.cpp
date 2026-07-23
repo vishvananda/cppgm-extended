@@ -295,8 +295,9 @@ ClassInfo * create_class_info(TypeRegistryState & state,
     if(info->symbol_qualified_name_syntax.name.empty()) {
       info->symbol_qualified_name_syntax = symbol_qualified_name_syntax;
     }
-    if(info->display_qualified_name.empty()) {
-      info->display_qualified_name = source_qualified_name;
+    if(info->display_qualified_name.empty() &&
+       info->qualified_name != source_qualified_name) {
+      set_class_output_qualified_name(*info, source_qualified_name);
     }
     return info;
   }
@@ -305,7 +306,7 @@ ClassInfo * create_class_info(TypeRegistryState & state,
   info->name = name;
   info->qualified_name = qualified_name;
   info->symbol_qualified_name_syntax = symbol_qualified_name_syntax;
-  info->display_qualified_name = source_qualified_name;
+  set_class_output_qualified_name(*info, source_qualified_name);
   info->class_kind = class_kind;
   info->enclosing_scope = &durable_scope;
   info->class_node = class_node;
@@ -398,7 +399,7 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
   info->name = template_name;
   info->qualified_name = qualified_name;
   info->symbol_qualified_name_syntax = symbol_qualified_name_syntax;
-  info->display_qualified_name = display_qualified_name;
+  set_class_output_qualified_name(*info, display_qualified_name);
   info->class_kind = class_kind;
   info->enclosing_scope = &durable_scope;
   info->default_access =

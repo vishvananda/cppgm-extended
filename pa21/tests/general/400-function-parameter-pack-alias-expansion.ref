@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = convert zext i32 u8 %t6
     return i32 %t7
 }
-function @Box____f() -> i32 [binding=weak, object=_ZN3Box1fEv] {
+function @Box____f() -> i32 [binding=weak, object=_ZN3BoxIJEE1fEv] {
   block ^entry:
     %t1 = const i64 0
     %t2 = convert trunc i32 i64 %t1

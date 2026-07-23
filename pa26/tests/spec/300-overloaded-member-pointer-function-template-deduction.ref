@@ -45,7 +45,7 @@ function @boost__ref(%t : ptr [pass=reference]) -> obj<8x8> [binding=weak, objec
     call void @boost__reference_wrapper_Stream___reference_wrapper(%t1, %t2)
     return obj<8x8> $retobj__1
 }
-function @boost__bind(%f : i128, %object : ptr, %bound : obj<8x8>) -> i32 [binding=weak, object=_ZN5boost4bindIv6LoggerR6StreamPS1_NS_17reference_wrapperIS2_EEEEiMS1_FvS3_ET2_T3_] {
+function @boost__bind(%f : i128, %object : ptr, %bound : obj<8x8>) -> i32 [binding=weak, object=_ZN5boost4bindIv6LoggerR6StreamPS1_NS_17reference_wrapperIS2_EEEEiMT0_FT_T1_ET2_T3_] {
   slot $f : i128
   slot $object : ptr
   slot $bound : obj<8x8>

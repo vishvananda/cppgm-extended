@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @bind(%f : i128) -> i32 [binding=weak, object=_Z4bindIv6LoggerR6StreamEiMS0_FvS2_E] {
+function @bind(%f : i128) -> i32 [binding=weak, object=_Z4bindIv6LoggerR6StreamEiMT0_FT_T1_E] {
   slot $f : i128
 
   block ^entry:
@@ -30,7 +30,7 @@ function @bind(%f : i128) -> i32 [binding=weak, object=_Z4bindIv6LoggerR6StreamE
     %t2 = call i32 @mem_fn(%t1)
     return i32 %t2
 }
-function @mem_fn(%pmf : i128) -> i32 [binding=weak, object=_Z6mem_fnIv6LoggerJR6StreamEEiMS0_FvS2_E] {
+function @mem_fn(%pmf : i128) -> i32 [binding=weak, object=_Z6mem_fnIv6LoggerJR6StreamEEiMT0_FT_DpT1_E] {
   slot $pmf : i128
   slot $cond__1 : i32
 

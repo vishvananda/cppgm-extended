@@ -6996,8 +6996,8 @@ bool try_expand_alias_template_pattern_structurally(
     parameters = &owner->source_template->parameters;
     arguments = &owner->instantiation_arguments;
     if(owner->has_instantiation_binding_arguments &&
-       !owner->instantiation_binding_arguments.empty()) {
-      arguments = &owner->instantiation_binding_arguments;
+       !class_instantiation_binding_arguments(*owner).empty()) {
+      arguments = &class_instantiation_binding_arguments(*owner);
     }
     if(owner->template_output_node &&
        owner->source_template->class_node &&
@@ -7633,7 +7633,7 @@ bool try_expand_alias_template_pattern_structurally(
             &info.instantiation_arguments :
         class_info && !class_info->instantiation_arguments.empty() ?
                 &class_info->instantiation_arguments :
-        mangle_arguments_usable ? &mangle_info->arguments :
+        mangle_arguments_usable ? &mangle_info->arguments.const_values() :
             nullptr;
     const std::vector<std::string> * instantiation_arg_texts =
         dependent_source_template && !dependent_class_arg_texts.empty() ?

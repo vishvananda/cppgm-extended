@@ -77,15 +77,19 @@ const PartialClassTemplateSpecializationDecl * selected_partial_specialization(
 void record_class_template_binding_state(
     ClassInfo & info,
     const vector<TemplateArgument> & arguments,
-    const map<string, size_t> * pack_sizes)
+    const map<string, size_t> * pack_sizes,
+    bool reuse_primary_arguments)
 {
-  info.instantiation_binding_arguments = arguments;
+  if(reuse_primary_arguments) {
+    reuse_primary_class_instantiation_binding_arguments(info);
+  } else {
+    set_class_instantiation_binding_arguments(info, arguments);
+  }
   if(pack_sizes) {
     info.instantiation_binding_pack_sizes = *pack_sizes;
   } else {
     info.instantiation_binding_pack_sizes.clear();
   }
-  info.has_instantiation_binding_arguments = true;
 }
 
 void bind_declaring_owner_template_arguments_into_scope(SemanticContext & ctx,
@@ -106,7 +110,7 @@ void bind_declaring_owner_template_arguments_into_scope(SemanticContext & ctx,
       &declared_owner->instantiation_arguments;
   const map<string, size_t> * pack_sizes = nullptr;
   if(declared_owner->has_instantiation_binding_arguments) {
-    arguments = &declared_owner->instantiation_binding_arguments;
+    arguments = &class_instantiation_binding_arguments(*declared_owner);
     pack_sizes = &declared_owner->instantiation_binding_pack_sizes;
   }
   if(const PartialClassTemplateSpecializationDecl * partial =
@@ -3444,7 +3448,9 @@ public:
       }
       record_class_template_binding_state(*info,
                                           *bound_arguments,
-                                          bound_pack_sizes);
+                                          bound_pack_sizes,
+                                          specialization.kind ==
+                                              template_api::MS_PRIMARY);
       record_selected_class_template_base_source_uses(decl, specialization);
       note_class_use(info);
       return info;
@@ -3516,7 +3522,9 @@ public:
     }
     record_class_template_binding_state(*info,
                                         *bound_arguments,
-                                        bound_pack_sizes);
+                                        bound_pack_sizes,
+                                        specialization.kind ==
+                                            template_api::MS_PRIMARY);
     bind_declaring_owner_template_arguments_into_scope(ctx,
                                                        *info->member_scope,
                                                        binding_scope);

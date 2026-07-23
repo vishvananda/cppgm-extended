@@ -13380,7 +13380,7 @@ private:
       const vector<TemplateArgument> * owner_arguments =
           &owner.instantiation_arguments;
       if(owner.has_instantiation_binding_arguments) {
-        owner_arguments = &owner.instantiation_binding_arguments;
+        owner_arguments = &class_instantiation_binding_arguments(owner);
         if(owner.template_output_node &&
            owner.source_template->class_node &&
            owner.template_output_node != owner.source_template->class_node) {
@@ -23902,6 +23902,10 @@ private:
 	            current->enclosing_scope->class_info :
 	            nullptr) {
 	      ClassInfo * mutable_current = const_cast<ClassInfo *>(current);
+	      if(mutable_current->has_instantiation_binding_arguments) {
+	        detach_primary_class_instantiation_binding_arguments(
+	            *mutable_current);
+	      }
 	      rehydrate_template_argument_function_values(
 	          mutable_current->instantiation_arguments);
 	      if(mutable_current->has_instantiation_binding_arguments) {
@@ -23912,7 +23916,11 @@ private:
 	          named_type_class_template_specialization_mangle_info(
 	              mutable_current->type);
 	      if(specialization) {
-	        rehydrate_template_argument_function_values(specialization->arguments);
+	        if(!specialization->arguments.shares(
+	               mutable_current->instantiation_arguments_storage)) {
+	          rehydrate_template_argument_function_values(
+	              specialization->arguments.mutable_values());
+	        }
 	        rehydrate_template_argument_function_values(
 	            specialization->mangle_arguments);
 	      }

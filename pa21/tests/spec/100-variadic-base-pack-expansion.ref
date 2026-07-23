@@ -43,7 +43,7 @@ function @sum_bases_two___sum(%this : ptr) -> i32 [binding=weak, object=_ZNK9sum
     %t4 = binary add i32 2, %t3
     return i32 %t4
 }
-function @sum_bases____sum(%this : ptr) -> i32 [binding=weak, object=_ZNK9sum_bases3sumEv] {
+function @sum_bases____sum(%this : ptr) -> i32 [binding=weak, object=_ZNK9sum_basesIJEE3sumEv] {
   slot $this : ptr
 
   block ^entry:

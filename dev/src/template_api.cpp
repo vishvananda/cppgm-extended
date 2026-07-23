@@ -2231,7 +2231,7 @@ void apply_function_template_symbol_options(
       component_template =
           static_cast<const semantic_model::ClassTemplateDecl *>(
               specialization->class_template_decl);
-      component_arguments = &specialization->arguments;
+      component_arguments = &specialization->arguments.const_values();
     }
     if(specialization && component_arguments) {
       if(!specialization->mangle_parameters.empty()) {
@@ -6199,7 +6199,7 @@ bool prepare_nested_member_class_reference_from_owner_definition(
         ctx,
         *nested->member_scope,
         member_def->second.parameters,
-        owner->instantiation_binding_arguments);
+        class_instantiation_binding_arguments(*owner));
   }
   if(!nested->complete) {
     ctx.ensure_class_reference_members(*nested);
@@ -6248,7 +6248,7 @@ TemplateNestedMemberClassCompletionResult complete_nested_member_class_from_owne
         ctx,
         *nested->member_scope,
         member_def->second.parameters,
-        owner->instantiation_binding_arguments);
+        class_instantiation_binding_arguments(*owner));
   }
   if(!nested->complete) {
     ctx.populate_class_info(*nested, *member_def->second.class_node);

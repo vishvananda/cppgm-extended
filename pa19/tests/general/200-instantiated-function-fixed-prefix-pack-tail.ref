@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @Box____f(%prefix : i32) -> i32 [binding=weak, object=_ZN3Box1fEi] {
+function @Box____f(%prefix : i32) -> i32 [binding=weak, object=_ZN3BoxIJEE1fEi] {
   slot $prefix : i32
 
   block ^entry:

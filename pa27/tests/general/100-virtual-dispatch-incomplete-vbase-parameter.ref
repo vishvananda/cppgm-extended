@@ -1,16 +1,16 @@
-declare function @get_argument() -> ptr [binding=strong, object=_Z12get_argumentv]
-declare function @get_interface() -> ptr [binding=strong, object=_Z13get_interfacev]
+declare function @a() -> ptr [binding=strong, object=_Z1av]
+declare function @i() -> ptr [binding=strong, object=_Z1iv]
 
-function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+function @g() -> void [binding=strong, object=_Z1gv] {
   block ^entry:
-    %t1 = call ptr @get_interface()
-    %t2 = call ptr @get_argument()
+    %t1 = call ptr @i()
+    %t2 = call ptr @a()
     %t3 = load ptr %t2
     %t4 = index i8 %t3, -24
     %t5 = load i64 %t4
     %t6 = index i8 %t2, %t5
     %t7 = load ptr %t1
     %t8 = load ptr %t7
-    %t9 = call i32 %t8(%t1, %t2, %t6) as (%arg0 : ptr, %arg1 : ptr [pass=reference], %__pvbptr0 : ptr) -> i32
-    return i32 %t9
+    call void %t8(%t1, %t2, %t6) as (%arg0 : ptr, %arg1 : ptr [pass=reference], %__pvbptr0 : ptr) -> void
+    return void
 }

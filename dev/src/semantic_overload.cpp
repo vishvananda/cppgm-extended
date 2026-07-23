@@ -3620,7 +3620,7 @@ ClassInfo * canonicalize_constructor_target(SemanticContext & ctx,
 
   const vector<TemplateArgument> & arguments =
       info.has_instantiation_binding_arguments ?
-          info.instantiation_binding_arguments :
+          class_instantiation_binding_arguments(info) :
           info.instantiation_arguments;
   if(arguments.empty() && !info.source_template->parameters.empty()) {
     return &info;

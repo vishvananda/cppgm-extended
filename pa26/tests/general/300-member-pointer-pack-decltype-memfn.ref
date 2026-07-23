@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = call i32 @test(%t3, %t4)
     return i32 %t5
 }
-function @model__bind__ov3(%f : i128, %a1 : ptr, %a2 : i32, %a3 : obj<1x1>) -> obj<16x8> [binding=weak, object=_ZN5model4bindIv5log_tiR6streamPS1_iS2_EEDTclsr5modelE4bindclsr5modelE6mem_fnfp_Efp0_fp1_fp2_EEMS1_FviS3_ET3_T4_T5_] {
+function @model__bind__ov3(%f : i128, %a1 : ptr, %a2 : i32, %a3 : obj<1x1>) -> obj<16x8> [binding=weak, object=_ZN5model4bindIv5log_tiR6streamPS1_iS2_EEDTclsr5modelE4bindclsr5modelE6mem_fnfp_Efp0_fp1_fp2_EEMT0_FT_T1_T2_ET3_T4_T5_] {
   slot $f : i128
   slot $a1 : ptr
   slot $a2 : i32
@@ -56,7 +56,7 @@ function @model__bind__ov3(%f : i128, %a1 : ptr, %a2 : i32, %a3 : obj<1x1>) -> o
     copyobj 16x8 %t9, %t1
     return obj<16x8> $retobj__1
 }
-function @model__mem_fn__ov2(%pmf : i128) -> obj<16x8> [binding=weak, object=_ZN5model6mem_fnIv5log_tJiR6streamEEENS_16function_wrapperIMS1_FviS3_EvS1_JiS3_EEES7_] {
+function @model__mem_fn__ov2(%pmf : i128) -> obj<16x8> [binding=weak, object=_ZN5model6mem_fnIv5log_tJiR6streamEEENS_16function_wrapperIDTscMT0_FT_DpT1_ELi0EES7_S6_JS9_EEESB_] {
   slot $pmf : i128
   slot $out : obj<16x8>
   slot $retobj__1 : obj<16x8>

@@ -28,6 +28,9 @@ bool enabled()
 
 void set_creation_context(ClassInfo & info, const std::string & fallback_context)
 {
+  if(!enabled()) {
+    return;
+  }
   if(info.creation_context.empty()) {
     info.creation_context = effective_context(fallback_context);
   }

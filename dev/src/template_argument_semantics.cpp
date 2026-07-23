@@ -17634,7 +17634,7 @@ bool attach_substituted_dependent_class_mangle_info_from_arguments(
     const ClassTemplateDecl & class_template,
     const vector<DependentAliasTemplateArgumentSyntax> & substituted_arguments)
 {
-  if(!substituted || substituted_arguments.empty()) {
+  if(!substituted) {
     return false;
   }
 
@@ -29711,15 +29711,16 @@ bool try_resolve_dependent_class_instantiation_from_mangle_info(
 
   ClassTemplateDecl * class_template =
       static_cast<ClassTemplateDecl *>(mangle_info->class_template_decl);
-  const vector<TemplateArgument> * source_arguments = &mangle_info->arguments;
+  const vector<TemplateArgument> * source_arguments =
+      &mangle_info->arguments.const_values();
   ClassInfo * class_info =
       template_api::find_named_type_class_info(service_type_system(services).model,
                                                type);
   if(class_info &&
      class_info->source_template == class_template &&
      class_info->has_instantiation_binding_arguments &&
-     !class_info->instantiation_binding_arguments.empty()) {
-    source_arguments = &class_info->instantiation_binding_arguments;
+     !class_instantiation_binding_arguments(*class_info).empty()) {
+    source_arguments = &class_instantiation_binding_arguments(*class_info);
   }
   if(!class_info) {
     for(size_t i = 0; i < source_arguments->size(); ++i) {

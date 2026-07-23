@@ -476,7 +476,7 @@ void validate_instantiated_result_template_arguments(SemanticContext & ctx,
       if(mangle_info &&
          mangle_info->class_template_decl == class_template_decl &&
          mangle_info->arguments.size() == arguments.size()) {
-        resolved_arguments = &mangle_info->arguments;
+        resolved_arguments = &mangle_info->arguments.const_values();
       } else if(ClassInfo * info = ctx.class_info_for_type(type)) {
         if(info->source_template == class_template &&
            info->instantiation_arguments.size() == arguments.size()) {
@@ -5062,15 +5062,28 @@ std::vector<TemplateArgumentSyntax> normalized_class_template_argument_syntaxes(
   return syntaxes;
 }
 
+void detach_shared_class_template_mangle_arguments(ClassInfo & info)
+{
+  std::shared_ptr<const ClassTemplateSpecializationMangleInfo> previous_info =
+      named_type_class_template_specialization_mangle_info_const(info.type);
+  if(previous_info &&
+     previous_info->arguments.shares(info.instantiation_arguments_storage)) {
+    std::const_pointer_cast<ClassTemplateSpecializationMangleInfo>(
+        previous_info)->arguments.mutable_values();
+  }
+}
+
 void update_class_template_specialization_mangle_info(
     ClassInfo & info,
     const std::vector<TemplateArgument> & arguments,
     bool force_structured_mangling,
+    bool share_primary_arguments,
     const std::vector<TemplateArgumentSyntax> * argument_syntaxes = nullptr,
     const std::vector<TemplateParameterInfo> * mangle_parameters = nullptr,
     const std::vector<TemplateArgument> * mangle_arguments = nullptr,
     const std::map<std::string, std::size_t> * pack_sizes = nullptr)
 {
+  detach_shared_class_template_mangle_arguments(info);
   if(!info.type || !info.source_template || info.is_lambda_closure) {
     set_named_type_class_template_specialization_mangle_info(
         info.type,
@@ -5109,7 +5122,12 @@ void update_class_template_specialization_mangle_info(
   if(mangle_arguments) {
     mangle_info->mangle_arguments = *mangle_arguments;
   }
-  mangle_info->arguments = arguments;
+  if(share_primary_arguments &&
+     &arguments == &info.instantiation_arguments) {
+    mangle_info->arguments.share(info.instantiation_arguments_storage);
+  } else {
+    mangle_info->arguments = arguments;
+  }
   mangle_info->argument_syntaxes =
       normalized_class_template_argument_syntaxes(arguments, argument_syntaxes);
   if(pack_sizes) {
@@ -5158,17 +5176,21 @@ void record_class_template_argument_state(
   info.instantiation_key = key;
   info.instantiation_arg_texts =
       canonical_instantiation_arg_texts_impl(ctx, normalized_arguments);
+  detach_shared_class_template_mangle_arguments(info);
   info.instantiation_arguments = normalized_arguments;
-  info.instantiation_binding_arguments = normalized_arguments;
+  reuse_primary_class_instantiation_binding_arguments(info);
   info.instantiation_binding_pack_sizes.clear();
-  info.has_instantiation_binding_arguments = true;
   const bool force_structured_mangling =
       template_arguments_contain_forced_structured_mangling(normalized_arguments);
+  const bool dependent_arguments =
+      template_arguments_are_dependent_for_instantiation(ctx,
+                                                         normalized_arguments);
   clear_class_template_cached_lambda_mangle_metadata(info, normalized_arguments);
   update_class_template_specialization_mangle_info(
       info,
-      normalized_arguments,
+      info.instantiation_arguments,
       force_structured_mangling,
+      !dependent_arguments,
       nullptr,
       mangle_parameters,
       effective_mangle_arguments,
@@ -5177,26 +5199,31 @@ void record_class_template_argument_state(
       ctx,
       info,
       normalized_arguments,
-      template_arguments_are_dependent_for_instantiation(ctx,
-                                                         normalized_arguments));
+      dependent_arguments);
 }
 
 void record_class_template_binding_state(
     SemanticContext & ctx,
     ClassInfo & info,
     const std::vector<TemplateArgument> & arguments,
-    const std::map<std::string, std::size_t> * pack_sizes)
+    const std::map<std::string, std::size_t> * pack_sizes,
+    bool reuse_primary_arguments = false)
 {
-  info.instantiation_binding_arguments =
-      template_arguments_need_function_value_rehydration(arguments) ?
-          rehydrated_template_argument_function_values(ctx, arguments) :
-          arguments;
+  if(reuse_primary_arguments &&
+     !template_arguments_need_function_value_rehydration(arguments)) {
+    reuse_primary_class_instantiation_binding_arguments(info);
+  } else {
+    const std::vector<TemplateArgument> normalized_arguments =
+        template_arguments_need_function_value_rehydration(arguments) ?
+            rehydrated_template_argument_function_values(ctx, arguments) :
+            arguments;
+    set_class_instantiation_binding_arguments(info, normalized_arguments);
+  }
   if(pack_sizes) {
     info.instantiation_binding_pack_sizes = *pack_sizes;
   } else {
     info.instantiation_binding_pack_sizes.clear();
   }
-  info.has_instantiation_binding_arguments = true;
 }
 
 void attach_function_template_registration_identity(
@@ -8053,6 +8080,14 @@ bool record_class_template_instantiation_state(
           was_dependent,
           dependent_arguments,
           preserve_existing_concrete_instantiation);
+  const bool mutates_primary_arguments =
+      refresh_arguments ||
+      !info.instantiation_arguments.empty() ||
+      (dependent_argument_texts && !dependent_argument_texts->empty()) ||
+      dependent_argument_syntaxes;
+  if(mutates_primary_arguments) {
+    detach_shared_class_template_mangle_arguments(info);
+  }
 
   info.is_explicit_specialization = is_explicit_specialization;
   info.suppress_implicit_instantiation_definition =
@@ -8070,13 +8105,19 @@ bool record_class_template_instantiation_state(
     info.instantiation_arguments = normalized_arguments;
     clear_class_template_cached_lambda_mangle_metadata(info, normalized_arguments);
   } else if(!info.instantiation_arguments.empty()) {
+    detach_primary_class_instantiation_binding_arguments(info);
     merge_template_argument_value_dependencies(info.instantiation_arguments,
                                                normalized_arguments);
   }
   if(refresh_arguments || !info.has_instantiation_binding_arguments) {
-    record_class_template_binding_state(ctx, info, normalized_arguments, nullptr);
+    record_class_template_binding_state(ctx,
+                                        info,
+                                        normalized_arguments,
+                                        nullptr,
+                                        refresh_arguments);
   }
   if(dependent_argument_texts && !dependent_argument_texts->empty()) {
+    detach_primary_class_instantiation_binding_arguments(info);
     if(info.instantiation_arg_texts.size() < normalized_arguments.size()) {
       info.instantiation_arg_texts =
           canonical_instantiation_arg_texts_impl(ctx, normalized_arguments);
@@ -8102,6 +8143,7 @@ bool record_class_template_instantiation_state(
     }
   }
   if(dependent_argument_syntaxes) {
+    detach_primary_class_instantiation_binding_arguments(info);
     if(info.instantiation_arguments.empty()) {
       info.instantiation_arguments = arguments;
     }
@@ -8114,11 +8156,15 @@ bool record_class_template_instantiation_state(
     }
   }
   const std::vector<TemplateArgument> & effective_arguments =
-      info.instantiation_arguments.empty() ? arguments : info.instantiation_arguments;
+      preserve_existing_concrete_instantiation ||
+              !info.instantiation_arguments.empty() ?
+          info.instantiation_arguments :
+          arguments;
   update_class_template_specialization_mangle_info(
       info,
       effective_arguments,
       template_arguments_contain_forced_structured_mangling(effective_arguments),
+      !info.dependent_instantiation,
       dependent_argument_syntaxes,
       dependent_argument_mangle_parameters,
       effective_mangle_arguments,
@@ -8161,7 +8207,9 @@ bool refresh_forward_class_template_selection(SemanticContext & ctx,
   record_class_template_binding_state(ctx,
                                       info,
                                       specialization.arguments,
-                                      &specialization.pack_sizes);
+                                      &specialization.pack_sizes,
+                                      specialization.kind ==
+                                          template_api::MS_PRIMARY);
   if(specialization.binding_scope) {
     bind_declaring_owner_instantiation_context(ctx,
                                                *info.member_scope,
@@ -9233,7 +9281,7 @@ bool class_template_binding_context(const ClassInfo & info,
   out.pack_sizes = nullptr;
 
   if(info.has_instantiation_binding_arguments) {
-    out.arguments = &info.instantiation_binding_arguments;
+    out.arguments = &class_instantiation_binding_arguments(info);
     out.pack_sizes = &info.instantiation_binding_pack_sizes;
   }
 
@@ -9802,7 +9850,9 @@ ClassInfo * instantiate_selected_class_template(
   record_class_template_binding_state(ctx,
                                       *info,
                                       *bound_arguments,
-                                      bound_pack_sizes);
+                                      bound_pack_sizes,
+                                      specialization.kind ==
+                                          template_api::MS_PRIMARY);
   info->dependent_instantiation = current_arguments_dependent;
   info->is_explicit_specialization =
       specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION;

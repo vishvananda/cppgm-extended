@@ -202,7 +202,7 @@ void class_template_member_substitution_bindings(
            selected_partial_specialization_for_class_output_node(info)) {
       parameters = &partial->parameters;
     }
-    arguments = &info.instantiation_binding_arguments;
+    arguments = &class_instantiation_binding_arguments(info);
   }
 }
 

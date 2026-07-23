@@ -34,11 +34,11 @@ function @fusion__operators__operator__(%os : ptr [pass=reference], %seq : ptr [
     %t1 = load ptr $os
     return ptr %t1
 }
-function @fusion__vector____vector(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6fusion6vectorC1Ev, trivial_lifecycle=yes] {
+function @fusion__vector____vector(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6fusion6vectorIJEEC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-alias object _ZN6fusion6vectorC2Ev = @fusion__vector____vector
+alias object _ZN6fusion6vectorIJEEC2Ev = @fusion__vector____vector

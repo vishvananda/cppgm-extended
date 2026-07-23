@@ -538,6 +538,13 @@ struct VTableInfo
 
 struct ClassInfo
 {
+  ClassInfo()
+      : instantiation_arguments_storage(
+            new std::vector<template_model::TemplateArgument>()),
+        instantiation_arguments(*instantiation_arguments_storage)
+  {
+  }
+
   std::string name;
   std::string qualified_name;
   cpp_decl::QualifiedName symbol_qualified_name_syntax;
@@ -619,10 +626,14 @@ struct ClassInfo
   std::string instantiation_key;
   std::size_t instantiation_specialization_epoch = 0;
   std::vector<std::string> instantiation_arg_texts;
-  std::vector<template_model::TemplateArgument> instantiation_arguments;
+  std::shared_ptr<std::vector<template_model::TemplateArgument> >
+      instantiation_arguments_storage;
+  std::vector<template_model::TemplateArgument> & instantiation_arguments;
   std::vector<template_model::TemplateArgument> instantiation_binding_arguments;
   std::map<std::string, std::size_t> instantiation_binding_pack_sizes;
   bool has_instantiation_binding_arguments = false;
+  const std::vector<template_model::TemplateArgument> *
+      instantiation_binding_arguments_view = nullptr;
   std::vector<template_model::TemplateValueDependency> template_value_dependencies;
   std::string first_qualifier_use_location;
   bool reentrant_primary_selection = false;
@@ -632,6 +643,55 @@ struct ClassInfo
 inline const std::string & class_output_qualified_name(const ClassInfo & info)
 {
   return info.display_qualified_name.empty() ? info.qualified_name : info.display_qualified_name;
+}
+
+inline void set_class_output_qualified_name(ClassInfo & info,
+                                            const std::string & name)
+{
+  if(name == info.qualified_name) {
+    info.display_qualified_name.clear();
+  } else {
+    info.display_qualified_name = name;
+  }
+}
+
+inline const std::vector<template_model::TemplateArgument> &
+class_instantiation_binding_arguments(const ClassInfo & info)
+{
+  return info.instantiation_binding_arguments_view ?
+      *info.instantiation_binding_arguments_view :
+      info.instantiation_binding_arguments;
+}
+
+inline void reuse_primary_class_instantiation_binding_arguments(
+    ClassInfo & info)
+{
+  std::vector<template_model::TemplateArgument>().swap(
+      info.instantiation_binding_arguments);
+  info.has_instantiation_binding_arguments = true;
+  info.instantiation_binding_arguments_view = &info.instantiation_arguments;
+}
+
+inline void set_class_instantiation_binding_arguments(
+    ClassInfo & info,
+    const std::vector<template_model::TemplateArgument> & arguments)
+{
+  info.instantiation_binding_arguments = arguments;
+  info.has_instantiation_binding_arguments = true;
+  info.instantiation_binding_arguments_view =
+      &info.instantiation_binding_arguments;
+}
+
+inline void detach_primary_class_instantiation_binding_arguments(
+    ClassInfo & info)
+{
+  if(info.instantiation_binding_arguments_view !=
+     &info.instantiation_arguments) {
+    return;
+  }
+  info.instantiation_binding_arguments = info.instantiation_arguments;
+  info.instantiation_binding_arguments_view =
+      &info.instantiation_binding_arguments;
 }
 
 inline std::string function_output_name(const FunctionBinding & binding)
