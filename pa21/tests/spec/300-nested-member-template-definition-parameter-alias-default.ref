@@ -27,29 +27,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = convert zext i32 u8 %t7
     return i32 %t8
 }
-function @adaptor_int___range_true___range(%this : ptr) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb1EEC1Ev] {
-  slot $this : ptr
-  slot $cond__1 : i32
-
-  block ^entry:
-    store ptr %this, $this
-    branch 1, ^cond_then_1, ^cond_else_2
-
-  block ^cond_then_1:
-    store i32 1, $cond__1
-    jump ^cond_end_3
-
-  block ^cond_else_2:
-    store i32 0, $cond__1
-    jump ^cond_end_3
-
-  block ^cond_end_3:
-    %t1 = load i32 $cond__1
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    return void
-}
 function @adaptor_int___range_false___range__ov4(%this : ptr, %other : ptr [pass=reference], %__param2 : ptr) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb0EEC1ILb0EvEERKNS0_S1_ILb1EEEPT0_] {
   slot $this : ptr
   slot $other : ptr
@@ -80,5 +57,28 @@ function @adaptor_int___range_false___range__ov4(%this : ptr, %other : ptr [pass
     store i32 %t4, %t6
     return void
 }
-alias object _ZN7adaptorIiE5rangeILb1EEC2Ev = @adaptor_int___range_true___range
+function @adaptor_int___range_true___range(%this : ptr) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb1EEC1Ev] {
+  slot $this : ptr
+  slot $cond__1 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    branch 1, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t1 = load i32 $cond__1
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
 alias object _ZN7adaptorIiE5rangeILb0EEC2ILb0EvEERKNS0_S1_ILb1EEEPT0_ = @adaptor_int___range_false___range__ov4
+alias object _ZN7adaptorIiE5rangeILb1EEC2Ev = @adaptor_int___range_true___range

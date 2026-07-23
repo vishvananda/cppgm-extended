@@ -2269,6 +2269,11 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_POINTER && expr_base->kind == Type::TK_POINTER) {
+    if(type_equals(target_base, expr_base)) {
+      out = expr;
+      ctx.set_expr_info_metadata(out, target, out.category);
+      return true;
+    }
     TypePtr target_pointee_base;
     TypePtr expr_pointee_base;
     if(!pointer_pointee_cv_allows_base_conversion(target_base,

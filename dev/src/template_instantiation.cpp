@@ -4386,11 +4386,19 @@ std::string template_argument_text_for_diagnostic(template_api::TemplateTypeSyst
 
 std::string template_template_argument_identity_text(
     SemanticContext & ctx,
-    const TemplateArgument & argument)
+    const TemplateArgument & argument,
+    bool qualify_namespace_template = false)
 {
-  if((argument.kind != TemplateArgument::TA_CLASS_TEMPLATE &&
-      argument.kind != TemplateArgument::TA_ALIAS_TEMPLATE) ||
-     !argument.template_owner_type) {
+  if(argument.kind != TemplateArgument::TA_CLASS_TEMPLATE &&
+     argument.kind != TemplateArgument::TA_ALIAS_TEMPLATE) {
+    return template_model::template_argument_text(
+        argument,
+        [&ctx](const TypePtr & type)
+        {
+          return ctx.instantiation_identity_text_for_type_argument(type);
+        });
+  }
+  if(!argument.template_owner_type && !qualify_namespace_template) {
     return template_model::template_argument_text(
         argument,
         [&ctx](const TypePtr & type)
@@ -4399,31 +4407,67 @@ std::string template_template_argument_identity_text(
         });
   }
 
-  const std::string owner =
-      ctx.instantiation_identity_text_for_type_argument(
-          argument.template_owner_type);
-  std::string member = argument.template_entity_name();
-  if(member.empty() && argument.template_decl) {
-    if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE) {
-      member = static_cast<ClassTemplateDecl *>(argument.template_decl)->name;
-    } else {
-      member = static_cast<AliasTemplateDecl *>(argument.template_decl)->name;
+  if(argument.template_owner_type) {
+    const std::string owner =
+        ctx.instantiation_identity_text_for_type_argument(
+            argument.template_owner_type);
+    std::string member = argument.template_entity_name();
+    if(member.empty() && argument.template_decl) {
+      if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE) {
+        member = static_cast<ClassTemplateDecl *>(argument.template_decl)->name;
+      } else {
+        member = static_cast<AliasTemplateDecl *>(argument.template_decl)->name;
+      }
+    }
+    if(!owner.empty() && !member.empty()) {
+      return owner + "::" + member;
     }
   }
-  if(owner.empty() || member.empty()) {
-    return template_model::template_argument_text(
-        argument,
-        [&ctx](const TypePtr & type)
-        {
-          return ctx.instantiation_identity_text_for_type_argument(type);
-        });
+
+  std::string member = argument.template_entity_name();
+  Scope * declaring_scope = nullptr;
+  if(member.empty() && argument.template_decl) {
+    if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE) {
+      ClassTemplateDecl * decl =
+          static_cast<ClassTemplateDecl *>(argument.template_decl);
+      member = decl->name;
+      declaring_scope = decl->declaring_scope;
+    } else {
+      AliasTemplateDecl * decl =
+          static_cast<AliasTemplateDecl *>(argument.template_decl);
+      member = decl->name;
+      declaring_scope = decl->declaring_scope;
+    }
+  } else if(argument.template_decl) {
+    declaring_scope =
+        argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ?
+            static_cast<ClassTemplateDecl *>(argument.template_decl)->declaring_scope :
+            static_cast<AliasTemplateDecl *>(argument.template_decl)->declaring_scope;
   }
-  return owner + "::" + member;
+  const std::string & scope_prefix =
+      argument.template_entity_scope_prefix();
+  if(!scope_prefix.empty() && !member.empty()) {
+    return scope_prefix + "::" + member;
+  }
+  if(declaring_scope && !member.empty()) {
+    const std::string qualified =
+        semantic_lookup::scope_qualified_name(*declaring_scope, member);
+    if(!qualified.empty()) {
+      return qualified;
+    }
+  }
+  return template_model::template_argument_text(
+      argument,
+      [&ctx](const TypePtr & type)
+      {
+        return ctx.instantiation_identity_text_for_type_argument(type);
+      });
 }
 
 std::string template_argument_key_for_instantiation_impl(
     SemanticContext & ctx,
-    const std::vector<TemplateArgument> & arguments)
+    const std::vector<TemplateArgument> & arguments,
+    bool qualify_namespace_templates = false)
 {
   std::string out;
   for(std::size_t i = 0; i < arguments.size(); ++i) {
@@ -4434,9 +4478,84 @@ std::string template_argument_key_for_instantiation_impl(
       out += ctx.instantiation_identity_text_for_type_argument(arguments[i].type);
       continue;
     }
-    out += template_template_argument_identity_text(ctx, arguments[i]);
+    out += template_template_argument_identity_text(
+        ctx, arguments[i], qualify_namespace_templates);
   }
   return out;
+}
+
+bool template_template_argument_entities_conflict(
+    SemanticContext & ctx,
+    const std::vector<TemplateArgument> & existing,
+    const std::vector<TemplateArgument> & current)
+{
+  const std::size_t count = std::min(existing.size(), current.size());
+  for(std::size_t i = 0; i < count; ++i) {
+    const bool existing_is_template =
+        existing[i].kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+        existing[i].kind == TemplateArgument::TA_ALIAS_TEMPLATE;
+    const bool current_is_template =
+        current[i].kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+        current[i].kind == TemplateArgument::TA_ALIAS_TEMPLATE;
+    if(!existing_is_template || !current_is_template) {
+      continue;
+    }
+    if(existing[i].template_decl &&
+       current[i].template_decl &&
+       existing[i].template_decl == current[i].template_decl) {
+      continue;
+    }
+    const std::string existing_identity =
+        template_template_argument_identity_text(ctx, existing[i], true);
+    const std::string current_identity =
+        template_template_argument_identity_text(ctx, current[i], true);
+    if(!existing_identity.empty() &&
+       !current_identity.empty() &&
+       existing_identity != current_identity) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const ClassInfo * class_template_instantiation_for_key(
+    const ClassTemplateDecl & decl,
+    const std::string & key)
+{
+  std::map<std::string, ClassInfo *>::const_iterator found =
+      decl.instantiations.find(key);
+  if(found != decl.instantiations.end()) {
+    return found->second;
+  }
+  found = decl.reference_instantiations.find(key);
+  return found != decl.reference_instantiations.end() ? found->second : nullptr;
+}
+
+std::string class_template_argument_key_for_instantiation_impl(
+    SemanticContext & ctx,
+    const ClassTemplateDecl & decl,
+    const std::vector<TemplateArgument> & arguments)
+{
+  const std::string key =
+      template_argument_key_for_instantiation_impl(ctx, arguments);
+  const ClassInfo * existing = class_template_instantiation_for_key(decl, key);
+  if(!existing ||
+     !template_template_argument_entities_conflict(
+         ctx, existing->instantiation_arguments, arguments)) {
+    return key;
+  }
+
+  const std::string qualified_key =
+      template_argument_key_for_instantiation_impl(ctx, arguments, true);
+  if(parser_trace::enabled("template.resolve")) {
+    std::ostringstream trace;
+    trace << "class-template-key-disambiguated"
+          << " name=" << decl.name
+          << " base=" << key
+          << " qualified=" << qualified_key;
+    parser_trace::note("template.resolve", std::string(), trace.str());
+  }
+  return qualified_key;
 }
 
 bool function_template_argument_key_is_concrete(SemanticContext & ctx,
@@ -5609,7 +5728,8 @@ void sync_function_template_parameter_aliases(FunctionTemplateDecl & target,
 std::string specialization_name_for_instantiation_impl(
     SemanticContext & ctx,
     const std::string & name,
-    const std::vector<TemplateArgument> & arguments)
+    const std::vector<TemplateArgument> & arguments,
+    bool qualify_namespace_templates = false)
 {
   std::string out = name;
   out += "<";
@@ -5621,7 +5741,8 @@ std::string specialization_name_for_instantiation_impl(
       out += ctx.instantiation_identity_text_for_type_argument(arguments[i].type);
       continue;
     }
-    out += template_template_argument_identity_text(ctx, arguments[i]);
+    out += template_template_argument_identity_text(
+        ctx, arguments[i], qualify_namespace_templates);
   }
   out += ">";
   return out;
@@ -7614,6 +7735,14 @@ std::string template_argument_key_for_instantiation(
   return template_argument_key_for_instantiation_impl(ctx, arguments);
 }
 
+std::string class_template_argument_key_for_instantiation(
+    SemanticContext & ctx,
+    const ClassTemplateDecl & decl,
+    const std::vector<TemplateArgument> & arguments)
+{
+  return class_template_argument_key_for_instantiation_impl(ctx, decl, arguments);
+}
+
 std::vector<std::string> canonical_instantiation_arg_texts(
     SemanticContext & ctx,
     const std::vector<TemplateArgument> & arguments)
@@ -7627,6 +7756,19 @@ std::string specialization_name_for_instantiation(
     const std::vector<TemplateArgument> & arguments)
 {
   return specialization_name_for_instantiation_impl(ctx, name, arguments);
+}
+
+std::string class_specialization_name_for_instantiation(
+    SemanticContext & ctx,
+    const std::string & name,
+    const std::vector<TemplateArgument> & arguments,
+    const std::string & instantiation_key)
+{
+  const bool qualify_namespace_templates =
+      instantiation_key !=
+      template_argument_key_for_instantiation_impl(ctx, arguments);
+  return specialization_name_for_instantiation_impl(
+      ctx, name, arguments, qualify_namespace_templates);
 }
 
 std::string display_specialization_name_for_instantiation(
@@ -9425,7 +9567,8 @@ ClassInfo * instantiate_class_template(SemanticContext & ctx,
   DIAG_CONTEXT("instantiate_class_template [" + decl.name +
                ", args=" + std::to_string(arguments.size()) + "]" +
                (decl.class_node ? ctx.source_location_for_node(*decl.class_node) : std::string()));
-  const std::string key = template_argument_key_for_instantiation(ctx, arguments);
+  const std::string key =
+      class_template_argument_key_for_instantiation_impl(ctx, decl, arguments);
   if(ctx.is_builtin_initializer_list_template(decl)) {
     return instantiate_builtin_initializer_list_template(
         ctx,
@@ -9462,12 +9605,8 @@ ClassInfo * instantiate_selected_class_template(
     const std::vector<TemplateArgument> & arguments,
     const template_api::ClassSpecializationSelection & specialization)
 {
-  const std::string computed_key =
-      specialization.selection_key.empty() ?
-          template_argument_key_for_instantiation(ctx, arguments) :
-          std::string();
-  const std::string & key =
-      specialization.selection_key.empty() ? computed_key : specialization.selection_key;
+  const std::string key =
+      class_template_argument_key_for_instantiation_impl(ctx, decl, arguments);
   const std::string instantiation_use_location =
       parser_trace::current_order_use_location();
   std::string requested_specialization_name;
@@ -9487,7 +9626,8 @@ ClassInfo * instantiate_selected_class_template(
   {
     if(!internal_specialization_name_ready) {
       internal_specialization_name =
-          specialization_name_for_instantiation(ctx, decl.name, arguments);
+          class_specialization_name_for_instantiation(
+              ctx, decl.name, arguments, key);
       internal_specialization_name_ready = true;
     }
     return internal_specialization_name;

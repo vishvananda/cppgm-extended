@@ -17,6 +17,7 @@
 #include "template_api.h"
 #include "template_argument_semantics.h"
 #include "template_audit.h"
+#include "template_instantiation.h"
 #include "template_model.h"
 #include "template_services.h"
 #include "types.h"
@@ -1573,7 +1574,8 @@ public:
 
     canonicalize_simple_dependent_argument_texts(arguments);
     note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_key_builds);
-    key = template_argument_key(arguments);
+    key = template_instantiation::class_template_argument_key_for_instantiation(
+        ctx, decl, arguments);
     auto found = decl.instantiations.find(key);
     if(found != decl.instantiations.end()) {
       info = found->second;
@@ -2100,7 +2102,8 @@ public:
       }
       canonicalize_simple_dependent_argument_texts(arguments);
       note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_key_builds);
-      key = template_argument_key(arguments);
+      key = template_instantiation::class_template_argument_key_for_instantiation(
+          ctx, decl, arguments);
     }
     const bool dependent_arguments = template_arguments_are_dependent(arguments);
     const bool fast_existing_requires_mangle_refresh =
@@ -2210,7 +2213,9 @@ public:
     string computed_key;
     if(!precomputed_key) {
       note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_key_builds);
-      computed_key = template_argument_key(arguments);
+      computed_key =
+          template_instantiation::class_template_argument_key_for_instantiation(
+              ctx, decl, arguments);
     }
     const string & key = precomputed_key ? *precomputed_key : computed_key;
     const bool dependent_arguments =
@@ -2270,8 +2275,9 @@ public:
       if(!internal_specialization_name_ready) {
         note_performance_counter(
             &semantic_metrics::AnalyzerCounters::class_template_specialization_name_builds);
-        internal_specialization_name = make_template_specialization_name(decl.name,
-                                                                        arguments);
+        internal_specialization_name =
+            template_instantiation::class_specialization_name_for_instantiation(
+                ctx, decl.name, arguments, key);
         internal_specialization_name_ready = true;
       }
       return internal_specialization_name;
@@ -3421,7 +3427,11 @@ public:
               arguments,
               specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION,
               decl.suppress_implicit_instantiation_definitions.find(key) !=
-                  decl.suppress_implicit_instantiation_definitions.end(),
+                      decl.suppress_implicit_instantiation_definitions.end() ||
+                  (!decl.suppress_implicit_instantiation_definitions.empty() &&
+                   decl.suppress_implicit_instantiation_definitions.find(
+                       template_argument_key(arguments)) !=
+                       decl.suppress_implicit_instantiation_definitions.end()),
               dependent_arguments,
               dependent_arguments ? source_arg_texts : nullptr,
               dependent_arguments ? source_arg_syntaxes : nullptr,
@@ -3489,7 +3499,11 @@ public:
             arguments,
             specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION,
             decl.suppress_implicit_instantiation_definitions.find(key) !=
-                decl.suppress_implicit_instantiation_definitions.end(),
+                    decl.suppress_implicit_instantiation_definitions.end() ||
+                (!decl.suppress_implicit_instantiation_definitions.empty() &&
+                 decl.suppress_implicit_instantiation_definitions.find(
+                     template_argument_key(arguments)) !=
+                     decl.suppress_implicit_instantiation_definitions.end()),
             dependent_arguments,
             dependent_arguments ? source_arg_texts : nullptr,
             dependent_arguments ? source_arg_syntaxes : nullptr,
@@ -3717,7 +3731,9 @@ private:
     }
     canonicalize_simple_dependent_argument_texts(arguments);
     note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_key_builds);
-    const std::string key = template_argument_key(arguments);
+    const std::string key =
+        template_instantiation::class_template_argument_key_for_instantiation(
+            ctx, decl, arguments);
     const template_api::ClassSpecializationSelection specialization =
         template_api::specialization::select_class_specialization(
             ctx,

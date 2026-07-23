@@ -266,7 +266,10 @@ bool is_virtual_base_view(const ClassInfo & info, const VTableInfo & table)
 ClassInfo * class_info_for_virtual_base_layout_param(SemanticContext & ctx,
                                                      const TypePtr & type)
 {
-  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  TypePtr base = strip_top_level_cv(type);
+  const bool indirect = is_reference_type(base) ||
+                        (base && base->kind == Type::TK_POINTER);
+  base = strip_top_level_cv(remove_reference_type(base));
   if(base && base->kind == Type::TK_POINTER) {
     base = strip_top_level_cv(base->inner);
   }
@@ -277,6 +280,9 @@ ClassInfo * class_info_for_virtual_base_layout_param(SemanticContext & ctx,
   ClassInfo * info = ctx.class_info_for_type(base);
   if(info && info->complete) {
     return info->virtual_base_subobjects.empty() ? nullptr : info;
+  }
+  if(indirect) {
+    return nullptr;
   }
   info = ctx.complete_class_type(base);
   if(info) {

@@ -17,6 +17,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @sleep_for(%t1)
     return i32 0
 }
+function @duration_long_long_int__milli___duration(%this : ptr) -> void [binding=weak, object=_ZN8durationIx5milliEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
 function @duration_long_long_int__nano___duration__ov4(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN8durationIx4nanoEC1Ix5milliEERKS_IT_T0_E] {
   slot $this : ptr
   slot $__param1 : ptr
@@ -26,12 +33,5 @@ function @duration_long_long_int__nano___duration__ov4(%this : ptr, %__param1 : 
     store ptr %__param1, $__param1
     return void
 }
-function @duration_long_long_int__milli___duration(%this : ptr) -> void [binding=weak, object=_ZN8durationIx5milliEC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN8durationIx4nanoEC2Ix5milliEERKS_IT_T0_E = @duration_long_long_int__nano___duration__ov4
 alias object _ZN8durationIx5milliEC2Ev = @duration_long_long_int__milli___duration
+alias object _ZN8durationIx4nanoEC2Ix5milliEERKS_IT_T0_E = @duration_long_long_int__nano___duration__ov4

@@ -8310,7 +8310,8 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
      !ctx.type_depends_on_template_parameter(semantic_target_type)) {
     target_type = semantic_target_type;
   }
-  if(!target_type && !ctx.parse_type_id(scope, node.children[0], target_type)) {
+  if(!target_type &&
+     !ctx.parse_type_id(scope, node.children[0], target_type, true)) {
     ExprInfo disguised_call;
     if(try_analyze_disguised_parenthesized_call(ctx, scope, node, disguised_call)) {
       return disguised_call;
@@ -8348,6 +8349,7 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
       cast_target_base->kind != Type::TK_LVALUE_REFERENCE &&
       cast_target_base->kind != Type::TK_RVALUE_REFERENCE &&
       cast_target_object_type &&
+      cast_target_object_type->kind == Type::TK_NAMED &&
       (ctx.class_info_for_type(cast_target_object_type) ||
        complete_class_type_for_lookup(ctx, cast_target_object_type));
   if(class_object_direct_cast) {
@@ -8395,8 +8397,12 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
   bool applied_direct_static_reference_cast = false;
   if(node.simple_type == KW_STATIC_CAST || c_style_cast) {
     TypePtr explicit_target = strip_top_level_cv(remove_reference_type(target_type));
+    const bool explicit_target_may_be_class =
+        explicit_target && explicit_target->kind == Type::TK_NAMED;
     ClassInfo * explicit_target_info =
-        explicit_target ? ctx.class_info_for_type(explicit_target) : nullptr;
+        explicit_target_may_be_class ?
+            ctx.class_info_for_type(explicit_target) :
+            nullptr;
     const bool explicit_target_completion_in_progress =
         explicit_target_info &&
         (explicit_target_info->full_member_collection_in_progress ||
@@ -8404,7 +8410,8 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
     if(explicit_target &&
        !is_void_type(explicit_target) &&
        !explicit_target_completion_in_progress &&
-       !complete_class_type_for_lookup(ctx, explicit_target)) {
+       (!explicit_target_may_be_class ||
+        !complete_class_type_for_lookup(ctx, explicit_target))) {
       ExprInfo converted;
       ConversionRank conversion_rank = CR_BAD;
       if(ctx.try_argument_conversion(scope,
@@ -8420,6 +8427,7 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
         node.simple_type == KW_STATIC_CAST &&
         is_reference_type(target_type) &&
         cast_target_object_type &&
+        cast_target_object_type->kind == Type::TK_NAMED &&
         (ctx.class_info_for_type(cast_target_object_type) ||
          complete_class_type_for_lookup(ctx, cast_target_object_type));
     if(explicit_class_reference_target && !direct_static_class_reference_cast) {

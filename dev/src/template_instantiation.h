@@ -19,6 +19,11 @@ std::string template_argument_key_for_instantiation(
     SemanticContext & ctx,
     const std::vector<template_model::TemplateArgument> & arguments);
 
+std::string class_template_argument_key_for_instantiation(
+    SemanticContext & ctx,
+    const semantic_model::ClassTemplateDecl & decl,
+    const std::vector<template_model::TemplateArgument> & arguments);
+
 std::vector<std::string> canonical_instantiation_arg_texts(
     SemanticContext & ctx,
     const std::vector<template_model::TemplateArgument> & arguments);
@@ -27,6 +32,12 @@ std::string specialization_name_for_instantiation(
     SemanticContext & ctx,
     const std::string & name,
     const std::vector<template_model::TemplateArgument> & arguments);
+
+std::string class_specialization_name_for_instantiation(
+    SemanticContext & ctx,
+    const std::string & name,
+    const std::vector<template_model::TemplateArgument> & arguments,
+    const std::string & instantiation_key);
 
 std::string display_specialization_name_for_instantiation(
     SemanticContext & ctx,
