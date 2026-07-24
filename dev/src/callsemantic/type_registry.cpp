@@ -140,8 +140,9 @@ QualifiedName append_symbol_member_name_syntax(const Scope & scope,
                                                const std::string & name)
 {
   if(scope.class_info &&
-     !scope.class_info->symbol_qualified_name_syntax.name.empty()) {
-    QualifiedName out = scope.class_info->symbol_qualified_name_syntax;
+     !class_symbol_qualified_name_syntax(*scope.class_info).name.empty()) {
+    QualifiedName out =
+        class_symbol_qualified_name_syntax(*scope.class_info);
     out.qualifiers.push_back(out.name);
     out.name = name;
     return out;
@@ -157,6 +158,9 @@ ClassInfo * class_info_for_type(const TypeRegistryState & state,
   TypePtr base = strip_top_level_cv(type);
   if(!base || base->kind != Type::TK_NAMED) {
     return nullptr;
+  }
+  if(base->named_rare().named_class_info) {
+    return base->named_rare().named_class_info;
   }
 
   auto found = state.classes_by_key.find(base->named_key);
@@ -319,8 +323,10 @@ ClassInfo * create_class_info(TypeRegistryState & state,
   info->default_access =
       callsemantic_internal::default_access_for_class_kind(class_kind);
   info->type = make_named(display_name, type_key, false);
+  info->type->mutable_named_rare_metadata().named_class_info = info.get();
   info->type->set_named_qualified_name_syntax(symbol_qualified_name_syntax);
   info->type->set_named_source_name(canonical_name);
+  set_class_output_qualified_name(*info, source_qualified_name);
   if(durable_scope.class_info && durable_scope.class_info->type) {
     TypePtr base = strip_top_level_cv(info->type);
     if(base && base->kind == Type::TK_NAMED) {
@@ -385,8 +391,13 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
   const std::string type_key = std::string("class ") + qualified_name;
   auto found = state.classes_by_key.find(type_key);
   if(found != state.classes_by_key.end()) {
-    if(found->second->symbol_qualified_name_syntax.name.empty()) {
-      found->second->symbol_qualified_name_syntax = symbol_qualified_name_syntax;
+    TypePtr found_type =
+        found->second ? strip_top_level_cv(found->second->type) : TypePtr();
+    if(found_type &&
+       found_type->kind == Type::TK_NAMED &&
+       found_type->named_qualified_name_syntax().name.empty()) {
+      found_type->set_named_qualified_name_syntax(
+          symbol_qualified_name_syntax);
     }
     if(track_output && !found->second->template_instantiation_tracked) {
       found->second->template_instantiation_tracked = true;
@@ -398,7 +409,6 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
   std::unique_ptr<ClassInfo> info(new ClassInfo());
   info->name = template_name;
   info->qualified_name = qualified_name;
-  info->symbol_qualified_name_syntax = symbol_qualified_name_syntax;
   set_class_output_qualified_name(*info, display_qualified_name);
   info->class_kind = class_kind;
   info->enclosing_scope = &durable_scope;
@@ -411,8 +421,10 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
   info->type = make_named(class_kind + " " + display_qualified_name,
                           type_key,
                           false);
+  info->type->mutable_named_rare_metadata().named_class_info = info.get();
   info->type->set_named_qualified_name_syntax(symbol_qualified_name_syntax);
   info->type->set_named_source_name(template_name);
+  set_class_output_qualified_name(*info, display_qualified_name);
   if(durable_scope.class_info && durable_scope.class_info->type) {
     TypePtr base = strip_top_level_cv(info->type);
     if(base && base->kind == Type::TK_NAMED) {
@@ -422,15 +434,11 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
     }
   }
   info->member_scope.reset(
-      new Scope(&durable_scope, canonical_specialization_name, false));
+      new Scope(&durable_scope, canonical_internal_specialization_name, false));
   info->member_scope->class_info = info.get();
   info->member_scope->named_types[template_name] = info->type;
-  scope.named_types[canonical_specialization_name] = info->type;
-  durable_scope.named_types[canonical_specialization_name] = info->type;
-  if(canonical_specialization_name != specialization_name) {
-    scope.named_types[specialization_name] = info->type;
-    durable_scope.named_types[specialization_name] = info->type;
-  }
+  scope.named_types[canonical_internal_specialization_name] = info->type;
+  durable_scope.named_types[canonical_internal_specialization_name] = info->type;
   state.classes_by_key[type_key] = info.get();
   ++state.classes_by_key_version;
   state.classes_by_key_epochs[type_key] = state.classes_by_key_version;

@@ -1012,7 +1012,8 @@ CppAstNode make_template_id_expression_syntax_from_range(
   if(template_id) {
     expression.qualified_name_syntax.reset(
         new cpp_decl::QualifiedName(template_id->name));
-    expression.template_id_syntax = template_id;
+    expression.template_id_syntax.reset(
+        new cpp_decl::TemplateIdSyntax(*template_id));
   }
   if(!qualifier_template_ids.empty()) {
     set_cppast_qualifier_template_id_syntaxes(expression,
@@ -1735,7 +1736,7 @@ void annotate_builtin_type_transform_node(CppAstNode & node,
   const RecogToken & identifier = tokens.peek(name_start);
   if(is_builtin_type_transform_identifier(identifier) &&
      tokens.peek(name_start + 1).is_simple(OP_LPAREN)) {
-    node.builtin_type_transform_name = identifier.source;
+    mutable_cppast_builtin_type_transform_name(node) = identifier.source;
   }
 }
 
@@ -1794,7 +1795,7 @@ CppAstNode make_gnu_complex_type_specifier(
 {
   CppAstNode out =
       make_node(kind, template_angle::token_span_text_spaced(tokens, start, end));
-  out.builtin_type_transform_name = "_Complex";
+  mutable_cppast_builtin_type_transform_name(out) = "_Complex";
   out.token_start = start;
   out.token_end = end;
   out.source_location_id = tokens.peek(start).location_id;
@@ -1813,7 +1814,8 @@ CppAstNode make_gnu_complex_type_specifier(
   component_type_id.token_end = end;
   component_type_id.source_location_id = tokens.peek(start + 1).location_id;
   component_type_id.children.push_back(std::move(component));
-  out.base_type_syntax.reset(new CppAstNode(std::move(component_type_id)));
+  mutable_cppast_base_type_syntax_storage(out).reset(
+      new CppAstNode(std::move(component_type_id)));
   return out;
 }
 
@@ -1861,7 +1863,9 @@ void apply_leading_declaration_attributes(CppAstNode & node,
     mutable_cppast_gnu_section_name(node) =
         cppast_gnu_section_name(attributes);
   }
-  append_cppast_abi_tags(node.abi_tags, attributes);
+  append_cppast_abi_tags(
+      mutable_cppast_abi_tags(node).mutable_vector(),
+      attributes);
   append_cppast_alignment_specifiers(node, attributes);
 
   if(node.kind != CppAstKind::simple_declaration) {
@@ -1890,7 +1894,9 @@ void apply_leading_declaration_attributes(CppAstNode & node,
           mutable_cppast_gnu_section_name(child.children[j]) =
               cppast_gnu_section_name(attributes);
         }
-        append_cppast_abi_tags(child.children[j].abi_tags, attributes);
+        append_cppast_abi_tags(
+            mutable_cppast_abi_tags(child.children[j]).mutable_vector(),
+            attributes);
         append_cppast_alignment_specifiers(child.children[j], attributes);
       }
     }
@@ -4403,7 +4409,9 @@ void CppAstParser::note_attribute_specifier(CppAstNode * annotated,
       continue;
     }
     if(abi_tag_paren_depth > 0 && is_string_literal_attribute_token(token)) {
-      append_unique_cppast_text(annotated->abi_tags, abi_tag_literal_value(token.source));
+      append_unique_cppast_text(
+          mutable_cppast_abi_tags(*annotated).mutable_vector(),
+          abi_tag_literal_value(token.source));
     }
   }
 }
@@ -4536,7 +4544,9 @@ void apply_trailing_declarator_extensions(CppAstNode & target,
   if(!cppast_asm_label(extensions).empty()) {
     mutable_cppast_asm_label(target) = cppast_asm_label(extensions);
   }
-  append_cppast_abi_tags(target.abi_tags, extensions);
+  append_cppast_abi_tags(
+      mutable_cppast_abi_tags(target).mutable_vector(),
+      extensions);
   append_cppast_alignment_specifiers(target, extensions);
 }
 
@@ -5216,8 +5226,8 @@ bool CppAstParser::parse_special_member_declaration(CppAstNode & out)
      specifiers.has_exclude_from_explicit_instantiation ||
      specifiers.has_using_if_exists ||
      specifiers.has_no_unique_address ||
-     !specifiers.abi_tags.empty() ||
-     !specifiers.alignment_specifiers.empty()) {
+     !cppast_abi_tags(specifiers).empty() ||
+     !cppast_alignment_specifiers(specifiers).empty()) {
     out.children.push_back(std::move(specifiers));
   }
   out.children.push_back(std::move(declarator));
@@ -5347,8 +5357,8 @@ bool CppAstParser::parse_deduction_guide_declaration(CppAstNode & out)
      specifiers.has_exclude_from_explicit_instantiation ||
      specifiers.has_using_if_exists ||
      specifiers.has_no_unique_address ||
-     !specifiers.abi_tags.empty() ||
-     !specifiers.alignment_specifiers.empty()) {
+     !cppast_abi_tags(specifiers).empty() ||
+     !cppast_alignment_specifiers(specifiers).empty()) {
     out.children.push_back(std::move(specifiers));
   }
   out.children.push_back(std::move(declarator));
@@ -5554,8 +5564,8 @@ bool CppAstParser::parse_qualified_special_member_declaration(CppAstNode & out)
          specifiers.has_exclude_from_explicit_instantiation ||
          specifiers.has_using_if_exists ||
          specifiers.has_no_unique_address ||
-         !specifiers.abi_tags.empty() ||
-         !specifiers.alignment_specifiers.empty()) {
+         !cppast_abi_tags(specifiers).empty() ||
+         !cppast_alignment_specifiers(specifiers).empty()) {
         out.children.push_back(std::move(specifiers));
       }
       out.children.push_back(std::move(declarator));
@@ -5582,8 +5592,8 @@ bool CppAstParser::parse_qualified_special_member_declaration(CppAstNode & out)
      specifiers.has_exclude_from_explicit_instantiation ||
      specifiers.has_using_if_exists ||
      specifiers.has_no_unique_address ||
-     !specifiers.abi_tags.empty() ||
-     !specifiers.alignment_specifiers.empty()) {
+     !cppast_abi_tags(specifiers).empty() ||
+     !cppast_alignment_specifiers(specifiers).empty()) {
     out.children.push_back(std::move(specifiers));
   }
   out.children.push_back(std::move(declarator));
@@ -5732,8 +5742,8 @@ bool CppAstParser::parse_qualified_special_member_definition(CppAstNode & out)
      specifiers.has_exclude_from_explicit_instantiation ||
      specifiers.has_using_if_exists ||
      specifiers.has_no_unique_address ||
-     !specifiers.abi_tags.empty() ||
-     !specifiers.alignment_specifiers.empty()) {
+     !cppast_abi_tags(specifiers).empty() ||
+     !cppast_alignment_specifiers(specifiers).empty()) {
     out.children.push_back(std::move(specifiers));
   }
   out.children.push_back(std::move(declarator));
@@ -7617,7 +7627,8 @@ bool CppAstParser::parse_base_specifier(CppAstNode & out)
     if(parse_decltype_or_typeof_operand_node(name_start, pos, is_typeof, operand)) {
       type_spec.children.push_back(std::move(operand));
     }
-    base_name.base_type_syntax.reset(new CppAstNode(std::move(type_spec)));
+    mutable_cppast_base_type_syntax_storage(base_name).reset(
+        new CppAstNode(std::move(type_spec)));
     out.children.push_back(std::move(base_name));
   }
   else {
@@ -8163,7 +8174,8 @@ bool CppAstParser::parse_lazy_header_compound_function_body(CppAstNode & out)
   pos = next;
   out = make_node(CppAstKind::lazy_function_body);
   set_span(out, start);
-  out.name_lookup_snapshot = snapshot_name_lookup_state(&used_names);
+  mutable_cppast_name_lookup_snapshot(out) =
+      snapshot_name_lookup_state(&used_names);
   ++lazy_body_stats().skipped_header_bodies;
   lazy_body_stats().skipped_header_body_tokens += pos - start;
   return true;
@@ -11720,8 +11732,9 @@ void CppAstParser::attach_builtin_type_transform_syntax_from_span(
     return;
   }
 
-  node.builtin_type_transform_name = identifier.source;
-  node.base_type_syntax.reset(new CppAstNode(std::move(operand)));
+  mutable_cppast_builtin_type_transform_name(node) = identifier.source;
+  mutable_cppast_base_type_syntax_storage(node).reset(
+      new CppAstNode(std::move(operand)));
 }
 
 void CppAstParser::attach_qualified_name_syntax_from_span(CppAstNode & node,
@@ -12290,13 +12303,14 @@ void CppAstParser::refresh_lazy_function_body_snapshots_for_class(
       }
       shared_ptr<CppAstNameLookupSnapshot> refreshed(
           new CppAstNameLookupSnapshot(
-              node.name_lookup_snapshot ? *node.name_lookup_snapshot :
+              cppast_name_lookup_snapshot(node) ?
+                  *cppast_name_lookup_snapshot(node) :
                                            CppAstNameLookupSnapshot()));
       refreshed->template_value_parameter_scopes.push_back(template_value_names);
       refreshed->template_name_scopes.push_back(template_names);
       refreshed->type_name_scopes.push_back(type_names);
       refreshed->value_name_scopes.push_back(value_names);
-      node.name_lookup_snapshot = refreshed;
+      mutable_cppast_name_lookup_snapshot(node) = refreshed;
     }
     return;
   }

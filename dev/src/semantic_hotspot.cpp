@@ -631,12 +631,14 @@ void note_semantic_query(const char * kind,
   QueryRecord & record = profiler().queries[key];
   ++record.count;
   record.total_chars += text.size();
-  ++record.frames[DiagnosticContext::current_frame()];
+  const std::string current_frame = DiagnosticContext::current_frame();
+  ++record.frames[current_frame];
   ++profiler().total_query_requests;
 
   const std::string & trace_filter = query_trace_filter();
   if(!trace_filter.empty() &&
-     text.find(trace_filter) != std::string::npos &&
+     (text.find(trace_filter) != std::string::npos ||
+      current_frame.find(trace_filter) != std::string::npos) &&
      profiler().emitted_query_traces < fragment_trace_limit()) {
     ++profiler().emitted_query_traces;
     std::cerr << "SEMANTIC_HOTSPOT query_trace"

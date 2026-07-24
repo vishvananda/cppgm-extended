@@ -15,7 +15,7 @@ inline const std::vector<std::string> * argument_texts(
 {
   return metadata.instantiation_arg_texts.empty() ?
              nullptr :
-             &metadata.instantiation_arg_texts;
+             metadata.instantiation_arg_texts.pointer();
 }
 
 inline const std::vector<std::string> * argument_texts(
@@ -67,7 +67,7 @@ inline const std::vector<std::string> * selected_argument_texts(
       metadata,
       fully_bound,
       argument_count) ?
-          &metadata.instantiation_arg_texts :
+          metadata.instantiation_arg_texts.pointer() :
           nullptr;
 }
 // template-boundary-audit: end canonical_key_metadata

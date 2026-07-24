@@ -311,6 +311,7 @@ string normalize_type_lookup_name(const string & text)
 string normalize_qualified_name_spacing(const string & text)
 {
   string out;
+  out.reserve(text.size());
   for(size_t i = 0; i < text.size(); ++i) {
     const char ch = text[i];
     if(!std::isspace(static_cast<unsigned char>(ch))) {
@@ -326,7 +327,10 @@ string normalize_qualified_name_spacing(const string & text)
 
     const char next_ch = next < text.size() ? text[next] : '\0';
     const char prev_ch = out.empty() ? '\0' : out.back();
-    if(next_ch == '>' || next_ch == ':' || prev_ch == ':') {
+    if(next_ch == '\0' ||
+       next_ch == '>' ||
+       next_ch == ':' ||
+       prev_ch == ':') {
       continue;
     }
 
@@ -335,7 +339,7 @@ string normalize_qualified_name_spacing(const string & text)
     }
     i = next - 1;
   }
-  return trim_space(out);
+  return out;
 }
 
 bool has_top_level_declarator_syntax(const string & text)

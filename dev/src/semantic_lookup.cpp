@@ -2723,6 +2723,18 @@ QualifiedName scope_symbol_qualified_name_syntax(const Scope & scope, const stri
       continue;
     }
     if(is_named_class_member_scope(current)) {
+      if(current->class_info &&
+         !class_output_qualified_name_syntax(*current->class_info).name.empty()) {
+        const QualifiedName owner =
+            class_output_qualified_name_syntax(*current->class_info);
+        out.rooted = owner.rooted;
+        out.qualifiers = owner.qualifiers;
+        out.qualifiers.push_back(owner.name);
+        for(size_t i = qualifiers.size(); i > 0; --i) {
+          out.qualifiers.push_back(qualifiers[i - 1]);
+        }
+        return out;
+      }
       qualifiers.push_back(current->name);
     }
   }
@@ -3773,9 +3785,29 @@ bool optional_qualified_name_syntax_equal(
   return !lhs || qualified_name_syntax_equal(*lhs, *rhs);
 }
 
+bool optional_qualified_name_syntax_equal(
+    const CppAstSharedPtr<QualifiedName> & lhs,
+    const CppAstSharedPtr<QualifiedName> & rhs)
+{
+  if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
+    return false;
+  }
+  return !lhs || qualified_name_syntax_equal(*lhs, *rhs);
+}
+
 bool optional_template_id_syntax_shape_equal(
     const shared_ptr<TemplateIdSyntax> & lhs,
     const shared_ptr<TemplateIdSyntax> & rhs)
+{
+  if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
+    return false;
+  }
+  return !lhs || template_id_syntax_shape_equal(*lhs, *rhs);
+}
+
+bool optional_template_id_syntax_shape_equal(
+    const CppAstSharedPtr<TemplateIdSyntax> & lhs,
+    const CppAstSharedPtr<TemplateIdSyntax> & rhs)
 {
   if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
     return false;
@@ -3904,15 +3936,16 @@ bool cppast_node_shape_equal(const CppAstNode & lhs,
   return lhs.kind == rhs.kind &&
          cppast_node_value_shape_equal(lhs, rhs) &&
          type_equals(lhs.semantic_type, rhs.semantic_type) &&
-         lhs.builtin_type_transform_name == rhs.builtin_type_transform_name &&
+         cppast_builtin_type_transform_name(lhs) ==
+             cppast_builtin_type_transform_name(rhs) &&
          optional_qualified_name_syntax_equal(lhs.qualified_name_syntax,
                                               rhs.qualified_name_syntax) &&
          optional_template_id_syntax_shape_equal(lhs.template_id_syntax,
                                                 rhs.template_id_syntax) &&
-         optional_cppast_node_shape_equal(lhs.conversion_type_id_syntax,
-                                         rhs.conversion_type_id_syntax) &&
-         optional_cppast_node_shape_equal(lhs.base_type_syntax,
-                                         rhs.base_type_syntax) &&
+         optional_cppast_node_shape_equal(cppast_conversion_type_id_syntax_storage(lhs),
+                                         cppast_conversion_type_id_syntax_storage(rhs)) &&
+         optional_cppast_node_shape_equal(cppast_base_type_syntax_storage(lhs),
+                                         cppast_base_type_syntax_storage(rhs)) &&
          cppast_lazy_template_id_vector_shape_equal(
              lhs.qualifier_template_id_syntaxes,
              rhs.qualifier_template_id_syntaxes) &&
@@ -3949,6 +3982,12 @@ bool optional_cppast_node_has_result_sfinae_discriminator(
 
 bool optional_template_id_has_result_sfinae_discriminator(
     const shared_ptr<TemplateIdSyntax> & syntax)
+{
+  return syntax && template_id_has_result_sfinae_discriminator(*syntax);
+}
+
+bool optional_template_id_has_result_sfinae_discriminator(
+    const CppAstSharedPtr<TemplateIdSyntax> & syntax)
 {
   return syntax && template_id_has_result_sfinae_discriminator(*syntax);
 }
@@ -3993,7 +4032,7 @@ bool cppast_node_has_result_sfinae_discriminator(const CppAstNode & node)
 {
   if(node.kind == CppAstKind::decltype_specifier ||
      node.kind == CppAstKind::type_trait_expression ||
-     !node.builtin_type_transform_name.empty()) {
+     !cppast_builtin_type_transform_name(node).empty()) {
     return true;
   }
   if(node.kind == CppAstKind::decl_specifier &&
@@ -4007,8 +4046,8 @@ bool cppast_node_has_result_sfinae_discriminator(const CppAstNode & node)
   if(optional_template_id_has_result_sfinae_discriminator(
          node.template_id_syntax) ||
      optional_cppast_node_has_result_sfinae_discriminator(
-         node.conversion_type_id_syntax) ||
-     optional_cppast_node_has_result_sfinae_discriminator(node.base_type_syntax)) {
+         cppast_conversion_type_id_syntax_storage(node)) ||
+     optional_cppast_node_has_result_sfinae_discriminator(cppast_base_type_syntax_storage(node))) {
     return true;
   }
   for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
@@ -6776,7 +6815,8 @@ CppAstNode make_value_qualifier_type_lookup_node(const CppAstNode & node,
   out.token_start = node.token_start;
   out.token_end = node.token_end;
   out.source_location_id = node.source_location_id;
-  out.name_lookup_snapshot = node.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(out) =
+      cppast_name_lookup_snapshot(node);
   out.allows_implicit_typename = true;
   if(qualified.qualifiers.empty()) {
     return out;

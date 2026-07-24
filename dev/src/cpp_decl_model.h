@@ -11,6 +11,7 @@
 struct CppAstNode;
 
 namespace semantic_model {
+struct ClassInfo;
 struct FunctionBinding;
 struct Scope;
 struct ValueBinding;
@@ -126,6 +127,7 @@ struct Type
         named_dependent_template_template_arguments;
     std::shared_ptr<ClassTemplateSpecializationMangleInfo>
         named_class_template_specialization_mangle_info;
+    semantic_model::ClassInfo * named_class_info = nullptr;
     TypePtr named_member_owner_type;
     std::string named_member_name;
     TypePtr named_dependent_qualified_owner;
@@ -136,6 +138,7 @@ struct Type
         named_dependent_qualified_member_template_ids;
     bool dependent_type_expression_formed_with_placeholders = false;
     bool named_dependent_qualified_leading_typename = false;
+    bool named_output_name_is_final = false;
   };
 
   enum Kind

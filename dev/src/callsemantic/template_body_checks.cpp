@@ -297,15 +297,15 @@ static bool ast_mentions_template_parameter(
       return true;
     }
   }
-  if(node.conversion_type_id_syntax &&
+  if(cppast_conversion_type_id_syntax_storage(node) &&
      ast_mentions_template_parameter(
          ctx,
-         *node.conversion_type_id_syntax,
+         *cppast_conversion_type_id_syntax_storage(node),
          parameter_names)) {
     return true;
   }
-  if(node.base_type_syntax &&
-     ast_mentions_template_parameter(ctx, *node.base_type_syntax, parameter_names)) {
+  if(cppast_base_type_syntax_storage(node) &&
+     ast_mentions_template_parameter(ctx, *cppast_base_type_syntax_storage(node), parameter_names)) {
     return true;
   }
   for(std::size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
@@ -362,16 +362,16 @@ static bool ast_mentions_template_dependency(
       return true;
     }
   }
-  if(node.conversion_type_id_syntax &&
+  if(cppast_conversion_type_id_syntax_storage(node) &&
      ast_mentions_template_dependency(ctx,
-                                      *node.conversion_type_id_syntax,
+                                      *cppast_conversion_type_id_syntax_storage(node),
                                       parameter_names,
                                       dependent_type_names)) {
     return true;
   }
-  if(node.base_type_syntax &&
+  if(cppast_base_type_syntax_storage(node) &&
      ast_mentions_template_dependency(ctx,
-                                      *node.base_type_syntax,
+                                      *cppast_base_type_syntax_storage(node),
                                       parameter_names,
                                       dependent_type_names)) {
     return true;

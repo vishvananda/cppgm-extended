@@ -40,7 +40,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @boost__fusion__vector_detail__value_at_impl(%__param0 : ptr) -> obj<1x1> [binding=weak, object=_ZN5boost6fusion13vector_detail13value_at_implILi0EiEEN3mpl8identityIT0_EEPKVNS1_5storeIXT_ES4_EE] {
+function @boost__fusion__vector_detail__value_at_impl(%__param0 : ptr) -> obj<1x1> [binding=weak, object=_ZN5boost6fusion13vector_detail13value_at_implILi0EiEENS_3mpl8identityIT0_EEPKVNS1_5storeIXT_ES5_EE] {
   slot $__param0 : ptr
   slot $retobj__1 : obj<1x1>
 

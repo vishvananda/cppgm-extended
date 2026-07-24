@@ -250,7 +250,7 @@ public:
     for(Scope * current = &scope; current; current = current->parent) {
       if(current->class_info &&
          current->class_info->source_template &&
-         !current->class_info->instantiation_key.empty()) {
+         !class_instantiation_key(*current->class_info).empty()) {
         return true;
       }
     }
@@ -648,7 +648,9 @@ public:
                                                   binding_arg_texts);
     request.template_name =
         strip_trailing_top_level_template_arguments(
-            semantic_model::class_output_qualified_name(*binding.owner_class));
+            template_api::class_witness_output_qualified_name(
+                *this,
+                *binding.owner_class));
     if(request.template_name.empty()) {
       request.template_name = class_template->name;
     }
@@ -751,7 +753,7 @@ public:
     request.use_anchor_location = use_location;
     request.template_name =
         strip_trailing_top_level_template_arguments(
-            semantic_model::class_output_qualified_name(owner));
+            template_api::class_witness_output_qualified_name(*this, owner));
     if(request.template_name.empty()) {
       request.template_name = class_template->name;
     }
@@ -868,7 +870,7 @@ public:
     decision.template_name =
         source_template ? source_template->name : binding.name;
     decision.selected =
-        semantic_model::function_binding_qualified_name_for_symbol(binding);
+        template_api::function_binding_witness_entity(*this, &binding);
     decision.role = witness::SourceUseRole::QualifierUse;
     decision.selection =
         binding.is_explicit_specialization ?
@@ -1167,7 +1169,10 @@ public:
                                                     binding_arg_texts);
       request.template_name =
           !info->qualified_name.empty() ?
-              strip_trailing_top_level_template_arguments(info->qualified_name) :
+              strip_trailing_top_level_template_arguments(
+                  template_api::class_witness_output_qualified_name(
+                      *this,
+                      *info)) :
               class_template->name;
       request.selection =
           source_selection_kind_for_match_kind(specialization.kind);
@@ -1366,6 +1371,42 @@ public:
       if(type_depends_on_template_parameter(qualifier_type) &&
          !allow_dependent_class_qualifiers) {
         return nullptr;
+      }
+
+      if(allow_dependent_class_qualifiers &&
+         qualifier_template_id &&
+         type_depends_on_template_parameter(qualifier_type)) {
+        TemplateIdSyntax local_qualifier_template_id =
+            *qualifier_template_id;
+        local_qualifier_template_id.name.rooted = false;
+        local_qualifier_template_id.name.qualifiers.clear();
+        local_qualifier_template_id.name.name =
+            unqualified_member_name(
+                local_qualifier_template_id.name.name);
+        ClassTemplateDecl * class_template =
+            semantic_lookup::lookup_class_template(
+                ctx,
+                *current,
+                local_qualifier_template_id.name);
+        if(class_template) {
+          const vector<string> arg_texts =
+              template_id_argument_texts_preserving_spacing(
+                  local_qualifier_template_id);
+          ClassInfo * qualifier_info =
+              ctx.reference_class_template_instantiation_with_syntax(
+                  *class_template,
+                  scope,
+                  arg_texts,
+                  &local_qualifier_template_id.argument_syntaxes,
+                  template_api::ClassTemplateSourceUseMode::
+                      NestedArgumentsOnly);
+          if(qualifier_info && qualifier_info->member_scope) {
+            ctx.ensure_class_reference_members(*qualifier_info);
+            current = qualifier_info->member_scope.get();
+            resolved_scope = current;
+            continue;
+          }
+        }
       }
 
       if(Scope * type_scope = ctx.scope_for_type(qualifier_type)) {
@@ -1779,7 +1820,9 @@ public:
             request.use_anchor_present = true;
             request.use_anchor_location = event_location;
             request.template_name = strip_trailing_top_level_template_arguments(
-                semantic_model::class_output_qualified_name(*owner));
+                template_api::class_witness_output_qualified_name(
+                    *this,
+                    *owner));
             const std::string source_template_identifier =
                 unqualified_member_name(request.template_name);
             if(!source_template_identifier.empty() &&
@@ -1827,9 +1870,16 @@ public:
       string qualified_template_name;
       if(resolved_binding && resolved_binding->owner_class) {
         const ClassInfo * owner = resolved_binding->owner_class;
-        qualified_template_name = strip_trailing_top_level_template_arguments(
-            semantic_model::class_output_qualified_name(*owner));
         class_template = owner->source_template;
+        qualified_template_name =
+            class_template ?
+                template_api::class_template_witness_qualified_name(
+                    *this,
+                    *class_template) :
+                strip_trailing_top_level_template_arguments(
+                    template_api::class_witness_output_qualified_name(
+                        *this,
+                        *owner));
         arguments = owner->instantiation_arguments;
         if(class_template && !arguments.empty()) {
           key = template_api::class_template_effective_instantiation_key(*this, *owner);

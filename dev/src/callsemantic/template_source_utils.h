@@ -120,6 +120,9 @@ private:
   bool active_ = false;
 };
 
+ExactTemplateTypeLookupAnchor retained_template_type_lookup_anchor(
+    const CppAstNode * node);
+
 struct ScopedSuppressedTemplateUseLocation
 {
   explicit ScopedSuppressedTemplateUseLocation(bool active = true);

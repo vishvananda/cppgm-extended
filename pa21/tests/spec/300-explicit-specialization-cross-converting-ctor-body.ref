@@ -41,16 +41,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @complex_float___real(%this : ptr) -> f32 [binding=weak, object=_ZNK7complexIfE4realEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load f32 %t2
-    return f32 %t3
-}
 function @complex_double___complex(%this : ptr, %re : f64) -> void [binding=weak, object=_ZN7complexIdEC1Ed] {
   slot $this : ptr
   slot $re : f64
@@ -73,6 +63,16 @@ function @complex_double___real(%this : ptr) -> f64 [binding=weak, object=_ZNK7c
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load f64 %t2
     return f64 %t3
+}
+function @complex_float___real(%this : ptr) -> f32 [binding=weak, object=_ZNK7complexIfE4realEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load f32 %t2
+    return f32 %t3
 }
 alias object _ZN7complexIfEC2ERKS_IdE = @complex_float___complex
 alias object _ZN7complexIdEC2Ed = @complex_double___complex

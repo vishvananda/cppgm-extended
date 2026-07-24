@@ -1,6 +1,7 @@
 #include "callsemantic/function_registry.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <map>
 #include <stdexcept>
 
@@ -225,20 +226,24 @@ FunctionBinding * find_function_by_symbol(
 
   FunctionBinding * best = nullptr;
   int best_score = -1;
-  for(std::size_t i = 0; i < state.functions.size(); ++i) {
-    if(!state.functions[i]) {
+  std::unordered_map<std::string, std::vector<FunctionBinding *> >::const_iterator
+      named = state.functions_by_name.find(name);
+  if(named == state.functions_by_name.end()) {
+    return nullptr;
+  }
+  for(std::size_t i = 0; i < named->second.size(); ++i) {
+    FunctionBinding * candidate = named->second[i];
+    if(!candidate) {
       continue;
     }
     const bool signature_match =
-        state.functions[i]->name == name &&
-        callbacks.types_equivalent_for_member_binding(state.functions[i]->type,
-                                                      type);
+        callbacks.types_equivalent_for_member_binding(candidate->type, type);
     if(!signature_match) {
       continue;
     }
-    int score = binding_score(state.functions[i].get()) + 10;
+    int score = binding_score(candidate) + 10;
     if(score > best_score) {
-      best = state.functions[i].get();
+      best = candidate;
       best_score = score;
     }
   }
@@ -444,17 +449,31 @@ FunctionBinding * find_defined_function_binding(
 void index_function_binding(FunctionRegistryState & state,
                             FunctionBinding * binding)
 {
-  if(!binding || binding->symbol.internal_symbol.empty()) {
+  if(!binding) {
     return;
   }
-  state.functions_by_internal_symbol[binding->symbol.internal_symbol].push_back(
-      binding);
+  state.functions_by_name[binding->name].push_back(binding);
+  if(!binding->symbol.internal_symbol.empty()) {
+    state.functions_by_internal_symbol[binding->symbol.internal_symbol].push_back(
+        binding);
+  }
 }
 
 void erase_indexed_function_binding(FunctionRegistryState & state,
                                     FunctionBinding * binding)
 {
-  if(!binding || binding->symbol.internal_symbol.empty()) {
+  if(!binding) {
+    return;
+  }
+  std::unordered_map<std::string, std::vector<FunctionBinding *> >::iterator
+      named = state.functions_by_name.find(binding->name);
+  if(named != state.functions_by_name.end()) {
+    erase_function_pointer(named->second, binding);
+    if(named->second.empty()) {
+      state.functions_by_name.erase(named);
+    }
+  }
+  if(binding->symbol.internal_symbol.empty()) {
     return;
   }
   std::unordered_map<std::string, std::vector<FunctionBinding *> >::iterator
@@ -526,6 +545,43 @@ void discard_function_binding(FunctionRegistryState & state,
   }
 }
 
+static bool function_binding_output_has_started(
+    const FunctionBinding * binding,
+    const ClassInfo & info)
+{
+  return function_binding_belongs_to_class(binding, info) &&
+         (binding->output_emitted ||
+          binding->definition_output_emitted ||
+          binding->output_requirements != semantic_model::ORK_NONE);
+}
+
+bool class_function_binding_output_has_started(const ClassInfo & info)
+{
+  for(std::map<std::string, std::vector<FunctionBinding *> >::const_iterator it =
+          info.methods.begin();
+      it != info.methods.end();
+      ++it) {
+    for(std::size_t i = 0; i < it->second.size(); ++i) {
+      if(function_binding_output_has_started(it->second[i], info)) {
+        return true;
+      }
+    }
+  }
+  if(info.member_scope) {
+    for(std::map<std::string, std::vector<FunctionBinding *> >::const_iterator it =
+            info.member_scope->function_sets.begin();
+        it != info.member_scope->function_sets.end();
+        ++it) {
+      for(std::size_t i = 0; i < it->second.size(); ++i) {
+        if(function_binding_output_has_started(it->second[i], info)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 void discard_class_function_bindings(FunctionRegistryState & state,
                                      ClassInfo & info)
 {
@@ -554,10 +610,16 @@ void discard_class_function_bindings(FunctionRegistryState & state,
       }
     }
   }
-  for(std::size_t i = 0; i < state.functions.size(); ++i) {
-    FunctionBinding * binding = state.functions[i].get();
-    if(function_binding_belongs_to_class(binding, info)) {
-      stale.insert(binding);
+  static const bool validate_class_function_index =
+      std::getenv("CPPGM_VALIDATE_CLASS_FUNCTION_INDEX") != nullptr;
+  if(validate_class_function_index) {
+    for(std::size_t i = 0; i < state.functions.size(); ++i) {
+      FunctionBinding * binding = state.functions[i].get();
+      if(function_binding_belongs_to_class(binding, info) &&
+         stale.count(binding) == 0) {
+        throw std::logic_error(
+            "class function binding missing from owner indexes");
+      }
     }
   }
   for(std::unordered_set<FunctionBinding *>::iterator it = stale.begin();

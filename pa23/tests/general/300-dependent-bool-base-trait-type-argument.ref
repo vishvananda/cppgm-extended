@@ -26,10 +26,10 @@ function @std___Hashtable_int__int__int__int____Hashtable__base_entry(%this : pt
     %t2 = index i8 [projection=base_subobject] %t1, 0
     %t3 = addr $argobj__1
     call void @std___Enable_default_constructor_tag___Enable_default_constructor_tag(%t3)
-    call void @std___Enable_default_constructor_true__std____detail___Hash_node_base____Enable_default_constructor__ov2__base_entry(%t2, $argobj__1)
+    call void @std___Enable_default_constructor_true____detail___Hash_node_base____Enable_default_constructor__ov2__base_entry(%t2, $argobj__1)
     return void
 }
-function @std___Enable_default_constructor_true__std____detail___Hash_node_base____Enable_default_constructor__ov2__base_entry(%this : ptr, %__param1 : obj<1x1>) -> void [binding=weak, object=_ZNSt27_Enable_default_constructorILb1ENSt8__detail15_Hash_node_baseEEC2ESt31_Enable_default_constructor_tag] {
+function @std___Enable_default_constructor_true____detail___Hash_node_base____Enable_default_constructor__ov2__base_entry(%this : ptr, %__param1 : obj<1x1>) -> void [binding=weak, object=_ZNSt27_Enable_default_constructorILb1ENSt8__detail15_Hash_node_baseEEC2ESt31_Enable_default_constructor_tag] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 

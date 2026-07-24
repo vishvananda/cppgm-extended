@@ -15,7 +15,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `70 / 147`
 - current cursor: `#71 libs/msm/test`
-- active compiler frontier: remaining MSM graph after the repaired and passing `AnonymousAndGuard` target
+- active compiler frontiers: shared `get_hierarchical_test_machines`
+  MPL-vector instantiation failure in `CompositeMachine` and `Entries`, plus
+  recursively flattened semantic identity retention in `AnonymousEuml`
 
 ## Baseline Gates
 
@@ -216,6 +218,8 @@ differences other than the output path.
 | `(MSM qualified identity and incomplete-indirect closure)` | Collision-local namespace identity for class-template template arguments plus no eager class completion through pointer/reference cast targets and ABI parameters | -10.70% | -10.65% | -11.58% | versus the initial MSM checkpoint, instructions move +1,005,004,442 while RSS improves by 3,014,656 B and footprint improves by 1,978,368 B; the large cumulative instruction and memory wins remain | `/tmp/cppgm-boost-frontier-v2-msm-identity-incomplete-pointee-perf.json` | pass; candidate medians are 235,351,253,622 instructions, 1,154,961,408 B RSS, and 892,989,440 B footprint. The candidate-only gate verified frozen source epoch `9764b3835` and its exact 51-header closure before every run. All fresh processes released before the next, recorded zero swaps, and used no parent compiler or live project header. |
 | `(MSM nested identity and virtual-parameter ABI closure)` | Preserve collision-qualified class-template identity through nested alias results and recover virtual-base parameter ABI metadata from an incomplete class's typed base graph without completing its members | -12.53% | -10.68% | -11.63% | versus the preceding MSM checkpoint, instructions improve by 4,808,435,527 while RSS improves by 339,968 B and footprint improves by 577,536 B; the large instruction win and recovered memory signal are both retained | `/private/tmp/cppgm-boost-frontier-v2-msm-pvb-final-perf.json` | pass; candidate medians are 230,542,818,095 instructions, 1,154,621,440 B RSS, and 892,411,904 B footprint. The candidate-only gate verified frozen source epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`. No parent compiler or live project header was measured. |
 | `(MSM template-state sharing and pack ABI closure)` | Share immutable primary class-template arguments with binding and mangle state, discard disabled audit-only creation strings, preserve empty owner packs, and retain dependent member-pointer declarators in symbols | -12.89% | -11.97% | -12.91% | versus the preceding MSM checkpoint, instructions improve by 949,425,793 while RSS improves by 16,756,736 B and footprint improves by 12,890,112 B; both the instruction win and the recovered memory signal strengthen | `/private/tmp/cppgm-boost-frontier-v2-msm-pack-memory-final-accessor.json` | pass; the final candidate-only run records 229,593,392,302 instructions, 1,137,864,704 B RSS, and 879,521,792 B footprint. The gate verified frozen source epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`. The originally named `/tmp` baseline had been cleaned, so the check used the preserved byte-equivalent epoch baseline with the same head and medians; no parent compiler or live project header was measured. |
+| `(MSM mangle-name allocation recovery)` | Copy only the rooted/qualifier syntax that survives when class-specialization metadata replaces its long internal name with the short source template name | -12.75% | -11.40% | -13.09% | versus the preceding checkpoint, instructions move +357,837,613 and RSS +7,393,280 B while footprint improves by 1,818,624 B; all cumulative signals remain substantially improved | `/private/tmp/cppgm-boost-frontier-v2-msm-mangle-name-final.json` | pass; the exact 18,083-class Euml census found 17,009,208 B of retained allocation for only 177,518 B of live template-name syntax. At the identical class count, releasing that discarded capacity reduced the instrumented process maximum from 1,872,293,888 B to 1,610,145,792 B. The final implementation avoids allocating and copying the discarded name at all. The frozen gate records 229,951,229,915 instructions, 1,145,257,984 B RSS, and 877,703,168 B footprint; it verified epoch `9764b3835` and all 51 frozen headers. |
+| `(MSM algorithmic cleanup package)` | Remove eager unused instantiation, compact/share typed template state, avoid repeated rendered-name recovery, and skip witness-only class-lifecycle rendering when no witness session exists | -25.36% | -22.41% | -28.72% | versus the mangle-name checkpoint, instructions improve by 33,233,712,344, RSS by 142,258,176 B, and footprint by 157,884,416 B; the final witness-only gate alone removes another 7,299,286,986 instructions from exact `AnonymousEuml` with byte-identical object output | `/private/tmp/cppgm-boost-frontier-v2-final-witness-gate-perf.json` | pass; three-run medians are 196,717,517,571 instructions, 1,002,999,808 B RSS, and 719,818,752 B footprint. The gate verified frozen source epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent compiler or live project header was measured, and system swap remained unchanged. |
 
 ## Suite Cursor
 
@@ -294,7 +298,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 68 | `libs/mpi/test` | blocked-external | `(no compiler change)` | The exact forced two-job graph finds only one bookkeeping target and exits successfully without creating any compile, link, or runtime action in 3.00s at 39,317,504 B maximum RSS and zero process swaps; log `/tmp/boost-frontier-v2-suite-068-mpi-initial-forced.log`. | Boost.MPI declares C++03, but its Jamfile creates the test suite only when `mpi.configured` is true. This host has neither `mpic++` nor `mpirun`, so the empty successful B2 graph is external-configuration evidence, not a compiler pass. System swap remains unchanged at 551.75 MB. |
 | 69 | `libs/mpl/test` | pass | `(this commit)` | The final exact forced two-job C++11 graph finds 2413 targets, updates all 220 requested targets, records 99 passing test actions, and exits with no failure or skip in 332.56s; log `/private/tmp/boost-frontier-v2-suite-069-mpl-full-fixed.log`. | Two minimal, header-free C++11 owners cover ordinary multicharacter constant evaluation and qualified static-array decay to a pointer non-type template argument. PA19/PA22 pass `453/453`; all 959 configured strict comparisons, the PA9-excluded broad report (`4079/4079`, including PA37 `7/7`), all 31 audit/performance unit tests, placement review, cache parity, Clang/GCC controls, and warning-clean Clang/GCC production builds pass. The final graph peaks at 447,705,088 B RSS, essentially unchanged from the one-failure intake, releases fully, and records zero swaps. |
 | 70 | `libs/mqtt5/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/mqtt5/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the frontier language policy, no graph was run and no compiler work is inferred from the historical configuration-only result. The cursor advances directly to C++03-declared MSM. |
-| 71 | `libs/msm/test` | frontier | `(this commit)` | The exact two-job intake and focused replays expose four initial semantic defects, the qualified MPL/Fusion `end` collision, and a caller-side virtual-base ABI metadata gap in `AnonymousAndGuard`. After the retained-state and pack-ABI cleanup, the exact focused graph finds 4175 targets, rebuilds all 69 affected dependency/object/archive/executable targets with `JOBS=2`, and passes compile, link, and runtime; log `/private/tmp/boost-frontier-v2-msm-anonymous-pack-memory-final.log`. The complete suite graph has not yet been replayed, so the suite remains open. | The former 3,494-copy invalid index-4 retry cascade is closed without a cache. The apparent later repetition consists of 19,264 distinct class identities among 19,266 reference-member collection events, with only two revisits and no substitution failures. The final exact-flag repeat takes 73.40s at 1,463,574,528 B maximum RSS, 79,331,328 B below the previous 1,542,905,856 B replay, emits an object byte-identical to the pre-accessor run, and records zero swaps; system swap falls from 1128 MiB to 1064 MiB rather than accumulating. The next task is the complete exact two-job MSM graph. |
+| 71 | `libs/msm/test` | frontier | `(this commit)` | The exact two-job intake and focused replays expose four initial semantic defects, the qualified MPL/Fusion `end` collision, and a caller-side virtual-base ABI metadata gap in `AnonymousAndGuard`. After the retained-state and pack-ABI cleanup, the exact focused graph finds 4175 targets, rebuilds all 69 affected dependency/object/archive/executable targets with `JOBS=2`, and passes compile, link, and runtime; log `/private/tmp/boost-frontier-v2-msm-anonymous-pack-memory-final.log`. The subsequent full forced graph finds 5324 targets and requests 419 updates. `Anonymous`, `AnonymousAndGuard`, and `AnonymousEuml` compile/link/run, while `CompositeMachine` and `Entries` expose the same real compile failure; log `/private/tmp/boost-frontier-v2-suite-071-full-mangle-name.log`. | The former 3,494-copy invalid index-4 retry cascade is closed without a cache: the name-only hotspot was unrelated MPL/Fusion declarations sharing the leaf name `end`, while exact declaration-plus-canonical-argument keys had no comparable hotspot. The later reference-member activity consists of 19,264 distinct class identities among 19,266 events. Avoiding obsolete mangle-name capacity is a valid retained-state improvement and passes the focused 1585-test semantic report plus the frozen performance gate, but it does not close `AnonymousEuml`: a full-TU retained-state diagnostic reaches 6,205,792,256 B RSS and 6,833,315,840 B footprint. At the same 28,000 class specializations, compacting only semantic identity names at least 4096 bytes changes RSS from 3,330,023,424 B to 2,277,285,888 B. cppgm also creates fewer class specializations than Clang, so the remaining pathology is recursive flattened identity retention rather than excess specialization breadth. The memory frontier remains open alongside the shared `get_hierarchical_test_machines<hierarchical_state_machine>` three-element MPL-vector failure. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
@@ -302,16 +306,23 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 ## Active Frontier
 
 - suite: `#71 libs/msm/test`
-- focused target: complete `libs/msm/test` graph; `AnonymousAndGuard` is closed
+- focused targets: `CompositeMachine` and `Entries` for the semantic failure;
+  `AnonymousEuml` for pathological compile-memory retention
 - last closed suite: `#70 libs/mqtt5/test` (`skipped-language`)
-- failure phase: no remaining focused failure; complete-suite replay pending
-- diagnostic: the exact source traverses Fusion vector iterators 0 through 3, selects `boost::mpl::aux::for_each_impl<true>`, and passes runtime after receiving the virtual reference parameter's hidden virtual-base pointer
+- failure phase: class-template instantiation while collecting a typedef in an
+  unnamed namespace; recursively flattened semantic identity retention
+- diagnostic: both targets fail instantiating `boost::mpl::vector<hierarchical_state_machine<boost::msm::back::state_machine>, hierarchical_state_machine<boost::msm::back::state_machine, boost::msm::back::favor_compile_time>, hierarchical_state_machine<boost::msm::back11::state_machine>>` from `get_hierarchical_test_machines<hierarchical_state_machine>`
 - reduced repro: 11-line header-free C++11 PA21 nested identity owner, 5-line PA21 incomplete-pointee owner, and 6-line header-free C++11 PA27 virtual-dispatch ABI owner with a 16-line LowIR reference
 - owning PA/cluster: PA21 template integration and PA27 virtual dispatch/ABI lowering
-- implementation area: collision-qualified typed template identity and typed class base-graph ABI metadata
+- implementation area: collision-qualified typed template identity, typed class
+  base-graph ABI metadata, and environment-qualified immutable template identity
+  with lazily rendered spelling
 - performance risk: MSM is template-heavy; use two B2 jobs and monitor compiler-child RSS, aggregate system memory, and swap throughout the graph
 - language lane: Boost.MSM declares C++03 in `libs/msm/meta/libraries.json`, so it is supported and must run
-- next action: run the complete exact two-job MSM graph with bounded memory monitoring, then classify and reduce the next independent failure if one remains
+- next action: introduce and validate the smallest collision-safe,
+  environment-qualified immutable identity slice, keeping full spelling lazy;
+  then replay `AnonymousEuml` under a memory bound before returning to the two
+  semantic-failure targets
 
 ## Fix Ledger
 
@@ -553,6 +564,63 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Dependent-type resolution cache input lifetime | The nested dependent-type cache keyed entries by a raw `Type *` while retaining only the resolved output. Recursive resolution could release an ephemeral input and allocate an unrelated type at the same address before the outermost query cleared the cache, producing a stale hit such as `const wrap_iter<size_t*>& -> int`. Each key now owns its input `TypePtr` for the cache entry's bounded lifetime; lookup ordering remains pointer-based and the cache is still cleared after the outermost query. | `pa22/tests/general/300-dependent-type-resolution-cache-input-lifetime.t`, reduced to 21 lines / 851 bytes of header-free C++11 with a local three-line `enable` stand-in | The saved pre-fix compiler fails 43 of 256 concurrent compilations of the reduced declaration graph. Trace evidence showed the same address first stored for a resolved `enable_t<..., int>` input and then reused by an unrelated `const W&` input. The hosted `<algorithm>` form reproduced 9 of 16 times; disabling the cache passed 16 of 16. | Clang 22 and GCC 15 accept the reducer warning-clean. The focused PA22 check, cache-on/off byte parity, and 48 concurrent fixed-compiler repetitions pass with zero swaps and at most 10,137,600 B RSS per process. The frozen self-compile gate completes three fresh compiler processes, each releases fully between runs, and records zero process swaps. | included in the same final three-run result: -11.08% instructions, -10.45% RSS, and -11.43% footprint; the cache ownership fix retains both the instruction win and recovered memory | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-24`: Packaged the `AnonymousEuml` algorithmic and memory work after
+  one final instrumented pass. With exact B2 `-O0` inputs, Clang 22 compiles the
+  translation unit in 6.94s at 399,683,584 B RSS and 23,330,508,818
+  instructions. The final cppgm++ compile takes 88.19s at 2,003,734,528 B RSS
+  and 354,594,916,944 instructions, down from the earlier 6.2 GiB diagnostic;
+  its object is byte-identical before and after the last no-witness
+  optimization. The remaining gap is not excess template-expansion breadth:
+  Clang's AST records 51,003 class-template-specialization declarations, while
+  cppgm++ creates 36,809 class specializations and receives only 10,029
+  class-template reference requests. cppgm++ instead performs 6,092,656
+  type-to-class-info queries, including 4,517,980 while rescanning 160,627
+  emitted nodes over eight instantiated-output fixpoint iterations. A stack
+  sample exposed one avoidable part of that work: disabled witness lifecycle
+  hooks still rendered nested class identities, recursively walking defaulted
+  arguments and mangle structure before discarding the event. Gating those
+  hooks on an active witness session removes 2.02% of exact-TU instructions
+  without changing the object. The remaining repeated class-info traffic is
+  now explicitly identified as fixpoint/model lookup overhead rather than a
+  pathological specialization explosion; replacing it safely requires a
+  separate worklist/generation design, not a cache keyed by rendered aliases.
+  The final strict direct-LowIR suites pass 959/959 and the complete direct-text
+  report passes 4099/4099. The 16 updated LowIR references were audited rather
+  than accepted as arbitrary churn: they reflect typed CV/member-pointer name
+  normalization, removal of unused eager-instantiation ordinal suffixes, two
+  Clang-confirmed ABI corrections (covarying owner-pack mangling and direct
+  two-pointer aggregate return), and byte-identical lazy first-use ordering.
+  The PA27 virtual-base reducer is intentionally reduced from 30 source lines
+  and 248 reference lines to 10 and 138; the larger remaining PA27 refs come
+  from sources of only 4--22 lines and are intrinsic vtable/RTTI/lifecycle
+  output for distinct object-model cases. The frozen performance gate passes at
+  -25.36% instructions, -22.41% RSS, and -28.72% footprint with the exact
+  51-header closure verified before every run.
+
+- `2026-07-23`: Reopened `AnonymousEuml` as a compile-memory frontier. Its
+  successful compile/link/run is functionally useful but a full-TU
+  retained-state diagnostic reaches 6,205,792,256 B RSS and 6,833,315,840 B
+  footprint, far outside the other MSM units. The retained-state census
+  separates breadth from representation: cppgm creates about 35,595 class
+  specializations against Clang's 46,526, while a controlled stop at exactly
+  28,000 cppgm classes uses 3,330,023,424 B RSS. Replacing only semantic
+  identity names at least 4096 bytes reduces that same-count result to
+  2,277,285,888 B, a 1,052,737,536 B delta. Whole-name interning barely helps
+  because most recursively composed names are unique. Replacing the spellings
+  with compact hashes is diagnostic evidence, not a fix: it reduces the
+  same-count memory again but a full replay remains active in late
+  class-reference lookup, dependency analysis, and specialization reset churn.
+  Relaxing the exact named-key guard during that probe caused five focused
+  PA19/PA21/PA23 ABI/materialization regressions; restoring the guard returns
+  the focused report to 1585/1585. A direct `Type`-to-`ClassInfo` backlink is
+  also insufficient because identical spelling can refer to contextually
+  rematerialized owners. Both `Type *` and `ClassInfo *` therefore require a
+  binding-environment snapshot before they can participate in durable
+  identity. The production direction is a collision-safe immutable identity
+  containing the declaration, typed arguments, and binding environment or
+  generation, with textual names rendered only at ABI/output boundaries. No
+  identity cache or hash substitution is retained from this investigation.
 
 - `2026-07-22`: Closed the apparent repeated-alias MSM frontier without a
   cache. The repeated work was not thousands of legitimate resolutions of one
@@ -2689,5 +2757,7 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh -a libs/msm/test
+  ./run-cppgm-b2.sh \
+    libs/msm/test//CompositeMachine \
+    libs/msm/test//Entries
 ```

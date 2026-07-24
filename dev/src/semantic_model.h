@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <map>
 #include <memory>
@@ -65,6 +66,7 @@ enum BuiltinConstantEvaluationKind
 };
 
 std::size_t next_scope_instance_id();
+std::size_t next_class_instance_id();
 
 enum MemberAccess : int
 {
@@ -236,6 +238,193 @@ inline void clear_value_binding_constexpr_value(ValueBinding & binding)
   binding.constexpr_value.reset();
 }
 
+template<typename Key,
+         typename Value,
+         typename Compare = std::less<Key> >
+class LazyMap
+{
+public:
+  typedef std::map<Key, Value, Compare> Map;
+  typedef typename Map::key_type key_type;
+  typedef typename Map::mapped_type mapped_type;
+  typedef typename Map::value_type value_type;
+  typedef typename Map::size_type size_type;
+  typedef typename Map::iterator iterator;
+  typedef typename Map::const_iterator const_iterator;
+
+  LazyMap() = default;
+
+  LazyMap(const LazyMap & other)
+      : values_(other.values_ ? new Map(*other.values_) : nullptr)
+  {
+  }
+
+  LazyMap(LazyMap && other) noexcept = default;
+
+  LazyMap & operator=(const LazyMap & other)
+  {
+    if(this != &other) {
+      values_.reset(other.values_ ? new Map(*other.values_) : nullptr);
+    }
+    return *this;
+  }
+
+  LazyMap & operator=(LazyMap && other) noexcept = default;
+
+  mapped_type & operator[](const key_type & key)
+  {
+    return mutable_values()[key];
+  }
+
+  mapped_type & operator[](key_type && key)
+  {
+    return mutable_values()[std::move(key)];
+  }
+
+  iterator begin()
+  {
+    return values_ ? values_->begin() : empty_map().begin();
+  }
+
+  const_iterator begin() const
+  {
+    return values_ ? values_->begin() : empty_map().begin();
+  }
+
+  iterator end()
+  {
+    return values_ ? values_->end() : empty_map().end();
+  }
+
+  const_iterator end() const
+  {
+    return values_ ? values_->end() : empty_map().end();
+  }
+
+  iterator find(const key_type & key)
+  {
+    return values_ ? values_->find(key) : empty_map().end();
+  }
+
+  const_iterator find(const key_type & key) const
+  {
+    return values_ ? values_->find(key) : empty_map().end();
+  }
+
+  size_type count(const key_type & key) const
+  {
+    return values_ ? values_->count(key) : 0;
+  }
+
+  bool empty() const
+  {
+    return !values_ || values_->empty();
+  }
+
+  size_type size() const
+  {
+    return values_ ? values_->size() : 0;
+  }
+
+  std::pair<iterator, bool> insert(const value_type & value)
+  {
+    return mutable_values().insert(value);
+  }
+
+  std::pair<iterator, bool> insert(value_type && value)
+  {
+    return mutable_values().insert(std::move(value));
+  }
+
+  template<typename InputIterator>
+  void insert(InputIterator first, InputIterator last)
+  {
+    if(first != last) {
+      mutable_values().insert(first, last);
+    }
+  }
+
+  template<typename... Args>
+  std::pair<iterator, bool> emplace(Args &&... args)
+  {
+    return mutable_values().emplace(std::forward<Args>(args)...);
+  }
+
+  size_type erase(const key_type & key)
+  {
+    if(!values_) {
+      return 0;
+    }
+    const size_type erased = values_->erase(key);
+    reset_if_empty();
+    return erased;
+  }
+
+  iterator erase(iterator position)
+  {
+    if(!values_) {
+      return empty_map().end();
+    }
+    iterator next = values_->erase(position);
+    if(values_->empty()) {
+      values_.reset();
+      return empty_map().end();
+    }
+    return next;
+  }
+
+  void clear()
+  {
+    values_.reset();
+  }
+
+  void swap(Map & other)
+  {
+    if(!values_) {
+      if(other.empty()) {
+        return;
+      }
+      values_.reset(new Map);
+    }
+    values_->swap(other);
+    reset_if_empty();
+  }
+
+  const Map & get() const
+  {
+    return values_ ? *values_ : empty_map();
+  }
+
+  operator const Map &() const
+  {
+    return get();
+  }
+
+private:
+  static Map & empty_map()
+  {
+    static Map empty;
+    return empty;
+  }
+
+  Map & mutable_values()
+  {
+    if(!values_) {
+      values_.reset(new Map);
+    }
+    return *values_;
+  }
+
+  void reset_if_empty()
+  {
+    if(values_ && values_->empty()) {
+      values_.reset();
+    }
+  }
+
+  std::unique_ptr<Map> values_;
+};
+
 struct Scope
 {
   explicit Scope(Scope * parent = nullptr,
@@ -259,6 +448,7 @@ struct Scope
     name = other.name;
     namespace_scope = other.namespace_scope;
     inline_namespace = other.inline_namespace;
+    persistent_lifetime = other.persistent_lifetime;
     class_info = other.class_info;
     function = other.function;
     named_types = other.named_types;
@@ -319,6 +509,7 @@ struct Scope
   std::string name;
   bool namespace_scope;
   bool inline_namespace = false;
+  bool persistent_lifetime = false;
   ClassInfo * class_info = nullptr;
   FunctionBinding * function = nullptr;
   // Point-lookup keyed by type name; iteration order is not relied upon (the one
@@ -327,17 +518,18 @@ struct Scope
   typedef std::unordered_map<std::string, cpp_decl::TypePtr> NamedTypeMap;
   NamedTypeMap named_types;
   std::map<std::string, MemberAccess> named_type_access;
-  std::map<std::string, std::vector<cpp_decl::TypePtr> > named_type_packs;
-  std::map<std::string, std::vector<ValueBinding> > named_value_packs;
-  std::map<std::string, std::size_t> named_pack_sizes;
+  LazyMap<std::string, std::vector<cpp_decl::TypePtr> > named_type_packs;
+  LazyMap<std::string, std::vector<ValueBinding> > named_value_packs;
+  LazyMap<std::string, std::size_t> named_pack_sizes;
   std::set<std::string> template_bound_type_names;
   std::set<std::string> template_bound_type_pack_names;
   std::set<std::string> template_bound_value_names;
   std::set<std::string> template_bound_value_pack_names;
   std::set<std::string> template_bound_template_names;
-  std::map<std::string, template_model::TemplateArgument> template_bound_template_arguments;
+  LazyMap<std::string, template_model::TemplateArgument>
+      template_bound_template_arguments;
   std::map<std::string, ValueBinding> values;
-  std::map<std::string, Scope *> namespace_bindings;
+  LazyMap<std::string, Scope *> namespace_bindings;
   // Namespace collection is intentionally eager so later declarations are
   // available when deferred class bodies are completed.  Keep the first token
   // at which each spelling became visible so source-point qualified lookup can
@@ -353,13 +545,13 @@ struct Scope
       std::map<std::string,
                std::map<const FunctionBinding *, std::size_t> > >
       function_binding_first_token_starts;
-  std::map<std::string, std::map<const FunctionBinding *, MemberAccess> >
+  LazyMap<std::string, std::map<const FunctionBinding *, MemberAccess> >
       function_set_access_overrides;
-  std::map<std::string, ClassTemplateDecl *> class_templates;
-  std::map<std::string, std::vector<FunctionTemplateDecl *> > function_templates;
+  LazyMap<std::string, ClassTemplateDecl *> class_templates;
+  LazyMap<std::string, std::vector<FunctionTemplateDecl *> > function_templates;
   std::set<const CppAstNode *> collected_template_declarations;
-  std::map<std::string, AliasTemplateDecl *> alias_templates;
-  std::map<std::string, VariableTemplateDecl *> variable_templates;
+  LazyMap<std::string, AliasTemplateDecl *> alias_templates;
+  LazyMap<std::string, VariableTemplateDecl *> variable_templates;
   std::vector<Scope *> using_directives;
   std::vector<std::unique_ptr<Scope> > namespace_children;
   std::size_t instance_id;
@@ -369,7 +561,7 @@ struct Scope
     std::size_t dependency_token = 0;
     std::vector<FunctionBinding *> functions;
   };
-  mutable std::map<std::string, DirectFunctionLookupCacheEntry>
+  mutable LazyMap<std::string, DirectFunctionLookupCacheEntry>
       cached_direct_function_lookups;
   std::size_t direct_function_lookup_cache_epoch = 0;
   mutable bool cached_binding_scope_fingerprint_valid = false;
@@ -539,12 +731,17 @@ struct VTableInfo
 struct ClassInfo
 {
   ClassInfo()
-      : instantiation_arguments_storage(
+      : semantic_identity_id(next_class_instance_id()),
+        instantiation_arguments_storage(
             new std::vector<template_model::TemplateArgument>()),
         instantiation_arguments(*instantiation_arguments_storage)
   {
   }
 
+  // Process-local, collision-free identity for semantic graph edges.  Textual
+  // names remain available for diagnostics and ABI rendering, but must not be
+  // recursively flattened merely to identify an already materialized class.
+  std::size_t semantic_identity_id;
   std::string name;
   std::string qualified_name;
   cpp_decl::QualifiedName symbol_qualified_name_syntax;
@@ -624,6 +821,7 @@ struct ClassInfo
   std::map<std::string, ClassTemplateDecl *>
       reference_reset_witness_class_templates;
   std::string instantiation_key;
+  const std::string * instantiation_key_view = nullptr;
   std::size_t instantiation_specialization_epoch = 0;
   std::vector<std::string> instantiation_arg_texts;
   std::shared_ptr<std::vector<template_model::TemplateArgument> >
@@ -640,16 +838,209 @@ struct ClassInfo
   mutable SourceDeclAnchorCache declaration_anchor;
 };
 
-inline const std::string & class_output_qualified_name(const ClassInfo & info)
+inline std::string class_instantiation_output_local_name(
+    const ClassInfo & info)
 {
-  return info.display_qualified_name.empty() ? info.qualified_name : info.display_qualified_name;
+  if(!info.source_template) {
+    return std::string();
+  }
+  const bool have_canonical_texts =
+      info.instantiation_arg_texts.size() ==
+      info.instantiation_arguments.size();
+  if(!have_canonical_texts && info.instantiation_arguments.empty()) {
+    return std::string();
+  }
+  std::string out = info.name + "<";
+  for(std::size_t i = 0; i < info.instantiation_arguments.size(); ++i) {
+    if(i != 0) {
+      out += ", ";
+    }
+    const std::string & text =
+        have_canonical_texts ?
+            info.instantiation_arg_texts[i] :
+            info.instantiation_arguments[i].text;
+    if(text.empty()) {
+      return std::string();
+    }
+    out += text;
+  }
+  out += ">";
+  return out;
+}
+
+inline std::size_t last_top_level_qualified_name_separator(
+    const std::string & text)
+{
+  std::size_t depth = 0;
+  std::size_t split = std::string::npos;
+  for(std::size_t i = 0; i + 1 < text.size(); ++i) {
+    if(text[i] == '<') {
+      ++depth;
+    } else if(text[i] == '>' && depth != 0) {
+      --depth;
+    } else if(text[i] == ':' &&
+              text[i + 1] == ':' &&
+              depth == 0) {
+      split = i;
+      ++i;
+    }
+  }
+  return split;
+}
+
+inline std::string class_output_qualified_name(const ClassInfo & info)
+{
+  return info.display_qualified_name.empty() ?
+      info.qualified_name :
+      info.display_qualified_name;
+}
+
+inline cpp_decl::QualifiedName
+class_output_qualified_name_syntax(const ClassInfo & info)
+{
+  cpp_decl::QualifiedName out;
+  cpp_decl::TypePtr type = cpp_decl::strip_top_level_cv(info.type);
+  if(info.is_lambda_closure &&
+     (!type ||
+      type->kind != cpp_decl::Type::TK_NAMED ||
+      !type->named_rare().named_member_owner_type) &&
+     !info.symbol_qualified_name_syntax.name.empty()) {
+    return info.symbol_qualified_name_syntax;
+  }
+  if(type &&
+     type->kind == cpp_decl::Type::TK_NAMED &&
+     !info.is_lambda_closure) {
+    out.rooted = type->named_qualified_name_syntax().rooted;
+    cpp_decl::TypePtr owner_type =
+        cpp_decl::strip_top_level_cv(
+            type->named_rare().named_member_owner_type);
+    ClassInfo * owner =
+        owner_type && owner_type->kind == cpp_decl::Type::TK_NAMED ?
+            owner_type->named_rare().named_class_info :
+            nullptr;
+    if(owner && owner != &info) {
+      out = class_output_qualified_name_syntax(*owner);
+      if(!out.name.empty()) {
+        out.qualifiers.push_back(out.name);
+        const std::string instantiation_local =
+            class_instantiation_output_local_name(info);
+        out.name =
+            !instantiation_local.empty() ?
+                instantiation_local :
+                (!info.symbol_qualified_name_syntax.name.empty() ?
+                     info.symbol_qualified_name_syntax.name :
+                     info.name);
+        return out;
+      }
+    }
+  }
+
+  if(!info.source_template &&
+     !info.is_lambda_closure &&
+     !info.symbol_qualified_name_syntax.name.empty()) {
+    return info.symbol_qualified_name_syntax;
+  }
+
+  const std::string text = class_output_qualified_name(info);
+  std::size_t component_start = 0;
+  std::size_t angle_depth = 0;
+  for(std::size_t i = 0; i + 1 < text.size(); ++i) {
+    if(text[i] == '<') {
+      ++angle_depth;
+    } else if(text[i] == '>' && angle_depth != 0) {
+      --angle_depth;
+    } else if(text[i] == ':' &&
+              text[i + 1] == ':' &&
+              angle_depth == 0) {
+      if(i != component_start) {
+        out.qualifiers.push_back(
+            text.substr(component_start, i - component_start));
+      } else if(component_start == 0) {
+        out.rooted = true;
+      }
+      component_start = i + 2;
+      ++i;
+    }
+  }
+  out.name = text.substr(component_start);
+  if(out.name.empty() && !out.qualifiers.empty()) {
+    out.name = out.qualifiers.back();
+    out.qualifiers.pop_back();
+  }
+  if(type && type->kind == cpp_decl::Type::TK_NAMED) {
+    const cpp_decl::QualifiedName & internal =
+        type->named_qualified_name_syntax();
+    for(std::size_t i = 0; i < internal.qualifiers.size(); ++i) {
+      if(internal.qualifiers[i] != "_GLOBAL__N_1") {
+        continue;
+      }
+      if(std::find(out.qualifiers.begin(),
+                   out.qualifiers.end(),
+                   internal.qualifiers[i]) != out.qualifiers.end()) {
+        continue;
+      }
+      out.qualifiers.insert(
+          out.qualifiers.begin() +
+              std::min(i, out.qualifiers.size()),
+          internal.qualifiers[i]);
+    }
+  }
+  return out;
+}
+
+inline const cpp_decl::QualifiedName &
+class_symbol_qualified_name_syntax(const ClassInfo & info)
+{
+  if(!info.symbol_qualified_name_syntax.name.empty()) {
+    return info.symbol_qualified_name_syntax;
+  }
+  cpp_decl::TypePtr type = cpp_decl::strip_top_level_cv(info.type);
+  if(type && type->kind == cpp_decl::Type::TK_NAMED) {
+    return type->named_qualified_name_syntax();
+  }
+  static const cpp_decl::QualifiedName empty;
+  return empty;
+}
+
+inline const std::string & class_instantiation_key(const ClassInfo & info)
+{
+  return info.instantiation_key_view ?
+      *info.instantiation_key_view :
+      info.instantiation_key;
+}
+
+inline void set_class_instantiation_key(ClassInfo & info,
+                                        const std::string & key)
+{
+  info.instantiation_key_view = nullptr;
+  info.instantiation_key = key;
+}
+
+inline void borrow_class_instantiation_key(ClassInfo & info,
+                                           const std::string & stable_key)
+{
+  std::string().swap(info.instantiation_key);
+  info.instantiation_key_view = &stable_key;
+}
+
+inline std::string class_internal_output_qualified_name(const ClassInfo & info)
+{
+  std::string out = class_output_qualified_name(info);
+  const std::string unnamed = "<unnamed>";
+  const std::string internal_unnamed = "_GLOBAL__N_1";
+  std::size_t position = 0;
+  while((position = out.find(unnamed, position)) != std::string::npos) {
+    out.replace(position, unnamed.size(), internal_unnamed);
+    position += internal_unnamed.size();
+  }
+  return out;
 }
 
 inline void set_class_output_qualified_name(ClassInfo & info,
                                             const std::string & name)
 {
   if(name == info.qualified_name) {
-    info.display_qualified_name.clear();
+    std::string().swap(info.display_qualified_name);
   } else {
     info.display_qualified_name = name;
   }
@@ -1174,6 +1565,12 @@ struct ClassTemplateDecl
   std::string name;
   const CppAstNode * class_node = nullptr;
   std::vector<template_model::TemplateParameterInfo> parameters;
+  // ABI metadata retained past Analyzer teardown shares one immutable
+  // parameter snapshot per source template instead of copying it into every
+  // specialization.
+  mutable std::shared_ptr<
+      const std::vector<template_model::TemplateParameterInfo> >
+      retained_mangle_parameters;
   std::map<std::string, ClassInfo *> instantiations;
   std::map<std::string, ClassInfo *> reference_instantiations;
   std::map<std::string, ClassInfo *> fast_reference_cache;
@@ -1181,6 +1578,8 @@ struct ClassTemplateDecl
   mutable std::map<std::string, SpecializationSelectionCacheEntry>
       specialization_selection_cache;
   std::set<std::string> suppress_implicit_instantiation_definitions;
+  std::set<std::pair<std::string, std::string> >
+      suppress_implicit_member_function_instantiation_definitions;
   std::set<std::string> explicit_static_member_specializations;
   std::set<std::pair<std::string, std::string> >
       explicit_static_member_specialization_keys;

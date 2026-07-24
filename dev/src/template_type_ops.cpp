@@ -37,8 +37,10 @@ void append_template_argument_value_dependencies(
     const std::vector<template_model::TemplateArgument> & arguments)
 {
   for(std::size_t i = 0; i < arguments.size(); ++i) {
-    for(std::size_t j = 0; j < arguments[i].value_dependencies.size(); ++j) {
-      append_template_value_dependency(out, arguments[i].value_dependencies[j]);
+    const std::vector<template_model::TemplateValueDependency> & dependencies =
+        arguments[i].rare().value_dependencies;
+    for(std::size_t j = 0; j < dependencies.size(); ++j) {
+      append_template_value_dependency(out, dependencies[j]);
     }
   }
 }

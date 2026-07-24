@@ -264,15 +264,18 @@ bool non_type_template_argument_values_match(const TemplateArgument & lhs,
   if(integral_like) {
     return lhs.value == rhs.value;
   }
-  if(!lhs.function_internal_symbol.empty() ||
-     !rhs.function_internal_symbol.empty()) {
-    return lhs.function_internal_symbol == rhs.function_internal_symbol;
+  const TemplateArgument::RareData & lhs_rare = lhs.rare();
+  const TemplateArgument::RareData & rhs_rare = rhs.rare();
+  if(!lhs_rare.function_internal_symbol.empty() ||
+     !rhs_rare.function_internal_symbol.empty()) {
+    return lhs_rare.function_internal_symbol ==
+        rhs_rare.function_internal_symbol;
   }
-  if(lhs.function_value || rhs.function_value) {
-    return lhs.function_value == rhs.function_value;
+  if(lhs_rare.function_value || rhs_rare.function_value) {
+    return lhs_rare.function_value == rhs_rare.function_value;
   }
-  if(lhs.value_binding || rhs.value_binding) {
-    return lhs.value_binding == rhs.value_binding;
+  if(lhs_rare.value_binding || rhs_rare.value_binding) {
+    return lhs_rare.value_binding == rhs_rare.value_binding;
   }
   if(!lhs.text.empty() || !rhs.text.empty()) {
     return lhs.text == rhs.text;
@@ -283,13 +286,14 @@ bool non_type_template_argument_values_match(const TemplateArgument & lhs,
 bool make_function_non_type_argument_expression(const TemplateArgument & argument,
                                                 CppAstNode & out)
 {
-  if(!argument.function_value) {
+  const FunctionBinding * function = argument.rare().function_value;
+  if(!function) {
     return false;
   }
 
   QualifiedName qualified;
   if(!semantic_model::function_binding_qualified_name_syntax_for_symbol(
-         *argument.function_value,
+         *function,
          qualified)) {
     return false;
   }
@@ -297,12 +301,12 @@ bool make_function_non_type_argument_expression(const TemplateArgument & argumen
   CppAstNode id;
   id.kind = CppAstKind::id_expression;
   id.value = template_api::qualified_name_text(qualified);
-  id.semantic_type = argument.function_value->declared_type ?
-      argument.function_value->declared_type :
-      argument.function_value->type;
+  id.semantic_type = function->declared_type ?
+      function->declared_type :
+      function->type;
   set_cppast_qualified_name_syntax(id, qualified);
 
-  if(!argument.function_value->is_method) {
+  if(!function->is_method) {
     out = id;
     return true;
   }
@@ -323,7 +327,8 @@ bool function_non_type_argument_syntax_needs_refresh(
     const TemplateArgument & argument,
     const TemplateArgumentSyntax & syntax)
 {
-  if(!argument.function_value || !argument.function_value->is_method) {
+  const FunctionBinding * function = argument.rare().function_value;
+  if(!function || !function->is_method) {
     return false;
   }
   if(!syntax.expression) {
@@ -339,7 +344,7 @@ void refresh_function_non_type_argument_syntax(TemplateArgument & argument)
 {
   if(argument.kind != TemplateArgument::TA_VALUE ||
      argument.dependent ||
-     !argument.function_value) {
+     !argument.rare().function_value) {
     return;
   }
   if(!argument.source_syntax) {
@@ -1810,12 +1815,12 @@ bool ast_with_sidecars_contains_kind(const CppAstNode & node, CppAstKind kind)
      template_id_syntax_contains_ast_kind(*node.template_id_syntax, kind)) {
     return true;
   }
-  if(node.conversion_type_id_syntax &&
-     ast_with_sidecars_contains_kind(*node.conversion_type_id_syntax, kind)) {
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     ast_with_sidecars_contains_kind(*cppast_conversion_type_id_syntax_storage(node), kind)) {
     return true;
   }
-  if(node.base_type_syntax &&
-     ast_with_sidecars_contains_kind(*node.base_type_syntax, kind)) {
+  if(cppast_base_type_syntax_storage(node) &&
+     ast_with_sidecars_contains_kind(*cppast_base_type_syntax_storage(node), kind)) {
     return true;
   }
   for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
@@ -3965,9 +3970,10 @@ bool stable_alias_expansion_argument_key(
              type_system,
              argument.template_owner_type))));
   out.source_defaulted = argument.source_defaulted;
-  out.function_value = argument.function_value;
-  out.function_internal_symbol = argument.function_internal_symbol;
-  out.value_binding = argument.value_binding;
+  const TemplateArgument::RareData & rare = argument.rare();
+  out.function_value = rare.function_value;
+  out.function_internal_symbol = rare.function_internal_symbol;
+  out.value_binding = rare.value_binding;
   if(argument.kind == TemplateArgument::TA_TYPE ||
      argument.kind == TemplateArgument::TA_VALUE) {
     if(argument.type &&
@@ -5162,6 +5168,7 @@ bool try_expand_alias_template_pattern_structurally(
           template_scope::bind_named_type(scope, name, argument.type);
         } else if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE &&
                   argument.kind == TemplateArgument::TA_VALUE) {
+          const TemplateArgument::RareData & rare = argument.rare();
           TypePtr value_type = argument.type ? argument.type : parameter.value_type;
           template_scope::bind_non_type_value(
               scope,
@@ -5171,10 +5178,10 @@ bool try_expand_alias_template_pattern_structurally(
               argument.dependent,
               !argument.dependent ? argument.text : std::string(),
               !argument.dependent ?
-                  const_cast<FunctionBinding *>(argument.function_value) :
+                  const_cast<FunctionBinding *>(rare.function_value) :
                   nullptr,
-              !argument.dependent ? argument.function_internal_symbol : std::string(),
-              !argument.dependent ? argument.value_binding : nullptr);
+              !argument.dependent ? rare.function_internal_symbol : std::string(),
+              !argument.dependent ? rare.value_binding : nullptr);
         } else if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
                   (argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
                    argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
@@ -7479,14 +7486,14 @@ bool try_expand_alias_template_pattern_structurally(
                                           dependent_class_arguments);
             selected_default_scope = selected_default_scope_storage.get();
           }
-          template_api::TemplateEnvironmentHandle value_eval_scope =
+          template_api::TemplateEnvironmentHandle value_type_scope =
               selected_default_scope ?
                   template_api::make_template_environment(*selected_default_scope) :
                   match_scope;
           TypePtr substituted_value_type;
           if(argument.type &&
              template_argument_semantics::substitute_type(
-                 value_eval_scope.require(),
+                 value_type_scope.require(),
                  argument.type,
                  dependent_source_template->parameters,
                  dependent_class_arguments,
@@ -7496,8 +7503,17 @@ bool try_expand_alias_template_pattern_structurally(
           }
           template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
               services,
-              value_eval_scope,
+              value_type_scope,
               argument.type);
+          template_api::TemplateEnvironmentHandle value_expression_scope =
+              source_arg.semantic_scope ?
+                  template_api::make_template_environment(
+                      *source_arg.semantic_scope) :
+              source_arg.source_defaulted ?
+                  value_type_scope :
+              effective_body_scope.valid() ?
+                  effective_body_scope :
+                  match_scope;
           long long value = 0;
           template_argument_semantics::NonTypeArgumentStatus status =
               template_argument_semantics::NT_ARG_PARSE_FAILED;
@@ -7509,7 +7525,7 @@ bool try_expand_alias_template_pattern_structurally(
             status =
                 template_argument_semantics::evaluate_non_type_argument_syntax(
                     services,
-                    value_eval_scope,
+                    value_expression_scope,
                     source_arg.syntax,
                     value,
                     nullptr,
@@ -7630,7 +7646,7 @@ bool try_expand_alias_template_pattern_structurally(
         dependent_source_template && !dependent_class_arguments.empty() ?
             &dependent_class_arguments :
         have_named_metadata && !info.instantiation_arguments.empty() ?
-            &info.instantiation_arguments :
+            info.instantiation_arguments.pointer() :
         class_info && !class_info->instantiation_arguments.empty() ?
                 &class_info->instantiation_arguments :
         mangle_arguments_usable ? &mangle_info->arguments.const_values() :
@@ -7639,7 +7655,7 @@ bool try_expand_alias_template_pattern_structurally(
         dependent_source_template && !dependent_class_arg_texts.empty() ?
             &dependent_class_arg_texts :
         have_named_metadata && !info.instantiation_arg_texts.empty() ?
-            &info.instantiation_arg_texts :
+            info.instantiation_arg_texts.pointer() :
         (class_info && !class_info->instantiation_arg_texts.empty() ?
             &class_info->instantiation_arg_texts :
             nullptr);
@@ -8269,9 +8285,9 @@ bool try_expand_alias_template_pattern_structurally(
                                                   named_info)) {
       ClassTemplateDecl * source_template = named_info.source_template;
       const std::vector<TemplateArgument> * instantiation_arguments =
-          &named_info.instantiation_arguments;
+          named_info.instantiation_arguments.pointer();
       const std::vector<std::string> * instantiation_arg_texts =
-          &named_info.instantiation_arg_texts;
+          named_info.instantiation_arg_texts.pointer();
       std::vector<TemplateArgument> dependent_class_arguments;
       std::vector<std::string> dependent_class_arg_texts;
       if(pattern_has_dependent_class_template) {
@@ -8555,11 +8571,12 @@ bool try_expand_alias_template_pattern_structurally(
           if(argument.kind == TemplateArgument::TA_TYPE) {
             dependent_argument.type = argument.type;
           } else if(argument.kind == TemplateArgument::TA_VALUE) {
+            const TemplateArgument::RareData & rare = argument.rare();
             dependent_argument.type = argument.type;
-            dependent_argument.function_value = argument.function_value;
+            dependent_argument.function_value = rare.function_value;
             dependent_argument.function_internal_symbol =
-                argument.function_internal_symbol;
-            dependent_argument.value_binding = argument.value_binding;
+                rare.function_internal_symbol;
+            dependent_argument.value_binding = rare.value_binding;
             dependent_argument.value = argument.value;
             dependent_argument.has_non_type_value =
                 !argument.partial_order_placeholder;
@@ -9245,15 +9262,16 @@ Scope make_partial_match_scope(const std::vector<TemplateParameterInfo> & parame
         std::string();
     FunctionBinding * function_value =
         argument_found != deduced.value_arguments.end() ?
-            const_cast<FunctionBinding *>(argument_found->second.function_value) :
+            const_cast<FunctionBinding *>(
+                argument_found->second.rare().function_value) :
             nullptr;
     const std::string function_internal_symbol =
         argument_found != deduced.value_arguments.end() ?
-            argument_found->second.function_internal_symbol :
+            argument_found->second.rare().function_internal_symbol :
             std::string();
     const ValueBinding * value_binding =
         argument_found != deduced.value_arguments.end() ?
-            argument_found->second.value_binding :
+            argument_found->second.rare().value_binding :
             nullptr;
     template_scope::bind_non_type_value(
         eval_scope,

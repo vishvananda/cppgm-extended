@@ -1,5 +1,6 @@
 #pragma once
 
+#include "class_template_mangle_parameters.h"
 #include <cstdlib>
 #include <set>
 #include <sstream>
@@ -591,20 +592,29 @@ public:
       return false;
     }
     template_api::TemplateServices bundle = this->bundle();
-    const std::string key =
-        template_instantiation::class_template_argument_key_for_instantiation(
-            ctx_, *request.class_template, request.resolved_arguments);
-    const bool forward_only_class_template =
-        !request.class_template->class_node ||
-        request.class_template->class_node->kind == CppAstKind::class_forward_declaration;
-    if(request.lookup.allow_class_templates &&
-       forward_only_class_template &&
-       request.class_template->partial_specializations.empty() &&
-       request.class_template->explicit_specializations.empty() &&
-       !parser_trace::enabled("template.resolve") &&
-       !template_api::semantic_source_use_capture_enabled() &&
-       template_api::template_arguments_are_dependent(ctx_,
-                                                      request.resolved_arguments)) {
+    const bool arguments_dependent =
+        request.resolved_arguments_dependent ||
+        template_api::template_arguments_are_dependent(
+            ctx_, request.resolved_arguments);
+    if(parser_trace::enabled("template.resolve") &&
+       request.class_template->name == "as_child") {
+      std::ostringstream trace;
+      trace << "selected-class-template-service"
+            << " defer="
+            << (request.lookup.defer_dependent_class_template_id ? "yes" : "no")
+            << " carried-dependent="
+            << (request.resolved_arguments_dependent ? "yes" : "no")
+            << " dependent=" << (arguments_dependent ? "yes" : "no")
+            << " allow="
+            << (request.lookup.allow_class_templates ? "yes" : "no")
+            << " source-capture="
+            << (template_api::semantic_source_use_capture_enabled() ?
+                    "yes" :
+                    "no");
+      parser_trace::note(
+          "template.resolve", request.lookup.source_location, trace.str());
+    }
+    if(request.lookup.allow_class_templates && arguments_dependent) {
       out = make_dependent_class_template_type(request);
       if(out && (request.lookup.top_const || request.lookup.top_volatile)) {
         out = cpp_decl::apply_cv(out, request.lookup.top_const, request.lookup.top_volatile);
@@ -617,6 +627,9 @@ public:
         return true;
       }
     }
+    const std::string key =
+        template_instantiation::class_template_argument_key_for_instantiation(
+            ctx_, *request.class_template, request.resolved_arguments);
     const template_selection::ClassSpecializationSelection internal_selection =
         template_selection::select_class_specialization(
             bundle,
@@ -851,13 +864,15 @@ private:
       const template_model::TemplateArgument & argument,
       CppAstNode & out)
   {
-    if(!argument.function_value) {
+    const semantic_model::FunctionBinding * function =
+        argument.rare().function_value;
+    if(!function) {
       return false;
     }
 
     cpp_decl::QualifiedName qualified;
     if(!semantic_model::function_binding_qualified_name_syntax_for_symbol(
-           *argument.function_value,
+           *function,
            qualified)) {
       return false;
     }
@@ -865,12 +880,12 @@ private:
     CppAstNode id;
     id.kind = CppAstKind::id_expression;
     id.value = qualified_name_text(qualified);
-    id.semantic_type = argument.function_value->declared_type ?
-        argument.function_value->declared_type :
-        argument.function_value->type;
+    id.semantic_type = function->declared_type ?
+        function->declared_type :
+        function->type;
     set_cppast_qualified_name_syntax(id, qualified);
 
-    if(!argument.function_value->is_method) {
+    if(!function->is_method) {
       out = id;
       return true;
     }
@@ -891,7 +906,9 @@ private:
       const template_model::TemplateArgument & argument,
       const cpp_decl::TemplateArgumentSyntax & syntax)
   {
-    if(!argument.function_value || !argument.function_value->is_method) {
+    const semantic_model::FunctionBinding * function =
+        argument.rare().function_value;
+    if(!function || !function->is_method) {
       return false;
     }
     if(!syntax.expression) {
@@ -979,11 +996,13 @@ private:
         argument.type = request.resolved_arguments[i].type;
       } else if(request.resolved_arguments[i].kind ==
                 template_model::TemplateArgument::TA_VALUE) {
+        const template_model::TemplateArgument::RareData & rare =
+            request.resolved_arguments[i].rare();
         argument.type = request.resolved_arguments[i].type;
-        argument.function_value = request.resolved_arguments[i].function_value;
+        argument.function_value = rare.function_value;
         argument.function_internal_symbol =
-            request.resolved_arguments[i].function_internal_symbol;
-        argument.value_binding = request.resolved_arguments[i].value_binding;
+            rare.function_internal_symbol;
+        argument.value_binding = rare.value_binding;
         argument.value = request.resolved_arguments[i].value;
         argument.has_non_type_value = true;
         argument.dependent_value = request.resolved_arguments[i].dependent;
@@ -1046,7 +1065,9 @@ private:
             qualified.substr(0, qualified.size() - suffix.size());
       }
     }
-    mangle_info->template_parameters = request.class_template->parameters;
+    mangle_info->template_parameters.share(
+        semantic_model::retained_class_template_mangle_parameters(
+            *request.class_template));
     mangle_info->arguments = request.resolved_arguments;
     mangle_info->argument_syntaxes =
         normalized_class_template_argument_syntaxes(request.resolved_arguments,

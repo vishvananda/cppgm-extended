@@ -15,6 +15,85 @@ struct DependentExpression;
 struct FunctionEncoding;
 struct Type;
 
+template<typename T>
+class CopySharedVector
+{
+public:
+  typedef typename std::vector<T>::size_type size_type;
+
+  CopySharedVector() = default;
+
+  CopySharedVector & operator=(std::vector<T> && values)
+  {
+    if(values.empty()) {
+      values_.reset();
+    } else {
+      values_ =
+          std::make_shared<std::vector<T> >(std::move(values));
+    }
+    return *this;
+  }
+
+  bool empty() const
+  {
+    return !values_ || values_->empty();
+  }
+
+  size_type size() const
+  {
+    return values_ ? values_->size() : 0;
+  }
+
+  const T & operator[](size_type index) const
+  {
+    return (*values_)[index];
+  }
+
+  void reserve(size_type count)
+  {
+    mutable_values().reserve(count);
+  }
+
+  void push_back(T && value)
+  {
+    mutable_values().push_back(std::move(value));
+  }
+
+  const std::vector<T> & get() const
+  {
+    static const std::vector<T> empty_values;
+    return values_ ? *values_ : empty_values;
+  }
+
+private:
+  std::vector<T> & mutable_values()
+  {
+    if(!values_) {
+      values_ = std::make_shared<std::vector<T> >();
+    } else if(!values_.unique()) {
+      values_ =
+          std::make_shared<std::vector<T> >(*values_);
+    }
+    return *values_;
+  }
+
+  std::shared_ptr<std::vector<T> > values_;
+};
+
+template<typename T>
+inline bool operator==(const CopySharedVector<T> & lhs,
+                       const CopySharedVector<T> & rhs)
+{
+  return lhs.get() == rhs.get();
+}
+
+template<typename T>
+inline bool operator<(const CopySharedVector<T> & lhs,
+                      const CopySharedVector<T> & rhs)
+{
+  return lhs.get() < rhs.get();
+}
+
 struct SubstitutionKey
 {
   enum Kind
@@ -43,7 +122,7 @@ struct SubstitutionKey
   Kind kind = SK_NONE;
   std::uintptr_t id = 0;
   std::string payload;
-  std::vector<SubstitutionKey> children;
+  CopySharedVector<SubstitutionKey> children;
   mutable std::size_t cached_hash = 0;
 
   static SubstitutionKey none()

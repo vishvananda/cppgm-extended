@@ -277,7 +277,7 @@ std::string function_instantiation_detail(bool created_new,
 bool class_info_has_template_instantiation_key(
     const semantic_model::ClassInfo & info)
 {
-  return !info.instantiation_key.empty();
+  return !semantic_model::class_instantiation_key(info).empty();
 }
 
 const std::string & function_binding_template_instantiation_key(
@@ -471,66 +471,30 @@ bool template_argument_contains_named_function_local_type_for_witness(
   return function_local_type_argument_text(ctx, argument.type, text);
 }
 
-bool class_instantiation_contains_named_function_local_type_for_witness(
-    SemanticContext & ctx,
+const semantic_model::ClassInfo * class_witness_owner(
     const semantic_model::ClassInfo & info)
 {
-  for(std::size_t i = 0; i < info.instantiation_arguments.size(); ++i) {
-    if(template_argument_contains_named_function_local_type_for_witness(
-           ctx,
-           info.instantiation_arguments[i])) {
-      return true;
+  cpp_decl::TypePtr type = cpp_decl::strip_top_level_cv(info.type);
+  if(type && type->kind == cpp_decl::Type::TK_NAMED) {
+    cpp_decl::TypePtr owner_type =
+        cpp_decl::strip_top_level_cv(
+            type->named_rare().named_member_owner_type);
+    if(owner_type && owner_type->kind == cpp_decl::Type::TK_NAMED) {
+      semantic_model::ClassInfo * owner =
+          owner_type->named_rare().named_class_info;
+      if(owner && owner != &info) {
+        return owner;
+      }
     }
   }
-  return false;
-}
-
-std::size_t template_log_scope_operator_count(const std::string & text)
-{
-  std::size_t count = 0;
-  for(std::size_t i = 0; i + 1 < text.size(); ++i) {
-    if(text[i] == ':' && text[i + 1] == ':') {
-      ++count;
-      ++i;
+  for(const semantic_model::Scope * scope = info.enclosing_scope;
+      scope;
+      scope = scope->parent) {
+    if(scope->class_info && scope->class_info != &info) {
+      return scope->class_info;
     }
   }
-  return count;
-}
-
-bool function_lifecycle_owner_should_prefer_symbol_name(
-    SemanticContext & ctx,
-    const semantic_model::ClassInfo & info,
-    const std::string & witness_owner)
-{
-  const std::string canonical_owner =
-      semantic_utils::trim_space(info.qualified_name);
-  const std::string display_owner =
-      semantic_utils::trim_space(witness_owner);
-  if(canonical_owner.empty() ||
-     display_owner.empty() ||
-     canonical_owner == display_owner ||
-     display_owner.find('<') == std::string::npos ||
-     canonical_owner.find("__local_") != std::string::npos) {
-    return false;
-  }
-  if(witness_visible_class_template_argument_count(ctx, info, true) <
-     info.instantiation_arguments.size()) {
-    return false;
-  }
-  for(std::size_t i = 0; i < info.instantiation_arguments.size(); ++i) {
-    if(info.instantiation_arguments[i].source_defaulted) {
-      return false;
-    }
-  }
-  for(std::size_t i = 0; i < info.instantiation_arguments.size(); ++i) {
-    if(template_argument_has_underqualified_source_type_for_witness(
-           ctx,
-           info.instantiation_arguments[i])) {
-      return true;
-    }
-  }
-  return template_log_scope_operator_count(canonical_owner) >
-      template_log_scope_operator_count(display_owner);
+  return nullptr;
 }
 
 std::string binding_log_entity(SemanticContext & ctx,
@@ -544,25 +508,13 @@ std::string binding_log_entity(SemanticContext & ctx,
   if(binding->owner_class &&
      !binding->owner_class->qualified_name.empty()) {
     std::string owner =
-        binding->owner_class->source_template ||
-        class_instantiation_contains_named_function_local_type_for_witness(
-            ctx,
-            *binding->owner_class) ?
-            (binding->owner_class->source_template ?
-                 class_witness_output_qualified_name_for_lifecycle(
-                     ctx,
-                     *binding->owner_class) :
-                 class_witness_output_qualified_name(
-                     ctx,
-                     *binding->owner_class)) :
-            binding->owner_class->qualified_name;
-    if(binding->owner_class->source_template &&
-       function_lifecycle_owner_should_prefer_symbol_name(
-           ctx,
-           *binding->owner_class,
-           owner)) {
-      owner = semantic_utils::trim_space(binding->owner_class->qualified_name);
-    }
+        binding->owner_class->source_template ?
+            class_witness_output_qualified_name_for_lifecycle(
+                ctx,
+                *binding->owner_class) :
+            class_witness_output_qualified_name(
+                ctx,
+                *binding->owner_class);
     return owner + "::" + simple_name;
   }
   return semantic_model::function_binding_qualified_name_for_symbol(*binding);
@@ -683,7 +635,8 @@ std::string source_unnamed_class_log_entity(SemanticContext & ctx,
            lexical_function_for_class(parent)) {
       out << function_scope_entity_for_anonymous_class(*function) << "::";
     } else if(parent->enclosing_scope && parent->enclosing_scope->class_info) {
-      out << semantic_model::class_output_qualified_name(
+      out << class_witness_output_qualified_name(
+          ctx,
           *parent->enclosing_scope->class_info) << "::";
     }
     out << source_unnamed_class_short_entity(*parent, false, std::string())
@@ -692,7 +645,7 @@ std::string source_unnamed_class_log_entity(SemanticContext & ctx,
     return out.str();
   }
   if(!lexical_function_for_class(&info) && parent) {
-    return semantic_model::class_output_qualified_name(*parent) + "::" +
+    return class_witness_output_qualified_name(ctx, *parent) + "::" +
         source_unnamed_class_short_entity(info, true, location);
   }
   return source_unnamed_class_short_entity(info, true, location);
@@ -715,7 +668,7 @@ std::string anonymous_member_class_log_entity(
     }
     out << source_unnamed_class_short_entity(owner, false, std::string()) << "::";
   } else {
-    out << semantic_model::class_output_qualified_name(owner) << "::";
+    out << class_witness_output_qualified_name(ctx, owner) << "::";
   }
   out << "(anonymous " << member.class_kind;
   if(!location.empty()) {
@@ -731,20 +684,15 @@ std::string class_log_entity(SemanticContext & ctx,
   if(!info) {
     return std::string();
   }
+  std::string entity;
   if(info->source_is_unnamed_class) {
-    return source_unnamed_class_log_entity(ctx, *info);
+    entity = source_unnamed_class_log_entity(ctx, *info);
+  } else if(class_is_named_function_local_for_witness(info)) {
+    entity = info->name;
+  } else {
+    entity = class_witness_output_qualified_name(ctx, *info);
   }
-  if(class_is_named_function_local_for_witness(info)) {
-    return info->name;
-  }
-  if(class_instantiation_contains_named_function_local_type_for_witness(ctx,
-                                                                       *info)) {
-    return class_witness_output_qualified_name(ctx, *info);
-  }
-  if(info->source_template) {
-    return class_witness_output_qualified_name(ctx, *info);
-  }
-  return info->qualified_name;
+  return entity;
 }
 
 std::string class_decl_location(SemanticContext & ctx,
@@ -775,8 +723,9 @@ std::string anonymous_symbol_class_log_name(
     const semantic_model::ClassInfo & info)
 {
   const std::string symbol_text =
-      !info.symbol_qualified_name_syntax.name.empty() ?
-          qualified_name_text(info.symbol_qualified_name_syntax) :
+      !semantic_model::class_symbol_qualified_name_syntax(info).name.empty() ?
+          qualified_name_text(
+              semantic_model::class_symbol_qualified_name_syntax(info)) :
           std::string();
   if(symbol_text.find("_GLOBAL__N_") != std::string::npos) {
     return symbol_text;
@@ -797,16 +746,8 @@ std::string value_log_entity(SemanticContext & ctx,
      !binding->declaration_scope->class_info->qualified_name.empty()) {
     const semantic_model::ClassInfo & owner =
         *binding->declaration_scope->class_info;
-    std::string owner_text = anonymous_symbol_class_log_name(owner);
-    if(owner_text.empty()) {
-      owner_text =
-          class_instantiation_contains_named_function_local_type_for_witness(
-              ctx,
-              owner) ?
-              class_witness_output_qualified_name(ctx, owner) :
-              owner.qualified_name;
-    }
-    return owner_text + "::" + binding->name;
+    return class_witness_output_qualified_name(ctx, owner) +
+        "::" + binding->name;
   }
   return binding->name;
 }
@@ -1532,7 +1473,7 @@ void adopt_function_template_identity_from_materialized(
 const std::string & class_template_instantiation_key(
     const semantic_model::ClassInfo & info)
 {
-  return info.instantiation_key;
+  return semantic_model::class_instantiation_key(info);
 }
 
 std::string class_template_effective_instantiation_key(
@@ -2027,14 +1968,20 @@ bool function_binding_owner_class_suppresses_implicit_instantiation_definition(
   if(function_binding_is_member_function_template(binding)) {
     return false;
   }
-  if(owner->suppress_implicit_instantiation_definition) {
+  const semantic_model::ClassInfo * output_owner =
+      effective_instantiated_class_output_owner(*owner);
+  if(!output_owner) {
+    output_owner = owner;
+  }
+  if(output_owner->suppress_implicit_instantiation_definition) {
     return true;
   }
-  const semantic_model::ClassTemplateDecl * source_template = owner->source_template;
+  const semantic_model::ClassTemplateDecl * source_template =
+      output_owner->source_template;
   const std::string & instantiation_key =
-      !binding.template_instantiation_key.empty() ?
+      output_owner == owner && !binding.template_instantiation_key.empty() ?
           binding.template_instantiation_key :
-          owner->instantiation_key;
+          semantic_model::class_instantiation_key(*output_owner);
   return source_template &&
          !instantiation_key.empty() &&
          source_template->suppress_implicit_instantiation_definitions.find(
@@ -2057,6 +2004,13 @@ bool function_binding_bypasses_explicit_instantiation_suppression(
     bool explicit_instantiation_suppressed)
 {
   if(binding.is_explicit_instantiation_definition) {
+    return true;
+  }
+  // A lambda's functions have no separately provided explicit-instantiation
+  // definition. If emitted code reaches the closure, its local definitions
+  // must accompany that code even when the enclosing class specialization is
+  // covered by an extern-template declaration.
+  if(binding.owner_class && binding.owner_class->is_lambda_closure) {
     return true;
   }
   const bool weak_local_definition_candidate =
@@ -2156,7 +2110,8 @@ bool value_binding_owner_class_suppresses_implicit_instantiation_definition(
   }
   const semantic_model::ClassTemplateDecl * source_template =
       owner->source_template;
-  const std::string & instantiation_key = owner->instantiation_key;
+  const std::string & instantiation_key =
+      semantic_model::class_instantiation_key(*owner);
   return source_template &&
          !instantiation_key.empty() &&
          source_template->suppress_implicit_instantiation_definitions.find(
@@ -2535,10 +2490,11 @@ semantic_model::FunctionBinding * find_defined_function_matching_template_identi
                                    identity);
 }
 
-std::string function_binding_witness_entity(const semantic_model::FunctionBinding * binding)
+std::string function_binding_witness_entity(
+    SemanticContext & ctx,
+    const semantic_model::FunctionBinding * binding)
 {
-  return binding ? semantic_model::function_binding_qualified_name_for_symbol(*binding) :
-      std::string();
+  return binding_log_entity(ctx, binding);
 }
 
 std::string function_binding_witness_decl_location(
@@ -3321,6 +3277,34 @@ bool template_argument_has_typedef_source_spelling_for_witness(
          canonical_text.find("__local_") == std::string::npos;
 }
 
+std::string class_template_witness_scope_qualified_name(
+    const semantic_model::Scope & scope,
+    const std::string & name)
+{
+  std::vector<std::string> parts;
+  parts.push_back(name);
+  for(const semantic_model::Scope * current = &scope;
+      current;
+      current = current->parent) {
+    if(!current->namespace_scope || current->name == "<global>") {
+      continue;
+    }
+    if(current->name == "<unnamed>") {
+      parts.push_back("(anonymous namespace)");
+    } else if(!current->name.empty()) {
+      parts.push_back(current->name);
+    }
+  }
+  std::string out;
+  for(std::size_t i = parts.size(); i > 0; --i) {
+    if(!out.empty()) {
+      out += "::";
+    }
+    out += parts[i - 1];
+  }
+  return out;
+}
+
 std::string class_witness_output_qualified_name_impl(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info,
@@ -3328,6 +3312,37 @@ std::string class_witness_output_qualified_name_impl(
 {
   if(class_is_named_function_local_for_witness(&info)) {
     return info.name;
+  }
+  const semantic_model::ClassInfo * owner = class_witness_owner(info);
+  if(!info.source_template &&
+     !info.is_lambda_closure &&
+     owner &&
+     !info.name.empty()) {
+    return normalize_witness_angle_spacing(
+        class_witness_output_qualified_name_impl(ctx, *owner, false) +
+        "::" + info.name);
+  }
+  if(!info.source_template &&
+     !info.is_lambda_closure &&
+     info.instantiation_arguments.empty()) {
+    const std::string anonymous_name =
+        anonymous_symbol_class_log_name(info);
+    if(!anonymous_name.empty()) {
+      return normalize_witness_angle_spacing(anonymous_name);
+    }
+  }
+  if(!info.source_template && info.type) {
+    if(std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
+           mangle_info =
+               cpp_decl::named_type_class_template_specialization_mangle_info_const(
+                   info.type)) {
+      if(!mangle_info->template_name.empty()) {
+        return class_template_mangle_info_witness_text(
+            ctx,
+            *mangle_info,
+            0);
+      }
+    }
   }
   if(info.is_explicit_specialization) {
     return normalize_witness_angle_spacing(
@@ -3356,9 +3371,14 @@ std::string class_witness_output_qualified_name_impl(
           ctx,
           info,
           allow_explicit_default_equivalent);
+  const std::string structured_template_name =
+      info.source_template ?
+          info.source_template->name :
+          semantic_utils::strip_trailing_top_level_template_arguments(
+              info.name);
   bool rebuild_from_structured_arguments =
-      info.source_template &&
-      visible_count < info.instantiation_arguments.size();
+      !structured_template_name.empty() &&
+      !info.instantiation_arguments.empty();
   for(std::size_t i = 0;
       !rebuild_from_structured_arguments &&
       i < visible_count &&
@@ -3418,13 +3438,18 @@ std::string class_witness_output_qualified_name_impl(
   const std::string specialization_name =
       witness_specialization_name_for_visible_args(
           ctx,
-          info.source_template->name,
+          structured_template_name,
           info.instantiation_arguments,
           visible_count);
-  const std::string qualified_name = info.enclosing_scope ?
-      semantic_lookup::scope_qualified_name(*info.enclosing_scope,
-                                            specialization_name) :
-      specialization_name;
+  const std::string qualified_name =
+      owner ?
+          class_witness_output_qualified_name_impl(ctx, *owner, false) +
+              "::" + specialization_name :
+          (info.enclosing_scope ?
+               class_template_witness_scope_qualified_name(
+                   *info.enclosing_scope,
+                   specialization_name) :
+               specialization_name);
   return normalize_witness_angle_spacing(qualified_name);
 }
 
@@ -3433,6 +3458,22 @@ std::string class_witness_output_qualified_name(
     const semantic_model::ClassInfo & info)
 {
   return class_witness_output_qualified_name_impl(ctx, info, false);
+}
+
+std::string class_template_witness_qualified_name(
+    SemanticContext & ctx,
+    const semantic_model::ClassTemplateDecl & decl)
+{
+  const semantic_model::ClassInfo * owner =
+      nearest_scope_class_info(decl.declaring_scope);
+  if(owner) {
+    return class_witness_output_qualified_name(ctx, *owner) +
+        "::" + decl.name;
+  }
+  return decl.declaring_scope ?
+      class_template_witness_scope_qualified_name(*decl.declaring_scope,
+                                                  decl.name) :
+      decl.name;
 }
 
 std::string class_witness_output_qualified_name_for_lifecycle(
@@ -3558,10 +3599,18 @@ std::string class_template_mangle_info_witness_text(
     return std::string();
   }
   std::ostringstream out;
-  if(!info.template_scope_prefix.empty()) {
-    out << info.template_scope_prefix << "::";
+  const semantic_model::ClassTemplateDecl * class_template =
+      static_cast<const semantic_model::ClassTemplateDecl *>(
+          info.class_template_decl);
+  if(class_template) {
+    out << class_template_witness_qualified_name(ctx, *class_template);
+  } else {
+    if(!info.template_scope_prefix.empty()) {
+      out << info.template_scope_prefix << "::";
+    }
+    out << info.template_name;
   }
-  out << info.template_name << "<";
+  out << "<";
   const std::size_t visible_count =
       witness_visible_class_template_argument_count(ctx, info, false);
   for(std::size_t i = 0; i < visible_count && i < info.arguments.size(); ++i) {
@@ -3727,12 +3776,8 @@ std::string value_binding_member_instantiation_entity(
 {
   if(binding.owner_class &&
      !semantic_model::class_output_qualified_name(*binding.owner_class).empty()) {
-    std::string owner_text =
-        anonymous_symbol_class_log_name(*binding.owner_class);
-    if(owner_text.empty()) {
-      owner_text = class_witness_output_qualified_name(ctx, *binding.owner_class);
-    }
-    return owner_text + "::" + binding.name;
+    return class_witness_output_qualified_name(ctx, *binding.owner_class) +
+        "::" + binding.name;
   }
   return binding.name;
 }
@@ -3923,8 +3968,10 @@ void note_template_member_value_instantiation_if_needed(
           << " owner-source-template="
           << (binding.owner_class && binding.owner_class->source_template ? "yes" : "no")
           << " owner-key="
-          << (binding.owner_class ? binding.owner_class->instantiation_key :
-                                    std::string())
+          << (binding.owner_class ?
+                  semantic_model::class_instantiation_key(
+                      *binding.owner_class) :
+                  std::string())
           << " dependent-owner="
           << (binding.owner_class && binding.owner_class->dependent_instantiation ? "yes" : "no")
           << " explicit-owner="
@@ -3982,6 +4029,28 @@ void note_template_member_value_instantiation_if_needed(
       binding.witness_static_member_definition_replayed = true;
     }
   };
+  if(template_witness_source_type_lookup_active() &&
+     template_witness_qualified_member_type_lookup_active()) {
+    template_model::TemplateValueDependency dependency;
+    dependency.entity =
+        value_binding_member_instantiation_entity(ctx, binding);
+    dependency.decl_location =
+        value_binding_member_instantiation_decl_location(ctx, binding);
+    dependency.value_scope = binding.declaration_scope;
+    dependency.value_name = binding.name;
+    dependency.entity_has_template_identity =
+        value_or_owner_has_template_identity(&binding);
+    dependency.public_use_location =
+        normalize_template_witness_source_location(
+            strip_at_prefix(ctx.template_witness_context().public_use_location));
+    if(!dependency.entity.empty() &&
+       !dependency.decl_location.empty() &&
+       template_argument_semantics::
+           collect_template_member_value_dependency_if_active(dependency)) {
+      trace_skip("qualified-member-dependency-collected");
+      return;
+    }
+  }
   if(binding.witness_member_value_instantiation_noted) {
     replay_static_member_definition_once();
     trace_skip("already-noted");
@@ -4093,16 +4162,20 @@ void note_nested_member_class_track_instantiation(
     const semantic_model::ClassInfo & info,
     const std::string & decl_location)
 {
+  if(ctx.template_witness_context().session == nullptr) {
+    return;
+  }
+  const std::string entity = class_log_entity(ctx, &info);
   const template_api::ScopedTemplateWitnessEntryContext entry_context(
       template_api::make_template_closure_entry_context(
           template_api::TemplateClosureReason::TrackInstantiation,
-          info.qualified_name,
+          entity,
           decl_location,
           class_has_template_identity(&info)));
   template_api::note_template_witness_log_event(
       template_api::TemplateWitnessLogEventKind::ClassInstantiation,
       decl_location,
-      info.qualified_name,
+      entity,
       decl_location,
       created_new_detail(false),
       template_api::TemplateLifecycleCause::TrackInstantiation,
@@ -4116,7 +4189,9 @@ void note_source_unnamed_class_finalization_if_needed(
     const std::string & entity,
     const std::string & decl_location)
 {
-  if(!info.source_is_unnamed_class || !lexical_function_for_class(&info)) {
+  if(ctx.template_witness_context().session == nullptr ||
+     !info.source_is_unnamed_class ||
+     !lexical_function_for_class(&info)) {
     return;
   }
   note_template_witness_log_event(
@@ -4135,6 +4210,9 @@ void note_source_unnamed_class_instantiation(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info)
 {
+  if(ctx.template_witness_context().session == nullptr) {
+    return;
+  }
   const std::string entity = source_unnamed_class_log_entity(ctx, info);
   const std::string decl_location = class_decl_location(ctx, &info);
   note_source_unnamed_class_finalization_if_needed(ctx,
@@ -4158,7 +4236,8 @@ void note_anonymous_member_class_instantiation(
     const semantic_model::ClassInfo & owner,
     const semantic_model::AnonymousMemberClassInfo & member)
 {
-  if(!member.class_node) {
+  if(ctx.template_witness_context().session == nullptr ||
+     !member.class_node) {
     return;
   }
   const std::string entity = anonymous_member_class_log_entity(ctx, owner, member);
@@ -4179,6 +4258,9 @@ void note_anonymous_member_class_instantiation(
 void note_anonymous_member_class_events(SemanticContext & ctx,
                                         const semantic_model::ClassInfo & owner)
 {
+  if(ctx.template_witness_context().session == nullptr) {
+    return;
+  }
   for(std::size_t i = 0; i < owner.fields.size(); ++i) {
     semantic_model::ClassInfo * field_class =
         ctx.class_info_for_type(owner.fields[i].type);
@@ -4198,7 +4280,8 @@ void note_anonymous_member_class_events_if_owner_logged(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info)
 {
-  if(info.template_instantiation_log_emitted) {
+  if(ctx.template_witness_context().session != nullptr &&
+     info.template_instantiation_log_emitted) {
     note_anonymous_member_class_events(ctx, info);
   }
 }
@@ -4259,6 +4342,9 @@ void note_value_binding_closure_event(
     const std::string & detail,
     TemplateLifecycleCause cause)
 {
+  if(ctx.template_witness_context().session == nullptr) {
+    return;
+  }
   note_template_witness_log_event(
       kind,
       location,
@@ -4725,6 +4811,37 @@ std::string witness_lookup_text_for_type_argument(
   if(function_local_type_argument_text(ctx, type, local_type_text)) {
     return semantic_utils::trim_space(local_type_text);
   }
+  if(type &&
+     type->kind == cpp_decl::Type::TK_CV &&
+     type->inner &&
+     ctx.class_info_for_type(type->inner)) {
+    return default_elided_type_argument_text(ctx, type);
+  }
+  // Prefer the structured specialization metadata over display/source
+  // spellings.  A typedef used as an outer template argument can otherwise
+  // leave aliases from an inner specialization (for example K and D) in the
+  // public binding even though the semantic type is fully concrete.
+  if(std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
+         mangle_info =
+             cpp_decl::named_type_class_template_specialization_mangle_info_const(type)) {
+    if(!mangle_info->template_name.empty()) {
+      const std::string structured =
+          class_template_mangle_info_witness_text(ctx, *mangle_info, 0);
+      if(structured.find("_GLOBAL__N_") == std::string::npos) {
+        return structured;
+      }
+      const std::string public_lookup =
+          semantic_utils::trim_space(
+              template_argument_semantics::lookup_text_for_type_argument(
+                  ctx,
+                  type));
+      if(!public_lookup.empty() &&
+         public_lookup.find("_GLOBAL__N_") == std::string::npos) {
+        return public_lookup;
+      }
+      return structured;
+    }
+  }
   if(semantic_model::ClassInfo * info = ctx.class_info_for_type(type)) {
     const std::string default_elided_text =
         semantic_utils::trim_space(
@@ -4746,20 +4863,6 @@ std::string witness_lookup_text_for_type_argument(
             strip_witness_elaborated_type_prefix(type->named_display));
     if(witness_text_is_owner_qualified_suffix(display_text, named_display)) {
       return display_text;
-    }
-  }
-  if(std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
-         mangle_info =
-             cpp_decl::named_type_class_template_specialization_mangle_info_const(type)) {
-    if(class_template_mangle_info_contains_default_elided_type_for_witness(
-           ctx,
-           *mangle_info,
-           0) ||
-       class_template_mangle_info_contains_qualified_enum_for_witness(
-           ctx,
-           *mangle_info,
-           0)) {
-      return class_template_mangle_info_witness_text(ctx, *mangle_info, 0);
     }
   }
   if(witness_type_argument_should_prefer_named_key(type)) {
@@ -5024,7 +5127,7 @@ bool explicit_type_argument_uses_typedef_spelling(
     const std::string display_text =
         semantic_utils::trim_space(
             strip_witness_elaborated_type_prefix(
-                semantic_model::class_output_qualified_name(*info)));
+                class_witness_output_qualified_name(ctx, *info)));
     if(!display_text.empty() &&
        display_text.find("_GLOBAL__N_") == std::string::npos &&
        (resolved_text.empty() ||

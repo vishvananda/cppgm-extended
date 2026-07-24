@@ -58,6 +58,72 @@ inline bool class_template_source_use_is_semantic_lookup_only(
   return mode == ClassTemplateSourceUseMode::SemanticLookupOnly;
 }
 
+template<typename T>
+class TemplateMetadataVectorView
+{
+public:
+  using const_iterator = typename std::vector<T>::const_iterator;
+
+  TemplateMetadataVectorView()
+      : values_(&empty_values())
+  {
+  }
+
+  void share(const std::vector<T> & values)
+  {
+    values_ = &values;
+  }
+
+  bool empty() const
+  {
+    return values_->empty();
+  }
+
+  std::size_t size() const
+  {
+    return values_->size();
+  }
+
+  const T & operator[](std::size_t index) const
+  {
+    return (*values_)[index];
+  }
+
+  const_iterator begin() const
+  {
+    return values_->begin();
+  }
+
+  const_iterator end() const
+  {
+    return values_->end();
+  }
+
+  const std::vector<T> & values() const
+  {
+    return *values_;
+  }
+
+  const std::vector<T> * pointer() const
+  {
+    return values_;
+  }
+
+  operator const std::vector<T> &() const
+  {
+    return *values_;
+  }
+
+private:
+  static const std::vector<T> & empty_values()
+  {
+    static const std::vector<T> empty;
+    return empty;
+  }
+
+  const std::vector<T> * values_;
+};
+
 struct TemplateNamedTypeMetadata
 {
   std::string name;
@@ -83,8 +149,9 @@ struct TemplateNamedTypeMetadata
   semantic_model::ClassTemplateDecl * source_template = nullptr;
   std::vector<cpp_decl::TypePtr> direct_base_types;
   std::vector<cpp_decl::TypePtr> field_types;
-  std::vector<std::string> instantiation_arg_texts;
-  std::vector<template_model::TemplateArgument> instantiation_arguments;
+  TemplateMetadataVectorView<std::string> instantiation_arg_texts;
+  TemplateMetadataVectorView<template_model::TemplateArgument>
+      instantiation_arguments;
 };
 
 struct TemplateSemanticModelView
@@ -102,6 +169,9 @@ inline semantic_model::ClassInfo * find_named_type_class_info(
   }
   if(base->definitely_not_class) {
     return nullptr;
+  }
+  if(base->named_rare().named_class_info) {
+    return base->named_rare().named_class_info;
   }
 
   auto found = model.classes_by_key->find(base->named_key);
@@ -213,8 +283,8 @@ inline bool describe_named_type_metadata(const TemplateSemanticModelView & model
       }
     }
   }
-  out.instantiation_arg_texts = info->instantiation_arg_texts;
-  out.instantiation_arguments = info->instantiation_arguments;
+  out.instantiation_arg_texts.share(info->instantiation_arg_texts);
+  out.instantiation_arguments.share(info->instantiation_arguments);
   return true;
 }
 
@@ -246,6 +316,7 @@ struct TemplateTypeLookupRequest
   cpp_decl::QualifiedName name;
   TemplateElaboratedTypeKind elaborated_kind = TETK_NONE;
   bool allow_class_templates = false;
+  bool defer_dependent_class_template_id = false;
   bool top_const = false;
   bool top_volatile = false;
   ClassTemplateSourceUseMode source_use_mode =
@@ -259,6 +330,7 @@ struct TemplateSelectedClassTemplateIdRequest
   semantic_model::Scope * argument_scope = nullptr;
   semantic_model::ClassTemplateDecl * class_template = nullptr;
   std::vector<template_model::TemplateArgument> resolved_arguments;
+  bool resolved_arguments_dependent = false;
   std::vector<std::string> source_arg_texts;
   std::vector<cpp_decl::TemplateArgumentSyntax> source_arg_syntaxes;
 };

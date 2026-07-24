@@ -60,40 +60,6 @@ using semantic_utils::strip_trailing_top_level_template_arguments;
 using semantic_utils::trim_space;
 using semantic_utils::unqualified_member_name;
 
-ExactTemplateTypeLookupAnchor retained_template_type_lookup_anchor(
-    const CppAstNode * node)
-{
-  ExactTemplateTypeLookupAnchor anchor;
-  const TemplateIdSyntax * syntax = nullptr;
-  if(node) {
-    for(std::size_t i = 0;
-        i < node->qualifier_template_id_syntaxes.size();
-        ++i) {
-      if(!node->qualifier_template_id_syntaxes[i].name.name.empty()) {
-        syntax = &node->qualifier_template_id_syntaxes[i];
-        break;
-      }
-    }
-  }
-  if(!syntax && node) {
-    syntax = first_template_id_syntax_in_subtree(*node);
-  }
-  if(!syntax || syntax->name.name.empty()) {
-    return anchor;
-  }
-  anchor.template_text = template_id_syntax_text_preserving_spacing(*syntax);
-  anchor.identifier = unqualified_member_name(syntax->name.name);
-  if(anchor.identifier.empty()) {
-    anchor.identifier = syntax->name.name;
-  }
-  anchor.compact_key = compact_lookup_text(anchor.template_text);
-  anchor.template_id_syntax_ref = syntax;
-  anchor.arg_texts_ref = &syntax->arguments;
-  anchor.arg_syntaxes_ref = &syntax->argument_syntaxes;
-  anchor.has_argument_list = true;
-  return anchor;
-}
-
 const CppAstNode * function_parameter_clause_in_declarator(const CppAstNode & node)
 {
   const CppAstNode * found = nullptr;
@@ -342,6 +308,10 @@ public:
       }
     }
     const CppAstNode & inner = *effective_inner;
+    const ExactTemplateTypeLookupAnchor inner_type_lookup_anchor =
+        retained_template_type_lookup_anchor(&inner);
+    const ScopedExactTemplateTypeLookupAnchor inner_type_lookup_anchor_guard(
+        inner_type_lookup_anchor);
     if(inner.kind == CppAstKind::template_declaration) {
       collect_template_declaration_impl(pattern_scope,
                                         inner,
@@ -1176,6 +1146,12 @@ public:
           Scope * owner_template_scope = nullptr;
           if(owner && owner->member_scope) {
             owner_template_decl = owner->source_template;
+            if(!owner_template_decl &&
+               owner->enclosing_scope &&
+               owner->enclosing_scope->class_info) {
+              owner_template_decl =
+                  owner->enclosing_scope->class_info->source_template;
+            }
             if(!owner_template_decl && owner->enclosing_scope) {
               owner_template_decl =
                   lookup_class_template(*owner->enclosing_scope, owner->name);
@@ -1460,7 +1436,10 @@ public:
                                                         params,
                                                         declarator_identifier,
                                                         binding))) {
-          if(record_out_of_class_special_member_for_owner_template(nullptr, false, nullptr)) {
+          if(record_out_of_class_special_member_for_owner_template(
+                 parse_scope->class_info,
+                 false,
+                 nullptr)) {
               emit_out_of_class_owner_class_use_if_needed(pattern_scope,
                                                           *qualified_special_member,
                                                           inner.value,
@@ -4431,21 +4410,24 @@ private:
     }
 
     if(lhs.kind == TemplateArgument::TA_VALUE) {
+      const TemplateArgument::RareData & lhs_rare = lhs.rare();
+      const TemplateArgument::RareData & rhs_rare = rhs.rare();
       const bool types_match =
           (!lhs.type && !rhs.type) ||
           (lhs.type && rhs.type && type_equals(lhs.type, rhs.type));
       if(!types_match) {
         return false;
       }
-      if(lhs.function_value || rhs.function_value) {
-        return lhs.function_value == rhs.function_value;
+      if(lhs_rare.function_value || rhs_rare.function_value) {
+        return lhs_rare.function_value == rhs_rare.function_value;
       }
-      if(!lhs.function_internal_symbol.empty() ||
-         !rhs.function_internal_symbol.empty()) {
-        return lhs.function_internal_symbol == rhs.function_internal_symbol;
+      if(!lhs_rare.function_internal_symbol.empty() ||
+         !rhs_rare.function_internal_symbol.empty()) {
+        return lhs_rare.function_internal_symbol ==
+            rhs_rare.function_internal_symbol;
       }
-      if(lhs.value_binding || rhs.value_binding) {
-        return lhs.value_binding == rhs.value_binding;
+      if(lhs_rare.value_binding || rhs_rare.value_binding) {
+        return lhs_rare.value_binding == rhs_rare.value_binding;
       }
       if(lhs.dependent || rhs.dependent) {
         return lhs.dependent == rhs.dependent && lhs.text == rhs.text;
@@ -4664,7 +4646,15 @@ private:
       owner_template_name = owner_template_id->name.name;
     }
     ClassTemplateDecl * owner_template =
-        lookup_class_template(*owner_lookup_scope, owner_template_name);
+        semantic_lookup::lookup_class_template_node(
+            ctx,
+            scope,
+            owner_template_id->name,
+            *function_identifier);
+    if(!owner_template) {
+      owner_template =
+          lookup_class_template(*owner_lookup_scope, owner_template_name);
+    }
     if(!owner_template) {
       return nullptr;
     }
@@ -4745,6 +4735,7 @@ private:
         is_volatile_method,
         ref_qualifier,
         out,
+        function_identifier,
         resolution);
   }
 

@@ -1,8 +1,11 @@
 #include "callsemantic/memory_census.h"
+#include "class_template_mangle_info.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdlib>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <ostream>
@@ -30,6 +33,228 @@ struct MemoryCensusBucket
   size_t bytes = 0;
 };
 
+size_t string_storage_bytes(const string & value);
+
+enum ExactStringCategory
+{
+  ESC_TYPE_DISPLAY,
+  ESC_TYPE_KEY,
+  ESC_TYPE_QUALIFIED_NAME,
+  ESC_TYPE_MANGLE,
+  ESC_TEMPLATE_ARGUMENT,
+  ESC_CLASS_QUALIFIED_NAME,
+  ESC_CLASS_ARGUMENT_TEXT,
+  ESC_CLASS_INSTANTIATION_KEY,
+  ESC_SCOPE_NAME,
+  ESC_SCOPE_NAMED_TYPE_KEY,
+  ESC_FUNCTION_NAME,
+  ESC_FUNCTION_INSTANTIATION_KEY,
+  ESC_CLASS_TEMPLATE_INSTANTIATION_KEY,
+  ESC_CLASS_TEMPLATE_REFERENCE_KEY,
+  ESC_COUNT
+};
+
+const char * exact_string_category_name(ExactStringCategory category)
+{
+  static const char * names[ESC_COUNT] = {
+      "type.display",
+      "type.key",
+      "type.qualified-name",
+      "type.mangle",
+      "template-argument",
+      "class.qualified-name",
+      "class.argument-text",
+      "class.instantiation-key",
+      "scope.name",
+      "scope.named-type-key",
+      "function.name",
+      "function.instantiation-key",
+      "class-template.instantiation-key",
+      "class-template.reference-key"};
+  return names[static_cast<size_t>(category)];
+}
+
+struct ExactStringPointerHash
+{
+  size_t operator()(const string * value) const
+  {
+    return hash<string>()(*value);
+  }
+};
+
+struct ExactStringPointerEqual
+{
+  bool operator()(const string * lhs, const string * rhs) const
+  {
+    return *lhs == *rhs;
+  }
+};
+
+struct ExactStringRetentionEntry
+{
+  size_t occurrences = 0;
+  size_t storage_bytes = 0;
+  array<size_t, ESC_COUNT> category_occurrences;
+  array<size_t, ESC_COUNT> category_storage_bytes;
+
+  ExactStringRetentionEntry()
+  {
+    category_occurrences.fill(0);
+    category_storage_bytes.fill(0);
+  }
+};
+
+class ExactStringRetentionCensus
+{
+public:
+  void note(ExactStringCategory category, const string & value)
+  {
+    if(!seen_objects_.insert(&value).second) {
+      return;
+    }
+    const size_t bytes = string_storage_bytes(value);
+    ExactStringRetentionEntry & entry = entries_[&value];
+    ++entry.occurrences;
+    entry.storage_bytes += bytes;
+    ++entry.category_occurrences[static_cast<size_t>(category)];
+    entry.category_storage_bytes[static_cast<size_t>(category)] += bytes;
+    ++category_occurrences_[static_cast<size_t>(category)];
+    category_storage_bytes_[static_cast<size_t>(category)] += bytes;
+  }
+
+  void dump(ostream & out) const
+  {
+    struct Row
+    {
+      const string * value = nullptr;
+      const ExactStringRetentionEntry * entry = nullptr;
+      size_t one_copy_bytes = 0;
+      size_t redundant_bytes = 0;
+    };
+
+    size_t total_storage_bytes = 0;
+    size_t one_copy_storage_bytes = 0;
+    size_t duplicate_objects = 0;
+    array<size_t, ESC_COUNT> category_unique_contents = {};
+    array<size_t, ESC_COUNT> category_duplicate_objects = {};
+    array<size_t, ESC_COUNT> category_one_copy_storage_bytes = {};
+    vector<Row> rows;
+    rows.reserve(entries_.size());
+    for(EntryMap::const_iterator it = entries_.begin();
+        it != entries_.end();
+        ++it) {
+      const size_t one_copy_bytes =
+          it->second.storage_bytes == 0 ? 0 : it->first->size() + 1;
+      const size_t redundant_bytes =
+          it->second.storage_bytes > one_copy_bytes ?
+              it->second.storage_bytes - one_copy_bytes :
+              0;
+      total_storage_bytes += it->second.storage_bytes;
+      one_copy_storage_bytes += one_copy_bytes;
+      if(it->second.occurrences > 1) {
+        duplicate_objects += it->second.occurrences - 1;
+      }
+      for(size_t category = 0; category < ESC_COUNT; ++category) {
+        const size_t category_occurrences =
+            it->second.category_occurrences[category];
+        if(category_occurrences == 0) {
+          continue;
+        }
+        ++category_unique_contents[category];
+        category_duplicate_objects[category] += category_occurrences - 1;
+        if(it->second.category_storage_bytes[category] != 0) {
+          category_one_copy_storage_bytes[category] +=
+              it->first->size() + 1;
+        }
+      }
+      if(redundant_bytes != 0) {
+        Row row;
+        row.value = it->first;
+        row.entry = &it->second;
+        row.one_copy_bytes = one_copy_bytes;
+        row.redundant_bytes = redundant_bytes;
+        rows.push_back(row);
+      }
+    }
+    sort(rows.begin(),
+         rows.end(),
+         [](const Row & lhs, const Row & rhs)
+         {
+           if(lhs.redundant_bytes != rhs.redundant_bytes) {
+             return lhs.redundant_bytes > rhs.redundant_bytes;
+           }
+           return lhs.value->size() > rhs.value->size();
+         });
+
+    out << "semantic-memory-exact-strings"
+        << " objects=" << seen_objects_.size()
+        << " unique-contents=" << entries_.size()
+        << " duplicate-objects=" << duplicate_objects
+        << " storage-bytes=" << total_storage_bytes
+        << " one-copy-bytes=" << one_copy_storage_bytes
+        << " exact-redundant-bytes="
+        << (total_storage_bytes - one_copy_storage_bytes)
+        << '\n';
+    for(size_t category = 0; category < ESC_COUNT; ++category) {
+      out << "semantic-memory-exact-string-category"
+          << " kind="
+          << exact_string_category_name(
+                 static_cast<ExactStringCategory>(category))
+          << " objects=" << category_occurrences_[category]
+          << " unique-contents=" << category_unique_contents[category]
+          << " duplicate-objects=" << category_duplicate_objects[category]
+          << " storage-bytes=" << category_storage_bytes_[category]
+          << " one-copy-bytes="
+          << category_one_copy_storage_bytes[category]
+          << " exact-redundant-bytes="
+          << (category_storage_bytes_[category] -
+              category_one_copy_storage_bytes[category])
+          << '\n';
+    }
+    const size_t row_count = min<size_t>(rows.size(), 40);
+    for(size_t i = 0; i < row_count; ++i) {
+      const Row & row = rows[i];
+      string prefix = row.value->substr(0, 120);
+      for(size_t j = 0; j < prefix.size(); ++j) {
+        if(prefix[j] == '\n' || prefix[j] == '\r' || prefix[j] == '\t') {
+          prefix[j] = ' ';
+        }
+      }
+      out << "semantic-memory-exact-string-duplicate"
+          << " rank=" << i + 1
+          << " length=" << row.value->size()
+          << " objects=" << row.entry->occurrences
+          << " storage-bytes=" << row.entry->storage_bytes
+          << " exact-redundant-bytes=" << row.redundant_bytes
+          << " owners=";
+      bool first_owner = true;
+      for(size_t category = 0; category < ESC_COUNT; ++category) {
+        if(row.entry->category_occurrences[category] == 0) {
+          continue;
+        }
+        if(!first_owner) {
+          out << ',';
+        }
+        first_owner = false;
+        out << exact_string_category_name(
+                   static_cast<ExactStringCategory>(category))
+            << ':' << row.entry->category_occurrences[category];
+      }
+      out << " prefix={" << prefix << "}\n";
+    }
+  }
+
+private:
+  typedef unordered_map<const string *,
+                        ExactStringRetentionEntry,
+                        ExactStringPointerHash,
+                        ExactStringPointerEqual> EntryMap;
+  EntryMap entries_;
+  unordered_set<const string *> seen_objects_;
+  array<size_t, ESC_COUNT> category_occurrences_ = {};
+  array<size_t, ESC_COUNT> category_storage_bytes_ = {};
+};
+
 class MemoryCensus
 {
 public:
@@ -49,6 +274,22 @@ public:
     MemoryCensusBucket & bucket = detail_buckets_[kind];
     bucket.count += count;
     bucket.bytes += bytes;
+  }
+
+  bool first_class_template_mangle_info(
+      const ClassTemplateSpecializationMangleInfo * info)
+  {
+    return seen_class_template_mangle_infos_.insert(info).second;
+  }
+
+  bool first_class_template_mangle_arguments(const void * arguments)
+  {
+    return seen_class_template_mangle_arguments_.insert(arguments).second;
+  }
+
+  bool first_template_argument_text(const string * text)
+  {
+    return !text || seen_template_argument_texts_.insert(text).second;
   }
 
   void dump(ostream & out) const
@@ -106,6 +347,10 @@ public:
 private:
   map<string, MemoryCensusBucket> buckets_;
   map<string, MemoryCensusBucket> detail_buckets_;
+  unordered_set<const ClassTemplateSpecializationMangleInfo *>
+      seen_class_template_mangle_infos_;
+  unordered_set<const void *> seen_class_template_mangle_arguments_;
+  unordered_set<const string *> seen_template_argument_texts_;
 };
 size_t string_storage_bytes(const string & value)
 {
@@ -188,7 +433,7 @@ size_t callsem_symbol_storage_bytes(
          symbol_identity_payload_bytes(*symbol);
 }
 
-size_t qualified_name_payload_bytes(const shared_ptr<QualifiedName> & name)
+size_t qualified_name_payload_bytes(const QualifiedName * name)
 {
   if(!name) {
     return 0;
@@ -200,6 +445,11 @@ size_t qualified_name_payload_bytes(const shared_ptr<QualifiedName> & name)
     bytes += string_storage_bytes(name->qualifiers[i]);
   }
   return bytes;
+}
+
+size_t qualified_name_payload_bytes(const shared_ptr<QualifiedName> & name)
+{
+  return qualified_name_payload_bytes(name.get());
 }
 
 void census_type(const TypePtr & type,
@@ -265,7 +515,69 @@ size_t template_argument_payload_bytes(const TemplateArgument & arg,
                                        MemoryCensus & census,
                                        unordered_set<const Type *> & seen_types)
 {
-  size_t bytes = string_storage_bytes(arg.text);
+  census.note_detail("template_argument.base", sizeof(TemplateArgument));
+  if(arg.kind != TemplateArgument::TA_TYPE) {
+    census.note_detail("template_argument.non_type_kind", sizeof(arg.kind));
+  }
+  if(arg.template_decl) {
+    census.note_detail("template_argument.nonempty.template_decl",
+                       sizeof(arg.template_decl));
+  }
+  if(arg.template_owner_type) {
+    census.note_detail("template_argument.nonempty.template_owner_type",
+                       sizeof(arg.template_owner_type));
+  }
+  if(arg.template_entity_identity) {
+    census.note_detail("template_argument.nonempty.template_entity_identity",
+                       sizeof(arg.template_entity_identity));
+  }
+  if(arg.rare_data) {
+    census.note_detail("template_argument.nonempty.rare_data",
+                       sizeof(arg.rare_data) +
+                           sizeof(TemplateArgument::RareData));
+  }
+  const TemplateArgument::RareData & rare = arg.rare();
+  if(rare.function_value) {
+    census.note_detail("template_argument.nonempty.function_value",
+                       sizeof(rare.function_value));
+  }
+  if(!rare.function_internal_symbol.empty()) {
+    census.note_detail("template_argument.nonempty.function_internal_symbol",
+                       sizeof(rare.function_internal_symbol));
+  }
+  if(rare.value_binding) {
+    census.note_detail("template_argument.nonempty.value_binding",
+                       sizeof(rare.value_binding));
+  }
+  if(!rare.value_dependencies.empty()) {
+    census.note_detail("template_argument.nonempty.value_dependencies",
+                       vector_storage_bytes(rare.value_dependencies));
+  }
+  if(arg.source_syntax) {
+    census.note_detail("template_argument.nonempty.source_syntax",
+                       sizeof(arg.source_syntax));
+  }
+  if(arg.expression) {
+    census.note_detail("template_argument.nonempty.expression",
+                       sizeof(arg.expression));
+  }
+  if(arg.dependent) {
+    census.note_detail("template_argument.true.dependent",
+                       sizeof(arg.dependent));
+  }
+  if(arg.source_defaulted) {
+    census.note_detail("template_argument.true.source_defaulted",
+                       sizeof(arg.source_defaulted));
+  }
+  if(arg.partial_order_placeholder) {
+    census.note_detail("template_argument.true.partial_order_placeholder",
+                       sizeof(arg.partial_order_placeholder));
+  }
+  const string * text_identity = arg.text.storage_identity();
+  size_t bytes =
+      census.first_template_argument_text(text_identity) ?
+          string_storage_bytes(arg.text) :
+          0;
   census_type(arg.type, census, seen_types);
   return bytes;
 }
@@ -290,20 +602,148 @@ void census_type(const TypePtr & type,
     return;
   }
 
+  const size_t named_display_bytes = string_storage_bytes(type->named_display);
+  const size_t named_key_bytes = string_storage_bytes(type->named_key);
+  const size_t named_semantic_payload_bytes =
+      string_storage_bytes(type->named_semantic_payload);
+  const size_t bound_text_bytes = string_storage_bytes(type->bound_text);
+  static const char * type_kind_names[] = {
+      "fundamental",
+      "named",
+      "cv",
+      "atomic",
+      "pointer",
+      "member_pointer",
+      "block_pointer",
+      "lvalue_reference",
+      "rvalue_reference",
+      "array",
+      "function"};
+  census.note_detail(
+      string("type.kind.") +
+          type_kind_names[static_cast<size_t>(type->kind)],
+      sizeof(Type));
   size_t bytes = sizeof(Type) +
-                 string_storage_bytes(type->named_display) +
-                 string_storage_bytes(type->named_key) +
-                 string_storage_bytes(type->bound_text) +
+                 named_display_bytes +
+                 named_key_bytes +
+                 named_semantic_payload_bytes +
+                 bound_text_bytes +
                  vector_storage_bytes(type->named_host_abi_chunks) +
                  vector_storage_bytes(type->params);
+  census.note_detail("type.string_capacity.named_display", named_display_bytes);
+  census.note_detail("type.string_capacity.named_key", named_key_bytes);
+  census.note_detail("type.string_capacity.named_semantic_payload",
+                     named_semantic_payload_bytes);
+  census.note_detail("type.string_capacity.bound_text", bound_text_bytes);
   if(type->named_rare_metadata) {
     const Type::NamedRareMetadata & syntax = *type->named_rare_metadata;
+    const size_t qualified_name_bytes =
+        qualified_name_payload_bytes(&syntax.qualified_name);
+    const size_t source_name_bytes = string_storage_bytes(syntax.source_name);
+    const size_t dependent_template_name_bytes =
+        string_storage_bytes(
+            syntax.named_dependent_template_template_parameter_name);
+    const size_t member_name_bytes =
+        string_storage_bytes(syntax.named_member_name);
     bytes += sizeof(Type::NamedRareMetadata) +
-             string_storage_bytes(syntax.qualified_name.name) +
-             vector_storage_bytes(syntax.qualified_name.qualifiers) +
-             string_storage_bytes(syntax.source_name);
-    for(size_t i = 0; i < syntax.qualified_name.qualifiers.size(); ++i) {
-      bytes += string_storage_bytes(syntax.qualified_name.qualifiers[i]);
+             qualified_name_bytes +
+             source_name_bytes +
+             dependent_template_name_bytes +
+             member_name_bytes;
+    census.note_detail("type.rare.qualified_name", qualified_name_bytes);
+    census.note_detail("type.rare.string_capacity.source_name",
+                       source_name_bytes);
+    census.note_detail("type.rare.string_capacity.dependent_template_name",
+                       dependent_template_name_bytes);
+    census.note_detail("type.rare.string_capacity.member_name",
+                       member_name_bytes);
+    if(syntax.named_class_template_specialization_mangle_info &&
+       census.first_class_template_mangle_info(
+           syntax.named_class_template_specialization_mangle_info.get())) {
+      const ClassTemplateSpecializationMangleInfo & mangle =
+          *syntax.named_class_template_specialization_mangle_info;
+      const size_t base_bytes =
+          sizeof(ClassTemplateSpecializationMangleInfo);
+      const size_t name_syntax_bytes =
+          qualified_name_payload_bytes(&mangle.template_name_syntax);
+      const size_t scope_prefix_bytes =
+          string_storage_bytes(mangle.template_scope_prefix);
+      const size_t template_name_bytes =
+          string_storage_bytes(mangle.template_name);
+      const size_t template_parameter_storage_bytes =
+          mangle.template_parameters.owned_capacity() *
+          sizeof(TemplateParameterInfo);
+      const size_t mangle_parameter_storage_bytes =
+          vector_storage_bytes(mangle.mangle_parameters);
+      const size_t mangle_argument_storage_bytes =
+          vector_storage_bytes(mangle.mangle_arguments);
+      const size_t argument_storage_bytes =
+          census.first_class_template_mangle_arguments(
+              mangle.arguments.storage_identity()) ?
+              mangle.arguments.storage_capacity() *
+                  sizeof(TemplateArgument) :
+              0;
+      const size_t argument_syntax_storage_bytes =
+          vector_storage_bytes(mangle.argument_syntaxes);
+      const size_t pack_size_storage_bytes =
+          map_storage_bytes(mangle.pack_sizes);
+      size_t mangle_bytes =
+          base_bytes +
+          name_syntax_bytes +
+          scope_prefix_bytes +
+          template_name_bytes +
+          template_parameter_storage_bytes +
+          mangle_parameter_storage_bytes +
+          mangle_argument_storage_bytes +
+          argument_storage_bytes +
+          argument_syntax_storage_bytes +
+          pack_size_storage_bytes;
+      census.note_detail("type.mangle.base", base_bytes);
+      census.note_detail("type.mangle.name_syntax", name_syntax_bytes);
+      census.note_detail("type.mangle.scope_prefix", scope_prefix_bytes);
+      census.note_detail("type.mangle.template_name", template_name_bytes);
+      census.note_detail("type.mangle.template_parameter_storage",
+                         template_parameter_storage_bytes);
+      census.note_detail("type.mangle.mangle_parameter_storage",
+                         mangle_parameter_storage_bytes);
+      census.note_detail("type.mangle.mangle_argument_storage",
+                         mangle_argument_storage_bytes);
+      census.note_detail("type.mangle.argument_storage",
+                         argument_storage_bytes);
+      census.note_detail("type.mangle.argument_syntax_storage",
+                         argument_syntax_storage_bytes);
+      census.note_detail("type.mangle.pack_size_storage",
+                         pack_size_storage_bytes);
+      census.note_detail(
+          syntax.named_class_info ?
+              "type.mangle.with_class_info" :
+              "type.mangle.without_class_info",
+          base_bytes);
+      if(mangle.template_parameters.owns_values()) {
+        for(size_t i = 0; i < mangle.template_parameters.size(); ++i) {
+          mangle_bytes += template_parameter_payload_bytes(
+              mangle.template_parameters[i], census, seen_types);
+        }
+      }
+      for(size_t i = 0; i < mangle.mangle_parameters.size(); ++i) {
+        mangle_bytes += template_parameter_payload_bytes(
+            mangle.mangle_parameters[i], census, seen_types);
+      }
+      for(size_t i = 0; i < mangle.mangle_arguments.size(); ++i) {
+        mangle_bytes += template_argument_payload_bytes(
+            mangle.mangle_arguments[i], census, seen_types);
+      }
+      for(size_t i = 0; i < mangle.arguments.const_values().size(); ++i) {
+        mangle_bytes += template_argument_payload_bytes(
+            mangle.arguments.const_values()[i], census, seen_types);
+      }
+      for(map<string, size_t>::const_iterator it = mangle.pack_sizes.begin();
+          it != mangle.pack_sizes.end();
+          ++it) {
+        mangle_bytes += string_storage_bytes(it->first);
+      }
+      bytes += mangle_bytes;
+      census.note_detail("type.rare.class_template_mangle", mangle_bytes);
     }
   }
   census.note("type", bytes);
@@ -319,17 +759,91 @@ void census_cpp_ast_node(const CppAstNode & node,
                          const string & kind,
                          MemoryCensus & census)
 {
+  if(kind == "cppast.source") {
+    census.note_detail("cppast.source.base", sizeof(CppAstNode));
+    if(!node.value.empty()) {
+      census.note_detail("cppast.source.nonempty.value",
+                         string_storage_bytes(node.value));
+    }
+    if(!node.children.empty()) {
+      census.note_detail("cppast.source.nonempty.children",
+                         vector_storage_bytes(node.children));
+    }
+    if(!cppast_builtin_type_transform_name(node).empty()) {
+      census.note_detail("cppast.source.nonempty.builtin_type_transform_name",
+                         string_storage_bytes(
+                             cppast_builtin_type_transform_name(node)));
+    }
+    if(node.semantic_type) {
+      census.note_detail("cppast.source.nonempty.semantic_type",
+                         sizeof(node.semantic_type));
+    }
+    if(node.qualified_name_syntax) {
+      census.note_detail("cppast.source.nonempty.qualified_name_syntax",
+                         sizeof(node.qualified_name_syntax));
+    }
+    if(node.template_id_syntax) {
+      census.note_detail("cppast.source.nonempty.template_id_syntax",
+                         sizeof(node.template_id_syntax));
+    }
+    if(cppast_conversion_type_id_syntax_storage(node)) {
+      census.note_detail("cppast.source.cppast_conversion_type_id_syntax_storage(nonempty)",
+                         sizeof(cppast_conversion_type_id_syntax_storage(node)));
+    }
+    if(cppast_base_type_syntax_storage(node)) {
+      census.note_detail("cppast.source.cppast_base_type_syntax_storage(nonempty)",
+                         sizeof(cppast_base_type_syntax_storage(node)));
+    }
+    if(!node.qualifier_template_id_syntaxes.empty()) {
+      census.note_detail(
+          "cppast.source.nonempty.qualifier_template_id_syntaxes",
+          vector_storage_bytes(node.qualifier_template_id_syntaxes));
+    }
+    if(!node.qualifier_type_syntaxes.empty()) {
+      census.note_detail("cppast.source.nonempty.qualifier_type_syntaxes",
+                         vector_storage_bytes(node.qualifier_type_syntaxes));
+    }
+    if(!node.exception_type_id_syntaxes.empty()) {
+      census.note_detail("cppast.source.nonempty.exception_type_id_syntaxes",
+                         vector_storage_bytes(node.exception_type_id_syntaxes));
+    }
+    if(cppast_has_rare_strings(node)) {
+      census.note_detail("cppast.source.nonempty.rare_strings",
+                         sizeof(CppAstRareStrings));
+    }
+    if(!cppast_abi_tags(node).empty()) {
+      census.note_detail("cppast.source.nonempty.abi_tags",
+                         vector_storage_bytes(cppast_abi_tags(node)));
+    }
+    if(!cppast_alignment_specifiers(node).empty()) {
+      census.note_detail("cppast.source.nonempty.alignment_specifiers",
+                         vector_storage_bytes(
+                             cppast_alignment_specifiers(node)));
+    }
+    if(!node.alignment_specifier_nodes.empty()) {
+      census.note_detail("cppast.source.nonempty.alignment_specifier_nodes",
+                         vector_storage_bytes(
+                             node.alignment_specifier_nodes));
+    }
+    if(cppast_name_lookup_snapshot(node)) {
+      census.note_detail("cppast.source.nonempty.name_lookup_snapshot",
+                         sizeof(CppAstNameLookupSnapshot));
+    }
+  }
   size_t bytes = sizeof(CppAstNode) +
                  string_storage_bytes(node.value) +
-                 vector_storage_bytes(node.abi_tags) +
-                 vector_storage_bytes(node.alignment_specifiers) +
+                 vector_storage_bytes(cppast_abi_tags(node)) +
+                 vector_storage_bytes(cppast_alignment_specifiers(node)) +
                  vector_storage_bytes(node.alignment_specifier_nodes) +
                  vector_storage_bytes(node.children);
-  for(size_t i = 0; i < node.abi_tags.size(); ++i) {
-    bytes += string_storage_bytes(node.abi_tags[i]);
+  const CppAstLazyVector<std::string> & abi_tags = cppast_abi_tags(node);
+  for(size_t i = 0; i < abi_tags.size(); ++i) {
+    bytes += string_storage_bytes(abi_tags[i]);
   }
-  for(size_t i = 0; i < node.alignment_specifiers.size(); ++i) {
-    bytes += string_storage_bytes(node.alignment_specifiers[i]);
+  const CppAstLazyVector<std::string> & alignment_specifiers =
+      cppast_alignment_specifiers(node);
+  for(size_t i = 0; i < alignment_specifiers.size(); ++i) {
+    bytes += string_storage_bytes(alignment_specifiers[i]);
   }
   census.note(kind, bytes);
   for(size_t i = 0; i < node.alignment_specifier_nodes.size(); ++i) {
@@ -476,34 +990,124 @@ void census_scope(const Scope * scope,
     return;
   }
 
+  const auto note_nonempty =
+      [&census](const char * kind, bool nonempty)
+      {
+        if(nonempty) {
+          census.note_detail(kind, 0);
+        }
+      };
+  note_nonempty("scope.nonempty.named_types", !scope->named_types.empty());
+  note_nonempty("scope.nonempty.named_type_access",
+                !scope->named_type_access.empty());
+  note_nonempty("scope.nonempty.named_type_packs",
+                !scope->named_type_packs.empty());
+  note_nonempty("scope.nonempty.named_value_packs",
+                !scope->named_value_packs.empty());
+  note_nonempty("scope.nonempty.named_pack_sizes",
+                !scope->named_pack_sizes.empty());
+  note_nonempty("scope.nonempty.template_bound_type_names",
+                !scope->template_bound_type_names.empty());
+  note_nonempty("scope.nonempty.template_bound_type_pack_names",
+                !scope->template_bound_type_pack_names.empty());
+  note_nonempty("scope.nonempty.template_bound_value_names",
+                !scope->template_bound_value_names.empty());
+  note_nonempty("scope.nonempty.template_bound_value_pack_names",
+                !scope->template_bound_value_pack_names.empty());
+  note_nonempty("scope.nonempty.template_bound_template_names",
+                !scope->template_bound_template_names.empty());
+  note_nonempty("scope.nonempty.template_bound_template_arguments",
+                !scope->template_bound_template_arguments.empty());
+  note_nonempty("scope.nonempty.values", !scope->values.empty());
+  note_nonempty("scope.nonempty.namespace_bindings",
+                !scope->namespace_bindings.empty());
+  note_nonempty("scope.nonempty.function_sets",
+                !scope->function_sets.empty());
+  note_nonempty("scope.nonempty.function_set_access_overrides",
+                !scope->function_set_access_overrides.empty());
+  note_nonempty("scope.nonempty.class_templates",
+                !scope->class_templates.empty());
+  note_nonempty("scope.nonempty.function_templates",
+                !scope->function_templates.empty());
+  note_nonempty("scope.nonempty.collected_template_declarations",
+                !scope->collected_template_declarations.empty());
+  note_nonempty("scope.nonempty.alias_templates",
+                !scope->alias_templates.empty());
+  note_nonempty("scope.nonempty.variable_templates",
+                !scope->variable_templates.empty());
+  note_nonempty("scope.nonempty.using_directives",
+                !scope->using_directives.empty());
+  note_nonempty("scope.nonempty.namespace_children",
+                !scope->namespace_children.empty());
+  note_nonempty("scope.nonempty.cached_direct_function_lookups",
+                !scope->cached_direct_function_lookups.empty());
+
   size_t bytes = sizeof(Scope) +
                  string_storage_bytes(scope->name) +
                  unordered_map_storage_bytes(scope->named_types) +
-                 map_storage_bytes(scope->named_type_packs) +
-                 map_storage_bytes(scope->named_value_packs) +
-                 map_storage_bytes(scope->named_pack_sizes) +
+                 map_storage_bytes(scope->named_type_packs.get()) +
+                 map_storage_bytes(scope->named_value_packs.get()) +
+                 map_storage_bytes(scope->named_pack_sizes.get()) +
                  set_storage_bytes(scope->template_bound_type_names) +
                  set_storage_bytes(scope->template_bound_type_pack_names) +
                  set_storage_bytes(scope->template_bound_value_names) +
                  set_storage_bytes(scope->template_bound_value_pack_names) +
                  set_storage_bytes(scope->template_bound_template_names) +
                  map_storage_bytes(scope->values) +
-                 map_storage_bytes(scope->namespace_bindings) +
+                 map_storage_bytes(scope->namespace_bindings.get()) +
                  map_storage_bytes(scope->function_sets) +
-                 map_storage_bytes(scope->class_templates) +
-                 map_storage_bytes(scope->function_templates) +
+                 map_storage_bytes(scope->class_templates.get()) +
+                 map_storage_bytes(scope->function_templates.get()) +
                  set_storage_bytes(scope->collected_template_declarations) +
-                 map_storage_bytes(scope->alias_templates) +
-                 map_storage_bytes(scope->variable_templates) +
+                 map_storage_bytes(scope->alias_templates.get()) +
+                 map_storage_bytes(scope->variable_templates.get()) +
                  vector_storage_bytes(scope->using_directives) +
                  vector_storage_bytes(scope->namespace_children);
+  census.note_detail("scope.base", sizeof(Scope));
+  census.note_detail("scope.storage.named_types",
+                     unordered_map_storage_bytes(scope->named_types));
+  census.note_detail("scope.storage.named_type_packs",
+                     map_storage_bytes(scope->named_type_packs.get()));
+  census.note_detail("scope.storage.named_value_packs",
+                     map_storage_bytes(scope->named_value_packs.get()));
+  census.note_detail("scope.storage.named_pack_sizes",
+                     map_storage_bytes(scope->named_pack_sizes.get()));
+  census.note_detail("scope.storage.template_bound_type_names",
+                     set_storage_bytes(scope->template_bound_type_names));
+  census.note_detail("scope.storage.template_bound_type_pack_names",
+                     set_storage_bytes(
+                         scope->template_bound_type_pack_names));
+  census.note_detail("scope.storage.template_bound_value_names",
+                     set_storage_bytes(
+                         scope->template_bound_value_names));
+  census.note_detail("scope.storage.template_bound_value_pack_names",
+                     set_storage_bytes(
+                         scope->template_bound_value_pack_names));
+  census.note_detail("scope.storage.template_bound_template_names",
+                     set_storage_bytes(
+                         scope->template_bound_template_names));
+  census.note_detail("scope.storage.values",
+                     map_storage_bytes(scope->values));
+  census.note_detail("scope.storage.function_sets",
+                     map_storage_bytes(scope->function_sets));
+  census.note_detail("scope.storage.class_templates",
+                     map_storage_bytes(scope->class_templates.get()));
+  census.note_detail("scope.storage.function_templates",
+                     map_storage_bytes(scope->function_templates.get()));
+  census.note_detail("scope.string_capacity.name",
+                     string_storage_bytes(scope->name));
 
+  size_t named_type_key_bytes = 0;
   for(auto it = scope->named_types.begin();
       it != scope->named_types.end();
       ++it) {
-    bytes += string_storage_bytes(it->first);
+    const size_t key_bytes = string_storage_bytes(it->first);
+    bytes += key_bytes;
+    named_type_key_bytes += key_bytes;
     census_type(it->second, census, seen_types);
   }
+  census.note_detail("scope.named_types.string_capacity.keys",
+                     named_type_key_bytes);
   for(map<string, vector<TypePtr> >::const_iterator it = scope->named_type_packs.begin();
       it != scope->named_type_packs.end();
       ++it) {
@@ -629,6 +1233,12 @@ void census_function_binding(const FunctionBinding * binding,
                  vector_storage_bytes(binding->instantiation_arguments) +
                  map_storage_bytes(binding->instantiation_pack_sizes) +
                  symbol_identity_payload_bytes(binding->symbol);
+  census.note_detail("function_binding.string_capacity.name",
+                     string_storage_bytes(binding->name));
+  census.note_detail("function_binding.string_capacity.display_name",
+                     string_storage_bytes(binding->display_name));
+  census.note_detail("function_binding.string_capacity.instantiation_key",
+                     string_storage_bytes(binding->template_instantiation_key));
   for(size_t i = 0; i < binding->params.size(); ++i) {
     bytes += string_storage_bytes(binding->params[i].first);
     census_type(binding->params[i].second, census, seen_types);
@@ -685,6 +1295,8 @@ void census_class_info(const ClassInfo * info,
   size_t bytes = sizeof(ClassInfo) +
                  string_storage_bytes(info->name) +
                  string_storage_bytes(info->qualified_name) +
+                 qualified_name_payload_bytes(
+                     &info->symbol_qualified_name_syntax) +
                  string_storage_bytes(info->display_qualified_name) +
                  string_storage_bytes(info->class_kind) +
                  string_storage_bytes(info->creation_context) +
@@ -703,7 +1315,23 @@ void census_class_info(const ClassInfo * info,
                  vector_storage_bytes(info->friend_access_function_templates) +
                  vector_storage_bytes(info->friend_class_names) +
                  vector_storage_bytes(info->instantiation_arg_texts) +
-                 vector_storage_bytes(info->instantiation_arguments);
+                 vector_storage_bytes(info->instantiation_arguments) +
+                 vector_storage_bytes(info->instantiation_binding_arguments) +
+                 map_storage_bytes(info->instantiation_binding_pack_sizes);
+  census.note_detail("class_info.string_capacity.name",
+                     string_storage_bytes(info->name));
+  census.note_detail("class_info.string_capacity.qualified_name",
+                     string_storage_bytes(info->qualified_name));
+  census.note_detail("class_info.symbol_qualified_name_syntax",
+                     qualified_name_payload_bytes(
+                         &info->symbol_qualified_name_syntax));
+  census.note_detail("class_info.string_capacity.display_qualified_name",
+                     string_storage_bytes(info->display_qualified_name));
+  census.note_detail("class_info.string_capacity.creation_context",
+                     string_storage_bytes(info->creation_context));
+  census.note_detail("class_info.string_capacity.instantiation_key",
+                     string_storage_bytes(info->instantiation_key));
+  size_t instantiation_arg_text_bytes = 0;
   for(size_t i = 0; i < info->fields.size(); ++i) {
     bytes += string_storage_bytes(info->fields[i].name);
     census_type(info->fields[i].type, census, seen_types);
@@ -722,13 +1350,36 @@ void census_class_info(const ClassInfo * info,
     bytes += string_storage_bytes(info->friend_class_names[i]);
   }
   for(size_t i = 0; i < info->instantiation_arg_texts.size(); ++i) {
-    bytes += string_storage_bytes(info->instantiation_arg_texts[i]);
+    const size_t text_bytes =
+        string_storage_bytes(info->instantiation_arg_texts[i]);
+    bytes += text_bytes;
+    instantiation_arg_text_bytes += text_bytes;
   }
+  census.note_detail("class_info.instantiation_arg_text_capacity",
+                     instantiation_arg_text_bytes);
   for(size_t i = 0; i < info->instantiation_arguments.size(); ++i) {
     bytes += template_argument_payload_bytes(info->instantiation_arguments[i],
                                              census,
                                              seen_types);
   }
+  size_t binding_argument_bytes =
+      vector_storage_bytes(info->instantiation_binding_arguments);
+  for(size_t i = 0;
+      i < info->instantiation_binding_arguments.size();
+      ++i) {
+    binding_argument_bytes += template_argument_payload_bytes(
+        info->instantiation_binding_arguments[i], census, seen_types);
+  }
+  for(map<string, size_t>::const_iterator
+          it = info->instantiation_binding_pack_sizes.begin();
+      it != info->instantiation_binding_pack_sizes.end();
+      ++it) {
+    binding_argument_bytes += string_storage_bytes(it->first);
+  }
+  bytes += binding_argument_bytes -
+           vector_storage_bytes(info->instantiation_binding_arguments);
+  census.note_detail("class_info.instantiation_binding_arguments",
+                     binding_argument_bytes);
   census.note("class_info", bytes);
 
   census_type(info->type, census, seen_types);
@@ -804,11 +1455,16 @@ void census_function_template(const FunctionTemplateDecl & decl,
   for(size_t i = 0; i < decl.parameter_aliases_pattern.size(); ++i) {
     bytes += string_storage_bytes(decl.parameter_aliases_pattern[i]);
   }
+  size_t instantiation_key_bytes = 0;
   for(map<string, FunctionBinding *>::const_iterator it = decl.instantiations.begin();
       it != decl.instantiations.end();
       ++it) {
-    bytes += string_storage_bytes(it->first);
+    const size_t key_bytes = string_storage_bytes(it->first);
+    bytes += key_bytes;
+    instantiation_key_bytes += key_bytes;
   }
+  census.note_detail("function_template.instantiation_key_capacity",
+                     instantiation_key_bytes);
   census.note("function_template", bytes);
 
   census_type(decl.type_pattern, census, seen_types);
@@ -905,6 +1561,8 @@ void census_class_template(const ClassTemplateDecl & decl,
                  map_storage_bytes(decl.reference_instantiations) +
                  map_storage_bytes(decl.fast_reference_cache) +
                  set_storage_bytes(decl.suppress_implicit_instantiation_definitions) +
+                 set_storage_bytes(
+                     decl.suppress_implicit_member_function_instantiation_definitions) +
                  map_storage_bytes(decl.explicit_specializations) +
                  vector_storage_bytes(decl.partial_specializations) +
                  vector_storage_bytes(decl.deduction_guides) +
@@ -916,25 +1574,47 @@ void census_class_template(const ClassTemplateDecl & decl,
   for(size_t i = 0; i < decl.parameters.size(); ++i) {
     bytes += template_parameter_payload_bytes(decl.parameters[i], census, seen_types);
   }
+  size_t instantiation_key_bytes = 0;
   for(auto it = decl.instantiations.begin();
       it != decl.instantiations.end();
       ++it) {
-    bytes += string_storage_bytes(it->first);
+    const size_t key_bytes = string_storage_bytes(it->first);
+    bytes += key_bytes;
+    instantiation_key_bytes += key_bytes;
   }
+  census.note_detail("class_template.instantiation_key_capacity",
+                     instantiation_key_bytes);
+  size_t reference_instantiation_key_bytes = 0;
   for(auto it = decl.reference_instantiations.begin();
       it != decl.reference_instantiations.end();
       ++it) {
-    bytes += string_storage_bytes(it->first);
+    const size_t key_bytes = string_storage_bytes(it->first);
+    bytes += key_bytes;
+    reference_instantiation_key_bytes += key_bytes;
   }
+  census.note_detail("class_template.reference_instantiation_key_capacity",
+                     reference_instantiation_key_bytes);
+  size_t fast_reference_key_bytes = 0;
   for(auto it = decl.fast_reference_cache.begin();
       it != decl.fast_reference_cache.end();
       ++it) {
-    bytes += string_storage_bytes(it->first);
+    const size_t key_bytes = string_storage_bytes(it->first);
+    bytes += key_bytes;
+    fast_reference_key_bytes += key_bytes;
   }
+  census.note_detail("class_template.fast_reference_key_capacity",
+                     fast_reference_key_bytes);
   for(set<string>::const_iterator it = decl.suppress_implicit_instantiation_definitions.begin();
       it != decl.suppress_implicit_instantiation_definitions.end();
       ++it) {
     bytes += string_storage_bytes(*it);
+  }
+  for(set<pair<string, string> >::const_iterator it =
+          decl.suppress_implicit_member_function_instantiation_definitions.begin();
+      it != decl.suppress_implicit_member_function_instantiation_definitions.end();
+      ++it) {
+    bytes += string_storage_bytes(it->first);
+    bytes += string_storage_bytes(it->second);
   }
   for(map<string, ClassTemplateSpecializationDecl>::const_iterator
           it = decl.explicit_specializations.begin();
@@ -2065,6 +2745,125 @@ private:
   unordered_map<uint64_t, vector<CallSemDuplicateShapeGroup> > shape_groups_;
 };
 
+void note_exact_qualified_name_strings(ExactStringRetentionCensus & census,
+                                       ExactStringCategory category,
+                                       const QualifiedName & name)
+{
+  census.note(category, name.name);
+  for(size_t i = 0; i < name.qualifiers.size(); ++i) {
+    census.note(category, name.qualifiers[i]);
+  }
+}
+
+void note_exact_template_argument_strings(
+    ExactStringRetentionCensus & census,
+    const vector<TemplateArgument> & arguments)
+{
+  for(size_t i = 0; i < arguments.size(); ++i) {
+    census.note(ESC_TEMPLATE_ARGUMENT, arguments[i].text);
+    census.note(ESC_TEMPLATE_ARGUMENT,
+                arguments[i].rare().function_internal_symbol);
+    if(arguments[i].template_entity_identity) {
+      census.note(ESC_TEMPLATE_ARGUMENT,
+                  arguments[i].template_entity_identity->scope_prefix);
+      census.note(ESC_TEMPLATE_ARGUMENT,
+                  arguments[i].template_entity_identity->name);
+      note_exact_qualified_name_strings(
+          census,
+          ESC_TEMPLATE_ARGUMENT,
+          arguments[i].template_entity_identity->name_syntax);
+    }
+  }
+}
+
+void dump_exact_string_retention_census(
+    ostream & out,
+    const MemoryCensusInput & input,
+    const unordered_set<const Scope *> & seen_scopes,
+    const unordered_set<const FunctionBinding *> & seen_functions,
+    const unordered_set<const ClassInfo *> & seen_classes,
+    const unordered_set<const Type *> & seen_types)
+{
+  ExactStringRetentionCensus census;
+  for(unordered_set<const Type *>::const_iterator it = seen_types.begin();
+      it != seen_types.end();
+      ++it) {
+    const Type & type = **it;
+    census.note(ESC_TYPE_DISPLAY, type.named_display);
+    census.note(ESC_TYPE_KEY, type.named_key);
+    if(!type.named_rare_metadata) {
+      continue;
+    }
+    const Type::NamedRareMetadata & rare = *type.named_rare_metadata;
+    note_exact_qualified_name_strings(
+        census, ESC_TYPE_QUALIFIED_NAME, rare.qualified_name);
+    if(!rare.named_class_template_specialization_mangle_info) {
+      continue;
+    }
+    const ClassTemplateSpecializationMangleInfo & mangle =
+        *rare.named_class_template_specialization_mangle_info;
+    note_exact_qualified_name_strings(
+        census, ESC_TYPE_MANGLE, mangle.template_name_syntax);
+    census.note(ESC_TYPE_MANGLE, mangle.template_scope_prefix);
+    census.note(ESC_TYPE_MANGLE, mangle.template_name);
+    note_exact_template_argument_strings(census, mangle.mangle_arguments);
+    note_exact_template_argument_strings(
+        census, mangle.arguments.const_values());
+  }
+
+  for(unordered_set<const ClassInfo *>::const_iterator it = seen_classes.begin();
+      it != seen_classes.end();
+      ++it) {
+    const ClassInfo & info = **it;
+    census.note(ESC_CLASS_QUALIFIED_NAME, info.qualified_name);
+    census.note(ESC_CLASS_INSTANTIATION_KEY, info.instantiation_key);
+    for(size_t i = 0; i < info.instantiation_arg_texts.size(); ++i) {
+      census.note(ESC_CLASS_ARGUMENT_TEXT, info.instantiation_arg_texts[i]);
+    }
+    note_exact_template_argument_strings(census, info.instantiation_arguments);
+    note_exact_template_argument_strings(
+        census, class_instantiation_binding_arguments(info));
+  }
+
+  for(unordered_set<const Scope *>::const_iterator it = seen_scopes.begin();
+      it != seen_scopes.end();
+      ++it) {
+    const Scope & scope = **it;
+    census.note(ESC_SCOPE_NAME, scope.name);
+    for(Scope::NamedTypeMap::const_iterator named = scope.named_types.begin();
+        named != scope.named_types.end();
+        ++named) {
+      census.note(ESC_SCOPE_NAMED_TYPE_KEY, named->first);
+    }
+  }
+
+  for(unordered_set<const FunctionBinding *>::const_iterator
+          it = seen_functions.begin();
+      it != seen_functions.end();
+      ++it) {
+    census.note(ESC_FUNCTION_NAME, (*it)->name);
+    census.note(ESC_FUNCTION_INSTANTIATION_KEY,
+                (*it)->template_instantiation_key);
+    note_exact_template_argument_strings(census, (*it)->instantiation_arguments);
+  }
+
+  for(size_t i = 0; i < input.class_templates.size(); ++i) {
+    const ClassTemplateDecl & decl = *input.class_templates[i];
+    for(map<string, ClassInfo *>::const_iterator it = decl.instantiations.begin();
+        it != decl.instantiations.end();
+        ++it) {
+      census.note(ESC_CLASS_TEMPLATE_INSTANTIATION_KEY, it->first);
+    }
+    for(map<string, ClassInfo *>::const_iterator
+            it = decl.reference_instantiations.begin();
+        it != decl.reference_instantiations.end();
+        ++it) {
+      census.note(ESC_CLASS_TEMPLATE_REFERENCE_KEY, it->first);
+    }
+  }
+  census.dump(out);
+}
+
 }  // namespace
 
 void dump_memory_census(ostream & out, const MemoryCensusInput & input)
@@ -2163,6 +2962,12 @@ void dump_memory_census(ostream & out, const MemoryCensusInput & input)
                       seen_callsem_source_files,
                       seen_callsem_symbols);
   census.dump(out);
+  dump_exact_string_retention_census(out,
+                                     input,
+                                     seen_scopes,
+                                     seen_functions,
+                                     seen_classes,
+                                     seen_types);
 }
 
 void dump_source_ast_memory_census(ostream & out,

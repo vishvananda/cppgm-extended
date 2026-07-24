@@ -14,10 +14,10 @@ function @g(%t : i32, %u : i32) -> i32 [binding=weak, object=_Z1gIiiEDTcl1fIT_Ef
     store i32 %u, $u
     %t1 = load i32 $t
     %t2 = load i32 $u
-    %t3 = call i32 @f__ov2(%t1, %t2)
+    %t3 = call i32 @f(%t1, %t2)
     return i32 %t3
 }
-function @f__ov2(%t : i32, %u : i32) -> i32 [binding=weak, object=_Z1fIiiEiT_T0_] {
+function @f(%t : i32, %u : i32) -> i32 [binding=weak, object=_Z1fIiiEiT_T0_] {
   slot $t : i32
   slot $u : i32
 

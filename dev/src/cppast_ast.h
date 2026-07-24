@@ -374,6 +374,151 @@ private:
   std::unique_ptr<std::vector<T> > values_;
 };
 
+template <typename T>
+class CppAstSharedPtr
+{
+public:
+  CppAstSharedPtr() : holder_(nullptr) {}
+
+  CppAstSharedPtr(const CppAstSharedPtr & other)
+      : holder_(other.holder_)
+  {
+    retain();
+  }
+
+  CppAstSharedPtr(CppAstSharedPtr && other) noexcept
+      : holder_(other.holder_)
+  {
+    other.holder_ = nullptr;
+  }
+
+  ~CppAstSharedPtr()
+  {
+    release();
+  }
+
+  CppAstSharedPtr & operator=(const CppAstSharedPtr & other)
+  {
+    if(this != &other) {
+      CppAstSharedPtr replacement(other);
+      swap(replacement);
+    }
+    return *this;
+  }
+
+  CppAstSharedPtr & operator=(CppAstSharedPtr && other) noexcept
+  {
+    if(this != &other) {
+      release();
+      holder_ = other.holder_;
+      other.holder_ = nullptr;
+    }
+    return *this;
+  }
+
+  explicit operator bool() const
+  {
+    return holder_ != nullptr;
+  }
+
+  T & operator*() const
+  {
+    return *holder_->value;
+  }
+
+  T * operator->() const
+  {
+    return holder_->value;
+  }
+
+  T * get() const
+  {
+    return holder_ ? holder_->value : nullptr;
+  }
+
+  bool unique() const
+  {
+    return holder_ && holder_->reference_count == 1;
+  }
+
+  void reset(T * value = nullptr)
+  {
+    Holder * replacement = nullptr;
+    if(value) {
+      try {
+        replacement = new Holder(value);
+      } catch(...) {
+        delete value;
+        throw;
+      }
+    }
+    release();
+    holder_ = replacement;
+  }
+
+  void swap(CppAstSharedPtr & other) noexcept
+  {
+    std::swap(holder_, other.holder_);
+  }
+
+private:
+  struct Holder
+  {
+    explicit Holder(T * value_in)
+        : reference_count(1), value(value_in)
+    {}
+
+    ~Holder()
+    {
+      delete value;
+    }
+
+    std::size_t reference_count;
+    T * value;
+  };
+
+  void retain()
+  {
+    if(holder_) {
+      ++holder_->reference_count;
+    }
+  }
+
+  void release()
+  {
+    if(holder_ && --holder_->reference_count == 0) {
+      delete holder_;
+    }
+    holder_ = nullptr;
+  }
+
+  Holder * holder_;
+};
+
+template <typename T>
+inline bool operator==(const CppAstSharedPtr<T> & value, std::nullptr_t)
+{
+  return !value;
+}
+
+template <typename T>
+inline bool operator==(std::nullptr_t, const CppAstSharedPtr<T> & value)
+{
+  return !value;
+}
+
+template <typename T>
+inline bool operator!=(const CppAstSharedPtr<T> & value, std::nullptr_t)
+{
+  return static_cast<bool>(value);
+}
+
+template <typename T>
+inline bool operator!=(std::nullptr_t, const CppAstSharedPtr<T> & value)
+{
+  return static_cast<bool>(value);
+}
+
 inline const char * cppast_kind_text(CppAstKind kind)
 {
   switch(kind) {
@@ -407,16 +552,134 @@ struct CppAstRareStrings
   std::string asm_label;
 };
 
+struct CppAstNode;
+
+struct CppAstSparseData
+{
+  CppAstSparseData() : reference_count(1) {}
+  CppAstSparseData(const CppAstSparseData & other)
+      : reference_count(1),
+        builtin_type_transform_name(other.builtin_type_transform_name),
+        rare_strings(other.rare_strings),
+        name_lookup_snapshot(other.name_lookup_snapshot),
+        conversion_type_id_syntax(other.conversion_type_id_syntax),
+        base_type_syntax(other.base_type_syntax),
+        abi_tags(other.abi_tags),
+        alignment_specifiers(other.alignment_specifiers)
+  {}
+
+  std::size_t reference_count;
+  std::string builtin_type_transform_name;
+  CppAstRareStrings rare_strings;
+  std::shared_ptr<const CppAstNameLookupSnapshot> name_lookup_snapshot;
+  std::shared_ptr<CppAstNode> conversion_type_id_syntax;
+  std::shared_ptr<CppAstNode> base_type_syntax;
+  CppAstLazyVector<std::string> abi_tags;
+  CppAstLazyVector<std::string> alignment_specifiers;
+};
+
+class CppAstSparseDataPtr
+{
+public:
+  CppAstSparseDataPtr() : value_(nullptr) {}
+
+  CppAstSparseDataPtr(const CppAstSparseDataPtr & other)
+      : value_(other.value_)
+  {
+    retain();
+  }
+
+  CppAstSparseDataPtr(CppAstSparseDataPtr && other) noexcept
+      : value_(other.value_)
+  {
+    other.value_ = nullptr;
+  }
+
+  ~CppAstSparseDataPtr()
+  {
+    release();
+  }
+
+  CppAstSparseDataPtr & operator=(const CppAstSparseDataPtr & other)
+  {
+    if(this != &other) {
+      CppAstSparseDataPtr replacement(other);
+      swap(replacement);
+    }
+    return *this;
+  }
+
+  CppAstSparseDataPtr & operator=(CppAstSparseDataPtr && other) noexcept
+  {
+    if(this != &other) {
+      release();
+      value_ = other.value_;
+      other.value_ = nullptr;
+    }
+    return *this;
+  }
+
+  explicit operator bool() const
+  {
+    return value_ != nullptr;
+  }
+
+  CppAstSparseData & operator*() const
+  {
+    return *value_;
+  }
+
+  CppAstSparseData * operator->() const
+  {
+    return value_;
+  }
+
+  bool unique() const
+  {
+    return value_ && value_->reference_count == 1;
+  }
+
+  void reset(CppAstSparseData * value = nullptr)
+  {
+    if(value_ == value) {
+      return;
+    }
+    release();
+    value_ = value;
+  }
+
+  void swap(CppAstSparseDataPtr & other) noexcept
+  {
+    std::swap(value_, other.value_);
+  }
+
+private:
+  void retain()
+  {
+    if(value_) {
+      ++value_->reference_count;
+    }
+  }
+
+  void release()
+  {
+    if(value_ && --value_->reference_count == 0) {
+      delete value_;
+    }
+    value_ = nullptr;
+  }
+
+  CppAstSparseData * value_;
+};
+
 struct CppAstNode
 {
   CppAstKind kind = CppAstKind::invalid;
   std::string value;
   cpp_decl::TypePtr semantic_type;
-  std::string builtin_type_transform_name;
-  std::shared_ptr<cpp_decl::QualifiedName> qualified_name_syntax;
-  std::shared_ptr<cpp_decl::TemplateIdSyntax> template_id_syntax;
-  std::shared_ptr<CppAstNode> conversion_type_id_syntax;
-  std::shared_ptr<CppAstNode> base_type_syntax;
+  CppAstSparseDataPtr sparse_data;
+  CppAstSharedPtr<cpp_decl::QualifiedName> qualified_name_syntax;
+  CppAstSharedPtr<cpp_decl::TemplateIdSyntax> template_id_syntax;
   CppAstLazyVector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
   CppAstLazyVector<CppAstNode> qualifier_type_syntaxes;
   bool has_leading_typename = false;
@@ -429,9 +692,6 @@ struct CppAstNode
   bool has_using_if_exists = false;
   bool has_exclude_from_explicit_instantiation = false;
   bool has_weak_attribute = false;
-  std::shared_ptr<CppAstRareStrings> rare_strings;
-  CppAstLazyVector<std::string> abi_tags;
-  CppAstLazyVector<std::string> alignment_specifiers;
   CppAstLazyVector<CppAstNode> alignment_specifier_nodes;
   bool is_final_specifier = false;
   bool uses_assignment_form = false;
@@ -443,7 +703,6 @@ struct CppAstNode
   std::size_t token_start = 0;
   std::size_t token_end = 0;
   uint32_t source_location_id = 0;
-  std::shared_ptr<const CppAstNameLookupSnapshot> name_lookup_snapshot;
   std::vector<CppAstNode> children;
 };
 
@@ -453,21 +712,117 @@ inline const std::string & cppast_empty_rare_string()
   return value;
 }
 
+inline CppAstSparseData & mutable_cppast_sparse_data(CppAstNode & node)
+{
+  if(!node.sparse_data) {
+    node.sparse_data.reset(new CppAstSparseData());
+  } else if(!node.sparse_data.unique()) {
+    node.sparse_data.reset(new CppAstSparseData(*node.sparse_data));
+  }
+  return *node.sparse_data;
+}
+
+inline const CppAstLazyVector<std::string> & cppast_abi_tags(
+    const CppAstNode & node)
+{
+  static const CppAstLazyVector<std::string> empty;
+  return node.sparse_data ? node.sparse_data->abi_tags : empty;
+}
+
+inline CppAstLazyVector<std::string> & mutable_cppast_abi_tags(
+    CppAstNode & node)
+{
+  return mutable_cppast_sparse_data(node).abi_tags;
+}
+
+inline const CppAstLazyVector<std::string> & cppast_alignment_specifiers(
+    const CppAstNode & node)
+{
+  static const CppAstLazyVector<std::string> empty;
+  return node.sparse_data ? node.sparse_data->alignment_specifiers : empty;
+}
+
+inline CppAstLazyVector<std::string> & mutable_cppast_alignment_specifiers(
+    CppAstNode & node)
+{
+  return mutable_cppast_sparse_data(node).alignment_specifiers;
+}
+
+inline const std::string & cppast_builtin_type_transform_name(
+    const CppAstNode & node)
+{
+  return node.sparse_data ?
+      node.sparse_data->builtin_type_transform_name :
+      cppast_empty_rare_string();
+}
+
+inline std::string & mutable_cppast_builtin_type_transform_name(
+    CppAstNode & node)
+{
+  return mutable_cppast_sparse_data(node).builtin_type_transform_name;
+}
+
+inline const std::shared_ptr<const CppAstNameLookupSnapshot> &
+cppast_name_lookup_snapshot(const CppAstNode & node)
+{
+  static const std::shared_ptr<const CppAstNameLookupSnapshot> empty;
+  return node.sparse_data ? node.sparse_data->name_lookup_snapshot : empty;
+}
+
+inline std::shared_ptr<const CppAstNameLookupSnapshot> &
+mutable_cppast_name_lookup_snapshot(CppAstNode & node)
+{
+  return mutable_cppast_sparse_data(node).name_lookup_snapshot;
+}
+
+inline const std::shared_ptr<CppAstNode> &
+cppast_conversion_type_id_syntax_storage(const CppAstNode & node)
+{
+  static const std::shared_ptr<CppAstNode> empty;
+  return node.sparse_data ? node.sparse_data->conversion_type_id_syntax : empty;
+}
+
+inline std::shared_ptr<CppAstNode> &
+mutable_cppast_conversion_type_id_syntax_storage(CppAstNode & node)
+{
+  return mutable_cppast_sparse_data(node).conversion_type_id_syntax;
+}
+
+inline const std::shared_ptr<CppAstNode> &
+cppast_base_type_syntax_storage(const CppAstNode & node)
+{
+  static const std::shared_ptr<CppAstNode> empty;
+  return node.sparse_data ? node.sparse_data->base_type_syntax : empty;
+}
+
+inline std::shared_ptr<CppAstNode> &
+mutable_cppast_base_type_syntax_storage(CppAstNode & node)
+{
+  return mutable_cppast_sparse_data(node).base_type_syntax;
+}
+
+inline bool cppast_has_rare_strings(const CppAstNode & node)
+{
+  if(!node.sparse_data) {
+    return false;
+  }
+  const CppAstRareStrings & strings = node.sparse_data->rare_strings;
+  return !strings.gnu_ext_vector_type_argument_identifier.empty() ||
+         !strings.gnu_section_segment.empty() ||
+         !strings.gnu_section_name.empty() ||
+         !strings.asm_label.empty();
+}
+
 inline CppAstRareStrings & mutable_cppast_rare_strings(CppAstNode & node)
 {
-  if(!node.rare_strings) {
-    node.rare_strings.reset(new CppAstRareStrings());
-  } else if(!node.rare_strings.unique()) {
-    node.rare_strings.reset(new CppAstRareStrings(*node.rare_strings));
-  }
-  return *node.rare_strings;
+  return mutable_cppast_sparse_data(node).rare_strings;
 }
 
 inline const std::string & cppast_gnu_ext_vector_type_argument_identifier(
     const CppAstNode & node)
 {
-  return node.rare_strings ?
-      node.rare_strings->gnu_ext_vector_type_argument_identifier :
+  return node.sparse_data ?
+      node.sparse_data->rare_strings.gnu_ext_vector_type_argument_identifier :
       cppast_empty_rare_string();
 }
 
@@ -480,8 +835,8 @@ inline std::string & mutable_cppast_gnu_ext_vector_type_argument_identifier(
 
 inline const std::string & cppast_gnu_section_segment(const CppAstNode & node)
 {
-  return node.rare_strings ?
-      node.rare_strings->gnu_section_segment :
+  return node.sparse_data ?
+      node.sparse_data->rare_strings.gnu_section_segment :
       cppast_empty_rare_string();
 }
 
@@ -492,8 +847,8 @@ inline std::string & mutable_cppast_gnu_section_segment(CppAstNode & node)
 
 inline const std::string & cppast_gnu_section_name(const CppAstNode & node)
 {
-  return node.rare_strings ?
-      node.rare_strings->gnu_section_name :
+  return node.sparse_data ?
+      node.sparse_data->rare_strings.gnu_section_name :
       cppast_empty_rare_string();
 }
 
@@ -504,8 +859,8 @@ inline std::string & mutable_cppast_gnu_section_name(CppAstNode & node)
 
 inline const std::string & cppast_asm_label(const CppAstNode & node)
 {
-  return node.rare_strings ?
-      node.rare_strings->asm_label :
+  return node.sparse_data ?
+      node.sparse_data->rare_strings.asm_label :
       cppast_empty_rare_string();
 }
 
@@ -568,21 +923,23 @@ inline void set_cppast_template_id_syntax(
 inline const CppAstNode * cppast_conversion_type_id_syntax(
     const CppAstNode & node)
 {
-  return node.conversion_type_id_syntax.get();
+  return cppast_conversion_type_id_syntax_storage(node).get();
 }
 
 inline void set_cppast_conversion_type_id_syntax(
     CppAstNode & node,
     const CppAstNode & type_id)
 {
-  node.conversion_type_id_syntax.reset(new CppAstNode(type_id));
+  mutable_cppast_conversion_type_id_syntax_storage(node).reset(
+      new CppAstNode(type_id));
 }
 
 inline void set_cppast_conversion_type_id_syntax(
     CppAstNode & node,
     CppAstNode && type_id)
 {
-  node.conversion_type_id_syntax.reset(new CppAstNode(std::move(type_id)));
+  mutable_cppast_conversion_type_id_syntax_storage(node).reset(
+      new CppAstNode(std::move(type_id)));
 }
 
 inline const std::vector<CppAstNode> * cppast_exception_type_id_syntaxes(
@@ -711,33 +1068,38 @@ inline void append_cppast_alignment_specifier(CppAstNode & out,
   if(text.empty()) {
     return;
   }
-  for(std::size_t i = 0; i < out.alignment_specifiers.size(); ++i) {
-    if(out.alignment_specifiers[i] == text) {
+  const CppAstLazyVector<std::string> & existing =
+      cppast_alignment_specifiers(out);
+  for(std::size_t i = 0; i < existing.size(); ++i) {
+    if(existing[i] == text) {
       return;
     }
   }
-  out.alignment_specifiers.push_back(text);
+  mutable_cppast_alignment_specifiers(out).push_back(text);
   out.alignment_specifier_nodes.push_back(syntax ? *syntax : CppAstNode());
 }
 
 inline void append_cppast_abi_tags(std::vector<std::string> & out,
                                    const CppAstNode & node)
 {
-  for(std::size_t i = 0; i < node.abi_tags.size(); ++i) {
-    append_unique_cppast_text(out, node.abi_tags[i]);
+  const CppAstLazyVector<std::string> & tags = cppast_abi_tags(node);
+  for(std::size_t i = 0; i < tags.size(); ++i) {
+    append_unique_cppast_text(out, tags[i]);
   }
 }
 
 inline void append_cppast_alignment_specifiers(CppAstNode & out,
                                                const CppAstNode & node)
 {
-  for(std::size_t i = 0; i < node.alignment_specifiers.size(); ++i) {
+  const CppAstLazyVector<std::string> & specifiers =
+      cppast_alignment_specifiers(node);
+  for(std::size_t i = 0; i < specifiers.size(); ++i) {
     const CppAstNode * syntax =
         (i < node.alignment_specifier_nodes.size() &&
          node.alignment_specifier_nodes[i].kind != CppAstKind::invalid) ?
             &node.alignment_specifier_nodes[i] :
             nullptr;
-    append_cppast_alignment_specifier(out, node.alignment_specifiers[i], syntax);
+    append_cppast_alignment_specifier(out, specifiers[i], syntax);
   }
 }
 

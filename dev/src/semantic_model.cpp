@@ -210,11 +210,18 @@ std::size_t next_scope_instance_id()
   return next_id.fetch_add(1, std::memory_order_relaxed);
 }
 
+std::size_t next_class_instance_id()
+{
+  static std::atomic<std::size_t> next_id(1);
+  return next_id.fetch_add(1, std::memory_order_relaxed);
+}
+
 Scope::Scope(const Scope & other)
   : parent(other.parent),
     name(other.name),
     namespace_scope(other.namespace_scope),
     inline_namespace(other.inline_namespace),
+    persistent_lifetime(other.persistent_lifetime),
     class_info(other.class_info),
     function(other.function),
     named_types(other.named_types),
@@ -259,6 +266,7 @@ Scope::Scope(Scope && other)
     name(std::move(other.name)),
     namespace_scope(other.namespace_scope),
     inline_namespace(other.inline_namespace),
+    persistent_lifetime(other.persistent_lifetime),
     class_info(other.class_info),
     function(other.function),
     named_types(std::move(other.named_types)),
@@ -302,6 +310,7 @@ Scope & Scope::operator=(Scope && other)
   name = std::move(other.name);
   namespace_scope = other.namespace_scope;
   inline_namespace = other.inline_namespace;
+  persistent_lifetime = other.persistent_lifetime;
   class_info = other.class_info;
   function = other.function;
   named_types = std::move(other.named_types);
@@ -623,9 +632,10 @@ bool function_binding_qualified_name_syntax_for_symbol(
   if(simple_name.empty()) {
     return false;
   }
-  if(binding.owner_class &&
-     !binding.owner_class->symbol_qualified_name_syntax.name.empty()) {
-    out = binding.owner_class->symbol_qualified_name_syntax;
+  if(binding.owner_class) {
+    out = class_output_qualified_name_syntax(*binding.owner_class);
+  }
+  if(binding.owner_class && !out.name.empty()) {
     out.qualifiers.push_back(out.name);
     out.name = simple_name;
     return true;

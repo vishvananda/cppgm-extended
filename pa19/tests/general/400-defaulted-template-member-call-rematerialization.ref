@@ -18,10 +18,11 @@ function @use(%input : i32) -> i32 [binding=strong, object=_Z3usei] {
     copyobj 16x8 %t6, %t3
     store i32 4, $refarg__4
     %t7 = addr $refarg__4
-    call void @append__ov2(%t2, %t3, %t7)
-    %t8 = load i32 $input
-    %t9 = call i32 @Lazy_Lazy_Root__int__int_const_____int__int_const_____operator__(%t2, %t8)
-    return i32 %t9
+    %t8 = call obj<16x8> @append__ov2(%t3, %t7)
+    copyobj 16x8 %t8, %t2
+    %t9 = load i32 $input
+    %t10 = call i32 @Lazy_Lazy_Root__int__int_const_____int__int_const_____operator__(%t2, %t9)
+    return i32 %t10
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
@@ -76,17 +77,19 @@ function @append(%prev : ptr [pass=reference], %value : ptr [pass=reference]) ->
     call void @Lazy_Root__int__int_const_____Lazy(%t1, %t2, %t3)
     return obj<16x8> $retobj__1
 }
-function @append__ov2(%ret : ptr [pass=indirect_result], %prev : ptr [pass=reference], %value : ptr [pass=reference]) -> void [binding=weak, object=_Z6appendI4RootiiE4LazyIS1_IT_T0_RKS3_ET1_RKS7_ERKS6_S9_] {
+function @append__ov2(%prev : ptr [pass=reference], %value : ptr [pass=reference]) -> obj<16x8> [binding=weak, object=_Z6appendI4RootiiE4LazyIS1_IT_T0_RKS3_ET1_RKS7_ERKS6_S9_] {
   slot $prev : ptr
   slot $value : ptr
+  slot $retobj__1 : obj<16x8>
 
   block ^entry:
     store ptr %prev, $prev
     store ptr %value, $value
-    %t1 = load ptr $prev
-    %t2 = load ptr $value
-    call void @Lazy_Lazy_Root__int__int_const_____int__int_const_____Lazy(%ret, %t1, %t2)
-    return void
+    %t1 = addr $retobj__1
+    %t2 = load ptr $prev
+    %t3 = load ptr $value
+    call void @Lazy_Lazy_Root__int__int_const_____int__int_const_____Lazy(%t1, %t2, %t3)
+    return obj<16x8> $retobj__1
 }
 function @Lazy_Root__int__int_const_____Lazy(%this : ptr, %p : ptr [pass=reference], %v : ptr [pass=reference]) -> void [binding=weak, object=_ZN4LazyI4RootiRKiEC1ERKS0_S2_] {
   slot $this : ptr

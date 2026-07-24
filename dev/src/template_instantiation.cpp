@@ -8,7 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "class_template_mangle_info.h"
+#include "class_template_mangle_parameters.h"
 #include "cpp_decl_ast.h"
 #include "cpp_decl_bridge.h"
 #include "callsemantic/function_registry.h"
@@ -54,12 +54,31 @@ using namespace semantic_model;
 using namespace template_model;
 using callsemantic_internal::reparseable_type_argument_text;
 using callsemantic::prefer_earlier_source_location;
+using callsemantic::ExactTemplateTypeLookupAnchor;
+using callsemantic::ScopedExactTemplateTypeLookupAnchor;
+using callsemantic::retained_template_type_lookup_anchor;
 using semantic_trace::scope_bindings_for_diagnostic;
 using semantic_trace::scope_name_for_diagnostic;
 
 namespace {
 
 thread_local int variable_initializer_replay_depth = 0;
+
+void store_class_instantiation(
+    std::map<std::string, ClassInfo *> & storage,
+    const std::string & key,
+    ClassInfo * info)
+{
+  if(!info) {
+    return;
+  }
+  std::pair<std::map<std::string, ClassInfo *>::iterator, bool> inserted =
+      storage.insert(std::make_pair(key, info));
+  if(!inserted.second) {
+    inserted.first->second = info;
+  }
+  borrow_class_instantiation_key(*info, inserted.first->first);
+}
 
 void note_function_instantiation_use_location(FunctionBinding & binding,
                                               const std::string & location)
@@ -265,7 +284,8 @@ bool dependent_member_owner_matches_instantiation_owner(
     }
     return owner_info->source_template &&
            owner_info->source_template == instantiation_owner.source_template &&
-           owner_info->instantiation_key == instantiation_owner.instantiation_key;
+           class_instantiation_key(*owner_info) ==
+               class_instantiation_key(instantiation_owner);
   }
 
   if(std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
@@ -620,6 +640,8 @@ bool template_result_argument_refines_same_pattern(
   }
 
   if(current.kind == TemplateArgument::TA_VALUE) {
+    const TemplateArgument::RareData & current_rare = current.rare();
+    const TemplateArgument::RareData & parsed_rare = parsed.rare();
     const bool types_match =
         (!current.type && !parsed.type) ||
         (current.type && parsed.type && type_equals(current.type, parsed.type));
@@ -631,15 +653,16 @@ bool template_result_argument_refines_same_pattern(
        (current.dependent && !current_has_expression)) {
       return false;
     }
-    if(current.function_value || parsed.function_value) {
-      return current.function_value == parsed.function_value;
+    if(current_rare.function_value || parsed_rare.function_value) {
+      return current_rare.function_value == parsed_rare.function_value;
     }
-    if(!current.function_internal_symbol.empty() ||
-       !parsed.function_internal_symbol.empty()) {
-      return current.function_internal_symbol == parsed.function_internal_symbol;
+    if(!current_rare.function_internal_symbol.empty() ||
+       !parsed_rare.function_internal_symbol.empty()) {
+      return current_rare.function_internal_symbol ==
+          parsed_rare.function_internal_symbol;
     }
-    if(current.value_binding || parsed.value_binding) {
-      return current.value_binding == parsed.value_binding;
+    if(current_rare.value_binding || parsed_rare.value_binding) {
+      return current_rare.value_binding == parsed_rare.value_binding;
     }
     return current.value == parsed.value ||
            current_has_expression;
@@ -779,7 +802,7 @@ bool template_argument_needs_function_value_rehydration(
 {
   return argument.kind == TemplateArgument::TA_VALUE &&
          !argument.dependent &&
-         !argument.function_internal_symbol.empty();
+         !argument.rare().function_internal_symbol.empty();
 }
 
 bool template_arguments_need_function_value_rehydration(
@@ -801,8 +824,9 @@ void rehydrate_template_argument_function_value(SemanticContext & ctx,
   }
 
   FunctionBinding * function =
-      ctx.first_function_by_internal_symbol(argument.function_internal_symbol);
-  argument.function_value = function;
+      ctx.first_function_by_internal_symbol(
+          argument.rare().function_internal_symbol);
+  argument.mutable_rare().function_value = function;
   if(function && function->symbol.object_symbol.empty()) {
     ctx.upgrade_function_symbol_linkage(function, function->symbol.linkage);
   }
@@ -1613,13 +1637,13 @@ bool ast_mentions_template_parameter_name(
                                                         parameters)) {
     return true;
   }
-  if(node.conversion_type_id_syntax &&
-     ast_mentions_template_parameter_name(*node.conversion_type_id_syntax,
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     ast_mentions_template_parameter_name(*cppast_conversion_type_id_syntax_storage(node),
                                           parameters)) {
     return true;
   }
-  if(node.base_type_syntax &&
-     ast_mentions_template_parameter_name(*node.base_type_syntax, parameters)) {
+  if(cppast_base_type_syntax_storage(node) &&
+     ast_mentions_template_parameter_name(*cppast_base_type_syntax_storage(node), parameters)) {
     return true;
   }
   for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
@@ -1783,12 +1807,12 @@ void clear_cached_semantic_types_impl(CppAstNode & node,
     clear_cached_semantic_types_impl(*node.template_id_syntax,
                                      clear_resolved_argument_types);
   }
-  if(node.conversion_type_id_syntax) {
-    clear_cached_semantic_types_impl(*node.conversion_type_id_syntax,
+  if(cppast_conversion_type_id_syntax_storage(node)) {
+    clear_cached_semantic_types_impl(*cppast_conversion_type_id_syntax_storage(node),
                                      clear_resolved_argument_types);
   }
-  if(node.base_type_syntax) {
-    clear_cached_semantic_types_impl(*node.base_type_syntax,
+  if(cppast_base_type_syntax_storage(node)) {
+    clear_cached_semantic_types_impl(*cppast_base_type_syntax_storage(node),
                                      clear_resolved_argument_types);
   }
   for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
@@ -1873,13 +1897,13 @@ bool ast_has_dependent_non_type_template_argument(
                                                  parameters)) {
     return true;
   }
-  if(node.conversion_type_id_syntax &&
+  if(cppast_conversion_type_id_syntax_storage(node) &&
      ast_has_dependent_non_type_template_argument(
-         *node.conversion_type_id_syntax, parameters)) {
+         *cppast_conversion_type_id_syntax_storage(node), parameters)) {
     return true;
   }
-  if(node.base_type_syntax &&
-     ast_has_dependent_non_type_template_argument(*node.base_type_syntax,
+  if(cppast_base_type_syntax_storage(node) &&
+     ast_has_dependent_non_type_template_argument(*cppast_base_type_syntax_storage(node),
                                                   parameters)) {
     return true;
   }
@@ -2155,12 +2179,12 @@ void clear_dependent_cached_semantic_types_impl(
     clear_dependent_cached_semantic_types_impl(*node.template_id_syntax,
                                                parameters);
   }
-  if(node.conversion_type_id_syntax) {
-    clear_dependent_cached_semantic_types_impl(*node.conversion_type_id_syntax,
+  if(cppast_conversion_type_id_syntax_storage(node)) {
+    clear_dependent_cached_semantic_types_impl(*cppast_conversion_type_id_syntax_storage(node),
                                                parameters);
   }
-  if(node.base_type_syntax) {
-    clear_dependent_cached_semantic_types_impl(*node.base_type_syntax,
+  if(cppast_base_type_syntax_storage(node)) {
+    clear_dependent_cached_semantic_types_impl(*cppast_base_type_syntax_storage(node),
                                                parameters);
   }
   for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
@@ -2995,6 +3019,15 @@ bool stored_member_definition_matches_target_class(
     const ClassInfo & info)
 {
   (void)ctx;
+  if(!stored.qualified_name_syntax.qualifiers.empty()) {
+    const std::string stored_owner_name =
+        semantic_utils::unqualified_member_name(
+            strip_template_id_suffix(
+                stored.qualified_name_syntax.qualifiers.back()));
+    if(!stored_owner_name.empty() && stored_owner_name != info.name) {
+      return false;
+    }
+  }
   const CppAstNode * target_node =
       info.template_output_node ? info.template_output_node : info.class_node;
   if(!stored.owner_output_node || !target_node) {
@@ -3141,8 +3174,10 @@ ClassInfo * lookup_declared_owner_class_via_leaf_type_lookup(
 
 QualifiedName class_info_qualified_name_syntax(const ClassInfo & info)
 {
-  if(!info.symbol_qualified_name_syntax.name.empty()) {
-    return info.symbol_qualified_name_syntax;
+  const QualifiedName & symbol_name =
+      class_symbol_qualified_name_syntax(info);
+  if(!symbol_name.name.empty()) {
+    return symbol_name;
   }
   TypePtr type = strip_top_level_cv(info.type);
   if(type && type->kind == Type::TK_NAMED) {
@@ -3169,16 +3204,17 @@ bool template_argument_is_primary_parameter_placeholder(
                                                    argument.type) == &parameter;
 
   case TemplateParameterInfo::TP_NON_TYPE: {
+    const ValueBinding * value_binding = argument.rare().value_binding;
     if(argument.kind != TemplateArgument::TA_VALUE ||
        !argument.dependent ||
-       !argument.value_binding ||
+       !value_binding ||
        !decl.pattern_scope) {
       return false;
     }
     std::map<std::string, ValueBinding>::const_iterator found =
         decl.pattern_scope->values.find(parameter.name);
     return found != decl.pattern_scope->values.end() &&
-           argument.value_binding == &found->second;
+           value_binding == &found->second;
   }
 
   case TemplateParameterInfo::TP_TEMPLATE_TEMPLATE:
@@ -3497,6 +3533,10 @@ void apply_stored_out_of_class_member_function_abi_metadata_map(
          !stored_member_definition_matches_target_class(ctx, stored, info)) {
         continue;
       }
+      const ExactTemplateTypeLookupAnchor syntax_anchor =
+          retained_template_type_lookup_anchor(stored.declarator);
+      const ScopedExactTemplateTypeLookupAnchor syntax_anchor_guard(
+          syntax_anchor);
       Scope & binding_scope = ctx.append_template_scope(*info.member_scope);
       if(bind_stored_parameters) {
         bind_template_arguments_into_scope(ctx, binding_scope, stored.parameters, arguments);
@@ -3678,6 +3718,10 @@ void apply_stored_out_of_class_member_function_definitions_map(
         }
         continue;
       }
+      const ExactTemplateTypeLookupAnchor syntax_anchor =
+          retained_template_type_lookup_anchor(stored.declarator);
+      const ScopedExactTemplateTypeLookupAnchor syntax_anchor_guard(
+          syntax_anchor);
       Scope & binding_scope = ctx.append_template_scope(*info.member_scope);
       if(bind_stored_parameters) {
         bind_template_arguments_into_scope(ctx, binding_scope, stored.parameters, arguments);
@@ -4251,10 +4295,10 @@ bool ast_node_contains_this_expression(const CppAstNode & node)
      template_id_syntax_contains_this_expression(*node.template_id_syntax)) {
     return true;
   }
-  if((node.conversion_type_id_syntax &&
-      ast_node_contains_this_expression(*node.conversion_type_id_syntax)) ||
-     (node.base_type_syntax &&
-      ast_node_contains_this_expression(*node.base_type_syntax))) {
+  if((cppast_conversion_type_id_syntax_storage(node) &&
+      ast_node_contains_this_expression(*cppast_conversion_type_id_syntax_storage(node))) ||
+     (cppast_base_type_syntax_storage(node) &&
+      ast_node_contains_this_expression(*cppast_base_type_syntax_storage(node)))) {
     return true;
   }
   for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
@@ -4475,7 +4519,7 @@ std::string template_argument_key_for_instantiation_impl(
       out += "|";
     }
     if(arguments[i].kind == TemplateArgument::TA_TYPE && arguments[i].type) {
-      out += ctx.instantiation_identity_text_for_type_argument(arguments[i].type);
+      out += ctx.semantic_identity_key_for_type_argument(arguments[i].type);
       continue;
     }
     out += template_template_argument_identity_text(
@@ -4613,11 +4657,14 @@ std::string function_template_instantiation_type_argument_key(
 
   std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
       named_type_class_template_specialization_mangle_info_const(type);
+  const std::vector<TemplateParameterInfo> * mangle_parameters =
+      mangle_info ? class_template_mangle_parameters(*mangle_info) : nullptr;
   if(!mangle_info ||
      mangle_info->template_name.empty() ||
      mangle_info->arguments.empty() ||
+     !mangle_parameters ||
      !function_template_key_text_mentions_parameter(fallback,
-                                                    mangle_info->template_parameters)) {
+                                                    *mangle_parameters)) {
     return fallback;
   }
 
@@ -4692,8 +4739,8 @@ std::string class_instantiation_key_for_metadata(
     SemanticContext & ctx,
     const ClassInfo & info)
 {
-  if(!info.instantiation_key.empty()) {
-    return info.instantiation_key;
+  if(!class_instantiation_key(info).empty()) {
+    return class_instantiation_key(info);
   }
   return template_argument_key_for_instantiation_impl(ctx, info.instantiation_arguments);
 }
@@ -4835,11 +4882,12 @@ void update_class_template_dependent_type_metadata(
     if(arguments[i].kind == TemplateArgument::TA_TYPE) {
       dependent_argument.type = arguments[i].type;
     } else if(arguments[i].kind == TemplateArgument::TA_VALUE) {
+      const TemplateArgument::RareData & rare = arguments[i].rare();
       dependent_argument.type = arguments[i].type;
-      dependent_argument.function_value = arguments[i].function_value;
+      dependent_argument.function_value = rare.function_value;
       dependent_argument.function_internal_symbol =
-          arguments[i].function_internal_symbol;
-      dependent_argument.value_binding = arguments[i].value_binding;
+          rare.function_internal_symbol;
+      dependent_argument.value_binding = rare.value_binding;
       dependent_argument.value = arguments[i].value;
       dependent_argument.has_non_type_value =
           !arguments[i].partial_order_placeholder;
@@ -4938,13 +4986,14 @@ bool template_arguments_contain_forced_structured_mangling(
       const TemplateArgument & argument,
       CppAstNode & out)
   {
-    if(!argument.function_value) {
+    const FunctionBinding * function = argument.rare().function_value;
+    if(!function) {
       return false;
     }
 
     QualifiedName qualified;
     if(!semantic_model::function_binding_qualified_name_syntax_for_symbol(
-           *argument.function_value,
+           *function,
            qualified)) {
       return false;
     }
@@ -4952,12 +5001,12 @@ bool template_arguments_contain_forced_structured_mangling(
     CppAstNode id;
     id.kind = CppAstKind::id_expression;
     id.value = template_api::qualified_name_text(qualified);
-    id.semantic_type = argument.function_value->declared_type ?
-        argument.function_value->declared_type :
-        argument.function_value->type;
+    id.semantic_type = function->declared_type ?
+        function->declared_type :
+        function->type;
     set_cppast_qualified_name_syntax(id, qualified);
 
-    if(!argument.function_value->is_method) {
+    if(!function->is_method) {
       out = id;
       return true;
     }
@@ -5012,7 +5061,8 @@ bool concrete_non_type_argument_expression_needs_refresh(
     const TemplateArgument & argument,
     const TemplateArgumentSyntax & syntax)
 {
-  if(!argument.function_value || !argument.function_value->is_method) {
+  const FunctionBinding * function = argument.rare().function_value;
+  if(!function || !function->is_method) {
     return false;
   }
   if(!syntax.expression) {
@@ -5094,10 +5144,16 @@ void update_class_template_specialization_mangle_info(
   std::shared_ptr<ClassTemplateSpecializationMangleInfo> mangle_info(
       new ClassTemplateSpecializationMangleInfo());
   mangle_info->class_template_decl = info.source_template;
-  mangle_info->template_name_syntax = info.symbol_qualified_name_syntax;
-  if(mangle_info->template_name_syntax.name.empty() && info.type) {
-    mangle_info->template_name_syntax = info.type->named_qualified_name_syntax();
+  const QualifiedName * retained_name_syntax =
+      &class_symbol_qualified_name_syntax(info);
+  if(retained_name_syntax->name.empty() && info.type) {
+    retained_name_syntax = &info.type->named_qualified_name_syntax();
   }
+  // The specialization name can be very long, but it is replaced immediately
+  // by the source template name. Copy only the syntax components that survive.
+  mangle_info->template_name_syntax.rooted = retained_name_syntax->rooted;
+  mangle_info->template_name_syntax.qualifiers =
+      retained_name_syntax->qualifiers;
   mangle_info->template_name_syntax.name = info.source_template->name;
   mangle_info->template_name = info.source_template->name;
   if(info.source_template->declaring_scope) {
@@ -5115,7 +5171,8 @@ void update_class_template_specialization_mangle_info(
           qualified.substr(0, qualified.size() - suffix.size());
     }
   }
-  mangle_info->template_parameters = info.source_template->parameters;
+  mangle_info->template_parameters.share(
+      retained_class_template_mangle_parameters(*info.source_template));
   if(mangle_parameters) {
     mangle_info->mangle_parameters = *mangle_parameters;
   }
@@ -5173,18 +5230,22 @@ void record_class_template_argument_state(
     effective_mangle_arguments = &normalized_mangle_arguments;
   }
 
-  info.instantiation_key = key;
-  info.instantiation_arg_texts =
-      canonical_instantiation_arg_texts_impl(ctx, normalized_arguments);
+  const bool dependent_arguments =
+      template_arguments_are_dependent_for_instantiation(ctx,
+                                                         normalized_arguments);
+  set_class_instantiation_key(info, key);
+  if(dependent_arguments) {
+    info.instantiation_arg_texts =
+        canonical_instantiation_arg_texts_impl(ctx, normalized_arguments);
+  } else {
+    std::vector<std::string>().swap(info.instantiation_arg_texts);
+  }
   detach_shared_class_template_mangle_arguments(info);
   info.instantiation_arguments = normalized_arguments;
   reuse_primary_class_instantiation_binding_arguments(info);
   info.instantiation_binding_pack_sizes.clear();
   const bool force_structured_mangling =
       template_arguments_contain_forced_structured_mangling(normalized_arguments);
-  const bool dependent_arguments =
-      template_arguments_are_dependent_for_instantiation(ctx,
-                                                         normalized_arguments);
   clear_class_template_cached_lambda_mangle_metadata(info, normalized_arguments);
   update_class_template_specialization_mangle_info(
       info,
@@ -7791,11 +7852,9 @@ std::string class_specialization_name_for_instantiation(
     const std::vector<TemplateArgument> & arguments,
     const std::string & instantiation_key)
 {
-  const bool qualify_namespace_templates =
-      instantiation_key !=
-      template_argument_key_for_instantiation_impl(ctx, arguments);
-  return specialization_name_for_instantiation_impl(
-      ctx, name, arguments, qualify_namespace_templates);
+  (void)ctx;
+  (void)arguments;
+  return name + "<" + instantiation_key + ">";
 }
 
 std::string display_specialization_name_for_instantiation(
@@ -7934,8 +7993,7 @@ bool class_template_instance_arguments_need_refresh(
     return false;
   }
   return (was_dependent && !dependent_arguments) ||
-         info.instantiation_arguments.size() != arguments.size() ||
-         info.instantiation_arg_texts.size() != arguments.size();
+         info.instantiation_arguments.size() != arguments.size();
 }
 
 bool append_template_value_dependency_if_new(
@@ -7961,9 +8019,16 @@ void merge_template_argument_value_dependencies(
 {
   const std::size_t count = std::min(target.size(), source.size());
   for(std::size_t i = 0; i < count; ++i) {
-    for(std::size_t j = 0; j < source[i].value_dependencies.size(); ++j) {
-      append_template_value_dependency_if_new(target[i].value_dependencies,
-                                             source[i].value_dependencies[j]);
+    const std::vector<TemplateValueDependency> & source_dependencies =
+        source[i].rare().value_dependencies;
+    if(source_dependencies.empty()) {
+      continue;
+    }
+    std::vector<TemplateValueDependency> & target_dependencies =
+        target[i].mutable_rare().value_dependencies;
+    for(std::size_t j = 0; j < source_dependencies.size(); ++j) {
+      append_template_value_dependency_if_new(target_dependencies,
+                                             source_dependencies[j]);
     }
   }
 }
@@ -8067,7 +8132,7 @@ bool record_class_template_instantiation_state(
   }
 
   const bool existing_instantiation_metadata =
-      !info.instantiation_key.empty() ||
+      !class_instantiation_key(info).empty() ||
       !info.instantiation_arguments.empty() ||
       !info.instantiation_arg_texts.empty();
   const bool was_dependent = info.dependent_instantiation;
@@ -8096,12 +8161,16 @@ bool record_class_template_instantiation_state(
       existing_instantiation_metadata ?
           (was_dependent && dependent_arguments) :
           dependent_arguments;
-  info.instantiation_key = key;
+  set_class_instantiation_key(info, key);
   info.instantiation_specialization_epoch =
       info.source_template ? info.source_template->specialization_epoch : 0;
   if(refresh_arguments) {
-    info.instantiation_arg_texts =
-        canonical_instantiation_arg_texts_impl(ctx, normalized_arguments);
+    if(dependent_arguments) {
+      info.instantiation_arg_texts =
+          canonical_instantiation_arg_texts_impl(ctx, normalized_arguments);
+    } else {
+      std::vector<std::string>().swap(info.instantiation_arg_texts);
+    }
     info.instantiation_arguments = normalized_arguments;
     clear_class_template_cached_lambda_mangle_metadata(info, normalized_arguments);
   } else if(!info.instantiation_arguments.empty()) {
@@ -8612,7 +8681,7 @@ bool class_template_use_info_for_class(SemanticContext & ctx,
   const bool has_instantiation_metadata =
       info &&
       (info->template_instantiation_tracked ||
-       !info->instantiation_key.empty() ||
+       !class_instantiation_key(*info).empty() ||
        !info->instantiation_arguments.empty() ||
        !info->instantiation_arg_texts.empty());
   if(!(info && info->source_template && has_instantiation_metadata)) {
@@ -8624,7 +8693,7 @@ bool class_template_use_info_for_class(SemanticContext & ctx,
   out.arguments = &info->instantiation_arguments;
   out.canonical_texts = &info->instantiation_arg_texts;
   out.explicit_case = info->is_explicit_specialization;
-  out.has_stored_key = !info->instantiation_key.empty();
+  out.has_stored_key = !class_instantiation_key(*info).empty();
   out.selects_specialized_definition =
       info->template_output_node &&
       info->source_template->class_node &&
@@ -8898,8 +8967,9 @@ ClassInfo * current_instantiation_owner_for_scope(SemanticContext & ctx,
           if(candidate->source_template != declared_owner->source_template) {
             return false;
           }
-          if(!declared_owner->instantiation_key.empty()) {
-            return candidate->instantiation_key == declared_owner->instantiation_key;
+          if(!class_instantiation_key(*declared_owner).empty()) {
+            return class_instantiation_key(*candidate) ==
+                   class_instantiation_key(*declared_owner);
           }
           return true;
         }
@@ -9521,7 +9591,7 @@ ClassInfo * instantiate_builtin_initializer_list_template(
     info->is_initializer_list = true;
     info->initializer_list_element_type = arguments[0].type;
     if(info->complete) {
-      decl.instantiations[key] = info;
+      store_class_instantiation(decl.instantiations, key, info);
       return info;
     }
   } else {
@@ -9596,7 +9666,7 @@ ClassInfo * instantiate_builtin_initializer_list_template(
     }
     info->template_instantiation_in_progress = false;
   }
-  decl.instantiations[key] = info;
+  store_class_instantiation(decl.instantiations, key, info);
   return info;
 }
 
@@ -9744,7 +9814,10 @@ ClassInfo * instantiate_selected_class_template(
                                     reference_found->second);
           return reference_found->second;
         }
-        decl.instantiations[key] = reference_found->second;
+        store_class_instantiation(
+            decl.instantiations,
+            key,
+            reference_found->second);
         found = decl.instantiations.find(key);
       }
       decl.reference_instantiations.erase(reference_found);
@@ -9829,7 +9902,7 @@ ClassInfo * instantiate_selected_class_template(
           prefer_earlier_source_location(info->first_qualifier_use_location,
                                          instantiation_use_location);
     }
-    decl.instantiations[key] = info;
+    store_class_instantiation(decl.instantiations, key, info);
     trace_class_instantiation("cache-miss", info);
     template_audit::set_creation_context(
         *info, "instantiate_class_template [" + decl.name + "]");
@@ -9846,6 +9919,7 @@ ClassInfo * instantiate_selected_class_template(
       selected_partial_mangle_context ? bound_parameters : nullptr,
       selected_partial_mangle_context ? bound_arguments : nullptr,
       selected_partial_mangle_context ? bound_pack_sizes : nullptr);
+  store_class_instantiation(decl.instantiations, key, info);
   info->reentrant_primary_selection = specialization.reentrant_primary;
   record_class_template_binding_state(ctx,
                                       *info,
@@ -9963,9 +10037,9 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
             return false;
           }
           if(!declared_owner->dependent_instantiation &&
-             !declared_owner->instantiation_key.empty()) {
-            return candidate->instantiation_key ==
-                   declared_owner->instantiation_key;
+             !class_instantiation_key(*declared_owner).empty()) {
+            return class_instantiation_key(*candidate) ==
+                   class_instantiation_key(*declared_owner);
           }
           return true;
         };

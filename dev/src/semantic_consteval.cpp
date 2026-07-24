@@ -698,8 +698,8 @@ bool template_id_syntax_equal(const cpp_decl::TemplateIdSyntax & lhs,
 }
 
 bool optional_template_id_syntax_equal(
-    const std::shared_ptr<cpp_decl::TemplateIdSyntax> & lhs,
-    const std::shared_ptr<cpp_decl::TemplateIdSyntax> & rhs)
+    const CppAstSharedPtr<cpp_decl::TemplateIdSyntax> & lhs,
+    const CppAstSharedPtr<cpp_decl::TemplateIdSyntax> & rhs)
 {
   if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
     return false;

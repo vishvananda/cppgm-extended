@@ -19,10 +19,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load ptr $last
     %t8 = call obj<16x8> @std__make_pair(%t6, %t7)
     copyobj 16x8 %t8, %t5
-    %t9 = call ptr @boost__tuples__tuple_std__pair_unsigned_long_int__unsigned_long_int_______std__pair_unsigned_long_int__unsigned_long_int________operator___ov3(%t1, %t5)
+    %t9 = call ptr @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int_______std__pair_unsigned_long_int_unsigned_long_int________operator___ov3(%t1, %t5)
     return i32 0
 }
-function @boost__tuples__tuple_std__pair_unsigned_long_int__unsigned_long_int_______std__pair_unsigned_long_int__unsigned_long_int________operator___ov3(%this : ptr, %pair : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EaSIS4_S4_EERS6_RKS2_IT_T0_E] {
+function @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int_______std__pair_unsigned_long_int_unsigned_long_int________operator___ov3(%this : ptr, %pair : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EaSIS4_S4_EERS6_RKS2_IT_T0_E] {
   slot $this : ptr
   slot $pair : ptr
 
@@ -60,7 +60,7 @@ function @boost__tuples__tie(%t0 : ptr [pass=reference], %t1 : ptr [pass=referen
     %t2 = addr $retobj__1
     %t3 = load ptr $t0
     %t4 = load ptr $t1
-    call void @boost__tuples__tuple_std__pair_unsigned_long_int__unsigned_long_int_______std__pair_unsigned_long_int__unsigned_long_int________tuple(%t2, %t3, %t4)
+    call void @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int_______std__pair_unsigned_long_int_unsigned_long_int________tuple(%t2, %t3, %t4)
     return obj<16x8> $retobj__1
 }
 function @std__make_pair(%a : ptr, %b : ptr) -> obj<16x8> [binding=weak, object=_ZSt9make_pairIPSt4pairImmES2_ES0_IT_T0_ES3_S4_] {
@@ -74,10 +74,10 @@ function @std__make_pair(%a : ptr, %b : ptr) -> obj<16x8> [binding=weak, object=
     %t1 = addr $retobj__1
     %t2 = load ptr $a
     %t3 = load ptr $b
-    call void @std__pair_std__pair_unsigned_long_int__unsigned_long_int_____std__pair_unsigned_long_int__unsigned_long_int______pair(%t1, %t2, %t3)
+    call void @std__pair_std__pair_unsigned_long_int_unsigned_long_int_____std__pair_unsigned_long_int_unsigned_long_int______pair(%t1, %t2, %t3)
     return obj<16x8> $retobj__1
 }
-function @boost__tuples__tuple_std__pair_unsigned_long_int__unsigned_long_int_______std__pair_unsigned_long_int__unsigned_long_int________tuple(%this : ptr, %t0 : ptr [pass=reference], %t1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EC1ES5_S5_] {
+function @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int_______std__pair_unsigned_long_int_unsigned_long_int________tuple(%this : ptr, %t0 : ptr [pass=reference], %t1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EC1ES5_S5_] {
   slot $this : ptr
   slot $t0 : ptr
   slot $t1 : ptr
@@ -152,7 +152,7 @@ function @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int____
     copyobj 8x8 %t6, %t5
     return void
 }
-function @std__pair_std__pair_unsigned_long_int__unsigned_long_int_____std__pair_unsigned_long_int__unsigned_long_int______pair(%this : ptr, %a : ptr, %b : ptr) -> void [binding=weak, object=_ZNSt4pairIPS_ImmES1_EC1ES1_S1_] {
+function @std__pair_std__pair_unsigned_long_int_unsigned_long_int_____std__pair_unsigned_long_int_unsigned_long_int______pair(%this : ptr, %a : ptr, %b : ptr) -> void [binding=weak, object=_ZNSt4pairIPS_ImmES1_EC1ES1_S1_] {
   slot $this : ptr
   slot $a : ptr
   slot $b : ptr
@@ -178,8 +178,8 @@ function @boost__tuples__null_type__null_type(%this : ptr) -> void [unwind=no, b
     store ptr %this, $this
     return void
 }
-alias object _ZN5boost6tuples5tupleIRPSt4pairImmES5_EC2ES5_S5_ = @boost__tuples__tuple_std__pair_unsigned_long_int__unsigned_long_int_______std__pair_unsigned_long_int__unsigned_long_int________tuple
+alias object _ZN5boost6tuples5tupleIRPSt4pairImmES5_EC2ES5_S5_ = @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int_______std__pair_unsigned_long_int_unsigned_long_int________tuple
 alias object _ZN5boost6tuples4consIRPSt4pairImmENS0_9null_typeEEC2ES5_RKS6_ = @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type___cons
 alias object _ZN5boost6tuples4consIRPSt4pairImmENS1_IS5_NS0_9null_typeEEEEC2ES5_RKS7_ = @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type____cons
-alias object _ZNSt4pairIPS_ImmES1_EC2ES1_S1_ = @std__pair_std__pair_unsigned_long_int__unsigned_long_int_____std__pair_unsigned_long_int__unsigned_long_int______pair
+alias object _ZNSt4pairIPS_ImmES1_EC2ES1_S1_ = @std__pair_std__pair_unsigned_long_int_unsigned_long_int_____std__pair_unsigned_long_int_unsigned_long_int______pair
 alias object _ZN5boost6tuples9null_typeC2Ev = @boost__tuples__null_type__null_type

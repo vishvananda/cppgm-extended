@@ -2,12 +2,14 @@
 
 #include <functional>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "cpp_decl_model.h"
 #include "cppast_ast.h"
+#include "text_intern.h"
 
 namespace semantic_model {
 struct AliasTemplateDecl;
@@ -19,6 +21,249 @@ struct ValueBinding;
 }
 
 namespace template_model {
+
+class SharedTemplateArgumentText
+{
+public:
+  typedef std::string::size_type size_type;
+  static const size_type npos = std::string::npos;
+
+  SharedTemplateArgumentText() = default;
+
+  explicit SharedTemplateArgumentText(const std::string & value)
+  {
+    assign(value);
+  }
+
+  explicit SharedTemplateArgumentText(std::string && value)
+  {
+    assign(std::move(value));
+  }
+
+  explicit SharedTemplateArgumentText(const char * value)
+  {
+    assign(value);
+  }
+
+  SharedTemplateArgumentText & operator=(const std::string & value)
+  {
+    assign(value);
+    return *this;
+  }
+
+  SharedTemplateArgumentText & operator=(std::string && value)
+  {
+    assign(std::move(value));
+    return *this;
+  }
+
+  SharedTemplateArgumentText & operator=(const char * value)
+  {
+    assign(value);
+    return *this;
+  }
+
+  operator const std::string &() const
+  {
+    return get();
+  }
+
+  const std::string & get() const
+  {
+    static const std::string empty_value;
+    return value_ ? *value_ : empty_value;
+  }
+
+  const std::string * storage_identity() const
+  {
+    return value_;
+  }
+
+  bool empty() const
+  {
+    return !value_ || value_->empty();
+  }
+
+  size_type size() const
+  {
+    return value_ ? value_->size() : 0;
+  }
+
+  std::string substr(size_type pos = 0, size_type count = npos) const
+  {
+    return get().substr(pos, count);
+  }
+
+  size_type find(const std::string & value, size_type pos = 0) const
+  {
+    return get().find(value, pos);
+  }
+
+  size_type find(const char * value, size_type pos = 0) const
+  {
+    return get().find(value, pos);
+  }
+
+  size_type find(char value, size_type pos = 0) const
+  {
+    return get().find(value, pos);
+  }
+
+  void clear()
+  {
+    value_ = nullptr;
+  }
+
+  SharedTemplateArgumentText & operator+=(const std::string & suffix)
+  {
+    std::string combined = get();
+    combined += suffix;
+    assign(std::move(combined));
+    return *this;
+  }
+
+  SharedTemplateArgumentText & operator+=(const char * suffix)
+  {
+    std::string combined = get();
+    combined += suffix;
+    assign(std::move(combined));
+    return *this;
+  }
+
+  SharedTemplateArgumentText & operator+=(char suffix)
+  {
+    std::string combined = get();
+    combined += suffix;
+    assign(std::move(combined));
+    return *this;
+  }
+
+private:
+  void assign(const std::string & value)
+  {
+    if(value.empty()) {
+      value_ = nullptr;
+    } else {
+      value_ = text_intern::intern(value);
+    }
+  }
+
+  void assign(std::string && value)
+  {
+    if(value.empty()) {
+      value_ = nullptr;
+    } else {
+      value_ = text_intern::intern(std::move(value));
+    }
+  }
+
+  void assign(const char * value)
+  {
+    if(!value || !*value) {
+      value_ = nullptr;
+    } else {
+      value_ = text_intern::intern(std::string(value));
+    }
+  }
+
+  text_intern::Atom value_ = nullptr;
+};
+
+inline bool operator==(const SharedTemplateArgumentText & lhs,
+                       const SharedTemplateArgumentText & rhs)
+{
+  return lhs.get() == rhs.get();
+}
+
+inline bool operator!=(const SharedTemplateArgumentText & lhs,
+                       const SharedTemplateArgumentText & rhs)
+{
+  return !(lhs == rhs);
+}
+
+inline bool operator==(const SharedTemplateArgumentText & lhs,
+                       const std::string & rhs)
+{
+  return lhs.get() == rhs;
+}
+
+inline bool operator==(const std::string & lhs,
+                       const SharedTemplateArgumentText & rhs)
+{
+  return lhs == rhs.get();
+}
+
+inline bool operator!=(const SharedTemplateArgumentText & lhs,
+                       const std::string & rhs)
+{
+  return !(lhs == rhs);
+}
+
+inline bool operator!=(const std::string & lhs,
+                       const SharedTemplateArgumentText & rhs)
+{
+  return !(lhs == rhs);
+}
+
+inline bool operator==(const SharedTemplateArgumentText & lhs,
+                       const char * rhs)
+{
+  return lhs.get() == rhs;
+}
+
+inline bool operator==(const char * lhs,
+                       const SharedTemplateArgumentText & rhs)
+{
+  return lhs == rhs.get();
+}
+
+inline bool operator!=(const SharedTemplateArgumentText & lhs,
+                       const char * rhs)
+{
+  return !(lhs == rhs);
+}
+
+inline bool operator!=(const char * lhs,
+                       const SharedTemplateArgumentText & rhs)
+{
+  return !(lhs == rhs);
+}
+
+inline bool operator<(const SharedTemplateArgumentText & lhs,
+                      const SharedTemplateArgumentText & rhs)
+{
+  return lhs.get() < rhs.get();
+}
+
+inline std::string operator+(const std::string & lhs,
+                             const SharedTemplateArgumentText & rhs)
+{
+  return lhs + rhs.get();
+}
+
+inline std::string operator+(const char * lhs,
+                             const SharedTemplateArgumentText & rhs)
+{
+  return std::string(lhs) + rhs.get();
+}
+
+inline std::string operator+(const SharedTemplateArgumentText & lhs,
+                             const std::string & rhs)
+{
+  return lhs.get() + rhs;
+}
+
+inline std::string operator+(const SharedTemplateArgumentText & lhs,
+                             const char * rhs)
+{
+  return lhs.get() + rhs;
+}
+
+inline std::ostream & operator<<(std::ostream & out,
+                                 const SharedTemplateArgumentText & value)
+{
+  return out << value.get();
+}
 
 struct TemplateValueDependency
 {
@@ -287,6 +532,14 @@ struct TemplateArgument
     cpp_decl::QualifiedName name_syntax;
   };
 
+  struct RareData
+  {
+    const semantic_model::FunctionBinding * function_value = nullptr;
+    std::string function_internal_symbol;
+    const semantic_model::ValueBinding * value_binding = nullptr;
+    std::vector<TemplateValueDependency> value_dependencies;
+  };
+
   enum Kind
   {
     TA_TYPE,
@@ -300,17 +553,30 @@ struct TemplateArgument
   void * template_decl = nullptr;
   cpp_decl::TypePtr template_owner_type;
   std::shared_ptr<TemplateEntityIdentity> template_entity_identity;
-  const semantic_model::FunctionBinding * function_value = nullptr;
-  std::string function_internal_symbol;
-  const semantic_model::ValueBinding * value_binding = nullptr;
-  std::string text;
-  std::vector<TemplateValueDependency> value_dependencies;
+  std::shared_ptr<RareData> rare_data;
+  SharedTemplateArgumentText text;
   std::shared_ptr<cpp_decl::TemplateArgumentSyntax> source_syntax;
   std::shared_ptr<CppAstNode> expression;
   long long value = 0;
   bool dependent = false;
   bool source_defaulted = false;
   bool partial_order_placeholder = false;
+
+  const RareData & rare() const
+  {
+    static const RareData empty;
+    return rare_data ? *rare_data : empty;
+  }
+
+  RareData & mutable_rare()
+  {
+    if(!rare_data) {
+      rare_data.reset(new RareData());
+    } else if(!rare_data.unique()) {
+      rare_data.reset(new RareData(*rare_data));
+    }
+    return *rare_data;
+  }
 
   const std::string & template_entity_scope_prefix() const
   {

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <map>
@@ -1610,10 +1611,10 @@ TypePtr resolve_base_type_node(SemanticContext & ctx,
                                              base_type)) {
     return base_type;
   }
-  if(node.base_type_syntax &&
+  if(cppast_base_type_syntax_storage(node) &&
      template_api::type::parse_decltype_or_typeof_node(ctx,
                                                        scope,
-                                                       *node.base_type_syntax,
+                                                       *cppast_base_type_syntax_storage(node),
                                                        base_type) &&
      base_type) {
     return base_type;
@@ -3131,8 +3132,9 @@ void record_anonymous_member_class(ClassInfo & info,
 
 std::string metrics_class_name(const ClassInfo & info)
 {
-  if(!info.display_qualified_name.empty()) {
-    return info.display_qualified_name;
+  const std::string output_name = class_output_qualified_name(info);
+  if(!output_name.empty()) {
+    return output_name;
   }
   if(!info.qualified_name.empty()) {
     return info.qualified_name;
@@ -3381,7 +3383,8 @@ bool current_class_qualifier_matches(const ClassInfo & info,
                                semantic_utils::trim_space(candidate)));
       };
   return matches_unqualified_class_name(info.qualified_name) ||
-         matches_unqualified_class_name(info.display_qualified_name);
+         matches_unqualified_class_name(
+             class_output_qualified_name(info));
 }
 
 bool current_class_member_type_is_available_or_deferred(const ClassInfo & info,
@@ -3615,12 +3618,12 @@ bool class_alias_type_id_has_qualified_template_id_syntax(
 void clear_class_alias_type_id_semantic_annotations(CppAstNode & node)
 {
   node.semantic_type.reset();
-  if(node.conversion_type_id_syntax) {
+  if(cppast_conversion_type_id_syntax_storage(node)) {
     clear_class_alias_type_id_semantic_annotations(
-        *node.conversion_type_id_syntax);
+        *cppast_conversion_type_id_syntax_storage(node));
   }
-  if(node.base_type_syntax) {
-    clear_class_alias_type_id_semantic_annotations(*node.base_type_syntax);
+  if(cppast_base_type_syntax_storage(node)) {
+    clear_class_alias_type_id_semantic_annotations(*cppast_base_type_syntax_storage(node));
   }
   for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
     clear_class_alias_type_id_semantic_annotations(
@@ -3652,11 +3655,11 @@ bool class_alias_type_id_contains_type_pack_element(const CppAstNode & node)
 {
   if((node.template_id_syntax &&
       template_id_contains_type_pack_element(*node.template_id_syntax)) ||
-     (node.conversion_type_id_syntax &&
+     (cppast_conversion_type_id_syntax_storage(node) &&
       class_alias_type_id_contains_type_pack_element(
-          *node.conversion_type_id_syntax)) ||
-     (node.base_type_syntax &&
-      class_alias_type_id_contains_type_pack_element(*node.base_type_syntax))) {
+          *cppast_conversion_type_id_syntax_storage(node))) ||
+     (cppast_base_type_syntax_storage(node) &&
+      class_alias_type_id_contains_type_pack_element(*cppast_base_type_syntax_storage(node)))) {
     return true;
   }
   for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
@@ -4055,13 +4058,15 @@ size_t evaluate_declared_alignment(SemanticContext & ctx,
                                    Scope & scope,
                                    const CppAstNode * node)
 {
-  if(node == nullptr || node->alignment_specifiers.empty()) {
+  if(node == nullptr || cppast_alignment_specifiers(*node).empty()) {
     return 0;
   }
 
+  const CppAstLazyVector<std::string> & alignment_specifiers =
+      cppast_alignment_specifiers(*node);
   size_t out = 0;
-  for(size_t i = 0; i < node->alignment_specifiers.size(); ++i) {
-    const std::string text = semantic_utils::trim_space(node->alignment_specifiers[i]);
+  for(size_t i = 0; i < alignment_specifiers.size(); ++i) {
+    const std::string text = semantic_utils::trim_space(alignment_specifiers[i]);
     if(text.empty()) {
       continue;
     }
@@ -4559,10 +4564,12 @@ std::string vtable_view_key(const ClassInfo & dynamic_class,
                             size_t offset)
 {
   if(offset == 0) {
-    return dynamic_class.qualified_name;
+    return class_internal_output_qualified_name(dynamic_class);
   }
   std::ostringstream out;
-  out << dynamic_class.qualified_name << "::__view__" << view_class.qualified_name
+  out << class_internal_output_qualified_name(dynamic_class)
+      << "::__view__"
+      << class_internal_output_qualified_name(view_class)
       << "__" << offset;
   return out.str();
 }
@@ -6580,6 +6587,18 @@ bool try_parse_conversion_operator_result_type(SemanticContext & ctx,
                        false)) {
     bool allow_concrete_dependent_argument_spelling = true;
     bool record_conversion_result_class_use = true;
+    // A conversion-type-id parsed from an instantiated class-template member
+    // still denotes the source declaration.  Its concrete substituted type is
+    // needed for semantics, but replaying it as a fresh source use fabricates a
+    // use at the instantiation site.  The source declaration was (or, when
+    // dependent, could not be) recorded when the template was collected.
+    if(conversion_type_id &&
+       substitution_parameters &&
+       substitution_arguments &&
+       !substitution_arguments->empty()) {
+      allow_concrete_dependent_argument_spelling = false;
+      record_conversion_result_class_use = false;
+    }
     if(conversion_type_id) {
       std::vector<std::string> source_type_texts;
       source_type_texts.push_back(node_text(*conversion_type_id));
@@ -7477,9 +7496,9 @@ std::string construction_vtable_key(const ClassInfo & dynamic_class,
                                     size_t base_offset)
 {
   std::ostringstream out;
-  out << dynamic_class.qualified_name
+  out << class_internal_output_qualified_name(dynamic_class)
       << "::__construction__"
-      << base_class.qualified_name
+      << class_internal_output_qualified_name(base_class)
       << "__"
       << base_offset;
   return out.str();

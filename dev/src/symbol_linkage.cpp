@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <deque>
 #include <functional>
 #include <map>
 #include <sstream>
@@ -13,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-#include "class_template_mangle_info.h"
+#include "class_template_mangle_parameters.h"
 #include "builtin_type_transforms.h"
 #include "cpp_decl_bridge.h"
 #include "parser_trace.h"
@@ -733,13 +736,32 @@ struct MangleSubstitutionState
     }
   };
 
+  struct SubstitutionKeyPtrHash
+  {
+    size_t operator()(const abi_mangle::SubstitutionKey * key) const
+    {
+      return key ? SubstitutionKeyHash()(*key) : 0;
+    }
+  };
+
+  struct SubstitutionKeyPtrEqual
+  {
+    bool operator()(const abi_mangle::SubstitutionKey * lhs,
+                    const abi_mangle::SubstitutionKey * rhs) const
+    {
+      return lhs == rhs || (lhs && rhs && *lhs == *rhs);
+    }
+  };
+
   unordered_map<string, size_t> substitution_index;
-  unordered_map<abi_mangle::SubstitutionKey, size_t, SubstitutionKeyHash>
-      ir_substitution_index;
+  unordered_map<const abi_mangle::SubstitutionKey *,
+                size_t,
+                SubstitutionKeyPtrHash,
+                SubstitutionKeyPtrEqual> ir_substitution_index;
+  unordered_map<string, size_t> ir_named_alias_index;
   vector<string> substitution_keys;
-  vector<abi_mangle::SubstitutionKey> substitution_ir_keys;
+  deque<abi_mangle::SubstitutionKey> substitution_ir_keys;
   vector<string> substitution_index_log;
-  vector<abi_mangle::SubstitutionKey> ir_substitution_index_log;
   MangleSubstitutionState * parent_lookup = nullptr;
   size_t parent_substitution_count = 0;
   size_t checkpoint_depth = 0;
@@ -759,8 +781,6 @@ struct MangleSubstitutionCheckpoint
             state ? state->substitution_ir_keys.size() : 0),
         substitution_index_log_size(
             state ? state->substitution_index_log.size() : 0),
-        ir_substitution_index_log_size(
-            state ? state->ir_substitution_index_log.size() : 0),
         active(state != nullptr)
   {
     if(state) {
@@ -779,7 +799,6 @@ struct MangleSubstitutionCheckpoint
       --state->checkpoint_depth;
       if(state->checkpoint_depth == 0) {
         state->substitution_index_log.clear();
-        state->ir_substitution_index_log.clear();
       }
     }
     active = false;
@@ -790,14 +809,6 @@ struct MangleSubstitutionCheckpoint
     if(!active || !state) {
       return;
     }
-    for(size_t i = state->ir_substitution_index_log.size();
-        i > ir_substitution_index_log_size;
-        --i) {
-      state->ir_substitution_index.erase(
-          state->ir_substitution_index_log[i - 1]);
-    }
-    state->ir_substitution_index_log.resize(ir_substitution_index_log_size);
-
     for(size_t i = state->substitution_index_log.size();
         i > substitution_index_log_size;
         --i) {
@@ -808,12 +819,12 @@ struct MangleSubstitutionCheckpoint
     state->substitution_keys.resize(substitution_keys_size);
     state->substitution_ir_keys.resize(substitution_ir_keys_size);
     state->ir_substitution_index.clear();
+    state->ir_named_alias_index.clear();
     state->ir_substitution_index_materialized = false;
     if(state->checkpoint_depth > 0) {
       --state->checkpoint_depth;
       if(state->checkpoint_depth == 0) {
         state->substitution_index_log.clear();
-        state->ir_substitution_index_log.clear();
       }
     }
     active = false;
@@ -823,7 +834,6 @@ struct MangleSubstitutionCheckpoint
   size_t substitution_keys_size;
   size_t substitution_ir_keys_size;
   size_t substitution_index_log_size;
-  size_t ir_substitution_index_log_size;
   bool active;
 
 private:
@@ -842,6 +852,10 @@ static bool try_mangle_template_argument_syntax_impl(
 static bool try_build_type_ir(const TypePtr & type,
                               const TypeMangleContext * mangle_ctx,
                               abi_mangle::Type & out);
+static bool try_build_type_ir_cached(const TypePtr & type,
+                                     const TypeMangleContext * mangle_ctx,
+                                     abi_mangle::Type & out);
+static bool type_ir_operation_cache_enabled();
 static bool try_build_function_parameter_type_ir(
     const TypePtr & type,
     const TypeMangleContext * mangle_ctx,
@@ -1432,11 +1446,6 @@ static bool emit_registered_substitution(MangleSubstitutionState * state,
   return true;
 }
 
-static bool insert_ir_substitution_index(
-    MangleSubstitutionState * state,
-    const abi_mangle::SubstitutionKey & key,
-    size_t index);
-
 static void reserve_substitution_state_capacity(MangleSubstitutionState * state)
 {
   if(!state || state->substitution_capacity_reserved) {
@@ -1444,7 +1453,6 @@ static void reserve_substitution_state_capacity(MangleSubstitutionState * state)
   }
   state->substitution_capacity_reserved = true;
   state->substitution_keys.reserve(16);
-  state->substitution_ir_keys.reserve(16);
 }
 
 static size_t substitution_state_size(const MangleSubstitutionState * state)
@@ -1493,20 +1501,20 @@ static void materialize_ir_substitution_index(MangleSubstitutionState * state)
     return;
   }
   state->ir_substitution_index.clear();
+  state->ir_named_alias_index.clear();
   state->ir_substitution_index.reserve(state->substitution_ir_keys.size() * 2);
+  state->ir_named_alias_index.reserve(state->substitution_ir_keys.size());
   for(size_t i = 0; i < state->substitution_ir_keys.size(); ++i) {
     const abi_mangle::SubstitutionKey & key = state->substitution_ir_keys[i];
     if(key.empty()) {
       continue;
     }
     const size_t global_index = state->parent_substitution_count + i;
-    state->ir_substitution_index.insert(make_pair(key, global_index));
+    state->ir_substitution_index.insert(make_pair(&key, global_index));
     if(key.kind ==
            abi_mangle::SubstitutionKey::SK_CLASS_TEMPLATE_SPECIALIZATION &&
        !key.payload.empty()) {
-      state->ir_substitution_index.insert(
-          make_pair(abi_mangle::SubstitutionKey::named(key.payload),
-                    global_index));
+      state->ir_named_alias_index.insert(make_pair(key.payload, global_index));
     }
   }
   state->ir_substitution_index_materialized = true;
@@ -1533,15 +1541,26 @@ static bool find_registered_ir_substitution_index(
   }
   materialize_ir_substitution_index(state);
 
-  unordered_map<abi_mangle::SubstitutionKey,
+  unordered_map<const abi_mangle::SubstitutionKey *,
                 size_t,
-                MangleSubstitutionState::SubstitutionKeyHash>::const_iterator found =
-      state->ir_substitution_index.find(key);
+                MangleSubstitutionState::SubstitutionKeyPtrHash,
+                MangleSubstitutionState::SubstitutionKeyPtrEqual>::
+      const_iterator found = state->ir_substitution_index.find(&key);
+  bool have_index = false;
   if(found != state->ir_substitution_index.end()) {
     index = found->second;
-    return true;
+    have_index = true;
   }
-  return false;
+  if(key.kind == abi_mangle::SubstitutionKey::SK_NAMED) {
+    unordered_map<string, size_t>::const_iterator alias_found =
+        state->ir_named_alias_index.find(key.payload);
+    if(alias_found != state->ir_named_alias_index.end() &&
+       (!have_index || alias_found->second < index)) {
+      index = alias_found->second;
+      have_index = true;
+    }
+  }
+  return have_index;
 }
 
 static bool emit_registered_ir_substitution(
@@ -1577,41 +1596,27 @@ static bool insert_substitution_index(MangleSubstitutionState * state,
   return inserted.second;
 }
 
-static bool insert_ir_substitution_index(
+static void index_registered_ir_substitution(
     MangleSubstitutionState * state,
     const abi_mangle::SubstitutionKey & key,
     size_t index)
 {
   reserve_substitution_state_capacity(state);
   if(!state->ir_substitution_index_materialized &&
-     state->substitution_ir_keys.size() < SMALL_IR_SUBSTITUTION_LIMIT) {
-    return true;
+     state->substitution_ir_keys.size() <= SMALL_IR_SUBSTITUTION_LIMIT) {
+    return;
   }
+  const bool was_materialized = state->ir_substitution_index_materialized;
   materialize_ir_substitution_index(state);
-  pair<unordered_map<abi_mangle::SubstitutionKey,
-                     size_t,
-                     MangleSubstitutionState::SubstitutionKeyHash>::iterator,
-       bool> inserted =
-      state->ir_substitution_index.insert(make_pair(key, index));
-  if(inserted.second && state->checkpoint_depth != 0) {
-    state->ir_substitution_index_log.push_back(key);
+  if(!was_materialized) {
+    return;
   }
-  if(inserted.second &&
-     key.kind ==
+  state->ir_substitution_index.insert(make_pair(&key, index));
+  if(key.kind ==
          abi_mangle::SubstitutionKey::SK_CLASS_TEMPLATE_SPECIALIZATION &&
      !key.payload.empty()) {
-    const abi_mangle::SubstitutionKey alias =
-        abi_mangle::SubstitutionKey::named(key.payload);
-    pair<unordered_map<abi_mangle::SubstitutionKey,
-                       size_t,
-                       MangleSubstitutionState::SubstitutionKeyHash>::iterator,
-         bool> alias_inserted =
-        state->ir_substitution_index.insert(make_pair(alias, index));
-    if(alias_inserted.second && state->checkpoint_depth != 0) {
-      state->ir_substitution_index_log.push_back(alias);
-    }
+    state->ir_named_alias_index.insert(make_pair(key.payload, index));
   }
-  return inserted.second;
 }
 
 static void ensure_substitution_ir_key_slots(MangleSubstitutionState * state)
@@ -1674,17 +1679,10 @@ static bool prepare_ir_substitution_key_registration(
     return false;
   }
   size_t existing_index = 0;
-  if(state->parent_lookup &&
-     find_registered_ir_substitution_index(state->parent_lookup,
-                                           key,
-                                           existing_index)) {
+  if(find_registered_ir_substitution_index(state, key, existing_index)) {
     return false;
   }
-  if(find_registered_ir_substitution_small(state, key, existing_index)) {
-    return false;
-  }
-  const size_t index = substitution_state_size(state);
-  return insert_ir_substitution_index(state, key, index);
+  return true;
 }
 
 static void register_ir_substitution_key_raw(
@@ -1692,8 +1690,11 @@ static void register_ir_substitution_key_raw(
     const abi_mangle::SubstitutionKey & key)
 {
   if(prepare_ir_substitution_key_registration(state, key)) {
+    const size_t index = substitution_state_size(state);
     state->substitution_keys.push_back(string());
     state->substitution_ir_keys.push_back(key);
+    index_registered_ir_substitution(
+        state, state->substitution_ir_keys.back(), index);
   }
 }
 
@@ -1702,8 +1703,11 @@ static void register_ir_substitution_key_owned(
     abi_mangle::SubstitutionKey && key)
 {
   if(prepare_ir_substitution_key_registration(state, key)) {
+    const size_t index = substitution_state_size(state);
     state->substitution_keys.push_back(string());
     state->substitution_ir_keys.push_back(std::move(key));
+    index_registered_ir_substitution(
+        state, state->substitution_ir_keys.back(), index);
   }
 }
 
@@ -2013,20 +2017,6 @@ static bool emit_function_name_ir(
   return true;
 }
 
-static bool emit_function_encoding_ir_owned(
-    abi_mangle::FunctionEncoding & function,
-    MangleSubstitutionState * state,
-    string & out)
-{
-  MangleIrSubstitutionSink sink(state);
-  string candidate;
-  if(!abi_mangle::emit_function_encoding_owned(function, candidate, &sink)) {
-    return false;
-  }
-  out.swap(candidate);
-  return true;
-}
-
 static bool emit_function_encoding_ir(
     const abi_mangle::FunctionEncoding & function,
     MangleSubstitutionState * state,
@@ -2202,7 +2192,7 @@ static bool scope_prefix_syntax_for_template_decl(
   for(const semantic_model::Scope * current = scope; current; current = current->parent) {
     if(current->class_info &&
        current->class_info->member_scope.get() == current) {
-      out = current->class_info->symbol_qualified_name_syntax;
+      out = class_symbol_qualified_name_syntax(*current->class_info);
       if(out.name.empty()) {
         return false;
       }
@@ -2442,10 +2432,10 @@ static bool type_is_std_class_template_specialization(
     const TypePtr & type,
     const string & template_name,
     size_t argument_count,
-    shared_ptr<const ClassTemplateSpecializationMangleInfo> * info_out = nullptr)
+    const ClassTemplateSpecializationMangleInfo ** info_out = nullptr)
 {
-  shared_ptr<const ClassTemplateSpecializationMangleInfo> info =
-      named_type_class_template_specialization_mangle_info_const(type);
+  const ClassTemplateSpecializationMangleInfo * info =
+      named_type_class_template_specialization_mangle_info_ptr(type);
   if(!info) {
     return false;
   }
@@ -2470,7 +2460,7 @@ static bool template_argument_is_std_char_traits_char(
   if(argument.kind != TemplateArgument::TA_TYPE) {
     return false;
   }
-  shared_ptr<const ClassTemplateSpecializationMangleInfo> info;
+  const ClassTemplateSpecializationMangleInfo * info = nullptr;
   return type_is_std_class_template_specialization(argument.type,
                                                   "char_traits",
                                                   1,
@@ -2484,7 +2474,7 @@ static bool template_argument_is_std_allocator_char(
   if(argument.kind != TemplateArgument::TA_TYPE) {
     return false;
   }
-  shared_ptr<const ClassTemplateSpecializationMangleInfo> info;
+  const ClassTemplateSpecializationMangleInfo * info = nullptr;
   return type_is_std_class_template_specialization(argument.type,
                                                   "allocator",
                                                   1,
@@ -3374,8 +3364,8 @@ static bool ast_node_mentions_template_parameter(
       return true;
     }
   }
-  if(node.conversion_type_id_syntax &&
-     ast_node_mentions_template_parameter(*node.conversion_type_id_syntax,
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     ast_node_mentions_template_parameter(*cppast_conversion_type_id_syntax_storage(node),
                                           mangle_ctx)) {
     return true;
   }
@@ -3447,8 +3437,8 @@ static bool ast_node_mentions_function_parameter(const CppAstNode & node,
      function_parameter_index_for_name(node.value, mangle_ctx, ignored_index)) {
     return true;
   }
-  if(node.conversion_type_id_syntax &&
-     ast_node_mentions_function_parameter(*node.conversion_type_id_syntax,
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     ast_node_mentions_function_parameter(*cppast_conversion_type_id_syntax_storage(node),
                                           mangle_ctx)) {
     return true;
   }
@@ -3484,8 +3474,8 @@ static bool declarator_type_syntax_mentions_function_parameter(
      function_parameter_index_for_name(node.value, mangle_ctx, ignored_index)) {
     return true;
   }
-  if(node.conversion_type_id_syntax &&
-     ast_node_mentions_function_parameter(*node.conversion_type_id_syntax,
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     ast_node_mentions_function_parameter(*cppast_conversion_type_id_syntax_storage(node),
                                           mangle_ctx)) {
     return true;
   }
@@ -3753,7 +3743,8 @@ static CppAstNode clone_ast_node_for_mangling(const CppAstNode & source)
   out.kind = source.kind;
   out.value = source.value;
   out.semantic_type = source.semantic_type;
-  out.builtin_type_transform_name = source.builtin_type_transform_name;
+  mutable_cppast_builtin_type_transform_name(out) =
+      cppast_builtin_type_transform_name(source);
   out.has_leading_typename = source.has_leading_typename;
   out.has_exception_type_id_syntaxes = source.has_exception_type_id_syntaxes;
   out.linkage_has_braces = source.linkage_has_braces;
@@ -3764,8 +3755,9 @@ static CppAstNode clone_ast_node_for_mangling(const CppAstNode & source)
   if(!cppast_asm_label(source).empty()) {
     mutable_cppast_asm_label(out) = cppast_asm_label(source);
   }
-  out.abi_tags = source.abi_tags;
-  out.alignment_specifiers = source.alignment_specifiers;
+  mutable_cppast_abi_tags(out) = cppast_abi_tags(source);
+  mutable_cppast_alignment_specifiers(out) =
+      cppast_alignment_specifiers(source);
   out.is_final_specifier = source.is_final_specifier;
   out.uses_assignment_form = source.uses_assignment_form;
   out.has_token = source.has_token;
@@ -3774,7 +3766,8 @@ static CppAstNode clone_ast_node_for_mangling(const CppAstNode & source)
   out.token_start = source.token_start;
   out.token_end = source.token_end;
   out.source_location_id = source.source_location_id;
-  out.name_lookup_snapshot = source.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(out) =
+      cppast_name_lookup_snapshot(source);
   if(source.qualified_name_syntax) {
     out.qualified_name_syntax.reset(new QualifiedName(*source.qualified_name_syntax));
   }
@@ -3783,14 +3776,14 @@ static CppAstNode clone_ast_node_for_mangling(const CppAstNode & source)
         new TemplateIdSyntax(clone_template_id_syntax_for_mangling(
             *source.template_id_syntax)));
   }
-  if(source.conversion_type_id_syntax) {
-    out.conversion_type_id_syntax.reset(
+  if(cppast_conversion_type_id_syntax_storage(source)) {
+    mutable_cppast_conversion_type_id_syntax_storage(out).reset(
         new CppAstNode(clone_ast_node_for_mangling(
-            *source.conversion_type_id_syntax)));
+            *cppast_conversion_type_id_syntax_storage(source))));
   }
-  if(source.base_type_syntax) {
-    out.base_type_syntax.reset(
-        new CppAstNode(clone_ast_node_for_mangling(*source.base_type_syntax)));
+  if(cppast_base_type_syntax_storage(source)) {
+    mutable_cppast_base_type_syntax_storage(out).reset(
+        new CppAstNode(clone_ast_node_for_mangling(*cppast_base_type_syntax_storage(source))));
   }
   out.qualifier_template_id_syntaxes.reserve(
       source.qualifier_template_id_syntaxes.size());
@@ -3903,15 +3896,15 @@ static bool attach_dependent_builtin_type_transform_argument_for_mangling(
     const vector<TemplateParameterInfo> & parameters,
     const vector<TemplateArgumentSyntax> & arguments)
 {
-  const string & builtin_name = node.builtin_type_transform_name;
-  if(!node.base_type_syntax ||
+  const string & builtin_name = cppast_builtin_type_transform_name(node);
+  if(!cppast_base_type_syntax_storage(node) ||
      !is_mangleable_builtin_type_transform_name(builtin_name)) {
     return false;
   }
 
   const size_t count = std::min(parameters.size(), arguments.size());
   for(size_t i = 0; i < count; ++i) {
-    if(!type_id_ast_is_template_type_parameter(*node.base_type_syntax,
+    if(!type_id_ast_is_template_type_parameter(*cppast_base_type_syntax_storage(node),
                                                parameters[i])) {
       continue;
     }
@@ -3927,13 +3920,13 @@ static bool attach_dependent_builtin_type_transform_argument_for_mangling(
         return false;
       }
       node.value = builtin_name + "(" + trim_space(arguments[i].text) + ")";
-      node.builtin_type_transform_name = builtin_name;
+      mutable_cppast_builtin_type_transform_name(node) = builtin_name;
       node.semantic_type = transformed;
       return true;
     }
     if(arguments[i].type_id) {
       node.value = builtin_name + "(" + trim_space(arguments[i].text) + ")";
-      node.builtin_type_transform_name = builtin_name;
+      mutable_cppast_builtin_type_transform_name(node) = builtin_name;
       node.children.clear();
       node.children.push_back(clone_ast_node_for_mangling(*arguments[i].type_id));
       return true;
@@ -4140,8 +4133,8 @@ static bool ast_contains_decltype_specifier(const CppAstNode & node)
   if(node.kind == CppAstKind::decltype_specifier) {
     return true;
   }
-  if(node.conversion_type_id_syntax &&
-     ast_contains_decltype_specifier(*node.conversion_type_id_syntax)) {
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     ast_contains_decltype_specifier(*cppast_conversion_type_id_syntax_storage(node))) {
     return true;
   }
   for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
@@ -4949,12 +4942,12 @@ static bool substitute_dependent_alias_template_arguments_in_node(
                                                      arguments)) {
     return true;
   }
-  const string & builtin_name = node.builtin_type_transform_name;
-  if(node.base_type_syntax &&
+  const string & builtin_name = cppast_builtin_type_transform_name(node);
+  if(cppast_base_type_syntax_storage(node) &&
      is_mangleable_builtin_type_transform_name(builtin_name)) {
     const size_t count = std::min(parameters.size(), arguments.size());
     for(size_t i = 0; i < count; ++i) {
-      if(!type_id_ast_is_template_type_parameter(*node.base_type_syntax,
+      if(!type_id_ast_is_template_type_parameter(*cppast_base_type_syntax_storage(node),
                                                  parameters[i]) ||
          ((!arguments[i].type ||
            !type_has_dependent_mangle_state(arguments[i].type)) &&
@@ -4971,7 +4964,7 @@ static bool substitute_dependent_alias_template_arguments_in_node(
         if(transformed) {
           node.value =
               builtin_name + "(" + trim_space(arguments[i].text) + ")";
-          node.builtin_type_transform_name = builtin_name;
+          mutable_cppast_builtin_type_transform_name(node) = builtin_name;
           node.semantic_type = transformed;
           attached_semantic = true;
           changed = true;
@@ -4979,7 +4972,7 @@ static bool substitute_dependent_alias_template_arguments_in_node(
       } else if(arguments[i].syntax.type_id) {
         node.value =
             builtin_name + "(" + trim_space(arguments[i].text) + ")";
-        node.builtin_type_transform_name = builtin_name;
+        mutable_cppast_builtin_type_transform_name(node) = builtin_name;
         node.children.clear();
         node.children.push_back(
             clone_ast_node_for_mangling(*arguments[i].syntax.type_id));
@@ -5164,9 +5157,9 @@ static void clear_default_type_argument_semantics_for_mangling(CppAstNode & node
     clear_default_type_argument_semantics_for_mangling(
         *node.template_id_syntax);
   }
-  if(node.conversion_type_id_syntax) {
+  if(cppast_conversion_type_id_syntax_storage(node)) {
     clear_default_type_argument_semantics_for_mangling(
-        *node.conversion_type_id_syntax);
+        *cppast_conversion_type_id_syntax_storage(node));
   }
   for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
     clear_default_type_argument_semantics_for_mangling(
@@ -5194,9 +5187,10 @@ static TemplateArgumentSyntax default_template_argument_syntax_for_mangling(
   CppAstNode cloned_payload = clone_ast_node_for_mangling(payload);
   if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
     clear_default_type_argument_semantics_for_mangling(cloned_payload);
+    qualify_default_template_argument_node_for_mangling(
+        cloned_payload,
+        default_argument_scope);
   }
-  qualify_default_template_argument_node_for_mangling(cloned_payload,
-                                                      default_argument_scope);
   if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE) {
     syntax.expression.reset(new CppAstNode(std::move(cloned_payload)));
   } else {
@@ -5532,11 +5526,17 @@ static const semantic_model::ClassInfo * nearest_member_class_scope(
 }
 
 static TemplateArgumentSyntax effective_dependent_argument_syntax(
-    const DependentAliasTemplateArgumentSyntax & argument)
+    const DependentAliasTemplateArgumentSyntax & argument,
+    const TemplateParameterInfo * parameter)
 {
   TemplateArgumentSyntax syntax = dependent_alias_argument_syntax_for_mangling(argument);
   if(syntax.text.empty()) {
     syntax.text = argument.text;
+  }
+  if(parameter &&
+     parameter->kind == TemplateParameterInfo::TP_NON_TYPE &&
+     argument.syntax.pack_expansion) {
+    syntax.pack_expansion = true;
   }
   return syntax;
 }
@@ -5580,15 +5580,15 @@ static bool dependent_class_template_metadata_should_drive_mangling(
   if(!type || type->kind != Type::TK_NAMED) {
     return false;
   }
+  if(named_type_has_dependent_semantic(type)) {
+    return true;
+  }
   const string selected_text = selected_named_type_text(type);
   if(mangle_ctx &&
      !selected_text.empty() &&
      selected_text.find('<') != string::npos &&
      !text_mentions_template_mangle_parameter(selected_text, mangle_ctx)) {
     return false;
-  }
-  if(named_type_has_dependent_semantic(type)) {
-    return true;
   }
   if(!mangle_ctx) {
     return true;
@@ -5615,10 +5615,10 @@ static bool is_mangleable_builtin_type_transform_name(const string & name)
 static bool builtin_type_transform_ast_name(const CppAstNode & node,
                                             string & out)
 {
-  if(!node.builtin_type_transform_name.empty() &&
+  if(!cppast_builtin_type_transform_name(node).empty() &&
      is_mangleable_builtin_type_transform_name(
-         node.builtin_type_transform_name)) {
-    out = node.builtin_type_transform_name;
+         cppast_builtin_type_transform_name(node))) {
+    out = cppast_builtin_type_transform_name(node);
     return true;
   }
 
@@ -6559,14 +6559,6 @@ static bool try_build_fundamental_type_specifier_seq_ast_ir(
   return try_build_type_ir(typed, mangle_ctx, out);
 }
 
-static bool emit_type_ir_owned(abi_mangle::Type & type,
-                               MangleSubstitutionState * state,
-                               string & out)
-{
-  MangleIrSubstitutionSink sink(state);
-  return abi_mangle::emit_type_owned(type, out, &sink);
-}
-
 static bool emit_type_ir(const abi_mangle::Type & type,
                          MangleSubstitutionState * state,
                          string & out)
@@ -6599,7 +6591,7 @@ static bool build_and_emit_type_ir(const TypePtr & type,
     *captured_type = ir_type;
     return true;
   }
-  if(!emit_type_ir_owned(ir_type, state, out)) {
+  if(!emit_type_ir(ir_type, state, out)) {
     return false;
   }
   return true;
@@ -6624,7 +6616,7 @@ static bool build_and_emit_type_id_ir_from_ast(
     *captured_type = ir_type;
     return true;
   }
-  if(!emit_type_ir_owned(ir_type, state, out)) {
+  if(!emit_type_ir(ir_type, state, out)) {
     return false;
   }
   return true;
@@ -6652,7 +6644,7 @@ static bool build_and_emit_parameter_declaration_ir_from_ast(
     *captured_type = ir_type;
     return true;
   }
-  if(!emit_type_ir_owned(ir_type, state, out)) {
+  if(!emit_type_ir(ir_type, state, out)) {
     return false;
   }
   return true;
@@ -7432,7 +7424,8 @@ static bool try_build_external_entity_argument_ir_payload(
   }
 
   TypePtr base = strip_top_level_cv(argument.type);
-  if(argument.function_value && base) {
+  const TemplateArgument::RareData & rare = argument.rare();
+  if(rare.function_value && base) {
     const bool is_function_pointer =
         base->kind == Type::TK_POINTER &&
         base->inner &&
@@ -7448,10 +7441,10 @@ static bool try_build_external_entity_argument_ir_payload(
         strip_top_level_cv(base->inner)->kind == Type::TK_FUNCTION;
     if(is_function_pointer || is_function_reference ||
        is_member_function_pointer) {
-      payload.symbol = argument.function_value->symbol.object_symbol;
+      payload.symbol = rare.function_value->symbol.object_symbol;
       payload.address_of = is_function_pointer || is_member_function_pointer;
       if(is_member_function_pointer) {
-        return build_external_member_function_payload(*argument.function_value,
+        return build_external_member_function_payload(*rare.function_value,
                                                       mangle_ctx,
                                                       payload);
       }
@@ -7459,8 +7452,8 @@ static bool try_build_external_entity_argument_ir_payload(
     }
   }
 
-  if(argument.value_binding && base && base->kind == Type::TK_MEMBER_POINTER) {
-    const semantic_model::ValueBinding * binding = argument.value_binding;
+  if(rare.value_binding && base && base->kind == Type::TK_MEMBER_POINTER) {
+    const semantic_model::ValueBinding * binding = rare.value_binding;
     if(binding->kind == semantic_model::ValueBinding::VK_FIELD) {
       payload.address_of = true;
       if(binding->owner_class) {
@@ -7472,7 +7465,7 @@ static bool try_build_external_entity_argument_ir_payload(
     }
   }
 
-  if(argument.value_binding && base) {
+  if(rare.value_binding && base) {
     const bool is_object_pointer =
         base->kind == Type::TK_POINTER &&
         base->inner &&
@@ -7483,14 +7476,14 @@ static bool try_build_external_entity_argument_ir_payload(
     if(is_object_pointer) {
       payload.address_of = true;
       return try_build_value_binding_object_symbol_ir_payload(
-          *argument.value_binding,
+          *rare.value_binding,
           mangle_ctx,
           payload.symbol);
     }
     if(is_object_reference) {
       payload.address_of = false;
       return try_build_value_binding_object_symbol_ir_payload(
-          *argument.value_binding,
+          *rare.value_binding,
           mangle_ctx,
           payload.symbol);
     }
@@ -7704,7 +7697,7 @@ static bool try_build_template_argument_type_ir(
     const TypeMangleContext * mangle_ctx,
     abi_mangle::Type & out)
 {
-  return try_build_type_ir(
+  return try_build_type_ir_cached(
       type,
       template_argument_type_mangle_context(type, mangle_ctx),
       out);
@@ -8746,7 +8739,8 @@ static bool build_dependent_template_arguments_ir(
                                                             mangle_ctx,
                                                             ir_argument) &&
              !try_build_template_argument_syntax_ir(
-                 effective_dependent_argument_syntax(dependent_argument),
+                 effective_dependent_argument_syntax(dependent_argument,
+                                                     &parameter),
                  &parameter,
                  mangle_ctx,
                  ir_argument)) {
@@ -8779,7 +8773,8 @@ static bool build_dependent_template_arguments_ir(
                                                         mangle_ctx,
                                                         ir_argument) &&
          !try_build_template_argument_syntax_ir(
-             effective_dependent_argument_syntax(dependent_argument),
+             effective_dependent_argument_syntax(dependent_argument,
+                                                 &parameter),
              &parameter,
              mangle_ctx,
              ir_argument)) {
@@ -8803,7 +8798,7 @@ static bool build_dependent_template_arguments_ir(
   for(size_t i = 0; i < arguments.size(); ++i) {
     abi_mangle::Type::ClassTemplateArgument ir_argument;
     if(!try_build_template_argument_syntax_ir(
-           effective_dependent_argument_syntax(arguments[i]),
+           effective_dependent_argument_syntax(arguments[i], nullptr),
            nullptr,
            mangle_ctx,
            ir_argument)) {
@@ -9395,6 +9390,30 @@ static bool try_build_qualified_template_id_type_ast_ir(
   if(template_id_resolves_to_namespace_template_for_mangling(template_id,
                                                              mangle_ctx)) {
     return false;
+  }
+
+  if(!qualified.rooted) {
+    QualifiedName lookup_prefix;
+    if(qualified_type_text_lexical_lookup_prefix(qualified,
+                                                 mangle_ctx,
+                                                 lookup_prefix) &&
+       !lookup_prefix.rooted &&
+       !lookup_prefix.name.empty()) {
+      TemplateIdSyntax namespace_template_id = template_id;
+      namespace_template_id.name = qualified;
+      vector<string> qualifiers = lookup_prefix.qualifiers;
+      qualifiers.push_back(lookup_prefix.name);
+      qualifiers.insert(qualifiers.end(),
+                        namespace_template_id.name.qualifiers.begin(),
+                        namespace_template_id.name.qualifiers.end());
+      namespace_template_id.name.qualifiers.swap(qualifiers);
+      if(lookup_class_template_for_template_id_syntax(namespace_template_id,
+                                                      mangle_ctx)) {
+        return try_build_template_id_type_ir(namespace_template_id,
+                                             mangle_ctx,
+                                             out);
+      }
+    }
   }
 
   abi_mangle::Type current;
@@ -12975,6 +12994,11 @@ static bool try_build_class_template_type_argument_ir(
      !try_build_template_argument_source_type_ir(argument, mangle_ctx, type)) {
     return false;
   }
+  if(argument.dependent &&
+     argument.source_syntax &&
+     argument.source_syntax->pack_expansion) {
+    wrap_pack_expansion_type_ir_if_needed(true, type);
+  }
   out = abi_mangle::Type::ClassTemplateArgument::type_arg(std::move(type));
   return true;
 }
@@ -13426,11 +13450,12 @@ static bool try_build_class_template_specialization_type_ir(
   }
   TypePtr base = type;
 
-  shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization =
-      named_type_class_template_specialization_mangle_info_const(base);
+  const ClassTemplateSpecializationMangleInfo * specialization =
+      named_type_class_template_specialization_mangle_info_ptr(base);
   const Type::NamedRareMetadata & rare = base->named_rare();
   const bool has_typed_member_owner =
-      rare.named_member_owner_type && !rare.named_member_name.empty();
+      rare.named_member_owner_type &&
+      !rare.named_member_name.empty();
   if(!specialization ||
      trim_space(specialization->template_name).empty() ||
      (!has_typed_member_owner &&
@@ -13484,9 +13509,7 @@ static bool try_build_class_template_specialization_type_ir(
   }
 
   const vector<TemplateParameterInfo> * parameters =
-      specialization->template_parameters.empty() ?
-          nullptr :
-          &specialization->template_parameters;
+      semantic_model::class_template_mangle_parameters(*specialization);
   const map<string, size_t> * pack_sizes = nullptr;
   if(!specialization->pack_sizes.empty() &&
      (specialization->mangle_parameters.empty() ||
@@ -13627,7 +13650,15 @@ static bool try_build_named_type_ir(const TypePtr & type,
     if(!try_build_type_ir(rare.named_member_owner_type, mangle_ctx, owner)) {
       return false;
     }
-    const string selected_text = preferred_named_type_text(type, mangle_ctx);
+    const string owner_text =
+        preferred_named_type_text(
+            strip_top_level_cv(rare.named_member_owner_type),
+            mangle_ctx);
+    const string selected_text =
+        owner_text.empty() ?
+            preferred_named_type_text(type, mangle_ctx) :
+            append_qualified_component_text(owner_text,
+                                            rare.named_member_name);
     if(selected_text.empty()) {
       return false;
     }
@@ -13931,9 +13962,9 @@ static bool try_build_builtin_va_list_type_ir(
   return true;
 }
 
-static bool try_build_type_ir(const TypePtr & type,
-                              const TypeMangleContext * mangle_ctx,
-                              abi_mangle::Type & out)
+static bool try_build_type_ir_uncached(const TypePtr & type,
+                                       const TypeMangleContext * mangle_ctx,
+                                       abi_mangle::Type & out)
 {
   if(try_build_context_free_type_ir(type, mangle_ctx, out)) {
     return true;
@@ -13996,8 +14027,11 @@ static bool try_build_type_ir(const TypePtr & type,
   if(try_build_dependent_alias_type_ir(type, mangle_ctx, out)) {
     return true;
   }
-  shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization =
-      named_type_class_template_specialization_mangle_info_const(type);
+  if(try_build_dependent_class_template_type_ir(type, mangle_ctx, out)) {
+    return true;
+  }
+  const ClassTemplateSpecializationMangleInfo * specialization =
+      named_type_class_template_specialization_mangle_info_ptr(type);
   if(specialization &&
      !template_arguments_have_dependent_mangle_state(specialization->arguments) &&
      !template_arguments_have_entity_value(specialization->arguments) &&
@@ -14007,9 +14041,6 @@ static bool try_build_type_ir(const TypePtr & type,
   if(try_build_dependent_template_template_parameter_type_ir(type,
                                                             mangle_ctx,
                                                             out)) {
-    return true;
-  }
-  if(try_build_dependent_class_template_type_ir(type, mangle_ctx, out)) {
     return true;
   }
   if(try_build_class_template_specialization_type_ir(type, mangle_ctx, out)) {
@@ -14022,6 +14053,127 @@ static bool try_build_type_ir(const TypePtr & type,
     return true;
   }
   return try_build_wrapped_type_ir(type, mangle_ctx, out);
+}
+
+struct TypeIrOperationCacheKey
+{
+  const Type * type = nullptr;
+  const TypeMangleContext * context = nullptr;
+
+  bool operator==(const TypeIrOperationCacheKey & rhs) const
+  {
+    return type == rhs.type && context == rhs.context;
+  }
+};
+
+struct TypeIrOperationCacheKeyHash
+{
+  size_t operator()(const TypeIrOperationCacheKey & key) const
+  {
+    size_t seed = std::hash<const Type *>()(key.type);
+    seed ^= std::hash<const TypeMangleContext *>()(key.context) +
+            static_cast<size_t>(0x9e3779b9) +
+            (seed << 6) +
+            (seed >> 2);
+    return seed;
+  }
+};
+
+struct TypeIrOperationCacheState
+{
+  unordered_map<TypeIrOperationCacheKey,
+                abi_mangle::Type,
+                TypeIrOperationCacheKeyHash> values;
+  size_t depth = 0;
+  size_t hits = 0;
+  size_t misses = 0;
+  size_t max_entries = 0;
+  bool diagnostic = false;
+
+  TypeIrOperationCacheState()
+      : diagnostic(
+            std::getenv("CPPGM_DIAGNOSTIC_TYPE_IR_OPERATION_CACHE") != nullptr)
+  {
+    values.reserve(128);
+  }
+
+  ~TypeIrOperationCacheState()
+  {
+    if(diagnostic) {
+      std::fprintf(stderr,
+                   "type-ir-operation-cache hits=%zu misses=%zu "
+                   "max-entries=%zu\n",
+                   hits,
+                   misses,
+                   max_entries);
+    }
+  }
+};
+
+static bool type_ir_operation_cache_enabled()
+{
+  return true;
+}
+
+struct TypeIrOperationCacheFrame
+{
+  explicit TypeIrOperationCacheFrame(TypeIrOperationCacheState & state)
+      : state(state),
+        root(state.depth++ == 0)
+  {
+    if(root) {
+      state.values.clear();
+    }
+  }
+
+  ~TypeIrOperationCacheFrame()
+  {
+    if(--state.depth == 0) {
+      state.max_entries = max(state.max_entries, state.values.size());
+      state.values.clear();
+    }
+  }
+
+  TypeIrOperationCacheState & state;
+  bool root;
+};
+
+static bool try_build_type_ir(const TypePtr & type,
+                              const TypeMangleContext * mangle_ctx,
+                              abi_mangle::Type & out)
+{
+  if(!type_ir_operation_cache_enabled() ||
+     !type ||
+     (mangle_ctx && !context_free_type_ir_only_context(mangle_ctx))) {
+    return try_build_type_ir_uncached(type, mangle_ctx, out);
+  }
+
+  static thread_local TypeIrOperationCacheState state;
+  TypeIrOperationCacheFrame frame(state);
+  TypeIrOperationCacheKey key;
+  key.type = type.get();
+  key.context = mangle_ctx;
+  unordered_map<TypeIrOperationCacheKey,
+                abi_mangle::Type,
+                TypeIrOperationCacheKeyHash>::const_iterator found =
+      state.values.find(key);
+  if(found != state.values.end()) {
+    ++state.hits;
+    out = found->second;
+    return true;
+  }
+
+  ++state.misses;
+  abi_mangle::Type candidate;
+  if(!try_build_type_ir_uncached(type, mangle_ctx, candidate)) {
+    return false;
+  }
+  pair<unordered_map<TypeIrOperationCacheKey,
+                     abi_mangle::Type,
+                     TypeIrOperationCacheKeyHash>::iterator,
+       bool> inserted = state.values.emplace(key, std::move(candidate));
+  out = inserted.first->second;
+  return true;
 }
 
 static bool try_build_type_ir_cached(
@@ -14037,17 +14189,98 @@ static bool try_build_type_ir_cached(
     return try_build_type_ir(type, mangle_ctx, out);
   }
 
-  static thread_local unordered_map<TypePtr, abi_mangle::Type> default_cache;
-  static thread_local unordered_map<TypePtr, abi_mangle::Type> ir_only_cache;
+  struct TypeIrCacheState
+  {
+    unordered_map<TypePtr, abi_mangle::Type> default_cache;
+    unordered_map<TypePtr, abi_mangle::Type> ir_only_cache;
+    unordered_map<const Type *, size_t> hit_counts;
+    size_t default_hits = 0;
+    size_t default_misses = 0;
+    size_t ir_only_hits = 0;
+    size_t ir_only_misses = 0;
+    bool diagnostic = false;
+
+    TypeIrCacheState()
+        : diagnostic(std::getenv("CPPGM_DIAGNOSTIC_TYPE_IR_CACHE") != nullptr)
+    {
+    }
+
+    ~TypeIrCacheState()
+    {
+      if(!diagnostic) {
+        return;
+      }
+      std::fprintf(stderr,
+                   "type-ir-cache default-hits=%zu default-misses=%zu "
+                   "default-entries=%zu ir-only-hits=%zu ir-only-misses=%zu "
+                   "ir-only-entries=%zu distinct-hit-types=%zu\n",
+                   default_hits,
+                   default_misses,
+                   default_cache.size(),
+                   ir_only_hits,
+                   ir_only_misses,
+                   ir_only_cache.size(),
+                   hit_counts.size());
+      vector<pair<size_t, const Type *> > ranked;
+      ranked.reserve(hit_counts.size());
+      for(unordered_map<const Type *, size_t>::const_iterator it =
+              hit_counts.begin();
+          it != hit_counts.end();
+          ++it) {
+        ranked.push_back(make_pair(it->second, it->first));
+      }
+      sort(ranked.begin(), ranked.end(),
+           [](const pair<size_t, const Type *> & lhs,
+              const pair<size_t, const Type *> & rhs)
+           {
+             return lhs.first > rhs.first;
+           });
+      const size_t limit = min<size_t>(ranked.size(), 20);
+      for(size_t i = 0; i < limit; ++i) {
+        const Type * semantic_type = ranked[i].second;
+        const string & text =
+            !semantic_type->named_key.empty() ?
+                semantic_type->named_key :
+                semantic_type->named_display;
+        const size_t prefix_size = min<size_t>(text.size(), 160);
+        std::fprintf(stderr,
+                     "type-ir-cache-hot rank=%zu hits=%zu kind=%d "
+                     "key-bytes=%zu display-bytes=%zu text=%.*s\n",
+                     i + 1,
+                     ranked[i].first,
+                     static_cast<int>(semantic_type->kind),
+                     semantic_type->named_key.size(),
+                     semantic_type->named_display.size(),
+                     static_cast<int>(prefix_size),
+                     text.data());
+      }
+    }
+  };
+  static thread_local TypeIrCacheState state;
   unordered_map<TypePtr, abi_mangle::Type> & cache =
-      mangle_ctx ? ir_only_cache : default_cache;
+      mangle_ctx ? state.ir_only_cache : state.default_cache;
   unordered_map<TypePtr, abi_mangle::Type>::const_iterator found =
       cache.find(type);
   if(found != cache.end()) {
+    if(state.diagnostic) {
+      if(mangle_ctx) {
+        ++state.ir_only_hits;
+      } else {
+        ++state.default_hits;
+      }
+      ++state.hit_counts[type.get()];
+    }
     out = found->second;
     return true;
   }
 
+  if(state.diagnostic) {
+    if(mangle_ctx) {
+      ++state.ir_only_misses;
+    } else {
+      ++state.default_misses;
+    }
+  }
   abi_mangle::Type candidate;
   if(!try_build_type_ir(type, mangle_ctx, candidate)) {
     return false;
@@ -14086,7 +14319,7 @@ static bool build_and_emit_function_parameter_type_ir(
     *captured_type = ir_type;
     return true;
   }
-  return emit_type_ir_owned(ir_type, state, out);
+  return emit_type_ir(ir_type, state, out);
 }
 
 static bool try_mangle_context_free_type_ir(const TypePtr & type,
@@ -14700,8 +14933,10 @@ static void adopt_actual_class_template_owner_for_hybrid_named_type(
     if(!pattern_info->arguments.empty()) {
       hybrid_info->arguments = pattern_info->arguments;
     }
-    if(!pattern_info->template_parameters.empty()) {
-      hybrid_info->template_parameters = pattern_info->template_parameters;
+    const vector<TemplateParameterInfo> * pattern_parameters =
+        semantic_model::class_template_mangle_parameters(*pattern_info);
+    if(pattern_parameters) {
+      hybrid_info->template_parameters = *pattern_parameters;
     }
     if(!pattern_info->mangle_parameters.empty()) {
       hybrid_info->mangle_parameters = pattern_info->mangle_parameters;
@@ -14920,8 +15155,8 @@ static bool type_has_dependent_mangle_state_impl(
   }
 
   if(type->kind == Type::TK_NAMED) {
-    shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization =
-        named_type_class_template_specialization_mangle_info_const(type);
+    const ClassTemplateSpecializationMangleInfo * specialization =
+        named_type_class_template_specialization_mangle_info_ptr(type);
     if(specialization &&
        (template_arguments_have_dependent_mangle_state_impl(
             specialization->arguments, visited) ||
@@ -14969,8 +15204,8 @@ static bool template_argument_has_dependent_mangle_state_impl(
   case TemplateArgument::TA_CLASS_TEMPLATE:
   case TemplateArgument::TA_ALIAS_TEMPLATE:
     return argument.template_decl == nullptr ||
-           type_has_dependent_mangle_state_impl(argument.template_owner_type,
-                                                visited);
+           type_has_dependent_mangle_state_impl(
+               argument.template_owner_type, visited);
   }
 
   return false;
@@ -15002,7 +15237,8 @@ static bool template_arguments_have_entity_value(
 {
   for(size_t i = 0; i < arguments.size(); ++i) {
     if(arguments[i].kind == TemplateArgument::TA_VALUE &&
-       (arguments[i].function_value || arguments[i].value_binding)) {
+       (arguments[i].rare().function_value ||
+        arguments[i].rare().value_binding)) {
       return true;
     }
   }
@@ -15358,6 +15594,21 @@ static string preferred_named_type_text(const TypePtr & type,
     return string();
   }
 
+  if(type->named_rare().named_output_name_is_final) {
+    return trim_elaborated_type_prefix(type->named_display);
+  }
+
+  semantic_model::ClassInfo * class_info =
+      type->named_rare().named_class_info;
+  if(class_info &&
+     (class_info->source_template ||
+      type->named_rare().named_member_owner_type)) {
+    const string output_name = class_output_qualified_name(*class_info);
+    if(!output_name.empty()) {
+      return output_name;
+    }
+  }
+
   const string display_text = trim_elaborated_type_prefix(type->named_display);
   const string key_text = trim_elaborated_type_prefix(type->named_key);
   string selected_text = display_text;
@@ -15667,7 +15918,7 @@ static bool build_class_template_specialization_structural_key(
                                       canonical_component_text(template_name));
 
   const vector<TemplateParameterInfo> * parameters =
-      info->template_parameters.empty() ? nullptr : &info->template_parameters;
+      semantic_model::class_template_mangle_parameters(*info);
   vector<abi_mangle::Type::ClassTemplateArgument> arguments;
   if(!try_build_class_template_arguments_ir(info->arguments,
                                             parameters,
@@ -15982,9 +16233,10 @@ static bool template_value_argument_needs_entity_identity(
   }
 
   TypePtr base = strip_top_level_cv(argument.type);
+  const TemplateArgument::RareData & rare = argument.rare();
   return base &&
-         !argument.function_value &&
-         !argument.value_binding &&
+         !rare.function_value &&
+         !rare.value_binding &&
          (base->kind == Type::TK_POINTER ||
           base->kind == Type::TK_LVALUE_REFERENCE ||
           base->kind == Type::TK_RVALUE_REFERENCE ||
@@ -17336,7 +17588,7 @@ static bool try_mangle_plain_function_ir(const QualifiedName & qualified,
       return false;
     }
     *captured_function = function;
-  } else if(!emit_function_encoding_ir_owned(function, state, candidate)) {
+  } else if(!emit_function_encoding_ir(function, state, candidate)) {
     return false;
   }
   out.swap(candidate);
@@ -17815,7 +18067,7 @@ static bool try_emit_owner_type_parameter_pack_function_parameter_ir(
     *captured_type = expansion;
     return true;
   }
-  if(!abi_mangle::emit_type_owned(expansion, out, &sink)) {
+  if(!abi_mangle::emit_type(expansion, out, &sink)) {
     return false;
   }
   return true;
@@ -18830,8 +19082,9 @@ static bool template_argument_needs_structural_internal_symbol(
                                                       active_types);
 
   case TemplateArgument::TA_VALUE:
-    return argument.function_value || argument.value_binding ||
-           !argument.value_dependencies.empty();
+    return argument.rare().function_value ||
+           argument.rare().value_binding ||
+           !argument.rare().value_dependencies.empty();
 
   case TemplateArgument::TA_CLASS_TEMPLATE:
   case TemplateArgument::TA_ALIAS_TEMPLATE:
@@ -19192,10 +19445,16 @@ SymbolIdentity make_static_member_variable_symbol_identity(
     bool is_c_linkage,
     SymbolLinkage linkage)
 {
+  const QualifiedName owner_syntax =
+      class_output_qualified_name_syntax(owner_class);
+  const string owner_name =
+      owner_syntax.name.empty() ?
+          class_internal_output_qualified_name(owner_class) :
+          qualified_name_syntax_key_text(owner_syntax);
   const string qualified_name =
-      owner_class.qualified_name.empty() ?
+      owner_name.empty() ?
           member_name :
-          owner_class.qualified_name + "::" + member_name;
+          owner_name + "::" + member_name;
   if(is_c_linkage) {
     SymbolIdentity out = c_linkage_identity(member_name, linkage);
     append_variable_abi_mangle_fact(out, out.object_symbol, qualified_name, true);
@@ -19226,10 +19485,12 @@ SymbolIdentity make_static_member_variable_template_symbol_identity(
     bool is_c_linkage,
     SymbolLinkage linkage)
 {
+  const string owner_name =
+      class_internal_output_qualified_name(owner_class);
   const string qualified_name =
-      owner_class.qualified_name.empty() ?
+      owner_name.empty() ?
           internal_member_name :
-          owner_class.qualified_name + "::" + internal_member_name;
+          owner_name + "::" + internal_member_name;
   if(is_c_linkage) {
     SymbolIdentity out = c_linkage_identity(internal_member_name, linkage);
     append_variable_abi_mangle_fact(out, out.object_symbol, qualified_name, true);

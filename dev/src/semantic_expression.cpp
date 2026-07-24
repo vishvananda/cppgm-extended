@@ -85,7 +85,8 @@ CppAstNode make_synthetic_literal_node(const CppAstNode & source,
   out.source_location_id = source.source_location_id;
   out.token_start = source.token_start;
   out.token_end = source.token_end;
-  out.name_lookup_snapshot = source.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(out) =
+      cppast_name_lookup_snapshot(source);
   return out;
 }
 
@@ -162,7 +163,8 @@ ExprInfo analyze_string_user_defined_literal(SemanticContext & ctx,
   call.source_location_id = node.source_location_id;
   call.token_start = node.token_start;
   call.token_end = node.token_end;
-  call.name_lookup_snapshot = node.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(call) =
+      cppast_name_lookup_snapshot(node);
 
   CppAstNode callee;
   callee.kind = CppAstKind::id_expression;
@@ -170,7 +172,8 @@ ExprInfo analyze_string_user_defined_literal(SemanticContext & ctx,
   callee.source_location_id = node.source_location_id;
   callee.token_start = node.token_start;
   callee.token_end = node.token_end;
-  callee.name_lookup_snapshot = node.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(callee) =
+      cppast_name_lookup_snapshot(node);
   call.children.push_back(callee);
 
   CppAstNode arguments;
@@ -178,7 +181,8 @@ ExprInfo analyze_string_user_defined_literal(SemanticContext & ctx,
   arguments.source_location_id = node.source_location_id;
   arguments.token_start = node.token_start;
   arguments.token_end = node.token_end;
-  arguments.name_lookup_snapshot = node.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(arguments) =
+      cppast_name_lookup_snapshot(node);
   arguments.children.push_back(
       make_synthetic_literal_node(
           node,
@@ -205,7 +209,8 @@ ExprInfo analyze_cooked_numeric_user_defined_literal(SemanticContext & ctx,
   call.source_location_id = node.source_location_id;
   call.token_start = node.token_start;
   call.token_end = node.token_end;
-  call.name_lookup_snapshot = node.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(call) =
+      cppast_name_lookup_snapshot(node);
 
   CppAstNode callee;
   callee.kind = CppAstKind::id_expression;
@@ -213,7 +218,8 @@ ExprInfo analyze_cooked_numeric_user_defined_literal(SemanticContext & ctx,
   callee.source_location_id = node.source_location_id;
   callee.token_start = node.token_start;
   callee.token_end = node.token_end;
-  callee.name_lookup_snapshot = node.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(callee) =
+      cppast_name_lookup_snapshot(node);
   call.children.push_back(callee);
 
   CppAstNode arguments;
@@ -221,7 +227,8 @@ ExprInfo analyze_cooked_numeric_user_defined_literal(SemanticContext & ctx,
   arguments.source_location_id = node.source_location_id;
   arguments.token_start = node.token_start;
   arguments.token_end = node.token_end;
-  arguments.name_lookup_snapshot = node.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(arguments) =
+      cppast_name_lookup_snapshot(node);
   arguments.children.push_back(make_synthetic_literal_node(node, literal_text));
   call.children.push_back(arguments);
 
@@ -241,7 +248,8 @@ ExprInfo analyze_numeric_user_defined_literal_template(SemanticContext & ctx,
   call.source_location_id = node.source_location_id;
   call.token_start = node.token_start;
   call.token_end = node.token_end;
-  call.name_lookup_snapshot = node.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(call) =
+      cppast_name_lookup_snapshot(node);
 
   CppAstNode callee;
   callee.kind = CppAstKind::id_expression;
@@ -249,7 +257,8 @@ ExprInfo analyze_numeric_user_defined_literal_template(SemanticContext & ctx,
   callee.source_location_id = node.source_location_id;
   callee.token_start = node.token_start;
   callee.token_end = node.token_end;
-  callee.name_lookup_snapshot = node.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(callee) =
+      cppast_name_lookup_snapshot(node);
 
   TemplateIdSyntax template_id;
   template_id.name.name = operator_name;
@@ -270,7 +279,8 @@ ExprInfo analyze_numeric_user_defined_literal_template(SemanticContext & ctx,
   arguments.source_location_id = node.source_location_id;
   arguments.token_start = node.token_start;
   arguments.token_end = node.token_end;
-  arguments.name_lookup_snapshot = node.name_lookup_snapshot;
+  mutable_cppast_name_lookup_snapshot(arguments) =
+      cppast_name_lookup_snapshot(node);
   call.children.push_back(arguments);
 
   return ctx.analyze_call_expression(scope, call);
@@ -3820,7 +3830,8 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
           class_qualifier.semantic_type = current->class_info->type;
           class_qualifier.semantic_type_is_resolved_qualifier = true;
           class_qualifier.source_location_id = adjusted_type_id.source_location_id;
-          class_qualifier.name_lookup_snapshot = adjusted_type_id.name_lookup_snapshot;
+          mutable_cppast_name_lookup_snapshot(class_qualifier) =
+              cppast_name_lookup_snapshot(adjusted_type_id);
         }
         set_cppast_qualifier_type_syntaxes(callee, std::move(qualifier_types));
       }

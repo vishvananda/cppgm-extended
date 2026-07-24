@@ -25,6 +25,9 @@ struct FunctionRegistryState
   std::unordered_map<std::string,
                      std::vector<semantic_model::FunctionBinding *> > &
       functions_by_internal_symbol;
+  std::unordered_map<std::string,
+                     std::vector<semantic_model::FunctionBinding *> > &
+      functions_by_name;
   std::set<std::string> & used_internal_symbols;
   std::vector<semantic_model::FunctionBinding *> & instantiated_functions;
   std::unordered_set<semantic_model::FunctionBinding *> &
@@ -113,6 +116,9 @@ void release_function_symbol_reservation(
 
 void discard_function_binding(FunctionRegistryState & state,
                               semantic_model::FunctionBinding * binding);
+
+bool class_function_binding_output_has_started(
+    const semantic_model::ClassInfo & info);
 
 void discard_class_function_bindings(FunctionRegistryState & state,
                                      semantic_model::ClassInfo & info);

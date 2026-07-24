@@ -26,6 +26,12 @@ Atom intern(const std::string & text)
   return &*pool.insert(text).first;
 }
 
+Atom intern(std::string && text)
+{
+  std::unordered_set<std::string> & pool = atom_pool();
+  return &*pool.insert(std::move(text)).first;
+}
+
 Atom intern(const char * data, std::size_t length)
 {
   std::unordered_set<std::string> & pool = atom_pool();

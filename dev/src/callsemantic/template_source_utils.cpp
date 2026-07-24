@@ -642,8 +642,8 @@ const TemplateIdSyntax * template_id_syntax_matching_compact_lookup_text(
     }
   }
   const CppAstNode * direct_sidecars[] = {
-    node.conversion_type_id_syntax.get(),
-    node.base_type_syntax.get()
+    cppast_conversion_type_id_syntax_storage(node).get(),
+    cppast_base_type_syntax_storage(node).get()
   };
   for(size_t i = 0; i < sizeof(direct_sidecars) / sizeof(direct_sidecars[0]); ++i) {
     if(direct_sidecars[i]) {
@@ -993,6 +993,57 @@ bool node_has_template_id_qualifier_syntax(const CppAstNode & node)
     }
   }
   return false;
+}
+
+ExactTemplateTypeLookupAnchor retained_template_type_lookup_anchor(
+    const CppAstNode * node)
+{
+  ExactTemplateTypeLookupAnchor anchor;
+  const TemplateIdSyntax * syntax = nullptr;
+  if(node) {
+    for(std::size_t i = 0;
+        i < node->qualifier_template_id_syntaxes.size();
+        ++i) {
+      if(!node->qualifier_template_id_syntaxes[i].name.name.empty()) {
+        syntax = &node->qualifier_template_id_syntaxes[i];
+        break;
+      }
+    }
+  }
+  if(!syntax && node) {
+    const CppAstNode * identifier =
+        find_descendant_kind(*node, CppAstKind::identifier);
+    if(identifier) {
+      for(std::size_t i = 0;
+          i < identifier->qualifier_template_id_syntaxes.size();
+          ++i) {
+        if(!identifier->qualifier_template_id_syntaxes[i].name.name.empty()) {
+          syntax = &identifier->qualifier_template_id_syntaxes[i];
+          break;
+        }
+      }
+      if(!syntax) {
+        syntax = cppast_template_id_syntax(*identifier);
+      }
+    }
+  }
+  if(!syntax && node) {
+    syntax = first_template_id_syntax_in_subtree(*node);
+  }
+  if(!syntax || syntax->name.name.empty()) {
+    return anchor;
+  }
+  anchor.template_text = template_id_syntax_text_preserving_spacing(*syntax);
+  anchor.identifier = unqualified_member_name(syntax->name.name);
+  if(anchor.identifier.empty()) {
+    anchor.identifier = syntax->name.name;
+  }
+  anchor.compact_key = compact_lookup_text(anchor.template_text);
+  anchor.template_id_syntax_ref = syntax;
+  anchor.arg_texts_ref = &syntax->arguments;
+  anchor.arg_syntaxes_ref = &syntax->argument_syntaxes;
+  anchor.has_argument_list = true;
+  return anchor;
 }
 
 const ExactTemplateTypeLookupAnchor * current_exact_template_type_lookup_anchor()
@@ -2245,12 +2296,12 @@ bool node_contains_template_id_syntax(const CppAstNode & node)
   if(node.template_id_syntax || !node.qualifier_template_id_syntaxes.empty()) {
     return true;
   }
-  if(node.conversion_type_id_syntax &&
-     node_contains_template_id_syntax(*node.conversion_type_id_syntax)) {
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     node_contains_template_id_syntax(*cppast_conversion_type_id_syntax_storage(node))) {
     return true;
   }
-  if(node.base_type_syntax &&
-     node_contains_template_id_syntax(*node.base_type_syntax)) {
+  if(cppast_base_type_syntax_storage(node) &&
+     node_contains_template_id_syntax(*cppast_base_type_syntax_storage(node))) {
     return true;
   }
   for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {

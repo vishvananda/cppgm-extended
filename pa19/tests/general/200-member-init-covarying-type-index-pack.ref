@@ -60,7 +60,7 @@ function @run(%tuple : ptr [pass=reference], %__param1 : obj<1x1>, %__param2 : o
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @pair_like__local_8254806509891058448__pair_like(%this : ptr, %value : ptr [pass=reference]) -> void [binding=weak, object=_ZZ3runIJiEJLm0EEEiR6tuple1IiE9type_listIDpT_E7indexesIDp1IEEN9pair_likeC1ES2_] {
+function @pair_like__local_8254806509891058448__pair_like(%this : ptr, %value : ptr [pass=reference]) -> void [binding=weak, object=_ZZ3runIJiEJLm0EEEiR6tuple1IiE9type_listIJDpT_EE7indexesIJXspT0_EEEEN9pair_likeC1ES2_] {
   slot $this : ptr
   slot $value : ptr
 
@@ -98,4 +98,4 @@ function @identity(%value : i32) -> i32 [binding=weak, object=_Z8identityIiET_S0
 }
 alias object _ZN9type_listIJiEEC2Ev = @type_list_int___type_list
 alias object _ZN7indexesIJLm0EEEC2Ev = @indexes_0___indexes
-alias object _ZZ3runIJiEJLm0EEEiR6tuple1IiE9type_listIDpT_E7indexesIDp1IEEN9pair_likeC2ES2_ = @pair_like__local_8254806509891058448__pair_like
+alias object _ZZ3runIJiEJLm0EEEiR6tuple1IiE9type_listIJDpT_EE7indexesIJXspT0_EEEEN9pair_likeC2ES2_ = @pair_like__local_8254806509891058448__pair_like

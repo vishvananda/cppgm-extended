@@ -225,6 +225,7 @@ template_binding::Hooks make_scope_binding_hooks(Scope & scope)
                                  const TypePtr & bound_value_type,
                                  const TemplateArgument & argument)
   {
+    const TemplateArgument::RareData & rare = argument.rare();
     bind_non_type_value(
         scope,
         name,
@@ -233,10 +234,10 @@ template_binding::Hooks make_scope_binding_hooks(Scope & scope)
         argument.dependent,
         !argument.dependent ? argument.text : std::string(),
         !argument.dependent ?
-            const_cast<FunctionBinding *>(argument.function_value) :
+            const_cast<FunctionBinding *>(rare.function_value) :
             nullptr,
-        !argument.dependent ? argument.function_internal_symbol : std::string(),
-        !argument.dependent ? argument.value_binding : nullptr);
+        !argument.dependent ? rare.function_internal_symbol : std::string(),
+        !argument.dependent ? rare.value_binding : nullptr);
   };
   return hooks;
 }
@@ -380,6 +381,7 @@ void bind_non_type_pack(Scope & scope,
   std::vector<ValueBinding> pack_bindings;
   pack_bindings.reserve(bound_pack.size());
   for(std::size_t i = 0; i < bound_pack.size(); ++i) {
+    const TemplateArgument::RareData & rare = bound_pack[i].rare();
     const std::string alias_name = pack_value_alias_name(name, i);
     const bool dependent = bound_pack[i].dependent;
     const long long value = dependent ? 0 : bound_pack[i].value;
@@ -390,12 +392,12 @@ void bind_non_type_pack(Scope & scope,
                         dependent,
                         bound_pack[i].text,
                         !dependent ?
-                            const_cast<FunctionBinding *>(bound_pack[i].function_value) :
+                            const_cast<FunctionBinding *>(rare.function_value) :
                             nullptr,
                         !dependent ?
-                            bound_pack[i].function_internal_symbol :
+                            rare.function_internal_symbol :
                             std::string(),
-                        !dependent ? bound_pack[i].value_binding : nullptr);
+                        !dependent ? rare.value_binding : nullptr);
     pack_bindings.push_back(scope.values[alias_name]);
   }
   bind_value_pack(scope, name, pack_bindings, true);
@@ -429,6 +431,7 @@ void bind_template_argument_pack(Scope & scope,
   std::vector<ValueBinding> bound_pack;
   bound_pack.reserve(arguments.size());
   for(std::size_t i = 0; i < arguments.size(); ++i) {
+    const TemplateArgument::RareData & rare = arguments[i].rare();
     const std::string alias_name = pack_value_alias_name(parameter.name, i);
     const TypePtr value_type =
         arguments[i].type ? arguments[i].type : parameter.value_type;
@@ -440,12 +443,12 @@ void bind_template_argument_pack(Scope & scope,
                           arguments[i].dependent,
                           arguments[i].text,
                           !arguments[i].dependent ?
-                              const_cast<FunctionBinding *>(arguments[i].function_value) :
+                              const_cast<FunctionBinding *>(rare.function_value) :
                               nullptr,
                           !arguments[i].dependent ?
-                              arguments[i].function_internal_symbol :
+                              rare.function_internal_symbol :
                               std::string(),
-                          !arguments[i].dependent ? arguments[i].value_binding : nullptr);
+                          !arguments[i].dependent ? rare.value_binding : nullptr);
     } else {
       bind_non_type_value(scope, alias_name, value_type, 0, true);
     }

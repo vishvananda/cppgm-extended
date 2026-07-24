@@ -1305,6 +1305,17 @@ bool type_mentions_deduction_parameter(
         }
       }
     }
+    if(std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
+           mangle_info =
+               cpp_decl::named_type_class_template_specialization_mangle_info_const(
+                   base)) {
+      for(std::size_t i = 0; i < mangle_info->arguments.size(); ++i) {
+        if(template_argument_mentions_deduction_parameter(
+               ctx, parameters, mangle_info->arguments[i])) {
+          return true;
+        }
+      }
+    }
     return false;
   }
 
@@ -1409,12 +1420,20 @@ std::string function_template_deduction_failure_drop_reason(
   return "substitution_failure";
 }
 
-std::string function_template_witness_name(const FunctionTemplateDecl * decl)
+std::string function_template_witness_name(
+    SemanticContext & ctx,
+    const FunctionTemplateDecl * decl)
 {
   if(!decl) {
     return std::string();
   }
   if(decl->declaring_scope) {
+    if(decl->declaring_scope->class_info) {
+      return template_api::class_witness_output_qualified_name(
+                 ctx,
+                 *decl->declaring_scope->class_info) +
+          "::" + decl->name;
+    }
     return semantic_lookup::scope_symbol_qualified_name(*decl->declaring_scope, decl->name);
   }
   return decl->name;
@@ -1581,17 +1600,7 @@ FunctionWitnessDeclAnchor function_binding_witness_decl_anchor(
 std::string function_binding_witness_name(SemanticContext & ctx,
                                           const FunctionBinding * binding)
 {
-  if(!binding) {
-    return std::string();
-  }
-  const std::string simple_name =
-      semantic_model::function_binding_display_name_for_symbol(*binding);
-  if(binding->owner_class && !binding->owner_class->qualified_name.empty()) {
-    return template_api::class_witness_output_qualified_name(ctx,
-                                                            *binding->owner_class) +
-        "::" + simple_name;
-  }
-  return function_binding_qualified_name_for_symbol(*binding);
+  return template_api::function_binding_witness_entity(ctx, binding);
 }
 
 std::string function_binding_witness_decl_location(SemanticContext & ctx,
@@ -1813,7 +1822,7 @@ void append_template_function_candidate_drop(
   }
   witness::append_source_drop(
       *out,
-      function_template_witness_name(decl),
+      function_template_witness_name(ctx, decl),
       function_template_witness_decl_location(ctx, decl),
       reason);
 }
@@ -1879,7 +1888,8 @@ std::size_t function_candidate_bucket_key(FunctionBinding * binding)
 }
 
 bool contains_equivalent_function_candidate(const FunctionCandidateBucketMap & buckets,
-                                            FunctionBinding * binding)
+                                            FunctionBinding * binding,
+                                            SemanticContext * ctx = nullptr)
 {
   const std::size_t key = function_candidate_bucket_key(binding);
   FunctionCandidateBucketMap::const_iterator found = buckets.find(key);
@@ -1887,6 +1897,9 @@ bool contains_equivalent_function_candidate(const FunctionCandidateBucketMap & b
     return false;
   }
   for(size_t i = 0; i < found->second.size(); ++i) {
+    if(ctx && !ctx->function_binding_is_live(found->second[i])) {
+      continue;
+    }
     if(same_function_candidate_entity(found->second[i], binding)) {
       return true;
     }
@@ -2004,10 +2017,11 @@ bool source_template_is_in_lookup_set(const FunctionBinding * binding,
 }
 
 void suppress_implicit_template_instantiation_lookup_candidates(
+    SemanticContext & ctx,
     vector<FunctionBinding *> & candidates,
     const vector<FunctionTemplateDecl *> & templates)
 {
-  if(templates.empty() || candidates.empty()) {
+  if(candidates.empty()) {
     return;
   }
   candidates.erase(
@@ -2015,6 +2029,9 @@ void suppress_implicit_template_instantiation_lookup_candidates(
                 candidates.end(),
                 [&](FunctionBinding * binding) -> bool
                 {
+                  if(!ctx.function_binding_is_live(binding)) {
+                    return true;
+                  }
                   return source_template_is_in_lookup_set(binding, templates);
                 }),
       candidates.end());
@@ -3599,16 +3616,20 @@ ClassInfo * canonicalize_constructor_target(SemanticContext & ctx,
   if(!info.source_template) {
     return &info;
   }
-  if(!info.instantiation_key.empty()) {
+  const std::string & instantiation_key =
+      class_instantiation_key(info);
+  if(!instantiation_key.empty()) {
     auto found =
-        info.source_template->instantiations.find(info.instantiation_key);
+        info.source_template->instantiations.find(instantiation_key);
     if(found != info.source_template->instantiations.end() &&
        found->second &&
        found->second->source_template == info.source_template &&
        found->second->name == info.name) {
       return found->second;
     }
-    found = info.source_template->reference_instantiations.find(info.instantiation_key);
+    found =
+        info.source_template->reference_instantiations.find(
+            instantiation_key);
     if(found != info.source_template->reference_instantiations.end() &&
        found->second &&
        found->second->source_template == info.source_template &&
@@ -9883,10 +9904,12 @@ void append_function_template_call_candidates_impl(
                                                           name_node,
                                                           &lookup_scope);
   }
-  suppress_implicit_template_instantiation_lookup_candidates(out, templates);
+  suppress_implicit_template_instantiation_lookup_candidates(ctx, out, templates);
   FunctionCandidateBucketMap seen_candidates;
   for(size_t i = 0; i < out.size(); ++i) {
-    note_function_candidate_bucket(seen_candidates, out[i]);
+    if(ctx.function_binding_is_live(out[i])) {
+      note_function_candidate_bucket(seen_candidates, out[i]);
+    }
   }
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
@@ -10317,6 +10340,12 @@ void append_function_template_call_candidates_impl(
           if(!binding) {
             return;
           }
+          FunctionCandidateRefreshKey binding_refresh_key;
+          if(binding->owner_class &&
+             binding->owner_class->reference_members_collected &&
+             !binding->owner_class->complete) {
+            binding_refresh_key = function_candidate_refresh_key(*binding);
+          }
           if(!binding_accepts_implicit_object(binding)) {
             append_template_function_candidate_drop(ctx,
                                                     &candidate_template,
@@ -10324,7 +10353,22 @@ void append_function_template_call_candidates_impl(
                                                     &combination_drops);
             return;
           }
-          if(!contains_equivalent_function_candidate(seen_candidates, binding)) {
+          if(binding_refresh_key.owner_class) {
+            if(!function_candidate_matches_refresh_key(
+                   ctx, binding, binding_refresh_key)) {
+              binding = refresh_invalidated_member_candidate(
+                  ctx, binding_refresh_key);
+              if(!function_candidate_matches_refresh_key(
+                     ctx, binding, binding_refresh_key)) {
+                return;
+              }
+              note_overload_candidate_refresh(ctx, true);
+            }
+          } else if(!ctx.function_binding_is_live(binding)) {
+            return;
+          }
+          if(!contains_equivalent_function_candidate(
+                 seen_candidates, binding, &ctx)) {
             out.push_back(binding);
             note_function_candidate_bucket(seen_candidates, binding);
           }

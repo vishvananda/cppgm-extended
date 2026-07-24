@@ -80,6 +80,7 @@ struct OutOfClassMemberResolutionServices
       bool is_volatile_method,
       semantic_model::RefQualifier ref_qualifier,
       semantic_model::FunctionBinding *& out,
+      const CppAstNode * function_identifier,
       QualifiedOwnerClassResolution resolution) = 0;
   virtual bool out_of_class_special_member_template_parameters_match(
       semantic_model::Scope & lhs_scope,

@@ -13,11 +13,13 @@ namespace semantic_template_class {
 
 namespace {
 
-std::string class_template_source_use_name(const semantic_model::ClassInfo & info)
+std::string class_template_source_use_name(
+    SemanticContext & ctx,
+    const semantic_model::ClassInfo & info)
 {
   std::string name =
       semantic_utils::strip_trailing_top_level_template_arguments(
-          semantic_model::class_output_qualified_name(info));
+          template_api::class_witness_output_qualified_name(ctx, info));
   if(name.empty() && info.source_template) {
     name = info.source_template->name;
   }
@@ -59,7 +61,7 @@ void emit_instantiated_class_template_use_source(
 
   witness::ClassUseEmitRequest request;
   request.location = public_location;
-  request.template_name = class_template_source_use_name(info);
+  request.template_name = class_template_source_use_name(ctx, info);
   request.selection = info.is_explicit_specialization ?
       witness::SourceSelectionKind::ExplicitSpecialization :
       witness::SourceSelectionKind::Primary;

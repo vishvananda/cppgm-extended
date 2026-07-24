@@ -1,8 +1,10 @@
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 
 using namespace std;
 
@@ -451,12 +453,195 @@ void Type::set_dependent_type_expression_formed_with_placeholders(bool formed)
       .dependent_type_expression_formed_with_placeholders = formed;
 }
 
+namespace {
+
+struct WrapperTypeKey
+{
+  Type::Kind kind = Type::TK_POINTER;
+  const Type * inner = nullptr;
+  bool cv_const = false;
+  bool cv_volatile = false;
+
+  bool operator==(const WrapperTypeKey & other) const
+  {
+    return kind == other.kind &&
+           inner == other.inner &&
+           cv_const == other.cv_const &&
+           cv_volatile == other.cv_volatile;
+  }
+};
+
+struct WrapperTypeKeyHash
+{
+  size_t operator()(const WrapperTypeKey & key) const
+  {
+    size_t result =
+        static_cast<size_t>(
+            reinterpret_cast<uintptr_t>(key.inner) >> 4);
+    result ^= static_cast<size_t>(key.kind) * 0x9e3779b9U;
+    result ^= key.cv_const ? 0x85ebca6bU : 0;
+    result ^= key.cv_volatile ? 0xc2b2ae35U : 0;
+    return result;
+  }
+};
+
+TypePtr canonical_wrapper_type(Type::Kind kind,
+                               const TypePtr & inner,
+                               bool cv_const = false,
+                               bool cv_volatile = false,
+                               bool definitely_not_class = true)
+{
+  typedef unordered_map<WrapperTypeKey,
+                        weak_ptr<Type>,
+                        WrapperTypeKeyHash> Cache;
+  static thread_local Cache cache;
+
+  WrapperTypeKey key;
+  key.kind = kind;
+  key.inner = inner.get();
+  key.cv_const = cv_const;
+  key.cv_volatile = cv_volatile;
+  Cache::iterator found = cache.find(key);
+  if(found != cache.end()) {
+    if(TypePtr existing = found->second.lock()) {
+      return existing;
+    }
+  }
+
+  TypePtr result(new Type(kind));
+  result->inner = inner;
+  result->cv_const = cv_const;
+  result->cv_volatile = cv_volatile;
+  result->definitely_not_class = definitely_not_class;
+  cache[key] = result;
+  return result;
+}
+
+size_t function_type_identity_hash(
+    const TypePtr & result_type,
+    const vector<TypePtr> & params,
+    bool variadic,
+    bool function_const,
+    bool function_volatile,
+    bool prototype_relaxed,
+    FunctionTypeRefQualifier function_ref_qualifier)
+{
+  size_t seed =
+      static_cast<size_t>(
+          reinterpret_cast<uintptr_t>(result_type.get()) >> 4);
+  for(size_t i = 0; i < params.size(); ++i) {
+    const size_t value =
+        static_cast<size_t>(
+            reinterpret_cast<uintptr_t>(params[i].get()) >> 4);
+    seed ^= value + 0x9e3779b9U + (seed << 6) + (seed >> 2);
+  }
+  seed ^= params.size() + 0x9e3779b9U + (seed << 6) + (seed >> 2);
+  seed ^= variadic ? 0x85ebca6bU : 0;
+  seed ^= function_const ? 0xc2b2ae35U : 0;
+  seed ^= function_volatile ? 0x27d4eb2fU : 0;
+  seed ^= prototype_relaxed ? 0x165667b1U : 0;
+  seed ^= static_cast<size_t>(function_ref_qualifier) * 0xd3a2646cU;
+  return seed;
+}
+
+bool function_type_identity_matches(
+    const Type & candidate,
+    const TypePtr & result_type,
+    const vector<TypePtr> & params,
+    bool variadic,
+    bool function_const,
+    bool function_volatile,
+    bool prototype_relaxed,
+    FunctionTypeRefQualifier function_ref_qualifier)
+{
+  if(candidate.kind != Type::TK_FUNCTION ||
+     candidate.inner.get() != result_type.get() ||
+     candidate.params.size() != params.size() ||
+     candidate.variadic != variadic ||
+     candidate.function_const != function_const ||
+     candidate.function_volatile != function_volatile ||
+     candidate.prototype_relaxed != prototype_relaxed ||
+     candidate.function_ref_qualifier != function_ref_qualifier) {
+    return false;
+  }
+  for(size_t i = 0; i < params.size(); ++i) {
+    if(candidate.params[i].get() != params[i].get()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+TypePtr canonical_function_type(
+    const TypePtr & result_type,
+    const vector<TypePtr> & params,
+    bool variadic,
+    bool function_const,
+    bool function_volatile,
+    bool prototype_relaxed,
+    FunctionTypeRefQualifier function_ref_qualifier)
+{
+  typedef unordered_multimap<size_t, weak_ptr<Type> > Cache;
+  static thread_local Cache cache;
+  const size_t hash =
+      function_type_identity_hash(result_type,
+                                  params,
+                                  variadic,
+                                  function_const,
+                                  function_volatile,
+                                  prototype_relaxed,
+                                  function_ref_qualifier);
+  pair<Cache::iterator, Cache::iterator> range = cache.equal_range(hash);
+  for(Cache::iterator it = range.first; it != range.second;) {
+    TypePtr existing = it->second.lock();
+    if(!existing) {
+      it = cache.erase(it);
+      continue;
+    }
+    if(function_type_identity_matches(*existing,
+                                      result_type,
+                                      params,
+                                      variadic,
+                                      function_const,
+                                      function_volatile,
+                                      prototype_relaxed,
+                                      function_ref_qualifier)) {
+      return existing;
+    }
+    ++it;
+  }
+
+  TypePtr result(new Type(Type::TK_FUNCTION));
+  result->inner = result_type;
+  result->params = params;
+  result->variadic = variadic;
+  result->prototype_relaxed = prototype_relaxed;
+  result->function_const = function_const;
+  result->function_volatile = function_volatile;
+  result->function_ref_qualifier = function_ref_qualifier;
+  result->definitely_not_class = true;
+  cache.emplace(hash, result);
+  return result;
+}
+
+}  // namespace
+
 TypePtr make_fundamental(EFundamentalType type)
 {
-  TypePtr result(new Type(Type::TK_FUNDAMENTAL));
-  result->fundamental = type;
-  result->definitely_not_class = true;
-  return result;
+  static const vector<TypePtr> canonical_types =
+      []()
+      {
+        vector<TypePtr> values(
+            static_cast<size_t>(FT_NULLPTR_T) + 1);
+        for(size_t i = 0; i < values.size(); ++i) {
+          TypePtr value(new Type(Type::TK_FUNDAMENTAL));
+          value->fundamental = static_cast<EFundamentalType>(i);
+          value->definitely_not_class = true;
+          values[i] = value;
+        }
+        return values;
+      }();
+  return canonical_types[static_cast<size_t>(type)];
 }
 
 TypePtr make_named(const string & display_name,
@@ -853,36 +1038,29 @@ TypePtr make_cv(const TypePtr & base, bool cv_const, bool cv_volatile)
   }
 
   if(base->kind == Type::TK_CV) {
-    TypePtr result(new Type(Type::TK_CV));
-    result->cv_const = base->cv_const || cv_const;
-    result->cv_volatile = base->cv_volatile || cv_volatile;
-    result->inner = base->inner;
-    result->definitely_not_class = base->definitely_not_class;
-    return result;
+    return canonical_wrapper_type(Type::TK_CV,
+                                  base->inner,
+                                  base->cv_const || cv_const,
+                                  base->cv_volatile || cv_volatile,
+                                  base->definitely_not_class);
   }
 
-  TypePtr result(new Type(Type::TK_CV));
-  result->cv_const = cv_const;
-  result->cv_volatile = cv_volatile;
-  result->inner = base;
-  result->definitely_not_class = base->definitely_not_class;
-  return result;
+  return canonical_wrapper_type(
+      Type::TK_CV,
+      base,
+      cv_const,
+      cv_volatile,
+      base->definitely_not_class);
 }
 
 TypePtr make_atomic(const TypePtr & base)
 {
-  TypePtr result(new Type(Type::TK_ATOMIC));
-  result->inner = base;
-  result->definitely_not_class = true;
-  return result;
+  return canonical_wrapper_type(Type::TK_ATOMIC, base);
 }
 
 TypePtr make_pointer(const TypePtr & base)
 {
-  TypePtr result(new Type(Type::TK_POINTER));
-  result->inner = base;
-  result->definitely_not_class = true;
-  return result;
+  return canonical_wrapper_type(Type::TK_POINTER, base);
 }
 
 TypePtr make_member_pointer(const TypePtr & owner, const TypePtr & base)
@@ -896,10 +1074,7 @@ TypePtr make_member_pointer(const TypePtr & owner, const TypePtr & base)
 
 TypePtr make_block_pointer(const TypePtr & base)
 {
-  TypePtr result(new Type(Type::TK_BLOCK_POINTER));
-  result->inner = base;
-  result->definitely_not_class = true;
-  return result;
+  return canonical_wrapper_type(Type::TK_BLOCK_POINTER, base);
 }
 
 TypePtr make_array(const TypePtr & element,
@@ -924,51 +1099,33 @@ TypePtr make_function(const TypePtr & result_type,
                       bool prototype_relaxed,
                       FunctionTypeRefQualifier function_ref_qualifier)
 {
-  TypePtr result(new Type(Type::TK_FUNCTION));
-  result->inner = result_type;
-  result->params = params;
-  result->variadic = variadic;
-  result->prototype_relaxed = prototype_relaxed;
-  result->function_const = function_const;
-  result->function_volatile = function_volatile;
-  result->function_ref_qualifier = function_ref_qualifier;
-  result->definitely_not_class = true;
-  return result;
+  return canonical_function_type(result_type,
+                                 params,
+                                 variadic,
+                                 function_const,
+                                 function_volatile,
+                                 prototype_relaxed,
+                                 function_ref_qualifier);
 }
 
 TypePtr make_lvalue_reference_raw(const TypePtr & base)
 {
   if(base->kind == Type::TK_LVALUE_REFERENCE ||
      base->kind == Type::TK_RVALUE_REFERENCE) {
-    TypePtr result(new Type(Type::TK_LVALUE_REFERENCE));
-    result->inner = base->inner;
-    result->definitely_not_class = true;
-    return result;
+    return canonical_wrapper_type(Type::TK_LVALUE_REFERENCE, base->inner);
   }
-  TypePtr result(new Type(Type::TK_LVALUE_REFERENCE));
-  result->inner = base;
-  result->definitely_not_class = true;
-  return result;
+  return canonical_wrapper_type(Type::TK_LVALUE_REFERENCE, base);
 }
 
 TypePtr make_rvalue_reference_raw(const TypePtr & base)
 {
   if(base->kind == Type::TK_LVALUE_REFERENCE) {
-    TypePtr result(new Type(Type::TK_LVALUE_REFERENCE));
-    result->inner = base->inner;
-    result->definitely_not_class = true;
-    return result;
+    return canonical_wrapper_type(Type::TK_LVALUE_REFERENCE, base->inner);
   }
   if(base->kind == Type::TK_RVALUE_REFERENCE) {
-    TypePtr result(new Type(Type::TK_RVALUE_REFERENCE));
-    result->inner = base->inner;
-    result->definitely_not_class = true;
-    return result;
+    return canonical_wrapper_type(Type::TK_RVALUE_REFERENCE, base->inner);
   }
-  TypePtr result(new Type(Type::TK_RVALUE_REFERENCE));
-  result->inner = base;
-  result->definitely_not_class = true;
-  return result;
+  return canonical_wrapper_type(Type::TK_RVALUE_REFERENCE, base);
 }
 
 TypePtr apply_cv(const TypePtr & base, bool cv_const, bool cv_volatile)

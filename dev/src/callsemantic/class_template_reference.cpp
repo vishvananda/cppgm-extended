@@ -508,9 +508,7 @@ public:
       }
       const std::string current_name =
           strip_trailing_top_level_template_arguments(
-              !info->display_qualified_name.empty() ?
-                  info->display_qualified_name :
-                  info->qualified_name);
+              class_output_qualified_name(*info));
       return info->source_template == &decl ||
              unqualified_member_name(current_name) == decl.name;
     };
@@ -997,14 +995,15 @@ public:
       const TemplateArgument & argument,
       const TemplateArgumentSyntax * syntax)
   {
-    if(argument.value_binding) {
+    const ValueBinding * value_binding = argument.rare().value_binding;
+    if(value_binding) {
       std::string name = normalized_inferred_template_parameter_name(
-          argument.value_binding->name);
+          value_binding->name);
       if(!name.empty()) {
         return name;
       }
       name = normalized_inferred_template_parameter_name(
-          argument.value_binding->non_type_template_argument_text);
+          value_binding->non_type_template_argument_text);
       if(!name.empty()) {
         return name;
       }
@@ -2908,14 +2907,15 @@ public:
 
       std::string qualified_template_name =
           !resolved_info->qualified_name.empty() ?
-              strip_trailing_top_level_template_arguments(resolved_info->qualified_name) :
+              strip_trailing_top_level_template_arguments(
+                  template_api::class_witness_output_qualified_name(
+                      ctx,
+                      *resolved_info)) :
               decl.name;
       if(class_template_decl_is_member_template(decl) &&
          decl.declaring_scope) {
         const std::string declaring_scope_name =
-            strip_trailing_top_level_template_arguments(
-                semantic_lookup::scope_qualified_name(*decl.declaring_scope,
-                                                      decl.name));
+            template_api::class_template_witness_qualified_name(ctx, decl);
         if(!declaring_scope_name.empty()) {
           qualified_template_name = declaring_scope_name;
         }
@@ -3481,8 +3481,20 @@ public:
     info->reentrant_primary_selection = specialization.reentrant_primary;
     note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_creates);
     if(semantic_hotspot::enabled()) {
-      semantic_hotspot::note_semantic_query("reference_class_template_instantiation_create",
-                                            create_specialization_name);
+      std::ostringstream create_decl;
+      create_decl << "name=" << decl.name
+                  << " loc="
+                  << (class_node ? source_location_for_node(*class_node) :
+                                   std::string("<none>"))
+                  << " selection="
+                  << (class_node == decl.class_node ? "primary" : "specialization")
+                  << " dependent=" << (dependent_arguments ? 1 : 0)
+                  << " demand="
+                  << semantic_metrics::class_demand_kind_name(
+                         semantic_metrics::current_class_demand());
+      semantic_hotspot::note_semantic_query(
+          "reference_class_template_instantiation_create_decl",
+          create_decl.str());
     }
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
@@ -3534,6 +3546,17 @@ public:
                                                              *bound_arguments,
                                                              bound_pack_sizes);
     record_selected_class_template_base_source_uses(decl, specialization);
+    if(lazy_references) {
+      auto stored = decl.reference_instantiations.find(key);
+      if(stored != decl.reference_instantiations.end()) {
+        borrow_class_instantiation_key(*info, stored->first);
+      }
+    } else {
+      auto stored = decl.instantiations.find(key);
+      if(stored != decl.instantiations.end()) {
+        borrow_class_instantiation_key(*info, stored->first);
+      }
+    }
     note_class_use(info);
     return info;
   }

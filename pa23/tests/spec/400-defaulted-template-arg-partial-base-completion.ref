@@ -56,16 +56,6 @@ function @tuple_lambda_functor_identity_int_const____null_type__null_type__null_
     store ptr %this, $this
     return void
 }
-function @lambda_functor_identity_int_const____lambda_functor(%this : ptr, %t : obj<1x1>) -> void [binding=weak, object=_ZN14lambda_functorI8identityIKiEEC1ES2_] {
-  slot $this : ptr
-  slot $t : obj<1x1>
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
-    return void
-}
 function @identity_int_const___identity(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN8identityIKiEC1Ei] {
   slot $this : ptr
   slot $__param1 : i32
@@ -75,7 +65,7 @@ function @identity_int_const___identity(%this : ptr, %__param1 : i32) -> void [b
     store i32 %__param1, $__param1
     return void
 }
-function @lambda_functor_lambda_functor_base_protect_action__tuple_lambda_functor_identity_int_const____null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type_____lambda_functor(%this : ptr, %t : obj<1x1>) -> void [binding=weak, object=_ZN14lambda_functorI19lambda_functor_baseI14protect_action5tupleIS_I8identityIKiEE9null_typeS7_S7_S7_S7_S7_S7_S7_S7_EEEC1ES9_] {
+function @lambda_functor_identity_int_const____lambda_functor(%this : ptr, %t : obj<1x1>) -> void [binding=weak, object=_ZN14lambda_functorI8identityIKiEEC1ES2_] {
   slot $this : ptr
   slot $t : obj<1x1>
 
@@ -93,8 +83,18 @@ function @lambda_functor_base_protect_action__tuple_lambda_functor_identity_int_
     store ptr %this, $this
     return void
 }
+function @lambda_functor_lambda_functor_base_protect_action__tuple_lambda_functor_identity_int_const____null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type_____lambda_functor(%this : ptr, %t : obj<1x1>) -> void [binding=weak, object=_ZN14lambda_functorI19lambda_functor_baseI14protect_action5tupleIS_I8identityIKiEE9null_typeS7_S7_S7_S7_S7_S7_S7_S7_EEEC1ES9_] {
+  slot $this : ptr
+  slot $t : obj<1x1>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    return void
+}
 alias object _ZN5tupleI14lambda_functorI8identityIKiEE9null_typeS5_S5_S5_S5_S5_S5_S5_S5_EC2ES4_ = @tuple_lambda_functor_identity_int_const____null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type___tuple
-alias object _ZN14lambda_functorI8identityIKiEEC2ES2_ = @lambda_functor_identity_int_const____lambda_functor
 alias object _ZN8identityIKiEC2Ei = @identity_int_const___identity
-alias object _ZN14lambda_functorI19lambda_functor_baseI14protect_action5tupleIS_I8identityIKiEE9null_typeS7_S7_S7_S7_S7_S7_S7_S7_EEEC2ES9_ = @lambda_functor_lambda_functor_base_protect_action__tuple_lambda_functor_identity_int_const____null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type_____lambda_functor
+alias object _ZN14lambda_functorI8identityIKiEEC2ES2_ = @lambda_functor_identity_int_const____lambda_functor
 alias object _ZN19lambda_functor_baseI14protect_action5tupleI14lambda_functorI8identityIKiEE9null_typeS7_S7_S7_S7_S7_S7_S7_S7_EEC2ES8_ = @lambda_functor_base_protect_action__tuple_lambda_functor_identity_int_const____null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type____lambda_functor_base
+alias object _ZN14lambda_functorI19lambda_functor_baseI14protect_action5tupleIS_I8identityIKiEE9null_typeS7_S7_S7_S7_S7_S7_S7_S7_EEEC2ES9_ = @lambda_functor_lambda_functor_base_protect_action__tuple_lambda_functor_identity_int_const____null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type__null_type_____lambda_functor

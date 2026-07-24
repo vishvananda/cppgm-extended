@@ -462,6 +462,8 @@ public:
                                                    const std::string & text) const = 0;
   virtual std::string instantiation_identity_text_for_type_argument(
       const cpp_decl::TypePtr & type) const = 0;
+  virtual std::string semantic_identity_key_for_type_argument(
+      const cpp_decl::TypePtr & type) const = 0;
   virtual void bind_single_template_argument_into_scope(
       semantic_model::Scope & scope,
       const template_model::TemplateParameterInfo & parameter,

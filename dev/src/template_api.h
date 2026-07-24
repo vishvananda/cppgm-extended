@@ -498,7 +498,9 @@ semantic_model::FunctionBinding * find_defined_function_matching_template_identi
     const std::string & lookup_name,
     const semantic_model::FunctionBinding & binding);
 
-std::string function_binding_witness_entity(const semantic_model::FunctionBinding * binding);
+std::string function_binding_witness_entity(
+    SemanticContext & ctx,
+    const semantic_model::FunctionBinding * binding);
 std::string function_binding_witness_decl_location(
     SemanticContext & ctx,
     const semantic_model::FunctionBinding * binding);
@@ -637,6 +639,10 @@ void append_class_template_witness_bindings(
 std::string class_witness_output_qualified_name(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info);
+
+std::string class_template_witness_qualified_name(
+    SemanticContext & ctx,
+    const semantic_model::ClassTemplateDecl & decl);
 
 std::string template_witness_source_argument_text(
     SemanticContext & ctx,

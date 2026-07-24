@@ -356,12 +356,13 @@ std::string function_call_template_name(
 }
 
 std::string function_call_selected_name(
+    SemanticContext & ctx,
     const FunctionTemplateCallSourceUseRequest & request)
 {
   if(!request.selected.empty()) {
     return request.selected;
   }
-  return template_api::function_binding_witness_entity(request.binding);
+  return template_api::function_binding_witness_entity(ctx, request.binding);
 }
 
 void set_function_call_selected_decl_anchor(
@@ -528,7 +529,7 @@ void emit_function_template_call_source_use(
                           decision.use_anchor,
                           public_location);
   decision.template_name = function_call_template_name(request);
-  decision.selected = function_call_selected_name(request);
+  decision.selected = function_call_selected_name(ctx, request);
   decision.selection = request.selection != witness::SourceSelectionKind::None ?
       request.selection :
       (binding && binding->is_explicit_specialization ?

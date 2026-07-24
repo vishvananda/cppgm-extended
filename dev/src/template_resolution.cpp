@@ -986,9 +986,10 @@ bool bind_object_pointer_non_type_template_argument(
   out.kind = TemplateArgument::TA_VALUE;
   out.type = target_type;
   out.value = 0;
-  out.function_value = nullptr;
-  out.function_internal_symbol.clear();
-  out.value_binding = &binding;
+  TemplateArgument::RareData & rare = out.mutable_rare();
+  rare.function_value = nullptr;
+  rare.function_internal_symbol.clear();
+  rare.value_binding = &binding;
   out.text = text;
   out.dependent = false;
   return true;
@@ -1029,9 +1030,10 @@ bool bind_data_member_pointer_non_type_template_argument(
   }
   out.kind = TemplateArgument::TA_VALUE;
   out.type = target_type;
-  out.function_value = nullptr;
-  out.function_internal_symbol.clear();
-  out.value_binding = &binding;
+  TemplateArgument::RareData & rare = out.mutable_rare();
+  rare.function_value = nullptr;
+  rare.function_internal_symbol.clear();
+  rare.value_binding = &binding;
   out.value = encoded_offset;
   out.text.clear();
   out.dependent = false;
@@ -1078,9 +1080,10 @@ bool bind_value_binding_non_type_template_argument(
     out.kind = TemplateArgument::TA_VALUE;
     out.type = target_type;
     out.value = 0;
-    out.function_value = nullptr;
-    out.function_internal_symbol.clear();
-    out.value_binding = &binding;
+    TemplateArgument::RareData & rare = out.mutable_rare();
+    rare.function_value = nullptr;
+    rare.function_internal_symbol.clear();
+    rare.value_binding = &binding;
     out.text = fallback_text;
     out.dependent = false;
     return true;
@@ -1668,8 +1671,9 @@ bool bind_non_type_function_argument(SemanticContext * semantic_context,
   }
   out.kind = TemplateArgument::TA_VALUE;
   out.type = target_type;
-  out.function_value = function;
-  out.function_internal_symbol = function->symbol.internal_symbol;
+  TemplateArgument::RareData & rare = out.mutable_rare();
+  rare.function_value = function;
+  rare.function_internal_symbol = function->symbol.internal_symbol;
   out.text = text;
   out.dependent = false;
   return true;
@@ -2261,7 +2265,7 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
       if(type_equals(bound_type, target_base)) {
         out.kind = TemplateArgument::TA_VALUE;
         out.type = target_type;
-        out.value_binding = binding;
+        out.mutable_rare().value_binding = binding;
         out.text = trimmed;
         out.dependent = false;
         return true;
@@ -2586,12 +2590,13 @@ void hash_template_argument_for_scope_cache(std::size_t & seed,
   hash_combine(seed, argument.text);
   hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.template_decl));
   hash_type_ptr_for_scope_cache(seed, argument.template_owner_type);
-  if(!argument.function_internal_symbol.empty()) {
-    hash_combine(seed, argument.function_internal_symbol);
+  const TemplateArgument::RareData & rare = argument.rare();
+  if(!rare.function_internal_symbol.empty()) {
+    hash_combine(seed, rare.function_internal_symbol);
   } else {
-    hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.function_value));
+    hash_combine(seed, reinterpret_cast<std::uintptr_t>(rare.function_value));
   }
-  hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.value_binding));
+  hash_combine(seed, reinterpret_cast<std::uintptr_t>(rare.value_binding));
 }
 
 template <typename MapT>
@@ -3280,7 +3285,7 @@ std::uint64_t cppast_node_syntax_fingerprint(const CppAstNode * node,
   std::size_t seed = 0;
   hash_combine(seed, static_cast<int>(node->kind));
   hash_combine(seed, node->value);
-  hash_combine(seed, node->builtin_type_transform_name);
+  hash_combine(seed, cppast_builtin_type_transform_name(*node));
   hash_combine(seed,
                type_syntax_fingerprint(node->semantic_type,
                                        include_source_identity));
@@ -3295,10 +3300,12 @@ std::uint64_t cppast_node_syntax_fingerprint(const CppAstNode * node,
                                                 include_source_identity));
   }
   hash_combine(seed,
-               cppast_node_syntax_fingerprint(node->conversion_type_id_syntax.get(),
+               cppast_node_syntax_fingerprint(
+                   cppast_conversion_type_id_syntax_storage(*node).get(),
                                               include_source_identity));
   hash_combine(seed,
-               cppast_node_syntax_fingerprint(node->base_type_syntax.get(),
+               cppast_node_syntax_fingerprint(
+                   cppast_base_type_syntax_storage(*node).get(),
                                               include_source_identity));
   hash_template_id_vector_syntax(seed,
                                  node->qualifier_template_id_syntaxes,
@@ -3315,8 +3322,8 @@ std::uint64_t cppast_node_syntax_fingerprint(const CppAstNode * node,
   hash_combine(seed, node->has_no_unique_address);
   hash_combine(seed, node->has_using_if_exists);
   hash_combine(seed, node->has_exclude_from_explicit_instantiation);
-  hash_string_vector_syntax(seed, node->abi_tags);
-  hash_string_vector_syntax(seed, node->alignment_specifiers);
+  hash_string_vector_syntax(seed, cppast_abi_tags(*node));
+  hash_string_vector_syntax(seed, cppast_alignment_specifiers(*node));
   hash_cppast_node_vector_syntax(seed,
                                  node->alignment_specifier_nodes,
                                  include_source_identity);
@@ -4222,6 +4229,8 @@ void rehydrate_cached_defaulted_non_type_argument_witness_dependencies(
           default_argument_evaluation;
       const template_api::TemplateEnvironmentHandle default_argument_env =
           template_api::make_template_environment(*default_argument_scope);
+      std::vector<TemplateValueDependency> value_dependencies =
+          argument.rare().value_dependencies;
       TypePtr bound_value_type = argument.type;
       if(!bound_value_type) {
         (void)try_resolve_non_type_template_parameter_type(
@@ -4233,17 +4242,21 @@ void rehydrate_cached_defaulted_non_type_argument_witness_dependencies(
               services,
               default_argument_env,
               dependency_default_syntax,
-              argument.value_dependencies);
+              value_dependencies);
       template_argument_semantics::
           append_non_bool_static_value_dependencies_in_template_argument_syntax(
               services,
               default_argument_env,
               dependency_default_syntax,
               bound_value_type,
-              argument.value_dependencies);
+              value_dependencies);
       template_argument_semantics::note_template_value_dependencies_for_witness(
           *services.semantic_context,
-          argument.value_dependencies);
+          value_dependencies);
+      if(!value_dependencies.empty()) {
+        argument.mutable_rare().value_dependencies =
+            std::move(value_dependencies);
+      }
       template_argument_semantics::
           note_structured_bool_value_members_in_template_argument_syntax(
               services,
@@ -4363,7 +4376,9 @@ bool refresh_dependent_defaulted_non_type_template_arguments_impl(
           value_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
         }
         if(value_status == template_argument_semantics::NT_ARG_EVALUATED) {
-          argument.value_dependencies.clear();
+          if(argument.rare_data) {
+            argument.mutable_rare().value_dependencies.clear();
+          }
           argument.type = bound_value_type;
           argument.value = value;
           argument.text = typed_non_type_template_argument_text(
@@ -4552,7 +4567,8 @@ size_t cppast_node_cache_dynamic_bytes(
     std::unordered_set<const CppAstNode *> & seen_ast_nodes)
 {
   size_t bytes = cache_string_storage_bytes(node.value) +
-                 cache_string_storage_bytes(node.builtin_type_transform_name);
+                 cache_string_storage_bytes(
+                     cppast_builtin_type_transform_name(node));
   if(node.qualified_name_syntax) {
     bytes += sizeof(QualifiedName) +
              qualified_name_cache_dynamic_bytes(*node.qualified_name_syntax);
@@ -4561,11 +4577,11 @@ size_t cppast_node_cache_dynamic_bytes(
                                                 seen_syntaxes,
                                                 seen_template_ids,
                                                 seen_ast_nodes);
-  bytes += cppast_node_cache_owned_bytes(node.conversion_type_id_syntax.get(),
+  bytes += cppast_node_cache_owned_bytes(cppast_conversion_type_id_syntax_storage(node).get(),
                                          seen_syntaxes,
                                          seen_template_ids,
                                          seen_ast_nodes);
-  bytes += cppast_node_cache_owned_bytes(node.base_type_syntax.get(),
+  bytes += cppast_node_cache_owned_bytes(cppast_base_type_syntax_storage(node).get(),
                                          seen_syntaxes,
                                          seen_template_ids,
                                          seen_ast_nodes);
@@ -4600,15 +4616,17 @@ size_t cppast_node_cache_dynamic_bytes(
                                              seen_ast_nodes);
   }
 
-  bytes += cache_lazy_vector_storage_bytes(node.abi_tags);
-  const std::vector<std::string> & abi_tags = node.abi_tags.as_vector();
+  bytes += cache_lazy_vector_storage_bytes(cppast_abi_tags(node));
+  const std::vector<std::string> & abi_tags =
+      cppast_abi_tags(node).as_vector();
   for(size_t i = 0; i < abi_tags.size(); ++i) {
     bytes += cache_string_storage_bytes(abi_tags[i]);
   }
 
-  bytes += cache_lazy_vector_storage_bytes(node.alignment_specifiers);
+  bytes +=
+      cache_lazy_vector_storage_bytes(cppast_alignment_specifiers(node));
   const std::vector<std::string> & alignment_specifiers =
-      node.alignment_specifiers.as_vector();
+      cppast_alignment_specifiers(node).as_vector();
   for(size_t i = 0; i < alignment_specifiers.size(); ++i) {
     bytes += cache_string_storage_bytes(alignment_specifiers[i]);
   }
@@ -5835,11 +5853,11 @@ bool template_argument_syntax_mentions_template_bound_type_name(
             return true;
           }
         }
-        if(node.conversion_type_id_syntax &&
-           node_mentions_bound(*node.conversion_type_id_syntax)) {
+        if(cppast_conversion_type_id_syntax_storage(node) &&
+           node_mentions_bound(*cppast_conversion_type_id_syntax_storage(node))) {
           return true;
         }
-        if(node.base_type_syntax && node_mentions_bound(*node.base_type_syntax)) {
+        if(cppast_base_type_syntax_storage(node) && node_mentions_bound(*cppast_base_type_syntax_storage(node))) {
           return true;
         }
         for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
@@ -7971,21 +7989,22 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
                 function_value = resolved_function;
               }
             }
-            arg.function_value = function_value;
-            if(arg.function_value &&
+            TemplateArgument::RareData & rare = arg.mutable_rare();
+            rare.function_value = function_value;
+            if(rare.function_value &&
                services.semantic_context &&
-               arg.function_value->symbol.object_symbol.empty()) {
+               rare.function_value->symbol.object_symbol.empty()) {
               services.semantic_context->upgrade_function_symbol_linkage(
                   function_value,
-                  arg.function_value->symbol.linkage);
+                  rare.function_value->symbol.linkage);
             }
-            arg.function_internal_symbol =
+            rare.function_internal_symbol =
                 !binding.non_type_template_function_internal_symbol.empty() ?
                     binding.non_type_template_function_internal_symbol :
-                    arg.function_value ?
-                        arg.function_value->symbol.internal_symbol :
+                    rare.function_value ?
+                        rare.function_value->symbol.internal_symbol :
                         std::string();
-            arg.value_binding = binding.non_type_template_value_binding;
+            rare.value_binding = binding.non_type_template_value_binding;
           } else if(binding.has_constant_value) {
             arg.value = binding.constant_value;
             arg.text = typed_non_type_template_argument_text(
@@ -8245,9 +8264,15 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
           arg.kind = TemplateArgument::TA_VALUE;
           arg.type = dependent_arg.type ? dependent_arg.type : parameter->value_type;
           arg.text = trim_space(dependent_arg.text);
-          arg.function_value = dependent_arg.function_value;
-          arg.function_internal_symbol = dependent_arg.function_internal_symbol;
-          arg.value_binding = dependent_arg.value_binding;
+          if(dependent_arg.function_value ||
+             !dependent_arg.function_internal_symbol.empty() ||
+             dependent_arg.value_binding) {
+            TemplateArgument::RareData & rare = arg.mutable_rare();
+            rare.function_value = dependent_arg.function_value;
+            rare.function_internal_symbol =
+                dependent_arg.function_internal_symbol;
+            rare.value_binding = dependent_arg.value_binding;
+          }
           arg.value = dependent_arg.value;
           arg.dependent = dependent_arg.dependent_value;
           arg.source_defaulted = dependent_arg.source_defaulted;
@@ -8675,10 +8700,11 @@ bool non_type_argument_needs_structured_deduction(
   if(base && (is_integral_type(base) || is_bool_type(base) || named_enum)) {
     return false;
   }
+  const TemplateArgument::RareData & rare = argument.rare();
   return !argument.text.empty() ||
-         argument.function_value ||
-         !argument.function_internal_symbol.empty() ||
-         argument.value_binding ||
+         rare.function_value ||
+         !rare.function_internal_symbol.empty() ||
+         rare.value_binding ||
          argument.expression;
 }
 
@@ -8691,15 +8717,18 @@ bool deduced_non_type_arguments_equivalent(const TemplateArgument & lhs,
   if(!types_match) {
     return false;
   }
-  if(lhs.function_value && rhs.function_value) {
-    return lhs.function_value == rhs.function_value;
+  const TemplateArgument::RareData & lhs_rare = lhs.rare();
+  const TemplateArgument::RareData & rhs_rare = rhs.rare();
+  if(lhs_rare.function_value && rhs_rare.function_value) {
+    return lhs_rare.function_value == rhs_rare.function_value;
   }
-  if(!lhs.function_internal_symbol.empty() &&
-     !rhs.function_internal_symbol.empty()) {
-    return lhs.function_internal_symbol == rhs.function_internal_symbol;
+  if(!lhs_rare.function_internal_symbol.empty() &&
+     !rhs_rare.function_internal_symbol.empty()) {
+    return lhs_rare.function_internal_symbol ==
+        rhs_rare.function_internal_symbol;
   }
-  if(lhs.value_binding && rhs.value_binding) {
-    return lhs.value_binding == rhs.value_binding;
+  if(lhs_rare.value_binding && rhs_rare.value_binding) {
+    return lhs_rare.value_binding == rhs_rare.value_binding;
   }
   return lhs.value == rhs.value && lhs.text == rhs.text;
 }
@@ -9081,12 +9110,12 @@ bool ast_node_mentions_parameter_name(const CppAstNode & node,
      template_id_syntax_mentions_parameter_name(*node.template_id_syntax, name)) {
     return true;
   }
-  if(node.conversion_type_id_syntax &&
-     ast_node_mentions_parameter_name(*node.conversion_type_id_syntax, name)) {
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     ast_node_mentions_parameter_name(*cppast_conversion_type_id_syntax_storage(node), name)) {
     return true;
   }
-  if(node.base_type_syntax &&
-     ast_node_mentions_parameter_name(*node.base_type_syntax, name)) {
+  if(cppast_base_type_syntax_storage(node) &&
+     ast_node_mentions_parameter_name(*cppast_base_type_syntax_storage(node), name)) {
     return true;
   }
   for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
@@ -9255,7 +9284,8 @@ bool template_argument_structured_mentions_parameter_name(
      ast_node_mentions_parameter_name(*argument.expression, name)) {
     return true;
   }
-  if(argument.value_binding && argument.value_binding->name == name) {
+  if(argument.rare().value_binding &&
+     argument.rare().value_binding->name == name) {
     return true;
   }
   return false;
@@ -9287,7 +9317,7 @@ bool template_argument_structured_mentions_unbound_function_template_parameter(
   const bool allow_source_syntax =
       template_argument_source_syntax_may_identify_unbound_parameter(ctx,
                                                                     argument);
-  if(!allow_source_syntax && !argument.value_binding) {
+  if(!allow_source_syntax && !argument.rare().value_binding) {
     return false;
   }
   for(std::size_t i = 0; i < parameters.size(); ++i) {
@@ -9343,9 +9373,9 @@ bool template_argument_mentions_function_template_parameter(
   }
   if(argument.kind == TemplateArgument::TA_VALUE &&
      !argument.dependent &&
-     !argument.value_binding &&
-     !argument.function_value &&
-     argument.function_internal_symbol.empty()) {
+     !argument.rare().value_binding &&
+     !argument.rare().function_value &&
+     argument.rare().function_internal_symbol.empty()) {
     return false;
   }
   if(!argument.text.empty()) {
@@ -9519,9 +9549,9 @@ bool template_argument_mentions_function_template_parameter(
   }
   if(argument.kind == TemplateArgument::TA_VALUE &&
      !argument.dependent &&
-     !argument.value_binding &&
-     !argument.function_value &&
-     argument.function_internal_symbol.empty()) {
+     !argument.rare().value_binding &&
+     !argument.rare().function_value &&
+     argument.rare().function_internal_symbol.empty()) {
     return false;
   }
   if(!argument.text.empty()) {
@@ -10428,7 +10458,7 @@ bool finalize_deduced_function_template_arguments(
             return false;
           }
           template_argument_semantics::note_template_value_dependencies_for_witness(
-              ctx, arg.value_dependencies);
+              ctx, arg.mutable_rare().value_dependencies);
         }
         const bool default_mentions_template_placeholders =
             !resolve_substituted_default_directly &&
@@ -11327,6 +11357,42 @@ bool argument_is_braced_init_list_for_deduction(const ExprInfo & arg)
   return arg.node.kind == CallSemKind::braced_init_list;
 }
 
+bool initializer_list_deduction_pattern_element(SemanticContext & ctx,
+                                                const TypePtr & pattern,
+                                                TypePtr & element)
+{
+  element.reset();
+  if(!pattern) {
+    return false;
+  }
+
+  TypePtr base = strip_top_level_cv(remove_reference_type(strip_top_level_cv(pattern)));
+  if(!base) {
+    return false;
+  }
+  if(ctx.is_initializer_list_type(base, &element, nullptr) && element) {
+    return true;
+  }
+
+  void * class_template_identity = nullptr;
+  std::vector<DependentAliasTemplateArgumentSyntax> arguments;
+  if(!named_type_dependent_class_template(base,
+                                          class_template_identity,
+                                          arguments) ||
+     !class_template_identity ||
+     arguments.size() != 1 ||
+     !arguments[0].type) {
+    return false;
+  }
+  ClassTemplateDecl * class_template =
+      static_cast<ClassTemplateDecl *>(class_template_identity);
+  if(!ctx.is_builtin_initializer_list_template(*class_template)) {
+    return false;
+  }
+  element = arguments[0].type;
+  return true;
+}
+
 bool deduction_pattern_accepts_braced_init_list_argument(SemanticContext & ctx,
                                                         const TypePtr & pattern)
 {
@@ -11341,7 +11407,8 @@ bool deduction_pattern_accepts_braced_init_list_argument(SemanticContext & ctx,
   if(base->kind == Type::TK_ARRAY) {
     return true;
   }
-  return ctx.is_initializer_list_type(base, nullptr, nullptr);
+  TypePtr element;
+  return initializer_list_deduction_pattern_element(ctx, base, element);
 }
 
 void remove_shadowing_template_parameter_bindings(
@@ -12448,17 +12515,17 @@ bool resolve_template_argument(template_api::TemplateServices & services,
                 services,
                 argument_scope,
                 *syntax,
-                out.value_dependencies);
+                out.mutable_rare().value_dependencies);
         template_argument_semantics::
             append_non_bool_static_value_dependencies_in_template_argument_syntax(
                 services,
                 argument_scope,
                 *syntax,
                 bound_value_type,
-                out.value_dependencies);
+                out.mutable_rare().value_dependencies);
         template_argument_semantics::note_template_value_dependencies_for_witness(
             *services.semantic_context,
-            out.value_dependencies);
+            out.mutable_rare().value_dependencies);
         template_argument_semantics::
             note_structured_bool_value_members_in_template_argument_syntax(
                 services,
@@ -12516,17 +12583,17 @@ bool resolve_template_argument(template_api::TemplateServices & services,
               services,
               argument_scope,
               *syntax,
-              out.value_dependencies);
+              out.mutable_rare().value_dependencies);
       template_argument_semantics::
           append_non_bool_static_value_dependencies_in_template_argument_syntax(
               services,
               argument_scope,
               *syntax,
               bound_value_type,
-              out.value_dependencies);
+              out.mutable_rare().value_dependencies);
       template_argument_semantics::note_template_value_dependencies_for_witness(
           *services.semantic_context,
-          out.value_dependencies);
+          out.mutable_rare().value_dependencies);
       template_argument_semantics::
           note_structured_bool_value_members_in_template_argument_syntax(
               services,
@@ -12851,10 +12918,10 @@ bool resolve_template_argument(template_api::TemplateServices & services,
             services,
             argument_scope,
             *syntax,
-            out.value_dependencies);
+            out.mutable_rare().value_dependencies);
     template_argument_semantics::note_template_value_dependencies_for_witness(
         *services.semantic_context,
-        out.value_dependencies);
+        out.mutable_rare().value_dependencies);
   }
   return true;
 }
@@ -13705,17 +13772,17 @@ bool resolve_template_arguments(
                   services,
                   default_argument_env,
                   dependency_default_syntax,
-                  arg.value_dependencies);
+                  arg.mutable_rare().value_dependencies);
           template_argument_semantics::
               append_non_bool_static_value_dependencies_in_template_argument_syntax(
                   services,
                   default_argument_env,
                   dependency_default_syntax,
                   bound_value_type,
-                  arg.value_dependencies);
+                  arg.mutable_rare().value_dependencies);
           template_argument_semantics::note_template_value_dependencies_for_witness(
               *services.semantic_context,
-              arg.value_dependencies);
+              arg.mutable_rare().value_dependencies);
           template_argument_semantics::
               note_structured_bool_value_members_in_template_argument_syntax(
                   services,
@@ -14268,6 +14335,35 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         }
         return out;
       };
+      const auto find_direct_template_parameter_from_structured_arg =
+          [&](const std::string & raw_arg,
+              const TemplateArgument * structured_arg)
+              -> DirectTemplateParameterMatch
+      {
+        DirectTemplateParameterMatch out =
+            find_direct_template_parameter_from_arg(raw_arg);
+        if(!structured_arg ||
+           structured_arg->kind != TemplateArgument::TA_TYPE ||
+           !structured_arg->type) {
+          return out;
+        }
+        const TemplateParameterInfo * carried_parameter =
+            find_template_parameter(parameters, structured_arg->type);
+        if(!carried_parameter) {
+          return DirectTemplateParameterMatch();
+        }
+        if(carried_parameter->kind != TemplateParameterInfo::TP_TYPE) {
+          return out;
+        }
+        out.parameter = carried_parameter;
+        out.name = carried_parameter->name;
+        // A type parameter pack used as a class-template argument must be an
+        // expansion. The carried semantic type identifies the current
+        // function parameter; retained source syntax can still name an outer
+        // pack that was expanded while instantiating the enclosing class.
+        out.pack_expansion = carried_parameter->parameter_pack;
+        return out;
+      };
 
       const auto lookup_actual_arg_type =
           [&](const std::string & actual_arg,
@@ -14492,6 +14588,10 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         if(!structured_pattern->source_syntax) {
           return true;
         }
+        if(find_template_parameter(parameters, structured_pattern->type) ==
+               direct_match.parameter) {
+          return true;
+        }
         return syntax_is_direct_type_parameter(*structured_pattern->source_syntax,
                                                *direct_match.parameter,
                                                direct_match.pack_expansion);
@@ -14682,8 +14782,41 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           [&](const TemplateArgument & argument, Scope * scope) -> TypePtr
       {
         TypePtr out = argument.type;
+        bool source_syntax_matches_carried_parameter = true;
+        if(argument.source_syntax && !argument.text.empty()) {
+          const DirectTemplateParameterMatch carried_match =
+              find_direct_template_parameter_from_arg(argument.text);
+          if(carried_match.parameter) {
+            std::vector<std::string> source_candidates;
+            source_candidates.push_back(argument.source_syntax->text);
+            source_candidates.push_back(argument.source_syntax->source_text);
+            if(argument.source_syntax->type_id) {
+              source_candidates.push_back(
+                  node_text(*argument.source_syntax->type_id));
+            }
+            if(argument.source_syntax->source_type_id) {
+              source_candidates.push_back(
+                  node_text(*argument.source_syntax->source_type_id));
+            }
+            if(argument.source_syntax->resolved_type) {
+              source_candidates.push_back(
+                  deduction_ops.type_argument_text(
+                      argument.source_syntax->resolved_type));
+            }
+            for(std::size_t i = 0; i < source_candidates.size(); ++i) {
+              const DirectTemplateParameterMatch source_match =
+                  find_direct_template_parameter_from_arg(source_candidates[i]);
+              if(!source_match.name.empty() &&
+                 source_match.name != carried_match.name) {
+                source_syntax_matches_carried_parameter = false;
+                break;
+              }
+            }
+          }
+        }
         if(scope &&
            argument.source_syntax &&
+           source_syntax_matches_carried_parameter &&
            argument.source_syntax->type_id) {
           TypePtr syntax_type;
           if(deduction_ops.resolve_type_argument_syntax(
@@ -14693,8 +14826,9 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
              syntax_type) {
             // Instantiated partial-specialization members can retain source
             // syntax for an owner pack after the carried argument has become
-            // concrete. Do not replace that exact typed argument with the
-            // older dependent placeholder during deduction.
+            // concrete or has been rebound to a different dependent function
+            // parameter. Do not replace that exact typed argument with the
+            // older placeholder during deduction.
             const bool downgrades_concrete_type =
                 out &&
                 !deduction_ops.type_depends(out) &&
@@ -15379,7 +15513,7 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           if(canonical_function_pack_count == 1) {
             pattern_args_ptr = &pattern_canonical_args_storage;
             pattern_structured_args =
-                &pattern_canonical_metadata.instantiation_arguments;
+                pattern_canonical_metadata.instantiation_arguments.pointer();
             pattern_uses_canonical_bound_pack_arguments = true;
           }
         }
@@ -15467,8 +15601,13 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         }
         std::size_t direct_pack_count = 0;
         for(std::size_t i = 0; i < pattern_args.size(); ++i) {
+          const TemplateArgument * structured_pattern =
+              pattern_structured_args && i < pattern_structured_args->size() ?
+                  &(*pattern_structured_args)[i] :
+                  nullptr;
           const DirectTemplateParameterMatch direct_match =
-              find_direct_template_parameter_from_arg(pattern_args[i]);
+              find_direct_template_parameter_from_structured_arg(
+                  pattern_args[i], structured_pattern);
           if(direct_match.parameter &&
              direct_match.pack_expansion &&
              direct_match.parameter->parameter_pack) {
@@ -15559,10 +15698,11 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         std::size_t actual_index = 0;
         for(std::size_t i = 0; i < pattern_args.size(); ++i) {
           const std::string pattern_arg = trim_space(pattern_args[i]);
-          const DirectTemplateParameterMatch direct_match =
-              find_direct_template_parameter_from_arg(pattern_arg);
           const TemplateArgument * structured_pattern =
               pattern_structured_args ? &(*pattern_structured_args)[i] : nullptr;
+          const DirectTemplateParameterMatch direct_match =
+              find_direct_template_parameter_from_structured_arg(
+                  pattern_arg, structured_pattern);
           if(direct_match.parameter &&
              (pattern_uses_canonical_bound_pack_arguments ||
               direct_match_is_structurally_direct(direct_match,
@@ -16190,11 +16330,8 @@ bool deduce_initializer_list_pattern_from_list_like_argument(
     return false;
   }
 
-  TypePtr pattern_base = strip_top_level_cv(remove_reference_type(strip_top_level_cv(pattern)));
   TypePtr pattern_element;
-  if(!pattern_base ||
-     !ctx.is_initializer_list_type(pattern_base, &pattern_element, nullptr) ||
-     !pattern_element) {
+  if(!initializer_list_deduction_pattern_element(ctx, pattern, pattern_element)) {
     return false;
   }
 
