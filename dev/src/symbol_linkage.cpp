@@ -15269,9 +15269,11 @@ static bool type_contains_lambda_mangle_metadata(const TypePtr & type)
   return false;
 }
 
-static bool type_has_structured_dependent_qualified_member(const TypePtr & type)
+static bool type_has_structured_dependent_qualified_member_impl(
+    const TypePtr & type,
+    unordered_set<const Type *> & visited)
 {
-  if(!type) {
+  if(!type || !visited.insert(type.get()).second) {
     return false;
   }
 
@@ -15297,9 +15299,12 @@ static bool type_has_structured_dependent_qualified_member(const TypePtr & type)
       for(size_t set_index = 0; set_index < 2; ++set_index) {
         const vector<TemplateArgument> & arguments = *argument_sets[set_index];
         for(size_t i = 0; i < arguments.size(); ++i) {
-          if(type_has_structured_dependent_qualified_member(arguments[i].type) ||
-             type_has_structured_dependent_qualified_member(
-                 arguments[i].template_owner_type)) {
+          if(type_has_structured_dependent_qualified_member_impl(
+                 arguments[i].type,
+                 visited) ||
+             type_has_structured_dependent_qualified_member_impl(
+                 arguments[i].template_owner_type,
+                 visited)) {
             return true;
           }
         }
@@ -15307,18 +15312,25 @@ static bool type_has_structured_dependent_qualified_member(const TypePtr & type)
     }
   }
 
-  if(type_has_structured_dependent_qualified_member(type->owner) ||
-     type_has_structured_dependent_qualified_member(type->inner)) {
+  if(type_has_structured_dependent_qualified_member_impl(type->owner, visited) ||
+     type_has_structured_dependent_qualified_member_impl(type->inner, visited)) {
     return true;
   }
 
   for(size_t i = 0; i < type->params.size(); ++i) {
-    if(type_has_structured_dependent_qualified_member(type->params[i])) {
+    if(type_has_structured_dependent_qualified_member_impl(type->params[i],
+                                                          visited)) {
       return true;
     }
   }
 
   return false;
+}
+
+static bool type_has_structured_dependent_qualified_member(const TypePtr & type)
+{
+  unordered_set<const Type *> visited;
+  return type_has_structured_dependent_qualified_member_impl(type, visited);
 }
 
 static bool type_has_dependent_class_template_nested_owner_mangle_state(

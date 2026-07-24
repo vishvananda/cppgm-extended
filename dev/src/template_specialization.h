@@ -76,7 +76,9 @@ bool expand_alias_template_pattern_type(
         template_api::TemplateEnvironmentHandle(),
     bool allow_dependent_expansion = false,
     bool materialize_class_template_targets = false,
-    AliasSubstitutionFailure * substitution_failure = nullptr);
+    AliasSubstitutionFailure * substitution_failure = nullptr,
+    const std::vector<template_model::TemplateArgument> * resolved_arguments =
+        nullptr);
 
 bool match_partial_class_specialization(
     template_api::TemplateServices & services,

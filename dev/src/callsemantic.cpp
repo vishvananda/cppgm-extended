@@ -14676,7 +14676,8 @@ private:
 	                   template_api::make_template_environment(*inst_scope),
 	                   dependent_arguments,
 	                   materialize_direct_class_alias_target(),
-	                   &structural_substitution_failure);
+	                   &structural_substitution_failure,
+	                   &arguments);
 	             });
 	      invalid_structural_alias_type_formation =
 	          structural_substitution_failure.kind ==
