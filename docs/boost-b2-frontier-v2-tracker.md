@@ -299,7 +299,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 68 | `libs/mpi/test` | blocked-external | `(no compiler change)` | The exact forced two-job graph finds only one bookkeeping target and exits successfully without creating any compile, link, or runtime action in 3.00s at 39,317,504 B maximum RSS and zero process swaps; log `/tmp/boost-frontier-v2-suite-068-mpi-initial-forced.log`. | Boost.MPI declares C++03, but its Jamfile creates the test suite only when `mpi.configured` is true. This host has neither `mpic++` nor `mpirun`, so the empty successful B2 graph is external-configuration evidence, not a compiler pass. System swap remains unchanged at 551.75 MB. |
 | 69 | `libs/mpl/test` | pass | `(this commit)` | The final exact forced two-job C++11 graph finds 2413 targets, updates all 220 requested targets, records 99 passing test actions, and exits with no failure or skip in 332.56s; log `/private/tmp/boost-frontier-v2-suite-069-mpl-full-fixed.log`. | Two minimal, header-free C++11 owners cover ordinary multicharacter constant evaluation and qualified static-array decay to a pointer non-type template argument. PA19/PA22 pass `453/453`; all 959 configured strict comparisons, the PA9-excluded broad report (`4079/4079`, including PA37 `7/7`), all 31 audit/performance unit tests, placement review, cache parity, Clang/GCC controls, and warning-clean Clang/GCC production builds pass. The final graph peaks at 447,705,088 B RSS, essentially unchanged from the one-failure intake, releases fully, and records zero swaps. |
 | 70 | `libs/mqtt5/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/mqtt5/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the frontier language policy, no graph was run and no compiler work is inferred from the historical configuration-only result. The cursor advances directly to C++03-declared MSM. |
-| 71 | `libs/msm/test` | frontier | `(this commit)` | The initial exact graphs close the first semantic and `AnonymousEuml` algorithmic/memory fronts. The current follow-on package advances the exact two-job `CompositeEuml` compile past its guarded `previous_song[True_()]` transition and into the second transition table, where lookup of `Playing` now fails; log `/private/tmp/boost-composite-euml-after-pa26-revert.log`. A fresh exact `CompositeMachine` replay still fails its earlier nested `hierarchical_state_machine<boost::msm::back::state_machine, boost::msm::back::favor_compile_time>` lookup; log `/private/tmp/boost-msm-composite-machine-entries-package.log`. | `AnonymousEuml` is no longer a pathological retained-memory frontier: the packaged algorithmic pass reduced its full compile from 6.2 GiB to about 2.0 GiB, and the fixed 51-header gate remains strongly improved. Two compact PA21 C++11 reducers now protect constituent alias/template-template reconstruction defects, but the fresh Boost evidence shows they are stepping stones rather than a complete reduction of `CompositeMachine`. The rejected owner-first member-pointer experiment broke two PA26 SFINAE controls and was removed. All 4,101 assignment tests, the five configured strict suites, placement, zero-reparse, audit/perf unit tests, and Clang/GCC warning builds pass. |
+| 71 | `libs/msm/test` | frontier | `(this commit)` | The initial exact graphs close the first semantic and `AnonymousEuml` algorithmic/memory fronts. The current package fixes `CompositeMachine`'s stale-anchor rejection of `hierarchical_state_machine<boost::msm::back::state_machine, boost::msm::back::favor_compile_time>`: unpatched HEAD fails in 12.19s at 449,990,656 B RSS, while the single typed fix passes that point and remains active through the bounded 20s replay. `CompositeEuml` has independently advanced past its guarded `previous_song[True_()]` transition and now fails lookup of `Playing` in the second transition table. | The fix recognizes the current injected specialization from its retained structured instantiation identity rather than allowing an unrelated exact-lookup anchor to override it. No source text is parsed. A final algorithm audit found normal `reverse_fold` progression and comparable specialization breadth: Clang records 483 filtered `reverse_fold_impl` specialization declarations while cppgm has created 427 at the comparable point, and both compilers' dominant MPL/Fusion families align. No further algorithmic change is justified without new frontier evidence. The PA9-excluded direct report passes `4090/4090`; all configured strict comparisons, all 23 zero-reparse categories, 31 audit/performance tests, and Clang/GCC warning builds pass. The immutable frozen-source/51-header gate records -24.06% instructions, -21.29% RSS, and -28.57% footprint. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
@@ -310,27 +310,27 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 - focused targets: `CompositeMachine` first; `Entries` carries the previously
   shared failure; `CompositeEuml` has advanced to an independent later failure
 - last closed suite: `#70 libs/mqtt5/test` (`skipped-language`)
-- failure phase: structured type lookup while completing nested
-  `Playing_` in `CompositeMachine`; expression lookup of `Playing` in
-  `CompositeEuml`'s second transition table
-- diagnostic: `CompositeMachine` retains an unrelated `mpl::vector<...>` anchor
-  while resolving the concrete `hierarchical_state_machine<state_machine,
-  favor_compile_time>` owner; `CompositeEuml` fails the first `Playing ==
-  Stopped + play / ...` row after its earlier guarded transition succeeds
+- failure phase: the known `CompositeMachine` structured-identity rejection is
+  fixed and awaits an unbounded exact replay; expression lookup of `Playing`
+  remains the next known `CompositeEuml` failure
+- diagnostic: the single-fix `CompositeMachine` replay passes the former
+  `hierarchical_state_machine<state_machine, favor_compile_time>` rejection and
+  remains active through 20 seconds; `CompositeEuml` fails the first `Playing
+  == Stopped + play / ...` row after its earlier guarded transition succeeds
 - reduced repro: two compact header-free C++11 PA21 constituent regressions,
   `200-alias-template-template-argument-use-scope.t` and
   `200-template-template-function-result-reconstruction.t`; neither is yet the
   complete `CompositeMachine` failure
 - owning PA/cluster: PA21 template-template arguments, alias integration, and
   partial result deduction
-- implementation area: structured `QualifiedName`/`TemplateIdSyntax`
-  preservation and declaration/use-scope ownership during nested class/alias
-  reconstruction
-- performance risk: MSM is template-heavy; use two B2 jobs and monitor compiler-child RSS, aggregate system memory, and swap throughout the graph
+- implementation area: current injected class identity and subsequent
+  structured `QualifiedName`/`TemplateIdSyntax` lookup
+- performance risk: MSM is template-heavy; replay `CompositeMachine` alone
+  first and monitor compiler-child RSS, aggregate system memory, and swap;
+  parallelize ordinary follow-on targets when memory allows
 - language lane: Boost.MSM declares C++03 in `libs/msm/meta/libraries.json`, so it is supported and must run
-- next action: reduce the fresh `CompositeMachine` structured-anchor mismatch
-  without enlarging the existing constituent reducer; then replay `Entries`
-  before returning to `CompositeEuml`'s `Playing` expression
+- next action: complete the exact monitored `CompositeMachine` replay, then
+  replay `Entries` before returning to `CompositeEuml`'s `Playing` expression
 
 ## Fix Ledger
 
@@ -339,6 +339,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | MSM `CompositeMachine` current injected specialization identity | Current injected class lookup compared only the source spelling and the materialized `ClassInfo::qualified_name`. For a concrete nested specialization whose materialized name contains semantic identity components, neither matched the lexical template-id; a stale unrelated exact-lookup anchor then won. The lookup now also compares the retained typed instantiation identity. No source text is parsed and no speculative lookup or cache change remains. | No new fixture: all compact header-free scratch forms passed before and after, so none causally reduced the Boost failure. The exact `CompositeMachine` TU is retained as the pre/post witness rather than adding a large or false reducer. | Unpatched HEAD rejects the exact TU in 12.19s at 449,990,656 B RSS with the stale `mpl::vector<...>` anchor; the isolated 13-line fix passes that point and remains active through a bounded 20s replay at 651,878,400 B RSS. Two other provisional lookup changes were independently removed without losing this advance. | PA22 direct LowIR passes `306/306`; the PA9-excluded direct report passes `4090/4090`; configured strict comparisons pass PA18 `186`, PA19 `115`, PA21 `162`, PA22 `158`, and PA23 `338` with zero failures; all 23 zero-reparse categories and 31 audit/performance tests pass; Clang 22 and GCC 15 warning builds are clean. | -24.06% instructions, -21.29% RSS, and -28.57% footprint; three-run immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-msm-current-injected-identity.json`; restored embedded baseline hash `c03bfd5c1b63bb022cd119eb0968dace0346052cdc13091665ea22a3a4f54996`; no parent or live header was measured | `(this commit)` |
 | fixed | MSM constituent alias/template-template reconstruction and dependent-type DAG walk | Direct type substitution discarded structured qualified/template-id sidecars, concrete template-template arguments reconstructed only display text, and partial function-result deduction did not compare the retained class-template declaration and typed arguments. The typed paths now preserve or reconstruct those structures, alias expansion can consume the caller's already resolved argument vector, and partial deduction compares dependent/concrete class-template metadata. Separately, the dependent-qualified-member predicate treated a shared `Type` graph as a tree; an exact pointer-identity visited set bounds the traversal without a result cache. No semantic text is parsed. | `pa21/tests/general/200-alias-template-template-argument-use-scope.t` and `pa21/tests/general/200-template-template-function-result-reconstruction.t`, both compact header-free C++11 compile-pass cases with ordinary LowIR references | Clang 22 accepts both reducers; the two controlled clean pre-fix compilers reject both. Exact `CompositeEuml` previously failed its first guarded subscript result and now reaches the later `Playing` row. A fresh `CompositeMachine` replay proves that its similar-looking structured-anchor failure remains open, so the smaller alias reducer is recorded as a constituent repair rather than overclaimed as the complete Boost reduction. An attempted owner-first member-pointer lookup made inherited name collisions viable and broke two PA26 controls; it was reverted completely. | PA21 passes `254/254`; PA26 passes `82/82`; configured strict suites pass PA18 `238/238`, PA19 `147/147`, PA21 `254/254`, PA22 `306/306`, and PA23 `409/409`; the full direct-text report passes `4101/4101`, including PA37 `7/7`. PA21 placement/hygiene has zero findings, all 23 reparse categories and 31 audit/perf unit tests pass, and the changed production units build warning-clean under Clang 22 and GCC 15. | -24.30% instructions, -21.11% RSS, and -30.09% footprint; three-run immutable frozen-header report `/private/tmp/cppgm-boost-frontier-v2-template-template-candidate.json`; required diagnostic sample finds no new dominant helper | `(this commit)` |
 | fixed | MSM `AnonymousAndGuard` qualified template-template identity | Class-template specialization/reference keys rendered namespace template-template arguments by leaf name. `boost::mpl::end` and `boost::fusion::result_of::end` therefore both became `end`, and Fusion reused MPL's helper. When an occupied legacy key carries a different typed template entity, the class-template path disambiguates it with the entity's structured namespace scope while retaining legacy keys for non-colliding cases. Selected class-template IDs and nested alias results now carry that collision-aware key instead of falling back to a generic argument key or reconstructed display identity. No lookup text is parsed and no success or failure cache is added. | `pa21/tests/spec/200-deduced-template-template-qualified-identity.t`, strengthened to 11 lines / 580 bytes with a nested `outer<F>::type` layer; header-free C++11 with two same-named namespace templates and no `<type_traits>` | The saved pre-fix compiler aliases the second `x` to the first. A controlled removal of only the two nested identity-propagation edits makes the strengthened second assertion fail while the original direct form still passes. In exact MSM, the initial collision produces `boost::fusion::extension::value_at_impl<..., mpl_::int_<4>>` for a four-element vector; that identical invalid entity accounts for 3,494 of 3,771 reset traces. After repair, 19,264 of 19,266 later reference-member events have distinct `ClassInfo` identities and names, with only two revisits and no substitution failures: this is legitimate specialization breadth, not one alias resolving thousands of times, and no cache change is warranted. | The reducer passes cppgm++, Clang 22, and GCC 15 warning-clean under C++11. Normal, all ten cache-disabled modes, and template tracing produce byte-identical output. The exact trace distinguishes legacy `x` from qualified `b::x`, traverses Fusion iterator indices 0 through 3, and selects terminal `for_each_impl<true>`. PA21 passes `252/252`; all configured strict suites, placement, all 23 zero-reparse categories, 20 audit tests, GCC 15 production builds, and PA37 `7/7` pass. | final combined frozen gate: -12.53% instructions, -10.68% RSS, and -11.63% footprint; candidate-only report `/private/tmp/cppgm-boost-frontier-v2-msm-pvb-final-perf.json`; no parent or live header was measured | `(this commit)` |
 | fixed | MSM function-template pointer argument with an incomplete pointee | Cast type-id analysis and virtual-base ABI-parameter metadata both completed a class reached only through a pointer/reference. That eagerly instantiated an intentionally ill-formed lazy member although neither pointer conversion nor indirect parameter layout needs the pointee definition. Cast parsing is now reference-only until an actual named class object target needs completion; identical pointer conversion short-circuits before inheritance work; and virtual-base parameter metadata uses an indirect class only when it is already complete. No cache is added. | `pa21/tests/spec/300-function-template-pointer-argument-incomplete-pointee.t`, 5 lines / 228 bytes, header-free C++11 with no `<type_traits>` | The saved pre-fix compiler rejects `call::execute(static_cast<lazy<n> *>(0))` by instantiating `lazy<n>::type`. Clang 22 and GCC 15 accept the class-static function-template form; moving it to a global function changes the language behavior and is not a valid reduction. LLDB shows both eager completion sites in the pre-fix stack. | The reducer passes cppgm++, Clang 22, and GCC 15 warning-clean under C++11. PA21 and all configured strict suites pass. The PA9-excluded direct report passes 4,084 of 4,085 before the sole deterministic PA24 order-only reference is refreshed; PA24 then passes `115/115` direct. All 23 zero-reparse categories, 14 audit tests, placement, cache-disabled parity, GCC 15 production builds, and PA37 `7/7` pass. | included in the same final frozen checkpoint: -10.70% instructions, -10.65% RSS, and -11.58% footprint; every fresh process records zero swaps and releases before the next | `(this commit)` |
@@ -573,6 +574,22 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Dependent-type resolution cache input lifetime | The nested dependent-type cache keyed entries by a raw `Type *` while retaining only the resolved output. Recursive resolution could release an ephemeral input and allocate an unrelated type at the same address before the outermost query cleared the cache, producing a stale hit such as `const wrap_iter<size_t*>& -> int`. Each key now owns its input `TypePtr` for the cache entry's bounded lifetime; lookup ordering remains pointer-based and the cache is still cleared after the outermost query. | `pa22/tests/general/300-dependent-type-resolution-cache-input-lifetime.t`, reduced to 21 lines / 851 bytes of header-free C++11 with a local three-line `enable` stand-in | The saved pre-fix compiler fails 43 of 256 concurrent compilations of the reduced declaration graph. Trace evidence showed the same address first stored for a resolved `enable_t<..., int>` input and then reused by an unrelated `const W&` input. The hosted `<algorithm>` form reproduced 9 of 16 times; disabling the cache passed 16 of 16. | Clang 22 and GCC 15 accept the reducer warning-clean. The focused PA22 check, cache-on/off byte parity, and 48 concurrent fixed-compiler repetitions pass with zero swaps and at most 10,137,600 B RSS per process. The frozen self-compile gate completes three fresh compiler processes, each releases fully between runs, and records zero process swaps. | included in the same final three-run result: -11.08% instructions, -10.45% RSS, and -11.43% footprint; the cache ownership fix retains both the instruction win and recovered memory | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-24`: Closed the last planned MSM algorithm audit and returned to the
+  frontier. The exact `CompositeMachine` failure was a typed current-injected
+  specialization identity error, not `reverse_fold` runaway: unpatched HEAD
+  rejects the TU in 12.19s at 449,990,656 B RSS, while the isolated structured
+  fix passes that point. Clang's filtered AST contains 483
+  `reverse_fold_impl` specialization declarations versus cppgm's 427 creations
+  at a comparable point, and both compilers spend their breadth in the same
+  dominant MPL/Fusion template families. The remaining time/RSS multiple is
+  therefore representation and per-node cost unless a later frontier failure
+  supplies contrary evidence; no cache or speculative lookup change was kept.
+  The PA9-excluded direct report passes `4090/4090`, configured strict LowIR
+  comparisons and zero-reparse/audit controls pass, and Clang/GCC warning
+  builds are clean. The three-run immutable frozen-source/51-header gate records
+  -24.06% instructions, -21.29% RSS, and -28.57% footprint. The next action is
+  a complete monitored `CompositeMachine` replay.
 
 - `2026-07-24`: Packaged the follow-on structured-template fixes after a fresh
   correctness, performance, and frontier audit. Two minimal PA21 C++11
@@ -2783,12 +2800,18 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
+/usr/local/bin/timeout 14400 env JOBS=1 \
+  CPPGM_BOOST_B2_FRONTIER=1 \
+  CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
+  CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
+  CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
+  ./run-cppgm-b2.sh -a libs/msm/test//CompositeMachine
+
+# After the monitored heavy TU releases:
 /usr/local/bin/timeout 14400 env JOBS=2 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh \
-    libs/msm/test//CompositeMachine \
-    libs/msm/test//Entries
+  ./run-cppgm-b2.sh -a libs/msm/test//Entries
 ```

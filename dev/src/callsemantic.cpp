@@ -8003,7 +8003,19 @@ private:
                 template_id &&
                 unqualified_member_name(info->qualified_name) ==
                     normalized_name;
-            if(source_name_matches || materialized_name_matches) {
+            string structured_identity;
+            const bool structured_instantiation_matches =
+                template_id &&
+                structured_instantiation_identity_text_for_named_type(
+                    info->type,
+                    0,
+                    structured_identity) &&
+                compact_lookup_text(
+                    unqualified_member_name(structured_identity)) ==
+                    compact_lookup_text(normalized_name);
+            if(source_name_matches ||
+               materialized_name_matches ||
+               structured_instantiation_matches) {
               return info->type;
             }
           }
