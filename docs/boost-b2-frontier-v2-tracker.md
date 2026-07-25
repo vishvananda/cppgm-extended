@@ -310,12 +310,14 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 - focused target: `CompositeEuml`; exact `CompositeMachine` and `Entries`
   replays pass
 - last closed suite: `#70 libs/mqtt5/test` (`skipped-language`)
-- failure phase: the current package fixes the reference-field `decltype`
-  handoff; the next exact `CompositeEuml` replay will establish the next
-  semantic frontier or close the target
-- diagnostic: cppgm materializes fewer class specializations than Clang in the
-  heavy TU, while allocator sampling shows broad small-object retention rather
-  than a hot cache or repeated alias branch
+- failure phase: the reference-field `decltype` handoff is fixed, but an exact
+  `CompositeEuml` replay remains memory-bound before semantic output completes
+- diagnostic: 86,334 reference-collection requests produce 32,768 actual,
+  pointer-unique class specializations with zero repeated collections. Two
+  correct clone-reduction experiments pass PA19/PA22/PA23 `862/862`, but leave
+  the exact RSS curve unchanged and have been reverted. At 328 seconds the
+  compiler footprint reaches 10.5 GB; Clang `-O0 -Xclang -print-stats`
+  completes in 14.96 seconds at 941,101,056 bytes maximum RSS.
 - reduced repro:
   `pa21/tests/general/200-reference-field-decltype-alias.t`, five lines and
   193 bytes, header-free C++11 with no `<type_traits>`
@@ -326,8 +328,11 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
   monitor compiler-child RSS, system memory, and swap, and kill the compiler
   child before its B2 wrapper if the run must stop
 - language lane: Boost.MSM declares C++03 in `libs/msm/meta/libraries.json`, so it is supported and must run
-- next action: run the exact monitored `CompositeEuml` target, then run the
-  complete forced MSM graph if the target passes
+- next action: extend the retained-memory census to the AST graphs currently
+  omitted from `FunctionTemplateDecl::result_type_pattern`, type mangle
+  argument syntax, and template-argument source syntax/expression. Use that
+  owner-specific result to design sharing or typed-only retention for
+  reference-only specializations before replaying the exact target.
 
 ## Fix Ledger
 
@@ -572,6 +577,26 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Dependent-type resolution cache input lifetime | The nested dependent-type cache keyed entries by a raw `Type *` while retaining only the resolved output. Recursive resolution could release an ephemeral input and allocate an unrelated type at the same address before the outermost query cleared the cache, producing a stale hit such as `const wrap_iter<size_t*>& -> int`. Each key now owns its input `TypePtr` for the cache entry's bounded lifetime; lookup ordering remains pointer-based and the cache is still cleared after the outermost query. | `pa22/tests/general/300-dependent-type-resolution-cache-input-lifetime.t`, reduced to 21 lines / 851 bytes of header-free C++11 with a local three-line `enable` stand-in | The saved pre-fix compiler fails 43 of 256 concurrent compilations of the reduced declaration graph. Trace evidence showed the same address first stored for a resolved `enable_t<..., int>` input and then reused by an unrelated `const W&` input. The hosted `<algorithm>` form reproduced 9 of 16 times; disabling the cache passed 16 of 16. | Clang 22 and GCC 15 accept the reducer warning-clean. The focused PA22 check, cache-on/off byte parity, and 48 concurrent fixed-compiler repetitions pass with zero swaps and at most 10,137,600 B RSS per process. The frozen self-compile gate completes three fresh compiler processes, each releases fully between runs, and records zero process swaps. | included in the same final three-run result: -11.08% instructions, -10.45% RSS, and -11.43% footprint; the cache ownership fix retains both the instruction win and recovered memory | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-24`: Kept suite 71 open for one owner-specific representation pass.
+  The packaged semantic fixes are clean, but the exact `CompositeEuml` replay
+  remains active beyond 328 seconds and reaches a 10.5 GB footprint. It was
+  stopped at 32% system memory free with 3.713 of 4.096 GB swap used. A
+  reference-collection probe records 86,334 requests, 32,768 actual
+  collections, 32,768 pointer-unique `ClassInfo` objects, and zero repeated
+  collections, so the multiplier is not repeated collection of one
+  specialization. Allocator stack logging attributes the largest retained
+  family to substituted AST vectors. A census at 8,192 collected references
+  accounts for 93.1 MB of `Type`, 45.5 MB of `Scope`, 33.7 MB of `ClassInfo`,
+  31.6 MB of `FunctionBinding`, and smaller owners, but omits several embedded
+  AST graphs. Exact string redundancy is only 12.4 MB. Clone-once and
+  copy-on-change experiments both pass the focused direct report `862/862`,
+  yet their exact RSS trajectories match the baseline; both are reverted.
+  Broad base-object splitting, string interning, and another cache are
+  therefore unsupported by the measurements. The next pass will count the
+  omitted AST owners, then change only the dominant retained representation.
+  The late linear source-owner scan is a possible time improvement after
+  memory is controlled, but it cannot explain the pre-output footprint.
 
 - `2026-07-24`: Packaged the reference-field `decltype` handoff and returned to
   the MSM frontier. Exact monitored `CompositeMachine` and `Entries` replays
