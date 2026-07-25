@@ -4519,6 +4519,8 @@ private:
       AnalysisPolicy suppressed_policy = analysis_policy_;
       suppressed_policy.instantiate_function_bodies = false;
       ScopedAnalysisPolicyOverride suppression(*this, suppressed_policy);
+      const semantic_expression::ScopedUnevaluatedOperand
+          unevaluated_operand;
       if(!is_typeof && expr.kind == CppAstKind::delete_expression) {
         size_t delete_child_index = 0;
         if(delete_child_index < expr.children.size() &&

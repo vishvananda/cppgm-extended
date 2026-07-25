@@ -8,6 +8,18 @@ struct MemberValueLookupResult;
 
 namespace semantic_expression {
 
+class ScopedUnevaluatedOperand
+{
+public:
+  ScopedUnevaluatedOperand();
+  ~ScopedUnevaluatedOperand();
+
+  ScopedUnevaluatedOperand(const ScopedUnevaluatedOperand &) = delete;
+  ScopedUnevaluatedOperand & operator=(const ScopedUnevaluatedOperand &) = delete;
+};
+
+bool unevaluated_operand_active();
+
 semantic_conversion::ExprInfo analyze_expression(SemanticContext & ctx,
                                                  semantic_model::Scope & scope,
                                                  const CppAstNode & node);

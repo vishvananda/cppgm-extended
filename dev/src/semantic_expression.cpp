@@ -59,6 +59,27 @@ using DumpNode = CallSemNode;
 
 namespace {
 
+thread_local std::size_t unevaluated_operand_depth = 0;
+
+}  // namespace
+
+ScopedUnevaluatedOperand::ScopedUnevaluatedOperand()
+{
+  ++unevaluated_operand_depth;
+}
+
+ScopedUnevaluatedOperand::~ScopedUnevaluatedOperand()
+{
+  --unevaluated_operand_depth;
+}
+
+bool unevaluated_operand_active()
+{
+  return unevaluated_operand_depth != 0;
+}
+
+namespace {
+
 size_t string_literal_code_unit_count(const QuoteLiteralData & literal)
 {
   return quote_literal_string_unit_count(literal);
@@ -4873,6 +4894,27 @@ ExprInfo make_value_binding_expr(SemanticContext & ctx,
     if((!lookup_member_value_in_scope_chain(scope, node.value, member) || !member.binding) &&
        !member_value_lookup_result_for_binding(scope, binding, member)) {
       throw logic_error("failed to resolve member id-expression");
+    }
+    if(unevaluated_operand_active() &&
+       !current_function_scope(scope)) {
+      const ClassInfo * current_class = current_class_scope(scope);
+      if(!binding.owner_class || !current_class ||
+         !member_access_allowed(&scope,
+                                current_class,
+                                nullptr,
+                                member.declared_in,
+                                binding.access,
+                                member.path_access)) {
+        throw logic_error("inaccessible member");
+      }
+      ExprInfo result;
+      result.type = binding.type;
+      result.category = VC_LVALUE;
+      result.node =
+          make_dump_node(CallSemKind::id_expression, binding.name);
+      set_dump_token(result.node, node);
+      set_expr_metadata(result.node, result.type, result.category);
+      return result;
     }
     return make_implicit_member_expression_impl(ctx, scope, member);
   }

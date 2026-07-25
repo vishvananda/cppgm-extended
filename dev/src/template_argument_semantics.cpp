@@ -29,6 +29,7 @@
 #include "semantic_conversion.h"
 #include "semantic_context.h"
 #include "semantic_errors.h"
+#include "semantic_expression.h"
 #include "semantic_fallback_audit.h"
 #include "semantic_hotspot.h"
 #include "semantic_lookup.h"
@@ -41238,6 +41239,8 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
       source_location_with_text_offset(base_use_location, node.value, use_offset);
   request.operand = *request_expr;
   TypePtr evaluated;
+  const semantic_expression::ScopedUnevaluatedOperand
+      unevaluated_operand;
   if(evaluate_dependent_type_expression_leaf(services, scope, request, evaluated) &&
      evaluated &&
      !service_type_depends_on_template_parameter(services, evaluated)) {

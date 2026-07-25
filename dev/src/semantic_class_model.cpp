@@ -9574,7 +9574,15 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
         }
       }
       info.member_scope->values[member_name] = binding;
+      continue;
     }
+
+    ValueBinding binding(ValueBinding::VK_FIELD, member_name, member_type);
+    binding.owner_class = &info;
+    binding.access = access;
+    binding.is_mutable = has_mutable_specifier;
+    binding.declaration_node = &init_decl;
+    info.member_scope->values[member_name] = binding;
   }
 }
 
