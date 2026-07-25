@@ -3158,14 +3158,65 @@ public:
                       template_owner->enclosing_scope->class_info :
                       nullptr;
             }
-            const bool partial_owner =
-                template_owner &&
-                template_owner->template_output_node &&
-                template_owner->template_output_node != owner_template->class_node;
-            PartialClassTemplateSpecializationDecl * owner_partial_decl =
-                partial_owner ?
-                    find_partial_specialization_decl(*owner_template, template_owner) :
-                    nullptr;
+            PartialClassTemplateSpecializationDecl * owner_partial_decl = nullptr;
+            if(template_owner) {
+              template_api::ClassTemplateUseInfo use;
+              if(template_api::class_template_use_info_for_class(
+                     ctx,
+                     pattern_scope,
+                     template_owner,
+                     use,
+                     true) &&
+                 use.has_selection &&
+                 use.selection.class_node &&
+                 use.selection.class_node != owner_template->class_node) {
+                for(size_t i = 0;
+                    i < owner_template->partial_specializations.size();
+                    ++i) {
+                  if(owner_template->partial_specializations[i].class_node ==
+                     use.selection.class_node) {
+                    owner_partial_decl =
+                        &owner_template->partial_specializations[i];
+                    break;
+                  }
+                }
+              }
+              if(!owner_partial_decl) {
+                const TemplateIdSyntax * owner_template_id =
+                    cppast_qualifier_template_id_syntax(
+                        *static_member_identifier,
+                        owner_template_qualifier_index);
+                if(owner_template_id) {
+                  const vector<string> & owner_arg_texts =
+                      owner_template_id->arguments;
+                  const vector<TemplateArgumentSyntax> & owner_arg_syntaxes =
+                      owner_template_id->argument_syntaxes;
+                  for(size_t i = 0;
+                      i < owner_template->partial_specializations.size();
+                      ++i) {
+                    PartialClassTemplateSpecializationDecl & candidate =
+                        owner_template->partial_specializations[i];
+                    if(partial_class_specialization_patterns_redeclare_same(
+                           candidate,
+                           pattern_scope,
+                           owner_arg_texts,
+                           owner_arg_syntaxes,
+                           *owner_template)) {
+                      owner_partial_decl = &candidate;
+                      break;
+                    }
+                  }
+                }
+              }
+              if(!owner_partial_decl &&
+                 template_owner->template_output_node &&
+                 template_owner->template_output_node !=
+                     owner_template->class_node) {
+                owner_partial_decl =
+                    find_partial_specialization_decl(
+                        *owner_template, template_owner);
+              }
+            }
             Scope * owner_partial_scope =
                 owner_partial_decl ?
                     (owner_partial_decl->pattern_scope ?

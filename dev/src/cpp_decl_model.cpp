@@ -9,6 +9,7 @@
 using namespace std;
 
 #include "cppast_ast.h"
+#include "class_template_mangle_info.h"
 #include "cpp_decl_model.h"
 
 namespace cpp_decl {
@@ -40,6 +41,144 @@ string strip_elaborated_type_prefix(const string & text)
     }
   }
   return text;
+}
+
+const char * class_template_display_prefix(
+    ClassTemplateSpecializationMangleInfo::DisplayClassKey key)
+{
+  switch(key) {
+  case ClassTemplateSpecializationMangleInfo::DCK_CLASS:
+    return "class ";
+  case ClassTemplateSpecializationMangleInfo::DCK_STRUCT:
+    return "struct ";
+  case ClassTemplateSpecializationMangleInfo::DCK_UNION:
+    return "union ";
+  case ClassTemplateSpecializationMangleInfo::DCK_UNKNOWN:
+    break;
+  }
+  return "";
+}
+
+bool named_type_is_enum_for_template_display(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_NAMED) {
+    return false;
+  }
+  const string display = named_type_display_text(base);
+  return base->named_key.compare(0, 5, "enum ") == 0 ||
+         display.compare(0, 5, "enum ") == 0 ||
+         display.compare(0, 11, "enum class ") == 0 ||
+         display.compare(0, 12, "enum struct ") == 0;
+}
+
+bool simple_identifier_text(const string & text)
+{
+  if(text.empty() ||
+     !(std::isalpha(static_cast<unsigned char>(text[0])) ||
+       text[0] == '_')) {
+    return false;
+  }
+  for(size_t i = 1; i < text.size(); ++i) {
+    if(!(std::isalnum(static_cast<unsigned char>(text[i])) ||
+         text[i] == '_')) {
+      return false;
+    }
+  }
+  return true;
+}
+
+string class_template_display_argument_text(
+    const template_model::TemplateArgument & argument)
+{
+  using template_model::TemplateArgument;
+  if(argument.kind == TemplateArgument::TA_TYPE &&
+     argument.type &&
+     !argument.dependent &&
+     (argument.text.empty() ||
+      simple_identifier_text(argument.text))) {
+    TypePtr argument_base = strip_top_level_cv(argument.type);
+    if(argument_base &&
+       argument_base->kind == Type::TK_NAMED &&
+       argument_base->named_key.find("__local_") != string::npos) {
+      // Function-local types require their semantic discriminator in every
+      // reconstructed owner name.  The user-facing display alone is not a
+      // unique compiler-internal identity.
+      return strip_elaborated_type_prefix(argument_base->named_key);
+    }
+    return template_argument_type_text(argument.type);
+  }
+  if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+     argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
+    return argument.text;
+  }
+  if(argument.kind == TemplateArgument::TA_VALUE) {
+    if(argument.dependent) {
+      return argument.text;
+    }
+    if(!argument.text.empty() &&
+       (!argument.type ||
+        (!is_integral_type(argument.type) &&
+         !is_bool_type(argument.type) &&
+         !named_type_is_enum_for_template_display(argument.type)))) {
+      return argument.text;
+    }
+    if(is_bool_type(argument.type)) {
+      return argument.value != 0 ? "true" : "false";
+    }
+    if(named_type_is_enum_for_template_display(argument.type)) {
+      return string("(") + template_argument_type_text(argument.type) + ")" +
+             std::to_string(argument.value);
+    }
+    return std::to_string(argument.value);
+  }
+  if(argument.text.empty()) {
+    TypePtr argument_base = strip_top_level_cv(argument.type);
+    return argument_base ? template_argument_type_text(argument.type) :
+                           string();
+  }
+  return argument.text;
+}
+
+string reconstruct_named_class_template_display(const Type & type)
+{
+  if(type.kind != Type::TK_NAMED ||
+     !type.named_rare()
+          .named_class_template_specialization_mangle_info) {
+    return string();
+  }
+  const ClassTemplateSpecializationMangleInfo & mangle =
+      *type.named_rare()
+           .named_class_template_specialization_mangle_info;
+  if(mangle.display_class_key ==
+         ClassTemplateSpecializationMangleInfo::DCK_UNKNOWN ||
+     mangle.template_name.empty()) {
+    return string();
+  }
+
+  string out = class_template_display_prefix(mangle.display_class_key);
+  if(!mangle.template_scope_prefix.empty()) {
+    out += mangle.template_scope_prefix;
+    out += "::";
+  }
+  out += mangle.template_name;
+  out += "<";
+  const vector<template_model::TemplateArgument> & arguments =
+      mangle.arguments.const_values();
+  for(size_t i = 0; i < arguments.size(); ++i) {
+    if(i != 0) {
+      out += ", ";
+    }
+    if(arguments[i].kind == template_model::TemplateArgument::TA_TYPE &&
+       arguments[i].text.empty() &&
+       strip_top_level_cv(arguments[i].type).get() == &type) {
+      out += "<recursive-type-display>";
+    } else {
+      out += class_template_display_argument_text(arguments[i]);
+    }
+  }
+  out += ">";
+  return out;
 }
 
 enum NamedTypeKeyPrefixKind
@@ -277,7 +416,9 @@ TypeSpelling spell_template_argument_type(const TypePtr & type)
     return TypeSpelling{type_to_string(type->fundamental) + " ", ""};
 
   case Type::TK_NAMED:
-    return TypeSpelling{strip_elaborated_type_prefix(type->named_display) + " ", ""};
+    return TypeSpelling{
+        strip_elaborated_type_prefix(named_type_display_text(type)) + " ",
+        ""};
 
   case Type::TK_CV:
   {
@@ -1577,7 +1718,8 @@ size_t type_size(const TypePtr & type)
     if(type->named_has_layout) {
       return type->named_size;
     }
-    throw logic_error(string("named type size unavailable: ") + type->named_display +
+    throw logic_error(string("named type size unavailable: ") +
+                      named_type_display_text(type) +
                       " [key " + type->named_key + "]");
 
   case Type::TK_CV:
@@ -1616,7 +1758,7 @@ string describe_type(const TypePtr & type)
     return type_to_string(type->fundamental);
 
   case Type::TK_NAMED:
-    return type->named_display;
+    return named_type_display_text(type);
 
   case Type::TK_CV:
     if(type->cv_const && type->cv_volatile) {
@@ -1702,6 +1844,45 @@ string template_argument_type_text(const TypePtr & type)
 {
   TypeSpelling spelling = spell_template_argument_type(type);
   return trim_trailing_space(spelling.before) + spelling.after;
+}
+
+string named_type_display_text(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_NAMED) {
+    return string();
+  }
+  return named_type_display_text(*base);
+}
+
+string named_type_display_text(const Type & type)
+{
+  if(type.kind != Type::TK_NAMED) {
+    return string();
+  }
+  if(!type.named_display.empty()) {
+    return type.named_display;
+  }
+  const string reconstructed =
+      reconstruct_named_class_template_display(type);
+  return reconstructed.empty() ? type.named_key : reconstructed;
+}
+
+bool compact_named_type_display(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base ||
+     base->kind != Type::TK_NAMED ||
+     base->named_display.empty()) {
+    return false;
+  }
+  const string reconstructed =
+      reconstruct_named_class_template_display(*base);
+  if(reconstructed.empty() || reconstructed != base->named_display) {
+    return false;
+  }
+  string().swap(base->named_display);
+  return true;
 }
 
 bool finalize_fundamental_type_specifiers(int signed_count,

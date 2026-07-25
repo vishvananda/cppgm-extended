@@ -267,7 +267,15 @@ ClassInfo * create_class_info(TypeRegistryState & state,
               "previous declaration",
               base ? class_info_for_type(state, base) : nullptr));
     }
-    base->named_display = display_name;
+    const bool has_structured_template_display =
+        base->named_display.empty() &&
+        base->named_rare()
+            .named_class_template_specialization_mangle_info;
+    if(!has_structured_template_display &&
+       (!base->named_display.empty() ||
+        named_type_display_text(base) != display_name)) {
+      base->named_display = display_name;
+    }
     base->set_named_qualified_name_syntax(symbol_qualified_name_syntax);
     base->set_named_source_name(canonical_name);
     ClassInfo * info = class_info_for_type(state, base);
@@ -299,7 +307,7 @@ ClassInfo * create_class_info(TypeRegistryState & state,
     if(info->symbol_qualified_name_syntax.name.empty()) {
       info->symbol_qualified_name_syntax = symbol_qualified_name_syntax;
     }
-    if(info->display_qualified_name.empty() &&
+    if(!info->has_display_qualified_name &&
        info->qualified_name != source_qualified_name) {
       set_class_output_qualified_name(*info, source_qualified_name);
     }
@@ -372,16 +380,21 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
     bool track_output)
 {
   Scope & durable_scope = callbacks.persistent_enclosing_scope(scope);
+  const bool deferred_display_name = specialization_name.empty();
   const std::string canonical_specialization_name =
-      callsemantic_internal::normalize_qualified_name_spacing(
-          specialization_name);
+      deferred_display_name ?
+          std::string() :
+          callsemantic_internal::normalize_qualified_name_spacing(
+              specialization_name);
   const std::string canonical_internal_specialization_name =
       callsemantic_internal::normalize_qualified_name_spacing(
           internal_specialization_name);
   const std::string display_qualified_name =
-      callsemantic_internal::normalize_qualified_name_spacing(
-          semantic_lookup::scope_qualified_name(durable_scope,
-                                                canonical_specialization_name));
+      deferred_display_name ?
+          std::string() :
+          callsemantic_internal::normalize_qualified_name_spacing(
+              semantic_lookup::scope_qualified_name(
+                  durable_scope, canonical_specialization_name));
   const std::string qualified_name =
       append_symbol_member_name(durable_scope,
                                 canonical_internal_specialization_name);
@@ -409,7 +422,11 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
   std::unique_ptr<ClassInfo> info(new ClassInfo());
   info->name = template_name;
   info->qualified_name = qualified_name;
-  set_class_output_qualified_name(*info, display_qualified_name);
+  if(deferred_display_name) {
+    info->has_display_qualified_name = true;
+  } else {
+    set_class_output_qualified_name(*info, display_qualified_name);
+  }
   info->class_kind = class_kind;
   info->enclosing_scope = &durable_scope;
   info->default_access =
@@ -418,13 +435,17 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
   info->template_output_node = output_node;
   info->is_final = output_node && output_node->is_final_specifier;
   info->template_instantiation_tracked = track_output;
-  info->type = make_named(class_kind + " " + display_qualified_name,
+  info->type = make_named(deferred_display_name ?
+                              std::string() :
+                              class_kind + " " + display_qualified_name,
                           type_key,
                           false);
   info->type->mutable_named_rare_metadata().named_class_info = info.get();
   info->type->set_named_qualified_name_syntax(symbol_qualified_name_syntax);
   info->type->set_named_source_name(template_name);
-  set_class_output_qualified_name(*info, display_qualified_name);
+  if(!deferred_display_name) {
+    set_class_output_qualified_name(*info, display_qualified_name);
+  }
   if(durable_scope.class_info && durable_scope.class_info->type) {
     TypePtr base = strip_top_level_cv(info->type);
     if(base && base->kind == Type::TK_NAMED) {

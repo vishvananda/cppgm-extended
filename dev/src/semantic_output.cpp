@@ -341,25 +341,6 @@ symbol_linkage::SymbolIdentity function_entry_point_symbol(const FunctionBinding
     return output_function_symbol_identity(binding);
   }
 
-  std::string symbol_key = binding.symbol.object_symbol;
-  if(symbol_key.empty()) {
-    symbol_key = binding.symbol.internal_symbol;
-  }
-  if(!symbol_key.empty()) {
-    symbol_key += "|entry=";
-    switch(kind) {
-    case symbol_linkage::SMEK_BASE:
-      symbol_key += "base";
-      break;
-    case symbol_linkage::SMEK_DELETING:
-      symbol_key += "deleting";
-      break;
-    case symbol_linkage::SMEK_COMPLETE:
-      symbol_key += "complete";
-      break;
-    }
-  }
-
   symbol_linkage::FunctionSymbolOptions options;
   options.is_member_function = binding.is_method;
   options.has_implicit_object_parameter = binding.is_method;
@@ -392,7 +373,6 @@ symbol_linkage::SymbolIdentity function_entry_point_symbol(const FunctionBinding
               binding.is_c_linkage,
               binding.type,
               options,
-              symbol_key,
               output_function_symbol_linkage(binding)) :
           symbol_linkage::make_c_function_symbol_identity(
               display_name,
@@ -473,7 +453,6 @@ symbol_linkage::SymbolIdentity emitted_vtable_entry_symbol(const FunctionBinding
               binding.is_c_linkage,
               binding.type,
               options,
-              string(),
               output_function_symbol_linkage(binding)) :
           symbol_linkage::make_c_function_symbol_identity(
               display_name,
@@ -7412,7 +7391,7 @@ void synchronize_output_named_type_layout(const TypePtr & type,
   if(base_key != info_key) {
     return;
   }
-  base->named_display = info_base->named_display;
+  base->named_display = named_type_display_text(info_base);
   base->named_key = info_base->named_key;
   base->named_semantic_kind = info_base->named_semantic_kind;
   base->named_semantic_payload = info_base->named_semantic_payload;

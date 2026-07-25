@@ -1108,8 +1108,9 @@ public:
             parameters,
             seen_names,
             TemplateParameterInfo::TP_TYPE,
-            type->named_semantic_payload.empty() ? type->named_display :
-                                                   type->named_semantic_payload,
+            type->named_semantic_payload.empty() ?
+                named_type_display_text(type) :
+                type->named_semantic_payload,
             TypePtr(),
             false);
         visiting.erase(raw);
@@ -3456,9 +3457,6 @@ public:
       return info;
     }
 
-    // Reference-only class instantiations still need the same isolation as full class
-    // instantiations: inheriting unrelated caller bindings can corrupt member typedef
-    // materialization inside library templates.
     Scope * inst_scope =
         &template_api::binding::bind_class_template_arguments_for_instantiation(
             *this,
@@ -3467,7 +3465,8 @@ public:
             *bound_parameters,
             *bound_arguments,
             bound_pack_sizes);
-    const string & create_specialization_name = ensure_specialization_name();
+    const string create_specialization_name =
+        dependent_arguments ? ensure_specialization_name() : string();
     const string & create_internal_specialization_name =
         ensure_internal_specialization_name();
     info = create_instantiated_class_info_with_internal_name(*inst_scope,

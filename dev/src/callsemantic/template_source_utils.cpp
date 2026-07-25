@@ -882,7 +882,9 @@ bool should_prefer_named_key_for_instantiation_identity(const TypePtr & type)
   if(!type || type->kind != Type::TK_NAMED) {
     return false;
   }
-  const string display_text = trim_space(strip_elaborated_type_prefix(type->named_display));
+  const string display_text =
+      trim_space(strip_elaborated_type_prefix(
+          named_type_display_text(type)));
   const string key_text = trim_space(strip_elaborated_type_prefix(type->named_key));
   if(key_text.empty()) {
     return false;

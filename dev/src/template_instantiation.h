@@ -109,8 +109,9 @@ bool record_class_template_instantiation_state(
 using ClassTemplateCompletionPlan = template_api::ClassTemplateCompletionPlan;
 using ClassTemplateUseInfo = template_api::ClassTemplateUseInfo;
 
-bool refresh_forward_class_template_selection(SemanticContext & ctx,
-                                              semantic_model::ClassInfo & info);
+bool refresh_referenced_class_template_selection(
+    SemanticContext & ctx,
+    semantic_model::ClassInfo & info);
 
 bool class_template_completion_has_owner_definition(
     const semantic_model::ClassInfo & info);

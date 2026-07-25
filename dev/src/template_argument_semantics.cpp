@@ -369,7 +369,7 @@ bool named_type_has_function_local_marker(const TypePtr & type)
     return false;
   }
   return base->named_key.find("__local_") != string::npos ||
-         base->named_display.find("__local_") != string::npos;
+         named_type_display_text(base).find("__local_") != string::npos;
 }
 
 }  // namespace
@@ -586,6 +586,15 @@ bool service_lookup_leaf_member_expression_type_in_scope(
     const string & name,
     TypePtr & out)
 {
+  if(!witness::enabled(services.witness_context) &&
+     services.semantic_context &&
+     member_scope.class_info &&
+     !member_scope.class_info->reference_members_collected &&
+     member_scope.class_info->reference_named_members_collected.count(name) == 0 &&
+     !member_scope.class_info->reference_member_collection_in_progress) {
+    services.semantic_context->ensure_class_reference_named_member(
+        *member_scope.class_info, name);
+  }
   return lookup_leaf_member_expression_type_in_scope(
       service_type_system(services),
       member_scope,
@@ -600,6 +609,15 @@ bool service_lookup_leaf_member_expression_value_in_scope(
     constant_eval::ConstexprValue & out,
     bool * evaluation_incomplete = nullptr)
 {
+  if(!witness::enabled(services.witness_context) &&
+     services.semantic_context &&
+     member_scope.class_info &&
+     !member_scope.class_info->reference_members_collected &&
+     member_scope.class_info->reference_named_members_collected.count(name) == 0 &&
+     !member_scope.class_info->reference_member_collection_in_progress) {
+    services.semantic_context->ensure_class_reference_named_member(
+        *member_scope.class_info, name);
+  }
   const bool found = lookup_leaf_member_expression_value_in_scope(
       services,
       member_scope,
@@ -628,6 +646,22 @@ bool service_lookup_leaf_member_function_bindings(
     const string & name,
     vector<FunctionBinding *> & out)
 {
+  if(!witness::enabled(services.witness_context) &&
+     services.semantic_context) {
+    TypePtr class_type = strip_top_level_cv(remove_reference_type(base_type));
+    ClassInfo * info = class_type ?
+        template_api::find_named_type_class_info(
+            service_type_system(services).model,
+            class_type) :
+        nullptr;
+    if(info &&
+       !info->reference_members_collected &&
+       info->reference_named_members_collected.count(name) == 0 &&
+       !info->reference_member_collection_in_progress) {
+      services.semantic_context->ensure_class_reference_named_member(
+          *info, name);
+    }
+  }
   return lookup_leaf_member_function_bindings(
       service_type_system(services),
       base_type,
@@ -6759,7 +6793,7 @@ void append_static_member_value_dependency_for_type(
        effective_type->kind == Type::TK_NAMED) {
       string bound_name = effective_type->named_semantic_payload;
       if(bound_name.empty()) {
-        bound_name = effective_type->named_display;
+        bound_name = named_type_display_text(effective_type);
       }
       bound_name = trim_space(bound_name);
       const string typename_prefix = "typename ";
@@ -13781,7 +13815,7 @@ const TemplateParameterInfo * find_substitution_parameter(
   vector<string> lookup_keys;
   append_lookup_key(lookup_keys, parameter_key);
   append_lookup_key(lookup_keys, named_type_semantic_payload(type));
-  append_lookup_key(lookup_keys, type->named_display);
+  append_lookup_key(lookup_keys, named_type_display_text(type));
   append_lookup_key(lookup_keys, type->named_key);
 
   for(size_t i = 0; i < lookup_keys.size(); ++i) {
@@ -16091,7 +16125,8 @@ bool substitute_dependent_argument_text_and_syntax(
               !is_bool_type(nttp_base) &&
               !(nttp_base->kind == Type::TK_NAMED &&
                 (nttp_base->named_key.compare(0, 5, "enum ") == 0 ||
-                 nttp_base->named_display.compare(0, 5, "enum ") == 0))));
+                 named_type_display_text(nttp_base).compare(0, 5, "enum ") ==
+                     0))));
         if(prefer_textual_binding) {
           binding.non_type_template_argument_text = bound_argument.text;
         } else {
@@ -16403,7 +16438,7 @@ ValueBinding make_value_binding_for_substitution_argument(
         !is_bool_type(nttp_base) &&
         !(nttp_base->kind == Type::TK_NAMED &&
           (nttp_base->named_key.compare(0, 5, "enum ") == 0 ||
-           nttp_base->named_display.compare(0, 5, "enum ") == 0))));
+           named_type_display_text(nttp_base).compare(0, 5, "enum ") == 0))));
   if(prefer_textual_binding) {
     binding.non_type_template_argument_text = argument.text;
   } else {
@@ -17914,7 +17949,8 @@ bool substitute_dependent_class_type(const TypePtr & type,
     substituted->named_display = display;
     substituted->named_key = qualified;
     if(substituted->named_semantic_payload == type->named_key ||
-       substituted->named_semantic_payload == type->named_display) {
+       substituted->named_semantic_payload ==
+           named_type_display_text(type)) {
       substituted->named_semantic_payload = qualified;
     }
   }
@@ -18224,7 +18260,7 @@ bool substitute_dependent_qualified_member_type(
                                               members,
                                               leading_typename);
   out = make_dependent_qualified_member_type(
-      display.empty() ? type->named_display : display,
+      display.empty() ? named_type_display_text(type) : display,
       substituted_owner,
       members,
       leading_typename,
@@ -18561,7 +18597,7 @@ bool substitute_dependent_alias_type(const TypePtr & type,
 
   dependent_arguments.swap(substituted_arguments);
 
-  string display = type->named_display;
+  string display = named_type_display_text(type);
   string payload = named_type_semantic_payload(type);
   if(AliasTemplateDecl * alias_template =
          static_cast<AliasTemplateDecl *>(alias_template_decl)) {
@@ -21685,7 +21721,7 @@ bool type_is_integral_or_named_enum_for_template_value(const TypePtr & type)
          (is_integral_type(base) ||
           (base->kind == Type::TK_NAMED &&
            (base->named_key.compare(0, 5, "enum ") == 0 ||
-            base->named_display.compare(0, 5, "enum ") == 0)));
+            named_type_display_text(base).compare(0, 5, "enum ") == 0)));
 }
 
 bool try_evaluate_integral_cast_template_argument(
@@ -21860,8 +21896,11 @@ CppAstNode clone_expression_node_for_template_substitution_impl(
         clone_expression_node_for_template_substitution(
             *cppast_conversion_type_id_syntax_storage(source))));
   }
-  mutable_cppast_base_type_syntax_storage(out) =
-      cppast_base_type_syntax_storage(source);
+  if(cppast_base_type_syntax_storage(source)) {
+    mutable_cppast_base_type_syntax_storage(out).reset(new CppAstNode(
+        clone_expression_node_for_template_substitution(
+            *cppast_base_type_syntax_storage(source))));
+  }
   out.qualifier_template_id_syntaxes.reserve(
       source.qualifier_template_id_syntaxes.size());
   for(size_t i = 0; i < source.qualifier_template_id_syntaxes.size(); ++i) {
@@ -23241,7 +23280,7 @@ bool concrete_non_type_argument_expression_supported(
           is_integral_type(base) ||
           (base->kind == Type::TK_NAMED &&
 	           (base->named_key.compare(0, 5, "enum ") == 0 ||
-	            base->named_display.compare(0, 5, "enum ") == 0)));
+	            named_type_display_text(base).compare(0, 5, "enum ") == 0)));
 }
 
 bool try_make_function_non_type_argument_expression(
@@ -27533,7 +27572,7 @@ bool lookup_leaf_qualified_function_templates(template_api::TemplateServices & s
   return !out.empty();
 }
 
-AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices &,
+AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices & services,
                                                Scope & scope,
                                                const string & name)
 {
@@ -27541,6 +27580,21 @@ AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices &,
     return nullptr;
   }
 
+  if(services.semantic_context) {
+    for(Scope * current = &scope; current; current = current->parent) {
+      if(current->class_info &&
+         !current->class_info->reference_members_collected &&
+         current->class_info->reference_named_members_collected.count(name) == 0 &&
+         current->class_info->reference_named_members_in_progress.count(name) == 0 &&
+         !current->class_info->reference_member_collection_in_progress) {
+        services.semantic_context->ensure_class_reference_named_member(
+            *current->class_info, name);
+      }
+      if(current->namespace_scope || current->parent == nullptr) {
+        break;
+      }
+    }
+  }
   return semantic_lookup::lookup_unqualified_alias_template(scope, name);
 }
 
@@ -27549,7 +27603,7 @@ AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices & 
                                                const QualifiedName & name)
 {
   if(!name.rooted && name.qualifiers.empty()) {
-    return semantic_lookup::lookup_unqualified_alias_template(scope, name.name);
+    return lookup_alias_template_impl(services, scope, name.name);
   }
   QualifiedName owner = name;
   owner.name = owner.qualifiers.empty() ? string() : owner.qualifiers.back();
@@ -28233,7 +28287,8 @@ bool substitute_expression_node_for_template_arguments_impl(
               !is_bool_type(nttp_base) &&
               !(nttp_base->kind == Type::TK_NAMED &&
                 (nttp_base->named_key.compare(0, 5, "enum ") == 0 ||
-                 nttp_base->named_display.compare(0, 5, "enum ") == 0))));
+                 named_type_display_text(nttp_base).compare(0, 5, "enum ") ==
+                     0))));
         if(prefer_textual_binding) {
           binding.non_type_template_argument_text = argument.text;
         } else {
@@ -32166,7 +32221,7 @@ bool resolve_instantiated_dependent_type_uncached(
               };
 
           if(try_lookup_name(base->named_key) ||
-             try_lookup_name(base->named_display)) {
+             try_lookup_name(named_type_display_text(base))) {
             return true;
           }
           const std::string payload = named_type_semantic_payload(base);
@@ -36469,7 +36524,6 @@ bool lookup_concrete_member_type_for_trait(
           return true;
         }
         if(target_scope.class_info &&
-           !target_scope.class_info->bases.empty() &&
            type_system.resolve_member_type_lookup(scope.require(),
                                                   *target_scope.class_info,
                                                   member_name,
@@ -36830,8 +36884,9 @@ LibcppIteratorCategoryRank direct_libcpp_iterator_category_rank_from_tag_type(
     return LICR_NONE;
   }
 
-  string name = !base->named_display.empty() ?
-      base->named_display :
+  const string display = named_type_display_text(base);
+  string name = !display.empty() ?
+      display :
       base->named_key;
   name = unqualified_member_name(strip_elaborated_type_prefix(trim_space(name)));
   if(name == "input_iterator_tag") {

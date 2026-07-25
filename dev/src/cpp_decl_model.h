@@ -280,6 +280,9 @@ bool named_type_has_dependent_semantic(const TypePtr & type);
 bool named_type_key_contains_dependent_semantic(const TypePtr & type);
 bool named_type_key_contains_partial_order_placeholder(const TypePtr & type);
 std::string named_type_semantic_payload(const TypePtr & type);
+std::string named_type_display_text(const TypePtr & type);
+std::string named_type_display_text(const Type & type);
+bool compact_named_type_display(const TypePtr & type);
 const CppAstNode * named_type_dependent_type_expression_node(const TypePtr & type);
 bool named_type_dependent_type_expression_formed_with_placeholders(
     const TypePtr & type);

@@ -268,7 +268,7 @@ bool named_type_has_function_local_marker(const TypePtr & type)
     return false;
   }
   return base->named_key.find("__local_") != string::npos ||
-         base->named_display.find("__local_") != string::npos;
+         named_type_display_text(base).find("__local_") != string::npos;
 }
 
 semantic_source_use::SourceUseRole declaration_alias_class_use_role(
@@ -944,7 +944,11 @@ private:
       }
       Type::NamedRareMetadata & rare =
           type->mutable_named_rare_metadata();
-      if(info->source_template || rare.named_member_owner_type) {
+      if(info->source_template &&
+         rare.named_class_template_specialization_mangle_info) {
+        compact_named_type_display(type);
+        rare.named_output_name_is_final = true;
+      } else if(rare.named_member_owner_type) {
         const string output_name = class_output_qualified_name(*info);
         if(!output_name.empty()) {
           type->named_display =
@@ -5385,7 +5389,8 @@ private:
 
   TypeSpellingParts spell_instantiation_identity_type_argument(
       const TypePtr & type,
-      unsigned depth = 0) const
+      unsigned depth = 0,
+      bool compact_named_classes = false) const
   {
     switch(type->kind) {
     case Type::TK_FUNDAMENTAL:
@@ -5393,12 +5398,28 @@ private:
 
     case Type::TK_NAMED:
     {
-      string text = type->named_display.empty() ? type->named_key : type->named_display;
+      if(compact_named_classes) {
+        ClassInfo * info = type->named_rare().named_class_info;
+        if(!info) {
+          auto found = classes_by_key.find(type->named_key);
+          if(found != classes_by_key.end()) {
+            info = found->second;
+          }
+        }
+        if(info && !class_instantiation_key(*info).empty()) {
+          return TypeSpellingParts{
+              "__cppgm_class_identity_" +
+                  std::to_string(info->semantic_identity_id) + " ",
+              ""};
+        }
+      }
+      const string display = named_type_display_text(type);
+      string text = display.empty() ? type->named_key : display;
       if(should_prefer_named_key_for_instantiation_identity(type)) {
         text = type->named_key;
       } else if(text.compare(0, 19, "template-parameter ") == 0 ||
                 text.compare(0, 10, "dependent ") == 0) {
-        text = type->named_display;
+        text = display;
       }
       text = collapse_reparseable_scope_operators(strip_elaborated_type_prefix(text));
       string structured_text;
@@ -5423,7 +5444,9 @@ private:
         cv_volatile = cv_volatile || base->cv_volatile;
         base = base->inner;
       }
-      TypeSpellingParts inner = spell_instantiation_identity_type_argument(base);
+      TypeSpellingParts inner =
+          spell_instantiation_identity_type_argument(
+              base, depth, compact_named_classes);
       string qualifier;
       if(cv_const) {
         qualifier += "const";
@@ -5444,13 +5467,17 @@ private:
 
     case Type::TK_ATOMIC:
     {
-      TypeSpellingParts inner = spell_instantiation_identity_type_argument(type->inner);
+      TypeSpellingParts inner =
+          spell_instantiation_identity_type_argument(
+              type->inner, depth, compact_named_classes);
       return TypeSpellingParts{"_Atomic(" + trim_space(inner.before) + inner.after + ") ", ""};
     }
 
     case Type::TK_POINTER:
     {
-      TypeSpellingParts inner = spell_instantiation_identity_type_argument(type->inner);
+      TypeSpellingParts inner =
+          spell_instantiation_identity_type_argument(
+              type->inner, depth, compact_named_classes);
       if(!inner.after.empty()) {
         return TypeSpellingParts{
             append_parenthesized_type_spelling_prefix(inner.before, "(*"),
@@ -5461,9 +5488,13 @@ private:
 
     case Type::TK_MEMBER_POINTER:
     {
-      TypeSpellingParts inner = spell_instantiation_identity_type_argument(type->inner);
+      TypeSpellingParts inner =
+          spell_instantiation_identity_type_argument(
+              type->inner, depth, compact_named_classes);
       const string owner_text =
-          trim_space(spell_instantiation_identity_type_argument(type->owner).before);
+          trim_space(
+              spell_instantiation_identity_type_argument(
+                  type->owner, depth, compact_named_classes).before);
       if(!inner.after.empty()) {
         return TypeSpellingParts{
             append_parenthesized_type_spelling_prefix(inner.before,
@@ -5475,7 +5506,9 @@ private:
 
     case Type::TK_BLOCK_POINTER:
     {
-      TypeSpellingParts inner = spell_instantiation_identity_type_argument(type->inner);
+      TypeSpellingParts inner =
+          spell_instantiation_identity_type_argument(
+              type->inner, depth, compact_named_classes);
       if(!inner.after.empty()) {
         return TypeSpellingParts{
             append_parenthesized_type_spelling_prefix(inner.before, "(^"),
@@ -5486,7 +5519,9 @@ private:
 
     case Type::TK_LVALUE_REFERENCE:
     {
-      TypeSpellingParts inner = spell_instantiation_identity_type_argument(type->inner);
+      TypeSpellingParts inner =
+          spell_instantiation_identity_type_argument(
+              type->inner, depth, compact_named_classes);
       if(!inner.after.empty()) {
         return TypeSpellingParts{
             append_parenthesized_type_spelling_prefix(inner.before, "(&"),
@@ -5497,7 +5532,9 @@ private:
 
     case Type::TK_RVALUE_REFERENCE:
     {
-      TypeSpellingParts inner = spell_instantiation_identity_type_argument(type->inner);
+      TypeSpellingParts inner =
+          spell_instantiation_identity_type_argument(
+              type->inner, depth, compact_named_classes);
       if(!inner.after.empty()) {
         return TypeSpellingParts{
             append_parenthesized_type_spelling_prefix(inner.before, "(&&"),
@@ -5508,7 +5545,9 @@ private:
 
     case Type::TK_ARRAY:
     {
-      TypeSpellingParts inner = spell_instantiation_identity_type_argument(type->inner);
+      TypeSpellingParts inner =
+          spell_instantiation_identity_type_argument(
+              type->inner, depth, compact_named_classes);
       if(type->has_bound) {
         ostringstream out;
         out << "[" << type->bound << "]";
@@ -5523,7 +5562,9 @@ private:
 
     case Type::TK_FUNCTION:
     {
-      TypeSpellingParts inner = spell_instantiation_identity_type_argument(type->inner);
+      TypeSpellingParts inner =
+          spell_instantiation_identity_type_argument(
+              type->inner, depth, compact_named_classes);
       inner.before = trim_space(inner.before);
       ostringstream out;
       out << "(";
@@ -5531,7 +5572,9 @@ private:
         if(i != 0) {
           out << ", ";
         }
-        TypeSpellingParts param = spell_instantiation_identity_type_argument(type->params[i]);
+        TypeSpellingParts param =
+            spell_instantiation_identity_type_argument(
+                type->params[i], depth, compact_named_classes);
         out << trim_space(param.before + param.after);
       }
       if(type->variadic) {
@@ -5606,7 +5649,9 @@ private:
         return out;
       }
     }
-    return instantiation_identity_text_for_type_argument(type);
+    const TypeSpellingParts parts =
+        spell_instantiation_identity_type_argument(type, 0, true);
+    return trim_space(parts.before + parts.after);
   }
 
   string lookup_text_for_non_type_template_argument(const TypePtr & type,
@@ -6400,7 +6445,9 @@ private:
                 return direct_named;
               }
               if(direct_scope.class_info &&
-                 direct_scope.class_info->reference_member_collection_in_progress) {
+                 (direct_scope.class_info->reference_member_collection_in_progress ||
+                  direct_scope.class_info->reference_named_members_in_progress.count(
+                      lookup_name) != 0)) {
                 TypePtr enclosing =
                     lookup_enclosing_type_before_reference_placeholder(
                         direct_scope,
@@ -7239,7 +7286,9 @@ private:
        normalized_name.find('<') == string::npos) {
       for(Scope * current = &scope; current; current = current->parent) {
         if(current->class_info &&
-           current->class_info->reference_member_collection_in_progress) {
+           (current->class_info->reference_member_collection_in_progress ||
+            current->class_info->reference_named_members_in_progress.count(
+                normalized_name) != 0)) {
           TypePtr direct_alias = direct_named_type(*current, normalized_name);
           if(direct_alias) {
             return direct_alias;
@@ -7862,7 +7911,9 @@ private:
                         return direct_named;
                       }
                       if(direct_scope.class_info &&
-                         direct_scope.class_info->reference_member_collection_in_progress) {
+                         (direct_scope.class_info->reference_member_collection_in_progress ||
+                          direct_scope.class_info->reference_named_members_in_progress.count(
+                              lookup_name) != 0)) {
                         TypePtr enclosing =
                             lookup_enclosing_type_before_reference_placeholder(
                                 direct_scope,
@@ -9066,7 +9117,9 @@ private:
           note_resolved_alias_class_use(member.type, nullptr);
           return cache_qualified_type_result(member.type);
         }
-        if(current->class_info->reference_member_collection_in_progress &&
+        if((current->class_info->reference_member_collection_in_progress ||
+            current->class_info->reference_named_members_in_progress.count(
+                qualified.name) != 0) &&
            (current->class_info->dependent_instantiation ||
             scope_has_template_placeholders(*current->class_info->member_scope))) {
           return make_dependent_class_member_type_placeholder(
@@ -10672,6 +10725,26 @@ private:
     }
 
     info.reference_members_collected = true;
+  }
+
+  void ensure_class_reference_type_members(ClassInfo & info) override
+  {
+    if(witness::enabled(template_witness_context())) {
+      semantic_class_model::ensure_class_reference_members(*this, info);
+    } else {
+      semantic_class_model::ensure_class_reference_type_members(*this, info);
+    }
+  }
+
+  void ensure_class_reference_named_member(ClassInfo & info,
+                                           const string & name) override
+  {
+    if(witness::enabled(template_witness_context())) {
+      semantic_class_model::ensure_class_reference_members(*this, info);
+    } else {
+      semantic_class_model::ensure_class_reference_named_member(
+          *this, info, name);
+    }
   }
 
   void ensure_class_reference_members(ClassInfo & info) override
@@ -13215,7 +13288,7 @@ private:
       return false;
     }
     return text_matches(base->named_key) ||
-           text_matches(base->named_display) ||
+           text_matches(named_type_display_text(base)) ||
            text_matches(base->named_semantic_payload);
   }
 
@@ -14422,7 +14495,9 @@ private:
         return candidate;
       }
       std::string lookup_text =
-          candidate_dependent ? describe_type(base) : trim_space(base->named_display);
+          candidate_dependent ?
+              describe_type(base) :
+              trim_space(named_type_display_text(base));
       if(lookup_text.empty()) {
         lookup_text = trim_space(base->named_key);
       }
@@ -14548,9 +14623,11 @@ private:
 	      if(!candidate) {
 	        return false;
 	      }
+	      const string candidate_display =
+	          named_type_display_text(candidate);
 	      const string alias_text =
-	          candidate->named_display.empty() ? describe_type(candidate) :
-	                                             candidate->named_display;
+	          candidate_display.empty() ? describe_type(candidate) :
+	                                      candidate_display;
 	      return text_mentions_template_placeholders(*inst_scope, alias_text) ||
 	             text_mentions_dependent_non_namespace_binding_names(*inst_scope,
 	                                                                 alias_text);
@@ -14961,8 +15038,9 @@ private:
       }
       alias = make_dependent_alias_specialization();
     }
+    const string alias_display = named_type_display_text(alias);
     const string alias_text =
-        alias ? (alias->named_display.empty() ? describe_type(alias) : alias->named_display) :
+        alias ? (alias_display.empty() ? describe_type(alias) : alias_display) :
                 string();
     if(alias &&
        type_depends_on_template_parameter(alias) &&
@@ -17370,6 +17448,12 @@ private:
         lexical_class = current->function->lexical_access_class;
       }
       if(lexical_class) {
+        if(!witness::enabled(template_witness_context()) &&
+           !lexical_class->reference_members_collected &&
+           !lexical_class->reference_member_collection_in_progress &&
+           lexical_class->reference_named_members_collected.count(name) == 0) {
+          ensure_class_reference_named_member(*lexical_class, name);
+        }
         MemberValueLookupResult member = lookup_member_value(*lexical_class, name);
         if(lexical_only && member.binding && member.binding->kind == ValueBinding::VK_FIELD) {
           member.binding = nullptr;
@@ -22257,7 +22341,7 @@ private:
       out += "N:";
       out += type->named_key;
       out += ":";
-      out += type->named_display;
+      out += named_type_display_text(type);
       out += ":";
       out += (type->named_complete ? "1" : "0");
       break;
@@ -22395,7 +22479,7 @@ private:
       out << "<cyclic>";
     }
     if(type->kind == Type::TK_NAMED) {
-      out << " display=" << type->named_display;
+      out << " display=" << named_type_display_text(type);
     }
     out << "}";
     return out.str();
@@ -24231,50 +24315,6 @@ private:
     return template_api::function_binding_registration_identity(binding);
   }
 
-  string function_object_symbol_key(const string & qualified_name,
-                                    const TypePtr & type,
-                                    bool is_const_method,
-                                    bool is_volatile_method,
-                                    RefQualifier ref_qualifier,
-                                    bool is_constructor,
-                                    bool is_destructor,
-                                    const FunctionTemplateRegistrationIdentity & template_identity,
-                                    const ClassInfo * owner_class) const
-  {
-    ostringstream out;
-    out << qualified_name;
-    out << "|type=" << describe_type(type);
-    if(is_const_method) {
-      out << "|const";
-    }
-    if(is_volatile_method) {
-      out << "|volatile";
-    }
-    if(ref_qualifier != RQ_NONE) {
-      out << "|refq=" << static_cast<int>(ref_qualifier);
-    }
-    if(is_constructor) {
-      out << "|ctor";
-    }
-    if(is_destructor) {
-      out << "|dtor";
-    }
-    if(template_identity.decl) {
-      out << "|template=" << template_identity.decl->name;
-    }
-    if(owner_class) {
-      const string & owner_instantiation =
-          template_api::class_template_instantiation_key(*owner_class);
-      if(!owner_instantiation.empty()) {
-        out << "|owner-inst=" << owner_instantiation;
-      }
-    }
-    if(!template_identity.key.empty()) {
-      out << "|inst=" << template_identity.key;
-    }
-    return out.str();
-  }
-
   symbol_linkage::FunctionRefQualifier symbol_linkage_ref_qualifier(
       RefQualifier ref_qualifier) const
   {
@@ -24531,16 +24571,6 @@ private:
       throw logic_error("missing qualified-name syntax for function symbol " +
                         qualified_name);
     }
-    const string object_symbol_key =
-        function_object_symbol_key(qualified_name,
-                                   type,
-                                   binding.is_const_method,
-                                   binding.is_volatile_method,
-                                   binding.ref_qualifier,
-                                   binding.is_constructor,
-                                   binding.is_destructor,
-                                   function_template_registration_identity(binding),
-                                   binding.owner_class);
     symbol_linkage::SymbolIdentity updated =
         has_qualified_name_syntax ?
             symbol_linkage::make_function_symbol_identity(qualified_name_syntax,
@@ -24548,7 +24578,6 @@ private:
                                                           binding.is_c_linkage,
                                                           type,
                                                           options,
-                                                          object_symbol_key,
                                                           linkage) :
             symbol_linkage::make_c_function_symbol_identity(name, linkage);
     apply_object_symbol_override(updated, binding.object_symbol_override);
@@ -24621,16 +24650,6 @@ private:
                                      declaration_node,
                                      definition_node);
     options.is_conversion_operator = is_conversion_operator;
-    const string object_symbol_key =
-        function_object_symbol_key(qualified_name,
-                                   type,
-                                   is_const_method,
-                                   is_volatile_method,
-                                   ref_qualifier,
-                                   is_constructor,
-                                   is_destructor,
-                                   template_identity,
-                                   owner_class);
     QualifiedName generated_qualified_name_syntax;
     const QualifiedName * selected_qualified_name_syntax = qualified_name_syntax;
     if(!selected_qualified_name_syntax &&
@@ -24651,7 +24670,6 @@ private:
                                                           is_c_linkage,
                                                           type,
                                                           options,
-                                                          object_symbol_key,
                                                           linkage) :
             symbol_linkage::make_c_function_symbol_identity(name, linkage);
     apply_object_symbol_override(symbol, object_symbol_override);
@@ -26345,8 +26363,10 @@ private:
         {
           const string lhs_key = normalize_named_text(lhs->named_key);
           const string rhs_key = normalize_named_text(rhs->named_key);
-          const string lhs_display = normalize_named_text(lhs->named_display);
-          const string rhs_display = normalize_named_text(rhs->named_display);
+          const string lhs_display =
+              normalize_named_text(named_type_display_text(lhs));
+          const string rhs_display =
+              normalize_named_text(named_type_display_text(rhs));
           return lhs_key == rhs_key || lhs_key == rhs_display ||
                  lhs_display == rhs_key || lhs_display == rhs_display;
         }
@@ -27086,7 +27106,7 @@ private:
     case Type::TK_NAMED:
     {
       if(lhs->named_key == rhs->named_key &&
-         lhs->named_display == rhs->named_display) {
+         named_type_display_text(lhs) == named_type_display_text(rhs)) {
         return true;
       }
 
@@ -27095,9 +27115,11 @@ private:
       const string rhs_key =
           canonicalize_parameter_names(rhs_parameters, rhs->named_key);
       const string lhs_display =
-          canonicalize_parameter_names(lhs_parameters, lhs->named_display);
+          canonicalize_parameter_names(
+              lhs_parameters, named_type_display_text(lhs));
       const string rhs_display =
-          canonicalize_parameter_names(rhs_parameters, rhs->named_display);
+          canonicalize_parameter_names(
+              rhs_parameters, named_type_display_text(rhs));
       if(lhs_key == rhs_key && lhs_display == rhs_display) {
         return true;
       }
@@ -27224,7 +27246,7 @@ private:
              !named_type_is_template_parameter(base)) {
             return false;
           }
-          string display = trim_space(base->named_display);
+          string display = trim_space(named_type_display_text(base));
           const string typename_prefix = "typename ";
           if(display.compare(0, typename_prefix.size(), typename_prefix) == 0) {
             display = trim_space(display.substr(typename_prefix.size()));
@@ -27357,7 +27379,8 @@ private:
                   return describe_type(type);
                 case Type::TK_NAMED:
                   return canonicalize_text_template_parameter_names(
-                      trim_space(normalize_type_lookup_name(type->named_display)));
+                      trim_space(normalize_type_lookup_name(
+                          named_type_display_text(type))));
                 case Type::TK_CV:
                 {
                   string out = canonical_type_text(type->inner);
@@ -31723,17 +31746,6 @@ private:
       throw logic_error("missing qualified-name syntax for function entry symbol " +
                         qualified_name);
     }
-    const string object_symbol_key =
-        function_object_symbol_key(
-            qualified_name,
-            target.type,
-            target.is_const_method,
-            target.is_volatile_method,
-            target.ref_qualifier,
-            target.is_constructor,
-            target.is_destructor,
-            function_template_registration_identity(target),
-            target.owner_class);
     symbol_linkage::SymbolIdentity updated =
         has_qualified_name_syntax ?
             symbol_linkage::make_function_symbol_identity(
@@ -31742,7 +31754,6 @@ private:
                 target.is_c_linkage,
                 target.type,
                 options,
-                object_symbol_key,
                 target.symbol.linkage) :
             symbol_linkage::make_c_function_symbol_identity(
                 function_binding_display_name_for_symbol(target),
@@ -32567,6 +32578,31 @@ private:
           &semantic_metrics::AnalyzerCounters::complete_class_type_in_progress);
       return nullptr;
     }
+    if(!template_api::class_has_source_template_identity(info) &&
+       info->class_node &&
+       info->class_node->kind != CppAstKind::class_forward_declaration) {
+      note_complete_class_materialization(info, info->class_node);
+      populate_class_info(*info, *info->class_node);
+      const bool has_template_owner =
+          info->source_template ||
+          (info->enclosing_scope &&
+           info->enclosing_scope->class_info &&
+           info->enclosing_scope->class_info->source_template);
+      if(info->complete &&
+         has_template_owner &&
+         witness::enabled(template_witness_context())) {
+        template_api::note_nested_member_class_instantiation_completed_if_needed(
+            *this, info, info->class_node, info->class_node);
+      }
+      if(info->complete &&
+         template_api::class_template_completion_has_owner_definition(*info)) {
+        template_api::finalize_nested_member_class_instantiation_from_owner(*this,
+                                                                           info,
+                                                                           true);
+      }
+      sync_query_type_layout(info);
+      return info->complete ? info : nullptr;
+    }
     if(!info->source_template &&
        info->enclosing_scope &&
        info->enclosing_scope->class_info &&
@@ -32609,7 +32645,7 @@ private:
         }
       }
     }
-    template_api::refresh_forward_class_template_selection(*this, *info);
+    template_api::refresh_referenced_class_template_selection(*this, *info);
     if(template_api::class_template_completion_has_owner_definition(*info)) {
       template_api::TemplateNestedMemberClassCompletionRequest request;
       request.nested_info = info;
@@ -32623,20 +32659,6 @@ private:
                                                                            true);
         return info;
       }
-    }
-    if(!template_api::class_has_source_template_identity(info) &&
-       info->class_node &&
-       info->class_node->kind != CppAstKind::class_forward_declaration) {
-      note_complete_class_materialization(info, info->class_node);
-      populate_class_info(*info, *info->class_node);
-      if(info->complete &&
-         template_api::class_template_completion_has_owner_definition(*info)) {
-        template_api::finalize_nested_member_class_instantiation_from_owner(*this,
-                                                                           info,
-                                                                           true);
-      }
-      sync_query_type_layout(info);
-      return info->complete ? info : nullptr;
     }
     const bool incomplete_instantiation_has_member_state =
         info->reference_members_collected ||

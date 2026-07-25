@@ -469,6 +469,7 @@ public:
       return false;
     }
     if(!info->reference_members_collected &&
+       !info->reference_type_members_collected &&
        !info->reference_member_collection_in_progress &&
        !(info->full_member_collection_in_progress &&
          info->member_scope &&
@@ -479,7 +480,7 @@ public:
         ++counters->reference_member_scope_ensure_by_demand[
             static_cast<std::size_t>(demand)];
       }
-      ctx_.ensure_class_reference_members(*info);
+      ctx_.ensure_class_reference_type_members(*info);
     }
     out = info->member_scope.get();
     return out != nullptr;

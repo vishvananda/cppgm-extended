@@ -351,7 +351,7 @@ void bind_non_type_value(Scope & scope,
         !is_bool_type(base_type) &&
         !(base_type->kind == Type::TK_NAMED &&
           (base_type->named_key.compare(0, 5, "enum ") == 0 ||
-           base_type->named_display.compare(0, 5, "enum ") == 0))));
+           named_type_display_text(base_type).compare(0, 5, "enum ") == 0))));
   if(!dependent) {
     binding.non_type_template_function_value = function_value;
     binding.non_type_template_function_internal_symbol =

@@ -1062,7 +1062,7 @@ bool substitute_owner_arguments_in_class_type(
           display += dependent_qualified_members[i];
         }
         out = make_dependent_qualified_member_type(
-            display.empty() ? type->named_display : display,
+            display.empty() ? named_type_display_text(type) : display,
             owner_substituted,
             dependent_qualified_members,
             dependent_qualified_leading_typename,
@@ -1559,7 +1559,8 @@ bool type_mentions_template_parameter_name(
         rare.named_dependent_class_template_decl != nullptr;
     if(dependent_named_type &&
        (text_mentions_template_parameter_name(type->named_key, parameters) ||
-        text_mentions_template_parameter_name(type->named_display, parameters) ||
+        text_mentions_template_parameter_name(
+            named_type_display_text(type), parameters) ||
         text_mentions_template_parameter_name(named_type_semantic_payload(type),
                                               parameters))) {
       return true;
@@ -2576,7 +2577,9 @@ TypePtr rebind_special_member_self_parameter_type(const TypePtr & type,
     }
     std::string text = semantic_utils::trim_space(
         semantic_utils::strip_elaborated_type_prefix(
-            named->named_display.empty() ? named->named_key : named->named_display));
+            named_type_display_text(named).empty() ?
+                named->named_key :
+                named_type_display_text(named)));
     const std::string typename_prefix = "typename ";
     while(text.compare(0, typename_prefix.size(), typename_prefix) == 0) {
       text = semantic_utils::trim_space(text.substr(typename_prefix.size()));
@@ -2648,8 +2651,9 @@ TypePtr rebind_out_of_class_member_self_type(const TypePtr & type,
 
   std::string current_text = semantic_utils::trim_space(
       semantic_utils::strip_elaborated_type_prefix(
-          unqualified->named_display.empty() ? unqualified->named_key :
-                                               unqualified->named_display));
+          named_type_display_text(unqualified).empty() ?
+              unqualified->named_key :
+              named_type_display_text(unqualified)));
   const std::string typename_prefix = "typename ";
   while(current_text.compare(0, typename_prefix.size(), typename_prefix) == 0) {
     current_text = semantic_utils::trim_space(current_text.substr(typename_prefix.size()));
@@ -4651,6 +4655,11 @@ std::string function_template_instantiation_type_argument_key(
     const TypePtr & type,
     unsigned depth = 0)
 {
+  if(type &&
+     !template_argument_semantics::type_depends_on_template_parameter(
+         ctx, type)) {
+    return ctx.semantic_identity_key_for_type_argument(type);
+  }
   const std::string fallback = ctx.instantiation_identity_text_for_type_argument(type);
   if(!type || depth >= 8) {
     return fallback;
@@ -5226,6 +5235,16 @@ void update_class_template_specialization_mangle_info(
   if(pack_sizes) {
     mangle_info->pack_sizes = *pack_sizes;
   }
+  if(info.class_kind == "class") {
+    mangle_info->display_class_key =
+        ClassTemplateSpecializationMangleInfo::DCK_CLASS;
+  } else if(info.class_kind == "struct") {
+    mangle_info->display_class_key =
+        ClassTemplateSpecializationMangleInfo::DCK_STRUCT;
+  } else if(info.class_kind == "union") {
+    mangle_info->display_class_key =
+        ClassTemplateSpecializationMangleInfo::DCK_UNION;
+  }
   if(template_api::current_template_witness_session() == nullptr) {
     std::vector<TemplateArgument> * retained_arguments = nullptr;
     if(share_primary_arguments &&
@@ -5243,6 +5262,9 @@ void update_class_template_specialization_mangle_info(
   }
   mangle_info->force_structured_mangling = force_structured_mangling;
   set_named_type_class_template_specialization_mangle_info(info.type, mangle_info);
+  if(share_primary_arguments) {
+    compact_named_type_display(info.type);
+  }
 }
 
 void clear_class_template_cached_lambda_mangle_metadata(
@@ -6515,7 +6537,8 @@ bool template_parameter_type_shape_matches(
   case Type::TK_NAMED:
     if(!allow_nontemplate_named_mismatch) {
       return lhs_base->named_key == rhs_base->named_key &&
-             lhs_base->named_display == rhs_base->named_display;
+             named_type_display_text(lhs_base) ==
+                 named_type_display_text(rhs_base);
     }
     // Owner template parameters may already be substituted on one side. Once a
     // type position does not mention the member template parameters, it does
@@ -8298,14 +8321,22 @@ bool record_class_template_instantiation_state(
   return refresh_arguments;
 }
 
-bool refresh_forward_class_template_selection(SemanticContext & ctx,
-                                              ClassInfo & info)
+bool refresh_referenced_class_template_selection(SemanticContext & ctx,
+                                                 ClassInfo & info)
 {
   if(!info.source_template ||
      info.instantiation_arguments.empty() ||
      !info.template_output_node ||
-     info.template_output_node->kind != CppAstKind::class_forward_declaration ||
+     info.complete ||
+     info.template_instantiation_in_progress ||
+     info.full_member_collection_in_progress ||
+     info.reference_member_collection_in_progress ||
      !info.member_scope) {
+    return false;
+  }
+  if(witness::enabled(ctx.template_witness_context()) &&
+     info.template_output_node->kind !=
+         CppAstKind::class_forward_declaration) {
     return false;
   }
 
@@ -8318,6 +8349,21 @@ bool refresh_forward_class_template_selection(SemanticContext & ctx,
           info.instantiation_arguments);
   if(!specialization.class_node ||
      specialization.class_node == info.template_output_node) {
+    return false;
+  }
+
+  const bool current_is_primary =
+      info.template_output_node == info.source_template->class_node;
+  const bool current_is_partial =
+      selected_partial_specialization(*info.source_template, info) != nullptr;
+  const bool current_is_forward =
+      info.template_output_node->kind == CppAstKind::class_forward_declaration;
+  const bool selection_is_more_specialized =
+      (current_is_primary &&
+       specialization.kind != template_api::MS_PRIMARY) ||
+      (current_is_partial &&
+       specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION);
+  if(!current_is_forward && !selection_is_more_specialized) {
     return false;
   }
 
@@ -9717,6 +9763,7 @@ ClassInfo * instantiate_builtin_initializer_list_template(
     }
     info->template_instantiation_in_progress = false;
   }
+  compact_named_type_display(info->type);
   store_class_instantiation(decl.instantiations, key, info);
   return info;
 }
@@ -9941,7 +9988,10 @@ ClassInfo * instantiate_selected_class_template(
     create_request.scope = inst_scope;
     create_request.class_kind = node_text(*class_key);
     create_request.template_name = decl.name;
-    create_request.specialization_name = ensure_requested_specialization_name();
+    if(current_arguments_dependent) {
+      create_request.specialization_name =
+          ensure_requested_specialization_name();
+    }
     create_request.internal_specialization_name = ensure_internal_specialization_name();
     create_request.template_decl = &decl;
     create_request.output_node = class_node;
@@ -9981,9 +10031,14 @@ ClassInfo * instantiate_selected_class_template(
   info->dependent_instantiation = current_arguments_dependent;
   info->is_explicit_specialization =
       specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION;
-  bind_declaring_owner_instantiation_context(ctx, *info->member_scope, *binding_scope);
+  bind_declaring_owner_instantiation_context(
+      ctx, *info->member_scope, *binding_scope);
   bind_template_arguments_into_scope(
-      ctx, *info->member_scope, *bound_parameters, *bound_arguments, bound_pack_sizes);
+      ctx,
+      *info->member_scope,
+      *bound_parameters,
+      *bound_arguments,
+      bound_pack_sizes);
   ctx.record_primary_alias_base_source_uses(decl);
   if(forward_only_selection) {
     trace_class_instantiation("forward-only", info);
@@ -10009,6 +10064,9 @@ ClassInfo * instantiate_selected_class_template(
           return instantiated_class_context(ctx, *info, decl, arguments);
         });
     finalize_instantiated_class(ctx, decl, *info, arguments);
+    if(!info->dependent_instantiation) {
+      compact_named_type_display(info->type);
+    }
   } catch(const TemplateSubstitutionFailure &) {
     info->template_instantiation_in_progress = false;
     trace_class_instantiation("populate-fail", info, "template-substitution-failure");

@@ -15,9 +15,10 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `70 / 147`
 - current cursor: `#71 libs/msm/test`
-- active compiler frontiers: shared `get_hierarchical_test_machines`
-  MPL-vector instantiation failure in `CompositeMachine` and `Entries`, plus
-  recursively flattened semantic identity retention in `AnonymousEuml`
+- active compiler frontiers: the forced `CompositeEuml` source now clears the
+  old memory-bound phase and fails while instantiating `boost::mpl::for_each`;
+  its qualified four-argument `for_each_impl<...>::execute` call is
+  misclassified as a functional cast
 
 ## Baseline Gates
 
@@ -222,6 +223,7 @@ differences other than the output path.
 | `(MSM algorithmic cleanup package)` | Remove eager unused instantiation, compact/share typed template state, avoid repeated rendered-name recovery, and skip witness-only class-lifecycle rendering when no witness session exists | -25.36% | -22.41% | -28.72% | versus the mangle-name checkpoint, instructions improve by 33,233,712,344, RSS by 142,258,176 B, and footprint by 157,884,416 B; the final witness-only gate alone removes another 7,299,286,986 instructions from exact `AnonymousEuml` with byte-identical object output | `/private/tmp/cppgm-boost-frontier-v2-final-witness-gate-perf.json` | pass; three-run medians are 196,717,517,571 instructions, 1,002,999,808 B RSS, and 719,818,752 B footprint. The gate verified frozen source epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent compiler or live project header was measured, and system swap remained unchanged. |
 | `(MSM structured template reconstruction package)` | Preserve qualified/template-id sidecars through direct type substitution, consume already resolved alias arguments without resolving their display text again, structurally deduce class-template arguments in partial function results, and bound dependent-qualified-member scans by exact `Type` identity | -24.30% | -21.11% | -30.09% | versus the preceding recorded medians, instructions move +1.42%, RSS +1.67%, and footprint improves 1.92%; the required sample finds no new structural-deduction helper with at least five self samples, only two samples in the visited-set walk, and 11 of 7,787 samples in template-syntax reconstruction | `/private/tmp/cppgm-boost-frontier-v2-template-template-candidate.json`; diagnostic `/private/tmp/cppgm-template-template.sample.txt` and `/private/tmp/cppgm-template-template-hotspot.log` | pass; three-run medians are 199,516,398,659 instructions, 1,019,727,872 B RSS, and 705,990,656 B footprint. The immutable gate verified exact epoch `9764b3835`, its frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 | `(MSM concrete template-argument syntax compaction)` | Drop source AST from retained concrete type and ordinary value arguments after typed mangle state is complete; preserve member-pointer values, dependent arguments, template entities, and all witness-session syntax | -23.87% | -23.06% | -29.47% | versus the reference-field checkpoint, instructions move +0.19 percentage points, RSS improves 1.74 percentage points, and footprint moves +0.81 percentage points | `/private/tmp/cppgm-boost-frontier-v2-concrete-syntax-perf.json` | pass; three-run medians are 200,651,979,093 instructions, 994,582,528 B RSS, and 712,261,632 B footprint. The immutable gate verified epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
+| `(MSM lazy member and structured identity package)` | Materialize only the referenced class member/type slice, retain exact local-type identity in reconstructed displays, compact nested semantic identity keys, reuse completed host-ABI facts, bound compiler-internal function names, and remove rendered symbol work and a process-lifetime component-string memo that could not avoid linear work | -26.33% | -28.51% | -35.46% | versus the preceding concrete-syntax checkpoint, instructions improve 3.24%, RSS 7.09%, and footprint 8.50% | `/private/tmp/cppgm-boost-frontier-v2-msm-lazy-reference-final-perf.json` | pass; three-run medians are 194,153,880,135 instructions, 924,094,464 B RSS, and 651,743,232 B footprint. The gate verified immutable epoch `9764b3835`, frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 
 ## Suite Cursor
 
@@ -300,7 +302,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 68 | `libs/mpi/test` | blocked-external | `(no compiler change)` | The exact forced two-job graph finds only one bookkeeping target and exits successfully without creating any compile, link, or runtime action in 3.00s at 39,317,504 B maximum RSS and zero process swaps; log `/tmp/boost-frontier-v2-suite-068-mpi-initial-forced.log`. | Boost.MPI declares C++03, but its Jamfile creates the test suite only when `mpi.configured` is true. This host has neither `mpic++` nor `mpirun`, so the empty successful B2 graph is external-configuration evidence, not a compiler pass. System swap remains unchanged at 551.75 MB. |
 | 69 | `libs/mpl/test` | pass | `(this commit)` | The final exact forced two-job C++11 graph finds 2413 targets, updates all 220 requested targets, records 99 passing test actions, and exits with no failure or skip in 332.56s; log `/private/tmp/boost-frontier-v2-suite-069-mpl-full-fixed.log`. | Two minimal, header-free C++11 owners cover ordinary multicharacter constant evaluation and qualified static-array decay to a pointer non-type template argument. PA19/PA22 pass `453/453`; all 959 configured strict comparisons, the PA9-excluded broad report (`4079/4079`, including PA37 `7/7`), all 31 audit/performance unit tests, placement review, cache parity, Clang/GCC controls, and warning-clean Clang/GCC production builds pass. The final graph peaks at 447,705,088 B RSS, essentially unchanged from the one-failure intake, releases fully, and records zero swaps. |
 | 70 | `libs/mqtt5/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/mqtt5/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the frontier language policy, no graph was run and no compiler work is inferred from the historical configuration-only result. The cursor advances directly to C++03-declared MSM. |
-| 71 | `libs/msm/test` | frontier | `(this commit)` | Exact monitored replays of `CompositeMachine` and `Entries` compile, link, run, and pass. `CompositeEuml` now passes its guarded `previous_song[True_()]` transition and the later `Playing` lookup. The current package repairs the next handoff: reference-only class collection now records ordinary fields, and class-scope `decltype` can analyze a field designator without constructing an evaluated implicit-object expression. | A five-line, 193-byte, header-free C++11 PA21 reducer covers the reference-field `decltype` alias chain. The broad report exposed two member-pointer regressions from the new reference-only field binding; data-member-pointer template argument encoding now completes the owner layout and refreshes the field binding before reading its offset. PA26 and PA32 pass without reference changes. Clang's `-O0` AST statistics show 192,290 class-template-specialization declarations and 534,800 template-specialization types in the heavy TU. The cppgm allocator sample spreads 1.46 GB across seven million small anonymous allocations with 2--4% fragmentation, so the remaining time and RSS gap points to semantic-object representation rather than an extra specialization branch in the measured interval. PA9-excluded direct tests pass `4091/4091`; strict, cache parity, placement, all 23 zero-reparse categories, 31 audit/performance tests, host controls, and Clang/GCC warning builds pass. The immutable frozen-source/51-header gate records -24.06% instructions, -21.32% RSS, and -30.28% footprint. |
+| 71 | `libs/msm/test` | frontier | `(this commit)` | Exact monitored replays of `CompositeMachine` and `Entries` compile, link, run, and pass. The packaged compiler completes the guarded default-backend `CompositeEuml` scale input, and the exact forced source now exposes a later semantic failure in `boost::mpl::for_each`: its qualified four-argument `for_each_impl<...>::execute` call is treated as a functional cast. | The final algorithmic pass replaces eager reference-member collection with name-directed materialization, preserves structured nested/local template identity, reuses completed host-ABI facts, bounds compiler-internal names, and removes redundant rendered-symbol work and a process-lifetime component-string memo. The 25-nonblank-line PA21 C++11 reducer isolates direct-sibling member-template lookup without headers or `<type_traits>`. The guarded scale input completes in 113.47s at 1,954,742,272 B RSS; unlike the exact source, it substitutes a single default `test_machines` backend and omits the forced `Playing_type` process-event instantiation. The exact one-job B2 compile reaches the new diagnostic at 3,453,186,048 B maximum RSS with zero process swaps, versus the former 8.98 GiB footprint without output. PA9-excluded direct tests pass `4092/4092`, PA37 object roundtrip passes `7/7`, all 959 configured strict comparisons pass, all 23 reparse categories remain zero, and all 14 audit tests pass. The immutable frozen-source/51-header gate records -26.33% instructions, -28.51% RSS, and -35.46% footprint. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
@@ -308,36 +310,36 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 ## Active Frontier
 
 - suite: `#71 libs/msm/test`
-- focused target: `CompositeEuml`; exact `CompositeMachine` and `Entries`
-  replays pass
+- focused target: forced `CompositeEuml`; exact `CompositeMachine` and
+  `Entries` replays and the guarded default-backend scale input pass
 - last closed suite: `#70 libs/mqtt5/test` (`skipped-language`)
-- failure phase: the reference-field `decltype` handoff is fixed, but an exact
-  `CompositeEuml` replay remains memory-bound before semantic output completes
-- diagnostic: 86,334 reference-collection requests produce 32,768
-  pointer-unique class specializations with zero repeated collections. The
-  class count rises from 11,379 at 8,203 collections to 41,927 at 32,768
-  collections, and retained member AST children rise from 34,635 to 114,866.
-  The owner census counts 73.6 MB in omitted AST graphs at the first boundary;
-  concrete type/value source syntax accounts for 40.8 MB.
-  Releasing safe concrete syntax shifts the heavy-TU RSS curve by about 2%.
-  The packaged exact replay reaches an 8.98 GiB physical footprint at 261
-  seconds without producing semantic output.
-  Clang `-O0 -Xclang -print-stats` completes in 14.96 seconds at 941,101,056
-  bytes maximum RSS.
+- failure phase: function-body call analysis while instantiating
+  `boost::mpl::for_each`; the qualified four-argument
+  `for_each_impl<...>::execute` call falls through to non-class functional-cast
+  analysis
+- diagnostic: the guarded C++11 `-O0` scale input completes in 113.47 seconds
+  at 1,954,742,272 B maximum RSS, 1,872,072,704 B footprint, and
+  528,081,721,146 instructions with zero swaps. It emits LowIR SHA-256
+  `864522e6abe8a9f1f40fdd48c5525610dd0069a36473a91bd638512606bbb77c`.
+  It differs from the exact source by selecting one default `test_machines`
+  backend and omitting the forced `Playing_type` process-event instantiation.
+  The exact one-job B2 compile reaches the new semantic diagnostic at
+  3,453,186,048 B maximum RSS with zero process swaps, so the old 8.98 GiB
+  no-output footprint remains fixed but 1.95 GB is not the exact-target peak.
 - reduced repro:
-  `pa21/tests/general/200-reference-field-decltype-alias.t`, five lines and
-  193 bytes, header-free C++11 with no `<type_traits>`
-- owning PA/cluster: PA21 alias-template and class-reference integration
-- implementation area: reference-only class member collection, unevaluated
-  field expression analysis, and data-member-pointer layout encoding
-- performance risk: `CompositeEuml` remains a heavy semantic-object workload;
-  monitor compiler-child RSS, system memory, and swap, and kill the compiler
-  child before its B2 wrapper if the run must stop
+  exact Boost source currently; a 39-nonblank-line header-free C++11 scratch
+  form of the same dependent static member-function-template call passes and is
+  not yet a causal reducer
+- owning PA/cluster: likely PA21/PA22 qualified member-template lookup and call
+  integration; place only after a causal reducer exists
+- implementation area: qualified call candidate lookup, deferred functional
+  cast disambiguation, and name-directed reference-only member collection
+- performance risk: keep exact replays at one job and stop after the failed
+  object; the first packaged replay peaked at 3.45 GB RSS with unchanged swap
 - language lane: Boost.MSM declares C++03 in `libs/msm/meta/libraries.json`, so it is supported and must run
-- next action: treat `CompositeEuml` as a compact semantic/AST storage project.
-  Do not repeat the exact target until that representation changes. Survey the
-  remaining MSM targets one at a time for independent correctness frontiers
-  while this target remains open.
+- next action: capture the rejected `execute` callee type/candidate state,
+  reduce the state transition that loses the static function template, and fix
+  the uncached qualified-call algorithm before replaying the target
 
 ## Fix Ledger
 
@@ -346,6 +348,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | MSM lazy reference-member materialization and structured specialization identity | Reference-only class completion eagerly instantiated every member and retained a broad semantic graph even when lookup needed one name. It now collects the requested member/type slice and preserves the old eager path for witness generation. Concrete nested types retain compact typed identity, reconstructed local displays keep their discriminator, completed host-ABI facts are reused, internal names are bounded, and symbol construction no longer retains a process-lifetime memo of large component strings that still had to be hashed, compared, and copied. No semantic source text is reparsed and no correctness cache is introduced. | `pa21/tests/general/300-nested-base-prefers-direct-sibling-member-template.t`, 25 nonblank lines / 553 bytes, header-free C++11 with no `<type_traits>` and a 106-byte empty-main LowIR reference | The reducer selects a direct sibling member template through a nested dependent base path. The guarded default-backend `CompositeEuml` scale input is the scale witness: the prior package reached 8.98 GiB physical footprint without output, whereas this package completes it at 1.95 GB RSS. The exact source advances to a later independent qualified-call diagnostic at 3.45 GB RSS. | The reducer passes cppgm++, Clang 22, and GCC 15 under C++11; normal, ten individual cache-off modes, and all-off runs are byte-identical. The final PA9-excluded direct report passes `4092/4092`, PA37 object roundtrip passes `7/7`, all 959 strict comparisons pass, all 23 text-reparse categories stay zero, and all 14 audit tests pass. Five normal LowIR refs change for lazy first-use ordering or removal of an internal overload ordinal; witness refs are unchanged. | -26.33% instructions, -28.51% RSS, and -35.46% footprint; three-run immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-msm-lazy-reference-final-perf.json`. Versus the preceding concrete-syntax checkpoint, instructions improve another 3.24%, RSS 7.09%, and footprint 8.50%. | `(this commit)` |
 | fixed | MSM `CompositeEuml` reference-field `decltype` handoff | Reference-only class collection recorded static data members but omitted ordinary fields. A later class-scope `decltype(x + x)` alias therefore lacked `x`, and ordinary expression analysis could not form an implicit member access without a function `this`. Reference collection now records a typed `ValueBinding` for each field, and a scoped unevaluated-operand mode analyzes its type and value category without inventing an object. Data-member-pointer non-type template arguments complete an incomplete owner and refresh that binding before encoding the layout offset. The fix adds no source text or cache path. | `pa21/tests/general/200-reference-field-decltype-alias.t`, five lines / 193 bytes, header-free C++11 with a 106-byte empty-main LowIR reference and no `<type_traits>` | The saved pre-fix compiler rejects the alias chain. Exact `CompositeEuml` reaches the same reference-only typedef handoff after clearing the guarded transition and `Playing` fronts. The first broad run after adding field bindings collapsed `&pair::x` and `&pair::y` to the same offset and omitted a PA32 owner-sensitive ABI symbol; forcing layout before numeric encoding repairs both cases without reference changes. | The reducer passes cppgm++, Clang 22, and GCC 15 under C++11. PA26/PA32 pass `195/195`; the PA9-excluded direct report passes `4091/4091`, including PA37 `7/7`; all configured strict comparisons pass. Normal, ten individual cache-off modes, and all-off runs produce byte-identical reducer LowIR. PA21 placement and hygiene have zero findings; all 23 reparse categories and 31 audit/performance tests pass; changed production units build warning-clean under Clang 22 and GCC 15. | -24.06% instructions, -21.32% RSS, and -30.28% footprint; candidate-only frozen report `/private/tmp/cppgm-boost-frontier-v2-msm-reference-field-candidate.json`; rolling instructions are flat, RSS improves 0.04%, and footprint improves 2.39%; the gate measured neither a parent nor a live header | `(this commit)` |
 | fixed | MSM `CompositeMachine` current injected specialization identity | Current injected class lookup compared only the source spelling and the materialized `ClassInfo::qualified_name`. For a concrete nested specialization whose materialized name contains semantic identity components, neither matched the lexical template-id; a stale unrelated exact-lookup anchor then won. The lookup now also compares the retained typed instantiation identity. No source text is parsed and no speculative lookup or cache change remains. | No new fixture: all compact header-free scratch forms passed before and after, so none causally reduced the Boost failure. The exact `CompositeMachine` TU is retained as the pre/post witness rather than adding a large or false reducer. | Unpatched HEAD rejects the exact TU in 12.19s at 449,990,656 B RSS with the stale `mpl::vector<...>` anchor; the isolated 13-line fix passes that point and remains active through a bounded 20s replay at 651,878,400 B RSS. Two other provisional lookup changes were independently removed without losing this advance. | PA22 direct LowIR passes `306/306`; the PA9-excluded direct report passes `4090/4090`; configured strict comparisons pass PA18 `186`, PA19 `115`, PA21 `162`, PA22 `158`, and PA23 `338` with zero failures; all 23 zero-reparse categories and 31 audit/performance tests pass; Clang 22 and GCC 15 warning builds are clean. | -24.06% instructions, -21.29% RSS, and -28.57% footprint; three-run immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-msm-current-injected-identity.json`; restored embedded baseline hash `c03bfd5c1b63bb022cd119eb0968dace0346052cdc13091665ea22a3a4f54996`; no parent or live header was measured | `(this commit)` |
 | fixed | MSM constituent alias/template-template reconstruction and dependent-type DAG walk | Direct type substitution discarded structured qualified/template-id sidecars, concrete template-template arguments reconstructed only display text, and partial function-result deduction did not compare the retained class-template declaration and typed arguments. The typed paths now preserve or reconstruct those structures, alias expansion can consume the caller's already resolved argument vector, and partial deduction compares dependent/concrete class-template metadata. Separately, the dependent-qualified-member predicate treated a shared `Type` graph as a tree; an exact pointer-identity visited set bounds the traversal without a result cache. No semantic text is parsed. | `pa21/tests/general/200-alias-template-template-argument-use-scope.t` and `pa21/tests/general/200-template-template-function-result-reconstruction.t`, both compact header-free C++11 compile-pass cases with ordinary LowIR references | Clang 22 accepts both reducers; the two controlled clean pre-fix compilers reject both. Exact `CompositeEuml` previously failed its first guarded subscript result and now reaches the later `Playing` row. A fresh `CompositeMachine` replay proves that its similar-looking structured-anchor failure remains open, so the smaller alias reducer is recorded as a constituent repair rather than overclaimed as the complete Boost reduction. An attempted owner-first member-pointer lookup made inherited name collisions viable and broke two PA26 controls; it was reverted completely. | PA21 passes `254/254`; PA26 passes `82/82`; configured strict suites pass PA18 `238/238`, PA19 `147/147`, PA21 `254/254`, PA22 `306/306`, and PA23 `409/409`; the full direct-text report passes `4101/4101`, including PA37 `7/7`. PA21 placement/hygiene has zero findings, all 23 reparse categories and 31 audit/perf unit tests pass, and the changed production units build warning-clean under Clang 22 and GCC 15. | -24.30% instructions, -21.11% RSS, and -30.09% footprint; three-run immutable frozen-header report `/private/tmp/cppgm-boost-frontier-v2-template-template-candidate.json`; required diagnostic sample finds no new dominant helper | `(this commit)` |
@@ -582,6 +585,39 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Dependent-type resolution cache input lifetime | The nested dependent-type cache keyed entries by a raw `Type *` while retaining only the resolved output. Recursive resolution could release an ephemeral input and allocate an unrelated type at the same address before the outermost query cleared the cache, producing a stale hit such as `const wrap_iter<size_t*>& -> int`. Each key now owns its input `TypePtr` for the cache entry's bounded lifetime; lookup ordering remains pointer-based and the cache is still cleared after the outermost query. | `pa22/tests/general/300-dependent-type-resolution-cache-input-lifetime.t`, reduced to 21 lines / 851 bytes of header-free C++11 with a local three-line `enable` stand-in | The saved pre-fix compiler fails 43 of 256 concurrent compilations of the reduced declaration graph. Trace evidence showed the same address first stored for a resolved `enable_t<..., int>` input and then reused by an unrelated `const W&` input. The hosted `<algorithm>` form reproduced 9 of 16 times; disabling the cache passed 16 of 16. | Clang 22 and GCC 15 accept the reducer warning-clean. The focused PA22 check, cache-on/off byte parity, and 48 concurrent fixed-compiler repetitions pass with zero swaps and at most 10,137,600 B RSS per process. The frozen self-compile gate completes three fresh compiler processes, each releases fully between runs, and records zero process swaps. | included in the same final three-run result: -11.08% instructions, -10.45% RSS, and -11.43% footprint; the cache ownership fix retains both the instruction win and recovered memory | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-25`: Packaged the final MSM algorithmic pass and returned to the
+  forced frontier. Name-directed reference-only member materialization replaces
+  eager whole-class work while witness generation retains its required eager
+  path. Structured nested/local specialization identity, completed host-ABI
+  fact reuse, bounded internal names, and removal of redundant rendered-symbol
+  storage close the remaining measured algorithmic and retention defects. The
+  25-nonblank-line PA21 reducer is header-free C++11, uses no `<type_traits>`,
+  passes Clang and GCC with warnings as errors, and produces byte-identical
+  LowIR with each of ten caches and all caches disabled.
+
+  The guarded default-backend `CompositeEuml` scale input completes in 113.47s
+  at 1,954,742,272 B RSS, 1,872,072,704 B footprint, and 528,081,721,146
+  instructions with zero swaps. Its LowIR SHA-256 is
+  `864522e6abe8a9f1f40fdd48c5525610dd0069a36473a91bd638512606bbb77c`.
+  It substitutes a single default `test_machines` backend and omits the forced
+  `Playing_type` process-event instantiation, so it is not the exact source.
+  The exact one-job B2 compile clears the old memory-bound phase and reaches a
+  later `boost::mpl::for_each` qualified-call diagnostic at 3,453,186,048 B
+  maximum RSS with zero process swaps. This is still a substantial recovery
+  from the former 8.98 GiB no-output footprint, but the exact target remains
+  open and 1.95 GB is not its peak.
+
+  The immutable source-and-51-header gate passes at -26.33% instructions,
+  -28.51% RSS, and -35.46% footprint; versus the prior concrete-syntax
+  checkpoint it improves another 3.24%, 7.09%, and 8.50%. The final
+  PA9-excluded direct-LowIR report passes `4092/4092`, including PA37 `7/7`;
+  all 959 strict comparisons, all 23 zero-reparse categories, and all 14 audit
+  tests pass. The five normal LowIR reference changes have narrow causes:
+  lazy first-use ordering in PA18, PA22, PA23, and PA26, and removal of an
+  internal overload ordinal in PA21. Witness references are unchanged. The
+  next action is to reduce and fix the `for_each_impl<...>::execute`
+  call-candidate loss exposed by the exact source.
 
 - `2026-07-25`: Ended the owner-specific representation pass and returned to
   the MSM frontier. At 8,203 reference collections, the primary semantic census
@@ -2890,13 +2926,13 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh -a libs/msm/test//CompositeMachine
+  ./run-cppgm-b2.sh -a libs/msm/test//CompositeEuml
 
-# After the monitored heavy TU releases:
-/usr/local/bin/timeout 14400 env JOBS=2 \
+# After the monitored target passes and releases:
+/usr/local/bin/timeout 14400 env JOBS=1 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh -a libs/msm/test//Entries
+  ./run-cppgm-b2.sh -a libs/msm/test
 ```

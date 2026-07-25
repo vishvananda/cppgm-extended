@@ -4685,7 +4685,8 @@ string named_template_base_name(const TypePtr & type)
     return string();
   }
 
-  string text = base->named_display.empty() ? base->named_key : base->named_display;
+  const string display = named_type_display_text(base);
+  string text = display.empty() ? base->named_key : display;
   text = semantic_utils::trim_space(semantic_utils::strip_elaborated_type_prefix(text));
   if(text.compare(0, 15, "dependent type ") == 0) {
     text = text.substr(15);
@@ -9829,25 +9830,27 @@ void append_function_template_call_candidates_impl(
         }
       };
   const auto ensure_template_lookup_reference_members_for_class =
-      [&](ClassInfo * info) -> void
+      [&](ClassInfo * info, const string & lookup_name) -> void
       {
         if(!info ||
            !info->member_scope ||
            info->reference_members_collected ||
+           info->reference_named_members_collected.count(lookup_name) != 0 ||
            info->reference_member_collection_in_progress ||
            info->full_member_collection_in_progress) {
           return;
         }
-        ctx.ensure_class_reference_members(*info);
+        ctx.ensure_class_reference_named_member(*info, lookup_name);
       };
   const auto ensure_template_lookup_reference_members =
-      [&](Scope * qualified_scope) -> void
+      [&](Scope * qualified_scope, const string & lookup_name) -> void
       {
         if(!qualified_scope || !qualified_scope->class_info) {
           return;
         }
         ensure_template_lookup_reference_members_for_class(
-            qualified_scope->class_info);
+            qualified_scope->class_info,
+            lookup_name);
       };
   if(use_preselected_member_templates) {
     const vector<FunctionTemplateDecl *> * found =
@@ -9863,7 +9866,9 @@ void append_function_template_call_candidates_impl(
                                              *name_node,
                                              false);
     if(qualified_scope && qualified_scope->class_info) {
-      ensure_template_lookup_reference_members(qualified_scope);
+      ensure_template_lookup_reference_members(
+          qualified_scope,
+          qualified_template_name.name);
       MemberFunctionTemplateLookupResult result =
           lookup_visible_member_function_templates(*qualified_scope->class_info,
                                                    qualified_template_name.name);
@@ -9880,7 +9885,9 @@ void append_function_template_call_candidates_impl(
                                                        lookup_scope,
                                                        qualified_template_name);
     if(qualified_scope && qualified_scope->class_info) {
-      ensure_template_lookup_reference_members(qualified_scope);
+      ensure_template_lookup_reference_members(
+          qualified_scope,
+          qualified_template_name.name);
       MemberFunctionTemplateLookupResult result =
           lookup_visible_member_function_templates(*qualified_scope->class_info,
                                                    qualified_template_name.name);
@@ -9891,10 +9898,12 @@ void append_function_template_call_candidates_impl(
     }
   } else {
     ensure_template_lookup_reference_members_for_class(
-        current_class_scope(lookup_scope));
+        current_class_scope(lookup_scope),
+        template_name);
     if(FunctionBinding * function = current_function_scope(lookup_scope)) {
       ensure_template_lookup_reference_members_for_class(
-          function->lexical_access_class);
+          function->lexical_access_class,
+          template_name);
     }
     collect_function_templates(ctx, lookup_scope, template_name, templates);
   }

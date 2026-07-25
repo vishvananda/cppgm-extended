@@ -1,8 +1,8 @@
 #include "template_resolution.h"
 
 #include <algorithm>
-#include <cstdlib>
 #include <cctype>
+#include <cstdlib>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -2955,7 +2955,7 @@ bool function_template_deduction_type_contains_local_named_type_impl(
   case Type::TK_NAMED:
     found =
         type->named_key.find("__local_") != std::string::npos ||
-        type->named_display.find("__local_") != std::string::npos;
+        named_type_display_text(type).find("__local_") != std::string::npos;
     break;
   case Type::TK_CV:
   case Type::TK_ATOMIC:
@@ -3615,8 +3615,7 @@ bool try_resolve_member_type_on_known_owner(
       out = direct->second;
       return out != nullptr;
     }
-    if(!member_scope->class_info->bases.empty() &&
-       type_system.resolve_member_type_lookup(raw_argument_scope,
+    if(type_system.resolve_member_type_lookup(raw_argument_scope,
                                               *member_scope->class_info,
                                               member_name,
                                               true,
@@ -3640,8 +3639,7 @@ bool try_resolve_member_type_on_known_owner(
           out = direct->second;
           return out != nullptr;
         }
-        if(!member_scope->class_info->bases.empty() &&
-           type_system.resolve_member_type_lookup(raw_argument_scope,
+        if(type_system.resolve_member_type_lookup(raw_argument_scope,
                                                   *member_scope->class_info,
                                                   member_name,
                                                   true,
@@ -7368,6 +7366,14 @@ const ValueBinding * lookup_unqualified_value(template_api::TemplateServices & s
       lexical_class = current->function->lexical_access_class;
     }
     if(lexical_class) {
+      if(!witness::enabled(services.witness_context) &&
+         services.semantic_context &&
+         !lexical_class->reference_members_collected &&
+         !lexical_class->reference_member_collection_in_progress &&
+         lexical_class->reference_named_members_collected.count(name) == 0) {
+        services.semantic_context->ensure_class_reference_named_member(
+            *lexical_class, name);
+      }
       semantic_lookup::MemberValueLookupResult member =
           semantic_lookup::lookup_member_value(*lexical_class, name);
       if(lexical_only && member.binding && member.binding->kind == ValueBinding::VK_FIELD) {
@@ -8728,7 +8734,7 @@ bool non_type_argument_needs_structured_deduction(
   const bool named_enum =
       base && base->kind == Type::TK_NAMED &&
       (base->named_key.compare(0, 5, "enum ") == 0 ||
-       base->named_display.compare(0, 5, "enum ") == 0);
+       named_type_display_text(base).compare(0, 5, "enum ") == 0);
   if(base && (is_integral_type(base) || is_bool_type(base) || named_enum)) {
     return false;
   }
@@ -9555,7 +9561,7 @@ bool dependent_named_type_head_is_template_template_parameter(
        parameters[i].name.empty()) {
       continue;
     }
-    if(head_matches(base->named_display, parameters[i].name) ||
+    if(head_matches(named_type_display_text(base), parameters[i].name) ||
        head_matches(base->named_key, parameters[i].name) ||
        head_matches(base->named_semantic_payload, parameters[i].name)) {
       return true;
@@ -14219,9 +14225,9 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
       const std::string payload = named_type_semantic_payload(pattern_base);
       if((!payload.empty() &&
           try_deduce_dependent_named_declarator_shell(payload)) ||
-         (!pattern_base->named_display.empty() &&
+         (!named_type_display_text(pattern_base).empty() &&
           try_deduce_dependent_named_declarator_shell(
-              pattern_base->named_display)) ||
+              named_type_display_text(pattern_base))) ||
          (!pattern_base->named_key.empty() &&
           try_deduce_dependent_named_declarator_shell(
               pattern_base->named_key))) {
@@ -14713,7 +14719,7 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
             candidate_names.push_back(name);
           };
           append_candidate(named_type_semantic_payload(named));
-          append_candidate(named->named_display);
+          append_candidate(named_type_display_text(named));
           append_candidate(named->named_key);
           append_candidate(deduction_ops.type_argument_text(named));
           for(std::size_t i = 0; i < candidate_names.size(); ++i) {

@@ -430,6 +430,43 @@ bool expand_initializer_argument_nodes(SemanticContext & ctx,
     if(!ctx.expand_pack_argument_node(scope, *arg, expanded_nodes)) {
       return false;
     }
+    const auto mark_concrete_qualifier_types =
+        [&ctx](CppAstNode & root)
+    {
+      std::vector<CppAstNode *> pending;
+      pending.push_back(&root);
+      while(!pending.empty()) {
+        CppAstNode * current = pending.back();
+        pending.pop_back();
+        for(size_t qualifier_index = 0;
+            qualifier_index < current->qualifier_type_syntaxes.size();
+            ++qualifier_index) {
+          CppAstNode & qualifier =
+              current->qualifier_type_syntaxes[qualifier_index];
+          if(qualifier.semantic_type &&
+             !ctx.type_depends_on_template_parameter(
+                 qualifier.semantic_type)) {
+            // Pack substitution attaches the concrete owner type while
+            // retaining the source spelling (for example T::value).  During
+            // constexpr initializer evaluation that annotation is the
+            // resolved qualifier; reparsing the stale spelling would recover
+            // the parameter pack instead of the selected pack element.
+            qualifier.semantic_type_is_resolved_qualifier = true;
+          }
+          pending.push_back(&qualifier);
+        }
+        for(size_t child_index = 0;
+            child_index < current->children.size();
+            ++child_index) {
+          pending.push_back(&current->children[child_index]);
+        }
+      }
+    };
+    for(size_t expanded_index = 0;
+        expanded_index < expanded_nodes.size();
+        ++expanded_index) {
+      mark_concrete_qualifier_types(expanded_nodes[expanded_index]);
+    }
     expanded_storage.insert(expanded_storage.end(),
                             expanded_nodes.begin(),
                             expanded_nodes.end());

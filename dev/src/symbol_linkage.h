@@ -192,7 +192,6 @@ SymbolIdentity make_function_symbol_identity(const cpp_decl::QualifiedName & qua
                                              const cpp_decl::TypePtr & type,
                                              const FunctionSymbolOptions & options =
                                                  FunctionSymbolOptions(),
-                                             const std::string & symbol_key = std::string(),
                                              SymbolLinkage linkage = SL_EXTERNAL);
 SymbolIdentity make_internal_symbol_identity(const std::string & internal_symbol,
                                              SymbolLinkage linkage = SL_EXTERNAL);

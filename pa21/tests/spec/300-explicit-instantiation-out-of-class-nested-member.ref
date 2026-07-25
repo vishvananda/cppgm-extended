@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $tmpobj__1
     %t3 = addr $tmpobj__2
     %t4 = addr $value
-    %t5 = call obj<4x4> @adaptor_int___data__ov2(%t4)
+    %t5 = call obj<4x4> @adaptor_int___data(%t4)
     copyobj 4x4 %t5, %t3
     %t6 = call obj<4x4> @adaptor_int___range_false___begin(%t3)
     copyobj 4x4 %t6, %t2
@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 %t7
     return i32 %t8
 }
-function @adaptor_int___data__ov2(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK7adaptorIiE4dataEv, object_root=yes] {
+function @adaptor_int___data(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK7adaptorIiE4dataEv, object_root=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 

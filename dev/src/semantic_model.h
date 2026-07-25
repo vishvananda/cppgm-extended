@@ -746,6 +746,7 @@ struct ClassInfo
   std::string qualified_name;
   cpp_decl::QualifiedName symbol_qualified_name_syntax;
   std::string display_qualified_name;
+  bool has_display_qualified_name = false;
   std::string class_kind;
   std::string creation_context;
   cpp_decl::TypePtr type;
@@ -792,8 +793,22 @@ struct ClassInfo
   bool template_instantiation_in_progress = false;
   bool full_member_collection_in_progress = false;
   bool reference_member_collection_in_progress = false;
+  bool reference_type_member_collection_in_progress = false;
+  bool reference_type_members_collected = false;
+  std::set<std::string> reference_named_members_collected;
+  std::set<std::string> reference_named_members_in_progress;
+  std::set<const CppAstNode *> reference_named_member_declarations_collected;
   bool reference_members_collected = false;
   bool implicit_special_members_ensured = false;
+  // Host ABI classification is structural and immutable once a concrete
+  // class is complete.  Retain the result on the semantic class so parents do
+  // not recursively re-walk the same base/field graph.
+  bool host_abi_implicit_copy_allowed_known = false;
+  bool host_abi_implicit_copy_allowed = false;
+  bool host_abi_trivially_copy_constructible_known = false;
+  bool host_abi_trivially_copy_constructible = false;
+  bool host_abi_trivially_destructible_known = false;
+  bool host_abi_trivially_destructible = false;
   bool out_of_class_member_function_template_definitions_applied = false;
   bool out_of_class_member_function_definitions_applied = false;
   bool out_of_class_special_member_definitions_applied = false;
@@ -890,9 +905,26 @@ inline std::size_t last_top_level_qualified_name_separator(
 
 inline std::string class_output_qualified_name(const ClassInfo & info)
 {
-  return info.display_qualified_name.empty() ?
-      info.qualified_name :
-      info.display_qualified_name;
+  if(!info.has_display_qualified_name) {
+    return info.qualified_name;
+  }
+  if(!info.display_qualified_name.empty()) {
+    return info.display_qualified_name;
+  }
+  cpp_decl::TypePtr type = cpp_decl::strip_top_level_cv(info.type);
+  if(type && type->kind == cpp_decl::Type::TK_NAMED) {
+    const std::string prefix =
+        info.class_kind.empty() ? std::string() : info.class_kind + " ";
+    const std::string display = cpp_decl::named_type_display_text(type);
+    if(!prefix.empty() &&
+       display.compare(0, prefix.size(), prefix) == 0) {
+      return display.substr(prefix.size());
+    }
+    if(!display.empty()) {
+      return display;
+    }
+  }
+  return info.qualified_name;
 }
 
 inline cpp_decl::QualifiedName
@@ -1040,10 +1072,27 @@ inline void set_class_output_qualified_name(ClassInfo & info,
                                             const std::string & name)
 {
   if(name == info.qualified_name) {
+    info.has_display_qualified_name = false;
     std::string().swap(info.display_qualified_name);
-  } else {
-    info.display_qualified_name = name;
+    return;
   }
+
+  info.has_display_qualified_name = true;
+  cpp_decl::TypePtr type = cpp_decl::strip_top_level_cv(info.type);
+  if(type && type->kind == cpp_decl::Type::TK_NAMED) {
+    const std::string prefix =
+        info.class_kind.empty() ? std::string() : info.class_kind + " ";
+    const std::string display = cpp_decl::named_type_display_text(type);
+    const bool type_owns_same_display =
+        display.size() == prefix.size() + name.size() &&
+        display.compare(0, prefix.size(), prefix) == 0 &&
+        display.compare(prefix.size(), name.size(), name) == 0;
+    if(type_owns_same_display) {
+      std::string().swap(info.display_qualified_name);
+      return;
+    }
+  }
+  info.display_qualified_name = name;
 }
 
 inline const std::vector<template_model::TemplateArgument> &

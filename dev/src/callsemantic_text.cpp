@@ -115,11 +115,13 @@ TypeSpellingParts spell_reparseable_type_argument(const TypePtr & type)
 
   case Type::TK_NAMED:
   {
-    std::string text = type->named_key.empty() ? type->named_display : type->named_key;
+    std::string text =
+        type->named_key.empty() ? named_type_display_text(type) :
+                                  type->named_key;
     if(text.compare(0, 19, "template-parameter ") == 0 ||
        text.compare(0, 10, "dependent ") == 0 ||
        text.compare(0, 10, "$dqmember:") == 0) {
-      text = type->named_display;
+      text = named_type_display_text(type);
     }
     text = collapse_reparseable_scope_operators(strip_elaborated_type_prefix(text));
     return TypeSpellingParts{text + " ", ""};

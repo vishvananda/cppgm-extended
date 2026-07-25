@@ -1580,10 +1580,12 @@ bool record_class_template_instantiation_state(
       dependent_argument_mangle_pack_sizes);
 }
 
-bool refresh_forward_class_template_selection(SemanticContext & ctx,
-                                              semantic_model::ClassInfo & info)
+bool refresh_referenced_class_template_selection(
+    SemanticContext & ctx,
+    semantic_model::ClassInfo & info)
 {
-  return template_instantiation::refresh_forward_class_template_selection(ctx, info);
+  return template_instantiation::refresh_referenced_class_template_selection(
+      ctx, info);
 }
 
 bool class_template_completion_has_owner_definition(
@@ -2832,7 +2834,7 @@ static bool value_argument_has_named_enum_type(
   return base &&
          base->kind == cpp_decl::Type::TK_NAMED &&
          (base->named_key.compare(0, 5, "enum ") == 0 ||
-          base->named_display.compare(0, 5, "enum ") == 0);
+          named_type_display_text(base).compare(0, 5, "enum ") == 0);
 }
 
 std::string enum_witness_enumerator_text_for_value(
@@ -2929,7 +2931,7 @@ std::string canonical_named_type_key_for_witness(const cpp_decl::TypePtr & type)
   const std::string key =
       strip_witness_elaborated_type_prefix(base->named_key);
   const std::string display =
-      strip_witness_elaborated_type_prefix(base->named_display);
+      strip_witness_elaborated_type_prefix(named_type_display_text(base));
   return witness_text_is_owner_qualified_suffix(key, display) ? key :
                                                                std::string();
 }
@@ -3574,11 +3576,11 @@ std::string witness_text_for_qualified_enum_type(const cpp_decl::TypePtr & type)
   if(!(base &&
        base->kind == cpp_decl::Type::TK_NAMED &&
        (base->named_key.compare(0, 5, "enum ") == 0 ||
-        base->named_display.compare(0, 5, "enum ") == 0))) {
+        named_type_display_text(base).compare(0, 5, "enum ") == 0))) {
     return std::string();
   }
   if(enum_witness_scope_operator_count(base->named_key) <=
-     enum_witness_scope_operator_count(base->named_display)) {
+     enum_witness_scope_operator_count(named_type_display_text(base))) {
     return std::string();
   }
   return normalize_witness_angle_spacing(
@@ -4139,19 +4141,34 @@ void note_nested_member_class_instantiation_completed_if_needed(
   if(!info || info->template_instantiation_log_emitted) {
     return;
   }
+  struct LifecycleResume
+  {
+    int saved_depth;
+
+    LifecycleResume()
+      : saved_depth(
+            template_witness_detail::current_lifecycle_pause_depth_storage())
+    {
+      template_witness_detail::current_lifecycle_pause_depth_storage() = 0;
+    }
+
+    ~LifecycleResume()
+    {
+      template_witness_detail::current_lifecycle_pause_depth_storage() =
+          saved_depth;
+    }
+  } lifecycle_resume;
   info->template_instantiation_log_emitted = true;
   if(!info->template_instantiation_tracked) {
     info->template_instantiation_tracked = true;
   }
-  template_api::note_class_closure_event(
+  note_nested_member_class_track_instantiation(
       ctx,
-      TemplateWitnessLogEventKind::ClassInstantiation,
+      *info,
       nested_member_class_instantiation_event_location(ctx,
-                                                      info,
-                                                      preferred_decl_node,
-                                                      fallback_decl_node),
-      info,
-      created_new_detail(false));
+                                                       info,
+                                                       preferred_decl_node,
+                                                       fallback_decl_node));
 }
 
 void note_anonymous_member_class_events(SemanticContext & ctx,
@@ -4757,7 +4774,8 @@ std::string witness_non_side_effect_named_type_text(
   if(key_text.find("_GLOBAL__N_") != std::string::npos) {
     const std::string display_text =
         semantic_utils::trim_space(
-            strip_witness_elaborated_type_prefix(type->named_display));
+            strip_witness_elaborated_type_prefix(
+                named_type_display_text(type)));
     if(!display_text.empty() &&
        display_text.find("_GLOBAL__N_") == std::string::npos &&
        witness_argument_text_should_prefer_structured(display_text,
@@ -4787,7 +4805,8 @@ bool witness_type_argument_should_prefer_named_key(const cpp_decl::TypePtr & typ
   }
   const std::string display_text =
       semantic_utils::trim_space(
-          strip_witness_elaborated_type_prefix(type->named_display));
+          strip_witness_elaborated_type_prefix(
+              named_type_display_text(type)));
   const std::string key_text =
       semantic_utils::trim_space(
           strip_witness_elaborated_type_prefix(type->named_key));
@@ -4860,7 +4879,8 @@ std::string witness_lookup_text_for_type_argument(
                 semantic_model::class_output_qualified_name(*info)));
     const std::string named_display =
         semantic_utils::trim_space(
-            strip_witness_elaborated_type_prefix(type->named_display));
+            strip_witness_elaborated_type_prefix(
+                named_type_display_text(type)));
     if(witness_text_is_owner_qualified_suffix(display_text, named_display)) {
       return display_text;
     }

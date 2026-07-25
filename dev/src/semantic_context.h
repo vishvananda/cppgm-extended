@@ -730,6 +730,11 @@ public:
       semantic_model::ClassInfo & info) = 0;
   virtual semantic_model::FunctionBinding * ensure_implicit_copy_assignment(
       semantic_model::ClassInfo & info) = 0;
+  virtual void ensure_class_reference_type_members(
+      semantic_model::ClassInfo & info) = 0;
+  virtual void ensure_class_reference_named_member(
+      semantic_model::ClassInfo & info,
+      const std::string & name) = 0;
   virtual void ensure_class_reference_members(semantic_model::ClassInfo & info) = 0;
   virtual semantic_model::FunctionBinding * select_constructor_from_exprs(
       semantic_model::Scope & scope,

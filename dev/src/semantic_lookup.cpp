@@ -1393,8 +1393,9 @@ DeclT * lookup_inherited_member_template_decl(SemanticContext & ctx,
     if(!current || current->reference_member_collection_in_progress) {
       continue;
     }
-    if(!current->reference_members_collected) {
-      ctx.ensure_class_reference_members(*current);
+    if(!current->reference_members_collected &&
+       current->reference_named_members_collected.count(name) == 0) {
+      ctx.ensure_class_reference_named_member(*current, name);
     }
     if(current->member_scope && map_lookup(*current->member_scope, name)) {
       candidates.push_back(current);
@@ -1445,6 +1446,16 @@ ClassTemplateDecl * lookup_class_template_in_scope_or_inherited_members(
      scope.class_info->source_template->name == name) {
     return scope.class_info->source_template;
   }
+  if(!scope.class_info->reference_members_collected &&
+     scope.class_info->reference_named_members_collected.count(name) == 0 &&
+     scope.class_info->reference_named_members_in_progress.count(name) == 0 &&
+     !scope.class_info->reference_member_collection_in_progress) {
+    ctx.ensure_class_reference_named_member(*scope.class_info, name);
+    if(ClassTemplateDecl * materialized =
+           lookup_direct_class_template(scope, name)) {
+      return materialized;
+    }
+  }
   if(scope.class_info->member_scope &&
      scope.class_info->member_scope.get() != &scope) {
     if(ClassTemplateDecl * owner_direct =
@@ -1472,6 +1483,16 @@ AliasTemplateDecl * lookup_alias_template_in_scope_or_inherited_members(
   }
   if(!scope.class_info) {
     return nullptr;
+  }
+  if(!scope.class_info->reference_members_collected &&
+     scope.class_info->reference_named_members_collected.count(name) == 0 &&
+     scope.class_info->reference_named_members_in_progress.count(name) == 0 &&
+     !scope.class_info->reference_member_collection_in_progress) {
+    ctx.ensure_class_reference_named_member(*scope.class_info, name);
+    if(AliasTemplateDecl * materialized =
+           lookup_direct_alias_template(scope, name)) {
+      return materialized;
+    }
   }
   if(scope.class_info->member_scope &&
      scope.class_info->member_scope.get() != &scope) {
@@ -2158,18 +2179,22 @@ Scope * scope_for_resolved_type_qualifier(SemanticContext & ctx,
           prefer_earlier_source_location(info->first_qualifier_use_location,
                                          use_location);
     }
-    if(is_concrete_class_template_qualifier(ctx, info) &&
-       !info->complete &&
-       !info->full_member_collection_in_progress &&
-       !info->template_instantiation_in_progress) {
-      parser_trace::push_use_location("\x1d");
-      if(ClassInfo * completed = ctx.complete_class_type(as_type)) {
-        info = completed;
+    if(witness::enabled(ctx.template_witness_context())) {
+      if(is_concrete_class_template_qualifier(ctx, info) &&
+         !info->complete &&
+         !info->full_member_collection_in_progress &&
+         !info->template_instantiation_in_progress) {
+        parser_trace::push_use_location("\x1d");
+        if(ClassInfo * completed = ctx.complete_class_type(as_type)) {
+          info = completed;
+        }
+        parser_trace::pop_use_location();
       }
-      parser_trace::pop_use_location();
-    }
-    if(!info->complete) {
-      ensure_class_reference_members_if_needed(ctx, scope, *info);
+      if(!info->complete) {
+        ensure_class_reference_members_if_needed(ctx, scope, *info);
+      }
+    } else if(!info->complete) {
+      ctx.ensure_class_reference_type_members(*info);
     }
     if(!info->member_scope) {
       parser_trace::push_use_location("\x1d");
@@ -3425,9 +3450,11 @@ bool same_inline_namespace_template_parameter_type(
     const std::string rhs_key =
         canonicalize_template_named_type_text(rhs_parameters, rhs_type->named_key);
     const std::string lhs_display =
-        canonicalize_template_named_type_text(lhs_parameters, lhs_type->named_display);
+        canonicalize_template_named_type_text(
+            lhs_parameters, named_type_display_text(lhs_type));
     const std::string rhs_display =
-        canonicalize_template_named_type_text(rhs_parameters, rhs_type->named_display);
+        canonicalize_template_named_type_text(
+            rhs_parameters, named_type_display_text(rhs_type));
     const std::string lhs_key_normalized =
         semantic_utils::trim_space(semantic_utils::strip_elaborated_type_prefix(lhs_key));
     const std::string rhs_key_normalized =
@@ -3595,9 +3622,11 @@ bool same_function_template_entity_type_impl(
     const std::string rhs_key =
         canonicalize_template_named_type_text(rhs_parameters, rhs->named_key);
     const std::string lhs_display =
-        canonicalize_template_named_type_text(lhs_parameters, lhs->named_display);
+        canonicalize_template_named_type_text(
+            lhs_parameters, named_type_display_text(lhs));
     const std::string rhs_display =
-        canonicalize_template_named_type_text(rhs_parameters, rhs->named_display);
+        canonicalize_template_named_type_text(
+            rhs_parameters, named_type_display_text(rhs));
     const std::string lhs_key_normalized =
         semantic_utils::trim_space(semantic_utils::strip_elaborated_type_prefix(lhs_key));
     const std::string rhs_key_normalized =
@@ -4472,8 +4501,9 @@ MemberClassTemplateLookupResult lookup_member_class_template(SemanticContext & c
           return MemberClassTemplateLookupResult();
         }
         if(!current.reference_members_collected &&
+           current.reference_named_members_collected.count(name) == 0 &&
            !current.reference_member_collection_in_progress) {
-          ctx.ensure_class_reference_members(current);
+          ctx.ensure_class_reference_named_member(current, name);
         }
         if(!current.member_scope) {
           return MemberClassTemplateLookupResult();
@@ -4502,8 +4532,9 @@ MemberAliasTemplateLookupResult lookup_member_alias_template(SemanticContext & c
           return MemberAliasTemplateLookupResult();
         }
         if(!current.reference_members_collected &&
+           current.reference_named_members_collected.count(name) == 0 &&
            !current.reference_member_collection_in_progress) {
-          ctx.ensure_class_reference_members(current);
+          ctx.ensure_class_reference_named_member(current, name);
         }
         if(!current.member_scope) {
           return MemberAliasTemplateLookupResult();
@@ -4532,8 +4563,9 @@ MemberVariableTemplateLookupResult lookup_member_variable_template(SemanticConte
           return MemberVariableTemplateLookupResult();
         }
         if(!current.reference_members_collected &&
+           current.reference_named_members_collected.count(name) == 0 &&
            !current.reference_member_collection_in_progress) {
-          ctx.ensure_class_reference_members(current);
+          ctx.ensure_class_reference_named_member(current, name);
         }
         if(!current.member_scope) {
           return MemberVariableTemplateLookupResult();
@@ -4671,7 +4703,10 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
     return type;
   };
 
-  if(info.reference_member_collection_in_progress) {
+  const bool named_member_collection_in_progress =
+      info.reference_named_members_in_progress.count(name) != 0;
+  if(info.reference_member_collection_in_progress ||
+     named_member_collection_in_progress) {
     MemberTypeLookupResult result;
     if(info.member_scope) {
       auto direct =
@@ -4705,12 +4740,24 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
         return result;
       }
     }
+    if(named_member_collection_in_progress && info.type) {
+      vector<string> members;
+      members.push_back(name);
+      result.type = make_dependent_qualified_member_type(
+          class_output_qualified_name(info) + "::" + name,
+          info.type,
+          members,
+          false);
+      result.declared_in = &info;
+      return result;
+    }
   }
 
   if(ensure_current_reference_members &&
      !info.reference_member_collection_in_progress &&
-     !info.reference_members_collected) {
-    ctx.ensure_class_reference_members(info);
+     !info.reference_members_collected &&
+     info.reference_named_members_collected.count(name) == 0) {
+    ctx.ensure_class_reference_named_member(info, name);
   }
 
   auto direct =
@@ -4765,8 +4812,9 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
       continue;
     }
 
-    if(!current->reference_members_collected) {
-      ctx.ensure_class_reference_members(*current);
+    if(!current->reference_members_collected &&
+       current->reference_named_members_collected.count(name) == 0) {
+      ctx.ensure_class_reference_named_member(*current, name);
     }
 
     auto found =
@@ -5947,20 +5995,20 @@ bool collect_associated_namespace_scopes_for_type_impl(
   }
 
   if(!info->complete &&
-     !info->reference_members_collected &&
+     !info->reference_type_members_collected &&
      !info->full_member_collection_in_progress &&
      !info->reference_member_collection_in_progress &&
      !info->template_instantiation_in_progress &&
      !ctx.type_depends_on_template_parameter(base)) {
     semantic_metrics::ScopedClassDemand class_demand(
         semantic_metrics::CDK_BASE_CLASS_COLLECTION);
-    ctx.ensure_class_reference_members(*info);
+    ctx.ensure_class_reference_type_members(*info);
   }
 
   if(info->template_instantiation_in_progress ||
      info->full_member_collection_in_progress ||
      info->reference_member_collection_in_progress ||
-     (!info->complete && !info->reference_members_collected)) {
+     (!info->complete && !info->reference_type_members_collected)) {
     cacheable = false;
   }
 
@@ -6239,12 +6287,18 @@ void lookup_associated_friend_candidates_for_type(
     }
   }
 
-  ClassInfo * info = ctx.complete_class_type(base);
-  if(!info) {
-    info = ctx.class_info_for_type(base);
-  }
+  ClassInfo * info = ctx.class_info_for_type(base);
   if(!info) {
     return;
+  }
+  if(!info->complete &&
+     !info->reference_members_collected &&
+     info->reference_named_members_collected.count(name) == 0 &&
+     !info->full_member_collection_in_progress &&
+     !info->reference_member_collection_in_progress &&
+     !info->template_instantiation_in_progress &&
+     !ctx.type_depends_on_template_parameter(base)) {
+    ctx.ensure_class_reference_named_member(*info, name);
   }
 
   AssociatedFriendLookupCacheEntry entry;

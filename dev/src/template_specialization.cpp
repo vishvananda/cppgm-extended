@@ -259,8 +259,8 @@ bool non_type_template_argument_values_match(const TemplateArgument & lhs,
       is_integral_type(value_base) ||
       is_bool_type(value_base) ||
       (value_base->kind == Type::TK_NAMED &&
-       (value_base->named_key.compare(0, 5, "enum ") == 0 ||
-        value_base->named_display.compare(0, 5, "enum ") == 0));
+      (value_base->named_key.compare(0, 5, "enum ") == 0 ||
+        named_type_display_text(value_base).compare(0, 5, "enum ") == 0));
   if(integral_like) {
     return lhs.value == rhs.value;
   }
@@ -3961,7 +3961,8 @@ std::string template_argument_text_for_matching(template_api::TemplateTypeSystem
     }
     if(template_argument_semantics::type_depends_on_template_parameter(type_system, arg.type)) {
       if(arg.type->kind == Type::TK_NAMED) {
-        return strip_elaborated_type_prefix(trim_space(arg.type->named_display));
+        return strip_elaborated_type_prefix(
+            trim_space(named_type_display_text(arg.type)));
       }
       return std::string();
     }
@@ -4444,7 +4445,8 @@ bool alias_template_type_pattern_mentions_parameters(
   }
   if(type->kind == Type::TK_NAMED) {
     if(alias_template_target_mentions_parameters(type->named_key, parameters) ||
-       alias_template_target_mentions_parameters(type->named_display, parameters) ||
+       alias_template_target_mentions_parameters(
+           named_type_display_text(type), parameters) ||
        alias_template_target_mentions_parameters(named_type_semantic_payload(type),
                                                  parameters)) {
       return true;
@@ -4500,7 +4502,7 @@ bool alias_template_type_pattern_mentions_parameter(
       };
   if(type->kind == Type::TK_NAMED) {
     if(text_mentions_parameter(type->named_key) ||
-       text_mentions_parameter(type->named_display) ||
+       text_mentions_parameter(named_type_display_text(type)) ||
        text_mentions_parameter(named_type_semantic_payload(type))) {
       return true;
     }
@@ -5286,7 +5288,7 @@ std::vector<std::string> template_parameter_type_names(const TypePtr & type)
   };
   append_unique(named_type_semantic_payload(type));
   append_unique(type->named_key);
-  append_unique(type->named_display);
+  append_unique(named_type_display_text(type));
   return out;
 }
 
@@ -8058,7 +8060,7 @@ bool try_expand_alias_template_pattern_structurally(
     std::string owner_type_display;
     if(owner_type && owner_type->kind == Type::TK_NAMED) {
       owner_type_key = owner_type->named_key;
-      owner_type_display = owner_type->named_display;
+      owner_type_display = named_type_display_text(owner_type);
     } else {
       owner_type_display = describe_type(lookup_class->type);
     }
@@ -8388,8 +8390,9 @@ bool try_expand_alias_template_pattern_structurally(
             display += dependent_members[i];
           }
         }
-        out = make_dependent_qualified_member_type(display.empty() ?
-                                                       pattern->named_display :
+        out = make_dependent_qualified_member_type(
+                                                   display.empty() ?
+                                                       named_type_display_text(pattern) :
                                                        display,
                                                    substituted_owner,
                                                    dependent_members,

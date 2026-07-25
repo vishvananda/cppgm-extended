@@ -176,6 +176,37 @@ string internal_symbol_from_name(const string & name)
   return string("@") + mangle_symbol_name(name);
 }
 
+string internal_function_symbol_from_name(const string & name,
+                                          const string & display_name)
+{
+  const size_t kMaxReadableInternalFunctionName = 4096;
+  if(name.size() <= kMaxReadableInternalFunctionName) {
+    return internal_symbol_from_name(name);
+  }
+
+  // Internal names are compiler-local graph identities, not ABI names.  Keep
+  // ordinary names readable, but do not retain multi-kilobyte template
+  // presentation strings in every FunctionBinding.  FNV-1a is fixed here so
+  // the spelling is stable across host standard-library implementations.
+  uint64_t hash = 1469598103934665603ULL;
+  for(size_t i = 0; i < name.size(); ++i) {
+    hash ^= static_cast<unsigned char>(name[i]);
+    hash *= 1099511628211ULL;
+  }
+  static const char hex[] = "0123456789abcdef";
+  string digest(16, '0');
+  for(size_t i = 0; i < digest.size(); ++i) {
+    digest[digest.size() - 1 - i] = hex[hash & 0xf];
+    hash >>= 4;
+  }
+  string readable = mangle_symbol_name(display_name);
+  if(readable.size() > 96) {
+    readable = readable.substr(readable.size() - 96);
+  }
+  return string("@__cppgm_function_") + digest +
+         (readable.empty() ? string() : string("__") + readable);
+}
+
 string thread_local_wrapper_internal_symbol(const string & variable_internal_symbol)
 {
   return variable_internal_symbol + "__tls_wrapper";
@@ -2031,39 +2062,6 @@ static bool emit_function_encoding_ir(
   return true;
 }
 
-struct StringMemoEntry
-{
-  bool occupied = false;
-  string key;
-  string value;
-};
-
-template <size_t N>
-static bool lookup_string_memo(array<StringMemoEntry, N> & cache,
-                               const string & key,
-                               string & out)
-{
-  const size_t index = hash<string>()(key) & (N - 1);
-  const StringMemoEntry & entry = cache[index];
-  if(!entry.occupied || entry.key != key) {
-    return false;
-  }
-  out = entry.value;
-  return true;
-}
-
-template <size_t N>
-static void store_string_memo(array<StringMemoEntry, N> & cache,
-                              const string & key,
-                              const string & value)
-{
-  const size_t index = hash<string>()(key) & (N - 1);
-  StringMemoEntry & entry = cache[index];
-  entry.occupied = true;
-  entry.key = key;
-  entry.value = value;
-}
-
 static string canonical_template_argument_text(const string & text)
 {
   string out = trim_space(strip_elaborated_type_prefix(text));
@@ -2076,15 +2074,11 @@ static string canonical_template_argument_text(const string & text)
 
 static string canonical_component_text(const string & text)
 {
-  static thread_local array<StringMemoEntry, 4096> cache;
-  string cached;
-  if(lookup_string_memo(cache, text, cached)) {
-    return cached;
-  }
-
-  const string out = strip_leading_template_disambiguator(trim_space(text));
-  store_string_memo(cache, text, out);
-  return out;
+  // Memoizing this transformation cannot avoid its linear work: lookup hashes
+  // and compares the complete input, and the result still has to be copied.
+  // Keeping both strings in a process-lifetime cache also retains enormous
+  // nested template spellings.  Canonicalize once for the caller instead.
+  return strip_leading_template_disambiguator(text);
 }
 
 static string append_qualified_component_text(const string & prefix,
@@ -2790,7 +2784,8 @@ static bool template_argument_is_self_type_parameter(
         return true;
       }
       const string argument_display =
-          trim_elaborated_type_prefix(argument_base->named_display);
+          trim_elaborated_type_prefix(
+              named_type_display_text(argument_base));
       if(!parameter.name.empty() &&
          text_matches_type_parameter_name(argument_display, parameter.name)) {
         return true;
@@ -2803,7 +2798,7 @@ static bool template_argument_is_self_type_parameter(
            (argument_base->kind == Type::TK_NAMED &&
             argument_base->named_key == matched_type->named_key &&
             trim_elaborated_type_prefix(
-                argument_base->named_display) == matched_display);
+                named_type_display_text(argument_base)) == matched_display);
   }
 
   const string argument_text =
@@ -2898,7 +2893,8 @@ static TypePtr lookup_scope_named_type_for_mangling(
        scope->class_info->type == found->second) {
       return found->second;
     }
-    if(trim_elaborated_type_prefix(found->second->named_display) == stripped &&
+    if(trim_elaborated_type_prefix(
+           named_type_display_text(found->second)) == stripped &&
        trim_elaborated_type_prefix(found->second->named_key) == stripped) {
       return TypePtr();
     }
@@ -3129,7 +3125,8 @@ static bool type_mentions_template_parameter_slice(
   case Type::TK_NAMED:
   {
     const string selected = selected_named_type_text(base);
-    const string display = trim_elaborated_type_prefix(base->named_display);
+    const string display =
+        trim_elaborated_type_prefix(named_type_display_text(base));
     const string key = trim_elaborated_type_prefix(base->named_key);
     for(size_t i = begin; i < parameters->size(); ++i) {
       const TemplateParameterInfo & parameter = (*parameters)[i];
@@ -7661,9 +7658,10 @@ static bool type_has_contextual_local_mangle_state(const TypePtr & type)
     return false;
   }
   if(type->kind == Type::TK_NAMED &&
-     (type->named_display.find("__local_") != string::npos ||
+     (named_type_display_text(type).find("__local_") != string::npos ||
       type->named_key.find("__local_") != string::npos ||
-      type->named_display.find("(anonymous namespace)") != string::npos ||
+      named_type_display_text(type).find("(anonymous namespace)") !=
+          string::npos ||
       type->named_key.find("(anonymous namespace)") != string::npos)) {
     return true;
   }
@@ -7946,7 +7944,7 @@ static bool try_build_template_parameter_type_spelling_ir(
       !mangle_ctx || !mangle_ctx->suppress_template_parameter_type_registration;
   vector<string> candidates;
   candidates.push_back(type->named_semantic_payload);
-  candidates.push_back(type->named_display);
+  candidates.push_back(named_type_display_text(type));
   candidates.push_back(type->named_key);
   for(size_t i = 0; i < candidates.size(); ++i) {
     const string stripped = strip_named_semantic_match_prefix(candidates[i]);
@@ -8078,7 +8076,7 @@ static bool type_mentions_owner_type_template_parameter_pack(
     const string payload =
         strip_named_semantic_match_prefix(type->named_semantic_payload);
     const string display =
-        strip_named_semantic_match_prefix(type->named_display);
+        strip_named_semantic_match_prefix(named_type_display_text(type));
     const string key =
         strip_named_semantic_match_prefix(type->named_key);
     const vector<TemplateParameterInfo> & parameters =
@@ -8134,7 +8132,8 @@ static bool try_build_unbound_template_parameter_type_ir(
     return false;
   }
 
-  string source_name = canonical_template_argument_text(type->named_display);
+  string source_name =
+      canonical_template_argument_text(named_type_display_text(type));
   if(source_name.empty()) {
     source_name = canonical_template_argument_text(type->named_key);
   }
@@ -12649,7 +12648,9 @@ static bool try_build_non_type_template_parameter_type_ir(
           << (parameter.non_type_decl_specifier_seq ? "yes" : "no")
           << " has-value-type=" << (parameter.value_type ? "yes" : "no")
           << " value-display="
-          << (parameter.value_type ? parameter.value_type->named_display : string())
+          << (parameter.value_type ?
+                  named_type_display_text(parameter.value_type) :
+                  string())
           << " value-key="
           << (parameter.value_type ? parameter.value_type->named_key : string());
     parser_trace::note("symbol.linkage", string(), trace.str());
@@ -12664,7 +12665,7 @@ static bool try_build_non_type_template_parameter_type_ir(
     ostringstream trace;
     trace << "non-type-parameter-type-ir value-type-failed"
           << " parameter=" << parameter.name
-          << " display=" << parameter.value_type->named_display
+          << " display=" << named_type_display_text(parameter.value_type)
           << " key=" << parameter.value_type->named_key;
     parser_trace::note("symbol.linkage", string(), trace.str());
   }
@@ -13425,7 +13426,7 @@ static bool try_build_function_template_arguments_ir(
                 << (type_has_dependent_mangle_state(failed_argument.type) ?
                         "yes" : "no")
                 << " argument-type-display="
-                << failed_argument.type->named_display
+                << named_type_display_text(failed_argument.type)
                 << " argument-type-key="
                 << failed_argument.type->named_key;
         }
@@ -13733,16 +13734,17 @@ static bool try_build_contextual_local_named_type_ir(
   if(!type ||
      type->kind != Type::TK_NAMED ||
      (type->named_key.find("__local_") == string::npos &&
-      type->named_display.find("__local_") == string::npos &&
+      named_type_display_text(type).find("__local_") == string::npos &&
       type->named_key.find("(anonymous namespace)") == string::npos &&
-      type->named_display.find("(anonymous namespace)") == string::npos)) {
+      named_type_display_text(type).find("(anonymous namespace)") ==
+          string::npos)) {
     return false;
   }
 
   string selected = type->named_key.find("__local_") != string::npos ||
                     type->named_key.find("(anonymous namespace)") != string::npos ?
       type->named_key :
-      type->named_display;
+      named_type_display_text(type);
   selected = trim_elaborated_type_prefix(selected);
   if(selected.empty() ||
      selected.find('<') != string::npos) {
@@ -14238,10 +14240,12 @@ static bool try_build_type_ir_cached(
       const size_t limit = min<size_t>(ranked.size(), 20);
       for(size_t i = 0; i < limit; ++i) {
         const Type * semantic_type = ranked[i].second;
+        const string display =
+            named_type_display_text(*semantic_type);
         const string & text =
             !semantic_type->named_key.empty() ?
                 semantic_type->named_key :
-                semantic_type->named_display;
+                display;
         const size_t prefix_size = min<size_t>(text.size(), 160);
         std::fprintf(stderr,
                      "type-ir-cache-hot rank=%zu hits=%zu kind=%d "
@@ -14250,7 +14254,7 @@ static bool try_build_type_ir_cached(
                      ranked[i].first,
                      static_cast<int>(semantic_type->kind),
                      semantic_type->named_key.size(),
-                     semantic_type->named_display.size(),
+                     display.size(),
                      static_cast<int>(prefix_size),
                      text.data());
       }
@@ -14668,7 +14672,8 @@ static bool try_mangle_template_parameter_type(const TypePtr & type,
     return false;
   }
 
-  const string named_display = trim_elaborated_type_prefix(type->named_display);
+  const string named_display =
+      trim_elaborated_type_prefix(named_type_display_text(type));
   const bool has_template_parameter_key =
       type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER;
   if(mangle_ctx->template_parameters &&
@@ -14758,7 +14763,8 @@ static bool should_prefer_unqualified_lexical_named_type(const TypePtr & type,
     return false;
   }
 
-  const string display_text = trim_elaborated_type_prefix(type->named_display);
+  const string display_text =
+      trim_elaborated_type_prefix(named_type_display_text(type));
   if(type->named_source_name().empty() ||
      display_text != type->named_source_name()) {
     return false;
@@ -14891,7 +14897,8 @@ static string selected_named_type_text(const TypePtr & type)
     return string();
   }
 
-  const string display_text = trim_elaborated_type_prefix(type->named_display);
+  const string display_text =
+      trim_elaborated_type_prefix(named_type_display_text(type));
   const string key_text = trim_elaborated_type_prefix(type->named_key);
   return named_type_should_prefer_key_for_mangling(*type, display_text, key_text) ?
       key_text :
@@ -15479,7 +15486,7 @@ static bool try_mangle_template_argument_impl(const TemplateArgument & arg,
          value_base &&
          value_base->kind == Type::TK_NAMED &&
          (named_type_has_dependent_semantic(value_base) ||
-          value_base->named_display.find("::") != string::npos ||
+          named_type_display_text(value_base).find("::") != string::npos ||
           value_base->named_key.find("::") != string::npos)) {
         value_type = arg.type;
       }
@@ -15487,7 +15494,7 @@ static bool try_mangle_template_argument_impl(const TemplateArgument & arg,
          value_base &&
          value_base->kind == Type::TK_NAMED &&
          (named_type_has_dependent_semantic(value_base) ||
-          value_base->named_display.find("::") != string::npos ||
+          named_type_display_text(value_base).find("::") != string::npos ||
           value_base->named_key.find("::") != string::npos)) {
         return try_mangle_untyped_integral_template_argument_value(arg.value, out);
       }
@@ -15626,7 +15633,7 @@ static string preferred_named_type_text(const TypePtr & type,
   }
 
   if(type->named_rare().named_output_name_is_final) {
-    return trim_elaborated_type_prefix(type->named_display);
+    return trim_elaborated_type_prefix(named_type_display_text(type));
   }
 
   semantic_model::ClassInfo * class_info =
@@ -15640,7 +15647,8 @@ static string preferred_named_type_text(const TypePtr & type,
     }
   }
 
-  const string display_text = trim_elaborated_type_prefix(type->named_display);
+  const string display_text =
+      trim_elaborated_type_prefix(named_type_display_text(type));
   const string key_text = trim_elaborated_type_prefix(type->named_key);
   string selected_text = display_text;
   const bool prefer_lexical_name =
@@ -15841,7 +15849,8 @@ static bool build_type_substitution_key_impl(const TypePtr & type,
   }
 
   case Type::TK_NAMED: {
-    const string named_display = trim_elaborated_type_prefix(type->named_display);
+    const string named_display =
+        trim_elaborated_type_prefix(named_type_display_text(type));
     const bool has_template_parameter_key =
         type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER;
     if(mangle_ctx && mangle_ctx->template_parameters &&
@@ -15887,7 +15896,7 @@ static bool build_type_substitution_key_impl(const TypePtr & type,
              (argument_base->kind == Type::TK_NAMED &&
               argument_base->named_key == type->named_key &&
               trim_elaborated_type_prefix(
-                  argument_base->named_display) == named_display)) {
+                  named_type_display_text(argument_base)) == named_display)) {
             out = template_parameter_type_substitution_key(&parameters, i, param);
             return true;
           }
@@ -16147,7 +16156,8 @@ static bool type_names_match_qualified_owner(const TypePtr & type,
   const string normalized_owner =
       remove_space_chars(trim_elaborated_type_prefix(owner_text));
   const string normalized_display =
-      remove_space_chars(trim_elaborated_type_prefix(type->named_display));
+      remove_space_chars(
+          trim_elaborated_type_prefix(named_type_display_text(type)));
   if(normalized_display == normalized_owner) {
     return true;
   }
@@ -17515,7 +17525,9 @@ static bool try_mangle_conversion_operator_name_prefix_ir(
             << (target_type ? to_string(static_cast<int>(target_type->kind)) :
                 string("<none>"))
             << " display="
-            << (target_type ? target_type->named_display : string("<none>"))
+            << (target_type ?
+                    named_type_display_text(target_type) :
+                    string("<none>"))
             << " key="
             << (target_type ? target_type->named_key : string("<none>"));
       parser_trace::note("symbol.linkage", string(), trace.str());
@@ -18797,7 +18809,7 @@ static bool try_emit_itanium_function_symbol_ir(
         ostringstream trace;
         trace << "mangle-itanium-function parameter-type-failed"
               << " index=" << i
-              << " display=" << type->params[i]->named_display
+              << " display=" << named_type_display_text(type->params[i])
               << " key=" << type->params[i]->named_key
               << " kind=" << static_cast<int>(type->params[i]->kind)
               << " owner-pack="
@@ -19351,11 +19363,9 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
                                              bool is_c_linkage,
                                              const TypePtr & type,
                                              const FunctionSymbolOptions & options,
-                                             const string & symbol_key,
                                              SymbolLinkage linkage)
 {
   const string qualified_name = qualified_name_syntax_key_text(qualified);
-  (void)symbol_key;
   if(is_c_linkage) {
     SymbolIdentity out = c_linkage_identity(display_name, linkage);
     append_c_function_abi_mangle_fact(out, qualified_name);
@@ -19364,7 +19374,8 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
   }
 
   SymbolIdentity out;
-  out.internal_symbol = internal_symbol_from_name(qualified_name);
+  out.internal_symbol =
+      internal_function_symbol_from_name(qualified_name, display_name);
   out.linkage = linkage;
   bool emitted_object_symbol = false;
   const bool capture_abi_fact = abi_mangle_fact_capture_enabled_ref();

@@ -700,6 +700,12 @@ vector<FunctionBinding *> lookup_using_target_functions(SemanticContext & ctx,
   if(ClassInfo * target_class = known_target_class ?
          known_target_class :
          lookup_using_target_class(ctx, scope, qualified, target)) {
+    if(!witness::enabled(ctx.template_witness_context()) &&
+       !target_class->reference_members_collected &&
+       !target_class->reference_member_collection_in_progress &&
+       target_class->reference_named_members_collected.count(qualified.name) == 0) {
+      ctx.ensure_class_reference_named_member(*target_class, qualified.name);
+    }
     if(qualified.name == "operator=") {
       semantic_class_model::ensure_implicit_special_members(ctx, *target_class);
       semantic_class_model::ensure_implicit_copy_assignment(ctx, *target_class);
@@ -744,6 +750,12 @@ vector<FunctionTemplateDecl *> lookup_using_target_function_templates(
   if(ClassInfo * target_class = known_target_class ?
          known_target_class :
          lookup_using_target_class(ctx, scope, qualified, target)) {
+    if(!witness::enabled(ctx.template_witness_context()) &&
+       !target_class->reference_members_collected &&
+       !target_class->reference_member_collection_in_progress &&
+       target_class->reference_named_members_collected.count(qualified.name) == 0) {
+      ctx.ensure_class_reference_named_member(*target_class, qualified.name);
+    }
     return semantic_lookup::lookup_visible_member_function_templates(*target_class,
                                                                      qualified.name).templates;
   }
@@ -839,7 +851,10 @@ void collect_using_declaration(SemanticContext & ctx,
 
   TypePtr type;
   ClassInfo * using_target_class = nullptr;
-  if(!cppast_has_qualifier_template_id_syntaxes(*target) &&
+  const bool target_is_operator =
+      qualified.name.compare(0, 8, "operator") == 0;
+  if(!target_is_operator &&
+     !cppast_has_qualifier_template_id_syntaxes(*target) &&
      target->qualifier_type_syntaxes.empty()) {
     try {
       type = ctx.lookup_type_node(scope, *target, target_text);

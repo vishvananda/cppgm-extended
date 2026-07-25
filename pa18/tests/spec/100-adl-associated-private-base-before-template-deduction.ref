@@ -55,13 +55,6 @@ function @library__classify(%__param0 : ptr [pass=reference]) -> i32 [binding=we
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @library__detail__selected__selected(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7library6detail8selectedC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
 function @library__argument_int___argument(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7library8argumentIiEC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
@@ -69,5 +62,12 @@ function @library__argument_int___argument(%this : ptr) -> void [unwind=no, bind
     store ptr %this, $this
     return void
 }
-alias object _ZN7library6detail8selectedC2Ev = @library__detail__selected__selected
+function @library__detail__selected__selected(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7library6detail8selectedC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
 alias object _ZN7library8argumentIiEC2Ev = @library__argument_int___argument
+alias object _ZN7library6detail8selectedC2Ev = @library__detail__selected__selected

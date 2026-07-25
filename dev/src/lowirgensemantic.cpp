@@ -1931,13 +1931,14 @@ string class_qualified_name(const TypePtr & type)
       return base->named_key.substr(prefix.size());
     }
   }
+  const string display = named_type_display_text(base);
   for(size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); ++i) {
     const string prefix = prefixes[i];
-    if(base->named_display.compare(0, prefix.size(), prefix) == 0) {
-      return base->named_display.substr(prefix.size());
+    if(display.compare(0, prefix.size(), prefix) == 0) {
+      return display.substr(prefix.size());
     }
   }
-  return base->named_display;
+  return display;
 }
 
 string canonical_host_runtime_rtti_class_name(string qualified_name)

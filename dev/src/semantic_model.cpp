@@ -114,7 +114,8 @@ std::string predefined_pretty_function_type_text(
   }
 
   const std::string display =
-      semantic_utils::strip_elaborated_type_prefix(base->named_display);
+      semantic_utils::strip_elaborated_type_prefix(
+          named_type_display_text(base));
   const std::string qualified =
       semantic_utils::strip_elaborated_type_prefix(base->named_key);
   if(!display.empty() &&

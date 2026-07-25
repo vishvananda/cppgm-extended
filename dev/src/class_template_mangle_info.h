@@ -297,6 +297,14 @@ private:
 
 struct ClassTemplateSpecializationMangleInfo
 {
+  enum DisplayClassKey
+  {
+    DCK_UNKNOWN,
+    DCK_CLASS,
+    DCK_STRUCT,
+    DCK_UNION
+  };
+
   void * class_template_decl = nullptr;
   QualifiedName template_name_syntax;
   std::string template_scope_prefix;
@@ -307,6 +315,7 @@ struct ClassTemplateSpecializationMangleInfo
   ClassTemplateMangleArguments arguments;
   std::vector<TemplateArgumentSyntax> argument_syntaxes;
   std::map<std::string, std::size_t> pack_sizes;
+  DisplayClassKey display_class_key = DCK_UNKNOWN;
   bool force_structured_mangling = false;
 };
 

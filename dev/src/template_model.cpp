@@ -14,7 +14,7 @@ bool is_named_enum_argument_type(const cpp_decl::TypePtr & type)
   return base &&
          base->kind == cpp_decl::Type::TK_NAMED &&
          (base->named_key.compare(0, 5, "enum ") == 0 ||
-          base->named_display.compare(0, 5, "enum ") == 0);
+          named_type_display_text(base).compare(0, 5, "enum ") == 0);
 }
 
 }  // namespace
