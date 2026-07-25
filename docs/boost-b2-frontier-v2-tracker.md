@@ -320,6 +320,8 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
   The owner census counts 73.6 MB in omitted AST graphs at the first boundary;
   concrete type/value source syntax accounts for 40.8 MB.
   Releasing safe concrete syntax shifts the heavy-TU RSS curve by about 2%.
+  The packaged exact replay reaches an 8.98 GiB physical footprint at 261
+  seconds without producing semantic output.
   Clang `-O0 -Xclang -print-stats` completes in 14.96 seconds at 941,101,056
   bytes maximum RSS.
 - reduced repro:
@@ -332,11 +334,10 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
   monitor compiler-child RSS, system memory, and swap, and kill the compiler
   child before its B2 wrapper if the run must stop
 - language lane: Boost.MSM declares C++03 in `libs/msm/meta/libraries.json`, so it is supported and must run
-- next action: resume the Boost frontier with one monitored exact
-  `CompositeEuml` replay on the packaged compiler. Stop the compiler child
-  before B2 if the established memory curve remains unsafe. Any further memory
-  work needs a compact semantic/AST storage project; the measurements do not
-  support another narrow cache or traversal change.
+- next action: treat `CompositeEuml` as a compact semantic/AST storage project.
+  Do not repeat the exact target until that representation changes. Survey the
+  remaining MSM targets one at a time for independent correctness frontiers
+  while this target remains open.
 
 ## Fix Ledger
 
@@ -606,6 +607,15 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
   matches the census and cannot close the Clang gap. Further progress requires
   a compact semantic/AST representation rather than another cache, alias
   retry, or eager-instantiation change.
+
+  The packaged exact replay confirms the boundary. At 204 seconds the compiler
+  reports 6.88 GiB RSS. macOS then compresses resident pages while physical
+  footprint keeps rising; at 261 seconds the process owns 8.98 GiB of physical
+  footprint and system swap reaches 1.55 of 2.00 GiB. The compiler remains
+  CPU-active and produces no diagnostic. We stopped the compiler child, then
+  its replacement child and B2. The system recovered without an orphaned
+  process. Log:
+  `/private/tmp/boost-frontier-v2-suite-071-concrete-syntax-composite-euml.log`.
 
 - `2026-07-24`: Kept suite 71 open for one owner-specific representation pass.
   The packaged semantic fixes are clean, but the exact `CompositeEuml` replay
