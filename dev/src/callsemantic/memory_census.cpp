@@ -452,6 +452,281 @@ size_t qualified_name_payload_bytes(const shared_ptr<QualifiedName> & name)
   return qualified_name_payload_bytes(name.get());
 }
 
+struct RetainedAstMemoryBucket
+{
+  size_t ast_nodes = 0;
+  size_t argument_syntaxes = 0;
+  size_t template_ids = 0;
+  size_t bytes = 0;
+};
+
+class RetainedAstMemoryCensus
+{
+public:
+  void add_inline_ast(const CppAstNode & node, const string & owner)
+  {
+    add_ast(node, owner, false);
+  }
+
+  void add_heap_ast(const shared_ptr<CppAstNode> & node, const string & owner)
+  {
+    if(node) {
+      add_ast(*node, owner, true);
+    }
+  }
+
+  void add_heap_ast(const unique_ptr<CppAstNode> & node, const string & owner)
+  {
+    if(node) {
+      add_ast(*node, owner, true);
+    }
+  }
+
+  void add_heap_template_id(const shared_ptr<TemplateIdSyntax> & syntax,
+                            const string & owner)
+  {
+    if(syntax) {
+      add_template_id(*syntax, owner, true);
+    }
+  }
+
+  void add_inline_template_id(const TemplateIdSyntax & syntax,
+                              const string & owner)
+  {
+    add_template_id(syntax, owner, false);
+  }
+
+  void add_argument_syntax(const TemplateArgumentSyntax & syntax,
+                           const string & owner,
+                           bool heap_object)
+  {
+    if(!seen_argument_syntaxes_.insert(&syntax).second) {
+      return;
+    }
+    RetainedAstMemoryBucket & bucket = buckets_[owner];
+    ++bucket.argument_syntaxes;
+    bucket.bytes +=
+        (heap_object ? sizeof(TemplateArgumentSyntax) : 0) +
+        string_storage_bytes(syntax.text) +
+        string_storage_bytes(syntax.source_text);
+    if(syntax.template_id) {
+      add_template_id(*syntax.template_id, owner, true);
+    }
+    add_heap_ast(syntax.type_id, owner);
+    add_heap_ast(syntax.source_type_id, owner);
+    add_heap_ast(syntax.expression, owner);
+  }
+
+  void add_template_argument(const TemplateArgument & argument,
+                             const string & owner)
+  {
+    static const char * kind_names[] = {
+        "type",
+        "value",
+        "class_template",
+        "alias_template"};
+    const string classified_owner =
+        owner +
+        (argument.dependent ? ".dependent." : ".concrete.") +
+        kind_names[static_cast<size_t>(argument.kind)];
+    if(argument.source_syntax) {
+      add_argument_syntax(*argument.source_syntax,
+                          classified_owner + ".source_syntax",
+                          true);
+    }
+    add_heap_ast(argument.expression, classified_owner + ".expression");
+  }
+
+  void dump(ostream & out) const
+  {
+    vector<pair<string, RetainedAstMemoryBucket> > rows(buckets_.begin(),
+                                                        buckets_.end());
+    sort(rows.begin(),
+         rows.end(),
+         [](const pair<string, RetainedAstMemoryBucket> & lhs,
+            const pair<string, RetainedAstMemoryBucket> & rhs)
+         {
+           if(lhs.second.bytes != rhs.second.bytes) {
+             return lhs.second.bytes > rhs.second.bytes;
+           }
+           return lhs.first < rhs.first;
+         });
+    size_t total_bytes = 0;
+    size_t total_ast_nodes = 0;
+    size_t total_argument_syntaxes = 0;
+    size_t total_template_ids = 0;
+    for(size_t i = 0; i < rows.size(); ++i) {
+      const RetainedAstMemoryBucket & bucket = rows[i].second;
+      total_bytes += bucket.bytes;
+      total_ast_nodes += bucket.ast_nodes;
+      total_argument_syntaxes += bucket.argument_syntaxes;
+      total_template_ids += bucket.template_ids;
+      out << "semantic-memory-retained-ast"
+          << " owner=" << rows[i].first
+          << " ast-nodes=" << bucket.ast_nodes
+          << " argument-syntaxes=" << bucket.argument_syntaxes
+          << " template-ids=" << bucket.template_ids
+          << " bytes=" << bucket.bytes
+          << '\n';
+    }
+    out << "semantic-memory-retained-ast-total"
+        << " owners=" << rows.size()
+        << " ast-nodes=" << total_ast_nodes
+        << " argument-syntaxes=" << total_argument_syntaxes
+        << " template-ids=" << total_template_ids
+        << " bytes=" << total_bytes
+        << '\n';
+  }
+
+private:
+  template<class T>
+  size_t lazy_vector_bytes(const CppAstLazyVector<T> & values) const
+  {
+    return values.empty() ?
+        0 :
+        sizeof(vector<T>) + vector_storage_bytes(values.as_vector());
+  }
+
+  void note_qualified_name(const QualifiedName & name,
+                           const string & owner,
+                           bool heap_object)
+  {
+    RetainedAstMemoryBucket & bucket = buckets_[owner];
+    bucket.bytes +=
+        (heap_object ? sizeof(QualifiedName) : 0) +
+        string_storage_bytes(name.name) +
+        vector_storage_bytes(name.qualifiers);
+    for(size_t i = 0; i < name.qualifiers.size(); ++i) {
+      bucket.bytes += string_storage_bytes(name.qualifiers[i]);
+    }
+  }
+
+  void add_template_id(const TemplateIdSyntax & syntax,
+                       const string & owner,
+                       bool heap_object)
+  {
+    if(!seen_template_ids_.insert(&syntax).second) {
+      return;
+    }
+    RetainedAstMemoryBucket & bucket = buckets_[owner];
+    ++bucket.template_ids;
+    bucket.bytes +=
+        (heap_object ? sizeof(TemplateIdSyntax) : 0) +
+        vector_storage_bytes(syntax.qualifier_template_id_syntaxes) +
+        vector_storage_bytes(syntax.arguments) +
+        vector_storage_bytes(syntax.argument_syntaxes);
+    note_qualified_name(syntax.name, owner, false);
+    for(size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
+      add_template_id(syntax.qualifier_template_id_syntaxes[i], owner, false);
+    }
+    for(size_t i = 0; i < syntax.arguments.size(); ++i) {
+      bucket.bytes += string_storage_bytes(syntax.arguments[i]);
+    }
+    for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+      add_argument_syntax(syntax.argument_syntaxes[i], owner, false);
+    }
+  }
+
+  void add_ast(const CppAstNode & node,
+               const string & owner,
+               bool heap_object)
+  {
+    if(!seen_ast_nodes_.insert(&node).second) {
+      return;
+    }
+    RetainedAstMemoryBucket & bucket = buckets_[owner];
+    ++bucket.ast_nodes;
+    bucket.bytes +=
+        (heap_object ? sizeof(CppAstNode) : 0) +
+        string_storage_bytes(node.value) +
+        vector_storage_bytes(node.children) +
+        lazy_vector_bytes(node.qualifier_template_id_syntaxes) +
+        lazy_vector_bytes(node.qualifier_type_syntaxes) +
+        lazy_vector_bytes(node.exception_type_id_syntaxes) +
+        lazy_vector_bytes(node.alignment_specifier_nodes);
+
+    if(node.qualified_name_syntax &&
+       seen_qualified_names_.insert(node.qualified_name_syntax.get()).second) {
+      note_qualified_name(*node.qualified_name_syntax, owner, true);
+    }
+    if(node.template_id_syntax) {
+      add_template_id(*node.template_id_syntax, owner, true);
+    }
+    for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+      add_template_id(node.qualifier_template_id_syntaxes[i], owner, false);
+    }
+    for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+      add_ast(node.qualifier_type_syntaxes[i], owner, false);
+    }
+    for(size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+      add_ast(node.exception_type_id_syntaxes[i], owner, false);
+    }
+    for(size_t i = 0; i < node.alignment_specifier_nodes.size(); ++i) {
+      add_ast(node.alignment_specifier_nodes[i], owner, false);
+    }
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      add_ast(node.children[i], owner, false);
+    }
+
+    const CppAstSparseData * sparse =
+        node.sparse_data ? &*node.sparse_data : nullptr;
+    if(sparse && seen_sparse_data_.insert(sparse).second) {
+      bucket.bytes +=
+          sizeof(CppAstSparseData) +
+          string_storage_bytes(sparse->builtin_type_transform_name) +
+          string_storage_bytes(
+              sparse->rare_strings.gnu_ext_vector_type_argument_identifier) +
+          string_storage_bytes(sparse->rare_strings.gnu_section_segment) +
+          string_storage_bytes(sparse->rare_strings.gnu_section_name) +
+          string_storage_bytes(sparse->rare_strings.asm_label) +
+          lazy_vector_bytes(sparse->abi_tags) +
+          lazy_vector_bytes(sparse->alignment_specifiers);
+      for(size_t i = 0; i < sparse->abi_tags.size(); ++i) {
+        bucket.bytes += string_storage_bytes(sparse->abi_tags[i]);
+      }
+      for(size_t i = 0; i < sparse->alignment_specifiers.size(); ++i) {
+        bucket.bytes += string_storage_bytes(sparse->alignment_specifiers[i]);
+      }
+      if(sparse->name_lookup_snapshot &&
+         seen_name_lookup_snapshots_.insert(
+             sparse->name_lookup_snapshot.get()).second) {
+        bucket.bytes += sizeof(CppAstNameLookupSnapshot);
+      }
+      add_heap_ast(sparse->conversion_type_id_syntax, owner);
+      add_heap_ast(sparse->base_type_syntax, owner);
+    }
+  }
+
+  map<string, RetainedAstMemoryBucket> buckets_;
+  unordered_set<const CppAstNode *> seen_ast_nodes_;
+  unordered_set<const TemplateArgumentSyntax *> seen_argument_syntaxes_;
+  unordered_set<const TemplateIdSyntax *> seen_template_ids_;
+  unordered_set<const QualifiedName *> seen_qualified_names_;
+  unordered_set<const CppAstSparseData *> seen_sparse_data_;
+  unordered_set<const CppAstNameLookupSnapshot *> seen_name_lookup_snapshots_;
+};
+
+thread_local RetainedAstMemoryCensus * active_retained_ast_memory_census =
+    nullptr;
+
+class ScopedRetainedAstMemoryCensus
+{
+public:
+  explicit ScopedRetainedAstMemoryCensus(RetainedAstMemoryCensus & census)
+    : previous_(active_retained_ast_memory_census)
+  {
+    active_retained_ast_memory_census = &census;
+  }
+
+  ~ScopedRetainedAstMemoryCensus()
+  {
+    active_retained_ast_memory_census = previous_;
+  }
+
+private:
+  RetainedAstMemoryCensus * previous_;
+};
+
 void census_type(const TypePtr & type,
                  MemoryCensus & census,
                  unordered_set<const Type *> & seen_types);
@@ -487,21 +762,41 @@ size_t template_parameter_payload_bytes(const TemplateParameterInfo & info,
   if(info.owned_syntax) {
     bytes += sizeof(template_model::TemplateParameterOwnedSyntax);
     if(info.owned_syntax->non_type_decl_specifier_seq) {
+      if(active_retained_ast_memory_census) {
+        active_retained_ast_memory_census->add_heap_ast(
+            info.owned_syntax->non_type_decl_specifier_seq,
+            "template_parameter.owned_syntax");
+      }
       census_cpp_ast_node(*info.owned_syntax->non_type_decl_specifier_seq,
                           "template_parameter.syntax",
                           census);
     }
     if(info.owned_syntax->non_type_declarator) {
+      if(active_retained_ast_memory_census) {
+        active_retained_ast_memory_census->add_heap_ast(
+            info.owned_syntax->non_type_declarator,
+            "template_parameter.owned_syntax");
+      }
       census_cpp_ast_node(*info.owned_syntax->non_type_declarator,
                           "template_parameter.syntax",
                           census);
     }
     if(info.owned_syntax->non_type_abstract_declarator) {
+      if(active_retained_ast_memory_census) {
+        active_retained_ast_memory_census->add_heap_ast(
+            info.owned_syntax->non_type_abstract_declarator,
+            "template_parameter.owned_syntax");
+      }
       census_cpp_ast_node(*info.owned_syntax->non_type_abstract_declarator,
                           "template_parameter.syntax",
                           census);
     }
     if(info.owned_syntax->default_argument) {
+      if(active_retained_ast_memory_census) {
+        active_retained_ast_memory_census->add_heap_ast(
+            info.owned_syntax->default_argument,
+            "template_parameter.owned_syntax");
+      }
       census_cpp_ast_node(*info.owned_syntax->default_argument,
                           "template_parameter.syntax",
                           census);
@@ -513,8 +808,13 @@ size_t template_parameter_payload_bytes(const TemplateParameterInfo & info,
 
 size_t template_argument_payload_bytes(const TemplateArgument & arg,
                                        MemoryCensus & census,
-                                       unordered_set<const Type *> & seen_types)
+                                       unordered_set<const Type *> & seen_types,
+                                       const char * retained_owner)
 {
+  if(active_retained_ast_memory_census) {
+    active_retained_ast_memory_census->add_template_argument(
+        arg, retained_owner);
+  }
   census.note_detail("template_argument.base", sizeof(TemplateArgument));
   if(arg.kind != TemplateArgument::TA_TYPE) {
     census.note_detail("template_argument.non_type_kind", sizeof(arg.kind));
@@ -637,6 +937,47 @@ void census_type(const TypePtr & type,
   census.note_detail("type.string_capacity.bound_text", bound_text_bytes);
   if(type->named_rare_metadata) {
     const Type::NamedRareMetadata & syntax = *type->named_rare_metadata;
+    if(active_retained_ast_memory_census) {
+      active_retained_ast_memory_census->add_heap_ast(
+          syntax.named_dependent_type_expression_node,
+          "type.dependent_expression");
+      for(size_t i = 0;
+          i < syntax.named_dependent_alias_arguments.size();
+          ++i) {
+        active_retained_ast_memory_census->add_argument_syntax(
+            syntax.named_dependent_alias_arguments[i].syntax,
+            "type.dependent_alias_argument",
+            false);
+      }
+      for(size_t i = 0;
+          i < syntax.named_dependent_class_arguments.size();
+          ++i) {
+        active_retained_ast_memory_census->add_argument_syntax(
+            syntax.named_dependent_class_arguments[i].syntax,
+            "type.dependent_class_argument",
+            false);
+      }
+      for(size_t i = 0;
+          i < syntax.named_dependent_template_template_arguments.size();
+          ++i) {
+        active_retained_ast_memory_census->add_argument_syntax(
+            syntax.named_dependent_template_template_arguments[i].syntax,
+            "type.dependent_template_template_argument",
+            false);
+      }
+      if(syntax.named_dependent_qualified_owner_template_id) {
+        active_retained_ast_memory_census->add_heap_template_id(
+            syntax.named_dependent_qualified_owner_template_id,
+            "type.dependent_qualified_owner_template_id");
+      }
+      for(size_t i = 0;
+          i < syntax.named_dependent_qualified_member_template_ids.size();
+          ++i) {
+        active_retained_ast_memory_census->add_inline_template_id(
+            syntax.named_dependent_qualified_member_template_ids[i],
+            "type.dependent_qualified_member_template_id");
+      }
+    }
     const size_t qualified_name_bytes =
         qualified_name_payload_bytes(&syntax.qualified_name);
     const size_t source_name_bytes = string_storage_bytes(syntax.source_name);
@@ -731,11 +1072,25 @@ void census_type(const TypePtr & type,
       }
       for(size_t i = 0; i < mangle.mangle_arguments.size(); ++i) {
         mangle_bytes += template_argument_payload_bytes(
-            mangle.mangle_arguments[i], census, seen_types);
+            mangle.mangle_arguments[i],
+            census,
+            seen_types,
+            "type.mangle.mangle_argument");
       }
       for(size_t i = 0; i < mangle.arguments.const_values().size(); ++i) {
         mangle_bytes += template_argument_payload_bytes(
-            mangle.arguments.const_values()[i], census, seen_types);
+            mangle.arguments.const_values()[i],
+            census,
+            seen_types,
+            "type.mangle.argument");
+      }
+      if(active_retained_ast_memory_census) {
+        for(size_t i = 0; i < mangle.argument_syntaxes.size(); ++i) {
+          active_retained_ast_memory_census->add_argument_syntax(
+              mangle.argument_syntaxes[i],
+              "type.mangle.argument_syntax",
+              false);
+        }
       }
       for(map<string, size_t>::const_iterator it = mangle.pack_sizes.begin();
           it != mangle.pack_sizes.end();
@@ -1249,7 +1604,8 @@ void census_function_binding(const FunctionBinding * binding,
   for(size_t i = 0; i < binding->instantiation_arguments.size(); ++i) {
     bytes += template_argument_payload_bytes(binding->instantiation_arguments[i],
                                              census,
-                                             seen_types);
+                                             seen_types,
+                                             "function_binding.instantiation_argument");
   }
   for(map<string, size_t>::const_iterator it = binding->instantiation_pack_sizes.begin();
       it != binding->instantiation_pack_sizes.end();
@@ -1360,7 +1716,8 @@ void census_class_info(const ClassInfo * info,
   for(size_t i = 0; i < info->instantiation_arguments.size(); ++i) {
     bytes += template_argument_payload_bytes(info->instantiation_arguments[i],
                                              census,
-                                             seen_types);
+                                             seen_types,
+                                             "class_info.instantiation_argument");
   }
   size_t binding_argument_bytes =
       vector_storage_bytes(info->instantiation_binding_arguments);
@@ -1368,7 +1725,10 @@ void census_class_info(const ClassInfo * info,
       i < info->instantiation_binding_arguments.size();
       ++i) {
     binding_argument_bytes += template_argument_payload_bytes(
-        info->instantiation_binding_arguments[i], census, seen_types);
+        info->instantiation_binding_arguments[i],
+        census,
+        seen_types,
+        "class_info.instantiation_binding_argument");
   }
   for(map<string, size_t>::const_iterator
           it = info->instantiation_binding_pack_sizes.begin();
@@ -1467,6 +1827,12 @@ void census_function_template(const FunctionTemplateDecl & decl,
                      instantiation_key_bytes);
   census.note("function_template", bytes);
 
+  if(active_retained_ast_memory_census &&
+     decl.result_type_pattern.kind != CppAstKind::invalid) {
+    active_retained_ast_memory_census->add_inline_ast(
+        decl.result_type_pattern,
+        "function_template.result_type_pattern");
+  }
   census_type(decl.type_pattern, census, seen_types);
   census_scope(decl.pattern_scope, census, seen_scopes, seen_types);
 }
@@ -2869,6 +3235,8 @@ void dump_exact_string_retention_census(
 void dump_memory_census(ostream & out, const MemoryCensusInput & input)
 {
   MemoryCensus census;
+  RetainedAstMemoryCensus retained_ast_census;
+  ScopedRetainedAstMemoryCensus retained_ast_scope(retained_ast_census);
   unordered_set<const Scope *> seen_scopes;
   unordered_set<const FunctionBinding *> seen_functions;
   unordered_set<const ClassInfo *> seen_classes;
@@ -2962,6 +3330,7 @@ void dump_memory_census(ostream & out, const MemoryCensusInput & input)
                       seen_callsem_source_files,
                       seen_callsem_symbols);
   census.dump(out);
+  retained_ast_census.dump(out);
   dump_exact_string_retention_census(out,
                                      input,
                                      seen_scopes,

@@ -15232,6 +15232,25 @@ static bool template_arguments_have_dependent_mangle_state(
                                                               visited);
 }
 
+bool template_argument_requires_source_syntax_for_mangling(
+    const TemplateArgument & argument)
+{
+  if(argument.dependent) {
+    return true;
+  }
+  switch(argument.kind) {
+  case TemplateArgument::TA_TYPE:
+    return type_has_dependent_mangle_state(argument.type);
+  case TemplateArgument::TA_VALUE:
+    return false;
+  case TemplateArgument::TA_CLASS_TEMPLATE:
+  case TemplateArgument::TA_ALIAS_TEMPLATE:
+    return argument.template_decl == nullptr ||
+           type_has_dependent_mangle_state(argument.template_owner_type);
+  }
+  return true;
+}
+
 static bool template_arguments_have_entity_value(
     const vector<TemplateArgument> & arguments)
 {

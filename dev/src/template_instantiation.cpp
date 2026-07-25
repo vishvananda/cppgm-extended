@@ -36,6 +36,7 @@
 #include "template_selection_api.h"
 #include "template_scope.h"
 #include "template_selection.h"
+#include "template_witness.h"
 #include "symbol_linkage.h"
 
 namespace template_argument_semantics {
@@ -5123,6 +5124,41 @@ void detach_shared_class_template_mangle_arguments(ClassInfo & info)
   }
 }
 
+bool template_argument_can_drop_source_syntax(
+    const TemplateArgument & argument)
+{
+  if(argument.dependent) {
+    return false;
+  }
+  if(argument.kind == TemplateArgument::TA_VALUE) {
+    TypePtr value_type = strip_top_level_cv(argument.type);
+    // Member-pointer specialization output still consults the retained
+    // expression after the mangle metadata is installed.
+    if(value_type && value_type->kind == Type::TK_MEMBER_POINTER) {
+      return false;
+    }
+  } else if(argument.kind != TemplateArgument::TA_TYPE) {
+    return false;
+  }
+  return !symbol_linkage::template_argument_requires_source_syntax_for_mangling(
+      argument);
+}
+
+void compact_retained_template_arguments(
+    std::vector<TemplateArgument> & arguments,
+    std::vector<TemplateArgumentSyntax> * syntaxes)
+{
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(!template_argument_can_drop_source_syntax(arguments[i])) {
+      continue;
+    }
+    arguments[i].source_syntax.reset();
+    if(syntaxes && i < syntaxes->size()) {
+      (*syntaxes)[i] = TemplateArgumentSyntax();
+    }
+  }
+}
+
 void update_class_template_specialization_mangle_info(
     ClassInfo & info,
     const std::vector<TemplateArgument> & arguments,
@@ -5189,6 +5225,21 @@ void update_class_template_specialization_mangle_info(
       normalized_class_template_argument_syntaxes(arguments, argument_syntaxes);
   if(pack_sizes) {
     mangle_info->pack_sizes = *pack_sizes;
+  }
+  if(template_api::current_template_witness_session() == nullptr) {
+    std::vector<TemplateArgument> * retained_arguments = nullptr;
+    if(share_primary_arguments &&
+       &arguments == &info.instantiation_arguments) {
+      retained_arguments = &info.instantiation_arguments;
+    } else {
+      retained_arguments = &mangle_info->arguments.mutable_values();
+    }
+    compact_retained_template_arguments(
+        *retained_arguments,
+        &mangle_info->argument_syntaxes);
+    compact_retained_template_arguments(
+        mangle_info->mangle_arguments,
+        nullptr);
   }
   mangle_info->force_structured_mangling = force_structured_mangling;
   set_named_type_class_template_specialization_mangle_info(info.type, mangle_info);

@@ -221,6 +221,7 @@ differences other than the output path.
 | `(MSM mangle-name allocation recovery)` | Copy only the rooted/qualifier syntax that survives when class-specialization metadata replaces its long internal name with the short source template name | -12.75% | -11.40% | -13.09% | versus the preceding checkpoint, instructions move +357,837,613 and RSS +7,393,280 B while footprint improves by 1,818,624 B; all cumulative signals remain substantially improved | `/private/tmp/cppgm-boost-frontier-v2-msm-mangle-name-final.json` | pass; the exact 18,083-class Euml census found 17,009,208 B of retained allocation for only 177,518 B of live template-name syntax. At the identical class count, releasing that discarded capacity reduced the instrumented process maximum from 1,872,293,888 B to 1,610,145,792 B. The final implementation avoids allocating and copying the discarded name at all. The frozen gate records 229,951,229,915 instructions, 1,145,257,984 B RSS, and 877,703,168 B footprint; it verified epoch `9764b3835` and all 51 frozen headers. |
 | `(MSM algorithmic cleanup package)` | Remove eager unused instantiation, compact/share typed template state, avoid repeated rendered-name recovery, and skip witness-only class-lifecycle rendering when no witness session exists | -25.36% | -22.41% | -28.72% | versus the mangle-name checkpoint, instructions improve by 33,233,712,344, RSS by 142,258,176 B, and footprint by 157,884,416 B; the final witness-only gate alone removes another 7,299,286,986 instructions from exact `AnonymousEuml` with byte-identical object output | `/private/tmp/cppgm-boost-frontier-v2-final-witness-gate-perf.json` | pass; three-run medians are 196,717,517,571 instructions, 1,002,999,808 B RSS, and 719,818,752 B footprint. The gate verified frozen source epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run. No parent compiler or live project header was measured, and system swap remained unchanged. |
 | `(MSM structured template reconstruction package)` | Preserve qualified/template-id sidecars through direct type substitution, consume already resolved alias arguments without resolving their display text again, structurally deduce class-template arguments in partial function results, and bound dependent-qualified-member scans by exact `Type` identity | -24.30% | -21.11% | -30.09% | versus the preceding recorded medians, instructions move +1.42%, RSS +1.67%, and footprint improves 1.92%; the required sample finds no new structural-deduction helper with at least five self samples, only two samples in the visited-set walk, and 11 of 7,787 samples in template-syntax reconstruction | `/private/tmp/cppgm-boost-frontier-v2-template-template-candidate.json`; diagnostic `/private/tmp/cppgm-template-template.sample.txt` and `/private/tmp/cppgm-template-template-hotspot.log` | pass; three-run medians are 199,516,398,659 instructions, 1,019,727,872 B RSS, and 705,990,656 B footprint. The immutable gate verified exact epoch `9764b3835`, its frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
+| `(MSM concrete template-argument syntax compaction)` | Drop source AST from retained concrete type and ordinary value arguments after typed mangle state is complete; preserve member-pointer values, dependent arguments, template entities, and all witness-session syntax | -23.87% | -23.06% | -29.47% | versus the reference-field checkpoint, instructions move +0.19 percentage points, RSS improves 1.74 percentage points, and footprint moves +0.81 percentage points | `/private/tmp/cppgm-boost-frontier-v2-concrete-syntax-perf.json` | pass; three-run medians are 200,651,979,093 instructions, 994,582,528 B RSS, and 712,261,632 B footprint. The immutable gate verified epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 
 ## Suite Cursor
 
@@ -312,12 +313,15 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 - last closed suite: `#70 libs/mqtt5/test` (`skipped-language`)
 - failure phase: the reference-field `decltype` handoff is fixed, but an exact
   `CompositeEuml` replay remains memory-bound before semantic output completes
-- diagnostic: 86,334 reference-collection requests produce 32,768 actual,
-  pointer-unique class specializations with zero repeated collections. Two
-  correct clone-reduction experiments pass PA19/PA22/PA23 `862/862`, but leave
-  the exact RSS curve unchanged and have been reverted. At 328 seconds the
-  compiler footprint reaches 10.5 GB; Clang `-O0 -Xclang -print-stats`
-  completes in 14.96 seconds at 941,101,056 bytes maximum RSS.
+- diagnostic: 86,334 reference-collection requests produce 32,768
+  pointer-unique class specializations with zero repeated collections. The
+  class count rises from 11,379 at 8,203 collections to 41,927 at 32,768
+  collections, and retained member AST children rise from 34,635 to 114,866.
+  The owner census counts 73.6 MB in omitted AST graphs at the first boundary;
+  concrete type/value source syntax accounts for 40.8 MB.
+  Releasing safe concrete syntax shifts the heavy-TU RSS curve by about 2%.
+  Clang `-O0 -Xclang -print-stats` completes in 14.96 seconds at 941,101,056
+  bytes maximum RSS.
 - reduced repro:
   `pa21/tests/general/200-reference-field-decltype-alias.t`, five lines and
   193 bytes, header-free C++11 with no `<type_traits>`
@@ -328,11 +332,11 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
   monitor compiler-child RSS, system memory, and swap, and kill the compiler
   child before its B2 wrapper if the run must stop
 - language lane: Boost.MSM declares C++03 in `libs/msm/meta/libraries.json`, so it is supported and must run
-- next action: extend the retained-memory census to the AST graphs currently
-  omitted from `FunctionTemplateDecl::result_type_pattern`, type mangle
-  argument syntax, and template-argument source syntax/expression. Use that
-  owner-specific result to design sharing or typed-only retention for
-  reference-only specializations before replaying the exact target.
+- next action: resume the Boost frontier with one monitored exact
+  `CompositeEuml` replay on the packaged compiler. Stop the compiler child
+  before B2 if the established memory curve remains unsafe. Any further memory
+  work needs a compact semantic/AST storage project; the measurements do not
+  support another narrow cache or traversal change.
 
 ## Fix Ledger
 
@@ -577,6 +581,31 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Dependent-type resolution cache input lifetime | The nested dependent-type cache keyed entries by a raw `Type *` while retaining only the resolved output. Recursive resolution could release an ephemeral input and allocate an unrelated type at the same address before the outermost query cleared the cache, producing a stale hit such as `const wrap_iter<size_t*>& -> int`. Each key now owns its input `TypePtr` for the cache entry's bounded lifetime; lookup ordering remains pointer-based and the cache is still cleared after the outermost query. | `pa22/tests/general/300-dependent-type-resolution-cache-input-lifetime.t`, reduced to 21 lines / 851 bytes of header-free C++11 with a local three-line `enable` stand-in | The saved pre-fix compiler fails 43 of 256 concurrent compilations of the reduced declaration graph. Trace evidence showed the same address first stored for a resolved `enable_t<..., int>` input and then reused by an unrelated `const W&` input. The hosted `<algorithm>` form reproduced 9 of 16 times; disabling the cache passed 16 of 16. | Clang 22 and GCC 15 accept the reducer warning-clean. The focused PA22 check, cache-on/off byte parity, and 48 concurrent fixed-compiler repetitions pass with zero swaps and at most 10,137,600 B RSS per process. The frozen self-compile gate completes three fresh compiler processes, each releases fully between runs, and records zero process swaps. | included in the same final three-run result: -11.08% instructions, -10.45% RSS, and -11.43% footprint; the cache ownership fix retains both the instruction win and recovered memory | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-25`: Ended the owner-specific representation pass and returned to
+  the MSM frontier. At 8,203 reference collections, the primary semantic census
+  accounts for 243.2 MB and the pointer-deduplicated omitted AST census adds
+  73.6 MB. Type-mangle argument ownership contributes 43.4 MB; 40.8 MB of that
+  is source syntax attached to concrete type and value arguments. At 32,768
+  collections the compiler owns 41,927 classes, 37,393 functions, 12,397
+  function templates, and 73,500 template scopes. Those counts grow
+  at less than four times the first-boundary counts, while retained class-member
+  AST children grow from 34,635 to 114,866. We found no hidden second
+  specialization wave or large repeated member traversal in the measured
+  interval.
+
+  The packaged representation change releases concrete type and ordinary value
+  source syntax after typed mangle metadata is complete. It keeps dependent
+  syntax, template entities, witness-session syntax, and concrete member-pointer
+  values. An initial broad run found the two member-pointer dependencies in
+  PA26; preserving that value category restores PA26 `82/82`. The same broad
+  run passed the other `4089/4089` direct-LowIR tests, and all 959 configured
+  strict comparisons pass. The immutable source-and-51-header gate records
+  -23.87% instructions, -23.06% RSS, and -29.47% footprint with median RSS
+  994,582,528 B. On `CompositeEuml`, the change reduces RSS by about 2%; that
+  matches the census and cannot close the Clang gap. Further progress requires
+  a compact semantic/AST representation rather than another cache, alias
+  retry, or eager-instantiation change.
 
 - `2026-07-24`: Kept suite 71 open for one owner-specific representation pass.
   The packaged semantic fixes are clean, but the exact `CompositeEuml` replay

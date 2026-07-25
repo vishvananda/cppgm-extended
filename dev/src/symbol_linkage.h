@@ -218,5 +218,7 @@ SymbolIdentity make_static_member_variable_template_symbol_identity(
     bool is_c_linkage,
     SymbolLinkage linkage = SL_EXTERNAL);
 bool has_external_vtable_symbol_candidate(const cpp_decl::TypePtr & type);
+bool template_argument_requires_source_syntax_for_mangling(
+    const template_model::TemplateArgument & argument);
 
 }  // namespace symbol_linkage
