@@ -1540,7 +1540,8 @@ bool supports_non_reference_explicit_cast(SemanticContext & ctx,
   if(!supported && allow_reinterpret_like) {
     supported =
         (is_integral_type(target_base) && is_pointer_type(operand_base)) ||
-        (is_pointer_type(target_base) && is_integral_type(operand_base));
+        (is_pointer_type(target_base) &&
+         (is_integral_type(operand_base) || is_named_enum_type(ctx, operand_base)));
   }
   return supported;
 }
