@@ -15574,13 +15574,40 @@ private:
       if(argument.pack_expansion) {
         continue;
       }
-      if(contains_identifier_token(argument.text, name)) {
-        return true;
-      }
+      bool has_structured_argument = false;
       if(argument.template_id &&
          template_id_syntax_mentions_pack_identifier_in_current_expansion(
              *argument.template_id,
              name)) {
+        return true;
+      }
+      has_structured_argument = has_structured_argument || argument.template_id;
+      if(argument.type_id) {
+        has_structured_argument = true;
+        if(ast_node_mentions_pack_identifier_in_current_expansion(
+               *argument.type_id,
+               name)) {
+          return true;
+        }
+      }
+      if(argument.source_type_id) {
+        has_structured_argument = true;
+        if(ast_node_mentions_pack_identifier_in_current_expansion(
+               *argument.source_type_id,
+               name)) {
+          return true;
+        }
+      }
+      if(argument.expression) {
+        has_structured_argument = true;
+        if(ast_node_mentions_pack_identifier_in_current_expansion(
+               *argument.expression,
+               name)) {
+          return true;
+        }
+      }
+      if(!has_structured_argument &&
+         contains_identifier_token(argument.text, name)) {
         return true;
       }
     }
@@ -15598,9 +15625,11 @@ private:
     if(ast_node_value_names_pack_identifier(node, name)) {
       return true;
     }
-    if(!node.value.empty() && contains_identifier_token(node.value, name)) {
-      return true;
-    }
+    const bool has_structured_node =
+        node.template_id_syntax ||
+        !node.qualifier_template_id_syntaxes.empty() ||
+        !node.qualifier_type_syntaxes.empty() ||
+        !node.children.empty();
     if(node.template_id_syntax &&
        template_id_syntax_mentions_pack_identifier_in_current_expansion(
            *node.template_id_syntax,
@@ -15628,7 +15657,9 @@ private:
         return true;
       }
     }
-    return false;
+    return !has_structured_node &&
+           !node.value.empty() &&
+           contains_identifier_token(node.value, name);
   }
 
   string typed_value_binding_pack_text(const ValueBinding & binding) const
@@ -15823,6 +15854,16 @@ private:
       out.template_id_syntax.reset(new TemplateIdSyntax(
           clone_template_id_syntax(*source.template_id_syntax)));
     }
+    if(cppast_conversion_type_id_syntax_storage(source)) {
+      mutable_cppast_conversion_type_id_syntax_storage(out).reset(
+          new CppAstNode(clone_pack_substitution_node(
+              *cppast_conversion_type_id_syntax_storage(source))));
+    }
+    if(cppast_base_type_syntax_storage(source)) {
+      mutable_cppast_base_type_syntax_storage(out).reset(
+          new CppAstNode(clone_pack_substitution_node(
+              *cppast_base_type_syntax_storage(source))));
+    }
     out.qualifier_template_id_syntaxes.clear();
     out.qualifier_template_id_syntaxes.reserve(
         source.qualifier_template_id_syntaxes.size());
@@ -15835,6 +15876,20 @@ private:
     for(size_t i = 0; i < source.qualifier_type_syntaxes.size(); ++i) {
       out.qualifier_type_syntaxes.push_back(
           clone_pack_substitution_node(source.qualifier_type_syntaxes[i]));
+    }
+    out.exception_type_id_syntaxes.clear();
+    out.exception_type_id_syntaxes.reserve(
+        source.exception_type_id_syntaxes.size());
+    for(size_t i = 0; i < source.exception_type_id_syntaxes.size(); ++i) {
+      out.exception_type_id_syntaxes.push_back(
+          clone_pack_substitution_node(source.exception_type_id_syntaxes[i]));
+    }
+    out.alignment_specifier_nodes.clear();
+    out.alignment_specifier_nodes.reserve(
+        source.alignment_specifier_nodes.size());
+    for(size_t i = 0; i < source.alignment_specifier_nodes.size(); ++i) {
+      out.alignment_specifier_nodes.push_back(
+          clone_pack_substitution_node(source.alignment_specifier_nodes[i]));
     }
     out.children.clear();
     out.children.reserve(source.children.size());
@@ -16213,6 +16268,34 @@ private:
                                                 value_replacements,
                                                 preserve_nested_pack_expansions);
     }
+    if(cppast_conversion_type_id_syntax_storage(node)) {
+      CppAstNode conversion_type_id;
+      if(!substitute_pack_argument_node_ast(
+             scope,
+             *cppast_conversion_type_id_syntax_storage(node),
+             type_replacements,
+             value_replacements,
+             conversion_type_id,
+             preserve_nested_pack_expansions)) {
+        return false;
+      }
+      mutable_cppast_conversion_type_id_syntax_storage(out).reset(
+          new CppAstNode(conversion_type_id));
+    }
+    if(cppast_base_type_syntax_storage(node)) {
+      CppAstNode base_type;
+      if(!substitute_pack_argument_node_ast(
+             scope,
+             *cppast_base_type_syntax_storage(node),
+             type_replacements,
+             value_replacements,
+             base_type,
+             preserve_nested_pack_expansions)) {
+        return false;
+      }
+      mutable_cppast_base_type_syntax_storage(out).reset(
+          new CppAstNode(base_type));
+    }
     for(size_t i = 0; i < out.qualifier_type_syntaxes.size(); ++i) {
       CppAstNode qualifier;
       if(!substitute_pack_argument_node_ast(scope,
@@ -16224,6 +16307,30 @@ private:
         return false;
       }
       out.qualifier_type_syntaxes[i] = qualifier;
+    }
+    for(size_t i = 0; i < out.exception_type_id_syntaxes.size(); ++i) {
+      CppAstNode exception_type;
+      if(!substitute_pack_argument_node_ast(scope,
+                                            node.exception_type_id_syntaxes[i],
+                                            type_replacements,
+                                            value_replacements,
+                                            exception_type,
+                                            preserve_nested_pack_expansions)) {
+        return false;
+      }
+      out.exception_type_id_syntaxes[i] = exception_type;
+    }
+    for(size_t i = 0; i < out.alignment_specifier_nodes.size(); ++i) {
+      CppAstNode alignment;
+      if(!substitute_pack_argument_node_ast(scope,
+                                            node.alignment_specifier_nodes[i],
+                                            type_replacements,
+                                            value_replacements,
+                                            alignment,
+                                            preserve_nested_pack_expansions)) {
+        return false;
+      }
+      out.alignment_specifier_nodes[i] = alignment;
     }
 
     for(auto it = type_replacements.begin();
@@ -16348,6 +16455,11 @@ private:
       }
     }
 
+    CppAstNode substitution_source =
+        clone_pack_substitution_node(node.children[0]);
+    template_argument_semantics::clear_pack_element_resolved_type_annotations(
+        *this,
+        substitution_source);
     for(size_t i = 0; i < pack_size; ++i) {
       map<string, TypePtr> type_replacements;
       map<string, ValueBinding> value_replacements;
@@ -16359,7 +16471,7 @@ private:
       }
       CppAstNode expr;
       if(!substitute_pack_argument_node_ast(scope,
-                                            node.children[0],
+                                            substitution_source,
                                             type_replacements,
                                             value_replacements,
                                             expr,
@@ -16367,6 +16479,11 @@ private:
         trace_pack_failure("structured-substitution-failed", pattern);
         return false;
       }
+      // source_text is witness provenance, not semantic input.  The expanded
+      // node's structured syntax and current text carry the pack element's
+      // substituted meaning; retaining the dependent spelling can make a
+      // later template-id lookup evaluate the pre-expansion argument.
+      template_argument_semantics::clear_pack_element_source_provenance(expr);
       out.push_back(expr);
     }
     return true;
@@ -20817,10 +20934,26 @@ private:
     out.has_auto = decl_spec_contains_auto(out.resolved_specifiers);
     const bool declaration_is_typedef =
         decl_spec_contains_token(out.resolved_specifiers, KW_TYPEDEF);
+    Scope * decl_spec_scope = &scope;
+    if(declarators && declarators->children.size() == 1) {
+      const CppAstNode & init_decl = declarators->children[0];
+      if(init_decl.kind == CppAstKind::init_declarator &&
+         !init_decl.children.empty()) {
+        // A namespace-scope definition of a static data member is in the
+        // member's class context, including its leading decl-specifier-seq.
+        // Resolve that context before parsing a possibly private nested type,
+        // as in `C::private_type C::member;`.
+        decl_spec_scope =
+            semantic_lookup::resolve_qualified_variable_parse_scope(
+                *this,
+                scope,
+                init_decl.children[0]);
+      }
+    }
     out.parsed_decl_spec =
         out.has_auto ||
         parse_decl_spec(out.resolved_specifiers,
-                        scope,
+                        *decl_spec_scope,
                         out.declaration_is_typedef,
                         out.base,
                         declaration_is_typedef);

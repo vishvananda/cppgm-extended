@@ -1,0 +1,20 @@
+global @value [binding=strong, object=_Z5value] = {
+  zero 1
+}
+global @first : ptr [binding=strong, object=_Z5first] = zero
+global @second : ptr [binding=strong, object=_Z6second] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @value
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    store ptr %t2, @first
+    %t3 = addr @value
+    %t4 = index i8 [projection=base_subobject] %t3, 0
+    store ptr %t4, @second
+    return void
+}

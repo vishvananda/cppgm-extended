@@ -1674,17 +1674,22 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
       }
       TypePtr member_function_type = binding->declared_type;
       TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
+      const FunctionTypeRefQualifier ref_qualifier =
+          binding->ref_qualifier == RQ_LVALUE ? FTRQ_LVALUE :
+          binding->ref_qualifier == RQ_RVALUE ? FTRQ_RVALUE :
+                                               FTRQ_NONE;
       if(stripped_function_type &&
          stripped_function_type->kind == Type::TK_FUNCTION &&
          (stripped_function_type->function_const != binding->is_const_method ||
-          stripped_function_type->function_volatile != binding->is_volatile_method)) {
+          stripped_function_type->function_volatile != binding->is_volatile_method ||
+          stripped_function_type->function_ref_qualifier != ref_qualifier)) {
         member_function_type = make_function(stripped_function_type->inner,
                                              stripped_function_type->params,
                                              stripped_function_type->variadic,
                                              binding->is_const_method,
                                              binding->is_volatile_method,
                                              stripped_function_type->prototype_relaxed,
-                                             stripped_function_type->function_ref_qualifier);
+                                             ref_qualifier);
       }
       ctx.require_function_definition(binding,
                                       OutputReason::FunctionIdUse,
@@ -1756,17 +1761,22 @@ TypePtr member_function_pointer_target_type(const FunctionBinding & binding)
 {
   TypePtr member_function_type = binding.declared_type;
   TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
+  const FunctionTypeRefQualifier ref_qualifier =
+      binding.ref_qualifier == RQ_LVALUE ? FTRQ_LVALUE :
+      binding.ref_qualifier == RQ_RVALUE ? FTRQ_RVALUE :
+                                           FTRQ_NONE;
   if(stripped_function_type &&
      stripped_function_type->kind == Type::TK_FUNCTION &&
      (stripped_function_type->function_const != binding.is_const_method ||
-      stripped_function_type->function_volatile != binding.is_volatile_method)) {
+      stripped_function_type->function_volatile != binding.is_volatile_method ||
+      stripped_function_type->function_ref_qualifier != ref_qualifier)) {
     member_function_type = make_function(stripped_function_type->inner,
                                          stripped_function_type->params,
                                          stripped_function_type->variadic,
                                          binding.is_const_method,
                                          binding.is_volatile_method,
                                          stripped_function_type->prototype_relaxed,
-                                         stripped_function_type->function_ref_qualifier);
+                                         ref_qualifier);
   }
   return member_function_type;
 }

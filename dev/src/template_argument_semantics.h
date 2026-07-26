@@ -461,6 +461,10 @@ ExpandedTemplateArgumentInputs expand_template_argument_inputs(
     const std::vector<std::string> & texts,
     const std::vector<cpp_decl::TemplateArgumentSyntax> * syntaxes);
 
+void clear_pack_element_source_provenance(CppAstNode & node);
+void clear_pack_element_resolved_type_annotations(SemanticContext & ctx,
+                                                  CppAstNode & node);
+
 // template-boundary-audit: end text_recovery_bridge
 
 }  // namespace template_argument_semantics

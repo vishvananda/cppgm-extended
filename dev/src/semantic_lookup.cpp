@@ -4985,6 +4985,16 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
                               declared_in,
                               member_access,
                               result.path_access);
+    if(!access_allowed) {
+      access_allowed =
+          member_access_allowed_through_object(lexical_scope,
+                                               lookup_current_class,
+                                               lookup_current_function,
+                                               &info,
+                                               declared_in,
+                                               member_access,
+                                               result.path_access);
+    }
     if(!access_allowed &&
        member_access != MA_PRIVATE &&
        result.path_access != MA_PUBLIC) {

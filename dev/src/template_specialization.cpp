@@ -642,6 +642,9 @@ const TemplateParameterInfo * type_pattern_template_parameter(
              nullptr;
 }
 
+bool strip_trailing_pack_ellipsis(const std::string & text,
+                                  std::string & element_text);
+
 bool deduce_type_pattern_to_state(
     template_api::TemplateServices & services,
     const std::vector<TemplateParameterInfo> & parameters,
@@ -846,13 +849,37 @@ bool deduce_type_pattern_to_state(
                                                     actual_metadata) &&
          actual_metadata.source_template ==
              static_cast<ClassTemplateDecl *>(
-                 dependent_class_template_decl) &&
-         dependent_class_arguments.size() ==
-             actual_metadata.instantiation_arguments.size()) {
+                 dependent_class_template_decl)) {
+        const TemplateParameterInfo * trailing_pack_parameter = nullptr;
+        if(!dependent_class_arguments.empty()) {
+          const DependentAliasTemplateArgumentSyntax & trailing =
+              dependent_class_arguments.back();
+          std::string pack_parameter_name;
+          if(strip_trailing_pack_ellipsis(trailing.text,
+                                          pack_parameter_name)) {
+            const TemplateParameterInfo * parameter =
+                find_template_parameter_by_name(parameters,
+                                                pack_parameter_name);
+            if(!parameter) {
+              parameter = find_template_parameter(parameters,
+                                                  pack_parameter_name);
+            }
+            if(parameter && parameter->parameter_pack) {
+              trailing_pack_parameter = parameter;
+            }
+          }
+        }
+        const std::size_t fixed_argument_count =
+            dependent_class_arguments.size() -
+            (trailing_pack_parameter ? 1 : 0);
         DeducedState trial = deduced;
-        bool matched = true;
+        bool matched =
+            actual_metadata.instantiation_arguments.size() >= fixed_argument_count &&
+            (trailing_pack_parameter ||
+             actual_metadata.instantiation_arguments.size() ==
+                 dependent_class_arguments.size());
         for(std::size_t i = 0;
-            i < dependent_class_arguments.size();
+            matched && i < fixed_argument_count;
             ++i) {
           const DependentAliasTemplateArgumentSyntax & pattern_argument =
               dependent_class_arguments[i];
@@ -944,6 +971,52 @@ bool deduce_type_pattern_to_state(
           }
           matched = false;
           break;
+        }
+        if(matched && trailing_pack_parameter) {
+          if(trailing_pack_parameter->kind == TemplateParameterInfo::TP_TYPE) {
+            std::vector<TypePtr> pack;
+            for(std::size_t i = fixed_argument_count;
+                i < actual_metadata.instantiation_arguments.size();
+                ++i) {
+              const TemplateArgument & actual_argument =
+                  actual_metadata.instantiation_arguments[i];
+              if(actual_argument.kind != TemplateArgument::TA_TYPE ||
+                 !actual_argument.type) {
+                matched = false;
+                break;
+              }
+              pack.push_back(actual_argument.type);
+            }
+            if(matched &&
+               !store_deduced_type_pack(trial,
+                                        trailing_pack_parameter->name,
+                                        pack)) {
+              matched = false;
+            }
+          } else if(trailing_pack_parameter->kind ==
+                        TemplateParameterInfo::TP_NON_TYPE) {
+            std::vector<long long> pack;
+            for(std::size_t i = fixed_argument_count;
+                i < actual_metadata.instantiation_arguments.size();
+                ++i) {
+              const TemplateArgument & actual_argument =
+                  actual_metadata.instantiation_arguments[i];
+              if(actual_argument.kind != TemplateArgument::TA_VALUE ||
+                 actual_argument.dependent) {
+                matched = false;
+                break;
+              }
+              pack.push_back(actual_argument.value);
+            }
+            if(matched &&
+               !store_deduced_value_pack(trial,
+                                         trailing_pack_parameter->name,
+                                         pack)) {
+              matched = false;
+            }
+          } else {
+            matched = false;
+          }
         }
         if(matched) {
           deduced = trial;
@@ -1241,6 +1314,9 @@ bool type_pattern_has_deducible_template_parameter(
         const TemplateArgument & argument = metadata.instantiation_arguments[i];
         if(argument.kind == TemplateArgument::TA_TYPE &&
            type_pattern_has_deducible_template_parameter(type_system, argument.type)) {
+          return true;
+        }
+        if(argument.kind == TemplateArgument::TA_VALUE && argument.dependent) {
           return true;
         }
         if((argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
@@ -11813,6 +11889,44 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
             }
           }
         }
+        if(pattern_mentions_placeholders &&
+           placeholder_pattern_type &&
+           !type_pattern_has_deducible_template_parameter(
+               type_system,
+               placeholder_pattern_type) &&
+           pattern_syntax) {
+          const TemplateIdSyntax * pattern_id =
+              template_argument_template_id_syntax(*pattern_syntax);
+          AliasTemplateDecl * alias_template =
+              pattern_id ?
+                  template_argument_semantics::lookup_alias_template(
+                      services,
+                      placeholder_match_scope,
+                      pattern_id->name) :
+                  nullptr;
+          std::string expanded_text;
+          TypePtr expanded_type;
+          if(alias_template &&
+             try_expand_alias_template_pattern_structurally(
+                 services,
+                 template_api::make_template_environment(placeholder_match_scope),
+                 *alias_template,
+                 pattern_id->arguments,
+                 &pattern_id->argument_syntaxes,
+                 template_api::make_template_environment(placeholder_match_scope),
+                 expanded_text,
+                 &expanded_type,
+                 true,
+                 false) &&
+             expanded_type) {
+            const bool expanded_has_deducible_parameter =
+                type_pattern_has_deducible_template_parameter(type_system,
+                                                              expanded_type);
+            if(expanded_has_deducible_parameter) {
+              placeholder_pattern_type = expanded_type;
+            }
+          }
+        }
         const bool pattern_has_deducible_placeholders =
             pattern_mentions_placeholders &&
             type_pattern_has_deducible_template_parameter(type_system,
@@ -11959,21 +12073,64 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
           }
           Scope & deduction_scope =
               pattern_mentions_placeholders ? placeholder_match_scope : match_scope_copy;
-          if(deduction_pattern_type &&
-             partial_specialization_top_cv_matches(deduction_pattern_type, actual.type) &&
-             (deduce_type_pattern_with_pack_arguments(
-                  services,
-                  partial.parameters,
-                  deduction_pattern_type,
-                  actual.type,
-                  deduced_copy,
-                  deduction_scope,
-                  scope) ||
-              deduce_type_pattern_to_state(services,
-                                           partial.parameters,
-                                           deduction_pattern_type,
-                                           actual.type,
-                                           deduced_copy))) {
+          const bool top_cv_matches =
+              deduction_pattern_type &&
+              partial_specialization_top_cv_matches(deduction_pattern_type,
+                                                    actual.type);
+          bool prefer_structured_state = false;
+          void * dependent_class_template_decl = nullptr;
+          std::vector<DependentAliasTemplateArgumentSyntax>
+              dependent_class_arguments;
+          if(named_type_dependent_class_template(
+                 deduction_pattern_type,
+                 dependent_class_template_decl,
+                 dependent_class_arguments) &&
+             !dependent_class_arguments.empty()) {
+            const DependentAliasTemplateArgumentSyntax & trailing =
+                dependent_class_arguments.back();
+            std::string pack_parameter_name;
+            if(strip_trailing_pack_ellipsis(trailing.text,
+                                            pack_parameter_name)) {
+              const TemplateParameterInfo * parameter =
+                  find_template_parameter_by_name(partial.parameters,
+                                                  pack_parameter_name);
+              prefer_structured_state = parameter && parameter->parameter_pack;
+            }
+          }
+          bool matched_with_state = false;
+          bool matched_with_pack_arguments = false;
+          if(top_cv_matches && prefer_structured_state) {
+            matched_with_state =
+                deduce_type_pattern_to_state(services,
+                                             partial.parameters,
+                                             deduction_pattern_type,
+                                             actual.type,
+                                             deduced_copy);
+          }
+          if(top_cv_matches && !matched_with_state) {
+            deduced_copy = deduced;
+            matched_with_pack_arguments =
+                deduce_type_pattern_with_pack_arguments(
+                    services,
+                    partial.parameters,
+                    deduction_pattern_type,
+                    actual.type,
+                    deduced_copy,
+                    deduction_scope,
+                    scope);
+          }
+          if(top_cv_matches &&
+             !matched_with_state &&
+             !matched_with_pack_arguments) {
+            deduced_copy = deduced;
+            matched_with_state =
+                deduce_type_pattern_to_state(services,
+                                             partial.parameters,
+                                             deduction_pattern_type,
+                                             actual.type,
+                                             deduced_copy);
+          }
+          if(matched_with_pack_arguments || matched_with_state) {
             deduced = deduced_copy;
             matched_by_type = true;
           }

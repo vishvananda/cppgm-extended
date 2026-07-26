@@ -28139,6 +28139,23 @@ string replace_identifier_token_text_preserving_sizeof_pack_operands(
 
 }  // namespace
 
+void clear_pack_element_source_provenance(CppAstNode & node)
+{
+  clear_temporary_pack_element_source_texts(node);
+}
+
+void clear_pack_element_resolved_type_annotations(SemanticContext & ctx,
+                                                  CppAstNode & node)
+{
+  (void)template_api::with_template_services(
+      ctx,
+      [&](template_api::TemplateServices & services) -> bool
+      {
+        clear_resolved_type_annotations_in_node(services, node, true);
+        return true;
+      });
+}
+
 bool try_resolve_type_pack_element_template_id(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

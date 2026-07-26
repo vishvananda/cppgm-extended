@@ -3705,6 +3705,23 @@ private:
     return peel_base_subobject_root_shared(node);
   }
 
+  const CallSemNode * reference_lifetime_materialization_root(
+      const CallSemNode & node) const
+  {
+    const CallSemNode * root = peel_base_subobject_root(node);
+    if(!root ||
+       root->value_category != CVC_PRVALUE ||
+       is_reference_type(root->semantic_type) ||
+       !is_complete_class_value_type(root->semantic_type)) {
+      return nullptr;
+    }
+    if(root->kind != CallSemKind::call_expression &&
+       !is_special_class_materialization_node(*root)) {
+      return nullptr;
+    }
+    return root;
+  }
+
   bool root_is_current_this(const CallSemNode & node) const
   {
     const CallSemNode * root = peel_base_subobject_root(node);
@@ -4697,6 +4714,8 @@ private:
   vector<bool> cleanup_scope_host_unwind_cleanup_;
   vector<bool> cleanup_scope_is_full_expression_;
   vector<string> * extended_initializer_list_cleanup_slots_ = nullptr;
+  const CallSemNode * lifetime_extended_reference_materialization_ = nullptr;
+  string lifetime_extended_reference_storage_slot_;
   map<string, string> shared_call_unwind_dispatch_labels_;
   vector<string> active_host_cleanup_labels_;
   vector<vector<BindingScopeEntry> > binding_scopes_;
@@ -8324,7 +8343,7 @@ private:
     return false;
   }
 
-  bool argument_subtree_may_materialize_cleanup(const CallSemNode & node) const
+  bool expression_subtree_may_materialize_cleanup(const CallSemNode & node) const
   {
     if(node.value_category == CVC_PRVALUE &&
        !is_reference_type(node.semantic_type)) {
@@ -8337,7 +8356,7 @@ private:
     }
 
     for(size_t i = 0; i < node.children.size(); ++i) {
-      if(argument_subtree_may_materialize_cleanup(node.children[i])) {
+      if(expression_subtree_may_materialize_cleanup(node.children[i])) {
         return true;
       }
     }
@@ -8373,7 +8392,7 @@ private:
              node.children[i])) {
         return true;
       }
-      if(argument_subtree_may_materialize_cleanup(node.children[i])) {
+      if(expression_subtree_may_materialize_cleanup(node.children[i])) {
         return true;
       }
     }
@@ -10568,7 +10587,7 @@ private:
     }
   }
 
-  vector<CleanupAction> take_initializer_list_backing_cleanups(
+  vector<CleanupAction> take_materialized_temporary_cleanups(
       const vector<string> & storage_slots)
   {
     vector<CleanupAction> taken;
@@ -13983,6 +14002,9 @@ private:
       const string temp_ptr = new_hidden_object_address(node.semantic_type, "tmpobj");
       if(emit_special_class_value_to_target(node, temp_ptr)) {
         register_materialized_temporary_cleanup_live(node.semantic_type, temp_ptr);
+        if(lifetime_extended_reference_materialization_ == &node) {
+          lifetime_extended_reference_storage_slot_ = temp_ptr;
+        }
         return temp_ptr;
       }
     }
@@ -14345,6 +14367,9 @@ private:
           new_hidden_object_address(object_type, "tmpobj");
       emit_call_expression_to_target(node, temp_ptr);
       register_materialized_temporary_cleanup_live(object_type, temp_ptr);
+      if(lifetime_extended_reference_materialization_ == &node) {
+        lifetime_extended_reference_storage_slot_ = temp_ptr;
+      }
       return temp_ptr;
     }
 
@@ -14673,7 +14698,7 @@ private:
         emit_special_class_value_to_target(child, target_ptr);
         extended_initializer_list_cleanup_slots_ = saved_extended_cleanup_slots;
         vector<CleanupAction> extended_cleanups =
-            take_initializer_list_backing_cleanups(extended_cleanup_slots);
+            take_materialized_temporary_cleanups(extended_cleanup_slots);
         if(current_block_) {
           emit_scope_cleanups(cleanup_scopes_.back());
         }
@@ -14871,9 +14896,36 @@ private:
       if(variable.children.size() != 1) {
         throw logic_error("reference initialization requires single initializer");
       }
+      push_cleanup_scope(true);
+      const CallSemNode * const saved_lifetime_extended_materialization =
+          lifetime_extended_reference_materialization_;
+      const string saved_lifetime_extended_storage_slot =
+          lifetime_extended_reference_storage_slot_;
+      lifetime_extended_reference_materialization_ =
+          reference_lifetime_materialization_root(variable.children[0]);
+      lifetime_extended_reference_storage_slot_.clear();
       const string object_ptr = emit_lvalue_address(variable.children[0]);
+      const string extended_storage_slot =
+          lifetime_extended_reference_storage_slot_;
+      lifetime_extended_reference_materialization_ =
+          saved_lifetime_extended_materialization;
+      lifetime_extended_reference_storage_slot_ =
+          saved_lifetime_extended_storage_slot;
       emit_line("store ptr " + object_ptr + ", " + binding.slots[0]);
       store_reference_hidden_virtual_base_slots(binding, variable.children[0], object_ptr);
+      vector<string> extended_storage_slots;
+      if(!extended_storage_slot.empty()) {
+        extended_storage_slots.push_back(extended_storage_slot);
+      }
+      vector<CleanupAction> extended_cleanups =
+          take_materialized_temporary_cleanups(extended_storage_slots);
+      if(current_block_) {
+        emit_scope_cleanups(cleanup_scopes_.back());
+      }
+      pop_cleanup_scope();
+      for(size_t i = 0; i < extended_cleanups.size(); ++i) {
+        append_cleanup_action(extended_cleanups[i]);
+      }
       return;
     }
     if(is_indirect_value_type(variable.semantic_type)) {
@@ -15107,14 +15159,16 @@ private:
           callsem_lowered_condition_test(child) ?
               *callsem_lowered_condition_test(child) :
               child.children[0];
-      if(is_short_circuit_truthy_expression(test)) {
+      if(is_short_circuit_truthy_expression(test) &&
+         !expression_subtree_may_materialize_cleanup(test)) {
         emit_truthy_branch(test, true_label, false_label);
       } else {
         emit_simple_condition_branch(test, true_label, false_label);
       }
       return;
     }
-    if(is_short_circuit_truthy_expression(child)) {
+    if(is_short_circuit_truthy_expression(child) &&
+       !expression_subtree_may_materialize_cleanup(child)) {
       emit_truthy_branch(child, true_label, false_label);
     } else {
       emit_simple_condition_branch(child, true_label, false_label);
@@ -17187,7 +17241,12 @@ private:
 
       start_block(iter_label);
       if(iteration && iteration->children.size() == 1) {
+        push_cleanup_scope(true);
         emit_discarded_expression(iteration->children[0]);
+        if(current_block_) {
+          emit_scope_cleanups(cleanup_scopes_.back());
+        }
+        pop_cleanup_scope();
       }
       if(current_block_) {
         terminate("jump " + lowir_block_name(cond_label));

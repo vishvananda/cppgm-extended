@@ -2990,8 +2990,13 @@ bool evaluate_constexpr_function_address_expression(
       if(!member_function_type || member_function_type->kind != Type::TK_FUNCTION) {
         return false;
       }
+      const FunctionTypeRefQualifier ref_qualifier =
+          function->ref_qualifier == RQ_LVALUE ? FTRQ_LVALUE :
+          function->ref_qualifier == RQ_RVALUE ? FTRQ_RVALUE :
+                                                FTRQ_NONE;
       if(member_function_type->function_const != function->is_const_method ||
-         member_function_type->function_volatile != function->is_volatile_method) {
+         member_function_type->function_volatile != function->is_volatile_method ||
+         member_function_type->function_ref_qualifier != ref_qualifier) {
         member_function_type =
             make_function(member_function_type->inner,
                           member_function_type->params,
@@ -2999,7 +3004,7 @@ bool evaluate_constexpr_function_address_expression(
                           function->is_const_method,
                           function->is_volatile_method,
                           member_function_type->prototype_relaxed,
-                          member_function_type->function_ref_qualifier);
+                          ref_qualifier);
       }
       out = constant_eval::make_member_pointer_value(
           make_member_pointer(function->owner_class->type, member_function_type),
