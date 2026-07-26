@@ -15,7 +15,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `71 / 147`
 - current cursor: `#72 libs/multi_array/test`
-- active compiler frontiers: MultiArray's initial forced C++11 graph is pending
+- active compiler frontiers: 15 positive MultiArray translation units reject
+  the explicit pointer cast `(T*)initial_base_` where `initial_base_` is an
+  anonymous-enum zero
 
 ## Baseline Gates
 
@@ -301,6 +303,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 69 | `libs/mpl/test` | pass | `(this commit)` | The final exact forced two-job C++11 graph finds 2413 targets, updates all 220 requested targets, records 99 passing test actions, and exits with no failure or skip in 332.56s; log `/private/tmp/boost-frontier-v2-suite-069-mpl-full-fixed.log`. | Two minimal, header-free C++11 owners cover ordinary multicharacter constant evaluation and qualified static-array decay to a pointer non-type template argument. PA19/PA22 pass `453/453`; all 959 configured strict comparisons, the PA9-excluded broad report (`4079/4079`, including PA37 `7/7`), all 31 audit/performance unit tests, placement review, cache parity, Clang/GCC controls, and warning-clean Clang/GCC production builds pass. The final graph peaks at 447,705,088 B RSS, essentially unchanged from the one-failure intake, releases fully, and records zero swaps. |
 | 70 | `libs/mqtt5/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/mqtt5/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the frontier language policy, no graph was run and no compiler work is inferred from the historical configuration-only result. The cursor advances directly to C++03-declared MSM. |
 | 71 | `libs/msm/test` | pass | `2c6db27c0` | The final exact two-job forced C++11 target `libs/msm/test//msm-unit-tests` finds 4901 targets, updates all 213 requested targets, passes all 37 compile/link/runtime actions, and exits successfully in 2562.09s; log `/private/tmp/boost-msm-cxx11-suite-typed-retry.log`. The separately declared C++17 and C++20 suites were intentionally excluded. | The last three failures shared one lazy integral-comparison defect: initial typed lookup of an inherited static `value` failed before materialization, the boolean fallback completed the qualifier but collapsed its exact integer `3` to `true`, and equality compared `1 == 1`. Typed lookup now retries after that materialization and preserves the exact integral value. The 21-line / 352-byte PA19 reducer is header-free C++11 and uses no `<type_traits>`; its witness comes from patched Clang. A serialized replay of `Serialize`, `SerializeSimpleEuml`, and `SerializeWithHistory` updates all 77 targets and passes in 710.11s at 2,839,158,784 B maximum RSS with zero process swaps. The full two-job graph peaks at 4,380,020,736 B when known multi-GiB units overlap; each TU releases fully, while the overlap moves about 488 MiB of system pages to swap, so future known-heavy replays are serialized while ordinary work remains parallel. The final PA9-excluded direct report passes `4094/4094`, PA37 passes `7/7`, all 960 strict comparisons pass, all 23 reparse categories remain zero, all 31 audit/performance tests pass, all cache-off modes are byte-identical, and Clang 22 C++11 warning controls pass. The committed frozen-source/51-header gate records -26.56% instructions, -28.56% RSS, and -35.61% footprint. |
+| 72 | `libs/multi_array/test` | frontier | `(no compiler change)` | The initial exact two-job forced C++11 graph finds 1906 targets, requests 140 updates, updates 80, records 26 passing actions, fails 15 positive compile updates, and skips 45 downstream targets in 115.99s; log `/private/tmp/boost-frontier-v2-suite-072-initial-forced.log`. | Every positive failure has the same diagnostic: the `multi_array` constructor delegates with `(T*)initial_base_`, where `initial_base_` is an anonymous-enum constant equal to zero, and pointer-cast analysis rejects the integral constant expression as an unsupported enum-to-pointer cast. The 22 negative tests fail as expected. `storage_order_convert`, `range1`, `idxgen1`, and `concept_checks` pass. Peak RSS is 268,263,424 B, compiler processes report zero swaps, and system swap is unchanged. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
@@ -308,18 +311,25 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 ## Active Frontier
 
 - suite: `#72 libs/multi_array/test`
-- focused target: initial forced graph pending
+- focused target: one of the 15 positive targets constructing
+  `boost::multi_array`; use `constructors` for the first focused replay
 - last closed suite: `#71 libs/msm/test` (`pass`)
-- failure phase: none observed yet
-- diagnostic: none yet
+- failure phase: constructor initializer analysis in `boost/multi_array.hpp`
+- diagnostic: `unsupported cast expression` for target `pointer to T` and
+  operand `enum __anonymous_enum*`; the source is `(T*)initial_base_` and the
+  enum constant is zero
 - reduced repro: none yet
-- owning PA/cluster: to be determined from the first causal failure
-- implementation area: to be determined from the initial graph
-- performance risk: start with two jobs and monitor compiler children; serialize
-  only a target demonstrated to be multi-GiB
+- owning PA/cluster: likely PA12/PA19 explicit conversion and integral constant
+  expression integration; place only after a causal reducer confirms the owner
+- implementation area: typed C-style cast conversion from a zero-valued
+  integral constant expression to pointer
+- performance risk: low so far; the two-job intake peaks at 268,263,424 B RSS
+  with zero swaps
 - language lane: Boost.MultiArray declares C++03 in
   `libs/multi_array/meta/libraries.json`, so it is supported and must run
-- next action: run the exact forced C++11 graph and classify its first failure
+- next action: reduce the anonymous-enum-zero pointer cast without headers,
+  compare Clang C++11 behavior, and repair the typed cast conversion before a
+  focused `constructors` replay
 
 ## Fix Ledger
 
@@ -566,6 +576,16 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Dependent-type resolution cache input lifetime | The nested dependent-type cache keyed entries by a raw `Type *` while retaining only the resolved output. Recursive resolution could release an ephemeral input and allocate an unrelated type at the same address before the outermost query cleared the cache, producing a stale hit such as `const wrap_iter<size_t*>& -> int`. Each key now owns its input `TypePtr` for the cache entry's bounded lifetime; lookup ordering remains pointer-based and the cache is still cleared after the outermost query. | `pa22/tests/general/300-dependent-type-resolution-cache-input-lifetime.t`, reduced to 21 lines / 851 bytes of header-free C++11 with a local three-line `enable` stand-in | The saved pre-fix compiler fails 43 of 256 concurrent compilations of the reduced declaration graph. Trace evidence showed the same address first stored for a resolved `enable_t<..., int>` input and then reused by an unrelated `const W&` input. The hosted `<algorithm>` form reproduced 9 of 16 times; disabling the cache passed 16 of 16. | Clang 22 and GCC 15 accept the reducer warning-clean. The focused PA22 check, cache-on/off byte parity, and 48 concurrent fixed-compiler repetitions pass with zero swaps and at most 10,137,600 B RSS per process. The frozen self-compile gate completes three fresh compiler processes, each releases fully between runs, and records zero process swaps. | included in the same final three-run result: -11.08% instructions, -10.45% RSS, and -11.43% footprint; the cache ownership fix retains both the instruction win and recovered memory | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-26`: Opened MultiArray with the exact two-job C++11 graph. It finds
+  1906 targets, updates 80 of 140 requested targets, passes 26 actions, fails
+  15 positive compiles, and skips 45 downstream targets in 115.99s. Every
+  positive failure is the same typed conversion frontier: `(T*)initial_base_`
+  casts an anonymous-enum constant zero to a pointer, but CPPGM rejects the
+  integral constant expression before constructor selection. The full intake
+  peaks at 268,263,424 B RSS with zero process swaps and no system swap movement.
+  The next step is a header-free C++11 reducer and a focused `constructors`
+  replay; no compiler change is bundled with this intake record.
 
 - `2026-07-26`: Closed MSM and advanced the cursor to MultiArray. The exact
   C++11-only `msm-unit-tests` target passes all 37 actions and updates all 213
