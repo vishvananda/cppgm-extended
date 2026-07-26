@@ -10307,6 +10307,74 @@ void populate_class_reference_members(SemanticContext & ctx,
   }
 }
 
+struct ActiveReferenceNamedMemberDeclaration
+{
+  const ClassInfo * info;
+  const CppAstNode * class_node;
+  std::size_t member_index;
+  const ActiveReferenceNamedMemberDeclaration * previous;
+};
+
+const ActiveReferenceNamedMemberDeclaration * &
+active_reference_named_member_declaration()
+{
+  static thread_local const ActiveReferenceNamedMemberDeclaration * active = nullptr;
+  return active;
+}
+
+class ScopedReferenceNamedMemberDeclaration
+{
+public:
+  ScopedReferenceNamedMemberDeclaration(const ClassInfo & info,
+                                        const CppAstNode & class_node,
+                                        std::size_t member_index)
+  {
+    active_.info = &info;
+    active_.class_node = &class_node;
+    active_.member_index = member_index;
+    active_.previous = active_reference_named_member_declaration();
+    active_reference_named_member_declaration() = &active_;
+  }
+
+  ~ScopedReferenceNamedMemberDeclaration()
+  {
+    active_reference_named_member_declaration() = active_.previous;
+  }
+
+  ScopedReferenceNamedMemberDeclaration(
+      const ScopedReferenceNamedMemberDeclaration &) = delete;
+  ScopedReferenceNamedMemberDeclaration & operator=(
+      const ScopedReferenceNamedMemberDeclaration &) = delete;
+
+private:
+  ActiveReferenceNamedMemberDeclaration active_;
+};
+
+// A lazily requested member must obey the same point-of-declaration boundary
+// as the ordinary left-to-right class walk.  Otherwise an unqualified name in
+// an earlier member type can materialize and be shadowed by a later member.
+bool reference_named_member_is_after_active_declaration(
+    const ClassInfo & info,
+    const CppAstNode & class_node,
+    const std::string & name)
+{
+  for(const ActiveReferenceNamedMemberDeclaration * current =
+          active_reference_named_member_declaration();
+      current;
+      current = current->previous) {
+    if(current->info != &info || current->class_node != &class_node) {
+      continue;
+    }
+    for(std::size_t i = 0; i < class_node.children.size(); ++i) {
+      if(reference_member_declaration_declares_name(class_node.children[i], name)) {
+        return i >= current->member_index;
+      }
+    }
+    return false;
+  }
+  return false;
+}
+
 bool populate_class_reference_named_member(SemanticContext & ctx,
                                            ClassInfo & info,
                                            const CppAstNode & node,
@@ -10331,6 +10399,8 @@ bool populate_class_reference_named_member(SemanticContext & ctx,
     if(!info.reference_named_member_declarations_collected.insert(&child).second) {
       continue;
     }
+    const ScopedReferenceNamedMemberDeclaration active_declaration(
+        info, node, i);
 
     if(child.kind == CppAstKind::simple_declaration) {
       collect_class_reference_simple_declaration(
@@ -10523,6 +10593,11 @@ void ensure_class_reference_named_member(SemanticContext & ctx,
       info.template_output_node ? info.template_output_node : info.class_node;
   if(!reference_node) {
     info.reference_named_members_collected.insert(lookup_name);
+    return;
+  }
+  if(reference_named_member_is_after_active_declaration(info,
+                                                        *reference_node,
+                                                        lookup_name)) {
     return;
   }
 
