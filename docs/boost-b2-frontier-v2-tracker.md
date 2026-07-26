@@ -13,11 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `71 / 147`
-- current cursor: `#72 libs/multi_array/test`
-- active compiler frontiers: 15 positive MultiArray translation units reject
-  the explicit pointer cast `(T*)initial_base_` where `initial_base_` is an
-  anonymous-enum zero
+- completed suites: `72 / 147`
+- current cursor: `#73 libs/log/test`
+- active compiler frontiers: none; the forced C++11 Log intake is next
 
 ## Baseline Gates
 
@@ -224,6 +222,7 @@ differences other than the output path.
 | `(MSM concrete template-argument syntax compaction)` | Drop source AST from retained concrete type and ordinary value arguments after typed mangle state is complete; preserve member-pointer values, dependent arguments, template entities, and all witness-session syntax | -23.87% | -23.06% | -29.47% | versus the reference-field checkpoint, instructions move +0.19 percentage points, RSS improves 1.74 percentage points, and footprint moves +0.81 percentage points | `/private/tmp/cppgm-boost-frontier-v2-concrete-syntax-perf.json` | pass; three-run medians are 200,651,979,093 instructions, 994,582,528 B RSS, and 712,261,632 B footprint. The immutable gate verified epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 | `173ed08ec` | Materialize only the referenced class member/type slice, retain exact local-type identity in reconstructed displays, compact nested semantic identity keys, reuse completed host-ABI facts, bound compiler-internal function names, and remove rendered symbol work and a process-lifetime component-string memo that could not avoid linear work | -26.39% | -28.56% | -35.36% | versus the preceding concrete-syntax checkpoint, instructions improve 3.32%, RSS 7.15%, and footprint 8.35% | `/private/tmp/cppgm-boost-frontier-v2-msm-lazy-reference-clean-head-perf.json` | pass; the clean committed-HEAD three-run medians are 193,997,459,005 instructions, 923,467,776 B RSS, and 652,795,904 B footprint. The gate verified immutable epoch `9764b3835`, frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 | `2c6db27c0` | Preserve the exact integral value of an inherited lazy static member after structured boolean evaluation materializes its qualifier | -26.56% | -28.56% | -35.61% | versus `173ed08ec`, instructions improve by 439,687,392, RSS by 45,056 B, and footprint by 2,535,424 B | `/private/tmp/cppgm-boost-frontier-v2-msm-lazy-integral-final-perf.json` | pass; committed-HEAD three-run medians are 193,557,771,613 instructions, 923,422,720 B RSS, and 650,260,480 B footprint. The gate verified immutable source epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
+| `704b43ebb` | Accept C++11 enumeration-to-pointer conversions only in reinterpret-like explicit casts | -26.26% | -28.33% | -35.97% | versus the preceding MSM checkpoint, instructions move +793,789,137 while RSS moves +2,957,312 B and footprint improves by 3,604,480 B; all cumulative signals remain substantially improved | `/private/tmp/cppgm-boost-frontier-v2-multi-array-enum-pointer-perf.json` | pass; committed-HEAD three-run medians are 194,351,560,750 instructions, 926,380,032 B RSS, and 646,656,000 B footprint. The gate verified immutable epoch `9764b3835`, frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 
 ## Suite Cursor
 
@@ -303,33 +302,27 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 69 | `libs/mpl/test` | pass | `(this commit)` | The final exact forced two-job C++11 graph finds 2413 targets, updates all 220 requested targets, records 99 passing test actions, and exits with no failure or skip in 332.56s; log `/private/tmp/boost-frontier-v2-suite-069-mpl-full-fixed.log`. | Two minimal, header-free C++11 owners cover ordinary multicharacter constant evaluation and qualified static-array decay to a pointer non-type template argument. PA19/PA22 pass `453/453`; all 959 configured strict comparisons, the PA9-excluded broad report (`4079/4079`, including PA37 `7/7`), all 31 audit/performance unit tests, placement review, cache parity, Clang/GCC controls, and warning-clean Clang/GCC production builds pass. The final graph peaks at 447,705,088 B RSS, essentially unchanged from the one-failure intake, releases fully, and records zero swaps. |
 | 70 | `libs/mqtt5/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/mqtt5/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the frontier language policy, no graph was run and no compiler work is inferred from the historical configuration-only result. The cursor advances directly to C++03-declared MSM. |
 | 71 | `libs/msm/test` | pass | `2c6db27c0` | The final exact two-job forced C++11 target `libs/msm/test//msm-unit-tests` finds 4901 targets, updates all 213 requested targets, passes all 37 compile/link/runtime actions, and exits successfully in 2562.09s; log `/private/tmp/boost-msm-cxx11-suite-typed-retry.log`. The separately declared C++17 and C++20 suites were intentionally excluded. | The last three failures shared one lazy integral-comparison defect: initial typed lookup of an inherited static `value` failed before materialization, the boolean fallback completed the qualifier but collapsed its exact integer `3` to `true`, and equality compared `1 == 1`. Typed lookup now retries after that materialization and preserves the exact integral value. The 21-line / 352-byte PA19 reducer is header-free C++11 and uses no `<type_traits>`; its witness comes from patched Clang. A serialized replay of `Serialize`, `SerializeSimpleEuml`, and `SerializeWithHistory` updates all 77 targets and passes in 710.11s at 2,839,158,784 B maximum RSS with zero process swaps. The full two-job graph peaks at 4,380,020,736 B when known multi-GiB units overlap; each TU releases fully, while the overlap moves about 488 MiB of system pages to swap, so future known-heavy replays are serialized while ordinary work remains parallel. The final PA9-excluded direct report passes `4094/4094`, PA37 passes `7/7`, all 960 strict comparisons pass, all 23 reparse categories remain zero, all 31 audit/performance tests pass, all cache-off modes are byte-identical, and Clang 22 C++11 warning controls pass. The committed frozen-source/51-header gate records -26.56% instructions, -28.56% RSS, and -35.61% footprint. |
-| 72 | `libs/multi_array/test` | frontier | `(no compiler change)` | The initial exact two-job forced C++11 graph finds 1906 targets, requests 140 updates, updates 80, records 26 passing actions, fails 15 positive compile updates, and skips 45 downstream targets in 115.99s; log `/private/tmp/boost-frontier-v2-suite-072-initial-forced.log`. | Every positive failure has the same diagnostic: the `multi_array` constructor delegates with `(T*)initial_base_`, where `initial_base_` is an anonymous-enum constant equal to zero, and pointer-cast analysis rejects the integral constant expression as an unsupported enum-to-pointer cast. The 22 negative tests fail as expected. `storage_order_convert`, `range1`, `idxgen1`, and `concept_checks` pass. Peak RSS is 268,263,424 B, compiler processes report zero swaps, and system swap is unchanged. |
+| 72 | `libs/multi_array/test` | pass | `704b43ebb` | The final exact two-job forced C++11 graph finds 1906 targets, updates all 140 requested targets, reports all 41 tests passed (19 positive and 22 expected compile failures), and exits successfully in 136.06s; log `/private/tmp/boost-frontier-v2-suite-072-fixed.log`. Maximum RSS is 301,981,696 B with zero process swaps. | C++11 permits values of integral or enumeration type to convert to a pointer through `reinterpret_cast`; a C-style cast can select that path. CPPGM admitted only integral operands in its reinterpret-like branch, so Boost's `(T*)initial_base_` failed for an anonymous enum. The typed branch now admits enumeration operands without changing ordinary or `static_cast` conversions. The three-line header-free PA14:200 reducer passes Clang 22 and CPPGM; a structured negative control confirms `static_cast<int*>(enum_zero)` remains rejected. The PA9-excluded direct report passes `4095/4095`, including PA37 `7/7`; strict passes `960/960`; all 23 reparse categories and all 31 audit/performance tests pass; all-cache-off LowIR is byte-identical. The committed frozen gate records -26.26% instructions, -28.33% RSS, and -35.97% footprint. |
+| 73 | `libs/log/test` | frontier | `(no compiler change)` | Intake pending on the committed MultiArray closure. Boost.Log declares C++11 in `libs/log/meta/libraries.json`, so the complete supported graph must run. | Start with the exact two-job forced graph and stop at the first causal compiler failure, if any. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#72 libs/multi_array/test`
-- focused target: one of the 15 positive targets constructing
-  `boost::multi_array`; use `constructors` for the first focused replay
-- last closed suite: `#71 libs/msm/test` (`pass`)
-- failure phase: constructor initializer analysis in `boost/multi_array.hpp`
-- diagnostic: `unsupported cast expression` for target `pointer to T` and
-  operand `enum __anonymous_enum*`; the source is `(T*)initial_base_` and the
-  enum constant is zero
-- reduced repro: none yet
-- owning PA/cluster: likely PA12/PA19 explicit conversion and integral constant
-  expression integration; place only after a causal reducer confirms the owner
-- implementation area: typed C-style cast conversion from a zero-valued
-  integral constant expression to pointer
-- performance risk: low so far; the two-job intake peaks at 268,263,424 B RSS
-  with zero swaps
-- language lane: Boost.MultiArray declares C++03 in
-  `libs/multi_array/meta/libraries.json`, so it is supported and must run
-- next action: reduce the anonymous-enum-zero pointer cast without headers,
-  compare Clang C++11 behavior, and repair the typed cast conversion before a
-  focused `constructors` replay
+- suite: `#73 libs/log/test`
+- focused target: none until the forced intake establishes a failure
+- last closed suite: `#72 libs/multi_array/test` (`pass`)
+- failure phase: none
+- diagnostic: none
+- reduced repro: none
+- owning PA/cluster: pending intake
+- implementation area: pending intake
+- performance risk: unknown; start at the established two-job frontier default
+  and monitor compiler RSS and system swap
+- language lane: Boost.Log declares C++11 in `libs/log/meta/libraries.json`, so
+  it is supported and must run
+- next action: run the exact forced C++11 `libs/log/test` graph
 
 ## Fix Ledger
 
@@ -574,8 +567,27 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | MP11 `mp_reverse_fold` both-pack fixed-prefix partial ordering | The existing structured comparator handled a trailing pack against a fixed pattern but returned a tie when both template-id patterns had trailing packs. When both fixed prefixes consist only of distinct unconstrained type parameters, the pattern with more fixed parameters accepts a strict subset and is more specialized. The comparator now recognizes only that structured case; concrete or repeated constraints remain on their existing ordering paths. No source text, Boost rule, cache, or language-version extension is added. | `pa21/tests/general/400-template-id-fixed-prefix-pack-partial-ordering.t`, 8 nonblank header-free C++11 lines (11 with spacing, 444 bytes) at PA21's template-template/class-partial-ordering owner; its 106-byte empty-main reference is reused from an existing PA21 fixture rather than generated by the candidate compiler | The saved pre-fix compiler reports the exact ambiguous partial-class-specialization error. Clang 22 selects the longer prefix, and exact Boost's one-element and ten-element `mp_reverse_fold_impl` partials have the same structured relation. | The reducer passes cppgm++ and Clang warning-clean; PA21 passes `243/243`; strict PA18/19/21/22 comparisons have zero failures; all 23 reparse categories and 23 audit tests pass; the production unit is warning-clean under Clang 22 and GCC 15. Exact `mp_reverse_fold` and `_q` compile, link, run, and pass under a two-job forced B2 replay. | final candidate-only frozen gate passes twice; confirmation is -11.27% instructions, -10.64% RSS, and -11.36% footprint in `/tmp/cppgm-boost-frontier-v2-mp-reverse-fold-pack-order-perf-repeat.json`; no parent or live header was measured | `(this commit)` |
 | fixed | MP11 `mp_compose` template-template pack element identity | A bound template-template parameter pack recorded its size but not a distinct structured binding for every concrete template element. Expanding `X...` could therefore reuse the first bound head for every slot, turning `L<A, B>` into `L<A, A>`. Binding now records each exact template argument under the existing pack-element naming convention, and structured type/expression syntax substitution consumes the corresponding element without reparsing source text. | `pa23/tests/general/400-template-template-pack-alias-expansion-order.t`, 6 lines / 243 bytes with no headers and a 106-byte LowIR reference | The saved pre-fix compiler makes both expanded elements `A`; the conditional type check therefore rejects `C<A, B>::R` against `L<A, B>`. Clang 22 and GCC 15 accept the reducer as C++11. | The reducer passes normally and with the relevant caches disabled with byte-identical LowIR. The final PA22/PA23 direct report passes `712/712`; configured strict comparisons pass, including PA23 `338/338`; all 23 reparse categories and 31 audit/performance unit tests pass. The final PA9-excluded broad report passes `4068/4068`, including PA37 object roundtrip `7/7`. Exact `mp_compose` compiles, links, runs, and passes under a forced two-job B2 replay at 234,467,328 B RSS with zero swaps. | -11.08% instructions, -10.45% RSS, and -11.43% footprint; three-run candidate-only frozen report `/tmp/cppgm-boost-frontier-v2-mp-compose-cache-lifetime-perf.json`; no parent or live header was measured | `(this commit)` |
 | fixed | Dependent-type resolution cache input lifetime | The nested dependent-type cache keyed entries by a raw `Type *` while retaining only the resolved output. Recursive resolution could release an ephemeral input and allocate an unrelated type at the same address before the outermost query cleared the cache, producing a stale hit such as `const wrap_iter<size_t*>& -> int`. Each key now owns its input `TypePtr` for the cache entry's bounded lifetime; lookup ordering remains pointer-based and the cache is still cleared after the outermost query. | `pa22/tests/general/300-dependent-type-resolution-cache-input-lifetime.t`, reduced to 21 lines / 851 bytes of header-free C++11 with a local three-line `enable` stand-in | The saved pre-fix compiler fails 43 of 256 concurrent compilations of the reduced declaration graph. Trace evidence showed the same address first stored for a resolved `enable_t<..., int>` input and then reused by an unrelated `const W&` input. The hosted `<algorithm>` form reproduced 9 of 16 times; disabling the cache passed 16 of 16. | Clang 22 and GCC 15 accept the reducer warning-clean. The focused PA22 check, cache-on/off byte parity, and 48 concurrent fixed-compiler repetitions pass with zero swaps and at most 10,137,600 B RSS per process. The frozen self-compile gate completes three fresh compiler processes, each releases fully between runs, and records zero process swaps. | included in the same final three-run result: -11.08% instructions, -10.45% RSS, and -11.43% footprint; the cache ownership fix retains both the instruction win and recovered memory | `(this commit)` |
+| fixed | MultiArray reinterpret-like enumeration-to-pointer cast | The ordinary explicit-cast helper allowed pointer conversion from integral operands but omitted enumeration operands from its reinterpret-like branch. C++11 allows both integral and enumeration values to convert to a pointer through `reinterpret_cast`, and a C-style cast can select that conversion. The typed branch now includes enumeration operands only when reinterpret-like conversions are enabled; copy initialization and `static_cast` remain unchanged. No null-constant shortcut, source text, cache, hosted-header rule, or Boost-specific path is added. | `pa14/tests/general/200-reinterpret-enum-to-pointer.t`, three nonblank lines of header-free C++11 at PA14:200's built-in cast lowering owner | All 15 positive intake failures reject `(T*)initial_base_` with an anonymous-enum operand. Clang 22 accepts both zero and nonzero scoped or unscoped enum values through C-style or `reinterpret_cast` casts, but rejects `static_cast<int*>(enum_zero)`. The fixed compiler has the same boundary. | Focused PA14 direct LowIR passes; the complete forced MultiArray graph passes all 19 positive and 22 expected-fail tests; the PA9-excluded direct report passes `4095/4095`, including PA37 `7/7`; strict passes `960/960`; all 23 reparse categories and all 31 audit/performance unit tests pass. The three-line reducer passes Clang 22 warning-clean, its PA14 feature placement is correct, and normal/all-cache-off LowIR is byte-identical. | -26.26% instructions, -28.33% RSS, and -35.97% footprint; committed-HEAD three-run immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-multi-array-enum-pointer-perf.json`; no parent or live project header was measured | `704b43ebb` |
 
 ## Decision Log
+
+- `2026-07-26`: Closed MultiArray and advanced the cursor to C++11 Boost.Log.
+  Clang 22 establishes that enum zero is not a null pointer constant for
+  `static_cast`, but enumeration values are valid operands for
+  `reinterpret_cast` and the reinterpret-like fallback of a C-style cast.
+  CPPGM's typed explicit-cast helper admitted only integral operands in that
+  branch. Commit `704b43ebb` adds enumeration operands only to the
+  reinterpret-like path and a three-line header-free PA14:200 regression.
+
+  The final exact two-job forced graph updates all 140 targets and passes all
+  19 positive plus 22 expected-fail tests in 136.06s at 301,981,696 B maximum
+  RSS with zero process swaps. The PA9-excluded direct report passes
+  `4095/4095`, PA37 passes `7/7`, strict passes `960/960`, all 23 text-reparse
+  categories and all 31 audit/performance tests pass, and all-cache-off reducer
+  LowIR is byte-identical. The immutable source-and-51-header performance gate
+  records -26.26% instructions, -28.33% RSS, and -35.97% footprint in
+  `/private/tmp/cppgm-boost-frontier-v2-multi-array-enum-pointer-perf.json`.
+  No parent compiler or live project header was measured.
 
 - `2026-07-26`: Opened MultiArray with the exact two-job C++11 graph. It finds
   1906 targets, updates 80 of 140 requested targets, passes 26 actions, fails
@@ -2948,18 +2960,10 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-/usr/local/bin/timeout 14400 env JOBS=1 \
+/usr/local/bin/timeout 14400 env JOBS=2 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh -a libs/msm/test//CompositeEuml
-
-# After the monitored target passes and releases:
-/usr/local/bin/timeout 14400 env JOBS=1 \
-  CPPGM_BOOST_B2_FRONTIER=1 \
-  CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
-  CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
-  CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh -a libs/msm/test
+  ./run-cppgm-b2.sh -a libs/log/test
 ```
