@@ -134,6 +134,7 @@ struct OutOfClassMemberResolutionServices
       bool is_volatile_method,
       semantic_model::RefQualifier ref_qualifier,
       semantic_model::FunctionBinding *& out,
+      const CppAstNode * function_identifier,
       QualifiedOwnerClassResolution resolution) = 0;
   virtual bool resolve_out_of_class_static_member_binding(
       semantic_model::Scope & scope,

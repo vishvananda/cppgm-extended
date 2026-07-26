@@ -26195,18 +26195,20 @@ private:
       bool is_volatile_method,
       RefQualifier ref_qualifier,
       FunctionBinding *& out,
+      const CppAstNode * function_identifier,
       QualifiedOwnerClassResolution resolution) override
   {
-    return resolve_out_of_class_named_method_binding(scope,
-                                                     qualified,
-                                                     qualified.name,
-                                                     declared_type,
-                                                     is_const_method,
-                                                     is_volatile_method,
-                                                     ref_qualifier,
-                                                     out,
-                                                     nullptr,
-                                                     resolution);
+    return resolve_out_of_class_named_method_binding_with_syntax(
+        scope,
+        qualified,
+        qualified.name,
+        declared_type,
+        is_const_method,
+        is_volatile_method,
+        ref_qualifier,
+        out,
+        function_identifier,
+        resolution);
   }
 
   bool resolve_out_of_class_method_binding(Scope & scope,
@@ -26225,6 +26227,7 @@ private:
         is_volatile_method,
         ref_qualifier,
         out,
+        nullptr,
         QualifiedOwnerClassResolution::Complete);
   }
 
@@ -27056,7 +27059,8 @@ private:
       return lhs == rhs;
     }
     if(type_equals(lhs, rhs)) {
-      return true;
+      return semantic_lookup::same_function_template_entity_type(
+          lhs, lhs_parameters, rhs, rhs_parameters);
     }
 
     TypePtr lhs_alias_target = dependent_member_alias_target(lhs);

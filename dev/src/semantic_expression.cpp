@@ -1619,6 +1619,11 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
                                           *qualified,
                                           operand_node,
                                           &qualifier_type);
+  ValueBinding retained_value_binding;
+  if(value_binding) {
+    retained_value_binding = *value_binding;
+    value_binding = &retained_value_binding;
+  }
   ClassInfo * naming_class =
       qualifier_type ?
           ctx.class_info_for_type(strip_top_level_cv(remove_reference_type(qualifier_type))) :

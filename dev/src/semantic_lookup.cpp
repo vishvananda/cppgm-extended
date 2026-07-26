@@ -2968,6 +2968,109 @@ bool same_function_template_entity_type_impl(
     const std::vector<TemplateParameterInfo> & rhs_parameters,
     bool ignore_top_level_cv);
 
+bool types_have_definitely_distinct_namespace_template_metadata(
+    const TypePtr & lhs,
+    const TypePtr & rhs)
+{
+  if(!lhs || !rhs || lhs->kind != rhs->kind) {
+    return false;
+  }
+  switch(lhs->kind) {
+  case Type::TK_NAMED:
+  {
+    void * lhs_declaration = nullptr;
+    void * rhs_declaration = nullptr;
+    std::vector<DependentAliasTemplateArgumentSyntax> lhs_arguments;
+    std::vector<DependentAliasTemplateArgumentSyntax> rhs_arguments;
+    const bool lhs_class =
+        named_type_dependent_class_template(lhs,
+                                            lhs_declaration,
+                                            lhs_arguments);
+    const bool rhs_class =
+        named_type_dependent_class_template(rhs,
+                                            rhs_declaration,
+                                            rhs_arguments);
+    if(lhs_class && rhs_class && lhs_declaration != rhs_declaration) {
+      const ClassTemplateDecl * lhs_decl =
+          static_cast<const ClassTemplateDecl *>(lhs_declaration);
+      const ClassTemplateDecl * rhs_decl =
+          static_cast<const ClassTemplateDecl *>(rhs_declaration);
+      if(lhs_decl && rhs_decl && lhs_decl->declaring_scope &&
+         rhs_decl->declaring_scope &&
+         lhs_decl->declaring_scope->namespace_scope &&
+         rhs_decl->declaring_scope->namespace_scope &&
+         !same_inline_namespace_collapsed_scope_identity(
+             lhs_decl->declaring_scope,
+             rhs_decl->declaring_scope)) {
+        return true;
+      }
+    }
+    const bool lhs_alias =
+        named_type_dependent_alias_template(lhs,
+                                            lhs_declaration,
+                                            lhs_arguments);
+    const bool rhs_alias =
+        named_type_dependent_alias_template(rhs,
+                                            rhs_declaration,
+                                            rhs_arguments);
+    if(lhs_alias && rhs_alias && lhs_declaration != rhs_declaration) {
+      const AliasTemplateDecl * lhs_decl =
+          static_cast<const AliasTemplateDecl *>(lhs_declaration);
+      const AliasTemplateDecl * rhs_decl =
+          static_cast<const AliasTemplateDecl *>(rhs_declaration);
+      return lhs_decl && rhs_decl && lhs_decl->declaring_scope &&
+             rhs_decl->declaring_scope &&
+             lhs_decl->declaring_scope->namespace_scope &&
+             rhs_decl->declaring_scope->namespace_scope &&
+             !same_inline_namespace_collapsed_scope_identity(
+                 lhs_decl->declaring_scope,
+                 rhs_decl->declaring_scope);
+    }
+    return false;
+  }
+  case Type::TK_CV:
+  case Type::TK_ATOMIC:
+  case Type::TK_POINTER:
+  case Type::TK_BLOCK_POINTER:
+  case Type::TK_LVALUE_REFERENCE:
+  case Type::TK_RVALUE_REFERENCE:
+    return types_have_definitely_distinct_namespace_template_metadata(
+        lhs->inner,
+        rhs->inner);
+  case Type::TK_MEMBER_POINTER:
+    return types_have_definitely_distinct_namespace_template_metadata(
+               lhs->owner,
+               rhs->owner) ||
+           types_have_definitely_distinct_namespace_template_metadata(
+               lhs->inner,
+               rhs->inner);
+  case Type::TK_ARRAY:
+    return types_have_definitely_distinct_namespace_template_metadata(
+        lhs->inner,
+        rhs->inner);
+  case Type::TK_FUNCTION:
+    if(types_have_definitely_distinct_namespace_template_metadata(
+           lhs->inner,
+           rhs->inner)) {
+      return true;
+    }
+    if(lhs->params.size() != rhs->params.size()) {
+      return false;
+    }
+    for(std::size_t i = 0; i < lhs->params.size(); ++i) {
+      if(types_have_definitely_distinct_namespace_template_metadata(
+             lhs->params[i],
+             rhs->params[i])) {
+        return true;
+      }
+    }
+    return false;
+  case Type::TK_FUNDAMENTAL:
+    return false;
+  }
+  return false;
+}
+
 std::string canonicalize_dependent_template_argument_text(
     const std::vector<TemplateParameterInfo> & parameters,
     const DependentAliasTemplateArgumentSyntax & argument)
@@ -3546,7 +3649,8 @@ bool same_function_template_entity_type_impl(
   if(!lhs || !rhs) {
     return lhs == rhs;
   }
-  if(type_equals(lhs, rhs)) {
+  if(type_equals(lhs, rhs) &&
+     !types_have_definitely_distinct_namespace_template_metadata(lhs, rhs)) {
     return true;
   }
 
@@ -4740,17 +4844,6 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
         return result;
       }
     }
-    if(named_member_collection_in_progress && info.type) {
-      vector<string> members;
-      members.push_back(name);
-      result.type = make_dependent_qualified_member_type(
-          class_output_qualified_name(info) + "::" + name,
-          info.type,
-          members,
-          false);
-      result.declared_in = &info;
-      return result;
-    }
   }
 
   if(ensure_current_reference_members &&
@@ -4839,6 +4932,18 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
   }
 
   if(candidates.empty()) {
+    if(named_member_collection_in_progress && info.type) {
+      MemberTypeLookupResult result;
+      vector<string> members;
+      members.push_back(name);
+      result.type = make_dependent_qualified_member_type(
+          class_output_qualified_name(info) + "::" + name,
+          info.type,
+          members,
+          false);
+      result.declared_in = &info;
+      return result;
+    }
     return MemberTypeLookupResult();
   }
 

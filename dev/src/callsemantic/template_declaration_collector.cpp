@@ -5410,7 +5410,15 @@ private:
     const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
     return callbacks.out_of_class_services->
         resolve_out_of_class_method_binding_with_resolution(
-        scope, qualified, declared_type, is_const_method, is_volatile_method, ref_qualifier, out, resolution);
+        scope,
+        qualified,
+        declared_type,
+        is_const_method,
+        is_volatile_method,
+        ref_qualifier,
+        out,
+        function_identifier,
+        resolution);
   }
 
   bool resolve_out_of_class_static_member_binding(Scope & scope,
