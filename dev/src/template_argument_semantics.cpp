@@ -38977,6 +38977,19 @@ NonTypeArgumentStatus evaluate_structured_bool_expression(
             evaluate_structured_template_member_bool_value(
                 services, scope, operand, structured_bool_value);
         if(structured_bool_status == NT_ARG_EVALUATED) {
+          // The structured-bool path can materialize a previously incomplete
+          // qualifier while interpreting its `value` in a boolean context.
+          // Retry typed lookup so an inherited non-bool value keeps its exact
+          // integral value in comparisons instead of being reduced to 0/1.
+          const NonTypeArgumentStatus refreshed_member_status =
+              evaluate_template_member_value_expression(
+                  services, scope, operand, value, TypePtr());
+          if(refreshed_member_status == NT_ARG_EVALUATED) {
+            return refreshed_member_status;
+          }
+          if(refreshed_member_status == NT_ARG_DEPENDENT) {
+            return refreshed_member_status;
+          }
           value = structured_bool_value ? 1 : 0;
           return NT_ARG_EVALUATED;
         }
