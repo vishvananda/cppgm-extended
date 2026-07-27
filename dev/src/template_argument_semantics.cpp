@@ -27642,7 +27642,27 @@ bool lookup_leaf_qualified_value_binding_from_owner_type(
     }
   }
 
-  return lookup_value_binding_in_resolved_scope(*target, qualified.name, out);
+  if(lookup_value_binding_in_resolved_scope(*target, qualified.name, out)) {
+    return true;
+  }
+
+  // Preparing an included class for type lookup intentionally collects only
+  // its type-bearing members.  A concrete qualified value lookup must demand
+  // the named value as well; otherwise success depends on whether an earlier
+  // expression happened to populate the class's value bindings.
+  if(!witness::enabled(services.witness_context) &&
+     services.semantic_context &&
+     target->class_info &&
+     !target->class_info->reference_members_collected &&
+     target->class_info->reference_named_members_collected.count(
+         qualified.name) == 0 &&
+     !target->class_info->reference_member_collection_in_progress) {
+    services.semantic_context->ensure_class_reference_named_member(
+        *target->class_info, qualified.name);
+    return lookup_value_binding_in_resolved_scope(
+        *target, qualified.name, out);
+  }
+  return false;
 }
 
 bool resolve_qualified_value_owner_prefix_type(

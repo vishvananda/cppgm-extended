@@ -233,6 +233,7 @@ differences other than the output path.
 | `(Phoenix function-type pack scalarization)` | Substitute each selected type-pack element through a function-type parameter pattern with scalarized parameter metadata | -25.90% | -28.11% | -36.61% | versus the final Parameter checkpoint, instructions move +0.12 percentage points while RSS improves 0.35 and footprint improves 0.78 percentage points | `/private/tmp/cppgm-boost-frontier-v2-phoenix-pack-scalar-candidate.json` | pass; candidate medians are 195,301,308,168 instructions, 929,255,424 B RSS, and 640,147,456 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 | `(Phoenix namespace using-directive template lookup)` | Route a namespace-qualified class-template lookup through the authoritative structured lookup after proving that the owner is a namespace, so namespace using-directives participate while the existing class-qualified path remains unchanged | -26.14% | -27.89% | -36.10% | versus the function-pack checkpoint, instructions improve by 626,962,499 while RSS moves +2,809,856 B and footprint +5,173,248 B; every cumulative hard gate remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-phoenix-namespace-using-candidate.json` | pass; candidate medians are 194,674,345,669 instructions, 932,065,280 B RSS, and 645,320,704 B footprint. The three-run candidate-only gate verified immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 | `(Phoenix nested function-type pack parameter fix)` | Distinguish a pack on the current function parameter declarator from a pack nested inside that parameter's function type, so an empty inner pack removes only the nested function parameters and not the enclosing pointer-to-member-function parameter | -26.15% | -27.83% | -35.83% | versus the namespace-lookup checkpoint, instructions improve by 27,575,160 while RSS moves +798,720 B and footprint +2,723,840 B; every cumulative hard gate remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-phoenix-nested-function-pack-candidate.json` | pass; candidate medians are 194,646,770,509 instructions, 932,864,000 B RSS, and 648,044,544 B footprint. The three-run candidate-only gate verified immutable epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
+| `(Phoenix lazy qualified static-value demand)` | Demand-load a named value member when a concrete qualified lookup first reaches an included class whose reference preparation collected only type-bearing members | -26.11% | -27.64% | -35.88% | versus the nested-function-pack checkpoint, instructions move +106,799,882 while RSS improves by 2,506,752 B and footprint by 540,672 B; all cumulative hard gates remain strongly improved | `/private/tmp/cppgm-boost-frontier-v2-phoenix-lazy-qualified-value-candidate.json` | pass; three-run medians are 194,753,570,391 instructions, 935,370,752 B RSS, and 647,503,872 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 
 ## Suite Cursor
 
@@ -323,7 +324,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 80 | `libs/parameter/test` | pass | `(this commit)` | The final forced `pch=off` C++11 graph finds 2676 targets, updates all 229 requested targets, passes every positive compile/link/runtime action, handles deliberate compile failures as failed-as-expected, and exits successfully in 330.81s; log `/private/tmp/boost-frontier-v2-suite-080-parameter-final-forced.log`. Maximum RSS is 887,111,680 B with zero process swaps, every compiler child releases, and system swap remains exactly 849 MiB. | The closure repairs typed substitution order, qualified dependent non-deduced contexts, concrete class and alias failure categorization, required-owner `static_assert` evaluation, direct non-type value-pack forwarding, string-literal array-reference casts, and one narrowly scoped stale member-template candidate after class completion. Two compact header-free C++11 reducers cover the independently reducible language rules; neither uses `<type_traits>`. PA16/PA21/PA22 pass `756/756`; all 960 configured strict comparisons pass; the PA9-excluded direct report passes `4136/4136`, including PA37 `7/7`. All 23 text-reparse categories, 20 audit tests, cache parity, placement review, a warning-clean Homebrew Clang 22 build, and `git diff --check` pass. The existing PA22 ref changes only in declaration order for the principled correction that leading function-return substitution precedes later parameters; instructions and symbols are unchanged. The preserved immutable frozen-source/header gate records -26.02% instructions, -27.76% RSS, and -35.83% footprint. |
 | 81 | `libs/parser/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/parser/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. |
 | 82 | `libs/pfr/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/pfr/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. The cursor advances directly to C++03-declared Boost.Phoenix. |
-| 83 | `libs/phoenix/test` | frontier | `(this commit)` | The initial forced graph found 6367 targets and 117 compile failures. After the first two fixes, the Clang-pinned forced replay completed in 1302.46s with 16 failed updates; log `/private/tmp/boost-frontier-v2-suite-083-after-if-else-full-clang.log`. Its first failure, `bind_member_function_tests`, now passes compile, link, and runtime in 23.21s; log `/private/tmp/boost-frontier-v2-phoenix-bind-member-function-candidate-clang.log`. | The full replay's 1,447,030,784 B maximum is a concurrent process-tree peak, not a single translation unit; sampled children remained in the ordinary Phoenix range, every process recorded zero swaps, and system swap remained exactly 817 MiB. Every command explicitly binds the compiler under test to this worktree and host C, assembly, and link actions to Homebrew Clang 22; Boost.Build's `gcc.compile.*` text is only the legacy adapter action name. The remaining bind-compatibility family is the next focused survey before another complete graph. |
+| 83 | `libs/phoenix/test` | frontier | `(this commit)` | The initial forced graph found 6367 targets and 117 compile failures. After the first two fixes, the Clang-pinned forced replay completed in 1302.46s with 16 failed updates; log `/private/tmp/boost-frontier-v2-suite-083-after-if-else-full-clang.log`. `bind_member_function_tests` now passes in 23.21s, and `switch_tests` passes compile, link, and runtime in 44.19s; logs `/private/tmp/boost-frontier-v2-phoenix-bind-member-function-candidate-clang.log` and `/private/tmp/boost-frontier-v2-phoenix-switch-final-clang.log`. | A grouped bind replay also passes `bind_rv_sp_test` and `bind_stateful_test` while leaving four later bind diagnostics for subsequent classification; log `/private/tmp/boost-frontier-v2-phoenix-bind-family-clang.log`. The next complete forced graph will establish the authoritative ordered remainder. Every command explicitly binds cppgm to this worktree and host C, assembly, linking, production rebuilds, and controls to Homebrew Clang 22; Boost.Build's `gcc.compile.*` text is only the legacy adapter action name. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
@@ -331,27 +332,29 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 ## Active Frontier
 
 - suite: `#83 libs/phoenix/test`
-- focused target: remaining bind-compatibility family;
-  `bind_member_function_tests` is closed
+- focused target: none until the complete forced replay establishes the next
+  ordered failure; `bind_member_function_tests` and `switch_tests` are closed
 - last closed suite: `#82 libs/pfr/test` (`skipped-language`)
 - failure phase: compile
-- diagnostic: pending focused classification after the first bind failure;
-  the closed failure was an outer function parameter incorrectly erased by an
-  empty pack nested inside its pointer-to-member-function type
+- diagnostic: pending the next complete forced replay; the just-closed switch
+  failure was a concrete qualified static value absent from an included
+  class's type-only reference shell on its first use
 - reduced repro:
-  `pa26/tests/general/300-nested-function-type-empty-pack-parameter.t`, four
-  header-free C++11 lines with no `<type_traits>`
-- owning PA/cluster: `pa26:300`, pointer-to-member function syntax
-- implementation area: structured declarator AST pack ownership
-- performance risk: bounded; the full three-job graph peaked at 1.45 GB for the
-  concurrent process tree, the focused target at 494 MB, and system swap did
-  not move
+  `pa23/tests/general/500-lazy-qualified-static-value-demand.t` plus its tiny
+  local companion header; it includes no Boost, STL, vendor, or standard-
+  library header and uses only C++11 with no `<type_traits>`
+- owning PA/cluster: `pa23:500`, integrated template instantiation and
+  qualified non-type value evaluation
+- implementation area: structured concrete qualified-value lookup and lazy
+  class-reference named-member collection
+- performance risk: bounded; the focused target peaks at 727,764,992 B with
+  zero swaps, the broad report is clean, and all immutable-gate memory signals
+  remain strongly improved
 - language lane: Boost.Phoenix declares C++03 in
   `libs/phoenix/meta/libraries.json`, so
   it is supported and must run
-- next action: run the remaining bind-compatibility targets together, then run
-  the complete forced Phoenix graph and reduce its next ordered independent
-  failure
+- next action: run the complete forced Phoenix graph and reduce its next
+  ordered independent failure
 
 ## Fix Ledger
 
@@ -629,8 +632,35 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Phoenix `adapt_function` function-type pack result | Function-type parameter-pack expansion selected one concrete pack element at a time but recursively substituted it with the original parameter metadata still marked as a pack. Argument lookup therefore expected the complete pack, failed on the scalar element vector, and retained the placeholder in nested types such as `W<A>::type`. The expansion now uses the existing scalarizing pack-element substitution helper; no cache, retry, source text, or retained representation is added. | `pa22/tests/general/400-function-type-pack-element-substitution.t`, eight lines of header-free C++11 with no `<type_traits>` | Reverting only the helper call makes the checked-in reducer and the exact Phoenix actor reducer fail; restoring it makes both pass. The original 18-line class-argument reducer and direct Boost result wrapper pass as independent controls. | Clang 22 accepts the reducer under strict C++11; PA22 passes `312/312`; all 960 configured strict comparisons and the PA9-excluded broad report `4137/4137` pass, including PA37 `7/7`. All 23 text-reparse categories and 31 audit/performance unit tests pass. Twelve cache modes emit byte-identical LowIR. Focused forced `adapt_function` passes in 21.42s at 460,378,112 B maximum RSS with zero swaps. | -25.90% instructions, -28.11% RSS, and -36.61% footprint; candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-pack-scalar-candidate.json`; no parent or live header was measured | `(this commit)` |
 | fixed | Phoenix namespace using-directive class-template lookup | The internal qualified template lookup first resolved the namespace owner, then manually searched only its direct and inline-namespace declarations. That bypassed namespace using-directives, so `boost::proto::base_expr` could not find the real class template exported from `boost::proto::domainns_`. After the owner is proven to be a namespace, lookup now uses the authoritative structured semantic path; class-qualified lookup retains its established implementation. No cache, source text, rendered spelling, or retry is added. | `pa22/tests/general/100-qualified-template-using-directive-result.t`, five lines / 188 bytes of header-free C++11 with no `<type_traits>` | A controlled rollback rejects the reducer and leaves Phoenix's concrete `base_expr<...>::type` dependent. The fixed compiler and Clang 22 accept the reducer, and focused `if_else_tests` passes compile, link, and runtime. A broad experiment that used the authoritative lookup for class owners changed an existing PA22 SFINAE result and was discarded; the namespace-only implementation preserves that LowIR byte-for-byte. | PA22 direct comparison passes `313/313`; configured strict PA18, PA19, PA21, and PA22 suites have zero failures; all 23 text-reparse categories and 14 audit tests pass. Normal, ten individual cache-disabled modes, and all-disabled mode emit byte-identical LowIR with SHA-256 `78b9baa9ef1f809059c4057b1f4daccea575658ab5c4426cbfd62d0737ed55db`. The new reducer adds no placement finding; the whole-PA audit still reports four unrelated pre-existing rows. The PA9-excluded broad run passes 4137 tests and has one load-sensitive PA35 batch timeout; the exact standard-timeout replay and complete isolated PA35 report pass `93/93`. The exact focused Boost replay passes in 20.26s at 473,288,704 B maximum RSS with zero swaps. | -26.14% instructions, -27.89% RSS, and -36.10% footprint; candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-namespace-using-candidate.json`; no parent or live header was measured | `(this commit)` |
 | fixed | Phoenix nested function-type pack inside an ordinary parameter | Declarator parsing recursively treated any pack nested anywhere below a function parameter as a pack on that whole parameter. For `R (C::*)(P...) const`, an empty `P` therefore erased the enclosing pointer-to-member-function parameter before the separate trailing `T...` was expanded. Whole-parameter expansion now follows only pack markers on the current declarator and its nested-declarator chain; a pack inside a nested parameter clause remains owned and expanded by that clause. No source-text recovery, cache, or compatibility special case is added. | `pa26/tests/general/300-nested-function-type-empty-pack-parameter.t`, four header-free C++11 lines with no `<type_traits>`; PA26 is the earliest essential owner because member-pointer syntax is required | Reverting only the parser change makes the specialized three-argument `pick` instantiation fail with `unsupported trailing function parameter pack expansion`, deletes the pointer-to-member parameter, and selects no viable function. Restoring it passes. The existing PA23 dependent function-type pack constructor-initializer control also passes. | Clang 22 strict C++11 accepts the reducer and the patched-Clang witness matches exactly. PA26 passes `85/85`; configured strict PA18/19/21/22 comparisons all pass; the PA9-excluded broad direct-LowIR report passes `4139/4139`, including PA37 `7/7`. All 23 text-reparse categories and audit unit tests pass. Normal, ten individual cache-disabled modes, and all-disabled mode emit byte-identical LowIR with SHA-256 `b75fca5e6cf2d592c377ffad701821e363ff878dc60160cc50766cfccc88efa9`. The focused Boost target passes in 23.21s at 494,460,928 B maximum RSS with zero swaps. | -26.15% instructions, -27.83% RSS, and -35.83% footprint; candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-nested-function-pack-candidate.json`; no parent or live header was measured | `(this commit)` |
+| fixed | Phoenix included-class qualified static-value first use | Included class preparation deliberately collects only type-bearing reference members. Concrete qualified non-type lookup reused that shell without demanding the named value, making `I::index + N::value` depend on whether some earlier expression happened to populate the static member. After ordinary lookup misses in an incomplete reference shell, the resolver now invokes the existing named-member loader for that exact value and retries once. Witness collection, fully collected classes, and in-progress collection retain their established paths; no cache, source text, eager completion, or representation growth is added. | `pa23/tests/general/500-lazy-qualified-static-value-demand.t` and its 13-line local companion header; C++11 with no Boost, STL, vendor header, or `<type_traits>`. The include boundary is essential to exercise a reference-only class shell. | A controlled rollback of only the named-demand branch rejects the final minimized reducer at `I::index+N::value`; Clang 22 accepts it warning-clean, and the fixed compiler emits the checked-in LowIR. Warming `N::value` before the failing expression also made the pre-fix compiler pass, proving the order-dependent missing-demand cause. | PA23 passes `410/410`; all five configured strict suites pass 960 comparisons; the PA9-excluded direct report passes `4140/4140`, including PA37 `7/7`. Placement/hygiene is clean, all 23 text-reparse categories and 14 audit tests pass, and normal, ten individual cache-off modes, and all-off emit byte-identical LowIR at SHA-256 `485fc8e3251fe7b25d56cc0db4e5cc73da7486c3984948de64f662839846898f`. The exact Clang-pinned `switch_tests` target passes in 44.19s at 727,764,992 B RSS with zero swaps. | -26.11% instructions, -27.64% RSS, and -35.88% footprint; candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-lazy-qualified-value-candidate.json`; no parent or live header was measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-27`: Closed Phoenix `switch_tests` as an order-dependent first-use
+  defect in concrete qualified static-value lookup. Included class reference
+  preparation intentionally populated only type-bearing members. The lookup
+  for `mpl_::long_<1>::value` then saw that partial shell but never invoked the
+  existing named value-member loader, so `Iterator::index + N::value` failed
+  unless an earlier expression had happened to warm the same class.
+
+  The fix demand-loads only the missed named value and retries once; it adds no
+  cache, eager class completion, source-text recovery, or retained state. The
+  final PA23 reducer uses a 13-line local header because the include/reference
+  boundary is the behavior under test; it otherwise uses no library header and
+  only C++11. A controlled rollback fails on the exact final reducer, while
+  Homebrew Clang 22 and the fixed compiler accept it. The patched-Clang witness
+  and cppgm disagree on a pre-existing namespace display spelling, so no
+  witness ref was fabricated; the test uses the established compile/LowIR
+  oracle path.
+
+  PA23 passes `410/410`; all 960 configured strict comparisons and the PA9-
+  excluded broad report `4140/4140` pass. Twelve cache modes are byte-identical,
+  placement is clean, and all 23 zero-reparse categories plus 14 audit tests
+  pass. The exact Clang-pinned `switch_tests` replay passes in 44.19s at
+  727,764,992 B RSS with zero swaps. The immutable source/51-header gate records
+  -26.11% instructions, -27.64% RSS, and -35.88% footprint without measuring a
+  parent compiler or live project header. The next action is a complete forced
+  Phoenix replay to establish the authoritative ordered remainder.
 
 - `2026-07-27`: The Clang-pinned forced Phoenix replay completed the graph in
   1302.46s and reduced the inventory to 16 failed updates. Its first failure,
@@ -3295,16 +3325,10 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-/usr/bin/time -lp /usr/local/bin/timeout 1800 env JOBS=4 \
+/usr/bin/time -lp /usr/local/bin/timeout 1800 env JOBS=3 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a \
-    libs/phoenix/test//bind_interoperation_test \
-    libs/phoenix/test//bind_mf2_test \
-    libs/phoenix/test//bind_ref_test \
-    libs/phoenix/test//bind_rv_sp_test \
-    libs/phoenix/test//bind_stateful_test \
-    libs/phoenix/test//bind_test
+  ./run-cppgm-b2.sh pch=off -a libs/phoenix/test
 ```
