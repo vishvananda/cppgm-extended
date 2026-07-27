@@ -8706,10 +8706,7 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
       } else if(reinterpret_like_cast &&
                 target_base->kind == Type::TK_LVALUE_REFERENCE) {
         supported =
-            operand.category == VC_LVALUE &&
-            target_base->inner &&
-            !is_void_type(target_base->inner) &&
-            !is_function_type(target_base->inner);
+            supports_reinterpret_like_reference_cast(target_type, operand);
       } else if(node.simple_type == KW_CONST_CAST &&
                 target_base->kind == Type::TK_RVALUE_REFERENCE) {
         supported =
@@ -8722,10 +8719,7 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
       } else if(reinterpret_like_cast &&
                 target_base->kind == Type::TK_RVALUE_REFERENCE) {
         supported =
-            operand.category != VC_PRVALUE &&
-            target_base->inner &&
-            !is_void_type(target_base->inner) &&
-            !is_function_type(target_base->inner);
+            supports_reinterpret_like_reference_cast(target_type, operand);
       } else if(node.simple_type == KW_STATIC_CAST &&
          target_base->kind == Type::TK_LVALUE_REFERENCE) {
         supported =

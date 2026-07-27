@@ -1,0 +1,8 @@
+function @f(%x : ptr [pass=reference]) -> ptr [binding=strong, object=_Z1fRKi] {
+  slot $x : ptr
+
+  block ^entry:
+    store ptr %x, $x
+    %t1 = load ptr $x
+    return ptr %t1
+}

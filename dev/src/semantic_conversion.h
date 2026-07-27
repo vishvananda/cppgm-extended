@@ -75,6 +75,9 @@ bool supports_non_reference_explicit_cast(SemanticContext & ctx,
                                           const cpp_decl::TypePtr & target,
                                           const ExprInfo & expr,
                                           bool allow_reinterpret_like);
+bool supports_reinterpret_like_reference_cast(
+    const cpp_decl::TypePtr & target,
+    const ExprInfo & expr);
 bool top_level_cv_flags(const cpp_decl::TypePtr & type,
                         cpp_decl::TypePtr & base,
                         bool & cv_const,

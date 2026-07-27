@@ -1546,6 +1546,25 @@ bool supports_non_reference_explicit_cast(SemanticContext & ctx,
   return supported;
 }
 
+bool supports_reinterpret_like_reference_cast(const TypePtr & target,
+                                              const ExprInfo & expr)
+{
+  TypePtr target_base = strip_top_level_cv(target);
+  if(!target_base ||
+     (target_base->kind != Type::TK_LVALUE_REFERENCE &&
+      target_base->kind != Type::TK_RVALUE_REFERENCE) ||
+     !target_base->inner ||
+     is_void_type(target_base->inner) ||
+     is_function_type(target_base->inner)) {
+    return false;
+  }
+
+  if(target_base->kind == Type::TK_LVALUE_REFERENCE) {
+    return expr.category == VC_LVALUE;
+  }
+  return expr.category != VC_PRVALUE;
+}
+
 bool top_level_cv_flags(const TypePtr & type,
                         TypePtr & base,
                         bool & cv_const,

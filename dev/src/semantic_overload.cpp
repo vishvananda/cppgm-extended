@@ -7547,6 +7547,23 @@ ExprInfo finalize_functional_cast_result(SemanticContext & ctx,
                                    semantic_policy::allow_explicit_argument_conversion())) {
       result = converted;
       operand = result;
+    } else if(semantic_conversion::supports_reinterpret_like_reference_cast(
+                  callee_type, result)) {
+      result.type = callee_type;
+      if(!semantic_conversion::result_value_category_for_function_result(
+             callee_type, result.category)) {
+        result.category = VC_PRVALUE;
+      }
+      const TypePtr materialization_source =
+          callsem_materialization_source_type(operand.node)
+              ? callsem_materialization_source_type(operand.node)
+              : (callsem_conversion_source_type(operand.node)
+                     ? callsem_conversion_source_type(operand.node)
+                     : operand.type);
+      result.node.semantic_type = result.type;
+      set_callsem_materialization_source_type(result.node, materialization_source);
+      set_callsem_conversion_source_type(result.node, operand.type);
+      result.node.value_category = to_call_value_category(result.category);
     } else if(semantic_conversion::supports_non_reference_explicit_cast(
            ctx, callee_type, result, true)) {
       result.type = callee_type;
