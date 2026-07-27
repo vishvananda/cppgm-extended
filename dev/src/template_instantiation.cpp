@@ -207,6 +207,17 @@ void reject_invalid_instantiated_function_parameter_type(SemanticContext & ctx,
                                                         const FunctionTemplateDecl & decl,
                                                         const TypePtr & type)
 {
+  TypePtr base = strip_top_level_cv(type);
+  if(base &&
+     (base->kind == Type::TK_LVALUE_REFERENCE ||
+      base->kind == Type::TK_RVALUE_REFERENCE) &&
+     !type_can_be_reference_target(base->inner)) {
+    std::ostringstream out;
+    out << "instantiated function template parameter has invalid reference target";
+    out << " [template " << decl.name << "]";
+    out << " [type " << describe_type(type) << "]";
+    throw TemplateSubstitutionFailure(out.str());
+  }
   if(type_forms_array_of_abstract_class(ctx, type)) {
     std::ostringstream out;
     out << "instantiated function template parameter forms array of abstract class";
