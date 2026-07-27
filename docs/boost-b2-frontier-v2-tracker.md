@@ -13,13 +13,11 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `82 / 147`
-- current cursor: `#83 libs/phoenix/test`
-- active compiler frontier: all investigated Bind compatibility targets,
-  `bug4853`, and `bind_tests_advanced` pass. The complete forced Phoenix
-  graph's only remaining compiler-owned failure is `bug5968`; the independent
-  `bug_000008` link failure is an upstream Boost Jamfile typo reproduced by
-  Homebrew Clang 22
+- completed suites: `83 / 147`
+- current cursor: `#84 libs/poly_collection/test`
+- active compiler frontier: none; Phoenix is closed. Its final forced graph
+  passes every compiler-owned action and retains only the independent
+  `bug_000008` upstream Boost Jamfile link typo reproduced by Homebrew Clang 22
 
 ## Baseline Gates
 
@@ -330,36 +328,27 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 80 | `libs/parameter/test` | pass | `(this commit)` | The final forced `pch=off` C++11 graph finds 2676 targets, updates all 229 requested targets, passes every positive compile/link/runtime action, handles deliberate compile failures as failed-as-expected, and exits successfully in 330.81s; log `/private/tmp/boost-frontier-v2-suite-080-parameter-final-forced.log`. Maximum RSS is 887,111,680 B with zero process swaps, every compiler child releases, and system swap remains exactly 849 MiB. | The closure repairs typed substitution order, qualified dependent non-deduced contexts, concrete class and alias failure categorization, required-owner `static_assert` evaluation, direct non-type value-pack forwarding, string-literal array-reference casts, and one narrowly scoped stale member-template candidate after class completion. Two compact header-free C++11 reducers cover the independently reducible language rules; neither uses `<type_traits>`. PA16/PA21/PA22 pass `756/756`; all 960 configured strict comparisons pass; the PA9-excluded direct report passes `4136/4136`, including PA37 `7/7`. All 23 text-reparse categories, 20 audit tests, cache parity, placement review, a warning-clean Homebrew Clang 22 build, and `git diff --check` pass. The existing PA22 ref changes only in declaration order for the principled correction that leading function-return substitution precedes later parameters; instructions and symbols are unchanged. The preserved immutable frozen-source/header gate records -26.02% instructions, -27.76% RSS, and -35.83% footprint. |
 | 81 | `libs/parser/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/parser/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. |
 | 82 | `libs/pfr/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/pfr/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. The cursor advances directly to C++03-declared Boost.Phoenix. |
-| 83 | `libs/phoenix/test` | frontier | `(this commit)` | The post-`switch_tests` Clang-pinned forced graph found 6367 targets, updated 832, and completed in 1278.21s with 11 failed actions at 1,484,349,440 B maximum RSS and zero process swaps; log `/private/tmp/boost-frontier-v2-suite-083-post-switch-full-clang.log`. The reference-cast group is closed. A qualified typedef in an alias target then lost its non-type pack argument during deduction; after preserving and resolving that typed syntax, object emission exposed a separate collision because declarator-to-ABI conversion omitted member-function `const`. The three-target replay passes `bind_interoperation_test`, `bind_ref_test`, and `bind_mf2_test` in 44.82s at 879,222,784 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bind-mangle-focused-clang.log`. | The fourth target's apparent `get_pointer` lookup error was unreachable. Explicit `U=::V` concretized `U const*`, but spelling fallback then mistook that concrete `::V` for the separate template parameter `V`, rejected the preferred overload, and instantiated the ellipsis fallback. Semantic identity gating fixes deduction; exact `bind_test` passes compile/link/runtime in 109.48s at 1,873,051,648 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bind-test-typed-identity-clang.log`. The final forced replay finds 6367 targets, requests 832 updates, updates 819, skips 9, and fails exactly four: the known external `bug_000008` link typo plus compiler-owned `bug4853`, `bug5968`, and `bind_tests_advanced`. It completes in 1320.02s at 1,850,249,216 B maximum RSS with zero process swaps; log `/private/tmp/boost-frontier-v2-suite-083-post-bind-full-clang.log`. `bug4853` was a function-template SFINAE defect: cppgm admitted Proto's comma overload after substituting `void&&`, instead of discarding the candidate and selecting built-in comma as Clang does. The exact target now passes compile/link/runtime in 22.63s at 520,990,720 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bug4853-final-clang.log`. `bind_tests_advanced` exposed an independent built-in lowering defect: a compound assignment recomputed its left operand for load, store, and result-address use. The fixed target passes compile/link/runtime in 31.65s at 649,588,736 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bind-advanced-lhs-once-fixed-clang.log`. System swap remained stable. Every actual compiler and host command remains cppgm plus Homebrew Clang 22 despite Boost.Build's legacy `gcc.*` action labels. |
+| 83 | `libs/phoenix/test` | pass | `c9eec23b8` | The final Clang-pinned forced `pch=off` C++11 graph finds 6367 targets, requests 832 updates, updates 829, and passes every compiler-owned positive and deliberate-negative action. It fails only the independently reproduced upstream `bug_000008` Boost.Thread Jamfile link typo and skips that target's two downstream actions; this external defect is not charged to CPPGM. The run completes in 1325.61s at 1,846,845,440 B process-tree maximum RSS with zero process swaps; log `/private/tmp/boost-frontier-v2-phoenix-post-bug5968-full-forced.log`. | The last compiler frontier, `bug5968`, was a false class-member index entry: recursive declarator discovery descended into a function parameter clause and treated its parameter named `slot` as a member. Commit `c9eec23b8` stops discovery at that semantic boundary. PA18 passes `241/241`, all 960 strict comparisons and the PA9-excluded broad report's `4147/4147` pass, thirteen cache modes are byte-identical, and all reparse/audit/placement/warning gates pass. The immutable frozen-source/51-header gate records -26.22% instructions, -27.14% RSS, and -31.89% footprint. Actual compiler and host commands are CPPGM plus Homebrew Clang 22; Boost.Build's printed `gcc.*` strings are legacy action labels only. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#83 libs/phoenix/test`
-- focused target: `libs/phoenix/test//bug5968`; `bug4853`,
-  `bind_tests_advanced`, and all four investigated Bind compatibility targets
-  are closed
-- last closed suite: `#82 libs/pfr/test` (`skipped-language`)
-- failure phase: compile-time class-template instantiation while constructing a
-  `boost::signals2::signal`
-- diagnostic: lookup/instantiation of
-  `garbage_collecting_lock<mutex_type>` fails while completing the referenced
-  `signal_impl`, producing a downstream no-viable-constructor diagnostic for
-  its owning `boost::shared_ptr`
+- suite: `#84 libs/poly_collection/test`
+- focused target: none; intake pending
+- last closed suite: `#83 libs/phoenix/test` (`pass`, with only the independently
+  reproduced upstream `bug_000008` Jamfile link typo excluded)
+- failure phase: none established
+- diagnostic: none established
 - reduced repro: none active
-- owning PA/cluster: pending reduction of dependent nested class-template lookup
-- implementation area: structured dependent-type resolution during referenced
-  class completion
-- performance risk: moderate; keep sampling the exact compile while reducing
-  because the last complete Phoenix graph peaked at 1.85 GB RSS
-- language lane: Boost.Phoenix declares C++03 in
-  `libs/phoenix/meta/libraries.json`, so
-  it is supported and must run
-- next action: rerun exact `bug5968` under cppgm and Homebrew Clang 22, reduce
-  the `garbage_collecting_lock<mutex_type>` instantiation failure, and fix only
-  the earliest typed defect
+- owning PA/cluster: pending intake
+- implementation area: pending intake
+- performance risk: unknown; retain explicit memory monitoring and Clang paths
+- language lane: inspect `libs/poly_collection/meta/libraries.json` before the
+  graph; run only if the suite's declared requirements remain within C++11
+- next action: establish the suite language requirement, then run the forced
+  `pch=off` graph under CPPGM and Homebrew Clang 22
 
 ## Fix Ledger
 
@@ -647,6 +636,26 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Phoenix `bug5968` parameter names in the lazy class-member index | The reference-member name probe recursively descended a function's parameter clause and treated parameter identifiers as class members. Looking up namespace template `slot` while completing `signal_impl` therefore followed a false current-class `slot` hit into a later `connect(..., slot)` declaration and parsed its `garbage_collecting_lock<mutex_type>` parameter before the preceding `mutex_type` typedef had been installed. Declarator name discovery now stops at the parameter-clause boundary, matching the existing structured rule used by pack-parameter analysis. No eager completion, cache, source text, rendered-name recovery, or Boost-specific path is added. | `pa18/tests/general/100-class-template-member-index-ignores-parameter-name.t`, eight code lines / 343 total bytes of header-free C++11 with no `<type_traits>`; PA18:100 is the audited basic class-template owner. The worktree has no patched-Clang witness producer, so only the ordinary LowIR sidecars are checked in and no witness reference is fabricated. | A controlled rollback makes the reducer fail at `lock<mutex_type>` while Homebrew Clang 22 accepts it warning-clean. The two-line Boost-header reducer fails pre-fix at the same undeclared typedef; changing the unrelated parameter name in a temporary header control removes the false hit. The fixed exact `bug5968` target compiles, links, and runs in 29.51s at 692,158,464 B process-tree RSS with zero swaps; the header-only source uses 261,316,608 B. | PA18 passes `241/241`; all 960 configured strict comparisons and the PA9-excluded direct-LowIR report's `4147/4147` pass, including PA37 `7/7`. All 23 text-reparse categories and 14 audit tests pass. Normal, eleven individual cache-off modes, and all-off emit byte-identical LowIR at SHA-256 `25d4e7b6483bcdaa6c45b2e9a870c5faa8e499912011c4a012168e8e8922356b`. The new test has no placement or hygiene finding, and the production unit is warning-clean under Homebrew Clang 22. | -26.22% instructions, -27.14% RSS, and -31.89% footprint; three-run candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-bug5968-parameter-name-candidate-3run.json`; no parent compiler or live project header was measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-27`: Closed the complete Phoenix graph after commit `c9eec23b8`.
+  The final forced `pch=off` run uses CPPGM with explicit Homebrew Clang 22
+  host paths, finds 6367 targets, requests 832 updates, updates 829, and passes
+  every compiler-owned positive and deliberate-negative action. The sole
+  failed target is the known upstream `bug_000008` Boost.Thread Jamfile link
+  typo, independently reproduced with Homebrew Clang; its two downstream
+  actions are consequently skipped. Boost.Build's displayed `gcc.*` strings
+  remain legacy action names rather than evidence of a GCC invocation.
+
+  The authoritative log is
+  `/private/tmp/boost-frontier-v2-phoenix-post-bug5968-full-forced.log`; the run
+  takes 1325.61s, peaks at 1,846,845,440 B process-tree RSS under three-way
+  concurrency, and records zero process swaps. Individual sampled CPPGM
+  children remain below about 650 MiB and release between units. macOS system
+  swap rose while Spotlight's `mds_stores` grew to about 800 MiB, then that
+  process fell back near 110 MiB; memory pressure retained 66--67% free. This
+  is concurrent graph load plus unrelated Spotlight pressure, not a retained
+  compiler or Docker VM leak. Suite 83 is closed and the cursor advances to
+  `#84 libs/poly_collection/test`.
 
 - `2026-07-27`: Closed Phoenix `bug5968` at the false class-member name index,
   rather than by retaining more state or changing instantiation order. During
@@ -3505,5 +3514,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/phoenix/test//bug5968
+  ./run-cppgm-b2.sh pch=off -a libs/poly_collection/test
 ```
