@@ -1,4 +1,4 @@
-declare function @pick(%arg0 : i128, %arg1 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4pickIv1XJES0_JEEiMT0_FT_DpT1_ERKT2_DpRKT3_]
+declare function @pick(%arg0 : i128, %arg1 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4pickIv1XJES0_JEEiMT0_KFT_DpT1_ERKT2_DpRKT3_]
 declare function @X__f(%arg0 : ptr) -> void [binding=strong, object=_ZNK1X1fEv]
 
 global @x [binding=strong, object=_Z1x] = {

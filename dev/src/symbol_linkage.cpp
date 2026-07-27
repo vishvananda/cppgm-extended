@@ -10957,6 +10957,10 @@ static bool try_build_parameter_clause_type_ast_ir(
     const CppAstNode & clause,
     const abi_mangle::Type & result,
     const TypeMangleContext * mangle_ctx,
+    bool function_const,
+    bool function_volatile,
+    bool function_lvalue_ref,
+    bool function_rvalue_ref,
     abi_mangle::Type & out)
 {
   if(clause.kind != CppAstKind::parameter_clause) {
@@ -10999,8 +11003,19 @@ static bool try_build_parameter_clause_type_ast_ir(
 
   out = abi_mangle::Type::function(std::move(result),
                                    std::move(params),
-                                   variadic);
-  return attach_type_ir_substitution(out);
+                                   variadic,
+                                   function_lvalue_ref,
+                                   function_rvalue_ref);
+  if(!attach_type_ir_substitution(out)) {
+    return false;
+  }
+  if(function_const || function_volatile) {
+    out = abi_mangle::Type::cv(function_const,
+                               function_volatile,
+                               std::move(out));
+    return attach_type_ir_substitution(out);
+  }
+  return true;
 }
 
 static bool try_build_declarator_ast_type_ir(
@@ -11017,6 +11032,11 @@ static bool try_build_declarator_ast_type_ir(
   vector<const CppAstNode *> ptr_operators;
   vector<const CppAstNode *> suffixes;
   const CppAstNode * nested_declarator = nullptr;
+  bool after_parameter_clause = false;
+  bool function_const = false;
+  bool function_volatile = false;
+  bool function_lvalue_ref = false;
+  bool function_rvalue_ref = false;
   for(size_t i = 0; i < declarator.children.size(); ++i) {
     const CppAstNode & child = declarator.children[i];
     if(child.kind == CppAstKind::ptr_operator) {
@@ -11024,6 +11044,17 @@ static bool try_build_declarator_ast_type_ir(
     } else if(child.kind == CppAstKind::array_suffix ||
               child.kind == CppAstKind::parameter_clause) {
       suffixes.push_back(&child);
+      after_parameter_clause = child.kind == CppAstKind::parameter_clause;
+    } else if(after_parameter_clause &&
+              child.kind == CppAstKind::cv_qualifier) {
+      function_const =
+          function_const || token_or_text_is(child, KW_CONST, "const");
+      function_volatile =
+          function_volatile || token_or_text_is(child, KW_VOLATILE, "volatile");
+    } else if(after_parameter_clause &&
+              child.kind == CppAstKind::ref_qualifier) {
+      function_lvalue_ref = token_or_text_is(child, OP_AMP, "&");
+      function_rvalue_ref = token_or_text_is(child, OP_LAND, "&&");
     } else if(child.kind == CppAstKind::nested_declarator) {
       for(size_t j = 0; j < child.children.size(); ++j) {
         if(child.children[j].kind == CppAstKind::declarator ||
@@ -11148,7 +11179,14 @@ static bool try_build_declarator_ast_type_ir(
 
         if(suffix.kind == CppAstKind::parameter_clause) {
           return try_build_parameter_clause_type_ast_ir(
-              suffix, inner, mangle_ctx, type);
+              suffix,
+              inner,
+              mangle_ctx,
+              function_const,
+              function_volatile,
+              function_lvalue_ref,
+              function_rvalue_ref,
+              type);
         }
 
         return false;

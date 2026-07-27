@@ -8216,6 +8216,7 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
         static_cast<ClassTemplateDecl *>(dependent_class_template_decl);
     if(source_template) {
       out.source_template = source_template;
+      out.dependent_template_arguments = dependent_class_args;
       out.name = source_template->declaring_scope ?
           semantic_lookup::scope_qualified_name_syntax(
               *source_template->declaring_scope,
@@ -15785,6 +15786,39 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           const std::string pattern_arg = trim_space(pattern_args[i]);
           const TemplateArgument * structured_pattern =
               pattern_structured_args ? &(*pattern_structured_args)[i] : nullptr;
+          TemplateArgument resolved_pattern_argument;
+          if(!structured_pattern && actual_template_decl) {
+            const TemplateParameterInfo * source_parameter =
+                parameter_for_explicit_argument_index(
+                    actual_template_decl->parameters,
+                    pattern_args.size(),
+                    i);
+            bool resolved_pattern = false;
+            if(source_parameter) {
+              const TemplateArgumentSyntax * source_syntax =
+                  pattern_instantiation.dependent_template_arguments.size() ==
+                          pattern_args.size() ?
+                      &pattern_instantiation
+                           .dependent_template_arguments[i].syntax :
+                      nullptr;
+              try {
+                resolved_pattern =
+                    resolve_template_argument(
+                        ctx,
+                        *deduction_scope,
+                        *deduction_scope,
+                        *source_parameter,
+                        pattern_arg,
+                        source_syntax,
+                        resolved_pattern_argument);
+              } catch(const TemplateSubstitutionFailure &) {
+                resolved_pattern = false;
+              }
+            }
+            if(resolved_pattern) {
+              structured_pattern = &resolved_pattern_argument;
+            }
+          }
           const DirectTemplateParameterMatch direct_match =
               find_direct_template_parameter_from_structured_arg(
                   pattern_arg, structured_pattern);
