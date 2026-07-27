@@ -152,19 +152,6 @@ bool parse_declarator_core(const CppAstNode & node,
                            TypePtr & out,
                            bool require_name);
 
-bool node_contains_parameter_pack(const CppAstNode & node)
-{
-  if(node.kind == CppAstKind::parameter_pack) {
-    return true;
-  }
-  for(size_t i = 0; i < node.children.size(); ++i) {
-    if(node_contains_parameter_pack(node.children[i])) {
-      return true;
-    }
-  }
-  return false;
-}
-
 bool node_has_direct_parameter_pack(const CppAstNode * node)
 {
   if(!node) {
@@ -180,7 +167,17 @@ bool node_has_direct_parameter_pack(const CppAstNode * node)
 
 bool declarator_has_parameter_pack(const CppAstNode * declarator)
 {
-  return declarator && node_contains_parameter_pack(*declarator);
+  if(!declarator) {
+    return false;
+  }
+  if(node_has_direct_parameter_pack(declarator)) {
+    return true;
+  }
+  const CppAstNode * nested = find_child(*declarator,
+                                        CppAstKind::nested_declarator);
+  return nested &&
+         nested->children.size() == 1 &&
+         declarator_has_parameter_pack(&nested->children[0]);
 }
 
 bool node_names_parameter_pack_type(const AstDeclHooks & hooks,
@@ -484,7 +481,7 @@ bool parse_parameter_clause_ast(
     }
     const bool declarator_has_pack = declarator_has_parameter_pack(declarator);
     const bool declarator_has_direct_pack = node_has_direct_parameter_pack(declarator);
-    if(declarator_has_pack || node_contains_parameter_pack(child)) {
+    if(declarator_has_pack) {
       if(hooks.expand_parameter_clause_packs && try_expanded_pack_clause()) {
         return true;
       }
