@@ -10,7 +10,7 @@ struct has_iterator_category
 };
 
 template<typename T>
-struct has_iterator_category<T, void_t<typename T::iterator_category> >
+struct has_iterator_category<T, void_t<int, typename T::iterator_category> >
 {
   static const bool value = true;
 };

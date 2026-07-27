@@ -11877,11 +11877,14 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                 type_pattern_template_parameter(
                     alias_template->parameters,
                     alias_template->resolved_type_pattern);
-            const std::size_t result_index = result_parameter ?
+            const std::size_t result_index =
+                result_parameter && !result_parameter->parameter_pack ?
                 static_cast<std::size_t>(
                     result_parameter - &alias_template->parameters[0]) :
                 alias_template->parameters.size();
-            if(result_index < dependent_alias_arguments.size() &&
+            if(result_parameter &&
+               !result_parameter->parameter_pack &&
+               result_index < dependent_alias_arguments.size() &&
                dependent_alias_arguments[result_index].type) {
               placeholder_pattern_type =
                   dependent_alias_arguments[result_index].type;
@@ -11927,8 +11930,19 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
             }
           }
         }
+        void * unexpanded_alias_template_decl = nullptr;
+        std::vector<DependentAliasTemplateArgumentSyntax>
+            unexpanded_alias_arguments;
+        const bool pattern_is_unexpanded_dependent_alias =
+            named_type_dependent_alias_template(
+                placeholder_pattern_type,
+                unexpanded_alias_template_decl,
+                unexpanded_alias_arguments) &&
+            unexpanded_alias_template_decl;
         const bool pattern_has_deducible_placeholders =
             pattern_mentions_placeholders &&
+            (!pattern_is_unexpanded_dependent_alias ||
+             deduced_through_identity_alias_pattern) &&
             type_pattern_has_deducible_template_parameter(type_system,
                                                           placeholder_pattern_type);
         bool pattern_requires_concrete_expression_recheck = false;

@@ -875,11 +875,8 @@ void collect_using_declaration(SemanticContext & ctx,
       type = member_type.type;
     }
   }
-  if(type) {
-    semantic_scope_mutation::bind_named_type(scope, qualified.name, type);
-    return;
-  }
-  if(bind_dependent_using_typename(ctx, scope, *target, qualified, target_text)) {
+  if(!type &&
+     bind_dependent_using_typename(ctx, scope, *target, qualified, target_text)) {
     return;
   }
 
@@ -969,6 +966,11 @@ void collect_using_declaration(SemanticContext & ctx,
                                                               function_templates);
   }
   if(!functions.empty() || !function_templates.empty()) {
+    return;
+  }
+
+  if(type) {
+    semantic_scope_mutation::bind_named_type(scope, qualified.name, type);
     return;
   }
 
