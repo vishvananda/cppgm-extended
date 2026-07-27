@@ -27418,6 +27418,14 @@ ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices & 
     owner.qualifiers.pop_back();
   }
   Scope * target = semantic_lookup::lookup_namespace_name(scope, owner);
+  if(target && services.semantic_context) {
+    if(ClassTemplateDecl * found =
+           semantic_lookup::lookup_class_template(*services.semantic_context,
+                                                  scope,
+                                                  name)) {
+      return found;
+    }
+  }
   if(!target) {
     target = resolve_qualified_scope_for_class_or_namespace_impl(
         services,

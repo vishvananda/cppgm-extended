@@ -1,0 +1,1 @@
+global @value : i32 [binding=strong, object=_Z5value] = zero
