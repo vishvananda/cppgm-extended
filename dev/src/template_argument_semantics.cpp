@@ -18901,11 +18901,12 @@ bool substitute_type_impl(const TypePtr & type,
             return false;
           }
           TypePtr param;
-          if(!substitute_type_impl(type->params[i],
-                                   parameters,
-                                   element_arguments,
-                                   scope,
-                                   param)) {
+          if(!substitute_type_with_pack_element_arguments(
+                 type->params[i],
+                 parameters,
+                 element_arguments,
+                 scope,
+                 param)) {
             return false;
           }
           params_out.push_back(param);

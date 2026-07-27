@@ -228,6 +228,7 @@ differences other than the output path.
 | `(MySQL C++11 semantic and lifetime closure)` | Qualified namespace definitions, typed leaf-expression overload selection, C++11 list/value initialization, array subobject special members, data-member alignment, and base-initializer full-expression cleanup | -26.23% | -27.52% | -35.44% | versus the MultiIndex checkpoint, instructions improve by 66,206,300 while RSS moves +9,449,472 B and footprint +2,052,096 B; all cumulative signals remain strongly improved | `/private/tmp/cppgm-boost-frontier-v2-mysql-final-perf.json` | pass; three-run candidate medians are 194,420,449,699 instructions, 936,923,136 B RSS, and 651,931,648 B footprint. The gate verified immutable epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; every process released and recorded zero swaps. No parent compiler or live project header was measured. |
 | `(Nowide alias deduction and ordinary-name lookup closure)` | Treat an unexpanded dependent alias as a non-deduced context unless its result is a proven direct non-pack parameter, and let an ordinary using-declaration target win over a same-named tag | -26.17% | -27.92% | -35.84% | versus the MySQL checkpoint, instructions move +0.09% while RSS improves 0.56% and footprint improves 0.62% | `/private/tmp/cppgm-boost-frontier-v2-nowide-final-isolated-perf.json` | pass; isolated three-run candidate medians are 194,594,064,245 instructions, 931,708,928 B RSS, and 647,917,568 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, its frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured, and system swap remained unchanged. |
 | `(Optional C++11 semantic and lowering closure)` | Preserve virtual-base constructor ABI arguments for placement new, enforce conversion/function-template viability, and complete the required C++11 constexpr and dependent-qualified type obligations | -26.05% | -27.60% | -35.46% | versus the Nowide checkpoint, instructions move +0.16%, RSS +0.44%, and footprint +0.59%; this remains below the instruction early-warning threshold and strongly improves every fixed-baseline signal | `/private/tmp/cppgm-boost-frontier-v2-optional-candidate.json` | pass; three-run candidate medians are 194,908,917,546 instructions, 935,821,312 B RSS, and 651,759,616 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, its frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
+| `(Phoenix function-type pack scalarization)` | Substitute each selected type-pack element through a function-type parameter pattern with scalarized parameter metadata | -25.90% | -28.11% | -36.61% | versus the final Parameter checkpoint, instructions move +0.12 percentage points while RSS improves 0.35 and footprint improves 0.78 percentage points | `/private/tmp/cppgm-boost-frontier-v2-phoenix-pack-scalar-candidate.json` | pass; candidate medians are 195,301,308,168 instructions, 929,255,424 B RSS, and 640,147,456 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 
 ## Suite Cursor
 
@@ -325,20 +326,22 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 ## Active Frontier
 
 - suite: `#83 libs/phoenix/test`
-- focused target: none until the forced intake establishes a failure
+- focused target: `libs/phoenix/test//if_else_tests`
 - last closed suite: `#82 libs/pfr/test` (`skipped-language`)
-- failure phase: none
-- diagnostic: none
-- reduced repro: none
-- owning PA/cluster: pending intake
-- implementation area: pending intake
-- performance risk: unknown; use four frontier jobs with `pch=off` and active
-  RSS/swap monitoring, reducing concurrency only if the live memory profile
-  requires it
+- failure phase: compile
+- diagnostic: Phoenix actor assignment reports no viable templated `operator=`;
+  the remaining full graph has 51 compile failures in several shared classes
+- reduced repro: pending reduction of the assignment class; the preceding
+  function-type pack failure is closed by the checked-in eight-line PA22 test
+- owning PA/cluster: pending reduction
+- implementation area: member-template assignment candidate instantiation
+- performance risk: bounded in the latest three-job graph; sampled compiler
+  children stayed in the ordinary Phoenix range and system swap did not move
 - language lane: Boost.Phoenix declares C++03 in
   `libs/phoenix/meta/libraries.json`, so
   it is supported and must run
-- next action: run the exact forced C++11 `libs/phoenix/test` graph
+- next action: reduce and trace `if_else_tests`, then rerun the shared
+  assignment-failure targets before another full graph
 
 ## Fix Ledger
 
@@ -613,8 +616,28 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Parameter required qualified-owner hard diagnostics | Concrete class-alias population could turn a failed concrete alias into a generic logic error that legacy SFINAE recovery swallowed, while qualified member-type resolution did not consistently force the concrete owner's class `static_assert`. A narrowly scoped required-resolution guard now checks that typed owner, concrete source-template alias failures become substitution failures, and concrete failed assertions use a hard diagnostic class outside legacy `logic_error` recovery. Ordinary diagnostics retain their established recovery behavior. | The lexical leading-return negative reducer exercises the hard-diagnostic boundary; exact Boost.Parameter paths cover the concrete owner and alias materialization | Broadly changing every semantic diagnostic to `runtime_error` caused three PA22 regressions and was discarded. The narrow hard-error type and required-resolution scope restore all three while preserving the intended failed assertion. | Owner, strict, broad, cache, reparse, audit, warning, final Boost.Parameter, and frozen performance gates pass. | measured with the complete preserved frozen closure; no parent or live header was measured | `(this commit)` |
 | fixed | Parameter direct non-type value-pack source forwarding | Syntax-pack expansion rebuilt every non-type pack element through replacement maps even when the source was the pack parameter itself. That could reuse an earlier element's annotated expression syntax, turning libc++ pair's empty piecewise index pack into the preceding nonempty pack. Direct value packs now clone each concrete element's own retained typed source syntax and binding/value metadata. | Exact Boost.Parameter `preprocessor_deduced` is the controlled hosted proof; no misleading header-free reducer was added | Before the change `_I2={}` was replayed as `_I1={0}`, producing a five-argument pair construction. The fixed target and its expected-failure companion both pass. | All owner, strict, broad, cache, reparse, audit, warning, final graph, and frozen performance gates pass. | measured with the complete preserved frozen closure; no parent or live header was measured | `(this commit)` |
 | fixed | Parameter member-template candidate lifetime after class completion | Acquiring one member-function-template instantiation can complete and rebuild the owning class, invalidating raw candidate bindings retained for the remaining overload set. The call path now detects that exact invalidation, repeats typed member lookup by the already retained member name, filters for live bindings, and discards a returned binding if completion invalidated it. Noninvalidating member paths and free functions remain untouched. | Exact Boost.Graph `read_graphviz_new.cpp` replay is the controlled proof; smaller attempts did not reproduce the required class-completion lifetime transition | The saved pre-fix compiler passes one Graph replay and segfaults on the second; the crash trace enters same-entity comparison through a freed reference-only member binding. The narrow fix passes two forced B2 replays and six direct compiles at three-way concurrency. | The six direct compiles use 883--908 MB RSS each with zero swaps; the full Parameter graph, owner, strict, broad, reparse, audit, warning, and frozen gates pass. | measured with the complete preserved frozen closure; the full graph peaks at 887,111,680 B with zero swaps | `(this commit)` |
+| fixed | Phoenix `adapt_function` function-type pack result | Function-type parameter-pack expansion selected one concrete pack element at a time but recursively substituted it with the original parameter metadata still marked as a pack. Argument lookup therefore expected the complete pack, failed on the scalar element vector, and retained the placeholder in nested types such as `W<A>::type`. The expansion now uses the existing scalarizing pack-element substitution helper; no cache, retry, source text, or retained representation is added. | `pa22/tests/general/400-function-type-pack-element-substitution.t`, eight lines of header-free C++11 with no `<type_traits>` | Reverting only the helper call makes the checked-in reducer and the exact Phoenix actor reducer fail; restoring it makes both pass. The original 18-line class-argument reducer and direct Boost result wrapper pass as independent controls. | Clang 22 accepts the reducer under strict C++11; PA22 passes `312/312`; all 960 configured strict comparisons and the PA9-excluded broad report `4137/4137` pass, including PA37 `7/7`. All 23 text-reparse categories and 31 audit/performance unit tests pass. Twelve cache modes emit byte-identical LowIR. Focused forced `adapt_function` passes in 21.42s at 460,378,112 B maximum RSS with zero swaps. | -25.90% instructions, -28.11% RSS, and -36.61% footprint; candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-pack-scalar-candidate.json`; no parent or live header was measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-27`: The first forced Phoenix intake found 6367 targets and 117
+  compile failures. The initial `adapt_function` blocker was not retained
+  memory or stale source syntax: function-type pack expansion selected a
+  scalar argument while leaving its parameter descriptor marked as a pack.
+  Reusing the existing scalarizing helper fixes the exact algorithm in one
+  call site. An extreme minimization pass removed 148 lines of unnecessary
+  typed-syntax safeguards; the final production diff is only that call-site
+  change, backed by an eight-line header-free PA22 C++11 reducer.
+
+  The post-fix three-job full graph updates 628 targets, records 157 passing
+  actions, skips 152 dependent targets, and fails 52 targets (51 compiler
+  failures) in 1170.78s; log
+  `/private/tmp/boost-frontier-v2-suite-083-phoenix-scalar-fix-full.log`.
+  Its reported 1,361,690,624 B maximum is the concurrent process-tree peak,
+  not one translation unit: a live sample showed approximately 545, 425, and
+  401 MB compiler children at once, matching the aggregate. Individual
+  children release, process swaps are zero, and system swap remains exactly
+  849 MiB. The next ordered failure is `if_else_tests` actor assignment.
 
 - `2026-07-27`: Closed the supported C++11 Boost.Parameter graph, classified
   C++17-only Boost.Parser and C++14-only Boost.PFR as `skipped-language`, and
