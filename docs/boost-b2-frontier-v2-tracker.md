@@ -16,8 +16,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - completed suites: `82 / 147`
 - current cursor: `#83 libs/phoenix/test`
 - active compiler frontiers: all four investigated Bind compatibility targets
-  pass. The complete forced Phoenix graph replay is next to re-establish the
-  earliest remaining independent compiler frontier
+  pass. The complete forced Phoenix graph leaves `bug4853`, `bug5968`, and the
+  `bind_tests_advanced` runtime mismatch; `bug4853` is the earliest
+  compiler-owned frontier
 
 ## Baseline Gates
 
@@ -326,7 +327,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 80 | `libs/parameter/test` | pass | `(this commit)` | The final forced `pch=off` C++11 graph finds 2676 targets, updates all 229 requested targets, passes every positive compile/link/runtime action, handles deliberate compile failures as failed-as-expected, and exits successfully in 330.81s; log `/private/tmp/boost-frontier-v2-suite-080-parameter-final-forced.log`. Maximum RSS is 887,111,680 B with zero process swaps, every compiler child releases, and system swap remains exactly 849 MiB. | The closure repairs typed substitution order, qualified dependent non-deduced contexts, concrete class and alias failure categorization, required-owner `static_assert` evaluation, direct non-type value-pack forwarding, string-literal array-reference casts, and one narrowly scoped stale member-template candidate after class completion. Two compact header-free C++11 reducers cover the independently reducible language rules; neither uses `<type_traits>`. PA16/PA21/PA22 pass `756/756`; all 960 configured strict comparisons pass; the PA9-excluded direct report passes `4136/4136`, including PA37 `7/7`. All 23 text-reparse categories, 20 audit tests, cache parity, placement review, a warning-clean Homebrew Clang 22 build, and `git diff --check` pass. The existing PA22 ref changes only in declaration order for the principled correction that leading function-return substitution precedes later parameters; instructions and symbols are unchanged. The preserved immutable frozen-source/header gate records -26.02% instructions, -27.76% RSS, and -35.83% footprint. |
 | 81 | `libs/parser/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/parser/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. |
 | 82 | `libs/pfr/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/pfr/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. The cursor advances directly to C++03-declared Boost.Phoenix. |
-| 83 | `libs/phoenix/test` | frontier | `(this commit)` | The post-`switch_tests` Clang-pinned forced graph found 6367 targets, updated 832, and completed in 1278.21s with 11 failed actions at 1,484,349,440 B maximum RSS and zero process swaps; log `/private/tmp/boost-frontier-v2-suite-083-post-switch-full-clang.log`. The reference-cast group is closed. A qualified typedef in an alias target then lost its non-type pack argument during deduction; after preserving and resolving that typed syntax, object emission exposed a separate collision because declarator-to-ABI conversion omitted member-function `const`. The three-target replay passes `bind_interoperation_test`, `bind_ref_test`, and `bind_mf2_test` in 44.82s at 879,222,784 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bind-mangle-focused-clang.log`. | The fourth target's apparent `get_pointer` lookup error was unreachable. Explicit `U=::V` concretized `U const*`, but spelling fallback then mistook that concrete `::V` for the separate template parameter `V`, rejected the preferred overload, and instantiated the ellipsis fallback. Semantic identity gating fixes deduction; exact `bind_test` passes compile/link/runtime in 109.48s at 1,873,051,648 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bind-test-typed-identity-clang.log`. Homebrew Clang reproduces `bug_000008`'s undefined Boost.Thread link exactly because Boost 1.91's Jamfile typo is already fixed upstream, so no Boost edit is made. The complete forced graph replay is next; every actual compiler and host command remains cppgm plus Homebrew Clang 22 despite Boost.Build's legacy `gcc.*` action labels. |
+| 83 | `libs/phoenix/test` | frontier | `(this commit)` | The post-`switch_tests` Clang-pinned forced graph found 6367 targets, updated 832, and completed in 1278.21s with 11 failed actions at 1,484,349,440 B maximum RSS and zero process swaps; log `/private/tmp/boost-frontier-v2-suite-083-post-switch-full-clang.log`. The reference-cast group is closed. A qualified typedef in an alias target then lost its non-type pack argument during deduction; after preserving and resolving that typed syntax, object emission exposed a separate collision because declarator-to-ABI conversion omitted member-function `const`. The three-target replay passes `bind_interoperation_test`, `bind_ref_test`, and `bind_mf2_test` in 44.82s at 879,222,784 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bind-mangle-focused-clang.log`. | The fourth target's apparent `get_pointer` lookup error was unreachable. Explicit `U=::V` concretized `U const*`, but spelling fallback then mistook that concrete `::V` for the separate template parameter `V`, rejected the preferred overload, and instantiated the ellipsis fallback. Semantic identity gating fixes deduction; exact `bind_test` passes compile/link/runtime in 109.48s at 1,873,051,648 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bind-test-typed-identity-clang.log`. The final forced replay finds 6367 targets, requests 832 updates, updates 819, skips 9, and fails exactly four: the known external `bug_000008` link typo plus compiler-owned `bug4853`, `bug5968`, and `bind_tests_advanced`. It completes in 1320.02s at 1,850,249,216 B maximum RSS with zero process swaps; log `/private/tmp/boost-frontier-v2-suite-083-post-bind-full-clang.log`. System swap remains exactly 817 MiB. Every actual compiler and host command remains cppgm plus Homebrew Clang 22 despite Boost.Build's legacy `gcc.*` action labels. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
@@ -334,24 +335,27 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 ## Active Frontier
 
 - suite: `#83 libs/phoenix/test`
-- focused target: complete forced `libs/phoenix/test` replay; all four
-  investigated Bind compatibility targets are closed
+- focused target: `libs/phoenix/test//bug4853`; all four investigated Bind
+  compatibility targets are closed
 - last closed suite: `#82 libs/pfr/test` (`skipped-language`)
-- failure phase: pending graph replay after the Bind compatibility closure
-- diagnostic: none active until the replay re-establishes ordered failures;
-  previously independent `bug4853`, `bug5968`, and `bind_tests_advanced`
-  evidence remains to be rechecked
+- failure phase: semantic conditional-expression analysis while instantiating
+  `boost::optional<T>::get`
+- diagnostic: `unsupported conditional operands` at
+  `boost/optional/detail/union_optional.hpp:579` while returning a const
+  Phoenix actor reference
 - reduced repro: none active
-- owning PA/cluster: pending next ordered failure
-- implementation area: pending next ordered failure
-- performance risk: moderate because `bind_test` reaches 1.87 GB RSS on its
-  now-successful full compile; keep sampling and swap checks active
+- owning PA/cluster: pending reduction of conditional-operator common type and
+  reference-category behavior
+- implementation area: typed conditional operands, conversion ranking, and
+  result value category
+- performance risk: moderate; the final three-way graph peaks at 1.85 GB RSS
+  with zero process swaps and unchanged system swap, but keep sampling the
+  focused compile
 - language lane: Boost.Phoenix declares C++03 in
   `libs/phoenix/meta/libraries.json`, so
   it is supported and must run
-- next action: run the complete forced Clang-pinned Phoenix graph, classify its
-  earliest remaining compiler failure, and keep `bug_000008` recorded as
-  upstream-blocked without editing Boost
+- next action: compare exact `bug4853` under cppgm and Homebrew Clang 22, reduce
+  the conditional-expression failure, and fix only the earliest typed defect
 
 ## Fix Ledger
 
@@ -636,6 +640,20 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Phoenix explicit-argument concrete type versus same-spelled template parameter | After explicit `U=::V`, deduction correctly resolved `U const*` to a pointer to the concrete class. The generic direct-parameter probe then matched that concrete class back to the distinct template parameter named `V` by display spelling, conflicting with the already deduced `V=::V const` and discarding the exact overload. Direct deduction now recognizes only the retained semantic template-parameter identity; concrete named types proceed through ordinary exact type comparison. No source text, retry, cache, eager instantiation, or Boost-specific path is added. | `pa22/tests/general/100-explicit-type-argument-name-collision-deduction.t`, 13 lines / 259 bytes, header-free C++11 with no `<type_traits>` and a 722-byte LowIR reference | The pre-fix trace shows `pointer to const struct V` against the identical actual type, then `explicit-deduction-failed`; only the ellipsis candidate remains and its deliberately invalid body is instantiated. Renaming the distinct template parameter `V` to `W` makes the pre-fix compiler pass. Homebrew Clang 22 accepts the original warning-clean and emits the same selected symbol. | Exact `bind_test` passes compile/link/runtime in 109.48s at 1,873,051,648 B maximum RSS with zero swaps. PA22 passes `315/315`; all 960 strict comparisons and the clean broad direct-text report's `4155/4155` pass. All 23 reparse categories and 20 audit tests pass; normal, all eleven individual cache-off modes, and all-off emit byte-identical LowIR at SHA-256 `54ef068cfd0bc557cd314bb8b87323303fe5aecd16002159e3765eb0e12889d5`. Placement identifies PA22:100 as the exact owner. | -26.06% instructions, -27.89% RSS, and -36.19% footprint; three-run immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-name-collision-candidate-3run.json`; no parent or live header measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-27`: Replayed the complete forced Phoenix graph after closing all
+  four investigated Boost.Bind compatibility targets. The Clang-pinned run
+  finds 6367 targets, requests 832 updates, updates 819, skips 9, and fails
+  exactly four targets in 1320.02s. `bug_000008` remains an upstream Boost
+  Jamfile link typo reproduced by Homebrew Clang; the compiler-owned remainder
+  is `bug4853`, `bug5968`, and the `bind_tests_advanced` runtime mismatch.
+  `bug4853` is earliest in graph order and fails conditional-expression
+  analysis in `boost::optional<T>::get`. Maximum RSS is 1,850,249,216 B with
+  zero process swaps, while system swap remains exactly 817 MiB. The live
+  process list and toolchain wrapper confirm that Boost.Build's visible
+  `gcc.compile.*` and `gcc.link` strings are legacy action names: cppgm handles
+  source compilation and Homebrew Clang 22 handles host C, assembly, and
+  linking.
 
 - `2026-07-27`: Closed Phoenix `bind_test` by separating a concrete type from a
   same-spelled template parameter during explicit function-template deduction.
@@ -3417,5 +3435,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/phoenix/test
+  ./run-cppgm-b2.sh pch=off -a libs/phoenix/test//bug4853
 ```
