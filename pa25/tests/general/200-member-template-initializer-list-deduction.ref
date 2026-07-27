@@ -13,9 +13,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $a
     %t3 = addr $argobj__1
     %t4 = addr $initlist__2
-    call void @item__item__ov2(%t4, 1)
+    call void @item__item__ov4(%t4, 1)
     %t5 = index i8 %t4, 4
-    call void @item__item__ov2(%t5, 2)
+    call void @item__item__ov4(%t5, 2)
     store ptr %t4, %t3
     %t6 = index i8 %t3, 8
     store i64 2, %t6
@@ -90,7 +90,7 @@ function @any_like__holder_payload___holder__ov2(%this : ptr, %il : obj<16x8>, %
     call void @payload__payload__ov2(%t3, $argobj__1, %t7)
     return void
 }
-function @item__item__ov2(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN4itemC1Ei] {
+function @item__item__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN4itemC1Ei] {
   slot $this : ptr
   slot $value : i32
 
@@ -132,5 +132,5 @@ function @std__initializer_list_item___size(%this : ptr) -> i64 [binding=weak, o
     return i64 %t3
 }
 alias object _ZN8any_like6holderI7payloadEC2I4itemJRiEEESt16initializer_listIT_EDpOT0_ = @any_like__holder_payload___holder__ov2
-alias object _ZN4itemC2Ei = @item__item__ov2
+alias object _ZN4itemC2Ei = @item__item__ov4
 alias object _ZN7payloadC2ESt16initializer_listI4itemEi = @payload__payload__ov2

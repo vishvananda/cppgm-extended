@@ -34,6 +34,7 @@
 #include "semantic_hotspot.h"
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
+#include "semantic_overload.h"
 #include "semantic_consteval.h"
 #include "semantic_template_function.h"
 #include "semantic_template_variable.h"
@@ -10654,10 +10655,15 @@ bool leaf_argument_can_bind_to_parameter(template_api::TemplateServices & servic
                                          Scope & scope,
                                          const TypePtr & parameter_type,
                                          const semantic_conversion::ExprInfo & expr_info,
-                                         bool allow_user_defined_conversion)
+                                         bool allow_user_defined_conversion,
+                                         semantic_conversion::ConversionRank * rank_out)
 {
-  if(semantic_conversion::standard_conversion_rank(parameter_type, expr_info) !=
-     semantic_conversion::CR_BAD) {
+  const semantic_conversion::ConversionRank standard_rank =
+      semantic_conversion::standard_conversion_rank(parameter_type, expr_info);
+  if(standard_rank != semantic_conversion::CR_BAD) {
+    if(rank_out) {
+      *rank_out = standard_rank;
+    }
     return true;
   }
   if(!allow_user_defined_conversion ||
@@ -10673,7 +10679,8 @@ bool leaf_argument_can_bind_to_parameter(template_api::TemplateServices & servic
       semantic_policy::without_user_defined_body_instantiation();
   options.materialize_user_defined_output = false;
   try {
-    return semantic_conversion::try_argument_conversion(
+    const bool converted_ok =
+        semantic_conversion::try_argument_conversion(
                *services.semantic_context,
                scope,
                parameter_type,
@@ -10681,7 +10688,11 @@ bool leaf_argument_can_bind_to_parameter(template_api::TemplateServices & servic
                converted,
                rank,
                options) &&
-           rank != semantic_conversion::CR_BAD;
+        rank != semantic_conversion::CR_BAD;
+    if(converted_ok && rank_out) {
+      *rank_out = rank;
+    }
+    return converted_ok;
   } catch(const logic_error &) {
     return false;
   }
@@ -10710,12 +10721,27 @@ bool select_unique_leaf_function_binding(
     bool allow_user_defined_conversions,
     FunctionBinding *& out)
 {
+  struct LeafCandidate
+  {
+    FunctionBinding * function = nullptr;
+    vector<semantic_conversion::ConversionRank> ranks;
+  };
+
   out = nullptr;
+  vector<LeafCandidate> viable;
+  viable.reserve(functions.size());
   for(size_t i = 0; i < functions.size(); ++i) {
     FunctionBinding * candidate = functions[i];
-    if(!candidate || candidate->is_method != is_method_call ||
-       !binding_supports_leaf_call_shape(*candidate, arg_infos.size()) ||
-       candidate->is_volatile_method) {
+    if(!candidate) {
+      continue;
+    }
+    if(candidate->is_method != is_method_call) {
+      continue;
+    }
+    if(!binding_supports_leaf_call_shape(*candidate, arg_infos.size())) {
+      continue;
+    }
+    if(candidate->is_volatile_method) {
       continue;
     }
     if(is_method_call) {
@@ -10737,6 +10763,9 @@ bool select_unique_leaf_function_binding(
     }
 
     bool matches = true;
+    LeafCandidate match;
+    match.function = candidate;
+    match.ranks.reserve(arg_infos.size());
     const bool allow_candidate_user_defined_conversions =
         allow_user_defined_conversions ||
         leaf_function_binding_has_friend_lookup_surface(*candidate);
@@ -10745,25 +10774,169 @@ bool select_unique_leaf_function_binding(
       semantic_conversion::ExprInfo expr_info;
       expr_info.type = arg_infos[arg_index].first;
       expr_info.category = arg_infos[arg_index].second;
+      semantic_conversion::ConversionRank rank =
+          semantic_conversion::CR_BAD;
       if(!leaf_argument_can_bind_to_parameter(services,
                                               scope,
                                               candidate->params[param_index].second,
                                               expr_info,
-                                              allow_candidate_user_defined_conversions)) {
+                                              allow_candidate_user_defined_conversions,
+                                              &rank)) {
         matches = false;
         break;
       }
+      match.ranks.push_back(rank);
     }
     if(!matches) {
       continue;
     }
-    if(out) {
-      out = nullptr;
-      return false;
-    }
-    out = candidate;
+    viable.push_back(match);
   }
 
+  if(viable.empty()) {
+    return false;
+  }
+  if(viable.size() == 1) {
+    out = viable[0].function;
+    return out != nullptr;
+  }
+
+  vector<semantic_conversion::ExprInfo> partial_order_arguments;
+  partial_order_arguments.reserve(arg_infos.size());
+  for(size_t i = 0; i < arg_infos.size(); ++i) {
+    semantic_conversion::ExprInfo argument;
+    argument.type = arg_infos[i].first;
+    argument.category = arg_infos[i].second;
+    partial_order_arguments.push_back(argument);
+  }
+
+  const auto compare_candidates =
+      [&](const LeafCandidate & lhs, const LeafCandidate & rhs) -> int
+  {
+    bool lhs_better = false;
+    bool rhs_better = false;
+    for(size_t arg_index = 0; arg_index < arg_infos.size(); ++arg_index) {
+      if(arg_index >= lhs.ranks.size() || arg_index >= rhs.ranks.size()) {
+        return 0;
+      }
+      if(lhs.ranks[arg_index] < rhs.ranks[arg_index]) {
+        lhs_better = true;
+        continue;
+      }
+      if(lhs.ranks[arg_index] > rhs.ranks[arg_index]) {
+        rhs_better = true;
+        continue;
+      }
+
+      const size_t lhs_param_index =
+          (lhs.function->is_method ? 1u : 0u) + arg_index;
+      const size_t rhs_param_index =
+          (rhs.function->is_method ? 1u : 0u) + arg_index;
+      semantic_conversion::ExprInfo arg;
+      arg.type = arg_infos[arg_index].first;
+      arg.category = arg_infos[arg_index].second;
+      int preference =
+          semantic_conversion::compare_reference_binding_preference(
+              lhs.function->params[lhs_param_index].second,
+              arg,
+              rhs.function->params[rhs_param_index].second,
+              arg);
+      if(preference == 0) {
+        preference =
+            semantic_conversion::compare_qualification_conversion_preference(
+                lhs.function->params[lhs_param_index].second,
+                arg,
+                rhs.function->params[rhs_param_index].second,
+                arg);
+      }
+      if(preference == 0) {
+        preference = semantic_conversion::compare_standard_conversion_preference(
+            lhs.function->params[lhs_param_index].second,
+            arg,
+            rhs.function->params[rhs_param_index].second,
+            arg);
+      }
+      if(preference < 0) {
+        lhs_better = true;
+      } else if(preference > 0) {
+        rhs_better = true;
+      }
+    }
+    if(lhs.function->is_method && rhs.function->is_method &&
+       lhs.function->params.size() > 0 && rhs.function->params.size() > 0 &&
+       object_type) {
+      semantic_conversion::ExprInfo object_arg;
+      object_arg.type = object_is_const ?
+          apply_cv(object_type, true, false) :
+          object_type;
+      object_arg.category = base_is_lvalue ?
+          semantic_conversion::VC_LVALUE :
+          semantic_conversion::VC_PRVALUE;
+      int preference =
+          semantic_conversion::compare_reference_binding_preference(
+              lhs.function->params[0].second,
+              object_arg,
+              rhs.function->params[0].second,
+              object_arg);
+      if(preference == 0) {
+        preference =
+            semantic_conversion::compare_qualification_conversion_preference(
+                lhs.function->params[0].second,
+                object_arg,
+                rhs.function->params[0].second,
+                object_arg);
+      }
+      if(preference == 0) {
+        preference = semantic_conversion::compare_standard_conversion_preference(
+            lhs.function->params[0].second,
+            object_arg,
+            rhs.function->params[0].second,
+            object_arg);
+      }
+      if(preference < 0) {
+        lhs_better = true;
+      } else if(preference > 0) {
+        rhs_better = true;
+      }
+    }
+    if(lhs_better != rhs_better) {
+      return lhs_better ? -1 : 1;
+    }
+    if(!lhs_better &&
+       lhs.function->source_template != rhs.function->source_template) {
+      if(!lhs.function->source_template) {
+        return -1;
+      }
+      if(!rhs.function->source_template) {
+        return 1;
+      }
+      if(services.semantic_context) {
+        const int partial_order =
+            semantic_overload::compare_resolved_function_template_partial_order(
+                *services.semantic_context,
+                lhs.function,
+                partial_order_arguments,
+                rhs.function);
+        if(partial_order != 0) {
+          return partial_order;
+        }
+      }
+    }
+    return 0;
+  };
+
+  size_t winner = 0;
+  for(size_t i = 1; i < viable.size(); ++i) {
+    if(compare_candidates(viable[i], viable[winner]) < 0) {
+      winner = i;
+    }
+  }
+  for(size_t i = 0; i < viable.size(); ++i) {
+    if(i != winner && compare_candidates(viable[winner], viable[i]) >= 0) {
+      return false;
+    }
+  }
+  out = viable[winner].function;
   return out != nullptr;
 }
 
@@ -11926,12 +12099,30 @@ bool lookup_leaf_expression_type_category(template_api::TemplateServices & servi
     }
 
     if(node_has_simple_type(expr, OP_STAR)) {
-      if(converted_type->kind != Type::TK_POINTER || !converted_type->inner) {
-        return false;
+      if(converted_type->kind == Type::TK_POINTER && converted_type->inner) {
+        out = converted_type->inner;
+        category = semantic_conversion::VC_LVALUE;
+        return true;
       }
-      out = converted_type->inner;
-      category = semantic_conversion::VC_LVALUE;
-      return true;
+
+      semantic_conversion::ExprInfo source;
+      source.type = operand_type;
+      source.category = operand_category;
+      semantic_conversion::ExprInfo dereferenced;
+      bool lookup_complete = true;
+      if(pointer_like_dereference_result(
+             service_type_system(services),
+             &services,
+             template_api::make_template_environment(scope),
+             source,
+             dereferenced,
+             lookup_complete) &&
+         dereferenced.type) {
+        out = dereferenced.type;
+        category = dereferenced.category;
+        return true;
+      }
+      return false;
     }
   }
 
@@ -11945,6 +12136,72 @@ bool lookup_leaf_expression_type_category(template_api::TemplateServices & servi
                services, scope, expr.children[0], ignored, ignored_category) &&
            lookup_leaf_expression_type_category(
                services, scope, expr.children[1], out, category);
+  }
+
+  if(expr.kind == CppAstKind::binary_expression &&
+     expr.children.size() == 2 &&
+     (node_has_simple_type(expr, OP_EQ) ||
+      node_has_simple_type(expr, OP_NE) ||
+      node_has_simple_type(expr, OP_LT) ||
+      node_has_simple_type(expr, OP_GT) ||
+      node_has_simple_type(expr, OP_LE) ||
+      node_has_simple_type(expr, OP_GE))) {
+    TypePtr lhs_type;
+    TypePtr rhs_type;
+    semantic_conversion::ValueCategory lhs_category =
+        semantic_conversion::VC_PRVALUE;
+    semantic_conversion::ValueCategory rhs_category =
+        semantic_conversion::VC_PRVALUE;
+    if(!lookup_leaf_expression_type_category(
+           services, scope, expr.children[0], lhs_type, lhs_category) ||
+       !lookup_leaf_expression_type_category(
+           services, scope, expr.children[1], rhs_type, rhs_category) ||
+       !lhs_type ||
+       !rhs_type) {
+      return false;
+    }
+
+    const char * operator_name =
+        node_has_simple_type(expr, OP_EQ) ? "operator==" :
+        node_has_simple_type(expr, OP_NE) ? "operator!=" :
+        node_has_simple_type(expr, OP_LT) ? "operator<" :
+        node_has_simple_type(expr, OP_GT) ? "operator>" :
+        node_has_simple_type(expr, OP_LE) ? "operator<=" :
+                                           "operator>=";
+    CppAstNode callee;
+    callee.kind = CppAstKind::id_expression;
+    callee.value = operator_name;
+    CppAstNode arguments;
+    arguments.kind = CppAstKind::paren_argument_list;
+    arguments.children.push_back(expr.children[0]);
+    arguments.children.push_back(expr.children[1]);
+    CppAstNode call;
+    call.kind = CppAstKind::call_expression;
+    call.children.push_back(callee);
+    call.children.push_back(arguments);
+    if(lookup_leaf_call_expression_type(
+           services, scope, call, out, category) && out) {
+      return true;
+    }
+
+    TypePtr lhs_value = strip_top_level_cv(remove_reference_type(lhs_type));
+    TypePtr rhs_value = strip_top_level_cv(remove_reference_type(rhs_type));
+    if(!lhs_value || !rhs_value) {
+      return false;
+    }
+    const bool arithmetic_comparison =
+        (is_integral_type(lhs_value) || is_floating_type(lhs_value)) &&
+        (is_integral_type(rhs_value) || is_floating_type(rhs_value));
+    const bool matching_pointer_comparison =
+        is_pointer_type(lhs_value) &&
+        is_pointer_type(rhs_value) &&
+        type_equals(lhs_value, rhs_value);
+    if(!arithmetic_comparison && !matching_pointer_comparison) {
+      return false;
+    }
+    out = make_fundamental(FT_BOOL);
+    category = semantic_conversion::VC_PRVALUE;
+    return true;
   }
 
   return false;

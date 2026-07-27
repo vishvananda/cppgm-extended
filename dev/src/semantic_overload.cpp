@@ -2363,6 +2363,9 @@ struct SharedCallArgumentAnalyzer
         child.kind == CppAstKind::lambda_expression &&
         target_class &&
         target_class->is_lambda_closure;
+    const bool prefer_target_aware_analysis =
+        use_target &&
+        should_use_target_aware_argument_analysis(child, target);
     const auto note_argument_path =
         [&](const char * mode, const char * reason) -> void
         {
@@ -2381,6 +2384,7 @@ struct SharedCallArgumentAnalyzer
           parser_trace::note("overload", std::string(), trace.str());
         };
     if(!prefer_lambda_closure_target &&
+       !prefer_target_aware_analysis &&
        hints &&
        index < hints->args.size() &&
        hints->args[index]) {
@@ -2398,8 +2402,7 @@ struct SharedCallArgumentAnalyzer
       }
       note_argument_path("generic", "non-closure-target");
     }
-    if(use_target &&
-       should_use_target_aware_argument_analysis(child, target) &&
+    if(prefer_target_aware_analysis &&
        ctx.try_analyze_target_aware_expression(scope, child, target, expr)) {
       if(child.kind == CppAstKind::lambda_expression) {
         note_argument_path("target-aware", "target-expression");
@@ -8697,6 +8700,40 @@ bool call_argument_list_is_parenthesized(SemanticContext & ctx,
 
 }  // namespace
 
+int compare_resolved_function_template_partial_order(
+    SemanticContext & ctx,
+    FunctionBinding * current,
+    const vector<ExprInfo> & arguments,
+    FunctionBinding * best)
+{
+  if(!current || !best ||
+     current->is_method || best->is_method ||
+     !current->source_template || !best->source_template) {
+    return 0;
+  }
+
+  const auto make_match =
+      [&arguments](FunctionBinding * function) -> CandidateMatch
+  {
+    CandidateMatch match;
+    match.function = function;
+    match.call_args = arguments;
+    match.source_args = arguments;
+    match.explicit_arg_count = arguments.size();
+    match.params.reserve(function->params.size());
+    for(size_t i = 0; i < function->params.size(); ++i) {
+      match.params.push_back(function->params[i].second);
+    }
+    return match;
+  };
+
+  const CandidateMatch current_match = make_match(current);
+  const CandidateMatch best_match = make_match(best);
+  return compare_function_template_partial_order_preference(ctx,
+                                                            current_match,
+                                                            best_match);
+}
+
 namespace {
 
 bool function_binding_accepts_argument_count(const FunctionBinding * binding,
@@ -10010,13 +10047,17 @@ void append_function_template_call_candidates_impl(
           arg_options.push_back(overload_options);
           continue;
         }
-        if(target_member_function_pointer_type(target) &&
-           collect_overloaded_member_pointer_argument_options(ctx,
-                                                              argument_scope,
-                                                              *arg_nodes[source_arg_index],
-                                                              overload_options)) {
-          arg_options.push_back(overload_options);
-          continue;
+        if(TypePtr member_pointer_target =
+               target_member_function_pointer_type(target)) {
+          if(collect_overloaded_member_pointer_argument_options(
+                 ctx,
+                 argument_scope,
+                 *arg_nodes[source_arg_index],
+                 overload_options,
+                 member_pointer_target)) {
+            arg_options.push_back(overload_options);
+            continue;
+          }
         }
         ExprInfo reference_source;
         if(target && is_reference_type(target)) {
@@ -10723,6 +10764,50 @@ bool constructor_template_pattern_is_initializer_list_candidate(
   return ctx.is_initializer_list_type(first_param, nullptr, nullptr);
 }
 
+bool class_has_initializer_list_constructor_candidate(SemanticContext & ctx,
+                                                      ClassInfo & info)
+{
+  bool found = false;
+  append_constructor_method_candidates(
+      info,
+      [&](FunctionBinding * candidate)
+      {
+        TypePtr function_type =
+            candidate ? strip_top_level_cv(candidate->type) : TypePtr();
+        if(function_type &&
+           function_type->kind == Type::TK_FUNCTION &&
+           function_type->params.size() > 1 &&
+           ctx.is_initializer_list_type(
+               strip_top_level_cv(remove_reference_type(function_type->params[1])),
+               nullptr,
+               nullptr)) {
+          found = true;
+        }
+      });
+  if(found) {
+    return true;
+  }
+
+  vector<FunctionTemplateDecl *> constructor_templates =
+      collect_constructor_templates(info);
+  const bool has_exact_owner =
+      constructor_template_set_has_exact_owner(constructor_templates, info);
+  for(size_t i = 0; i < constructor_templates.size(); ++i) {
+    FunctionTemplateDecl * decl = constructor_templates[i];
+    if(!decl ||
+       (has_exact_owner &&
+        decl->declaring_scope &&
+        decl->declaring_scope->class_info &&
+        decl->declaring_scope->class_info != &info)) {
+      continue;
+    }
+    if(constructor_template_pattern_is_initializer_list_candidate(ctx, *decl)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 template <typename AppendCandidate>
 void append_constructor_template_candidates(
     SemanticContext & ctx,
@@ -11220,8 +11305,7 @@ bool append_constructor_default_arguments(
     try
     {
       ArgumentConversionOptions conversion_options =
-          semantic_policy::without_user_defined_body_instantiation(
-              options.allow_explicit);
+          semantic_policy::without_user_defined_body_instantiation();
       conversion_options.materialize_standard_adjustments =
           !options.instantiate_bodies;
       if(!ctx.try_argument_conversion(conversion_scope,
@@ -11317,9 +11401,12 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
   semantic_class_model::ensure_implicit_special_members(ctx, target_info);
   const std::size_t aggregate_count =
       semantic_class_model::aggregate_element_count(target_info);
-  if(source_args.size() == aggregate_count) {
+  if(!options.initializer_list_only &&
+     source_args.size() == aggregate_count) {
     semantic_class_model::ensure_implicit_aggregate_constructor(ctx, target_info);
-  } else if(options.allow_partial_aggregate && source_args.size() < aggregate_count) {
+  } else if(!options.initializer_list_only &&
+            options.allow_partial_aggregate &&
+            source_args.size() < aggregate_count) {
     semantic_class_model::ensure_implicit_aggregate_constructor(ctx,
                                                                 target_info,
                                                                 source_args.size());
@@ -11380,7 +11467,7 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
       ArgumentConversionOptions conversion_options(options.allow_user_defined,
                                                    false,
                                                    true,
-                                                   options.allow_explicit);
+                                                   false);
       conversion_options.materialize_standard_adjustments =
           !options.instantiate_bodies;
       try
@@ -11698,9 +11785,12 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
   semantic_class_model::ensure_implicit_special_members(ctx, target_info);
   const std::size_t aggregate_count =
       semantic_class_model::aggregate_element_count(target_info);
-  if(effective_arg_nodes.size() == aggregate_count) {
+  if(!options.initializer_list_only &&
+     effective_arg_nodes.size() == aggregate_count) {
     semantic_class_model::ensure_implicit_aggregate_constructor(ctx, target_info);
-  } else if(!effective_arg_nodes.empty() && effective_arg_nodes.size() < aggregate_count) {
+  } else if(!options.initializer_list_only &&
+            !effective_arg_nodes.empty() &&
+            effective_arg_nodes.size() < aggregate_count) {
     semantic_class_model::ensure_implicit_aggregate_constructor(ctx,
                                                                 target_info,
                                                                 effective_arg_nodes.size());
@@ -11755,6 +11845,8 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
       }
       return;
     }
+    const bool class_copy_or_move_candidate =
+        constructor_is_class_copy_or_move_candidate(target_info, candidate);
 
     TypePtr function_type = strip_top_level_cv(candidate->type);
     if(!function_type || function_type->kind != Type::TK_FUNCTION ||
@@ -11843,7 +11935,29 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
             ((effective_arg_nodes[j]->kind == CppAstKind::lambda_expression &&
               target_class && target_class->is_lambda_closure) ||
              should_use_target_aware_argument_analysis(*effective_arg_nodes[j], target));
-        if(needs_target_aware_analysis) {
+        const vector<const CppAstNode *> copy_move_list_elements =
+            class_copy_or_move_candidate &&
+                    effective_arg_nodes[j]->kind == CppAstKind::braced_init_list ?
+                initializer_argument_nodes(*effective_arg_nodes[j]) :
+                vector<const CppAstNode *>();
+        const bool analyze_copy_move_list_element =
+            copy_move_list_elements.size() == 1 &&
+            copy_move_list_elements[0] != effective_arg_nodes[j] &&
+            copy_move_list_elements[0]->kind != CppAstKind::braced_init_list;
+        if(analyze_copy_move_list_element) {
+          // A one-element braced argument to a copy/move constructor is
+          // reference-bound from that element.  Analyzing the entire list for
+          // the constructor's class target would recursively construct a new
+          // object and make the copy/move candidate spuriously viable.
+          source_arg =
+              argument_analyzer.analyze_subexpression(*copy_move_list_elements[0]);
+        } else if(class_copy_or_move_candidate &&
+                  effective_arg_nodes[j]->kind == CppAstKind::braced_init_list) {
+          candidate_rejection =
+              candidate->name + ": copy/move list argument is not a single expression";
+          okay = false;
+          break;
+        } else if(needs_target_aware_analysis) {
           source_arg = argument_analyzer.analyze_argument(j, target, true);
         } else if(!argument_analyzer.analyze_generic_arg(j, source_arg, arg_error)) {
           candidate_rejection =
@@ -11867,7 +11981,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
         ArgumentConversionOptions conversion_options(true,
                                                     false,
                                                     true,
-                                                    options.allow_explicit);
+                                                    false);
         conversion_options.materialize_standard_adjustments =
             !options.instantiate_bodies;
         try
@@ -11930,6 +12044,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
         }
         if(has_fixed_param &&
            needs_target_aware_analysis &&
+           !analyze_copy_move_list_element &&
            effective_arg_nodes[j]->kind == CppAstKind::braced_init_list &&
            target_base &&
            target_class &&
@@ -12194,25 +12309,28 @@ FunctionBinding * select_constructor_for_direct_braced_init(
     const ConstructorSelectionOptions & options)
 {
   ScopedCallSemConstructionPath construction_path("overload.direct-braced-constructor");
+  ClassInfo * target_info = canonicalize_constructor_target(ctx, scope, info);
   vector<const CppAstNode *> single_arg_node(1, &direct_braced_init);
   std::string single_arg_error;
-  try
-  {
-    ConstructorSelectionOptions single_arg_options = options;
-    single_arg_options.initializer_list_only = true;
-    if(FunctionBinding * ctor =
-           select_constructor(ctx,
-                              scope,
-                              info,
-                              single_arg_node,
-                              args_out,
-                              single_arg_options)) {
-      return ctor;
+  if(class_has_initializer_list_constructor_candidate(ctx, *target_info)) {
+    try
+    {
+      ConstructorSelectionOptions single_arg_options = options;
+      single_arg_options.initializer_list_only = true;
+      if(FunctionBinding * ctor =
+             select_constructor(ctx,
+                                scope,
+                                *target_info,
+                                single_arg_node,
+                                args_out,
+                                single_arg_options)) {
+        return ctor;
+      }
     }
-  }
-  catch(const SemanticSoftFailure & e)
-  {
-    single_arg_error = e.what();
+    catch(const SemanticSoftFailure & e)
+    {
+      single_arg_error = e.what();
+    }
   }
 
   vector<const CppAstNode *> expanded_arg_nodes =
@@ -12240,13 +12358,13 @@ FunctionBinding * select_constructor_for_direct_braced_init(
     }
     if(expanded_arg_nodes.size() == 1 &&
        expanded_arg_nodes[0]->kind == CppAstKind::braced_init_list &&
-       semantic_class_model::can_synthesize_aggregate_constructor(info) &&
-       semantic_class_model::aggregate_element_count(info) == 1) {
+       semantic_class_model::can_synthesize_aggregate_constructor(*target_info) &&
+       semantic_class_model::aggregate_element_count(*target_info) == 1) {
       expanded_options.synthesize_implicit_copy_move = false;
     }
     return select_constructor(ctx,
                               scope,
-                              info,
+                              *target_info,
                               expanded_arg_nodes,
                               args_out,
                               expanded_options);
@@ -14718,11 +14836,16 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
             }
             bool converted_from_member_pointer_option = false;
             vector<ExprInfo> member_pointer_options;
-            if(target_member_function_pointer_type(target) &&
-               collect_overloaded_member_pointer_argument_options(ctx,
-                                                                  scope,
-                                                                  *arg_nodes[j],
-                                                                  member_pointer_options)) {
+            if(TypePtr member_pointer_target =
+                   target_member_function_pointer_type(target)) {
+              collect_overloaded_member_pointer_argument_options(
+                  ctx,
+                  scope,
+                  *arg_nodes[j],
+                  member_pointer_options,
+                  member_pointer_target);
+            }
+            if(!member_pointer_options.empty()) {
               bool found_member_pointer_option = false;
               bool ambiguous_member_pointer_option = false;
               ExprInfo best_arg;

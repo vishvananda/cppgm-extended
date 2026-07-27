@@ -525,6 +525,20 @@ private:
     return lookup_namespace_member_in_qualified_scope(*current, qualified.name);
   }
 
+  Scope * lookup_qualifier_name(Scope & scope, const QualifiedName & qualified)
+  {
+    if(!qualified.rooted && qualified.qualifiers.empty()) {
+      return lookup_qualifier_unqualified(scope, qualified.name);
+    }
+    return lookup_qualified_generic<Scope *>(
+        scope,
+        qualified,
+        [this](Scope & target, const string & lookup_name) -> Scope *
+        {
+          return resolve_direct_qualifier(target, lookup_name);
+        });
+  }
+
   TypePtr lookup_qualified_type(Scope & scope, const QualifiedName & qualified)
   {
     const NamedTypeBinding * binding = lookup_qualified_generic<const NamedTypeBinding *>(
@@ -1217,27 +1231,49 @@ private:
       throw logic_error("function-definition missing children");
     }
 
+    Scope * parse_scope = &scope;
+    string definition_name;
+    const CppAstNode * identifier =
+        find_descendant_kind(*declarator, CppAstKind::identifier);
+    const QualifiedName * qualified =
+        identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
+    if(qualified && !qualified->qualifiers.empty()) {
+      QualifiedName owner;
+      owner.rooted = qualified->rooted;
+      owner.qualifiers.assign(qualified->qualifiers.begin(),
+                              qualified->qualifiers.end() - 1);
+      owner.name = qualified->qualifiers.back();
+      if(Scope * resolved = lookup_qualifier_name(scope, owner)) {
+        parse_scope = resolved;
+        definition_name = qualified->name;
+      }
+    }
+
     bool is_typedef = false;
     TypePtr base;
-    if(!parse_decl_spec(*specifiers, scope, is_typedef, base) || is_typedef) {
+    if(!parse_decl_spec(*specifiers, *parse_scope, is_typedef, base) || is_typedef) {
       throw logic_error("unsupported function decl-specifier-seq");
     }
 
     string name;
     TypePtr type;
-    if(!parse_declarator(scope, *declarator, base, name, type) ||
+    if(!parse_declarator(*parse_scope, *declarator, base, name, type) ||
        !type || strip_top_level_cv(type)->kind != Type::TK_FUNCTION) {
       throw logic_error("unsupported function declarator");
     }
 
-    add_binding(scope, BK_FUNCTION, name, type);
+    if(!definition_name.empty()) {
+      name = definition_name;
+    }
 
-    Scope & function_scope = append_child_scope(scope, Scope::SK_FUNCTION, name);
+    add_binding(*parse_scope, BK_FUNCTION, name, type);
+
+    Scope & function_scope = append_child_scope(*parse_scope, Scope::SK_FUNCTION, name);
 
     const TypePtr function_type = strip_top_level_cv(type);
     const CppAstNode * parameter_clause = find_child_kind(*declarator, CppAstKind::parameter_clause);
     vector<pair<string, TypePtr> > params;
-    if(parameter_clause && !parse_parameter_clause(scope, *parameter_clause, params)) {
+    if(parameter_clause && !parse_parameter_clause(*parse_scope, *parameter_clause, params)) {
       throw logic_error("unsupported function parameter-clause");
     }
     for(size_t i = 0; i < params.size(); ++i) {

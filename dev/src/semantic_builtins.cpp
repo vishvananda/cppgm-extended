@@ -1618,6 +1618,34 @@ bool try_expand_builtin_type_trait_call_arg(SemanticContext & ctx,
   return true;
 }
 
+TypePtr remove_builtin_cv_qualification(const TypePtr & type,
+                                        bool remove_const,
+                                        bool remove_volatile)
+{
+  if(!type) {
+    return TypePtr();
+  }
+  if(type->kind == Type::TK_CV) {
+    const bool keep_const = type->cv_const && !remove_const;
+    const bool keep_volatile = type->cv_volatile && !remove_volatile;
+    return (keep_const || keep_volatile) ?
+        make_cv(type->inner, keep_const, keep_volatile) :
+        type->inner;
+  }
+  if(type->kind == Type::TK_ARRAY) {
+    TypePtr element = remove_builtin_cv_qualification(type->inner,
+                                                      remove_const,
+                                                      remove_volatile);
+    return element == type->inner ?
+        type :
+        make_array(element,
+                   type->has_bound,
+                   type->bound,
+                   type->bound_text);
+  }
+  return type;
+}
+
 }  // namespace
 
 TypePtr make_dependent_builtin_type_transform_type(
@@ -1684,19 +1712,15 @@ bool apply_builtin_type_transform_kind(builtin_type_transforms::Kind kind,
 
   switch(kind) {
   case builtin_type_transforms::BTK_REMOVE_CV:
-    out = strip_top_level_cv(arg_type);
+    out = remove_builtin_cv_qualification(arg_type, true, true);
     return static_cast<bool>(out);
 
   case builtin_type_transforms::BTK_REMOVE_CONST:
-    out = arg_type->kind == Type::TK_CV ?
-        make_cv(arg_type->inner, false, arg_type->cv_volatile) :
-        arg_type;
+    out = remove_builtin_cv_qualification(arg_type, true, false);
     return static_cast<bool>(out);
 
   case builtin_type_transforms::BTK_REMOVE_VOLATILE:
-    out = arg_type->kind == Type::TK_CV ?
-        make_cv(arg_type->inner, arg_type->cv_const, false) :
-        arg_type;
+    out = remove_builtin_cv_qualification(arg_type, false, true);
     return static_cast<bool>(out);
 
   case builtin_type_transforms::BTK_REMOVE_EXTENT:
@@ -1729,14 +1753,14 @@ bool apply_builtin_type_transform_kind(builtin_type_transforms::Kind kind,
   case builtin_type_transforms::BTK_REMOVE_CONST_REF:
   {
     TypePtr no_ref = remove_reference_type(arg_type);
-    out = no_ref && no_ref->kind == Type::TK_CV ?
-        make_cv(no_ref->inner, false, no_ref->cv_volatile) :
-        no_ref;
+    out = remove_builtin_cv_qualification(no_ref, true, false);
     return static_cast<bool>(out);
   }
 
   case builtin_type_transforms::BTK_REMOVE_CVREF:
-    out = strip_top_level_cv(remove_reference_type(arg_type));
+    out = remove_builtin_cv_qualification(remove_reference_type(arg_type),
+                                          true,
+                                          true);
     return static_cast<bool>(out);
 
   case builtin_type_transforms::BTK_DECAY:

@@ -40,6 +40,12 @@ void initialize_operator_candidate_scope(
     const std::vector<semantic_model::FunctionBinding *> & functions,
     const std::vector<semantic_model::FunctionTemplateDecl *> & templates);
 
+int compare_resolved_function_template_partial_order(
+    SemanticContext & ctx,
+    semantic_model::FunctionBinding * current,
+    const std::vector<semantic_conversion::ExprInfo> & arguments,
+    semantic_model::FunctionBinding * best);
+
 bool resolve_function_id_for_target(SemanticContext & ctx,
                                     semantic_model::Scope & scope,
                                     const std::string & name,

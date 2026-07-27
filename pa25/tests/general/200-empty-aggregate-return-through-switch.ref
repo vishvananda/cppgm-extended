@@ -1,0 +1,59 @@
+function @make(%n : i32) -> obj<16x8> [binding=strong, object=_Z4makei] {
+  slot $n : i32
+  slot $retobj__1 : obj<16x8>
+
+  block ^entry:
+    store i32 %n, $n
+    %t1 = load i32 $n
+    jump ^switch_dispatch_1
+
+  block ^switch_dispatch_1:
+    switch %t1, ^switch_default_3
+
+  block ^switch_default_3:
+    %t2 = addr $retobj__1
+    store i64 0, %t2
+    %t3 = index i8 %t2, 8
+    store i64 0, %t3
+    call void @value__value(%t2)
+    return obj<16x8> $retobj__1
+
+  block ^switch_end_2:
+    zeroinit 16x8 $retobj__1
+    return obj<16x8> $retobj__1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $v : obj<16x8>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $v
+    %t2 = call obj<16x8> @make(1)
+    copyobj 16x8 %t2, %t1
+    %t3 = addr $v
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load ptr %t4
+    %t6 = copy ptr nullptr
+    %t7 = cmp eq ptr %t5, %t6
+    branch %t7, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t8 = load i32 $cond__1
+    return i32 %t8
+}
+function @value__value(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5valueC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+alias object _ZN5valueC2Ev = @value__value

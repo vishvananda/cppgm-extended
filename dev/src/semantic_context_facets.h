@@ -170,7 +170,7 @@ inline ArgumentConversionOptions rematerialization_conversion(
   return ArgumentConversionOptions(options.allow_user_defined,
                                    options.instantiate_bodies,
                                    true,
-                                   options.allow_explicit);
+                                   false);
 }
 
 inline ArgumentConversionOptions rematerialization_conversion(

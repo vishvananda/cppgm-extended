@@ -5,7 +5,7 @@ function @make_error() -> obj<4x4> [binding=strong, object=_Z10make_errorv] {
   block ^entry:
     %t1 = addr $retobj__1
     %t2 = addr $arg__2
-    call void @error_id__error_id__ov2(%t2, 7)
+    call void @error_id__error_id__ov4(%t2, 7)
     call void @result_payload___result__ov3(%t1, %t2)
     return obj<4x4> $retobj__1
 }
@@ -51,7 +51,7 @@ function @result_payload___result__ov3(%this : ptr, %error : ptr [pass=reference
     store i32 %t4, %t6
     return void
 }
-function @error_id__error_id__ov2(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN8error_idC1Ei] {
+function @error_id__error_id__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN8error_idC1Ei] {
   slot $this : ptr
   slot $value : i32
 
@@ -65,4 +65,4 @@ function @error_id__error_id__ov2(%this : ptr, %value : i32) -> void [unwind=no,
     return void
 }
 alias object _ZN6resultI7payloadEC2I8error_idEEOT_ = @result_payload___result__ov3
-alias object _ZN8error_idC2Ei = @error_id__error_id__ov2
+alias object _ZN8error_idC2Ei = @error_id__error_id__ov4

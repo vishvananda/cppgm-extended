@@ -2081,8 +2081,15 @@ public:
     }
 
     Scope * parse_scope = &pattern_scope;
+    Scope * function_template_entity_scope = &scope;
     if(!special_member_template) {
-      parse_scope = resolve_qualified_function_parse_scope(pattern_scope, *declarator);
+      parse_scope = resolve_qualified_function_parse_scope(
+          pattern_scope,
+          *declarator,
+          inner.kind == CppAstKind::function_definition);
+      if(parse_scope != &pattern_scope && !parse_scope->class_info) {
+        function_template_entity_scope = parse_scope;
+      }
     }
     Scope overlay_scope(parse_scope, "", false);
     if(!special_member_template && parse_scope != &pattern_scope) {
@@ -2371,7 +2378,7 @@ public:
         }
       }
     } else if(nonmember_function_like_template) {
-      if(!parse_variable_declaration_type(*parse_scope,
+      if(!parse_variable_declaration_type(*function_template_parse_scope,
                                           *specifiers,
                                           *declarator,
                                           initializer,
@@ -2459,7 +2466,7 @@ public:
       string reparsed_name;
       TypePtr reparsed_type;
       bool reparsed_is_typedef = false;
-      if(parse_variable_declaration_type(*parse_scope,
+      if(parse_variable_declaration_type(*function_template_parse_scope,
                                          *specifiers,
                                          *declarator,
                                          initializer,
@@ -2472,6 +2479,25 @@ public:
          !reparsed_is_typedef) {
         name = reparsed_name;
         type = reparsed_type;
+      }
+    }
+    if(function_template_entity_scope != &scope &&
+       !function_template_entity_scope->class_info) {
+      const CppAstNode * function_identifier =
+          find_descendant_kind(*declarator, CppAstKind::identifier);
+      const QualifiedName * function_name_syntax =
+          function_identifier ? cppast_qualified_name_syntax(*function_identifier) : nullptr;
+      Scope * resolved_entity_scope = nullptr;
+      string resolved_entity_name;
+      if(function_name_syntax &&
+         semantic_lookup::resolve_qualified_namespace_entity_target(
+             ctx,
+             scope,
+             *function_name_syntax,
+             resolved_entity_scope,
+             resolved_entity_name)) {
+        function_template_entity_scope = resolved_entity_scope;
+        name = resolved_entity_name;
       }
     }
     if(parser_trace::enabled("template.resolve")) {
@@ -3958,20 +3984,22 @@ public:
     }
     const vector<const CppAstNode *> normalized_default_args =
         normalize_default_arguments(params, default_args);
-    vector<FunctionTemplateDecl *> existing_templates = direct_function_templates(scope, name);
+    vector<FunctionTemplateDecl *> existing_templates =
+        direct_function_templates(*function_template_entity_scope, name);
     for(size_t i = 0; i < existing_templates.size(); ++i) {
       FunctionTemplateDecl * existing = existing_templates[i];
       if(!existing) {
         continue;
       }
-      if(existing->inner == &inner && existing->declaring_scope == &scope) {
+      if(existing->inner == &inner &&
+         existing->declaring_scope == function_template_entity_scope) {
         return;
       }
       if(existing->body && body) {
         continue;
       }
       if(!function_template_entities_match(*existing,
-                                           scope,
+                                           *function_template_entity_scope,
                                            pattern_scope,
                                            name,
                                            template_parameters,
@@ -4093,7 +4121,7 @@ public:
     }
 
     unique_ptr<FunctionTemplateDecl> decl(new FunctionTemplateDecl());
-    decl->declaring_scope = &scope;
+    decl->declaring_scope = function_template_entity_scope;
     decl->pattern_scope = &pattern_scope;
     decl->name = name;
     decl->declaration_node = &node;
@@ -4170,7 +4198,8 @@ public:
     }
     snapshot_function_template_debug_info(*this, *decl);
     inherit_pending_friend_function_template_access(*decl);
-    semantic_lookup::direct_function_template_slot(scope, name).push_back(decl.get());
+    semantic_lookup::direct_function_template_slot(*function_template_entity_scope,
+                                                   name).push_back(decl.get());
     function_templates.push_back(std::move(decl));
   }
 
@@ -5925,12 +5954,15 @@ private:
   }
 
   Scope * resolve_qualified_function_parse_scope(Scope & scope,
-                                                 const CppAstNode & declarator)
+                                                 const CppAstNode & declarator,
+                                                 bool allow_namespace_owner = false)
   {
     const ExactTemplateTypeLookupAnchor anchor =
         retained_template_type_lookup_anchor(&declarator);
     const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
-    return ctx.resolve_qualified_function_parse_scope(scope, declarator);
+    return ctx.resolve_qualified_function_parse_scope(scope,
+                                                      declarator,
+                                                      allow_namespace_owner);
   }
 
   bool resolve_out_of_class_special_member_binding(

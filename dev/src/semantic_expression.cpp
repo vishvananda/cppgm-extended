@@ -4519,12 +4519,16 @@ bool storage_backed_primary_template_static_member(const ValueBinding & binding)
          template_api::class_has_template_identity(binding.owner_class);
 }
 
-bool can_inline_int128_static_member_initializer(const ValueBinding & binding)
+bool can_inline_constexpr_static_member_initializer_without_storage(
+    const ValueBinding & binding)
 {
-  return is_int128_integral_type(binding.type) &&
-         binding.requires_constant_initializer &&
-         binding.constant_initializer &&
-         binding.constant_initializer_scope;
+  if(!binding.requires_constant_initializer ||
+     !binding.constant_initializer ||
+     !binding.constant_initializer_scope) {
+    return false;
+  }
+  const TypePtr value_type = strip_top_level_cv(binding.type);
+  return is_int128_integral_type(value_type) || is_pointer_type(value_type);
 }
 
 const CppAstNode & static_member_initializer_payload(const CppAstNode & node)
@@ -5156,7 +5160,7 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
       is_const_object_type(remove_reference_type(binding.type));
   if(allow_constant_fold &&
      !force_storage_load &&
-     can_inline_int128_static_member_initializer(binding)) {
+     can_inline_constexpr_static_member_initializer_without_storage(binding)) {
     const CppAstNode & payload =
         static_member_initializer_payload(*binding.constant_initializer);
     return ctx.analyze_expression_for_target(*binding.constant_initializer_scope,

@@ -1,0 +1,34 @@
+declare function @algorithm__algorithm(%arg0 : ptr, %arg1 : obj<8x8>) -> void [binding=strong, object=_ZN9algorithmC1E6params]
+
+global @value : i32 [binding=strong, object=_Z5value] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $instance : obj<4x4>
+  slot $argobj__1 : obj<8x8>
+  slot $copied : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $instance
+    %t2 = addr $argobj__1
+    %t3 = addr @value
+    call void @params__params__ov4(%t2, %t3)
+    call void @algorithm__algorithm(%t1, $argobj__1)
+    %t4 = addr $copied
+    %t5 = addr $instance
+    copyobj 4x4 %t5, %t4
+    return i32 0
+}
+function @params__params__ov4(%this : ptr, %value : ptr) -> void [unwind=no, binding=weak, object=_ZN6paramsC1EPi] {
+  slot $this : ptr
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %value, $value
+    %t1 = load ptr $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}
+alias object _ZN6paramsC2EPi = @params__params__ov4

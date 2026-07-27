@@ -5456,7 +5456,8 @@ void analyze_function_definition(SemanticContext & ctx,
   {
     const CppAstNode * specifiers = find_child_kind(node, CppAstKind::decl_specifier_seq);
     bool is_typedef = false;
-    Scope * parse_scope = ctx.resolve_qualified_function_parse_scope(scope, *declarator);
+    Scope * parse_scope =
+        ctx.resolve_qualified_function_parse_scope(scope, *declarator, true);
     method_like_definition =
         parse_scope->class_info &&
         find_child_kind(*declarator, CppAstKind::parameter_clause) != nullptr;

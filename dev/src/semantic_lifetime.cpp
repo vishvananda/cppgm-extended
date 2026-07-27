@@ -3752,6 +3752,84 @@ void append_move_constructor_action(SemanticContext & ctx,
   out.children.push_back(std::move(action));
 }
 
+void append_copy_constructor_actions_for_subobject(SemanticContext & ctx,
+                                                   Scope & scope,
+                                                   const TypePtr & type,
+                                                   const ExprInfo & target,
+                                                   const ExprInfo & source,
+                                                   DumpNode & out)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(base && base->kind == Type::TK_ARRAY) {
+    if(!base->has_bound) {
+      throw logic_error("implicit copy constructor requires bounded member array");
+    }
+    for(size_t i = 0; i < base->bound; ++i) {
+      append_copy_constructor_actions_for_subobject(
+          ctx,
+          scope,
+          base->inner,
+          ctx.make_subscript_expr(target, i, base->inner),
+          ctx.make_subscript_expr(source, i, base->inner),
+          out);
+    }
+    return;
+  }
+  if(is_reference_type(type)) {
+    append_reference_binding_action(ctx, target, source, out);
+    return;
+  }
+  if(ClassInfo * field_class = ctx.class_info_for_type(type)) {
+    append_copy_constructor_action(ctx,
+                                   scope,
+                                   *field_class,
+                                   ctx.make_address_of_expr(target),
+                                   source,
+                                   out);
+    return;
+  }
+  out.children.push_back(make_assignment_statement(target, source));
+}
+
+void append_move_constructor_actions_for_subobject(SemanticContext & ctx,
+                                                   Scope & scope,
+                                                   const TypePtr & type,
+                                                   const ExprInfo & target,
+                                                   const ExprInfo & source,
+                                                   DumpNode & out)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(base && base->kind == Type::TK_ARRAY) {
+    if(!base->has_bound) {
+      throw logic_error("implicit move constructor requires bounded member array");
+    }
+    for(size_t i = 0; i < base->bound; ++i) {
+      append_move_constructor_actions_for_subobject(
+          ctx,
+          scope,
+          base->inner,
+          ctx.make_subscript_expr(target, i, base->inner),
+          ctx.make_subscript_expr(source, i, base->inner),
+          out);
+    }
+    return;
+  }
+  if(is_reference_type(type)) {
+    append_reference_binding_action(ctx, target, source, out);
+    return;
+  }
+  if(ClassInfo * field_class = ctx.class_info_for_type(type)) {
+    append_move_constructor_action(ctx,
+                                   scope,
+                                   *field_class,
+                                   ctx.make_address_of_expr(target),
+                                   source,
+                                   out);
+    return;
+  }
+  out.children.push_back(make_assignment_statement(target, make_xvalue_expr(source)));
+}
+
 bool require_destructor_function_if_needed(SemanticContext & ctx,
                                            ClassInfo & info,
                                            FunctionBinding * dtor,
@@ -3959,6 +4037,76 @@ void append_move_assignment_action(SemanticContext & ctx,
   ExprInfo call = ctx.make_direct_call_expr(*op, args);
   stmt.children.push_back(std::move(call.node));
   out.children.push_back(std::move(stmt));
+}
+
+void append_copy_assignment_actions_for_subobject(SemanticContext & ctx,
+                                                  Scope & scope,
+                                                  const TypePtr & type,
+                                                  const ExprInfo & target,
+                                                  const ExprInfo & source,
+                                                  DumpNode & out)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(base && base->kind == Type::TK_ARRAY) {
+    if(!base->has_bound) {
+      throw logic_error("implicit copy assignment requires bounded member array");
+    }
+    for(size_t i = 0; i < base->bound; ++i) {
+      append_copy_assignment_actions_for_subobject(
+          ctx,
+          scope,
+          base->inner,
+          ctx.make_subscript_expr(target, i, base->inner),
+          ctx.make_subscript_expr(source, i, base->inner),
+          out);
+    }
+    return;
+  }
+  if(ClassInfo * field_class = ctx.class_info_for_type(type)) {
+    append_copy_assignment_action(ctx,
+                                  scope,
+                                  *field_class,
+                                  ctx.make_address_of_expr(target),
+                                  source,
+                                  out);
+    return;
+  }
+  out.children.push_back(make_assignment_statement(target, source));
+}
+
+void append_move_assignment_actions_for_subobject(SemanticContext & ctx,
+                                                  Scope & scope,
+                                                  const TypePtr & type,
+                                                  const ExprInfo & target,
+                                                  const ExprInfo & source,
+                                                  DumpNode & out)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(base && base->kind == Type::TK_ARRAY) {
+    if(!base->has_bound) {
+      throw logic_error("implicit move assignment requires bounded member array");
+    }
+    for(size_t i = 0; i < base->bound; ++i) {
+      append_move_assignment_actions_for_subobject(
+          ctx,
+          scope,
+          base->inner,
+          ctx.make_subscript_expr(target, i, base->inner),
+          ctx.make_subscript_expr(source, i, base->inner),
+          out);
+    }
+    return;
+  }
+  if(ClassInfo * field_class = ctx.class_info_for_type(type)) {
+    append_move_assignment_action(ctx,
+                                  scope,
+                                  *field_class,
+                                  ctx.make_address_of_expr(target),
+                                  source,
+                                  out);
+    return;
+  }
+  out.children.push_back(make_assignment_statement(target, make_xvalue_expr(source)));
 }
 
 }  // namespace
@@ -4240,13 +4388,24 @@ void analyze_initializer(SemanticContext & ctx,
 
   if(payload.kind == CppAstKind::paren_initializer ||
      payload.kind == CppAstKind::paren_argument_list) {
-    if(payload.children.size() != 1) {
+    std::deque<CppAstNode> expanded_storage;
+    const vector<const CppAstNode *> args =
+        expand_initializer_argument_nodes(ctx,
+                                          scope,
+                                          initializer_argument_nodes(payload),
+                                          expanded_storage);
+    if(args.empty()) {
+      ExprInfo value = ctx.make_value_initialized_expr(type);
+      out.children.push_back(std::move(value.node));
+      return;
+    }
+    if(args.size() != 1 || !args[0]) {
       throw logic_error("scalar paren-initializer requires one expression");
     }
     ExprInfo element =
         analyze_initializer_expression_for_target(ctx,
                                                   scope,
-                                                  payload.children[0],
+                                                  *args[0],
                                                   type,
                                                   true);
     if(!can_copy_initialize(ctx, type, element)) {
@@ -4254,7 +4413,7 @@ void analyze_initializer(SemanticContext & ctx,
       outmsg << "invalid initializer";
       outmsg << " [target " << describe_type(type) << "]";
       outmsg << " [source " << describe_type(element.type) << "]";
-      outmsg << " [init " << node_text(payload.children[0]) << "]";
+      outmsg << " [init " << node_text(*args[0]) << "]";
       throw logic_error(outmsg.str());
     }
     out.children.push_back(std::move(element.node));
@@ -4512,17 +4671,12 @@ void append_constructor_generated_statements(SemanticContext & ctx,
       } else {
         ExprInfo field_expr = ctx.make_field_expr(this_expr, info.fields[i]);
         ExprInfo source_field = ctx.make_field_expr(source_expr, info.fields[i]);
-        ClassInfo * field_class = ctx.class_info_for_type(info.fields[i].type);
-        if(is_reference_type(info.fields[i].type)) {
-          append_reference_binding_action(ctx, field_expr, source_field, function_node);
-        } else if(field_class) {
-          append_copy_constructor_action(ctx, scope, *field_class,
-                                         ctx.make_address_of_expr(field_expr),
-                                         source_field, function_node);
-        } else {
-          function_node.children.push_back(
-              make_assignment_statement(field_expr, std::move(source_field)));
-        }
+        append_copy_constructor_actions_for_subobject(ctx,
+                                                      scope,
+                                                      info.fields[i].type,
+                                                      field_expr,
+                                                      source_field,
+                                                      function_node);
       }
     }
     return;
@@ -4592,20 +4746,12 @@ void append_constructor_generated_statements(SemanticContext & ctx,
       } else {
         ExprInfo field_expr = ctx.make_field_expr(this_expr, info.fields[i]);
         ExprInfo source_field = ctx.make_field_expr(source_expr, info.fields[i]);
-        ClassInfo * field_class = ctx.class_info_for_type(info.fields[i].type);
-        if(is_reference_type(info.fields[i].type)) {
-          append_reference_binding_action(ctx, field_expr, source_field, function_node);
-        } else if(field_class) {
-          append_move_constructor_action(ctx,
-                                         scope,
-                                         *field_class,
-                                         ctx.make_address_of_expr(field_expr),
-                                         source_field,
-                                         function_node);
-        } else {
-          function_node.children.push_back(
-              make_assignment_statement(field_expr, make_xvalue_expr(source_field)));
-        }
+        append_move_constructor_actions_for_subobject(ctx,
+                                                      scope,
+                                                      info.fields[i].type,
+                                                      field_expr,
+                                                      source_field,
+                                                      function_node);
       }
     }
     return;
@@ -4927,14 +5073,12 @@ void append_copy_assignment_generated_statements(SemanticContext & ctx,
     } else {
       ExprInfo field_expr = ctx.make_field_expr(this_expr, info.fields[i]);
       ExprInfo source_field = ctx.make_field_expr(source_expr, info.fields[i]);
-      ClassInfo * field_class = ctx.class_info_for_type(info.fields[i].type);
-      if(field_class) {
-        append_copy_assignment_action(ctx, scope, *field_class, ctx.make_address_of_expr(field_expr),
-                                      source_field, function_node);
-      } else {
-        function_node.children.push_back(
-            make_assignment_statement(field_expr, std::move(source_field)));
-      }
+      append_copy_assignment_actions_for_subobject(ctx,
+                                                   scope,
+                                                   info.fields[i].type,
+                                                   field_expr,
+                                                   source_field,
+                                                   function_node);
     }
   }
 
@@ -5007,18 +5151,12 @@ void append_move_assignment_generated_statements(SemanticContext & ctx,
     } else {
       ExprInfo field_expr = ctx.make_field_expr(this_expr, info.fields[i]);
       ExprInfo source_field = ctx.make_field_expr(source_expr, info.fields[i]);
-      ClassInfo * field_class = ctx.class_info_for_type(info.fields[i].type);
-      if(field_class) {
-        append_move_assignment_action(ctx,
-                                      scope,
-                                      *field_class,
-                                      ctx.make_address_of_expr(field_expr),
-                                      source_field,
-                                      function_node);
-      } else {
-        function_node.children.push_back(
-            make_assignment_statement(field_expr, std::move(source_field)));
-      }
+      append_move_assignment_actions_for_subobject(ctx,
+                                                   scope,
+                                                   info.fields[i].type,
+                                                   field_expr,
+                                                   source_field,
+                                                   function_node);
     }
   }
 

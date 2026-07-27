@@ -4180,6 +4180,18 @@ size_t evaluate_declared_alignment(SemanticContext & ctx,
   return out;
 }
 
+size_t effective_field_alignment(SemanticContext & ctx,
+                                 ClassInfo & info,
+                                 const FieldInfo & field)
+{
+  const size_t natural_alignment = cpp_decl::type_alignment(field.type);
+  const size_t declared_alignment =
+      evaluate_declared_alignment(ctx,
+                                  *info.member_scope,
+                                  field.alignment_declaration);
+  return std::max(natural_alignment, declared_alignment);
+}
+
 TypePtr const_lvalue_reference_to(const TypePtr & type)
 {
   return make_lvalue_reference_raw(make_cv(type, true, false));
@@ -7834,7 +7846,7 @@ void finalize_class_layout(SemanticContext & ctx,
       std::size_t field_alignment = 1;
       std::size_t field_size = 0;
       try {
-        field_alignment = cpp_decl::type_alignment(field.type);
+        field_alignment = effective_field_alignment(ctx, info, field);
         field_size = cpp_decl::type_size(field.type);
       } catch(const std::logic_error & e) {
         std::ostringstream out;
@@ -7991,7 +8003,8 @@ void finalize_class_layout(SemanticContext & ctx,
       size_t field_alignment = 0;
       size_t field_size = 0;
       try {
-        field_alignment = cpp_decl::type_alignment(info.fields[i].type);
+        field_alignment =
+            effective_field_alignment(ctx, info, info.fields[i]);
         field_size = cpp_decl::type_size(info.fields[i].type);
       } catch(const std::logic_error & e) {
         std::ostringstream out;
@@ -8061,12 +8074,14 @@ void finalize_class_layout(SemanticContext & ctx,
     size_t field_alignment = 0;
     size_t field_size = 0;
     try {
-      field_alignment = cpp_decl::type_alignment(info.fields[i].type);
+      field_alignment =
+          effective_field_alignment(ctx, info, info.fields[i]);
       field_size = cpp_decl::type_size(info.fields[i].type);
     } catch(const std::logic_error & e) {
       maybe_complete_class_member_object_type(ctx, info.fields[i].type);
       try {
-        field_alignment = cpp_decl::type_alignment(info.fields[i].type);
+        field_alignment =
+            effective_field_alignment(ctx, info, info.fields[i]);
         field_size = cpp_decl::type_size(info.fields[i].type);
       } catch(const std::logic_error &) {
       std::ostringstream out;
@@ -9245,6 +9260,7 @@ void collect_class_simple_declaration(SemanticContext & ctx,
     FieldInfo field;
     field.name = member_name;
     field.type = member_type;
+    field.alignment_declaration = &init_decl;
     field.is_mutable = has_mutable_specifier;
     field.default_initializer = default_initializer;
     field.is_no_unique_address = init_decl.has_no_unique_address;
@@ -9330,6 +9346,7 @@ void collect_class_bit_field_declaration(SemanticContext & ctx,
     FieldInfo field;
     field.name = member_name;
     field.type = member_type;
+    field.alignment_declaration = &child;
     field.is_mutable = has_mutable_specifier;
     field.bit_width_expression = width;
     field.is_bit_field = true;
@@ -9736,6 +9753,7 @@ void collect_class_reference_bit_field_declaration(SemanticContext & ctx,
     FieldInfo field;
     field.name = member_name;
     field.type = member_type;
+    field.alignment_declaration = &child;
     field.bit_width_expression = width;
     field.is_bit_field = true;
     field.access = access;
@@ -11368,6 +11386,7 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
     FieldInfo field;
     field.name = member_name;
     field.type = member_type;
+    field.alignment_declaration = &init_decl;
     field.is_mutable = has_mutable_specifier;
     field.default_initializer = default_initializer;
     field.is_no_unique_address = init_decl.has_no_unique_address;
@@ -11440,6 +11459,7 @@ void collect_dependent_class_bit_field_declaration(SemanticContext & ctx,
     FieldInfo field;
     field.name = member_name;
     field.type = member_type;
+    field.alignment_declaration = &child;
     field.is_mutable = has_mutable_specifier;
     field.bit_width_expression = width;
     field.is_bit_field = true;

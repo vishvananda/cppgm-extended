@@ -644,7 +644,8 @@ public:
       const cpp_decl::TypePtr & type) = 0;
   virtual semantic_model::Scope * resolve_qualified_function_parse_scope(
       semantic_model::Scope & scope,
-      const CppAstNode & declarator) = 0;
+      const CppAstNode & declarator,
+      bool allow_namespace_owner = false) = 0;
   virtual bool resolve_out_of_class_method_binding(
       semantic_model::Scope & scope,
       const cpp_decl::QualifiedName & name,

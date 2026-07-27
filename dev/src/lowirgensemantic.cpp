@@ -12354,6 +12354,17 @@ private:
   {
     ScopedLowIRCurrentExpr current_expr(node);
 
+    TypePtr braced_array_type =
+        strip_top_level_cv(remove_reference_type(node.semantic_type));
+    if(node.kind == CallSemKind::braced_init_list &&
+       braced_array_type &&
+       braced_array_type->kind == Type::TK_ARRAY &&
+       !array_element_uses_storage_slots(braced_array_type->inner)) {
+      const string temp_ptr = new_hidden_object_address(node.semantic_type, "arraytmp");
+      emit_local_array_initializer(node.semantic_type, node, temp_ptr);
+      return emit_decay_pointer(temp_ptr);
+    }
+
     if(node.kind == CallSemKind::statement_expression) {
       if(node.children.empty() ||
          node.children.size() > 2 ||
@@ -13978,6 +13989,18 @@ private:
       }
       if(node.semantic_type) {
         outmsg << " type=" << describe_type(node.semantic_type);
+      }
+      if(g_lowir_current_function_node) {
+        outmsg << " [function "
+               << (g_lowir_current_function_node->text.empty() ?
+                       node_internal_symbol(*g_lowir_current_function_node) :
+                       g_lowir_current_function_node->text.str())
+               << "]";
+      }
+      if(node.has_source_location()) {
+        outmsg << " [source " << callsem_source_file(node)
+               << ":" << callsem_source_line(node)
+               << ":" << callsem_source_column(node) << "]";
       }
       throw logic_error(outmsg.str());
     }
@@ -16550,9 +16573,22 @@ private:
       throw logic_error(gnu_asm_unsupported_message(node));
     }
 
+    if(node.kind == CallSemKind::constructor_action) {
+      if(!expression_subtree_may_materialize_cleanup(node)) {
+        emit_action(node);
+        return;
+      }
+      push_cleanup_scope(true);
+      emit_action(node);
+      if(current_block_) {
+        emit_scope_cleanups(cleanup_scopes_.back());
+      }
+      pop_cleanup_scope();
+      return;
+    }
+
     if(node.kind == CallSemKind::array_constructor_action ||
        node.kind == CallSemKind::array_destructor_action ||
-       node.kind == CallSemKind::constructor_action ||
        node.kind == CallSemKind::destructor_action ||
        node.kind == CallSemKind::vptr_action) {
       emit_action(node);

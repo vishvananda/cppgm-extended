@@ -9288,7 +9288,8 @@ private:
   }
 
   Scope * resolve_qualified_function_parse_scope(Scope & scope,
-                                                 const CppAstNode & declarator) override
+                                                 const CppAstNode & declarator,
+                                                 bool allow_namespace_owner = false) override
   {
     const CppAstNode * identifier = find_descendant_kind(declarator, CppAstKind::identifier);
     if(!identifier) {
@@ -9567,7 +9568,8 @@ private:
     Scope * owner_scope =
         semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
             *this, scope, owner_qualified, true);
-    if(owner_scope && owner_scope->class_info) {
+    if(owner_scope &&
+       (owner_scope->class_info || allow_namespace_owner)) {
       return owner_scope;
     }
 
@@ -11097,8 +11099,9 @@ private:
   {
     ScopedCallSemConstructionPath construction_path("target-aware-expression");
     vector<unique_ptr<CppAstNode> > expanded_ctor_arg_storage;
+    const CppAstNode * direct_braced_ctor_init = nullptr;
     const auto collect_constructor_arg_nodes =
-        [this, &scope, &target, &expanded_ctor_arg_storage](
+        [this, &scope, &target, &expanded_ctor_arg_storage, &direct_braced_ctor_init](
             const CppAstNode & expr,
             vector<const CppAstNode *> & args) -> bool
         {
@@ -11131,6 +11134,9 @@ private:
              payload->kind == CppAstKind::argument_list ||
              payload->kind == CppAstKind::paren_argument_list ||
              payload->kind == CppAstKind::braced_init_list) {
+            if(payload->kind == CppAstKind::braced_init_list) {
+              direct_braced_ctor_init = payload;
+            }
             for(size_t i = 0; i < payload->children.size(); ++i) {
               if(!append_arg(payload->children[i])) {
                 return false;
@@ -11198,6 +11204,7 @@ private:
              argument_list->children.size() == 1 &&
              argument_list->children[0].kind == CppAstKind::braced_init_list) {
             const CppAstNode & braced_arg = argument_list->children[0];
+            direct_braced_ctor_init = &braced_arg;
             for(size_t i = 0; i < braced_arg.children.size(); ++i) {
               if(!append_arg(braced_arg.children[i])) {
                 return false;
@@ -11393,10 +11400,10 @@ private:
         try
         {
           ctor =
-              (node.kind == CppAstKind::braced_init_list) ?
+              direct_braced_ctor_init ?
                   select_constructor_for_direct_braced_init(scope,
                                                             *target_class,
-                                                            node,
+                                                            *direct_braced_ctor_init,
                                                             converted,
                                                             ctor_options) :
                   select_constructor(scope,
@@ -11418,6 +11425,12 @@ private:
         }
         if(ctor) {
           out = make_constructor_conversion_expr(*ctor, target, converted);
+          if(direct_braced_ctor_init &&
+             direct_braced_ctor_init->children.empty() &&
+             constructor_lifecycle_service::value_initialization_requires_zero_init(
+                 *ctor)) {
+            out.node.value_initializes_result = true;
+          }
           return true;
         }
       }
@@ -29361,7 +29374,8 @@ private:
 
     bool is_typedef = false;
     TypePtr base;
-    Scope * parse_scope = resolve_qualified_function_parse_scope(scope, *declarator);
+    Scope * parse_scope =
+        resolve_qualified_function_parse_scope(scope, *declarator, true);
     const bool method_like_definition =
         parse_scope->class_info &&
         find_child_kind(*declarator, CppAstKind::parameter_clause) != nullptr;

@@ -796,11 +796,40 @@ static void collect_dependent_parameter_names_for_template_body(
   }
 }
 
-static void collect_alias_type_name_for_template_body(const CppAstNode & node,
-                                                      AtomNameSet & type_names)
+static void collect_declared_type_names_for_template_body(
+    const CppAstNode & node,
+    AtomNameSet & type_names)
 {
-  if(node.kind == CppAstKind::alias_declaration && !node.value.empty()) {
+  if((node.kind == CppAstKind::alias_declaration ||
+      node.kind == CppAstKind::class_specifier ||
+      node.kind == CppAstKind::class_forward_declaration ||
+      node.kind == CppAstKind::enum_specifier) &&
+     !node.value.empty()) {
     type_names.insert(node.value);
+  }
+
+  if(node.kind != CppAstKind::simple_declaration) {
+    return;
+  }
+  const CppAstNode * specifiers =
+      find_child_kind(node, CppAstKind::decl_specifier_seq);
+  if(!specifiers ||
+     !cpp_decl::decl_spec_contains_token(*specifiers, KW_TYPEDEF)) {
+    return;
+  }
+  const CppAstNode * declarators =
+      find_child_kind(node, CppAstKind::init_declarator_list);
+  if(!declarators) {
+    return;
+  }
+  for(std::size_t i = 0; i < declarators->children.size(); ++i) {
+    const CppAstNode & init_decl = declarators->children[i];
+    std::string declared_name;
+    if(init_decl.kind == CppAstKind::init_declarator &&
+       !init_decl.children.empty() &&
+       declarator_declared_identifier(init_decl.children[0], declared_name)) {
+      type_names.insert(declared_name);
+    }
   }
 }
 
@@ -1649,8 +1678,8 @@ static bool template_body_has_invalid_nondependent_id_expression(
             sequential_dependent_type_names,
             sequential_dependent_value_names);
       }
-      collect_alias_type_name_for_template_body(node.children[i],
-                                                sequential_type_names);
+      collect_declared_type_names_for_template_body(node.children[i],
+                                                    sequential_type_names);
     }
     return false;
   }

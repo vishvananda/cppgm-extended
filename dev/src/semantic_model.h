@@ -677,6 +677,7 @@ struct FieldInfo
 {
   std::string name;
   cpp_decl::TypePtr type;
+  const CppAstNode * alignment_declaration = nullptr;
   const CppAstNode * default_initializer = nullptr;
   const CppAstNode * bit_width_expression = nullptr;
   std::size_t offset = 0;
