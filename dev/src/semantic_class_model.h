@@ -98,6 +98,9 @@ void prepare_method_parse_context(
     PreparedMethodParseContext & out,
     bool has_method_syntax = true,
     bool require_parameter_clause_for_filtered_parse = false);
+void ensure_class_reference_static_asserts(
+    SemanticContext & ctx,
+    semantic_model::ClassInfo & info);
 bool prepare_class_member_declaration_context(
     SemanticContext & ctx,
     semantic_model::Scope & member_scope,

@@ -4433,14 +4433,15 @@ private:
   bool resolve_call_parameter_virtual_base_layout(
       const CallSemNode & call,
       const TypePtr & function_type,
-      ParameterVirtualBaseLayout & out_layout) const
+      ParameterVirtualBaseLayout & out_layout,
+      size_t callee_child_index = 0) const
   {
-    if(call.kind != CallSemKind::call_expression || call.children.empty()) {
+    if(callee_child_index >= call.children.size()) {
       return false;
     }
 
     const string callee_symbol =
-        direct_parameter_virtual_base_layout_symbol(call.children[0]);
+        direct_parameter_virtual_base_layout_symbol(call.children[callee_child_index]);
     if(!callee_symbol.empty()) {
       map<string, ParameterVirtualBaseLayout>::const_iterator layout_it =
           function_parameter_virtual_base_layouts_.find(callee_symbol);
@@ -4448,7 +4449,7 @@ private:
         out_layout = layout_it->second;
         return true;
       }
-      if(!call.children[0].is_virtual_dispatch) {
+      if(!call.children[callee_child_index].is_virtual_dispatch) {
         return false;
       }
     }
@@ -4478,18 +4479,22 @@ private:
 
   void append_parameter_virtual_base_arguments(const CallSemNode & call,
                                                bool constructor_call,
-                                               vector<string> & args)
+                                               vector<string> & args,
+                                               size_t callee_child_index = 0,
+                                               size_t argument_child_offset = 0)
   {
-    if(call.kind != CallSemKind::call_expression || call.children.empty()) {
+    if(callee_child_index >= call.children.size()) {
       return;
     }
     TypePtr function_type;
     const bool have_function_type =
-        resolve_callable_function_type(call.children[0].semantic_type, function_type) &&
+        resolve_callable_function_type(call.children[callee_child_index].semantic_type,
+                                       function_type) &&
         function_type;
     const vector<pair<string, unsigned long long> > * current_function_virtual_base_layout =
         resolve_current_function_virtual_base_layout();
     if(!constructor_call &&
+       call.kind == CallSemKind::call_expression &&
        function_node_ &&
        current_function_virtual_base_layout &&
        !current_function_virtual_base_layout->empty() &&
@@ -4506,7 +4511,8 @@ private:
     ParameterVirtualBaseLayout parameter_virtual_base_layout;
     if(!resolve_call_parameter_virtual_base_layout(call,
                                                    function_type,
-                                                   parameter_virtual_base_layout)) {
+                                                   parameter_virtual_base_layout,
+                                                   callee_child_index)) {
       return;
     }
     const vector<ParameterVirtualBaseLayoutEntry> entries =
@@ -4514,7 +4520,8 @@ private:
     for(size_t ei = 0; ei < entries.size(); ++ei) {
       const ParameterVirtualBaseLayoutEntry & entry = entries[ei];
       const size_t child_index =
-          constructor_call ? entry.parameter_index : (entry.parameter_index + 1);
+          (constructor_call ? entry.parameter_index : (entry.parameter_index + 1)) +
+          argument_child_offset;
       if(child_index >= call.children.size()) {
         throw logic_error("parameter virtual base argument source missing");
       }
@@ -12152,6 +12159,7 @@ private:
         append_variadic_call_argument_value(args, node.children[i]);
       }
     }
+    append_parameter_virtual_base_arguments(node, true, args, 1, 1);
     ostringstream op;
     op << "call void " << lookup_function_symbol(node.children[1]) << "(";
     for(size_t i = 0; i < args.size(); ++i) {
@@ -12326,6 +12334,7 @@ private:
         append_variadic_call_argument_value(args, node.children[i]);
       }
     }
+    append_parameter_virtual_base_arguments(node, true, args, 1, 1);
 
     if(node.value_initializes_result && !is_empty_class_storage_type(result_type->inner)) {
       string nothrow_end_label;

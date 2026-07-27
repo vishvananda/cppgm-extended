@@ -1,0 +1,20 @@
+declare function @B__B(%arg0 : ptr, %arg1 : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=strong, object=_ZN1BC1ERS_]
+declare function @operatornew(%arg0 : i64, %arg1 : ptr) -> ptr [binding=strong, object=_ZnwmPv]
+
+function @make(%address : ptr, %value : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=strong, object=_Z4makePvR1B] {
+  slot $address : ptr
+  slot $value : ptr
+  slot $value__pvb0 : ptr
+
+  block ^entry:
+    store ptr %address, $address
+    store ptr %value, $value
+    store ptr %__pvbptr0, $value__pvb0
+    %t1 = convert sext i64 i32 2
+    %t2 = load ptr $address
+    %t3 = call ptr @operatornew(%t1, %t2)
+    %t4 = load ptr $value
+    %t5 = load ptr $value__pvb0
+    call void @B__B(%t3, %t4, %t5)
+    return void
+}

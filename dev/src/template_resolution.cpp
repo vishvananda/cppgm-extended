@@ -11587,8 +11587,9 @@ bool try_resolve_non_type_template_parameter_type_from_syntax(
 
   resolved_type =
       adjusted_non_type_template_parameter_type_for_resolution(resolved_type);
-  template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
-      services, scope, resolved_type);
+  template_argument_semantics::
+      resolve_non_type_template_parameter_type_if_needed(
+          services, scope, resolved_type);
   const bool remains_dependent =
       resolved_type &&
       template_argument_semantics::type_depends_on_template_parameter(
@@ -11622,8 +11623,9 @@ bool try_resolve_non_type_template_parameter_type(
       resolved = static_cast<bool>(out);
     } else {
       if(out) {
-        template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
-            services, scope, out);
+        template_argument_semantics::
+            resolve_non_type_template_parameter_type_if_needed(
+                services, scope, out);
       }
       if(out && !template_argument_semantics::type_depends_on_template_parameter(type_system, out)) {
         resolved = true;

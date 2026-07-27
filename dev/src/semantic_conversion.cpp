@@ -2745,6 +2745,11 @@ bool try_argument_conversion(SemanticContext & ctx,
          function_type->params.size() != 1) {
         return;
       }
+      if(!ref_qualifier_accepts_implicit_object(candidate->ref_qualifier,
+                                                function_type->params[0],
+                                                expr.category)) {
+        return;
+      }
 
       const ExprInfo & implicit_object_arg =
           get_conversion_function_implicit_object_arg();

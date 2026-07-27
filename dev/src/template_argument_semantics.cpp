@@ -97,6 +97,13 @@ bool resolve_instantiated_template_argument(
 
 namespace {
 
+thread_local std::size_t non_type_parameter_type_resolution_depth = 0;
+
+bool validating_non_type_parameter_qualified_owner()
+{
+  return non_type_parameter_type_resolution_depth != 0;
+}
+
 bool ref_qualifier_rejects_implicit_object(RefQualifier ref_qualifier,
                                            const TypePtr & implicit_object_parameter,
                                            semantic_conversion::ValueCategory category)
@@ -6471,6 +6478,11 @@ bool try_resolve_concrete_template_member_type(
            member_scope) ||
        !member_scope) {
       return false;
+    }
+    if(validating_non_type_parameter_qualified_owner() &&
+       services.semantic_context && member_scope->class_info) {
+      semantic_class_model::ensure_class_reference_static_asserts(
+          *services.semantic_context, *member_scope->class_info);
     }
 
     member_type =
@@ -32804,6 +32816,23 @@ bool resolve_instantiated_dependent_type_if_needed(
   }
   type = resolved;
   return true;
+}
+
+bool resolve_non_type_template_parameter_type_if_needed(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    TypePtr & type)
+{
+  ++non_type_parameter_type_resolution_depth;
+  struct ResolutionGuard
+  {
+    ~ResolutionGuard()
+    {
+      --non_type_parameter_type_resolution_depth;
+    }
+  } guard;
+  return resolve_instantiated_dependent_type_if_needed(
+      services, scope, type);
 }
 
 bool resolve_instantiated_dependent_type(SemanticContext & ctx,

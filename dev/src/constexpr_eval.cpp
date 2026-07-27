@@ -288,7 +288,17 @@ bool Evaluator::eval_initializer(const CppAstNode & node,
     if(payload->children.size() != 1) {
       return false;
     }
-    return eval_expr(payload->children[0], out);
+    if(!eval_expr(payload->children[0], out)) {
+      return false;
+    }
+    if(target) {
+      ConstexprValue converted;
+      if(!constexpr_value_cast(out, target, converted)) {
+        return false;
+      }
+      out = converted;
+    }
+    return true;
   }
 
   if(!eval_expr(*payload, out)) {

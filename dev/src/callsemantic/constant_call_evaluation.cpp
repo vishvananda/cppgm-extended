@@ -9,6 +9,7 @@
 #include "semantic_conversion.h"
 #include "semantic_lookup.h"
 #include "semantic_template_function.h"
+#include "semantic_utils.h"
 #include "template_scope.h"
 #include "types.h"
 
@@ -189,6 +190,7 @@ bool expand_constexpr_function_body_packs(SemanticContext & ctx,
 bool evaluate_method_call_implicit_object(
     constant_eval::Evaluator & evaluator,
     const CppAstNode & callee,
+    const FunctionBinding & binding,
     constant_eval::ConstexprValue & out)
 {
   if(callee.kind == CppAstKind::member_expression &&
@@ -202,6 +204,10 @@ bool evaluate_method_call_implicit_object(
 
   if(callee.kind == CppAstKind::id_expression ||
      callee.kind == CppAstKind::identifier) {
+    if(semantic_utils::unqualified_member_name(binding.name) == "operator()" &&
+       callee.value != "operator()") {
+      return evaluator.eval_expr(callee, out);
+    }
     return evaluator.current_this_object(out);
   }
 
@@ -897,7 +903,10 @@ bool evaluate_constant_call_expression_value(
   info.is_method = binding->is_method;
   if(binding->is_method) {
     constant_eval::ConstexprValue implicit_object;
-    if(!evaluate_method_call_implicit_object(evaluator, callee, implicit_object)) {
+    if(!evaluate_method_call_implicit_object(evaluator,
+                                             callee,
+                                             *binding,
+                                             implicit_object)) {
       return false;
     }
     info.has_implicit_object = true;

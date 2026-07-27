@@ -1398,7 +1398,32 @@ bool evaluate_constexpr_constructor(SemanticContext & ctx,
     member_is_base.push_back(true);
   }
 
+  size_t active_union_field = info->fields.size();
+  if(info->class_kind == "union") {
+    for(size_t i = 0; i < info->fields.size(); ++i) {
+      const CppAstNode * mem_init = nullptr;
+      if(find_ctor_mem_initializer(binding, info->fields[i].name, mem_init) && mem_init) {
+        active_union_field = i;
+        break;
+      }
+    }
+    if(active_union_field == info->fields.size()) {
+      for(size_t i = 0; i < info->fields.size(); ++i) {
+        if(info->fields[i].default_initializer) {
+          active_union_field = i;
+          break;
+        }
+      }
+    }
+    if(active_union_field == info->fields.size()) {
+      return false;
+    }
+  }
+
   for(size_t i = 0; i < info->fields.size(); ++i) {
+    if(info->class_kind == "union" && i != active_union_field) {
+      continue;
+    }
     const FieldInfo & field = info->fields[i];
     const CppAstNode * mem_init = nullptr;
     find_ctor_mem_initializer(binding, field.name, mem_init);
@@ -1926,7 +1951,39 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
   if(!target_base) {
     return false;
   }
-  TypedInitializerRecursionGuard recursion_guard(node, target_base);
+
+  if(node.kind == CppAstKind::paren_initializer ||
+     node.kind == CppAstKind::argument_list ||
+     node.kind == CppAstKind::paren_argument_list ||
+     node.kind == CppAstKind::braced_init_list) {
+    bool has_direct_pack_expansion = false;
+    for(std::size_t i = 0; i < node.children.size(); ++i) {
+      if(node.children[i].kind == CppAstKind::pack_expansion_expression) {
+        has_direct_pack_expansion = true;
+        break;
+      }
+    }
+    if(has_direct_pack_expansion) {
+      std::vector<const CppAstNode *> args = initializer_argument_nodes(ctx, node);
+      std::vector<CppAstNode> expanded_args;
+      if(!expand_initializer_argument_nodes(ctx, scope, args, expanded_args)) {
+        return false;
+      }
+      CppAstNode expanded = node;
+      expanded.children = expanded_args;
+      return evaluate_typed_initializer_value(ctx,
+                                              scope,
+                                              evaluator,
+                                              expanded,
+                                              target,
+                                              out);
+    }
+  }
+  const TypePtr recursion_target =
+      is_reference_type(strip_top_level_cv(target)) &&
+      node.kind == CppAstKind::braced_init_list ?
+          strip_top_level_cv(target) : target_base;
+  TypedInitializerRecursionGuard recursion_guard(node, recursion_target);
   if(!recursion_guard.entered()) {
     // Speculative constructor-argument evaluation can ask the constexpr
     // evaluator to reconstruct the same braced initializer as the same type.
@@ -2105,6 +2162,11 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
               const constant_eval::ConstexprValue & target_value,
               bool source_is_lhs) -> bool
           {
+            if(expr.simple_type == OP_LAND || expr.simple_type == OP_LOR) {
+              // Built-in logical operators are considered only after overload
+              // resolution, and require short-circuit evaluation below.
+              return false;
+            }
             TypePtr source_type =
                 strip_top_level_cv(remove_reference_type(source_value.type));
             TypePtr target_type =
@@ -2126,11 +2188,12 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
                                                      converted)) {
               return false;
             }
-            return source_is_lhs ?
-                constant_eval::constexpr_value_apply_binary(
-                    expr.simple_type, converted, target_value, out) :
-                constant_eval::constexpr_value_apply_binary(
-                    expr.simple_type, target_value, converted, out);
+            const constant_eval::ConstexprValue & lhs_value =
+                source_is_lhs ? converted : target_value;
+            const constant_eval::ConstexprValue & rhs_value =
+                source_is_lhs ? target_value : converted;
+            return constant_eval::constexpr_value_apply_binary(
+                expr.simple_type, lhs_value, rhs_value, out);
           };
 
       if(try_builtin_class_conversion(expr.children[0], lhs, rhs, true) ||
@@ -2296,7 +2359,78 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
   member_call.kind = CppAstKind::call_expression;
   member_call.children.push_back(member_callee);
   member_call.children.push_back(member_args);
-  return try_synthetic_call(member_call, true);
+  if(try_synthetic_call(member_call, true)) {
+    return true;
+  }
+
+  if(expr.kind == CppAstKind::binary_expression &&
+     (node_has_simple_type(expr, OP_LAND) ||
+      node_has_simple_type(expr, OP_LOR))) {
+    const auto evaluate_contextual_bool =
+        [&](const CppAstNode & operand, bool & truthy) -> bool
+        {
+          constant_eval::ConstexprValue value;
+          if(!evaluator.eval_expr(operand, value)) {
+            return false;
+          }
+          TypePtr value_type = strip_top_level_cv(remove_reference_type(value.type));
+          if(value_type && ctx.class_info_for_type(value_type)) {
+            constant_eval::ConstexprValue converted;
+            if(!evaluate_constexpr_target_conversion(ctx,
+                                                     scope,
+                                                     evaluator,
+                                                     operand,
+                                                     value,
+                                                     make_fundamental(FT_BOOL),
+                                                     converted)) {
+              return false;
+            }
+            return constant_eval::constexpr_value_truthy(converted, truthy);
+          }
+          return constant_eval::constexpr_value_truthy(value, truthy);
+        };
+
+    bool lhs_truthy = false;
+    if(!evaluate_contextual_bool(expr.children[0], lhs_truthy)) {
+      return false;
+    }
+    if((node_has_simple_type(expr, OP_LAND) && !lhs_truthy) ||
+       (node_has_simple_type(expr, OP_LOR) && lhs_truthy)) {
+      out = constant_eval::make_integral_value(lhs_truthy,
+                                               make_fundamental(FT_BOOL));
+      return true;
+    }
+    bool rhs_truthy = false;
+    if(!evaluate_contextual_bool(expr.children[1], rhs_truthy)) {
+      return false;
+    }
+    out = constant_eval::make_integral_value(rhs_truthy,
+                                             make_fundamental(FT_BOOL));
+    return true;
+  }
+
+  if(expr.kind == CppAstKind::unary_expression &&
+     node_has_simple_type(expr, OP_LNOT)) {
+    constant_eval::ConstexprValue operand;
+    TypePtr operand_type;
+    if(evaluator.eval_expr(expr.children[0], operand)) {
+      operand_type = strip_top_level_cv(remove_reference_type(operand.type));
+    }
+    if(operand_type && ctx.class_info_for_type(operand_type)) {
+      constant_eval::ConstexprValue converted;
+      if(evaluate_constexpr_target_conversion(ctx,
+                                              scope,
+                                              evaluator,
+                                              expr.children[0],
+                                              operand,
+                                              make_fundamental(FT_BOOL),
+                                              converted) &&
+         constant_eval::constexpr_value_apply_unary(OP_LNOT, converted, out)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool constexpr_base_expression_is_lvalue(const CppAstNode & expr)
@@ -2548,23 +2682,24 @@ bool evaluate_constexpr_member_call_expression(SemanticContext & ctx,
   }
 
   std::vector<constant_eval::ConstexprValue> arg_values;
+  std::vector<bool> arg_values_evaluated;
   if(argument_list) {
     for(size_t i = 0; i < argument_list->children.size(); ++i) {
       constant_eval::ConstexprValue value;
-      if(!evaluator.eval_expr(argument_list->children[i], value)) {
-        return false;
-      }
+      const bool evaluated = evaluator.eval_expr(argument_list->children[i], value);
       arg_values.push_back(value);
+      arg_values_evaluated.push_back(evaluated);
     }
   }
 
   const bool base_is_lvalue = constexpr_base_expression_is_lvalue(callee->children[0]);
   FunctionBinding * selected = nullptr;
   TypePtr selected_function_type;
+  std::vector<constant_eval::ConstexprValue> selected_arg_values;
   const std::size_t explicit_param_offset = 1u;
   for(size_t i = 0; i < found->second.size(); ++i) {
     FunctionBinding * candidate = found->second[i];
-    if(!candidate || !candidate->is_method || !candidate->is_constexpr || !candidate->body) {
+    if(!candidate || !candidate->is_method || !candidate->is_constexpr) {
       continue;
     }
     if(object_is_const && !candidate->is_const_method) {
@@ -2596,6 +2731,8 @@ bool evaluate_constexpr_member_call_expression(SemanticContext & ctx,
     }
 
     bool matches = true;
+    std::vector<constant_eval::ConstexprValue> candidate_arg_values;
+    candidate_arg_values.reserve(arg_values.size());
     for(size_t arg_index = 0; arg_index < arg_values.size(); ++arg_index) {
       const std::size_t param_index = explicit_param_offset + arg_index;
       const TypePtr & param_type =
@@ -2603,9 +2740,24 @@ bool evaluate_constexpr_member_call_expression(SemanticContext & ctx,
               candidate->params[param_index].second :
               function_type->params[param_index];
       constant_eval::ConstexprValue converted;
-      if(!constant_eval::constexpr_value_cast(arg_values[arg_index], param_type, converted)) {
+      if(arg_values_evaluated[arg_index]) {
+        if(!constant_eval::constexpr_value_cast(arg_values[arg_index],
+                                                 param_type,
+                                                 converted)) {
+          matches = false;
+          break;
+        }
+        candidate_arg_values.push_back(arg_values[arg_index]);
+      } else if(!evaluate_typed_initializer_value(ctx,
+                                                  scope,
+                                                  evaluator,
+                                                  argument_list->children[arg_index],
+                                                  param_type,
+                                                  converted)) {
         matches = false;
         break;
+      } else {
+        candidate_arg_values.push_back(converted);
       }
     }
     if(!matches) {
@@ -2616,6 +2768,7 @@ bool evaluate_constexpr_member_call_expression(SemanticContext & ctx,
     }
     selected = candidate;
     selected_function_type = function_type;
+    selected_arg_values.swap(candidate_arg_values);
   }
 
   if(!selected || !selected_function_type) {
@@ -2638,7 +2791,7 @@ bool evaluate_constexpr_member_call_expression(SemanticContext & ctx,
       build_hooks(ctx, constexpr_default_arg_scope);
   Scope constexpr_call_scope = make_constexpr_call_scope(call_scope, selected);
   const constant_eval::Hooks call_hooks = build_hooks(ctx, constexpr_call_scope);
-  std::vector<constant_eval::ConstexprValue> final_args = arg_values;
+  std::vector<constant_eval::ConstexprValue> final_args = selected_arg_values;
   for(size_t param_index = final_args.size() + explicit_param_offset;
       param_index < selected->params.size();
       ++param_index) {
@@ -2920,6 +3073,56 @@ bool evaluate_constexpr_value_member_conversion(SemanticContext & ctx,
   return true;
 }
 
+bool evaluate_constexpr_bool_functional_cast(
+    SemanticContext & ctx,
+    Scope & scope,
+    constant_eval::Evaluator & evaluator,
+    const CppAstNode & expr,
+    constant_eval::ConstexprValue & out)
+{
+  if(expr.kind != CppAstKind::call_expression || expr.children.empty()) {
+    return false;
+  }
+
+  const CppAstNode * callee = &expr.children[0];
+  while(callee->kind == CppAstKind::parenthesized_expression &&
+        callee->children.size() == 1) {
+    callee = &callee->children[0];
+  }
+  if(callee->kind != CppAstKind::id_expression || callee->value != "bool") {
+    return false;
+  }
+
+  const TypePtr target = make_fundamental(FT_BOOL);
+
+  const CppAstNode * arguments =
+      find_child_kind(expr, CppAstKind::argument_list);
+  if(!arguments) {
+    arguments = find_child_kind(expr, CppAstKind::paren_argument_list);
+  }
+  if(!arguments || arguments->children.size() != 1) {
+    return false;
+  }
+
+  const CppAstNode & source_expr = arguments->children[0];
+  constant_eval::ConstexprValue source;
+  if(!evaluator.eval_expr(source_expr, source)) {
+    return false;
+  }
+  if(!constant_eval::constexpr_value_cast(source, target, out) &&
+     !evaluate_constexpr_target_conversion(ctx,
+                                          scope,
+                                          evaluator,
+                                          source_expr,
+                                          source,
+                                          target,
+                                          out)) {
+    return false;
+  }
+  out.type = target;
+  return true;
+}
+
 bool evaluate_constexpr_function_address_expression(
     SemanticContext & ctx,
     Scope & scope,
@@ -3050,6 +3253,71 @@ bool target_is_function_pointer(const TypePtr & target)
   return pointee && pointee->kind == Type::TK_FUNCTION;
 }
 
+bool evaluate_constexpr_arrow_member_expression(
+    constant_eval::Evaluator & evaluator,
+    const CppAstNode & expr,
+    constant_eval::ConstexprValue & out)
+{
+  if(expr.kind != CppAstKind::member_expression ||
+     expr.children.size() != 2 ||
+     !node_has_simple_type(expr, OP_ARROW)) {
+    return false;
+  }
+
+  constant_eval::ConstexprValue base;
+  if(!evaluator.eval_expr(expr.children[0], base)) {
+    return false;
+  }
+
+  CppAstNode pointer_expr = expr.children[0];
+  if(base.kind == constant_eval::ConstexprValue::CV_AGGREGATE) {
+    CppAstNode member_callee;
+    member_callee.kind = CppAstKind::member_expression;
+    member_callee.has_token = true;
+    member_callee.token_kind = RT_SIMPLE;
+    member_callee.simple_type = OP_DOT;
+    member_callee.value = ".";
+    member_callee.children.push_back(expr.children[0]);
+
+    CppAstNode member_name;
+    member_name.kind = CppAstKind::identifier;
+    member_name.value = "operator->";
+    QualifiedName qualified_name;
+    qualified_name.name = member_name.value;
+    set_cppast_qualified_name_syntax(member_name, qualified_name);
+    member_callee.children.push_back(member_name);
+
+    CppAstNode arguments;
+    arguments.kind = CppAstKind::paren_argument_list;
+
+    CppAstNode call;
+    call.kind = CppAstKind::call_expression;
+    call.children.push_back(member_callee);
+    call.children.push_back(arguments);
+    pointer_expr = call;
+  } else if(base.kind != constant_eval::ConstexprValue::CV_POINTER) {
+    return false;
+  }
+
+  CppAstNode dereference;
+  dereference.kind = CppAstKind::unary_expression;
+  dereference.has_token = true;
+  dereference.token_kind = RT_SIMPLE;
+  dereference.simple_type = OP_STAR;
+  dereference.value = "*";
+  dereference.children.push_back(pointer_expr);
+
+  CppAstNode member_access;
+  member_access.kind = CppAstKind::member_expression;
+  member_access.has_token = true;
+  member_access.token_kind = RT_SIMPLE;
+  member_access.simple_type = OP_DOT;
+  member_access.value = ".";
+  member_access.children.push_back(dereference);
+  member_access.children.push_back(expr.children[1]);
+  return evaluator.eval_expr(member_access, out);
+}
+
 bool evaluate_default_special_expression(SemanticContext & ctx,
                                          Scope & scope,
                                          constant_eval::Evaluator & evaluator,
@@ -3104,6 +3372,14 @@ bool evaluate_default_special_expression(SemanticContext & ctx,
     return true;
   }
 
+  if(evaluate_constexpr_bool_functional_cast(ctx,
+                                             scope,
+                                             evaluator,
+                                             expr,
+                                             value)) {
+    return true;
+  }
+
   if(evaluate_constexpr_function_address_expression(ctx,
                                                     scope,
                                                     expr,
@@ -3152,6 +3428,10 @@ bool evaluate_default_special_expression(SemanticContext & ctx,
                                                        evaluator,
                                                        expr,
                                                        value)) {
+    return true;
+  }
+
+  if(evaluate_constexpr_arrow_member_expression(evaluator, expr, value)) {
     return true;
   }
 

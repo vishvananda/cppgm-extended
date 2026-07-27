@@ -8329,6 +8329,63 @@ bool scope_has_direct_callable_name(Scope & current,
          !lookup_direct_function_templates(*lexical_class->member_scope, name).empty();
 }
 
+bool scope_has_direct_nonconstructor_callable_name(Scope & current,
+                                                   const std::string & name)
+{
+  const vector<FunctionBinding *> direct_functions =
+      lookup_direct_functions(current, name);
+  for(size_t i = 0; i < direct_functions.size(); ++i) {
+    if(direct_functions[i] && !direct_functions[i]->is_constructor) {
+      return true;
+    }
+  }
+  const vector<FunctionTemplateDecl *> direct_templates =
+      lookup_direct_function_templates(current, name);
+  for(size_t i = 0; i < direct_templates.size(); ++i) {
+    if(direct_templates[i] && !direct_templates[i]->is_constructor) {
+      return true;
+    }
+  }
+
+  const bool has_lexical_class =
+      !current.class_info && current.function &&
+      current.function->lexical_access_class;
+  ClassInfo * lexical_class = current.class_info;
+  if(!lexical_class && has_lexical_class) {
+    lexical_class = current.function->lexical_access_class;
+  }
+  if(!lexical_class || !lexical_class->member_scope) {
+    return false;
+  }
+
+  const vector<FunctionBinding *> * member_functions =
+      find_direct_function_set(*lexical_class->member_scope, name);
+  if(member_functions) {
+    for(size_t i = 0; i < member_functions->size(); ++i) {
+      if((*member_functions)[i] && !(*member_functions)[i]->is_constructor) {
+        return true;
+      }
+    }
+  }
+  map<string, vector<FunctionBinding *> >::const_iterator methods =
+      lexical_class->methods.find(name);
+  if(methods != lexical_class->methods.end()) {
+    for(size_t i = 0; i < methods->second.size(); ++i) {
+      if(methods->second[i] && !methods->second[i]->is_constructor) {
+        return true;
+      }
+    }
+  }
+  const vector<FunctionTemplateDecl *> member_templates =
+      lookup_direct_function_templates(*lexical_class->member_scope, name);
+  for(size_t i = 0; i < member_templates.size(); ++i) {
+    if(member_templates[i] && !member_templates[i]->is_constructor) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool scope_has_direct_type_name(Scope & current,
                                 const std::string & name)
 {
@@ -8368,7 +8425,7 @@ bool resolved_functional_cast_type_declares_direct_name(SemanticContext & ctx,
     return false;
   }
   return !semantic_lookup::lookup_direct_value(*info->enclosing_scope, name) &&
-         !scope_has_direct_callable_name(*info->enclosing_scope, name) &&
+         !scope_has_direct_nonconstructor_callable_name(*info->enclosing_scope, name) &&
          scope_has_direct_type_name(*info->enclosing_scope, name);
 }
 
@@ -8386,7 +8443,7 @@ bool unqualified_functional_cast_type_hides_outer_functions(
     if(semantic_lookup::lookup_direct_value(*current, name)) {
       return false;
     }
-    if(scope_has_direct_callable_name(*current, name)) {
+    if(scope_has_direct_nonconstructor_callable_name(*current, name)) {
       return false;
     }
     if(scope_has_direct_type_name(*current, name)) {

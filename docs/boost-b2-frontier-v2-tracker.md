@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `77 / 147`
-- current cursor: `#78 libs/optional/test`
-- active compiler frontiers: none; the forced C++11 Optional intake is next
+- completed suites: `79 / 147`
+- current cursor: `#80 libs/parameter/test`
+- active compiler frontiers: none; the forced C++11 Parameter intake is next
 
 ## Baseline Gates
 
@@ -227,6 +227,7 @@ differences other than the output path.
 | `(MultiIndex closure)` | Structured pack-specialization deduction, pack-element AST ownership, qualified declaration/access/member-pointer semantics, and complete full-expression temporary cleanup | -26.21% | -28.25% | -35.65% | versus the committed post-optimization checkpoint, instructions move +684,609,840, RSS +3,129,344 B, and footprint +7,393,280 B; every cumulative hard gate remains strongly improved | `/tmp/cppgm-boost-frontier-v2-multi-index-final-perf.json` | pass; candidate-only medians are 194,486,655,999 instructions, 927,473,664 B RSS, and 649,879,552 B footprint. The gate verified immutable epoch `9764b3835`, frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; all three compiler processes released between runs and recorded zero swaps. No parent compiler or live project header was measured. |
 | `(MySQL C++11 semantic and lifetime closure)` | Qualified namespace definitions, typed leaf-expression overload selection, C++11 list/value initialization, array subobject special members, data-member alignment, and base-initializer full-expression cleanup | -26.23% | -27.52% | -35.44% | versus the MultiIndex checkpoint, instructions improve by 66,206,300 while RSS moves +9,449,472 B and footprint +2,052,096 B; all cumulative signals remain strongly improved | `/private/tmp/cppgm-boost-frontier-v2-mysql-final-perf.json` | pass; three-run candidate medians are 194,420,449,699 instructions, 936,923,136 B RSS, and 651,931,648 B footprint. The gate verified immutable epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; every process released and recorded zero swaps. No parent compiler or live project header was measured. |
 | `(Nowide alias deduction and ordinary-name lookup closure)` | Treat an unexpanded dependent alias as a non-deduced context unless its result is a proven direct non-pack parameter, and let an ordinary using-declaration target win over a same-named tag | -26.17% | -27.92% | -35.84% | versus the MySQL checkpoint, instructions move +0.09% while RSS improves 0.56% and footprint improves 0.62% | `/private/tmp/cppgm-boost-frontier-v2-nowide-final-isolated-perf.json` | pass; isolated three-run candidate medians are 194,594,064,245 instructions, 931,708,928 B RSS, and 647,917,568 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, its frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured, and system swap remained unchanged. |
+| `(Optional C++11 semantic and lowering closure)` | Preserve virtual-base constructor ABI arguments for placement new, enforce conversion/function-template viability, and complete the required C++11 constexpr and dependent-qualified type obligations | -26.05% | -27.60% | -35.46% | versus the Nowide checkpoint, instructions move +0.16%, RSS +0.44%, and footprint +0.59%; this remains below the instruction early-warning threshold and strongly improves every fixed-baseline signal | `/private/tmp/cppgm-boost-frontier-v2-optional-candidate.json` | pass; three-run candidate medians are 194,908,917,546 instructions, 935,821,312 B RSS, and 651,759,616 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, its frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 
 ## Suite Cursor
 
@@ -312,26 +313,29 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 75 | `libs/mysql/test` | pass | `(this commit)` | The final exact two-job forced graph with `pch=off` finds and updates all 177 requested targets, passes the C SHA-2 password test and the complete 1,848-case `boost_mysql_unittests` executable, and exits successfully in 1515.72s; log `/private/tmp/boost-frontier-v2-suite-075-mysql-clean-final-pch-off.log`. Maximum RSS is 1,387,618,304 B with zero process swaps, and system swap remains exactly 945 MiB. | The closure has 19 compact header-free C++11 regressions across the earliest owning PAs. The largest source is 34 lines; none uses `<type_traits>`. A misplaced pack reducer was reduced to explicit by-value pack use and moved from PA18 to the clean PA19:200 pack owner while retaining a pre-fix missing-definition witness. The final Homebrew Clang 22 build is warning-clean; the PA9-excluded direct report passes `4125/4125`, PA37 passes `7/7`, and all 960 strict comparisons pass. All 23 text-reparse categories and 14 audit tests pass. Placement review finds no new early feature use; PA16 retains only its unrelated pre-existing sized-delete finding. Four LowIR refs change for principled corrected constructor/partial-specialization identity, with no witness refs fabricated. The immutable frozen-source/51-header gate records -26.23% instructions, -27.52% RSS, and -35.44% footprint. |
 | 76 | `libs/nowide/test` | pass | `(this commit)` | The initial exact two-job graph exposed nine compile failures: eight shared the variadic `void_t` partial-specialization defect and `test_stat` independently imported a tag instead of the same-named ordinary function. The final exact `pch=off` graph finds 1837 targets, updates all 111 requested targets, records 22 passing test actions, and exits successfully in 265.63s; log `/private/tmp/boost-frontier-v2-suite-076-nowide-final-clean.log`. Maximum RSS is 1,101,295,616 B under concurrent broad/perf load, every compiler child releases, and process and system swap remain unchanged. | The existing PA22 detector owner was strengthened by one additional variadic alias argument; the only new source fixture is a 3-line / 113-byte PA15 using-declaration reducer. Both are header-free apart from PA22's established local support header and neither uses `<type_traits>`. The Homebrew Clang 22 build and warning controls pass. PA15+PA22 pass `528/528`; all 960 configured strict comparisons pass; the PA9-excluded direct report passes `4126/4126`, including PA37 `7/7`. Normal, ten individual cache-off modes, and all-off LowIR are byte-identical; the PA22 witness is byte-identical to patched Clang; placement, all 23 zero-reparse categories, 14 audit tests, and `git diff --check` pass. The isolated immutable frozen-source/51-header gate records -26.17% instructions, -27.92% RSS, and -35.84% footprint. |
 | 77 | `libs/openmethod/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/openmethod/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from the historical configuration-only result. The cursor advances directly to C++11 Boost.Optional. |
+| 78 | `libs/optional/test` | pass | `(this commit)` | The exact four-job `pch=off` intake finds 1932 targets, requests 472 updates, and exposes exactly three failures: `optional_test` segfaults, while `optional_test_constexpr` and `optional_test_ref_to_val` fail to compile; log `/private/tmp/boost-frontier-v2-suite-078-optional-intake.log`. The final forced `pch=off` graph finds the same 1932 targets, updates all 253 requested targets, passes every positive compile/link/runtime action, handles every deliberate failure as failed-as-expected, and exits successfully in 106.36s; log `/private/tmp/boost-frontier-v2-suite-078-optional-final-pch-off.log`. | Eight compact header-free C++11 reducers cover the independent typed causes across PA16, PA20, PA21, PA22, and PA27; the longest is 16 lines and none uses `<type_traits>`. The placement-new reducer is six lines with a 20-line LowIR ref. The earlier PA27 large-ref audit remains valid: every ref above 5 KiB has a compact source owner, and only irreducible VTT/diamond-destructor outputs exceed 10 KiB. The direct owner reports pass, all 960 strict comparisons pass, and the PA9-excluded broad report passes `4134/4134`, including PA37 `7/7`. Normal, ten individual cache-off modes, and all-off output are byte-identical; the negative class-assertion reducer rejects in every mode. All 23 text-reparse categories and 31 audit/performance unit tests pass. New placement/hygiene is clean; PA16 and PA22 retain only unrelated pre-existing audit rows. The sole existing PA23 ref change is the principled removal of a spurious enclosing-constructor candidate ordinal; object symbol and instructions are unchanged. The final graph peaks at 307,638,272 B RSS with zero process swaps, and the immutable frozen gate records -26.05% instructions, -27.60% RSS, and -35.46% footprint. |
+| 79 | `libs/outcome/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/outcome/meta/libraries.json`, and its Jamfile requires C++14 variable templates and extended constexpr. | CPPGM's supported source-language lane remains C++11. Per the established frontier policy, no C++11 graph is run and no compiler work is inferred from the historical configuration-only result. The cursor advances directly to C++03-declared Boost.Parameter. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#78 libs/optional/test`
+- suite: `#80 libs/parameter/test`
 - focused target: none until the forced intake establishes a failure
-- last closed suite: `#77 libs/openmethod/test` (`skipped-language`)
+- last closed suite: `#79 libs/outcome/test` (`skipped-language`)
 - failure phase: none
 - diagnostic: none
 - reduced repro: none
 - owning PA/cluster: pending intake
 - implementation area: pending intake
-- performance risk: unknown; retain the established two-job frontier default,
-  `pch=off`, and active RSS/swap monitoring
-- language lane: Boost.Optional declares C++11 in
-  `libs/optional/meta/libraries.json`, so
+- performance risk: unknown; use four frontier jobs with `pch=off` and active
+  RSS/swap monitoring, reducing concurrency only if the live memory profile
+  requires it
+- language lane: Boost.Parameter declares C++03 in
+  `libs/parameter/meta/libraries.json`, so
   it is supported and must run
-- next action: run the exact forced C++11 `libs/optional/test` graph
+- next action: run the exact forced C++11 `libs/parameter/test` graph
 
 ## Fix Ledger
 
@@ -340,6 +344,10 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | Optional placement-new virtual-base constructor call | Placement-new lowering treated the selected constructor as having only the explicit source arguments. It now appends the constructor binding's typed hidden virtual-base pointers using generalized callee and explicit-argument offsets, matching ordinary construction without changing lookup or ABI inference. | `pa27/tests/general/100-placement-new-vbase-hidden-argument.t`, 6 lines with a 20-line LowIR ref | The saved parent emits a two-argument `B::B` call and the reduced native program segfaults; the fixed LowIR passes the destination, source, and hidden virtual-base pointer. | Focused PA27, owner/broad direct comparison, cache modes, strict, placement, and the exact Optional runtime pass. | measured with the complete Optional closure: -26.05% instructions, -27.60% RSS, and -35.46% footprint | `(this commit)` |
+| fixed | Optional conversion and functional-cast candidate viability | Conversion-function candidate collection ignored member ref qualifiers, so an lvalue could select a deleted `&&` conversion. Separately, functional-cast type lookup treated constructors as ordinary callable-name declarations and let an enclosing constructor template hide the intended type. Typed ref-qualifier filtering and a direct nonconstructor-name predicate restore the two ordinary lookup/ranking rules. | `pa16/tests/general/400-conversion-function-ref-qualifier-viability.t`; `pa21/tests/spec/300-functional-cast-type-not-hidden-by-constructor-template.t` | The saved parent rejects both header-free C++11 reducers; Clang 22 and the fixed compiler accept them. The latter principled candidate removal changes only an internal PA23 overload ordinal, not its object symbol or instructions. | PA16/PA21/PA23 direct comparison, all strict suites, cache modes, broad, and exact Optional positives pass. | measured with the complete Optional closure | `(this commit)` |
+| fixed | Optional C++11 constexpr callable, union, bool, and braced-template evaluation | Constant evaluation walked inactive union members, lost direct pack-expanded initializer arguments, used raw class truthiness before overload/contextual-bool semantics, treated a callable object as the enclosing `this`, omitted class `operator->`, and failed to materialize the selected member-template specialization for a typed empty braced argument. The repaired paths reuse typed overload, conversion, object, member, and initializer state with correct short-circuiting; no source text or cache is added. | Two PA20 constexpr owners plus `pa22/tests/spec/100-constexpr-union-active-pack-constructor.t` and `100-constexpr-member-template-braced-argument.t`; all are header-free C++11 and the two template-dependent cases are placed at PA22:100 | The three exact Optional positives and the compact reducers fail before the closure. Clang 22 accepts every reducer under C++11. | PA20/PA22 direct comparison, all strict suites, twelve cache modes, broad, and the final Optional graph pass. | measured with the complete Optional closure | `(this commit)` |
+| fixed | Optional hard assertion in a dependent qualified non-type parameter type | Resolving `typename hard<T>::type` lazily materialized the member alias without checking the concrete owner specialization's class-scope `static_assert`, so Boost's `fail_hard_on_nonconvertible` default admitted explicit-only conversions. A scoped non-type-parameter-type resolution mode checks only the concrete qualified owner assertions at the lookup that requires class instantiation. The discarded broad experiment that checked every lazy member lookup is absent; unrelated libc++ classes remain lazy. | `pa21/tests/spec/300-nontype-parameter-dependent-owner-static-assert-bad.t`, 8 lines, header-free C++11 | The saved compiler accepts the reducer and both Boost compile-fail sources. Clang rejects at the class assertion; the fixed compiler rejects both exact sources specifically at `is_convertible<U&&, T>`. | The reducer rejects in normal, all ten individual cache-off modes, and all-off mode; PA21, strict, broad, and every Optional deliberate failure pass. | measured with the complete Optional closure | `(this commit)` |
 | fixed | Nowide variadic alias partial-specialization matching | The identity-alias shortcut used the alias parameter count as a missing-result sentinel. For `void_t<int, T>`, the one-parameter variadic alias therefore treated argument index one as a valid direct result and collapsed the whole alias to `T`. Identity deduction now requires an actual direct non-pack result parameter. A still-unexpanded dependent alias is otherwise a non-deduced context; after another pattern deduces its parameters, the existing typed substitution and comparison validate its concrete result. No cache, source-text parse, spelling rule, or Boost-specific path is added. | Strengthened existing `pa22/tests/spec/300-void-t-detector.t` from one to two `void_t` arguments; this keeps the established compact C++11 detector owner and adds no new long fixture or `<type_traits>` dependency | The 23-line header-free scratch reduction and eight Nowide string/conversion/stream targets failed before the fix. Trace evidence showed the missing-result sentinel `1` indexing the second expanded alias argument and replacing `void_t<int,T>` with `T`. Clang accepts the reduction. | The reducer, exact eight-target family, PA22 LowIR and patched-Clang witness, twelve cache modes, PA15+PA22 `528/528`, all 960 strict comparisons, PA9-excluded `4126/4126`, placement, zero-reparse/audit, warning, and final full Nowide gates pass. | measured with the complete Nowide closure: -26.17% instructions, -27.92% RSS, and -35.84% footprint; isolated candidate-only report `/private/tmp/cppgm-boost-frontier-v2-nowide-final-isolated-perf.json` | `(this commit)` |
 | fixed | Nowide ordinary using-declaration target colliding with a tag | Using-declaration collection returned immediately after type lookup. In C++'s separate tag namespace, `struct stat` can coexist with the ordinary function `stat`; `using ::stat` must import the ordinary declaration, not the hidden tag. Collection now completes structured ordinary class/alias/variable-template, namespace, value, function, and function-template lookup before falling back to the tag type. This replaces the provisional function-only repair with the general lookup order and adds no name special case. | `pa15/tests/general/300-using-declaration-function-hides-tag.t`, 3 lines / 113 bytes with a 263-byte LowIR reference at PA15's using-declaration owner | The 15-line exact-shape reduction and Nowide `test_stat` were parsed as a functional cast because the function was never imported. An independent tag-plus-variable control exposed the same algorithmic gap in the provisional function-only branch; Clang accepts both forms. | Both controls pass under cppgm++ and Clang C++11; the owner report, strict, twelve cache modes, placement, zero-reparse/audit, warning, broad, and final full Nowide gates pass. | measured with the complete Nowide closure | `(this commit)` |
 | fixed | MySQL qualified namespace function definitions | Function-definition parsing accepted qualified class owners but not qualified namespace owners, so parameter typedefs were parsed in the wrong scope and template definitions were registered apart from their declarations. The structured owner resolver now admits namespace scopes for definitions and registers the entity in that resolved scope. Template-body validation also recognizes locally declared classes, enums, aliases, and typedefs as types. | `pa11/tests/general/200-qualified-namespace-function-definition-parameter-type.t`; `pa18/tests/general/100-qualified-namespace-function-template-definition.t`; `pa19/tests/general/200-qualified-namespace-function-template-pack-definition.t`; `pa18/tests/general/100-template-member-local-class-functional-cast-argument.t` | The old compiler rejects the non-template typedef parameter and emits only declarations for the template definitions. The reduced PA19 pack case avoids full deduction yet still proves the missing definition. | Clang 22 strict C++11 accepts every reducer; PA18+PA19 direct comparison passes `390/390`; PA19 placement is clean. | measured with the complete MySQL closure | `(this commit)` |
@@ -599,6 +607,42 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Post-MSM qualified member-pointer binding lifetime | Qualified member-pointer analysis retained a raw `ValueBinding *` across a function lookup that could complete and rebuild the owning class scope. Xpressive's `&dummy::i_` then dereferenced the discarded binding. The analyzer now snapshots the typed value binding before any completion-capable lookup and uses that stable value for the remainder of the expression. This adds no cache, source scan, spelling rule, or retained global state. | No false header-free regression was added: several minimal safe-bool shapes could not trigger the required hosted class-completion order. The exact Boost Xpressive header path is the controlled proof. | Typed trace records a valid `dummy::i_` binding before function lookup and a stale binding afterward in the pre-fix build. The fixed forced Xpressive-dependent Log test compiles, links, and runs inside the complete graph. | The full exact two-job Log replay performs 281 C++ compiles, one C compile, 59 passing test actions, and one failed-as-expected negative; all 549 targets update in 2091.95s at 1,260,748,800 B maximum RSS and zero process swaps. System swap ends 32 MiB below its starting value. All repository gates listed above pass; log `/tmp/boost-frontier-v2-postopt-log-full-forced.log`. | measured with the same clean committed closure: -26.47% instructions, -28.49% RSS, and -36.38% footprint | `7dd7c9df7` |
 
 ## Decision Log
+
+- `2026-07-26`: Closed the supported C++11 Boost.Optional graph, classified
+  C++14-only Boost.Outcome as `skipped-language`, and advanced the cursor to
+  C++03-declared Boost.Parameter. The initial exact four-job forced graph
+  exposed exactly three positive failures. The final authoritative `pch=off`
+  graph finds 1932 targets, updates all 253 requested targets, handles every
+  deliberate failure as failed-as-expected, and exits successfully in 106.36s
+  at 307,638,272 B maximum RSS with zero process swaps. The Boost.Build
+  `gcc.compile.*` text remains only its legacy adapter label: C++ actions use
+  `dev/cppgm++`, and all host C, assembly, link, and production rebuild actions
+  use Homebrew Clang 22.
+
+  The closure repairs typed algorithms rather than retaining more data or
+  hiding repeated work in a cache. Placement-new lowering now carries typed
+  virtual-base constructor arguments. Conversion-function viability observes
+  ref qualifiers, and functional-cast lookup does not count constructors as
+  ordinary same-named callables. Constant evaluation now respects active union
+  members, direct pack-expanded initializers, callable objects, `operator->`,
+  overloaded and contextual Boolean semantics, and typed braced arguments.
+  Finally, a deliberately scoped non-type-template-parameter type-resolution
+  mode checks the concrete qualified owner's class `static_assert`; the broad
+  eager-member experiment was discarded.
+
+  Eight compact header-free C++11 reducers cover the independent causes across
+  PA16, PA20, PA21, PA22, and PA27. The longest is 16 lines, none uses
+  `<type_traits>`, and the PA27 placement-new source is six lines with a
+  20-line LowIR reference. The PA27 large-ref review remains clean: only
+  irreducible VTT/diamond-destructor lifecycle outputs exceed 10 KiB. All 960
+  strict direct comparisons and the PA9-excluded `4134/4134` report pass,
+  including PA37 `7/7`; twelve cache modes are byte-identical, all 23 text
+  reparse categories are zero, and the standard 31 audit/performance unit
+  tests pass. The immutable frozen-source and frozen-51-header gate records
+  -26.05% instructions, -27.60% RSS, and -35.46% footprint; versus the Nowide
+  checkpoint the movements are +0.16%, +0.44%, and +0.59%, below the
+  instruction early-warning threshold. No parent compiler or live project
+  header was measured.
 
 - `2026-07-26`: Closed the supported C++11 Boost.Nowide graph, classified
   C++17-only Boost.OpenMethod as `skipped-language`, and advanced the cursor to
@@ -3131,10 +3175,10 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-/usr/local/bin/timeout 14400 env JOBS=2 \
+/usr/local/bin/timeout 14400 env JOBS=4 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/optional/test
+  ./run-cppgm-b2.sh pch=off -a libs/parameter/test
 ```

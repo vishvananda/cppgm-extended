@@ -145,6 +145,10 @@ bool resolve_instantiated_dependent_type_if_needed(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     cpp_decl::TypePtr & type);
+bool resolve_non_type_template_parameter_type_if_needed(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    cpp_decl::TypePtr & type);
 
 NonTypeArgumentStatus evaluate_non_type_argument_expression(
     template_api::TemplateServices & services,

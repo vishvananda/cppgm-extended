@@ -10524,6 +10524,35 @@ bool populate_class_reference_named_member(SemanticContext & ctx,
 
 }  // namespace
 
+void ensure_class_reference_static_asserts(SemanticContext & ctx,
+                                           ClassInfo & info)
+{
+  if(info.complete || info.reference_members_collected ||
+     class_instantiation_is_dependent(ctx, info)) {
+    return;
+  }
+
+  template_api::refresh_referenced_class_template_selection(ctx, info);
+  const CppAstNode * reference_node =
+      info.template_output_node ? info.template_output_node : info.class_node;
+  if(!reference_node || info.complete || info.reference_members_collected ||
+     class_instantiation_is_dependent(ctx, info)) {
+    return;
+  }
+
+  for(std::size_t i = 0; i < reference_node->children.size(); ++i) {
+    const CppAstNode & child = reference_node->children[i];
+    if(child.kind != CppAstKind::static_assert_declaration ||
+       !info.reference_named_member_declarations_collected.insert(&child).second) {
+      continue;
+    }
+    const ScopedReferenceNamedMemberDeclaration active_declaration(
+        info, *reference_node, i);
+    semantic_declaration::analyze_static_assert_declaration(
+        ctx, *info.member_scope, child);
+  }
+}
+
 void ensure_class_reference_type_members(SemanticContext & ctx,
                                          ClassInfo & info)
 {
