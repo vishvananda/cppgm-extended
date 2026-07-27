@@ -66,18 +66,17 @@ function @layer_second___insert_(%this : ptr, %__param1 : i32, %position : ptr, 
     %t1 = load ptr $value
     %t2 = load i32 %t1
     %t3 = binary add i32 %t2, 100
-    %t4 = load ptr $value
-    store i32 %t3, %t4
-    %t5 = load ptr $this
+    store i32 %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 0
     %t6 = index i8 [projection=base_subobject] %t5, 0
-    %t7 = index i8 [projection=base_subobject] %t6, 0
-    %t8 = load ptr $position
-    %t9 = load ptr $value
-    %t10 = addr $argobj__1
-    %t11 = addr $variant
-    %t12 = call i32 @layer_terminal___insert_(%t7, 0, %t8, %t9, $argobj__1)
-    %t13 = binary add i32 %t12, 100
-    return i32 %t13
+    %t7 = load ptr $position
+    %t8 = load ptr $value
+    %t9 = addr $argobj__1
+    %t10 = addr $variant
+    %t11 = call i32 @layer_terminal___insert_(%t6, 0, %t7, %t8, $argobj__1)
+    %t12 = binary add i32 %t11, 100
+    return i32 %t12
 }
 function @layer_terminal___insert_(%this : ptr, %__param1 : i32, %position : ptr, %value : ptr [pass=reference], %variant : obj<1x1>) -> i32 [binding=weak, object=_ZN5layerI8terminalE7insert_I3tagEEiiPiRiT_] {
   slot $this : ptr
@@ -95,17 +94,16 @@ function @layer_terminal___insert_(%this : ptr, %__param1 : i32, %position : ptr
     %t1 = load ptr $value
     %t2 = load i32 %t1
     %t3 = binary add i32 %t2, 100
-    %t4 = load ptr $value
-    store i32 %t3, %t4
-    %t5 = load ptr $this
-    %t6 = index i8 [projection=base_subobject] %t5, 0
-    %t7 = load ptr $position
-    %t8 = load ptr $value
-    %t9 = addr $argobj__1
-    %t10 = addr $variant
-    %t11 = call i32 @terminal__insert_(%t6, 0, %t7, %t8, $argobj__1)
-    %t12 = binary add i32 %t11, 100
-    return i32 %t12
+    store i32 %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t6 = load ptr $position
+    %t7 = load ptr $value
+    %t8 = addr $argobj__1
+    %t9 = addr $variant
+    %t10 = call i32 @terminal__insert_(%t5, 0, %t6, %t7, $argobj__1)
+    %t11 = binary add i32 %t10, 100
+    return i32 %t11
 }
 function @tag__tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3tagC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr

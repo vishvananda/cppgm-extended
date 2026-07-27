@@ -8,8 +8,7 @@ function @assign_address(%value : ptr [pass=reference], %next : i32) -> ptr [bin
     %t1 = load i32 $next
     %t2 = load ptr $value
     store i32 %t1, %t2
-    %t3 = load ptr $value
-    return ptr %t3
+    return ptr %t2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : i32

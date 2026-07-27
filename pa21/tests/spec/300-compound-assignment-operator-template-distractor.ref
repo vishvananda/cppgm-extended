@@ -14,10 +14,7 @@ function @Holder__operator__(%this : ptr, %rhs : ptr [pass=reference]) -> void [
     %t7 = call ptr @Property__operatorread_access_t(%t6)
     %t8 = load i64 %t7
     %t9 = binary add i64 %t4, %t8
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
-    %t12 = index i8 [projection=field] %t11, 0
-    store i64 %t9, %t12
+    store i64 %t9, %t3
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

@@ -114,11 +114,7 @@ function @Box_Maker__Piece__local_14468886021768262279___Guard__operator__(%this
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load i32 %t4
     %t6 = binary add i32 %t5, 1
-    %t7 = load ptr $this
-    %t8 = index i8 [projection=reference_field] %t7, 0
-    %t9 = load ptr %t8
-    %t10 = index i8 [projection=field] %t9, 0
-    store i32 %t6, %t10
+    store i32 %t6, %t4
     return void
 }
 function @Box_Maker__Piece__local_6130952152799155301___Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxIZN5Maker3twoEvE5PieceEC1Ev] {
@@ -167,11 +163,7 @@ function @Box_Maker__Piece__local_6130952152799155301___Guard__operator__(%this 
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load i32 %t4
     %t6 = binary add i32 %t5, 1
-    %t7 = load ptr $this
-    %t8 = index i8 [projection=reference_field] %t7, 0
-    %t9 = load ptr %t8
-    %t10 = index i8 [projection=field] %t9, 0
-    store i32 %t6, %t10
+    store i32 %t6, %t4
     return void
 }
 alias object _ZN3BoxIZN5Maker3oneEvE5PieceEC2Ev = @Box_Maker__Piece__local_14468886021768262279___Box

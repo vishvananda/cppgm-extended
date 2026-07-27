@@ -84,11 +84,9 @@ function @Box_int___operator__(%this : ptr, %n : i64) -> ptr [binding=weak, obje
     %t4 = load i64 $n
     %t5 = binary mul i64 %t4, 4
     %t6 = index i8 %t3, %t5
+    store ptr %t6, %t2
     %t7 = load ptr $this
-    %t8 = index i8 [projection=field] %t7, 0
-    store ptr %t6, %t8
-    %t9 = load ptr $this
-    return ptr %t9
+    return ptr %t7
 }
 function @Box_int___Box__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN3BoxIiEC1ERKS0_, trivial_lifecycle=yes] {
   slot $this : ptr

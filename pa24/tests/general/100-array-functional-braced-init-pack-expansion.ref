@@ -75,11 +75,10 @@ function @add_impl(%st : ptr [pass=reference]) -> i32 [binding=weak, object=_Z8a
     %t4 = convert sext i64 i32 %t2
     %t5 = binary add i64 %t4, %t3
     %t6 = convert trunc i32 i64 %t5
+    store i32 %t6, %t1
     %t7 = load ptr $st
-    store i32 %t6, %t7
-    %t8 = load ptr $st
-    %t9 = load i32 %t8
-    return i32 %t9
+    %t8 = load i32 %t7
+    return i32 %t8
 }
 function @add_impl__ov2(%st : ptr [pass=reference]) -> i32 [binding=weak, object=_Z8add_implIcEiRi] {
   slot $st : ptr
@@ -92,9 +91,8 @@ function @add_impl__ov2(%st : ptr [pass=reference]) -> i32 [binding=weak, object
     %t4 = convert sext i64 i32 %t2
     %t5 = binary add i64 %t4, %t3
     %t6 = convert trunc i32 i64 %t5
+    store i32 %t6, %t1
     %t7 = load ptr $st
-    store i32 %t6, %t7
-    %t8 = load ptr $st
-    %t9 = load i32 %t8
-    return i32 %t9
+    %t8 = load i32 %t7
+    return i32 %t8
 }

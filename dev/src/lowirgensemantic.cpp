@@ -12361,6 +12361,12 @@ private:
 
   string emit_rvalue(const CallSemNode & node)
   {
+    return emit_rvalue_impl(node, nullptr);
+  }
+
+  string emit_rvalue_impl(const CallSemNode & node,
+                          string * assignment_result_address)
+  {
     ScopedLowIRCurrentExpr current_expr(node);
 
     TypePtr braced_array_type =
@@ -12616,6 +12622,13 @@ private:
       if(node.children.size() != 2) {
         throw logic_error("assignment-expression arity");
       }
+      const auto record_assignment_result_address =
+          [&](const string & target)
+          {
+            if(assignment_result_address) {
+              *assignment_result_address = target;
+            }
+          };
       if(callsem_has_token(node, OP_ASS)) {
         if(node.children[0].is_reference_storage_target) {
           TypePtr target_memory_type = strip_top_level_cv(node.children[0].semantic_type);
@@ -12632,6 +12645,7 @@ private:
           const string rebound =
               emit_reference_storage_value(referent_type, *source);
           const string target = emit_lvalue_storage(node.children[0]);
+          record_assignment_result_address(target);
           emit_line("store ptr " + rebound + ", " + target);
           return rebound;
         }
@@ -12643,11 +12657,13 @@ private:
                 lhs_type;
         if(lhs_base && lhs_base->kind == Type::TK_ARRAY) {
           const string target_ptr = emit_lvalue_address(node.children[0]);
+          record_assignment_result_address(target_ptr);
           emit_storage_value_to_target(lhs_type, node.children[1], target_ptr);
           return target_ptr;
         }
         if(is_complete_class_value_type(lhs_storage_value_type)) {
           const string target_ptr = emit_lvalue_address(node.children[0]);
+          record_assignment_result_address(target_ptr);
           if(!emit_trivial_class_storage_copy_to_target(lhs_storage_value_type,
                                                         node.children[1],
                                                         target_ptr)) {
@@ -12658,11 +12674,12 @@ private:
           return target_ptr;
         }
         const string rhs = emit_scalar_storage_value(lhs_type, node.children[1]);
+        const string target = emit_lvalue_storage(node.children[0]);
+        record_assignment_result_address(target);
         if(is_bit_field_member_expression(node.children[0])) {
-          emit_store_to_bit_field(node.children[0], rhs);
+          emit_store_to_bit_field_storage(node.children[0], rhs, target);
           return rhs;
         }
-        const string target = emit_lvalue_storage(node.children[0]);
         const string memory_type = lowir_lvalue_memory_type(node.children[0]);
         const string debug_name = direct_local_debug_name(node.children[0]);
         const string stored_value =
@@ -12673,11 +12690,15 @@ private:
       }
 
       const string memory_type = lowir_lvalue_memory_type(node.children[0]);
-      const string old_value = is_bit_field_member_expression(node.children[0]) ?
-          emit_bit_field_rvalue(node.children[0]) :
+      const bool bit_field_member =
+          is_bit_field_member_expression(node.children[0]);
+      const string target = emit_lvalue_storage(node.children[0]);
+      record_assignment_result_address(target);
+      const string old_value = bit_field_member ?
+          emit_bit_field_rvalue_from_storage(node.children[0], target) :
           emit_temp_assignment(memory_type,
                                string("load ") + memory_type + " " +
-                               emit_lvalue_storage(node.children[0]));
+                               target);
       const string rhs = emit_rvalue(node.children[1]);
       TypePtr lhs_type = remove_reference_type(node.children[0].semantic_type);
       if(!lhs_type) {
@@ -12777,10 +12798,9 @@ private:
                                          lhs_type,
                                          true);
       }
-      if(is_bit_field_member_expression(node.children[0])) {
-        emit_store_to_bit_field(node.children[0], next_value);
+      if(bit_field_member) {
+        emit_store_to_bit_field_storage(node.children[0], next_value, target);
       } else {
-        const string target = emit_lvalue_storage(node.children[0]);
         const string debug_name = direct_local_debug_name(node.children[0]);
         const string stored_value =
             debug_name.empty() ? next_value
@@ -14411,8 +14431,12 @@ private:
     }
 
     if(node.kind == CallSemKind::assignment_expression && node.children.size() == 2) {
-      emit_rvalue(node);
-      return emit_lvalue_address(node.children[0]);
+      string result_address;
+      emit_rvalue_impl(node, &result_address);
+      if(result_address.empty()) {
+        throw logic_error("assignment-expression missing result address");
+      }
+      return emit_lvalue_storage_operand_address(result_address);
     }
 
     if(node.kind == CallSemKind::binary_expression &&
@@ -14612,7 +14636,12 @@ private:
 
   string emit_bit_field_rvalue(const CallSemNode & node)
   {
-    const string target = emit_lvalue_storage(node);
+    return emit_bit_field_rvalue_from_storage(node, emit_lvalue_storage(node));
+  }
+
+  string emit_bit_field_rvalue_from_storage(const CallSemNode & node,
+                                             const string & target)
+  {
     const string memory_type = lowir_lvalue_memory_type(node);
     string value =
         emit_temp_assignment(memory_type, string("load ") + memory_type + " " + target);
@@ -14639,7 +14668,13 @@ private:
 
   void emit_store_to_bit_field(const CallSemNode & node, const string & rhs)
   {
-    const string target = emit_lvalue_storage(node);
+    emit_store_to_bit_field_storage(node, rhs, emit_lvalue_storage(node));
+  }
+
+  void emit_store_to_bit_field_storage(const CallSemNode & node,
+                                       const string & rhs,
+                                       const string & target)
+  {
     const string memory_type = lowir_lvalue_memory_type(node);
     const size_t storage_bits =
         static_cast<size_t>(

@@ -87,9 +87,7 @@ function @parser_test__parse(%this : ptr, %message : i32, %check : ptr [pass=ref
     %t7 = load i32 $message
     %t8 = call i32 @parser_test____lambda_parser_test__run_t68_72____lambda_parser_test____lambda_parser_test__run_t68_72__operator___t83_87__operator__(%t6, %t7)
     %t9 = binary add i32 %t5, %t8
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=field] %t10, 0
-    store i32 %t9, %t11
+    store i32 %t9, %t4
     jump ^if_end_3
 
   block ^if_else_2:
