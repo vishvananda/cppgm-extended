@@ -10347,6 +10347,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
             {
               const witness::ScopedTemplateWitnessSourceCapturePause
                   source_capture_pause;
+              const template_argument_semantics::
+                  ScopedRequiredQualifiedTypeResolution required_resolution;
               CppAstNode parse_pattern = pattern_decl.result_type_pattern;
               clear_cached_semantic_types(parse_pattern);
               CppAstNode substituted_pattern;
@@ -11004,6 +11006,56 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           << " bindings=" << scope_bindings_for_diagnostic(inst_scope);
     parser_trace::note("template.resolve", std::string(), trace.str());
   }
+
+  // Substitution proceeds in lexical order.  For an ordinary leading return
+  // type, that means its dependent types are substituted before any function
+  // parameter types.  In particular, a hard diagnostic raised while
+  // instantiating the return type must not be hidden by a later parameter's
+  // substitution failure.
+  const bool has_trailing_return_type =
+      source_decl->declarator &&
+      find_child(*source_decl->declarator, CppAstKind::trailing_return_type);
+  TypePtr leading_function_pattern = strip_top_level_cv(instantiation_type_pattern);
+  if(!source_decl->is_constructor &&
+     !source_decl->is_destructor &&
+     !has_trailing_return_type &&
+     leading_function_pattern &&
+     leading_function_pattern->kind == Type::TK_FUNCTION &&
+     !template_arguments_are_dependent_for_instantiation(ctx, arguments) &&
+     (template_argument_semantics::type_depends_on_template_parameter(
+          ctx, leading_function_pattern->inner) ||
+      (source_decl->result_type_pattern.kind != CppAstKind::invalid &&
+       ast_mentions_template_parameter_name(source_decl->result_type_pattern,
+                                            source_decl->parameters)))) {
+    TypePtr leading_result = leading_function_pattern->inner;
+    TypePtr substituted_result;
+    const template_argument_semantics::
+        ScopedRequiredQualifiedTypeResolution required_resolution;
+    if(template_argument_semantics::substitute_type(inst_scope,
+                                                    leading_result,
+                                                    source_decl->parameters,
+                                                    arguments,
+                                                    substituted_result) &&
+       substituted_result) {
+      leading_result = substituted_result;
+    }
+    TypePtr resolved_result;
+    if(recover_instantiation_bound_type(ctx,
+                                       inst_scope,
+                                       leading_result,
+                                       resolved_result) &&
+       resolved_result) {
+      leading_result = resolved_result;
+    }
+    instantiation_type_pattern =
+        make_function(leading_result,
+                      leading_function_pattern->params,
+                      leading_function_pattern->variadic,
+                      leading_function_pattern->function_const,
+                      leading_function_pattern->function_volatile,
+                      leading_function_pattern->prototype_relaxed,
+                      leading_function_pattern->function_ref_qualifier);
+  }
   std::string name;
   TypePtr type;
   std::vector<std::pair<std::string, TypePtr> > params;
@@ -11449,6 +11501,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       const auto recover_result_without_preempting_pattern_rebind =
           [&](Scope & recovery_scope, TypePtr & recovered) -> bool
           {
+            const template_argument_semantics::
+                ScopedRequiredQualifiedTypeResolution required_resolution;
             try {
               return recover_instantiation_bound_type(ctx,
                                                       recovery_scope,
@@ -11465,6 +11519,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       if(source_result_type_was_dependent ||
          source_result_mentions_template_parameter) {
         TypePtr substituted;
+        const template_argument_semantics::
+            ScopedRequiredQualifiedTypeResolution required_resolution;
         if(template_argument_semantics::substitute_type(
                inst_scope, result_type, source_decl->parameters, arguments, substituted)) {
           result_type = substituted;
@@ -11718,6 +11774,9 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                         *owner_arguments,
                         owner_pack_sizes);
                   }
+                  const template_argument_semantics::
+                      ScopedRequiredQualifiedTypeResolution
+                          required_resolution;
                   CppAstNode parse_pattern = source_decl->result_type_pattern;
                   clear_cached_semantic_types(parse_pattern);
                   CppAstNode substituted_pattern;

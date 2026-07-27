@@ -88,6 +88,26 @@ private:
   Diagnostic diagnostic_;
 };
 
+// A diagnostic which must not be converted into a substitution failure by
+// legacy recovery sites that catch std::logic_error.  Concrete static_assert
+// failures are hard errors even when they occur while substituting a function
+// type.
+struct SemanticHardDiagnosticError : std::runtime_error
+{
+  explicit SemanticHardDiagnosticError(const Diagnostic & diagnostic)
+    : std::runtime_error(format_diagnostic_message(diagnostic)),
+      diagnostic_(diagnostic)
+  {}
+
+  const Diagnostic & diagnostic() const
+  {
+    return diagnostic_;
+  }
+
+private:
+  Diagnostic diagnostic_;
+};
+
 struct SemanticSoftFailure : std::logic_error
 {
   using std::logic_error::logic_error;
@@ -150,6 +170,15 @@ inline Diagnostic make_diagnostic(DiagnosticKind kind,
                                           const std::string & phase = std::string())
 {
   throw SemanticDiagnosticError(
+      make_diagnostic(DiagnosticKind::UserError, message, location, phase));
+}
+
+[[noreturn]] inline void throw_hard_user_error(
+    const std::string & message,
+    const std::string & location = std::string(),
+    const std::string & phase = std::string())
+{
+  throw SemanticHardDiagnosticError(
       make_diagnostic(DiagnosticKind::UserError, message, location, phase));
 }
 

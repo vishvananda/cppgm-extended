@@ -32,13 +32,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0____long_int__unsigned_long_int__0___offset_ptr(%this : ptr) -> void [binding=weak, object=_ZN10offset_ptrI12compact_nodeIS_IvlmLm0EEElmLm0EEC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
 function @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0___const__long_int__unsigned_long_int__0___offset_ptr__ov4(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr) -> void [binding=weak, object=_ZN10offset_ptrIK12compact_nodeIS_IvlmLm0EEElmLm0EEC1IS2_EERKS_IT_lmLm0EEPN21enable_if_convertibleIS6_S3_vE4typeE] {
   slot $this : ptr
   slot $__param1 : ptr
@@ -50,5 +43,12 @@ function @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__
     store ptr %__param2, $__param2
     return void
 }
-alias object _ZN10offset_ptrI12compact_nodeIS_IvlmLm0EEElmLm0EEC2Ev = @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0____long_int__unsigned_long_int__0___offset_ptr
+function @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0____long_int__unsigned_long_int__0___offset_ptr(%this : ptr) -> void [binding=weak, object=_ZN10offset_ptrI12compact_nodeIS_IvlmLm0EEElmLm0EEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
 alias object _ZN10offset_ptrIK12compact_nodeIS_IvlmLm0EEElmLm0EEC2IS2_EERKS_IT_lmLm0EEPN21enable_if_convertibleIS6_S3_vE4typeE = @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0___const__long_int__unsigned_long_int__0___offset_ptr__ov4
+alias object _ZN10offset_ptrI12compact_nodeIS_IvlmLm0EEElmLm0EEC2Ev = @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0____long_int__unsigned_long_int__0___offset_ptr

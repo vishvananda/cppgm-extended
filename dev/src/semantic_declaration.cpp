@@ -1069,9 +1069,9 @@ void analyze_static_assert_declaration(SemanticContext & ctx,
     const string condition = ctx.describe_expression_for_diagnostic(node.children[0]);
     const string bindings = ctx.describe_scope_bindings_for_diagnostic(scope);
     const string lookup = ctx.describe_static_assert_lookup_for_diagnostic(scope, node.children[0]);
-    throw logic_error(string("static_assert unevaluated: ") + condition +
-                      (lookup.empty() ? string() : string(" [lookup ") + lookup + "]") +
-                      (bindings.empty() ? string() : string(" [bindings ") + bindings + "]"));
+    throw_hard_user_error(string("static_assert unevaluated: ") + condition +
+                          (lookup.empty() ? string() : string(" [lookup ") + lookup + "]") +
+                          (bindings.empty() ? string() : string(" [bindings ") + bindings + "]"));
   }
   if(!truthy) {
     if(ctx.scope_has_template_placeholders(scope) &&
@@ -1083,9 +1083,9 @@ void analyze_static_assert_declaration(SemanticContext & ctx,
     const string condition = ctx.describe_expression_for_diagnostic(node.children[0]);
     const string bindings = ctx.describe_scope_bindings_for_diagnostic(scope);
     const string lookup = ctx.describe_static_assert_lookup_for_diagnostic(scope, node.children[0]);
-    throw logic_error(string("static_assert false: ") + condition +
-                      (lookup.empty() ? string() : string(" [lookup ") + lookup + "]") +
-                      (bindings.empty() ? string() : string(" [bindings ") + bindings + "]"));
+    throw_hard_user_error(string("static_assert false: ") + condition +
+                          (lookup.empty() ? string() : string(" [lookup ") + lookup + "]") +
+                          (bindings.empty() ? string() : string(" [bindings ") + bindings + "]"));
   }
 }
 

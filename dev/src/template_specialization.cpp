@@ -14,6 +14,7 @@
 #include "semantic_lookup.h"
 #include "semantic_conversion.h"
 #include "semantic_builtins.h"
+#include "semantic_class_model.h"
 #include "semantic_errors.h"
 #include "semantic_fallback_audit.h"
 #include "semantic_utils.h"
@@ -8501,6 +8502,12 @@ bool try_expand_alias_template_pattern_structurally(
         }
         TypePtr member_type;
         if(current->class_info) {
+          if(services.semantic_context &&
+             template_argument_semantics::
+                 required_qualified_type_resolution_active()) {
+            semantic_class_model::ensure_class_reference_static_asserts(
+                *services.semantic_context, *current->class_info);
+          }
           auto found_member =
               current->named_types.find(member_name);
           if(found_member != current->named_types.end()) {

@@ -97,11 +97,11 @@ bool resolve_instantiated_template_argument(
 
 namespace {
 
-thread_local std::size_t non_type_parameter_type_resolution_depth = 0;
+thread_local std::size_t required_qualified_type_resolution_depth = 0;
 
-bool validating_non_type_parameter_qualified_owner()
+bool validating_required_qualified_type_owner()
 {
-  return non_type_parameter_type_resolution_depth != 0;
+  return required_qualified_type_resolution_depth != 0;
 }
 
 bool ref_qualifier_rejects_implicit_object(RefQualifier ref_qualifier,
@@ -1088,6 +1088,25 @@ ScopedDefaultTemplateArgumentEvaluation::~ScopedDefaultTemplateArgumentEvaluatio
 bool default_template_argument_evaluation_active()
 {
   return g_default_template_argument_evaluation_depth != 0;
+}
+
+bool required_qualified_type_resolution_active()
+{
+  return validating_required_qualified_type_owner();
+}
+
+ScopedRequiredQualifiedTypeResolution::
+    ScopedRequiredQualifiedTypeResolution()
+{
+  ++required_qualified_type_resolution_depth;
+}
+
+ScopedRequiredQualifiedTypeResolution::
+    ~ScopedRequiredQualifiedTypeResolution()
+{
+  if(required_qualified_type_resolution_depth != 0) {
+    --required_qualified_type_resolution_depth;
+  }
 }
 
 TypePtr lookup_structured_type_node(template_api::TemplateServices & services,
@@ -6479,12 +6498,6 @@ bool try_resolve_concrete_template_member_type(
        !member_scope) {
       return false;
     }
-    if(validating_non_type_parameter_qualified_owner() &&
-       services.semantic_context && member_scope->class_info) {
-      semantic_class_model::ensure_class_reference_static_asserts(
-          *services.semantic_context, *member_scope->class_info);
-    }
-
     member_type =
         lookup_concrete_type_in_resolved_scope(
             services,
@@ -9689,6 +9702,10 @@ TypePtr lookup_concrete_type_in_resolved_scope(
     if(!services.semantic_context) {
       return TypePtr();
     }
+    if(validating_required_qualified_type_owner()) {
+      semantic_class_model::ensure_class_reference_static_asserts(
+          *services.semantic_context, *resolved_scope.class_info);
+    }
     semantic_lookup::MemberTypeLookupResult member =
         semantic_lookup::lookup_member_type(*services.semantic_context,
                                             *resolved_scope.class_info,
@@ -11262,6 +11279,17 @@ bool append_leaf_member_function_template_instantiations_from_candidates(
     expr_args.push_back(info);
   }
 
+  string member_name;
+  for(size_t i = 0; i < function_templates.size(); ++i) {
+    if(function_templates[i]) {
+      member_name = semantic_utils::unqualified_member_name(
+          function_templates[i]->name);
+      if(!member_name.empty()) {
+        break;
+      }
+    }
+  }
+
   bool added_function = false;
   for(size_t i = 0; i < function_templates.size(); ++i) {
     if(!function_templates[i]) {
@@ -11292,6 +11320,39 @@ bool append_leaf_member_function_template_instantiations_from_candidates(
           template_api::acquire_function_instantiation(
               *services.semantic_context,
               instantiation_request).function_binding;
+      bool invalidated_existing_binding = false;
+      for(size_t function_index = 0;
+          function_index < functions.size();
+          ++function_index) {
+        if(functions[function_index] &&
+           !services.semantic_context->function_binding_is_live(
+               functions[function_index])) {
+          invalidated_existing_binding = true;
+          break;
+        }
+      }
+      if(invalidated_existing_binding &&
+         active_owner &&
+         !member_name.empty()) {
+        semantic_lookup::MemberFunctionLookupResult refreshed =
+            semantic_lookup::lookup_visible_member_functions(
+                *active_owner, member_name);
+        vector<FunctionBinding *> live_functions;
+        live_functions.reserve(refreshed.functions.size());
+        for(size_t function_index = 0;
+            function_index < refreshed.functions.size();
+            ++function_index) {
+          if(services.semantic_context->function_binding_is_live(
+                 refreshed.functions[function_index])) {
+            live_functions.push_back(refreshed.functions[function_index]);
+          }
+        }
+        functions.swap(live_functions);
+      }
+      if(binding &&
+         !services.semantic_context->function_binding_is_live(binding)) {
+        binding = nullptr;
+      }
       const size_t before = functions.size();
       append_unique_leaf_function_binding(functions, binding);
       if(functions.size() != before) {
@@ -11425,7 +11486,8 @@ bool leaf_id_expression_names_function_or_template(
     vector<FunctionBinding *> qualified_functions;
     if(lookup_leaf_qualified_function_bindings(
            services, scope, *template_qualified, &node, qualified_functions)) {
-      append_unique_leaf_function_bindings(functions, qualified_functions);
+      append_unique_leaf_function_bindings(functions,
+                                           qualified_functions);
     }
   }
   if(!functions.empty()) {
@@ -11676,7 +11738,8 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
         vector<FunctionBinding *> qualified_functions;
         if(lookup_leaf_qualified_function_bindings(
                services, scope, *template_qualified, callee, qualified_functions)) {
-          append_unique_leaf_function_bindings(functions, qualified_functions);
+          append_unique_leaf_function_bindings(functions,
+                                               qualified_functions);
         }
       }
     }
@@ -12323,7 +12386,8 @@ bool evaluate_leaf_constexpr_function_call(template_api::TemplateServices & serv
         vector<FunctionBinding *> qualified_functions;
         if(lookup_leaf_qualified_function_bindings(
                services, scope, *template_qualified, callee, qualified_functions)) {
-          append_unique_leaf_function_bindings(functions, qualified_functions);
+          append_unique_leaf_function_bindings(functions,
+                                               qualified_functions);
         }
       }
     }
@@ -16997,7 +17061,17 @@ bool expand_dependent_argument_syntax_pack(
                  parameters[pack_parameter_index].alternate_names.end(),
                  direct_type_pack_name) !=
            parameters[pack_parameter_index].alternate_names.end());
-
+  string direct_value_pack_name;
+  const bool direct_value_pack =
+      parameters[pack_parameter_index].kind ==
+          TemplateParameterInfo::TP_NON_TYPE &&
+      direct_value_pack_name_from_argument(source_argument,
+                                           direct_value_pack_name) &&
+      (direct_value_pack_name == parameters[pack_parameter_index].name ||
+       std::find(parameters[pack_parameter_index].alternate_names.begin(),
+                 parameters[pack_parameter_index].alternate_names.end(),
+                 direct_value_pack_name) !=
+           parameters[pack_parameter_index].alternate_names.end());
   for(size_t pack_index = 0; pack_index < pack_argument_count; ++pack_index) {
     vector<TemplateArgument> element_arguments;
     if(!build_pack_element_substitution_arguments(parameters,
@@ -17033,7 +17107,31 @@ bool expand_dependent_argument_syntax_pack(
       changed = true;
       continue;
     }
-
+    if(direct_value_pack &&
+       pack_element.kind == TemplateArgument::TA_VALUE &&
+       pack_element.source_syntax) {
+      DependentAliasTemplateArgumentSyntax expanded = source_argument;
+      expanded.type = pack_element.type;
+      expanded.syntax = clone_argument_syntax_for_template_substitution(
+          *pack_element.source_syntax);
+      expanded.text = trim_space(expanded.syntax.text.empty() ?
+                                     pack_element.text :
+                                     expanded.syntax.text);
+      expanded.syntax.text = expanded.text;
+      const TemplateArgument::RareData & rare = pack_element.rare();
+      expanded.function_value = rare.function_value;
+      expanded.function_internal_symbol = rare.function_internal_symbol;
+      expanded.value_binding = rare.value_binding;
+      expanded.value = pack_element.value;
+      expanded.has_non_type_value =
+          !pack_element.dependent && !pack_element.partial_order_placeholder;
+      expanded.dependent_value = pack_element.dependent;
+      expanded.partial_order_placeholder =
+          pack_element.partial_order_placeholder;
+      substituted_arguments.push_back(expanded);
+      changed = true;
+      continue;
+    }
     map<string, TypePtr> type_replacements;
     map<string, ValueBinding> value_replacements;
     TemplateTemplateReplacementMap template_replacements;
@@ -32823,14 +32921,7 @@ bool resolve_non_type_template_parameter_type_if_needed(
     template_api::TemplateEnvironmentHandle scope,
     TypePtr & type)
 {
-  ++non_type_parameter_type_resolution_depth;
-  struct ResolutionGuard
-  {
-    ~ResolutionGuard()
-    {
-      --non_type_parameter_type_resolution_depth;
-    }
-  } guard;
+  const ScopedRequiredQualifiedTypeResolution required_resolution;
   return resolve_instantiated_dependent_type_if_needed(
       services, scope, type);
 }

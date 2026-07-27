@@ -12226,6 +12226,9 @@ void populate_class_info(SemanticContext & ctx,
                                                type_id_text,
                                                dependent_class);
         if(!alias) {
+          if(info.source_template && !dependent_class) {
+            throw TemplateSubstitutionFailure("unsupported class alias-declaration");
+          }
           throw std::logic_error("unsupported class alias-declaration");
         }
         alias = refine_instantiated_class_alias(ctx, *info.member_scope, alias);
@@ -12356,6 +12359,9 @@ void populate_class_info(SemanticContext & ctx,
         out << " [type-id-text " << type_id_text << "]";
         if(type_id_text.empty()) {
           out << " [type-id-ast {" << describe_cppast_translation_unit(*type_id) << "}]";
+        }
+        if(info.source_template && !dependent_class) {
+          throw TemplateSubstitutionFailure(out.str());
         }
         throw std::logic_error(out.str());
       }

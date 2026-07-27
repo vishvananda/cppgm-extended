@@ -463,7 +463,7 @@ bool try_get_direct_integral_literal_value(const CallSemNode & node,
 bool string_literal_type_matches(const TypePtr & type,
                                  const QuoteLiteralData & literal)
 {
-  TypePtr base = strip_top_level_cv(type);
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
   if(!base) {
     return false;
   }

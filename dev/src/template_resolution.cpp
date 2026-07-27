@@ -11105,6 +11105,50 @@ bool is_dependent_qualified_nondeduced_type_context(
       DeductionContextOps(ctx), parameters, type);
 }
 
+bool is_direct_dependent_qualified_nondeduced_type_context(
+    SemanticContext & ctx,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  while(base &&
+        (base->kind == Type::TK_POINTER ||
+         base->kind == Type::TK_BLOCK_POINTER ||
+         base->kind == Type::TK_LVALUE_REFERENCE ||
+         base->kind == Type::TK_RVALUE_REFERENCE ||
+         base->kind == Type::TK_ARRAY)) {
+    base = strip_top_level_cv(base->inner);
+  }
+  if(!base || base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  TypePtr owner;
+  std::vector<std::string> members;
+  bool leading_typename = false;
+  if(!named_type_dependent_qualified_member(base,
+                                            owner,
+                                            members,
+                                            leading_typename) ||
+     !owner ||
+     members.empty()) {
+    return false;
+  }
+  return type_mentions_function_template_parameter(ctx, parameters, owner);
+}
+
+bool function_parameter_is_nondeduced_type_context(
+    SemanticContext & ctx,
+    const FunctionTemplateDecl & decl,
+    std::size_t parameter_index,
+    const TypePtr & pattern)
+{
+  return is_direct_dependent_qualified_nondeduced_type_context(
+             ctx, decl.parameters, pattern) ||
+         direct_function_parameter_alias_is_nondeduced(
+             ctx, decl, parameter_index);
+}
+
 // template-boundary-audit: begin text_recovery_bridge
 bool recover_function_template_deduction_pattern_type(
     SemanticContext & ctx,
@@ -11682,7 +11726,8 @@ bool can_skip_resolved_non_dependent_pattern_check(
   }
 
   if(type_mentions_function_template_parameter(ctx, decl.parameters, original_pattern)) {
-    if(direct_function_parameter_alias_is_nondeduced(ctx, decl, param_index)) {
+    if(function_parameter_is_nondeduced_type_context(
+           ctx, decl, param_index, original_pattern)) {
       return true;
     }
 
@@ -16721,6 +16766,23 @@ bool deduce_function_template_arguments_uncached(
               decl.params_pattern.size() - 1 :
               i;
       const TypePtr original_pattern = decl.params_pattern[pattern_index].second;
+      if(function_parameter_is_nondeduced_type_context(
+             ctx, decl, pattern_index, original_pattern)) {
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "deduction-skip-nondeduced template=" << decl.name
+                << " param_index=" << pattern_index
+                << " pattern=" << describe_type(original_pattern);
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        original_pattern);
+        continue;
+      }
       TypePtr pattern = prepare_function_template_deduction_pattern(
           ctx, decl.parameters, bound_scope, original_pattern);
       const TypePtr parameter_scope_pattern = pattern;
@@ -17400,6 +17462,23 @@ bool deduce_function_template_arguments_with_explicit(
               decl.params_pattern.size() - 1 :
               i;
       const TypePtr original_pattern = decl.params_pattern[pattern_index].second;
+      if(function_parameter_is_nondeduced_type_context(
+             ctx, decl, pattern_index, original_pattern)) {
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "explicit-deduction-skip-nondeduced template=" << decl.name
+                << " param_index=" << pattern_index
+                << " pattern=" << describe_type(original_pattern);
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        original_pattern);
+        continue;
+      }
       TypePtr pattern = prepare_function_template_deduction_pattern(
           ctx, decl.parameters, bound_scope, original_pattern);
       const TypePtr parameter_scope_pattern = pattern;

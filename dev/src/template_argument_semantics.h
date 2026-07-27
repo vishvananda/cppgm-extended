@@ -45,6 +45,20 @@ public:
 
 bool default_template_argument_evaluation_active();
 
+bool required_qualified_type_resolution_active();
+
+class ScopedRequiredQualifiedTypeResolution
+{
+public:
+  ScopedRequiredQualifiedTypeResolution();
+  ~ScopedRequiredQualifiedTypeResolution();
+
+  ScopedRequiredQualifiedTypeResolution(
+      const ScopedRequiredQualifiedTypeResolution &) = delete;
+  ScopedRequiredQualifiedTypeResolution & operator=(
+      const ScopedRequiredQualifiedTypeResolution &) = delete;
+};
+
 class ScopedBaseSpecifierTypeLookup
 {
 public:
