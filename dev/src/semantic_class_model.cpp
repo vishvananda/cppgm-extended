@@ -9895,6 +9895,9 @@ bool declarator_declares_reference_name(const CppAstNode & node,
     }
     return node.value == name;
   }
+  if(node.kind == CppAstKind::parameter_clause) {
+    return false;
+  }
   for(size_t i = 0; i < node.children.size(); ++i) {
     if(declarator_declares_reference_name(node.children[i], name)) {
       return true;
