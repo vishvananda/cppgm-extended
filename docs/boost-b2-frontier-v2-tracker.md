@@ -15,10 +15,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `82 / 147`
 - current cursor: `#83 libs/phoenix/test`
-- active compiler frontiers: the qualified-typedef alias deduction and
-  dependent member-function cv-mangling defects are fixed. Three Bind
-  compatibility targets pass; `bind_test` now advances independently to
-  unqualified `get_pointer` lookup
+- active compiler frontiers: all four investigated Bind compatibility targets
+  pass. The complete forced Phoenix graph replay is next to re-establish the
+  earliest remaining independent compiler frontier
 
 ## Baseline Gates
 
@@ -236,6 +235,7 @@ differences other than the output path.
 | `(Phoenix nested function-type pack parameter fix)` | Distinguish a pack on the current function parameter declarator from a pack nested inside that parameter's function type, so an empty inner pack removes only the nested function parameters and not the enclosing pointer-to-member-function parameter | -26.15% | -27.83% | -35.83% | versus the namespace-lookup checkpoint, instructions improve by 27,575,160 while RSS moves +798,720 B and footprint +2,723,840 B; every cumulative hard gate remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-phoenix-nested-function-pack-candidate.json` | pass; candidate medians are 194,646,770,509 instructions, 932,864,000 B RSS, and 648,044,544 B footprint. The three-run candidate-only gate verified immutable epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 | `(Phoenix lazy qualified static-value demand)` | Demand-load a named value member when a concrete qualified lookup first reaches an included class whose reference preparation collected only type-bearing members | -26.11% | -27.64% | -35.88% | versus the nested-function-pack checkpoint, instructions move +106,799,882 while RSS improves by 2,506,752 B and footprint by 540,672 B; all cumulative hard gates remain strongly improved | `/private/tmp/cppgm-boost-frontier-v2-phoenix-lazy-qualified-value-candidate.json` | pass; three-run medians are 194,753,570,391 instructions, 935,370,752 B RSS, and 647,503,872 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 | `(Phoenix qualified typedef alias-pack deduction and member-function cv ABI)` | Retain dependent alias arguments for typed non-type pack deduction and preserve function cv/ref qualifiers when structured declarator syntax is converted to ABI IR | -26.10% | -28.02% | -36.05% | versus the preceding Phoenix checkpoint, instructions move by less than 0.01 percentage points while RSS and footprint remain strongly improved | `/private/tmp/cppgm-boost-frontier-v2-phoenix-alias-mangle-candidate.json` | pass; three-run candidate medians are 194,776,376,897 instructions, 930,467,840 B RSS, and 645,828,608 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
+| `(Phoenix concrete type/template-parameter identity separation)` | Treat only a semantic template-parameter type as a direct deduction parameter after explicit arguments have concretized another parameter to a same-spelled class | -26.06% | -27.89% | -36.19% | versus the preceding Phoenix checkpoint, instructions move +0.04 percentage points, RSS +0.13, and footprint improves 0.14 percentage points; every cumulative hard gate remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-phoenix-name-collision-candidate-3run.json` | pass; three-run candidate medians are 194,867,902,155 instructions, 932,130,816 B RSS, and 644,411,392 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured and all runs recorded zero swaps. |
 
 ## Suite Cursor
 
@@ -326,7 +326,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 80 | `libs/parameter/test` | pass | `(this commit)` | The final forced `pch=off` C++11 graph finds 2676 targets, updates all 229 requested targets, passes every positive compile/link/runtime action, handles deliberate compile failures as failed-as-expected, and exits successfully in 330.81s; log `/private/tmp/boost-frontier-v2-suite-080-parameter-final-forced.log`. Maximum RSS is 887,111,680 B with zero process swaps, every compiler child releases, and system swap remains exactly 849 MiB. | The closure repairs typed substitution order, qualified dependent non-deduced contexts, concrete class and alias failure categorization, required-owner `static_assert` evaluation, direct non-type value-pack forwarding, string-literal array-reference casts, and one narrowly scoped stale member-template candidate after class completion. Two compact header-free C++11 reducers cover the independently reducible language rules; neither uses `<type_traits>`. PA16/PA21/PA22 pass `756/756`; all 960 configured strict comparisons pass; the PA9-excluded direct report passes `4136/4136`, including PA37 `7/7`. All 23 text-reparse categories, 20 audit tests, cache parity, placement review, a warning-clean Homebrew Clang 22 build, and `git diff --check` pass. The existing PA22 ref changes only in declaration order for the principled correction that leading function-return substitution precedes later parameters; instructions and symbols are unchanged. The preserved immutable frozen-source/header gate records -26.02% instructions, -27.76% RSS, and -35.83% footprint. |
 | 81 | `libs/parser/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/parser/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. |
 | 82 | `libs/pfr/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/pfr/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. The cursor advances directly to C++03-declared Boost.Phoenix. |
-| 83 | `libs/phoenix/test` | frontier | `(this commit)` | The post-`switch_tests` Clang-pinned forced graph found 6367 targets, updated 832, and completed in 1278.21s with 11 failed actions at 1,484,349,440 B maximum RSS and zero process swaps; log `/private/tmp/boost-frontier-v2-suite-083-post-switch-full-clang.log`. The reference-cast group is closed. A qualified typedef in an alias target then lost its non-type pack argument during deduction; after preserving and resolving that typed syntax, object emission exposed a separate collision because declarator-to-ABI conversion omitted member-function `const`. The final three-target replay passes `bind_interoperation_test`, `bind_ref_test`, and `bind_mf2_test` in 44.82s at 879,222,784 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bind-mangle-focused-clang.log`. | Homebrew Clang reproduces `bug_000008`'s undefined Boost.Thread link exactly because Boost 1.91's Jamfile spells `<library>/boost/thread`; current Boost develop fixes that upstream typo to `<library>/boost/thread//boost_thread`, so no compiler or local Boost edit is warranted. The fourth compatibility target, `bind_test`, now compiles past both repaired paths and fails independently at unqualified `get_pointer` lookup after 89.13s and 1,483,788,288 B RSS with zero swaps. The remaining independent frontiers are `bind_test`, `bug4853`, `bug5968`, and the `bind_tests_advanced` runtime mismatch. Every command explicitly binds cppgm to this worktree and host C, assembly, linking, production rebuilds, and controls to Homebrew Clang 22; Boost.Build's `gcc.compile.*`, `gcc.link`, and `gcc-cppgm` text is only the legacy adapter action name. |
+| 83 | `libs/phoenix/test` | frontier | `(this commit)` | The post-`switch_tests` Clang-pinned forced graph found 6367 targets, updated 832, and completed in 1278.21s with 11 failed actions at 1,484,349,440 B maximum RSS and zero process swaps; log `/private/tmp/boost-frontier-v2-suite-083-post-switch-full-clang.log`. The reference-cast group is closed. A qualified typedef in an alias target then lost its non-type pack argument during deduction; after preserving and resolving that typed syntax, object emission exposed a separate collision because declarator-to-ABI conversion omitted member-function `const`. The three-target replay passes `bind_interoperation_test`, `bind_ref_test`, and `bind_mf2_test` in 44.82s at 879,222,784 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bind-mangle-focused-clang.log`. | The fourth target's apparent `get_pointer` lookup error was unreachable. Explicit `U=::V` concretized `U const*`, but spelling fallback then mistook that concrete `::V` for the separate template parameter `V`, rejected the preferred overload, and instantiated the ellipsis fallback. Semantic identity gating fixes deduction; exact `bind_test` passes compile/link/runtime in 109.48s at 1,873,051,648 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-phoenix-bind-test-typed-identity-clang.log`. Homebrew Clang reproduces `bug_000008`'s undefined Boost.Thread link exactly because Boost 1.91's Jamfile typo is already fixed upstream, so no Boost edit is made. The complete forced graph replay is next; every actual compiler and host command remains cppgm plus Homebrew Clang 22 despite Boost.Build's legacy `gcc.*` action labels. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
@@ -334,27 +334,24 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 ## Active Frontier
 
 - suite: `#83 libs/phoenix/test`
-- focused target: `libs/phoenix/test//bind_test`; the functional-cast group,
-  qualified-typedef alias-pack deduction, and member-function cv ABI collision
-  are closed
+- focused target: complete forced `libs/phoenix/test` replay; all four
+  investigated Bind compatibility targets are closed
 - last closed suite: `#82 libs/pfr/test` (`skipped-language`)
-- failure phase: semantic lookup while instantiating
-  `boost::proto::detail::proto_get_pointer`
-- diagnostic: unqualified call `get_pointer(t)` at
-  `boost/proto/detail/decltype.hpp:228` reports no visible function after the
-  three earlier Bind targets pass
-- reduced repro: pending; the exact forced target is the current starting point
-- owning PA/cluster: pending reduction of ordinary lookup versus ADL behavior
-- implementation area: structured unqualified function lookup and associated
-  namespace contribution
-- performance risk: moderate because the exact target reaches 1.48 GB RSS;
-  keep sampling and system swap checks active during reduction
+- failure phase: pending graph replay after the Bind compatibility closure
+- diagnostic: none active until the replay re-establishes ordered failures;
+  previously independent `bug4853`, `bug5968`, and `bind_tests_advanced`
+  evidence remains to be rechecked
+- reduced repro: none active
+- owning PA/cluster: pending next ordered failure
+- implementation area: pending next ordered failure
+- performance risk: moderate because `bind_test` reaches 1.87 GB RSS on its
+  now-successful full compile; keep sampling and swap checks active
 - language lane: Boost.Phoenix declares C++03 in
   `libs/phoenix/meta/libraries.json`, so
   it is supported and must run
-- next action: reduce `proto_get_pointer`'s `get_pointer(t)` lookup, compare the
-  exact Homebrew Clang C++11 behavior, and fix only the earliest typed lookup
-  defect. Keep `bug_000008` recorded as upstream-blocked without editing Boost
+- next action: run the complete forced Clang-pinned Phoenix graph, classify its
+  earliest remaining compiler failure, and keep `bug_000008` recorded as
+  upstream-blocked without editing Boost
 
 ## Fix Ledger
 
@@ -636,8 +633,31 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Phoenix reference-typedef functional cast | A one-argument functional cast whose type-name denotes a reference has the semantics of the corresponding explicit C-style cast. The functional-cast path tried copy initialization, explicit argument conversion, and only non-reference explicit casts, so `typedef int & R; R(const_lvalue)` was rejected even though the ordinary C-style path already accepted the same reinterpret-like reference conversion. The shared typed conversion layer now owns that category/referent check, both spellings use it, and the functional path preserves the source/materialization metadata and reference value category. No Boost name, source text, cache, or compatibility recovery is added. | `pa14/tests/general/200-functional-reference-typedef-cast.t`, two header-free C++11 lines with no `<type_traits>`, at the PA14:200 built-in cast owner | The pre-fix compiler rejects the exact reducer with `invalid functional cast [target lvalue-reference to int] [arg_type const int] [arg_category lvalue]`; Homebrew Clang 22 accepts it warning-clean and represents the expression as an lvalue functional cast to the reference typedef. The full Phoenix failure instantiates the same rule in `eval_local::get`. | PA14 passes `83/83`; all 960 configured strict comparisons pass; the PA9-excluded broad direct-LowIR report passes `4141/4141`, including PA37 `7/7`. All 23 text-reparse categories and 14 audit tests pass. Normal, ten individual cache-off modes, and all-off emit byte-identical LowIR with SHA-256 `cc05309dfc33a0e30e05525c82984d278aeec2ae27a040f960153d46b8fc8ba5`. The new test adds no placement violation; PA14 retains one unrelated pre-existing local-static row. The Homebrew Clang 22 compiler rebuild is warning-clean. The three exact Phoenix targets pass together in 52.00s at 806,219,776 B maximum RSS with zero swaps. | -26.11% instructions, -27.95% RSS, and -36.80% footprint; candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-functional-reference-cast-candidate.json`; no parent or live header was measured | `(this commit)` |
 | fixed | Phoenix qualified-typedef alias non-type pack deduction | Dependent class-template decomposition kept rendered `n::size_type, I...` but discarded the retained argument syntax and its unresolved non-type pack element. Deduction then saw only `integer_sequence<unsigned long>` and accepted an empty pack against `integer_sequence<unsigned long, 0>`. Decomposition now preserves the typed dependent arguments, and the existing argument resolver reconstructs only a missing structured pattern argument against its declared template parameter. No source reparse, cache, spelling rule, or Boost-specific path is added. | `pa22/tests/general/300-qualified-typedef-alias-nontype-pack-deduction.t`, 11 header-free C++11 lines with no `<type_traits>` | The pre-fix compiler rejects Boost.Bind's `call_impl` and the reducer deduces an empty `I...`; Homebrew Clang 22 accepts the exact translation unit and reducer. | PA22 passes `314/314`; all 960 strict direct-text comparisons and the final broad direct-text report's `4154/4154` comparisons pass; normal, all eleven individual cache-off modes, and all-off emit byte-identical LowIR. The exact `bind_interoperation_test` advances from the deduction error to the separately repaired ABI collision. | measured with the adjacent ABI fix: -26.10% instructions, -28.02% RSS, and -36.05% footprint; candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-alias-mangle-candidate.json` | `(this commit)` |
 | fixed | Phoenix dependent member-function cv ABI spelling | The semantic pattern, actual type, and hybrid type all retained `function_const=true`, but the declarator-to-ABI path rebuilt the function from its parameter clause and ignored following cv/ref qualifiers. It therefore emitted the same `MT0_FT_vE` name for const and non-const member-function-pointer overloads. The structural AST-to-ABI builder now carries function cv and ref qualifiers into the typed ABI function node, producing Clang's required `K` before `F`. | `pa32/tests/general/200-function-template-member-function-cv-symbol-spelling.t`, nine header-free C++11 lines with two exact Clang-verified object symbols | The 22-line header-free reducer fails pre-fix with a duplicate symbol; exact Phoenix LowIR contains distinct bodies sharing one object name. Clang emits `MT0_FT_vE` and `MT0_KFT_vE`. | PA32 passes `114/114`; PA26's existing nested-function-pack reference changes by exactly the required `K` and then passes `85/85` under direct text comparison. The final broad direct-text report passes `4154/4154`; the three focused Phoenix targets pass compile/link/runtime in 44.82s at 879,222,784 B RSS with zero swaps. All cache, strict, reparse, warning-build, broad, and performance gates pass. | measured with the adjacent deduction fix: -26.10% instructions, -28.02% RSS, and -36.05% footprint; no parent or live header measured | `(this commit)` |
+| fixed | Phoenix explicit-argument concrete type versus same-spelled template parameter | After explicit `U=::V`, deduction correctly resolved `U const*` to a pointer to the concrete class. The generic direct-parameter probe then matched that concrete class back to the distinct template parameter named `V` by display spelling, conflicting with the already deduced `V=::V const` and discarding the exact overload. Direct deduction now recognizes only the retained semantic template-parameter identity; concrete named types proceed through ordinary exact type comparison. No source text, retry, cache, eager instantiation, or Boost-specific path is added. | `pa22/tests/general/100-explicit-type-argument-name-collision-deduction.t`, 13 lines / 259 bytes, header-free C++11 with no `<type_traits>` and a 722-byte LowIR reference | The pre-fix trace shows `pointer to const struct V` against the identical actual type, then `explicit-deduction-failed`; only the ellipsis candidate remains and its deliberately invalid body is instantiated. Renaming the distinct template parameter `V` to `W` makes the pre-fix compiler pass. Homebrew Clang 22 accepts the original warning-clean and emits the same selected symbol. | Exact `bind_test` passes compile/link/runtime in 109.48s at 1,873,051,648 B maximum RSS with zero swaps. PA22 passes `315/315`; all 960 strict comparisons and the clean broad direct-text report's `4155/4155` pass. All 23 reparse categories and 20 audit tests pass; normal, all eleven individual cache-off modes, and all-off emit byte-identical LowIR at SHA-256 `54ef068cfd0bc557cd314bb8b87323303fe5aecd16002159e3765eb0e12889d5`. Placement identifies PA22:100 as the exact owner. | -26.06% instructions, -27.89% RSS, and -36.19% footprint; three-run immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-name-collision-candidate-3run.json`; no parent or live header measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-27`: Closed Phoenix `bind_test` by separating a concrete type from a
+  same-spelled template parameter during explicit function-template deduction.
+  The reported `get_pointer` error was not a lookup defect: the exact overload
+  should prevent the fallback body from being instantiated. Tracing the
+  13-line header-free reducer showed the preferred pattern and actual type both
+  as `pointer to const struct V`, followed by deduction failure. Explicit
+  `U=::V` had produced the correct concrete type, but the generic direct-
+  parameter probe matched it back to the distinct parameter named `V` by
+  display spelling and conflicted with its existing `::V const` deduction.
+
+  Direct deduction now enters the parameter branch only for a type carrying
+  semantic template-parameter identity. Concrete named types use ordinary
+  exact comparison. Renaming the parameter to `W` is the controlled pre-fix
+  pass; Homebrew Clang 22 accepts the original warning-clean. Exact `bind_test`
+  passes compile/link/runtime in 109.48s at 1,873,051,648 B RSS with zero swaps.
+  PA22 passes `315/315`, strict passes all 960 comparisons, and the clean broad
+  direct-text report passes `4155/4155`. All 23 text-reparse categories, 20
+  audit tests, placement, and thirteen cache configurations pass. The frozen
+  three-run candidate records -26.06% instructions, -27.89% RSS, and -36.19%
+  footprint against immutable epoch `9764b3835` and its 51 frozen headers.
+  The next action is the complete forced Phoenix graph replay.
 
 - `2026-07-27`: Closed three Phoenix Boost.Bind compatibility targets through
   two independent typed fixes. A qualified typedef in an alias target first
@@ -3397,5 +3417,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/phoenix/test//bind_test
+  ./run-cppgm-b2.sh pch=off -a libs/phoenix/test
 ```

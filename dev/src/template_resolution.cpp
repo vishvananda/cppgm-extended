@@ -14196,7 +14196,9 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
 
   if(pattern_base->kind == Type::TK_NAMED) {
     const TemplateParameterInfo * parameter =
-        find_template_parameter(parameters, pattern_base);
+        named_type_is_template_parameter(pattern_base) ?
+            find_template_parameter(parameters, pattern_base) :
+            nullptr;
     if(!parameter) {
       const auto normalize_direct_type_parameter_name =
           [](std::string raw) -> std::string
