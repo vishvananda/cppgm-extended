@@ -32,6 +32,9 @@ TARGETS = \
 	nsinit \
 	cy86
 
+AUX_TARGETS = mobjroundtrip
+ALL_FRONTEND_TARGETS = $(TARGETS) $(AUX_TARGETS)
+
 DEBUG_TARGETS = $(addsuffix -debug,$(TARGETS))
 
 LLVM_CXX_LOCAL = /usr/local/opt/llvm/bin/clang++
@@ -110,9 +113,10 @@ link_objs = $(call common_objs,$(1)) $(call runner_obj,$(1))
 runner_state_stamp = $(OBJ)/$(1)/.test_runner_mode
 link_prereqs = $(call link_objs,$(1)) $(call runner_state_stamp,$(1))
 include frontend_source_sets.mk
-$(foreach target,$(TARGETS),$(if $(strip $(FRONTEND_OBJ_BASENAMES_$(target))),,$(error missing FRONTEND_OBJ_BASENAMES_$(target) in frontend_source_sets.mk)))
+$(foreach target,$(ALL_FRONTEND_TARGETS),$(if $(strip $(FRONTEND_OBJ_BASENAMES_$(target))),,$(error missing FRONTEND_OBJ_BASENAMES_$(target) in frontend_source_sets.mk)))
 frontend_obj_basenames = $(FRONTEND_OBJ_BASENAMES_$(1))
 frontend_link_objs = $(addprefix $(OBJ)/$(1)/,$(addsuffix .o,$(call frontend_obj_basenames,$(2)))) $(call runner_obj,$(1))
+auxiliary_link_objs = $(addprefix $(OBJ)/release/,$(addsuffix .o,$(call frontend_obj_basenames,$(1))))
 
 all: $(TARGETS)
 
@@ -131,6 +135,11 @@ $(1)-debug: $(1).cpp $(call frontend_link_objs,debug,$(1)) $(call runner_state_s
 endef
 
 $(foreach target,$(TARGETS),$(eval $(call DEV_FRONTEND_RULES,$(target))))
+
+mobjroundtrip: $(OBJ)/release mobjroundtrip.cpp $(call auxiliary_link_objs,mobjroundtrip)
+	$(call quiet,LINK,$@)
+	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o $@.tmp $@.cpp $(call auxiliary_link_objs,$@)
+	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv -f $@.tmp $@; else rm -f $@.tmp; fi
 
 $(OBJ)/release $(OBJ)/debug: %:
 	@- mkdir -p $@
@@ -176,7 +185,7 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/test_runner.cpp $(OBJ)/debug/.compile
 	@mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
 clean:
-	-rm -f $(TARGETS) $(DEBUG_TARGETS) $(OBJ)/release/*.o $(OBJ)/debug/*.o $(OBJ)/release/.compile_config $(OBJ)/debug/.compile_config
+	-rm -f $(TARGETS) $(AUX_TARGETS) $(DEBUG_TARGETS) $(OBJ)/release/*.o $(OBJ)/debug/*.o $(OBJ)/release/.compile_config $(OBJ)/debug/.compile_config
 
 $(RDEPDIR)/%.d: ;
 .PRECIOUS: $(RDEPDIR)/%.d

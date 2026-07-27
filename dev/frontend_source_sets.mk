@@ -1,7 +1,7 @@
 # Checked-in frontend source-set manifest for reduced-link frontend builds.
 # Keep these object lists in sync with dev/src and frontend entrypoints.
 
-FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native
+FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native mobjroundtrip
 
 # abimangle: shared object(s)
 FRONTEND_OBJ_BASENAMES_abimangle := \
@@ -504,3 +504,24 @@ FRONTEND_OBJ_BASENAMES_lowir2native := \
 	text_intern \
 	types \
 	x86_assembler
+
+# mobjroundtrip: 18 shared object(s)
+FRONTEND_OBJ_BASENAMES_mobjroundtrip := \
+	cpp_decl_bridge \
+	cpp_decl_model \
+	encoding \
+	machine_object \
+	pack_parameter_analysis \
+	parser_trace \
+	posttokenizer \
+	pptokenizer \
+	qualified_name_parser \
+	recog_parser \
+	recog_token_buffer \
+	recog_token_cursor \
+	semantic_utils \
+	source_location \
+	symbol_linkage \
+	template_angle_parser \
+	text_intern \
+	types

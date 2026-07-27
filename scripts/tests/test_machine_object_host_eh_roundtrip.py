@@ -32,20 +32,22 @@ def relevant_relocation_lines(text):
         "Relocation information (__LD,__compact_unwind)",
         "Relocation information (__TEXT,__eh_frame)",
     )
-    lines = []
-    keep = False
+    blocks = []
+    current = None
     for line in text.splitlines():
         if line.startswith("Relocation information ("):
-            keep = line.startswith(interesting_headers)
-        if keep:
-            lines.append(
+            current = [] if line.startswith(interesting_headers) else None
+            if current is not None:
+                blocks.append(current)
+        if current is not None:
+            current.append(
                 re.sub(
                     r"False\s+\d+\s+\((__[^)]+)\)",
                     r"False SECTION (\1)",
                     line.rstrip(),
                 )
             )
-    return lines
+    return [line for block in sorted(blocks) for line in block]
 
 
 class MachineObjectHostEhRoundtripTests(unittest.TestCase):
