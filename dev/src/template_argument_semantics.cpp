@@ -30748,6 +30748,7 @@ bool try_resolve_dependent_class_instantiation_from_mangle_info(
   resolved_arguments.reserve(source_arguments->size());
   bool changed = false;
   bool has_direct_type_parameter_dependency = false;
+  bool has_active_template_bound_dependency = false;
   for(size_t i = 0; i < source_arguments->size(); ++i) {
     const TemplateArgument & argument = (*source_arguments)[i];
     if(argument.kind == TemplateArgument::TA_TYPE &&
@@ -30757,15 +30758,30 @@ bool try_resolve_dependent_class_instantiation_from_mangle_info(
            services,
            argument)) {
       has_direct_type_parameter_dependency = true;
+    }
+    if((i < mangle_info->argument_syntaxes.size() &&
+        argument_syntax_mentions_unqualified_template_bound_name(
+            scope.require(), mangle_info->argument_syntaxes[i])) ||
+       (argument.source_syntax &&
+        argument_syntax_mentions_unqualified_template_bound_name(
+            scope.require(), *argument.source_syntax)) ||
+       (argument.expression &&
+        expression_node_mentions_unqualified_template_bound_name(
+            scope.require(), *argument.expression))) {
+      has_active_template_bound_dependency = true;
+    }
+    if(has_direct_type_parameter_dependency &&
+       has_active_template_bound_dependency) {
       break;
     }
   }
-  // A direct carried owner parameter must be rebound from the active
-  // instantiation scope.  Purely compound dependent metadata stays on the
-  // conservative declaration-scope path and lets the structured fallback
-  // resolve aliases and partial-specialization patterns.
+  // A carried direct type parameter or a structured expression that names an
+  // active template binding must be resolved from the instantiation scope.
+  // Metadata independent of active bindings stays on the conservative
+  // declaration-scope path.
   Scope * argument_scope_parent =
-      has_direct_type_parameter_dependency ?
+      has_direct_type_parameter_dependency ||
+              has_active_template_bound_dependency ?
           &scope.require() :
           (class_template->declaring_scope ?
                class_template->declaring_scope :
