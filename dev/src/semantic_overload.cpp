@@ -427,6 +427,36 @@ ClassInfo * complete_class_type_for_lookup(SemanticContext & ctx,
   return info ? ctx.complete_class_type(base) : nullptr;
 }
 
+ClassInfo * prepare_class_type_for_named_member_lookup(
+    SemanticContext & ctx,
+    const TypePtr & type,
+    const string & name)
+{
+  if(ctx.current_analysis_policy().materialize_direct_call_output) {
+    return complete_class_type_for_lookup(ctx, type);
+  }
+
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return nullptr;
+  }
+  ClassInfo * info = ctx.class_info_for_type(base);
+  if(!info || info->class_kind == "enum") {
+    return nullptr;
+  }
+  if(!info->complete &&
+     !info->reference_members_collected &&
+     !info->reference_member_collection_in_progress &&
+     !info->full_member_collection_in_progress &&
+     info->reference_named_members_collected.count(name) == 0) {
+    ctx.ensure_class_reference_named_member(*info, name);
+    if(ClassInfo * refreshed = ctx.class_info_for_type(base)) {
+      info = refreshed;
+    }
+  }
+  return info;
+}
+
 bool constructor_template_has_trailing_parameter_pack_fast(FunctionTemplateDecl & decl);
 bool function_template_has_trailing_parameter_pack_fast(FunctionTemplateDecl & decl);
 bool is_forwarding_reference_pattern(const vector<TemplateParameterInfo> & parameters,
@@ -10368,17 +10398,11 @@ void append_function_template_call_candidates_impl(
         ExprInfo adjusted_this = template_implicit_object_arg;
         ExprInfo converted_this;
         const bool converted_this_ok =
-            instantiate_bodies ?
-                semantic_conversion::try_apply_unmaterialized_inheritance_conversion(
-                    ctx,
-                    function_type->params[0],
-                    template_implicit_object_arg,
-                    converted_this) :
-                semantic_conversion::try_apply_inheritance_conversion(
-                    ctx,
-                    function_type->params[0],
-                    template_implicit_object_arg,
-                    converted_this);
+            semantic_conversion::try_apply_unmaterialized_inheritance_conversion(
+                ctx,
+                function_type->params[0],
+                template_implicit_object_arg,
+                converted_this);
         if(converted_this_ok) {
           adjusted_this = converted_this;
         }
@@ -14091,6 +14115,20 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
 
     const bool destructor_member_call =
         is_scalar_pseudo_destructor_name(member_callee_node.children[1].value);
+    const QualifiedName * member_name =
+        cppast_qualified_name_syntax(member_callee_node.children[1]);
+    if(!member_name) {
+      throw logic_error("member-call target missing structured name");
+    }
+    const TemplateIdSyntax * member_template_id =
+        cppast_template_id_syntax(member_callee_node.children[1]);
+    const TemplateIdSyntax * function_member_template_id =
+        destructor_member_call ? nullptr : member_template_id;
+    const string initial_member_lookup_name =
+        function_member_template_id ?
+            function_member_template_id->name.name :
+            semantic_utils::strip_trailing_top_level_template_arguments(
+                member_name->name);
     const template_api::ScopedTemplateWitnessDeclvalCallSourceCapturePause
         declval_witness_pause(destructor_member_call);
     ExprInfo base = hints && hints->explicit_member_base ?
@@ -14104,10 +14142,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
          base.category != VC_PRVALUE) {
         throw logic_error("dot requires class object");
       }
-      class_info = complete_class_type_for_lookup(ctx, base_type);
-      if(!class_info) {
-        class_info = ctx.class_info_for_type(base_type);
-      }
+      class_info = prepare_class_type_for_named_member_lookup(
+          ctx, base_type, initial_member_lookup_name);
       {
         ScopedCallSemConstructionPath construction_path(
             "overload.member-call-implicit-object");
@@ -14116,18 +14152,16 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       implicit_object_category = base.category;
     } else if(node_has_simple_type(member_callee_node, OP_ARROW)) {
       if(base_type && base_type->kind == Type::TK_POINTER) {
-        class_info = complete_class_type_for_lookup(ctx, base_type->inner);
-        if(!class_info) {
-          class_info = ctx.class_info_for_type(base_type->inner);
-        }
+        class_info = prepare_class_type_for_named_member_lookup(
+            ctx, base_type->inner, initial_member_lookup_name);
         implicit_object_arg = base;
         implicit_object_category = VC_LVALUE;
       } else {
         ClassInfo * base_class =
-            base_type ? complete_class_type_for_lookup(ctx, base_type) : nullptr;
-        if(!base_class && base_type) {
-          base_class = ctx.class_info_for_type(base_type);
-        }
+            base_type ?
+                prepare_class_type_for_named_member_lookup(
+                    ctx, base_type, "operator->") :
+                nullptr;
         const bool has_member_arrow =
             base_class &&
             (!lookup_visible_member_functions(*base_class, "operator->").functions.empty() ||
@@ -14175,12 +14209,6 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       throw logic_error("member call requires class type");
     }
 
-    const QualifiedName * member_name =
-        cppast_qualified_name_syntax(member_callee_node.children[1]);
-    if(!member_name) {
-      throw logic_error("member-call target missing structured name");
-    }
-
     QualifiedMemberTarget target;
     if(!resolve_qualified_member_target(ctx,
                                         scope,
@@ -14192,10 +14220,6 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       throw logic_error("unsupported qualified member call");
     }
 
-    const TemplateIdSyntax * member_template_id =
-        cppast_template_id_syntax(member_callee_node.children[1]);
-    const TemplateIdSyntax * function_member_template_id =
-        destructor_member_call ? nullptr : member_template_id;
     if(function_member_template_id) {
       source_explicit_template_arg_count =
           function_member_template_id->arguments.size();
@@ -14879,17 +14903,20 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         ExprInfo adjusted_this = implicit_object_arg;
         ExprInfo this_source_arg = implicit_object_arg;
         ExprInfo converted_this;
+        const bool materialize_standard_adjustments =
+            !instantiate_bodies &&
+            ctx.current_analysis_policy().materialize_direct_call_output;
         const bool converted_this_ok =
-            instantiate_bodies ?
+            materialize_standard_adjustments ?
+                semantic_conversion::try_apply_inheritance_conversion(ctx,
+                                                                      function_type->params[0],
+                                                                      implicit_object_arg,
+                                                                      converted_this) :
                 semantic_conversion::try_apply_unmaterialized_inheritance_conversion(
                     ctx,
                     function_type->params[0],
                     implicit_object_arg,
-                    converted_this) :
-                semantic_conversion::try_apply_inheritance_conversion(ctx,
-                                                                      function_type->params[0],
-                                                                      implicit_object_arg,
-                                                                      converted_this);
+                    converted_this);
         if(converted_this_ok) {
           adjusted_this = converted_this;
         }
@@ -14916,8 +14943,10 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           match.source_args.push_back(this_source_arg);
           match.source_arg_locations.push_back(std::string());
           match.params.push_back(function_type->params[0]);
-          match.needs_rematerialization.push_back(instantiate_bodies &&
-                                                    converted_this_ok);
+          match.needs_rematerialization.push_back(
+              instantiate_bodies &&
+              ctx.current_analysis_policy().materialize_direct_call_output &&
+              converted_this_ok);
           match.list_initialization_args.push_back(false);
           match.list_initialization_element_ranks.push_back(
               vector<ConversionRank>());
@@ -14949,7 +14978,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
             ClassInfo * target_class = target_base ? ctx.class_info_for_type(target_base) :
                                                      nullptr;
             ArgumentConversionOptions conversion_options(true, false);
-            conversion_options.materialize_standard_adjustments = !instantiate_bodies;
+            conversion_options.materialize_standard_adjustments =
+                !instantiate_bodies &&
+                ctx.current_analysis_policy().materialize_direct_call_output;
             if(hints && hints->suppress_user_defined_output_materialization) {
               conversion_options.materialize_user_defined_output = false;
             }

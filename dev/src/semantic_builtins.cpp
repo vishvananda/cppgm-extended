@@ -1477,6 +1477,127 @@ SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & 
   return result;
 }
 
+bool assignment_binding_is_trivial(SemanticContext & ctx,
+                                   Scope & scope,
+                                   const FunctionBinding & binding,
+                                   std::set<FunctionBinding *> & visiting);
+
+bool assignment_type_is_trivial(SemanticContext & ctx,
+                                Scope & scope,
+                                const TypePtr & type,
+                                bool move,
+                                bool source_const,
+                                bool source_volatile,
+                                std::set<FunctionBinding *> & visiting)
+{
+  if(is_const_object_type(type) || is_reference_type(strip_top_level_cv(type))) {
+    return false;
+  }
+
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  if(base->kind == Type::TK_ARRAY) {
+    return assignment_type_is_trivial(ctx,
+                                      scope,
+                                      base->inner,
+                                      move,
+                                      source_const,
+                                      source_volatile,
+                                      visiting);
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     is_scalar_or_member_pointer_type(ctx, base)) {
+    return true;
+  }
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  ClassInfo * info = ctx.complete_class_type(base);
+  if(!info || !info->complete) {
+    return false;
+  }
+
+  ExprInfo rhs;
+  rhs.type = make_cv(base, source_const, source_volatile);
+  rhs.category = move ? VC_XVALUE : VC_LVALUE;
+  SameClassAssignmentTrait class_trait =
+      evaluate_same_class_assignment_trait(ctx, scope, base, rhs);
+  return class_trait.known &&
+         class_trait.assignable &&
+         class_trait.binding &&
+         assignment_binding_is_trivial(ctx,
+                                       scope,
+                                       *class_trait.binding,
+                                       visiting);
+}
+
+bool assignment_binding_is_trivial(SemanticContext & ctx,
+                                   Scope & scope,
+                                   const FunctionBinding & binding,
+                                   std::set<FunctionBinding *> & visiting)
+{
+  if(!binding.owner_class ||
+     binding.is_deleted ||
+     (!binding.is_copy_assignment && !binding.is_move_assignment)) {
+    return false;
+  }
+  const bool implicit_like =
+      binding.synthesized ||
+      binding.is_defaulted ||
+      (!binding.declaration_node && !binding.definition_node && !binding.body);
+  if(!implicit_like || binding.params.size() != 2) {
+    return false;
+  }
+
+  FunctionBinding * mutable_binding = const_cast<FunctionBinding *>(&binding);
+  if(!visiting.insert(mutable_binding).second) {
+    return false;
+  }
+
+  ClassInfo & info = *binding.owner_class;
+  TypePtr source_ref = strip_top_level_cv(binding.params[1].second);
+  TypePtr source_object = source_ref && is_reference_type(source_ref) ?
+      source_ref->inner : TypePtr();
+  TypePtr source_base;
+  bool source_const = false;
+  bool source_volatile = false;
+  const bool source_ok =
+      source_object &&
+      top_level_cv_flags(source_object,
+                         source_base,
+                         source_const,
+                         source_volatile);
+  const bool move = binding.is_move_assignment;
+  bool trivial = source_ok && !info.is_polymorphic;
+  for(size_t i = 0; trivial && i < info.bases.size(); ++i) {
+    trivial =
+        !info.bases[i].is_virtual &&
+        info.bases[i].type &&
+        assignment_type_is_trivial(ctx,
+                                   scope,
+                                   info.bases[i].type->type,
+                                   move,
+                                   source_const,
+                                   source_volatile,
+                                   visiting);
+  }
+  for(size_t i = 0; trivial && i < info.fields.size(); ++i) {
+    trivial = assignment_type_is_trivial(ctx,
+                                         scope,
+                                         info.fields[i].type,
+                                         move,
+                                         source_const,
+                                         source_volatile,
+                                         visiting);
+  }
+
+  visiting.erase(mutable_binding);
+  return trivial;
+}
+
 bool default_initialization_is_nothrow(SemanticContext & ctx,
                                        Scope & scope,
                                        const TypePtr & type,
@@ -3058,6 +3179,21 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
       rhs_expr.category = VC_PRVALUE;
     }
 
+    SameClassAssignmentTrait class_trait =
+        evaluate_same_class_assignment_trait(ctx, scope, target, rhs_expr);
+    if(class_trait.known) {
+      if(!class_trait.assignable || !class_trait.binding) {
+        out = 0;
+        return true;
+      }
+      std::set<FunctionBinding *> visiting;
+      out = assignment_binding_is_trivial(ctx,
+                                          scope,
+                                          *class_trait.binding,
+                                          visiting) ? 1 : 0;
+      return true;
+    }
+
     ExprInfo converted;
     if(!try_argument_conversion(ctx, scope, target, rhs_expr, converted)) {
       out = 0;
@@ -3072,12 +3208,6 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
 
     if(target->kind != Type::TK_NAMED) {
       out = 0;
-      return true;
-    }
-
-    if(is_same_class_reference_parameter(target, rhs_base, Type::TK_LVALUE_REFERENCE) ||
-       is_same_class_reference_parameter(target, rhs_base, Type::TK_RVALUE_REFERENCE)) {
-      out = is_trivially_copy_assignable_type(ctx, target) ? 1 : 0;
       return true;
     }
 

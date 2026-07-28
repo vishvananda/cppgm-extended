@@ -907,6 +907,32 @@ ClassInfo * ensure_complete_class_info(SemanticContext & ctx, const TypePtr & ty
   return ctx.complete_class_type(type);
 }
 
+ClassInfo * class_info_for_inheritance_conversion(SemanticContext & ctx,
+                                                  const TypePtr & type,
+                                                  bool materialize)
+{
+  if(materialize) {
+    return ensure_complete_class_info(ctx, type);
+  }
+
+  ClassInfo * info = ctx.class_info_for_type(type);
+  if(!info) {
+    return ctx.complete_class_type(type);
+  }
+  if(!info->complete &&
+     !info->reference_type_members_collected &&
+     !info->reference_members_collected &&
+     !info->reference_type_member_collection_in_progress &&
+     !info->reference_member_collection_in_progress &&
+     !info->full_member_collection_in_progress) {
+    ctx.ensure_class_reference_type_members(*info);
+    if(ClassInfo * refreshed = ctx.class_info_for_type(type)) {
+      info = refreshed;
+    }
+  }
+  return info;
+}
+
 bool binding_declares_explicit_function(const FunctionBinding & binding)
 {
   if(binding.is_explicit) {
@@ -2249,9 +2275,10 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
     if(!top_level_cv_allows_reference_binding(target_base->inner, expr_object_type)) {
       return false;
     }
-    ClassInfo * target_class =
-        ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
-    ClassInfo * source_class = ensure_complete_class_info(ctx, expr_object_type);
+    ClassInfo * target_class = class_info_for_inheritance_conversion(
+        ctx, strip_top_level_cv(target_base->inner), materialize);
+    ClassInfo * source_class = class_info_for_inheritance_conversion(
+        ctx, expr_object_type, materialize);
     size_t offset = 0;
     MemberAccess access = MA_PUBLIC;
     if(target_class && source_class && target_class == source_class) {
@@ -2273,9 +2300,10 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
     if(!top_level_cv_allows_reference_binding(target_base->inner, expr_object_type)) {
       return false;
     }
-    ClassInfo * target_class =
-        ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
-    ClassInfo * source_class = ensure_complete_class_info(ctx, expr_object_type);
+    ClassInfo * target_class = class_info_for_inheritance_conversion(
+        ctx, strip_top_level_cv(target_base->inner), materialize);
+    ClassInfo * source_class = class_info_for_inheritance_conversion(
+        ctx, expr_object_type, materialize);
     size_t offset = 0;
     MemberAccess access = MA_PUBLIC;
     if(target_class && source_class && target_class == source_class) {
@@ -2307,10 +2335,10 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
                                                   &expr_pointee_base)) {
       return false;
     }
-    ClassInfo * target_class =
-        ensure_complete_class_info(ctx, target_pointee_base);
-    ClassInfo * source_class =
-        ensure_complete_class_info(ctx, expr_pointee_base);
+    ClassInfo * target_class = class_info_for_inheritance_conversion(
+        ctx, target_pointee_base, materialize);
+    ClassInfo * source_class = class_info_for_inheritance_conversion(
+        ctx, expr_pointee_base, materialize);
     size_t offset = 0;
     MemberAccess access = MA_PUBLIC;
     if(target_class && source_class && target_class == source_class) {
@@ -2346,8 +2374,10 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_NAMED) {
-    ClassInfo * target_class = ensure_complete_class_info(ctx, target_base);
-    ClassInfo * source_class = ensure_complete_class_info(ctx, expr_object_type);
+    ClassInfo * target_class = class_info_for_inheritance_conversion(
+        ctx, target_base, materialize);
+    ClassInfo * source_class = class_info_for_inheritance_conversion(
+        ctx, expr_object_type, materialize);
     size_t offset = 0;
     MemberAccess access = MA_PUBLIC;
     if(target_class && source_class && target_class == source_class) {

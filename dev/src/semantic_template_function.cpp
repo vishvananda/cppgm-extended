@@ -4,6 +4,7 @@
 
 #include "semantic_context.h"
 #include "template_api.h"
+#include "template_resolution.h"
 
 namespace semantic_template_function {
 
@@ -213,6 +214,19 @@ bool function_template_accepts_transformed_parameter_types(
         has_trailing_pack && i >= fixed_count ? fixed_count : i;
     cpp_decl::TypePtr pattern = decl.params_pattern[pattern_index].second;
     cpp_decl::TypePtr actual = actual_params[i];
+    cpp_decl::TypePtr expanded_alias;
+    if(deduction_scope &&
+       template_resolution::expand_dependent_alias_pattern_for_partial_order(
+           ctx, *deduction_scope, pattern, expanded_alias) &&
+       expanded_alias) {
+      pattern = expanded_alias;
+    }
+    if(actual_lookup_scope &&
+       template_resolution::expand_dependent_alias_pattern_for_partial_order(
+           ctx, *actual_lookup_scope, actual, expanded_alias) &&
+       expanded_alias) {
+      actual = expanded_alias;
+    }
     bool pattern_reference_adjusted = false;
     bool actual_reference_adjusted = false;
 

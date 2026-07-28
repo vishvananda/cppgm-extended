@@ -1077,6 +1077,29 @@ void collect_decl_lookup_from_using_directives(Scope & scope,
 }
 
 template<typename DeclT, typename DirectLookup, typename SameEntity>
+DeclT * lookup_decl_from_using_directives_only(
+    Scope & scope,
+    const std::string & name,
+    const DirectLookup & direct_lookup,
+    const SameEntity & same_entity,
+    bool & ambiguous)
+{
+  bool found = false;
+  DeclT * value = nullptr;
+  std::set<const Scope *> visited;
+  collect_decl_lookup_from_using_directives<DeclT>(
+      scope,
+      name,
+      visited,
+      direct_lookup,
+      same_entity,
+      found,
+      value,
+      ambiguous);
+  return ambiguous ? nullptr : value;
+}
+
+template<typename DeclT, typename DirectLookup, typename SameEntity>
 DeclT * lookup_unqualified_decl_with_entity_equivalence(
     Scope & scope,
     const std::string & name,
@@ -1525,6 +1548,44 @@ bool nearer_class_template_hides_unqualified_alias_template(
     if(lookup_class_template_in_scope_or_inherited_members(ctx,
                                                           *current,
                                                           name)) {
+      return true;
+    }
+    bool alias_ambiguous = false;
+    AliasTemplateDecl * imported_alias =
+        lookup_decl_from_using_directives_only<AliasTemplateDecl>(
+            *current,
+            name,
+            [&ctx](Scope & target, const string & lookup_name)
+                -> AliasTemplateDecl *
+            {
+              return lookup_alias_template_in_scope_or_inherited_members(
+                  ctx, target, lookup_name);
+            },
+            [](AliasTemplateDecl * lhs, AliasTemplateDecl * rhs) -> bool
+            {
+              return same_inline_namespace_alias_template_entity(lhs, rhs);
+            },
+            alias_ambiguous);
+    if(imported_alias && !alias_ambiguous) {
+      return false;
+    }
+    bool class_ambiguous = false;
+    ClassTemplateDecl * imported_class =
+        lookup_decl_from_using_directives_only<ClassTemplateDecl>(
+            *current,
+            name,
+            [&ctx](Scope & target, const string & lookup_name)
+                -> ClassTemplateDecl *
+            {
+              return lookup_class_template_in_scope_or_inherited_members(
+                  ctx, target, lookup_name);
+            },
+            [](ClassTemplateDecl * lhs, ClassTemplateDecl * rhs) -> bool
+            {
+              return same_inline_namespace_class_template_entity(lhs, rhs);
+            },
+            class_ambiguous);
+    if(imported_class || alias_ambiguous || class_ambiguous) {
       return true;
     }
   }
@@ -6677,6 +6738,53 @@ AliasTemplateDecl * lookup_unqualified_alias_template(Scope & scope,
        (current->class_info &&
         current->class_info->source_template &&
         current->class_info->source_template->name == name)) {
+      return nullptr;
+    }
+    bool alias_ambiguous = false;
+    AliasTemplateDecl * imported_alias =
+        lookup_decl_from_using_directives_only<AliasTemplateDecl>(
+            *current,
+            name,
+            [](Scope & target, const string & lookup_name)
+                -> AliasTemplateDecl *
+            {
+              map<string, AliasTemplateDecl *>::iterator found =
+                  target.alias_templates.find(lookup_name);
+              return found == target.alias_templates.end() ?
+                  nullptr : found->second;
+            },
+            [](AliasTemplateDecl * lhs, AliasTemplateDecl * rhs) -> bool
+            {
+              return same_inline_namespace_alias_template_entity(lhs, rhs);
+            },
+            alias_ambiguous);
+    if(imported_alias && !alias_ambiguous) {
+      break;
+    }
+    bool class_ambiguous = false;
+    ClassTemplateDecl * imported_class =
+        lookup_decl_from_using_directives_only<ClassTemplateDecl>(
+            *current,
+            name,
+            [](Scope & target, const string & lookup_name)
+                -> ClassTemplateDecl *
+            {
+              if(target.class_info &&
+                 target.class_info->source_template &&
+                 target.class_info->source_template->name == lookup_name) {
+                return target.class_info->source_template;
+              }
+              map<string, ClassTemplateDecl *>::iterator found =
+                  target.class_templates.find(lookup_name);
+              return found == target.class_templates.end() ?
+                  nullptr : found->second;
+            },
+            [](ClassTemplateDecl * lhs, ClassTemplateDecl * rhs) -> bool
+            {
+              return same_inline_namespace_class_template_entity(lhs, rhs);
+            },
+            class_ambiguous);
+    if(imported_class || alias_ambiguous || class_ambiguous) {
       return nullptr;
     }
   }

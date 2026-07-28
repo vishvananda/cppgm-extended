@@ -10,6 +10,8 @@
 #include "template_model.h"
 #include "template_service_interfaces.h"
 
+class SemanticContext;
+
 namespace template_resolution {
 
 bool resolve_non_type_template_parameter_type(
@@ -22,6 +24,12 @@ bool make_shallow_bound_alias_template_id_type(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const cpp_decl::TemplateIdSyntax & syntax,
+    cpp_decl::TypePtr & out);
+
+bool expand_dependent_alias_pattern_for_partial_order(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    const cpp_decl::TypePtr & pattern,
     cpp_decl::TypePtr & out);
 
 bool resolve_template_argument(template_api::TemplateServices & services,

@@ -7324,6 +7324,143 @@ bool expand_one_dependent_alias_pattern_for_deduction(
   const auto expand_alias_pattern =
       [&](template_api::TemplateServices & services) -> bool
   {
+    bool carries_partial_order_placeholder = false;
+    for(std::size_t i = 0; i < dependent_alias_args.size(); ++i) {
+      if(dependent_alias_args[i].partial_order_placeholder ||
+         named_type_is_partial_order_placeholder(
+             dependent_alias_args[i].type)) {
+        carries_partial_order_placeholder = true;
+        break;
+      }
+    }
+    const auto parameter_for_argument_index =
+        [](const std::vector<TemplateParameterInfo> & parameters,
+           std::size_t argument_count,
+           std::size_t argument_index) -> const TemplateParameterInfo *
+    {
+      std::size_t current_argument = 0;
+      for(std::size_t param_i = 0; param_i < parameters.size(); ++param_i) {
+        const TemplateParameterInfo & parameter = parameters[param_i];
+        if(parameter.parameter_pack) {
+          std::size_t trailing_non_pack = 0;
+          for(std::size_t j = param_i + 1; j < parameters.size(); ++j) {
+            if(!parameters[j].parameter_pack) {
+              ++trailing_non_pack;
+            }
+          }
+          if(argument_count < current_argument + trailing_non_pack) {
+            return static_cast<const TemplateParameterInfo *>(nullptr);
+          }
+          const std::size_t pack_count =
+              argument_count - current_argument - trailing_non_pack;
+          if(argument_index >= current_argument &&
+             argument_index < current_argument + pack_count) {
+            return &parameter;
+          }
+          current_argument += pack_count;
+          continue;
+        }
+        if(argument_index == current_argument) {
+          return &parameter;
+        }
+        ++current_argument;
+      }
+      return static_cast<const TemplateParameterInfo *>(nullptr);
+    };
+    const auto make_resolved_arguments =
+        [&](const AliasTemplateDecl & candidate,
+            std::vector<TemplateArgument> & arguments) -> bool
+    {
+      arguments.clear();
+      arguments.reserve(dependent_alias_args.size());
+      for(std::size_t i = 0; i < dependent_alias_args.size(); ++i) {
+        const DependentAliasTemplateArgumentSyntax & source =
+            dependent_alias_args[i];
+        const TemplateParameterInfo * parameter =
+            parameter_for_argument_index(candidate.parameters,
+                                         dependent_alias_args.size(),
+                                         i);
+        if(!parameter) {
+          arguments.clear();
+          return false;
+        }
+
+        TemplateArgument argument;
+        argument.text = trim_space(source.text);
+        argument.source_defaulted = source.source_defaulted;
+        if(parameter->kind == TemplateParameterInfo::TP_TYPE && source.type) {
+          argument.kind = TemplateArgument::TA_TYPE;
+          argument.type = source.type;
+          argument.dependent =
+              service_type_depends_on_template_parameter(services, source.type);
+        } else if(parameter->kind == TemplateParameterInfo::TP_NON_TYPE &&
+                  (source.has_non_type_value ||
+                   source.partial_order_placeholder)) {
+          argument.kind = TemplateArgument::TA_VALUE;
+          argument.type = source.type ? source.type : parameter->value_type;
+          argument.value = source.value;
+          argument.dependent =
+              source.dependent_value || source.partial_order_placeholder;
+          argument.partial_order_placeholder =
+              source.partial_order_placeholder;
+          if(source.function_value ||
+             !source.function_internal_symbol.empty() ||
+             source.value_binding) {
+            TemplateArgument::RareData & rare = argument.mutable_rare();
+            rare.function_value = source.function_value;
+            rare.function_internal_symbol = source.function_internal_symbol;
+            rare.value_binding = source.value_binding;
+          }
+        } else if(parameter->kind ==
+                      TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+                  template_argument_semantics::
+                      resolve_template_template_argument_syntax(
+                          services,
+                          template_api::make_template_environment(scope),
+                          source.text,
+                          source.syntax,
+                          parameter->template_parameter_count,
+                          true,
+                          argument)) {
+          // The resolver populated the structured template entity.
+        } else {
+          arguments.clear();
+          return false;
+        }
+        attach_template_argument_source_syntax(&source.syntax, argument);
+        arguments.push_back(argument);
+      }
+
+      if(template_arguments_fully_bind_parameters(candidate.parameters,
+                                                   arguments)) {
+        return true;
+      }
+      std::vector<TemplateArgument> completed;
+      if(!complete_template_arguments_with_default_arguments(
+             services,
+             template_api::make_template_environment(scope),
+             candidate.parameters,
+             arguments,
+             completed,
+             candidate.declaring_scope ?
+                 template_api::make_template_environment(
+                     *candidate.declaring_scope) :
+                 template_api::TemplateEnvironmentHandle())) {
+        arguments.clear();
+        return false;
+      }
+      arguments.swap(completed);
+      return true;
+    };
+
+    std::vector<TemplateArgument> resolved_arguments;
+    const std::vector<TemplateArgument> * resolved_arguments_override = nullptr;
+    if(carries_partial_order_placeholder) {
+      if(!make_resolved_arguments(*alias_decl, resolved_arguments)) {
+        return false;
+      }
+      resolved_arguments_override = &resolved_arguments;
+    }
     if(template_specialization::expand_alias_template_pattern_type(
            services,
            template_api::make_template_environment(scope),
@@ -7332,7 +7469,10 @@ bool expand_one_dependent_alias_pattern_for_deduction(
            expanded,
            &alias_arg_syntaxes,
            template_api::make_template_environment(scope),
-           true)) {
+           true,
+           false,
+           nullptr,
+           resolved_arguments_override)) {
       return true;
     }
     // A member alias retained from its source class is not addressable through
@@ -7358,7 +7498,10 @@ bool expand_one_dependent_alias_pattern_for_deduction(
         expanded,
         &alias_arg_syntaxes,
         template_api::make_template_environment(scope),
-        true);
+        true,
+        false,
+        nullptr,
+        resolved_arguments_override);
   };
   const bool expanded_alias_pattern = deduction_ops.services ?
       expand_alias_pattern(*deduction_ops.services) :
@@ -11872,7 +12015,7 @@ bool try_resolve_non_type_template_parameter_type(
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
     return resolved;
-  } catch(const TemplateSubstitutionFailure & e) {
+  } catch(const TemplateSubstitutionFailure &) {
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "non-type-param-type name=" << parameter.name
@@ -11980,6 +12123,16 @@ bool can_skip_resolved_non_dependent_pattern_check(
 }
 
 }  // namespace
+
+bool expand_dependent_alias_pattern_for_partial_order(
+    SemanticContext & ctx,
+    Scope & scope,
+    const TypePtr & pattern,
+    TypePtr & out)
+{
+  return expand_dependent_alias_pattern_for_deduction(
+      DeductionContextOps(ctx), scope, pattern, out);
+}
 
 bool make_shallow_bound_alias_template_id_type(
     template_api::TemplateServices & services,
