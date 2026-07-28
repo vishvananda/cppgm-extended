@@ -15,6 +15,7 @@
 #include "template_scope.h"
 #include "semantic_hotspot.h"
 #include "semantic_class_model.h"
+#include "semantic_errors.h"
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
 #include "semantic_trace.h"
@@ -5861,6 +5862,30 @@ bool resolve_template_arguments(
 {
   return template_resolution::resolve_template_arguments(
       services, scope, parameters, texts, syntaxes, out, default_argument_declaring_scope);
+}
+
+bool resolve_template_arguments_for_candidate(
+    TemplateServices & services,
+    TemplateEnvironmentHandle scope,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::vector<std::string> & texts,
+    const std::vector<cpp_decl::TemplateArgumentSyntax> * syntaxes,
+    std::vector<template_model::TemplateArgument> & out,
+    TemplateEnvironmentHandle default_argument_declaring_scope)
+{
+  try {
+    return template_resolution::resolve_template_arguments(
+        services,
+        scope,
+        parameters,
+        texts,
+        syntaxes,
+        out,
+        default_argument_declaring_scope);
+  } catch(const TemplateSubstitutionFailure &) {
+    out.clear();
+    return false;
+  }
 }
 
 bool resolve_template_arguments(

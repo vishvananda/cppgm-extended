@@ -19568,6 +19568,14 @@ private:
                                           false,
                                           false,
                                           node.is_thread_local));
+    if(callsem_symbol(node).linkage == symbol_linkage::SL_WEAK) {
+      set_exported_symbol(
+          guard_symbol,
+          symbol_linkage::make_internal_symbol_identity(guard_symbol,
+                                                        symbol_linkage::SL_WEAK),
+          "local-static-guard",
+          node.text);
+    }
     const string object_symbol = node_internal_symbol(node);
     const bool guard_for_named_thread_local_object =
         !object_symbol.empty() &&

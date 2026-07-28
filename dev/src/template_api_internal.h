@@ -121,6 +121,15 @@ bool resolve_template_arguments(
     std::vector<template_model::TemplateArgument> & out,
     TemplateEnvironmentHandle default_argument_declaring_scope = TemplateEnvironmentHandle());
 
+bool resolve_template_arguments_for_candidate(
+    TemplateServices & services,
+    TemplateEnvironmentHandle scope,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::vector<std::string> & texts,
+    const std::vector<cpp_decl::TemplateArgumentSyntax> * syntaxes,
+    std::vector<template_model::TemplateArgument> & out,
+    TemplateEnvironmentHandle default_argument_declaring_scope = TemplateEnvironmentHandle());
+
 bool deduce_template_argument(TemplateServices & services,
                               const std::vector<template_model::TemplateParameterInfo> & parameters,
                               const cpp_decl::TypePtr & pattern,

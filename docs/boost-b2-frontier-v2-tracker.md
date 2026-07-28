@@ -15,9 +15,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `83 / 147`
 - current cursor: `#84 libs/poly_collection/test`
-- active compiler frontier: PolyCollection `test_algorithm4`; the first
-  semantic closure makes `test_algorithm1` pass and reduces the full graph to
-  nine compile failures plus the independent `test_registration` runtime abort
+- active compiler frontier: PolyCollection `test_capacity`; `test_algorithm`,
+  `test_fixed_variant`, and `test_registration` now pass, leaving seven ordered
+  C++ compilation failures
 
 ## Baseline Gates
 
@@ -239,6 +239,7 @@ differences other than the output path.
 | `(Phoenix invalid reference-target function-template SFINAE)` | Reject an instantiated function-template parameter that forms a reference to `void` at the existing post-substitution validity boundary | -26.14% | -27.80% | -35.35% | versus the preceding Phoenix checkpoint, instructions improve by 212,261,258 while RSS moves +1,097,728 B and footprint +8,527,872 B; every cumulative hard gate remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-phoenix-void-ref-sfinae-candidate-3run.json` | pass; three-run candidate medians are 194,655,640,897 instructions, 933,228,544 B RSS, and 652,939,264 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured and all runs recorded zero swaps. |
 | `(Phoenix assignment-left-operand single evaluation)` | Capture a built-in assignment's evaluated destination inside assignment lowering and reuse it for load, store, and lvalue-result formation, including bit-field storage | -26.13% | -28.11% | -36.23% | versus the preceding Phoenix checkpoint, instructions move by only 36,028,777 while RSS improves by 4,001,792 B and footprint improves by 8,900,608 B; every cumulative signal remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-phoenix-assignment-lhs-once-candidate-3run-isolated.json` | pass; isolated three-run candidate medians are 194,691,669,674 instructions, 929,226,752 B RSS, and 644,038,656 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured and all runs recorded zero swaps. |
 | `(PolyCollection initial typed semantic closure)` | Structured explicit/template-template pack expansion, concrete retained-`decltype` validation, constexpr base-pack initialization, conversion-function and selected-constructor semantics, explicit constructibility traits, full typed INVOKE conversions, and pointer common-target conversion | -25.85% | -27.75% | -34.95% | versus the final Phoenix checkpoint, instructions move +0.50% while RSS improves 0.84% and footprint improves 4.50%; every cumulative hard gate remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-poly-semantic-closure-candidate.json` | pass; candidate medians are 195,432,470,919 instructions, 933,916,672 B RSS, and 656,883,712 B footprint. The candidate-only gate used the preserved byte-identical epoch baseline, verified exact epoch `9764b3835`, frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; every run recorded zero swaps. No parent compiler or live project header was measured. |
+| `(PolyCollection direct-init, candidate-SFINAE, and local-static ODR closure)` | Admit explicit conversion only for direct initialization of the actual target copy/move constructor argument, discard explicit template-argument kind mismatches at the candidate boundary, and give inline/template local statics plus their guards stable weak ODR identity | -25.78% | -27.84% | -36.30% | versus the initial Poly checkpoint, instructions move +0.10 percentage points while RSS improves 0.09 and footprint improves 1.35 percentage points; every cumulative signal remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-poly-initial-closure-candidate.json` | pass; candidate-only medians are 195,622,337,236 instructions, 932,790,272 B RSS, and 643,309,568 B footprint. The gate verified exact immutable epoch `9764b3835`, frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 
 ## Suite Cursor
 
@@ -330,7 +331,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 81 | `libs/parser/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/parser/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. |
 | 82 | `libs/pfr/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/pfr/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. The cursor advances directly to C++03-declared Boost.Phoenix. |
 | 83 | `libs/phoenix/test` | pass | `c9eec23b8` | The final Clang-pinned forced `pch=off` C++11 graph finds 6367 targets, requests 832 updates, updates 829, and passes every compiler-owned positive and deliberate-negative action. It fails only the independently reproduced upstream `bug_000008` Boost.Thread Jamfile link typo and skips that target's two downstream actions; this external defect is not charged to CPPGM. The run completes in 1325.61s at 1,846,845,440 B process-tree maximum RSS with zero process swaps; log `/private/tmp/boost-frontier-v2-phoenix-post-bug5968-full-forced.log`. | The last compiler frontier, `bug5968`, was a false class-member index entry: recursive declarator discovery descended into a function parameter clause and treated its parameter named `slot` as a member. Commit `c9eec23b8` stops discovery at that semantic boundary. PA18 passes `241/241`, all 960 strict comparisons and the PA9-excluded broad report's `4147/4147` pass, thirteen cache modes are byte-identical, and all reparse/audit/placement/warning gates pass. The immutable frozen-source/51-header gate records -26.22% instructions, -27.14% RSS, and -31.89% footprint. Actual compiler and host commands are CPPGM plus Homebrew Clang 22; Boost.Build's printed `gcc.*` strings are legacy action labels only. |
-| 84 | `libs/poly_collection/test` | frontier | `(this commit)` | Boost declares C++11. The latest exact Clang-pinned graph finds 4981 targets and leaves ten failed updates: nine C++ compilation failures (`test_algorithm4`, `test_comparison`, `test_capacity`, `test_construction`, `test_emplacement`, `test_fixed_variant`, `test_erasure`, `test_insertion`, and `test_iterators`) plus the independently executing `test_registration` runtime abort; log `/tmp/boost-frontier-v2-suite-084-poly-collection-after-fixes.log`. It completes in 494.54s at 3,219,517,440 B process-tree maximum RSS with zero process swaps. | The initial closure makes exact `test_algorithm1` pass and repairs nine independent C++11 rules with compact earliest-owner regressions. The current batch passes all configured strict comparisons, the PA9-excluded direct report `4156/4156`, placement/hygiene, cache-parity controls, all 23 zero-reparse categories, 14 audit tests, and the frozen performance gate. `test_algorithm4` is the next ordered compile frontier. |
+| 84 | `libs/poly_collection/test` | frontier | `(this commit)` | Boost declares C++11. The latest forced Clang-hosted two-job graph finds 4981 targets, updates 57, and leaves exactly seven C++ compilation failures: `test_capacity`, `test_comparison`, `test_construction`, `test_emplacement`, `test_erasure`, `test_insertion`, and `test_iterators`; log `/private/tmp/boost-frontier-v2-suite-084-poly-post-odr-sfinae-full-forced.log`. It completes in 1171.91s at 3,875,123,200 B maximum RSS with zero process swaps. | `test_algorithm`, `test_fixed_variant`, and `test_registration` now pass. Known multi-GiB `test_algorithm3` and `test_algorithm4` compiles were prevented from overlapping each other while the second worker continued ordinary graph work; every compiler child released, system swap stayed flat after the initial graph overlap, and pages were never throttled. All actual C++ commands use `dev/cppgm++`, with C/assembly/link work pinned to Homebrew Clang 22; printed `gcc.*` strings are Boost.Build adapter action labels, not GCC host compilation. The closure passes all 960 configured strict comparisons, the PA9-excluded direct report `4160/4160`, complete script tests, cache parity, placement review, all 23 zero-reparse categories, audit tests, and the frozen-header performance gate. `test_capacity` is the next ordered compile frontier. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
@@ -338,20 +339,25 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 ## Active Frontier
 
 - suite: `#84 libs/poly_collection/test`
-- focused target: `test_algorithm4.o`
+- focused target: `test_capacity.o`
 - last closed suite: `#83 libs/phoenix/test` (`pass`, with only the independently
   reproduced upstream `bug_000008` Jamfile link typo excluded)
 - failure phase: C++ compilation
-- diagnostic: the retained `restitute_range::iterator` cannot call `alg` in
-  PolyCollection's `for_each_n<all_types>` path
-- reduced repro: pending reduction from `test_algorithm4.cpp`
-- owning PA/cluster: likely PA22 overload/substitution; prove with the reducer
-- implementation area: typed callable resolution and dependent result recovery
-- performance risk: the latest complete graph peaks at 3.22 GB process-tree
-  RSS with zero swaps; retain explicit per-process memory monitoring
+- diagnostic: target-aware construction sees the two-argument
+  `local_iterator_impl(segment-map-iterator, base-iterator)` constructor but
+  rejects the only matching retained specialization as if it had too many
+  arguments
+- reduced repro: pending reduction from `test_capacity.cpp`
+- owning PA/cluster: likely PA21/PA22 constructor-template substitution; prove
+  with the smallest header-free reducer
+- implementation area: retained constructor-template specialization signature
+  and candidate rematerialization
+- performance risk: the latest graph peaks at 3.88 GB in the isolated
+  `test_algorithm4` compiler process with zero process swaps; keep ordinary
+  work parallel but do not overlap known multi-GiB translation units
 - language lane: Boost declares C++11; all actual compiler and host paths stay
   pinned to CPPGM plus Homebrew Clang 22
-- next action: reduce the `test_algorithm4` call failure, compare its typed
+- next action: reduce the `test_capacity` constructor failure, compare its typed
   overload behavior with Clang C++11, and add the smallest earliest-owner test
 
 ## Fix Ledger
@@ -361,6 +367,9 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | PolyCollection direct initialization through an explicit conversion | Target-aware construction treated the conversion used to supply a copy/move constructor's target-class parameter as implicit even during direct initialization. The conversion policy now admits an explicit conversion only when directly initializing the actual non-template target copy/move constructor parameter; copy initialization and unrelated constructor arguments remain implicit-only. | `pa16/tests/general/400-direct-init-class-explicit-conversion.t`; `pa34/tests/compile/600-builtin-constructible-explicit-conversion-template.t`, both compact header-free C++11 tests without `<type_traits>` | The reduced direct initialization and the corresponding constructibility builtin rejected a valid explicit conversion before the fix; Homebrew Clang 22 accepts both under strict C++11. | PA16/PA34 focused reports pass; strict passes `960/960`; the PA9-excluded broad direct-LowIR report passes `4160/4160`; placement and audit checks report no new finding. | measured with the complete current Poly closure: -25.78% instructions, -27.84% RSS, -36.30% footprint | `(this commit)` |
+| fixed | PolyCollection explicit function-template argument kind mismatch | Initial expansion of explicit template arguments could throw when a type argument was tried against a non-type parameter, aborting the complete overload set instead of discarding only that candidate. The raw typed resolver now catches substitution failure at its candidate API boundary and leaves successful witness-producing resolution unchanged. | `pa22/tests/general/300-explicit-argument-kind-mismatch-sfinae.t`, 17 header-free C++11 lines without `<type_traits>` | The pre-fix overload set aborts on its non-type-first candidate before reaching the valid type-first candidate. Clang accepts the call; the fixed compiler emits byte-identical LowIR in normal, ten individual cache-off modes, and all-off mode. | PA22 focused and strict witness output pass byte-for-byte; strict, broad, cache, placement, and zero-reparse/audit gates pass. Exact `test_fixed_variant` compiles, links, and runs. | measured with the complete current Poly closure | `(this commit)` |
+| fixed | PolyCollection inline/template local-static ODR identity and guard | Weak ODR-mergeable local statics used translation-unit token offsets in their symbol identity, and their dynamic-initialization guards remained internal even when the storage was weak. Weak local statics now use stable encoded source locations and export a matching weak guard; internal local statics retain token offsets to avoid unrelated output churn. | `pa32/tests/general/100-inline-local-static-header-coalesces.t` with a shared header and two translation units | Before the fix, each translation unit could retain distinct storage and independently execute dynamic initialization. The strengthened native reducer increments a shared counter in the initializer, mutates the object in TU1, observes it from TU2, and requires exactly one initialization. | CPPGM and Clang strict C++11 controls pass. Five existing LowIR refs change only for stable local-static identity and the corresponding principled weak guard binding. Strict passes `960/960`, broad passes `4160/4160`, and exact `test_algorithm` plus `test_registration` pass. | measured with the complete current Poly closure | `(this commit)` |
 | fixed | PolyCollection explicit and template-template argument packs | Explicit function-template arguments were resolved against fixed arity before a retained input pack was expanded, and a trailing template-template partial-specialization pack had no structured collection path. Resolution now expands the supplied argument inputs first and preserves every deduced template entity. A concrete retained `decltype` sidecar is re-evaluated after deduction; a syntax-free compatibility entry point may reuse only an exact already-materialized structured specialization identity and never decomposes text or creates an instantiation. | `pa19/tests/general/200-explicit-template-argument-pack-expands-fixed-parameters.t`; `pa21/tests/general/200-trailing-template-template-argument-pack-partial-specialization.t`; existing PA22 retained-`decltype` sidecar controls | Exact `test_algorithm1` success depended on these pack/identity transitions; each compact header-free reducer fails at its corresponding missing structured operation before the fix while Clang 22 accepts it under C++11. | Focused owners, configured strict, cache-parity controls, zero-reparse/audit, PA9-excluded `4156/4156`, and exact `test_algorithm1` pass. | measured with the complete initial Poly closure: -25.85% instructions, -27.75% RSS, -34.95% footprint | `(this commit)` |
 | fixed | PolyCollection constexpr base-pack constructor | Lowering could associate a pack-expanded base initializer with a concrete base, but constexpr evaluation used a separate unexpanded matcher and did not bind repeated concrete parameter aliases as a value pack. Both paths now share structured base-initializer selection, choose the corresponding expanded initializer argument, and bind its actual constexpr value. | `pa20/tests/general/300-constexpr-class-base-pack-constructor.t`, 27 header-free C++11 lines at the constexpr class-object owner | The pre-fix evaluator cannot establish the two base subobject values; Clang 22 proves both assertions under C++11. | PA20 and all broad/strict/placement/reparse/cache gates pass with byte-identical empty-main LowIR. | measured with the complete initial Poly closure | `(this commit)` |
 | fixed | PolyCollection conversion lookup, ranking, and selected-only instantiation | Retained conversion-function-template specializations were treated as independent declarations, an incidental cv rank could beat direct reference binding, and probing conversion constructors instantiated every viable body. Lookup now considers the primary conversion template for the current target, ranks direct reference binding first, probes constructor signatures without bodies, and acquires only the selected definition while preserving source-witness output. | `pa16/tests/general/400-reference-conversion-beats-temporary-construction.t`; `pa22/tests/spec/300-conversion-template-specializations-not-independent.t`; `pa22/tests/spec/300-unselected-constructor-template-body-not-instantiated.t` | The first reducer selected the temporary-producing constructor, distinct target cv forms reused retained specializations incorrectly, and the third reducer instantiated an invalid unselected constructor body. Clang accepts all three in C++11. | PA16/PA22 direct reports pass; configured strict witness output is byte-identical after preserving witness-only source emission; broad and audit gates pass. | measured with the complete initial Poly closure | `(this commit)` |
@@ -646,6 +655,44 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Phoenix `bug5968` parameter names in the lazy class-member index | The reference-member name probe recursively descended a function's parameter clause and treated parameter identifiers as class members. Looking up namespace template `slot` while completing `signal_impl` therefore followed a false current-class `slot` hit into a later `connect(..., slot)` declaration and parsed its `garbage_collecting_lock<mutex_type>` parameter before the preceding `mutex_type` typedef had been installed. Declarator name discovery now stops at the parameter-clause boundary, matching the existing structured rule used by pack-parameter analysis. No eager completion, cache, source text, rendered-name recovery, or Boost-specific path is added. | `pa18/tests/general/100-class-template-member-index-ignores-parameter-name.t`, eight code lines / 343 total bytes of header-free C++11 with no `<type_traits>`; PA18:100 is the audited basic class-template owner. The worktree has no patched-Clang witness producer, so only the ordinary LowIR sidecars are checked in and no witness reference is fabricated. | A controlled rollback makes the reducer fail at `lock<mutex_type>` while Homebrew Clang 22 accepts it warning-clean. The two-line Boost-header reducer fails pre-fix at the same undeclared typedef; changing the unrelated parameter name in a temporary header control removes the false hit. The fixed exact `bug5968` target compiles, links, and runs in 29.51s at 692,158,464 B process-tree RSS with zero swaps; the header-only source uses 261,316,608 B. | PA18 passes `241/241`; all 960 configured strict comparisons and the PA9-excluded direct-LowIR report's `4147/4147` pass, including PA37 `7/7`. All 23 text-reparse categories and 14 audit tests pass. Normal, eleven individual cache-off modes, and all-off emit byte-identical LowIR at SHA-256 `25d4e7b6483bcdaa6c45b2e9a870c5faa8e499912011c4a012168e8e8922356b`. The new test has no placement or hygiene finding, and the production unit is warning-clean under Homebrew Clang 22. | -26.22% instructions, -27.14% RSS, and -31.89% footprint; three-run candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-bug5968-parameter-name-candidate-3run.json`; no parent compiler or live project header was measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-27`: Packaged the second PolyCollection closure and advanced the
+  ordered compiler frontier to `test_capacity`. Direct initialization now
+  admits an explicit conversion only for the actual target copy/move
+  constructor parameter; an explicit template-argument kind mismatch is
+  candidate SFINAE; and ODR-mergeable inline/template local statics use stable
+  weak storage and guard identities across translation units. Exact
+  `test_algorithm`, `test_fixed_variant`, and `test_registration` now compile,
+  link, and run. The forced graph leaves exactly seven C++ compile failures:
+  `test_capacity`, `test_comparison`, `test_construction`, `test_emplacement`,
+  `test_erasure`, `test_insertion`, and `test_iterators`. The authoritative log
+  is
+  `/private/tmp/boost-frontier-v2-suite-084-poly-post-odr-sfinae-full-forced.log`.
+
+  The Clang-hosted two-job graph finds 4981 targets, updates 57, and completes
+  in 1171.91s at 3,875,123,200 B maximum RSS with zero process swaps. The known
+  multi-GiB `test_algorithm3` and `test_algorithm4` translation units were kept
+  from overlapping each other, while the ordinary second worker continued.
+  Every child released, system swap stayed flat after the initial overlap, and
+  pages were never throttled. All C++ compilation actions invoke
+  `dev/cppgm++`; C/assembly/link work and the compiler build use Homebrew Clang
+  22. Boost.Build's printed `gcc.compile.c++` and `gcc.link` strings are adapter
+  action labels only, not evidence that GCC was used.
+
+  The new reducers are compact, header-free C++11 at PA16, PA22, PA32, and
+  PA34; none uses `<type_traits>`. Strict direct comparison passes `960/960`,
+  the PA9-excluded direct report passes `4160/4160`, and all 166 discovered
+  script tests pass with one expected skip. All 23 zero-reparse categories,
+  audit tests, cache parity, placement review, and the warning-clean Clang build
+  pass. Five LowIR refs change only for the principled stable source identity
+  and weak dynamic guard of ODR-mergeable local statics; witness refs are
+  unchanged.
+
+  The candidate-only frozen-source/51-header gate records 195,622,337,236
+  instructions, 932,790,272 B RSS, and 643,309,568 B footprint: -25.78%,
+  -27.84%, and -36.30% from immutable epoch `9764b3835`. It verifies closure
+  hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`.
+  No parent compiler and no live project header was measured.
 
 - `2026-07-27`: Packaged the first PolyCollection semantic closure without
   claiming the suite. Boost declares C++11. Exact `test_algorithm1` now passes;
@@ -3546,10 +3593,10 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-/usr/bin/time -lp /usr/local/bin/timeout 1800 env JOBS=3 \
+/usr/bin/time -lp /usr/local/bin/timeout 1800 env JOBS=2 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/poly_collection/test
+  ./run-cppgm-b2.sh pch=off -a libs/poly_collection/test//test_capacity
 ```

@@ -1751,6 +1751,33 @@ bool constructor_is_class_copy_or_move_candidate(const ClassInfo & info,
   return same_type_with_compatible_top_cv(param->inner, info.type);
 }
 
+bool constructor_argument_may_use_explicit_conversion(
+    const ClassInfo & info,
+    const FunctionBinding * binding,
+    const ConstructorSelectionOptions & options)
+{
+  // Direct-initialization may initialize a target copy/move constructor's
+  // class-reference parameter through an explicit conversion function.  This
+  // exception does not apply to constructor templates or to ordinary
+  // converting-constructor parameters.
+  return options.allow_explicit &&
+         binding &&
+         !binding->source_template &&
+         constructor_is_class_copy_or_move_candidate(info, binding);
+}
+
+ArgumentConversionOptions constructor_rematerialization_conversion_options(
+    const ClassInfo & info,
+    const FunctionBinding * binding,
+    const ConstructorSelectionOptions & options)
+{
+  ArgumentConversionOptions conversion_options =
+      semantic_policy::rematerialization_conversion(options);
+  conversion_options.allow_explicit =
+      constructor_argument_may_use_explicit_conversion(info, binding, options);
+  return conversion_options;
+}
+
 bool has_materialized_copy_or_move_constructor_candidate(const ClassInfo & info)
 {
   std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
@@ -11503,8 +11530,9 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
       candidate_rejection = candidate->name + ": member access not allowed";
       return;
     }
-    if(!options.synthesize_implicit_copy_move &&
-       constructor_is_class_copy_or_move_candidate(target_info, candidate)) {
+    const bool class_copy_or_move_candidate =
+        constructor_is_class_copy_or_move_candidate(target_info, candidate);
+    if(!options.synthesize_implicit_copy_move && class_copy_or_move_candidate) {
       candidate_rejection = candidate->name + ": copy/move constructor not considered";
       return;
     }
@@ -11542,7 +11570,10 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
       ArgumentConversionOptions conversion_options(options.allow_user_defined,
                                                    false,
                                                    true,
-                                                   false);
+                                                   constructor_argument_may_use_explicit_conversion(
+                                                       target_info,
+                                                       candidate,
+                                                       options));
       conversion_options.materialize_standard_adjustments =
           !options.instantiate_bodies;
       try
@@ -11657,7 +11688,10 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
          !rematerialize_candidate_match_args(ctx,
                                              scope,
                                              state.matches[exact_selection.index],
-                                             semantic_policy::rematerialization_conversion(options),
+                                             constructor_rematerialization_conversion_options(
+                                                 target_info,
+                                                 chosen,
+                                                 options),
                                              false)) {
         throw logic_error("failed to rematerialize selected constructor conversions");
       }
@@ -11756,7 +11790,10 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
      !rematerialize_candidate_match_args(ctx,
                                          scope,
                                          state.matches[selection.index],
-                                         semantic_policy::rematerialization_conversion(options),
+                                         constructor_rematerialization_conversion_options(
+                                             target_info,
+                                             chosen,
+                                             options),
                                          false)) {
     throw logic_error("failed to rematerialize selected constructor conversions");
   }
@@ -11908,8 +11945,9 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
       }
       return;
     }
-    if(!options.synthesize_implicit_copy_move &&
-       constructor_is_class_copy_or_move_candidate(target_info, candidate)) {
+    const bool class_copy_or_move_candidate =
+        constructor_is_class_copy_or_move_candidate(target_info, candidate);
+    if(!options.synthesize_implicit_copy_move && class_copy_or_move_candidate) {
       candidate_rejection = candidate->name + ": copy/move constructor not considered";
       if(parser_trace::enabled("overload")) {
         ostringstream trace;
@@ -11920,9 +11958,6 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
       }
       return;
     }
-    const bool class_copy_or_move_candidate =
-        constructor_is_class_copy_or_move_candidate(target_info, candidate);
-
     TypePtr function_type = strip_top_level_cv(candidate->type);
     if(!function_type || function_type->kind != Type::TK_FUNCTION ||
        function_type->params.empty()) {
@@ -12056,7 +12091,10 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
         ArgumentConversionOptions conversion_options(true,
                                                     false,
                                                     true,
-                                                    false);
+                                                    constructor_argument_may_use_explicit_conversion(
+                                                        target_info,
+                                                        candidate,
+                                                        options));
         conversion_options.materialize_standard_adjustments =
             !options.instantiate_bodies;
         try
@@ -12211,7 +12249,10 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
       if(!rematerialize_candidate_match_args(ctx,
                                              scope,
                                              state.matches[exact_selection.index],
-                                             semantic_policy::rematerialization_conversion(options),
+                                             constructor_rematerialization_conversion_options(
+                                                 target_info,
+                                                 chosen,
+                                                 options),
                                              false)) {
         throw logic_error("failed to rematerialize selected constructor action");
       }
@@ -12342,7 +12383,10 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
   if(!rematerialize_candidate_match_args(ctx,
                                          scope,
                                          state.matches[selection.index],
-                                         semantic_policy::rematerialization_conversion(options),
+                                         constructor_rematerialization_conversion_options(
+                                             target_info,
+                                             chosen,
+                                             options),
                                          false)) {
     throw logic_error("failed to rematerialize selected constructor action");
   }

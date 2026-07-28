@@ -76,6 +76,15 @@ bool resolve_template_arguments(
     std::vector<template_model::TemplateArgument> & out,
     TemplateEnvironmentHandle default_argument_declaring_scope = TemplateEnvironmentHandle());
 
+bool resolve_template_arguments_for_candidate(
+    TemplateServices & services,
+    TemplateEnvironmentHandle scope,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::vector<std::string> & texts,
+    const std::vector<cpp_decl::TemplateArgumentSyntax> * syntaxes,
+    std::vector<template_model::TemplateArgument> & out,
+    TemplateEnvironmentHandle default_argument_declaring_scope = TemplateEnvironmentHandle());
+
 }  // namespace template_api
 
 namespace template_argument_semantics {
@@ -11223,7 +11232,7 @@ bool append_leaf_function_template_instantiations_from_candidates(
     if(template_id) {
       const template_api::TemplateEnvironmentHandle argument_scope =
           template_api::make_template_environment(scope);
-      if(!template_api::resolve_template_arguments(
+      if(!template_api::resolve_template_arguments_for_candidate(
              services,
              argument_scope,
              function_templates[i]->parameters,

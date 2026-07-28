@@ -240,22 +240,6 @@ TypePtr resolve_local_declaration_type(SemanticContext & ctx,
   return type;
 }
 
-string local_static_scope_discriminator(const Scope & scope,
-                                        const CppAstNode * declaration_node)
-{
-  if(declaration_node &&
-     declaration_node->token_end >= declaration_node->token_start &&
-     !(declaration_node->token_start == 0 && declaration_node->token_end == 0)) {
-    ostringstream out;
-    out << "tokens" << declaration_node->token_start
-        << "_" << declaration_node->token_end;
-    return out.str();
-  }
-  ostringstream out;
-  out << "scope" << scope.instance_id;
-  return out.str();
-}
-
 string symbol_discriminator_text(const string & text)
 {
   static const char hex[] = "0123456789abcdef";
@@ -267,6 +251,35 @@ string symbol_discriminator_text(const string & text)
     out += hex[ch & 0x0F];
   }
   return out;
+}
+
+string local_static_scope_discriminator(SemanticContext & ctx,
+                                        const Scope & scope,
+                                        const string & name,
+                                        const CppAstNode * declaration_node,
+                                        bool odr_mergeable)
+{
+  if(odr_mergeable && declaration_node) {
+    string source_location =
+        ctx.source_location_for_name_in_node(*declaration_node, name, true);
+    if(source_location.empty()) {
+      source_location = ctx.source_location_for_node(*declaration_node);
+    }
+    if(!source_location.empty()) {
+      return string("source") + symbol_discriminator_text(source_location);
+    }
+  }
+  if(declaration_node &&
+     declaration_node->token_end >= declaration_node->token_start &&
+     !(declaration_node->token_start == 0 && declaration_node->token_end == 0)) {
+    ostringstream out;
+    out << "tokens" << declaration_node->token_start
+        << "_" << declaration_node->token_end;
+    return out.str();
+  }
+  ostringstream out;
+  out << "scope" << scope.instance_id;
+  return out.str();
 }
 
 const FunctionBinding * local_static_enclosing_function(const Scope & scope)
@@ -306,23 +319,29 @@ string local_static_function_owner_name(const Scope & scope,
   return semantic_lookup::scope_symbol_qualified_name(scope, fallback_name);
 }
 
-string local_static_internal_symbol(const Scope & scope,
+string local_static_internal_symbol(SemanticContext & ctx,
+                                    const Scope & scope,
                                     const string & name,
-                                    const CppAstNode * declaration_node)
+                                    const CppAstNode * declaration_node,
+                                    bool odr_mergeable)
 {
   ostringstream out;
   out << "__local_static::";
   out << local_static_function_owner_name(scope, name);
   out << "::" << name << "::"
-      << local_static_scope_discriminator(scope, declaration_node);
+      << local_static_scope_discriminator(
+          ctx, scope, name, declaration_node, odr_mergeable);
   return symbol_linkage::internal_symbol_from_name(out.str());
 }
 
-string local_static_guard_internal_symbol(const Scope & scope,
+string local_static_guard_internal_symbol(SemanticContext & ctx,
+                                          const Scope & scope,
                                           const string & name,
-                                          const CppAstNode * declaration_node)
+                                          const CppAstNode * declaration_node,
+                                          bool odr_mergeable)
 {
-  return local_static_internal_symbol(scope, name, declaration_node) + "__guard";
+  return local_static_internal_symbol(
+      ctx, scope, name, declaration_node, odr_mergeable) + "__guard";
 }
 
 bool scope_has_internal_namespace_linkage(const Scope * scope)
@@ -2111,6 +2130,11 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
           is_thread_local ||
           decl_spec_contains_token(prepared_specifiers.resolved_specifiers, KW_STATIC);
       const bool use_global_static_storage = has_static_storage_specifier;
+      const symbol_linkage::SymbolLinkage local_static_linkage =
+          use_global_static_storage ? local_static_storage_linkage(scope) :
+                                      symbol_linkage::SL_INTERNAL;
+      const bool local_static_is_odr_mergeable =
+          local_static_linkage == symbol_linkage::SL_WEAK;
       const bool needs_local_static_guard =
           use_global_static_storage &&
           (has_class_lifetime ||
@@ -2126,8 +2150,12 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
       binding.requires_constant_initializer = is_constexpr_variable;
       if(use_global_static_storage) {
         binding.symbol = symbol_linkage::make_internal_symbol_identity(
-            local_static_internal_symbol(scope, name, &init_decl),
-            local_static_storage_linkage(scope));
+            local_static_internal_symbol(ctx,
+                                         scope,
+                                         name,
+                                         &init_decl,
+                                         local_static_is_odr_mergeable),
+            local_static_linkage);
         if(is_thread_local) {
           binding.symbol.thread_local_wrapper_object_symbol =
               symbol_linkage::thread_local_wrapper_internal_symbol(
@@ -2169,7 +2197,11 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
         if(needs_local_static_guard) {
           set_callsem_local_static_guard_symbol(
               var_node,
-              local_static_guard_internal_symbol(scope, name, &init_decl));
+              local_static_guard_internal_symbol(ctx,
+                                                 scope,
+                                                 name,
+                                                 &init_decl,
+                                                 local_static_is_odr_mergeable));
         }
       }
       if(use_global_static_storage && has_class_lifetime) {

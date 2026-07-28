@@ -13903,7 +13903,7 @@ bool resolve_template_arguments(
       services, scope, parameters, texts, nullptr, out, default_argument_declaring_scope);
 }
 
-bool resolve_function_explicit_template_arguments(
+bool resolve_function_explicit_template_arguments_impl(
     SemanticContext & ctx,
     FunctionTemplateDecl & decl,
     Scope & resolution_scope,
@@ -14055,6 +14055,28 @@ bool resolve_function_explicit_template_arguments(
     out.push_back(argument);
   }
   return true;
+}
+
+bool resolve_function_explicit_template_arguments(
+    SemanticContext & ctx,
+    FunctionTemplateDecl & decl,
+    Scope & resolution_scope,
+    const std::vector<std::string> & explicit_arg_texts,
+    std::vector<TemplateArgument> & out,
+    const std::vector<TemplateArgumentSyntax> * explicit_arg_syntaxes)
+{
+  try {
+    return resolve_function_explicit_template_arguments_impl(
+        ctx,
+        decl,
+        resolution_scope,
+        explicit_arg_texts,
+        out,
+        explicit_arg_syntaxes);
+  } catch(const TemplateSubstitutionFailure &) {
+    out.clear();
+    return false;
+  }
 }
 
 bool partition_explicit_function_template_arguments(
