@@ -7256,6 +7256,178 @@ struct DeductionContextOps
   }
 };
 
+bool expand_one_dependent_alias_pattern_for_deduction(
+    const DeductionContextOps & deduction_ops,
+    Scope & scope,
+    const TypePtr & pattern,
+    TypePtr & out,
+    bool * recognized = nullptr)
+{
+  out.reset();
+  if(recognized) {
+    *recognized = false;
+  }
+  TypePtr alias_type = pattern;
+  TypePtr cv_inner;
+  bool cv_const = false;
+  bool cv_volatile = false;
+  if(top_level_cv_flags(pattern,
+                        cv_inner,
+                        cv_const,
+                        cv_volatile) &&
+     (cv_const || cv_volatile) &&
+     cv_inner) {
+    alias_type = cv_inner;
+  }
+  if(!alias_type || alias_type->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  void * dependent_alias_template_decl = nullptr;
+  std::vector<DependentAliasTemplateArgumentSyntax> dependent_alias_args;
+  if(!named_type_dependent_alias_template(alias_type,
+                                          dependent_alias_template_decl,
+                                          dependent_alias_args) ||
+     !dependent_alias_template_decl) {
+    return false;
+  }
+  if(recognized) {
+    *recognized = true;
+  }
+
+  AliasTemplateDecl * alias_decl =
+      static_cast<AliasTemplateDecl *>(dependent_alias_template_decl);
+  if(!alias_decl) {
+    return false;
+  }
+  QualifiedName alias_name;
+  if(alias_decl->declaring_scope) {
+    alias_name = semantic_lookup::scope_qualified_name_syntax(
+        *alias_decl->declaring_scope, alias_decl->name);
+  } else {
+    alias_name.name = alias_decl->name;
+  }
+  if(alias_name.name.empty()) {
+    return false;
+  }
+
+  std::vector<std::string> alias_arg_texts;
+  std::vector<TemplateArgumentSyntax> alias_arg_syntaxes;
+  alias_arg_texts.reserve(dependent_alias_args.size());
+  alias_arg_syntaxes.reserve(dependent_alias_args.size());
+  for(std::size_t i = 0; i < dependent_alias_args.size(); ++i) {
+    alias_arg_texts.push_back(dependent_alias_args[i].text);
+    alias_arg_syntaxes.push_back(dependent_alias_args[i].syntax);
+  }
+
+  TypePtr expanded;
+  const auto expand_alias_pattern =
+      [&](template_api::TemplateServices & services) -> bool
+  {
+    if(template_specialization::expand_alias_template_pattern_type(
+           services,
+           template_api::make_template_environment(scope),
+           alias_name,
+           alias_arg_texts,
+           expanded,
+           &alias_arg_syntaxes,
+           template_api::make_template_environment(scope),
+           true)) {
+      return true;
+    }
+    // A member alias retained from its source class is not addressable through
+    // that source-qualified name once deduction is inside an instantiated
+    // owner. Use normal lookup there only when it identifies the same alias.
+    QualifiedName visible_name;
+    visible_name.name = alias_decl->name;
+    AliasTemplateDecl * visible_alias =
+        template_argument_semantics::lookup_alias_template(
+            services, scope, visible_name);
+    if(!visible_alias ||
+       (visible_alias != alias_decl &&
+        visible_alias->type_id != alias_decl->type_id &&
+        visible_alias->resolved_type_pattern !=
+            alias_decl->resolved_type_pattern)) {
+      return false;
+    }
+    return template_specialization::expand_alias_template_pattern_type(
+        services,
+        template_api::make_template_environment(scope),
+        visible_name,
+        alias_arg_texts,
+        expanded,
+        &alias_arg_syntaxes,
+        template_api::make_template_environment(scope),
+        true);
+  };
+  const bool expanded_alias_pattern = deduction_ops.services ?
+      expand_alias_pattern(*deduction_ops.services) :
+      template_api::with_template_services(
+          *deduction_ops.semantic_context, expand_alias_pattern);
+  if(!expanded_alias_pattern ||
+     !expanded ||
+     // Alias targets are semantically equal to their aliases, so type_equals
+     // cannot distinguish progress here.
+     expanded.get() == alias_type.get()) {
+    return false;
+  }
+
+  out = apply_cv(expanded, cv_const, cv_volatile);
+  return true;
+}
+
+bool expand_dependent_alias_pattern_for_deduction(
+    const DeductionContextOps & deduction_ops,
+    Scope & scope,
+    const TypePtr & pattern,
+    TypePtr & out,
+    bool * recognized = nullptr)
+{
+  out.reset();
+  if(recognized) {
+    *recognized = false;
+  }
+
+  TypePtr current = pattern;
+  std::set<const Type *> visited;
+  bool expanded_any = false;
+  for(std::size_t depth = 0; depth != 64; ++depth) {
+    if(!current || !visited.insert(current.get()).second) {
+      return false;
+    }
+    TypePtr expanded;
+    bool recognized_step = false;
+    if(!expand_one_dependent_alias_pattern_for_deduction(
+           deduction_ops,
+           scope,
+           current,
+           expanded,
+           &recognized_step)) {
+      if(recognized_step) {
+        if(recognized) {
+          *recognized = true;
+        }
+        if(!expanded_any) {
+          return false;
+        }
+        out = current;
+        return true;
+      }
+      if(!expanded_any) {
+        return false;
+      }
+      out = current;
+      return true;
+    }
+    expanded_any = true;
+    if(recognized) {
+      *recognized = true;
+    }
+    current = expanded;
+  }
+  return false;
+}
+
 const TemplateParameterInfo * direct_type_parameter_pack_pattern(
     const std::vector<TemplateParameterInfo> & parameters,
     const TypePtr & pattern)
@@ -14925,6 +15097,14 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           [&](const TemplateArgument & argument, Scope * scope) -> TypePtr
       {
         TypePtr out = argument.type;
+        TypePtr expanded_alias;
+        const bool expanded_structured_alias =
+            scope &&
+            expand_dependent_alias_pattern_for_deduction(
+                deduction_ops, *scope, out, expanded_alias);
+        if(expanded_structured_alias) {
+          out = expanded_alias;
+        }
         bool source_syntax_matches_carried_parameter = true;
         if(argument.source_syntax && !argument.text.empty()) {
           const DirectTemplateParameterMatch carried_match =
@@ -14958,6 +15138,7 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           }
         }
         if(scope &&
+           !expanded_structured_alias &&
            argument.source_syntax &&
            source_syntax_matches_carried_parameter &&
            argument.source_syntax->type_id) {
@@ -14981,6 +15162,12 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
             }
           }
           out = apply_top_level_cv_from_syntax(*argument.source_syntax, out);
+        }
+        if(scope &&
+           !expanded_structured_alias &&
+           expand_dependent_alias_pattern_for_deduction(
+               deduction_ops, *scope, out, expanded_alias)) {
+          out = expanded_alias;
         }
         return resolve_bound_dependent_type_for_deduction(out, scope);
       };
@@ -17001,81 +17188,28 @@ bool deduce_function_template_arguments_uncached(
                                           deduction_pack_arguments);
       }
       if(!deduced_argument) {
-        TypePtr original_base = strip_top_level_cv(original_pattern);
-        if(original_base && original_base->kind == Type::TK_NAMED) {
-          void * dependent_alias_template_decl = nullptr;
-          std::vector<DependentAliasTemplateArgumentSyntax> dependent_alias_args;
-          const bool have_dependent_alias_args =
-              named_type_dependent_alias_template(original_base,
-                                                  dependent_alias_template_decl,
-                                                  dependent_alias_args);
-          AliasTemplateDecl * alias_decl = nullptr;
-          QualifiedName alias_name;
-          if(have_dependent_alias_args && dependent_alias_template_decl) {
-            alias_decl =
-                static_cast<AliasTemplateDecl *>(dependent_alias_template_decl);
-            if(alias_decl) {
-              alias_name = alias_decl->declaring_scope ?
-                  semantic_lookup::scope_qualified_name_syntax(
-                      *alias_decl->declaring_scope, alias_decl->name) :
-                  QualifiedName();
-              if(!alias_decl->declaring_scope) {
-                alias_name.name = alias_decl->name;
-              }
-            }
-          }
-          if(alias_decl && !alias_name.name.empty()) {
-            std::vector<std::string> alias_arg_texts;
-            std::vector<TemplateArgumentSyntax> alias_arg_syntaxes;
-            const std::vector<TemplateArgumentSyntax> * alias_arg_syntaxes_ptr =
-                nullptr;
-            if(!have_dependent_alias_args ||
-               dependent_alias_template_decl != alias_decl) {
-              continue;
-            }
-            alias_arg_texts.reserve(dependent_alias_args.size());
-            alias_arg_syntaxes.reserve(dependent_alias_args.size());
-            for(std::size_t arg_index = 0;
-                arg_index < dependent_alias_args.size();
-                ++arg_index) {
-              alias_arg_texts.push_back(dependent_alias_args[arg_index].text);
-              alias_arg_syntaxes.push_back(dependent_alias_args[arg_index].syntax);
-            }
-            alias_arg_syntaxes_ptr = &alias_arg_syntaxes;
-            TypePtr expanded_pattern;
-            const auto expand_alias_pattern =
-                [&](template_api::TemplateServices & services) -> bool
-            {
-              return template_specialization::expand_alias_template_pattern_type(
-                  services,
-                  template_api::make_template_environment(bound_scope),
-                  alias_name,
-                  alias_arg_texts,
-                  expanded_pattern,
-                  alias_arg_syntaxes_ptr,
-                  template_api::make_template_environment(bound_scope),
-                  true);
-            };
-            const bool expanded_alias_pattern =
-                template_api::with_template_services(ctx, expand_alias_pattern);
-            if(expanded_alias_pattern &&
-               expanded_pattern &&
-               !type_equals(expanded_pattern, original_base) &&
-               deduce_template_argument_impl(ctx,
-                                             decl.parameters,
-                                             expanded_pattern,
-                                             actual,
-                                             temp_deduced_types,
-                                             temp_deduced_values,
-                                             &bound_scope,
-                                             false,
-                                             nullptr,
-                                             deduction_pack_arguments)) {
-              recovered_alias_pattern_deduction = true;
-            } else {
-              continue;
-            }
-          }
+        TypePtr expanded_pattern;
+        bool recognized_alias_pattern = false;
+        const DeductionContextOps deduction_ops(ctx);
+        if(expand_dependent_alias_pattern_for_deduction(
+               deduction_ops,
+               bound_scope,
+               original_pattern,
+               expanded_pattern,
+               &recognized_alias_pattern) &&
+           deduce_template_argument_impl(ctx,
+                                         decl.parameters,
+                                         expanded_pattern,
+                                         actual,
+                                         temp_deduced_types,
+                                         temp_deduced_values,
+                                         &bound_scope,
+                                         false,
+                                         nullptr,
+                                         deduction_pack_arguments)) {
+          recovered_alias_pattern_deduction = true;
+        } else if(recognized_alias_pattern) {
+          continue;
         }
         if(!recovered_alias_pattern_deduction &&
            template_argument_semantics::type_depends_on_template_parameter(ctx, pattern) &&

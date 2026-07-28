@@ -8,6 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "callsemantic/template_source_utils.h"
 #include "cppast_ast.h"
 #include "cpp_decl_bridge.h"
 #include "parser_trace.h"
@@ -8482,8 +8483,7 @@ bool try_expand_alias_template_pattern_structurally(
          substituted_alias) {
         void * substituted_alias_template_decl = nullptr;
         std::vector<DependentAliasTemplateArgumentSyntax> substituted_alias_args;
-        if(!type_equals(substituted_alias, pattern) &&
-           named_type_dependent_alias_template(substituted_alias,
+        if(named_type_dependent_alias_template(substituted_alias,
                                                substituted_alias_template_decl,
                                                substituted_alias_args) &&
            substituted_alias_template_decl &&
@@ -8530,17 +8530,11 @@ bool try_expand_alias_template_pattern_structurally(
                  &nested_expanded_type,
                  allow_dependent_expansion,
                  materialize_class_template_targets,
-	                 substitution_failure) &&
-	             nested_expanded_type) {
-	            if(alias_template_type_pattern_mentions_parameters(
-	                   nested_expanded_type,
-	                   nested_alias_template->parameters)) {
-	              out = substituted_alias;
-	              return true;
-	            }
-	            out = nested_expanded_type;
-	            return true;
-	          }
+                 substitution_failure) &&
+             nested_expanded_type) {
+            out = nested_expanded_type;
+            return true;
+          }
         }
         if(type_is_dependent(substituted_alias) &&
            type_has_dependent_non_type_template_argument(type_system,
@@ -8821,12 +8815,27 @@ bool try_expand_alias_template_pattern_structurally(
       }
     }
 
+    // A member alias can shadow the class template named in its own target.
+    // Recover that target from the retained template-id rather than the named
+    // type metadata that was resolved through the shadowing declaration.
+    const TemplateIdSyntax * alias_target_template_id =
+        substitution_depth == 1 && alias_template.type_id ?
+            callsemantic::first_template_id_syntax_in_subtree(
+                *alias_template.type_id) : nullptr;
+    ClassTemplateDecl * alias_target_class_template =
+        alias_target_template_id ?
+            template_argument_semantics::lookup_class_template(
+                services,
+                ensure_alias_target_scope(),
+                alias_target_template_id->name) : nullptr;
     template_api::TemplateNamedTypeMetadata named_info;
     const bool have_named_info =
         template_api::describe_named_type_metadata(type_system.model,
                                                    pattern,
                                                    named_info);
-    if(have_named_info || pattern_has_dependent_class_template) {
+    if(have_named_info ||
+       pattern_has_dependent_class_template ||
+       alias_target_class_template) {
       ClassTemplateDecl * source_template = named_info.source_template;
       const std::vector<TemplateArgument> * instantiation_arguments =
           named_info.instantiation_arguments.pointer();
@@ -8834,6 +8843,9 @@ bool try_expand_alias_template_pattern_structurally(
           named_info.instantiation_arg_texts.pointer();
       std::vector<TemplateArgument> dependent_class_arguments;
       std::vector<std::string> dependent_class_arg_texts;
+      std::vector<TemplateArgument> alias_target_arguments;
+      std::vector<std::string> alias_target_arg_texts;
+      std::vector<TemplateArgumentSyntax> alias_target_arg_syntaxes;
       if(pattern_has_dependent_class_template) {
         ClassTemplateDecl * dependent_source_template =
             static_cast<ClassTemplateDecl *>(pattern_dependent_class_template_decl);
@@ -8845,6 +8857,73 @@ bool try_expand_alias_template_pattern_structurally(
           source_template = dependent_source_template;
           instantiation_arguments = &dependent_class_arguments;
           instantiation_arg_texts = &dependent_class_arg_texts;
+        }
+      }
+      if(!source_template &&
+         alias_target_class_template &&
+         alias_target_template_id) {
+        alias_target_arg_texts = alias_target_template_id->arguments;
+        alias_target_arg_syntaxes = alias_target_template_id->argument_syntaxes;
+        bool resolved_alias_target_arguments =
+            alias_target_arg_syntaxes.size() == alias_target_arg_texts.size();
+        for(std::size_t i = 0;
+            resolved_alias_target_arguments &&
+            i < alias_target_arg_syntaxes.size();
+            ++i) {
+          TemplateArgumentSyntax & syntax = alias_target_arg_syntaxes[i];
+          const std::size_t target_parameter_index =
+              template_parameter_index_for_argument(
+                  alias_target_class_template->parameters, i);
+          if(target_parameter_index >=
+                 alias_target_class_template->parameters.size() ||
+             alias_target_class_template->parameters[target_parameter_index].kind !=
+                 TemplateParameterInfo::TP_TYPE ||
+             alias_target_class_template->parameters[target_parameter_index].parameter_pack) {
+            resolved_alias_target_arguments = false;
+            break;
+          }
+
+          TemplateArgument target_argument;
+          target_argument.kind = TemplateArgument::TA_TYPE;
+          target_argument.text = alias_target_arg_texts[i];
+          target_argument.source_syntax.reset(new TemplateArgumentSyntax(syntax));
+          const TemplateParameterInfo * parameter =
+              direct_template_parameter_from_argument_syntax(
+                  alias_template.parameters, syntax);
+          if(parameter &&
+             parameter->kind == TemplateParameterInfo::TP_TYPE &&
+             !parameter->parameter_pack) {
+            const std::size_t argument_index = static_cast<std::size_t>(
+                parameter - &alias_template.parameters[0]);
+            if(argument_index >= arguments.size() ||
+               arguments[argument_index].kind != TemplateArgument::TA_TYPE ||
+               !arguments[argument_index].type) {
+              resolved_alias_target_arguments = false;
+              break;
+            }
+            target_argument = arguments[argument_index];
+            target_argument.source_syntax.reset(
+                new TemplateArgumentSyntax(syntax));
+          } else if(!template_argument_semantics::resolve_type_argument_syntax_type(
+                        services,
+                        template_api::make_template_environment(
+                            ensure_alias_target_scope()),
+                        syntax,
+                        true,
+                        target_argument.type) ||
+                    !target_argument.type) {
+            resolved_alias_target_arguments = false;
+            break;
+          }
+          alias_target_arguments.push_back(target_argument);
+        }
+        if(resolved_alias_target_arguments &&
+           template_arguments_fully_bind_parameters(
+               alias_target_class_template->parameters,
+               alias_target_arguments)) {
+          source_template = alias_target_class_template;
+          instantiation_arguments = &alias_target_arguments;
+          instantiation_arg_texts = &alias_target_arg_texts;
         }
       }
       if(!source_template || instantiation_arguments->empty()) {
@@ -8942,16 +9021,32 @@ bool try_expand_alias_template_pattern_structurally(
 
           const TemplateParameterInfo * argument_parameter =
               find_type_parameter(argument.type);
-          if(argument_parameter && argument_parameter->parameter_pack) {
+          if(!argument_parameter && argument.source_syntax) {
+            // Target and alias parameters may have the same spelling but
+            // different type identities. The retained argument AST identifies
+            // which alias parameter supplied this class-template argument.
+            argument_parameter = direct_template_parameter_from_argument_syntax(
+                alias_template.parameters, *argument.source_syntax);
+          }
+          if(argument_parameter) {
+            const std::size_t argument_index = static_cast<std::size_t>(
+                argument_parameter - &alias_template.parameters[0]);
+            if(!argument_parameter->parameter_pack) {
+              if(argument_index >= arguments.size() ||
+                 arguments[argument_index].kind != TemplateArgument::TA_TYPE ||
+                 !arguments[argument_index].type) {
+                return false;
+              }
+              substituted_arguments.push_back(arguments[argument_index]);
+              continue;
+            }
             if(!metadata_argument_has_pack_expansion(named_info, i)) {
               return false;
             }
-            const std::size_t pack_index = static_cast<std::size_t>(
-                argument_parameter - &alias_template.parameters[0]);
-            if(pack_index > arguments.size()) {
+            if(argument_index > arguments.size()) {
               return false;
             }
-            for(std::size_t j = pack_index; j < arguments.size(); ++j) {
+            for(std::size_t j = argument_index; j < arguments.size(); ++j) {
               TemplateArgument pack_argument = arguments[j];
               if(pack_argument.kind != TemplateArgument::TA_TYPE ||
                  !pack_argument.type ||
