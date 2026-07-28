@@ -1,0 +1,16 @@
+translation-unit
+  function-call at pa22/tests/general/300-qualified-type-explicit-argument-rejects-nontype-overload.t:7:14
+    callee n::op::g
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity n::op::g
+  function-instantiation
+    entity n::f
+  function-instantiation
+    entity n::op::g
+  require-definition
+    entity n::f
+  require-definition
+    entity n::op::g

@@ -6942,9 +6942,11 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
         const bool can_evaluate_structured_syntax =
             needs_structured_pack_evaluation &&
             (syntax->expression || syntax->type_id || syntax->template_id);
-        if(text_mentions_template_dependency(services,
-                                             argument_scope,
-                                             inputs.texts[i])) {
+        const bool text_mentions_dependency =
+            text_mentions_template_dependency(services,
+                                               argument_scope,
+                                               inputs.texts[i]);
+        if(text_mentions_dependency) {
           if(!try_evaluate_sizeof_pack_non_type_argument(
                  services,
                  argument_scope,
@@ -7024,6 +7026,9 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
               type_system, bound_value_type, value);
           arg.dependent = false;
         } else if(status == template_api::NT_ARG_DEPENDENT) {
+          if(!text_mentions_dependency) {
+            return FRTA_UNSUPPORTED;
+          }
           arg.kind = TemplateArgument::TA_VALUE;
           arg.type = bound_value_type;
           arg.text = inputs.texts[i];

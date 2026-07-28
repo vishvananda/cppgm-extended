@@ -220,6 +220,10 @@ void ensure_class_reference_type_members(SemanticContext & ctx,
 void ensure_class_reference_named_member(SemanticContext & ctx,
                                          semantic_model::ClassInfo & info,
                                          const std::string & name);
+bool materialize_class_reference_named_function_definition(
+    SemanticContext & ctx,
+    semantic_model::ClassInfo & info,
+    const std::string & name);
 void ensure_class_reference_members(SemanticContext & ctx,
                                     semantic_model::ClassInfo & info);
 bool resolve_deferred_class_alias(SemanticContext & ctx,

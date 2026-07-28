@@ -10675,6 +10675,37 @@ void ensure_class_reference_named_member(SemanticContext & ctx,
   info.reference_named_members_collected.insert(lookup_name);
 }
 
+bool materialize_class_reference_named_function_definition(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    const std::string & name)
+{
+  const std::string lookup_name =
+      semantic_utils::strip_trailing_top_level_template_arguments(
+          semantic_utils::trim_space(name));
+  const CppAstNode * reference_node =
+      info.template_output_node ? info.template_output_node : info.class_node;
+  if(lookup_name.empty() || !reference_node) {
+    return false;
+  }
+
+  MemberAccess current_access = info.default_access;
+  for(std::size_t i = 0; i < reference_node->children.size(); ++i) {
+    const CppAstNode & child = reference_node->children[i];
+    if(child.kind == CppAstKind::access_specifier) {
+      current_access = access_from_node(child);
+      continue;
+    }
+    if(child.kind != CppAstKind::function_definition ||
+       !reference_member_declaration_declares_name(child, lookup_name)) {
+      continue;
+    }
+    collect_class_method_definition(ctx, info, child, current_access);
+    return true;
+  }
+  return false;
+}
+
 void ensure_class_reference_members(SemanticContext & ctx,
                                     ClassInfo & info)
 {

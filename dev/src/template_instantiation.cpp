@@ -3118,6 +3118,35 @@ bool resolve_stored_out_of_class_method_binding_in_target(
       out = signature_match;
     }
   }
+  if(!out &&
+     !is_const_method &&
+     !is_volatile_method &&
+     ref_qualifier == RQ_NONE &&
+     !ctx.is_conversion_function_name(member_name) &&
+     effective_declared_type->kind == Type::TK_FUNCTION &&
+     effective_declared_type->inner &&
+     template_argument_semantics::type_depends_on_template_parameter(
+         ctx, effective_declared_type->inner)) {
+    const std::vector<FunctionBinding *> candidates =
+        semantic_lookup::lookup_direct_functions(*info.member_scope, member_name);
+    FunctionBinding * signature_match = nullptr;
+    for(std::size_t i = 0; i < candidates.size(); ++i) {
+      FunctionBinding * candidate = candidates[i];
+      if(!candidate ||
+         candidate->owner_class != &info ||
+         candidate->is_method ||
+         !callsemantic::function_types_equivalent_for_member_signature(
+             candidate->type, effective_declared_type)) {
+        continue;
+      }
+      if(signature_match && signature_match != candidate) {
+        signature_match = nullptr;
+        break;
+      }
+      signature_match = candidate;
+    }
+    out = signature_match;
+  }
   return out && out->owner_class == &info;
 }
 

@@ -7964,18 +7964,6 @@ private:
                                   *this, scope, member.type, direct_scope.class_info);
                           return resolved ? resolved : member.type;
                         }
-                        if(class_collection_in_progress &&
-                           direct_scope.class_info->member_scope &&
-                           scope_is_within(direct_scope,
-                                           direct_scope.class_info->member_scope.get())) {
-                          TypePtr enclosing =
-                              lookup_enclosing_type_before_reference_placeholder(
-                                  direct_scope,
-                                  lookup_name);
-                          if(enclosing) {
-                            return enclosing;
-                          }
-                        }
                       }
                       const bool has_lexical_class =
                           !direct_scope.class_info &&
@@ -30224,6 +30212,42 @@ private:
       binding = preserve_owner_prefixed_template_binding(original_binding, binding);
       if(!binding || binding->has_definition) {
         return binding;
+      }
+    }
+
+    if(!binding->has_definition &&
+       binding->owner_class &&
+       !template_api::function_binding_has_source_template_identity(binding)) {
+      const string member_name =
+          unqualified_member_name(canonical_function_lookup_name(binding->name));
+      if(semantic_class_model::materialize_class_reference_named_function_definition(
+             *this, *binding->owner_class, member_name)) {
+        FunctionBinding * materialized =
+            find_equivalent_class_function(*binding->owner_class,
+                                           member_name,
+                                           binding->type,
+                                           binding->ref_qualifier);
+        if(materialized && materialized != binding) {
+          output_requirement_engine::State state = make_output_requirement_state();
+          output_requirement_engine::Hooks hooks = make_output_requirement_hooks();
+          binding = output_requirement_engine::adopt_output_requirements(
+              state,
+              hooks,
+              binding,
+              materialized,
+              OutputReason::TemplateUpgrade);
+        } else if(materialized) {
+          binding = materialized;
+        }
+        if(binding && binding->has_definition) {
+          if(template_owned_binding) {
+            template_api::note_function_definition_materialized_by_closure(
+                *this,
+                binding,
+                closure_state);
+          }
+          return binding;
+        }
       }
     }
 
