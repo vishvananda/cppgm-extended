@@ -8583,6 +8583,41 @@ bool class_member_collection_in_progress(const ClassInfo & info)
          info.reference_member_collection_in_progress;
 }
 
+void refresh_invalidated_leaf_member_function_bindings(
+    template_api::TemplateServices & services,
+    ClassInfo * owner,
+    const string & name,
+    vector<FunctionBinding *> & functions)
+{
+  if(!services.semantic_context || !owner || name.empty()) {
+    return;
+  }
+
+  bool invalidated = false;
+  for(size_t i = 0; i < functions.size(); ++i) {
+    if(functions[i] &&
+       !services.semantic_context->function_binding_is_live(functions[i])) {
+      invalidated = true;
+      break;
+    }
+  }
+  if(!invalidated) {
+    return;
+  }
+
+  semantic_lookup::MemberFunctionLookupResult refreshed =
+      semantic_lookup::lookup_visible_member_functions(*owner, name);
+  vector<FunctionBinding *> live_functions;
+  live_functions.reserve(refreshed.functions.size());
+  for(size_t i = 0; i < refreshed.functions.size(); ++i) {
+    if(services.semantic_context->function_binding_is_live(
+           refreshed.functions[i])) {
+      live_functions.push_back(refreshed.functions[i]);
+    }
+  }
+  functions.swap(live_functions);
+}
+
 bool append_leaf_member_function_template_instantiations_from_candidates(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -10785,7 +10820,8 @@ bool select_unique_leaf_function_binding(
     bool object_is_const,
     bool base_is_lvalue,
     bool allow_user_defined_conversions,
-    FunctionBinding *& out)
+    FunctionBinding *& out,
+    bool allow_static_member_call = false)
 {
   struct LeafCandidate
   {
@@ -10798,10 +10834,15 @@ bool select_unique_leaf_function_binding(
   viable.reserve(functions.size());
   for(size_t i = 0; i < functions.size(); ++i) {
     FunctionBinding * candidate = functions[i];
-    if(!candidate) {
+    if(!candidate ||
+       (services.semantic_context &&
+        !services.semantic_context->function_binding_is_live(candidate))) {
       continue;
     }
-    if(candidate->is_method != is_method_call) {
+    const bool static_member_call =
+        is_method_call && !candidate->is_method && candidate->owner_class;
+    if(candidate->is_method != is_method_call &&
+       !(allow_static_member_call && static_member_call)) {
       continue;
     }
     if(!binding_supports_leaf_call_shape(*candidate, arg_infos.size())) {
@@ -10836,7 +10877,7 @@ bool select_unique_leaf_function_binding(
         allow_user_defined_conversions ||
         leaf_function_binding_has_friend_lookup_surface(*candidate);
     for(size_t arg_index = 0; arg_index < arg_infos.size(); ++arg_index) {
-      const size_t param_index = (is_method_call ? 1u : 0u) + arg_index;
+      const size_t param_index = (candidate->is_method ? 1u : 0u) + arg_index;
       semantic_conversion::ExprInfo expr_info;
       expr_info.type = arg_infos[arg_index].first;
       expr_info.category = arg_infos[arg_index].second;
@@ -11357,35 +11398,8 @@ bool append_leaf_member_function_template_instantiations_from_candidates(
           template_api::acquire_function_instantiation(
               *services.semantic_context,
               instantiation_request).function_binding;
-      bool invalidated_existing_binding = false;
-      for(size_t function_index = 0;
-          function_index < functions.size();
-          ++function_index) {
-        if(functions[function_index] &&
-           !services.semantic_context->function_binding_is_live(
-               functions[function_index])) {
-          invalidated_existing_binding = true;
-          break;
-        }
-      }
-      if(invalidated_existing_binding &&
-         active_owner &&
-         !member_name.empty()) {
-        semantic_lookup::MemberFunctionLookupResult refreshed =
-            semantic_lookup::lookup_visible_member_functions(
-                *active_owner, member_name);
-        vector<FunctionBinding *> live_functions;
-        live_functions.reserve(refreshed.functions.size());
-        for(size_t function_index = 0;
-            function_index < refreshed.functions.size();
-            ++function_index) {
-          if(services.semantic_context->function_binding_is_live(
-                 refreshed.functions[function_index])) {
-            live_functions.push_back(refreshed.functions[function_index]);
-          }
-        }
-        functions.swap(live_functions);
-      }
+      refresh_invalidated_leaf_member_function_bindings(
+          services, active_owner, member_name, functions);
       if(binding &&
          !services.semantic_context->function_binding_is_live(binding)) {
         binding = nullptr;
@@ -11420,6 +11434,8 @@ bool append_leaf_member_function_template_instantiations(
      !object_info->reference_member_collection_in_progress) {
     services.semantic_context->ensure_class_reference_members(*object_info);
   }
+  refresh_invalidated_leaf_member_function_bindings(
+      services, object_info, name, functions);
   semantic_lookup::MemberFunctionTemplateLookupResult templates =
       semantic_lookup::lookup_visible_member_function_templates(*object_info, name);
   if(templates.templates.empty()) {
@@ -37187,7 +37203,8 @@ NonTypeArgumentStatus evaluate_libcpp_has_destroy_variable_template_value(
       false,
       false,
       false,
-      selected) &&
+      selected,
+      true) &&
       selected;
   return NT_ARG_EVALUATED;
 }
@@ -37368,7 +37385,8 @@ NonTypeArgumentStatus evaluate_libcpp_allocator_member_call_detector_template_va
       semantic_conversion::is_const_object_type(object_type),
       object_expr.category == semantic_conversion::VC_LVALUE,
       false,
-      selected) &&
+      selected,
+      true) &&
       selected;
   return NT_ARG_EVALUATED;
 }
