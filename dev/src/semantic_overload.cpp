@@ -5567,7 +5567,17 @@ bool constructor_template_matches_source_args_fast(SemanticContext & ctx,
     return true;
   }
 
-  const string actual_template = named_template_base_name(source_args[0].type);
+  string actual_template;
+  TypePtr actual_base =
+      strip_top_level_cv(remove_reference_type(source_args[0].type));
+  ClassInfo * actual_info =
+      actual_base && actual_base->kind == Type::TK_NAMED ?
+          ctx.class_info_for_type(actual_base) : nullptr;
+  if(actual_info && actual_info->source_template) {
+    actual_template = actual_info->source_template->name;
+  } else {
+    actual_template = named_template_base_name(source_args[0].type);
+  }
   if(actual_template.empty()) {
     return true;
   }

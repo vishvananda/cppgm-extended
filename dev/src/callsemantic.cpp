@@ -8218,8 +8218,12 @@ private:
                                                                    0,
                                                                    identity);
         if(compact_lookup_text(info->qualified_name) == compact_name ||
+           compact_lookup_text(unqualified_member_name(info->qualified_name)) ==
+               compact_name ||
            (structured_identity &&
-            compact_lookup_text(identity) == compact_name)) {
+            (compact_lookup_text(identity) == compact_name ||
+             compact_lookup_text(unqualified_member_name(identity)) ==
+                 compact_name))) {
           return info->type;
         }
       }

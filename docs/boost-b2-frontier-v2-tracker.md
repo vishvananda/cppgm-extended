@@ -13,11 +13,10 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `83 / 147`
-- current cursor: `#84 libs/poly_collection/test`
-- active compiler frontier: PolyCollection `test_iterators`; exact replays now
-  pass `test_construction`, `test_emplacement`, `test_erasure`, and
-  `test_insertion`, leaving only the independent iterator-overload failure
+- completed suites: `84 / 147`
+- current cursor: `#85 libs/polygon/test`
+- active compiler frontier: Polygon forced C++11 intake pending; its metadata
+  and Jamfiles impose no C++14-or-later requirement
 
 ## Baseline Gates
 
@@ -46,6 +45,7 @@ suite evidence and performance measurements.
 | host C++ compiler | `/usr/local/opt/llvm/bin/clang++`, Homebrew clang 22.1.0 |
 | C++ standard library | system libc++ (`/usr/lib/libc++.1.dylib`, current version 2000.67.0; headers `_LIBCPP_VERSION=220100`) |
 | B2 wrapper | `/Users/vishvananda/boost_1_91_0/run-cppgm-b2.sh` |
+| B2 adapter | `gcc-cppgm`; this is a GCC-command-line-compatible Boost.Build adapter name, not the host compiler. Its C++ compile action invokes CPPGM and its host actions invoke the Clang paths above. |
 | compiler under test | `/Users/vishvananda/cppgm-extended/dev/cppgm++` |
 | default suite jobs | `2`; memory sampling shows ordinary MP11 units release between translation units and do not accumulate RSS |
 | default suite timeout | `14400s` for large suites; shorter only for focused diagnostics |
@@ -243,6 +243,7 @@ differences other than the output path.
 | `(PolyCollection nested-alias deduction closure)` | Expand retained dependent member-alias chains before deduction, recover a shadowed class-template target and its arguments from retained AST, and map instantiated-owner aliases only through matching semantic declarations | -25.83% | -27.75% | -35.09% | versus the preceding Poly checkpoint, instructions improve by 135,495,227 while RSS moves +1,089,536 B and footprint +12,247,040 B; every cumulative signal remains strongly improved | `/tmp/cppgm-boost-frontier-v2-poly-capacity-final-perf.json` | pass; isolated three-run candidate medians are 195,486,842,009 instructions, 933,879,808 B RSS, and 655,556,608 B footprint. The candidate-only gate verified exact immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 | `(PolyCollection construction/emplacement closure and MIR move handoff)` | Preserve top-level cv through structured alias substitution, expand retained aliases only for explicit partial-order placeholders, keep dependent alias template-ids structured through ABI lowering, and transfer the completed MIR program into optimization without a full copy | -25.93% | -27.96% | -36.26% | versus the nested-alias checkpoint, instructions improve by 256,706,060, RSS by 2,658,304 B, and footprint by 11,882,496 B; every cumulative signal improves | `/private/tmp/cppgm-boost-frontier-v2-poly-final-perf.json` | pass; three-run candidate medians are 195,230,135,949 instructions, 931,221,504 B RSS, and 643,674,112 B footprint. The candidate-only gate verified immutable epoch `9764b3835`, the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured and every run recorded zero swaps. |
 | `(PolyCollection insertion semantic and lazy-lookup closure)` | Evaluate the exact selected same-class assignment operator for trivial-assignability, honor namespace using-directive hiding between alias and class templates, expand instantiated member aliases during function-template partial ordering, and keep unevaluated member-overload probes on named reference slices with unmaterialized inheritance conversions | -25.66% | -27.90% | -35.05% | versus the immutable epoch, candidate medians remain close to the preceding Poly checkpoint while the exact insertion target drops from the former pathological 6--9 GB range to 2,325,979,136 B and completes | `/private/tmp/cppgm-boost-frontier-v2-poly-insertion-final-perf.json` | pass; candidate medians are 195,924,722,849 instructions, 931,958,784 B RSS, and 655,953,920 B footprint. The isolated three-run gate verified epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured, all compiler runs recorded zero swaps, and system swap was unchanged. |
+| `(PolyCollection iterator closure)` | Obtain constructor-template identity from the concrete class specialization rather than its outer display name, and compare exact unqualified components of already structured materialized type identities during lookup | -25.78% | -28.25% | -36.36% | versus the insertion checkpoint, instructions improve by 302,599,857, RSS by 4,419,584 B, and footprint by 13,271,040 B; every cumulative signal improves | `/private/tmp/cppgm-boost-frontier-v2-poly-iterators-candidate.json` | pass; candidate medians are 195,622,122,992 instructions, 927,539,200 B RSS, and 642,682,880 B footprint. The gate verified immutable epoch `9764b3835`, frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. |
 
 ## Suite Cursor
 
@@ -334,32 +335,27 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 81 | `libs/parser/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/parser/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. |
 | 82 | `libs/pfr/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/pfr/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier language policy, no graph was run and no compiler work is inferred from historical results. The cursor advances directly to C++03-declared Boost.Phoenix. |
 | 83 | `libs/phoenix/test` | pass | `c9eec23b8` | The final Clang-pinned forced `pch=off` C++11 graph finds 6367 targets, requests 832 updates, updates 829, and passes every compiler-owned positive and deliberate-negative action. It fails only the independently reproduced upstream `bug_000008` Boost.Thread Jamfile link typo and skips that target's two downstream actions; this external defect is not charged to CPPGM. The run completes in 1325.61s at 1,846,845,440 B process-tree maximum RSS with zero process swaps; log `/private/tmp/boost-frontier-v2-phoenix-post-bug5968-full-forced.log`. | The last compiler frontier, `bug5968`, was a false class-member index entry: recursive declarator discovery descended into a function parameter clause and treated its parameter named `slot` as a member. Commit `c9eec23b8` stops discovery at that semantic boundary. PA18 passes `241/241`, all 960 strict comparisons and the PA9-excluded broad report's `4147/4147` pass, thirteen cache modes are byte-identical, and all reparse/audit/placement/warning gates pass. The immutable frozen-source/51-header gate records -26.22% instructions, -27.14% RSS, and -31.89% footprint. Actual compiler and host commands are CPPGM plus Homebrew Clang 22; Boost.Build's printed `gcc.*` strings are legacy action labels only. |
-| 84 | `libs/poly_collection/test` | frontier | `(this commit)` | Boost declares C++11. Exact post-fix replays now pass `test_capacity`, `test_comparison`, `test_construction`, `test_emplacement`, `test_erasure`, and `test_insertion`. `test_construction` compiles, links, and runs in 745.39s at 5,307,863,040 B maximum RSS; the final forced `test_insertion` graph updates all 36 requested targets and passes compile, link, and runtime in 313.71s at 2,325,979,136 B maximum RSS. Every measured process records zero swaps. | The ordered frontier advances to the sole remaining failure, `test_iterators`, which previously lacked the mutable/const iterator equality overload. The insertion closure adds four compact C++11 owner reducers, fixes exact selected-assignment triviality, namespace-import hiding, instantiated-member-alias partial ordering, and unevaluated named-member lookup without eager class materialization. All actual commands use CPPGM plus Homebrew Clang 22; printed `gcc.*` strings are Boost.Build adapter labels only. All 965 configured strict comparisons and the PA9-excluded direct report's `4169/4169` pass, normal and all ten cache-disabled modes are byte-identical for every new reducer, all 23 reparse categories and audit unit tests pass, and the immutable frozen-source/51-header gate records -25.66% instructions, -27.90% RSS, and -35.05% footprint. |
+| 84 | `libs/poly_collection/test` | pass | `(this commit)` | Boost declares C++11. The final forced graph found 4,981 targets, updated 85, and passed every compile, link, and runtime target. It completed in 1,972.90s at 4,656,861,184 B process-tree RSS with zero process swaps. Known heavy compilations were prevented from overlapping while light work continued in the second B2 worker. Docker had no running server or VM. | The iterator closure adds two minimal header-free PA22 C++11 owners: 8 nonblank lines / 187 bytes and 14 nonblank lines / 232 bytes. The saved parent rejects both; CPPGM and Homebrew Clang 22 accept both. PA22 passes `327/327`, all 966 configured strict comparisons pass, the PA9-excluded direct-LowIR report passes `4171/4171`, all ten individual cache-disabled modes plus all-disabled mode are byte-identical, and all reparse, audit, placement, and warning gates pass. The frozen-source/51-header gate records -25.78% instructions, -28.25% RSS, and -36.36% footprint. Commands use CPPGM plus Homebrew Clang 22; `gcc.compile.*` is only the action name supplied by the GCC-compatible B2 adapter. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#84 libs/poly_collection/test`
-- focused target: `test_iterators.o`
-- last closed suite: `#83 libs/phoenix/test` (`pass`, with only the independently
-  reproduced upstream `bug_000008` Jamfile link typo excluded)
-- failure phase: C++ compilation
-- diagnostic: mutable/const PolyCollection iterator equality does not retain a
-  viable heterogeneous `operator==` overload
-- reduced repro: pending reduction from `test_iterators.cpp`
-- owning PA/cluster: determine from the first typed failure and place the
-  smallest header-free C++11 reducer at its earliest owner
-- implementation area: pending typed candidate trace from `test_iterators`
-- performance risk: `test_construction` is a known 5.31 GB translation unit;
-  `test_insertion` now peaks at 2.33 GB. Keep ordinary work parallel, but do not
-  overlap an unknown heavy unit with another multi-GiB compile and continue
-  sampling memory before a full forced replay
-- language lane: Boost declares C++11; all actual compiler and host paths stay
-  pinned to CPPGM plus Homebrew Clang 22
-- next action: force and sample `test_iterators`, reduce its first exact typed
-  candidate failure, compare with Clang C++11, and repair the earliest owner
+- suite: `#85 libs/polygon/test`
+- focused target: pending first forced intake
+- last closed suite: `#84 libs/poly_collection/test` (`pass`)
+- failure phase: pending
+- diagnostic: pending
+- reduced repro: pending
+- owning PA/cluster: pending first exact compiler failure
+- implementation area: pending typed trace
+- performance risk: unknown; begin with two workers, sample memory, and avoid
+  overlapping any newly identified multi-GiB translation units
+- language lane: metadata and Jamfiles declare no C++14-or-later requirement;
+  force the graph under C++11 with CPPGM plus Homebrew Clang 22
+- next action: force the full Polygon test graph, classify the first exact
+  compiler failure if any, and reduce it to the earliest C++11 owner
 
 ## Fix Ledger
 
@@ -368,6 +364,8 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | PolyCollection `test_iterators` nested member-class converting constructor | The constructor-template fast filter derived the actual template name from a nested specialization's display, which returned the outer template rather than the nested member template. It now obtains the exact semantic declaration from the concrete `ClassInfo::source_template`, retaining the display helper only when no concrete class metadata exists. No text reparse, retry, or cache is added. | `pa22/tests/spec/300-nested-member-class-template-converting-constructor.t`, 8 nonblank lines / 187 bytes, header-free C++11 with no `<type_traits>` | The saved parent rejects the return conversion; CPPGM and Homebrew Clang 22 accept it. Patched Clang and CPPGM differ in an unrelated pre-existing constructor-call event location/order, so no inaccurate witness sidecar is checked in. | Exact `test_iterators` and the complete forced PolyCollection graph pass. PA22 direct comparison, cache parity, strict, broad, reparse, placement, audit, and warning gates pass. | measured with the complete iterator closure: -25.78% instructions, -28.25% RSS, and -36.36% footprint | `(this commit)` |
+| fixed | PolyCollection `test_iterators` namespaced injected owner and inherited member template | Structured type lookup compared a materialized class identity only in its fully qualified form, so an exact unqualified source lookup such as `poly_collection<ids>` missed the already materialized `boost::...::poly_collection<ids>`. It now also compares the exact unqualified component of the structured qualified name and identity. No name parsing, new materialization, retry, or cache is added. | `pa22/tests/spec/300-namespaced-injected-owner-inherited-member-template.t`, 14 nonblank lines / 232 bytes, header-free C++11 with no `<type_traits>` and a patched-Clang witness | The saved parent reports unknown member `f`; CPPGM and Homebrew Clang 22 accept it. | The patched-Clang witness matches exactly. Exact `test_iterators`, PA22 `327/327`, all 966 strict comparisons, the PA9-excluded broad direct report's `4171/4171`, cache parity, and all cleanup gates pass. | measured with the complete iterator closure | `(this commit)` |
 | fixed | PolyCollection `test_insertion` same-class trivial assignment | `__is_trivially_assignable(T&, T&&)` fell back to a coarse copy-assignability property after overload resolution, so a class with a user-declared move constructor but deleted move assignment was reported trivially assignable. The trait now evaluates the exact selected copy/move assignment binding and, for synthesized/defaulted operators, recursively checks non-virtual bases and fields with the selected source cv/category. | `pa34/tests/compile/700-trivially-assignable-deleted-move.t`, 5 lines / 142 bytes, C++11 and header-free | The saved parent accepts the negated trait only after the fix; before it, the assertion reports `false`. Homebrew Clang 22 accepts the reducer. | Exact `test_insertion` passes compile/link/runtime; PA34 participates in the clean `752/752` focused owner report and the PA9-excluded `4169/4169` broad report. | measured with the complete insertion closure: -25.66% instructions, -27.90% RSS, and -35.05% footprint | `(this commit)` |
 | fixed | PolyCollection `test_insertion` namespace-imported alias hiding | Unqualified alias-template lookup stopped at an outer class template before accounting for a nearer namespace's using-directive imports. Structured lookup now inspects the nearer namespace's imported alias and class-template entities, retaining ordinary ambiguity rules: an unambiguous imported alias hides the outer class template, while an imported class or ambiguous result blocks the alias. | `pa22/tests/general/100-using-directive-alias-template-hides-outer-class-template.t`, 33 lines / 659 bytes, header-free C++11 with no `<type_traits>` | The saved parent rejects the reducer's assertion after resolving the outer class template; Homebrew Clang 22 accepts it. | PA22 direct comparison and configured strict surfaces pass; normal and all ten cache-disabled modes emit byte-identical LowIR. | measured with the complete insertion closure | `(this commit)` |
 | fixed | PolyCollection `test_insertion` instantiated member-alias partial ordering | Function-template partial ordering compared retained instantiated member aliases without expanding their exact typed arguments, so `const_iterator<U>` and `iterator<U>` remained indistinguishable and the insertion overload was ambiguous. The partial-order path now expands each dependent alias through its own lookup scope. A resolved-argument override is constructed only when a synthesized partial-order placeholder is present; narrowing that boundary restored the existing GNU vector alias deduction test. | `pa22/tests/spec/200-instantiated-member-alias-cv-partial-order.t`, 18 lines / 655 bytes, header-free C++11 with no `<type_traits>` | The saved parent reports `segment<model>::insert` ambiguous; Homebrew Clang 22 selects the const-iterator overload. The patched Clang witness hook omits the losing member candidate, so no inaccurate `.ref.witness` is fabricated. | The new reducer, the existing PA34 GNU vector control, PA22 direct comparison, all configured strict comparisons, and all cache modes pass. | measured with the complete insertion closure | `(this commit)` |
@@ -665,6 +663,38 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Phoenix `bug5968` parameter names in the lazy class-member index | The reference-member name probe recursively descended a function's parameter clause and treated parameter identifiers as class members. Looking up namespace template `slot` while completing `signal_impl` therefore followed a false current-class `slot` hit into a later `connect(..., slot)` declaration and parsed its `garbage_collecting_lock<mutex_type>` parameter before the preceding `mutex_type` typedef had been installed. Declarator name discovery now stops at the parameter-clause boundary, matching the existing structured rule used by pack-parameter analysis. No eager completion, cache, source text, rendered-name recovery, or Boost-specific path is added. | `pa18/tests/general/100-class-template-member-index-ignores-parameter-name.t`, eight code lines / 343 total bytes of header-free C++11 with no `<type_traits>`; PA18:100 is the audited basic class-template owner. The worktree has no patched-Clang witness producer, so only the ordinary LowIR sidecars are checked in and no witness reference is fabricated. | A controlled rollback makes the reducer fail at `lock<mutex_type>` while Homebrew Clang 22 accepts it warning-clean. The two-line Boost-header reducer fails pre-fix at the same undeclared typedef; changing the unrelated parameter name in a temporary header control removes the false hit. The fixed exact `bug5968` target compiles, links, and runs in 29.51s at 692,158,464 B process-tree RSS with zero swaps; the header-only source uses 261,316,608 B. | PA18 passes `241/241`; all 960 configured strict comparisons and the PA9-excluded direct-LowIR report's `4147/4147` pass, including PA37 `7/7`. All 23 text-reparse categories and 14 audit tests pass. Normal, eleven individual cache-off modes, and all-off emit byte-identical LowIR at SHA-256 `25d4e7b6483bcdaa6c45b2e9a870c5faa8e499912011c4a012168e8e8922356b`. The new test has no placement or hygiene finding, and the production unit is warning-clean under Homebrew Clang 22. | -26.22% instructions, -27.14% RSS, and -31.89% footprint; three-run candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-bug5968-parameter-name-candidate-3run.json`; no parent compiler or live project header was measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-28`: Closed the complete PolyCollection C++11 suite and advanced to
+  Polygon. The final iterator failure contained two independent semantic
+  identity defects. Constructor candidate filtering read a nested member-class
+  specialization through a display helper and obtained the outer template;
+  it now uses the concrete specialization's `source_template`. Separately, an
+  unqualified lookup failed to match the exact unqualified component of an
+  already structured, fully qualified materialized identity. Both fixes stay
+  on typed semantic data and add no source parse, creation retry, or cache.
+
+  The PA22 owners are header-free C++11 tests of 8 and 14 nonblank lines (187
+  and 232 bytes), with no `<type_traits>`. The saved parent rejects both and
+  Homebrew Clang 22 accepts both. One patched-Clang witness matches exactly;
+  the other is intentionally absent because CPPGM and the witness hook have an
+  unrelated pre-existing constructor-call event location/order difference.
+  No witness was fabricated.
+
+  The forced full graph found 4,981 targets, updated 85, and passed every
+  compile, link, and runtime target in 1,972.90s. Process-tree RSS peaked at
+  4,656,861,184 B with zero process swaps. Two B2 workers remained active for
+  light work; only known heavy/heavy overlaps were paused and resumed. Docker
+  had no running server or VM. The `gcc.compile.*` output is the action name of
+  the GCC-compatible B2 adapter: actual C++ compilation uses CPPGM, and host C,
+  assembly, and linking are pinned to Homebrew Clang 22.
+
+  PA22 passes `327/327`, all 966 configured strict comparisons pass, and the
+  clean PA9-excluded broad direct-LowIR report passes `4171/4171`, including
+  PA37 `7/7`. Normal, all ten individual cache-disabled modes, and all-disabled
+  mode emit byte-identical LowIR for both reducers. Reparse, audit, placement,
+  and Clang warning gates pass. The immutable frozen-source/51-header gate
+  records 195,622,122,992 instructions, 927,539,200 B RSS, and 642,682,880 B
+  footprint: -25.78%, -28.25%, and -36.36% from epoch `9764b3835`.
 
 - `2026-07-28`: Closed the PolyCollection `test_insertion` compiler frontier
   and advanced to the suite's sole remaining target, `test_iterators`. Four
@@ -3763,10 +3793,10 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-/usr/bin/time -lp /usr/local/bin/timeout 1800 env JOBS=1 \
+/usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=2 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/poly_collection/test//test_iterators
+  ./run-cppgm-b2.sh pch=off -a libs/polygon/test
 ```
