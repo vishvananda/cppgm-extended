@@ -13912,29 +13912,61 @@ bool resolve_function_explicit_template_arguments(
     const std::vector<TemplateArgumentSyntax> * explicit_arg_syntaxes)
 {
   out.clear();
-  if(explicit_arg_texts.empty()) {
+  template_argument_semantics::ExpandedTemplateArgumentInputs expanded_inputs;
+  template_api::with_template_services(
+      ctx,
+      [&](template_api::TemplateServices & services)
+      {
+        expanded_inputs =
+            template_argument_semantics::expand_template_argument_inputs(
+                services,
+                resolution_scope,
+                explicit_arg_texts,
+                explicit_arg_syntaxes);
+        return true;
+      });
+  const std::vector<std::string> & effective_arg_texts = expanded_inputs.texts;
+  std::vector<TemplateArgumentSyntax> effective_arg_syntax_storage;
+  const std::vector<TemplateArgumentSyntax> * effective_arg_syntaxes = nullptr;
+  if(explicit_arg_syntaxes) {
+    effective_arg_syntax_storage.reserve(effective_arg_texts.size());
+    for(std::size_t i = 0; i < effective_arg_texts.size(); ++i) {
+      const TemplateArgumentSyntax * syntax = expanded_inputs.syntax_for(i);
+      if(syntax) {
+        effective_arg_syntax_storage.push_back(*syntax);
+      } else {
+        TemplateArgumentSyntax fallback;
+        fallback.text = effective_arg_texts[i];
+        fallback.resolved_type = expanded_inputs.type_for(i);
+        effective_arg_syntax_storage.push_back(fallback);
+      }
+    }
+    effective_arg_syntaxes = &effective_arg_syntax_storage;
+  }
+
+  if(effective_arg_texts.empty()) {
     return true;
   }
 
   const std::size_t pack_index = first_template_parameter_pack_index(decl.parameters);
   if(pack_index == decl.parameters.size() &&
-     explicit_arg_texts.size() > decl.parameters.size()) {
+     effective_arg_texts.size() > decl.parameters.size()) {
     return false;
   }
   if(pack_index == decl.parameters.size() ||
-     explicit_arg_texts.size() <= pack_index) {
+     effective_arg_texts.size() <= pack_index) {
     std::vector<TemplateParameterInfo> explicit_parameters(
         decl.parameters.begin(),
-        decl.parameters.begin() + explicit_arg_texts.size());
+        decl.parameters.begin() + effective_arg_texts.size());
     try {
       return resolve_template_arguments(ctx,
                                         resolution_scope,
                                         explicit_parameters,
-                                        explicit_arg_texts,
-                                        explicit_arg_syntaxes,
+                                        effective_arg_texts,
+                                        effective_arg_syntaxes,
                                         out,
                                         decl.declaring_scope) &&
-             out.size() == explicit_arg_texts.size();
+             out.size() == effective_arg_texts.size();
     } catch(const TemplateSubstitutionFailure &) {
       out.clear();
       return false;
@@ -13946,13 +13978,13 @@ bool resolve_function_explicit_template_arguments(
     std::vector<TemplateParameterInfo> fixed_parameters(
         decl.parameters.begin(),
         decl.parameters.begin() + pack_index);
-    std::vector<std::string> fixed_texts(explicit_arg_texts.begin(),
-                                         explicit_arg_texts.begin() + pack_index);
+    std::vector<std::string> fixed_texts(effective_arg_texts.begin(),
+                                         effective_arg_texts.begin() + pack_index);
     std::vector<TemplateArgumentSyntax> fixed_syntaxes;
     const std::vector<TemplateArgumentSyntax> * fixed_arg_syntaxes = nullptr;
-    if(explicit_arg_syntaxes && explicit_arg_syntaxes->size() >= pack_index) {
-      fixed_syntaxes.assign(explicit_arg_syntaxes->begin(),
-                            explicit_arg_syntaxes->begin() + pack_index);
+    if(effective_arg_syntaxes && effective_arg_syntaxes->size() >= pack_index) {
+      fixed_syntaxes.assign(effective_arg_syntaxes->begin(),
+                            effective_arg_syntaxes->begin() + pack_index);
       fixed_arg_syntaxes = &fixed_syntaxes;
     }
     bool fixed_ok = false;
@@ -13982,13 +14014,14 @@ bool resolve_function_explicit_template_arguments(
   }
 
   const TemplateParameterInfo & pack_parameter = decl.parameters[pack_index];
-  std::vector<std::string> pack_arg_texts(explicit_arg_texts.begin() + pack_index,
-                                          explicit_arg_texts.end());
+  std::vector<std::string> pack_arg_texts(effective_arg_texts.begin() + pack_index,
+                                          effective_arg_texts.end());
   std::vector<TemplateArgumentSyntax> pack_arg_syntax_storage;
   const std::vector<TemplateArgumentSyntax> * pack_arg_syntaxes = nullptr;
-  if(explicit_arg_syntaxes && explicit_arg_syntaxes->size() == explicit_arg_texts.size()) {
-    pack_arg_syntax_storage.assign(explicit_arg_syntaxes->begin() + pack_index,
-                                   explicit_arg_syntaxes->end());
+  if(effective_arg_syntaxes &&
+     effective_arg_syntaxes->size() == effective_arg_texts.size()) {
+    pack_arg_syntax_storage.assign(effective_arg_syntaxes->begin() + pack_index,
+                                   effective_arg_syntaxes->end());
     pack_arg_syntaxes = &pack_arg_syntax_storage;
   }
   template_argument_semantics::ExpandedTemplateArgumentInputs expanded_pack_inputs;

@@ -667,7 +667,12 @@ void append_direct_conversion_function_groups(
   set<FunctionBinding *> seen_bindings;
   const auto append_binding = [&](FunctionBinding * binding)
   {
-    if(!binding || !seen_bindings.insert(binding).second) {
+    // Function-template specializations are retained in the class method set
+    // for output and definition acquisition, but they are not independent
+    // declarations found by conversion-function lookup. The primary template
+    // is considered separately against the current target type below.
+    if(!binding || binding->source_template ||
+       !seen_bindings.insert(binding).second) {
       return;
     }
     TypePtr result_type = conversion_function_result_type(binding);
@@ -2644,7 +2649,9 @@ bool try_argument_conversion(SemanticContext & ctx,
           constructor_lifecycle_service::selection_options_for(
               constructor_lifecycle_service::user_defined_conversion_constructor_probe_profile(
                   "user-defined conversion constructor",
-                  options.instantiate_user_defined_bodies));
+                  false));
+      ctor_options.emit_source_witness_without_body_instantiation =
+          options.instantiate_user_defined_bodies;
       ctor_options.use_location = constructor_probe_use_location(expr);
       ctor = ctx.select_constructor_from_exprs(scope,
                                                *target_class,
@@ -2940,7 +2947,11 @@ bool try_argument_conversion(SemanticContext & ctx,
   for(size_t i = 1; i < candidates.size(); ++i) {
     bool current_better = false;
     bool best_better = false;
-    if(candidates[i].initial_rank < candidates[best].initial_rank) {
+    if(candidates[i].direct_reference_binding !=
+       candidates[best].direct_reference_binding) {
+      current_better = candidates[i].direct_reference_binding;
+      best_better = candidates[best].direct_reference_binding;
+    } else if(candidates[i].initial_rank < candidates[best].initial_rank) {
       current_better = true;
     } else if(candidates[i].initial_rank > candidates[best].initial_rank) {
       best_better = true;
@@ -2969,12 +2980,7 @@ bool try_argument_conversion(SemanticContext & ctx,
       }
     }
     if(!current_better && !best_better &&
-       candidates[i].direct_reference_binding !=
-       candidates[best].direct_reference_binding) {
-      current_better = candidates[i].direct_reference_binding;
-      best_better = candidates[best].direct_reference_binding;
-    } else if(!current_better && !best_better &&
-              candidates[i].second_rank < candidates[best].second_rank) {
+       candidates[i].second_rank < candidates[best].second_rank) {
       current_better = true;
     } else if(!current_better && !best_better &&
               candidates[i].second_rank > candidates[best].second_rank) {
@@ -3049,8 +3055,19 @@ bool try_argument_conversion(SemanticContext & ctx,
     if(!selected.constructor || !selected.constructor_target_class) {
       return false;
     }
+    FunctionBinding * selected_constructor = selected.constructor;
+    if(options.instantiate_user_defined_bodies) {
+      selected_constructor =
+          semantic_template_function::acquire_function_definition_binding(
+              ctx,
+              selected_constructor,
+              scope);
+      if(!selected_constructor) {
+        return false;
+      }
+    }
     ExprInfo ctor_expr =
-        ctx.make_constructor_conversion_expr(*selected.constructor,
+        ctx.make_constructor_conversion_expr(*selected_constructor,
                                              selected.constructor_target_class->type,
                                              selected.constructor_args,
                                              options.materialize_user_defined_output);

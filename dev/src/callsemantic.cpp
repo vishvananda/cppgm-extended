@@ -8198,6 +8198,35 @@ private:
     if(normalized_name.find('<') != string::npos &&
        !normalized_name.empty() &&
        normalized_name.back() == '>' &&
+       !parsed_template_id) {
+      // Some instantiation-owned types have already lost their source syntax
+      // by the time this string-only compatibility entry point is reached.
+      // Recover only an exact, already-materialized structured identity.  Do
+      // not decompose or reparse the requested template-id, and do not create
+      // a new instantiation from it.
+      const string compact_name = compact_lookup_text(normalized_name);
+      for(size_t i = 0; i < classes.size(); ++i) {
+        ClassInfo * info = classes[i].get();
+        if(!info || !info->type ||
+           (!info->source_template &&
+            class_instantiation_key(*info).empty())) {
+          continue;
+        }
+        string identity;
+        const bool structured_identity =
+            structured_instantiation_identity_text_for_named_type(info->type,
+                                                                   0,
+                                                                   identity);
+        if(compact_lookup_text(info->qualified_name) == compact_name ||
+           (structured_identity &&
+            compact_lookup_text(identity) == compact_name)) {
+          return info->type;
+        }
+      }
+    }
+    if(normalized_name.find('<') != string::npos &&
+       !normalized_name.empty() &&
+       normalized_name.back() == '>' &&
        !parsed_template_id &&
        !scope_has_template_placeholders(scope)) {
       const ExactTemplateTypeLookupAnchor * anchor =

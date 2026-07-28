@@ -2126,6 +2126,121 @@ bool template_argument_syntax_contains_ast_kind(
 bool ast_with_sidecars_contains_kind(const CppAstNode & node,
                                      CppAstKind kind);
 
+bool template_argument_syntax_decltypes_resolve_concretely(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax);
+bool ast_with_sidecars_decltypes_resolve_concretely(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const CppAstNode & node);
+
+bool template_id_syntax_decltypes_resolve_concretely(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TemplateIdSyntax & syntax)
+{
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(!template_argument_syntax_decltypes_resolve_concretely(
+           services, scope, syntax.argument_syntaxes[i])) {
+      return false;
+    }
+  }
+  for(std::size_t i = 0;
+      i < syntax.qualifier_template_id_syntaxes.size();
+      ++i) {
+    if(!template_id_syntax_decltypes_resolve_concretely(
+           services, scope, syntax.qualifier_template_id_syntaxes[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool ast_with_sidecars_decltypes_resolve_concretely(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::decltype_specifier) {
+    TypePtr resolved;
+    if(!template_argument_semantics::parse_decltype_or_typeof_node(
+           services, scope, node, resolved) ||
+       !resolved ||
+       template_argument_semantics::type_depends_on_template_parameter(
+           service_type_system(services), resolved)) {
+      return false;
+    }
+  }
+  if(node.template_id_syntax &&
+     !template_id_syntax_decltypes_resolve_concretely(
+         services, scope, *node.template_id_syntax)) {
+    return false;
+  }
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     !ast_with_sidecars_decltypes_resolve_concretely(
+         services,
+         scope,
+         *cppast_conversion_type_id_syntax_storage(node))) {
+    return false;
+  }
+  if(cppast_base_type_syntax_storage(node) &&
+     !ast_with_sidecars_decltypes_resolve_concretely(
+         services, scope, *cppast_base_type_syntax_storage(node))) {
+    return false;
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(!template_id_syntax_decltypes_resolve_concretely(
+           services, scope, node.qualifier_template_id_syntaxes[i])) {
+      return false;
+    }
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(!ast_with_sidecars_decltypes_resolve_concretely(
+           services, scope, node.qualifier_type_syntaxes[i])) {
+      return false;
+    }
+  }
+  for(std::size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+    if(!ast_with_sidecars_decltypes_resolve_concretely(
+           services, scope, node.exception_type_id_syntaxes[i])) {
+      return false;
+    }
+  }
+  for(std::size_t i = 0; i < node.alignment_specifier_nodes.size(); ++i) {
+    if(!ast_with_sidecars_decltypes_resolve_concretely(
+           services, scope, node.alignment_specifier_nodes[i])) {
+      return false;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(!ast_with_sidecars_decltypes_resolve_concretely(
+           services, scope, node.children[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool template_argument_syntax_decltypes_resolve_concretely(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  return (!syntax.type_id ||
+          ast_with_sidecars_decltypes_resolve_concretely(
+              services, scope, *syntax.type_id)) &&
+         (!syntax.source_type_id ||
+          ast_with_sidecars_decltypes_resolve_concretely(
+              services, scope, *syntax.source_type_id)) &&
+         (!syntax.expression ||
+          ast_with_sidecars_decltypes_resolve_concretely(
+              services, scope, *syntax.expression)) &&
+         (!syntax.template_id ||
+          template_id_syntax_decltypes_resolve_concretely(
+              services, scope, *syntax.template_id));
+}
+
 bool template_id_syntax_contains_ast_kind(const TemplateIdSyntax & syntax,
                                           CppAstKind kind)
 {
@@ -11388,6 +11503,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
 
     const TemplateParameterInfo * trailing_pack_parameter = nullptr;
     ArgumentPackExpansionPattern trailing_pack_pattern;
+    std::vector<TemplateArgument> trailing_template_template_arguments;
     std::size_t fixed_argument_count = partial.arg_texts.size();
     if(!partial.arg_texts.empty()) {
       const std::string trailing_pattern = trim_space(partial.arg_texts.back());
@@ -11772,6 +11888,19 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
           }
           deduced_pack.push_back(actual_arguments[i].value);
         }
+      } else if(trailing_pack_parameter->kind ==
+                    TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+        for(std::size_t i = fixed_argument_count; i < actual_arguments.size(); ++i) {
+          DeducedState element_deduced;
+          if(!deduce_template_template_parameter_from_argument(
+                 element_deduced,
+                 *trailing_pack_parameter,
+                 actual_arguments[i])) {
+            return false;
+          }
+          trailing_template_template_arguments.push_back(
+              template_template_identity_argument(actual_arguments[i]));
+        }
       } else {
         return false;
       }
@@ -11954,7 +12083,6 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                                                           placeholder_pattern_type);
         bool pattern_requires_concrete_expression_recheck = false;
         if(pattern_mentions_placeholders &&
-           placeholder_pattern_type &&
            !pattern_has_deducible_placeholders) {
           if(partial.concrete_expression_recheck_pattern_states.size() <
              partial.arg_texts.size()) {
@@ -11975,7 +12103,8 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
               }
             }
             const bool required =
-                (has_template_template_parameter &&
+                (placeholder_pattern_type &&
+                 has_template_template_parameter &&
                  named_type_is_dependent_alias(placeholder_pattern_type)) ||
                 (pattern_syntax &&
                  template_argument_syntax_contains_ast_kind(
@@ -11991,6 +12120,14 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         }
         TypePtr pattern_type;
         bool parsed_pattern_type = false;
+        if(pattern_requires_concrete_expression_recheck && pattern_syntax) {
+          std::vector<TemplateArgument> current_arguments;
+          if(make_complete_deduced_argument_list(current_arguments) &&
+             !template_argument_syntax_decltypes_resolve_concretely(
+                 services, match_scope, *pattern_syntax)) {
+            return false;
+          }
+        }
         const bool reuse_placeholder_pattern =
             services.witness_context.session == nullptr &&
             (pattern_has_deducible_placeholders ||
@@ -12398,6 +12535,16 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                   make_deduced_value_argument(value_type, pack_found->second[j]));
             }
           }
+          if(deduced_pack_sizes && !parameter.name.empty()) {
+            (*deduced_pack_sizes)[parameter.name] = pack_size;
+          }
+          continue;
+        }
+        if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+          pack_size = trailing_template_template_arguments.size();
+          deduced_arguments.insert(deduced_arguments.end(),
+                                   trailing_template_template_arguments.begin(),
+                                   trailing_template_template_arguments.end());
           if(deduced_pack_sizes && !parameter.name.empty()) {
             (*deduced_pack_sizes)[parameter.name] = pack_size;
           }

@@ -8057,6 +8057,49 @@ semantic_conversion::ExprInfo make_declval_trait_expr_info(const TypePtr & sourc
   return expr;
 }
 
+bool structured_invocation_argument_conversion_rank(
+    template_api::TemplateServices * services,
+    template_api::TemplateEnvironmentHandle scope,
+    const TypePtr & parameter,
+    const semantic_conversion::ExprInfo & argument,
+    semantic_conversion::ConversionRank & rank)
+{
+  rank = semantic_conversion::standard_conversion_rank(parameter, argument);
+  if(rank != semantic_conversion::CR_BAD) {
+    return true;
+  }
+
+  TypePtr parameter_base = strip_top_level_cv(remove_reference_type(parameter));
+  TypePtr argument_base =
+      strip_top_level_cv(remove_reference_type(argument.type));
+  if(!services ||
+     !services->semantic_context ||
+     !scope.valid() ||
+     ((!parameter_base || parameter_base->kind != Type::TK_NAMED) &&
+      (!argument_base || argument_base->kind != Type::TK_NAMED))) {
+    return false;
+  }
+
+  semantic_conversion::ExprInfo converted;
+  ArgumentConversionOptions conversion_options =
+      semantic_policy::without_user_defined_body_instantiation();
+  conversion_options.materialize_user_defined_output = false;
+  try {
+    return semantic_conversion::try_argument_conversion(
+               *services->semantic_context,
+               scope.require(),
+               parameter,
+               argument,
+               converted,
+               rank,
+               conversion_options) &&
+           rank != semantic_conversion::CR_BAD;
+  } catch(const logic_error &) {
+    rank = semantic_conversion::CR_BAD;
+    return false;
+  }
+}
+
 bool function_type_structured_invocation_result(
     template_api::TemplateServices * services,
     template_api::TemplateEnvironmentHandle scope,
@@ -8084,40 +8127,12 @@ bool function_type_structured_invocation_result(
     return false;
   }
   for(size_t i = 0; i < stripped->params.size(); ++i) {
-    if(semantic_conversion::standard_conversion_rank(stripped->params[i],
-                                                     arg_exprs[i]) !=
-       semantic_conversion::CR_BAD) {
-      continue;
-    }
-
-    TypePtr param_base = strip_top_level_cv(remove_reference_type(stripped->params[i]));
-    TypePtr arg_base = strip_top_level_cv(remove_reference_type(arg_exprs[i].type));
-    if(!services ||
-       !services->semantic_context ||
-       !scope.valid() ||
-       ((!param_base || param_base->kind != Type::TK_NAMED) &&
-        (!arg_base || arg_base->kind != Type::TK_NAMED))) {
-      return false;
-    }
-
-    semantic_conversion::ExprInfo converted;
     semantic_conversion::ConversionRank rank = semantic_conversion::CR_BAD;
-    ArgumentConversionOptions conversion_options =
-        semantic_policy::without_user_defined_body_instantiation();
-    conversion_options.materialize_user_defined_output = false;
-    try {
-      if(!semantic_conversion::try_argument_conversion(
-             *services->semantic_context,
-             scope.require(),
-             stripped->params[i],
-             arg_exprs[i],
-             converted,
-             rank,
-             conversion_options) ||
-         rank == semantic_conversion::CR_BAD) {
-        return false;
-      }
-    } catch(const logic_error &) {
+    if(!structured_invocation_argument_conversion_rank(services,
+                                                       scope,
+                                                       stripped->params[i],
+                                                       arg_exprs[i],
+                                                       rank)) {
       return false;
     }
   }
@@ -8472,9 +8487,9 @@ bool member_pointer_structured_invocation_result(
     }
 
     for(size_t i = 1; i < function_type->params.size(); ++i) {
-      if(semantic_conversion::standard_conversion_rank(function_type->params[i],
-                                                       arg_exprs[i]) ==
-         semantic_conversion::CR_BAD) {
+      semantic_conversion::ConversionRank rank = semantic_conversion::CR_BAD;
+      if(!structured_invocation_argument_conversion_rank(
+             services, scope, function_type->params[i], arg_exprs[i], rank)) {
         return false;
       }
     }
@@ -8523,8 +8538,11 @@ bool member_pointer_structured_invocation_result(
   return result_type != nullptr;
 }
 
-bool function_result_convertible_to_invocable_r(const TypePtr & result_type,
-                                                const TypePtr & required_return)
+bool function_result_convertible_to_invocable_r(
+    template_api::TemplateServices * services,
+    template_api::TemplateEnvironmentHandle scope,
+    const TypePtr & result_type,
+    const TypePtr & required_return)
 {
   TypePtr required_base = strip_top_level_cv(required_return);
   if(!required_base) {
@@ -8544,9 +8562,9 @@ bool function_result_convertible_to_invocable_r(const TypePtr & result_type,
          result_expr.category)) {
     return false;
   }
-  return semantic_conversion::standard_conversion_rank(required_return,
-                                                       result_expr) !=
-         semantic_conversion::CR_BAD;
+  semantic_conversion::ConversionRank rank = semantic_conversion::CR_BAD;
+  return structured_invocation_argument_conversion_rank(
+      services, scope, required_return, result_expr, rank);
 }
 
 bool class_member_collection_in_progress(const ClassInfo & info)
@@ -8565,6 +8583,8 @@ bool append_leaf_member_function_template_instantiations_from_candidates(
     vector<FunctionBinding *> & functions);
 
 int compare_callable_object_invocation_candidates(
+    template_api::TemplateServices * services,
+    template_api::TemplateEnvironmentHandle scope,
     const FunctionBinding & current,
     const FunctionBinding & best,
     const semantic_conversion::ExprInfo & callable_expr,
@@ -8587,12 +8607,14 @@ int compare_callable_object_invocation_candidates(
   for(size_t i = 0; i < arg_exprs.size(); ++i) {
     const TypePtr & current_param = current.params[current_offset + i].second;
     const TypePtr & best_param = best.params[best_offset + i].second;
-    const semantic_conversion::ConversionRank current_rank =
-        semantic_conversion::standard_conversion_rank(current_param,
-                                                      arg_exprs[i]);
-    const semantic_conversion::ConversionRank best_rank =
-        semantic_conversion::standard_conversion_rank(best_param,
-                                                      arg_exprs[i]);
+    semantic_conversion::ConversionRank current_rank =
+        semantic_conversion::CR_BAD;
+    semantic_conversion::ConversionRank best_rank =
+        semantic_conversion::CR_BAD;
+    structured_invocation_argument_conversion_rank(
+        services, scope, current_param, arg_exprs[i], current_rank);
+    structured_invocation_argument_conversion_rank(
+        services, scope, best_param, arg_exprs[i], best_rank);
     if(current_rank < best_rank) {
       current_better = true;
       continue;
@@ -8774,8 +8796,9 @@ bool callable_object_structured_invocation_result(
     bool viable = true;
     for(size_t arg = 0; arg < arg_exprs.size(); ++arg) {
       const TypePtr & param = binding->params[explicit_offset + arg].second;
-      if(semantic_conversion::standard_conversion_rank(param, arg_exprs[arg]) ==
-         semantic_conversion::CR_BAD) {
+      semantic_conversion::ConversionRank rank = semantic_conversion::CR_BAD;
+      if(!structured_invocation_argument_conversion_rank(
+             services, scope, param, arg_exprs[arg], rank)) {
         viable = false;
         break;
       }
@@ -8791,7 +8814,9 @@ bool callable_object_structured_invocation_result(
     }
     if(!saw_viable ||
        (selected_binding &&
-        compare_callable_object_invocation_candidates(*binding,
+        compare_callable_object_invocation_candidates(services,
+                                                      scope,
+                                                      *binding,
                                                       *selected_binding,
                                                       callable_expr,
                                                       arg_exprs) < 0)) {
@@ -8942,7 +8967,10 @@ bool evaluate_structured_invocable_r_trait(
     return true;
   }
 
-  if(!function_result_convertible_to_invocable_r(result_type, arguments[0].type)) {
+  if(!function_result_convertible_to_invocable_r(services,
+                                                 scope,
+                                                 result_type,
+                                                 arguments[0].type)) {
     out = false;
     return true;
   }

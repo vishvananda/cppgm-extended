@@ -45,6 +45,15 @@ bool build_aggregate_constructor_source_args(
     const CppAstNode & payload,
     std::vector<semantic_conversion::ExprInfo> & source_args);
 
+bool resolve_constructor_base_initializer(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    const semantic_model::FunctionBinding & binding,
+    const semantic_model::ClassInfo & owner_info,
+    const semantic_model::ClassInfo & base_info,
+    CppAstNode & expanded_storage,
+    const CppAstNode *& initializer);
+
 void analyze_initializer(SemanticContext & ctx,
                          semantic_model::Scope & scope,
                          const cpp_decl::TypePtr & type,

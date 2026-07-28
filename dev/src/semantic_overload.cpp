@@ -772,7 +772,8 @@ bool constructor_selection_is_speculative_user_defined_conversion_probe(
 {
   return options.context &&
          std::string(options.context) == "user-defined conversion constructor" &&
-         !options.instantiate_bodies;
+         !options.instantiate_bodies &&
+         !options.emit_source_witness_without_body_instantiation;
 }
 
 const CppAstNode * default_argument_payload(const CppAstNode * default_arg)

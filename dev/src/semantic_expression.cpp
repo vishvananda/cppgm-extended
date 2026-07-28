@@ -7339,11 +7339,12 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
         const auto try_convert_single_class_operand =
             [&](const ExprInfo & class_expr,
                 bool class_complete,
-                const TypePtr & other_base,
+                const ExprInfo & other_expr,
                 ExprInfo & converted_out,
                 ConversionRank & converted_rank_out,
                 TypePtr & target_out) -> bool
             {
+              TypePtr other_base = value_conversion_type(other_expr);
               ConversionRank rank = CR_BAD;
               if(try_builtin_user_defined_class_conversion(other_base,
                                                            class_expr,
@@ -7354,6 +7355,23 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
                 converted_rank_out = rank;
                 target_out = other_base;
                 return true;
+              }
+
+              if(is_pointer_type(other_base)) {
+                TypePtr converted_pointer_type;
+                if(try_builtin_pointer_operand_conversion(
+                       ctx,
+                       scope,
+                       class_expr,
+                       converted_out,
+                       converted_pointer_type,
+                       conversion_options) &&
+                   standard_conversion_rank(converted_pointer_type,
+                                            other_expr) != CR_BAD) {
+                  converted_rank_out = CR_USER_DEFINED;
+                  target_out = converted_pointer_type;
+                  return true;
+                }
               }
 
               TypePtr probe = TypePtr();
@@ -7413,7 +7431,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           } else if(lhs_class &&
                     try_convert_single_class_operand(lhs_expr,
                                                      lhs_class,
-                                                     rhs_base,
+                                                     rhs_expr,
                                                      converted,
                                                      converted_rank,
                                                      target)) {
@@ -7430,7 +7448,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           } else if(rhs_class &&
                     try_convert_single_class_operand(rhs_expr,
                                                      rhs_class,
-                                                     lhs_base,
+                                                     lhs_expr,
                                                      converted,
                                                      converted_rank,
                                                      target)) {

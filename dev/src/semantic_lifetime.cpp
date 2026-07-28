@@ -1584,10 +1584,15 @@ bool ctor_initializer_type_matches_base(SemanticContext & ctx,
   return candidate_info == &base;
 }
 
+bool find_ctor_base_pack_expansion_index(const ClassInfo & owner_info,
+                                         const ClassInfo & subobject_class,
+                                         size_t & out);
+
 const CppAstNode * find_ctor_base_initializer(SemanticContext & ctx,
                                               Scope & scope,
                                               const FunctionBinding & binding,
-                                              const ClassInfo & base)
+                                              const ClassInfo & base,
+                                              const ClassInfo * owner_info = nullptr)
 {
   if(!binding.ctor_initializer) {
     return nullptr;
@@ -1632,6 +1637,44 @@ const CppAstNode * find_ctor_base_initializer(SemanticContext & ctx,
     TypePtr named = ctx.lookup_type_node(scope, *id, id->value);
     if(named && ctor_initializer_type_matches_base(ctx, named, base)) {
       return &init;
+    }
+  }
+  size_t expansion_index = 0;
+  if(!owner_info ||
+     !find_ctor_base_pack_expansion_index(*owner_info,
+                                          base,
+                                          expansion_index)) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < binding.ctor_initializer->children.size(); ++i) {
+    const CppAstNode & candidate = binding.ctor_initializer->children[i];
+    if(candidate.children.size() < 3 ||
+       candidate.children[2].kind != CppAstKind::pack_expansion_expression) {
+      continue;
+    }
+    const CppAstNode * id =
+        find_child_kind(candidate, CppAstKind::mem_initializer_id);
+    if(!id) {
+      continue;
+    }
+    CppAstNode wrapped;
+    wrapped.kind = CppAstKind::pack_expansion_expression;
+    wrapped.children.push_back(*id);
+    vector<CppAstNode> expanded_ids;
+    if(!ctx.expand_pack_argument_node(scope, wrapped, expanded_ids) ||
+       expansion_index >= expanded_ids.size()) {
+      continue;
+    }
+    const CppAstNode & expanded_id = expanded_ids[expansion_index];
+    TypePtr candidate_type = expanded_id.semantic_type;
+    if(!candidate_type) {
+      candidate_type = ctx.lookup_type_node(scope,
+                                            expanded_id,
+                                            expanded_id.value);
+    }
+    if(candidate_type &&
+       ctor_initializer_type_matches_base(ctx, candidate_type, base)) {
+      return &candidate;
     }
   }
   return nullptr;
@@ -2317,7 +2360,12 @@ void append_ctor_subobject_constructor_action(SemanticContext & ctx,
                                               const ExprInfo & object_ptr,
                                               DumpNode & out)
 {
-  const CppAstNode * base_init = find_ctor_base_initializer(ctx, scope, binding, subobject_class);
+  const CppAstNode * base_init =
+      find_ctor_base_initializer(ctx,
+                                 scope,
+                                 binding,
+                                 subobject_class,
+                                 &owner_info);
   bool value_initializes_result = false;
   trace_ctor_initializer_state(binding,
                                owner_info,
@@ -4148,6 +4196,78 @@ void require_reference_bound_temporary_destructor_if_needed(
     return;
   }
   require_destructor_action_if_needed(ctx, expr_object_type);
+}
+
+bool resolve_constructor_base_initializer(
+    SemanticContext & ctx,
+    Scope & scope,
+    const FunctionBinding & binding,
+    const ClassInfo & owner_info,
+    const ClassInfo & base_info,
+    CppAstNode & expanded_storage,
+    const CppAstNode *& initializer)
+{
+  initializer = nullptr;
+  const CppAstNode * base_init =
+      find_ctor_base_initializer(ctx,
+                                 scope,
+                                 binding,
+                                 base_info,
+                                 &owner_info);
+  size_t expansion_index = 0;
+  const bool has_expansion_index =
+      find_ctor_base_pack_expansion_index(owner_info,
+                                          base_info,
+                                          expansion_index);
+  if(!base_init) {
+    return true;
+  }
+  if(base_init->children.size() < 2) {
+    return false;
+  }
+
+  initializer = &base_init->children[1];
+  if(base_init->children.size() < 3 ||
+     base_init->children[2].kind != CppAstKind::pack_expansion_expression) {
+    return true;
+  }
+
+  if(!has_expansion_index) {
+    return false;
+  }
+  const vector<const CppAstNode *> args =
+      initializer_argument_nodes(base_init->children[1]);
+  vector<CppAstNode> selected_args;
+  selected_args.reserve(args.size());
+  for(size_t i = 0; i < args.size(); ++i) {
+    CppAstNode wrapped;
+    wrapped.kind = CppAstKind::pack_expansion_expression;
+    wrapped.children.push_back(*args[i]);
+    vector<CppAstNode> expanded_args;
+    if(!ctx.expand_pack_argument_node(scope, wrapped, expanded_args) ||
+       expansion_index >= expanded_args.size()) {
+      return false;
+    }
+    selected_args.push_back(expanded_args[expansion_index]);
+  }
+
+  expanded_storage = base_init->children[1];
+  CppAstNode * payload = &expanded_storage;
+  if(payload->kind == CppAstKind::initializer &&
+     payload->children.size() == 1) {
+    payload = &payload->children[0];
+  }
+  if(payload->kind == CppAstKind::paren_initializer ||
+     payload->kind == CppAstKind::paren_argument_list ||
+     payload->kind == CppAstKind::braced_init_list) {
+    payload->children.swap(selected_args);
+  } else if(selected_args.size() == 1) {
+    *payload = selected_args[0];
+  } else {
+    return false;
+  }
+  initializer = &expanded_storage;
+  return true;
 }
 
 void note_constructor_witness_closure(SemanticContext & ctx,

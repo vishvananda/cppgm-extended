@@ -277,7 +277,9 @@ bool try_argument_conversion(SemanticContext & ctx,
                              Scope & scope,
                              const TypePtr & target,
                              const ExprInfo & arg,
-                             ExprInfo & out)
+                             ExprInfo & out,
+                             const ArgumentConversionOptions & options =
+                                 semantic_policy::default_argument_conversion())
 {
   const auto prepare_class_type =
       [&](const TypePtr & type)
@@ -302,7 +304,7 @@ bool try_argument_conversion(SemanticContext & ctx,
         arg,
         out,
         rank,
-        semantic_policy::default_argument_conversion());
+        options);
   }
   catch(const std::logic_error &)
   {
@@ -2932,7 +2934,13 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
     }
 
     ExprInfo converted;
-    if(!try_argument_conversion(ctx, scope, target, rhs_expr, converted)) {
+    if(!try_argument_conversion(
+           ctx,
+           scope,
+           target,
+           rhs_expr,
+           converted,
+           semantic_policy::allow_explicit_argument_conversion())) {
       out = 0;
       return true;
     }

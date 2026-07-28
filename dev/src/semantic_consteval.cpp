@@ -981,6 +981,7 @@ Scope make_constexpr_call_scope_impl(Scope & parent,
   if(binding && bind_parameters) {
     const std::vector<std::pair<std::string, TypePtr> > params =
         constexpr_function_parameters_impl(*binding);
+    std::map<std::string, std::vector<ValueBinding> > parameters_by_alias;
     std::size_t pack_start = 0;
     const std::string pack_name =
         trailing_function_parameter_pack_name(*binding, pack_start);
@@ -994,6 +995,9 @@ Scope make_constexpr_call_scope_impl(Scope & parent,
                              binding_name,
                              params[i].second);
       scope.values[binding_name] = parameter;
+      if(!alias_name.empty()) {
+        parameters_by_alias[alias_name].push_back(parameter);
+      }
       if(!alias_name.empty() &&
          alias_name != binding_name &&
          scope.values.find(alias_name) == scope.values.end()) {
@@ -1005,6 +1009,23 @@ Scope make_constexpr_call_scope_impl(Scope & parent,
     }
     if(!pack_name.empty()) {
       scope.named_pack_sizes[pack_name] = scope.named_value_packs[pack_name].size();
+    }
+    for(std::map<std::string, std::vector<ValueBinding> >::const_iterator it =
+            parameters_by_alias.begin();
+        it != parameters_by_alias.end();
+        ++it) {
+      if(it->second.size() < 2 ||
+         scope.named_value_packs.find(it->first) !=
+             scope.named_value_packs.end()) {
+        continue;
+      }
+      // A concrete instantiation of a non-template member of a class template
+      // has no FunctionTemplateDecl to describe a parameter pack.  Its
+      // expanded parameters nevertheless retain their common source alias.
+      // Repeated non-empty parameter names are invalid outside a pack, so that
+      // alias is an unambiguous typed record of the expansion.
+      scope.named_value_packs[it->first] = it->second;
+      scope.named_pack_sizes[it->first] = it->second.size();
     }
   }
   return scope;
@@ -1149,35 +1170,6 @@ bool find_ctor_mem_initializer(const FunctionBinding & binding,
   return false;
 }
 
-bool find_ctor_base_initializer(SemanticContext & ctx,
-                                Scope & scope,
-                                const FunctionBinding & binding,
-                                const ClassInfo & base,
-                                const CppAstNode *& out)
-{
-  out = nullptr;
-  if(!binding.ctor_initializer) {
-    return false;
-  }
-  for(size_t i = 0; i < binding.ctor_initializer->children.size(); ++i) {
-    const CppAstNode & init = binding.ctor_initializer->children[i];
-    const CppAstNode * id = find_child_kind(init, CppAstKind::mem_initializer_id);
-    if(!id) {
-      continue;
-    }
-    if(id->value == base.name || id->value == base.qualified_name) {
-      out = &init;
-      return true;
-    }
-    TypePtr named = ctx.lookup_type_node(scope, *id, id->value);
-    if(named && type_equals(strip_top_level_cv(named), base.type)) {
-      out = &init;
-      return true;
-    }
-  }
-  return false;
-}
-
 bool append_default_arguments(SemanticContext & ctx,
                               Scope & scope,
                               constant_eval::Evaluator & evaluator,
@@ -1223,6 +1215,7 @@ void bind_constexpr_function_argument_values(FunctionBinding & binding,
 {
   const std::vector<std::pair<std::string, TypePtr> > params =
       constexpr_function_parameters_impl(binding);
+  std::map<std::string, std::size_t> pack_offsets;
   for(std::size_t i = 0; i < args.size(); ++i) {
     const std::size_t param_index = explicit_param_offset + i;
     if(param_index >= params.size()) {
@@ -1250,11 +1243,20 @@ void bind_constexpr_function_argument_values(FunctionBinding & binding,
 
     const std::string alias_name =
         function_parameter_alias_name(binding, param_index);
-    if(!alias_name.empty() && alias_name != binding_name) {
-      std::map<std::string, ValueBinding>::iterator found =
-          scope.values.find(alias_name);
-      if(found != scope.values.end()) {
-        set_constexpr_parameter_value(found->second, value);
+    if(!alias_name.empty()) {
+      std::map<std::string, std::vector<ValueBinding> >::iterator pack =
+          scope.named_value_packs.find(alias_name);
+      if(pack != scope.named_value_packs.end() && pack->second.size() >= 2) {
+        const std::size_t pack_offset = pack_offsets[alias_name]++;
+        if(pack_offset < pack->second.size()) {
+          set_constexpr_parameter_value(pack->second[pack_offset], value);
+        }
+      } else if(alias_name != binding_name) {
+        std::map<std::string, ValueBinding>::iterator found =
+            scope.values.find(alias_name);
+        if(found != scope.values.end()) {
+          set_constexpr_parameter_value(found->second, value);
+        }
       }
     }
   }
@@ -1372,12 +1374,26 @@ bool evaluate_constexpr_constructor(SemanticContext & ctx,
 
   for(size_t i = 0; i < info->bases.size(); ++i) {
     const BaseInfo & base = info->bases[i];
-    const CppAstNode * base_init = nullptr;
-    find_ctor_base_initializer(ctx, ctor_scope, binding, *base.type, base_init);
+    CppAstNode expanded_base_initializer;
+    const CppAstNode * base_initializer = nullptr;
+    const bool resolved_base_initializer =
+        semantic_lifetime::resolve_constructor_base_initializer(
+           ctx,
+           constexpr_ctor_scope,
+           binding,
+           *info,
+           *base.type,
+           expanded_base_initializer,
+           base_initializer);
+    if(!resolved_base_initializer) {
+      return false;
+    }
 
     constant_eval::ConstexprValue base_value;
-    if(base_init && base_init->children.size() >= 2) {
-      if(!evaluate_ctor_initializer(base_init->children[1], base.type->type, base_value)) {
+    if(base_initializer) {
+      if(!evaluate_ctor_initializer(*base_initializer,
+                                    base.type->type,
+                                    base_value)) {
         return false;
       }
     } else if(!(value_initialize_missing_subobjects ?
@@ -1430,7 +1446,9 @@ bool evaluate_constexpr_constructor(SemanticContext & ctx,
 
     constant_eval::ConstexprValue field_value;
     if(mem_init && mem_init->children.size() >= 2) {
-      if(!evaluate_ctor_initializer(mem_init->children[1], field.type, field_value)) {
+      if(!evaluate_ctor_initializer(mem_init->children[1],
+                                    field.type,
+                                    field_value)) {
         return false;
       }
     } else if(field.default_initializer) {
