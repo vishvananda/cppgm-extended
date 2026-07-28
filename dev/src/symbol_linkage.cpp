@@ -4551,6 +4551,9 @@ static bool substitute_alias_template_arguments_in_syntax(
         substitute_alias_template_arguments_in_node(*syntax.expression, parameters, arguments) ||
         changed;
   }
+  if(changed) {
+    syntax.resolved_type.reset();
+  }
   return changed;
 }
 
@@ -4903,6 +4906,9 @@ static bool substitute_dependent_alias_template_arguments_in_syntax(
             parameters,
             arguments) ||
         changed;
+  }
+  if(changed) {
+    syntax.resolved_type.reset();
   }
   return changed;
 }
@@ -9386,9 +9392,15 @@ static bool try_build_qualified_template_id_type_ast_ir(
   if(qualified.qualifiers.empty() || qualified.name.empty()) {
     return false;
   }
-  if(template_id_resolves_to_namespace_template_for_mangling(template_id,
-                                                             mangle_ctx)) {
-    return false;
+  TemplateIdSyntax qualified_template_id = template_id;
+  qualified_template_id.name.rooted = qualified.rooted;
+  qualified_template_id.name.qualifiers = qualified.qualifiers;
+  if(template_id_resolves_to_namespace_template_for_mangling(
+         qualified_template_id,
+         mangle_ctx)) {
+    return try_build_template_id_type_ir(qualified_template_id,
+                                         mangle_ctx,
+                                         out);
   }
 
   if(!qualified.rooted) {
@@ -9399,7 +9411,8 @@ static bool try_build_qualified_template_id_type_ast_ir(
        !lookup_prefix.rooted &&
        !lookup_prefix.name.empty()) {
       TemplateIdSyntax namespace_template_id = template_id;
-      namespace_template_id.name = qualified;
+      namespace_template_id.name.rooted = qualified.rooted;
+      namespace_template_id.name.qualifiers = qualified.qualifiers;
       vector<string> qualifiers = lookup_prefix.qualifiers;
       qualifiers.push_back(lookup_prefix.name);
       qualifiers.insert(qualifiers.end(),
@@ -10327,16 +10340,11 @@ static bool try_build_dependent_alias_type_ir(
     abi_mangle::Type & out)
 {
   TypePtr base = strip_top_level_cv(type);
-  if(base &&
-     base->kind == Type::TK_NAMED &&
-     base->named_semantic_kind == Type::NSK_DEPENDENT_ALIAS &&
-     try_build_typed_member_named_type_ir(base, mangle_ctx, out)) {
-    return true;
-  }
-
   void * alias_template_decl = nullptr;
   vector<DependentAliasTemplateArgumentSyntax> arguments;
-  if(named_type_dependent_alias_template(type, alias_template_decl, arguments)) {
+  const bool have_alias_template =
+      named_type_dependent_alias_template(type, alias_template_decl, arguments);
+  if(have_alias_template) {
     const semantic_model::AliasTemplateDecl * alias_template =
         static_cast<const semantic_model::AliasTemplateDecl *>(alias_template_decl);
     if(alias_template && alias_template->type_id &&
@@ -10365,6 +10373,13 @@ static bool try_build_dependent_alias_type_ir(
         return true;
       }
     }
+  }
+
+  if(base &&
+     base->kind == Type::TK_NAMED &&
+     base->named_semantic_kind == Type::NSK_DEPENDENT_ALIAS &&
+     try_build_typed_member_named_type_ir(base, mangle_ctx, out)) {
+    return true;
   }
 
   if(base &&

@@ -1,0 +1,23 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $argobj__1 : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $argobj__1
+    call void @box_pair_int__int_const____box(%t1)
+    call void @accept($argobj__1)
+    return i32 0
+}
+function @box_pair_int__int_const____box(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3boxI4pairIiKiEEC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @accept(%__param0 : obj<1x1>) -> void [binding=weak, object=_Z6acceptIiEv3boxI4pairIiT_EE] {
+  slot $__param0 : obj<1x1>
+
+  block ^entry:
+    return void
+}
+alias object _ZN3boxI4pairIiKiEEC2Ev = @box_pair_int__int_const____box

@@ -5332,7 +5332,8 @@ machine_object::ObjectFile build_machine_object(const lowir_model::LowirProgram 
   }
   machine_ir::Program machine_program =
       build_lowir_machine_ir_object(program, output_target, enable_host_eh);
-  machine_program = optimize_machine_ir_program(machine_program, optimization_level);
+  machine_program =
+      optimize_machine_ir_program(std::move(machine_program), optimization_level);
   force_external_binding_for_function_declaration_imports(program, machine_program);
   if(parser_trace::enabled("object.symbol")) {
     for(size_t i = 0; i < machine_program.functions.size(); ++i) {

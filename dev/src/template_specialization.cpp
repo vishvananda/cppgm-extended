@@ -9037,7 +9037,24 @@ bool try_expand_alias_template_pattern_structurally(
                  !arguments[argument_index].type) {
                 return false;
               }
-              substituted_arguments.push_back(arguments[argument_index]);
+              TemplateArgument substituted_argument = arguments[argument_index];
+              TypePtr argument_base;
+              bool argument_const = false;
+              bool argument_volatile = false;
+              if(!top_level_cv_flags(argument.type,
+                                     argument_base,
+                                     argument_const,
+                                     argument_volatile)) {
+                return false;
+              }
+              substituted_argument.type =
+                  apply_cv(substituted_argument.type,
+                           argument_const,
+                           argument_volatile);
+              substituted_argument.dependent =
+                  type_is_dependent(substituted_argument.type);
+              substituted_argument.text = argument_text(substituted_argument);
+              substituted_arguments.push_back(substituted_argument);
               continue;
             }
             if(!metadata_argument_has_pack_expansion(named_info, i)) {

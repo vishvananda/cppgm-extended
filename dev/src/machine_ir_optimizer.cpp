@@ -1820,10 +1820,9 @@ bool minimize_callee_saved_preservation(mir::Function & function)
 
 }  // namespace
 
-mir_public::MirProgram optimize_machine_ir_program(const mir_public::MirProgram & program,
+mir_public::MirProgram optimize_machine_ir_program(mir_public::MirProgram out,
                                                    int optimization_level)
 {
-  mir_public::MirProgram out = program;
   optimization_level = normalize_optimization_level(optimization_level);
   for(size_t i = 0; i < out.functions.size(); ++i) {
     while(combine_block_trivial_mov_artifacts(out.functions[i])) {

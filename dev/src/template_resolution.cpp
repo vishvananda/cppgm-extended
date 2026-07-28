@@ -15171,6 +15171,26 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         }
         return resolve_bound_dependent_type_for_deduction(out, scope);
       };
+      const auto structured_argument_is_partial_order_alias =
+          [](const TemplateArgument & argument) -> bool
+      {
+        void * alias_template_decl = nullptr;
+        std::vector<DependentAliasTemplateArgumentSyntax> alias_arguments;
+        if(argument.kind != TemplateArgument::TA_TYPE ||
+           !argument.type ||
+           !named_type_dependent_alias_template(argument.type,
+                                                alias_template_decl,
+                                                alias_arguments)) {
+          return false;
+        }
+        for(std::size_t i = 0; i < alias_arguments.size(); ++i) {
+          if(alias_arguments[i].partial_order_placeholder ||
+             named_type_is_partial_order_placeholder(alias_arguments[i].type)) {
+            return true;
+          }
+        }
+        return false;
+      };
       const auto deduce_from_effective_type_template_arguments =
           [&](const std::vector<TemplateArgument> & pattern_effective_args,
               const std::vector<TemplateArgument> & actual_effective_args) -> bool
@@ -16130,7 +16150,11 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
             TypePtr actual_arg_type =
                 structured_actual &&
                 structured_actual->kind == TemplateArgument::TA_TYPE ?
-                    structured_actual->type :
+                    (structured_argument_is_partial_order_alias(*structured_actual) ?
+                         deduction_type_for_structured_argument(
+                             *structured_actual,
+                             actual_lookup_scope ? actual_lookup_scope : deduction_scope) :
+                         structured_actual->type) :
                     TypePtr();
             if(!actual_arg_type &&
                !lookup_actual_arg_type(actual_arg,
