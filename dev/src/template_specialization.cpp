@@ -10800,9 +10800,6 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
   const auto pattern_template_id_matches =
       [&](const QualifiedName & candidate_name) -> bool
   {
-    if(template_names_match(candidate_name, actual_name)) {
-      return true;
-    }
     if(services.semantic_context) {
       ClassTemplateDecl * pattern_template =
           semantic_lookup::lookup_class_template(*services.semantic_context,
@@ -10814,11 +10811,14 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
               semantic_lookup::lookup_class_template(*services.semantic_context,
                                                      match_scope,
                                                      actual_name);
-      if(semantic_lookup::same_inline_namespace_class_template_entity(
-             pattern_template,
-             actual_template)) {
-        return true;
+      if(pattern_template && actual_template) {
+        return semantic_lookup::same_inline_namespace_class_template_entity(
+            pattern_template,
+            actual_template);
       }
+    }
+    if(template_names_match(candidate_name, actual_name)) {
+      return true;
     }
     if(partial.pattern_scope &&
        !candidate_name.rooted &&

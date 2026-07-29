@@ -7716,6 +7716,12 @@ bool CppAstParser::parse_parameter_clause(CppAstNode & out)
     out.children.push_back(std::move(next));
   }
 
+  // C++ permits a C-style varargs marker directly after the final parameter
+  // declaration as well as after a separating comma.
+  if(consume_simple(OP_DOTS)) {
+    out.children.push_back(make_node(CppAstKind::parameter_pack, "..."));
+  }
+
   if(!consume_simple(OP_RPAREN)) {
     pos = start;
     return false;

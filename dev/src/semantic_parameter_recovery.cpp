@@ -403,6 +403,16 @@ bool recover_parameter_clause_initializer(
   CppAstNode paren;
   paren.kind = CppAstKind::paren_initializer;
   for(size_t i = 0; i < parameter_clause.children.size(); ++i) {
+    if(parameter_clause.children[i].kind == CppAstKind::parameter_pack ||
+       parameter_clause.children[i].kind == CppAstKind::ellipsis) {
+      if(paren.children.empty()) {
+        error = "ellipsis has no preceding initializer expression";
+        return false;
+      }
+      paren.children.back() =
+          make_pack_expansion_expression(paren.children.back());
+      continue;
+    }
     CppAstNode expr;
     if(!recover_parameter_expression(parameter_clause.children[i], expr)) {
       ostringstream out;

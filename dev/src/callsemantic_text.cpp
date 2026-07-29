@@ -663,6 +663,12 @@ bool declaration_node_is_pure_virtual(const CppAstNode * declaration_node)
     return false;
   }
 
+  const CppAstNode * special_definition =
+      cpp_decl::find_child(*declaration_node, CppAstKind::special_definition);
+  if(special_definition && special_definition->value == "0") {
+    return true;
+  }
+
   const CppAstNode * initializer =
       cpp_decl::find_child(*declaration_node, CppAstKind::initializer);
   if(initializer && is_pure_virtual_initializer(*initializer)) {
