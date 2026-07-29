@@ -25,6 +25,14 @@ struct NameLookup
     (void)token;
     return false;
   }
+  virtual bool is_known_member_template_identifier(
+      const RecogToken & owner,
+      const RecogToken & member) const
+  {
+    (void)owner;
+    (void)member;
+    return false;
+  }
   virtual bool unqualified_identifier_prefers_value_name(
       const RecogToken & token) const
   {

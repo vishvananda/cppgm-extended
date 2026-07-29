@@ -1,0 +1,22 @@
+translation-unit
+  alias-use at pa22/tests/spec/200-alias-nontype-pack-overload-ordering.t:5:9
+    template indices
+    bind #1 = I... source=explicit
+  alias-use at pa22/tests/spec/200-alias-nontype-pack-overload-ordering.t:7:15
+    template indices
+    bind #1 = I... source=explicit
+  function-call at pa22/tests/spec/200-alias-nontype-pack-overload-ordering.t:8:14
+    callee f
+    selected instantiation
+    bind #1 = <0> source=deduced
+    drop f reason=better_candidate_selected
+  alias-use at pa22/tests/spec/200-alias-nontype-pack-overload-ordering.t:8:26
+    template indices
+    bind #1 = 0 source=explicit
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  require-definition
+    entity f

@@ -140,6 +140,13 @@ struct QualifiedTypeComponentLookup : template_angle::NameLookup
     return inner.is_template_type_parameter_identifier(token);
   }
 
+  virtual bool is_known_member_template_identifier(
+      const RecogToken & owner,
+      const RecogToken & member) const
+  {
+    return inner.is_known_member_template_identifier(owner, member);
+  }
+
   virtual bool unqualified_identifier_prefers_value_name(
       const RecogToken & token) const
   {
@@ -1298,6 +1305,13 @@ struct TemplateArgumentFragmentNameLookup : template_angle::NameLookup
   {
     return parser.is_template_type_parameter_name(token) ||
            scoped_lookup.is_template_type_parameter_identifier(token);
+  }
+
+  virtual bool is_known_member_template_identifier(
+      const RecogToken & owner,
+      const RecogToken & member) const
+  {
+    return scoped_lookup.is_known_member_template_identifier(owner, member);
   }
 
   virtual bool prefer_template_id_for_unknown_identifiers() const
@@ -4994,6 +5008,13 @@ bool CppAstParser::parse_class_specifier(CppAstNode & out)
     stored.template_names = template_name_scopes.back();
     stored.type_names = type_name_scopes.back();
     stored.value_names = value_name_scopes.back();
+    const text_intern::Atom owner_name =
+        text_intern::intern(primary_name_text(name));
+    if(owner_name) {
+      NameSet & known_members = member_template_names[owner_name];
+      known_members.insert(stored.template_names.begin(),
+                           stored.template_names.end());
+    }
     refresh_lazy_function_body_snapshots_for_class(out, stored);
   }
   if(pushed_class_scope) {
@@ -11957,6 +11978,7 @@ template_angle_lookup::ScopedNameLookup CppAstParser::make_template_angle_lookup
   out.inherited_template_value_name_scopes =
       inherited_template_value_parameter_scopes;
   out.inherited_value_name_scopes = inherited_value_name_scopes;
+  out.member_template_names = &member_template_names;
   out.fallback_lookup = external_name_lookup;
   out.prefer_unknown_template_ids = prefer_unknown_template_ids;
   return out;

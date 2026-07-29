@@ -410,6 +410,7 @@ protected:
   std::vector<std::string> namespace_path_stack;
   std::vector<bool> namespace_inline_stack;
   std::unordered_map<std::string, ClassMemberNameScopes> class_member_name_scopes;
+  template_angle_lookup::MemberTemplateNameMap member_template_names;
   std::unordered_map<std::string, NameSet> namespace_template_name_scopes;
   std::unordered_map<std::string, NameSet> namespace_template_value_name_scopes;
   std::unordered_map<std::string, NameSet> namespace_type_name_scopes;

@@ -302,15 +302,86 @@ bool token_can_precede_nested_template_angle(const RecogToken & token)
 bool implicit_template_id_has_dependent_type_qualifier(
     const IRecogTokenSequence & tokens,
     std::size_t boundary,
-    const NameLookup & lookup)
+    const NameLookup & lookup,
+    ParseHeuristicCache * cache,
+    const RecogToken ** owner_head)
 {
+  if(owner_head) {
+    *owner_head = nullptr;
+  }
   if(boundary < 3 || !tokens.peek(boundary - 2).is_simple(OP_COLON2)) {
     return false;
   }
 
   const RecogToken & qualifier = tokens.peek(boundary - 3);
-  return qualifier.is_identifier() &&
-         lookup.is_template_type_parameter_identifier(qualifier);
+  if(qualifier.is_identifier()) {
+    const bool dependent =
+        lookup.is_template_type_parameter_identifier(qualifier);
+    if(dependent && owner_head) {
+      *owner_head = &qualifier;
+    }
+    return dependent;
+  }
+  if(!qualifier.is_close_angle_bracket()) {
+    return false;
+  }
+
+  const std::size_t qualifier_end = boundary - 2;
+  for(std::size_t cursor = boundary - 3; cursor > 0; --cursor) {
+    const RecogToken & token = tokens.peek(cursor);
+    if(token.is_simple(OP_SEMICOLON) ||
+       token.is_simple(OP_LBRACE) ||
+       token.is_simple(OP_RBRACE)) {
+      return false;
+    }
+    if(!token.is_simple(OP_LT)) {
+      continue;
+    }
+
+    const RecogToken & head = tokens.peek(cursor - 1);
+    if(!head.is_identifier() ||
+       (!lookup.is_known_template_name_identifier(head) &&
+        !lookup.is_template_type_parameter_identifier(head))) {
+      continue;
+    }
+
+    std::size_t parsed_end = cursor;
+    std::vector<std::pair<std::size_t, std::size_t> > argument_ranges;
+    if(!parse_template_id_suffix_ranges(tokens,
+                                        cursor,
+                                        lookup,
+                                        parsed_end,
+                                        argument_ranges,
+                                        cache) ||
+       parsed_end != qualifier_end) {
+      continue;
+    }
+    if(lookup.is_template_type_parameter_identifier(head)) {
+      if(owner_head) {
+        *owner_head = &head;
+      }
+      return true;
+    }
+    for(std::size_t range_index = 0;
+        range_index < argument_ranges.size();
+        ++range_index) {
+      for(std::size_t argument_pos = argument_ranges[range_index].first;
+          argument_pos < argument_ranges[range_index].second;
+          ++argument_pos) {
+        const RecogToken & argument_token = tokens.peek(argument_pos);
+        if(argument_token.is_identifier() &&
+          (lookup.is_template_type_parameter_identifier(argument_token) ||
+            lookup.is_known_value_template_parameter_identifier(argument_token))) {
+          if(owner_head) {
+            *owner_head = &head;
+          }
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  return false;
 }
 
 bool token_can_start_template_id_component_suffix(const RecogToken & token)
@@ -464,8 +535,16 @@ bool can_open_nested_template_angle_at(const IRecogTokenSequence & tokens,
         (tokens.peek(boundary - 2).is_simple(OP_COLON2) ||
          tokens.peek(boundary - 2).is_simple(OP_DOT) ||
          tokens.peek(boundary - 2).is_simple(OP_ARROW));
+    const RecogToken * dependent_owner_head = nullptr;
     const bool dependent_type_qualified_prefix =
-        implicit_template_id_has_dependent_type_qualifier(tokens, boundary, lookup);
+        implicit_template_id_has_dependent_type_qualifier(tokens,
+                                                         boundary,
+                                                         lookup,
+                                                         cache,
+                                                         &dependent_owner_head);
+    const bool known_dependent_member_template =
+        dependent_type_qualified_prefix && dependent_owner_head &&
+        lookup.is_known_member_template_identifier(*dependent_owner_head, prev);
     const bool value_name_preferred =
         !member_access_or_qualified_prefix &&
         lookup.unqualified_identifier_prefers_value_name(prev);
@@ -482,6 +561,10 @@ bool can_open_nested_template_angle_at(const IRecogTokenSequence & tokens,
       result = true;
     } else if(candidate_is_nested_name_qualifier) {
       result = true;
+    } else if(known_dependent_member_template) {
+      result = true;
+    } else if(dependent_type_qualified_prefix) {
+      result = false;
     } else if(value_name_preferred) {
       if(known_value) {
         result = false;
@@ -512,7 +595,7 @@ bool can_open_nested_template_angle_at(const IRecogTokenSequence & tokens,
     } else if(known_value) {
       result = false;
     } else if(lookup.prefer_template_id_for_unknown_identifiers()) {
-      result = !dependent_type_qualified_prefix;
+      result = true;
     } else {
       unknown_nested =
           looks_like_unknown_nested_template_id_at_impl(tokens, boundary, lookup, cache);
@@ -539,6 +622,8 @@ bool can_open_nested_template_angle_at(const IRecogTokenSequence & tokens,
                                   << (candidate_is_nested_name_qualifier ? "yes" : "no")
                                   << " dependent_qualifier="
                                   << (dependent_type_qualified_prefix ? "yes" : "no")
+                                  << " known_dependent_member_template="
+                                  << (known_dependent_member_template ? "yes" : "no")
                                   << " prefer_unknown="
                                   << (lookup.prefer_template_id_for_unknown_identifiers()
                                           ? "yes" :

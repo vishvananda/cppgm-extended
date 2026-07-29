@@ -8639,6 +8639,17 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
           out.arguments.push_back(arg);
         } else if(parameter &&
                   parameter->kind == TemplateParameterInfo::TP_NON_TYPE &&
+                  dependent_arg.syntax.pack_expansion) {
+          TemplateArgument arg;
+          arg.kind = TemplateArgument::TA_VALUE;
+          arg.type = dependent_arg.type ? dependent_arg.type : parameter->value_type;
+          arg.text = trim_space(dependent_arg.text);
+          arg.dependent = true;
+          arg.source_defaulted = dependent_arg.source_defaulted;
+          attach_template_argument_source_syntax(&dependent_arg.syntax, arg);
+          out.arguments.push_back(arg);
+        } else if(parameter &&
+                  parameter->kind == TemplateParameterInfo::TP_NON_TYPE &&
                   dependent_arg.partial_order_placeholder) {
           TemplateArgument arg;
           arg.kind = TemplateArgument::TA_VALUE;

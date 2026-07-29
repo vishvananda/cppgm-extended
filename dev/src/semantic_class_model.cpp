@@ -5808,7 +5808,9 @@ bool deferred_class_member_object_layout_supported(SemanticContext & ctx,
   const CppAstNode * node =
       info ? (info->template_output_node ? info->template_output_node : info->class_node) :
              nullptr;
-  return node && node->kind != CppAstKind::class_forward_declaration;
+  return (node && node->kind != CppAstKind::class_forward_declaration) ||
+         (info &&
+          template_api::nested_member_class_owner_definition_available(*info));
 }
 
 bool output_seed_class_member_object_type_supported(SemanticContext & ctx,

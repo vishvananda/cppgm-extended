@@ -19944,6 +19944,23 @@ void record_direct_alias_template_source_use_if_needed(
                                            explicit_argument_syntaxes);
   canonicalize_alias_template_source_argument_texts(alias_template.parameters,
                                            source_argument_texts);
+  const std::vector<std::string> * exact_source_args =
+      template_api::current_template_id_source_arguments_ptr(
+          use_location,
+          alias_template.name);
+  if(source_argument_texts_have_pack_expansion(source_argument_texts) &&
+     !exact_source_args) {
+    bool dependent_replay = false;
+    for(std::size_t i = 0; i < resolved_arguments.size(); ++i) {
+      if(resolved_arguments[i].dependent) {
+        dependent_replay = true;
+        break;
+      }
+    }
+    if(dependent_replay) {
+      return;
+    }
+  }
   if(argument_texts_have_instantiated_pack_syntax(services,
                                                   scope,
                                                   source_argument_texts)) {
@@ -19963,10 +19980,7 @@ void record_direct_alias_template_source_use_if_needed(
   bool exact_source_arguments = false;
   bool exact_source_arguments_have_pack_syntax = false;
   bool exact_source_arguments_mention_bound_pack = false;
-  if(const std::vector<std::string> * exact_source_args =
-         template_api::current_template_id_source_arguments_ptr(
-             use_location,
-             alias_template.name)) {
+  if(exact_source_args) {
     has_exact_source_arguments = true;
     for(std::size_t i = 0; i < exact_source_args->size(); ++i) {
       if((*exact_source_args)[i].find("...") != std::string::npos) {

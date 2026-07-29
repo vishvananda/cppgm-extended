@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -106,6 +107,8 @@ private:
 };
 
 using NameSetStack = std::vector<NameSet>;
+using MemberTemplateNameMap =
+    std::unordered_map<text_intern::Atom, NameSet>;
 
 inline bool lookup_in_stack(const NameSetStack * scopes, text_intern::Atom name)
 {
@@ -222,6 +225,7 @@ struct ScopedNameLookup : template_angle::NameLookup
   const NameSetStack * inherited_type_name_scopes = nullptr;
   const NameSetStack * inherited_template_value_name_scopes = nullptr;
   const NameSetStack * inherited_value_name_scopes = nullptr;
+  const MemberTemplateNameMap * member_template_names = nullptr;
   const template_angle::NameLookup * fallback_lookup = nullptr;
   bool prefer_unknown_template_ids = false;
 
@@ -264,6 +268,22 @@ struct ScopedNameLookup : template_angle::NameLookup
   {
     return lookup_in_scoped_names(value_name_scopes, inherited_value_name_scopes, token) ||
            (fallback_lookup && fallback_lookup->is_known_value_name_identifier(token));
+  }
+
+  bool is_known_member_template_identifier(
+      const RecogToken & owner,
+      const RecogToken & member) const override
+  {
+    if(owner.is_identifier() && member.is_identifier() && member_template_names) {
+      const MemberTemplateNameMap::const_iterator found =
+          member_template_names->find(owner.cached_identifier_atom());
+      if(found != member_template_names->end() &&
+         found->second.count(member.cached_identifier_atom()) != 0) {
+        return true;
+      }
+    }
+    return fallback_lookup &&
+           fallback_lookup->is_known_member_template_identifier(owner, member);
   }
 
   bool prefer_template_id_for_unknown_identifiers() const override

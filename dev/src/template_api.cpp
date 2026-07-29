@@ -1595,6 +1595,23 @@ bool class_template_completion_has_owner_definition(
   return template_instantiation::class_template_completion_has_owner_definition(info);
 }
 
+bool nested_member_class_owner_definition_available(
+    const semantic_model::ClassInfo & info)
+{
+  if(!class_template_completion_has_owner_definition(info)) {
+    return false;
+  }
+  const semantic_model::ClassInfo * owner =
+      info.enclosing_scope->class_info;
+  const semantic_model::ClassTemplateDecl * owner_template =
+      owner->source_template;
+  std::map<std::string, semantic_model::OutOfClassMemberClassDecl>::const_iterator
+      found = owner_template->member_class_definitions.find(info.name);
+  return found != owner_template->member_class_definitions.end() &&
+         found->second.class_node &&
+         found->second.class_node->kind != CppAstKind::class_forward_declaration;
+}
+
 ClassTemplateCompletionPlan class_template_completion_plan(
     const semantic_model::ClassInfo & info)
 {

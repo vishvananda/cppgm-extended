@@ -343,6 +343,8 @@ bool refresh_referenced_class_template_selection(
     semantic_model::ClassInfo & info);
 bool class_template_completion_has_owner_definition(
     const semantic_model::ClassInfo & info);
+bool nested_member_class_owner_definition_available(
+    const semantic_model::ClassInfo & info);
 ClassTemplateCompletionPlan class_template_completion_plan(
     const semantic_model::ClassInfo & info);
 bool apply_out_of_class_static_member_definitions_to_reference(

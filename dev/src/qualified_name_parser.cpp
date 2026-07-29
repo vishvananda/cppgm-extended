@@ -155,6 +155,13 @@ struct QualifiedFinalComponentLookup : NameLookup
     return inner.is_template_type_parameter_identifier(token);
   }
 
+  virtual bool is_known_member_template_identifier(
+      const RecogToken & owner,
+      const RecogToken & member) const
+  {
+    return inner.is_known_member_template_identifier(owner, member);
+  }
+
   virtual bool unqualified_identifier_prefers_value_name(
       const RecogToken & token) const
   {
