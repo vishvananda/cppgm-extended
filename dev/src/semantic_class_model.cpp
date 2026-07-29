@@ -10007,6 +10007,163 @@ bool reference_collection_can_defer_alias_failure(
          message.find("retained dependent result type") != std::string::npos;
 }
 
+bool reference_member_declaration_is_type_alias(
+    const CppAstNode & node,
+    const std::string & name)
+{
+  const CppAstNode * payload = innermost_template_declaration_payload(node);
+  if(!payload) {
+    return false;
+  }
+  if(payload->kind == CppAstKind::alias_declaration) {
+    return payload->value == name;
+  }
+  if(payload->kind != CppAstKind::simple_declaration) {
+    return false;
+  }
+  const CppAstNode * specifiers =
+      find_child(*payload, CppAstKind::decl_specifier_seq);
+  return specifiers &&
+         decl_spec_contains_token(*specifiers, KW_TYPEDEF) &&
+         declaration_declarators_declare_reference_name(*payload, name);
+}
+
+bool reference_class_has_direct_type_alias(const CppAstNode & node,
+                                           const std::string & name)
+{
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(reference_member_declaration_is_type_alias(node.children[i], name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool node_or_template_syntax_contains_address_expression(
+    const CppAstNode & node,
+    std::set<const CppAstNode *> & visited);
+
+bool template_id_syntax_contains_address_expression(
+    const TemplateIdSyntax & syntax,
+    std::set<const CppAstNode *> & visited)
+{
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    const TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
+    if((argument.expression &&
+        node_or_template_syntax_contains_address_expression(
+            *argument.expression, visited)) ||
+       (argument.type_id &&
+        node_or_template_syntax_contains_address_expression(
+            *argument.type_id, visited)) ||
+       (argument.source_type_id &&
+        node_or_template_syntax_contains_address_expression(
+            *argument.source_type_id, visited)) ||
+       (argument.template_id &&
+        template_id_syntax_contains_address_expression(
+            *argument.template_id, visited))) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0;
+      i < syntax.qualifier_template_id_syntaxes.size();
+      ++i) {
+    if(template_id_syntax_contains_address_expression(
+           syntax.qualifier_template_id_syntaxes[i], visited)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool node_or_template_syntax_contains_address_expression(
+    const CppAstNode & node,
+    std::set<const CppAstNode *> & visited)
+{
+  if(!visited.insert(&node).second) {
+    return false;
+  }
+  if(node.kind == CppAstKind::unary_expression &&
+     node_has_simple_type(node, OP_AMP)) {
+    return true;
+  }
+  if(const TemplateIdSyntax * template_id = cppast_template_id_syntax(node)) {
+    if(template_id_syntax_contains_address_expression(
+           *template_id, visited)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(node_or_template_syntax_contains_address_expression(
+           node.children[i], visited)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool declaration_type_contains_address_expression(const CppAstNode & node)
+{
+  std::set<const CppAstNode *> visited;
+  return node_or_template_syntax_contains_address_expression(node, visited);
+}
+
+void populate_class_reference_instantiation_aliases(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    const CppAstNode & node)
+{
+  const bool dependent_class = class_instantiation_is_dependent(ctx, info);
+  MemberAccess current_access = info.default_access;
+
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.kind == CppAstKind::access_specifier) {
+      current_access = access_from_node(child);
+      continue;
+    }
+
+    if(child.kind == CppAstKind::simple_declaration) {
+      const CppAstNode * specifiers =
+          find_child(child, CppAstKind::decl_specifier_seq);
+      if(!specifiers ||
+         !decl_spec_contains_token(*specifiers, KW_TYPEDEF) ||
+         !declaration_type_contains_address_expression(child) ||
+         !info.reference_named_member_declarations_collected.insert(&child).second) {
+        continue;
+      }
+      collect_class_reference_simple_declaration(
+          ctx, info, child, current_access);
+      continue;
+    }
+
+    if(child.kind != CppAstKind::alias_declaration ||
+       !declaration_type_contains_address_expression(child) ||
+       !info.reference_named_member_declarations_collected.insert(&child).second) {
+      continue;
+    }
+    const CppAstNode * type_id = find_child(child, CppAstKind::type_id);
+    if(!type_id) {
+      continue;
+    }
+    const std::string type_id_text = node_text(*type_id);
+    TypePtr alias =
+        parse_or_defer_reference_class_alias_type_id(ctx,
+                                                    info,
+                                                    child.value,
+                                                    *type_id,
+                                                    type_id_text,
+                                                    dependent_class);
+    if(!alias) {
+      continue;
+    }
+    alias = refine_instantiated_class_alias(ctx, *info.member_scope, alias);
+    trace_class_alias_store(
+        ctx, info, "reference-instantiation", child.value, type_id_text, alias);
+    semantic_scope_mutation::bind_template_named_type_with_access(
+        *info.member_scope, child.value, alias, current_access);
+  }
+}
+
 void populate_class_reference_members(SemanticContext & ctx,
                                       ClassInfo & info,
                                       const CppAstNode & node,
@@ -10601,6 +10758,41 @@ void ensure_class_reference_type_members(SemanticContext & ctx,
   info.reference_type_members_collected = true;
 }
 
+namespace {
+
+void instantiate_reference_base_alias_declarations(
+    SemanticContext & ctx,
+    ClassInfo & info)
+{
+  if(info.complete ||
+     info.reference_members_collected ||
+     class_instantiation_is_dependent(ctx, info)) {
+    return;
+  }
+
+  const CppAstNode * reference_node =
+      info.template_output_node ? info.template_output_node : info.class_node;
+  if(!reference_node) {
+    template_api::refresh_referenced_class_template_selection(ctx, info);
+    reference_node =
+        info.template_output_node ? info.template_output_node : info.class_node;
+  }
+  if(!reference_node ||
+     info.complete ||
+     info.reference_members_collected ||
+     class_instantiation_is_dependent(ctx, info)) {
+    return;
+  }
+
+  // Resolving a concrete member typedef/alias also demands the declarations
+  // of each direct base specialization.  Preserve the lazy member model by
+  // materializing only address-bearing aliases in this base: do not mark it
+  // as generally type-collected.
+  populate_class_reference_instantiation_aliases(ctx, info, *reference_node);
+}
+
+}  // namespace
+
 void ensure_class_reference_named_member(SemanticContext & ctx,
                                          ClassInfo & info,
                                          const std::string & name)
@@ -10651,6 +10843,16 @@ void ensure_class_reference_named_member(SemanticContext & ctx,
                                                         *reference_node,
                                                         lookup_name)) {
     return;
+  }
+
+  if(!class_instantiation_is_dependent(ctx, info) &&
+     reference_class_has_direct_type_alias(*reference_node, lookup_name)) {
+    for(std::size_t i = 0; i < info.bases.size(); ++i) {
+      if(info.bases[i].type) {
+        instantiate_reference_base_alias_declarations(
+            ctx, *info.bases[i].type);
+      }
+    }
   }
 
   const bool has_direct_declaration =

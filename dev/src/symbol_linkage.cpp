@@ -12294,6 +12294,26 @@ static bool try_build_dependent_expression_ir(
                                                        argument);
     return true;
   }
+  if(node.kind == CppAstKind::cast_expression &&
+     node.children.size() == 2 &&
+     node.has_token &&
+     node.simple_type == OP_LPAREN) {
+    abi_mangle::Type target_type;
+    abi_mangle::DependentExpression argument;
+    if(!try_build_cast_target_type_id_ast_ir(node.children[0],
+                                             mangle_ctx,
+                                             target_type) ||
+       !try_build_dependent_expression_ir(node.children[1],
+                                          mangle_ctx,
+                                          argument)) {
+      return false;
+    }
+    std::vector<abi_mangle::DependentExpression> arguments;
+    arguments.push_back(std::move(argument));
+    out = abi_mangle::DependentExpression::conversion(target_type,
+                                                       arguments);
+    return true;
+  }
   if(node.kind == CppAstKind::unary_expression && node.children.size() == 1) {
     string op_code;
     if(node.value == "*") {

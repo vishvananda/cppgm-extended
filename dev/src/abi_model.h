@@ -3717,6 +3717,11 @@ inline bool emit_dependent_expression_body(const DependentExpression & expressio
         return false;
       }
       if(op_code == "cv") {
+        if(expression.arguments.size() == 1) {
+          return emit_dependent_expression_body(expression.arguments[0],
+                                                out,
+                                                sink);
+        }
         out += '_';
         for(std::size_t i = 0; i < expression.arguments.size(); ++i) {
           if(!emit_dependent_expression_body(expression.arguments[i], out, sink)) {

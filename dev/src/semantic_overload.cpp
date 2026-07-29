@@ -2509,6 +2509,7 @@ struct CandidateMatch
   vector<ExprInfo> source_args;
   vector<string> source_arg_locations;
   vector<TypePtr> params;
+  vector<TypePtr> comparison_params;
   vector<bool> list_initialization_args;
   vector<vector<ConversionRank> > list_initialization_element_ranks;
   vector<bool> needs_rematerialization;
@@ -3899,6 +3900,30 @@ bool ref_qualifier_rejects_implicit_object(RefQualifier ref_qualifier,
       ref_qualifier,
       implicit_object_parameter,
       category);
+}
+
+TypePtr implicit_object_parameter_for_overload_ranking(
+    const FunctionBinding & candidate,
+    const ClassInfo * nominated_in,
+    const TypePtr & declared_parameter)
+{
+  if(!candidate.is_method ||
+     !candidate.owner_class ||
+     !nominated_in ||
+     nominated_in == candidate.owner_class ||
+     !nominated_in->type) {
+    return declared_parameter;
+  }
+
+  // A base member introduced into a derived class by a using-declaration is
+  // considered a member of the derived class when its implicit object
+  // parameter participates in overload resolution.  The declared parameter
+  // remains the conversion and call target so the actual base adjustment is
+  // still materialized below.
+  TypePtr object_type = make_cv(nominated_in->type,
+                                candidate.is_const_method,
+                                candidate.is_volatile_method);
+  return make_pointer(object_type);
 }
 
 vector<TemplateArgument> constructor_deduction_local_type_arguments(
@@ -5932,6 +5957,14 @@ int compare_candidate_match_preference(SemanticContext & ctx,
       [&](size_t begin, size_t end, bool & current_better, bool & best_better) -> void
   {
     for(size_t j = begin; j < end; ++j) {
+      const TypePtr & current_param =
+          j < current.comparison_params.size() &&
+                  current.comparison_params[j] ?
+              current.comparison_params[j] : current.params[j];
+      const TypePtr & best_param =
+          j < best.comparison_params.size() &&
+                  best.comparison_params[j] ?
+              best.comparison_params[j] : best.params[j];
       const bool compare_second_standard_conversion =
           current.ranks[j] == CR_USER_DEFINED &&
           best.ranks[j] == CR_USER_DEFINED &&
@@ -5952,14 +5985,14 @@ int compare_candidate_match_preference(SemanticContext & ctx,
            j < best.list_initialization_args.size() &&
            current.list_initialization_args[j] &&
            best.list_initialization_args[j]) {
-          const TypePtr current_param =
-              strip_top_level_cv(remove_reference_type(current.params[j]));
-          const TypePtr best_param =
-              strip_top_level_cv(remove_reference_type(best.params[j]));
+          const TypePtr current_param_base =
+              strip_top_level_cv(remove_reference_type(current_param));
+          const TypePtr best_param_base =
+              strip_top_level_cv(remove_reference_type(best_param));
           const bool current_initializer_list =
-              ctx.is_initializer_list_type(current_param, nullptr, nullptr);
+              ctx.is_initializer_list_type(current_param_base, nullptr, nullptr);
           const bool best_initializer_list =
-              ctx.is_initializer_list_type(best_param, nullptr, nullptr);
+              ctx.is_initializer_list_type(best_param_base, nullptr, nullptr);
           if(current_initializer_list != best_initializer_list) {
             list_pref = current_initializer_list ? -1 : 1;
           } else if(current_initializer_list) {
@@ -5972,44 +6005,44 @@ int compare_candidate_match_preference(SemanticContext & ctx,
         } else if(list_pref > 0) {
           best_better = true;
         } else {
-          int ref_pref = compare_reference_binding_preference(current.params[j],
+          int ref_pref = compare_reference_binding_preference(current_param,
                                                               current_compare_arg,
-                                                              best.params[j],
+                                                              best_param,
                                                               best_compare_arg);
           if(ref_pref < 0) {
             current_better = true;
           } else if(ref_pref > 0) {
             best_better = true;
           } else {
-            int qual_pref = compare_qualification_conversion_preference(current.params[j],
+            int qual_pref = compare_qualification_conversion_preference(current_param,
                                                                         current_compare_arg,
-                                                                        best.params[j],
+                                                                        best_param,
                                                                         best_compare_arg);
             if(qual_pref < 0) {
               current_better = true;
             } else if(qual_pref > 0) {
               best_better = true;
             } else {
-              int std_pref = compare_standard_conversion_preference(current.params[j],
+              int std_pref = compare_standard_conversion_preference(current_param,
                                                                     current_compare_arg,
-                                                                    best.params[j],
+                                                                    best_param,
                                                                     best_compare_arg);
               if(std_pref == 0 &&
                  (current.ranks[j] == CR_CONVERSION ||
                   compare_second_standard_conversion)) {
                 std_pref = compare_class_base_conversion_target_preference(
                     ctx,
-                    current.params[j],
+                    current_param,
                     current_compare_arg,
-                    best.params[j],
+                    best_param,
                     best_compare_arg);
               }
               if(std_pref == 0 && j < current.args.size() && j < best.args.size()) {
                 std_pref = compare_pointer_base_over_void_preference(
                     ctx,
-                    current.params[j],
+                    current_param,
                     current_compare_arg,
-                    best.params[j],
+                    best_param,
                     best_compare_arg);
               }
               if(std_pref < 0) {
@@ -12794,8 +12827,16 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
     if(converted_this_ok) {
       adjusted_this = converted_this;
     }
+    const TypePtr ranking_implicit_object_parameter =
+        implicit_object_parameter_for_overload_ranking(
+            *candidate,
+            assignment_candidates[i].declared_in,
+            function_type->params[0]);
     ConversionRank this_rank =
-        implicit_object_conversion_rank(ctx, function_type->params[0], implicit_object_arg);
+        implicit_object_conversion_rank(
+            ctx,
+            ranking_implicit_object_parameter,
+            implicit_object_arg);
     if(this_rank == CR_BAD) {
       candidate_rejections[i] = "implicit object conversion failed";
       continue;
@@ -12805,6 +12846,7 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
     match.call_args.push_back(adjusted_this);
     match.source_args.push_back(this_source_arg);
     match.params.push_back(function_type->params[0]);
+    match.comparison_params.push_back(ranking_implicit_object_parameter);
     match.list_initialization_args.push_back(false);
     match.list_initialization_element_ranks.push_back(
         vector<ConversionRank>());
@@ -14930,10 +14972,15 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         if(converted_this_ok) {
           adjusted_this = converted_this;
         }
+        const TypePtr ranking_implicit_object_parameter =
+            implicit_object_parameter_for_overload_ranking(*candidate,
+                                                           declared_in,
+                                                           function_type->params[0]);
         ConversionRank this_rank =
-            semantic_conversion::implicit_object_conversion_rank(ctx,
-                                                                 function_type->params[0],
-                                                                 implicit_object_arg);
+            semantic_conversion::implicit_object_conversion_rank(
+                ctx,
+                ranking_implicit_object_parameter,
+                implicit_object_arg);
         if(this_rank == CR_BAD &&
            candidate->is_destructor &&
            destructor_implicit_object_cv_compatible(function_type->params[0],
@@ -14953,6 +15000,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           match.source_args.push_back(this_source_arg);
           match.source_arg_locations.push_back(std::string());
           match.params.push_back(function_type->params[0]);
+          match.comparison_params.push_back(
+              ranking_implicit_object_parameter);
           match.needs_rematerialization.push_back(
               instantiate_bodies &&
               ctx.current_analysis_policy().materialize_direct_call_output &&
