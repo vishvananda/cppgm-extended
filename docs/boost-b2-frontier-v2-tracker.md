@@ -13,10 +13,11 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `97 / 147`
-- current cursor: `#98 libs/rational/test`
-- active compiler frontier: Boost.Ratio passes unchanged under the forced C++11
-  lane; Boost.Rational is the next ordered suite and declares `"cxxstd": "11"`
+- completed suites: `99 / 147`
+- current cursor: `#100 libs/regex/test`
+- active compiler frontier: Boost.Rational passes unchanged under the forced
+  C++11 lane and C++17-only Boost.Redis is skipped by policy; Boost.Regex is
+  the next ordered suite and declares `"cxxstd": "11"`
 
 ## Baseline Gates
 
@@ -360,26 +361,29 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 95 | `libs/random/test` | pass | `(this commit)` | The intake exposed five failures in three independent families: Boost.Test's overload set for `&X::f`, `test_seed_seq` constructor-template list initialization, and the shared Boost.Regex dependency's internal C-linkage constants. The final exact four-job forced C++11 `pch=off` graph finds 4862 targets, updates all 392 requested targets, passes every compile, link, and runtime action, and exits successfully in 400.33s; log `/private/tmp/boost-frontier-v2-suite-095-random-full-final-r2.log`. | Three compact C++11 owners close the graph: a 12-line PA26 overloaded-member-address reducer, a 13-line PA25 local-`initializer_list` reducer, and two PA14 `extern "C"` reducers whose sources are 1--3 lines. None uses `<type_traits>`, and refs are 281--718 bytes. The final PA9-excluded direct-LowIR report passes `6596/6596`, including PA37 `7/7`; all 973 configured strict comparisons pass. Normal, all eleven individual cache-off modes, and all-off emit byte-identical LowIR for the two semantic reducers. Placement review and all 23 text-reparse categories pass; PA14 retains only one unrelated pre-existing placement finding. The final Homebrew Clang 22 build is warning-clean. The graph peaks at 1,061,134,336 B across four workers, individual sampled units remain below 366 MiB, every child releases, throttled pages remain zero, and swap usage is unchanged. Actual C++ actions invoke CPPGM and host actions use explicitly pinned Homebrew Clang 22 paths; `gcc.*` is only the legacy B2 adapter label. |
 | 96 | `libs/range/test` | pass | `(this commit)` | Boost declares C++03 and passes in the forced C++11 lane. The final exact four-job `pch=off` graph finds 6146 targets, updates all 751 requested targets, passes every compile, link, and runtime action, and exits successfully in 853.75s; log `/private/tmp/boost-frontier-v2-suite-096-range-final-lookup-fix.log`. The `combine` failure was not a cache or retention defect: qualified leaf template lookup omitted namespace using-directives even though ordinary binding lookup included them. | Six compact header-free C++11 owners across PA15, PA17, PA18, PA19, and PA22 are 1--16 source lines, use no `<type_traits>`, and have refs no larger than 1906 bytes. Normal, each of eleven individual cache-off modes, and all-off produce byte-identical results for all six reducers. All 635 configured strict direct comparisons pass; the final PA9-excluded direct-LowIR report passes `4210/4210`, including PA37 `7/7`. The only two LowIR ref updates reorder already-equivalent definitions after the new by-value validation discovers constructors earlier; relaxed comparison proves identical symbols, bodies, calls, and aliases. All 23 text-reparse categories and 28 audit/performance/placement unit tests pass; the new placement rows have zero findings. A complete PA27 audit finds only six refs over 200 lines, each owned by a 4--35-line irreducible virtual-base/vtable reducer. The final Homebrew Clang 22 build is warning-clean. The graph's largest child is 1,181,216,768 B RSS, sampled aggregate compiler RSS stays near 2.43 GiB, every child releases, throttled pages stay zero, and system swap is unchanged. Actual C++ actions invoke CPPGM and host actions use explicitly pinned Homebrew Clang 22 paths; `gcc.*` is only the legacy B2 adapter label. |
 | 97 | `libs/ratio/test` | pass | `(no compiler change)` | Boost declares C++11. The exact forced four-job `pch=off` graph finds 799 targets, updates all 178 requested targets, passes 20 positive compile/link/runtime tests, handles all 10 deliberate compile failures as failed-as-expected, and exits successfully in 18.45s; log `/private/tmp/boost-frontier-v2-suite-097-ratio-intake.log`. | No compiler or test change is required. The graph peaks at 197,287,936 B maximum RSS with zero swaps. Actual C++ actions invoke CPPGM and host actions use explicitly pinned Homebrew Clang 22 paths; printed `gcc.*` strings are only legacy Boost.Build adapter labels. Since production code and test fixtures are unchanged from the fully validated Range commit, broad, strict, audit, and performance gates were not redundantly rerun. |
+| 98 | `libs/rational/test` | pass | `(no compiler change)` | Boost declares C++11. The exact forced four-job `pch=off` graph finds 2296 targets, updates all 126 requested targets, passes `rational_example`, `constexpr_test`, `rational_test`, and `expected_compile_12`, handles all 11 deliberate compile failures as failed-as-expected, and exits successfully in 90.25s; log `/private/tmp/boost-frontier-v2-suite-098-rational-intake.log`. | No compiler or test change is required. The graph peaks at 899,088,384 B maximum RSS while four independent compiler children overlap, every child releases, throttled pages remain zero, and process swaps remain zero. Actual paths are CPPGM plus explicitly pinned Homebrew Clang 22; `gcc.*` remains only the adapter action label. Validation remains inherited from the unchanged Range commit. |
+| 99 | `libs/redis/test` | skipped-language | `(no compiler change)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/redis/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the frontier language policy, no graph was run and no compiler work is inferred from the historical passing result. The cursor advances directly to C++11 Boost.Regex. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#98 libs/rational/test`
+- suite: `#100 libs/regex/test`
 - focused target: exact forced suite intake
-- last closed suite: `#97 libs/ratio/test` (`pass`)
+- last closed suite: `#99 libs/redis/test` (`skipped-language`)
 - failure phase: none known before intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: to be determined only if the exact graph exposes a
   compiler failure
 - implementation area: to be determined from the first typed failure
-- performance risk: Ratio peaked at only 197,287,936 B RSS with zero swaps;
-  four-way intake remains appropriate while monitoring every compiler child
-- language lane: Boost.Rational declares C++11; run it in CPPGM's supported C++11
+- performance risk: Rational peaked at 899,088,384 B maximum child RSS during
+  four-way overlap with zero swaps; retain four-way intake while monitoring
+  every compiler child and serialize only if Regex exposes a known-heavy TU
+- language lane: Boost.Regex declares C++11; run it in CPPGM's supported C++11
   lane plus explicitly pinned Homebrew Clang 22 host tools
-- next action: run the exact forced four-job `pch=off` Boost.Rational graph and
+- next action: run the exact forced four-job `pch=off` Boost.Regex graph and
   record the first real compiler failure or close the suite
 
 ## Fix Ledger
@@ -4174,5 +4178,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/rational/test
+  ./run-cppgm-b2.sh pch=off -a libs/regex/test
 ```
