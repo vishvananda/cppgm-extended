@@ -779,9 +779,9 @@ def split_top_level_commas(text: str) -> tuple[str, ...]:
     return tuple(parts)
 
 
-def has_top_level_equal(text: str) -> bool:
+def before_top_level_equal(text: str) -> str:
     angle = paren = bracket = brace = 0
-    for c in text:
+    for i, c in enumerate(text):
         if c == "<":
             angle += 1
         elif c == ">" and angle:
@@ -799,8 +799,12 @@ def has_top_level_equal(text: str) -> bool:
         elif c == "}" and brace:
             brace -= 1
         elif c == "=" and not (angle or paren or bracket or brace):
-            return True
-    return False
+            return text[:i].rstrip()
+    return text
+
+
+def has_top_level_equal(text: str) -> bool:
+    return len(before_top_level_equal(text)) != len(text)
 
 
 def find_template_headers(code: str) -> list[TemplateHeader]:
@@ -860,7 +864,8 @@ def is_template_template_parameter(param: str) -> bool:
 
 
 def is_pointer_or_reference_nttp(param: str) -> bool:
-    return bool(re.search(r"::\s*\*|\(\s*\*|\*|&", param))
+    declaration = before_top_level_equal(param)
+    return bool(re.search(r"::\s*\*|\(\s*\*|\*|&", declaration))
 
 
 def add_source_hit(hits: dict[str, FeatureHit], feature_id: str, evidence: str) -> None:

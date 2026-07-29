@@ -485,6 +485,15 @@ struct Scope
     direct_function_lookup_cache_epoch = other.direct_function_lookup_cache_epoch;
     class_templates = other.class_templates;
     function_templates = other.function_templates;
+    if(other.function_template_introduction_nodes) {
+      function_template_introduction_nodes.reset(
+          new std::map<
+              std::string,
+              std::map<const FunctionTemplateDecl *, const CppAstNode *> >(
+                  *other.function_template_introduction_nodes));
+    } else {
+      function_template_introduction_nodes.reset();
+    }
     collected_template_declarations = other.collected_template_declarations;
     alias_templates = other.alias_templates;
     variable_templates = other.variable_templates;
@@ -549,6 +558,13 @@ struct Scope
       function_set_access_overrides;
   LazyMap<std::string, ClassTemplateDecl *> class_templates;
   LazyMap<std::string, std::vector<FunctionTemplateDecl *> > function_templates;
+  // Imported function templates retain the using-declaration source point.
+  // Deferred bodies can carry cloned token offsets that are not comparable
+  // with offsets from the imported declaration's source file.
+  std::unique_ptr<
+      std::map<std::string,
+               std::map<const FunctionTemplateDecl *, const CppAstNode *> > >
+      function_template_introduction_nodes;
   std::set<const CppAstNode *> collected_template_declarations;
   LazyMap<std::string, AliasTemplateDecl *> alias_templates;
   LazyMap<std::string, VariableTemplateDecl *> variable_templates;

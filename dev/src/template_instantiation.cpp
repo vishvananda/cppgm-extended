@@ -677,7 +677,7 @@ bool template_result_argument_refines_same_pattern(
       return current_rare.value_binding == parsed_rare.value_binding;
     }
     return current.value == parsed.value ||
-           current_has_expression;
+           (current.dependent && current_has_expression);
   }
 
   const bool owners_match =
@@ -11921,7 +11921,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
               parsed_result_valid_for_stale_source_pattern = false;
             }
           }
-          if(current_result_dependent ||
+          if((source_result_type_was_dependent && !parsed_result_dependent) ||
+             current_result_dependent ||
              parsed_result_valid_for_stale_source_pattern ||
              (!parsed_result_dependent &&
               (type_equals(result_type, parsed_result) ||
@@ -11958,8 +11959,16 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       if(recover_result_type) {
         const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
             function_call_source_capture_pause;
+        const bool current_result_dependent =
+            template_argument_semantics::type_depends_on_template_parameter(
+                ctx, result_type);
         if(recover_instantiation_bound_type(ctx, inst_scope, result_type, resolved)) {
-          result_type = resolved;
+          // Recovery may consult retained source-expression metadata. Once a
+          // result is concrete, do not replace it with a different concrete
+          // specialization merely because both came from the same pattern.
+          if(current_result_dependent || type_equals(result_type, resolved)) {
+            result_type = resolved;
+          }
         }
       }
       if(parser_trace::enabled("template.resolve")) {

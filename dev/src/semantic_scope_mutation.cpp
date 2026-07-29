@@ -352,7 +352,8 @@ void append_function_bindings(semantic_model::Scope & scope,
 void append_unique_function_templates(
     semantic_model::Scope & scope,
     const std::string & name,
-    const std::vector<semantic_model::FunctionTemplateDecl *> & templates)
+    const std::vector<semantic_model::FunctionTemplateDecl *> & templates,
+    const CppAstNode * introduction_node)
 {
   if(templates.empty()) {
     return;
@@ -364,6 +365,22 @@ void append_unique_function_templates(
     if(std::find(slot.begin(), slot.end(), templates[i]) == slot.end()) {
       slot.push_back(templates[i]);
       changed = true;
+    }
+    if(introduction_node) {
+      if(!scope.function_template_introduction_nodes) {
+        scope.function_template_introduction_nodes.reset(
+            new std::map<
+                std::string,
+                std::map<const semantic_model::FunctionTemplateDecl *,
+                         const CppAstNode *> >());
+      }
+      std::map<const semantic_model::FunctionTemplateDecl *,
+               const CppAstNode *> & introductions =
+          (*scope.function_template_introduction_nodes)[name];
+      // Semantic collection visits declarations in source order. Keep the
+      // first using-declaration so a later repeated import cannot move the
+      // template's visibility point forward.
+      introductions.insert(std::make_pair(templates[i], introduction_node));
     }
   }
   if(changed) {

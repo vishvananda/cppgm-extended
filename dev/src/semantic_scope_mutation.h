@@ -92,6 +92,7 @@ void append_function_bindings(semantic_model::Scope & scope,
 void append_unique_function_templates(
     semantic_model::Scope & scope,
     const std::string & name,
-    const std::vector<semantic_model::FunctionTemplateDecl *> & templates);
+    const std::vector<semantic_model::FunctionTemplateDecl *> & templates,
+    const CppAstNode * introduction_node = nullptr);
 
 }  // namespace semantic_scope_mutation

@@ -253,6 +253,13 @@ Scope::Scope(const Scope & other)
     function_set_access_overrides(other.function_set_access_overrides),
     class_templates(other.class_templates),
     function_templates(other.function_templates),
+    function_template_introduction_nodes(
+        other.function_template_introduction_nodes ?
+            new std::map<
+                std::string,
+                std::map<const FunctionTemplateDecl *, const CppAstNode *> >(
+                    *other.function_template_introduction_nodes) :
+            nullptr),
     collected_template_declarations(other.collected_template_declarations),
     alias_templates(other.alias_templates),
     variable_templates(other.variable_templates),
@@ -291,6 +298,8 @@ Scope::Scope(Scope && other)
     function_set_access_overrides(std::move(other.function_set_access_overrides)),
     class_templates(std::move(other.class_templates)),
     function_templates(std::move(other.function_templates)),
+    function_template_introduction_nodes(
+        std::move(other.function_template_introduction_nodes)),
     collected_template_declarations(std::move(other.collected_template_declarations)),
     alias_templates(std::move(other.alias_templates)),
     variable_templates(std::move(other.variable_templates)),
@@ -337,6 +346,8 @@ Scope & Scope::operator=(Scope && other)
   direct_function_lookup_cache_epoch = other.direct_function_lookup_cache_epoch;
   class_templates = std::move(other.class_templates);
   function_templates = std::move(other.function_templates);
+  function_template_introduction_nodes =
+      std::move(other.function_template_introduction_nodes);
   collected_template_declarations = std::move(other.collected_template_declarations);
   alias_templates = std::move(other.alias_templates);
   variable_templates = std::move(other.variable_templates);

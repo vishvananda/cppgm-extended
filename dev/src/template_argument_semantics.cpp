@@ -28091,6 +28091,11 @@ bool lookup_leaf_qualified_function_bindings(template_api::TemplateServices & se
     return !out.empty();
   }
 
+  if(target->class_info && services.semantic_context) {
+    services.semantic_context->ensure_class_reference_named_member(
+        *target->class_info, qualified.name);
+  }
+
   map<string, vector<FunctionBinding *> >::const_iterator found =
       target->function_sets.find(qualified.name);
   if(found == target->function_sets.end()) {
@@ -28129,6 +28134,11 @@ bool lookup_leaf_qualified_function_bindings(template_api::TemplateServices & se
     return !out.empty();
   }
 
+  if(target->class_info && services.semantic_context) {
+    services.semantic_context->ensure_class_reference_named_member(
+        *target->class_info, qualified.name);
+  }
+
   map<string, vector<FunctionBinding *> >::const_iterator found =
       target->function_sets.find(qualified.name);
   if(found == target->function_sets.end()) {
@@ -28155,6 +28165,10 @@ bool lookup_leaf_qualified_function_templates(template_api::TemplateServices & s
   }
 
   if(target->class_info) {
+    if(services.semantic_context) {
+      services.semantic_context->ensure_class_reference_named_member(
+          *target->class_info, qualified.name);
+    }
     semantic_lookup::MemberFunctionTemplateLookupResult result =
         semantic_lookup::lookup_visible_member_function_templates(*target->class_info,
                                                                   qualified.name);
@@ -28198,6 +28212,10 @@ bool lookup_leaf_qualified_function_templates(template_api::TemplateServices & s
   }
 
   if(target->class_info) {
+    if(services.semantic_context) {
+      services.semantic_context->ensure_class_reference_named_member(
+          *target->class_info, qualified.name);
+    }
     semantic_lookup::MemberFunctionTemplateLookupResult result =
         semantic_lookup::lookup_visible_member_function_templates(*target->class_info,
                                                                   qualified.name);

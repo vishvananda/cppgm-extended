@@ -279,7 +279,8 @@ bool try_argument_conversion(SemanticContext & ctx,
                              const ExprInfo & arg,
                              ExprInfo & out,
                              const ArgumentConversionOptions & options =
-                                 semantic_policy::default_argument_conversion())
+                                 semantic_policy::default_argument_conversion(),
+                             ConversionRank * rank_out = nullptr)
 {
   const auto prepare_class_type =
       [&](const TypePtr & type)
@@ -298,13 +299,17 @@ bool try_argument_conversion(SemanticContext & ctx,
   ConversionRank rank = CR_BAD;
   try
   {
-    return ctx.try_argument_conversion(
+    const bool converted = ctx.try_argument_conversion(
         scope,
         target,
         arg,
         out,
         rank,
         options);
+    if(converted && rank_out) {
+      *rank_out = rank;
+    }
+    return converted;
   }
   catch(const std::logic_error &)
   {
@@ -1243,7 +1248,9 @@ FunctionBinding * find_assignment_operator_for_trait(ClassInfo & info, bool want
 bool assignment_binding_accepts_rhs(SemanticContext & ctx,
                                     Scope & scope,
                                     const FunctionBinding & binding,
-                                    const ExprInfo & rhs)
+                                    const ExprInfo & rhs,
+                                    ValueCategory lhs_category = VC_LVALUE,
+                                    ConversionRank * rank_out = nullptr)
 {
   TypePtr function_type = strip_top_level_cv(binding.type);
   if(!function_type ||
@@ -1251,9 +1258,19 @@ bool assignment_binding_accepts_rhs(SemanticContext & ctx,
      function_type->params.size() != 2) {
     return false;
   }
+  if(!semantic_conversion::ref_qualifier_accepts_implicit_object(
+         binding.ref_qualifier, function_type->params[0], lhs_category)) {
+    return false;
+  }
 
   ExprInfo converted;
-  return try_argument_conversion(ctx, scope, function_type->params[1], rhs, converted);
+  return try_argument_conversion(ctx,
+                                 scope,
+                                 function_type->params[1],
+                                 rhs,
+                                 converted,
+                                 semantic_policy::default_argument_conversion(),
+                                 rank_out);
 }
 
 bool assignment_type_is_nothrow(SemanticContext & ctx,
@@ -1352,7 +1369,8 @@ bool assignment_binding_is_implicitly_nothrow(
 FunctionBinding * find_class_assignment_operator_for_trait(SemanticContext & ctx,
                                                            Scope & scope,
                                                            const TypePtr & target,
-                                                           const ExprInfo & rhs)
+                                                           const ExprInfo & rhs,
+                                                           ValueCategory lhs_category = VC_LVALUE)
 {
   TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
   ClassInfo * info = ctx.complete_class_type(target_base);
@@ -1372,24 +1390,97 @@ FunctionBinding * find_class_assignment_operator_for_trait(SemanticContext & ctx
   semantic_lookup::MemberFunctionTemplateLookupResult template_candidates =
       semantic_lookup::lookup_visible_member_function_templates(*info, operator_name);
 
+  FunctionBinding * best = nullptr;
+  TypePtr best_parameter;
+  ConversionRank best_rank = CR_BAD;
+  bool ambiguous = false;
+  const auto consider_candidate =
+      [&](FunctionBinding * binding) -> void
+      {
+        if(!binding || binding == best) {
+          return;
+        }
+        TypePtr function_type = strip_top_level_cv(binding->type);
+        if(!function_type ||
+           function_type->kind != Type::TK_FUNCTION ||
+           function_type->params.size() != 2) {
+          return;
+        }
+
+        ConversionRank rank = CR_BAD;
+        try
+        {
+          if(!assignment_binding_accepts_rhs(
+                 ctx, scope, *binding, rhs, lhs_category, &rank)) {
+            return;
+          }
+        }
+        catch(const std::logic_error &)
+        {
+          return;
+        }
+
+        const TypePtr parameter = function_type->params[1];
+        if(!best) {
+          best = binding;
+          best_parameter = parameter;
+          best_rank = rank;
+          ambiguous = false;
+          return;
+        }
+
+        int preference = 0;
+        if(rank < best_rank) {
+          preference = -1;
+        } else if(rank > best_rank) {
+          preference = 1;
+        } else {
+          preference = semantic_conversion::compare_reference_binding_preference(
+              parameter, rhs, best_parameter, rhs);
+          if(preference == 0) {
+            preference =
+                semantic_conversion::compare_qualification_conversion_preference(
+                    parameter, rhs, best_parameter, rhs);
+          }
+          if(preference == 0) {
+            preference = semantic_conversion::compare_standard_conversion_preference(
+                parameter, rhs, best_parameter, rhs);
+          }
+          if(preference == 0 &&
+             binding->source_template != best->source_template) {
+            preference = binding->source_template ? 1 : -1;
+          }
+          if(preference == 0 &&
+             binding->ref_qualifier != best->ref_qualifier) {
+            const RefQualifier preferred =
+                lhs_category == VC_LVALUE ? RQ_LVALUE : RQ_RVALUE;
+            if(binding->ref_qualifier == preferred &&
+               best->ref_qualifier == RQ_NONE) {
+              preference = -1;
+            } else if(best->ref_qualifier == preferred &&
+                      binding->ref_qualifier == RQ_NONE) {
+              preference = 1;
+            }
+          }
+        }
+
+        if(preference < 0) {
+          best = binding;
+          best_parameter = parameter;
+          best_rank = rank;
+          ambiguous = false;
+        } else if(preference == 0) {
+          ambiguous = true;
+        }
+      };
+
   for(size_t i = 0; i < candidates.functions.size(); ++i) {
     FunctionBinding * binding = candidates.functions[i];
-    if(!binding || binding->is_deleted) {
-      continue;
-    }
-    try
-    {
-      if(assignment_binding_accepts_rhs(ctx, scope, *binding, rhs)) {
-        return binding;
-      }
-    }
-    catch(const std::logic_error &)
-    {
-    }
+    consider_candidate(binding);
   }
 
   if(template_candidates.templates.empty()) {
-    return nullptr;
+    return ambiguous ? nullptr : best;
   }
 
   const bool has_exact_template_owner =
@@ -1448,20 +1539,9 @@ FunctionBinding * find_class_assignment_operator_for_trait(SemanticContext & ctx
     {
       continue;
     }
-    if(!binding || binding->is_deleted) {
-      continue;
-    }
-    try
-    {
-      if(assignment_binding_accepts_rhs(ctx, scope, *binding, rhs)) {
-        return binding;
-      }
-    }
-    catch(const std::logic_error &)
-    {
-    }
+    consider_candidate(binding);
   }
-  return nullptr;
+  return ambiguous ? nullptr : best;
 }
 
 struct SameClassAssignmentTrait
@@ -1474,7 +1554,8 @@ struct SameClassAssignmentTrait
 SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & ctx,
                                                               Scope & scope,
                                                               const TypePtr & target,
-                                                              const ExprInfo & rhs)
+                                                              const ExprInfo & rhs,
+                                                              ValueCategory lhs_category = VC_LVALUE)
 {
   SameClassAssignmentTrait result;
   TypePtr target_base = strip_top_level_cv(target);
@@ -1500,7 +1581,8 @@ SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & 
   if(rhs.category != VC_LVALUE) {
     ctx.ensure_implicit_move_assignment(*info);
     FunctionBinding * move = find_assignment_operator_for_trait(*info, true);
-    if(move && assignment_binding_accepts_rhs(ctx, scope, *move, rhs)) {
+    if(move && assignment_binding_accepts_rhs(
+                   ctx, scope, *move, rhs, lhs_category)) {
       result.binding = move;
       result.assignable = !move->is_deleted;
       return result;
@@ -1511,10 +1593,12 @@ SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & 
   if(!copy) {
     copy = ctx.ensure_implicit_copy_assignment(*info);
   }
-  if(copy && assignment_binding_accepts_rhs(ctx, scope, *copy, rhs)) {
+  if(copy && assignment_binding_accepts_rhs(
+                 ctx, scope, *copy, rhs, lhs_category)) {
     if(copy->is_deleted) {
       if(FunctionBinding * alternate =
-             find_class_assignment_operator_for_trait(ctx, scope, target, rhs)) {
+             find_class_assignment_operator_for_trait(
+                 ctx, scope, target, rhs, lhs_category)) {
         result.binding = alternate;
         result.assignable = !alternate->is_deleted;
         return result;
@@ -1524,6 +1608,36 @@ SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & 
     result.assignable = !copy->is_deleted;
   }
   return result;
+}
+
+bool prepare_assignment_trait_lhs(SemanticContext & ctx,
+                                  const TypePtr & lhs,
+                                  TypePtr & target,
+                                  ValueCategory & category)
+{
+  TypePtr lhs_base = strip_top_level_cv(lhs);
+  if(!lhs_base) {
+    return false;
+  }
+  if(lhs_base->kind == Type::TK_LVALUE_REFERENCE) {
+    target = lhs_base->inner;
+    category = VC_LVALUE;
+    return true;
+  }
+  if(lhs_base->kind == Type::TK_RVALUE_REFERENCE) {
+    target = lhs_base->inner;
+    category = VC_XVALUE;
+    return true;
+  }
+  if(is_named_class_type(ctx, lhs_base) || is_named_union_type(ctx, lhs_base)) {
+    // declval<T>() is an xvalue for a non-reference class type. Assignment
+    // remains valid when an unqualified or &&-qualified member operator=
+    // accepts that implicit object.
+    target = lhs;
+    category = VC_XVALUE;
+    return true;
+  }
+  return false;
 }
 
 bool assignment_binding_is_trivial(SemanticContext & ctx,
@@ -2918,13 +3032,13 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
   }
 
   if(name == "__is_assignable") {
-    TypePtr lhs_base = strip_top_level_cv(lhs);
-    if(!lhs_base || lhs_base->kind != Type::TK_LVALUE_REFERENCE) {
+    TypePtr target;
+    ValueCategory lhs_category = VC_LVALUE;
+    if(!prepare_assignment_trait_lhs(ctx, lhs, target, lhs_category)) {
       out = 0;
       return true;
     }
 
-    TypePtr target = lhs_base->inner;
     if(is_const_object_type(target)) {
       out = 0;
       return true;
@@ -2948,15 +3062,25 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
     }
 
     SameClassAssignmentTrait class_trait =
-        evaluate_same_class_assignment_trait(ctx, scope, target, rhs_expr);
+        evaluate_same_class_assignment_trait(
+            ctx, scope, target, rhs_expr, lhs_category);
     if(class_trait.known) {
       out = class_trait.assignable ? 1 : 0;
       return true;
     }
 
     if(FunctionBinding * binding =
-           find_class_assignment_operator_for_trait(ctx, scope, target, rhs_expr)) {
+           find_class_assignment_operator_for_trait(
+               ctx, scope, target, rhs_expr, lhs_category)) {
       out = binding->is_deleted ? 0 : 1;
+      return true;
+    }
+
+    TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
+    if(target_base &&
+       (is_named_class_type(ctx, target_base) ||
+        is_named_union_type(ctx, target_base))) {
+      out = 0;
       return true;
     }
 
@@ -2966,13 +3090,13 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
   }
 
   if(name == "__is_nothrow_assignable") {
-    TypePtr lhs_base = strip_top_level_cv(lhs);
-    if(!lhs_base || lhs_base->kind != Type::TK_LVALUE_REFERENCE) {
+    TypePtr target;
+    ValueCategory lhs_category = VC_LVALUE;
+    if(!prepare_assignment_trait_lhs(ctx, lhs, target, lhs_category)) {
       out = 0;
       return true;
     }
 
-    TypePtr target = lhs_base->inner;
     if(is_const_object_type(target)) {
       out = 0;
       return true;
@@ -2996,7 +3120,8 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
     }
 
     SameClassAssignmentTrait class_trait =
-        evaluate_same_class_assignment_trait(ctx, scope, target, rhs_expr);
+        evaluate_same_class_assignment_trait(
+            ctx, scope, target, rhs_expr, lhs_category);
     if(class_trait.known) {
       if(!class_trait.assignable || !class_trait.binding) {
         out = 0;
@@ -3008,9 +3133,22 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
     }
 
     if(FunctionBinding * binding =
-           find_class_assignment_operator_for_trait(ctx, scope, target, rhs_expr)) {
+           find_class_assignment_operator_for_trait(
+               ctx, scope, target, rhs_expr, lhs_category)) {
+      if(binding->is_deleted) {
+        out = 0;
+        return true;
+      }
       std::set<FunctionBinding *> visiting;
       out = function_binding_is_nothrow(ctx, scope, *binding, visiting) ? 1 : 0;
+      return true;
+    }
+
+    TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
+    if(target_base &&
+       (is_named_class_type(ctx, target_base) ||
+        is_named_union_type(ctx, target_base))) {
+      out = 0;
       return true;
     }
 
@@ -3230,13 +3368,13 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
   }
 
   if(name == "__is_trivially_assignable") {
-    TypePtr lhs_base = strip_top_level_cv(lhs);
-    if(!lhs_base || lhs_base->kind != Type::TK_LVALUE_REFERENCE) {
+    TypePtr target;
+    ValueCategory lhs_category = VC_LVALUE;
+    if(!prepare_assignment_trait_lhs(ctx, lhs, target, lhs_category)) {
       out = 0;
       return true;
     }
 
-    TypePtr target = lhs_base->inner;
     if(is_const_object_type(target)) {
       out = 0;
       return true;
@@ -3260,7 +3398,8 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
     }
 
     SameClassAssignmentTrait class_trait =
-        evaluate_same_class_assignment_trait(ctx, scope, target, rhs_expr);
+        evaluate_same_class_assignment_trait(
+            ctx, scope, target, rhs_expr, lhs_category);
     if(class_trait.known) {
       if(!class_trait.assignable || !class_trait.binding) {
         out = 0;

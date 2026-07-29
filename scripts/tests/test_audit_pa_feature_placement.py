@@ -166,6 +166,22 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         self.assertNotIn("support.range_for", audit.detect_features(ordinary))
         self.assertIn("support.range_for", audit.detect_features(range_for))
 
+    def test_nttp_default_reference_expression_is_not_pointer_nttp(self) -> None:
+        default_expression = (
+            "template<class T, bool Value = noexcept(declval<T&>())> "
+            "struct trait;"
+        )
+        pointer_parameter = "template<class T, T *Value> struct pointer_trait;"
+
+        self.assertNotIn(
+            "template.nttp.pointer_member",
+            audit.detect_features(default_expression),
+        )
+        self.assertIn(
+            "template.nttp.pointer_member",
+            audit.detect_features(pointer_parameter),
+        )
+
     def test_lowir_eh_review_reports_hidden_source_to_lowir_output(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)

@@ -963,7 +963,8 @@ void collect_using_declaration(SemanticContext & ctx,
   if(!function_templates.empty()) {
     semantic_scope_mutation::append_unique_function_templates(scope,
                                                               qualified.name,
-                                                              function_templates);
+                                                              function_templates,
+                                                              &node);
   }
   if(!functions.empty() || !function_templates.empty()) {
     return;

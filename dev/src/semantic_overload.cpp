@@ -2291,6 +2291,7 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
   CallSemNode resolved_callee = make_dump_node(CallSemKind::callee, node.children[0].value);
   resolved_callee.semantic_type = make_function(result_type, vector<TypePtr>(), false);
   resolved_callee.value_category = CVC_PRVALUE;
+  resolved_callee.is_declval_callee = true;
   out.node.children.push_back(resolved_callee);
   return true;
 }
@@ -9096,6 +9097,36 @@ bool namespace_function_template_candidate_visible_from_node(
   if(!declaration_node ||
      declaration_node->token_end <= declaration_node->token_start) {
     return true;
+  }
+
+  // A namespace using-declaration introduces the imported template at the
+  // using-declaration's point, not at a token offset from the imported
+  // template's source file. This source location is also stable when the use
+  // node belongs to a deferred body whose token offsets were cloned.
+  for(const Scope * current = lookup_scope; current; current = current->parent) {
+    if(current->function_template_introduction_nodes) {
+      const auto by_name =
+          current->function_template_introduction_nodes->find(decl->name);
+      if(by_name != current->function_template_introduction_nodes->end()) {
+        const auto introduction = by_name->second.find(decl);
+        if(introduction != by_name->second.end() && introduction->second) {
+          const std::string introduction_location =
+              ast_node_start_location(ctx, *introduction->second);
+          const std::string use_location = ast_node_start_location(ctx, *use_node);
+          const ParsedSourceLocation parsed_introduction =
+              parse_source_location(introduction_location);
+          const ParsedSourceLocation parsed_use =
+              parse_source_location(use_location);
+          if(parsed_introduction.valid &&
+             parsed_use.valid &&
+             parsed_introduction.file == parsed_use.file) {
+            return !source_location_is_strictly_later_in_same_file(
+                introduction_location, use_location);
+          }
+          break;
+        }
+      }
+    }
   }
 
   for(const Scope * current = lookup_scope; current; current = current->parent) {
