@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `88 / 147`
-- current cursor: `#89 libs/property_map/test`
-- active compiler frontier: Property Map forced C++11 intake pending; its
+- completed suites: `89 / 147`
+- current cursor: `#90 libs/property_tree/test`
+- active compiler frontier: Property Tree forced C++11 intake pending; its
   metadata declares C++11
 
 ## Baseline Gates
@@ -344,15 +344,16 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 86 | `libs/pool/test` | pass | `(this commit)` | Boost declares C++03. The initial forced C++11 graph isolated exactly three compile failures (`test_pool_alloc`, `test_msvc_mem_leak_detect`, and `test_bug_4960`) in libc++ allocator member-call detection. The final exact forced graph found 6362 targets, updated 114, passed all 12 test actions, and exited successfully; log `/private/tmp/boost-frontier-v2-suite-086-pool-full-final.log`. A timed final characterization completed in 168.28s at 1,059,217,408 B process-tree maximum RSS with zero swaps. | The typed fix admits only static class members in the two libc++ allocator detector evaluators; no spelling or header special case is added. ASan also exposed an independent stale `FunctionBinding *` when a partial reference class was upgraded during leaf-member collection; the shared liveness refresh now reacquires typed candidates after either template instantiation or full reference-member completion. The existing hosted `ostringstream` regression passes under ASan and in 32/32 release-process repetitions. The new PA35 owner is four C++11 source lines, uses a 16-line synthetic system header, and needs no `<type_traits>`. PA35 passes `96/96`; all configured strict comparisons and the PA9-excluded direct-LowIR report pass, the latter at `4176/4176` including PA37 `7/7`. Normal, all eleven individual cache-off modes, and all-off emit byte-identical LowIR. All 23 reparse categories, 20 audit tests, placement/hygiene, warning, and diff gates pass. The frozen-source/51-header gate records -25.65% instructions, -28.04% RSS, and -35.36% footprint. Actual commands use CPPGM plus Homebrew Clang 22; printed `gcc.*` strings are only Boost.Build adapter action labels. |
 | 87 | `libs/preprocessor/test` | pass | `(this commit)` | Boost declares C++03. The initial forced C++11 graph found 814 targets, updated 209 of 211 requested targets, passed every other positive and deliberate-negative action, and isolated one C++ `seq` compile failure plus its downstream skip; log `/private/tmp/boost-frontier-v2-suite-087-preprocessor-intake.log`. The final exact forced graph found 814 targets, updated all 88 requested targets, and passed in 18.16s at 173,760,512 B maximum RSS with zero swaps; log `/private/tmp/boost-frontier-v2-suite-087-preprocessor-full-final.log`. | The ten-line / 260-byte PA4 macro-only reducer retains the two-element deferred-helper shape and its ten-token output matches Clang. PA4 passes `39/39`, the external course PA4 surface passes `31/31`, and its existing tail-helper and indirect-recursion controls remain exact. All configured strict comparisons pass and the PA9-excluded direct-LowIR report passes `4177/4177`, including PA37 `7/7`. All 23 reparse categories, 20 audit tests, warning-clean Clang build, and `git diff --check` pass. The generic placement scanner lexically mistakes the identity macro `REM(x) x` for a C++ cast; this is a known detector false positive, while PA4 is the exact macro-replacement owner and local hygiene is clean. The frozen-source/51-header gate records -25.58% instructions, -27.24% RSS, and -31.71% footprint. Actual commands use CPPGM plus Homebrew Clang 22; `gcc.*` remains only the Boost.Build adapter action label. |
 | 88 | `libs/program_options/test` | pass | `(this commit)` | Boost declares C++11. The initial exact two-job graph found 1610 targets, updated 229, failed eight actions, and skipped 53 targets. The three independent roots were a missing Apple `__DYNAMIC__` predefine in the shared library, transitive base conversion missing during multi-candidate overload screening in `unicode_test`, and the same conversion defect through `std::ostream`/`std::ios_base` in Boost.Timer. The final forced graph finds the same 1610 targets, updates all 181 requested targets, passes static, dylib, no-RTTI, Unicode, and Timer paths, and exits successfully in 261.93s; log `/private/tmp/boost-frontier-v2-suite-088-program-options-full-final.log`. Maximum RSS is 312,500,224 B with zero process swaps. | The overload defect is owned by a 10-line / 259-byte header-free PA19 C++11 reducer with no `<type_traits>`; the saved parent rejects it and Homebrew Clang 22 accepts it. The Apple predefine has a five-line PA34 preprocessor owner. PA19 and PA34 pass `152/152` and `333/333`; all 970 configured strict comparisons and the PA9-excluded broad report's `4179/4179` pass, including PA37 `7/7`. Normal, all eleven individual cache-off modes, and all-off emit byte-identical reducer LowIR at SHA-256 `eb6fc432d34af077066829ef5c48d0d3e9ea925a59d0f8acbe51a380926f4315`. Placement/hygiene is clean, all 23 reparse categories and 23 audit tests pass, and the final Homebrew Clang 22 build is warning-clean. The frozen-source/51-header gate records -25.73% instructions, -27.98% RSS, and -35.55% footprint. Actual host commands use Homebrew Clang 22; `gcc.*` is only the legacy Boost.Build adapter action label. |
+| 89 | `libs/property_map/test` | pass | `(this commit)` | Boost declares C++11. The exact forced two-job graph finds 1025 targets, updates all 49 requested targets, passes all compile, link, runtime, and no-RTTI actions, and exits successfully in 29.77s; log `/private/tmp/boost-frontier-v2-suite-089-property-map-intake.log`. | No compiler or test change is required. The graph peaks at 303,955,968 B maximum RSS with zero swaps. Actual CPPGM host work is pinned to Homebrew Clang 22; printed `gcc.*` strings are only legacy Boost.Build adapter action labels. Since production code and test fixtures are unchanged from the fully validated Program Options commit, broad, strict, audit, and performance gates were not redundantly rerun. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#89 libs/property_map/test`
+- suite: `#90 libs/property_tree/test`
 - focused target: pending first forced intake
-- last closed suite: `#88 libs/program_options/test` (`pass`)
+- last closed suite: `#89 libs/property_map/test` (`pass`)
 - failure phase: pending
 - diagnostic: pending
 - reduced repro: pending
@@ -361,7 +362,7 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 - performance risk: unknown; begin with two workers and sample memory
 - language lane: metadata declares C++11; force the graph under C++11 with
   CPPGM plus Homebrew Clang 22
-- next action: force the full Property Map test graph, classify the first exact
+- next action: force the full Property Tree test graph, classify the first exact
   compiler failure if any, and reduce it to the earliest C++11 owner
 
 ## Fix Ledger
@@ -679,6 +680,15 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Phoenix `bug5968` parameter names in the lazy class-member index | The reference-member name probe recursively descended a function's parameter clause and treated parameter identifiers as class members. Looking up namespace template `slot` while completing `signal_impl` therefore followed a false current-class `slot` hit into a later `connect(..., slot)` declaration and parsed its `garbage_collecting_lock<mutex_type>` parameter before the preceding `mutex_type` typedef had been installed. Declarator name discovery now stops at the parameter-clause boundary, matching the existing structured rule used by pack-parameter analysis. No eager completion, cache, source text, rendered-name recovery, or Boost-specific path is added. | `pa18/tests/general/100-class-template-member-index-ignores-parameter-name.t`, eight code lines / 343 total bytes of header-free C++11 with no `<type_traits>`; PA18:100 is the audited basic class-template owner. The worktree has no patched-Clang witness producer, so only the ordinary LowIR sidecars are checked in and no witness reference is fabricated. | A controlled rollback makes the reducer fail at `lock<mutex_type>` while Homebrew Clang 22 accepts it warning-clean. The two-line Boost-header reducer fails pre-fix at the same undeclared typedef; changing the unrelated parameter name in a temporary header control removes the false hit. The fixed exact `bug5968` target compiles, links, and runs in 29.51s at 692,158,464 B process-tree RSS with zero swaps; the header-only source uses 261,316,608 B. | PA18 passes `241/241`; all 960 configured strict comparisons and the PA9-excluded direct-LowIR report's `4147/4147` pass, including PA37 `7/7`. All 23 text-reparse categories and 14 audit tests pass. Normal, eleven individual cache-off modes, and all-off emit byte-identical LowIR at SHA-256 `25d4e7b6483bcdaa6c45b2e9a870c5faa8e499912011c4a012168e8e8922356b`. The new test has no placement or hygiene finding, and the production unit is warning-clean under Homebrew Clang 22. | -26.22% instructions, -27.14% RSS, and -31.89% footprint; three-run candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-bug5968-parameter-name-candidate-3run.json`; no parent compiler or live project header was measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-28`: Closed Property Map without a compiler change and advanced to
+  Property Tree. The exact forced two-job C++11 graph finds 1025 targets,
+  updates all 49 requested targets, passes every compile, link, runtime, and
+  no-RTTI action, and exits successfully in 29.77s at 303,955,968 B maximum RSS
+  with zero swaps. Actual host work uses Homebrew Clang 22; `gcc.*` remains only
+  the legacy Boost.Build adapter action prefix. Because this is a tracker-only
+  closure immediately after the fully validated Program Options commit, no
+  broad, strict, audit, or performance gate was redundantly rerun.
 
 - `2026-07-28`: Closed the complete Program Options C++11 graph and advanced
   to Property Map. The intake exposed three failures in two compiler areas.
@@ -3927,5 +3937,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/property_map/test
+  ./run-cppgm-b2.sh pch=off -a libs/property_tree/test
 ```
