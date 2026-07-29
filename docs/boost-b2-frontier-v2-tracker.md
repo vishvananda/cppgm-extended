@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `92 / 147`
-- current cursor: `#93 libs/python/test`
-- active compiler frontier: Boost.Python forced C++11 intake pending; its
+- completed suites: `93 / 147`
+- current cursor: `#94 libs/qvm/test`
+- active compiler frontier: Boost.QVM forced C++11 intake pending; its
   metadata declares `"cxxstd": "03"`
 
 ## Baseline Gates
@@ -351,25 +351,27 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 90 | `libs/property_tree/test` | pass | `(this commit)` | Boost declares C++11. The intake isolated three compiler failures: JSON alias-pack overload ordering, Boost.Spirit's dependent qualified-value comparison, and Boost.Foreach layout of an out-of-class nested member definition. The exact final forced two-job graph updates all 86 requested targets and passes every compile, link, runtime, and multi-module action in 230.17s; log `/private/tmp/boost-frontier-v2-property-tree-full-final.log`. Process-tree maximum RSS is 1,430,183,936 B with zero swaps, every child releases, and system swap does not increase. | Three minimal header-free C++11 reducers cover the independent causes at PA18, PA19, and PA22 in 4, 6, and 8 source lines; none uses `<type_traits>`. Controlled rollbacks reproduce each exact failure. PA18/19/22 direct LowIR passes `726/726`; all configured strict comparisons pass; the PA9-excluded broad report passes `4182/4182`, including PA37 `7/7`. All 23 text-reparse categories and 14 audit tests pass, the final Homebrew Clang 22 build is warning-clean, and no trace/debug instrumentation remains. The PA18 and PA22 placement scans retain only unrelated pre-existing rows; the new tests are not listed. The earlier PA27 large-reference audit remains valid: every ref above 5 KiB has a compact source owner, and only the irreducible recursive-VTT lifecycle and explicit diamond-destructor slot-merging refs exceed 10 KiB. The frozen source/51-header gate records -25.68% instructions, -27.75% RSS, and -36.21% footprint. C++ actions use CPPGM built by Homebrew Clang 22 and host actions use explicit Clang paths; `gcc.*` is only the legacy B2 adapter action label. |
 | 91 | `libs/proto/test` | pass | `(this commit)` | Proto has no suite-level `cxxstd` requirement. The exact final four-job forced C++11 graph finds 3,060 targets, updates all 118 requested targets, and passes every compile, link, and runtime action; log `/private/tmp/boost-frontier-v2-suite-091-proto-final-refined-forced.log`. Live monitoring samples the known-heavy `flatten.cpp` child at 958,192 KiB RSS and the concurrent compiler set near 1.37 GiB, with zero throttled pages and unchanged system swap. | Four compact header-free C++11 owners cover pure-virtual destructor classification, class-template entity identity in partial matching, preservation of an enclosing function ellipsis, and the boundary between an enclosing variadic parameter and a nested function-type pack. They are 3, 7, 7, and 8 source lines, use no `<type_traits>`, and have only empty or 106-byte LowIR refs. The structured suffix-ellipsis parser correction also restores the existing PA22 scalar parenthesized pack-expansion test without adding a duplicate reducer. The PA9-excluded direct-LowIR report passes `4186/4186`, including PA37 `7/7`; all 973 configured strict comparisons pass. All 23 text-reparse categories and 14 audit tests pass, PA21/PA22/PA23/PA34 placement and hygiene scans have zero findings, and the Homebrew Clang 22 build is warning-clean. The immutable frozen-source/51-header gate records -25.83% instructions, -28.50% RSS, and -36.42% footprint. Actual C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use explicit Clang paths; printed `gcc.*` strings remain only Boost.Build adapter labels. |
 | 92 | `libs/ptr_container/test` | pass | `(this commit)` | Boost declares C++11. The exact final forced graph updates all 154 requested targets and passes every compile, link, runtime, compile-only, and serialization action; log `/private/tmp/boost-frontier-v2-suite-092-ptr-container-full-final.log`. Live monitoring kept ordinary compiler children below roughly 350 MiB RSS, focused serialization reached about 514 MiB, concurrent compiler RSS remained below roughly 0.9 GiB, every child released, and the host retained 61% free memory with zero throttled pages. | Three minimal header-free C++11 PA22 owners are 5, 7, and 5 source lines (200--324 bytes), use no `<type_traits>`, and have refs of only 13, 357, and 784 bytes. They cover using-introduced base-member implicit-object ranking without losing the real base adjustment, demanded base-specialization typedef instantiation for a function-address NTTP, and structured dependent C-style conversion mangling. PA22 passes `332/332`; the full direct-LowIR report passes `6583/6583`; all configured strict direct comparisons pass. All 23 text-reparse categories and 28 focused audit/performance tests pass, the three new placement/hygiene rows are clean, the Homebrew Clang 22 build is warning-clean, and no trace/debug instrumentation remains. The immutable frozen-source/51-header gate records -25.70% instructions, -28.27% RSS, and -35.75% footprint. Actual C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use explicit Clang paths; printed `gcc.*` strings are only Boost.Build adapter labels. |
+| 93 | `libs/python/test` | pass | `(this commit)` | Boost declares C++03. The exact forced C++11 invocation exits successfully in 2.79s after finding the two configuration targets; log `/private/tmp/boost-frontier-v2-suite-093-python-intake.log`. | Python is not configured in this Boost tree, and the suite Jamfile places all compile/link/runtime tests under `if [ python.configured ]`, so this run contains no compiler test actions and is recorded only as the exact available graph closure. It peaks at 39,522,304 B RSS with zero swaps and zero throttled pages. No repository, validation, or performance work is required after the fully validated Pointer Container commit. Actual paths remain CPPGM plus Homebrew Clang 22; `gcc-cppgm` is only the adapter name. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#93 libs/python/test`
+- suite: `#94 libs/qvm/test`
 - focused target: pending first forced intake
-- last closed suite: `#92 libs/ptr_container/test` (`pass`)
+- last closed suite: `#93 libs/python/test` (`pass`)
 - failure phase: pending
 - diagnostic: pending
 - reduced repro: pending
 - owning PA/cluster: pending first exact compiler failure
 - implementation area: pending typed trace
-- performance risk: historical graph completed quickly; begin with four workers
-  and sample memory
+- performance risk: historical graph is large and long-running; begin with four
+  workers, sample per-process and aggregate memory, and reduce concurrency if
+  multiple heavy units overlap
 - language lane: metadata declares C++03; force the graph under C++11 with
   CPPGM plus Homebrew Clang 22
-- next action: force the full Boost.Python test graph, classify the first exact
+- next action: force the full Boost.QVM test graph, classify the first exact
   compiler failure if any, and reduce it to the earliest C++11 owner
 
 ## Fix Ledger
@@ -697,6 +699,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Phoenix `bug5968` parameter names in the lazy class-member index | The reference-member name probe recursively descended a function's parameter clause and treated parameter identifiers as class members. Looking up namespace template `slot` while completing `signal_impl` therefore followed a false current-class `slot` hit into a later `connect(..., slot)` declaration and parsed its `garbage_collecting_lock<mutex_type>` parameter before the preceding `mutex_type` typedef had been installed. Declarator name discovery now stops at the parameter-clause boundary, matching the existing structured rule used by pack-parameter analysis. No eager completion, cache, source text, rendered-name recovery, or Boost-specific path is added. | `pa18/tests/general/100-class-template-member-index-ignores-parameter-name.t`, eight code lines / 343 total bytes of header-free C++11 with no `<type_traits>`; PA18:100 is the audited basic class-template owner. The worktree has no patched-Clang witness producer, so only the ordinary LowIR sidecars are checked in and no witness reference is fabricated. | A controlled rollback makes the reducer fail at `lock<mutex_type>` while Homebrew Clang 22 accepts it warning-clean. The two-line Boost-header reducer fails pre-fix at the same undeclared typedef; changing the unrelated parameter name in a temporary header control removes the false hit. The fixed exact `bug5968` target compiles, links, and runs in 29.51s at 692,158,464 B process-tree RSS with zero swaps; the header-only source uses 261,316,608 B. | PA18 passes `241/241`; all 960 configured strict comparisons and the PA9-excluded direct-LowIR report's `4147/4147` pass, including PA37 `7/7`. All 23 text-reparse categories and 14 audit tests pass. Normal, eleven individual cache-off modes, and all-off emit byte-identical LowIR at SHA-256 `25d4e7b6483bcdaa6c45b2e9a870c5faa8e499912011c4a012168e8e8922356b`. The new test has no placement or hygiene finding, and the production unit is warning-clean under Homebrew Clang 22. | -26.22% instructions, -27.14% RSS, and -31.89% footprint; three-run candidate-only immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-phoenix-bug5968-parameter-name-candidate-3run.json`; no parent compiler or live project header was measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-28`: Closed the exact available Boost.Python graph without a
+  compiler change and advanced to QVM. Boost.Python declares C++03, but Python
+  is not configured in this Boost tree, and its Jamfile guards every test
+  action with `if [ python.configured ]`. The forced C++11 invocation therefore
+  finds only two configuration targets and exits successfully in 2.79s at
+  39,522,304 B peak RSS with zero swaps and zero throttling. This is recorded
+  explicitly as a configuration-limited closure, not as compiler evidence.
+  No broad or performance gate was redundantly rerun after the fully validated
+  Pointer Container commit. The supplied paths were CPPGM, Homebrew Clang, and
+  Homebrew Clang++; `gcc-cppgm` in the output is only the B2 adapter name.
 
 - `2026-07-28`: Closed the complete Pointer Container C++11 graph and advanced
   to Boost.Python. Three independent typed fixes were required. A
@@ -4013,5 +4026,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/python/test
+  ./run-cppgm-b2.sh pch=off -a libs/qvm/test
 ```
