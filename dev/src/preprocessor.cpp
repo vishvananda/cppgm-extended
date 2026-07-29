@@ -283,6 +283,7 @@ bool should_import_host_predefined_macro(const string & name)
   return name == "__APPLE__" ||
          name == "__APPLE_CC__" ||
          name == "__APPLE_CPP__" ||
+         name == "__DYNAMIC__" ||
          name == "__MACH__" ||
          name == "__linux__" ||
          name == "__unix__" ||

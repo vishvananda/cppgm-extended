@@ -907,6 +907,23 @@ ClassInfo * ensure_complete_class_info(SemanticContext & ctx, const TypePtr & ty
   return ctx.complete_class_type(type);
 }
 
+void ensure_reference_inheritance_graph(SemanticContext & ctx,
+                                        ClassInfo & info,
+                                        set<ClassInfo *> & visited)
+{
+  if(!visited.insert(&info).second) {
+    return;
+  }
+  // Speculative overload screening still needs transitive base paths, but it
+  // must not force full class-member materialization.
+  ctx.ensure_class_reference_type_members(info);
+  for(size_t i = 0; i < info.bases.size(); ++i) {
+    if(info.bases[i].type) {
+      ensure_reference_inheritance_graph(ctx, *info.bases[i].type, visited);
+    }
+  }
+}
+
 ClassInfo * class_info_for_inheritance_conversion(SemanticContext & ctx,
                                                   const TypePtr & type,
                                                   bool materialize)
@@ -929,6 +946,10 @@ ClassInfo * class_info_for_inheritance_conversion(SemanticContext & ctx,
     if(ClassInfo * refreshed = ctx.class_info_for_type(type)) {
       info = refreshed;
     }
+  }
+  if(info) {
+    set<ClassInfo *> visited;
+    ensure_reference_inheritance_graph(ctx, *info, visited);
   }
   return info;
 }
