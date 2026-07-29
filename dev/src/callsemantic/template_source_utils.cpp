@@ -841,6 +841,7 @@ vector<TemplateArgumentSyntax> normalized_template_argument_syntaxes(
   for(size_t i = explicit_count; i < normalized_arg_texts.size(); ++i) {
     TemplateArgumentSyntax argument;
     argument.text = normalized_arg_texts[i];
+    argument.source_defaulted = true;
     if(i < primary_parameters.size() &&
        primary_parameters[i].default_argument) {
       if(primary_parameters[i].kind == TemplateParameterInfo::TP_TYPE &&

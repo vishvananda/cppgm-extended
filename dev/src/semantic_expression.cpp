@@ -8807,11 +8807,13 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
     return result;
   }
   const TypePtr materialization_source =
-      callsem_materialization_source_type(operand.node)
-          ? callsem_materialization_source_type(operand.node)
-          : (callsem_conversion_source_type(operand.node) ?
-                 callsem_conversion_source_type(operand.node) :
-                 operand.type);
+      reinterpret_reference_cast
+          ? remove_reference_type(target_type)
+          : (callsem_materialization_source_type(operand.node)
+                 ? callsem_materialization_source_type(operand.node)
+                 : (callsem_conversion_source_type(operand.node) ?
+                        callsem_conversion_source_type(operand.node) :
+                        operand.type));
   result.node = std::move(operand.node);
   result.node.semantic_type = result.type;
   set_callsem_materialization_source_type(result.node, materialization_source);

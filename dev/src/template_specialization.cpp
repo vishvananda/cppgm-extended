@@ -12039,6 +12039,13 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         if(!actual.type) {
           return false;
         }
+        if(pattern_syntax &&
+           pattern_syntax->source_defaulted &&
+           actual.source_defaulted &&
+           !type_is_dependent(actual.type)) {
+          ++specificity_score;
+          continue;
+        }
         if(direct_parameter &&
            direct_parameter->kind == TemplateParameterInfo::TP_TYPE &&
            pattern_text == direct_parameter->name) {

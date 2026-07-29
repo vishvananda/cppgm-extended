@@ -573,9 +573,13 @@ public:
           throw logic_error("invalid class partial specialization arguments");
         }
         vector<TemplateArgumentSyntax> normalized_arg_syntaxes =
-            normalized_template_argument_syntaxes(*class_template_id,
-                                                  primary->parameters,
-                                                  normalized_arg_texts);
+            normalized_partial_specialization_argument_syntaxes(
+                pattern_scope,
+                *class_template_id,
+                primary->parameters,
+                arg_texts,
+                normalized_arg_texts,
+                primary->declaring_scope);
 
         for(size_t i = 0; i < primary->partial_specializations.size(); ++i) {
           PartialClassTemplateSpecializationDecl & existing =
@@ -3456,9 +3460,13 @@ public:
         partial.parameters = template_parameters;
         partial.arg_texts = normalized_arg_texts;
         partial.arg_syntaxes =
-            normalized_template_argument_syntaxes(*variable_template_id,
-                                                  primary->parameters,
-                                                  normalized_arg_texts);
+            normalized_partial_specialization_argument_syntaxes(
+                pattern_scope,
+                *variable_template_id,
+                primary->parameters,
+                arg_texts,
+                normalized_arg_texts,
+                primary->declaring_scope);
         primary->partial_specializations.push_back(partial);
         return;
       }
@@ -5277,6 +5285,83 @@ private:
   {
     return callbacks.declaration_services->fill_trailing_default_template_argument_texts(
         pattern_scope, parameters, texts, default_argument_scope, out);
+  }
+
+  vector<TemplateArgumentSyntax>
+  normalized_partial_specialization_argument_syntaxes(
+      Scope & pattern_scope,
+      const TemplateIdSyntax & source_syntax,
+      const vector<TemplateParameterInfo> & primary_parameters,
+      const vector<string> & explicit_arg_texts,
+      const vector<string> & normalized_arg_texts,
+      Scope * default_argument_scope)
+  {
+    vector<TemplateArgumentSyntax> out =
+        normalized_template_argument_syntaxes(source_syntax,
+                                              primary_parameters,
+                                              normalized_arg_texts);
+    const size_t explicit_count =
+        min(source_syntax.argument_syntaxes.size(), normalized_arg_texts.size());
+    if(explicit_count >= out.size()) {
+      return out;
+    }
+
+    vector<TemplateArgument> arguments;
+    try {
+      if(!resolve_template_arguments(pattern_scope,
+                                     primary_parameters,
+                                     explicit_arg_texts,
+                                     &source_syntax.argument_syntaxes,
+                                     arguments,
+                                     default_argument_scope) ||
+         arguments.size() != out.size()) {
+        return out;
+      }
+    } catch(const TemplateSubstitutionFailure &) {
+      return out;
+    }
+
+    for(size_t i = explicit_count; i < out.size(); ++i) {
+      if(i >= primary_parameters.size() ||
+         !primary_parameters[i].default_argument ||
+         primary_parameters[i].default_argument->children.empty()) {
+        continue;
+      }
+      const CppAstNode & default_node =
+          primary_parameters[i].default_argument->children[0];
+      vector<TemplateArgument> prefix_arguments(arguments.begin(),
+                                                arguments.begin() + i);
+      CppAstNode substituted;
+      if(primary_parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE) {
+        if(template_argument_semantics::substitute_expression_node_for_template_arguments(
+               pattern_scope,
+               default_node,
+               primary_parameters,
+               prefix_arguments,
+               substituted)) {
+          out[i].expression.reset(new CppAstNode(substituted));
+        }
+      } else if(template_argument_semantics::
+                    substitute_type_id_node_for_template_arguments(
+                        ctx,
+                        pattern_scope,
+                        default_node,
+                        primary_parameters,
+                        prefix_arguments,
+                        substituted)) {
+        if(primary_parameters[i].kind == TemplateParameterInfo::TP_TYPE) {
+          out[i].type_id.reset(new CppAstNode(substituted));
+        }
+        if(const TemplateIdSyntax * template_id =
+               first_template_id_syntax_in_subtree(substituted)) {
+          out[i].template_id.reset(new TemplateIdSyntax(*template_id));
+        }
+      }
+      if(arguments[i].kind == TemplateArgument::TA_TYPE && arguments[i].type) {
+        out[i].resolved_type = arguments[i].type;
+      }
+    }
+    return out;
   }
 
   vector<const CppAstNode *> normalize_default_arguments(

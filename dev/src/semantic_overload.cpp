@@ -9487,33 +9487,84 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
     return false;
   }
 
-  FunctionBinding * match = nullptr;
   vector<FunctionBinding *> matching_overloads;
   for(size_t i = 0; i < overloads.size(); ++i) {
     if(!type_equals(strip_top_level_cv(overloads[i]->type), function_target)) {
       continue;
     }
-    matching_overloads.push_back(overloads[i]);
-    if(match) {
-      ostringstream out;
-      out << "ambiguous overloaded function id";
-      out << " [target " << describe_type(function_target) << "]";
-      out << " [matches ";
-      for(size_t j = 0; j < matching_overloads.size(); ++j) {
-        if(j != 0) {
-          out << "; ";
-        }
-        append_function_candidate(out, ctx, matching_overloads[j]);
+    bool duplicate = false;
+    for(size_t j = 0; j < matching_overloads.size(); ++j) {
+      if(same_function_candidate_entity(overloads[i], matching_overloads[j])) {
+        duplicate = true;
+        break;
       }
-      out << "]";
-      throw logic_error(out.str());
     }
-    match = overloads[i];
+    if(!duplicate) {
+      matching_overloads.push_back(overloads[i]);
+    }
   }
 
-  if(!match) {
+  if(matching_overloads.empty()) {
     return false;
   }
+
+  bool has_non_template_match = false;
+  for(size_t i = 0; i < matching_overloads.size(); ++i) {
+    has_non_template_match =
+        has_non_template_match || !matching_overloads[i]->source_template;
+  }
+
+  vector<FunctionBinding *> preferred_overloads;
+  if(has_non_template_match) {
+    for(size_t i = 0; i < matching_overloads.size(); ++i) {
+      if(!matching_overloads[i]->source_template) {
+        preferred_overloads.push_back(matching_overloads[i]);
+      }
+    }
+  } else {
+    vector<ExprInfo> target_arguments;
+    target_arguments.reserve(function_target->params.size());
+    for(size_t i = 0; i < function_target->params.size(); ++i) {
+      target_arguments.push_back(
+          make_target_parameter_deduction_argument(function_target->params[i]));
+    }
+    for(size_t i = 0; i < matching_overloads.size(); ++i) {
+      bool less_specialized = false;
+      for(size_t j = 0; j < matching_overloads.size(); ++j) {
+        if(i == j) {
+          continue;
+        }
+        if(compare_resolved_function_template_partial_order(
+               ctx,
+               matching_overloads[j],
+               target_arguments,
+               matching_overloads[i]) < 0) {
+          less_specialized = true;
+          break;
+        }
+      }
+      if(!less_specialized) {
+        preferred_overloads.push_back(matching_overloads[i]);
+      }
+    }
+  }
+
+  if(preferred_overloads.size() != 1) {
+    ostringstream message;
+    message << "ambiguous overloaded function id";
+    message << " [target " << describe_type(function_target) << "]";
+    message << " [matches ";
+    for(size_t i = 0; i < preferred_overloads.size(); ++i) {
+      if(i != 0) {
+        message << "; ";
+      }
+      append_function_candidate(message, ctx, preferred_overloads[i]);
+    }
+    message << "]";
+    throw logic_error(message.str());
+  }
+
+  FunctionBinding * match = preferred_overloads[0];
 
   match = require_output_definition ?
       semantic_template_function::acquire_function_definition_binding(ctx, match, scope) :
@@ -9823,11 +9874,36 @@ ExprInfo make_function_id_expr(SemanticContext & ctx, FunctionBinding & binding)
   return out;
 }
 
+ExprInfo make_function_pointer_id_expr(SemanticContext & ctx,
+                                       const CppAstNode & unary_node,
+                                       FunctionBinding & binding)
+{
+  ExprInfo function = make_function_id_expr(ctx, binding);
+  ExprInfo out;
+  out.type = make_pointer(remove_reference_type(function.type));
+  out.category = VC_PRVALUE;
+  out.node = make_dump_node(CallSemKind::unary_expression, "&");
+  set_dump_token(out.node, unary_node);
+  out.node.children.push_back(std::move(function.node));
+  ctx.set_expr_info_metadata(out, out.type, out.category);
+  return out;
+}
+
 bool collect_overloaded_function_id_argument_options(SemanticContext & ctx,
                                                      Scope & scope,
-                                                     const CppAstNode & id_node,
+                                                     const CppAstNode & argument_node,
                                                      vector<ExprInfo> & out)
 {
+  const bool take_address =
+      argument_node.kind == CppAstKind::unary_expression &&
+      node_has_simple_type(argument_node, OP_AMP) &&
+      argument_node.children.size() == 1 &&
+      argument_node.children[0].kind == CppAstKind::id_expression;
+  if(argument_node.kind != CppAstKind::id_expression && !take_address) {
+    return false;
+  }
+  const CppAstNode & id_node =
+      take_address ? argument_node.children[0] : argument_node;
   if(lookup_id_expression_value_binding_for_call(ctx, scope, id_node)) {
     return false;
   }
@@ -9863,7 +9939,10 @@ bool collect_overloaded_function_id_argument_options(SemanticContext & ctx,
     if(!overloads[i]) {
       continue;
     }
-    out.push_back(make_function_id_expr(ctx, *overloads[i]));
+    out.push_back(take_address ?
+                      make_function_pointer_id_expr(
+                          ctx, argument_node, *overloads[i]) :
+                      make_function_id_expr(ctx, *overloads[i]));
   }
   return !out.empty();
 }
@@ -10213,8 +10292,7 @@ void append_function_template_call_candidates_impl(
                                                     TypePtr();
       vector<ExprInfo> overload_options;
       try {
-        if(arg_nodes[source_arg_index]->kind == CppAstKind::id_expression &&
-           target_function_type(target) &&
+        if(target_function_type(target) &&
            collect_overloaded_function_id_argument_options(ctx,
                                                            argument_scope,
                                                            *arg_nodes[source_arg_index],

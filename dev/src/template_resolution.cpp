@@ -16665,9 +16665,17 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
       TemplateArgument actual_bound_argument;
       actual_bound_argument.kind = TemplateArgument::TA_VALUE;
       actual_bound_argument.type = make_fundamental(FT_INT);
-      actual_bound_argument.value = static_cast<long long>(actual_base->bound);
-      if(!actual_base->has_bound ||
-         !record_deduced_non_type_argument(parameters,
+      if(actual_base->has_bound) {
+        actual_bound_argument.value = static_cast<long long>(actual_base->bound);
+      } else if(partial_top_level_cv_deduction &&
+                !actual_base->bound_text.empty()) {
+        actual_bound_argument.text = actual_base->bound_text;
+        actual_bound_argument.dependent = true;
+        actual_bound_argument.partial_order_placeholder = true;
+      } else {
+        return false;
+      }
+      if(!record_deduced_non_type_argument(parameters,
                                            pattern_base->bound_text,
                                            actual_bound_argument,
                                            deduced_values)) {

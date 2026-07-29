@@ -39,6 +39,7 @@ struct TemplateArgumentSyntax
   std::string source_text;
   bool pack_expansion = false;
   bool dependent = false;
+  bool source_defaulted = false;
   bool has_source_token_start = false;
   std::size_t source_token_start = 0;
   uint32_t source_location_id = 0;
