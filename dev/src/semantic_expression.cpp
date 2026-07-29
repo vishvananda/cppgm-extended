@@ -8034,6 +8034,42 @@ ExprInfo analyze_subscript_expression(SemanticContext & ctx,
       base_type && is_integral_or_unscoped_enum_type(base_type);
   bool index_is_subscript_index =
       index_type && is_integral_or_unscoped_enum_type(index_type);
+  const auto try_convert_subscript_index =
+      [&](ExprInfo & operand, bool & is_subscript_index) -> bool
+      {
+        if(is_subscript_index) {
+          return true;
+        }
+        if(complete_class_type_for_lookup(ctx, value_conversion_type(operand)) == nullptr) {
+          return false;
+        }
+
+        ExprInfo converted;
+        ConversionRank rank = CR_BAD;
+        if(!ctx.try_argument_conversion(scope,
+                                        make_fundamental(FT_LONG_INT),
+                                        operand,
+                                        converted,
+                                        rank,
+                                        semantic_policy::default_argument_conversion()) ||
+           !is_integral_or_unscoped_enum_type(value_conversion_type(converted))) {
+          return false;
+        }
+        operand = converted;
+        is_subscript_index = true;
+        return true;
+      };
+
+  if(base_pointer_type &&
+     !index_is_subscript_index &&
+     try_convert_subscript_index(index, index_is_subscript_index)) {
+    index_type = value_conversion_type(index);
+  }
+  if(index_pointer_type &&
+     !base_is_subscript_index &&
+     try_convert_subscript_index(base, base_is_subscript_index)) {
+    base_type = value_conversion_type(base);
+  }
   if(!base_pointer_type && index_is_subscript_index) {
     ExprInfo converted_base;
     TypePtr converted_pointer_type;

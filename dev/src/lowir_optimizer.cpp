@@ -1876,6 +1876,14 @@ bool rewrite_instruction_operands(const ValueEnvironment & environment,
                                                  &instruction,
                                                  fallback_debug_location,
                                                  track_debug_locations);
+      for(size_t i = 0; i + 1 < instruction.args.size(); i += 2) {
+        changed |= rewrite_operand_from_environment(environment,
+                                                   debug_locations,
+                                                   instruction.args[i],
+                                                   &instruction,
+                                                   fallback_debug_location,
+                                                   track_debug_locations);
+      }
       break;
     case lir::Instruction::IK_RETURN:
       if(instruction.type.text != "void") {
@@ -2007,8 +2015,14 @@ bool rewrite_instruction_operands_no_debug(const ValueEnvironment & environment,
       }
       break;
     case lir::Instruction::IK_BRANCH:
+      changed |= rewrite_operand_from_environment_no_debug(environment, instruction.first);
+      break;
     case lir::Instruction::IK_SWITCH:
       changed |= rewrite_operand_from_environment_no_debug(environment, instruction.first);
+      for(size_t i = 0; i + 1 < instruction.args.size(); i += 2) {
+        changed |= rewrite_operand_from_environment_no_debug(environment,
+                                                             instruction.args[i]);
+      }
       break;
     case lir::Instruction::IK_RETURN:
       if(instruction.type.text != "void") {
@@ -3434,6 +3448,9 @@ TempUseList instruction_temp_uses(const lir::Instruction & instruction)
       break;
     case lir::Instruction::IK_SWITCH:
       collect_temp_uses(instruction.first, out);
+      for(size_t i = 0; i + 1 < instruction.args.size(); i += 2) {
+        collect_temp_uses(instruction.args[i], out);
+      }
       break;
     case lir::Instruction::IK_RETURN:
       if(instruction.type.text != "void") {

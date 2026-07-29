@@ -713,11 +713,17 @@ void Macroizer::macro_start(const string & id)
   next_macro.functional = false;
   next_macro.replacement_has_join = false;
   next_macro.replacement_has_stringize = false;
+  next_macro.defined_on_command_line = false;
 }
 
 void Macroizer::macro_set_functional()
 {
   next_macro.functional = true;
+}
+
+void Macroizer::macro_set_command_line()
+{
+  next_macro.defined_on_command_line = true;
 }
 
 void Macroizer::macro_add_param(const string & id)
@@ -797,8 +803,10 @@ void Macroizer::macro_finish()
     if(existing->second.functional != next_macro.functional ||
        existing->second.tokens != next_macro.tokens ||
        existing->second.params != next_macro.params) {
-      if(existing->second.defined_in_system_header &&
-         next_macro.defined_in_system_header) {
+      if(existing->second.defined_on_command_line ||
+         next_macro.defined_on_command_line ||
+         (existing->second.defined_in_system_header &&
+          next_macro.defined_in_system_header)) {
         existing->second = next_macro;
       } else {
         throw logic_error(string("Illegal redefinition of macro ") +
@@ -817,6 +825,7 @@ void Macroizer::macro_finish()
   next_macro.functional = false;
   next_macro.replacement_has_join = false;
   next_macro.replacement_has_stringize = false;
+  next_macro.defined_on_command_line = false;
 }
 
 void Macroizer::macro_add(const string & id,

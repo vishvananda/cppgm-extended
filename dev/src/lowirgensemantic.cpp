@@ -15540,12 +15540,13 @@ private:
           emit_temp_assignment("i64",
                                string("load i64 ") +
                                    callsem_local_static_guard_symbol(action));
-      const string initialized =
-          emit_temp_assignment("i64", string("cmp ne i64 ") + guard_value + ", 0");
-      terminate("branch " + initialized + ", " + lowir_block_name(run_label) + ", " +
+      const string owns_destruction =
+          emit_temp_assignment("i64", string("cmp eq i64 ") + guard_value + ", 1");
+      terminate("branch " + owns_destruction + ", " + lowir_block_name(run_label) + ", " +
                 lowir_block_name(done_label));
       start_block(run_label);
       emit_rvalue(action.children[0]);
+      emit_line("store i64 2, " + callsem_local_static_guard_symbol(action));
       terminate("jump " + lowir_block_name(done_label));
       start_block(done_label);
       return;

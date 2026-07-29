@@ -41,6 +41,7 @@ struct Macroizer
 
   void macro_start(const std::string & id);
   void macro_set_functional();
+  void macro_set_command_line();
   void macro_add_param(const std::string & id);
   void macro_add_repl(const EPPTokenType type,
                       const std::string & data = std::string());
@@ -105,6 +106,7 @@ protected:
       functional(false),
       replacement_has_join(false),
       replacement_has_stringize(false),
+      defined_on_command_line(false),
       defined_in_system_header(false)
     {};
     std::unordered_map<std::string, std::size_t> param_indices;
@@ -114,6 +116,7 @@ protected:
     bool functional;
     bool replacement_has_join;
     bool replacement_has_stringize;
+    bool defined_on_command_line;
     bool defined_in_system_header;
   };
 

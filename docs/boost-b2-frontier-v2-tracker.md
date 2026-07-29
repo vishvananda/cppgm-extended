@@ -13,11 +13,12 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `99 / 147`
-- current cursor: `#100 libs/regex/test`
-- active compiler frontier: Boost.Rational passes unchanged under the forced
-  C++11 lane and C++17-only Boost.Redis is skipped by policy; Boost.Regex is
-  the next ordered suite and declares `"cxxstd": "11"`
+- completed suites: `100 / 147`
+- current cursor: `#101 libs/safe_numerics/test`
+- active compiler frontier: Boost.Regex passes its complete forced C++11 graph;
+  Boost.SafeNumerics is next and declares `"cxxstd": "14"`, so it is pending
+  the established unsupported-language skip before the cursor advances to
+  C++11 Boost.Scope
 
 ## Baseline Gates
 
@@ -363,28 +364,25 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 97 | `libs/ratio/test` | pass | `(no compiler change)` | Boost declares C++11. The exact forced four-job `pch=off` graph finds 799 targets, updates all 178 requested targets, passes 20 positive compile/link/runtime tests, handles all 10 deliberate compile failures as failed-as-expected, and exits successfully in 18.45s; log `/private/tmp/boost-frontier-v2-suite-097-ratio-intake.log`. | No compiler or test change is required. The graph peaks at 197,287,936 B maximum RSS with zero swaps. Actual C++ actions invoke CPPGM and host actions use explicitly pinned Homebrew Clang 22 paths; printed `gcc.*` strings are only legacy Boost.Build adapter labels. Since production code and test fixtures are unchanged from the fully validated Range commit, broad, strict, audit, and performance gates were not redundantly rerun. |
 | 98 | `libs/rational/test` | pass | `(no compiler change)` | Boost declares C++11. The exact forced four-job `pch=off` graph finds 2296 targets, updates all 126 requested targets, passes `rational_example`, `constexpr_test`, `rational_test`, and `expected_compile_12`, handles all 11 deliberate compile failures as failed-as-expected, and exits successfully in 90.25s; log `/private/tmp/boost-frontier-v2-suite-098-rational-intake.log`. | No compiler or test change is required. The graph peaks at 899,088,384 B maximum RSS while four independent compiler children overlap, every child releases, throttled pages remain zero, and process swaps remain zero. Actual paths are CPPGM plus explicitly pinned Homebrew Clang 22; `gcc.*` remains only the adapter action label. Validation remains inherited from the unchanged Range commit. |
 | 99 | `libs/redis/test` | skipped-language | `(no compiler change)` | Boost 1.91 declares `"cxxstd": "17"` in `libs/redis/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the frontier language policy, no graph was run and no compiler work is inferred from the historical passing result. The cursor advances directly to C++11 Boost.Regex. |
+| 100 | `libs/regex/test` | pass | `(this commit)` | The final exact forced four-job C++11 `pch=off` graph finds 10,046 targets, rebuilds all 380 requested targets, passes every compile, link, runtime, no-cache, no-EH, concept, Unicode, issue, and example action, and exits successfully in 820.95s; log `/private/tmp/boost-frontier-v2-suite-100-regex-final-authoritative.log`. Maximum RSS is 1,038,413,824 B with zero process swaps, zero throttled pages, and unchanged system swap. | Seven typed corrections close the graph: command-line macro replacement, inherited function-pointer surrogate fallback, built-in subscript conversion, scoped overload-candidate lifetime across class reset, constant local-static member-pointer arrays, one-time ODR local-static destruction, and switch-case operand propagation. Five new reducers are 2--11 C++11 lines, none uses `<type_traits>`, and the member-pointer owner is at the exact PA26:300 cluster. The PA9-excluded direct-LowIR report passes `4215/4215`, including PA37 object roundtrips `7/7`; all 973 strict comparisons pass. Normal, ten individual cache-off modes, and all-off are byte-identical for the semantic reducers. All 23 text-reparse categories and 14 audit tests pass, new placement/hygiene is clean, the complete PA27 large-ref review remains valid, and the forced Homebrew Clang 22 build is warning-clean. Three existing LowIR refs change only to remove redundant dynamic guards from data proven constant-initialized. The immutable frozen-source/51-header gate records -25.44% instructions, -27.63% RSS, and -35.89% footprint in `/private/tmp/cppgm-boost-frontier-v2-regex-final.json`. Actual C++ actions invoke CPPGM and host actions use explicitly pinned Homebrew Clang 22 paths; `gcc.*` is only the legacy B2 adapter action label. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#100 libs/regex/test`
-- focused target: exact forced suite intake
-- last closed suite: `#99 libs/redis/test` (`skipped-language`)
-- failure phase: none known before intake
-- diagnostic: none yet
-- reduced repro: none yet
-- owning PA/cluster: to be determined only if the exact graph exposes a
-  compiler failure
-- implementation area: to be determined from the first typed failure
-- performance risk: Rational peaked at 899,088,384 B maximum child RSS during
-  four-way overlap with zero swaps; retain four-way intake while monitoring
-  every compiler child and serialize only if Regex exposes a known-heavy TU
-- language lane: Boost.Regex declares C++11; run it in CPPGM's supported C++11
-  lane plus explicitly pinned Homebrew Clang 22 host tools
-- next action: run the exact forced four-job `pch=off` Boost.Regex graph and
-  record the first real compiler failure or close the suite
+- suite: `#101 libs/safe_numerics/test`
+- focused target: suite metadata language gate
+- last closed suite: `#100 libs/regex/test` (`pass`)
+- failure phase: unsupported source-language requirement
+- diagnostic: Boost.SafeNumerics declares `"cxxstd": "14"`
+- reduced repro: not applicable
+- owning PA/cluster: not applicable
+- implementation area: no compiler change; apply the established language skip
+- performance risk: none; no C++14 graph will be run
+- language lane: CPPGM remains C++11-only outside hosted-library compatibility
+- next action: record suite 101 as `skipped-language`, then advance to C++11
+  `#102 libs/scope/test`
 
 ## Fix Ledger
 
@@ -393,6 +391,13 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | Regex `regex_timer` command-line macro replacement | A macro introduced by `-D` was indistinguishable from an ordinary source definition, so the source's intentional replacement was treated as a fatal conflicting redefinition. Macro state now retains command-line provenance and permits the first source replacement to install the source definition; later source redefinitions keep the ordinary diagnostic rule. | `pa29/tests/general/100-command-line-macro-source-redefinition.t.1`, two C++11 lines | The intake fails on `BOOST_TIMER_ENABLE_DEPRECATED`, which is supplied both by the Jamfile and the example source. Homebrew Clang diagnoses but continues, while the saved CPPGM aborts preprocessing. | PA29, the exact timer target, complete Regex graph, broad/strict reports, Clang C++11 control, placement, and audit gates pass. | measured with the complete Regex closure | `(this commit)` |
+| fixed | Regex inherited conversion-function surrogate | Callable-object analysis tried conversion-to-function-pointer surrogates only when no `operator()` candidates existed. An inherited surrogate was therefore lost when an arity-incompatible `operator()` was present, although that candidate produced no viable match. The typed surrogate resolver is retained and retried only after the ordinary callable set is proven nonviable. | `pa16/tests/general/400-inherited-surrogate-after-nonviable-call-operator.t`, five lines / 239 bytes, header-free C++11 | The saved compiler rejects a two-argument call because the derived one-argument `operator()` suppresses the inherited function-pointer conversion; Homebrew Clang selects the surrogate. | PA16, cache parity, strict C++11 Clang control, the Regex runtime families, and all packaging gates pass. | measured with the complete Regex closure | `(this commit)` |
+| fixed | Regex built-in array subscript class conversion | Built-in subscript recognition accepted an already integral index but did not try the existing typed user conversion when the index was a class. It now converts a class operand to the compiler's canonical `long` index target, then requires the converted result to be integral or an unscoped enum; both `pointer[class]` and `class[pointer]` use the same rule. | `pa16/tests/general/400-class-conversion-array-subscript.t`, four lines / 134 bytes, header-free C++11 | The saved compiler rejects `values[index()]`; Homebrew Clang and the fixed compiler select the built-in subscript after `index::operator long()`. | PA16, all cache modes, strict C++11 Clang control, complete Regex, broad, strict, placement, and audit gates pass. | measured with the complete Regex closure | `(this commit)` |
+| fixed | Regex concept-check overload candidates across class reset | Overload candidate vectors borrow raw `FunctionBinding*` values. Reference-class completion removes those bindings from every registry before typed refresh, but immediate deallocation allowed allocator address reuse to make an unrelated new binding look live at the stale address. Candidate selection now opens a nestable borrow epoch: discarded bindings leave all semantic indexes immediately but their storage is reclaimed only when the outermost constructor/call/assignment selection exits. Signature-only template instantiation also avoids unnecessary owner-definition materialization, and demanded owner materialization asserts that its binding remains live. No semantic data is retained for the TU. | Existing `pa22/tests/spec/300-member-overload-set-survives-class-completion.t` covers the typed class-reset boundary; the allocator-layout-sensitive proof is the exact parallel Regex `concept_check` and `standalone_concept_check` pair | Repeated four-job runs intermittently resolved `match_results::format` through unrelated libc++ members at reused addresses. Exact tracing recorded 21 class resets and no refresh attempts after the borrow fix, proving address reuse—not missing lookup or a cache—was the remaining defect. | Both concept targets pass together and in the full forced graph. All cache modes, 973 strict comparisons, `4215/4215` broad direct LowIR, reparse/audit, warning, memory, and perf gates pass. | the final graph peaks at 1,038,413,824 B; frozen RSS improves 27.63% | `(this commit)` |
+| fixed | Regex `issue153` constant local-static member-pointer array | Statement analysis attempted constant evaluation for every automatic initializer before checking storage duration, then represented only scalar results. Constant initialization now runs only for static, non-class objects and preserves the existing typed `ConstexprValue`, allowing member-function-pointer arrays to be emitted directly as static data without polluting automatic-expression semantic state. | `pa26/tests/general/300-local-static-member-function-pointer-array-constant-init.t`, seven lines / 181 bytes with a 37-line ref; exact PA26:300 owner and no `<type_traits>` | The old path dynamically guarded a statically constant member-pointer table; the intermediate broad evaluator also corrupted unrelated automatic masks and made Regex runtime tests fail. The narrowed typed path passes both the reducer and `issue153`. | PA26 passes `87/87`, placement/hygiene is zero, cache parity and Clang C++11 controls pass, and the broad/strict/Regex gates are clean. The PA14/PA20 ref changes are principled removal of redundant dynamic stores and guards. | measured with the complete Regex closure | `(this commit)` |
+| fixed | Regex ODR local-static destructor ownership | Each coalesced inline-local-static destructor action treated any nonzero guard as permission to destroy, so duplicate actions from separate translation units could destroy the single object more than once. The existing guard now has explicit states: `0` uninitialized, `1` owns a live object, and `2` destruction already claimed. Only the `1` transition runs the destructor. | Existing PA32 inline-header coalescing test is strengthened with a nontrivial object and an abort-on-second-destruction counter | Regex regressions aborted after otherwise successful test execution; the strengthened two-TU owner reproduces duplicate destruction before the fix and exits cleanly after it. | PA32, ordinary/threaded/no-cache/no-EH Regex regressions, broad direct LowIR, and memory gates pass. | measured with the complete Regex closure | `(this commit)` |
+| fixed | Regex optimized switch case operands | LowIR operand rewriting and temporary-use collection handled a switch condition but ignored its case values. A folded temporary case could therefore remain referenced after its definition was removed. Both debug-aware and no-debug rewriting now visit every case-value/label pair, and liveness counts those values as uses. | `pa37/tests/o2/100-switch-case-value-propagation.t`, 11 LowIR lines | Optimizing a switch whose case is `%negative = unary neg i32 1` removed `%negative` but left the switch reference unresolved. | The focused O2 ref becomes `-1`, PA37 object roundtrips pass `7/7`, and the full direct report and Regex optimized/runtime surfaces pass. | measured with the complete Regex closure | `(this commit)` |
 | fixed | Range/qualified `combine` leaf overload | Qualified namespace function bindings followed using-directives, but the leaf template lookup used only direct declarations. It could therefore reuse an existing const specialization without seeing the mutable template needed to form the better specialization. Leaf lookup now uses the structured namespace lookup surface, including using-directives and inline namespaces. | `pa22/tests/spec/300-dependent-decltype-pack-overload-replay.t`, 16 lines / 545 bytes of header-free C++11 with a 1906-byte ref and no `<type_traits>` | The exact Boost.Range `combine` target failed before the lookup change and passes after it. The earlier cache and retained-memory hypotheses did not explain the missing specialization. | Focused `combine`, the full Range graph, strict direct comparison, the PA9-excluded broad report, and all cache-off modes pass. | measured with the complete Range closure; candidate-only frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-range-final-candidate.json` | `(this commit)` |
 | fixed | Range/dependent `decltype` replay | Pack expansion cloned semantic types cached by an earlier instantiation, so a later element could inherit stale overload results. Dependent `decltype` evaluation now clones and clears cached semantic state, pack-expanded operands are refreshed per instantiation, and substituted qualifier sidecars retain their already-resolved typed identity. | `pa22/tests/spec/300-dependent-decltype-pack-overload-replay.t`, shared minimal owner above | Controlled tracing localized the stale semantic payload; the final algorithmic fix removes all tracing and does not bypass leaf evaluation. | Normal plus eleven individual cache-off modes plus all-off are byte-identical; strict witness and LowIR comparisons remain exact. | included in the Range report above | `(this commit)` |
 | fixed | Range/by-value overload viability | Ordinary selected calls and dependent leaf calls ranked a class by-value parameter without confirming that the required copy construction was valid; builtin convertibility also treated abstract class destinations like scalar conversion. Selected calls now validate typed construction/abstractness, leaf calls reuse `__is_constructible`, and builtin class conversion uses non-explicit constructor selection. | `pa17/tests/general/100-abstract-class-by-value-argument-bad.t` and `pa22/tests/spec/300-dependent-decltype-by-value-abstract-sfinae.t`, 1 and 7 source lines with empty/106-byte refs | The saved compiler admitted the abstract by-value call and selected the invalid dependent probe; Homebrew Clang rejects/substitutes them as expected. | PA17/PA22, strict direct comparison, cache parity, and the broad report pass. The PA23/PA26 ref changes are only deterministic definition-order movement caused by earlier constructor discovery; relaxed comparison proves semantic equivalence. | included in the Range report above | `(this commit)` |
@@ -4171,6 +4176,8 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
+# Record suite 101 as skipped-language from its checked-in `"cxxstd": "14"`
+# metadata, then run suite 102.
 /usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=4 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
@@ -4178,5 +4185,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/regex/test
+  ./run-cppgm-b2.sh pch=off -a libs/scope/test
 ```

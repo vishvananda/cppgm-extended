@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -1980,6 +1981,24 @@ struct FunctionCandidateRefreshKey
   bool has_source_template = false;
   const CppAstNode * source_template_declaration = nullptr;
   std::string template_instantiation_key;
+};
+
+class ScopedFunctionBindingCandidateBorrow
+{
+public:
+  explicit ScopedFunctionBindingCandidateBorrow(SemanticContext & ctx)
+    : ctx_(ctx)
+  {
+    ctx_.begin_function_binding_candidate_borrow();
+  }
+
+  ~ScopedFunctionBindingCandidateBorrow()
+  {
+    ctx_.end_function_binding_candidate_borrow();
+  }
+
+private:
+  SemanticContext & ctx_;
 };
 
 FunctionCandidateRefreshKey function_candidate_refresh_key(
@@ -12088,6 +12107,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
                                      std::vector<ExprInfo> & args_out,
                                      const ConstructorSelectionOptions & options)
 {
+  ScopedFunctionBindingCandidateBorrow binding_borrow(ctx);
   ScopedCallSemConstructionPath construction_path("overload.select-constructor");
   ClassInfo * target_info_ptr = canonicalize_constructor_target(ctx, scope, info);
   target_info_ptr = complete_constructor_target_if_ready(ctx, *target_info_ptr);
@@ -12741,6 +12761,7 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
                                                   const CppAstNode & node,
                                                   const ExprInfo & lhs)
 {
+  ScopedFunctionBindingCandidateBorrow binding_borrow(ctx);
   ScopedCallSemConstructionPath construction_path("overload.assignment-expression");
   const bool instantiate_bodies =
       ctx.current_analysis_policy().instantiate_function_bodies;
@@ -13249,6 +13270,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                  const CppAstNode & node,
                                  const CallAnalysisOptions & options)
 {
+  ScopedFunctionBindingCandidateBorrow binding_borrow(ctx);
   ScopedCallSemConstructionPath construction_path("overload.call-expression");
   const bool instantiate_bodies = options.instantiate_bodies;
   const CallAnalysisHints * hints = options.hints;
@@ -13380,6 +13402,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
 
   bool explicit_member_call = lookup_callee_node.kind == CppAstKind::member_expression;
   bool callable_object_call = false;
+  std::function<bool(ExprInfo &)> callable_object_surrogate_fallback;
   ExprInfo implicit_object_arg;
   ValueCategory implicit_object_category = VC_LVALUE;
   vector<FunctionBinding *> candidates;
@@ -13676,9 +13699,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                 CallAnalysisOptions(instantiate_bodies, &callable_template_hints),
                 &direct_function_source_drops);
           }
-          if(candidates.empty()) {
-            const auto try_resolve_conversion_function_pointer_call =
-                [&]() -> bool
+          const auto try_resolve_conversion_function_pointer_call =
+              [&, callee_expr, callable_class](ExprInfo & surrogate_result) -> bool
             {
               vector<CandidateMatch> surrogate_matches;
               vector<TypePtr> surrogate_callee_types;
@@ -13905,14 +13927,15 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                                             result_category)) {
                 throw logic_error("invalid conversion-function-pointer call result");
               }
-              direct_result = make_call_result(ctx,
-                                               selected_function_type->inner,
-                                               result_category,
-                                               std::move(converted_callee.node),
-                                               std::move(selected_match.call_args));
+              surrogate_result = make_call_result(ctx,
+                                                  selected_function_type->inner,
+                                                  result_category,
+                                                  std::move(converted_callee.node),
+                                                  std::move(selected_match.call_args));
               return true;
             };
-            if(try_resolve_conversion_function_pointer_call()) {
+          if(candidates.empty()) {
+            if(try_resolve_conversion_function_pointer_call(direct_result)) {
               return true;
             }
             ostringstream out;
@@ -14007,6 +14030,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
             out << "]";
             throw logic_error(out.str());
           }
+          callable_object_surrogate_fallback =
+              try_resolve_conversion_function_pointer_call;
           {
             ScopedCallSemConstructionPath construction_path(
                 "overload.callable-object-implicit-object");
@@ -15453,6 +15478,12 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     }
 
     if(matches.empty()) {
+      if(callable_object_surrogate_fallback) {
+        ExprInfo surrogate_result;
+        if(callable_object_surrogate_fallback(surrogate_result)) {
+          return surrogate_result;
+        }
+      }
       ostringstream outmsg;
       outmsg << "no viable overload";
       if(explicit_member_call) {

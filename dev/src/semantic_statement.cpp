@@ -2122,14 +2122,20 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
           ctx.complete_class_type(static_storage_base);
       const bool is_thread_local =
           decl_spec_contains_token(prepared_specifiers.resolved_specifiers, KW_THREAD_LOCAL);
-      long long constexpr_static_value = 0;
-      const bool has_constant_static_initializer =
-          initializer && ctx.evaluate_initializer_constant(scope, *initializer,
-                                                           constexpr_static_value);
       const bool has_static_storage_specifier =
           is_thread_local ||
           decl_spec_contains_token(prepared_specifiers.resolved_specifiers, KW_STATIC);
       const bool use_global_static_storage = has_static_storage_specifier;
+      constant_eval::ConstexprValue constexpr_static_value;
+      const bool has_constant_static_initializer =
+          use_global_static_storage &&
+          initializer &&
+          !has_class_lifetime &&
+          !has_automatic_array_class_lifetime &&
+          ctx.evaluate_initializer_constant_value(scope,
+                                                  *initializer,
+                                                  type,
+                                                  constexpr_static_value);
       const symbol_linkage::SymbolLinkage local_static_linkage =
           use_global_static_storage ? local_static_storage_linkage(scope) :
                                       symbol_linkage::SL_INTERNAL;

@@ -215,6 +215,8 @@ public:
   virtual semantic_metrics::AnalyzerCounters * performance_counters() = 0;
   virtual bool function_binding_is_live(
       const semantic_model::FunctionBinding * binding) const = 0;
+  virtual void begin_function_binding_candidate_borrow() = 0;
+  virtual void end_function_binding_candidate_borrow() = 0;
   virtual const CppAstNode * materialize_lazy_function_body(const CppAstNode & body) = 0;
   virtual void note_late_required_class_method(
       semantic_model::FunctionBinding * binding) = 0;

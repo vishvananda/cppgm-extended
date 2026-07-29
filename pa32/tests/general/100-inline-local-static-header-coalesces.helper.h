@@ -1,9 +1,18 @@
 #pragma once
 
 extern int initializations;
+extern int destructions;
+extern "C" void abort();
 
-inline int & shared_value()
+struct shared
 {
-  static int value = ++initializations;
+  shared() : value(++initializations) {}
+  ~shared() { if(++destructions != 1) abort(); }
+  int value;
+};
+
+inline shared & shared_value()
+{
+  static shared value;
   return value;
 }

@@ -1,0 +1,37 @@
+global @__local_static__table__value__tokens32_43 [binding=internal] = {
+  ptr addr @x__f
+  i64 0
+}
+
+function @table() -> ptr [binding=strong, object=_Z5tablev] {
+  block ^entry:
+    %t1 = addr @__local_static__table__value__tokens32_43
+    %t2 = unary decay ptr %t1
+    return ptr %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = call ptr @table()
+    branch %t1, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t2 = load i32 $cond__1
+    return i32 %t2
+}
+function @x__f(%this : ptr) -> void [binding=weak, object=_ZN1x1fEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}

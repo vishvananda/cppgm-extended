@@ -1422,6 +1422,8 @@ private:
   bool class_template_declarations_complete_ = false;
   vector<unique_ptr<FunctionBinding> > functions;
   unordered_set<const FunctionBinding *> live_functions;
+  vector<unique_ptr<FunctionBinding> > retired_functions;
+  size_t active_function_binding_candidate_borrows = 0;
   unordered_map<string, vector<FunctionBinding *> > functions_by_internal_symbol;
   unordered_map<string, vector<FunctionBinding *> > functions_by_name;
   unordered_map<const CppAstNode *, FunctionBinding *>
@@ -3643,6 +3645,22 @@ private:
     return binding && live_functions.count(binding) != 0;
   }
 
+  void begin_function_binding_candidate_borrow() override
+  {
+    ++active_function_binding_candidate_borrows;
+  }
+
+  void end_function_binding_candidate_borrow() override
+  {
+    if(active_function_binding_candidate_borrows == 0) {
+      return;
+    }
+    --active_function_binding_candidate_borrows;
+    if(active_function_binding_candidate_borrows == 0) {
+      retired_functions.clear();
+    }
+  }
+
   static bool live_metrics_enabled()
   {
     static const bool enabled = env_flag_enabled("CPPGM_SEMANTIC_STATS_LIVE");
@@ -3883,7 +3901,9 @@ private:
         late_required_class_static_function_set,
         synthetic_functions,
         deferred_constexpr_functions,
-        live_functions};
+        live_functions,
+        retired_functions,
+        active_function_binding_candidate_borrows};
     return state;
   }
 

@@ -1242,6 +1242,7 @@ Preprocessor::Preprocessor(const string & file,
       throw logic_error("invalid -D macro definition: " + options.macro_definitions[i]);
     }
     macroizer.macro_start(name);
+    macroizer.macro_set_command_line();
     for(size_t j = 0; j < tokens.size(); ++j) {
       macroizer.macro_add_repl(tokens[j].type, tokens[j].data);
     }

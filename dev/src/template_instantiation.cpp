@@ -10328,7 +10328,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   }
   const std::string cache_key =
       function_template_instantiation_cache_key(*source_decl, key);
-  if(instantiation_owner &&
+  if(include_body &&
+     instantiation_owner &&
      instantiation_owner->source_template &&
      source_decl &&
      source_decl->declaring_scope &&
@@ -12136,6 +12137,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                   *instantiation_owner->source_template,
                                                   *instantiation_owner,
                                                   instantiation_owner->instantiation_arguments);
+    if(!ctx.function_binding_is_live(binding)) {
+      throw std::logic_error(
+          "function template binding invalidated while materializing owner definitions");
+    }
   }
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
