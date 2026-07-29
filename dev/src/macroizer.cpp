@@ -238,9 +238,12 @@ inline void Macroizer::add_expansion_blacklist(PPToken & target,
                                                BlacklistPtr & shared_inherited_blacklist,
                                                BlacklistPtr & shared_direct_blacklist)
 {
+  // A painted argument token keeps the unavailable set acquired during its
+  // own prescan.  An unpainted substituted token still inherits the head's
+  // set so indirect recursion remains suppressed.
   const bool include_inherited =
       !macro_token.breaks_inherited_blacklist ||
-      target.breaks_inherited_blacklist;
+      (target.breaks_inherited_blacklist && !target.blacklist);
   if(target.blacklist) {
     if(include_inherited) {
       target.blacklist =
