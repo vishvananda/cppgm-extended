@@ -7663,6 +7663,10 @@ const ValueBinding * lookup_unqualified_value(template_api::TemplateServices & s
                                               Scope & scope,
                                               const std::string & name)
 {
+  if(services.semantic_context) {
+    return services.semantic_context->lookup_value(scope, name);
+  }
+
   std::vector<Scope *> scope_path;
   for(Scope * current = &scope; current; current = current->parent) {
     scope_path.push_back(current);

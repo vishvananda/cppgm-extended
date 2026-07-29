@@ -8720,11 +8720,22 @@ bool CppAstParser::parse_for_statement(CppAstNode & out)
     pos = start;
     return false;
   }
+  NameSet for_value_names;
+  for(size_t i = 0; i < init.children.size(); ++i) {
+    collect_declared_value_names(init.children[i], for_value_names);
+  }
+  const bool has_for_value_scope = !for_value_names.empty();
+  if(has_for_value_scope) {
+    value_name_scopes.push_back(for_value_names);
+  }
   out.children.push_back(std::move(init));
 
   if(!peek().is_simple(OP_SEMICOLON)) {
     CppAstNode condition_expr;
     if(!parse_condition(condition_expr, OP_SEMICOLON)) {
+      if(has_for_value_scope) {
+        value_name_scopes.pop_back();
+      }
       pos = start;
       return false;
     }
@@ -8734,6 +8745,9 @@ bool CppAstParser::parse_for_statement(CppAstNode & out)
   }
 
   if(!consume_simple(OP_SEMICOLON)) {
+    if(has_for_value_scope) {
+      value_name_scopes.pop_back();
+    }
     pos = start;
     return false;
   }
@@ -8741,6 +8755,9 @@ bool CppAstParser::parse_for_statement(CppAstNode & out)
   if(!peek().is_simple(OP_RPAREN)) {
     CppAstNode iteration_expr;
     if(!parse_expression(iteration_expr)) {
+      if(has_for_value_scope) {
+        value_name_scopes.pop_back();
+      }
       pos = start;
       return false;
     }
@@ -8750,16 +8767,26 @@ bool CppAstParser::parse_for_statement(CppAstNode & out)
   }
 
   if(!consume_simple(OP_RPAREN)) {
+    if(has_for_value_scope) {
+      value_name_scopes.pop_back();
+    }
     pos = start;
     return false;
   }
 
   CppAstNode body;
   if(!parse_statement(body)) {
+    if(has_for_value_scope) {
+      value_name_scopes.pop_back();
+    }
     pos = start;
     return false;
   }
   out.children.push_back(std::move(body));
+
+  if(has_for_value_scope) {
+    value_name_scopes.pop_back();
+  }
 
   set_span(out, start);
   return true;

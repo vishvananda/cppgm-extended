@@ -3598,6 +3598,76 @@ bool rematerialize_candidate_match_args(SemanticContext & ctx,
   return true;
 }
 
+bool validate_selected_by_value_class_arguments(SemanticContext & ctx,
+                                                Scope & scope,
+                                                const CandidateMatch & match,
+                                                string & detail)
+{
+  const size_t count = std::min(match.params.size(), match.source_args.size());
+  for(size_t i = 0; i < count; ++i) {
+    TypePtr target = strip_top_level_cv(match.params[i]);
+    if(!target || is_reference_type(target) || target->kind != Type::TK_NAMED) {
+      continue;
+    }
+    ClassInfo * target_class = complete_class_type_for_lookup(ctx, target);
+    if(!target_class || target_class->class_kind == "enum") {
+      continue;
+    }
+
+    TypePtr source_type =
+        strip_top_level_cv(remove_reference_type(match.source_args[i].type));
+    ClassInfo * source_class = source_type ? ctx.class_info_for_type(source_type) : nullptr;
+    if(!source_class && source_type) {
+      source_class = complete_class_type_for_lookup(ctx, source_type);
+    }
+    bool same_or_derived_source = source_class == target_class;
+    if(!same_or_derived_source && source_class) {
+      size_t ignored_offset = 0;
+      MemberAccess ignored_access = MA_PUBLIC;
+      same_or_derived_source =
+          find_unique_base_path(*source_class,
+                                target_class,
+                                ignored_offset,
+                                ignored_access);
+    }
+    if(!same_or_derived_source) {
+      continue;
+    }
+
+    for(size_t slot = 0; slot < target_class->vtable_entries.size(); ++slot) {
+      FunctionBinding * virtual_function = target_class->vtable_entries[slot];
+      if(virtual_function && virtual_function->is_pure_virtual) {
+        detail = "abstract class by-value argument [class " +
+                 target_class->qualified_name + "]";
+        return false;
+      }
+    }
+
+    vector<ExprInfo> source_args(1, match.source_args[i]);
+    constructor_lifecycle_service::ConstructorSelectionResult selection;
+    ConstructorSelectionOptions options =
+        constructor_lifecycle_service::selection_options_for(
+            constructor_lifecycle_service::non_explicit_construction_profile(
+                "by-value parameter initialization"));
+    options.instantiate_bodies = false;
+    try
+    {
+      constructor_lifecycle_service::select_constructor_from_exprs_into(
+          ctx, scope, *target_class, source_args, selection, options);
+    }
+    catch(const logic_error &)
+    {
+      selection = constructor_lifecycle_service::ConstructorSelectionResult();
+    }
+    if(!selection.ctor) {
+      detail = "inaccessible or deleted class copy for by-value argument [class " +
+               target_class->qualified_name + "]";
+      return false;
+    }
+  }
+  return true;
+}
+
 bool candidate_match_is_all_exact(const CandidateMatch & match)
 {
   if(match.ranks.empty()) {
@@ -15474,6 +15544,28 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     FunctionBinding * chosen = refresh_candidate_at(selected_candidate_index);
     if(!chosen) {
       throw logic_error("selected candidate invalidated during class completion");
+    }
+    selected_match.function = chosen;
+    // Argument conversion rematerialization can complete/reset a selected
+    // member's owner even when that owner was complete during initial lookup.
+    // Snapshot the selected entity now so it can be reacquired afterward
+    // without paying to retain refresh keys for every complete-class candidate.
+    if(instantiate_bodies &&
+       chosen->owner_class &&
+       !candidate_refresh_keys[selected_candidate_index].owner_class) {
+      candidate_refresh_keys[selected_candidate_index] =
+          function_candidate_refresh_key(*chosen);
+    }
+    string by_value_validation_detail;
+    if(!validate_selected_by_value_class_arguments(ctx,
+                                                   scope,
+                                                   selected_match,
+                                                   by_value_validation_detail)) {
+      throw logic_error(by_value_validation_detail);
+    }
+    chosen = refresh_candidate_at(selected_candidate_index);
+    if(!chosen) {
+      throw logic_error("selected candidate invalidated during argument validation");
     }
     selected_match.function = chosen;
     if(chosen->is_deleted) {

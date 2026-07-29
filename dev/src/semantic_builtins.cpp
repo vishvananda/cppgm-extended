@@ -328,6 +328,10 @@ bool try_direct_class_construction_for_trait(
   if(!info || !info->complete) {
     return false;
   }
+  if(class_info_is_abstract(*info)) {
+    selection = constructor_lifecycle_service::ConstructorSelectionResult();
+    return true;
+  }
 
   std::vector<ExprInfo> args;
   args.push_back(arg);
@@ -349,6 +353,47 @@ bool try_direct_class_construction_for_trait(
   }
 }
 
+bool try_non_explicit_class_construction_for_trait(
+    SemanticContext & ctx,
+    Scope & scope,
+    const TypePtr & target,
+    const ExprInfo & arg,
+    constructor_lifecycle_service::ConstructorSelectionResult & selection)
+{
+  TypePtr target_base = strip_top_level_cv(target);
+  if(!target_base || is_reference_type(target_base) ||
+     target_base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  ClassInfo * info = ctx.complete_class_type(target_base);
+  if(!info || !info->complete) {
+    return false;
+  }
+  if(class_info_is_abstract(*info)) {
+    selection = constructor_lifecycle_service::ConstructorSelectionResult();
+    return true;
+  }
+
+  std::vector<ExprInfo> args;
+  args.push_back(arg);
+  ConstructorSelectionOptions options =
+      constructor_lifecycle_service::selection_options_for(
+          constructor_lifecycle_service::non_explicit_construction_profile(
+              "__is_convertible"));
+  options.instantiate_bodies = false;
+  try
+  {
+    constructor_lifecycle_service::select_constructor_from_exprs_into(
+        ctx, scope, *info, args, selection, options);
+  }
+  catch(const std::logic_error &)
+  {
+    selection = constructor_lifecycle_service::ConstructorSelectionResult();
+  }
+  return true;
+}
+
 bool try_direct_class_construction_for_trait(
     SemanticContext & ctx,
     Scope & scope,
@@ -364,6 +409,10 @@ bool try_direct_class_construction_for_trait(
   ClassInfo * info = ctx.complete_class_type(target_base);
   if(!info || !info->complete) {
     return false;
+  }
+  if(class_info_is_abstract(*info)) {
+    selection = constructor_lifecycle_service::ConstructorSelectionResult();
+    return true;
   }
 
   ConstructorSelectionOptions options =
@@ -2992,6 +3041,37 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
     }
 
     ExprInfo source_expr = make_builtin_trait_expr_info(lhs);
+
+    constructor_lifecycle_service::ConstructorSelectionResult copy_selection;
+    if(try_non_explicit_class_construction_for_trait(
+           ctx, scope, rhs, source_expr, copy_selection)) {
+      if(!copy_selection.ctor) {
+        out = 0;
+        return true;
+      }
+      if(name == "__is_nothrow_convertible") {
+        std::set<FunctionBinding *> visiting;
+        bool can_throw = false;
+        for(size_t i = 0; i < copy_selection.converted_args.size(); ++i) {
+          if(ctx.callsem_node_can_throw(scope,
+                                        copy_selection.converted_args[i].node,
+                                        visiting)) {
+            can_throw = true;
+            break;
+          }
+        }
+        if(!can_throw) {
+          can_throw = !function_binding_is_nothrow(ctx,
+                                                   scope,
+                                                   *copy_selection.ctor,
+                                                   visiting);
+        }
+        out = can_throw ? 0 : 1;
+      } else {
+        out = 1;
+      }
+      return true;
+    }
 
     ExprInfo converted;
     if(!try_argument_conversion(ctx, scope, rhs, source_expr, converted)) {

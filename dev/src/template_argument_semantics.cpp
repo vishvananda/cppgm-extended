@@ -10810,6 +10810,51 @@ bool leaf_function_binding_has_friend_lookup_surface(
           !binding.source_template->friend_access_classes.empty());
 }
 
+bool leaf_selected_call_has_valid_by_value_class_arguments(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    FunctionBinding & selected,
+    const vector<pair<TypePtr, semantic_conversion::ValueCategory> > & arg_infos)
+{
+  if(!services.semantic_context) {
+    return true;
+  }
+  const size_t param_offset = selected.is_method ? 1u : 0u;
+  for(size_t i = 0; i < arg_infos.size(); ++i) {
+    if(param_offset + i >= selected.params.size()) {
+      return false;
+    }
+    TypePtr target = strip_top_level_cv(selected.params[param_offset + i].second);
+    if(!target || is_reference_type(target) || target->kind != Type::TK_NAMED) {
+      continue;
+    }
+    ClassInfo * target_class = class_info_for_named_type(services, target);
+    if(!target_class || target_class->class_kind == "enum") {
+      continue;
+    }
+
+    TypePtr source = arg_infos[i].first;
+    if(arg_infos[i].second == semantic_conversion::VC_LVALUE) {
+      source = make_lvalue_reference_raw(remove_reference_type(source));
+    } else if(arg_infos[i].second == semantic_conversion::VC_XVALUE) {
+      source = make_rvalue_reference_raw(remove_reference_type(source));
+    }
+    long long constructible = 0;
+    vector<TypePtr> trait_types;
+    trait_types.push_back(target);
+    trait_types.push_back(source);
+    if(!evaluate_builtin_type_trait(services,
+                                    scope,
+                                    "__is_constructible",
+                                    trait_types,
+                                    constructible) ||
+       constructible == 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool select_unique_leaf_function_binding(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -10905,6 +10950,12 @@ bool select_unique_leaf_function_binding(
   }
   if(viable.size() == 1) {
     out = viable[0].function;
+    if(out &&
+       !leaf_selected_call_has_valid_by_value_class_arguments(
+           services, scope, *out, arg_infos)) {
+      out = nullptr;
+      return false;
+    }
     return out != nullptr;
   }
 
@@ -11044,6 +11095,12 @@ bool select_unique_leaf_function_binding(
     }
   }
   out = viable[winner].function;
+  if(out &&
+     !leaf_selected_call_has_valid_by_value_class_arguments(
+         services, scope, *out, arg_infos)) {
+    out = nullptr;
+    return false;
+  }
   return out != nullptr;
 }
 
@@ -24258,6 +24315,12 @@ bool substitute_qualified_name_qualifier_type(
   }
   new_qualifier_types[replacement_component_index] =
       make_substituted_type_id_node(type, replacement_text);
+  // This sidecar represents the already-resolved type substituted for a
+  // type-parameter qualifier.  Keep that entity identity authoritative: a
+  // later constant-expression lookup must not re-resolve the unqualified
+  // specialization spelling in its own scope.
+  new_qualifier_types[replacement_component_index]
+      .semantic_type_is_resolved_qualifier = true;
 
   qualified.rooted = qualified.rooted ||
       (qualifier_index == 0 && replacement_rooted);
@@ -24965,6 +25028,8 @@ bool substitute_type_pack_expression_node(
             }
             out.qualifier_type_syntaxes[i] =
                 make_substituted_type_id_node(it->second, replacement_text);
+            out.qualifier_type_syntaxes[i]
+                .semantic_type_is_resolved_qualifier = true;
             if(out.qualifier_template_id_syntaxes.size() < qualifiers.size()) {
               out.qualifier_template_id_syntaxes.mutable_vector().resize(
                   qualifiers.size());
@@ -28097,9 +28162,17 @@ bool lookup_leaf_qualified_function_templates(template_api::TemplateServices & s
     if(!out.empty()) {
       return true;
     }
+    semantic_lookup::collect_direct_function_templates(*target, qualified.name, out);
+    return !out.empty();
   }
 
-  semantic_lookup::collect_direct_function_templates(*target, qualified.name, out);
+  // Qualified namespace lookup includes templates introduced by inline
+  // namespaces and using-directives.  This must match the function-binding
+  // lookup above: otherwise an existing specialization can be found through a
+  // using-directive while the template needed to form a better specialization
+  // remains invisible.
+  semantic_lookup::lookup_function_templates_in_scopes(
+      vector<Scope *>(1, target), qualified.name, out);
   return !out.empty();
 }
 
@@ -28132,9 +28205,12 @@ bool lookup_leaf_qualified_function_templates(template_api::TemplateServices & s
     if(!out.empty()) {
       return true;
     }
+    semantic_lookup::collect_direct_function_templates(*target, qualified.name, out);
+    return !out.empty();
   }
 
-  semantic_lookup::collect_direct_function_templates(*target, qualified.name, out);
+  semantic_lookup::lookup_function_templates_in_scopes(
+      vector<Scope *>(1, target), qualified.name, out);
   return !out.empty();
 }
 
@@ -32411,11 +32487,14 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
              named_type_semantic_payload(type))) {
         return DependentNamedTypeResolutionStatus::KeepDependent;
       }
+      CppAstNode fresh_expr_node =
+          clone_expression_node_for_template_substitution(*expr_node);
+      clear_substituted_type_id_cached_semantics(fresh_expr_node);
       TypePtr resolved_expr_type;
       if(parse_decltype_or_typeof_node(
              services,
              raw_scope,
-             *expr_node,
+             fresh_expr_node,
              resolved_expr_type) &&
          resolved_expr_type &&
          !type_is_dependent(resolved_expr_type)) {
@@ -41873,6 +41952,10 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
                                                  expanded_expr,
                                                  expanded_expr_changed) &&
      expanded_expr_changed) {
+    // Pack expansion clones the dependent operand, including semantic types
+    // materialized by an earlier function-template instantiation.  Each pack
+    // element must be analyzed in the current instantiation scope.
+    clear_substituted_type_id_cached_semantics(expanded_expr);
     request_expr = &expanded_expr;
   }
   if(scope_has_template_placeholders(services,

@@ -25437,12 +25437,22 @@ private:
               !incoming_definition_location.empty() &&
               incoming_definition_location == existing_definition_location &&
               node_text(*incoming_definition) == node_text(*existing_definition);
+          // Class collection can register the same hidden friend once from a
+          // reference class and again when that exact class is completed.  An
+          // unnamed namespace gives the friend internal rather than weak
+          // linkage, but this is still one source definition in one class.
+          const bool same_hidden_friend_replay =
+              hidden_friend_only &&
+              existing->hidden_friend_only &&
+              lexical_access_class &&
+              existing->lexical_access_class == lexical_access_class &&
+              (same_definition_node || same_body_node || same_replayed_source);
           const bool weak_inline_replay =
               (linkage == symbol_linkage::SL_WEAK ||
                symbol_linkage::has_weak_linkage(existing->symbol) ||
                existing->odr_mergeable_definition) &&
               (same_definition_node || same_body_node || same_replayed_source);
-          if(!weak_inline_replay) {
+          if(!same_hidden_friend_replay && !weak_inline_replay) {
             ostringstream out;
             out << "duplicate function definition";
             out << " [name " << name << "]";
