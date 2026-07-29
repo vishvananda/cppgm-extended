@@ -979,7 +979,8 @@ private:
 
   bool simple_declaration_has_nonprimary_namespace_variable_definition(
       Scope & scope,
-      const CppAstNode & node)
+      const CppAstNode & node,
+      bool require_internal_linkage = false)
   {
     const CppAstNode * specifiers =
         find_child_kind(node, CppAstKind::decl_specifier_seq);
@@ -1041,6 +1042,13 @@ private:
                                              initializer,
                                              type)) {
         continue;
+      }
+      if(require_internal_linkage) {
+        const ValueBinding * binding = lookup_value(*parse_scope, name);
+        if(!binding || binding->kind != ValueBinding::VK_VARIABLE ||
+           binding->symbol.linkage != symbol_linkage::SL_INTERNAL) {
+          continue;
+        }
       }
       return true;
     }
@@ -1113,10 +1121,17 @@ private:
       return;
     }
 
-    if(is_c_linkage || node.kind != CppAstKind::simple_declaration) {
+    if(node.kind != CppAstKind::simple_declaration) {
       return;
     }
-    if(!simple_declaration_has_nonprimary_namespace_variable_definition(scope, node)) {
+    // External C definitions from compatibility headers remain demand-only,
+    // but a static/const declaration inside extern "C" still defines an
+    // internal object in every translation unit and must retain its
+    // initializer when non-primary source output is seeded.
+    if(!simple_declaration_has_nonprimary_namespace_variable_definition(
+           scope,
+           node,
+           is_c_linkage)) {
       return;
     }
     semantic_output::analyze_declaration_output(*this,
@@ -1124,7 +1139,7 @@ private:
                                                 scope,
                                                 node,
                                                 out,
-                                                false,
+                                                is_c_linkage,
                                                 linkage_has_braces);
   }
 
@@ -24547,9 +24562,6 @@ private:
     if(declaration_marks_weak(declaration_node)) {
       return symbol_linkage::SL_WEAK;
     }
-    if(is_c_linkage) {
-      return symbol_linkage::SL_EXTERNAL;
-    }
     if(scope_has_internal_namespace_linkage(scope)) {
       return symbol_linkage::SL_INTERNAL;
     }
@@ -24571,6 +24583,13 @@ private:
        (declaration_specifiers_contain_token(declaration_node, KW_CONST) ||
         declaration_specifiers_contain_token(declaration_node, KW_CONSTEXPR))) {
       return symbol_linkage::SL_INTERNAL;
+    }
+    // A language-linkage specification does not override an entity's
+    // internal linkage.  In particular, namespace-scope static and const
+    // objects declared inside extern "C" retain internal linkage and must not
+    // share the raw C object name with another namespace's internal object.
+    if(is_c_linkage) {
+      return symbol_linkage::SL_EXTERNAL;
     }
     return symbol_linkage::SL_EXTERNAL;
 	  }
@@ -25665,14 +25684,14 @@ private:
                                   symbol_linkage_node,
                                   effective_is_c_linkage,
                                   existing->second.owner_class);
-      if(linkage != symbol_linkage::SL_INTERNAL &&
-         declaration_marks_weak(declaration_node)) {
-        linkage = symbol_linkage::SL_WEAK;
-      }
       if(linkage == symbol_linkage::SL_INTERNAL &&
          !existing->second.has_storage_definition &&
          existing->second.symbol.linkage != symbol_linkage::SL_INTERNAL) {
         linkage = existing->second.symbol.linkage;
+      }
+      if(linkage != symbol_linkage::SL_INTERNAL &&
+         declaration_marks_weak(declaration_node)) {
+        linkage = symbol_linkage::SL_WEAK;
       }
       upgrade_value_symbol_linkage(existing->second,
                                    qualified_name,

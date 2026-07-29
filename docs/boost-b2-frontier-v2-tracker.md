@@ -13,10 +13,10 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `94 / 147`
-- current cursor: `#95 libs/random/test`
-- active compiler frontier: Boost.QVM is closed under the forced C++11 lane;
-  Boost.Random is the next ordered suite and declares `"cxxstd": "11"`
+- completed suites: `95 / 147`
+- current cursor: `#96 libs/range/test`
+- active compiler frontier: Boost.Random is closed under the forced C++11
+  lane; Boost.Range is the next ordered suite and declares `"cxxstd": "03"`
 
 ## Baseline Gates
 
@@ -252,6 +252,8 @@ differences other than the output path.
 | `(Proto structured identity and function-pack closure)` | Recognize pure-virtual destructor special definitions, require resolved class-template entity identity in partial matching, distinguish enclosing varargs from nested function packs, and preserve a direct suffix ellipsis through structured substitution and initializer recovery | -25.83% | -28.50% | -36.42% | versus Property Tree, instructions improve by 405,936,975, RSS by 9,613,312 B, and footprint by 2,117,632 B; every cumulative signal improves | `/private/tmp/cppgm-boost-frontier-v2-proto-final-perf.json` | pass; three-run candidate medians are 195,481,494,920 instructions, 924,274,688 B RSS, and 642,080,768 B footprint. The candidate-only gate used the preserved byte-identical immutable baseline and verified exact epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; all three runs recorded zero swaps, and neither the parent compiler nor live project headers were measured. |
 | `(Pointer Container overload, instantiation, and ABI closure)` | Rank a using-introduced base member's implicit object as a member of the nominated derived class while retaining the declared base conversion target; instantiate only address-bearing typedef/alias declarations in a demanded direct base specialization; and preserve dependent C-style conversion structure in Itanium ABI names | -25.70% | -28.27% | -35.75% | versus Proto, instructions move +354,073,696, RSS +2,949,120 B, and footprint +6,737,920 B; every cumulative hard gate remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-ptr-container-candidate.json` | pass; three-run candidate medians are 195,835,568,616 instructions, 927,223,808 B RSS, and 648,818,688 B footprint. The cleaned temporary baseline file was reconstructed from the tracker's documented immutable medians and exact epoch identity using the checker's supported pre-manifest compatibility form. The candidate gate independently verified exact epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8` before every run; neither the parent compiler nor live project headers were measured. |
 | `(QVM first semantic and lowering roots)` | Select the correct explicit function-template address from an overload set, compare nested array-reference function templates with symbolic bounds, substitute already resolved prefix arguments into omitted primary defaults before partial-specialization matching, and materialize `reinterpret_cast<T&>` through the target referent type | -25.63% | -27.89% | -36.64% | versus Pointer Container, instructions move +172,102,053 and RSS +4,964,352 B while footprint improves by 8,970,240 B; every immutable-baseline signal remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-qvm-roots-final-candidate.json` | pass; final three-run candidate medians are 196,007,670,669 instructions, 932,188,160 B RSS, and 639,848,448 B footprint. The candidate-only gate verified exact immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; neither the parent compiler nor live project headers were measured. |
+| `(QVM final semantic and native closure)` | Resolve nested dependent proxy results with nearest-binding shadowing, recurse array cv deduction, keep array-bound expressions non-deduced, replay explicit member specializations only for their exact owners, and reserve every XMM call-argument destination during cycle breaking | -25.47% | -27.63% | -35.92% | versus the first QVM checkpoint, instructions move +414,736,345, RSS +3,239,936 B, and footprint +7,335,936 B; every immutable-baseline signal remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-qvm-final-candidate.json` | pass; final three-run candidate medians are 196,422,407,014 instructions, 935,428,096 B RSS, and 647,184,384 B footprint. The candidate-only gate verified exact immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and the same closure hash; neither the parent compiler nor live project headers were measured. |
+| `(Random overload, list-constructor, and C-linkage closure)` | Exclude non-static members from ordinary function-pointer overload options, recognize dependent builtin `initializer_list<T>` constructor patterns before deduction, and preserve internal storage and namespace-distinct identity for entities lexically declared inside `extern "C"` | -25.41% | -27.90% | -36.37% | versus the final QVM checkpoint, instructions move +167,639,666 while RSS improves by 3,444,736 B and footprint by 4,620,288 B; every immutable-baseline signal remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-random-final-candidate.json` | pass; final three-run candidate medians are 196,590,046,680 instructions, 931,983,360 B RSS, and 642,564,096 B footprint. The candidate-only gate verified exact immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; neither the parent compiler nor live project headers were measured. |
 
 ## Suite Cursor
 
@@ -354,27 +356,28 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 92 | `libs/ptr_container/test` | pass | `(this commit)` | Boost declares C++11. The exact final forced graph updates all 154 requested targets and passes every compile, link, runtime, compile-only, and serialization action; log `/private/tmp/boost-frontier-v2-suite-092-ptr-container-full-final.log`. Live monitoring kept ordinary compiler children below roughly 350 MiB RSS, focused serialization reached about 514 MiB, concurrent compiler RSS remained below roughly 0.9 GiB, every child released, and the host retained 61% free memory with zero throttled pages. | Three minimal header-free C++11 PA22 owners are 5, 7, and 5 source lines (200--324 bytes), use no `<type_traits>`, and have refs of only 13, 357, and 784 bytes. They cover using-introduced base-member implicit-object ranking without losing the real base adjustment, demanded base-specialization typedef instantiation for a function-address NTTP, and structured dependent C-style conversion mangling. PA22 passes `332/332`; the full direct-LowIR report passes `6583/6583`; all configured strict direct comparisons pass. All 23 text-reparse categories and 28 focused audit/performance tests pass, the three new placement/hygiene rows are clean, the Homebrew Clang 22 build is warning-clean, and no trace/debug instrumentation remains. The immutable frozen-source/51-header gate records -25.70% instructions, -28.27% RSS, and -35.75% footprint. Actual C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use explicit Clang paths; printed `gcc.*` strings are only Boost.Build adapter labels. |
 | 93 | `libs/python/test` | pass | `(this commit)` | Boost declares C++03. The exact forced C++11 invocation exits successfully in 2.79s after finding the two configuration targets; log `/private/tmp/boost-frontier-v2-suite-093-python-intake.log`. | Python is not configured in this Boost tree, and the suite Jamfile places all compile/link/runtime tests under `if [ python.configured ]`, so this run contains no compiler test actions and is recorded only as the exact available graph closure. It peaks at 39,522,304 B RSS with zero swaps and zero throttled pages. No repository, validation, or performance work is required after the fully validated Pointer Container commit. Actual paths remain CPPGM plus Homebrew Clang 22; `gcc-cppgm` is only the adapter name. |
 | 94 | `libs/qvm/test` | pass | `(this commit)` | The initial forced C++11 graph exposed 40 compile and 14 runtime failures. The final exact four-job `pch=off` replay finds 2823 targets, updates all 526 requested targets, passes every positive compile/link/runtime action, handles the deliberate negative as failed-as-expected, and exits successfully in 623.29s; log `/private/tmp/boost-frontier-v2-suite-094-qvm-full-final.log`. | Ten typed roots close the graph. The six final roots have seven compact header-free C++11 owners across PA21, PA22, and PA28, sized 236--608 bytes with refs no larger than 1222 bytes and no `<type_traits>`. The full direct-LowIR report passes `4211/4211`, all 973 configured strict comparisons pass with direct LowIR enabled, cache parity and all 23 text-reparse categories pass, and the Homebrew Clang 22 build is warning-clean. The graph peaks at 635,494,400 B maximum RSS with zero swaps. The immutable frozen-source/51-header gate records -25.47% instructions, -27.63% RSS, and -35.92% footprint. Actual C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use explicit Clang paths; printed `gcc.*` strings are only legacy B2 adapter labels. |
+| 95 | `libs/random/test` | pass | `(this commit)` | The intake exposed five failures in three independent families: Boost.Test's overload set for `&X::f`, `test_seed_seq` constructor-template list initialization, and the shared Boost.Regex dependency's internal C-linkage constants. The final exact four-job forced C++11 `pch=off` graph finds 4862 targets, updates all 392 requested targets, passes every compile, link, and runtime action, and exits successfully in 400.33s; log `/private/tmp/boost-frontier-v2-suite-095-random-full-final-r2.log`. | Three compact C++11 owners close the graph: a 12-line PA26 overloaded-member-address reducer, a 13-line PA25 local-`initializer_list` reducer, and two PA14 `extern "C"` reducers whose sources are 1--3 lines. None uses `<type_traits>`, and refs are 281--718 bytes. The final PA9-excluded direct-LowIR report passes `6596/6596`, including PA37 `7/7`; all 973 configured strict comparisons pass. Normal, all eleven individual cache-off modes, and all-off emit byte-identical LowIR for the two semantic reducers. Placement review and all 23 text-reparse categories pass; PA14 retains only one unrelated pre-existing placement finding. The final Homebrew Clang 22 build is warning-clean. The graph peaks at 1,061,134,336 B across four workers, individual sampled units remain below 366 MiB, every child releases, throttled pages remain zero, and swap usage is unchanged. Actual C++ actions invoke CPPGM and host actions use explicitly pinned Homebrew Clang 22 paths; `gcc.*` is only the legacy B2 adapter label. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#95 libs/random/test`
+- suite: `#96 libs/range/test`
 - focused target: exact forced suite intake
-- last closed suite: `#94 libs/qvm/test` (`pass`)
+- last closed suite: `#95 libs/random/test` (`pass`)
 - failure phase: none known before intake
 - diagnostic: none yet
 - reduced repro: none yet
 - owning PA/cluster: to be determined only if the exact graph exposes a
   compiler failure
 - implementation area: to be determined from the first typed failure
-- performance risk: QVM closed at 635,494,400 B maximum RSS with zero swaps;
-  continue four-way monitoring and avoid overlapping a heavy suite with the
-  frozen perf workload
-- language lane: Boost.Random declares C++11; run CPPGM plus explicitly pinned
-  Homebrew Clang 22 host tools
-- next action: run the exact forced four-job `pch=off` Boost.Random graph and
+- performance risk: Random closed at 1,061,134,336 B process-tree maximum RSS
+  across four workers with zero swaps; continue four-way monitoring and avoid
+  overlapping a heavy suite with the frozen perf workload
+- language lane: Boost.Range declares C++03; run it in CPPGM's supported C++11
+  lane plus explicitly pinned Homebrew Clang 22 host tools
+- next action: run the exact forced four-job `pch=off` Boost.Range graph and
   record the first real compiler failure or close the suite
 
 ## Fix Ledger
@@ -384,6 +387,9 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | Random/Boost.Test overloaded member address | Ordinary function-pointer argument collection admitted non-static member functions from an overloaded `&X::f`, synthesizing an impossible free-function-pointer option and leaving the free and member-pointer templates ambiguous. The typed collector now excludes methods from the ordinary function-pointer path; member-pointer target collection remains unchanged. | `pa26/tests/general/300-overloaded-member-address-excludes-function-pointer-template.t`, 12 lines / 274 bytes of header-free C++11 with a 718-byte ref and no `<type_traits>` | The saved compiler rejects the reducer and the Boost.Test framework plus static/shared `test_random_device` objects. Homebrew Clang 22 accepts the reducer. Patched Clang classifies the losing overload only as `incomplete`, while CPPGM records a coarse substitution failure, so no inaccurate witness oracle was added. | PA26 and its placement audit pass; normal, all eleven individual cache-off modes, and all-off emit byte-identical LowIR. The exact Boost.Test and Random targets, configured strict suites, and PA9-excluded broad report pass. | measured with the complete Random closure; candidate-only frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-random-final-candidate.json` | `(this commit)` |
+| fixed | Random `test_seed_seq` dependent initializer-list constructor | First-phase list-constructor selection required a concrete `ClassInfo`, but `std::initializer_list<T>` in a constructor template is still a dependent class-template type before deduction. The selector now recognizes the retained builtin initializer-list template identity and its single structured argument, then uses the existing element deduction path. | `pa25/tests/general/200-copy-list-template-initializer-list-ctor.t`, 13 lines / 257 bytes of C++11 with a local minimal `std::initializer_list`, a 607-byte ref, and no `<type_traits>` | The saved compiler rejects copy-list initialization through the constructor template; Homebrew Clang 22 and the fixed compiler select `S::S<int>`. The checked-in witness is byte-identical to patched Clang. | PA25 and its placement audit pass; normal, all eleven individual cache-off modes, and all-off emit byte-identical LowIR. Exact `test_seed_seq`, configured strict suites, and the broad report pass. | measured with the complete Random closure; candidate-only frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-random-final-candidate.json` | `(this commit)` |
+| fixed | Random's shared Boost.Regex internal entities inside `extern "C"` | Lexical C linkage overrode namespace-scope internal storage linkage, raw C symbol identities collapsed distinct internal functions, and non-primary header seeding suppressed the sole definition of a static const object. Linkage classification now establishes internal storage first, raw C identity is limited to non-internal entities, and header seeding emits only internal C-linkage definitions while retaining demand-only behavior for external C definitions. Existing external redeclarations recover inherited linkage before applying a weak attribute. | `pa14/tests/general/200-extern-c-internal-header-const.t` with a one-line header; `pa14/tests/general/200-extern-c-internal-functions-stay-distinct.t`, 3 lines; existing PA32 inherited-C weak-definition owner | Before the fix, Boost.Regex's shared library has undefined `REG_ESPACE`, `REG_E_UNKNOWN`, and `REG_NOMATCH`; two same-named internal functions in different namespaces also alias. The saved PA32 weak redeclaration regressed under the initial ordering and directly motivated the final inherited-linkage-first rule. | Both PA14 native reducers run successfully, focused PA14/PA32 checks pass, and the exact Regex dylib plus complete Random graph pass. The new LowIR refs record the principled internal binding and namespace-distinct object identities. Strict, broad, placement review, reparse/audit, and the warning-clean Clang build pass. | measured with the complete Random closure; candidate-only frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-random-final-candidate.json` | `(this commit)` |
 | fixed | Pointer Container using-introduced base overload | A base member introduced by a using-declaration participates in implicit-object overload ranking as a member of the nominated derived class, but the actual conversion and call still target the member's declared base owner. The matcher previously had only one parameter vector, so it could either rank incorrectly or lose the required base-subobject adjustment. Candidate matches now retain separate comparison and conversion parameter types and use the nominated class only for ranking. | `pa22/tests/general/300-using-base-specialization-beats-derived-generic-reference.t`, 5 lines / 222 bytes of header-free C++11 with a 784-byte LowIR ref and no `<type_traits>` | Before the fix, the derived generic range overload beats the using-introduced base specialization. An intermediate implementation made overload selection pass but removed the base projection from LowIR; the final split preserves `[projection=base_subobject]`. Exact `ptr_vector` and the other four shared overload failures pass. | PA22, the complete Pointer Container graph, full and strict direct-LowIR reports, reparse, placement, audit, warning, memory, and diff gates pass. | measured with the complete Pointer Container closure: -25.70% instructions, -28.27% RSS, and -35.75% footprint; candidate-only frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-ptr-container-candidate.json` | `(this commit)` |
 | fixed | Pointer Container demanded base typedef instantiation | Resolving a concrete direct typedef/alias instantiates the declarations of its direct base specializations. The lazy reference-class path parsed the base graph but skipped a base typedef whose function-address non-type argument is the required instantiation trigger. The named-member loader now structurally identifies the demanded alias, then materializes only address-bearing typedef/alias declarations in its direct bases. It neither completes the base, marks all type members collected, recursively expands the graph, reparses source text, nor adds a cache. | `pa22/tests/general/400-base-typedef-function-address-instantiated-in-return-sfinae.t`, 7 lines / 324 bytes of header-free C++11 with only an `EXIT_FAILURE` sidecar and no `<type_traits>` | The saved compiler accepts the negative SFINAE program because `B<int>::f` is never instantiated; Homebrew Clang 22 rejects it. The fixed compiler rejects it and exact Boost.Serialization support compiles, links, and runs. | The focused negative owner passes, PA22 passes `332/332`, and the complete graph plus broad/strict/structural gates pass. Focused serialization uses about 514 MiB RSS and releases normally. | measured with the complete Pointer Container closure; no parent compiler or live project header was measured | `(this commit)` |
 | fixed | Pointer Container dependent C-style conversion ABI | A dependent C-style cast in a defaulted pointer non-type template argument was absent from the structured ABI-expression builder. It is now represented as the existing typed dependent conversion node; the Itanium renderer uses the required compact single-argument `cv` production while retaining the variadic form for zero or multiple arguments. | `pa22/tests/general/400-defaulted-dependent-pointer-nttp-cstyle-cast-symbol.t`, 5 lines / 200 bytes of header-free C++11 with a 357-byte LowIR ref and no `<type_traits>` | Before the fix, the emitted specialization symbol differs from Clang. The final CPPGM and Homebrew Clang 22 symbol is exactly `__Z1fIiTnPN1VIDTcvPT_Li0EEE1tELPv0EEbi`. | The focused owner, exact Pointer Container serialization path, PA22, complete suite, broad/strict, reparse, placement, audit, and warning gates pass. | measured with the complete Pointer Container closure; no parent compiler or live project header was measured | `(this commit)` |
@@ -712,6 +718,51 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | QVM XMM call-cycle scratch reservation | The parallel XMM argument-move scheduler removed completed self-moves from the used-register set. Their destination registers still held live call arguments, so a later cycle breaker could overwrite one before the call. Every destination is now reserved for the whole schedule, while only pending XMM sources constrain scratch selection. | `pa28/tests/behavior/800-xmm-call-arg-cycle-reserves-self-move.t`, 608 bytes of header-free C++11; all eight scalar arguments are required to exhaust the ABI XMM argument registers | The minimized eight-register cycle reproduces the corrupted argument and QVM `rot_mat_test` assertion failure. The fixed native output returns zero and the exact QVM runtime passes. | PA28, complete QVM, full direct-LowIR including PA37 object roundtrip, strict, reparse, warning, memory, and diff gates pass. | measured with the complete QVM closure; the graph peaks at 635,494,400 B maximum RSS with zero swaps | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-29`: Closed Boost.Random and advanced the cursor to C++03-declared
+  Boost.Range, which will run in the supported C++11 lane. Three independent
+  typed defects were repaired. Ordinary function-pointer overload collection
+  no longer admits non-static members from an overloaded member address.
+  Initializer-list constructor phase one recognizes the retained builtin
+  `initializer_list<T>` template before deduction has produced a concrete
+  class. Namespace-scope internal entities lexically inside `extern "C"` now
+  retain internal storage and namespace-distinct symbol identity; header
+  seeding emits their definitions without making external C header definitions
+  eager. The initial linkage ordering exposed and then restored the existing
+  rule that a redeclaration inherits external C linkage before a weak attribute
+  is applied.
+
+  The semantic owners are 12 and 13 C++11 lines at PA26 and PA25. The two PA14
+  linkage sources are one to three lines, with a one-line shared header. None
+  uses `<type_traits>`; every LowIR ref is 718 bytes or smaller. The PA25
+  witness is byte-identical to patched Clang. No PA26 witness was added because
+  patched Clang reports the losing candidate only as `incomplete`, while CPPGM
+  has the coarser substitution-failure category; checking in that mismatch
+  would create a false oracle. The two new PA14 refs record the principled
+  internal binding and namespace-distinct object identities.
+
+  The final PA9-excluded direct-LowIR report passes `6596/6596`, including PA37
+  object roundtrip `7/7`. With direct comparison enabled, PA18, PA19, PA21,
+  PA22, and PA23 pass 189, 118, 163, 165, and 338 strict comparisons. Normal,
+  all eleven individual cache-disabled modes, and all caches disabled emit
+  byte-identical LowIR for both semantic reducers. Placement review is clean
+  for the PA25 and PA26 owners; neither new PA14 test is flagged, and PA14 keeps
+  one unrelated pre-existing finding. All 23 text-reparse categories and their
+  audit tests pass. The final compiler build is warning-clean with Homebrew
+  Clang 22.
+
+  The exact final four-job forced Random graph finds 4862 targets, rebuilds all
+  392 requested targets, and passes every compile, link, and runtime action in
+  400.33s. Its process-tree maximum RSS is 1,061,134,336 B with zero swaps;
+  live samples keep individual compiler children below 366 MiB, show release
+  between translation units, and leave throttled pages at zero with unchanged
+  system swap. The final three-run candidate-only frozen gate records
+  196,590,046,680 instructions, 931,983,360 B RSS, and 642,564,096 B footprint:
+  -25.41%, -27.90%, and -36.37% from immutable epoch `9764b3835`. The checker
+  verified the exact frozen source and all 51 frozen headers before every run;
+  no parent compiler or live project header was measured. Actual C++ actions
+  invoke CPPGM, and every host path is explicitly pinned to Homebrew Clang 22;
+  printed `gcc.*` strings remain only legacy Boost.Build adapter labels.
 
 - `2026-07-29`: Closed Boost.QVM and advanced the cursor to C++11
   Boost.Random. The final six roots are nested class-template placeholder
@@ -4112,7 +4163,9 @@ cd /Users/vishvananda/boost_1_91_0
 /usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=4 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
+  CXX=/usr/local/opt/llvm/bin/clang++ \
+  CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/qvm/test
+  ./run-cppgm-b2.sh pch=off -a libs/range/test
 ```

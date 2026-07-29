@@ -19439,7 +19439,10 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
                                              SymbolLinkage linkage)
 {
   const string qualified_name = qualified_name_syntax_key_text(qualified);
-  if(is_c_linkage) {
+  // A name with internal linkage has no C language linkage.  Preserve the
+  // namespace-qualified internal identity even when its declaration is
+  // lexically contained in an extern "C" specification.
+  if(is_c_linkage && linkage != SL_INTERNAL) {
     SymbolIdentity out = c_linkage_identity(display_name, linkage);
     append_c_function_abi_mangle_fact(out, qualified_name);
     note_symbol_linkage_event("function", qualified_name, display_name, true, out);
@@ -19531,7 +19534,7 @@ SymbolIdentity make_scoped_variable_symbol_identity(const semantic_model::Scope 
     qualified_name = scoped_symbol_qualified_name_from_parts(parts);
   }
 
-  if(is_c_linkage) {
+  if(is_c_linkage && linkage != SL_INTERNAL) {
     SymbolIdentity out = c_linkage_identity(name, linkage);
     append_variable_abi_mangle_fact(out, out.object_symbol, qualified_name, true);
     note_symbol_linkage_event("variable", qualified_name, name, true, out);

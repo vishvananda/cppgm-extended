@@ -9936,7 +9936,11 @@ bool collect_overloaded_function_id_argument_options(SemanticContext & ctx,
   ScopedCallSemConstructionPath construction_path("overload.arg.overloaded-function-id");
   out.clear();
   for(size_t i = 0; i < overloads.size(); ++i) {
-    if(!overloads[i]) {
+    // A non-static member function can be selected only for a member-pointer
+    // target.  Treating it as an ordinary function-id option synthesizes an
+    // impossible free-function pointer and can leave both template overloads
+    // viable for an expression such as &C::f.
+    if(!overloads[i] || overloads[i]->is_method) {
       continue;
     }
     out.push_back(take_address ?
@@ -11008,7 +11012,25 @@ bool constructor_template_pattern_is_initializer_list_candidate(
   }
   TypePtr first_param =
       strip_top_level_cv(remove_reference_type(decl.params_pattern[0].second));
-  return ctx.is_initializer_list_type(first_param, nullptr, nullptr);
+  if(ctx.is_initializer_list_type(first_param, nullptr, nullptr)) {
+    return true;
+  }
+
+  // Before constructor-template deduction, initializer_list<T> may still be a
+  // dependent class-template type and therefore have no concrete ClassInfo.
+  // Its retained template identity is nevertheless sufficient to select the
+  // initializer-list first phase and deduce T from the braced elements.
+  void * class_template_identity = nullptr;
+  vector<DependentAliasTemplateArgumentSyntax> arguments;
+  if(!named_type_dependent_class_template(first_param,
+                                          class_template_identity,
+                                          arguments) ||
+     !class_template_identity ||
+     arguments.size() != 1) {
+    return false;
+  }
+  return ctx.is_builtin_initializer_list_template(
+      *static_cast<ClassTemplateDecl *>(class_template_identity));
 }
 
 bool class_has_initializer_list_constructor_candidate(SemanticContext & ctx,
