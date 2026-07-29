@@ -1,0 +1,3 @@
+global @value [binding=strong, object=_Z5value] = {
+  zero 1
+}

@@ -3029,12 +3029,19 @@ bool qualified_name_is_special_member(const QualifiedName & qualified)
          qualified.name == ("~" + owner_name);
 }
 
+std::string class_instantiation_key_for_metadata(SemanticContext & ctx,
+                                                 const ClassInfo & info);
+
 bool stored_member_definition_matches_target_class(
     SemanticContext & ctx,
     const OutOfClassMemberFunctionDecl & stored,
     const ClassInfo & info)
 {
-  (void)ctx;
+  if(!stored.owner_specialization_key.empty() &&
+     stored.owner_specialization_key !=
+         class_instantiation_key_for_metadata(ctx, info)) {
+    return false;
+  }
   if(!stored.qualified_name_syntax.qualifiers.empty()) {
     const std::string stored_owner_name =
         semantic_utils::unqualified_member_name(
@@ -3551,9 +3558,6 @@ bool stored_member_definition_suppressed_by_explicit_instantiation(
          !template_api::function_binding_excluded_from_explicit_instantiation(binding);
 }
 
-std::string class_instantiation_key_for_metadata(SemanticContext & ctx,
-                                                 const ClassInfo & info);
-
 void apply_stored_out_of_class_member_function_abi_metadata_map(
     SemanticContext & ctx,
     const std::map<std::string, std::vector<OutOfClassMemberFunctionDecl> > & stored_definitions,
@@ -3567,13 +3571,19 @@ void apply_stored_out_of_class_member_function_abi_metadata_map(
           stored_definitions.begin();
       it != stored_definitions.end();
       ++it) {
-    if(info.source_template &&
-       info.source_template->explicit_member_function_specialization_keys.count(
-           std::make_pair(it->first, specialization_key)) != 0) {
-      continue;
-    }
+    const bool target_has_explicit_specialization =
+        info.source_template &&
+        info.source_template->explicit_member_function_specialization_keys.count(
+            std::make_pair(it->first, specialization_key)) != 0;
     for(std::size_t i = 0; i < it->second.size(); ++i) {
       const OutOfClassMemberFunctionDecl & stored = it->second[i];
+      const bool exact_explicit_specialization =
+          !stored.owner_specialization_key.empty() &&
+          stored.owner_specialization_key == specialization_key;
+      if(target_has_explicit_specialization &&
+         !exact_explicit_specialization) {
+        continue;
+      }
       if(!stored.body ||
          !stored_member_definition_matches_target_class(ctx, stored, info)) {
         continue;
@@ -3583,7 +3593,7 @@ void apply_stored_out_of_class_member_function_abi_metadata_map(
       const ScopedExactTemplateTypeLookupAnchor syntax_anchor_guard(
           syntax_anchor);
       Scope & binding_scope = ctx.append_template_scope(*info.member_scope);
-      if(bind_stored_parameters) {
+      if(bind_stored_parameters && !exact_explicit_specialization) {
         bind_template_arguments_into_scope(ctx, binding_scope, stored.parameters, arguments);
       }
 
@@ -3738,20 +3748,26 @@ void apply_stored_out_of_class_member_function_definitions_map(
           stored_definitions.begin();
       it != stored_definitions.end();
       ++it) {
-    if(info.source_template &&
-       info.source_template->explicit_member_function_specialization_keys.count(
-           std::make_pair(it->first, specialization_key)) != 0) {
-      if(parser_trace::enabled("template.resolve")) {
-        std::ostringstream trace;
-        trace << "apply-out-of-class-member-function class=" << info.qualified_name
-              << " member=" << it->first
-              << " skipped=explicit-specialization";
-        parser_trace::note("template.resolve", std::string(), trace.str());
-      }
-      continue;
-    }
+    const bool target_has_explicit_specialization =
+        info.source_template &&
+        info.source_template->explicit_member_function_specialization_keys.count(
+            std::make_pair(it->first, specialization_key)) != 0;
     for(std::size_t i = 0; i < it->second.size(); ++i) {
       const OutOfClassMemberFunctionDecl & stored = it->second[i];
+      const bool exact_explicit_specialization =
+          !stored.owner_specialization_key.empty() &&
+          stored.owner_specialization_key == specialization_key;
+      if(target_has_explicit_specialization &&
+         !exact_explicit_specialization) {
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "apply-out-of-class-member-function class=" << info.qualified_name
+                << " member=" << it->first
+                << " skipped=overridden-by-explicit-specialization";
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
+        continue;
+      }
       if(!stored_member_definition_matches_target_class(ctx, stored, info)) {
         if(parser_trace::enabled("template.resolve")) {
           std::ostringstream trace;
@@ -3768,7 +3784,7 @@ void apply_stored_out_of_class_member_function_definitions_map(
       const ScopedExactTemplateTypeLookupAnchor syntax_anchor_guard(
           syntax_anchor);
       Scope & binding_scope = ctx.append_template_scope(*info.member_scope);
-      if(bind_stored_parameters) {
+      if(bind_stored_parameters && !exact_explicit_specialization) {
         bind_template_arguments_into_scope(ctx, binding_scope, stored.parameters, arguments);
       }
 

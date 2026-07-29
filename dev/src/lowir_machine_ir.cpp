@@ -114,11 +114,11 @@ bool find_spare_xmm_arg_move_register(const vector<XmmCallArgMove> & moves,
 {
   set<XmmRegister> used;
   for(size_t i = 0; i < moves.size(); ++i) {
-    if(moves[i].done) {
-      continue;
-    }
+    // Every destination already holds, or will hold, a live call argument.
+    // In particular, a completed self-move reserves its register through the
+    // call and cannot serve as cycle-breaking scratch storage.
     used.insert(moves[i].dst);
-    if(moves[i].src.kind == mir::Operand::OP_XMM) {
+    if(!moves[i].done && moves[i].src.kind == mir::Operand::OP_XMM) {
       used.insert(moves[i].src.xmm);
     }
   }

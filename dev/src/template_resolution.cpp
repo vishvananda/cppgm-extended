@@ -14480,10 +14480,12 @@ bool deduction_top_level_cv_flags(const TypePtr & type,
   TypePtr element_base;
   bool element_const = false;
   bool element_volatile = false;
-  if(!top_level_cv_flags(type->inner,
-                         element_base,
-                         element_const,
-                         element_volatile) ||
+  // An array has the cv-qualification of its element type, including through
+  // every dimension of a multidimensional array.
+  if(!deduction_top_level_cv_flags(type->inner,
+                                   element_base,
+                                   element_const,
+                                   element_volatile) ||
      (!element_const && !element_volatile)) {
     return true;
   }
@@ -16662,24 +16664,29 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         return false;
       }
     } else if(!pattern_base->bound_text.empty()) {
-      TemplateArgument actual_bound_argument;
-      actual_bound_argument.kind = TemplateArgument::TA_VALUE;
-      actual_bound_argument.type = make_fundamental(FT_INT);
-      if(actual_base->has_bound) {
-        actual_bound_argument.value = static_cast<long long>(actual_base->bound);
-      } else if(partial_top_level_cv_deduction &&
-                !actual_base->bound_text.empty()) {
-        actual_bound_argument.text = actual_base->bound_text;
-        actual_bound_argument.dependent = true;
-        actual_bound_argument.partial_order_placeholder = true;
-      } else {
-        return false;
-      }
-      if(!record_deduced_non_type_argument(parameters,
-                                           pattern_base->bound_text,
-                                           actual_bound_argument,
-                                           deduced_values)) {
-        return false;
+      const TemplateParameterInfo * bound_parameter =
+          find_template_parameter_for_text(parameters, pattern_base->bound_text);
+      if(bound_parameter &&
+         bound_parameter->kind == TemplateParameterInfo::TP_NON_TYPE) {
+        TemplateArgument actual_bound_argument;
+        actual_bound_argument.kind = TemplateArgument::TA_VALUE;
+        actual_bound_argument.type = make_fundamental(FT_INT);
+        if(actual_base->has_bound) {
+          actual_bound_argument.value = static_cast<long long>(actual_base->bound);
+        } else if(partial_top_level_cv_deduction &&
+                  !actual_base->bound_text.empty()) {
+          actual_bound_argument.text = actual_base->bound_text;
+          actual_bound_argument.dependent = true;
+          actual_bound_argument.partial_order_placeholder = true;
+        } else {
+          return false;
+        }
+        if(!record_deduced_non_type_argument(parameters,
+                                             pattern_base->bound_text,
+                                             actual_bound_argument,
+                                             deduced_values)) {
+          return false;
+        }
       }
     } else if(actual_base->has_bound || !actual_base->bound_text.empty()) {
       return false;

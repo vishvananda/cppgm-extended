@@ -1549,6 +1549,7 @@ struct OutOfClassMemberFunctionDecl
   std::string qualified_name;
   cpp_decl::QualifiedName qualified_name_syntax;
   const CppAstNode * owner_output_node = nullptr;
+  std::string owner_specialization_key;
   const CppAstNode * specifiers = nullptr;
   const CppAstNode * declarator = nullptr;
   const CppAstNode * body = nullptr;

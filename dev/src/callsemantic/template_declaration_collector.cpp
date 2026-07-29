@@ -2928,7 +2928,8 @@ public:
             const bool explicit_owner_specialization =
                 template_parameters.empty() &&
                 owner_template_decl &&
-                owner_is_template_id;
+                owner_is_template_id &&
+                !cppast_template_id_syntax(*function_identifier);
             if(explicit_owner_specialization) {
               OutOfClassMemberFunctionDecl stored;
               stored.declaring_scope = &scope;
@@ -2938,6 +2939,7 @@ public:
               stored.owner_output_node =
                   out_of_class_member_owner_output_node(owner,
                                                         owner_template_decl);
+              stored.owner_specialization_key = class_instantiation_key(*owner);
               stored.specifiers = specifiers;
               stored.declarator = declarator;
               stored.body = body;

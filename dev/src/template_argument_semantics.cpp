@@ -30832,10 +30832,16 @@ bool try_resolve_dependent_class_instantiation_from_mangle_info(
            argument.expression ||
            (i < mangle_info->argument_syntaxes.size() &&
             mangle_info->argument_syntaxes[i].expression));
+      const bool structured_dependent_class_type =
+          argument.kind == TemplateArgument::TA_TYPE &&
+          argument.type &&
+          named_type_class_template_specialization_mangle_info_const(
+              argument.type);
       if(!unresolved_mangle_argument_has_only_direct_type_parameter_dependency(
              services,
              argument) &&
-         !dependent_value_with_expression_syntax) {
+         !dependent_value_with_expression_syntax &&
+         !structured_dependent_class_type) {
         return false;
       }
     }
@@ -30844,9 +30850,17 @@ bool try_resolve_dependent_class_instantiation_from_mangle_info(
   resolved_arguments.reserve(source_arguments->size());
   bool changed = false;
   bool has_direct_type_parameter_dependency = false;
+  bool has_structured_dependent_class_type = false;
   bool has_active_template_bound_dependency = false;
   for(size_t i = 0; i < source_arguments->size(); ++i) {
     const TemplateArgument & argument = (*source_arguments)[i];
+    if(argument.kind == TemplateArgument::TA_TYPE &&
+       argument.type &&
+       service_type_depends_on_template_parameter(services, argument.type) &&
+       named_type_class_template_specialization_mangle_info_const(
+           argument.type)) {
+      has_structured_dependent_class_type = true;
+    }
     if(argument.kind == TemplateArgument::TA_TYPE &&
        argument.type &&
        service_type_depends_on_template_parameter(services, argument.type) &&
@@ -30866,17 +30880,19 @@ bool try_resolve_dependent_class_instantiation_from_mangle_info(
             scope.require(), *argument.expression))) {
       has_active_template_bound_dependency = true;
     }
-    if(has_direct_type_parameter_dependency &&
+    if((has_direct_type_parameter_dependency ||
+        has_structured_dependent_class_type) &&
        has_active_template_bound_dependency) {
       break;
     }
   }
-  // A carried direct type parameter or a structured expression that names an
-  // active template binding must be resolved from the instantiation scope.
-  // Metadata independent of active bindings stays on the conservative
+  // Carried direct parameters, nested class-template arguments, and structured
+  // expressions that name active bindings resolve from the instantiation
+  // scope. Metadata independent of active bindings stays on the conservative
   // declaration-scope path.
   Scope * argument_scope_parent =
       has_direct_type_parameter_dependency ||
+              has_structured_dependent_class_type ||
               has_active_template_bound_dependency ?
           &scope.require() :
           (class_template->declaring_scope ?
@@ -31617,11 +31633,15 @@ bool structured_type_mentions_local_dependent_placeholder(
             named_type_dependent_type_expression_node(named);
         return expression && expression_node_mentions_identifier(*expression, name);
       };
+  set<string> shadowed_names;
   for(Scope * current = &scope; current; current = current->parent) {
     if(current->namespace_scope || current->parent == nullptr) {
       break;
     }
     for(const auto & name : current->template_bound_type_names) {
+      if(!shadowed_names.insert(name).second) {
+        continue;
+      }
       auto found = current->named_types.find(name);
       if(found == current->named_types.end() ||
          !found->second ||
@@ -31632,6 +31652,9 @@ bool structured_type_mentions_local_dependent_placeholder(
       return true;
     }
     for(const auto & pack_name : current->template_bound_type_pack_names) {
+      if(!shadowed_names.insert(pack_name).second) {
+        continue;
+      }
       map<string, vector<TypePtr> >::const_iterator found =
           current->named_type_packs.find(pack_name);
       if(found == current->named_type_packs.end() ||
@@ -31646,6 +31669,9 @@ bool structured_type_mentions_local_dependent_placeholder(
       }
     }
     for(const auto & name : current->template_bound_value_names) {
+      if(!shadowed_names.insert(name).second) {
+        continue;
+      }
       if(!mentions(type, name, TypePtr(), 0)) {
         continue;
       }

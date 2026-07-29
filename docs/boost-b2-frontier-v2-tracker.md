@@ -13,11 +13,10 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `93 / 147`
-- current cursor: `#94 libs/qvm/test`
-- active compiler frontier: Boost.QVM forced C++11 intake reduced from 54 to
-  17 failures after four independent typed semantic/lowering fixes; its
-  metadata declares `"cxxstd": "03"`
+- completed suites: `94 / 147`
+- current cursor: `#95 libs/random/test`
+- active compiler frontier: Boost.QVM is closed under the forced C++11 lane;
+  Boost.Random is the next ordered suite and declares `"cxxstd": "11"`
 
 ## Baseline Gates
 
@@ -354,39 +353,29 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 91 | `libs/proto/test` | pass | `(this commit)` | Proto has no suite-level `cxxstd` requirement. The exact final four-job forced C++11 graph finds 3,060 targets, updates all 118 requested targets, and passes every compile, link, and runtime action; log `/private/tmp/boost-frontier-v2-suite-091-proto-final-refined-forced.log`. Live monitoring samples the known-heavy `flatten.cpp` child at 958,192 KiB RSS and the concurrent compiler set near 1.37 GiB, with zero throttled pages and unchanged system swap. | Four compact header-free C++11 owners cover pure-virtual destructor classification, class-template entity identity in partial matching, preservation of an enclosing function ellipsis, and the boundary between an enclosing variadic parameter and a nested function-type pack. They are 3, 7, 7, and 8 source lines, use no `<type_traits>`, and have only empty or 106-byte LowIR refs. The structured suffix-ellipsis parser correction also restores the existing PA22 scalar parenthesized pack-expansion test without adding a duplicate reducer. The PA9-excluded direct-LowIR report passes `4186/4186`, including PA37 `7/7`; all 973 configured strict comparisons pass. All 23 text-reparse categories and 14 audit tests pass, PA21/PA22/PA23/PA34 placement and hygiene scans have zero findings, and the Homebrew Clang 22 build is warning-clean. The immutable frozen-source/51-header gate records -25.83% instructions, -28.50% RSS, and -36.42% footprint. Actual C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use explicit Clang paths; printed `gcc.*` strings remain only Boost.Build adapter labels. |
 | 92 | `libs/ptr_container/test` | pass | `(this commit)` | Boost declares C++11. The exact final forced graph updates all 154 requested targets and passes every compile, link, runtime, compile-only, and serialization action; log `/private/tmp/boost-frontier-v2-suite-092-ptr-container-full-final.log`. Live monitoring kept ordinary compiler children below roughly 350 MiB RSS, focused serialization reached about 514 MiB, concurrent compiler RSS remained below roughly 0.9 GiB, every child released, and the host retained 61% free memory with zero throttled pages. | Three minimal header-free C++11 PA22 owners are 5, 7, and 5 source lines (200--324 bytes), use no `<type_traits>`, and have refs of only 13, 357, and 784 bytes. They cover using-introduced base-member implicit-object ranking without losing the real base adjustment, demanded base-specialization typedef instantiation for a function-address NTTP, and structured dependent C-style conversion mangling. PA22 passes `332/332`; the full direct-LowIR report passes `6583/6583`; all configured strict direct comparisons pass. All 23 text-reparse categories and 28 focused audit/performance tests pass, the three new placement/hygiene rows are clean, the Homebrew Clang 22 build is warning-clean, and no trace/debug instrumentation remains. The immutable frozen-source/51-header gate records -25.70% instructions, -28.27% RSS, and -35.75% footprint. Actual C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use explicit Clang paths; printed `gcc.*` strings are only Boost.Build adapter labels. |
 | 93 | `libs/python/test` | pass | `(this commit)` | Boost declares C++03. The exact forced C++11 invocation exits successfully in 2.79s after finding the two configuration targets; log `/private/tmp/boost-frontier-v2-suite-093-python-intake.log`. | Python is not configured in this Boost tree, and the suite Jamfile places all compile/link/runtime tests under `if [ python.configured ]`, so this run contains no compiler test actions and is recorded only as the exact available graph closure. It peaks at 39,522,304 B RSS with zero swaps and zero throttled pages. No repository, validation, or performance work is required after the fully validated Pointer Container commit. Actual paths remain CPPGM plus Homebrew Clang 22; `gcc-cppgm` is only the adapter name. |
-| 94 | `libs/qvm/test` | frontier | `(this commit)` | The initial forced C++11 graph exposed 40 compile and 14 runtime failures. After four shared fixes, the exact full forced replay finds 2823 targets, updates 460, and leaves 16 compile plus one runtime failure in 629.21s; log `/private/tmp/boost-frontier-v2-suite-094-qvm-post-roots-full.log`. | The replay peaks at 635,637,760 B process-tree RSS with zero swaps and no throttling. The remaining compile failures group into array-trait partial-specialization ambiguity, three related proxy/default-result families, and nested explicit member-specialization binding; `rot_mat_test` is the sole runtime failure. The compiler and every host action are pinned to Homebrew Clang 22; printed `gcc.*` strings are only legacy B2 adapter action labels. |
+| 94 | `libs/qvm/test` | pass | `(this commit)` | The initial forced C++11 graph exposed 40 compile and 14 runtime failures. The final exact four-job `pch=off` replay finds 2823 targets, updates all 526 requested targets, passes every positive compile/link/runtime action, handles the deliberate negative as failed-as-expected, and exits successfully in 623.29s; log `/private/tmp/boost-frontier-v2-suite-094-qvm-full-final.log`. | Ten typed roots close the graph. The six final roots have seven compact header-free C++11 owners across PA21, PA22, and PA28, sized 236--608 bytes with refs no larger than 1222 bytes and no `<type_traits>`. The full direct-LowIR report passes `4211/4211`, all 973 configured strict comparisons pass with direct LowIR enabled, cache parity and all 23 text-reparse categories pass, and the Homebrew Clang 22 build is warning-clean. The graph peaks at 635,494,400 B maximum RSS with zero swaps. The immutable frozen-source/51-header gate records -25.47% instructions, -27.63% RSS, and -35.92% footprint. Actual C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use explicit Clang paths; printed `gcc.*` strings are only legacy B2 adapter labels. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#94 libs/qvm/test`
-- focused target: array-trait partial-specialization ambiguity shared by
-  `mat_traits_array_test`, `vec_traits_array_test`, `quat_traits_array_test`,
-  and `quat_traits_std_array_test`
-- last closed suite: `#93 libs/python/test` (`pass`)
-- failure phase: template partial-specialization selection; 16 compile and one
-  runtime failure remain after the first four roots
-- diagnostic: the array-trait group reports ambiguous partial specializations;
-  the proxy group selects default-result forms involving `vref_`, `mref_`, and
-  `qref_`; `vec_register_test` misses a nested explicit member specialization
-- reduced repro: four compact header-free C++11 owners are checked in for the
-  completed roots; the next array-trait ambiguity still needs reduction
-- owning PA/cluster: completed roots are PA14:200 plus PA22:100/200; next root
-  is expected in PA22 partial-specialization ordering
-- implementation area: `semantic_overload.cpp`, `template_resolution.cpp`,
-  template declaration/default normalization, `template_specialization.cpp`,
-  and `semantic_expression.cpp`; next trace starts in partial selection
-- performance risk: the exact replay is healthy at 635,637,760 B maximum RSS,
-  zero swaps, and zero throttled pages; `rot_mat_test` produces a 62 MiB failed
-  assertion transcript, which is output amplification rather than retained
-  compiler memory
-- language lane: metadata declares C++03; force the graph under C++11 with
-  CPPGM plus Homebrew Clang 22
-- next action: reduce the shared array-trait ambiguity, compare its selected
-  partial ordering with Clang, and fix the typed rule before replaying all four
-  affected targets
+- suite: `#95 libs/random/test`
+- focused target: exact forced suite intake
+- last closed suite: `#94 libs/qvm/test` (`pass`)
+- failure phase: none known before intake
+- diagnostic: none yet
+- reduced repro: none yet
+- owning PA/cluster: to be determined only if the exact graph exposes a
+  compiler failure
+- implementation area: to be determined from the first typed failure
+- performance risk: QVM closed at 635,494,400 B maximum RSS with zero swaps;
+  continue four-way monitoring and avoid overlapping a heavy suite with the
+  frozen perf workload
+- language lane: Boost.Random declares C++11; run CPPGM plus explicitly pinned
+  Homebrew Clang 22 host tools
+- next action: run the exact forced four-job `pch=off` Boost.Random graph and
+  record the first real compiler failure or close the suite
 
 ## Fix Ledger
 
@@ -715,8 +704,52 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | QVM nested array-reference function-template partial ordering | While comparing function templates such as `A (&)[M][N]` and `A (&)[D]`, an unbound symbolic actual array bound was rejected before the partial-order deduction could use it as a placeholder. The matcher now permits that symbolic bound only in the existing `partial_top_level_cv_deduction` ordering mode, leaving ordinary deduction and concrete bounds unchanged. | `pa22/tests/general/200-nested-array-reference-partial-ordering.t`, three lines / 191 bytes of header-free C++11 with a 711-byte LowIR ref and no `<type_traits>` | The saved parent reports an ambiguity for the reduced two-dimensional versus one-dimensional array-reference overloads. Clang 22 and the fixed compiler select the two-dimensional form, matching QVM's `assign_test` and `projection_test`. | Focused and exact QVM targets pass; the full PA22, strict, broad follow-up, cache, reparse, audit, placement, and Clang warning gates above pass. All 48 cache comparisons are byte-identical for this reducer at SHA-256 `bc4b910f36abf23c02b98fcbc2ab75382222419d999230c97c22dc4e77f200be`. | measured with the same four-root QVM closure; candidate-only frozen report; no parent or live header was measured | `(this commit)` |
 | fixed | QVM omitted primary defaults in partial-specialization matching | Omitted class-template arguments were represented by copied primary defaults before earlier explicit arguments had been substituted into those defaults. A partial specialization such as `deduce<proxy<T>, D>` therefore compared against a stale dependent default and lost to the primary. Declaration collection now marks source-defaulted arguments, substitutes the already resolved prefix structurally into copied default AST nodes, and retains the resolved type. The matcher recognizes equality only when both sides came from the same primary-parameter default and the actual type is concrete. Two broader placeholder-matching experiments were removed after they introduced a real PA23 ambiguity. No source reparse, spelling rule, or eager instantiation is added. | `pa22/tests/general/200-defaulted-partial-specialization-substitution.t`, nine lines / 578 bytes of header-free C++11 with a 718-byte LowIR ref and no `<type_traits>` | With only the narrow provenance rule rolled back, the minimized reducer selects the primary and tries to construct an inaccessible `proxy<float>` instead of selecting the partial specialization's `vec<float, 2>` result. Clang 22 and the fixed compiler agree, and exact QVM `translation_test` passes. | PA22 passes `335/335`, PA23 strict recovers to `338/338`, and all configured strict suites pass after removal of the overbroad experiments. The broad, reparse, audit, placement, warning, and QVM focused gates pass. Every cache mode is byte-identical at SHA-256 `25b9bc510d692d3898e7f910f4be7b7192466303d00d827a5d5b473cae516040`. | measured with the same four-root QVM closure; candidate-only frozen report; no parent or live header was measured | `(this commit)` |
 | fixed | QVM `reinterpret_cast` reference materialization in a conditional | The semantic cast retained the flattened operand's old materialization type when lowering `reinterpret_cast<T&>`. In a conditional reference expression this loaded the source proxy/scalar interpretation and then converted it, rather than reading the same storage through the target referent type. Materialization now uses the typed target referent while preserving the source address and reference category. | `pa14/tests/general/200-reinterpret-reference-conditional-materialization.t`, four lines / 100 bytes of scalar-only header-free C++11 with a 565-byte LowIR ref | A controlled rollback loads `i32` and numerically converts it to `f32`; Clang and the fixed LowIR load the same bits as `f32`. The exact QVM `swizzle2_test` compiles, links, and runs after the fix. | PA14 passes `85/85`; the focused direct-text comparison, configured strict, broad follow-up, cache, reparse, audit, placement, and Homebrew Clang warning gates pass. Every cache mode is byte-identical at SHA-256 `de095fc8d71088217aaabf790105c784f527740f97aa2b436327ababc672c869`. | measured with the same four-root QVM closure; candidate-only frozen report; no parent or live header was measured | `(this commit)` |
+| fixed | QVM nested class-template placeholders in partial ordering | Partial-order placeholder collection stopped at a named class-template specialization instead of walking its structured template arguments. In addition, copied primary defaults were incorrectly treated as if they were written constraints of the partial specialization. Placeholder collection now recurses through typed class-template arguments, and partial ordering compares only source-written specialization arguments while ordinary matching retains normalized defaults. | `pa22/tests/general/200-nested-template-id-placeholder-partial-order.t` (403 bytes) and `pa22/tests/general/200-nested-class-template-argument-explicit-default-partial.t` (446 bytes), both header-free C++11 with 168-byte and 63-byte refs and no `<type_traits>` | The saved compiler reports the same ambiguity as QVM's array-trait specializations and misorders an explicit nested class-template argument against a copied default. Homebrew Clang 22 and the fixed compiler select the constrained partials. | The two owners, exact affected QVM array-trait targets, complete QVM graph, full and strict direct-LowIR reports, cache parity, reparse, placement, warning, and diff gates pass. | measured with the complete QVM closure: -25.47% instructions, -27.63% RSS, and -35.92% footprint; immutable frozen-source/51-header report `/private/tmp/cppgm-boost-frontier-v2-qvm-final-candidate.json` | `(this commit)` |
+| fixed | QVM nested dependent proxy result resolution | Mangle-backed dependent class instantiations admitted only direct type parameters, so nested structured arguments such as `traits<proxy<V>>::scalar_type` stayed unresolved. Witness replay could also look past a concrete nearest `V=result` binding and rediscover the older dependent declaration of `V`. Nested class-template arguments now resolve structurally in the instantiation scope, parsed witness patterns run the same dependent-type resolver, and the local-placeholder walk honors nearest-binding shadowing. No source-text recovery or eager instantiation is added. | `pa22/tests/general/200-nested-class-template-argument-explicit-default-partial.t`, 446 bytes of header-free C++11 with a 63-byte ref and no `<type_traits>` | The normal path could reach a concrete result while the exact witness path retained `traits<proxy<V>>::scalar_type`; traces proved the nearest scope already contained concrete `V=result` and the older declaration was incorrectly winning. The fix makes normal, witness, and checked reference output byte-identical and closes the related `vref_`, `mref_`, and `qref_` QVM families. | Exact normal/witness/direct comparison passes. All 973 strict comparisons and all cache configurations pass; no debug trace remains. | measured with the complete QVM closure; no parent compiler or live project header was measured | `(this commit)` |
+| fixed | QVM forwarded multidimensional array cv deduction | Template deduction obtained an array's cv-qualification from only one element layer, so forwarding `T const (&)[N][M]` lost `const` through the outer array. The existing top-level cv helper now recurses through every array dimension, matching the language rule that array cv follows its element type. | `pa22/tests/general/100-forwarded-const-reference-multidimensional-array-deduction.t`, 309 bytes of header-free C++11 with a 1222-byte ref and no `<type_traits>` | The saved compiler rejects the minimized forwarded two-dimensional array while Homebrew Clang 22 accepts it; the fixed compiler and affected QVM deduction paths agree with Clang. | The owner, complete QVM graph, full/strict reports, cache parity, Clang control, and structural gates pass. | measured with the complete QVM closure; no parent compiler or live project header was measured | `(this commit)` |
+| fixed | QVM non-deduced array-bound expression | Array deduction treated any retained bound text as a direct non-type template parameter, so an expression such as `N - 1` was itself recorded as a deduced key. Deduction now records a bound only when the pattern text names an actual non-type parameter; bound expressions remain non-deduced and the existing post-substitution type comparison still validates the resulting extent. | `pa22/tests/general/400-array-bound-expression-is-nondeduced.t`, 236 bytes of header-free C++11 with a 1074-byte ref and no `<type_traits>` | CPPGM and Clang accept the positive reducer after the fix. A temporary mismatched `[3]` control is rejected by both, proving that the fix does not skip post-substitution compatibility. | The owner, exact QVM translation path, complete graph, full/strict reports, all cache modes, and strict Clang controls pass. | measured with the complete QVM closure; no parent compiler or live project header was measured | `(this commit)` |
+| fixed | QVM explicit member specializations across class owners | A template-id member name on an explicit member-template specialization was misclassified as a non-template explicit owner specialization. Separately, non-template explicit specializations were replayed across every class-template owner with the same member name and attempted to bind nonexistent owner parameters. Template-id members now use the generic explicit function-template route; stored owner specializations carry the exact class-instantiation key, replay only for that owner, and skip irrelevant parameter binding. | `pa21/tests/general/300-explicit-member-template-specializations-multiple-owners.t` (427 bytes) and `pa21/tests/general/300-explicit-member-specializations-multiple-owners.t` (316 bytes), header-free C++11 with refs below 740 bytes and no `<type_traits>` | The saved compiler loses or cross-applies the explicit specialization when multiple specializations share one owner and a second owner has the same member spelling. Homebrew Clang 22 accepts both reducers; the fixed compiler closes QVM `vec_register_test`. | PA21, complete QVM, full/strict, cache, reparse, placement, warning, and diff gates pass. | measured with the complete QVM closure; no parent compiler or live project header was measured | `(this commit)` |
+| fixed | QVM XMM call-cycle scratch reservation | The parallel XMM argument-move scheduler removed completed self-moves from the used-register set. Their destination registers still held live call arguments, so a later cycle breaker could overwrite one before the call. Every destination is now reserved for the whole schedule, while only pending XMM sources constrain scratch selection. | `pa28/tests/behavior/800-xmm-call-arg-cycle-reserves-self-move.t`, 608 bytes of header-free C++11; all eight scalar arguments are required to exhaust the ABI XMM argument registers | The minimized eight-register cycle reproduces the corrupted argument and QVM `rot_mat_test` assertion failure. The fixed native output returns zero and the exact QVM runtime passes. | PA28, complete QVM, full direct-LowIR including PA37 object roundtrip, strict, reparse, warning, memory, and diff gates pass. | measured with the complete QVM closure; the graph peaks at 635,494,400 B maximum RSS with zero swaps | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-29`: Closed Boost.QVM and advanced the cursor to C++11
+  Boost.Random. The final six roots are nested class-template placeholder
+  traversal/source-written partial ordering, structured dependent proxy result
+  resolution with nearest-binding shadowing, recursive multidimensional-array
+  cv deduction, non-deduced array-bound expressions, exact-owner replay of
+  explicit member specializations, and XMM call-cycle destination reservation.
+  Their seven PA21/PA22/PA28 owners are 236--608 bytes, header-free C++11, use
+  no `<type_traits>`, and have refs no larger than 1222 bytes. The PA28 owner
+  needs all eight scalar arguments to exhaust the ABI XMM argument registers.
+  The existing PA27 large-ref audit remains unchanged: only the irreducible
+  recursive-VTT lifecycle and diamond virtual-destructor slot-merging refs
+  exceed 10 KiB, and both have compact source owners.
+
+  The complete direct-LowIR report passes `4211/4211`, including PA37 object
+  roundtrip `7/7`. With direct LowIR comparison enabled, PA18, PA19, PA21,
+  PA22, and PA23 pass 189, 118, 163, 165, and 338 comparisons respectively.
+  Normal mode, every one of eleven individual cache-disabled modes, and all
+  caches disabled together emit byte-identical LowIR for all six semantic
+  reducers. All 23 text-reparse categories and the focused audit unit tests
+  pass; the new PA21 and PA28 placement rows are clean, and PA22 reports only
+  four unrelated pre-existing findings. Strict warning-clean C++11 controls
+  pass under Homebrew Clang 22, including a negative array-bound mismatch that
+  both compilers reject. The final Clang-pinned compiler build is warning-clean
+  and peaks at 420,274,176 B RSS.
+
+  The exact four-job forced QVM graph finds 2823 targets, updates all 526
+  requested targets, passes every positive and deliberate-negative action, and
+  exits successfully in 623.29s. It peaks at 635,494,400 B maximum RSS with
+  zero process swaps; system memory remains healthy and no Docker VM is
+  running. The final immutable three-run gate verifies epoch `9764b3835`, the
+  frozen source, all 51 frozen headers, and closure hash
+  `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`.
+  Candidate medians are 196,422,407,014 instructions, 935,428,096 B RSS, and
+  647,184,384 B footprint: -25.47%, -27.63%, and -35.92% from baseline. No
+  parent compiler or live project header was measured. CPPGM and every host
+  path are pinned to Homebrew Clang 22; printed `gcc.*` strings remain only
+  legacy Boost.Build adapter labels.
 
 - `2026-07-29`: Packaged the first four Boost.QVM roots without claiming suite
   closure. Explicit function-template address selection, nested array-reference

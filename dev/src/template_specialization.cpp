@@ -2681,6 +2681,10 @@ QualifiedName qualify_relative_template_name(const Scope & scope,
   return scoped;
 }
 
+void collect_partial_order_placeholder_argument_keys(
+    const std::vector<TemplateArgument> & arguments,
+    std::set<std::string> & out);
+
 void collect_partial_order_placeholder_type_keys(const TypePtr & type,
                                                  std::set<std::string> & out)
 {
@@ -2697,6 +2701,29 @@ void collect_partial_order_placeholder_type_keys(const TypePtr & type,
   case Type::TK_NAMED:
     if(named_type_is_partial_order_placeholder(base)) {
       out.insert(base->named_key);
+      return;
+    }
+    if(const std::shared_ptr<const ClassTemplateSpecializationMangleInfo> info =
+           named_type_class_template_specialization_mangle_info_const(base)) {
+      collect_partial_order_placeholder_argument_keys(info->arguments, out);
+      return;
+    }
+    {
+      void * class_template_decl = nullptr;
+      std::vector<DependentAliasTemplateArgumentSyntax> arguments;
+      if(named_type_dependent_class_template(base,
+                                             class_template_decl,
+                                             arguments)) {
+        for(std::size_t i = 0; i < arguments.size(); ++i) {
+          collect_partial_order_placeholder_type_keys(arguments[i].type, out);
+          if(arguments[i].partial_order_placeholder ||
+             (arguments[i].has_non_type_value &&
+              arguments[i].value >= 0x100000)) {
+            out.insert(std::string("partial-order value#") +
+                       std::to_string(arguments[i].value));
+          }
+        }
+      }
     }
     return;
   case Type::TK_FUNCTION:
@@ -10097,9 +10124,22 @@ template_api::NonTypeArgumentStatus evaluate_partial_non_type_pattern_value(
 }
 
 template <typename PartialDecl>
+std::size_t source_written_partial_argument_count(const PartialDecl & partial)
+{
+  std::size_t count = partial.arg_texts.size();
+  while(count > 0 &&
+        count <= partial.arg_syntaxes.size() &&
+        partial.arg_syntaxes[count - 1].source_defaulted) {
+    --count;
+  }
+  return count;
+}
+
+template <typename PartialDecl>
 bool transformed_partial_specialization_arguments(template_api::TemplateServices & services,
                                                   const PartialDecl & partial,
-                                                  std::vector<TemplateArgument> & out)
+                                                  std::vector<TemplateArgument> & out,
+                                                  bool source_written_arguments_only = false)
 {
   template_api::TemplateTypeSystem & type_system = service_type_system(services);
   out.clear();
@@ -10212,7 +10252,11 @@ bool transformed_partial_specialization_arguments(template_api::TemplateServices
 
     return false;
   };
-  for(std::size_t i = 0; i < partial.arg_texts.size(); ++i) {
+  const std::size_t argument_count =
+      source_written_arguments_only ?
+          source_written_partial_argument_count(partial) :
+          partial.arg_texts.size();
+  for(std::size_t i = 0; i < argument_count; ++i) {
     const std::string pattern_text = trim_space(partial.arg_texts[i]);
     const DirectTemplateParameterPattern direct_pattern =
         find_direct_template_parameter_pattern(partial.parameters, pattern_text);
@@ -10316,9 +10360,11 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
   std::vector<TemplateArgument> current_transformed;
   std::vector<TemplateArgument> best_transformed;
   const bool current_transformed_ok =
-      transformed_partial_specialization_arguments(services, current, current_transformed);
+      transformed_partial_specialization_arguments(
+          services, current, current_transformed, true);
   const bool best_transformed_ok =
-      transformed_partial_specialization_arguments(services, best, best_transformed);
+      transformed_partial_specialization_arguments(
+          services, best, best_transformed, true);
   if(!current_transformed_ok || !best_transformed_ok) {
     const int direct_constraint_specificity =
         compare_direct_template_parameter_constraint_specificity(current, best);
@@ -11546,7 +11592,8 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                                        std::vector<TemplateArgument> & deduced_arguments,
                                        std::size_t & specificity_score,
                                        std::map<std::string, std::size_t> * deduced_pack_sizes,
-                                       bool * match_deferred)
+                                       bool * match_deferred,
+                                       bool source_written_arguments_only = false)
 {
   try {
     if(match_deferred) {
@@ -11616,9 +11663,14 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
     const TemplateParameterInfo * trailing_pack_parameter = nullptr;
     ArgumentPackExpansionPattern trailing_pack_pattern;
     std::vector<TemplateArgument> trailing_template_template_arguments;
-    std::size_t fixed_argument_count = partial.arg_texts.size();
-    if(!partial.arg_texts.empty()) {
-      const std::string trailing_pattern = trim_space(partial.arg_texts.back());
+    const std::size_t pattern_argument_count =
+        source_written_arguments_only ?
+            source_written_partial_argument_count(partial) :
+            partial.arg_texts.size();
+    std::size_t fixed_argument_count = pattern_argument_count;
+    if(pattern_argument_count != 0) {
+      const std::string trailing_pattern =
+          trim_space(partial.arg_texts[pattern_argument_count - 1]);
       for(std::size_t i = 0; i < partial.parameters.size(); ++i) {
         if(!partial.parameters[i].parameter_pack || partial.parameters[i].name.empty()) {
           continue;
@@ -11626,21 +11678,21 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         if(trailing_pattern == partial.parameters[i].name + "..." ||
            trailing_pattern == partial.parameters[i].name) {
           trailing_pack_parameter = &partial.parameters[i];
-          fixed_argument_count = partial.arg_texts.size() - 1;
+          fixed_argument_count = pattern_argument_count - 1;
           break;
         }
       }
       if(!trailing_pack_parameter) {
         const TemplateArgumentSyntax * trailing_syntax =
-            partial.arg_syntaxes.size() >= partial.arg_texts.size() ?
-                &partial.arg_syntaxes.back() :
+            partial.arg_syntaxes.size() >= pattern_argument_count ?
+                &partial.arg_syntaxes[pattern_argument_count - 1] :
                 nullptr;
         trailing_pack_pattern =
             argument_pack_expansion_pattern(partial.parameters,
                                             trailing_pattern,
                                             trailing_syntax);
         if(trailing_pack_pattern.active) {
-          fixed_argument_count = partial.arg_texts.size() - 1;
+          fixed_argument_count = pattern_argument_count - 1;
         }
       }
     }
@@ -11649,7 +11701,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
       if(actual_arguments.size() < fixed_argument_count) {
         return false;
       }
-    } else if(partial.arg_texts.size() != actual_arguments.size()) {
+    } else if(pattern_argument_count != actual_arguments.size()) {
       return false;
     }
 
@@ -12289,6 +12341,10 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                       pattern_type,
                       true,
                       pattern_requires_concrete_expression_recheck)) {
+          template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+              services,
+              template_api::make_template_environment(match_scope),
+              pattern_type);
           parsed_pattern_type = true;
         }
         if(pattern_type &&
@@ -12908,7 +12964,8 @@ int compare_partial_class_specialization_preference(
             deduced_arguments,
             specificity_score,
             nullptr,
-            nullptr);
+            nullptr,
+            true);
       });
 }
 
@@ -12936,7 +12993,8 @@ int compare_partial_variable_specialization_preference(
             deduced_arguments,
             specificity_score,
             nullptr,
-            nullptr);
+            nullptr,
+            true);
       });
 }
 
