@@ -2897,6 +2897,25 @@ void collect_pack_parameters_mentioned_in_syntax(
   }
 }
 
+bool partial_argument_mentions_non_type_parameter_pack(
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::string & text,
+    const TemplateArgumentSyntax * syntax)
+{
+  std::vector<const TemplateParameterInfo *> mentioned;
+  collect_pack_parameters_mentioned_in_text(parameters, text, mentioned);
+  if(syntax) {
+    collect_pack_parameters_mentioned_in_syntax(parameters, *syntax, mentioned);
+  }
+  for(std::size_t i = 0; i < mentioned.size(); ++i) {
+    if(mentioned[i] &&
+       mentioned[i]->kind == TemplateParameterInfo::TP_NON_TYPE) {
+      return true;
+    }
+  }
+  return false;
+}
+
 ArgumentPackExpansionPattern argument_pack_expansion_pattern(
     const std::vector<TemplateParameterInfo> & parameters,
     const std::string & raw_text,
@@ -10148,8 +10167,17 @@ bool transformed_partial_specialization_arguments(template_api::TemplateServices
   }
 
   DeducedState placeholders;
+  std::vector<TemplateArgument> placeholder_arguments;
+  bool can_substitute_resolved_patterns = true;
   for(std::size_t i = 0; i < partial.parameters.size(); ++i) {
     const TemplateParameterInfo & parameter = partial.parameters[i];
+    std::ostringstream placeholder_key;
+    placeholder_key << "partial-order "
+                    << (parameter.name.empty() ? std::string("<unnamed>") :
+                                                 parameter.name)
+                    << (parameter.parameter_pack ? std::string("...") :
+                                                   std::string())
+                    << "#" << i;
     if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
       cpp_decl::TypePtr placeholder = make_partial_order_placeholder_type(parameter, i);
       if(parameter.parameter_pack) {
@@ -10157,6 +10185,12 @@ bool transformed_partial_specialization_arguments(template_api::TemplateServices
       } else {
         placeholders.types[parameter.name] = placeholder;
       }
+      TemplateArgument placeholder_argument;
+      placeholder_argument.kind = TemplateArgument::TA_TYPE;
+      placeholder_argument.type = placeholder;
+      placeholder_argument.text = placeholder_key.str();
+      placeholder_argument.partial_order_placeholder = true;
+      placeholder_arguments.push_back(placeholder_argument);
       continue;
     }
     if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE) {
@@ -10166,9 +10200,18 @@ bool transformed_partial_specialization_arguments(template_api::TemplateServices
       } else {
         placeholders.values[parameter.name] = placeholder;
       }
+      TemplateArgument placeholder_argument;
+      placeholder_argument.kind = TemplateArgument::TA_VALUE;
+      placeholder_argument.type = parameter.value_type;
+      placeholder_argument.value = placeholder;
+      placeholder_argument.text = placeholder_key.str();
+      placeholder_argument.dependent = true;
+      placeholder_argument.partial_order_placeholder = true;
+      placeholder_arguments.push_back(placeholder_argument);
       continue;
     }
     if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+      can_substitute_resolved_patterns = false;
       continue;
     }
     return false;
@@ -10223,6 +10266,35 @@ bool transformed_partial_specialization_arguments(template_api::TemplateServices
 
     const bool pattern_mentions_parameters =
         alias_template_target_mentions_parameters(pattern_text, partial.parameters);
+    if(syntax && syntax->resolved_type) {
+      resolved_type = syntax->resolved_type;
+      TypePtr substituted_type;
+      const bool substituted_resolved_pattern =
+          can_substitute_resolved_patterns &&
+          !partial_argument_mentions_non_type_parameter_pack(
+              partial.parameters, pattern_text, syntax) &&
+          template_argument_semantics::substitute_type(
+             match_scope,
+             resolved_type,
+             partial.parameters,
+             placeholder_arguments,
+             substituted_type) &&
+          substituted_type;
+      if(substituted_resolved_pattern) {
+        resolved_type = substituted_type;
+      }
+      template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+          services,
+          template_api::make_template_environment(match_scope),
+          resolved_type);
+      if(resolved_type &&
+         (substituted_resolved_pattern ||
+          !template_argument_semantics::type_depends_on_template_parameter(
+              type_system,
+              resolved_type))) {
+        return true;
+      }
+    }
     if(syntax && !pattern_mentions_parameters) {
       TypePtr pattern_scope_type;
       if(parse_template_argument_type_syntax(
@@ -10338,6 +10410,9 @@ bool transformed_partial_specialization_arguments(template_api::TemplateServices
     }
 
     if(argument.kind == TemplateArgument::TA_TYPE) {
+      if(argument.source_syntax) {
+        argument.source_syntax->resolved_type = argument.type;
+      }
       if(template_argument_semantics::type_depends_on_template_parameter(type_system, argument.type)) {
         argument.text.clear();
       } else {

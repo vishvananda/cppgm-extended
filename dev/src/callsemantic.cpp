@@ -23722,11 +23722,13 @@ private:
     if(!parameters_match) {
       return false;
     }
+    if(existing.ref_qualifier != candidate_ref_qualifier) {
+      return false;
+    }
     if(existing.declaring_scope->class_info &&
        (existing.is_static_member != candidate_is_static_member ||
         existing.is_const_method != candidate_is_const_method ||
-        existing.is_volatile_method != candidate_is_volatile_method ||
-        existing.ref_qualifier != candidate_ref_qualifier)) {
+        existing.is_volatile_method != candidate_is_volatile_method)) {
       return false;
     }
     const bool allow_special_member_match =

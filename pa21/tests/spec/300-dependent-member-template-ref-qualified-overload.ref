@@ -1,0 +1,33 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : obj<1x1>
+  slot $v : i32
+
+  block ^entry:
+    %t1 = addr $x
+    store i32 0, $v
+    %t2 = addr $x
+    %t3 = addr $v
+    %t4 = call i32 @g(%t2, %t3)
+    return i32 %t4
+}
+function @g(%x : ptr, %v : ptr [pass=reference]) -> i32 [binding=weak, object=_Z1gIiEiP1XRT_] {
+  slot $x : ptr
+  slot $v : ptr
+
+  block ^entry:
+    store ptr %x, $x
+    store ptr %v, $v
+    %t1 = load ptr $x
+    %t2 = load ptr $v
+    %t3 = call i32 @X__f__ov2(%t1, %t2)
+    return i32 %t3
+}
+function @X__f__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNR1X1fIiEEiRT_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return i32 0
+}

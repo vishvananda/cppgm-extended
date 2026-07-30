@@ -5315,22 +5315,42 @@ private:
                                               normalized_arg_texts);
     const size_t explicit_count =
         min(source_syntax.argument_syntaxes.size(), normalized_arg_texts.size());
-    if(explicit_count >= out.size()) {
-      return out;
-    }
-
     vector<TemplateArgument> arguments;
+    bool have_resolved_arguments = false;
     try {
-      if(!resolve_template_arguments(pattern_scope,
+      have_resolved_arguments =
+          resolve_template_arguments(pattern_scope,
                                      primary_parameters,
                                      explicit_arg_texts,
                                      &source_syntax.argument_syntaxes,
                                      arguments,
-                                     default_argument_scope) ||
-         arguments.size() != out.size()) {
-        return out;
-      }
+                                     default_argument_scope) &&
+          arguments.size() == out.size();
     } catch(const TemplateSubstitutionFailure &) {
+      have_resolved_arguments = false;
+    }
+
+    if(have_resolved_arguments) {
+      for(size_t i = 0; i < arguments.size(); ++i) {
+        if(arguments[i].kind == TemplateArgument::TA_TYPE &&
+           arguments[i].type) {
+          void * class_template_decl = nullptr;
+          vector<DependentAliasTemplateArgumentSyntax> class_arguments;
+          // Preserve definition-time lookup for concrete types and structured
+          // class-template patterns. A dependent qualified member still needs
+          // deductions from earlier arguments before its terminal member can
+          // be resolved, so retain its syntax rather than a reusable result.
+          if(!type_depends_on_template_parameter(arguments[i].type) ||
+             named_type_dependent_class_template(arguments[i].type,
+                                                 class_template_decl,
+                                                 class_arguments)) {
+            out[i].resolved_type = arguments[i].type;
+          }
+        }
+      }
+    }
+
+    if(explicit_count >= out.size() || !have_resolved_arguments) {
       return out;
     }
 

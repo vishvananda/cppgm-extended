@@ -1909,6 +1909,7 @@ std::size_t function_candidate_bucket_key(FunctionBinding * binding)
     hash_combine(seed,
                  inline_namespace_collapsed_scope_name(
                      binding->source_template->declaring_scope));
+    hash_combine(seed, static_cast<std::size_t>(binding->ref_qualifier));
     if(binding->type) {
       // Function-template overloads can share a template-instantiation key while
       // still producing different callable signatures.
@@ -3931,6 +3932,9 @@ bool same_function_candidate_entity(FunctionBinding * lhs, FunctionBinding * rhs
     return true;
   }
   if(!lhs || !rhs) {
+    return false;
+  }
+  if(lhs->ref_qualifier != rhs->ref_qualifier) {
     return false;
   }
   const bool has_template_source =
@@ -6069,6 +6073,10 @@ int compare_candidate_match_preference(SemanticContext & ctx,
         current_better = true;
       } else if(current.ranks[j] > best.ranks[j]) {
         best_better = true;
+      } else if(current.ranks[j] == CR_ELLIPSIS) {
+        // An ellipsis conversion has no parameter type. Its rank cannot be
+        // refined by the standard-conversion tie-breakers below.
+        continue;
       } else {
         int list_pref = 0;
         if(j < current.list_initialization_args.size() &&

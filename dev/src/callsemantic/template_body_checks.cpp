@@ -1274,6 +1274,43 @@ static TypePtr template_body_expression_type(
   return TypePtr();
 }
 
+static TypePtr template_body_adl_argument_type(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & node,
+    const TemplateBodyValueTypes & visible_value_types)
+{
+  TypePtr type =
+      template_body_expression_type(ctx, scope, node, visible_value_types);
+  if(type) {
+    return type;
+  }
+
+  // ADL uses the type of the complete argument expression. During the early
+  // class-template body check, fields and preceding locals have not been
+  // installed in an ordinary semantic scope, so expose their already parsed
+  // types in a temporary scope and analyze the argument without materializing
+  // output. This covers nondependent expressions such as --ns::ref(field).
+  Scope argument_scope(&scope, "", false);
+  for(TemplateBodyValueTypes::const_iterator it = visible_value_types.begin();
+      it != visible_value_types.end(); ++it) {
+    if(!it->first || !it->second) {
+      continue;
+    }
+    const std::string & name = *it->first;
+    argument_scope.values[name] =
+        ValueBinding(ValueBinding::VK_VARIABLE, name, it->second);
+  }
+  try {
+    return ctx.analyze_expression_without_output_materialization(argument_scope,
+                                                                 node).type;
+  } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+    throw;
+  } catch(const std::exception &) {
+    return TypePtr();
+  }
+}
+
 static bool call_expression_has_adl_candidate(
     SemanticContext & ctx,
     Scope & scope,
@@ -1308,10 +1345,10 @@ static bool call_expression_has_adl_candidate(
 
   std::vector<TypePtr> arg_types;
   for(std::size_t i = 0; i < arguments->children.size(); ++i) {
-    TypePtr type = template_body_expression_type(ctx,
-                                                 scope,
-                                                 arguments->children[i],
-                                                 visible_value_types);
+    TypePtr type = template_body_adl_argument_type(ctx,
+                                                   scope,
+                                                   arguments->children[i],
+                                                   visible_value_types);
     if(type) {
       arg_types.push_back(type);
     }
