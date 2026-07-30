@@ -297,7 +297,8 @@ string local_static_function_owner_name(const Scope & scope,
 {
   const FunctionBinding * function = local_static_enclosing_function(scope);
   if(function && !function->name.empty()) {
-    if(function->has_instantiation_arguments) {
+    if(function->has_instantiation_arguments ||
+       template_api::function_binding_has_linkage_template_identity(function)) {
       string discriminator = function->symbol.object_symbol;
       if(discriminator.empty()) {
         discriminator = function->symbol.internal_symbol;
@@ -361,7 +362,8 @@ symbol_linkage::SymbolLinkage local_static_storage_linkage(const Scope & scope)
     return symbol_linkage::SL_INTERNAL;
   }
   if(function->symbol.linkage == symbol_linkage::SL_INTERNAL ||
-     scope_has_internal_namespace_linkage(function->declaration_scope)) {
+     scope_has_internal_namespace_linkage(function->declaration_scope) ||
+     template_api::function_binding_identity_has_internal_namespace_linkage(function)) {
     return symbol_linkage::SL_INTERNAL;
   }
   if(symbol_linkage::has_weak_linkage(function->symbol) ||

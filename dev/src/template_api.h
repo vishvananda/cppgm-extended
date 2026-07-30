@@ -388,6 +388,8 @@ bool function_binding_has_template_identity(const semantic_model::FunctionBindin
 bool function_or_owner_has_template_identity(const semantic_model::FunctionBinding * binding);
 bool function_binding_has_linkage_template_identity(
     const semantic_model::FunctionBinding * binding);
+bool function_binding_identity_has_internal_namespace_linkage(
+    const semantic_model::FunctionBinding * binding);
 bool value_or_owner_has_template_identity(const semantic_model::ValueBinding * binding);
 bool function_binding_has_source_template_identity(
     const semantic_model::FunctionBinding * binding);

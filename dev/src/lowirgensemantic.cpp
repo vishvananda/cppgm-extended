@@ -4445,13 +4445,23 @@ private:
     if(!callee_symbol.empty()) {
       map<string, ParameterVirtualBaseLayout>::const_iterator layout_it =
           function_parameter_virtual_base_layouts_.find(callee_symbol);
-      if(layout_it != function_parameter_virtual_base_layouts_.end()) {
+      if(layout_it != function_parameter_virtual_base_layouts_.end() &&
+         (!layout_it->second.layout.empty() ||
+          !layout_it->second.additional_layouts.empty())) {
         out_layout = layout_it->second;
         return true;
       }
-      if(!call.children[callee_child_index].is_virtual_dispatch) {
-        return false;
-      }
+      // A direct declaration can be emitted before its referenced class's
+      // virtual-base layout is discovered.  Reapply the same type-based rule
+      // used while seeding definitions so separate translation units agree on
+      // the hidden parameter ABI.
+    }
+
+    // Special-member entry-point calls already carry their structured hidden
+    // ABI arguments in the call node.  Inferring from the callable type here
+    // would rediscover the same reference layout and append it a second time.
+    if(call.children[callee_child_index].has_special_member_entry_point_kind) {
+      return false;
     }
 
     return infer_function_type_reference_parameter_virtual_base_layout(
@@ -6931,7 +6941,7 @@ private:
   {
     return node.kind == CallSemKind::call_expression &&
            callsem_has_token(node, KW_DELETE) &&
-           node.children.size() == 2 &&
+           node.children.size() >= 2 &&
            node.children[0].kind == CallSemKind::callee;
   }
 
@@ -7007,8 +7017,12 @@ private:
       if(!dtor.empty()) {
         emit_line("call void " + dtor + "(" + object_ptr + ")");
       }
+      string delete_args = delete_ptr;
+      for(size_t i = 2; i < node.children.size(); ++i) {
+        delete_args += ", " + emit_rvalue(node.children[i]);
+      }
       emit_line("call void " + lookup_function_symbol(node.children[0]) + "(" +
-                delete_ptr + ")");
+                delete_args + ")");
       terminate("jump " + lowir_block_name(end_label));
     }
 
@@ -14924,6 +14938,8 @@ private:
     }
     if(variable.is_thread_local) {
       emit_thread_local_destructor_registration(variable.semantic_type, target_ptr);
+    } else {
+      emit_static_destructor_registration(variable.semantic_type, target_ptr);
     }
     emit_line("store i64 1, " + callsem_local_static_guard_symbol(variable));
     terminate("jump " + lowir_block_name(done_label));
@@ -15428,7 +15444,7 @@ private:
     return true;
   }
 
-  bool type_needs_thread_local_destructor_registration(const TypePtr & type) const
+  bool type_needs_runtime_destructor_registration(const TypePtr & type) const
   {
     TypePtr base = strip_top_level_cv(remove_reference_type(type));
     if(!base) {
@@ -15436,10 +15452,53 @@ private:
     }
     if(base->kind == Type::TK_ARRAY) {
       return base->inner &&
-             type_needs_thread_local_destructor_registration(base->inner);
+             type_needs_runtime_destructor_registration(base->inner);
     }
     return is_complete_class_value_type(base) &&
            !destructor_symbol_for_runtime_call(base).empty();
+  }
+
+  void emit_static_destructor_registration(const TypePtr & type,
+                                           const string & object_ptr)
+  {
+    TypePtr base = strip_top_level_cv(remove_reference_type(type));
+    if(!base || object_ptr.empty() ||
+       !type_needs_runtime_destructor_registration(base)) {
+      return;
+    }
+    if(base->kind == Type::TK_ARRAY) {
+      TypePtr element_type = strip_top_level_cv(base->inner);
+      if(!element_type) {
+        return;
+      }
+      const size_t element_size = backend_storage_size(element_type);
+      for(size_t i = 0; i < base->bound; ++i) {
+        const string element_ptr =
+            i == 0 ? object_ptr :
+                emit_temp_assignment("ptr",
+                                     string("index i8 ") + object_ptr + ", " +
+                                         to_string(element_size * i));
+        emit_static_destructor_registration(element_type, element_ptr);
+      }
+      return;
+    }
+    if(!is_complete_class_value_type(base)) {
+      return;
+    }
+    const string dtor = destructor_symbol_for_runtime_call(base);
+    if(dtor.empty()) {
+      return;
+    }
+
+    const string dtor_ptr = emit_temp_assignment("ptr", string("addr ") + dtor);
+    const string dso_handle =
+        emit_temp_assignment("ptr",
+                             string("addr ") +
+                                 external_runtime_object_symbol("__dso_handle"));
+    emit_temp_assignment("i32",
+                         string("call i32 ") +
+                             external_runtime_symbol("__cxa_atexit") + "(" +
+                             dtor_ptr + ", " + object_ptr + ", " + dso_handle + ")");
   }
 
   void emit_thread_local_destructor_registration(const CallSemNode & action)
@@ -15452,7 +15511,7 @@ private:
     if(!constructor_action_target_object(action, target_arg, object_type)) {
       return;
     }
-    if(!type_needs_thread_local_destructor_registration(object_type)) {
+    if(!type_needs_runtime_destructor_registration(object_type)) {
       return;
     }
     emit_thread_local_destructor_registration(object_type, emit_rvalue(*target_arg));
@@ -17906,7 +17965,7 @@ private:
       signature.params.push_back(make_lowir_parameter_text("%arg0", "i64"));
       return true;
     }
-    if(name == "__cxa_thread_atexit") {
+    if(name == "__cxa_atexit" || name == "__cxa_thread_atexit") {
       signature.return_type = "i32";
       signature.params.push_back(make_lowir_parameter_text("%arg0", "ptr"));
       signature.params.push_back(make_lowir_parameter_text("%arg1", "ptr"));
@@ -21290,12 +21349,14 @@ private:
       const string root_class = class_qualified_name(root_type);
       if(root_class.empty() ||
          root_class == class_name ||
-         classes_with_virtual_functions_.count(root_class) == 0 ||
-         !symbol_linkage::has_external_vtable_symbol_candidate(root_type) ||
          vtable_bindings_.count(root_class) != 0 ||
          class_virtual_base_layouts_.count(root_class) != 0) {
         return;
       }
+      // A virtual-base projection is sufficient structural evidence for the
+      // root layout.  Virtual inheritance itself requires the runtime layout;
+      // it does not depend on seeing a virtual member or owning the vtable in
+      // this translation unit.
       class_virtual_base_layouts_[root_class] = virtual_base_layout;
       return;
     }
@@ -23096,7 +23157,9 @@ private:
               global_ctor_actions_.push_back(&action);
             } else if(action.kind == CallSemKind::destructor_action) {
               if(!action.trivial_lifecycle) {
-                global_dtor_actions_.push_back(&action);
+                if(callsem_local_static_guard_symbol(node).empty()) {
+                  global_dtor_actions_.push_back(&action);
+                }
               }
             } else {
               throw logic_error("unsupported global array initializer for " + node.text);
@@ -23146,6 +23209,7 @@ private:
                   is_direct_global_class_materialization_child(node, node.children[i])) {
           append_global_object_materialization_constructor_action(node, node.children[i]);
         } else if(!node.is_thread_local &&
+                  callsem_local_static_guard_symbol(node).empty() &&
                   node.children[i].kind == CallSemKind::destructor_action &&
                   !node.children[i].trivial_lifecycle) {
           global_dtor_actions_.push_back(&node.children[i]);

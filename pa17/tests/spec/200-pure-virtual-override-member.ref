@@ -19,8 +19,9 @@ global @__typeinfo_name__struct_mid [storage=readonly, binding=weak, object=_ZTS
   i8 0
 }
 global @__rtti_struct_mid [storage=readonly, binding=weak, object=_ZTI3mid] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name__struct_mid
+  ptr addr @__rtti_struct_base
 }
 global @__rtti_struct_leaf [storage=readonly, binding=weak, object=_ZTI4leaf] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16

@@ -6630,9 +6630,6 @@ PreExpansionResolveStatus try_resolve_pre_expansion_simple_type_arguments(
     }
 
     if(!type) {
-      type = resolved_parameter_type(simple_name);
-    }
-    if(!type) {
       resolve_non_dependent_direct_type_argument(
           services, scope, texts[index], type);
     }
@@ -6874,14 +6871,14 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
               services, template_api::make_template_environment(bound_scope), type);
           set_resolved_type_template_argument(type_system, type, inputs.texts[i], arg);
           attach_template_argument_source_syntax(inputs.syntax_for(i), arg);
-        } else if((lookup_direct_bound_type_argument(bound_scope,
+        } else if((lookup_direct_bound_type_argument(raw_scope,
                                                      inputs.texts[i],
                                                      type) ||
                    lookup_exact_visible_qualified_type_argument(
-                       bound_scope,
+                       raw_scope,
                        syntax,
                        type) ||
-                   lookup_exact_visible_direct_type_argument(bound_scope,
+                   lookup_exact_visible_direct_type_argument(raw_scope,
                                                             inputs.texts[i],
                                                             type)) &&
                   type) {

@@ -13,11 +13,10 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `102 / 147`
-- current cursor: `#103 libs/serialization/test`
-- active compiler frontier: Boost.SafeNumerics is recorded as an unsupported
-  C++14-language skip and Boost.Scope passes its complete forced C++11 graph;
-  C++03-declared Boost.Serialization is next
+- completed suites: `103 / 147`
+- current cursor: `#104 libs/signals2/test`
+- active compiler frontier: C++03-declared Boost.Serialization passes its
+  complete C++11 graph; C++03-declared Boost.Signals2 is next
 
 ## Baseline Gates
 
@@ -257,6 +256,7 @@ differences other than the output path.
 | `(Random overload, list-constructor, and C-linkage closure)` | Exclude non-static members from ordinary function-pointer overload options, recognize dependent builtin `initializer_list<T>` constructor patterns before deduction, and preserve internal storage and namespace-distinct identity for entities lexically declared inside `extern "C"` | -25.41% | -27.90% | -36.37% | versus the final QVM checkpoint, instructions move +167,639,666 while RSS improves by 3,444,736 B and footprint by 4,620,288 B; every immutable-baseline signal remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-random-final-candidate.json` | pass; final three-run candidate medians are 196,590,046,680 instructions, 931,983,360 B RSS, and 642,564,096 B footprint. The candidate-only gate verified exact immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; neither the parent compiler nor live project headers were measured. |
 | `(Range semantic replay closure)` | Preserve exact hidden-friend replay identity, keep `for` initializer names in parser scope, use structured unqualified lookup through using-directives, validate by-value class construction and abstractness, refresh dependent `decltype` pack semantics per instantiation, and give qualified leaf template lookup the same namespace-visibility surface as ordinary function lookup | -25.08% | -27.69% | -34.98% | versus Random, instructions move +858,190,790, RSS +2,781,184 B, and footprint +14,036,992 B; every immutable-baseline signal remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-range-final-candidate.json` | pass; final three-run candidate medians are 197,448,237,470 instructions, 934,764,544 B RSS, and 656,601,088 B footprint. The candidate-only gate verified exact immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; neither the parent compiler nor live project headers were measured. |
 | `(Scope detector, lookup, and assignability closure)` | Demand the exact current-instantiation member used by a qualified detector, retain using-declaration provenance for imported function templates, preserve concrete substituted function results and the unevaluated `declval` callee fact, and rank assignment operators with the correct class-object value category before applying deletion | -25.49% | -27.68% | -36.78% | versus the three-run Regex checkpoint, instructions improve by 126,996,782, RSS by 634,880 B, and footprint by 9,052,160 B; every immutable-baseline signal improves | `/private/tmp/cppgm-boost-frontier-v2-scope-final-r2.json` | pass; the final isolated candidate records 196,373,476,062 instructions, 934,809,600 B RSS, and 638,427,136 B footprint. The gate verified exact immutable epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; neither the parent compiler nor live project headers were measured and the compiler process recorded zero swaps. |
+| `(Serialization semantic, ABI, RTTI, and lifetime closure)` | Restore on-demand nested-class finalization while repairing split-token spelling, explicit-argument scope, virtual-base casts and reference ABI, class deallocation, local-static identity/destruction, explicit-specialization vtables and mandatory analysis, recursive RTTI bases, and variadic constexpr calls | -24.92% | -27.23% | -35.26% | versus the immutable recorded Scope candidate, instructions move +0.77%, RSS +0.63%, and footprint +2.41%; every fixed gate remains strongly improved. A direct 10-second/1 ms profile attributes 43 of 7,096 samples to the new declaration-time explicit-specialization instantiation, the required once-per-definition semantic work, with no repeated/pathological stack. | `/private/tmp/cppgm-boost-frontier-v2-serialization-final.json` | pass; isolated candidate medians are 197,887,901,659 instructions, 940,662,784 B RSS, and 653,795,328 B footprint. The candidate-only gate verified exact immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. Direct profile: `/private/tmp/cppgm-boost-frontier-v2-serialization-final-direct.sample.txt`. |
 
 ## Suite Cursor
 
@@ -367,23 +367,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 100 | `libs/regex/test` | pass | `(this commit)` | The final exact forced four-job C++11 `pch=off` graph finds 10,046 targets, rebuilds all 380 requested targets, passes every compile, link, runtime, no-cache, no-EH, concept, Unicode, issue, and example action, and exits successfully in 820.95s; log `/private/tmp/boost-frontier-v2-suite-100-regex-final-authoritative.log`. Maximum RSS is 1,038,413,824 B with zero process swaps, zero throttled pages, and unchanged system swap. | Seven typed corrections close the graph: command-line macro replacement, inherited function-pointer surrogate fallback, built-in subscript conversion, scoped overload-candidate lifetime across class reset, constant local-static member-pointer arrays, one-time ODR local-static destruction, and switch-case operand propagation. Five new reducers are 2--11 C++11 lines, none uses `<type_traits>`, and the member-pointer owner is at the exact PA26:300 cluster. The PA9-excluded direct-LowIR report passes `4215/4215`, including PA37 object roundtrips `7/7`; all 973 strict comparisons pass. Normal, ten individual cache-off modes, and all-off are byte-identical for the semantic reducers. All 23 text-reparse categories and 14 audit tests pass, new placement/hygiene is clean, the complete PA27 large-ref review remains valid, and the forced Homebrew Clang 22 build is warning-clean. Three existing LowIR refs change only to remove redundant dynamic guards from data proven constant-initialized. The immutable frozen-source/51-header gate records -25.44% instructions, -27.63% RSS, and -35.89% footprint in `/private/tmp/cppgm-boost-frontier-v2-regex-final.json`. Actual C++ actions invoke CPPGM and host actions use explicitly pinned Homebrew Clang 22 paths; `gcc.*` is only the legacy B2 adapter action label. |
 | 101 | `libs/safe_numerics/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/safe_numerics/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier policy, no graph was run and no compiler work is inferred from the historical passing result. The cursor advances directly to C++11 Boost.Scope. |
 | 102 | `libs/scope/test` | pass | `(this commit)` | The exact final forced three-job C++11 `pch=off` replay finds 548 targets, rebuilds all 74 currently requested targets, passes every positive compile/link/runtime action, handles every deliberate negative as failed-as-expected, and exits successfully in 28.96s; log `/private/tmp/boost-frontier-v2-suite-102-scope-final-package.log`. Maximum RSS is 256,516,096 B with zero process swaps, zero throttled pages, and unchanged system swap. | Five typed repairs close the four positive intake failures and the negative assignment-trait control: lazy current-instantiation member demand, using-declaration provenance for imported function templates, concrete function-result preservation, an explicit unevaluated `declval` callee fact, and value-category-aware assignment-operator ranking that considers deleted exact matches. Four PA22 owners are 20--27 lines with only a five-line local support header; the PA34 trait owner is 26 lines. None uses `<type_traits>`, all LowIR refs are 0--106 bytes, and all four witnesses come from patched Clang. PA22/PA34 pass `680/680`; all 977 configured strict comparisons pass; the final PA9-excluded direct-LowIR report passes `4220/4220`, including PA37 `7/7`. Normal, all eleven individual cache-off modes, and all-off are byte-identical for all five reducers. All 23 text-reparse categories and 21 audit tests pass; a placement-scanner correction stops default initializer expressions from being mistaken for pointer/reference NTTP declarations, and the new tests add no placement or hygiene finding. The complete PA27 large-ref review remains valid: only six refs exceed 200 lines, their source owners are 4--35 lines, and only the irreducible recursive VTT/diamond-destructor outputs exceed 10 KiB. The forced Homebrew Clang 22 build is warning-clean. The immutable frozen-source/51-header gate records -25.49% instructions, -27.68% RSS, and -36.78% footprint in `/private/tmp/cppgm-boost-frontier-v2-scope-final-r2.json`. Actual C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use the explicitly pinned Clang paths; `gcc.*` is only the legacy B2 adapter action label. |
+| 103 | `libs/serialization/test` | pass | `(this commit)` | The exact forced three-job C++11 `pch=off` graph finds 7,991 targets, requests 1,562 updates, updates 1,559, and passes every positive compile/link/runtime target. Its sole initial graph-status miss was the deliberate `test_traits_fail` compile-failure unexpectedly compiling; after the two-line semantic repair, a forced replay reports `(failed-as-expected)` and the complete incremental graph exits successfully with no pending update. Logs: `/private/tmp/boost-frontier-v2-suite-103-serialization-full-correct-final-20260729.log`, `/private/tmp/boost-frontier-v2-serialization-test-traits-fail-fixed-20260729.log`, and `/private/tmp/boost-frontier-v2-suite-103-serialization-incremental-final-20260729.log`. | Twelve compact C++11 regression families across PA16/18/19/22/32/33 cover lazy nested-class completion, split-`>>` spelling, explicit-argument scope, virtual-base casts and cross-TU ABI, class deallocation, local-static identity/destruction, explicit-specialization vtables and mandatory analysis, and recursive RTTI bases. The largest source component is 20 lines; none uses `<type_traits>`, and no new ref exceeds 10 KiB. All 978 configured strict comparisons pass. The PA9-excluded direct surface completes with PA37 `7/7`; the two PA21 refs whose definitions move to declaration-discovery order pass their exact `272/272` direct rerun. All 23 reparse categories and audit tests pass; placement adds no finding. The full graph's timed child maximum is 1,095,254,016 B; live sampling records a 975,684 KiB maximum child and 1,636,296 KiB maximum concurrent compiler RSS, with zero process swaps and full release. Actual C++ actions invoke CPPGM and every host path is pinned to Homebrew Clang 22; printed `gcc.*` and `gcc-cppgm` strings are only legacy adapter labels. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#103 libs/serialization/test`
+- suite: `#104 libs/signals2/test`
 - focused target: full forced C++11 graph intake
-- last closed suite: `#102 libs/scope/test` (`pass`)
+- last closed suite: `#103 libs/serialization/test` (`pass`)
 - failure phase: not yet established
 - diagnostic: pending exact intake
 - reduced repro: not applicable yet
 - owning PA/cluster: pending
 - implementation area: pending
-- performance risk: monitor template-heavy archive and polymorphic-archive units;
-  retain ordinary parallelism unless a measured heavy unit requires isolation
-- language lane: Boost.Serialization declares C++03 and will run in the stable
+- performance risk: monitor callback/template-heavy units while retaining
+  ordinary parallelism unless a measured heavy unit requires isolation
+- language lane: Boost.Signals2 declares C++03 and will run in the stable
   forced C++11 lane
 - next action: run the exact Clang-pinned `pch=off` forced graph with memory
   monitoring and isolate the first compiler-owned frontier, if any
@@ -395,6 +396,18 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| optimized | Serialization lazy nested member classes | Completing a class-template specialization eagerly finalized every direct nested class, recursively expanding template implementation detail that was never demanded. Finalization now leaves nested classes at their existing on-demand boundary. | `pa22/tests/general/300-lazy-nested-class-in-member-template.t`, seven header-free C++11 lines | The exact archive TU expanded the same nested graph pathologically; the minimized owner requires only the used member template. | Full Serialization, broad/strict, cache, reparse, placement, and memory gates pass. | final candidate-only frozen-source/51-header report; no parent or live header measured | `(this commit)` |
+| fixed | Serialization split right-shift token spelling | Text assembled from a token cursor appended the original `>>` spelling for each split piece, turning two logical `>` tokens into `>>>>`. Split pieces now contribute exactly one `>` while ordinary tokens retain their source spelling. | `pa18/tests/general/100-lazy-rshift-member-lookup.t`, two source lines and a seven-line local header | The saved compiler loses the nested member after a split template close; Clang and the fixed compiler accept it. | PA18 strict and the full packaging surfaces pass. | included in final Serialization gate | `(this commit)` |
+| fixed | Serialization sequential explicit template arguments | The fast resolver looked up each explicit type argument in the scope already augmented with earlier parameter bindings, so a later same-spelled source type could be shadowed. Exact explicit arguments now resolve from the raw use scope; bound scope remains for substitution. | `pa22/tests/spec/300-sequential-explicit-template-argument-name-shadow.t`, seven header-free C++11 lines | The saved compiler binds the later argument to the earlier template parameter rather than the source declaration; Clang selects the source type. | PA22, strict, cache, and full graph pass. | included in final Serialization gate | `(this commit)` |
+| fixed | Serialization C-style virtual-base downcasts | Static-like pointer/reference downcasts crossed a virtual base whenever the computed byte offset happened to be zero. Typed base-path traversal now rejects any path containing virtual inheritance, allowing substitution failure to select the ellipsis fallback. | `pa22/tests/spec/300-c-style-virtual-base-downcast-sfinae.t`, four header-free C++11 lines | The exact archive trait accepted an ill-formed virtual-base downcast; Clang rejects it in SFINAE. | Normal and all-cache-off rejection agree; full Serialization and strict surfaces pass. | included in final Serialization gate | `(this commit)` |
+| fixed | Serialization cross-TU reference virtual-base ABI | A function declaration could be emitted before the referenced class layout was observed, omitting the hidden virtual-base layout parameter later present on the definition in another TU. Declarations now carry structured parameter layouts, and direct calls retry the same type-based inference without duplicating special-member metadata. | `pa32/tests/general/200-cross-tu-host-virtual-base-reference-parameter.t`, two tiny TUs and a three-line header | The saved compiler produces incompatible caller/callee ABI; the fixed binary and Clang return zero. | PA32 runtime, complete graph, broad direct LowIR, and memory gates pass. | included in final Serialization gate | `(this commit)` |
+| fixed | Serialization class-specific deallocation | Delete analysis always formed an unqualified global call and lowering assumed one pointer argument. It now performs typed class-member lookup, selects sized deallocation when it is the only usual member form, and lowers every selected argument. | `pa16/tests/general/300-class-specific-delete-runtime.t`, four header-free C++11 lines | The saved binary bypasses the class deallocator; Clang and the fixed binary invoke it. | PA16 runtime and complete Serialization pass. | included in final Serialization gate | `(this commit)` |
+| fixed | Serialization local-static template identity and linkage | Local-static identity used an enclosing function discriminator only for direct instantiation arguments and ignored internal linkage carried through template argument types. It now uses the existing linkage-template identity and recursively detects typed unnamed-namespace identity, keeping distinct internal specializations local. | `pa32/tests/general/200-inline-local-static-distinct-class-specializations.t` and `200-inline-local-static-internal-template-argument-separates.t`, compact two-TU C++11 owners | The saved compiler coalesces distinct specialization storage or exports internal-type identity; Clang keeps the objects distinct. | Both PA32 runtime owners, broad, strict, and complete Serialization pass. | included in final Serialization gate | `(this commit)` |
+| fixed | Serialization function-local static destruction | Non-thread-local function statics were also queued as unconditional global destructors, rather than registering destruction only after successful initialization. Lowering now calls `__cxa_atexit` at the guarded initialization point and suppresses duplicate global-dtor actions. | `pa33/tests/general/200-host-local-static-dtor-atexit.t`, one 20-line implementation TU | The saved binary can destroy an uninitialized local static; Clang and the fixed runtime destroy exactly once after construction. | PA33 runtime and the complete graph pass; zero process swaps. | included in final Serialization gate | `(this commit)` |
+| fixed | Serialization explicit-specialization key-function vtables | Vtable key-function selection categorically excluded every templated context, including a non-template explicit class specialization. The decision now treats explicit specializations as ordinary classes for key-function ownership. | `pa33/tests/general/100-explicit-specialization-key-function-vtable.t`, two tiny TUs | The saved object omits the specialization's required vtable owner; Clang and the fixed linked program agree. | PA33 inspect/runtime and complete Serialization pass. | included in final Serialization gate | `(this commit)` |
+| fixed | Serialization recursive RTTI base registration | Late RTTI synthesis could emit a derived class from a reference-only `ClassInfo`, omit its direct bases, and never demand their RTTI. Late synthesis now completes the class and registers every typed base before emitting the base graph. | `pa33/tests/general/200-host-lazy-template-base-rtti-cross-cast.t`, a nine-line header and 7/12-line TUs | The controlled pre-fix compiler returns failure for the cross-cast while Clang and the fixed compiler return zero. | Exported XML and wide-XML targets, PA33 runtime, broad, and strict pass. | included in final Serialization gate | `(this commit)` |
+| fixed | Serialization variadic constexpr calls | Constant-call selection rejected every variadic function and the evaluator required exact argument/parameter counts. It now validates only named parameters, permits trailing arguments for a variadic body, and binds only those named parameters. | Existing PA constexpr owners plus exact Boost.Serialization constant-expression use | The saved compiler cannot evaluate the selected variadic constexpr call; the fixed result agrees with Clang. | Complete graph and broad/strict constexpr surfaces pass. | included in final Serialization gate | `(this commit)` |
+| fixed | Serialization explicit-specialization mandatory analysis | An explicit class-specialization definition was stored but never semantically analyzed unless a later use demanded it, allowing an unconditional class-scope assertion to compile. The collector now selects and instantiates only that just-defined explicit specialization; primaries, partials, and unrelated nested classes remain lazy. | `pa19/tests/general/300-explicit-specialization-static-assert.t`, two header-free C++11 lines | Clang rejects the reducer and Boost `test_traits_fail`; the saved compiler accepted both. The fixed B2 target reports `(failed-as-expected)`. | PA19 placement is clean; normal and all-cache-off reject identically; strict and direct packaging surfaces pass. | included in final Serialization gate | `(this commit)` |
 | fixed | Regex `regex_timer` command-line macro replacement | A macro introduced by `-D` was indistinguishable from an ordinary source definition, so the source's intentional replacement was treated as a fatal conflicting redefinition. Macro state now retains command-line provenance and permits the first source replacement to install the source definition; later source redefinitions keep the ordinary diagnostic rule. | `pa29/tests/general/100-command-line-macro-source-redefinition.t.1`, two C++11 lines | The intake fails on `BOOST_TIMER_ENABLE_DEPRECATED`, which is supplied both by the Jamfile and the example source. Homebrew Clang diagnoses but continues, while the saved CPPGM aborts preprocessing. | PA29, the exact timer target, complete Regex graph, broad/strict reports, Clang C++11 control, placement, and audit gates pass. | measured with the complete Regex closure | `(this commit)` |
 | fixed | Regex inherited conversion-function surrogate | Callable-object analysis tried conversion-to-function-pointer surrogates only when no `operator()` candidates existed. An inherited surrogate was therefore lost when an arity-incompatible `operator()` was present, although that candidate produced no viable match. The typed surrogate resolver is retained and retried only after the ordinary callable set is proven nonviable. | `pa16/tests/general/400-inherited-surrogate-after-nonviable-call-operator.t`, five lines / 239 bytes, header-free C++11 | The saved compiler rejects a two-argument call because the derived one-argument `operator()` suppresses the inherited function-pointer conversion; Homebrew Clang selects the surrogate. | PA16, cache parity, strict C++11 Clang control, the Regex runtime families, and all packaging gates pass. | measured with the complete Regex closure | `(this commit)` |
 | fixed | Regex built-in array subscript class conversion | Built-in subscript recognition accepted an already integral index but did not try the existing typed user conversion when the index was a class. It now converts a class operand to the compiler's canonical `long` index target, then requires the converted result to be integral or an unscoped enum; both `pointer[class]` and `class[pointer]` use the same rule. | `pa16/tests/general/400-class-conversion-array-subscript.t`, four lines / 134 bytes, header-free C++11 | The saved compiler rejects `values[index()]`; Homebrew Clang and the fixed compiler select the built-in subscript after `index::operator long()`. | PA16, all cache modes, strict C++11 Clang control, complete Regex, broad, strict, placement, and audit gates pass. | measured with the complete Regex closure | `(this commit)` |
@@ -743,6 +756,76 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | QVM XMM call-cycle scratch reservation | The parallel XMM argument-move scheduler removed completed self-moves from the used-register set. Their destination registers still held live call arguments, so a later cycle breaker could overwrite one before the call. Every destination is now reserved for the whole schedule, while only pending XMM sources constrain scratch selection. | `pa28/tests/behavior/800-xmm-call-arg-cycle-reserves-self-move.t`, 608 bytes of header-free C++11; all eight scalar arguments are required to exhaust the ABI XMM argument registers | The minimized eight-register cycle reproduces the corrupted argument and QVM `rot_mat_test` assertion failure. The fixed native output returns zero and the exact QVM runtime passes. | PA28, complete QVM, full direct-LowIR including PA37 object roundtrip, strict, reparse, warning, memory, and diff gates pass. | measured with the complete QVM closure; the graph peaks at 635,494,400 B maximum RSS with zero swaps | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-29`: Closed Boost.Serialization and advanced the cursor to
+  C++03-declared Boost.Signals2, which will run in the stable C++11 lane. The
+  final closure removes the broad eager nested-member-class finalization that
+  caused the pathological archive expansion and retains only standards-required
+  declaration-time analysis for an explicit class-specialization definition.
+  The latter is not a replacement cache or retention workaround: the two-line
+  PA19 owner and Clang both reject its unconditional assertion at the
+  specialization definition, while primary, partial, unused member, and
+  unrelated nested definitions remain lazy.
+
+  Eleven other typed corrections close independent split-token, explicit
+  argument-scope, virtual-base cast/ABI, class-deallocation, local-static
+  identity/destruction, vtable, RTTI, and constexpr paths. The resulting twelve
+  regression families live at their earliest PA16/18/19/22/32/33 owners. No
+  primary `.t` exceeds seven lines; the largest multi-TU source component is 20
+  lines, none uses `<type_traits>`, and no new ref exceeds 10 KiB. The complete
+  PA27 large-ref audit remains unchanged: only six existing refs exceed 200
+  lines, and only the irreducible recursive-VTT and diamond-destructor owners
+  exceed 10 KiB.
+
+  The PA9-excluded direct-LowIR surface completes through PA38, including PA37
+  object roundtrip `7/7`. The two PA21 refs moved only already-equivalent
+  function definitions into declaration-discovery order after mandatory
+  explicit-specialization analysis; their exact direct rerun passes `272/272`.
+  The existing PA17 RTTI ref now records the real direct base and matching
+  `__si_class_type_info` shape. All 978 configured strict comparisons pass.
+  Normal and all-cache-off controls agree for the new negative owner, all 23
+  text-reparse categories remain zero, all 32 audit/performance unit tests
+  pass, and placement adds no finding.
+
+  The exact forced three-job graph finds 7,991 targets, requests 1,562 updates,
+  and updates 1,559. Every positive compile/link/runtime path passes, including
+  exported XML and wide XML archives, RTTI cross-casts, diamond graphs,
+  singleton paths, and no-RTTI variants. The initial final graph status was
+  nonzero only because `test_traits_fail` unexpectedly compiled; after the
+  standards fix, its exact forced replay reports `(failed-as-expected)` and a
+  complete incremental graph exits zero with nothing pending. The full run's
+  timed child maximum is 1,095,254,016 B RSS. Live sampling records a 975,684
+  KiB maximum child and 1,636,296 KiB concurrent compiler high-water mark, with
+  zero process swaps, full release between units, and system swap decreasing
+  rather than increasing. The former 6--9 GiB single-TU behavior is gone.
+
+  Three external Boost-tree compatibility edits are recorded rather than
+  hidden. `libs/serialization/test/A.cpp` is guarded from a C++14-only form:
+  SHA-256 `27bba8d65dba6e05d9d45d6cf42d1ef7961699d72ec31d770a4e5c0755507a07`
+  before and `e74b8008a560b41b9ae66b38598b75696e592b33c1a81c5ed231b324b2facdb9`
+  after. `libs/serialization/test/Jamfile.v2` qualifies its filesystem library
+  target: `95934f03bd00fcadbcd11b473e7862985ec84c1dd8e471f467bb61c6dd19e6ec` before and
+  `690cfa13bd411b5f5331a16a6a021ae5cb4403e86405821065d7df7d674e6d5c`
+  after. Five Boost.Math-dependent sources now require `__cplusplus >=
+  201402L`, matching the C++11-frontier policy; their final hashes are
+  `55c11251eb8f188a144d5e7cac29f2b723c30d809f49d3c46b163deb2d8bcdb4`,
+  `35d274b7ef357dbd4c8c55d6af5e2c4c7cf40f5093c99f629508abc4bc2f47c9`,
+  `7bd786ae246f3df2a6881e8332af04499add5570258a6e39d61a4109de468aaf`,
+  `fc120122b163540281770698a4a7946e6908ccb1b48cd6aebd8fc3dda3cc3cd6`,
+  and `cc90ff11e2725992aa497be6d8ba94cb2faf0e875d6348885e1453cfc33f520e`
+  for `test_simple_class.cpp`, `test_variant.cpp`, `test_non_intrusive.cpp`,
+  `test_non_default_ctor.cpp`, and `test_complex.cpp`, respectively.
+
+  The isolated final frozen-source/51-header gate records 197,887,901,659
+  instructions, 940,662,784 B RSS, and 653,795,328 B footprint: -24.92%,
+  -27.23%, and -35.26% versus immutable epoch `9764b3835`. No parent compiler
+  and no live project header was measured. The +0.77% rolling instruction
+  movement from Scope triggered a direct 10-second/1 ms profile; the new
+  once-per-definition explicit-specialization path accounts for only 43 of
+  7,096 samples and shows no repeated or pathological expansion. Actual C++
+  actions invoke CPPGM; host C, assembly, and link actions are explicitly
+  pinned to Homebrew Clang 22. Printed `gcc.*` and `gcc-cppgm` strings are only
+  legacy Boost.Build adapter labels, not GCC processes.
 
 - `2026-07-29`: Closed Boost.Random and advanced the cursor to C++03-declared
   Boost.Range, which will run in the supported C++11 lane. Three independent
@@ -4185,7 +4268,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-# Suite 103 declares C++03; run it in the stable forced C++11 lane.
+# Suite 104 declares C++03; run it in the stable forced C++11 lane.
 /usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=3 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
@@ -4194,5 +4277,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/serialization/test
+  ./run-cppgm-b2.sh pch=off -a libs/signals2/test
 ```

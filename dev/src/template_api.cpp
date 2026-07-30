@@ -27,6 +27,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <map>
+#include <set>
 #include <sstream>
 #include <utility>
 
@@ -1123,6 +1124,118 @@ bool scope_has_linkage_template_owner_identity_impl(const semantic_model::Scope 
   return false;
 }
 
+bool scope_has_internal_namespace_linkage_impl(const semantic_model::Scope * scope)
+{
+  for(const semantic_model::Scope * current = scope;
+      current;
+      current = current->parent) {
+    if(current->namespace_scope && current->name == "<unnamed>") {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool type_identity_has_internal_namespace_linkage_impl(
+    const cpp_decl::TypePtr & type,
+    std::set<const cpp_decl::Type *> & visited_types,
+    std::set<const semantic_model::ClassInfo *> & visited_classes);
+
+bool template_arguments_have_internal_namespace_linkage_impl(
+    const std::vector<template_model::TemplateArgument> & arguments,
+    std::set<const cpp_decl::Type *> & visited_types,
+    std::set<const semantic_model::ClassInfo *> & visited_classes)
+{
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(type_identity_has_internal_namespace_linkage_impl(
+           arguments[i].type, visited_types, visited_classes) ||
+       type_identity_has_internal_namespace_linkage_impl(
+           arguments[i].template_owner_type, visited_types, visited_classes)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool class_identity_has_internal_namespace_linkage_impl(
+    const semantic_model::ClassInfo * info,
+    std::set<const cpp_decl::Type *> & visited_types,
+    std::set<const semantic_model::ClassInfo *> & visited_classes)
+{
+  if(!info) {
+    return false;
+  }
+  if(scope_has_internal_namespace_linkage_impl(info->enclosing_scope)) {
+    return true;
+  }
+  if(!visited_classes.insert(info).second) {
+    return false;
+  }
+  if(template_arguments_have_internal_namespace_linkage_impl(
+         info->instantiation_arguments, visited_types, visited_classes) ||
+     template_arguments_have_internal_namespace_linkage_impl(
+         info->instantiation_binding_arguments, visited_types, visited_classes)) {
+    return true;
+  }
+  if(info->instantiation_binding_arguments_view &&
+     info->instantiation_binding_arguments_view != &info->instantiation_arguments &&
+     info->instantiation_binding_arguments_view !=
+         &info->instantiation_binding_arguments &&
+     template_arguments_have_internal_namespace_linkage_impl(
+         *info->instantiation_binding_arguments_view,
+         visited_types,
+         visited_classes)) {
+    return true;
+  }
+  return info->enclosing_scope &&
+         class_identity_has_internal_namespace_linkage_impl(
+             info->enclosing_scope->class_info, visited_types, visited_classes);
+}
+
+bool type_identity_has_internal_namespace_linkage_impl(
+    const cpp_decl::TypePtr & type,
+    std::set<const cpp_decl::Type *> & visited_types,
+    std::set<const semantic_model::ClassInfo *> & visited_classes)
+{
+  if(!type || !visited_types.insert(type.get()).second) {
+    return false;
+  }
+  if(type->kind == cpp_decl::Type::TK_NAMED &&
+     class_identity_has_internal_namespace_linkage_impl(
+         type->named_rare().named_class_info, visited_types, visited_classes)) {
+    return true;
+  }
+  if(type_identity_has_internal_namespace_linkage_impl(
+         type->inner, visited_types, visited_classes) ||
+     type_identity_has_internal_namespace_linkage_impl(
+         type->owner, visited_types, visited_classes)) {
+    return true;
+  }
+  for(std::size_t i = 0; i < type->params.size(); ++i) {
+    if(type_identity_has_internal_namespace_linkage_impl(
+           type->params[i], visited_types, visited_classes)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool function_binding_identity_has_internal_namespace_linkage_impl(
+    const semantic_model::FunctionBinding * binding)
+{
+  if(!binding) {
+    return false;
+  }
+  std::set<const cpp_decl::Type *> visited_types;
+  std::set<const semantic_model::ClassInfo *> visited_classes;
+  return class_identity_has_internal_namespace_linkage_impl(
+             binding->owner_class, visited_types, visited_classes) ||
+         class_identity_has_internal_namespace_linkage_impl(
+             binding->lexical_access_class, visited_types, visited_classes) ||
+         template_arguments_have_internal_namespace_linkage_impl(
+             binding->instantiation_arguments, visited_types, visited_classes);
+}
+
 bool value_binding_has_template_identity_impl(const semantic_model::ValueBinding * binding)
 {
   return binding &&
@@ -1903,6 +2016,12 @@ bool function_binding_has_linkage_template_identity(
           class_has_linkage_template_identity_impl(binding->owner_class) ||
           class_has_linkage_template_identity_impl(binding->lexical_access_class) ||
           scope_has_linkage_template_owner_identity_impl(binding->declaration_scope));
+}
+
+bool function_binding_identity_has_internal_namespace_linkage(
+    const semantic_model::FunctionBinding * binding)
+{
+  return function_binding_identity_has_internal_namespace_linkage_impl(binding);
 }
 
 bool value_or_owner_has_template_identity(const semantic_model::ValueBinding * binding)

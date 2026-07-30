@@ -507,6 +507,17 @@ public:
           ++primary->specialization_epoch;
         }
         record_template_parameter_clause_source_uses(scope, node);
+        if(incoming_is_definition) {
+          const template_api::ClassSpecializationSelection specialization =
+              template_api::specialization::select_class_specialization(
+                  ctx,
+                  *primary,
+                  scope,
+                  specialization_key,
+                  arguments);
+          ctx.instantiate_selected_class_template(
+              *primary, scope, arguments, specialization);
+        }
         return;
       }
 

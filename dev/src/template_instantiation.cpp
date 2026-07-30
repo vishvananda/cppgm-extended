@@ -7910,40 +7910,6 @@ void finalize_nested_member_class_instantiation_impl(
                                                              decl_location);
 }
 
-void finalize_direct_nested_member_classes(
-    SemanticContext & ctx,
-    ClassTemplateDecl & decl,
-    ClassInfo & info,
-    const std::vector<TemplateArgument> & arguments)
-{
-  if(!info.member_scope) {
-    return;
-  }
-
-  std::vector<ClassInfo *> nested_classes;
-  for(auto it =
-          info.member_scope->named_types.begin();
-      it != info.member_scope->named_types.end();
-      ++it) {
-    ClassInfo * nested = ctx.class_info_for_type(it->second);
-    if(!nested ||
-       nested == &info ||
-       nested->source_template ||
-       nested->enclosing_scope != info.member_scope.get()) {
-      continue;
-    }
-    if(std::find(nested_classes.begin(), nested_classes.end(), nested) ==
-       nested_classes.end()) {
-      nested_classes.push_back(nested);
-    }
-  }
-
-  for(std::size_t i = 0; i < nested_classes.size(); ++i) {
-    finalize_nested_member_class_instantiation_impl(
-        ctx, decl, *nested_classes[i], arguments, false);
-  }
-}
-
 }  // namespace
 
 std::string template_argument_key_for_instantiation(
@@ -8977,7 +8943,6 @@ void finalize_instantiated_class(SemanticContext & ctx,
     apply_selected_specialization_member_function_definitions(ctx, decl, info);
     apply_out_of_class_special_member_definitions(ctx, decl, info, arguments);
     apply_out_of_class_static_member_definitions(ctx, decl, info, arguments);
-    finalize_direct_nested_member_classes(ctx, decl, info, arguments);
   }
   semantic_class_model::finalize_class_constant_members(ctx, info);
 }

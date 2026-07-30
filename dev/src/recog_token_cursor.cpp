@@ -47,7 +47,7 @@ struct VectorRecogTokenSequence : IRecogTokenSequence
     string text;
     text.reserve((end - start) * 8);
     for(size_t i = start; i < end; ++i) {
-      text += tokens[i].source;
+      text += tokens[i].is_rshift_piece() ? ">" : tokens[i].source;
     }
     return text;
   }

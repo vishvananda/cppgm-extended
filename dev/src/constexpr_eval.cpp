@@ -1182,8 +1182,9 @@ bool Evaluator::call(const FunctionInfo & function,
     hooks_ = *override_hooks;
   }
 
-  if(!function.body || function.variadic ||
-     function.params.size() != args.size() ||
+  if(!function.body ||
+     (!function.variadic && function.params.size() != args.size()) ||
+     (function.variadic && function.params.size() > args.size()) ||
      call_depth_ >= kMaxConstexprCallDepth) {
     if(use_override_hooks) {
       hooks_ = saved_hooks;
@@ -1248,7 +1249,7 @@ bool Evaluator::call(const FunctionInfo & function,
     append_visible_members(this_object);
   }
   push_scope();
-  for(size_t i = 0; i < args.size(); ++i) {
+  for(size_t i = 0; i < function.params.size(); ++i) {
     ConstexprValue value = args[i];
     if(function.params[i].second) {
       ConstexprValue converted;

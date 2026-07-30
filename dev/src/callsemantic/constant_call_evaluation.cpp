@@ -13,6 +13,7 @@
 #include "template_scope.h"
 #include "types.h"
 
+#include <algorithm>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -659,16 +660,17 @@ bool evaluate_constant_call_expression_value(
       TypePtr function_type = strip_top_level_cv(candidate->type);
       if(!function_type || function_type->kind != Type::TK_FUNCTION ||
          (!template_id &&
-          candidate->source_template &&
+         candidate->source_template &&
           !candidate->is_explicit_specialization &&
           !constexpr_template_specialization_matches_argument_types(*candidate,
                                                                      args)) ||
          ctx.type_depends_on_template_parameter(function_type) ||
-         function_type->variadic || function_type->prototype_relaxed ||
          candidate->is_method) {
         continue;
       }
-      if(args.size() > candidate->params.size()) {
+      const bool variadic =
+          function_type->variadic || function_type->prototype_relaxed;
+      if(!variadic && args.size() > candidate->params.size()) {
         continue;
       }
 
@@ -683,7 +685,9 @@ bool evaluate_constant_call_expression_value(
       }
 
       bool matches = true;
-      for(std::size_t arg_index = 0; arg_index < args.size(); ++arg_index) {
+      const std::size_t matched_arg_count =
+          std::min(args.size(), candidate->params.size());
+      for(std::size_t arg_index = 0; arg_index < matched_arg_count; ++arg_index) {
         ExprInfo expr;
         expr.type = args[arg_index].type;
         if(!expr.type) {

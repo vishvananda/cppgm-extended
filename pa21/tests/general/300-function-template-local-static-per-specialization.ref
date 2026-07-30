@@ -120,22 +120,6 @@ function @function_n_void___assign_to__ov2(%this : ptr, %__param1 : obj<1x1>) ->
     %t18 = binary add i32 %t13, %t17
     return i32 %t18
 }
-function @manager_log_functor___call() -> i32 [binding=weak, object=_ZN7managerI11log_functorE4callEv] {
-  block ^entry:
-    return i32 10
-}
-function @invoker_log_functor___call() -> i32 [binding=weak, object=_ZN7invokerI11log_functorE4callEv] {
-  block ^entry:
-    return i32 1
-}
-function @manager_init_functor___call() -> i32 [binding=weak, object=_ZN7managerI12init_functorE4callEv] {
-  block ^entry:
-    return i32 20
-}
-function @invoker_init_functor___call() -> i32 [binding=weak, object=_ZN7invokerI12init_functorE4callEv] {
-  block ^entry:
-    return i32 2
-}
 function @log_functor__log_functor(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11log_functorC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
@@ -149,6 +133,22 @@ function @init_functor__init_functor(%this : ptr) -> void [unwind=no, binding=we
   block ^entry:
     store ptr %this, $this
     return void
+}
+function @manager_log_functor___call() -> i32 [binding=weak, object=_ZN7managerI11log_functorE4callEv] {
+  block ^entry:
+    return i32 10
+}
+function @manager_init_functor___call() -> i32 [binding=weak, object=_ZN7managerI12init_functorE4callEv] {
+  block ^entry:
+    return i32 20
+}
+function @invoker_log_functor___call() -> i32 [binding=weak, object=_ZN7invokerI11log_functorE4callEv] {
+  block ^entry:
+    return i32 1
+}
+function @invoker_init_functor___call() -> i32 [binding=weak, object=_ZN7invokerI12init_functorE4callEv] {
+  block ^entry:
+    return i32 2
 }
 alias object _ZN11log_functorC2Ev = @log_functor__log_functor
 alias object _ZN12init_functorC2Ev = @init_functor__init_functor

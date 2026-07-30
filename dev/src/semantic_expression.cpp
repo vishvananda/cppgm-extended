@@ -727,6 +727,27 @@ bool const_cast_similar_object_types(const TypePtr & lhs, const TypePtr & rhs)
   return false;
 }
 
+bool class_path_crosses_virtual_base(const ClassInfo & derived,
+                                     const ClassInfo * base)
+{
+  vector<pair<const ClassInfo *, bool> > stack;
+  stack.push_back(make_pair(&derived, false));
+  while(!stack.empty()) {
+    const ClassInfo * current = stack.back().first;
+    const bool crossed_virtual_base = stack.back().second;
+    stack.pop_back();
+    if(current == base && crossed_virtual_base) {
+      return true;
+    }
+    for(size_t i = 0; i < current->bases.size(); ++i) {
+      stack.push_back(
+          make_pair(current->bases[i].type,
+                    crossed_virtual_base || current->bases[i].is_virtual));
+    }
+  }
+  return false;
+}
+
 bool supports_zero_offset_static_reference_downcast(SemanticContext & ctx,
                                                     const TypePtr & target_type,
                                                     const ExprInfo & operand)
@@ -759,7 +780,43 @@ bool supports_zero_offset_static_reference_downcast(SemanticContext & ctx,
   size_t offset = 0;
   MemberAccess access = MA_PUBLIC;
   return find_unique_base_path(*target_class, source_class, offset, access) &&
+         !class_path_crosses_virtual_base(*target_class, source_class) &&
          offset == 0;
+}
+
+bool pointer_downcast_crosses_virtual_base(SemanticContext & ctx,
+                                           const TypePtr & target_type,
+                                           const ExprInfo & operand)
+{
+  TypePtr target_base = strip_top_level_cv(target_type);
+  TypePtr source_base = value_conversion_type(operand);
+  if(!target_base || !source_base ||
+     target_base->kind != Type::TK_POINTER ||
+     source_base->kind != Type::TK_POINTER) {
+    return false;
+  }
+
+  TypePtr target_pointee = strip_top_level_cv(target_base->inner);
+  TypePtr source_pointee = strip_top_level_cv(source_base->inner);
+  if(type_equals(target_pointee, source_pointee)) {
+    return false;
+  }
+
+  ClassInfo * target_class =
+      complete_class_type_for_lookup(ctx, target_pointee);
+  ClassInfo * source_class =
+      complete_class_type_for_lookup(ctx, source_pointee);
+  if(!target_class || !source_class || target_class == source_class) {
+    return false;
+  }
+
+  size_t offset = 0;
+  MemberAccess access = MA_PUBLIC;
+  if(!find_unique_base_path(*target_class, source_class, offset, access)) {
+    return false;
+  }
+
+  return class_path_crosses_virtual_base(*target_class, source_class);
 }
 
 bool top_level_cv_compatible_for_direct_reference_cast(const TypePtr & target,
@@ -982,7 +1039,8 @@ bool try_apply_static_reference_derived_cast(SemanticContext & ctx,
 
   size_t offset = 0;
   MemberAccess access = MA_PUBLIC;
-  if(!find_unique_base_path(*target_class, source_class, offset, access)) {
+  if(!find_unique_base_path(*target_class, source_class, offset, access) ||
+     class_path_crosses_virtual_base(*target_class, source_class)) {
     return false;
   }
 
@@ -1034,6 +1092,9 @@ bool try_apply_static_pointer_derived_cast(SemanticContext & ctx,
 
   target_object_type = strip_top_level_cv(target_object_type);
   source_object_type = strip_top_level_cv(source_object_type);
+  if(type_equals(target_object_type, source_object_type)) {
+    return false;
+  }
   ClassInfo * target_class =
       target_object_type ? complete_class_type_for_lookup(ctx, target_object_type) : nullptr;
   if(!target_class && target_object_type) {
@@ -1050,7 +1111,8 @@ bool try_apply_static_pointer_derived_cast(SemanticContext & ctx,
 
   size_t offset = 0;
   MemberAccess access = MA_PUBLIC;
-  if(!find_unique_base_path(*target_class, source_class, offset, access)) {
+  if(!find_unique_base_path(*target_class, source_class, offset, access) ||
+     class_path_crosses_virtual_base(*target_class, source_class)) {
     return false;
   }
 
@@ -3779,6 +3841,82 @@ ExprInfo make_implicit_member_expression(SemanticContext & ctx,
   return make_implicit_member_expression_impl(ctx, scope, member);
 }
 
+bool qualify_class_allocation_function(CppAstNode & callee,
+                                       ClassInfo & allocation_class,
+                                       const string & allocation_name,
+                                       const CppAstNode & source)
+{
+  if(!allocation_class.member_scope) {
+    return false;
+  }
+  MemberFunctionLookupResult class_allocation =
+      lookup_visible_member_functions(allocation_class, allocation_name);
+  if(class_allocation.functions.empty()) {
+    return false;
+  }
+
+  QualifiedName qualified_allocation =
+      scope_qualified_name_syntax(*allocation_class.member_scope,
+                                  allocation_name);
+  set_cppast_qualified_name_syntax(callee, qualified_allocation);
+  callee.value = allocation_class.qualified_name + "::" + allocation_name;
+  if(qualified_allocation.qualifiers.empty()) {
+    return true;
+  }
+
+  vector<CppAstNode> qualifier_types(qualified_allocation.qualifiers.size());
+  size_t qualifier_index = qualified_allocation.qualifiers.size();
+  for(const Scope * current = allocation_class.member_scope.get();
+      current && qualifier_index != 0;
+      current = current->parent) {
+    const bool named_class_scope =
+        current->class_info &&
+        current->class_info->member_scope.get() == current &&
+        current->name != "<unnamed>";
+    if(!current->namespace_scope && !named_class_scope) {
+      continue;
+    }
+    --qualifier_index;
+    if(!named_class_scope) {
+      continue;
+    }
+    CppAstNode & class_qualifier = qualifier_types[qualifier_index];
+    class_qualifier.kind = CppAstKind::type_name;
+    class_qualifier.value = qualified_allocation.qualifiers[qualifier_index];
+    class_qualifier.semantic_type = current->class_info->type;
+    class_qualifier.semantic_type_is_resolved_qualifier = true;
+    class_qualifier.source_location_id = source.source_location_id;
+    mutable_cppast_name_lookup_snapshot(class_qualifier) =
+        cppast_name_lookup_snapshot(source);
+  }
+  set_cppast_qualifier_type_syntaxes(callee, std::move(qualifier_types));
+  return true;
+}
+
+bool class_delete_uses_sized_deallocation(ClassInfo & allocation_class,
+                                           const string & allocation_name)
+{
+  const MemberFunctionLookupResult class_allocation =
+      lookup_visible_member_functions(allocation_class, allocation_name);
+  const TypePtr size_type = make_fundamental(FT_UNSIGNED_LONG_INT);
+  bool has_unsized = false;
+  bool has_sized = false;
+  for(size_t i = 0; i < class_allocation.functions.size(); ++i) {
+    const FunctionBinding * binding = class_allocation.functions[i];
+    if(!binding || binding->is_deleted) {
+      continue;
+    }
+    if(binding->params.size() == 1) {
+      has_unsized = true;
+    } else if(binding->params.size() == 2 &&
+              type_equals(strip_top_level_cv(binding->params[1].second),
+                          size_type)) {
+      has_sized = true;
+    }
+  }
+  return !has_unsized && has_sized;
+}
+
 ExprInfo analyze_new_expression(SemanticContext & ctx,
                                 Scope & scope,
                                 const CppAstNode & node)
@@ -3834,44 +3972,11 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
   callee.value = allocation_name;
   const bool globally_qualified_new =
       find_child(node, CppAstKind::global_scope) != nullptr;
-  if(!globally_qualified_new && allocation_class && allocation_class->member_scope) {
-    MemberFunctionLookupResult class_allocation =
-        lookup_visible_member_functions(*allocation_class, allocation_name);
-    if(!class_allocation.functions.empty()) {
-      QualifiedName qualified_allocation =
-          scope_qualified_name_syntax(*allocation_class->member_scope,
-                                      allocation_name);
-      set_cppast_qualified_name_syntax(callee, qualified_allocation);
-      callee.value = allocation_class->qualified_name + "::" + allocation_name;
-      if(!qualified_allocation.qualifiers.empty()) {
-        vector<CppAstNode> qualifier_types(qualified_allocation.qualifiers.size());
-        size_t qualifier_index = qualified_allocation.qualifiers.size();
-        for(const Scope * current = allocation_class->member_scope.get();
-            current && qualifier_index != 0;
-            current = current->parent) {
-          const bool named_class_scope =
-              current->class_info &&
-              current->class_info->member_scope.get() == current &&
-              current->name != "<unnamed>";
-          if(!current->namespace_scope && !named_class_scope) {
-            continue;
-          }
-          --qualifier_index;
-          if(!named_class_scope) {
-            continue;
-          }
-          CppAstNode & class_qualifier = qualifier_types[qualifier_index];
-          class_qualifier.kind = CppAstKind::type_name;
-          class_qualifier.value = qualified_allocation.qualifiers[qualifier_index];
-          class_qualifier.semantic_type = current->class_info->type;
-          class_qualifier.semantic_type_is_resolved_qualifier = true;
-          class_qualifier.source_location_id = adjusted_type_id.source_location_id;
-          mutable_cppast_name_lookup_snapshot(class_qualifier) =
-              cppast_name_lookup_snapshot(adjusted_type_id);
-        }
-        set_cppast_qualifier_type_syntaxes(callee, std::move(qualifier_types));
-      }
-    }
+  if(!globally_qualified_new && allocation_class) {
+    qualify_class_allocation_function(callee,
+                                      *allocation_class,
+                                      allocation_name,
+                                      adjusted_type_id);
   }
   allocation_call.children.push_back(callee);
 
@@ -4089,18 +4194,38 @@ ExprInfo analyze_delete_expression(SemanticContext & ctx,
   if(!pointer_type || pointer_type->kind != Type::TK_POINTER) {
     throw logic_error("delete-expression operand must be a pointer");
   }
+  TypePtr pointee_type = strip_top_level_cv(pointer_type->inner);
+  ClassInfo * pointee_class = ctx.complete_class_type(pointee_type);
 
   CppAstNode call;
   call.kind = CppAstKind::call_expression;
 
   CppAstNode callee;
   callee.kind = CppAstKind::id_expression;
-  callee.value = is_array_delete ? "operator delete[]" : "operator delete";
+  const string allocation_name =
+      is_array_delete ? "operator delete[]" : "operator delete";
+  callee.value = allocation_name;
+  const bool globally_qualified_delete =
+      find_child(node, CppAstKind::global_scope) != nullptr;
+  const bool uses_class_deallocation =
+      !globally_qualified_delete && pointee_class &&
+      qualify_class_allocation_function(callee,
+                                        *pointee_class,
+                                        allocation_name,
+                                        *operand);
   call.children.push_back(callee);
 
   CppAstNode arguments;
   arguments.kind = CppAstKind::paren_argument_list;
   arguments.children.push_back(*operand);
+  if(!is_array_delete && uses_class_deallocation &&
+     class_delete_uses_sized_deallocation(*pointee_class, allocation_name)) {
+    CppAstNode size;
+    size.kind = CppAstKind::literal;
+    size.value = to_string(type_size(pointee_type));
+    size.semantic_type = make_fundamental(FT_UNSIGNED_LONG_INT);
+    arguments.children.push_back(size);
+  }
   call.children.push_back(arguments);
 
   // The first argument passed to a usual deallocation function is the address
@@ -4120,13 +4245,12 @@ ExprInfo analyze_delete_expression(SemanticContext & ctx,
       scope,
       call,
       semantic_overload::CallAnalysisOptions(true, &call_hints));
-  if(result.node.children.size() != 2) {
+  if(result.node.children.size() != arguments.children.size() + 1) {
     throw logic_error("delete-expression deallocation call shape");
   }
   result.node.children[1] = std::move(pointer.node);
 
-  TypePtr pointee_type = strip_top_level_cv(pointer_type->inner);
-  if(ClassInfo * info = ctx.complete_class_type(pointee_type)) {
+  if(ClassInfo * info = pointee_class) {
     if(info->complete) {
       if(is_array_delete) {
         result.node.has_token = true;
@@ -8608,6 +8732,10 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
         operand = inherited_conversion;
       }
     }
+  }
+  if((node.simple_type == KW_STATIC_CAST || c_style_cast) &&
+     pointer_downcast_crosses_virtual_base(ctx, target_type, operand)) {
+    throw logic_error("pointer downcast through virtual base");
   }
   if(node.simple_type == KW_DYNAMIC_CAST) {
     TypePtr target_base = strip_top_level_cv(target_type);

@@ -330,7 +330,9 @@ symbol_linkage::SymbolIdentity output_function_symbol_identity(const FunctionBin
   symbol_linkage::SymbolIdentity updated = binding.symbol;
   updated.linkage = output_function_symbol_linkage(binding);
   updated.prefer_local_object_binding =
-      output_function_prefers_local_object_binding(binding);
+      output_function_prefers_local_object_binding(binding) ||
+      (updated.linkage == symbol_linkage::SL_INTERNAL &&
+       template_api::function_binding_has_linkage_template_identity(&binding));
   return updated;
 }
 
@@ -392,7 +394,9 @@ symbol_linkage::SymbolIdentity function_entry_point_symbol(const FunctionBinding
   }
   updated.keep_internal_alias = binding.symbol.keep_internal_alias;
   updated.prefer_local_object_binding =
-      output_function_prefers_local_object_binding(binding);
+      output_function_prefers_local_object_binding(binding) ||
+      (updated.linkage == symbol_linkage::SL_INTERNAL &&
+       template_api::function_binding_has_linkage_template_identity(&binding));
   return updated;
 }
 
@@ -2860,6 +2864,7 @@ symbol_linkage::SymbolLinkage output_function_symbol_linkage(const FunctionBindi
   const bool linkage_template_identity =
       template_api::function_binding_has_linkage_template_identity(&binding);
   if(scope_has_internal_namespace_linkage(binding.declaration_scope) ||
+     template_api::function_binding_identity_has_internal_namespace_linkage(&binding) ||
      (!binding.owner_class &&
       node_decl_spec_contains_token(declaration, KW_STATIC))) {
     return symbol_linkage::SL_INTERNAL;
@@ -2910,7 +2915,8 @@ VTableKeyFunctionDecision vtable_key_function_decision(
     const ClassOutputReadiness & class_output_readiness)
 {
   VTableKeyFunctionDecision decision;
-  if(class_output_readiness.templated_context ||
+  if((class_output_readiness.templated_context &&
+      !template_api::class_is_explicit_specialization(&info)) ||
      !symbol_linkage::has_external_vtable_symbol_candidate(info.type)) {
     return decision;
   }
@@ -4140,6 +4146,22 @@ bool function_binding_has_object_trivial_lifecycle_output(SemanticContext & ctx,
   return function_binding_has_trivial_lifecycle_output(ctx, binding) ||
          function_binding_has_trivial_default_constructor_object_output(ctx, binding);
 }
+
+void append_function_declaration_parameter_layouts(SemanticContext & ctx,
+                                                   const FunctionBinding & binding,
+                                                   DumpNode & declaration)
+{
+  for(size_t i = 0; i < binding.params.size(); ++i) {
+    DumpNode parameter =
+        make_dump_node(CallSemKind::parameter,
+                       function_parameter_display_name(binding, i));
+    parameter.semantic_type = binding.params[i].second;
+    append_dump_virtual_base_layout(
+        parameter,
+        class_info_for_virtual_base_layout_param(ctx, binding.params[i].second));
+    declaration.children.push_back(std::move(parameter));
+  }
+}
 }
 
 void analyze_function_declaration_output(SemanticContext & ctx,
@@ -4156,6 +4178,7 @@ void analyze_function_declaration_output(SemanticContext & ctx,
   decl_node.trivial_lifecycle = function_binding_has_trivial_lifecycle_output(ctx, binding);
   set_dump_symbol(decl_node,
                   function_entry_point_symbol(binding, symbol_linkage::SMEK_COMPLETE));
+  append_function_declaration_parameter_layouts(ctx, binding, decl_node);
   out.children.push_back(std::move(decl_node));
   binding.output_emitted = true;
 }
@@ -4216,6 +4239,7 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
     decl_node.is_conversion_operator = binding.is_conversion_operator;
     set_dump_symbol(decl_node,
                     function_entry_point_symbol(binding, symbol_linkage::SMEK_COMPLETE));
+    append_function_declaration_parameter_layouts(ctx, binding, decl_node);
     out.children.push_back(std::move(decl_node));
     binding.output_emitted = true;
     return;
@@ -4940,13 +4964,16 @@ void analyze_conversion_operator_output(SemanticContext & ctx,
   emitted.insert(binding);
 }
 
-void append_rtti_base_output_nodes(const ClassInfo & info, DumpNode & node)
+void append_rtti_base_output_nodes(SemanticContext & ctx,
+                                   const ClassInfo & info,
+                                   DumpNode & node)
 {
   for(size_t base_index = 0; base_index < info.bases.size(); ++base_index) {
     const BaseInfo & base = info.bases[base_index];
     if(!base.type) {
       continue;
     }
+    ctx.note_rtti_use(base.type->type, false);
     DumpNode base_node = make_dump_node(CallSemKind::rtti_base,
                                         base.type->qualified_name);
     base_node.semantic_type = base.type->type;
@@ -5007,7 +5034,7 @@ void append_vtable_output_node(SemanticContext & ctx,
   }
   if(table_node.is_primary_vtable) {
     ClassInfo * rtti_info = rtti_type ? ctx.class_info_for_type(rtti_type) : nullptr;
-    append_rtti_base_output_nodes(rtti_info ? *rtti_info : info, table_node);
+    append_rtti_base_output_nodes(ctx, rtti_info ? *rtti_info : info, table_node);
   }
   for(size_t i = 0; i < table.slots.size(); ++i) {
     const VTableSlotInfo & slot = table.slots[i];
@@ -7016,7 +7043,11 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
         state.emitted_rtti_types.find(*it);
     if(type_it != state.emitted_rtti_types.end()) {
       node.semantic_type = type_it->second;
-      if(ClassInfo * info = ctx.class_info_for_type(type_it->second)) {
+      ClassInfo * info = ctx.complete_class_type(type_it->second);
+      if(!info) {
+        info = ctx.class_info_for_type(type_it->second);
+      }
+      if(info) {
         if((info->is_polymorphic &&
             is_host_runtime_rtti_name_for_output(info->qualified_name)) ||
            (is_host_runtime_rtti_name_for_output(info->qualified_name) &&
@@ -7024,7 +7055,7 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
           continue;
         }
         append_dump_virtual_base_layout(node, info);
-        append_rtti_base_output_nodes(*info, node);
+        append_rtti_base_output_nodes(ctx, *info, node);
       }
     }
     out.children.push_back(std::move(node));
