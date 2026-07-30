@@ -358,6 +358,7 @@ struct CallSemNode
       is_declval_callee(false),
       is_explicit_nothrow(false),
       is_semantically_nothrow(false),
+      is_force_inline(false),
       is_explicit_instantiation_definition(false),
       has_dynamic_exception_spec(false),
       needs_noexcept_terminate(false),
@@ -424,6 +425,7 @@ struct CallSemNode
   std::uint64_t is_declval_callee : 1;
   std::uint64_t is_explicit_nothrow : 1;
   std::uint64_t is_semantically_nothrow : 1;
+  std::uint64_t is_force_inline : 1;
   std::uint64_t is_explicit_instantiation_definition : 1;
   std::uint64_t has_dynamic_exception_spec : 1;
   std::uint64_t needs_noexcept_terminate : 1;

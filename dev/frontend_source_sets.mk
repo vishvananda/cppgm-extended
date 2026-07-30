@@ -460,7 +460,7 @@ FRONTEND_OBJ_BASENAMES_lowir2cy86 := \
 	types \
 	x86_assembler
 
-# lowir2native: 39 shared object(s)
+# lowir2native: 40 shared object(s)
 FRONTEND_OBJ_BASENAMES_lowir2native := \
 	calculator \
 	cli_batch_frontend \
@@ -478,6 +478,7 @@ FRONTEND_OBJ_BASENAMES_lowir2native := \
 	lowir_internal \
 	lowir_machine_ir \
 	lowir_object_backend \
+	lowir_optimizer \
 	lowir_tool_cli \
 	machine_ir \
 	machine_ir_optimizer \

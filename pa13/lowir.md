@@ -175,6 +175,9 @@ function @helper() -> i64 [binding=strong, object=_ZL6helperv, prefer_local=yes]
 function @Tag__Tag(%this : ptr) -> void [binding=weak, trivial_lifecycle=yes] {
   ...
 }
+function @small_required_helper(%x : i64) -> i64 [force_inline=yes] {
+  ...
+}
 function @boot() -> void [role=init, binding=strong] {
   ...
 }
@@ -182,7 +185,7 @@ function @boot() -> void [role=init, binding=strong] {
 
 The currently defined top-level metadata keys are `role`, `linkage`, `binding`, `object`,
 `tls_for` (functions only), `keep_alias`, `prefer_local`, `trivial_lifecycle`
-(functions only), and `storage` (globals only).
+(functions only), `force_inline` (functions only), and `storage` (globals only).
 
 The currently defined global `storage` values are:
 
@@ -257,6 +260,13 @@ function is a semantically trivial C++ lifecycle helper, such as a trivial
 constructor or destructor wrapper. Object lowering may use this fact to remove
 otherwise unreferenced weak lifecycle wrappers after the frontend has serialized
 the LowIR boundary.
+
+The `force_inline` metadata key is a `yes`/`no` flag for top-level function
+declarations and definitions. `force_inline=yes` records that eligible direct
+same-program calls must be expanded during object preparation at every
+optimization level. It does not relax call-boundary, ABI, type, recursion, or
+control-flow safety checks. Canonical `lowiropt -O0` preserves this metadata
+without performing the object-preparation transform.
 
 `alias object <object-symbol> = @target` records an additional object-file symbol spelling
 that must resolve to the same emitted top-level LowIR function or global as `@target`.
@@ -350,7 +360,8 @@ normally.
 Call signatures only accept call-boundary metadata such as `arity=...`, `effects=...`,
 `unwind=...`, and `return=...`. Top-level symbol metadata such as `role=...`, `linkage=...`,
 `binding=...`, `object=...`, `keep_alias=...`, `prefer_local=...`, and
-`trivial_lifecycle=...` is not valid on `as (...) -> ...` call signatures.
+`trivial_lifecycle=...` and `force_inline=...` are not valid on `as (...) -> ...`
+call signatures.
 
 Later backend lowering may also introduce internal compiler builtin helper symbols for
 operations that are still first-class in LowIR but are not emitted directly on the

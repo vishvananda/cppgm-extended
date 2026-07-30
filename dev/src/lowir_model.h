@@ -172,6 +172,7 @@ struct SymbolMetadata
   bool prefer_local_object_binding = false;
   bool object_output_root = false;
   bool object_trivial_lifecycle = false;
+  bool force_inline = false;
 };
 
 struct FunctionBoundaryMetadata

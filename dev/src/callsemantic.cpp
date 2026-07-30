@@ -9810,6 +9810,7 @@ private:
     binding->is_method = true;
     binding->is_constexpr = flags.is_constexpr;
     binding->is_inline = flags.is_inline;
+    binding->is_force_inline = declaration_marks_force_inline(declaration_node);
     binding->is_constructor = flags.is_constructor;
     binding->is_inherited_constructor = flags.is_inherited_constructor;
     binding->is_destructor = flags.is_destructor;
@@ -10195,6 +10196,8 @@ private:
       slot[i]->is_defaulted = slot[i]->is_defaulted || flags.is_defaulted;
       slot[i]->is_constexpr = slot[i]->is_constexpr || flags.is_constexpr;
       slot[i]->is_inline = slot[i]->is_inline || flags.is_inline;
+      slot[i]->is_force_inline =
+          slot[i]->is_force_inline || declaration_marks_force_inline(declaration_node);
       ensure_function_parameter_aliases(*slot[i]);
       if(slot[i]->default_arguments.size() < binding->default_arguments.size()) {
         slot[i]->default_arguments.resize(binding->default_arguments.size(), nullptr);
@@ -10405,6 +10408,8 @@ private:
     binding->access = flags.access;
     binding->is_deleted = binding->is_deleted || flags.is_deleted;
     binding->is_inline = binding->is_inline || flags.is_inline;
+    binding->is_force_inline =
+        binding->is_force_inline || declaration_marks_force_inline(declaration_node);
     upgrade_function_symbol_linkage(
         *binding,
         info.qualified_name + "::" + simple_name,
@@ -24378,6 +24383,29 @@ private:
     return false;
   }
 
+  bool declaration_marks_force_inline(const CppAstNode * declaration_node) const
+  {
+    if(!declaration_node) {
+      return false;
+    }
+    if(declaration_node->has_always_inline_attribute ||
+       declaration_node->value == "__forceinline") {
+      return true;
+    }
+    for(size_t i = 0; i < declaration_node->children.size(); ++i) {
+      const CppAstNode & child = declaration_node->children[i];
+      if(child.kind == CppAstKind::initializer ||
+         child.kind == CppAstKind::compound_statement ||
+         child.kind == CppAstKind::lazy_function_body) {
+        continue;
+      }
+      if(declaration_marks_force_inline(&child)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool declaration_marks_friend(const CppAstNode * declaration_node) const
   {
     return declaration_specifiers_contain_token(declaration_node, KW_FRIEND);
@@ -25102,6 +25130,8 @@ private:
         materialized->exclude_from_explicit_instantiation;
     original->is_constexpr = original->is_constexpr || materialized->is_constexpr;
     original->is_inline = original->is_inline || materialized->is_inline;
+    original->is_force_inline =
+        original->is_force_inline || materialized->is_force_inline;
     original->odr_mergeable_definition =
         original->odr_mergeable_definition ||
         materialized->odr_mergeable_definition;
@@ -25518,6 +25548,8 @@ private:
         existing->hidden_friend_only = false;
       }
       existing->is_constexpr = existing->is_constexpr || is_constexpr;
+      existing->is_force_inline =
+          existing->is_force_inline || declaration_marks_force_inline(declaration_node);
       apply_host_builtin_metadata(*existing, explicit_param_types);
       return;
     }
@@ -25577,6 +25609,7 @@ private:
     }
     apply_host_builtin_metadata(*binding, explicit_param_types);
     binding->is_constexpr = is_constexpr;
+    binding->is_force_inline = declaration_marks_force_inline(declaration_node);
     template_api::record_function_template_identity(*binding, template_identity);
     semantic_lookup::direct_function_set_slot(scope, name).push_back(binding.get());
     functions.push_back(std::move(binding));

@@ -1871,6 +1871,9 @@ void apply_leading_declaration_attributes(CppAstNode & node,
   if(attributes.has_weak_attribute) {
     node.has_weak_attribute = true;
   }
+  if(attributes.has_always_inline_attribute) {
+    node.has_always_inline_attribute = true;
+  }
   if(!cppast_gnu_section_name(attributes).empty()) {
     mutable_cppast_gnu_section_segment(node) =
         cppast_gnu_section_segment(attributes);
@@ -1901,6 +1904,9 @@ void apply_leading_declaration_attributes(CppAstNode & node,
         }
         if(attributes.has_weak_attribute) {
           child.children[j].has_weak_attribute = true;
+        }
+        if(attributes.has_always_inline_attribute) {
+          child.children[j].has_always_inline_attribute = true;
         }
         if(!cppast_gnu_section_name(attributes).empty()) {
           mutable_cppast_gnu_section_segment(child.children[j]) =
@@ -1936,6 +1942,27 @@ bool is_gnu_weak_attribute_name(const RecogToken & token)
          (token.source == "weak" ||
           token.source == "__weak" ||
           token.source == "__weak__");
+}
+
+bool is_always_inline_attribute_name(const RecogToken & token)
+{
+  return token.is_identifier() &&
+         (token.source == "always_inline" ||
+          token.source == "__always_inline" ||
+          token.source == "__always_inline__");
+}
+
+bool attribute_specifier_has_always_inline(
+    const IRecogTokenSequence & tokens,
+    std::size_t start,
+    std::size_t end)
+{
+  for(std::size_t i = start; i < end; ++i) {
+    if(is_always_inline_attribute_name(tokens.peek(i))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool gnu_attribute_specifier_has_weak(const IRecogTokenSequence & tokens,
@@ -4367,6 +4394,9 @@ void CppAstParser::note_attribute_specifier(CppAstNode * annotated,
   if(gnu_attribute_specifier_has_weak(tokens, start, end)) {
     annotated->has_weak_attribute = true;
   }
+  if(attribute_specifier_has_always_inline(tokens, start, end)) {
+    annotated->has_always_inline_attribute = true;
+  }
   for(std::size_t i = start; i < end; ++i) {
     const RecogToken & token = tokens.peek(i);
     if(!token.is_identifier() ||
@@ -5247,6 +5277,7 @@ bool CppAstParser::parse_special_member_declaration(CppAstNode & out)
      specifiers.has_exclude_from_explicit_instantiation ||
      specifiers.has_using_if_exists ||
      specifiers.has_no_unique_address ||
+     specifiers.has_always_inline_attribute ||
      !cppast_abi_tags(specifiers).empty() ||
      !cppast_alignment_specifiers(specifiers).empty()) {
     out.children.push_back(std::move(specifiers));
@@ -5378,6 +5409,7 @@ bool CppAstParser::parse_deduction_guide_declaration(CppAstNode & out)
      specifiers.has_exclude_from_explicit_instantiation ||
      specifiers.has_using_if_exists ||
      specifiers.has_no_unique_address ||
+     specifiers.has_always_inline_attribute ||
      !cppast_abi_tags(specifiers).empty() ||
      !cppast_alignment_specifiers(specifiers).empty()) {
     out.children.push_back(std::move(specifiers));
@@ -5585,6 +5617,7 @@ bool CppAstParser::parse_qualified_special_member_declaration(CppAstNode & out)
          specifiers.has_exclude_from_explicit_instantiation ||
          specifiers.has_using_if_exists ||
          specifiers.has_no_unique_address ||
+         specifiers.has_always_inline_attribute ||
          !cppast_abi_tags(specifiers).empty() ||
          !cppast_alignment_specifiers(specifiers).empty()) {
         out.children.push_back(std::move(specifiers));
@@ -5613,6 +5646,7 @@ bool CppAstParser::parse_qualified_special_member_declaration(CppAstNode & out)
      specifiers.has_exclude_from_explicit_instantiation ||
      specifiers.has_using_if_exists ||
      specifiers.has_no_unique_address ||
+     specifiers.has_always_inline_attribute ||
      !cppast_abi_tags(specifiers).empty() ||
      !cppast_alignment_specifiers(specifiers).empty()) {
     out.children.push_back(std::move(specifiers));
@@ -5763,6 +5797,7 @@ bool CppAstParser::parse_qualified_special_member_definition(CppAstNode & out)
      specifiers.has_exclude_from_explicit_instantiation ||
      specifiers.has_using_if_exists ||
      specifiers.has_no_unique_address ||
+     specifiers.has_always_inline_attribute ||
      !cppast_abi_tags(specifiers).empty() ||
      !cppast_alignment_specifiers(specifiers).empty()) {
     out.children.push_back(std::move(specifiers));
@@ -6107,6 +6142,7 @@ bool CppAstParser::parse_init_declarator_after_declarator(
 {
   out = make_node(CppAstKind::init_declarator);
   out.has_no_unique_address = declarator.has_no_unique_address;
+  out.has_always_inline_attribute = declarator.has_always_inline_attribute;
   out.children.push_back(std::move(declarator));
 
   if(!skip_trailing_declarator_extensions(&out)) {

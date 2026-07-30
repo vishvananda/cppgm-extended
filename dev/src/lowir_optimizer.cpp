@@ -4864,7 +4864,8 @@ bool call_has_inlineable_object_copy_consumer(const lir::Instruction & call,
 bool call_matches_inline_callee(const lir::Instruction & call,
                                 const lir::Instruction * next_instruction,
                                 const lir::Function & callee,
-                                const unordered_set<string> & recursive_functions)
+                                const unordered_set<string> & recursive_functions,
+                                bool force_inline)
 {
   if(call.kind != lir::Instruction::IK_CALL ||
      call.first.kind != lir::Operand::OP_GLOBAL ||
@@ -4893,7 +4894,7 @@ bool call_matches_inline_callee(const lir::Instruction & call,
     return false;
   }
 
-  return function_is_small_inline_candidate(callee);
+  return force_inline || function_is_small_inline_candidate(callee);
 }
 
 string make_inline_name(const string & original, size_t inline_site_id)
@@ -5327,7 +5328,8 @@ bool inline_small_direct_calls(lir::Function & function,
                                const FunctionBoundaryMap & function_boundaries,
                                const FunctionDefinitionMap & function_definitions,
                                const unordered_set<string> & recursive_functions,
-                               size_t & next_inline_site_id)
+                               size_t & next_inline_site_id,
+                               const unordered_set<string> * required_inline_functions = nullptr)
 {
   const FunctionControlFlow control_flow = build_function_control_flow(function);
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
@@ -5354,13 +5356,20 @@ bool inline_small_direct_calls(lir::Function & function,
 
       const FunctionDefinitionMap::const_iterator found =
           function_definitions.find(instruction.first.text);
+      const bool force_inline =
+          found != function_definitions.end() && found->second != nullptr &&
+          (found->second->metadata.force_inline ||
+           (required_inline_functions != nullptr &&
+            required_inline_functions->count(found->second->name) != 0));
       if(found == function_definitions.end() ||
          found->second == nullptr ||
          found->second->name == function.name ||
+         (required_inline_functions != nullptr && !force_inline) ||
          !call_matches_inline_callee(instruction,
                                      next_instruction,
                                      *found->second,
-                                     recursive_functions)) {
+                                     recursive_functions,
+                                     force_inline)) {
         continue;
       }
 
@@ -6084,6 +6093,53 @@ void run_o2_slot_promotion_pipeline(lir::Function & function,
 }
 
 }  // namespace
+
+lowir::LowirProgram inline_required_lowir_calls(lowir::LowirProgram program)
+{
+  unordered_set<string> required_inline_functions;
+  for(size_t i = 0; i < program.function_declarations.size(); ++i) {
+    if(program.function_declarations[i].metadata.force_inline) {
+      required_inline_functions.insert(program.function_declarations[i].name);
+    }
+  }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    if(program.functions[i].metadata.force_inline) {
+      required_inline_functions.insert(program.functions[i].name);
+    }
+  }
+  if(required_inline_functions.empty()) {
+    return program;
+  }
+
+  FunctionBoundaryMap function_boundaries;
+  for(size_t i = 0; i < program.function_declarations.size(); ++i) {
+    merge_boundary_metadata(function_boundaries[program.function_declarations[i].name],
+                            program.function_declarations[i].boundary);
+  }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    merge_boundary_metadata(function_boundaries[program.functions[i].name],
+                            program.functions[i].boundary);
+  }
+
+  FunctionDefinitionMap function_definitions;
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    function_definitions[program.functions[i].name] = &program.functions[i];
+  }
+
+  const unordered_set<string> recursive_functions =
+      find_recursive_function_names(program.functions);
+  vector<size_t> next_inline_site_ids(program.functions.size(), 0);
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    while(inline_small_direct_calls(program.functions[i],
+                                    function_boundaries,
+                                    function_definitions,
+                                    recursive_functions,
+                                    next_inline_site_ids[i],
+                                    &required_inline_functions)) {
+    }
+  }
+  return program;
+}
 
 lowir::LowirProgram optimize_lowir_program(lowir::LowirProgram optimized,
                                            int optimization_level)

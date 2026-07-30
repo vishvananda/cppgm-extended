@@ -3275,6 +3275,7 @@ public:
         function_node_->is_explicit_instantiation_definition;
     function_.metadata.object_trivial_lifecycle =
         function_node_->object_trivial_lifecycle || function_node_->trivial_lifecycle;
+    function_.metadata.force_inline = function_node_->is_force_inline;
     if(function_node_->has_source_location()) {
       function_.debug_location.file = callsem_source_file(*function_node_);
       function_.debug_location.line = callsem_source_line(*function_node_);
@@ -17793,6 +17794,7 @@ public:
           function.metadata.object_output_root;
       out.metadata.object_trivial_lifecycle =
           function.metadata.object_trivial_lifecycle;
+      out.metadata.force_inline = function.metadata.force_inline;
       for(size_t pi = 0; pi < function.params.size(); ++pi) {
         out.params.push_back(
             lowir_internal::Parameter{function.params[pi].name,

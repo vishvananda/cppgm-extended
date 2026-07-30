@@ -12,6 +12,7 @@ using namespace std;
 
 #include "lowir_machine_ir.h"
 #include "lowir_object_backend.h"
+#include "lowir_optimizer.h"
 #include "lowir_tool_cli.h"
 #include "machine_ir_optimizer.h"
 #include "machine_linker.h"
@@ -61,7 +62,8 @@ int run_lowir2native_impl(const vector<string> & args)
   }
   optimization_level = normalize_optimization_level(optimization_level);
 
-  const lowir_model::LowirProgram program = lowir_model::parse_lowir_program_files(srcfiles);
+  const lowir_model::LowirProgram program =
+      inline_required_lowir_calls(lowir_model::parse_lowir_program_files(srcfiles));
 
   if(!machine_ir_file.empty()) {
     ofstream mir(machine_ir_file.c_str());

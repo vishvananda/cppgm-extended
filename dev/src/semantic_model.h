@@ -616,6 +616,7 @@ struct FunctionBinding
   bool is_method = false;
   bool is_constexpr = false;
   bool is_inline = false;
+  bool is_force_inline = false;
   bool is_constructor = false;
   bool is_inherited_constructor = false;
   bool is_destructor = false;

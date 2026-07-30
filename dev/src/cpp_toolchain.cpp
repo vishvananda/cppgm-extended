@@ -1740,6 +1740,7 @@ lowir_internal::Program prepare_object_lowir_program(lowir_internal::Program pro
     clear_lowir_program_debug_locations(program);
   }
   program = optimize_lowir_program(std::move(program), optimization_level);
+  program = inline_required_lowir_calls(std::move(program));
   inline_trivial_identity_object_wrappers(program);
   inline_constant_object_wrappers(program);
   inline_compare_object_wrappers(program);

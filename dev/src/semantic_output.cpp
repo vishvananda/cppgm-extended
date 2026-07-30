@@ -4365,6 +4365,7 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
         function_node.is_virtual_member_function = binding.is_virtual;
         function_node.is_conversion_operator = binding.is_conversion_operator;
         function_node.is_semantically_nothrow = ctx.function_binding_is_nothrow(binding);
+        function_node.is_force_inline = binding.is_force_inline;
         function_node.is_explicit_instantiation_definition =
             binding.is_explicit_instantiation_definition;
         function_node.trivial_lifecycle =

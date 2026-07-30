@@ -3749,6 +3749,7 @@ static CppAstNode clone_ast_node_for_mangling(const CppAstNode & source)
   out.has_using_if_exists = source.has_using_if_exists;
   out.has_exclude_from_explicit_instantiation =
       source.has_exclude_from_explicit_instantiation;
+  out.has_always_inline_attribute = source.has_always_inline_attribute;
   if(!cppast_asm_label(source).empty()) {
     mutable_cppast_asm_label(out) = cppast_asm_label(source);
   }

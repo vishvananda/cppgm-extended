@@ -594,6 +594,7 @@ void parse_function_metadata(FunctionBoundaryMetadata & boundary,
   bool saw_prefer_local = false;
   bool saw_object_root = false;
   bool saw_trivial_lifecycle = false;
+  bool saw_force_inline = false;
   while(stream.consume("[")) {
     for(;;) {
       if(stream.eof()) {
@@ -718,6 +719,14 @@ void parse_function_metadata(FunctionBoundaryMetadata & boundary,
           fail(line, "unknown trivial_lifecycle mode '" + value + "'");
         }
         saw_trivial_lifecycle = true;
+      } else if(key == "force_inline") {
+        if(saw_force_inline) {
+          fail(line, "duplicate force_inline metadata");
+        }
+        if(!parse_yes_no_text(value, symbol.force_inline)) {
+          fail(line, "unknown force_inline mode '" + value + "'");
+        }
+        saw_force_inline = true;
       } else {
         fail(line, "unknown function metadata key '" + key + "'");
       }
@@ -1560,7 +1569,8 @@ void parse_call_signature(Instruction & instruction,
      metadata.keep_internal_alias ||
      metadata.prefer_local_object_binding ||
      metadata.object_output_root ||
-     metadata.object_trivial_lifecycle) {
+     metadata.object_trivial_lifecycle ||
+     metadata.force_inline) {
     fail(line, "call signature metadata does not allow symbol metadata");
   }
 }
@@ -2830,10 +2840,11 @@ void dump_function_metadata(const FunctionBoundaryMetadata & boundary,
   const bool has_prefer_local = metadata.prefer_local_object_binding;
   const bool has_object_root = metadata.object_output_root;
   const bool has_trivial_lifecycle = metadata.object_trivial_lifecycle;
+  const bool has_force_inline = metadata.force_inline;
   if(!has_arity && !has_effects && !has_unwind && !has_return &&
      !has_role && !has_linkage && !has_binding &&
      !has_object && !has_tls_for && !has_keep_alias && !has_prefer_local &&
-     !has_object_root && !has_trivial_lifecycle) {
+     !has_object_root && !has_trivial_lifecycle && !has_force_inline) {
     return;
   }
   out << " [";
@@ -2924,6 +2935,13 @@ void dump_function_metadata(const FunctionBoundaryMetadata & boundary,
       out << ", ";
     }
     out << "trivial_lifecycle=yes";
+    need_comma = true;
+  }
+  if(has_force_inline) {
+    if(need_comma) {
+      out << ", ";
+    }
+    out << "force_inline=yes";
   }
   out << "]";
 }
