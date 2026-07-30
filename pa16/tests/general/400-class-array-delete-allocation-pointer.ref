@@ -1,0 +1,79 @@
+declare function @operator_delete__(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete_array]
+declare function @operator_new__(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new_array]
+
+global @allocated : ptr [binding=strong, object=_Z9allocated] = zero
+global @good : i32 [binding=strong, object=_Z4good] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $array_delete_index__1 : i64
+
+  block ^entry:
+    %t1 = convert sext i64 i32 10
+    %t2 = call ptr @X__operatornew__(%t1)
+    %t3 = index i8 %t2, 8
+    %t4 = const i64 2
+    store i64 %t4, %t2
+    %t5 = cmp ne ptr %t3, 0
+    branch %t5, ^array_delete_nonnull_1, ^array_delete_end_2
+
+  block ^array_delete_nonnull_1:
+    %t6 = index i8 %t3, -8
+    %t7 = load i64 %t6
+    store i64 %t7, $array_delete_index__1
+    jump ^array_delete_dtor_cond_3
+
+  block ^array_delete_dtor_cond_3:
+    %t8 = load i64 $array_delete_index__1
+    %t9 = cmp ne i64 %t8, 0
+    branch %t9, ^array_delete_dtor_body_4, ^array_delete_dtor_end_5
+
+  block ^array_delete_dtor_body_4:
+    %t10 = binary sub i64 %t8, 1
+    store i64 %t10, $array_delete_index__1
+    %t11 = binary mul i64 %t10, 1
+    %t12 = index i8 %t3, %t11
+    call void @X___X(%t12)
+    jump ^array_delete_dtor_cond_3
+
+  block ^array_delete_dtor_end_5:
+    call void @X__operatordelete__(%t6)
+    jump ^array_delete_end_2
+
+  block ^array_delete_end_2:
+    %t13 = load i32 @good
+    %t14 = cmp eq i32 %t13, 0
+    %t15 = convert zext i32 u8 %t14
+    return i32 %t15
+}
+function @X__operatordelete__(%p : ptr) -> void [unwind=no, binding=weak, object=_ZN1XdaEPv] {
+  slot $p : ptr
+
+  block ^entry:
+    store ptr %p, $p
+    %t1 = load ptr $p
+    %t2 = load ptr @allocated
+    %t3 = cmp eq ptr %t1, %t2
+    %t4 = convert zext i32 u8 %t3
+    store i32 %t4, @good
+    %t5 = load ptr $p
+    call void @operator_delete__(%t5)
+    return void
+}
+function @X__operatornew__(%n : i64) -> ptr [binding=weak, object=_ZN1XnaEm] {
+  slot $n : i64
+
+  block ^entry:
+    store i64 %n, $n
+    %t1 = load i64 $n
+    %t2 = call ptr @operator_new__(%t1)
+    store ptr %t2, @allocated
+    return ptr %t2
+}
+function @X___X(%this : ptr) -> void [binding=weak, object=_ZN1XD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+alias object _ZN1XD2Ev = @X___X

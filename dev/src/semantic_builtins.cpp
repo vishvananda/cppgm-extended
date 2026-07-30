@@ -1077,7 +1077,7 @@ bool copy_or_move_construction_type_is_nothrow(
 }
 
 bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
-                                               Scope & scope,
+                                               Scope &,
                                                const FunctionBinding & binding,
                                                std::set<FunctionBinding *> & visiting)
 {
@@ -1089,6 +1089,7 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
   }
 
   const ClassInfo & info = *binding.owner_class;
+  Scope & init_scope = *binding.declaration_scope;
   std::set<std::string> explicitly_initialized;
   const bool copy_or_move_ctor =
       binding.is_copy_constructor || binding.is_move_constructor;
@@ -1124,7 +1125,7 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
         }
       }
       if(!matched) {
-        target_type = ctx.lookup_type_node(scope, *id, id->value);
+        target_type = ctx.lookup_type_node(init_scope, *id, id->value);
         matched = static_cast<bool>(target_type);
       }
       if(!matched) {
@@ -1132,7 +1133,12 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
       }
 
       const CppAstNode * payload = mem_init.children.empty() ? nullptr : &mem_init.children.back();
-      if(!payload || !initializer_is_nothrow(ctx, scope, target_type, *payload, visiting)) {
+      if(!payload ||
+         !initializer_is_nothrow(ctx,
+                                 init_scope,
+                                 target_type,
+                                 *payload,
+                                 visiting)) {
         return false;
       }
     }
@@ -1150,12 +1156,12 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
     }
     const bool base_nothrow = copy_or_move_ctor ?
         copy_or_move_construction_type_is_nothrow(ctx,
-                                                  scope,
+                                                  init_scope,
                                                   info.bases[i].type->type,
                                                   move_ctor,
                                                   visiting) :
         default_initialization_is_nothrow(ctx,
-                                          scope,
+                                          init_scope,
                                           info.bases[i].type->type,
                                           visiting);
     if(!base_nothrow) {
@@ -1169,7 +1175,7 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
     }
     if(copy_or_move_ctor) {
       if(!copy_or_move_construction_type_is_nothrow(ctx,
-                                                    scope,
+                                                    init_scope,
                                                     info.fields[i].type,
                                                     move_ctor,
                                                     visiting)) {
@@ -1177,7 +1183,7 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
       }
     } else if(info.fields[i].default_initializer) {
           if(!initializer_is_nothrow(ctx,
-                                     scope,
+                                     init_scope,
                                      info.fields[i].type,
                                      *info.fields[i].default_initializer,
                                      visiting)) {
@@ -1185,7 +1191,7 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
           }
     } else {
       if(!default_initialization_is_nothrow(ctx,
-                                            scope,
+                                            init_scope,
                                             info.fields[i].type,
                                             visiting)) {
         return false;

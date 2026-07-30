@@ -1716,7 +1716,7 @@ public:
             << " requirements=" << required->second.output_requirements;
       parser_trace::note("output.require", std::string(), trace.str());
     }
-    if(owner.definition_output_emitted &&
+    if(template_api::class_has_template_identity(&owner) &&
        !owner.definition_output_in_progress &&
        !required->second.definition_output_emitted) {
       owner.has_late_required_static_member_output = true;

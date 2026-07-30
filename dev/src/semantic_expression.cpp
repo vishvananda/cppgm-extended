@@ -3917,6 +3917,52 @@ bool class_delete_uses_sized_deallocation(ClassInfo & allocation_class,
   return !has_unsized && has_sized;
 }
 
+ExprInfo analyze_array_new_cleanup_deallocation(SemanticContext & ctx,
+                                                Scope & scope,
+                                                ClassInfo * allocation_class,
+                                                const ExprInfo & object_ptr,
+                                                const CppAstNode & source)
+{
+  CppAstNode call;
+  call.kind = CppAstKind::call_expression;
+
+  CppAstNode callee;
+  callee.kind = CppAstKind::id_expression;
+  callee.value = "operator delete[]";
+  if(allocation_class) {
+    qualify_class_allocation_function(callee,
+                                      *allocation_class,
+                                      "operator delete[]",
+                                      source);
+  }
+  call.children.push_back(callee);
+
+  CppAstNode arguments;
+  arguments.kind = CppAstKind::paren_argument_list;
+  CppAstNode placeholder;
+  placeholder.kind = CppAstKind::literal;
+  placeholder.value = "0";
+  arguments.children.push_back(placeholder);
+  call.children.push_back(arguments);
+
+  ExprInfo deallocation_address = object_ptr;
+  deallocation_address.type = make_pointer(make_fundamental(FT_VOID));
+  deallocation_address.category = VC_PRVALUE;
+  deallocation_address.null_pointer_constant = false;
+  ctx.set_expr_info_metadata(deallocation_address,
+                             deallocation_address.type,
+                             deallocation_address.category);
+  semantic_overload::CallAnalysisHints hints;
+  hints.args.push_back(&deallocation_address);
+  ExprInfo result = ctx.analyze_call_expression(
+      scope,
+      call,
+      semantic_overload::CallAnalysisOptions(true, &hints));
+  result.node.has_token = true;
+  result.node.token_type = KW_DELETE;
+  return result;
+}
+
 ExprInfo analyze_new_expression(SemanticContext & ctx,
                                 Scope & scope,
                                 const CppAstNode & node)
@@ -3957,8 +4003,16 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
     throw logic_error("function new-expression unsupported");
   }
   maybe_complete_layout_type(ctx, allocated_object_type);
+  TypePtr array_lifecycle_element_type = allocated_object_type;
+  while(array_lifecycle_element_type) {
+    TypePtr element_base = strip_top_level_cv(array_lifecycle_element_type);
+    if(!element_base || element_base->kind != Type::TK_ARRAY) {
+      break;
+    }
+    array_lifecycle_element_type = element_base->inner;
+  }
   ClassInfo * array_element_class =
-      is_array_new ? ctx.complete_class_type(allocated_object_type) : nullptr;
+      is_array_new ? ctx.complete_class_type(array_lifecycle_element_type) : nullptr;
   ClassInfo * allocation_class =
       is_array_new ? array_element_class : ctx.complete_class_type(allocated_object_type);
   const size_t array_cookie_size =
@@ -4026,6 +4080,16 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
   object_ptr.type = object_ptr_type;
   ctx.set_expr_info_metadata(object_ptr, object_ptr.type, object_ptr.category);
 
+  ExprInfo array_cleanup_deallocation;
+  if(is_array_new && array_element_class) {
+    array_cleanup_deallocation =
+        analyze_array_new_cleanup_deallocation(ctx,
+                                               scope,
+                                               allocation_class,
+                                               object_ptr,
+                                               adjusted_type_id);
+  }
+
   vector<const CppAstNode *> ctor_arg_nodes;
   if(const CppAstNode * initializer = find_child(node, CppAstKind::initializer)) {
     ctor_arg_nodes = new_initializer_argument_nodes(*initializer);
@@ -4062,7 +4126,14 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
       array_constructor_required =
           !semantic_class_model::is_trivially_default_constructible_type_for_host_abi(
               ctx,
-              allocated_object_type);
+              array_lifecycle_element_type);
+      if(array_constructor_required &&
+         !ctx.function_binding_is_nothrow(*array_ctor.ctor)) {
+        semantic_lifetime::require_destructor_action_if_needed(
+            ctx,
+            array_lifecycle_element_type,
+            false);
+      }
       class_array_zero_initializes =
           empty_value_initializer &&
           constructor_lifecycle_service::value_initialization_requires_zero_init(
@@ -4074,7 +4145,7 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
     result.node = make_dump_node(CallSemKind::new_expression);
     set_expr_metadata(result.node, result.type, result.category);
     if(element_class) {
-      set_callsem_uint_value(result.node, array_element_size);
+      set_callsem_uint_value(result.node, type_size(array_lifecycle_element_type));
     }
     if(element_class ? class_array_zero_initializes : empty_value_initializer) {
       result.node.value_initializes_result = true;
@@ -4093,6 +4164,9 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
       for(size_t i = 1; i < ctor_action.call_args.size(); ++i) {
         result.node.children.push_back(std::move(ctor_action.call_args[i].node));
       }
+    }
+    if(array_element_class) {
+      result.node.children.push_back(std::move(array_cleanup_deallocation.node));
     }
     return result;
   }
@@ -4195,7 +4269,15 @@ ExprInfo analyze_delete_expression(SemanticContext & ctx,
     throw logic_error("delete-expression operand must be a pointer");
   }
   TypePtr pointee_type = strip_top_level_cv(pointer_type->inner);
-  ClassInfo * pointee_class = ctx.complete_class_type(pointee_type);
+  TypePtr deletion_element_type = pointee_type;
+  while(deletion_element_type) {
+    TypePtr element_base = strip_top_level_cv(deletion_element_type);
+    if(!element_base || element_base->kind != Type::TK_ARRAY) {
+      break;
+    }
+    deletion_element_type = element_base->inner;
+  }
+  ClassInfo * pointee_class = ctx.complete_class_type(deletion_element_type);
 
   CppAstNode call;
   call.kind = CppAstKind::call_expression;
@@ -5378,7 +5460,7 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
               required->second);
       if(emit_required_static_member_definition) {
         add_output_requirement(required->second.output_requirements, ORK_DEFINITION);
-        if(binding.owner_class->definition_output_emitted &&
+        if(template_api::class_has_template_identity(binding.owner_class) &&
            !binding.owner_class->definition_output_in_progress &&
            !required->second.definition_output_emitted) {
           binding.owner_class->has_late_required_static_member_output = true;

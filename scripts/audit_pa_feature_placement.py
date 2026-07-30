@@ -344,7 +344,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("expr.array_new_delete", (rx(r"\bnew\s+[^\[]*\[|\bdelete\s*\["),),
                 ref_patterns=(rx(r"operator_(?:new|delete)_array|delete_array|array_cookie"),)),
     FeatureRule("lookup.using_directive", (rx(r"\busing\s+namespace\b|\busing\s+[A-Za-z_][A-Za-z0-9_:<>]*::[A-Za-z_]"),)),
-    FeatureRule("support.lambda", (rx(r"(?<!operator)\[[^]\n]*\]\s*\([^)]*\)\s*(?:mutable\s*)?(?:noexcept\s*)?(?:->|\{)"),)),
+    FeatureRule("support.lambda", (rx(r"(?<!operator)(?<!operator new)(?<!operator delete)\[[^]\n]*\]\s*\([^)]*\)\s*(?:mutable\s*)?(?:noexcept\s*)?(?:->|\{)"),)),
     FeatureRule("support.lambda.capture", ()),
     FeatureRule("support.lambda.capture.ref_this", ()),
     FeatureRule("support.range_for",

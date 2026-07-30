@@ -38,6 +38,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $stream : obj<16x4>
   slot $ptr : ptr
   slot $cond__1 : i32
+  slot $basecast__2 : ptr
+  slot $basecast__3 : ptr
 
   block ^entry:
     %t1 = addr $stream
@@ -46,11 +48,37 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store ptr %t2, $ptr
     %t3 = addr $ptr
     %t4 = load ptr %t3
-    %t5 = index i8 %t4, 8
-    %t6 = index i8 %t4, 12
-    %t7 = call i32 @call(%t3, %t5, %t6)
-    %t8 = cmp eq i32 %t7, 7
-    branch %t8, ^cond_then_1, ^cond_else_2
+    %t5 = cmp eq ptr %t4, 0
+    branch %t5, ^basecast_null_4, ^basecast_adjust_5
+
+  block ^basecast_null_4:
+    store ptr 0, $basecast__2
+    jump ^basecast_end_6
+
+  block ^basecast_adjust_5:
+    %t6 = index i8 [projection=base_subobject] %t4, 8
+    store ptr %t6, $basecast__2
+    jump ^basecast_end_6
+
+  block ^basecast_end_6:
+    %t7 = load ptr $basecast__2
+    %t8 = cmp eq ptr %t4, 0
+    branch %t8, ^basecast_null_7, ^basecast_adjust_8
+
+  block ^basecast_null_7:
+    store ptr 0, $basecast__3
+    jump ^basecast_end_9
+
+  block ^basecast_adjust_8:
+    %t9 = index i8 [projection=base_subobject] %t4, 12
+    store ptr %t9, $basecast__3
+    jump ^basecast_end_9
+
+  block ^basecast_end_9:
+    %t10 = load ptr $basecast__3
+    %t11 = call i32 @call(%t3, %t7, %t10)
+    %t12 = cmp eq i32 %t11, 7
+    branch %t12, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -61,8 +89,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
-    return i32 %t9
+    %t13 = load i32 $cond__1
+    return i32 %t13
 }
 function @StringStream__StringStream(%this : ptr) -> void [binding=weak, object=_ZN12StringStreamC1Ev] {
   slot $this : ptr

@@ -451,6 +451,32 @@ bool same_type_with_compatible_top_cv_for_semantic_identity(
   return class_object_types_have_same_semantic_identity(ctx, target_base, source_base);
 }
 
+bool array_aware_top_level_cv_flags(const TypePtr & type,
+                                    TypePtr & base,
+                                    bool & cv_const,
+                                    bool & cv_volatile)
+{
+  if(!type) {
+    return false;
+  }
+  if(type->kind != Type::TK_ARRAY) {
+    return top_level_cv_flags(type, base, cv_const, cv_volatile);
+  }
+
+  TypePtr element_base;
+  if(!array_aware_top_level_cv_flags(type->inner,
+                                     element_base,
+                                     cv_const,
+                                     cv_volatile)) {
+    return false;
+  }
+  base = make_array(element_base,
+                    type->has_bound,
+                    type->bound,
+                    type->bound_text);
+  return true;
+}
+
 bool pointer_pointee_cv_allows_base_conversion(const TypePtr & target_pointer,
                                                const TypePtr & source_pointer,
                                                TypePtr * target_pointee_base_out,
@@ -469,14 +495,14 @@ bool pointer_pointee_cv_allows_base_conversion(const TypePtr & target_pointer,
   bool target_volatile = false;
   bool source_const = false;
   bool source_volatile = false;
-  if(!top_level_cv_flags(target_pointer->inner,
-                         target_pointee_base,
-                         target_const,
-                         target_volatile) ||
-     !top_level_cv_flags(source_pointer->inner,
-                         source_pointee_base,
-                         source_const,
-                         source_volatile) ||
+  if(!array_aware_top_level_cv_flags(target_pointer->inner,
+                                     target_pointee_base,
+                                     target_const,
+                                     target_volatile) ||
+     !array_aware_top_level_cv_flags(source_pointer->inner,
+                                     source_pointee_base,
+                                     source_const,
+                                     source_volatile) ||
      (source_const && !target_const) ||
      (source_volatile && !target_volatile)) {
     return false;

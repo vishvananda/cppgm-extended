@@ -5350,7 +5350,7 @@ void append_destructor_generated_statements(SemanticContext & ctx,
                              true,
                              function_node);
   }
-  if(entry_point_kind == symbol_linkage::SMEK_COMPLETE) {
+  if(entry_point_kind != symbol_linkage::SMEK_BASE) {
     for(size_t i = info.virtual_base_subobjects.size(); i-- > 0;) {
       const SubobjectInfo & subobject = info.virtual_base_subobjects[i];
       if(!subobject.type) {

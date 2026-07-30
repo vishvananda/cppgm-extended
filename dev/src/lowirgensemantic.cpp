@@ -1745,6 +1745,15 @@ size_t class_array_new_cookie_size(const TypePtr & element_type)
   return max<size_t>(8, backend_storage_alignment(element_type));
 }
 
+TypePtr innermost_array_element_type(const TypePtr & type)
+{
+  TypePtr element = strip_top_level_cv(type);
+  while(element && element->kind == Type::TK_ARRAY) {
+    element = strip_top_level_cv(element->inner);
+  }
+  return element;
+}
+
 string storage_span_text(const TypePtr & type)
 {
   ostringstream out;
@@ -4010,7 +4019,8 @@ private:
   bool try_emit_dynamic_external_virtual_base_pointer(const TypePtr & object_type,
                                                       const string & object_ptr,
                                                       const string & qualified_name,
-                                                      string & out)
+                                                      string & out,
+                                                      bool pointer_may_be_null = true)
   {
     TypePtr class_type = strip_top_level_cv(remove_reference_type(object_type));
     const bool pointer_source = class_type && class_type->kind == Type::TK_POINTER;
@@ -4026,7 +4036,7 @@ private:
        !class_has_external_virtual_base_runtime_layout(class_type)) {
       return false;
     }
-    const bool preserve_null = pointer_source && !uses_vtable_runtime;
+    const bool preserve_null = pointer_source && pointer_may_be_null;
 
     map<string, vector<pair<string, unsigned long long> > >::const_iterator layout_it =
         class_virtual_base_layouts_.find(class_name);
@@ -4044,6 +4054,10 @@ private:
     }
     if(!found) {
       return false;
+    }
+    if(preserve_null && object_ptr == "0") {
+      out = "0";
+      return true;
     }
 
     const auto emit_adjusted_pointer = [&]() -> string
@@ -4116,10 +4130,18 @@ private:
   }
 
   string adjust_hidden_virtual_base_pointer(const string & object_ptr,
-                                            unsigned long long offset)
+                                            unsigned long long offset,
+                                            bool preserve_null = false)
   {
     if(offset == 0) {
       return object_ptr;
+    }
+    if(preserve_null) {
+      return emit_null_preserving_index_address_with_projection(
+          "i8",
+          object_ptr,
+          to_string(offset),
+          lowir_internal::IPK_BASE_SUBOBJECT);
     }
     return emit_temp_assignment("ptr",
                                 string("index i8 ") + object_ptr + ", " +
@@ -4175,6 +4197,12 @@ private:
                                            const CallSemNode & object_arg,
                                            const string * object_ptr = nullptr)
   {
+    TypePtr object_arg_type = strip_top_level_cv(remove_reference_type(
+        object_arg.semantic_type));
+    const bool preserve_null =
+        object_arg_type &&
+        object_arg_type->kind == Type::TK_POINTER &&
+        base_subobject_pointer_operand_may_be_null(object_arg);
     string forwarded;
     if(try_emit_forwarded_hidden_virtual_base_argument(virtual_base, object_arg, forwarded)) {
       return forwarded;
@@ -4268,11 +4296,14 @@ private:
       if(try_emit_dynamic_external_virtual_base_pointer(object_arg.semantic_type,
                                                         base_object_ptr,
                                                         virtual_base.first,
-                                                        dynamic_external)) {
+                                                        dynamic_external,
+                                                        preserve_null)) {
         if(virtual_base.second == 0) {
           return dynamic_external;
         }
-        return adjust_hidden_virtual_base_pointer(dynamic_external, virtual_base.second);
+        return adjust_hidden_virtual_base_pointer(dynamic_external,
+                                                  virtual_base.second,
+                                                  preserve_null);
       }
     }
 
@@ -4294,7 +4325,8 @@ private:
             base_object_ptr;
         return adjust_hidden_virtual_base_pointer(
             layout_base_ptr,
-            total_offset);
+            total_offset,
+            preserve_null);
       }
     }
 
@@ -4302,11 +4334,14 @@ private:
     if(try_emit_dynamic_external_virtual_base_pointer(object_arg.semantic_type,
                                                       base_object_ptr,
                                                       virtual_base.first,
-                                                      dynamic_external)) {
+                                                      dynamic_external,
+                                                      preserve_null)) {
       if(virtual_base.second == 0) {
         return dynamic_external;
       }
-      return adjust_hidden_virtual_base_pointer(dynamic_external, virtual_base.second);
+      return adjust_hidden_virtual_base_pointer(dynamic_external,
+                                                virtual_base.second,
+                                                preserve_null);
     }
 
     unsigned long long class_offset = 0;
@@ -4319,12 +4354,14 @@ private:
                                                       : emit_pointer_operand(object_arg));
       return adjust_hidden_virtual_base_pointer(
           base_object_ptr,
-          class_offset);
+          class_offset,
+          preserve_null);
     }
 
     return adjust_hidden_virtual_base_pointer(
         base_object_ptr,
-        virtual_base.second);
+        virtual_base.second,
+        preserve_null);
   }
 
   void append_hidden_virtual_base_arguments(const CallSemNode & call,
@@ -5798,6 +5835,9 @@ private:
       const string & offset,
       lowir_internal::IndexProjectionKind projection)
   {
+    if(base_ptr == "0") {
+      return "0";
+    }
     if(offset == "0") {
       return emit_index_address_with_projection(element_type,
                                                 base_ptr,
@@ -6930,7 +6970,10 @@ private:
     const string lookup_name =
         callsem_resolved_name(callee).empty() ? callee.text.str() :
             callsem_resolved_name(callee);
-    if(lookup_name == "operator delete[]" || lookup_name == "operatordelete[]") {
+    const string unqualified_name =
+        semantic_utils::unqualified_member_name(lookup_name);
+    if(unqualified_name == "operator delete[]" ||
+       unqualified_name == "operatordelete[]") {
       return true;
     }
     const string & symbol = callsem_symbol(callee).internal_symbol;
@@ -7041,7 +7084,7 @@ private:
     if(!pointer_type || pointer_type->kind != Type::TK_POINTER || !pointer_type->inner) {
       throw logic_error("marked array delete-expression requires pointer operand");
     }
-    TypePtr element_type = strip_top_level_cv(pointer_type->inner);
+    TypePtr element_type = innermost_array_element_type(pointer_type->inner);
     if(!element_type) {
       throw logic_error("marked array delete-expression requires element type");
     }
@@ -12116,15 +12159,58 @@ private:
     return object_ptr;
   }
 
+  const CallSemNode * array_new_cleanup_deallocation_call(
+      const CallSemNode & node) const
+  {
+    if(node.children.size() < 2) {
+      return nullptr;
+    }
+    const CallSemNode & candidate = node.children.back();
+    return is_marked_array_delete_expression(candidate) ? &candidate : nullptr;
+  }
+
+  void emit_array_new_cleanup_deallocation(const CallSemNode & call,
+                                           const string & allocation_ptr)
+  {
+    if(!is_marked_array_delete_expression(call)) {
+      throw logic_error("array new cleanup requires deallocation call");
+    }
+    string args = allocation_ptr;
+    for(size_t i = 2; i < call.children.size(); ++i) {
+      args += ", " + emit_rvalue(call.children[i]);
+    }
+    emit_line("call void " + lookup_function_symbol(call.children[0]) + "(" +
+              args + ")");
+  }
+
+  void propagate_array_new_constructor_unwind(size_t host_dispatch_depth)
+  {
+    if(should_route_to_active_host_cleanup()) {
+      terminate_through_active_host_cleanup(true, true);
+      return;
+    }
+    emit_call_unwind_dispatch_cleanups(true);
+    if(has_host_eh_dispatch_target()) {
+      terminate_host_eh_dispatch_or_resume(host_dispatch_depth);
+    } else if(!constructor_function_try_dispatch_labels_.empty()) {
+      emit_line("eh_end");
+      terminate("jump " +
+                lowir_block_name(constructor_function_try_dispatch_labels_.back()));
+    } else {
+      emit_host_eh_unwind_to_depth(host_dispatch_depth, 0);
+      terminate("resume");
+    }
+  }
+
   void emit_array_new_default_construction(const CallSemNode & node,
+                                           const string & allocation_ptr,
                                            const string & object_ptr,
                                            const string & evaluated_byte_count)
   {
-    if(!node.has_uint_value || node.children.size() == 1) {
+    if(!node.has_uint_value ||
+       node.children.size() < 2 ||
+       node.children[1].kind != CallSemKind::callee) {
       return;
-    }
-    if(node.children.size() < 2 || node.children[1].kind != CallSemKind::callee) {
-      throw logic_error("class array new-expression constructor shape");
     }
 
     TypePtr result_type = strip_top_level_cv(remove_reference_type(node.semantic_type));
@@ -12141,6 +12227,24 @@ private:
     const string cond_label = new_block("array_new_ctor_cond");
     const string body_label = new_block("array_new_ctor_body");
     const string end_label = new_block("array_new_ctor_end");
+    const bool call_can_throw =
+        !node.children[1].is_semantically_nothrow;
+    const CallSemNode * cleanup_deallocation =
+        array_new_cleanup_deallocation_call(node);
+    const string cleanup_label =
+        call_can_throw ? new_block("array_new_ctor_cleanup") : string();
+    const string continuation_label =
+        call_can_throw ? new_block("array_new_ctor_cont") : string();
+    const size_t constructor_arg_end =
+        cleanup_deallocation ? node.children.size() - 1 : node.children.size();
+    if(call_can_throw) {
+      if(!cleanup_deallocation) {
+        throw logic_error("throwing class array new-expression missing deallocation cleanup");
+      }
+      close_shared_host_call_unwind_region();
+    }
+    const size_t host_dispatch_depth =
+        use_host_eh_runtime() ? host_eh_region_depth_ : 0;
 
     emit_line("store i64 0, " + index_slot);
     terminate("jump " + lowir_block_name(cond_label));
@@ -12165,7 +12269,7 @@ private:
     }
     vector<string> args;
     args.push_back(element_ptr);
-    for(size_t i = 2; i < node.children.size(); ++i) {
+    for(size_t i = 2; i < constructor_arg_end; ++i) {
       const size_t param_index = i - 1;
       if(param_index < function_type->params.size()) {
         append_call_argument_values(args, function_type->params[param_index], node.children[i]);
@@ -12183,13 +12287,52 @@ private:
       op << args[i];
     }
     op << ")";
+    if(call_can_throw) {
+      emit_line("eh_try " + lowir_block_name(cleanup_label));
+    }
     emit_line(op.str());
+    if(call_can_throw) {
+      emit_line("eh_end");
+    }
     const string next =
         emit_temp_assignment("i64", string("binary add i64 ") + index + ", 1");
     emit_line("store i64 " + next + ", " + index_slot);
     terminate("jump " + lowir_block_name(cond_label));
 
     start_block(end_label);
+    if(call_can_throw) {
+      terminate("jump " + lowir_block_name(continuation_label));
+
+      start_block(cleanup_label);
+      if(has_host_eh_dispatch_target() &&
+         !host_eh_handler_nodes_.empty() &&
+         host_eh_handler_nodes_.back()) {
+        emit_host_eh_handler_metadata(*host_eh_handler_nodes_.back());
+        emit_line("eh_cleanup");
+      }
+      const string constructed_count =
+          emit_temp_assignment("i64", string("load i64 ") + index_slot);
+      TypePtr constructor_element_type =
+          function_type->params.empty() ? TypePtr() :
+              strip_top_level_cv(function_type->params[0]);
+      if(constructor_element_type &&
+         constructor_element_type->kind == Type::TK_POINTER) {
+        constructor_element_type =
+            strip_top_level_cv(constructor_element_type->inner);
+      }
+      if(!constructor_element_type) {
+        throw logic_error("array new constructor missing element type");
+      }
+      emit_compact_array_destructor_loop(constructor_element_type,
+                                         object_ptr,
+                                         constructed_count,
+                                         nullptr,
+                                         false);
+      emit_array_new_cleanup_deallocation(*cleanup_deallocation, allocation_ptr);
+      propagate_array_new_constructor_unwind(host_dispatch_depth);
+
+      start_block(continuation_label);
+    }
   }
 
   string emit_call_expression_rvalue(const CallSemNode & node,
@@ -12294,7 +12437,10 @@ private:
                                                           captured_array_new_byte_count);
         emit_line("store ptr " + object_ptr + ", " + result_slot);
         emit_array_new_value_initialization(node, object_ptr, captured_array_new_byte_count);
-        emit_array_new_default_construction(node, object_ptr, captured_array_new_byte_count);
+        emit_array_new_default_construction(node,
+                                            allocation_ptr,
+                                            object_ptr,
+                                            captured_array_new_byte_count);
         finish_nothrow_new_initialization(nothrow_end_label);
         return emit_temp_assignment("ptr", string("load ptr ") + result_slot);
       }
@@ -12302,7 +12448,10 @@ private:
                                                         allocation_ptr,
                                                         captured_array_new_byte_count);
       emit_array_new_value_initialization(node, object_ptr, captured_array_new_byte_count);
-      emit_array_new_default_construction(node, object_ptr, captured_array_new_byte_count);
+      emit_array_new_default_construction(node,
+                                          allocation_ptr,
+                                          object_ptr,
+                                          captured_array_new_byte_count);
       return object_ptr;
     }
     if(node.children.size() == 1) {
@@ -14209,7 +14358,8 @@ private:
             if(try_emit_dynamic_external_virtual_base_pointer(node.children[0].semantic_type,
                                                               root_ptr,
                                                               virtual_base.first,
-                                                              dynamic_vbase)) {
+                                                              dynamic_vbase,
+                                                              false)) {
               return address_from_parameter_hidden_virtual_base(dynamic_vbase,
                                                                 virtual_base.second);
             }
@@ -14238,8 +14388,12 @@ private:
         const CallSemNode * root = peel_base_subobject_root(node.children[0]);
         if(root && root->kind == CallSemKind::call_expression) {
           const string object_ptr = emit_pointer_operand(node.children[0]);
+          const pair<string, unsigned long long> requested_virtual_base =
+              make_pair(virtual_base.first, 0ULL);
           const string forwarded_virtual_base =
-              emit_hidden_virtual_base_argument(virtual_base, node.children[0], &object_ptr);
+              emit_hidden_virtual_base_argument(requested_virtual_base,
+                                                node.children[0],
+                                                &object_ptr);
           return address_from_parameter_hidden_virtual_base(forwarded_virtual_base,
                                                             virtual_base.second);
         }
@@ -14261,7 +14415,9 @@ private:
           if(!try_emit_dynamic_external_virtual_base_pointer(node.children[0].semantic_type,
                                                              object_ptr,
                                                              virtual_base.first,
-                                                             dynamic_external)) {
+                                                             dynamic_external,
+                                                             base_subobject_pointer_operand_may_be_null(
+                                                                 node.children[0]))) {
             throw logic_error("failed to emit dynamic external virtual base pointer");
           }
           return address_from_parameter_hidden_virtual_base(dynamic_external,
@@ -14299,7 +14455,8 @@ private:
             if(try_emit_dynamic_external_virtual_base_pointer(node.children[0].semantic_type,
                                                               root_ptr,
                                                               qualified_name,
-                                                              dynamic_vbase)) {
+                                                              dynamic_vbase,
+                                                              false)) {
               return emit_index_address_with_projection("i8",
                                                         dynamic_vbase,
                                                         0,

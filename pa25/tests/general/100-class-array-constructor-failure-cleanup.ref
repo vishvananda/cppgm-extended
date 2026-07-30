@@ -1,0 +1,191 @@
+declare global @__external_rtti__int [binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
+declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+declare function @operator_delete__(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete_array]
+declare function @operator_new__(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new_array]
+
+global @live : i32 [binding=strong, object=_Z4live] = zero
+global @freed : i32 [binding=strong, object=_Z5freed] = zero
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=weak, object=_ZTIi] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=weak, object=@__ehobj_int] = {
+  zero 4
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $array_new_index__1 : i64
+  slot $array_dtor_index__2 : i64
+  slot $lor__3 : i64
+
+  block ^entry:
+    eh_try ^catch_dispatch_1
+    %t1 = convert sext i64 i32 11
+    %t2 = call ptr @X__operatornew__(%t1)
+    %t3 = index i8 %t2, 8
+    %t4 = const i64 3
+    store i64 %t4, %t2
+    %t5 = const i64 3
+    store i64 0, $array_new_index__1
+    jump ^array_new_ctor_cond_4
+
+  block ^array_new_ctor_cond_4:
+    %t6 = load i64 $array_new_index__1
+    %t7 = cmp ult i64 %t6, %t5
+    branch %t7, ^array_new_ctor_body_5, ^array_new_ctor_end_6
+
+  block ^array_new_ctor_body_5:
+    %t8 = binary mul i64 %t6, 1
+    %t9 = index i8 %t3, %t8
+    eh_try ^array_new_ctor_cleanup_7
+    call void @X__X(%t9)
+    eh_end
+    %t10 = binary add i64 %t6, 1
+    store i64 %t10, $array_new_index__1
+    jump ^array_new_ctor_cond_4
+
+  block ^array_new_ctor_end_6:
+    jump ^array_new_ctor_cont_8
+
+  block ^array_new_ctor_cleanup_7:
+    eh_catch_all, 1
+    eh_cleanup
+    %t11 = load i64 $array_new_index__1
+    store i64 %t11, $array_dtor_index__2
+    jump ^array_dtor_cond_9
+
+  block ^array_dtor_cond_9:
+    %t12 = load i64 $array_dtor_index__2
+    %t13 = cmp ne i64 %t12, 0
+    branch %t13, ^array_dtor_body_10, ^array_dtor_end_11
+
+  block ^array_dtor_body_10:
+    %t14 = binary sub i64 %t12, 1
+    store i64 %t14, $array_dtor_index__2
+    %t15 = binary mul i64 %t14, 1
+    %t16 = index i8 %t3, %t15
+    call void @X___X(%t16)
+    jump ^array_dtor_cond_9
+
+  block ^array_dtor_end_11:
+    call void @X__operatordelete__(%t2)
+    eh_end
+    jump ^catch_entry_2
+
+  block ^array_new_ctor_cont_8:
+    eh_end
+    jump ^try_end_3
+
+  block ^catch_dispatch_1:
+    eh_catch_all, 1
+    jump ^catch_entry_2
+
+  block ^catch_entry_2:
+    %t17 = exception ptr
+    %t18 = exception_selector i32
+    %t19 = cmp eq i32 %t18, 1
+    branch %t19, ^catch_body_12, ^catch_next_13
+
+  block ^catch_body_12:
+    %t20 = call ptr @__external_runtime____cxa_begin_catch(%t17)
+    eh_cleanup ^catch_cleanup_14
+    %t21 = load i32 @live
+    branch %t21, ^lor_short_16, ^lor_rhs_15
+
+  block ^lor_rhs_15:
+    %t22 = load i32 @freed
+    %t23 = cmp ne i32 %t22, 1
+    %t24 = cmp ne i64 %t23, 0
+    store i64 %t24, $lor__3
+    jump ^lor_end_17
+
+  block ^lor_short_16:
+    store i64 1, $lor__3
+    jump ^lor_end_17
+
+  block ^lor_end_17:
+    %t25 = load i64 $lor__3
+    %t26 = convert zext i32 u8 %t25
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    return i32 %t26
+
+  block ^catch_cleanup_14:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^catch_next_13:
+    resume
+
+  block ^try_end_3:
+    return i32 1
+}
+function @X__X(%this : ptr) -> void [binding=weak, object=_ZN1XC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @live
+    %t2 = cmp eq i32 %t1, 2
+    branch %t2, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t3 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store i32 1, %t3
+    %t4 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t3, %t4, 0)
+    return void
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t5 = load i32 @live
+    %t6 = binary add i32 %t5, 1
+    store i32 %t6, @live
+    return void
+}
+function @X__operatordelete__(%p : ptr) -> void [unwind=no, binding=weak, object=_ZN1XdaEPv] {
+  slot $p : ptr
+
+  block ^entry:
+    store ptr %p, $p
+    %t1 = load i32 @freed
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @freed
+    %t3 = load ptr $p
+    call void @operator_delete__(%t3)
+    return void
+}
+function @X__operatornew__(%n : i64) -> ptr [binding=weak, object=_ZN1XnaEm] {
+  slot $n : i64
+
+  block ^entry:
+    store i64 %n, $n
+    %t1 = load i64 $n
+    %t2 = call ptr @operator_new__(%t1)
+    return ptr %t2
+}
+function @X___X(%this : ptr) -> void [binding=weak, object=_ZN1XD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @live
+    %t2 = binary sub i32 %t1, 1
+    store i32 %t2, @live
+    return void
+}
+alias object _ZN1XC2Ev = @X__X
+alias object _ZN1XD2Ev = @X___X

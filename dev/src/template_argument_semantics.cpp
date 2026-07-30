@@ -10220,7 +10220,7 @@ void require_structured_bool_value_member_output_if_needed(
   }
 
   add_output_requirement(required->second.output_requirements, ORK_DEFINITION);
-  if(owner.definition_output_emitted &&
+  if(template_api::class_has_template_identity(&owner) &&
      !owner.definition_output_in_progress &&
      !required->second.definition_output_emitted) {
     owner.has_late_required_static_member_output = true;

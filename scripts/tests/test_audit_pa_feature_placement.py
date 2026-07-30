@@ -166,6 +166,22 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         self.assertNotIn("support.range_for", audit.detect_features(ordinary))
         self.assertIn("support.range_for", audit.detect_features(range_for))
 
+    def test_lambda_ignores_array_allocation_operators(self) -> None:
+        allocation_operators = (
+            "static void *operator new[](unsigned long); "
+            "static void operator delete[](void *p) noexcept { free(p); }"
+        )
+        lambda_expression = "[](void *p) noexcept { free(p); }"
+
+        self.assertNotIn(
+            "support.lambda",
+            audit.detect_features(allocation_operators),
+        )
+        self.assertIn(
+            "support.lambda",
+            audit.detect_features(lambda_expression),
+        )
+
     def test_nttp_default_reference_expression_is_not_pointer_nttp(self) -> None:
         default_expression = (
             "template<class T, bool Value = noexcept(declval<T&>())> "

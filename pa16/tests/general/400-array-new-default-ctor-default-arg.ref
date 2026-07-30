@@ -26,65 +26,75 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^array_new_ctor_body_2:
     %t8 = binary mul i64 %t6, 4
     %t9 = index i8 %t3, %t8
+    eh_try ^array_new_ctor_cleanup_4
     call void @item__item(%t9, 7)
+    eh_end
     %t10 = binary add i64 %t6, 1
     store i64 %t10, $array_new_index__1
     jump ^array_new_ctor_cond_1
 
   block ^array_new_ctor_end_3:
+    jump ^array_new_ctor_cont_5
+
+  block ^array_new_ctor_cleanup_4:
+    %t11 = load i64 $array_new_index__1
+    call void @operator_delete__(%t2)
+    resume
+
+  block ^array_new_ctor_cont_5:
     store ptr %t3, $items
-    %t11 = load ptr $items
-    %t12 = binary mul i64 0, 4
-    %t13 = index i8 [projection=array_element] %t11, %t12
-    %t14 = index i8 [projection=field] %t13, 0
-    %t15 = load i32 %t14
-    %t16 = cmp eq i32 %t15, 7
-    branch %t16, ^land_rhs_4, ^land_short_5
+    %t12 = load ptr $items
+    %t13 = binary mul i64 0, 4
+    %t14 = index i8 [projection=array_element] %t12, %t13
+    %t15 = index i8 [projection=field] %t14, 0
+    %t16 = load i32 %t15
+    %t17 = cmp eq i32 %t16, 7
+    branch %t17, ^land_rhs_6, ^land_short_7
 
-  block ^land_rhs_4:
-    %t17 = load ptr $items
-    %t18 = binary mul i64 1, 4
-    %t19 = index i8 [projection=array_element] %t17, %t18
-    %t20 = index i8 [projection=field] %t19, 0
-    %t21 = load i32 %t20
-    %t22 = cmp eq i32 %t21, 7
-    %t23 = cmp ne i64 %t22, 0
-    store i64 %t23, $land__2
-    jump ^land_end_6
+  block ^land_rhs_6:
+    %t18 = load ptr $items
+    %t19 = binary mul i64 1, 4
+    %t20 = index i8 [projection=array_element] %t18, %t19
+    %t21 = index i8 [projection=field] %t20, 0
+    %t22 = load i32 %t21
+    %t23 = cmp eq i32 %t22, 7
+    %t24 = cmp ne i64 %t23, 0
+    store i64 %t24, $land__2
+    jump ^land_end_8
 
-  block ^land_short_5:
+  block ^land_short_7:
     store i64 0, $land__2
-    jump ^land_end_6
+    jump ^land_end_8
 
-  block ^land_end_6:
-    %t24 = load i64 $land__2
-    %t25 = convert zext i32 u8 %t24
-    store i32 %t25, $ok
-    %t26 = load ptr $items
-    %t27 = cmp ne ptr %t26, 0
-    branch %t27, ^array_delete_nonnull_7, ^array_delete_end_8
+  block ^land_end_8:
+    %t25 = load i64 $land__2
+    %t26 = convert zext i32 u8 %t25
+    store i32 %t26, $ok
+    %t27 = load ptr $items
+    %t28 = cmp ne ptr %t27, 0
+    branch %t28, ^array_delete_nonnull_9, ^array_delete_end_10
 
-  block ^array_delete_nonnull_7:
-    %t28 = index i8 %t26, -8
-    %t29 = load i64 %t28
-    call void @operator_delete__(%t28)
-    jump ^array_delete_end_8
+  block ^array_delete_nonnull_9:
+    %t29 = index i8 %t27, -8
+    %t30 = load i64 %t29
+    call void @operator_delete__(%t29)
+    jump ^array_delete_end_10
 
-  block ^array_delete_end_8:
-    %t30 = load i32 $ok
-    branch %t30, ^cond_then_9, ^cond_else_10
+  block ^array_delete_end_10:
+    %t31 = load i32 $ok
+    branch %t31, ^cond_then_11, ^cond_else_12
 
-  block ^cond_then_9:
+  block ^cond_then_11:
     store i32 0, $cond__3
-    jump ^cond_end_11
+    jump ^cond_end_13
 
-  block ^cond_else_10:
+  block ^cond_else_12:
     store i32 1, $cond__3
-    jump ^cond_end_11
+    jump ^cond_end_13
 
-  block ^cond_end_11:
-    %t31 = load i32 $cond__3
-    return i32 %t31
+  block ^cond_end_13:
+    %t32 = load i32 $cond__3
+    return i32 %t32
 }
 function @item__item(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4itemC1Ei] {
   slot $this : ptr
