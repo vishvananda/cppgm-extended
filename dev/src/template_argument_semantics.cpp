@@ -517,7 +517,8 @@ bool materialize_leaf_member_constant_binding(
     template_api::TemplateServices & services,
     ValueBinding & binding,
     constant_eval::ConstexprValue & out,
-    bool * evaluation_incomplete = nullptr);
+    bool * evaluation_incomplete = nullptr,
+    bool note_value_instantiation = true);
 void note_structured_bool_integral_constant_value_for_witness(
     template_api::TemplateServices & services,
     const ClassInfo & info,
@@ -10032,7 +10033,8 @@ bool materialize_leaf_member_constant_binding(
     template_api::TemplateServices & services,
     ValueBinding & binding,
     constant_eval::ConstexprValue & out,
-    bool * evaluation_incomplete)
+    bool * evaluation_incomplete,
+    bool note_value_instantiation)
 {
   if(binding.kind == ValueBinding::VK_FIELD) {
     return false;
@@ -10050,12 +10052,14 @@ bool materialize_leaf_member_constant_binding(
       require_structured_bool_value_member_output_if_needed(
           services, *binding.owner_class);
     }
-    if(services.semantic_context && !owner_value_evaluation_incomplete) {
+    if(note_value_instantiation &&
+       services.semantic_context &&
+       !owner_value_evaluation_incomplete) {
       template_api::note_template_member_value_instantiation_if_needed(
           *services.semantic_context,
           binding);
     }
-    if(!owner_value_evaluation_incomplete) {
+    if(note_value_instantiation && !owner_value_evaluation_incomplete) {
       note_non_bool_static_value_dependency_for_witness(services, binding);
     }
     out = constant_eval::make_integral_value(
@@ -10068,12 +10072,14 @@ bool materialize_leaf_member_constant_binding(
       require_structured_bool_value_member_output_if_needed(
           services, *binding.owner_class);
     }
-    if(services.semantic_context && !owner_value_evaluation_incomplete) {
+    if(note_value_instantiation &&
+       services.semantic_context &&
+       !owner_value_evaluation_incomplete) {
       template_api::note_template_member_value_instantiation_if_needed(
           *services.semantic_context,
           binding);
     }
-    if(!owner_value_evaluation_incomplete) {
+    if(note_value_instantiation && !owner_value_evaluation_incomplete) {
       note_non_bool_static_value_dependency_for_witness(services, binding);
     }
     out = value_binding_constexpr_value(binding);
@@ -10167,12 +10173,15 @@ bool materialize_leaf_member_constant_binding(
           services, *active->owner_class);
     }
   }
-  if(services.semantic_context && !current_owner_value_evaluation_incomplete) {
+  if(note_value_instantiation &&
+     services.semantic_context &&
+     !current_owner_value_evaluation_incomplete) {
     template_api::note_template_member_value_instantiation_if_needed(
         *services.semantic_context,
         *active);
   }
-  if(!current_owner_value_evaluation_incomplete) {
+  if(note_value_instantiation &&
+     !current_owner_value_evaluation_incomplete) {
     note_non_bool_static_value_dependency_for_witness(services, *active);
   }
   out = value;
@@ -39902,14 +39911,13 @@ NonTypeArgumentStatus evaluate_template_member_value_expression(
 
   Scope & raw_scope = scope.require();
   const QualifiedName * qualified = qualified_syntax_if_qualified(expr);
-  if(!qualified) {
-    return NT_ARG_PARSE_FAILED;
-  }
-
   const ValueBinding * binding = nullptr;
-  if(!lookup_leaf_qualified_value_binding(
-         services, raw_scope, *qualified, &expr, binding) ||
-     !binding) {
+  const bool found_binding =
+      qualified ?
+          lookup_leaf_qualified_value_binding(
+              services, raw_scope, *qualified, &expr, binding) :
+          lookup_leaf_value_binding(raw_scope, expr.value, binding);
+  if(!found_binding || !binding) {
     return NT_ARG_PARSE_FAILED;
   }
 
@@ -39919,7 +39927,8 @@ NonTypeArgumentStatus evaluate_template_member_value_expression(
          services,
          *const_cast<ValueBinding *>(binding),
          constexpr_value,
-         &evaluation_incomplete)) {
+         &evaluation_incomplete,
+         qualified != nullptr)) {
     return evaluation_incomplete ||
            value_binding_owner_has_reentrant_primary_selection(*binding) ||
            binding->dependent_template_value ||
@@ -39932,8 +39941,11 @@ NonTypeArgumentStatus evaluate_template_member_value_expression(
          target_type, constexpr_value, value)) {
     return NT_ARG_EVAL_FAILED;
   }
-  note_non_bool_static_value_dependency_for_witness(services, *binding);
-  if(is_structured_bool_result_member_name(qualified->name)) {
+  if(qualified) {
+    note_non_bool_static_value_dependency_for_witness(services, *binding);
+  }
+  const string member_name = qualified ? qualified->name : expr.value;
+  if(is_structured_bool_result_member_name(member_name)) {
     TypePtr owner_type =
         binding->owner_class ? binding->owner_class->type :
         (binding->declaration_scope && binding->declaration_scope->class_info ?
