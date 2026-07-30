@@ -3172,6 +3172,40 @@ bool remove_unreachable_blocks(lir::Function & function,
     return false;
   }
 
+  // A shared EH cleanup can remain reachable after the ordinary block that
+  // formed its slot addresses becomes unreachable.
+  set<string> reachable_temp_uses;
+  for(size_t i = 0; i < function.blocks.size(); ++i) {
+    if(!reachable[i]) {
+      continue;
+    }
+    for(size_t j = 0; j < function.blocks[i].instructions.size(); ++j) {
+      const TempUseList uses =
+          instruction_temp_uses(function.blocks[i].instructions[j]);
+      reachable_temp_uses.insert(uses.begin(), uses.end());
+    }
+  }
+
+  vector<lir::Instruction> rematerialized_addresses;
+  for(size_t i = 0; i < function.blocks.size(); ++i) {
+    if(reachable[i]) {
+      continue;
+    }
+    for(size_t j = 0; j < function.blocks[i].instructions.size(); ++j) {
+      const lir::Instruction & instruction = function.blocks[i].instructions[j];
+      if(instruction.dest.empty() ||
+         reachable_temp_uses.count(instruction.dest) == 0) {
+        continue;
+      }
+      if(instruction.kind != lir::Instruction::IK_ADDR ||
+         (instruction.first.kind != lir::Operand::OP_SLOT &&
+          instruction.first.kind != lir::Operand::OP_GLOBAL)) {
+        return false;
+      }
+      rematerialized_addresses.push_back(instruction);
+    }
+  }
+
   vector<lir::Block> kept_blocks;
   kept_blocks.reserve(function.blocks.size());
   for(size_t i = 0; i < function.blocks.size(); ++i) {
@@ -3180,6 +3214,12 @@ bool remove_unreachable_blocks(lir::Function & function,
     }
   }
   function.blocks.swap(kept_blocks);
+  if(!rematerialized_addresses.empty()) {
+    function.blocks.front().instructions.insert(
+        function.blocks.front().instructions.begin(),
+        rematerialized_addresses.begin(),
+        rematerialized_addresses.end());
+  }
   return true;
 }
 

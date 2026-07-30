@@ -13123,17 +13123,19 @@ private:
         throw logic_error("postfix-expression arity");
       }
       const string memory_type = lowir_lvalue_memory_type(node.children[0]);
-      const string old_value = is_bit_field_member_expression(node.children[0]) ?
-          emit_bit_field_rvalue(node.children[0]) :
+      const bool bit_field_member =
+          is_bit_field_member_expression(node.children[0]);
+      const string target = emit_lvalue_storage(node.children[0]);
+      const string old_value = bit_field_member ?
+          emit_bit_field_rvalue_from_storage(node.children[0], target) :
           emit_temp_assignment(memory_type,
                                string("load ") + memory_type + " " +
-                               emit_lvalue_storage(node.children[0]));
+                               target);
       const string next_value =
           emit_incdec_next_value(node, memory_type, old_value);
-      if(is_bit_field_member_expression(node.children[0])) {
-        emit_store_to_bit_field(node.children[0], next_value);
+      if(bit_field_member) {
+        emit_store_to_bit_field_storage(node.children[0], next_value, target);
       } else {
-        const string target = emit_lvalue_storage(node.children[0]);
         emit_line("store " + memory_type + " " + next_value +
                   ", " + target);
       }

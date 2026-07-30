@@ -14,14 +14,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = call ptr @Counter__operatorunsigned_(%t6)
     %t8 = load u32 %t7
     %t9 = binary add u32 %t8, 1
+    store u32 %t9, %t7
     %t10 = addr $counter
-    %t11 = call ptr @Counter__operatorunsigned_(%t10)
-    store u32 %t9, %t11
-    %t12 = addr $counter
-    %t13 = index i8 [projection=field] %t12, 0
-    %t14 = load u32 %t13
-    %t15 = cmp eq u32 %t14, 5
-    branch %t15, ^cond_then_1, ^cond_else_2
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load u32 %t11
+    %t13 = cmp eq u32 %t12, 5
+    branch %t13, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -32,8 +30,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t16 = load i32 $cond__1
-    return i32 %t16
+    %t14 = load i32 $cond__1
+    return i32 %t14
 }
 function @Counter__Counter(%this : ptr, %initial : u32) -> void [binding=weak, object=_ZN7CounterC1Ej] {
   slot $this : ptr

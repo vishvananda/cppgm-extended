@@ -6553,6 +6553,7 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
               out.push_back(mi);
             }
           } else if(inst.op == "shl" || inst.op == "shr" || inst.op == "ushr") {
+            emit_normalize_integer_temp(inst.type.text, dst, out);
             mi = make_instruction(mir::Instruction::MI_MOV);
             mi.operands.push_back(reg(XR_RCX));
             if(rhs_direct != nullptr) {

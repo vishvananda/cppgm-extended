@@ -1,0 +1,41 @@
+global @values [binding=strong, object=_Z6values] = {
+  zero 8
+}
+global @index : i32 [binding=strong, object=_Z5index] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+
+  block ^entry:
+    %t1 = addr @values
+    %t2 = unary decay ptr %t1
+    %t3 = load i32 @index
+    %t4 = binary add i32 %t3, 1
+    store i32 %t4, @index
+    %t5 = index i32 [projection=array_element] %t2, %t3
+    %t6 = load i32 %t5
+    %t7 = binary add i32 %t6, 1
+    store i32 %t7, %t5
+    %t8 = load i32 @index
+    %t9 = cmp ne i32 %t8, 1
+    branch %t9, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t10 = addr @values
+    %t11 = unary decay ptr %t10
+    %t12 = index i32 [projection=array_element] %t11, 0
+    %t13 = load i32 %t12
+    %t14 = cmp ne i32 %t13, 1
+    %t15 = cmp ne i64 %t14, 0
+    store i64 %t15, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t16 = load i64 $lor__1
+    %t17 = convert zext i32 u8 %t16
+    return i32 %t17
+}
