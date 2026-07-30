@@ -9745,6 +9745,29 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
       return;
     }
   }
+  if(!info.dependent_instantiation &&
+     is_typedef_member &&
+     !has_auto &&
+     info.has_instantiation_binding_arguments) {
+    // A concrete typedef can use an earlier static constant in its base
+    // specifier. Demand that retained reference before parsing the decl-spec,
+    // since the later concrete-typedef rebound is otherwise unreachable.
+    for(size_t j = 0; j < declarators->children.size(); ++j) {
+      const CppAstNode & init_decl = declarators->children[j];
+      if(init_decl.kind != CppAstKind::init_declarator ||
+         init_decl.children.empty()) {
+        continue;
+      }
+      std::string ignored_name;
+      CppAstNode type_id;
+      if(make_typedef_type_id_from_declarator(filtered_specifiers,
+                                              init_decl.children[0],
+                                              ignored_name,
+                                              type_id)) {
+        materialize_direct_class_value_references(ctx, info, type_id);
+      }
+    }
+  }
   if(!has_auto &&
      !ctx.parse_decl_spec(filtered_specifiers,
                           *info.member_scope,
@@ -11014,6 +11037,17 @@ bool populate_class_reference_named_member(SemanticContext & ctx,
 
 }  // namespace
 
+bool class_reference_named_member_is_after_active_declaration(
+    const ClassInfo & info,
+    const std::string & name)
+{
+  const CppAstNode * reference_node =
+      info.template_output_node ? info.template_output_node : info.class_node;
+  return reference_node &&
+      reference_named_member_is_after_active_declaration(
+          info, *reference_node, name);
+}
+
 void ensure_class_reference_static_asserts(SemanticContext & ctx,
                                            ClassInfo & info)
 {
@@ -11608,6 +11642,37 @@ void finalize_class_constant_members(SemanticContext & ctx,
     }
 
     const CppAstNode * initializer = binding->constant_initializer;
+    CppAstNode substituted_initializer;
+    const std::vector<template_model::TemplateParameterInfo> *
+        substitution_parameters = nullptr;
+    const std::vector<template_model::TemplateArgument> *
+        substitution_arguments = nullptr;
+    class_template_member_substitution_bindings(info,
+                                                substitution_parameters,
+                                                substitution_arguments);
+    const TypePtr constant_initializer_type = strip_top_level_cv(binding->type);
+    const bool replay_constant_initializer =
+        constant_initializer_type &&
+        (is_integral_type(constant_initializer_type) ||
+         (constant_initializer_type->kind == Type::TK_NAMED &&
+          constant_initializer_type->named_key.compare(0, 5, "enum ") == 0));
+    // Only integral/enum class constants need a concrete replay here. Runtime
+    // static objects are handled by normal initialization; replaying their
+    // address expressions during best-effort constant evaluation can
+    // materialize duplicate function-template bindings.
+    const bool substituted_constant_initializer =
+       replay_constant_initializer &&
+       substitution_parameters &&
+       substitution_arguments &&
+       template_argument_semantics::substitute_expression_node_for_template_arguments(
+           *info.member_scope,
+           *initializer,
+           *substitution_parameters,
+           *substitution_arguments,
+           substituted_initializer);
+    if(substituted_constant_initializer) {
+      initializer = &substituted_initializer;
+    }
     Scope * initializer_scope = binding->constant_initializer_scope;
     const TypePtr initializer_type = binding->type;
     constant_eval::ConstexprValue value;

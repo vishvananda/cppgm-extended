@@ -220,6 +220,9 @@ void ensure_class_reference_type_members(SemanticContext & ctx,
 void ensure_class_reference_named_member(SemanticContext & ctx,
                                          semantic_model::ClassInfo & info,
                                          const std::string & name);
+bool class_reference_named_member_is_after_active_declaration(
+    const semantic_model::ClassInfo & info,
+    const std::string & name);
 bool materialize_class_reference_named_function_definition(
     SemanticContext & ctx,
     semantic_model::ClassInfo & info,

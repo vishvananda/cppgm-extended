@@ -9154,7 +9154,16 @@ bool record_deduced_non_type_argument(
   }
 
   if(argument.dependent) {
-    return is_partial_order_dependent_non_type_argument(argument);
+    if(!is_partial_order_dependent_non_type_argument(argument)) {
+      return false;
+    }
+    // Partial-order placeholders stand for a concrete transformed-template
+    // argument. Record their sentinel value so the final completeness check
+    // sees the corresponding non-type parameter as deduced.
+    return record_deduced_non_type_value(parameters,
+                                         text,
+                                         argument.value,
+                                         deduced_values);
   }
 
   return record_deduced_non_type_value(parameters,

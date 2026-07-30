@@ -3832,6 +3832,51 @@ bool try_analyze_disguised_parenthesized_call(SemanticContext & ctx,
   return true;
 }
 
+bool try_analyze_disguised_parenthesized_binary_expression(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & node,
+    ExprInfo & out)
+{
+  if(node.simple_type != OP_LPAREN || node.children.size() != 2) {
+    return false;
+  }
+
+  CppAstNode lhs;
+  if(!extract_disguised_call_callee(node.children[0], lhs)) {
+    return false;
+  }
+
+  const CppAstNode & operand = node.children[1];
+  if(operand.kind != CppAstKind::unary_expression ||
+     operand.children.size() != 1 ||
+     (operand.simple_type != OP_PLUS &&
+      operand.simple_type != OP_MINUS &&
+      operand.simple_type != OP_STAR &&
+      operand.simple_type != OP_AMP)) {
+    return false;
+  }
+
+  CppAstNode parenthesized;
+  parenthesized.kind = CppAstKind::parenthesized_expression;
+  parenthesized.token_start = node.children[0].token_start;
+  parenthesized.token_end = node.children[0].token_end;
+  parenthesized.children.push_back(lhs);
+
+  CppAstNode binary;
+  binary.kind = CppAstKind::binary_expression;
+  binary.value = operand.value;
+  binary.has_token = operand.has_token;
+  binary.token_kind = operand.token_kind;
+  binary.simple_type = operand.simple_type;
+  binary.token_start = node.token_start;
+  binary.token_end = node.token_end;
+  binary.children.push_back(parenthesized);
+  binary.children.push_back(operand.children[0]);
+  out = ctx.analyze_expression(scope, binary);
+  return true;
+}
+
 }  // namespace
 
 ExprInfo make_implicit_member_expression(SemanticContext & ctx,
@@ -8647,6 +8692,11 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
     ExprInfo disguised_call;
     if(try_analyze_disguised_parenthesized_call(ctx, scope, node, disguised_call)) {
       return disguised_call;
+    }
+    ExprInfo disguised_binary;
+    if(try_analyze_disguised_parenthesized_binary_expression(
+           ctx, scope, node, disguised_binary)) {
+      return disguised_binary;
     }
     ostringstream out;
     out << "unsupported cast target type";

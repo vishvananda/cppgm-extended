@@ -2892,6 +2892,14 @@ bool try_argument_conversion(SemanticContext & ctx,
         adjusted = inherited;
         second = inheritance_conversion_rank(ctx, target, call_expr);
       }
+      // An explicit conversion function considered for direct-initialization
+      // must produce the destination type directly. Qualification and
+      // reference-binding adjustments are exact conversions, but a further
+      // promotion or conversion (for example explicit operator bool() followed
+      // by bool-to-char) does not make the function a viable candidate.
+      if(binding_declares_explicit_function(*candidate) && second != CR_EXACT) {
+        return;
+      }
       if(second != CR_BAD) {
         UserDefinedCandidate ud_candidate;
         ud_candidate.kind = UserDefinedCandidate::CONVERSION_FUNCTION;

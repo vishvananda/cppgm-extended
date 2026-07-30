@@ -4812,6 +4812,10 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
                                           bool ensure_current_reference_members,
                                           Scope * lexical_scope)
 {
+  const bool direct_member_is_after_active_declaration =
+      semantic_class_model::
+          class_reference_named_member_is_after_active_declaration(info, name);
+
   const auto inherited_name_is_class_template_type_parameter =
       [](const ClassInfo & owner, const string & member_name) -> bool
   {
@@ -4908,6 +4912,7 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
   }
 
   if(ensure_current_reference_members &&
+     !direct_member_is_after_active_declaration &&
      !info.reference_member_collection_in_progress &&
      !info.reference_members_collected &&
      info.reference_named_members_collected.count(name) == 0) {
@@ -4993,6 +4998,12 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
   }
 
   if(candidates.empty()) {
+    // A later direct declaration is unavailable at this point, but inherited
+    // declarations above remain valid lookup candidates. Only suppress the
+    // in-progress dependent-member fallback after base lookup is exhausted.
+    if(direct_member_is_after_active_declaration) {
+      return MemberTypeLookupResult();
+    }
     if(named_member_collection_in_progress && info.type) {
       MemberTypeLookupResult result;
       vector<string> members;

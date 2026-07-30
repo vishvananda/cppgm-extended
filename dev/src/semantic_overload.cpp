@@ -9135,6 +9135,13 @@ bool namespace_function_template_candidate_visible_from_node(
         }
       }
     }
+    // Once ordinary lookup reaches the template's declaring scope, the
+    // declaration itself is the introduction. A using-declaration for the
+    // same template in an enclosing namespace is a separate lookup path and
+    // must not move the direct declaration's point of visibility forward.
+    if(current == decl->declaring_scope) {
+      break;
+    }
   }
 
   for(const Scope * current = lookup_scope; current; current = current->parent) {
