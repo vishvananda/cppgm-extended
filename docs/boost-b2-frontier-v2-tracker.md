@@ -13,10 +13,10 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `103 / 147`
-- current cursor: `#104 libs/signals2/test`
-- active compiler frontier: C++03-declared Boost.Serialization passes its
-  complete C++11 graph; C++03-declared Boost.Signals2 is next
+- completed suites: `104 / 147`
+- current cursor: `#105 libs/smart_ptr/test`
+- active compiler frontier: C++03-declared Boost.Signals2 passes its complete
+  forced C++11 graph without a compiler change; C++11 Boost.SmartPtr is next
 
 ## Baseline Gates
 
@@ -368,24 +368,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 101 | `libs/safe_numerics/test` | skipped-language | `(this commit)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/safe_numerics/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier policy, no graph was run and no compiler work is inferred from the historical passing result. The cursor advances directly to C++11 Boost.Scope. |
 | 102 | `libs/scope/test` | pass | `(this commit)` | The exact final forced three-job C++11 `pch=off` replay finds 548 targets, rebuilds all 74 currently requested targets, passes every positive compile/link/runtime action, handles every deliberate negative as failed-as-expected, and exits successfully in 28.96s; log `/private/tmp/boost-frontier-v2-suite-102-scope-final-package.log`. Maximum RSS is 256,516,096 B with zero process swaps, zero throttled pages, and unchanged system swap. | Five typed repairs close the four positive intake failures and the negative assignment-trait control: lazy current-instantiation member demand, using-declaration provenance for imported function templates, concrete function-result preservation, an explicit unevaluated `declval` callee fact, and value-category-aware assignment-operator ranking that considers deleted exact matches. Four PA22 owners are 20--27 lines with only a five-line local support header; the PA34 trait owner is 26 lines. None uses `<type_traits>`, all LowIR refs are 0--106 bytes, and all four witnesses come from patched Clang. PA22/PA34 pass `680/680`; all 977 configured strict comparisons pass; the final PA9-excluded direct-LowIR report passes `4220/4220`, including PA37 `7/7`. Normal, all eleven individual cache-off modes, and all-off are byte-identical for all five reducers. All 23 text-reparse categories and 21 audit tests pass; a placement-scanner correction stops default initializer expressions from being mistaken for pointer/reference NTTP declarations, and the new tests add no placement or hygiene finding. The complete PA27 large-ref review remains valid: only six refs exceed 200 lines, their source owners are 4--35 lines, and only the irreducible recursive VTT/diamond-destructor outputs exceed 10 KiB. The forced Homebrew Clang 22 build is warning-clean. The immutable frozen-source/51-header gate records -25.49% instructions, -27.68% RSS, and -36.78% footprint in `/private/tmp/cppgm-boost-frontier-v2-scope-final-r2.json`. Actual C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use the explicitly pinned Clang paths; `gcc.*` is only the legacy B2 adapter action label. |
 | 103 | `libs/serialization/test` | pass | `(this commit)` | The exact forced three-job C++11 `pch=off` graph finds 7,991 targets, requests 1,562 updates, updates 1,559, and passes every positive compile/link/runtime target. Its sole initial graph-status miss was the deliberate `test_traits_fail` compile-failure unexpectedly compiling; after the two-line semantic repair, a forced replay reports `(failed-as-expected)` and the complete incremental graph exits successfully with no pending update. Logs: `/private/tmp/boost-frontier-v2-suite-103-serialization-full-correct-final-20260729.log`, `/private/tmp/boost-frontier-v2-serialization-test-traits-fail-fixed-20260729.log`, and `/private/tmp/boost-frontier-v2-suite-103-serialization-incremental-final-20260729.log`. | Twelve compact C++11 regression families across PA16/18/19/22/32/33 cover lazy nested-class completion, split-`>>` spelling, explicit-argument scope, virtual-base casts and cross-TU ABI, class deallocation, local-static identity/destruction, explicit-specialization vtables and mandatory analysis, and recursive RTTI bases. The largest source component is 20 lines; none uses `<type_traits>`, and no new ref exceeds 10 KiB. All 978 configured strict comparisons pass. The PA9-excluded direct surface completes with PA37 `7/7`; the two PA21 refs whose definitions move to declaration-discovery order pass their exact `272/272` direct rerun. All 23 reparse categories and audit tests pass; placement adds no finding. The full graph's timed child maximum is 1,095,254,016 B; live sampling records a 975,684 KiB maximum child and 1,636,296 KiB maximum concurrent compiler RSS, with zero process swaps and full release. Actual C++ actions invoke CPPGM and every host path is pinned to Homebrew Clang 22; printed `gcc.*` and `gcc-cppgm` strings are only legacy adapter labels. |
+| 104 | `libs/signals2/test` | pass | `(no compiler change)` | Boost declares C++03 and passes in the stable forced C++11 lane. The exact three-job `pch=off` graph finds 6,773 targets, updates all 163 requested targets, records 17 passing runtime tests, and exits successfully in 437.27s; log `/private/tmp/boost-frontier-v2-suite-104-signals2-intake-20260729.log`. | No compiler or test change is required. The timed process maximum is 1,533,050,880 B RSS with zero process swaps; live monitoring observed the largest active child near 1,145,624 KiB, ordinary concurrent compiler RSS near 2.4 GiB, and full release after each unit with unchanged system swap. Actual C++ actions invoke CPPGM, while host C, assembly, and link actions use explicitly pinned Homebrew Clang 22 paths; printed `gcc.*` and `gcc-cppgm` strings are only legacy Boost.Build adapter labels. Since production code and fixtures are unchanged from the fully validated Serialization commit, broad, strict, audit, and performance gates were not redundantly rerun. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#104 libs/signals2/test`
+- suite: `#105 libs/smart_ptr/test`
 - focused target: full forced C++11 graph intake
-- last closed suite: `#103 libs/serialization/test` (`pass`)
+- last closed suite: `#104 libs/signals2/test` (`pass`)
 - failure phase: not yet established
 - diagnostic: pending exact intake
 - reduced repro: not applicable yet
 - owning PA/cluster: pending
 - implementation area: pending
-- performance risk: monitor callback/template-heavy units while retaining
+- performance risk: monitor ownership/template-heavy units while retaining
   ordinary parallelism unless a measured heavy unit requires isolation
-- language lane: Boost.Signals2 declares C++03 and will run in the stable
-  forced C++11 lane
+- language lane: Boost.SmartPtr declares C++11
 - next action: run the exact Clang-pinned `pch=off` forced graph with memory
   monitoring and isolate the first compiler-owned frontier, if any
 
@@ -756,6 +756,18 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | QVM XMM call-cycle scratch reservation | The parallel XMM argument-move scheduler removed completed self-moves from the used-register set. Their destination registers still held live call arguments, so a later cycle breaker could overwrite one before the call. Every destination is now reserved for the whole schedule, while only pending XMM sources constrain scratch selection. | `pa28/tests/behavior/800-xmm-call-arg-cycle-reserves-self-move.t`, 608 bytes of header-free C++11; all eight scalar arguments are required to exhaust the ABI XMM argument registers | The minimized eight-register cycle reproduces the corrupted argument and QVM `rot_mat_test` assertion failure. The fixed native output returns zero and the exact QVM runtime passes. | PA28, complete QVM, full direct-LowIR including PA37 object roundtrip, strict, reparse, warning, memory, and diff gates pass. | measured with the complete QVM closure; the graph peaks at 635,494,400 B maximum RSS with zero swaps | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-29`: Closed Boost.Signals2 without a compiler change and advanced
+  the cursor to C++11 Boost.SmartPtr. The exact three-job forced C++11 graph
+  updates all 163 requested targets, records 17 passing runtime tests, and
+  exits successfully. Its 1,533,050,880 B timed maximum and approximately
+  2.4 GiB live concurrent compiler high-water come from overlapping
+  template-heavy units; every child releases, process swaps remain zero, and
+  system swap is unchanged. C++ actions invoke CPPGM and every host action is
+  pinned to Homebrew Clang 22; the printed `gcc.*` strings are adapter labels
+  only. With no production or fixture change after the fully packaged
+  Serialization commit, no redundant broad, strict, audit, or performance run
+  was required.
 
 - `2026-07-29`: Closed Boost.Serialization and advanced the cursor to
   C++03-declared Boost.Signals2, which will run in the stable C++11 lane. The
@@ -4268,7 +4280,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-# Suite 104 declares C++03; run it in the stable forced C++11 lane.
+# Suite 105 declares C++11.
 /usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=3 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
@@ -4277,5 +4289,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh pch=off -a libs/signals2/test
+  ./run-cppgm-b2.sh pch=off -a libs/smart_ptr/test
 ```
