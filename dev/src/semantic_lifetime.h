@@ -22,6 +22,12 @@ namespace semantic_lifetime {
 
 bool has_designated_braced_init(const CppAstNode & node);
 
+bool scalar_list_initialization_has_narrowing_conversion(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    const CppAstNode & initializer,
+    const cpp_decl::TypePtr & target_type);
+
 bool build_aggregate_initializer_plan(
     SemanticContext & ctx,
     semantic_model::Scope & scope,

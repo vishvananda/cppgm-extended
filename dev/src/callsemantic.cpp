@@ -11099,7 +11099,7 @@ private:
     }
 
     Scope * enumerator_scope = enum_scope;
-    if(scoped && !node.value.empty()) {
+    if(!node.value.empty()) {
       auto found = type_scopes_by_key.find(enum_type->named_key);
       if(found != type_scopes_by_key.end()) {
         enumerator_scope = found->second;
@@ -11110,8 +11110,6 @@ private:
         enumerator_scope->named_types[enum_name] = enum_type;
         type_scopes_by_key[enum_type->named_key] = enumerator_scope;
       }
-    } else if(!node.value.empty()) {
-      type_scopes_by_key[enum_type->named_key] = &durable_scope;
     }
 
     Scope enum_initializer_scope(enum_scope, string(), false);
@@ -11126,6 +11124,10 @@ private:
 
     long long next_value = -1;
     bool next_value_known = true;
+    bool have_enumerator_range = false;
+    bool have_negative_enumerator = false;
+    long long minimum_negative_enumerator = 0;
+    unsigned long long maximum_nonnegative_enumerator = 0;
     for(size_t i = 0; i < node.children.size(); ++i) {
       const CppAstNode & child = node.children[i];
       if(child.kind == CppAstKind::enum_key) {
@@ -11140,13 +11142,38 @@ private:
 
       long long value = next_value + 1;
       bool value_known = next_value_known;
+      bool wide_unsigned_value_known = false;
+      unsigned long long wide_unsigned_value = 0;
+      constant_eval::ConstexprValue constexpr_value;
+      bool have_constexpr_value = false;
       if(!child.children.empty()) {
         bool evaluated = false;
         if(child.children.size() == 1) {
           try {
-            evaluated = evaluate_constant_expression(enum_initializer_scope,
-                                                     child.children[0],
-                                                     value);
+            evaluated = evaluate_constant_expression_value(
+                enum_initializer_scope, child.children[0], constexpr_value);
+            if(evaluated) {
+              have_constexpr_value = true;
+              TypePtr value_type =
+                  strip_top_level_cv(remove_reference_type(
+                      constexpr_value.type));
+              if(value_type && is_unsigned_integral_type(value_type)) {
+                wide_unsigned_value_known =
+                    constant_eval::constexpr_value_to_unsigned_integral(
+                        constexpr_value, wide_unsigned_value);
+                value_known = false;
+              } else {
+                value_known =
+                    constant_eval::constexpr_value_to_integral(
+                        constexpr_value, value);
+                if(!value_known) {
+                  wide_unsigned_value_known =
+                      constant_eval::constexpr_value_to_unsigned_integral(
+                          constexpr_value, wide_unsigned_value);
+                }
+              }
+              evaluated = value_known || wide_unsigned_value_known;
+            }
           } catch(const logic_error &) {
             if(!scope_has_template_placeholders(scope)) {
               throw;
@@ -11164,20 +11191,101 @@ private:
       ValueBinding binding(ValueBinding::VK_VARIABLE, child.value, enum_type);
       binding.declaration_node = &child;
       binding.definition_node = &child;
+      if(have_constexpr_value) {
+        constant_eval::ConstexprValue enumerator_value = constexpr_value;
+        // The initializer's type determines how its bits are interpreted,
+        // but the declared type of an enumerator is the enumeration itself.
+        // Preserve that type on the cached value so qualified constant lookup
+        // does not expose the initializer type instead.
+        enumerator_value.type = enum_type;
+        set_value_binding_constexpr_value(binding, enumerator_value);
+      }
       if(value_known) {
         binding.has_constant_value = true;
         binding.constant_value = value;
+        if(value < 0) {
+          if(!have_negative_enumerator ||
+             value < minimum_negative_enumerator) {
+            minimum_negative_enumerator = value;
+          }
+          have_negative_enumerator = true;
+        } else {
+          maximum_nonnegative_enumerator =
+              std::max(maximum_nonnegative_enumerator,
+                       static_cast<unsigned long long>(value));
+        }
+        have_enumerator_range = true;
         next_value = value;
         next_value_known = true;
+      } else if(wide_unsigned_value_known) {
+        maximum_nonnegative_enumerator =
+            std::max(maximum_nonnegative_enumerator, wide_unsigned_value);
+        have_enumerator_range = true;
+        if(wide_unsigned_value <=
+           static_cast<unsigned long long>(
+               numeric_limits<long long>::max())) {
+          binding.has_constant_value = true;
+          binding.constant_value = static_cast<long long>(wide_unsigned_value);
+          next_value = binding.constant_value;
+          next_value_known = true;
+        } else {
+          next_value_known = false;
+        }
       } else {
         binding.dependent_template_value = true;
         next_value_known = false;
       }
       enumerator_scope->values[child.value] = binding;
-      if(enumerator_scope == &scope && &durable_scope != &scope) {
-        durable_scope.values[child.value] = binding;
+      if(!scoped) {
+        enum_scope->values[child.value] = binding;
+        if(enum_scope == &scope && &durable_scope != &scope) {
+          durable_scope.values[child.value] = binding;
+        }
       }
       enum_initializer_scope.values[child.value] = binding;
+    }
+
+    const bool has_fixed_underlying_type =
+        scoped || find_child_kind(node, CppAstKind::type_id) != nullptr;
+    if(!has_fixed_underlying_type && have_enumerator_range) {
+      EFundamentalType inferred = FT_INT;
+      if(have_negative_enumerator) {
+        if(minimum_negative_enumerator >= numeric_limits<int>::min() &&
+           maximum_nonnegative_enumerator <=
+               static_cast<unsigned long long>(numeric_limits<int>::max())) {
+          inferred = FT_INT;
+        } else if(minimum_negative_enumerator >= numeric_limits<long>::min() &&
+                  maximum_nonnegative_enumerator <=
+                      static_cast<unsigned long long>(
+                          numeric_limits<long>::max())) {
+          inferred = FT_LONG_INT;
+        } else {
+          inferred = FT_LONG_LONG_INT;
+        }
+      } else {
+        if(maximum_nonnegative_enumerator <=
+           static_cast<unsigned long long>(numeric_limits<int>::max())) {
+          inferred = FT_INT;
+        } else if(maximum_nonnegative_enumerator <=
+                  static_cast<unsigned long long>(
+                      numeric_limits<unsigned int>::max())) {
+          inferred = FT_UNSIGNED_INT;
+        } else if(maximum_nonnegative_enumerator <=
+                  static_cast<unsigned long long>(
+                      numeric_limits<long>::max())) {
+          inferred = FT_LONG_INT;
+        } else if(maximum_nonnegative_enumerator <=
+                  static_cast<unsigned long long>(
+                      numeric_limits<unsigned long>::max())) {
+          inferred = FT_UNSIGNED_LONG_INT;
+        } else {
+          inferred = FT_UNSIGNED_LONG_LONG_INT;
+        }
+      }
+      enum_underlying_type = make_fundamental(inferred);
+      enum_type->named_enum_underlying_type = enum_underlying_type;
+      enum_type->named_alignment = type_alignment(enum_underlying_type);
+      enum_type->named_size = type_size(enum_underlying_type);
     }
   }
 
@@ -17484,7 +17592,10 @@ private:
         ensure_class_reference_members(*qualifier_info);
       }
       if(!qualifier_info || !qualifier_info->member_scope) {
-        return lookup_functions(scope, name, options);
+        // A resolved, non-dependent type qualifier makes this member-only
+        // lookup. In particular, an enum qualifier must not fall back to an
+        // unrelated namespace/global function with the same name.
+        return vector<FunctionBinding *>();
       }
       current_scope = qualifier_info->member_scope.get();
     }

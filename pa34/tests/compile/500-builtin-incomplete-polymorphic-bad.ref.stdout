@@ -1,0 +1,8 @@
+ERROR: unsupported builtin type trait expression [function main] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings ]
+Diagnostic context:
+analyze_function_binding_output [main]
+  analyze_statement [return-statement] at tests/compile/500-builtin-incomplete-polymorphic-bad.t:1:1
+    analyze_expression_for_target [__is_polymorphic -> int] at tests/compile/500-builtin-incomplete-polymorphic-bad.t:1:1
+      semantic_expression::analyze_expression_for_target [__is_polymorphic -> int] at tests/compile/500-builtin-incomplete-polymorphic-bad.t:1:1
+        analyze_expression [__is_polymorphic] at tests/compile/500-builtin-incomplete-polymorphic-bad.t:1:1
+          semantic_expression::analyze_expression [__is_polymorphic] at tests/compile/500-builtin-incomplete-polymorphic-bad.t:1:1

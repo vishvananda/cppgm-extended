@@ -30,6 +30,7 @@ namespace semantic_builtins {
 using namespace cpp_decl;
 using namespace semantic_model;
 using namespace semantic_conversion;
+using semantic_class_model::class_info_is_abstract;
 using semantic_lookup::is_named_enum_type;
 
 namespace {
@@ -116,17 +117,6 @@ bool class_info_has_virtual_destructor(const ClassInfo & info)
       if(binding && binding->is_destructor && binding->has_virtual_slot) {
         return true;
       }
-    }
-  }
-  return false;
-}
-
-bool class_info_is_abstract(const ClassInfo & info)
-{
-  for(size_t i = 0; i < info.vtable_entries.size(); ++i) {
-    const FunctionBinding * binding = info.vtable_entries[i];
-    if(binding && binding->is_pure_virtual) {
-      return true;
     }
   }
   return false;
@@ -1339,10 +1329,6 @@ bool assignment_binding_is_implicitly_nothrow(
   }
 
   ClassInfo & info = *binding.owner_class;
-  if(info.class_kind == "union") {
-    return false;
-  }
-
   const bool move = binding.is_move_assignment;
   for(size_t i = 0; i < info.bases.size(); ++i) {
     if(info.bases[i].is_virtual ||
@@ -2027,14 +2013,15 @@ bool apply_builtin_type_transform_kind(builtin_type_transforms::Kind kind,
 
   case builtin_type_transforms::BTK_REMOVE_ALL_EXTENTS:
   {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
+    TypePtr current = arg_type;
+    while(current) {
+      TypePtr base = strip_top_level_cv(current);
+      if(!base || base->kind != Type::TK_ARRAY) {
+        break;
+      }
+      current = base->inner;
     }
-    while(base && base->kind == Type::TK_ARRAY) {
-      base = strip_top_level_cv(base->inner);
-    }
-    out = base ? base : arg_type;
+    out = current;
     return static_cast<bool>(out);
   }
 
@@ -2762,8 +2749,17 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
   }
 
   if(name == "__is_constructible" || name == "__is_nothrow_constructible") {
+    if(base->kind == Type::TK_ARRAY) {
+      long long element_value = 0;
+      out = (base->has_bound &&
+             base->inner &&
+             evaluate_builtin_type_trait(
+                 ctx, scope, name, base->inner, element_value) &&
+             element_value != 0) ? 1 : 0;
+      return true;
+    }
     if(is_reference_type(base) || base->kind == Type::TK_FUNCTION ||
-       is_void_type(base) || base->kind == Type::TK_ARRAY) {
+       is_void_type(base)) {
       out = 0;
       return true;
     }
@@ -2775,6 +2771,10 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
     ClassInfo * info = ctx.complete_class_type(base);
     if(!info || !info->complete) {
       return false;
+    }
+    if(class_info_is_abstract(*info)) {
+      out = 0;
+      return true;
     }
     FunctionBinding * ctor = ctx.select_default_constructor_for_builtin_trait(scope, *info);
     if(!ctor || ctor->is_deleted) {
@@ -2939,7 +2939,15 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
     return true;
   }
   if(name == "__is_polymorphic") {
+    if(!is_named_class_type(ctx, base) &&
+       !is_named_union_type(ctx, base)) {
+      out = 0;
+      return true;
+    }
     ClassInfo * info = ctx.complete_class_type(base);
+    if(!info || !info->complete) {
+      return false;
+    }
     out = (info && info->is_polymorphic) ? 1 : 0;
     return true;
   }
@@ -3044,6 +3052,19 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
         derived_type ? ctx.complete_class_type(derived_type) : nullptr;
     if(!derived_info && derived_type) {
       derived_info = ctx.class_info_for_type(derived_type);
+    }
+    const bool both_class_types =
+        base_info &&
+        derived_info &&
+        base_info->class_kind != "union" &&
+        base_info->class_kind != "enum" &&
+        derived_info->class_kind != "union" &&
+        derived_info->class_kind != "enum";
+    if(both_class_types &&
+       !type_equals(base_type, derived_type) &&
+       !derived_info->complete) {
+      throw std::logic_error(
+          "incomplete derived type used in __is_base_of expression");
     }
     out = (base_info &&
            derived_info &&
@@ -3207,7 +3228,7 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
     constructor_lifecycle_service::ConstructorSelectionResult copy_selection;
     if(try_non_explicit_class_construction_for_trait(
            ctx, scope, rhs, source_expr, copy_selection)) {
-      if(!copy_selection.ctor) {
+      if(!copy_selection.ctor || copy_selection.ctor->is_deleted) {
         out = 0;
         return true;
       }
@@ -3255,13 +3276,23 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
     if(!target || !source) {
       return false;
     }
+    TypePtr target_object =
+        strip_top_level_cv(remove_reference_type(target));
+    if(!is_reference_type(target) &&
+       target_object &&
+       (target_object->kind == Type::TK_FUNCTION ||
+        target_object->kind == Type::TK_ARRAY ||
+        is_void_type(target_object))) {
+      out = 0;
+      return true;
+    }
 
     ExprInfo rhs_expr = make_builtin_trait_expr_info(rhs);
 
     constructor_lifecycle_service::ConstructorSelectionResult direct_selection;
     if(try_direct_class_construction_for_trait(
            ctx, scope, target, rhs_expr, direct_selection)) {
-      if(!direct_selection.ctor) {
+      if(!direct_selection.ctor || direct_selection.ctor->is_deleted) {
         out = 0;
         return true;
       }
@@ -3360,9 +3391,17 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
       return true;
     }
 
+    const bool move_construction =
+        source->kind == Type::TK_RVALUE_REFERENCE &&
+        same_type_with_compatible_top_cv(target_base, source->inner);
     out = (type_equals(target_base, source_base) &&
-           semantic_class_model::is_trivially_copy_constructible_type_for_host_abi(
-               ctx, target_base)) ? 1 : 0;
+           (move_construction ?
+                semantic_class_model::
+                    is_trivially_move_constructible_type_for_host_abi(
+                        ctx, target_base) :
+                semantic_class_model::
+                    is_trivially_copy_constructible_type_for_host_abi(
+                        ctx, target_base))) ? 1 : 0;
     return true;
   }
 

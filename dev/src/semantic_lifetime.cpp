@@ -436,17 +436,21 @@ bool braced_scalar_initialization_has_narrowing_conversion(SemanticContext & ctx
                                                            const TypePtr & target_type,
                                                            ExprInfo & source_expr)
 {
-  source_expr = ctx.analyze_expression(scope, init);
   TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
+  if(!target_base || !is_integral_type(target_base)) {
+    return false;
+  }
+
+  source_expr = ctx.analyze_expression(scope, init);
   TypePtr source_base = strip_top_level_cv(remove_reference_type(source_expr.type));
-  if(!target_base || !source_base) {
+  if(!source_base) {
     return false;
   }
 
   // C++11 list-initialization forbids narrowing scalar floating-to-integral
   // conversions, so reject them in semantic initialization rather than letting
   // lowering trip over an already-ill-formed initializer.
-  return is_integral_type(target_base) && is_floating_type(source_base);
+  return is_floating_type(source_base);
 }
 
 logic_error make_narrowing_initializer_error(const TypePtr & target_type,
@@ -4279,6 +4283,17 @@ void note_constructor_witness_closure(SemanticContext & ctx,
                                       FunctionBinding * ctor)
 {
   note_constructor_witness_closure_impl(ctx, ctor);
+}
+
+bool scalar_list_initialization_has_narrowing_conversion(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & initializer,
+    const TypePtr & target_type)
+{
+  ExprInfo source_expr;
+  return braced_scalar_initialization_has_narrowing_conversion(
+      ctx, scope, initializer, target_type, source_expr);
 }
 
 bool has_designated_braced_init(const CppAstNode & node)

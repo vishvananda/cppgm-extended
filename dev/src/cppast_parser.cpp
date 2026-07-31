@@ -1952,6 +1952,14 @@ bool is_always_inline_attribute_name(const RecogToken & token)
           token.source == "__always_inline__");
 }
 
+bool is_gnu_aligned_attribute_name(const RecogToken & token)
+{
+  return token.is_identifier() &&
+         (token.source == "aligned" ||
+          token.source == "__aligned" ||
+          token.source == "__aligned__");
+}
+
 bool attribute_specifier_has_always_inline(
     const IRecogTokenSequence & tokens,
     std::size_t start,
@@ -4396,6 +4404,55 @@ void CppAstParser::note_attribute_specifier(CppAstNode * annotated,
   }
   if(attribute_specifier_has_always_inline(tokens, start, end)) {
     annotated->has_always_inline_attribute = true;
+  }
+  int gnu_attribute_paren_depth = 0;
+  for(std::size_t i = start; i < end; ++i) {
+    const RecogToken & token = tokens.peek(i);
+    if(token.is_simple(OP_LPAREN)) {
+      ++gnu_attribute_paren_depth;
+      continue;
+    }
+    if(token.is_simple(OP_RPAREN)) {
+      if(gnu_attribute_paren_depth > 0) {
+        --gnu_attribute_paren_depth;
+      }
+      continue;
+    }
+    if(gnu_attribute_paren_depth != 2 ||
+       !is_gnu_aligned_attribute_name(token) ||
+       i + 1 >= end ||
+       !tokens.peek(i + 1).is_simple(OP_LPAREN)) {
+      continue;
+    }
+
+    const std::size_t operand_start = i + 2;
+    std::size_t operand_end = operand_start;
+    int operand_paren_depth = 1;
+    for(; operand_end < end; ++operand_end) {
+      if(tokens.peek(operand_end).is_simple(OP_LPAREN)) {
+        ++operand_paren_depth;
+      } else if(tokens.peek(operand_end).is_simple(OP_RPAREN)) {
+        --operand_paren_depth;
+        if(operand_paren_depth == 0) {
+          break;
+        }
+      }
+    }
+    if(operand_end >= end || operand_start == operand_end) {
+      continue;
+    }
+
+    const std::size_t saved_pos = pos;
+    pos = operand_start;
+    CppAstNode operand;
+    const bool have_operand =
+        parse_assignment_expression(operand) && pos == operand_end;
+    pos = saved_pos;
+    append_cppast_alignment_specifier(
+        *annotated,
+        token_span_text_spaced(operand_start, operand_end),
+        have_operand ? &operand : nullptr);
+    i = operand_end;
   }
   for(std::size_t i = start; i < end; ++i) {
     const RecogToken & token = tokens.peek(i);

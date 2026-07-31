@@ -25085,6 +25085,20 @@ bool substitute_type_pack_expression_node(
     if(replaced_qualified_component) {
       continue;
     }
+    if(out.value == "~" + it->first &&
+       leaf_scalar_or_member_pointer_type(it->second)) {
+      const string replacement_text =
+          reparseable_type_argument_text(it->second);
+      if(!replacement_text.empty()) {
+        out.value = "~" + replacement_text;
+        out.semantic_type = it->second;
+        if(out.qualified_name_syntax) {
+          out.qualified_name_syntax->name = out.value;
+        }
+        replacement_mentions_node = false;
+        break;
+      }
+    }
     if(callsemantic_internal::is_identifier_text(out.value) &&
        out.value == it->first) {
       out.value = reparseable_type_argument_text(it->second);
@@ -34118,8 +34132,15 @@ bool evaluate_structural_builtin_type_trait(const string & name,
     return false;
   }
   if(name == "__is_constructible" || name == "__is_nothrow_constructible") {
+    if(base->kind == Type::TK_ARRAY) {
+      if(!base->has_bound) {
+        out = 0;
+        return true;
+      }
+      return evaluate_unary_array_recursive(name, base);
+    }
     if(is_reference_type(base) || base->kind == Type::TK_FUNCTION ||
-       is_void_type(base) || base->kind == Type::TK_ARRAY) {
+       is_void_type(base)) {
       out = 0;
       return true;
     }
@@ -34245,14 +34266,23 @@ bool evaluate_class_info_builtin_type_trait(template_api::TemplateTypeSystem & t
     return true;
   }
   if(name == "__is_abstract") {
+    if(!have_info || !info.complete) {
+      return false;
+    }
     out = (have_info && info.is_abstract) ? 1 : 0;
     return true;
   }
   if(name == "__is_polymorphic") {
+    if(!have_info || !info.complete) {
+      return false;
+    }
     out = (have_info && info.is_polymorphic) ? 1 : 0;
     return true;
   }
   if(name == "__has_virtual_destructor") {
+    if(!have_info || !info.complete) {
+      return false;
+    }
     out = (have_info && info.has_virtual_destructor) ? 1 : 0;
     return true;
   }
@@ -34563,9 +34593,13 @@ semantic_conversion::ExprInfo make_builtin_trait_expr_info(const TypePtr & sourc
   } else {
     expr.type = source;
     TypePtr object_base = strip_top_level_cv(remove_reference_type(source));
-    expr.category = (object_base && object_base->kind == Type::TK_ARRAY) ?
-        semantic_conversion::VC_XVALUE :
-        semantic_conversion::VC_PRVALUE;
+    if(object_base && object_base->kind == Type::TK_ARRAY) {
+      expr.category = semantic_conversion::VC_XVALUE;
+    } else if(object_base && object_base->kind == Type::TK_FUNCTION) {
+      expr.category = semantic_conversion::VC_LVALUE;
+    } else {
+      expr.category = semantic_conversion::VC_PRVALUE;
+    }
   }
   return expr;
 }
@@ -36208,6 +36242,14 @@ bool evaluate_standard_constructibility_shorthand_type(
                                   value)) {
     return false;
   }
+  TypePtr object_type = strip_top_level_cv(type);
+  if(object_type &&
+     object_type->kind == Type::TK_ARRAY &&
+     name != "is_default_constructible" &&
+     name != "is_nothrow_default_constructible") {
+    out = false;
+    return true;
+  }
   if(value == 0 &&
      services.semantic_context &&
      !require_nothrow) {
@@ -36263,6 +36305,11 @@ bool evaluate_standard_assignability_shorthand_type(
     const TypePtr & type,
     bool & out)
 {
+  TypePtr object_type = strip_top_level_cv(type);
+  if(object_type && object_type->kind == Type::TK_ARRAY) {
+    out = false;
+    return true;
+  }
   vector<TypePtr> trait_types;
   if(!standard_assignability_shorthand_types(name, type, trait_types)) {
     return false;

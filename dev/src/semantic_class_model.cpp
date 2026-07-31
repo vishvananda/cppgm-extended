@@ -13603,6 +13603,25 @@ FunctionBinding * ensure_implicit_copy_assignment(SemanticContext & ctx,
   return op;
 }
 
+bool class_info_is_abstract(const ClassInfo & info)
+{
+  for(size_t i = 0; i < info.vtable_entries.size(); ++i) {
+    const FunctionBinding * binding = info.vtable_entries[i];
+    if(binding && binding->is_pure_virtual) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < info.vtables.size(); ++i) {
+    for(size_t j = 0; j < info.vtables[i].slots.size(); ++j) {
+      const FunctionBinding * binding = info.vtables[i].slots[j].function;
+      if(binding && binding->is_pure_virtual) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 bool is_trivially_default_constructible_type_for_host_abi(SemanticContext & ctx,
                                                           const TypePtr & type)
 {

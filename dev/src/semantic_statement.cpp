@@ -940,28 +940,6 @@ TypePtr catch_match_type(const TypePtr & type)
   return base;
 }
 
-bool class_info_is_abstract_for_throw(const ClassInfo & info)
-{
-  for(map<string, vector<FunctionBinding *> >::const_iterator it =
-          info.methods.begin();
-      it != info.methods.end();
-      ++it) {
-    for(size_t i = 0; i < it->second.size(); ++i) {
-      const FunctionBinding * binding = it->second[i];
-      if(binding && binding->is_pure_virtual) {
-        return true;
-      }
-    }
-  }
-  for(size_t i = 0; i < info.vtable_entries.size(); ++i) {
-    const FunctionBinding * binding = info.vtable_entries[i];
-    if(binding && binding->is_pure_virtual) {
-      return true;
-    }
-  }
-  return false;
-}
-
 FunctionBinding * throw_target_destructor(ClassInfo & info)
 {
   map<string, vector<FunctionBinding *> >::iterator found =
@@ -1029,7 +1007,7 @@ void validate_throw_object_initialization(SemanticContext & ctx,
       throw logic_error(err.str());
     }
   }
-  if(class_info_is_abstract_for_throw(*target_class)) {
+  if(semantic_class_model::class_info_is_abstract(*target_class)) {
     ostringstream err;
     err << "invalid throw expression";
     err << " [abstract class " << target_class->qualified_name << "]";

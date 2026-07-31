@@ -209,6 +209,16 @@ inline bool describe_named_type_metadata(const TemplateSemanticModelView & model
       break;
     }
   }
+  for(std::size_t i = 0; !out.is_abstract && i < info->vtables.size(); ++i) {
+    for(std::size_t j = 0; j < info->vtables[i].slots.size(); ++j) {
+      semantic_model::FunctionBinding * binding =
+          info->vtables[i].slots[j].function;
+      if(binding && binding->is_pure_virtual) {
+        out.is_abstract = true;
+        break;
+      }
+    }
+  }
   out.source_template = info->source_template;
   out.direct_base_types.reserve(info->bases.size());
   for(std::size_t i = 0; i < info->bases.size(); ++i) {

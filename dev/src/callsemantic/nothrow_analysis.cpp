@@ -482,10 +482,6 @@ bool assignment_binding_is_implicitly_nothrow(
   }
 
   ClassInfo & info = *binding.owner_class;
-  if(info.class_kind == "union") {
-    return false;
-  }
-
   const bool move = binding.is_move_assignment;
   for(std::size_t i = 0; i < info.bases.size(); ++i) {
     if(info.bases[i].is_virtual ||
@@ -597,7 +593,7 @@ bool callsem_node_can_throw(
     }
     if(node.children[0].kind == CallSemKind::callee &&
        node.children[0].text == "__pseudo_destructor") {
-      return any_child_throws(node);
+      return false;
     }
     for(std::size_t i = 1; i < node.children.size(); ++i) {
       if(callsem_node_can_throw(scope, node.children[i], visiting, callbacks)) {

@@ -2122,6 +2122,13 @@ bool try_resolve_function_non_type_template_argument_syntax(
       }
     }
   }
+  if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
+    // The structured qualified lookup above is authoritative. Falling through
+    // to the text-only lookup can turn a failed type-member lookup (for
+    // example, E::operator new for an enum E) into an unrelated namespace or
+    // global function.
+    return false;
+  }
   return try_resolve_function_non_type_template_argument_name(
       services,
       scope,
@@ -9296,9 +9303,8 @@ bool default_argument_expression_is_still_dependent(
     template_api::TemplateEnvironmentHandle scope,
     const CppAstNode & node)
 {
-  std::string text = default_argument_expression_text(node);
-  return !text.empty() &&
-         text_mentions_template_dependency(services, scope, text);
+  return template_argument_semantics::ast_node_syntax_has_template_dependency(
+      services, scope, node);
 }
 
 bool non_type_template_parameter_has_non_dependent_binding(
@@ -11109,10 +11115,12 @@ bool finalize_deduced_function_template_arguments(
               have_substituted_default_expression ?
                   substituted_default_expression :
                   child;
-          if(value_status != template_argument_semantics::NT_ARG_DEPENDENT &&
-             !default_argument_expression_is_still_dependent(ctx,
-                                                            bound_scope,
-                                                            dependency_expression)) {
+          // A failed concrete call inside this parameter's own default can be
+          // conservatively reported as dependent while the parameter remains
+          // unbound. Only structured dependency that survives substituting all
+          // preceding arguments permits deferral.
+          if(!default_argument_expression_is_still_dependent(
+                 ctx, bound_scope, dependency_expression)) {
             return false;
           }
           arg.kind = TemplateArgument::TA_VALUE;

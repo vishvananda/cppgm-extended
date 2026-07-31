@@ -533,6 +533,16 @@ bool reference_referent_accepts_temporary(const TypePtr & referent)
   return referent && type_is_const_object(referent);
 }
 
+bool rvalue_reference_accepts_source_category(const TypePtr & referent,
+                                              ValueCategory category)
+{
+  if(category != VC_LVALUE) {
+    return true;
+  }
+  TypePtr base = strip_top_level_cv(referent);
+  return base && base->kind == Type::TK_FUNCTION;
+}
+
 bool nonvolatile_const_object_parameter(const TypePtr & implicit_object_parameter)
 {
   TypePtr parameter = strip_top_level_cv(implicit_object_parameter);
@@ -571,7 +581,8 @@ bool reference_target_accepts_result_category(const TypePtr & target,
            reference_referent_accepts_temporary(base->inner);
   }
   if(base->kind == Type::TK_RVALUE_REFERENCE) {
-    return result_category != VC_LVALUE;
+    return rvalue_reference_accepts_source_category(base->inner,
+                                                    result_category);
   }
   return true;
 }
@@ -1340,6 +1351,12 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
     if(reference_referent_accepts_temporary(base_target->inner) &&
        base_target->inner != referred_base &&
        base_target->inner->kind == Type::TK_CV) {
+      TypePtr source_type = reference_binding_source_type(expr);
+      // A class prvalue cannot shed cv by the scalar converted-temporary
+      // fallback. Forming such a temporary requires a viable constructor.
+      if(is_class_or_union_object_type(source_type)) {
+        return CR_BAD;
+      }
       ConversionRank rank = standard_conversion_rank_non_reference(referred_base, expr);
       if(expr.category == VC_LVALUE && rank == CR_EXACT) {
         // This path binds through a converted temporary, not a direct
@@ -1356,7 +1373,8 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
   if(base_target->kind == Type::TK_RVALUE_REFERENCE) {
     TypePtr source_type = reference_binding_source_type(expr);
     if(reference_referents_are_same_ignoring_top_cv(base_target->inner, source_type)) {
-      if(expr.category == VC_LVALUE) {
+      if(!rvalue_reference_accepts_source_category(base_target->inner,
+                                                   expr.category)) {
         return CR_BAD;
       }
       if(!same_type_with_compatible_top_cv(base_target->inner, source_type)) {
@@ -1402,7 +1420,8 @@ bool try_semantic_exact_reference_binding(SemanticContext & ctx,
                                                               source_type);
   } else {
     binds =
-        expr.category != VC_LVALUE &&
+        rvalue_reference_accepts_source_category(base_target->inner,
+                                                 expr.category) &&
         same_type_with_compatible_top_cv_for_semantic_identity(ctx,
                                                               base_target->inner,
                                                               source_type);
@@ -1476,7 +1495,8 @@ void apply_standard_conversion_result_metadata(SemanticContext & ctx,
     } else {
       TypePtr source_type = reference_binding_source_type(expr);
       const bool direct_binding =
-          expr.category != VC_LVALUE &&
+          rvalue_reference_accepts_source_category(referent_type,
+                                                   expr.category) &&
           reference_referents_are_same_ignoring_top_cv(referent_type, source_type);
       if(!direct_binding &&
          standard_conversion_rank_non_reference(referent_type, expr) != CR_BAD) {
@@ -1916,7 +1936,13 @@ TypePtr promoted_integral_type(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
   if(is_unscoped_enum_type_impl(base)) {
-    return make_fundamental(FT_INT);
+    TypePtr underlying =
+        base ? strip_top_level_cv(base->named_enum_underlying_type) : TypePtr();
+    if(!underlying) {
+      return make_fundamental(FT_INT);
+    }
+    TypePtr promoted_underlying = promoted_integral_type(underlying);
+    return promoted_underlying ? promoted_underlying : underlying;
   }
   if(!base || base->kind != Type::TK_FUNDAMENTAL) {
     return TypePtr();
@@ -2027,8 +2053,7 @@ int compare_reference_binding_preference(const TypePtr & lhs_param,
                                          const TypePtr & rhs_param,
                                          const ExprInfo & rhs_arg)
 {
-  if(lhs_arg.category != rhs_arg.category ||
-     lhs_arg.category == VC_LVALUE) {
+  if(lhs_arg.category != rhs_arg.category) {
     return 0;
   }
 
@@ -2038,6 +2063,27 @@ int compare_reference_binding_preference(const TypePtr & lhs_param,
   const bool lhs_rref = lhs_base && lhs_base->kind == Type::TK_RVALUE_REFERENCE;
   const bool rhs_lref = rhs_base && rhs_base->kind == Type::TK_LVALUE_REFERENCE;
   const bool rhs_rref = rhs_base && rhs_base->kind == Type::TK_RVALUE_REFERENCE;
+
+  if(lhs_arg.category == VC_LVALUE) {
+    TypePtr lhs_source =
+        strip_top_level_cv(reference_binding_source_type(lhs_arg));
+    TypePtr rhs_source =
+        strip_top_level_cv(reference_binding_source_type(rhs_arg));
+    const bool function_lvalue =
+        lhs_source && rhs_source &&
+        lhs_source->kind == Type::TK_FUNCTION &&
+        rhs_source->kind == Type::TK_FUNCTION;
+    if(!function_lvalue) {
+      return 0;
+    }
+    if(lhs_lref && rhs_rref) {
+      return -1;
+    }
+    if(lhs_rref && rhs_lref) {
+      return 1;
+    }
+    return 0;
+  }
 
   if(lhs_rref && rhs_lref) {
     return -1;
@@ -3247,9 +3293,13 @@ bool try_argument_conversion(SemanticContext & ctx,
 
 bool is_modifiable_lvalue(const ExprInfo & expr)
 {
+  TypePtr object_type = remove_reference_type(expr.type);
+  if(!object_type) {
+    object_type = expr.type;
+  }
   return expr.category == VC_LVALUE &&
-         expr.type &&
-         !type_is_const_object(expr.type);
+         object_type &&
+         !type_is_const_object(object_type);
 }
 
 ConversionRank implicit_object_conversion_rank(SemanticContext & ctx,
@@ -3285,7 +3335,12 @@ bool result_value_category_for_function_result(const TypePtr & result_type,
     return true;
   }
   if(base->kind == Type::TK_RVALUE_REFERENCE) {
-    out = VC_XVALUE;
+    // A call returning an rvalue reference to a function is an lvalue.
+    // Only rvalue references to objects produce xvalues.
+    TypePtr referred = strip_top_level_cv(base->inner);
+    out = referred && referred->kind == Type::TK_FUNCTION ?
+              VC_LVALUE :
+              VC_XVALUE;
     return true;
   }
 

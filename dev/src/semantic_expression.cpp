@@ -1462,12 +1462,16 @@ std::vector<TypePtr> builtin_increment_reference_targets()
   return out;
 }
 
-bool is_builtin_increment_operand_type(const TypePtr & type)
+bool is_complete_object_pointer_type(SemanticContext & ctx,
+                                     const TypePtr & type);
+
+bool is_builtin_increment_operand_type(SemanticContext & ctx,
+                                       const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(remove_reference_type(type));
   return is_integral_type(base) ||
          is_floating_type(base) ||
-         is_pointer_type(base);
+         is_complete_object_pointer_type(ctx, base);
 }
 
 bool try_builtin_increment_class_conversion(SemanticContext & ctx,
@@ -1499,7 +1503,7 @@ bool try_builtin_increment_class_conversion(SemanticContext & ctx,
       continue;
     }
     if(!is_modifiable_lvalue(converted) ||
-       !is_builtin_increment_operand_type(converted.type)) {
+       !is_builtin_increment_operand_type(ctx, converted.type)) {
       continue;
     }
     Candidate candidate;
@@ -2224,6 +2228,26 @@ bool has_class_operand(SemanticContext & ctx, const TypePtr & type)
 bool has_overloadable_operator_operand(SemanticContext & ctx, const TypePtr & type)
 {
   return classify_overloadable_operator_operand(ctx, type).has_overloadable_operand;
+}
+
+bool is_complete_object_pointer_type(SemanticContext & ctx,
+                                     const TypePtr & type)
+{
+  TypePtr pointer = strip_top_level_cv(type);
+  if(!pointer || pointer->kind != Type::TK_POINTER || !pointer->inner) {
+    return false;
+  }
+
+  TypePtr pointee = strip_top_level_cv(pointer->inner);
+  if(!pointee ||
+     pointee->kind == Type::TK_FUNCTION ||
+     is_void_type(pointee)) {
+    return false;
+  }
+  if(pointee->kind == Type::TK_NAMED && !pointee->named_complete) {
+    ctx.complete_class_type(pointee);
+  }
+  return type_is_complete(pointee);
 }
 
 CppAstNode make_operator_identifier_node(const string & operator_name)
@@ -4060,6 +4084,11 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
       is_array_new ? ctx.complete_class_type(array_lifecycle_element_type) : nullptr;
   ClassInfo * allocation_class =
       is_array_new ? array_element_class : ctx.complete_class_type(allocated_object_type);
+  if(allocation_class &&
+     semantic_class_model::class_info_is_abstract(*allocation_class)) {
+    throw NoViableConstructorError(
+        "cannot allocate an object of abstract class type");
+  }
   const size_t array_cookie_size =
       array_element_class ? class_array_new_cookie_size(allocated_object_type) : 0;
 
@@ -4234,6 +4263,9 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
           throw logic_error("non-class new-expression supports a single initializer");
         }
         init_expr = analyze_expression_for_target(ctx, scope, *ctor_arg_nodes[0], allocated_type);
+        if(!can_copy_initialize(ctx, allocated_type, init_expr)) {
+          throw logic_error("invalid non-class new-expression initializer");
+        }
       }
       result.node.children.push_back(std::move(init_expr.node));
     }
@@ -4757,7 +4789,31 @@ ExprInfo make_enumerator_value_expr(const CppAstNode & node,
   ExprInfo result;
   result.type = strip_top_level_cv(binding.type);
   result.category = VC_PRVALUE;
-  if(binding.has_constant_value) {
+  if(value_binding_has_constexpr_value(binding)) {
+    const constant_eval::ConstexprValue & value =
+        value_binding_constexpr_value(binding);
+    TypePtr enum_base = strip_top_level_cv(binding.type);
+    TypePtr underlying =
+        enum_base && enum_base->kind == Type::TK_NAMED ?
+            strip_top_level_cv(enum_base->named_enum_underlying_type) :
+            TypePtr();
+    unsigned long long unsigned_value = 0;
+    long long signed_value = 0;
+    if(underlying &&
+       is_unsigned_integral_type(underlying) &&
+       constant_eval::constexpr_value_to_unsigned_integral(
+           value, unsigned_value)) {
+      result.node =
+          make_dump_node(CallSemKind::literal, to_string(unsigned_value));
+      set_callsem_uint_value(result.node, unsigned_value);
+    } else if(constant_eval::constexpr_value_to_integral(value, signed_value)) {
+      result.node =
+          make_dump_node(CallSemKind::literal, to_string(signed_value));
+      set_callsem_int_value(result.node, signed_value);
+    } else {
+      result.node = make_dump_node(CallSemKind::id_expression, node.value);
+    }
+  } else if(binding.has_constant_value) {
     result.node = make_dump_node(CallSemKind::literal,
                                  to_string(binding.constant_value));
     set_callsem_int_value(result.node, binding.constant_value);
@@ -5835,6 +5891,10 @@ ExprInfo make_initializer_list_expression(SemanticContext & ctx,
   vector<const CppAstNode *> elements =
       expand_braced_init_list_elements(ctx, scope, node, expanded_storage);
   for(size_t i = 0; i < elements.size(); ++i) {
+    if(semantic_lifetime::scalar_list_initialization_has_narrowing_conversion(
+           ctx, scope, *elements[i], element_type)) {
+      throw logic_error("narrowing initializer_list element");
+    }
     ExprInfo element = ctx.analyze_expression_for_target(scope, *elements[i], element_type);
     if(!can_copy_initialize(ctx, element_type, element)) {
       throw logic_error("invalid initializer_list element");
@@ -5885,6 +5945,10 @@ bool try_analyze_array_braced_init_list_expression(SemanticContext & ctx,
     for(size_t i = 0; i < bound; ++i) {
       ExprInfo element;
       if(i < elements.size()) {
+        if(semantic_lifetime::scalar_list_initialization_has_narrowing_conversion(
+               ctx, scope, *elements[i], expr_base->inner)) {
+          return false;
+        }
         element = ctx.analyze_expression_for_target(scope, *elements[i], expr_base->inner);
         if(!can_copy_initialize(ctx, expr_base->inner, element)) {
           return false;
@@ -6737,14 +6801,14 @@ ExprInfo analyze_unary_expression(SemanticContext & ctx,
     result.category = VC_LVALUE;
   } else if(node_has_simple_type(node, OP_INC) || node_has_simple_type(node, OP_DEC)) {
     if(!is_modifiable_lvalue(operand) ||
-       !is_builtin_increment_operand_type(operand.type)) {
+       !is_builtin_increment_operand_type(ctx, operand.type)) {
       ExprInfo converted_operand;
       if(try_builtin_increment_class_conversion(ctx, scope, operand, converted_operand)) {
         operand = converted_operand;
       }
     }
     if(!is_modifiable_lvalue(operand) ||
-       !is_builtin_increment_operand_type(operand.type)) {
+       !is_builtin_increment_operand_type(ctx, operand.type)) {
       throw logic_error("invalid prefix increment/decrement");
     }
     result.type = remove_reference_type(operand.type);
@@ -6776,14 +6840,14 @@ ExprInfo analyze_postfix_expression(SemanticContext & ctx,
 
   ExprInfo operand = ctx.analyze_expression(scope, node.children[0]);
   if(!is_modifiable_lvalue(operand) ||
-     !is_builtin_increment_operand_type(operand.type)) {
+     !is_builtin_increment_operand_type(ctx, operand.type)) {
     ExprInfo converted_operand;
     if(try_builtin_increment_class_conversion(ctx, scope, operand, converted_operand)) {
       operand = converted_operand;
     }
   }
   if(!is_modifiable_lvalue(operand) ||
-     !is_builtin_increment_operand_type(operand.type)) {
+     !is_builtin_increment_operand_type(ctx, operand.type)) {
     throw logic_error("invalid postfix increment/decrement");
   }
 
@@ -7538,7 +7602,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
                 ConversionRank & converted_rank_out) -> bool
             {
               TypePtr pointer_base = value_conversion_type(pointer_expr);
-              if(!is_pointer_type(pointer_base)) {
+              if(!is_complete_object_pointer_type(ctx, pointer_base)) {
                 return false;
               }
               if(!node_has_simple_type(node, OP_PLUS) &&
@@ -7741,6 +7805,29 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
         if(node_has_simple_type(node, OP_EQ) || node_has_simple_type(node, OP_NE) ||
            node_has_simple_type(node, OP_LT) || node_has_simple_type(node, OP_GT) ||
            node_has_simple_type(node, OP_LE) || node_has_simple_type(node, OP_GE)) {
+          const auto append_pointer_conversion_target =
+              [&](const ExprInfo & expr)
+              {
+                ExprInfo converted;
+                TypePtr pointer_type;
+                if(!try_builtin_pointer_operand_conversion(
+                       ctx,
+                       scope,
+                       expr,
+                       converted,
+                       pointer_type,
+                       conversion_options)) {
+                  return;
+                }
+                for(size_t i = 0; i < targets.size(); ++i) {
+                  if(type_equals(targets[i], pointer_type)) {
+                    return;
+                  }
+                }
+                targets.push_back(pointer_type);
+              };
+          append_pointer_conversion_target(lhs_expr);
+          append_pointer_conversion_target(rhs_expr);
           targets.push_back(builtin_common_object_pointer_target());
         }
         for(size_t i = 0; i < targets.size(); ++i) {
@@ -7855,19 +7942,20 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
         const bool lhs_integral_like = is_integral_or_unscoped_enum_type(lhs_type);
         const bool rhs_integral_like = is_integral_or_unscoped_enum_type(rhs_type);
         if(node_has_simple_type(node, OP_MINUS) &&
+           is_complete_object_pointer_type(ctx, lhs_type) &&
            pointer_subtraction_operands_compatible(lhs_type, rhs_type)) {
           return true;
         }
         if(node_has_simple_type(node, OP_PLUS)) {
-          return (is_pointer_type(lhs_type) &&
+          return (is_complete_object_pointer_type(ctx, lhs_type) &&
                   is_integral_or_unscoped_enum_type(rhs_type)) ||
                  (is_integral_or_unscoped_enum_type(lhs_type) &&
-                  is_pointer_type(rhs_type)) ||
+                  is_complete_object_pointer_type(ctx, rhs_type)) ||
                  ((lhs_integral_like || is_floating_type(lhs_type)) &&
                   (rhs_integral_like || is_floating_type(rhs_type)));
         }
         if(node_has_simple_type(node, OP_MINUS)) {
-          return (is_pointer_type(lhs_type) &&
+          return (is_complete_object_pointer_type(ctx, lhs_type) &&
                   is_integral_or_unscoped_enum_type(rhs_type)) ||
                  ((lhs_integral_like || is_floating_type(lhs_type)) &&
                   (rhs_integral_like || is_floating_type(rhs_type)));
@@ -8141,16 +8229,20 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
   }
 
   if(node_has_simple_type(node, OP_MINUS) &&
+     is_complete_object_pointer_type(ctx, lhs_type) &&
      pointer_subtraction_operands_compatible(lhs_type, rhs_type)) {
     result.type = make_fundamental(FT_LONG_INT);
     result.category = VC_PRVALUE;
   } else if(node_has_simple_type(node, OP_PLUS) &&
-            ((is_pointer_type(lhs_type) && is_integral_or_unscoped_enum_type(rhs_type)) ||
-             (is_integral_or_unscoped_enum_type(lhs_type) && is_pointer_type(rhs_type)))) {
+            ((is_complete_object_pointer_type(ctx, lhs_type) &&
+              is_integral_or_unscoped_enum_type(rhs_type)) ||
+             (is_integral_or_unscoped_enum_type(lhs_type) &&
+              is_complete_object_pointer_type(ctx, rhs_type)))) {
     result.type = is_pointer_type(lhs_type) ? lhs_type : rhs_type;
     result.category = VC_PRVALUE;
   } else if(node_has_simple_type(node, OP_MINUS) &&
-            is_pointer_type(lhs_type) && is_integral_or_unscoped_enum_type(rhs_type)) {
+            is_complete_object_pointer_type(ctx, lhs_type) &&
+            is_integral_or_unscoped_enum_type(rhs_type)) {
     result.type = lhs_type;
     result.category = VC_PRVALUE;
   } else if(node_has_simple_type(node, OP_PLUS) || node_has_simple_type(node, OP_MINUS) ||
@@ -9540,20 +9632,9 @@ ExprInfo analyze_assignment_expression(SemanticContext & ctx,
         try_convert_rhs_to_compound_builtin_target(lhs_base, true);
       } else if((node_has_simple_type(node, OP_PLUSASS) ||
                  node_has_simple_type(node, OP_MINUSASS)) &&
-                is_pointer_type(lhs_base)) {
+                is_complete_object_pointer_type(ctx, lhs_base)) {
         try_convert_rhs_to_compound_builtin_target(make_fundamental(FT_LONG_INT), true);
       }
-    }
-    if(deferred_operator_builtin_fallback &&
-       (complete_class_type_for_lookup(ctx, value_conversion_type(lhs)) ||
-        complete_class_type_for_lookup(ctx, value_conversion_type(rhs)))) {
-      hard_fail_semantic_fallback(
-          ctx,
-          node,
-          "operator-overload-to-builtin",
-          "compound-assignment overload attempt fell back to builtin [op " +
-              deferred_operator_builtin_fallback_operator + "] [error " +
-              deferred_operator_builtin_fallback_error + "]");
     }
     const bool integral_compound =
         integral_compound_operator &&
@@ -9565,8 +9646,27 @@ ExprInfo analyze_assignment_expression(SemanticContext & ctx,
     const bool pointer_compound =
         (node_has_simple_type(node, OP_PLUSASS) ||
          node_has_simple_type(node, OP_MINUSASS)) &&
-        is_pointer_type(lhs_base) && is_integral_or_unscoped_enum_type(rhs_base);
-    if(!integral_compound && !arithmetic_compound && !pointer_compound) {
+        is_complete_object_pointer_type(ctx, lhs_base) &&
+        is_integral_or_unscoped_enum_type(rhs_base);
+    const bool bool_pointer_plus_compound =
+        node_has_simple_type(node, OP_PLUSASS) &&
+        is_bool_type(lhs_base) &&
+        is_complete_object_pointer_type(ctx, rhs_base);
+    if(deferred_operator_builtin_fallback &&
+       (integral_compound || arithmetic_compound || pointer_compound ||
+        bool_pointer_plus_compound) &&
+       (complete_class_type_for_lookup(ctx, value_conversion_type(lhs)) ||
+        complete_class_type_for_lookup(ctx, value_conversion_type(rhs)))) {
+      hard_fail_semantic_fallback(
+          ctx,
+          node,
+          "operator-overload-to-builtin",
+          "compound-assignment overload attempt fell back to builtin [op " +
+              deferred_operator_builtin_fallback_operator + "] [error " +
+              deferred_operator_builtin_fallback_error + "]");
+    }
+    if(!integral_compound && !arithmetic_compound && !pointer_compound &&
+       !bool_pointer_plus_compound) {
       ostringstream out;
       out << "unsupported assignment-expression";
       out << " [expr " << node_text(node) << "]";

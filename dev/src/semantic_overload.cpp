@@ -3536,7 +3536,11 @@ bool try_analyze_scalar_pseudo_destructor_call(SemanticContext & ctx,
     return false;
   }
 
-  TypePtr named_type = ctx.lookup_type(scope, callee_node.children[1].value.substr(1));
+  TypePtr named_type = callee_node.children[1].semantic_type;
+  if(!named_type) {
+    named_type =
+        ctx.lookup_type(scope, callee_node.children[1].value.substr(1));
+  }
   if(!named_type || !type_equals(strip_top_level_cv(named_type), object_type)) {
     return false;
   }
@@ -3664,26 +3668,6 @@ bool validate_selected_by_value_class_arguments(SemanticContext & ctx,
       continue;
     }
 
-    TypePtr source_type =
-        strip_top_level_cv(remove_reference_type(match.source_args[i].type));
-    ClassInfo * source_class = source_type ? ctx.class_info_for_type(source_type) : nullptr;
-    if(!source_class && source_type) {
-      source_class = complete_class_type_for_lookup(ctx, source_type);
-    }
-    bool same_or_derived_source = source_class == target_class;
-    if(!same_or_derived_source && source_class) {
-      size_t ignored_offset = 0;
-      MemberAccess ignored_access = MA_PUBLIC;
-      same_or_derived_source =
-          find_unique_base_path(*source_class,
-                                target_class,
-                                ignored_offset,
-                                ignored_access);
-    }
-    if(!same_or_derived_source) {
-      continue;
-    }
-
     for(size_t slot = 0; slot < target_class->vtable_entries.size(); ++slot) {
       FunctionBinding * virtual_function = target_class->vtable_entries[slot];
       if(virtual_function && virtual_function->is_pure_virtual) {
@@ -3693,7 +3677,41 @@ bool validate_selected_by_value_class_arguments(SemanticContext & ctx,
       }
     }
 
-    vector<ExprInfo> source_args(1, match.source_args[i]);
+    const ExprInfo * class_value = nullptr;
+    const auto is_target_class_value =
+        [&](const ExprInfo & candidate) -> bool
+        {
+          TypePtr candidate_type =
+              strip_top_level_cv(remove_reference_type(candidate.type));
+          ClassInfo * candidate_class =
+              candidate_type ? ctx.class_info_for_type(candidate_type) : nullptr;
+          if(!candidate_class && candidate_type) {
+            candidate_class =
+                complete_class_type_for_lookup(ctx, candidate_type);
+          }
+          if(candidate_class == target_class) {
+            return true;
+          }
+          if(!candidate_class) {
+            return false;
+          }
+          size_t ignored_offset = 0;
+          MemberAccess ignored_access = MA_PUBLIC;
+          return find_unique_base_path(*candidate_class,
+                                       target_class,
+                                       ignored_offset,
+                                       ignored_access);
+        };
+    if(i < match.args.size() && is_target_class_value(match.args[i])) {
+      class_value = &match.args[i];
+    } else if(is_target_class_value(match.source_args[i])) {
+      class_value = &match.source_args[i];
+    }
+    if(!class_value) {
+      continue;
+    }
+
+    vector<ExprInfo> source_args(1, *class_value);
     constructor_lifecycle_service::ConstructorSelectionResult selection;
     ConstructorSelectionOptions options =
         constructor_lifecycle_service::selection_options_for(
@@ -7961,6 +7979,10 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
                                                                  *direct_braced_init);
   }
   if(class_info) {
+    if(semantic_class_model::class_info_is_abstract(*class_info)) {
+      throw NoViableConstructorError(
+          "cannot construct an object of abstract class type");
+    }
     const ConstructorSelectionOptions ctor_options =
         constructor_lifecycle_service::selection_options_for(
             constructor_lifecycle_service::direct_initialization_profile(
@@ -7981,6 +8003,33 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
                                                              arg_nodes,
                                                              ctor,
                                                              ctor_options);
+    }
+    if(direct_braced_init && ctor.ctor) {
+      TypePtr ctor_type = strip_top_level_cv(ctor.ctor->type);
+      const size_t explicit_offset =
+          function_binding_explicit_parameter_offset(*ctor.ctor);
+      if(ctor_type && ctor_type->kind == Type::TK_FUNCTION) {
+        vector<unique_ptr<CppAstNode> > expanded_storage;
+        const vector<const CppAstNode *> elements =
+            expand_functional_braced_init_elements(ctx,
+                                                   scope,
+                                                   *direct_braced_init,
+                                                   expanded_storage);
+        for(size_t i = 0;
+            i < elements.size() &&
+            explicit_offset + i < ctor_type->params.size();
+            ++i) {
+          if(semantic_lifetime::
+                 scalar_list_initialization_has_narrowing_conversion(
+                     ctx,
+                     scope,
+                     *elements[i],
+                     ctor_type->params[explicit_offset + i])) {
+            throw NoViableConstructorError(
+                "narrowing constructor list-initialization");
+          }
+        }
+      }
     }
     constructor_lifecycle_service::ConstructorActionResult ctor_action;
     constructor_lifecycle_service::prepare_lifecycle_call_into(
@@ -8039,6 +8088,10 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
     }
     if(elements.size() != 1) {
       throw logic_error("non-class braced-init-list requires one element");
+    }
+    if(semantic_lifetime::scalar_list_initialization_has_narrowing_conversion(
+           ctx, scope, *elements[0], callee_type)) {
+      throw logic_error("narrowing scalar list-initialization");
     }
     return finalize_functional_cast_result(
         ctx,

@@ -249,6 +249,7 @@ void inject_anonymous_union_variable_bindings(semantic_model::Scope & scope,
 
 void ensure_implicit_special_members(SemanticContext & ctx,
                                      semantic_model::ClassInfo & info);
+bool class_info_is_abstract(const semantic_model::ClassInfo & info);
 bool is_trivially_default_constructible_type_for_host_abi(
     SemanticContext & ctx,
     const cpp_decl::TypePtr & type);
