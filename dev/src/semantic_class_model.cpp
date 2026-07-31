@@ -4474,9 +4474,9 @@ bool owner_on_primary_polymorphic_path(const ClassInfo & info,
   return false;
 }
 
-FunctionBinding * prefer_unrelated_destructor_override(const ClassInfo & info,
-                                                       FunctionBinding * lhs,
-                                                       FunctionBinding * rhs)
+FunctionBinding * prefer_unrelated_virtual_override(const ClassInfo & info,
+                                                    FunctionBinding * lhs,
+                                                    FunctionBinding * rhs)
 {
   const bool lhs_primary_path = owner_on_primary_polymorphic_path(info, *lhs);
   const bool rhs_primary_path = owner_on_primary_polymorphic_path(info, *rhs);
@@ -4536,10 +4536,8 @@ FunctionBinding * find_overridden_virtual(SemanticContext & ctx,
           parser_trace::note("class.collect", std::string(), trace.str());
         }
         if(match && match != candidate) {
-          if(match->has_virtual_slot && candidate->has_virtual_slot &&
-             match->virtual_slot == candidate->virtual_slot) {
-            continue;
-          }
+          // A slot index is local to its owning vtable.  Unrelated base
+          // classes can both use slot zero without naming the same slot.
           if(match->owner_class == candidate->owner_class) {
             if(candidate->has_virtual_slot &&
                (!match->has_virtual_slot ||
@@ -4557,31 +4555,13 @@ FunctionBinding * find_overridden_virtual(SemanticContext & ctx,
               continue;
             }
           }
-          if(binding.is_destructor &&
-             match->is_destructor &&
-             candidate->is_destructor) {
-            match = prefer_unrelated_destructor_override(info, match, candidate);
-            continue;
-          }
-          std::ostringstream out;
-          out << "ambiguous virtual override"
-              << " [binding " << binding.display_name
-              << " in " << info.qualified_name
-              << "] [match " << match->name;
-          out << " declared "
-              << (match->declared_type ?
-                      cpp_decl::describe_type(match->declared_type) :
-                      std::string("<special-member>"));
-          out << semantic_trace::previous_function_location_note(ctx, "match", match);
-          out << "] [candidate " << candidate->name;
-          out << " declared "
-              << (candidate->declared_type ?
-                      cpp_decl::describe_type(candidate->declared_type) :
-                      std::string("<special-member>"));
-          out << semantic_trace::previous_function_location_note(
-              ctx, "candidate", candidate);
-          out << "]";
-          throw std::logic_error(out.str());
+          // One member declared in the derived class overrides every matching
+          // virtual reached through unrelated bases.  Select the inherited
+          // entry that controls the derived primary slot; secondary vtable
+          // construction installs the same final overrider in the other
+          // sections.
+          match = prefer_unrelated_virtual_override(info, match, candidate);
+          continue;
         }
         match = candidate;
       }
@@ -4776,7 +4756,7 @@ FunctionBinding * find_final_overrider(SemanticContext & ctx,
           if(base_virtual.is_destructor &&
              found->is_destructor &&
              binding->is_destructor) {
-            found = prefer_unrelated_destructor_override(dynamic_class, found, binding);
+            found = prefer_unrelated_virtual_override(dynamic_class, found, binding);
             continue;
           }
           std::ostringstream out;

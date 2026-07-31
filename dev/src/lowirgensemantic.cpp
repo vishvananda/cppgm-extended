@@ -1529,6 +1529,9 @@ bool matches_constructor_entry_type_for_lowir(const TypePtr & entry_type,
   if(base->params.size() == 1) {
     return same_class_reference_parameter_for_lowir(class_type, base->params[0], ref_kind);
   }
+  if(base->params.empty()) {
+    return false;
+  }
   // The implicit-object (`this`) parameter must belong to the class being
   // looked up. Otherwise a converting constructor of a *different*
   // specialization can match purely on its reference parameter type -- e.g.

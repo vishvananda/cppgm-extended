@@ -5962,6 +5962,68 @@ private:
            explicit_value;
   }
 
+  bool missing_exception_spec_matches_replaceable_allocation_function(
+      FunctionBinding & existing,
+      bool existing_explicit,
+      ExplicitFunctionNothrowKind candidate_kind,
+      const string & candidate_expr_text,
+      bool candidate_explicit,
+      const CppAstNode * candidate_qualifier)
+  {
+    if(existing_explicit == candidate_explicit) {
+      return false;
+    }
+    if(existing.symbol.object_symbol != "cppgm_builtin_operator_new" &&
+       existing.symbol.object_symbol != "cppgm_builtin_operator_new_array") {
+      return false;
+    }
+
+    const ExplicitFunctionNothrowKind explicit_kind =
+        existing_explicit ? existing.explicit_function_nothrow_kind :
+                            candidate_kind;
+    const CppAstNode * explicit_qualifier =
+        existing_explicit ? existing.function_qualifier : candidate_qualifier;
+    if(explicit_kind == EFNK_EXPR) {
+      bool explicit_value = false;
+      return evaluate_explicit_function_nothrow_parse_state(
+                 existing,
+                 explicit_kind,
+                 existing_explicit ?
+                     existing.explicit_function_nothrow_expr_text :
+                     candidate_expr_text,
+                 explicit_qualifier,
+                 explicit_value) &&
+             !explicit_value;
+    }
+    if(explicit_kind != EFNK_ALWAYS_FALSE || !explicit_qualifier) {
+      return false;
+    }
+
+    const vector<CppAstNode> * exception_types =
+        cppast_exception_type_id_syntaxes(*explicit_qualifier);
+    if(!exception_types || exception_types->size() != 1) {
+      return false;
+    }
+    Scope qualifier_scope = build_function_qualifier_scope(existing);
+    TypePtr exception_type;
+    if(!parse_type_id(qualifier_scope, (*exception_types)[0], exception_type) ||
+       !exception_type) {
+      return false;
+    }
+    TypePtr exception_base = strip_top_level_cv(exception_type);
+    if(!exception_base || exception_base->kind != Type::TK_NAMED) {
+      return false;
+    }
+    const string exception_name = named_type_display_text(exception_base);
+    const string & exception_key = exception_base->named_key;
+    return exception_name == "std::bad_alloc" ||
+           exception_name == "std::__1::bad_alloc" ||
+           exception_key == "class std::bad_alloc" ||
+           exception_key == "class std::__1::bad_alloc" ||
+           exception_key == "std::bad_alloc" ||
+           exception_key == "std::__1::bad_alloc";
+  }
+
   bool explicit_function_nothrow_specifications_match(FunctionBinding & existing,
                                                       const CppAstNode * qualifier) override
   {
@@ -5982,6 +6044,15 @@ private:
     if(existing_explicit != candidate_explicit) {
       if(missing_exception_spec_matches_host_builtin_nothrow(existing,
                                                              existing_explicit)) {
+        return true;
+      }
+      if(missing_exception_spec_matches_replaceable_allocation_function(
+             existing,
+             existing_explicit,
+             candidate_kind,
+             candidate_expr_text,
+             candidate_explicit,
+             qualifier)) {
         return true;
       }
       return false;
@@ -11571,13 +11642,13 @@ private:
                                             bool mark_output_required = true) override
   {
     ScopedCallSemConstructionPath construction_path("constructor-conversion-expression");
-    CallableEmissionDecision emission =
-        decide_callable_emission(&ctor,
-                                 OutputReason::ConstructorUse,
-                                 mark_output_required && !ctor.is_deleted);
-    require_function_definition(&ctor,
-                                OutputReason::ConstructorUse,
-                                emission.mark_output_required_now);
+    if(mark_output_required && !ctor.is_deleted) {
+      CallableEmissionDecision emission =
+          decide_callable_emission(&ctor, OutputReason::ConstructorUse);
+      require_function_definition(&ctor,
+                                  OutputReason::ConstructorUse,
+                                  emission.mark_output_required_now);
+    }
     FunctionBinding * resolved_ctor =
         semantic_output::resolve_output_function_binding(*this, &ctor);
     FunctionBinding & emitted_ctor = resolved_ctor ? *resolved_ctor : ctor;

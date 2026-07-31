@@ -11900,7 +11900,7 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
       ConversionRank rank = CR_BAD;
       ArgumentConversionOptions conversion_options(options.allow_user_defined,
                                                    false,
-                                                   true,
+                                                   false,
                                                    constructor_argument_may_use_explicit_conversion(
                                                        target_info,
                                                        candidate,
@@ -12422,7 +12422,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
         ConversionRank rank = CR_BAD;
         ArgumentConversionOptions conversion_options(true,
                                                     false,
-                                                    true,
+                                                    false,
                                                     constructor_argument_may_use_explicit_conversion(
                                                         target_info,
                                                         candidate,

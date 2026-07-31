@@ -1,0 +1,21 @@
+declare function @A_int___A(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1AIiEC1EOS0_]
+
+global @c [binding=strong, object=_Z1c] = {
+  zero 1
+}
+
+function @f(%x : ptr [pass=reference]) -> void [binding=strong, object=_Z1fR1AIiE] {
+  slot $x : ptr
+  slot $a : obj<1x1>
+
+  block ^entry:
+    store ptr %x, $x
+    %t1 = addr $a
+    %t2 = load ptr $x
+    call void @A_int___A(%t1, %t2)
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    return void
+}

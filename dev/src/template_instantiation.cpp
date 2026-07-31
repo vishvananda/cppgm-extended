@@ -11772,12 +11772,50 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           source_decl->result_type_pattern.kind != CppAstKind::invalid &&
           ast_has_dependent_non_type_template_argument(
               source_decl->result_type_pattern, source_decl->parameters);
+      bool current_result_matches_structured_source_substitution = false;
+      TypePtr source_function_pattern =
+          strip_top_level_cv(source_decl->type_pattern);
+      if(!result_type_still_dependent &&
+         source_function_pattern &&
+         source_function_pattern->kind == Type::TK_FUNCTION) {
+        TypePtr structured_result;
+        if(template_argument_semantics::substitute_type(
+               source_function_pattern->inner,
+               source_decl->parameters,
+               arguments,
+               structured_result) &&
+           structured_result) {
+          const bool structured_result_consumed_function_argument =
+              !type_equals(source_function_pattern->inner,
+                           structured_result);
+          if(instantiation_owner &&
+             instantiation_owner->source_template &&
+             !instantiation_owner->instantiation_arguments.empty()) {
+            TypePtr owner_substituted_result;
+            if(template_argument_semantics::substitute_type(
+                   structured_result,
+                   instantiation_owner->source_template->parameters,
+                   instantiation_owner->instantiation_arguments,
+                   owner_substituted_result) &&
+               owner_substituted_result) {
+              structured_result = owner_substituted_result;
+            }
+          }
+          current_result_matches_structured_source_substitution =
+              structured_result_consumed_function_argument &&
+              type_equals(result_type, structured_result);
+        }
+      }
       // A materialized typed specialization no longer needs source-pattern
       // rebinding unless one of its non-type arguments came from a dependent
-      // expression. Unresolved and stale cached results still do as well.
+      // expression. The same is true when structured substitution already
+      // produced the current concrete result: reparsing that result can bind a
+      // same-named outer type in the argument a second time.
       if((result_type_still_dependent ||
           (source_result_mentions_template_parameter &&
            (!structured_result_materialized ||
+            source_result_has_dependent_non_type_argument) &&
+           (!current_result_matches_structured_source_substitution ||
             source_result_has_dependent_non_type_argument))) &&
          source_decl->result_type_pattern.kind != CppAstKind::invalid) {
         TypePtr parsed_result;

@@ -1,0 +1,26 @@
+function @g(%q : ptr [pass=reference], %d : ptr [pass=reference], %i : ptr [pass=reference]) -> void [binding=strong, object=_Z1gR1QIiERN1n1DIcEERi] {
+  slot $q : ptr
+  slot $d : ptr
+  slot $i : ptr
+
+  block ^entry:
+    store ptr %q, $q
+    store ptr %d, $d
+    store ptr %i, $i
+    %t1 = load ptr $q
+    %t2 = load ptr $d
+    %t3 = load ptr $i
+    call void @Q_int___f(%t1, %t2, %t3)
+    return void
+}
+function @Q_int___f(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1QIiE1fIcEEvRKN1n1DIT_EERi] {
+  slot $this : ptr
+  slot $__param1 : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    store ptr %__param2, $__param2
+    return void
+}

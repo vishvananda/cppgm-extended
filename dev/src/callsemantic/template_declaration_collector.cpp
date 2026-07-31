@@ -2120,8 +2120,11 @@ public:
     template_parameter_parse_scope.function = parse_scope->function;
     overlay_direct_scope_bindings(template_parameter_parse_scope, *parse_scope);
     bool template_parameter_hides_class_value = false;
-    for(size_t parameter_index = 0; parameter_index < template_parameters.size(); ++parameter_index) {
-      const TemplateParameterInfo & parameter = template_parameters[parameter_index];
+    for(size_t parameter_index = 0;
+        parameter_index < effective_template_parameters.size();
+        ++parameter_index) {
+      const TemplateParameterInfo & parameter =
+          effective_template_parameters[parameter_index];
       if(parameter.name.empty()) {
         continue;
       }
