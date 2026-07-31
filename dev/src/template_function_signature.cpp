@@ -77,20 +77,6 @@ CppAstNode filter_function_declarator(const CppAstNode & declarator)
   return filtered;
 }
 
-CppAstNode function_result_declarator(const CppAstNode & declarator)
-{
-  CppAstNode filtered = declarator;
-  std::vector<CppAstNode> kept;
-  for(std::size_t i = 0; i < filtered.children.size(); ++i) {
-    if(filtered.children[i].kind == CppAstKind::parameter_clause) {
-      continue;
-    }
-    kept.push_back(filtered.children[i]);
-  }
-  filtered.children.swap(kept);
-  return filtered;
-}
-
 bool is_empty_abstract_declarator(const CppAstNode & node)
 {
   return (node.kind == CppAstKind::abstract_declarator ||
@@ -172,6 +158,23 @@ CppAstNode build_function_result_abstract_declarator(
                                              erased_parameter_clause);
   erased_function_signature = erased_name && erased_parameter_clause;
   return abstract;
+}
+
+bool declarator_declared_identifier(const CppAstNode & node, std::string & out)
+{
+  if(node.kind == CppAstKind::identifier && !node.value.empty()) {
+    out = node.value;
+    return true;
+  }
+  if(node.kind == CppAstKind::parameter_clause) {
+    return false;
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(declarator_declared_identifier(node.children[i], out)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 std::vector<TypePtr> normalized_parameter_types(
@@ -418,13 +421,28 @@ FunctionTemplateSignatureParseResult try_parse_function_template_signature(
             FunctionTemplateSignatureParseStatus::UnsupportedParameterClause,
             msg.str());
       }
-      CppAstNode result_declarator =
-          function_result_declarator(out.effective_declarator);
       TypePtr result_type;
+      bool erased_function_signature = false;
+      CppAstNode result_declarator =
+          build_function_result_abstract_declarator(
+              out.effective_declarator, erased_function_signature);
       std::string parsed_name;
-      if(template_decl_ast::parse_declarator(
-             services, scope_ref, scope_ref, result_declarator, base, parsed_name, result_type, true) &&
-         result_type) {
+      bool parsed_result_type = false;
+      if(erased_function_signature &&
+         declarator_declared_identifier(raw_declarator, parsed_name)) {
+        result_type = base;
+        parsed_result_type =
+            result_declarator.children.empty() ||
+            template_decl_ast::parse_abstract_declarator(
+                services,
+                scope_ref,
+                scope_ref,
+                result_declarator,
+                base,
+                result_type,
+                true);
+      }
+      if(parsed_result_type && result_type) {
         out.name = parsed_name;
         out.type = make_function(result_type,
                                  normalized_parameter_types(out.params),

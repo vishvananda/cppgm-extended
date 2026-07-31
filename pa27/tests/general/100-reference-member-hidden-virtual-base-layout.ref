@@ -12,14 +12,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $h
     %t6 = addr $d
     %t7 = index i8 [projection=base_subobject] %t6, 0
-    %t8 = addr $d
-    %t9 = index i8 %t8, 8
-    call void @Holder__Holder(%t5, %t7, %t9)
-    %t10 = addr $h
-    %t11 = call i32 @Holder__f(%t10)
-    %t12 = cmp ne i32 %t11, 7
-    %t13 = convert zext i32 u8 %t12
-    return i32 %t13
+    %t8 = load ptr %t7
+    %t9 = index i8 %t8, -24
+    %t10 = load i64 %t9
+    %t11 = index i8 %t7, %t10
+    call void @Holder__Holder(%t5, %t7, %t11)
+    %t12 = addr $h
+    %t13 = call i32 @Holder__f(%t12)
+    %t14 = cmp ne i32 %t13, 7
+    %t15 = convert zext i32 u8 %t14
+    return i32 %t15
 }
 function @D__D(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev] {
   slot $this : ptr

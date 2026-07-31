@@ -2402,7 +2402,9 @@ public:
                                           type,
                                           is_typedef,
                                           true) ||
-         !type || is_typedef) {
+         !type ||
+         is_typedef ||
+         strip_top_level_cv(type)->kind != Type::TK_FUNCTION) {
         template_api::FunctionTemplateSignatureParseResult parsed_result =
             template_api::signature::try_parse_function_template_signature(
                 ctx,

@@ -15,20 +15,24 @@ struct ExpansionContext
   ExpansionContext() :
     file(),
     line(0),
-    system_header(false)
+    system_header(false),
+    counter_value(nullptr)
   {}
 
   ExpansionContext(std::string file,
                    unsigned long long line,
-                   bool system_header = false) :
+                   bool system_header = false,
+                   unsigned long long * counter_value = nullptr) :
     file(std::move(file)),
     line(line),
-    system_header(system_header)
+    system_header(system_header),
+    counter_value(counter_value)
   {}
 
   std::string file;
   unsigned long long line;
   bool system_header;
+  unsigned long long * counter_value;
 };
 
 typedef EPPToken (*token_callable)(const ExpansionContext &);

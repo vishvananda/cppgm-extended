@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <functional>
 #include <map>
 #include <memory>
@@ -49,6 +50,11 @@ bool is_initializer_list_type(const TypeRegistryState & state,
                               const cpp_decl::TypePtr & type,
                               cpp_decl::TypePtr * element_type = nullptr,
                               semantic_model::ClassInfo ** info_out = nullptr);
+
+std::size_t stable_function_local_type_fingerprint(
+    const semantic_model::Scope & current_scope,
+    const std::string & local_name,
+    const CppAstNode & node);
 
 semantic_model::ClassInfo * create_class_info(
     TypeRegistryState & state,

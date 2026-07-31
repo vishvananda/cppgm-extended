@@ -1,0 +1,5 @@
+#include <sstream>
+struct B : std::ostringstream { virtual ~B(); };
+struct D : B { ~D(); };
+D::~D() {}
+int main() { D value; }

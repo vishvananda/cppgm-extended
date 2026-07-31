@@ -11497,8 +11497,10 @@ bool append_leaf_member_function_template_instantiations(
     return false;
   }
   if(!object_info->reference_members_collected &&
-     !object_info->reference_member_collection_in_progress) {
-    services.semantic_context->ensure_class_reference_members(*object_info);
+     !object_info->reference_member_collection_in_progress &&
+     object_info->reference_named_members_collected.count(name) == 0) {
+    services.semantic_context->ensure_class_reference_named_member(*object_info,
+                                                                   name);
   }
   refresh_invalidated_leaf_member_function_bindings(
       services, object_info, name, functions);

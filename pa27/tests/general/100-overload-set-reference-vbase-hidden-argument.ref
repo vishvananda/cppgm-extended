@@ -48,11 +48,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @poison(0, %t6)
     %t7 = addr $d
     %t8 = index i8 [projection=base_subobject] %t7, 0
-    %t9 = addr $d
-    %t10 = index i8 %t9, 4
-    %t11 = call i32 @read(%t8, %t10)
-    %t12 = cmp eq i32 %t11, 7
-    branch %t12, ^cond_then_1, ^cond_else_2
+    %t9 = load ptr %t8
+    %t10 = index i8 %t9, -24
+    %t11 = load i64 %t10
+    %t12 = index i8 %t8, %t11
+    %t13 = call i32 @read(%t8, %t12)
+    %t14 = cmp eq i32 %t13, 7
+    branch %t14, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -63,8 +65,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load i32 $cond__1
-    return i32 %t13
+    %t15 = load i32 $cond__1
+    return i32 %t15
 }
 function @V__V__base_entry(%this : ptr) -> void [binding=weak, object=_ZN1VC2Ev] {
   slot $this : ptr

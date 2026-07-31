@@ -140,6 +140,13 @@ bool same_function_template_entity_type(
     const std::vector<template_model::TemplateParameterInfo> & lhs_parameters,
     const cpp_decl::TypePtr & rhs_type,
     const std::vector<template_model::TemplateParameterInfo> & rhs_parameters);
+bool same_function_template_entity_type_in_scopes(
+    const cpp_decl::TypePtr & lhs_type,
+    const std::vector<template_model::TemplateParameterInfo> & lhs_parameters,
+    Scope & lhs_scope,
+    const cpp_decl::TypePtr & rhs_type,
+    const std::vector<template_model::TemplateParameterInfo> & rhs_parameters,
+    Scope & rhs_scope);
 bool same_function_template_entity_result_pattern(
     const CppAstNode & lhs,
     const std::vector<template_model::TemplateParameterInfo> & lhs_parameters,

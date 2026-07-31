@@ -102,9 +102,10 @@ void mix_text(unsigned long long & seed, const std::string & text)
   }
 }
 
-std::size_t stable_local_class_fingerprint(const Scope & current_scope,
-                                           const std::string & local_name,
-                                           const CppAstNode & node)
+std::size_t stable_function_local_type_fingerprint_impl(
+    const Scope & current_scope,
+    const std::string & local_name,
+    const CppAstNode & node)
 {
   unsigned long long seed = 1469598103934665603ULL;
   const FunctionBinding * function = enclosing_function(current_scope);
@@ -151,6 +152,15 @@ QualifiedName append_symbol_member_name_syntax(const Scope & scope,
 }
 
 }  // namespace
+
+std::size_t stable_function_local_type_fingerprint(
+    const Scope & current_scope,
+    const std::string & local_name,
+    const CppAstNode & node)
+{
+  return stable_function_local_type_fingerprint_impl(
+      current_scope, local_name, node);
+}
 
 ClassInfo * class_info_for_type(const TypeRegistryState & state,
                                 const TypePtr & type)
@@ -229,7 +239,7 @@ ClassInfo * create_class_info(TypeRegistryState & state,
     std::ostringstream unique_name;
     unique_name << "__local_"
                 << (class_node->token_end > class_node->token_start ?
-                        stable_local_class_fingerprint(
+                        stable_function_local_type_fingerprint(
                             scope, source_qualified_name, *class_node) :
                         template_api::scope_template_instance_fingerprint(scope));
     const std::string local_suffix = unique_name.str();

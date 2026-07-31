@@ -4391,10 +4391,31 @@ bool ast_node_contains_this_expression(const CppAstNode & node)
   return false;
 }
 
+const CppAstNode * function_parameter_clause_in_declarator(const CppAstNode & node)
+{
+  const CppAstNode * found = nullptr;
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.kind == CppAstKind::parameter_clause) {
+      found = &child;
+      continue;
+    }
+    if(child.kind == CppAstKind::nested_declarator &&
+       child.children.size() == 1) {
+      if(const CppAstNode * nested =
+             function_parameter_clause_in_declarator(child.children[0])) {
+        found = nested;
+      }
+    }
+  }
+  return found;
+}
+
 const CppAstNode * function_template_parameter_clause(const FunctionTemplateDecl & decl)
 {
-  return decl.declarator ? find_child_kind(*decl.declarator, CppAstKind::parameter_clause) :
-                           nullptr;
+  return decl.declarator ?
+      function_parameter_clause_in_declarator(*decl.declarator) :
+      nullptr;
 }
 
 void bind_instantiated_function_parameter_values(

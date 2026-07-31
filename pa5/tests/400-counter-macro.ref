@@ -1,0 +1,5 @@
+preproc 1
+sof tests/400-counter-macro.t
+identifier value0
+identifier value1
+eof

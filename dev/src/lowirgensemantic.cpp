@@ -3926,8 +3926,11 @@ private:
       class_type = strip_top_level_cv(class_type->inner);
     }
     const string qualified_name = class_qualified_name(class_type);
+    const bool has_host_vtable =
+        symbol_linkage::has_external_vtable_symbol_candidate(class_type) ||
+        is_standard_library_class_name(qualified_name);
     return !qualified_name.empty() &&
-           symbol_linkage::has_external_vtable_symbol_candidate(class_type) &&
+           has_host_vtable &&
            class_virtual_base_layouts_.count(qualified_name) != 0 &&
            (!class_has_local_function_definition(qualified_name) ||
             is_standard_library_class_name(qualified_name)) &&
@@ -3939,6 +3942,10 @@ private:
     const CallSemNode * current = &node;
     size_t guard = 0;
     while(current && guard++ < 64) {
+      if(current->kind == CallSemKind::unary_expression &&
+         callsem_has_token(*current, OP_STAR)) {
+        return true;
+      }
       if(current->is_reference_storage && !current->is_reference_storage_target) {
         return true;
       }
@@ -4040,7 +4047,9 @@ private:
                                                       const string & object_ptr,
                                                       const string & qualified_name,
                                                       string & out,
-                                                      bool pointer_may_be_null = true)
+                                                      bool pointer_may_be_null = true,
+                                                      const CallSemVirtualBaseLayout *
+                                                          expression_layout = nullptr)
   {
     TypePtr class_type = strip_top_level_cv(remove_reference_type(object_type));
     const bool pointer_source = class_type && class_type->kind == Type::TK_POINTER;
@@ -4052,22 +4061,30 @@ private:
       return false;
     }
     const bool uses_vtable_runtime = class_uses_vtable_runtime(class_type);
+    const bool has_expression_vtable =
+        expression_layout &&
+        !expression_layout->empty();
     if(!uses_vtable_runtime &&
-       !class_has_external_virtual_base_runtime_layout(class_type)) {
+       !class_has_external_virtual_base_runtime_layout(class_type) &&
+       !has_expression_vtable) {
       return false;
     }
     const bool preserve_null = pointer_source && pointer_may_be_null;
 
     map<string, vector<pair<string, unsigned long long> > >::const_iterator layout_it =
         class_virtual_base_layouts_.find(class_name);
-    if(layout_it == class_virtual_base_layouts_.end()) {
+    const CallSemVirtualBaseLayout * runtime_layout =
+        layout_it == class_virtual_base_layouts_.end() ?
+            expression_layout :
+            &layout_it->second;
+    if(!runtime_layout || runtime_layout->empty()) {
       return false;
     }
 
     size_t layout_index = 0;
     bool found = false;
-    for(; layout_index < layout_it->second.size(); ++layout_index) {
-      if(layout_it->second[layout_index].first == qualified_name) {
+    for(; layout_index < runtime_layout->size(); ++layout_index) {
+      if((*runtime_layout)[layout_index].first == qualified_name) {
         found = true;
         break;
       }
@@ -4084,7 +4101,7 @@ private:
     {
       const string vptr = emit_temp_assignment("ptr", string("load ptr ") + object_ptr);
       const size_t slots_from_address_point =
-          layout_it->second.size() - layout_index + 2;
+          runtime_layout->size() - layout_index + 2;
       const long long slot_offset =
           -static_cast<long long>(slots_from_address_point * 8);
       const string offset_slot =
@@ -4311,13 +4328,17 @@ private:
       return contained_object_virtual_base;
     }
 
-    if(expression_path_uses_reference_storage(object_arg)) {
+    const CallSemVirtualBaseLayout & object_arg_virtual_base_layout =
+        callsem_virtual_base_layout(object_arg);
+    if(expression_path_uses_reference_storage(object_arg) ||
+       !object_arg_virtual_base_layout.empty()) {
       string dynamic_external;
       if(try_emit_dynamic_external_virtual_base_pointer(object_arg.semantic_type,
                                                         base_object_ptr,
                                                         virtual_base.first,
                                                         dynamic_external,
-                                                        preserve_null)) {
+                                                        preserve_null,
+                                                        &object_arg_virtual_base_layout)) {
         if(virtual_base.second == 0) {
           return dynamic_external;
         }
@@ -4327,8 +4348,6 @@ private:
       }
     }
 
-    const CallSemVirtualBaseLayout & object_arg_virtual_base_layout =
-        callsem_virtual_base_layout(object_arg);
     for(size_t i = 0; i < object_arg_virtual_base_layout.size(); ++i) {
       if(object_arg_virtual_base_layout[i].first == virtual_base.first) {
         const unsigned long long total_offset =
@@ -4593,8 +4612,6 @@ private:
         throw logic_error("parameter virtual base argument source missing");
       }
       const CallSemNode & object_arg = call.children[child_index];
-      const CallSemVirtualBaseLayout & object_arg_virtual_base_layout =
-          callsem_virtual_base_layout(object_arg);
       const size_t physical_parameter_index =
           have_function_type ?
               lowir_physical_argument_index(function_type, entry.parameter_index) :
@@ -4645,33 +4662,8 @@ private:
                 emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
             continue;
           }
-          bool appended_from_root_layout = false;
-          if(root && root != &object_arg && !object_arg_virtual_base_layout.empty()) {
-            bool found_root_offset = false;
-            unsigned long long root_offset = 0;
-            for(size_t j = 0; j < object_arg_virtual_base_layout.size(); ++j) {
-              if(object_arg_virtual_base_layout[j].first == entry.layout[i].first) {
-                root_offset = object_arg_virtual_base_layout[j].second;
-                found_root_offset = true;
-                break;
-              }
-            }
-            if(!found_root_offset && i < object_arg_virtual_base_layout.size()) {
-              root_offset = object_arg_virtual_base_layout[i].second;
-              found_root_offset = true;
-            }
-            if(found_root_offset) {
-              args.push_back(
-                  adjust_hidden_virtual_base_pointer(
-                      emit_pointer_operand(*root),
-                      root_offset));
-              appended_from_root_layout = true;
-            }
-          }
-          if(!appended_from_root_layout) {
-            args.push_back(
-                emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
-          }
+          args.push_back(
+              emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
           continue;
         }
         args.push_back(
@@ -4813,6 +4805,7 @@ private:
   bool is_constructor_function_ = false;
   size_t constructor_action_depth_ = 0;
   size_t cleanup_emission_depth_ = 0;
+  size_t throw_cleanup_emission_depth_ = 0;
   string direct_object_return_slot_;
 
   bool has_dynamic_exception_spec() const
@@ -8320,6 +8313,7 @@ private:
   {
     if(!is_constructor_function_ ||
        constructor_action_depth_ != 0 ||
+       throw_cleanup_emission_depth_ != 0 ||
        constructor_unwind_cleanups_.empty() ||
        node.kind != CallSemKind::call_expression ||
        node.children.empty() ||
@@ -10819,8 +10813,14 @@ private:
                            bool for_throw = false)
   {
     ++cleanup_emission_depth_;
+    if(for_throw) {
+      ++throw_cleanup_emission_depth_;
+    }
     for(size_t i = scope.size(); i-- > 0;) {
       emit_cleanup_action(scope[i], for_throw);
+    }
+    if(for_throw) {
+      --throw_cleanup_emission_depth_;
     }
     --cleanup_emission_depth_;
   }
@@ -10833,8 +10833,14 @@ private:
       throw logic_error("cleanup prefix exceeds scope");
     }
     ++cleanup_emission_depth_;
+    if(for_throw) {
+      ++throw_cleanup_emission_depth_;
+    }
     for(size_t i = cleanup_count; i-- > 0;) {
       emit_cleanup_action(scope[i], for_throw);
+    }
+    if(for_throw) {
+      --throw_cleanup_emission_depth_;
     }
     --cleanup_emission_depth_;
   }
@@ -10844,11 +10850,17 @@ private:
                                                     bool for_throw = false)
   {
     ++cleanup_emission_depth_;
+    if(for_throw) {
+      ++throw_cleanup_emission_depth_;
+    }
     for(size_t i = scope.size(); i-- > 0;) {
       if(should_skip_cleanup_action(scope[i], for_throw, excluded_destroy_ptr)) {
         continue;
       }
       emit_cleanup_action(scope[i], for_throw);
+    }
+    if(for_throw) {
+      --throw_cleanup_emission_depth_;
     }
     --cleanup_emission_depth_;
   }
@@ -10959,7 +10971,9 @@ private:
         emit_host_eh_handler_metadata(*host_eh_handler_nodes_.back());
       }
       ++cleanup_emission_depth_;
+      ++throw_cleanup_emission_depth_;
       emit_cleanup_action(scope[i - 1], true);
+      --throw_cleanup_emission_depth_;
       --cleanup_emission_depth_;
       if(current_block_) {
         if(i == 1) {
@@ -11122,9 +11136,13 @@ private:
   void emit_constructor_unwind_cleanups()
   {
     close_shared_host_call_unwind_region();
+    ++cleanup_emission_depth_;
+    ++throw_cleanup_emission_depth_;
     for(size_t i = constructor_unwind_cleanups_.size(); i-- > 0;) {
       emit_cleanup_action(constructor_unwind_cleanups_[i], true);
     }
+    --throw_cleanup_emission_depth_;
+    --cleanup_emission_depth_;
   }
 
   string emit_temp_assignment(const string & type, const string & op)
@@ -23031,6 +23049,8 @@ private:
         exported_symbol.internal_symbol = entry_symbol;
         set_exported_symbol(entry_symbol, exported_symbol, "vtable-entry", node.text);
       }
+      const bool vtable_entry_has_definition =
+          known_function_symbol_has_definition(entry_symbol);
       const long long this_adjust =
           node.children[i].has_int_value ? callsem_int_value(node.children[i]) : 0;
       const bool needs_entry_thunk =
@@ -23079,7 +23099,9 @@ private:
             thunk_exported_symbol =
                 symbol_linkage::make_object_symbol_identity(thunk_symbol,
                                                             thunk_object_symbol,
-                                                            exported_symbol.linkage);
+                                                            vtable_entry_has_definition ?
+                                                                exported_symbol.linkage :
+                                                                symbol_linkage::SL_WEAK);
           }
         }
         VTableEntryThunkRequest & request = vtable_entry_thunks_[thunk_symbol];
@@ -23143,7 +23165,9 @@ private:
             request.exported_symbol =
                 symbol_linkage::make_object_symbol_identity(thunk_symbol,
                                                             thunk_object_symbol,
-                                                            exported_symbol.linkage);
+                                                            vtable_entry_has_definition ?
+                                                                exported_symbol.linkage :
+                                                                symbol_linkage::SL_WEAK);
           } else if(request.target_symbol != entry_symbol ||
                     request.this_adjust != this_adjust ||
                     request.return_adjust != 0 ||
@@ -23189,7 +23213,9 @@ private:
             request.exported_symbol =
                 symbol_linkage::make_object_symbol_identity(thunk_symbol,
                                                             thunk_object_symbol,
-                                                            virtual_export_symbol.linkage);
+                                                            vtable_entry_has_definition ?
+                                                                virtual_export_symbol.linkage :
+                                                                symbol_linkage::SL_WEAK);
           } else if(request.target_symbol != entry_symbol ||
                     request.this_adjust != 0 ||
                     request.return_adjust != 0 ||

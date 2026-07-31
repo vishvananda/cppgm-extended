@@ -4311,7 +4311,17 @@ ExprInfo analyze_delete_expression(SemanticContext & ctx,
   ExprInfo pointer = ctx.analyze_expression(scope, *operand);
   TypePtr pointer_type = strip_top_level_cv(remove_reference_type(pointer.type));
   if(!pointer_type || pointer_type->kind != Type::TK_POINTER) {
-    throw logic_error("delete-expression operand must be a pointer");
+    ExprInfo converted_pointer;
+    TypePtr converted_pointer_type;
+    if(!try_builtin_pointer_operand_conversion(ctx,
+                                               scope,
+                                               pointer,
+                                               converted_pointer,
+                                               converted_pointer_type)) {
+      throw logic_error("delete-expression operand must be a pointer");
+    }
+    pointer = converted_pointer;
+    pointer_type = converted_pointer_type;
   }
   TypePtr pointee_type = strip_top_level_cv(pointer_type->inner);
   TypePtr deletion_element_type = pointee_type;

@@ -174,6 +174,7 @@ protected:
   std::vector<InjectedTokens> injections;
   std::vector<EPPToken> directive_tokens;
   std::size_t pragma_op_nesting;
+  unsigned long long counter_macro_value;
 
   void note_dependency(const std::string & path, bool system);
 };

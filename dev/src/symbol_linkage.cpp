@@ -1154,6 +1154,9 @@ shared_ptr<void> make_lambda_context_function_symbol_options(
 
 static bool try_emit_special_type_encoding_ir(const TypePtr & type, string & out)
 {
+  if(type_needs_structural_internal_symbol(type)) {
+    return try_emit_type_encoding_ir(type, out, nullptr);
+  }
   TypeMangleContext mangle_ctx;
   mangle_ctx.prefer_concrete_non_type_values_for_dependent_parameter_types = true;
   return try_emit_type_encoding_ir(type, out, &mangle_ctx);
@@ -8055,7 +8058,7 @@ static bool try_build_template_parameter_type_ir(
       type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER;
   if(!direct_template_parameter &&
      !named_type_has_dependent_semantic(type)) {
-    return try_build_template_parameter_type_spelling_ir(type, mangle_ctx, out);
+    return false;
   }
 
   const string payload =

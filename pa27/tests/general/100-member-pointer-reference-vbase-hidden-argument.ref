@@ -15,17 +15,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $writer
     %t7 = addr $ss
     %t8 = index i8 [projection=base_subobject] %t7, 0
-    %t9 = addr $ss
-    %t10 = index i8 %t9, 4
-    %t11 = load i128 $member
-    %t12 = convert trunc i64 i128 %t11
-    %t13 = copy ptr %t12
-    call void %t13(%t6, %t8, %t10) as (%arg0 : ptr, %arg1 : ptr [pass=reference], %__pvbptr0 : ptr) -> void
-    %t14 = addr $ss
-    %t15 = index i8 [projection=base_subobject] %t14, 4
-    %t16 = call i32 @IOS__get(%t15)
-    %t17 = cmp eq i32 %t16, 9
-    branch %t17, ^cond_then_1, ^cond_else_2
+    %t9 = load ptr %t8
+    %t10 = index i8 %t9, -24
+    %t11 = load i64 %t10
+    %t12 = index i8 %t8, %t11
+    %t13 = load i128 $member
+    %t14 = convert trunc i64 i128 %t13
+    %t15 = copy ptr %t14
+    call void %t15(%t6, %t8, %t12) as (%arg0 : ptr, %arg1 : ptr [pass=reference], %__pvbptr0 : ptr) -> void
+    %t16 = addr $ss
+    %t17 = index i8 [projection=base_subobject] %t16, 4
+    %t18 = call i32 @IOS__get(%t17)
+    %t19 = cmp eq i32 %t18, 9
+    branch %t19, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -36,8 +38,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t18 = load i32 $cond__1
-    return i32 %t18
+    %t20 = load i32 $cond__1
+    return i32 %t20
 }
 function @IOS__get(%this : ptr) -> i32 [binding=weak, object=_ZNK3IOS3getEv] {
   slot $this : ptr

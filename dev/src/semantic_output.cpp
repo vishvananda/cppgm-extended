@@ -2380,6 +2380,34 @@ void collect_required_special_class_materialization_support(SemanticContext & ct
                                                    resolution_scope);
 }
 
+void collect_required_closure_capture_support(SemanticContext & ctx,
+                                              const CallSemNode & node,
+                                              Scope * resolution_scope)
+{
+  if(node.kind != CallSemKind::closure_object) {
+    return;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    const CallSemNode & capture = node.children[i];
+    if(capture.kind != CallSemKind::closure_capture ||
+       capture.children.size() != 1) {
+      continue;
+    }
+    TypePtr capture_type =
+        resolve_output_support_type(ctx,
+                                    resolution_scope,
+                                    capture.semantic_type);
+    if(is_reference_type(capture_type) ||
+       !is_indirect_value_type_for_output(capture_type)) {
+      continue;
+    }
+    require_hidden_class_transfer_constructor_for_output(ctx,
+                                                         capture_type,
+                                                         &capture.children[0],
+                                                         resolution_scope);
+  }
+}
+
 void collect_required_full_expression_temporary_support(SemanticContext & ctx,
                                                         const CallSemNode & node,
                                                         const FunctionBinding * active_function,
@@ -2652,6 +2680,7 @@ void collect_required_callees_from_node(SemanticContext & ctx,
   }
   Scope * output_resolution_scope = function_output_resolution_scope(active_function);
   collect_required_special_class_materialization_support(ctx, node, output_resolution_scope);
+  collect_required_closure_capture_support(ctx, node, output_resolution_scope);
   collect_required_full_expression_temporary_support(
       ctx, node, active_function, parent, function_node, output_resolution_scope);
   collect_required_variable_initializer_support(ctx, node, output_resolution_scope);

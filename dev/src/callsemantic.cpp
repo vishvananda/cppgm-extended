@@ -41,7 +41,6 @@ using namespace std;
 #include "cpp_decl_model.h"
 #include "cpp_scope_lookup.h"
 #include "cppast_ast.h"
-#include "cppast_dump.h"
 #include "cppast_parser.h"
 #include "constexpr_eval.h"
 #include "constructor_lifecycle_service.h"
@@ -3218,15 +3217,33 @@ private:
   TypePtr make_enum_type(Scope & scope,
                          const string & enum_prefix,
                          const string & name,
+                         const CppAstNode * enum_node,
                          bool complete,
                          size_t alignment = 4,
                          size_t size = 4)
   {
     string display = enum_prefix + " " + name;
-    string key = enum_prefix + " " + scope_qualified_name(scope, name);
+    string symbol_name =
+        callsemantic_internal::normalize_qualified_name_spacing(
+            semantic_lookup::scope_symbol_qualified_name(scope, name));
+    QualifiedName symbol_name_syntax =
+        semantic_lookup::scope_symbol_qualified_name_syntax(scope, name);
+    const bool named_function_local_enum =
+        enum_node &&
+        !enum_node->value.empty() &&
+        current_function_scope(scope);
+    if(named_function_local_enum) {
+      ostringstream unique_name;
+      unique_name
+          << "__local_"
+          << callsemantic::stable_function_local_type_fingerprint(
+                 scope, scope_qualified_name(scope, name), *enum_node);
+      symbol_name += unique_name.str();
+      symbol_name_syntax.name += unique_name.str();
+    }
+    string key = enum_prefix + " " + symbol_name;
     TypePtr type = make_named(display, key, complete, true, alignment, size);
-    type->set_named_qualified_name_syntax(
-        semantic_lookup::scope_symbol_qualified_name_syntax(scope, name));
+    type->set_named_qualified_name_syntax(symbol_name_syntax);
     type->set_named_source_name(name);
     return type;
   }
@@ -10989,8 +11006,12 @@ private:
                               base ? class_info_for_type(base) : nullptr));
       }
     } else {
-      enum_type = make_enum_type(*enum_scope, enum_prefix, enum_name, true,
+      enum_type = make_enum_type(*enum_scope, enum_prefix, enum_name, &node, true,
                                  enum_alignment, enum_size);
+      if(!node.value.empty() && current_function_scope(*enum_scope)) {
+        assign_local_type_itanium_metadata(
+            enum_type, *enum_scope, enum_name);
+      }
       if(!node.value.empty()) {
         enum_scope->named_types[enum_name] = enum_type;
         durable_scope.named_types[enum_name] = enum_type;
@@ -23687,26 +23708,6 @@ private:
       }
       return false;
     };
-    auto function_result_types_match =
-        [&](const TypePtr & lhs,
-            const vector<TemplateParameterInfo> & lhs_parameters,
-            const TypePtr & rhs,
-            const vector<TemplateParameterInfo> & rhs_parameters) -> bool
-    {
-      TypePtr lhs_function = strip_top_level_cv(lhs);
-      TypePtr rhs_function = strip_top_level_cv(rhs);
-      if(!lhs_function || !rhs_function ||
-         lhs_function->kind != Type::TK_FUNCTION ||
-         rhs_function->kind != Type::TK_FUNCTION) {
-        return false;
-      }
-      return out_of_class_special_member_template_param_types_match(
-          lhs_function->inner,
-          lhs_parameters,
-          rhs_function->inner,
-          rhs_parameters);
-    };
-
     if(!existing.declaring_scope || !existing.type_pattern) {
       return false;
     }
@@ -23751,11 +23752,22 @@ private:
                                          candidate_parameters)) {
         return false;
       }
+      TypePtr existing_function_type =
+          strip_top_level_cv(existing.type_pattern);
+      TypePtr candidate_function_type =
+          strip_top_level_cv(candidate_type);
       const bool semantic_results_match =
-          function_result_types_match(existing.type_pattern,
-                                      existing.parameters,
-                                      candidate_type,
-                                      candidate_parameters);
+          existing_function_type &&
+          candidate_function_type &&
+          existing_function_type->kind == Type::TK_FUNCTION &&
+          candidate_function_type->kind == Type::TK_FUNCTION &&
+          semantic_lookup::same_function_template_entity_type_in_scopes(
+              existing_function_type->inner,
+              existing.parameters,
+              existing_template_scope,
+              candidate_function_type->inner,
+              candidate_parameters,
+              candidate_template_scope);
       bool alias_expanded_results_match = false;
       const bool syntax_results_match =
           result_type_patterns_match(existing.result_type_pattern,
@@ -23767,13 +23779,10 @@ private:
                                      candidate_parameters,
                                      candidate_template_scope,
                                      alias_expanded_results_match);
-      if(!semantic_results_match && !alias_expanded_results_match) {
-        return false;
+      if(semantic_results_match) {
+        return true;
       }
-      if(!syntax_results_match) {
-        return false;
-      }
-      return true;
+      return syntax_results_match;
     }
     if(out_of_class_special_member_template_param_types_match(existing.type_pattern,
                                                               existing.parameters,
@@ -23971,7 +23980,6 @@ private:
     }
 
     if(!body &&
-       !class_specific_friend_template &&
        attach_friend_function_template_access_to_existing(entity_scope,
                                                           template_scope,
                                                           name,
@@ -31026,9 +31034,9 @@ private:
     }
   }
 
-  void assign_local_class_itanium_metadata(ClassInfo & info,
-                                           Scope & scope,
-                                           const string & source_name)
+  void assign_local_type_itanium_metadata(const TypePtr & type,
+                                          Scope & scope,
+                                          const string & source_name)
   {
     FunctionBinding * current = current_function_scope(scope);
     ClassInfo * lexical_class = current_class_scope(scope);
@@ -31041,7 +31049,7 @@ private:
         current = call_operator.functions[0];
       }
     }
-    if(!current || !current->type || !info.type) {
+    if(!current || !current->type || !type) {
       return;
     }
 
@@ -31094,7 +31102,14 @@ private:
               named_local_type_count_key(*current, source_name)];
       metadata->discriminator = to_string(count++);
     }
-    info.type->set_named_lambda_mangle(metadata);
+    type->set_named_lambda_mangle(metadata);
+  }
+
+  void assign_local_class_itanium_metadata(ClassInfo & info,
+                                           Scope & scope,
+                                           const string & source_name)
+  {
+    assign_local_type_itanium_metadata(info.type, scope, source_name);
   }
 
   SyntheticLambdaKey make_synthetic_lambda_key(Scope & scope, const CppAstNode & node) const
@@ -31215,10 +31230,11 @@ private:
     if(!type) {
       return;
     }
-    const string symbol = rtti_symbol_for_type(type);
-    const bool inserted = emitted_rtti_symbols.insert(symbol).second;
-    emitted_rtti_types[symbol] = type;
     ClassInfo * info = class_info_for_type(type);
+    const TypePtr rtti_type = info && info->type ? info->type : type;
+    const string symbol = rtti_symbol_for_type(rtti_type);
+    const bool inserted = emitted_rtti_symbols.insert(symbol).second;
+    emitted_rtti_types[symbol] = rtti_type;
     if(dynamic_use) {
       mark_rtti_required_for_class(info);
     }

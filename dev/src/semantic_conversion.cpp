@@ -1040,7 +1040,8 @@ bool try_builtin_pointer_operand_conversion(SemanticContext & ctx,
   const auto append_target =
       [&](const TypePtr & result_type)
       {
-        TypePtr result_base = strip_top_level_cv(result_type);
+        TypePtr result_base =
+            strip_top_level_cv(remove_reference_type(result_type));
         if(!result_base || result_base->kind != Type::TK_POINTER) {
           return;
         }

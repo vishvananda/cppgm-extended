@@ -7,14 +7,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @StringStream__StringStream(%t1)
     %t2 = addr $ss
     %t3 = index i8 [projection=base_subobject] %t2, 0
-    %t4 = addr $ss
-    %t5 = index i8 %t4, 4
-    call void @OStream__mark(%t3, %t5)
-    %t6 = addr $ss
-    %t7 = index i8 [projection=base_subobject] %t6, 4
-    %t8 = call i32 @IOS__get(%t7)
-    %t9 = cmp eq i32 %t8, 7
-    branch %t9, ^cond_then_1, ^cond_else_2
+    %t4 = load ptr %t3
+    %t5 = index i8 %t4, -24
+    %t6 = load i64 %t5
+    %t7 = index i8 %t3, %t6
+    call void @OStream__mark(%t3, %t7)
+    %t8 = addr $ss
+    %t9 = index i8 [projection=base_subobject] %t8, 4
+    %t10 = call i32 @IOS__get(%t9)
+    %t11 = cmp eq i32 %t10, 7
+    branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -25,8 +27,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
-    return i32 %t10
+    %t12 = load i32 $cond__1
+    return i32 %t12
 }
 function @IOS__get(%this : ptr) -> i32 [binding=weak, object=_ZNK3IOS3getEv] {
   slot $this : ptr

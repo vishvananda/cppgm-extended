@@ -19,13 +19,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = index i8 [projection=base_subobject] %t9, 0
     %t11 = addr $right
     %t12 = index i8 [projection=base_subobject] %t11, 0
-    %t13 = addr $left
-    %t14 = index i8 %t13, 4
-    %t15 = addr $right
-    %t16 = index i8 %t15, 4
-    %t17 = call i32 @add(%t10, %t12, %t14, %t16)
-    %t18 = binary sub i32 %t17, 7
-    return i32 %t18
+    %t13 = load ptr %t10
+    %t14 = index i8 %t13, -24
+    %t15 = load i64 %t14
+    %t16 = index i8 %t10, %t15
+    %t17 = load ptr %t12
+    %t18 = index i8 %t17, -24
+    %t19 = load i64 %t18
+    %t20 = index i8 %t12, %t19
+    %t21 = call i32 @add(%t10, %t12, %t16, %t20)
+    %t22 = binary sub i32 %t21, 7
+    return i32 %t22
 }
 function @add(%left : ptr [pass=reference], %right : ptr [pass=reference], %__pvbptr0 : ptr, %__pvbptr1 : ptr) -> i32 [binding=weak, object=_Z3addI1BS0_EiRT_RT0_] {
   slot $left : ptr

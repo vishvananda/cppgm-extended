@@ -680,6 +680,14 @@ EPPToken line_macro(const ExpansionContext & context)
   return EPPToken{PP_INT_LITERAL, to_string(context.line)};
 }
 
+EPPToken counter_macro(const ExpansionContext & context)
+{
+  if(!context.counter_value) {
+    throw logic_error("__COUNTER__ expansion requires counter state");
+  }
+  return EPPToken{PP_INT_LITERAL, to_string((*context.counter_value)++)};
+}
+
 namespace {
 
 string join_include_path(const string & dir, const string & name)
@@ -1202,12 +1210,14 @@ Preprocessor::Preprocessor(const string & file,
   emit_insignificant_whitespace(options.emit_insignificant_whitespace),
   cursor(this),
   raw_input(&cursor),
-  pragma_op_nesting(0)
+  pragma_op_nesting(0),
+  counter_macro_value(0)
 {
   macroizer.set_context_provider([this]() {
     return ExpansionContext{this->file(),
                             this->line(),
-                            this->current_file_is_system_header()};
+                            this->current_file_is_system_header(),
+                            &this->counter_macro_value};
   });
   macroizer.macro_add("__CPPGM__", PP_INT_LITERAL, "201303L");
   macroizer.macro_add(
@@ -1290,6 +1300,7 @@ Preprocessor::Preprocessor(const string & file,
   // macroizer replaces these with the right data
   macroizer.macro_add("__FILE__", &file_macro);
   macroizer.macro_add("__LINE__", &line_macro);
+  macroizer.macro_add("__COUNTER__", &counter_macro);
   if(!file.empty()) {
     load(file);
     for(size_t i = options.forced_include_files.size(); i > 0; --i) {
