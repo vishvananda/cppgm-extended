@@ -13,11 +13,11 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `110 / 147`
-- current cursor: `#111 libs/static_string/test`
-- active compiler frontier: C++03-declared Boost.StaticAssert passes without a
-  compiler change in the stable C++11 lane; C++11-declared Boost.StaticString
-  is next
+- completed suites: `112 / 147`
+- current cursor: `#113 libs/system/test`
+- active compiler frontier: C++11 Boost.StaticString passes without a compiler
+  change, and C++14 Boost.StlInterfaces is skipped by language policy;
+  C++11-declared Boost.System is next
 
 ## Baseline Gates
 
@@ -382,22 +382,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 108 | `libs/stacktrace/test` | pass | `(this commit)` | Boost declares C++11. On macOS its graph requires `BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED`; without that project configuration Homebrew Clang 22 reaches the same deliberate preprocessor error. With the required macro, the pre-fix graph finds 4,514 targets and isolates ten runtime failures whose independent traces have the same first frame. The final exact two-job Clang-pinned C++11 debug graph finds 4,514 targets, rebuilds all 347 requested targets, passes every compile, link, and runtime action, and exits in 395.80s; log `/private/tmp/boost-frontier-v2-suite-116-stacktrace-force-inline-final.log`. Maximum RSS is 1,077,952,512 B, process swaps are zero, and system swap remains 1,490.75 MiB. | CPPGM parsed but discarded Boost's `always_inline` constructor attribute and emitted the Stacktrace constructor out of line under the suite's `-O0 -fno-inline`, making the constructor itself the first captured frame. Required-inline intent now travels through typed AST/semantic state into canonical `force_inline=yes` LowIR and is honored during object preparation even at O0. Canonical `lowiropt -O0` remains a parse/dump boundary. The causal PA34 regression is three C++11 lines across two TUs, uses no header or `<type_traits>`, fails with the previous compiler, and agrees with Clang 22; the PA37 LowIR syntax owner is five lines. The PA9-excluded direct report passes `4259/4259`, including PA37 object roundtrip `7/7`; all 978 strict comparisons pass. All 23 reparse categories and the 168-test script suite pass, with one intentional script skip; placement/hygiene, Clang warning controls, and diff checks are clean. The frozen-source/51-header gate records 199,331,482,183 instructions, 949,305,344 B RSS, and 664,031,232 B footprint: -24.37%, -26.56%, and -34.25% from epoch `9764b3835`. C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use explicitly pinned Clang paths; `gcc.*` and `gcc-cppgm` remain only legacy adapter labels. |
 | 109 | `libs/statechart/test` | pass | `(this commit)` | Boost declares C++03 and runs in the stable forced C++11 lane. The exact final-source two-job `pch=off` graph rebuilds all 547 requested targets and passes every positive runtime target and every deliberate compile failure in 1,256.33s. It peaks at 1,096,753,152 B RSS and 68,767,744 B footprint, records zero process swaps, and leaves system swap unchanged. Final log `/private/tmp/boost-frontier-v2-suite-109-statechart-final-source.log`. | Five independent typed repairs close the intake: defaulted member-function-pointer NTTP resolution and stable identity, scoped function-binding lifetime with rare-path reacquisition after class reset, constructor subobject unwind chaining, external key-function vtable ownership, and indirect access to preemptible weak definitions. The two PA26 reducers are five and six lines, header-free C++11, and use no `<type_traits>`; the cross-TU vtable owner belongs in PA29. The final PA9-excluded direct-LowIR report passes `4262/4262`, including PA37 `7/7`; all 978 configured strict comparisons pass. Normal, all 11 individual cache-disabled modes, and all-disabled mode are byte-identical for the three NTTP controls. All 23 reparse categories, all 168 script tests with one intentional skip, placement, and warning-clean Clang build pass. The immutable frozen-source/51-header gate records 199,556,805,614 instructions, 948,285,440 B RSS, and 659,566,592 B footprint: -24.28%, -26.64%, and -34.69% from epoch `9764b3835`. The two principled LowIR ref changes record stable semantic function-value identity and standards-required destruction of constructed array prefixes after a later constructor throws. CPPGM is built by Homebrew Clang 22, C++ actions invoke CPPGM, and host C/assembly/link actions use explicitly pinned Homebrew Clang paths; `gcc.*`, `gcc.link`, and `gcc-cppgm` are legacy Boost.Build adapter labels only. |
 | 110 | `libs/static_assert/test` | pass | `(no compiler change)` | Boost declares C++03 and runs in the stable forced C++11 lane. The exact two-job `pch=off` graph finds 462 targets, rebuilds all 81 requested targets, passes the positive runtime and example targets, handles all ten deliberate compile failures as failed-as-expected, and exits successfully in 11.01s; log `/private/tmp/boost-frontier-v2-suite-110-static-assert-intake.log`. | No compiler or fixture change is required. The graph peaks at 219,152,384 B RSS and 38,469,632 B footprint with zero process swaps. Validation and immutable frozen-source/51-header performance evidence are inherited from the immediately preceding Statechart commit. C++ actions invoke CPPGM and all host paths are explicitly pinned to Homebrew Clang 22; `gcc.*` and `gcc-cppgm` are legacy adapter labels only. |
+| 111 | `libs/static_string/test` | pass | `(no compiler change)` | Boost declares C++11. The exact two-job `pch=off` graph finds 223 targets, rebuilds all 15 requested targets, compiles, links, and runs `static_string`, and exits successfully in 70.38s; log `/private/tmp/boost-frontier-v2-suite-111-static-string-intake.log`. | No compiler or fixture change is required. The single heavy compile peaks at 1,049,440,256 B RSS and the graph records zero process swaps and unchanged system swap. Validation and immutable frozen-source/51-header performance evidence remain inherited from the Statechart commit. C++ actions invoke CPPGM and host actions use explicitly pinned Homebrew Clang 22 paths; printed `gcc.*` strings are adapter labels only. |
+| 112 | `libs/stl_interfaces/test` | skipped-language | `(no compiler change)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/stl_interfaces/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier policy, no graph was run and no compiler work is inferred from historical results. The cursor advances directly to C++11 Boost.System. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#111 libs/static_string/test`
-- focused target: `#111 libs/static_string/test` exact forced `pch=off` graph intake
-- last closed suite: `#110 libs/static_assert/test` (`pass`)
+- suite: `#113 libs/system/test`
+- focused target: `#113 libs/system/test` exact forced `pch=off` graph intake
+- last closed suite: `#112 libs/stl_interfaces/test` (`skipped-language`)
 - failure phase: not yet established
 - diagnostic: pending exact intake
 - reduced repro: not applicable yet
 - owning PA/cluster: pending
 - implementation area: pending
 - performance risk: ordinary parallelism with live memory monitoring
-- language lane: Boost.StaticString declares C++11 and runs in the stable C++11 lane
+- language lane: Boost.System declares C++11 and runs in the stable C++11 lane
 - next action: run the exact Clang-pinned `pch=off` forced graph and isolate the
   first compiler-owned frontier, if any
 
@@ -793,6 +795,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Preemptible weak definition address lowering | The object backend treated every local weak definition as directly addressable. Under Mach weak coalescing/interposition, a reference to an exported weak function or data definition must use the same indirect path as an imported/preemptible symbol. Weak exports are now excluded from the direct-definition sets used by address and memory-reference lowering; block-local labels remain direct. | Existing PA32 `200-extern-c-variable-definition-inherits-prior-linkage` object inspection now requires `imported_data_got alias` and excludes `data_pcrel`; the object-expectation helper gains a Mach canonical C-symbol control | Statechart DllTest gave its inline static ID a TU-local address instead of observing the coalesced definition. The fixed exact target passes, and both PA32 object variants record the required GOT relocation class. | PA32 participates in the final `4262/4262` report; all 168 script tests pass with one intentional skip, including the checker control; placement, strict, reparse, warning, and exact Statechart gates pass. | measured with the complete Statechart closure in the final immutable frozen-source/51-header report; no parent or live header measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-30`: Closed C++11 Boost.StaticString without a compiler or fixture
+  change, then skipped C++14 Boost.StlInterfaces by the established language
+  policy. The exact StaticString graph finds 223 targets, rebuilds all 15
+  requested targets, and passes its compile/link/runtime test in 70.38s. Its
+  single compiler child peaks at 1,049,440,256 B RSS, releases normally, and
+  records zero process swaps with unchanged system swap. StlInterfaces declares
+  `"cxxstd": "14"` in Boost 1.91 metadata, so no graph was run and no historical
+  result was credited. The counter advances to `112/147`; C++11 Boost.System is
+  Suite 113. Both decisions preserve the CPPGM plus explicitly pinned Homebrew
+  Clang 22 lane; Boost.Build's `gcc.*` names remain adapter labels only.
 
 - `2026-07-30`: Closed C++03 Boost.StaticAssert without a compiler or fixture
   change. The exact forced C++11 graph finds 462 targets, rebuilds all 81
