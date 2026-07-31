@@ -1,2 +1,6 @@
 weak_symbol 1 alias
 weak_symbol 2 alias
+relocation_class_canonical 1 imported_data_got alias
+absent_relocation_class_canonical 1 data_pcrel alias
+relocation_class_canonical 2 imported_data_got alias
+absent_relocation_class_canonical 2 data_pcrel alias

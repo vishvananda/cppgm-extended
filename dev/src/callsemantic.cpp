@@ -1423,7 +1423,7 @@ private:
   vector<unique_ptr<FunctionBinding> > functions;
   unordered_set<const FunctionBinding *> live_functions;
   vector<unique_ptr<FunctionBinding> > retired_functions;
-  size_t active_function_binding_candidate_borrows = 0;
+  size_t active_function_binding_borrows = 0;
   unordered_map<string, vector<FunctionBinding *> > functions_by_internal_symbol;
   unordered_map<string, vector<FunctionBinding *> > functions_by_name;
   unordered_map<const CppAstNode *, FunctionBinding *>
@@ -3645,18 +3645,18 @@ private:
     return binding && live_functions.count(binding) != 0;
   }
 
-  void begin_function_binding_candidate_borrow() override
+  void begin_function_binding_borrow() override
   {
-    ++active_function_binding_candidate_borrows;
+    ++active_function_binding_borrows;
   }
 
-  void end_function_binding_candidate_borrow() override
+  void end_function_binding_borrow() override
   {
-    if(active_function_binding_candidate_borrows == 0) {
+    if(active_function_binding_borrows == 0) {
       return;
     }
-    --active_function_binding_candidate_borrows;
-    if(active_function_binding_candidate_borrows == 0) {
+    --active_function_binding_borrows;
+    if(active_function_binding_borrows == 0) {
       retired_functions.clear();
     }
   }
@@ -3903,7 +3903,7 @@ private:
         deferred_constexpr_functions,
         live_functions,
         retired_functions,
-        active_function_binding_candidate_borrows};
+        active_function_binding_borrows};
     return state;
   }
 

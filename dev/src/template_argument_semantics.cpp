@@ -23860,7 +23860,9 @@ bool concrete_non_type_argument_expression_supported(
   if(argument.kind != TemplateArgument::TA_VALUE || argument.dependent) {
     return false;
   }
-  if(argument.rare().function_value) {
+  if(argument.rare().function_value ||
+     !argument.rare().function_internal_symbol.empty() ||
+     (argument.source_syntax && argument.source_syntax->expression)) {
     return true;
   }
   TypePtr base = strip_top_level_cv(remove_reference_type(argument.type));
@@ -23876,6 +23878,25 @@ bool try_make_function_non_type_argument_expression(
     const TemplateArgument & argument,
     CppAstNode & out)
 {
+  TypePtr argument_type = strip_top_level_cv(argument.type);
+  const bool is_member_pointer =
+      argument_type && argument_type->kind == Type::TK_MEMBER_POINTER;
+  if(argument.source_syntax && argument.source_syntax->expression) {
+    const CppAstNode & retained = *argument.source_syntax->expression;
+    const bool retained_has_required_address_of =
+        !is_member_pointer ||
+        (retained.kind == CppAstKind::unary_expression &&
+         retained.has_token &&
+         retained.simple_type == OP_AMP);
+    if(retained_has_required_address_of) {
+      out = clone_expression_node_for_template_substitution(retained);
+      if(is_member_pointer) {
+        out.semantic_type = argument.type;
+      }
+      return true;
+    }
+  }
+
   const FunctionBinding * function = argument.rare().function_value;
   if(!function) {
     return false;
@@ -23917,8 +23938,8 @@ bool concrete_non_type_argument_expression_needs_refresh(
     const TemplateArgument & argument,
     const TemplateArgumentSyntax & syntax)
 {
-  const FunctionBinding * function = argument.rare().function_value;
-  if(!function || !function->is_method) {
+  TypePtr argument_type = strip_top_level_cv(argument.type);
+  if(!argument_type || argument_type->kind != Type::TK_MEMBER_POINTER) {
     return false;
   }
   if(!syntax.expression) {

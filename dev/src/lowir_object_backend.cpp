@@ -2852,20 +2852,37 @@ void emit_instruction(X86Assembler & out,
   }
 }
 
-set<string> collect_defined_global_symbols(const mir::Program & program)
+bool has_preemptible_weak_definition(
+    const map<string, ir_model::ExportedSymbol> & exports,
+    const string & symbol)
+{
+  map<string, ir_model::ExportedSymbol>::const_iterator found =
+      exports.find(symbol);
+  return found != exports.end() && ir_model::has_weak_linkage(found->second);
+}
+
+set<string> collect_direct_defined_global_symbols(
+    const mir::Program & program,
+    const map<string, ir_model::ExportedSymbol> & exports)
 {
   set<string> out;
   for(size_t i = 0; i < program.globals.size(); ++i) {
-    out.insert(program.globals[i].name);
+    if(!has_preemptible_weak_definition(exports, program.globals[i].name)) {
+      out.insert(program.globals[i].name);
+    }
   }
   return out;
 }
 
-set<string> collect_defined_symbols(const mir::Program & program)
+set<string> collect_direct_defined_symbols(
+    const mir::Program & program,
+    const map<string, ir_model::ExportedSymbol> & exports)
 {
-  set<string> out = collect_defined_global_symbols(program);
+  set<string> out = collect_direct_defined_global_symbols(program, exports);
   for(size_t i = 0; i < program.functions.size(); ++i) {
-    out.insert(program.functions[i].name);
+    if(!has_preemptible_weak_definition(exports, program.functions[i].name)) {
+      out.insert(program.functions[i].name);
+    }
     for(size_t bi = 0; bi < program.functions[i].blocks.size(); ++bi) {
       out.insert(block_symbol(program.functions[i].name,
                               program.functions[i].blocks[bi].label));
@@ -3126,8 +3143,12 @@ ObjectLayout layout_object(const mir::Program & program)
       thread_local_section_info_for_target(program.target);
   const cy86_internal::NativeTarget target =
       native_format::hooks_for_target_text(program.target).target;
-  const set<string> defined_symbols = collect_defined_symbols(program);
-  const set<string> defined_globals = collect_defined_global_symbols(program);
+  const map<string, ir_model::ExportedSymbol> exports =
+      export_map(program.exported_symbols);
+  const set<string> defined_symbols =
+      collect_direct_defined_symbols(program, exports);
+  const set<string> defined_globals =
+      collect_direct_defined_global_symbols(program, exports);
   size_t code_offset = 0;
   for(size_t i = 0; i < program.functions.size(); ++i) {
     code_offset = align_up(code_offset, 16);
@@ -3241,8 +3262,10 @@ vector<unsigned char> build_code_bytes(const mir::Program & program,
   const ThreadLocalSectionInfo tls_info =
       thread_local_section_info_for_target(program.target);
   const cy86_internal::NativeTarget target = target_hooks.target;
-  const set<string> defined_symbols = collect_defined_symbols(program);
-  const set<string> defined_globals = collect_defined_global_symbols(program);
+  const set<string> defined_symbols =
+      collect_direct_defined_symbols(program, exports);
+  const set<string> defined_globals =
+      collect_direct_defined_global_symbols(program, exports);
   X86Assembler out;
   for(size_t fi = 0; fi < program.functions.size(); ++fi) {
     const mir::Function & function = program.functions[fi];

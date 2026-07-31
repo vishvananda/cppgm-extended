@@ -8304,7 +8304,17 @@ private:
     }
 
     const string symbol = lookup_function_symbol(node.children[0]);
-    return !symbol.empty() && throwing_function_symbols_.count(symbol) != 0;
+    if(!symbol.empty() && throwing_function_symbols_.count(symbol) != 0) {
+      return true;
+    }
+
+    // A constructor must unwind its already-constructed subobjects when any
+    // potentially-throwing call escapes, not only when the immediate callee's
+    // body contains a throw-expression.  In particular, an ordinary function
+    // can throw transitively through another call or from a separately compiled
+    // definition.  The function-boundary noexcept metadata is the sound way to
+    // prove that the wrapper can be omitted.
+    return !call_expression_is_known_nothrow(node);
   }
 
   bool cleanup_action_needs_host_unwind(const CleanupAction & cleanup) const
@@ -8885,7 +8895,9 @@ private:
     return iterator_arg;
   }
 
-  void emit_call_expression_to_target_impl(const CallSemNode & node, const string & target_ptr)
+  void emit_call_expression_to_target_impl(const CallSemNode & node,
+                                           const string & target_ptr,
+                                           bool call_already_wrapped = false)
   {
     if(node.kind != CallSemKind::call_expression || node.children.empty()) {
       throw logic_error("expected class-returning call-expression");
@@ -9077,7 +9089,9 @@ private:
       if(explicit_indirect_call_signature) {
         op << lowir_call_signature_suffix_for_call(node, function_type);
       }
-      open_host_unwind_region_for_emitted_call_if_needed(node);
+      if(!call_already_wrapped) {
+        open_host_unwind_region_for_emitted_call_if_needed(node);
+      }
       const string result = emit_temp_assignment(direct_object_result_type, op.str());
       emit_line("copyobj " + storage_span_text(object_type) + " " + result + ", " + target_ptr);
       return;
@@ -9123,7 +9137,9 @@ private:
         op << bridge_args[i];
       }
       op << ")";
-      open_host_unwind_region_for_emitted_call_if_needed(node);
+      if(!call_already_wrapped) {
+        open_host_unwind_region_for_emitted_call_if_needed(node);
+      }
       emit_line(op.str());
       return;
     }
@@ -9176,7 +9192,9 @@ private:
     if(explicit_indirect_call_signature) {
       op << lowir_call_signature_suffix_for_call(node, function_type);
     }
-    open_host_unwind_region_for_emitted_call_if_needed(node);
+    if(!call_already_wrapped) {
+      open_host_unwind_region_for_emitted_call_if_needed(node);
+    }
     emit_line(op.str());
   }
 
@@ -9300,7 +9318,7 @@ private:
     if(use_host_eh_runtime()) {
       ++host_eh_region_depth_;
     }
-    emit_call_expression_to_target_impl(node, target_ptr);
+    emit_call_expression_to_target_impl(node, target_ptr, true);
     emit_line("eh_end");
     if(use_host_eh_runtime()) {
       if(host_eh_region_depth_ == 0) {
@@ -10057,7 +10075,8 @@ private:
 
   string emit_call_expression_raw_impl(const CallSemNode & node,
                                        const CallArgumentCapture * capture = nullptr,
-                                       const CallArgumentOverride * override_arg = nullptr)
+                                       const CallArgumentOverride * override_arg = nullptr,
+                                       bool call_already_wrapped = false)
   {
     if(node.kind != CallSemKind::call_expression || node.children.empty()) {
       throw logic_error("expected call-expression");
@@ -10176,7 +10195,9 @@ private:
       if(bridge_args.size() >= 2) {
         bridge_args[1] = host_num_put_bridge_iterator_storage_ptr(bridge_args[1]);
       }
-      open_host_unwind_region_for_emitted_call_if_needed(node);
+      if(!call_already_wrapped) {
+        open_host_unwind_region_for_emitted_call_if_needed(node);
+      }
       emit_line("call void @" + host_num_put_bridge + "(" +
                 emit_storage_address(result_slot) + ", " +
                 bridge_args[0] + ", " +
@@ -10242,11 +10263,15 @@ private:
     }
 
     if(raw_result_lowir_type == "void") {
-      open_host_unwind_region_for_emitted_call_if_needed(node);
+      if(!call_already_wrapped) {
+        open_host_unwind_region_for_emitted_call_if_needed(node);
+      }
       emit_line(op.str());
       return "0";
     }
-    open_host_unwind_region_for_emitted_call_if_needed(node);
+    if(!call_already_wrapped) {
+      open_host_unwind_region_for_emitted_call_if_needed(node);
+    }
     return emit_temp_assignment(raw_result_lowir_type, op.str());
   }
 
@@ -10308,7 +10333,10 @@ private:
     if(use_host_eh_runtime()) {
       ++host_eh_region_depth_;
     }
-    const string result = emit_call_expression_raw_impl(node, capture, override_arg);
+    const string result = emit_call_expression_raw_impl(node,
+                                                        capture,
+                                                        override_arg,
+                                                        true);
     if(raw_result_lowir_type != "void") {
       if(lowir_internal::is_object_type(lowir_internal::LowType{raw_result_lowir_type})) {
         emit_line("copyobj " + lowir_object_span_text(raw_result_lowir_type) + " " +
@@ -15419,7 +15447,8 @@ private:
   }
 
   void emit_constructor_action_impl(const CallSemNode & action,
-                                    bool register_current_unwind_cleanup = true)
+                                    bool register_current_unwind_cleanup = true,
+                                    bool allow_current_call_unwind_wrapper = false)
   {
     if(action.kind != CallSemKind::constructor_action || action.children.size() != 1) {
       throw logic_error("invalid constructor lifetime action");
@@ -15516,9 +15545,13 @@ private:
       }
     }
 
-    ++constructor_action_depth_;
-    emit_rvalue(call);
-    --constructor_action_depth_;
+    if(allow_current_call_unwind_wrapper) {
+      emit_rvalue(call);
+    } else {
+      ++constructor_action_depth_;
+      emit_rvalue(call);
+      --constructor_action_depth_;
+    }
     if(register_current_unwind_cleanup) {
       register_constructor_unwind_cleanup(action);
     }
@@ -15540,7 +15573,10 @@ private:
     }
 
     const string symbol = lookup_function_symbol(call.children[0]);
-    return throwing_function_symbols_.count(symbol) != 0;
+    if(throwing_function_symbols_.count(symbol) != 0) {
+      return true;
+    }
+    return !call_expression_is_known_nothrow(call);
   }
 
   void emit_constructor_action(const CallSemNode & action)
@@ -15554,25 +15590,12 @@ private:
       return;
     }
 
-    const string dispatch_label = new_block("ctor_unwind_dispatch");
-    const string end_label = new_block("ctor_unwind_end");
-    close_shared_host_call_unwind_region();
-    emit_line("eh_try " + lowir_block_name(dispatch_label));
-    emit_constructor_action_impl(action, false);
-    terminate("jump " + lowir_block_name(end_label));
-
-    start_block(dispatch_label);
-    emit_constructor_unwind_cleanups();
-    if(!constructor_function_try_dispatch_labels_.empty()) {
-      emit_line("eh_end");
-      terminate("jump " +
-                lowir_block_name(constructor_function_try_dispatch_labels_.back()));
-    } else {
-      terminate("resume");
-    }
-
-    start_block(end_label);
-    register_constructor_unwind_cleanup(action);
+    // Let the ordinary call wrapper combine scope cleanups and already-built
+    // subobject cleanups in one landing pad.  A separate outer constructor
+    // region would require _Unwind_Resume from an inner scope-cleanup pad to be
+    // caught as though it were a fresh call site, which is not how the Itanium
+    // cleanup chain is represented.
+    emit_constructor_action_impl(action, true, true);
   }
 
   bool constructor_action_target_object(const CallSemNode & action,

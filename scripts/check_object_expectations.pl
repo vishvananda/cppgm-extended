@@ -62,6 +62,14 @@ sub line_has_canonical_symbol
 	return 0;
 }
 
+sub line_has_macos_canonical_symbol
+{
+	my ($line, $needle) = @_;
+	return 1 if line_has_canonical_symbol($line, $needle);
+	return 0 if $needle =~ /^_/;
+	return line_has_canonical_symbol($line, "_$needle");
+}
+
 sub read_nm_symbol_entries
 {
 	my ($obj, $mode) = @_;
@@ -207,7 +215,7 @@ sub count_macos_relocation_class
 	for my $line (read_command_lines('otool', '-rv', $obj))
 	{
 		next if index($line, $kind_for{$class}) < 0;
-		++$count if line_has_canonical_symbol($line, $needle);
+		++$count if line_has_macos_canonical_symbol($line, $needle);
 	}
 	return $count;
 }

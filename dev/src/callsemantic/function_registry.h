@@ -48,7 +48,7 @@ struct FunctionRegistryState
   std::unordered_set<const semantic_model::FunctionBinding *> & live_functions;
   std::vector<std::unique_ptr<semantic_model::FunctionBinding> > &
       retired_functions;
-  std::size_t & active_function_binding_candidate_borrows;
+  std::size_t & active_function_binding_borrows;
 };
 
 struct FunctionRegistryCallbacks

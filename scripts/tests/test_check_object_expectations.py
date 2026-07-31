@@ -87,6 +87,7 @@ class CheckObjectExpectationsTests(unittest.TestCase):
                 defined_symbol_canonical 1 _Z15mixed_subst_oneRKN7nsrepro7ProgramERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE
                 absent_defined_symbol_canonical 1 _Z15mixed_subst_oneRKN7nsrepro7ProgramERKNSt3__112basic_stringIcNS4_11char_traitsIcEENS4_9allocatorIcEEEE
                 relocation_class_canonical 1 data_pcrel _Z1g
+                relocation_class_canonical 1 imported_data_got alias
                 absent_relocation_class_canonical 1 branch_call _Z1g
                 """
             ),
@@ -96,12 +97,14 @@ class CheckObjectExpectationsTests(unittest.TestCase):
             ),
             otool_output=(
                 "0000000000000011 X86_64_RELOC_SIGNED False __Z1g\n"
+                "0000000000000033 X86_64_RELOC_GOT_LD False _alias\n"
                 "0000000000000056 X86_64_RELOC_BRANCH False __Z1fv\n"
             ),
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("defined_symbol_canonical 1 _Z15mixed_subst_one", result.stdout)
         self.assertIn("relocation_class_canonical 1 data_pcrel _Z1g 1", result.stdout)
+        self.assertIn("relocation_class_canonical 1 imported_data_got alias 1", result.stdout)
 
     def test_linux_canonical_symbols_and_relocations(self):
         result = self.run_helper(

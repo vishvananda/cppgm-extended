@@ -14130,6 +14130,13 @@ bool resolve_template_arguments(
           have_substituted_default_expression ?
               substituted_default_expression :
               child;
+      const bool resolved_function_default =
+          try_resolve_function_non_type_template_argument_syntax(
+              services,
+              *default_argument_scope,
+              &dependency_default_syntax,
+              bound_value_type,
+              arg);
       long long value = 0;
       template_argument_semantics::NonTypeArgumentStatus value_status =
           template_argument_semantics::NT_ARG_EVAL_FAILED;
@@ -14146,12 +14153,15 @@ bool resolve_template_arguments(
             &eval_error,
             bound_value_type);
       };
-      try {
-        value_status = evaluate_default_syntax(default_syntax);
-      } catch(const std::logic_error & e) {
-        eval_error = e.what();
+      if(!resolved_function_default) {
+        try {
+          value_status = evaluate_default_syntax(default_syntax);
+        } catch(const std::logic_error & e) {
+          eval_error = e.what();
+        }
       }
-      if(value_status != template_argument_semantics::NT_ARG_EVALUATED &&
+      if(!resolved_function_default &&
+         value_status != template_argument_semantics::NT_ARG_EVALUATED &&
          value_status != template_argument_semantics::NT_ARG_DEPENDENT &&
          have_substituted_default_expression) {
         eval_error.clear();
@@ -14161,7 +14171,8 @@ bool resolve_template_arguments(
           eval_error = e.what();
         }
       }
-      if(value_status != template_argument_semantics::NT_ARG_EVALUATED) {
+      if(!resolved_function_default &&
+         value_status != template_argument_semantics::NT_ARG_EVALUATED) {
         if(value_status != template_argument_semantics::NT_ARG_DEPENDENT &&
            !default_argument_expression_is_still_dependent(
                services, default_argument_env, evaluation_default_expression)) {
@@ -14191,7 +14202,7 @@ bool resolve_template_arguments(
         arg.text = default_text;
         attach_template_argument_source_syntax(&default_syntax, arg);
         arg.dependent = true;
-      } else {
+      } else if(!resolved_function_default) {
         arg.kind = TemplateArgument::TA_VALUE;
         arg.type = bound_value_type;
         arg.value = value;

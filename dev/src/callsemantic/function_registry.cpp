@@ -539,7 +539,7 @@ void discard_function_binding(FunctionRegistryState & state,
       ++it) {
     if(it->get() == binding) {
       state.live_functions.erase(binding);
-      if(state.active_function_binding_candidate_borrows != 0) {
+      if(state.active_function_binding_borrows != 0) {
         state.retired_functions.push_back(std::move(*it));
       }
       state.functions.erase(it);

@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = call obj<1x1> @make_holder($argobj__3)
     copyobj 1x1 %t7, %t3
     %t8 = addr $value
-    %t9 = call i32 @holder_example__fast_mem_fn_int__target_______const_target__id_1____apply(%t3, %t8)
+    %t9 = call i32 @holder_example__fast_mem_fn_int__target_______const__target__id_1____apply(%t3, %t8)
     %t10 = cmp eq i32 %t9, 7
     branch %t10, ^cond_then_1, ^cond_else_2
 
@@ -49,7 +49,7 @@ function @example__fast_mem_fn_int__target_______const__target__id__1___fast_mem
     store ptr %this, $this
     return void
 }
-function @holder_example__fast_mem_fn_int__target_______const_target__id_1____apply(%this : ptr, %value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEE5applyIS2_EEiRKT_] {
+function @holder_example__fast_mem_fn_int__target_______const__target__id_1____apply(%this : ptr, %value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEE5applyIS2_EEiRKT_] {
   slot $this : ptr
   slot $value : ptr
 
@@ -71,7 +71,7 @@ function @make_holder(%value : obj<1x1>) -> obj<1x1> [binding=weak, object=_Z11m
     %t1 = addr $retobj__1
     %t2 = addr $argobj__2
     %t3 = addr $value
-    call void @holder_example__fast_mem_fn_int__target_______const_target__id_1____holder(%t1, $argobj__2)
+    call void @holder_example__fast_mem_fn_int__target_______const__target__id_1____holder(%t1, $argobj__2)
     return obj<1x1> $retobj__1
 }
 function @example__fast_mem_fn_int__target_______const__target__id__1___operator__(%this : ptr, %value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK7example11fast_mem_fnIM6targetKFivEXadL_ZNKS1_2idEvEELi1EEclIS1_EEiRKT_] {
@@ -93,7 +93,7 @@ function @target__id(%this : ptr) -> i32 [binding=weak, object=_ZNK6target2idEv]
     store ptr %this, $this
     return i32 7
 }
-function @holder_example__fast_mem_fn_int__target_______const_target__id_1____holder(%this : ptr, %value : obj<1x1>) -> void [binding=weak, object=_ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC1ES5_] {
+function @holder_example__fast_mem_fn_int__target_______const__target__id_1____holder(%this : ptr, %value : obj<1x1>) -> void [binding=weak, object=_ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC1ES5_] {
   slot $this : ptr
   slot $value : obj<1x1>
 
@@ -104,4 +104,4 @@ function @holder_example__fast_mem_fn_int__target_______const_target__id_1____ho
     return void
 }
 alias object _ZN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS1_2idEvEELi1EEC2Ev = @example__fast_mem_fn_int__target_______const__target__id__1___fast_mem_fn
-alias object _ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC2ES5_ = @holder_example__fast_mem_fn_int__target_______const_target__id_1____holder
+alias object _ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC2ES5_ = @holder_example__fast_mem_fn_int__target_______const__target__id_1____holder

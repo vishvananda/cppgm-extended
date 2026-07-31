@@ -7272,6 +7272,66 @@ static bool build_external_member_function_payload(
   return true;
 }
 
+static bool build_external_member_function_payload_from_argument(
+    const TemplateArgument & argument,
+    const TypePtr & member_pointer_type,
+    const string & stable_symbol,
+    const TypeMangleContext * mangle_ctx,
+    ExternalEntityArgumentIrPayload & payload)
+{
+  if(!member_pointer_type ||
+     member_pointer_type->kind != Type::TK_MEMBER_POINTER ||
+     !member_pointer_type->owner ||
+     !member_pointer_type->inner) {
+    return false;
+  }
+
+  TypePtr function_type = strip_top_level_cv(member_pointer_type->inner);
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    return false;
+  }
+
+  QualifiedName qualified_name;
+  if(!argument.source_syntax ||
+     !replacement_syntax_qualified_name(*argument.source_syntax,
+                                        qualified_name,
+                                        nullptr) ||
+     qualified_name.name.empty()) {
+    return false;
+  }
+
+  abi_mangle::Type owner;
+  if(!try_build_type_ir(member_pointer_type->owner, mangle_ctx, owner)) {
+    return false;
+  }
+
+  vector<abi_mangle::Type> params;
+  params.reserve(function_type->params.size());
+  for(size_t i = 0; i < function_type->params.size(); ++i) {
+    abi_mangle::Type param;
+    if(!try_build_type_ir(function_type->params[i], mangle_ctx, param)) {
+      return false;
+    }
+    params.push_back(std::move(param));
+  }
+
+  payload.symbol = !stable_symbol.empty() ? stable_symbol : argument.text.get();
+  payload.address_of = true;
+  payload.has_member_semantics = true;
+  payload.owner_type = std::move(owner);
+  payload.member_name = unqualified_external_member_name(qualified_name.name);
+  payload.parameter_types = std::move(params);
+  payload.is_function = true;
+  payload.function_const = function_type->function_const;
+  payload.function_volatile = function_type->function_volatile;
+  payload.function_lvalue_ref =
+      function_type->function_ref_qualifier == cpp_decl::FTRQ_LVALUE;
+  payload.function_rvalue_ref =
+      function_type->function_ref_qualifier == cpp_decl::FTRQ_RVALUE;
+  payload.function_variadic = function_type->variadic;
+  return !payload.symbol.empty();
+}
+
 static bool build_external_member_object_payload(
     const semantic_model::ValueBinding & binding,
     const TypeMangleContext * mangle_ctx,
@@ -7429,7 +7489,8 @@ static bool try_build_external_entity_argument_ir_payload(
 
   TypePtr base = strip_top_level_cv(argument.type);
   const TemplateArgument::RareData & rare = argument.rare();
-  if(rare.function_value && base) {
+  if(base &&
+     (rare.function_value || !rare.function_internal_symbol.empty())) {
     const bool is_function_pointer =
         base->kind == Type::TK_POINTER &&
         base->inner &&
@@ -7443,15 +7504,27 @@ static bool try_build_external_entity_argument_ir_payload(
         base->kind == Type::TK_MEMBER_POINTER &&
         base->inner &&
         strip_top_level_cv(base->inner)->kind == Type::TK_FUNCTION;
-    if(is_function_pointer || is_function_reference ||
-       is_member_function_pointer) {
-      payload.symbol = rare.function_value->symbol.object_symbol;
-      payload.address_of = is_function_pointer || is_member_function_pointer;
-      if(is_member_function_pointer) {
-        return build_external_member_function_payload(*rare.function_value,
-                                                      mangle_ctx,
-                                                      payload);
+    if(is_member_function_pointer) {
+      if(build_external_member_function_payload_from_argument(
+             argument,
+             base,
+             rare.function_internal_symbol,
+             mangle_ctx,
+             payload)) {
+        return true;
       }
+      if(!rare.function_internal_symbol.empty()) {
+        return false;
+      }
+      payload.symbol = rare.function_value->symbol.object_symbol;
+      payload.address_of = true;
+      return build_external_member_function_payload(*rare.function_value,
+                                                    mangle_ctx,
+                                                    payload);
+    }
+    if(rare.function_value && (is_function_pointer || is_function_reference)) {
+      payload.symbol = rare.function_value->symbol.object_symbol;
+      payload.address_of = is_function_pointer;
       return !payload.symbol.empty();
     }
   }

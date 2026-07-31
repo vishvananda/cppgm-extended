@@ -4569,6 +4569,33 @@ std::string template_template_argument_identity_text(
       });
 }
 
+bool concrete_function_template_argument_identity(
+    const TemplateArgument & argument,
+    std::string & identity)
+{
+  if(argument.kind != TemplateArgument::TA_VALUE || argument.dependent) {
+    return false;
+  }
+  const TemplateArgument::RareData & rare = argument.rare();
+  // The enclosing parameter position already fixes the argument category.
+  // Use the semantic function symbol directly so the cache identity is stable
+  // without leaking an auxiliary category wrapper into generated LowIR names.
+  if(!rare.function_internal_symbol.empty()) {
+    identity = rare.function_internal_symbol;
+    return true;
+  }
+  if(rare.function_value) {
+    const symbol_linkage::SymbolIdentity & symbol = rare.function_value->symbol;
+    const std::string & function_symbol =
+        !symbol.object_symbol.empty() ? symbol.object_symbol : symbol.internal_symbol;
+    if(!function_symbol.empty()) {
+      identity = function_symbol;
+      return true;
+    }
+  }
+  return false;
+}
+
 std::string template_argument_key_for_instantiation_impl(
     SemanticContext & ctx,
     const std::vector<TemplateArgument> & arguments,
@@ -4581,6 +4608,11 @@ std::string template_argument_key_for_instantiation_impl(
     }
     if(arguments[i].kind == TemplateArgument::TA_TYPE && arguments[i].type) {
       out += ctx.semantic_identity_key_for_type_argument(arguments[i].type);
+      continue;
+    }
+    std::string function_identity;
+    if(concrete_function_template_argument_identity(arguments[i], function_identity)) {
+      out += function_identity;
       continue;
     }
     out += template_template_argument_identity_text(
@@ -4782,6 +4814,11 @@ std::string function_template_argument_key_for_instantiation(
     }
     if(arguments[i].kind == TemplateArgument::TA_TYPE && arguments[i].type) {
       out += function_template_instantiation_type_argument_key(ctx, arguments[i].type);
+      continue;
+    }
+    std::string function_identity;
+    if(concrete_function_template_argument_identity(arguments[i], function_identity)) {
+      out += function_identity;
       continue;
     }
     if((arguments[i].kind == TemplateArgument::TA_CLASS_TEMPLATE ||

@@ -1976,12 +1976,14 @@ void note_function_candidate_bucket(FunctionCandidateBucketMap & buckets,
 struct FunctionCandidateRefreshKey
 {
   ClassInfo * owner_class = nullptr;
+  Scope * declaration_scope = nullptr;
   std::string name;
   TypePtr type;
   RefQualifier ref_qualifier = RQ_NONE;
   bool has_source_template = false;
   const CppAstNode * source_template_declaration = nullptr;
   std::string template_instantiation_key;
+  const symbol_linkage::SymbolIdentity * symbol = nullptr;
 };
 
 class ScopedFunctionBindingCandidateBorrow
@@ -1990,12 +1992,12 @@ public:
   explicit ScopedFunctionBindingCandidateBorrow(SemanticContext & ctx)
     : ctx_(ctx)
   {
-    ctx_.begin_function_binding_candidate_borrow();
+    ctx_.begin_function_binding_borrow();
   }
 
   ~ScopedFunctionBindingCandidateBorrow()
   {
-    ctx_.end_function_binding_candidate_borrow();
+    ctx_.end_function_binding_borrow();
   }
 
 private:
@@ -2007,6 +2009,7 @@ FunctionCandidateRefreshKey function_candidate_refresh_key(
 {
   FunctionCandidateRefreshKey key;
   key.owner_class = binding.owner_class;
+  key.declaration_scope = binding.declaration_scope;
   key.name = semantic_utils::unqualified_member_name(
       canonical_function_lookup_name(binding.name));
   key.type = binding.type;
@@ -2015,18 +2018,19 @@ FunctionCandidateRefreshKey function_candidate_refresh_key(
   key.source_template_declaration =
       binding.source_template ? binding.source_template->declaration_node : nullptr;
   key.template_instantiation_key = binding.template_instantiation_key;
+  key.symbol = &binding.symbol;
   return key;
 }
 
-FunctionBinding * refresh_invalidated_member_candidate(
+FunctionBinding * refresh_invalidated_function_candidate(
     SemanticContext & ctx,
     const FunctionCandidateRefreshKey & key)
 {
-  if(!key.owner_class || key.name.empty() || !key.type) {
+  if(key.name.empty() || !key.type) {
     return nullptr;
   }
 
-  if(!key.has_source_template) {
+  if(key.owner_class && !key.has_source_template) {
     FunctionBinding * refreshed =
         ctx.find_equivalent_class_function(*key.owner_class,
                                            key.name,
@@ -2035,25 +2039,40 @@ FunctionBinding * refresh_invalidated_member_candidate(
     return ctx.function_binding_is_live(refreshed) ? refreshed : nullptr;
   }
 
-  std::map<std::string, std::vector<FunctionBinding *> >::iterator found =
-      key.owner_class->methods.find(key.name);
-  if(found == key.owner_class->methods.end()) {
+  if(key.owner_class) {
+    std::map<std::string, std::vector<FunctionBinding *> >::iterator found =
+        key.owner_class->methods.find(key.name);
+    if(found == key.owner_class->methods.end()) {
+      return nullptr;
+    }
+    for(std::size_t i = 0; i < found->second.size(); ++i) {
+      FunctionBinding * candidate = found->second[i];
+      if(!ctx.function_binding_is_live(candidate) ||
+         !candidate->source_template ||
+         candidate->source_template->declaration_node !=
+             key.source_template_declaration ||
+         candidate->template_instantiation_key != key.template_instantiation_key ||
+         candidate->ref_qualifier != key.ref_qualifier ||
+         !type_equals(candidate->type, key.type)) {
+        continue;
+      }
+      return candidate;
+    }
     return nullptr;
   }
-  for(std::size_t i = 0; i < found->second.size(); ++i) {
-    FunctionBinding * candidate = found->second[i];
-    if(!ctx.function_binding_is_live(candidate) ||
-       !candidate->source_template ||
-       candidate->source_template->declaration_node !=
-           key.source_template_declaration ||
-       candidate->template_instantiation_key != key.template_instantiation_key ||
-       candidate->ref_qualifier != key.ref_qualifier ||
-       !type_equals(candidate->type, key.type)) {
-      continue;
-    }
-    return candidate;
+
+  FunctionBinding * refreshed = nullptr;
+  if(key.symbol &&
+     (!key.symbol->internal_symbol.empty() ||
+      !key.symbol->object_symbol.empty())) {
+    refreshed = ctx.find_function_by_symbol(*key.symbol, key.name, key.type);
   }
-  return nullptr;
+  if(!refreshed && key.declaration_scope) {
+    refreshed = ctx.find_exact_function(*key.declaration_scope,
+                                        key.name,
+                                        key.type);
+  }
+  return ctx.function_binding_is_live(refreshed) ? refreshed : nullptr;
 }
 
 bool function_candidate_matches_refresh_key(
@@ -2061,7 +2080,7 @@ bool function_candidate_matches_refresh_key(
     FunctionBinding * candidate,
     const FunctionCandidateRefreshKey & key)
 {
-  if(!key.owner_class ||
+  if(!key.type ||
      !ctx.function_binding_is_live(candidate) ||
      candidate->owner_class != key.owner_class ||
      semantic_utils::unqualified_member_name(
@@ -2072,9 +2091,19 @@ bool function_candidate_matches_refresh_key(
      !type_equals(candidate->type, key.type)) {
     return false;
   }
-  return !key.has_source_template ||
-         candidate->source_template->declaration_node ==
-             key.source_template_declaration;
+  if(key.has_source_template &&
+     candidate->source_template->declaration_node !=
+         key.source_template_declaration) {
+    return false;
+  }
+  if(!key.owner_class &&
+     key.symbol &&
+     (!key.symbol->internal_symbol.empty() ||
+      !key.symbol->object_symbol.empty())) {
+    return candidate->symbol.internal_symbol == key.symbol->internal_symbol &&
+           candidate->symbol.object_symbol == key.symbol->object_symbol;
+  }
+  return true;
 }
 
 bool source_template_is_in_lookup_set(const FunctionBinding * binding,
@@ -10794,10 +10823,10 @@ void append_function_template_call_candidates_impl(
                                                     &combination_drops);
             return;
           }
-          if(binding_refresh_key.owner_class) {
+          if(binding_refresh_key.type) {
             if(!function_candidate_matches_refresh_key(
                    ctx, binding, binding_refresh_key)) {
-              binding = refresh_invalidated_member_candidate(
+              binding = refresh_invalidated_function_candidate(
                   ctx, binding_refresh_key);
               if(!function_candidate_matches_refresh_key(
                      ctx, binding, binding_refresh_key)) {
@@ -15047,9 +15076,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     {
       FunctionBinding * candidate = candidates[index];
       const FunctionCandidateRefreshKey & key = candidate_refresh_keys[index];
-      if(key.owner_class) {
+      if(key.type) {
         if(!function_candidate_matches_refresh_key(ctx, candidate, key)) {
-          candidate = refresh_invalidated_member_candidate(ctx, key);
+          candidate = refresh_invalidated_function_candidate(ctx, key);
           if(!function_candidate_matches_refresh_key(ctx, candidate, key)) {
             candidate = nullptr;
           }
@@ -15058,7 +15087,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           if(parser_trace::enabled("overload.refresh")) {
             std::ostringstream trace;
             trace << "candidate-refresh index=" << index
-                  << " owner=" << key.owner_class->qualified_name
+                  << " owner=" << (key.owner_class ?
+                                         key.owner_class->qualified_name :
+                                         std::string("<namespace>"))
                   << " name=" << key.name
                   << " template=" << (key.has_source_template ? "yes" : "no")
                   << " result=" << (candidate ? "reacquired" : "missing");
@@ -15618,21 +15649,32 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       *hints->selected_ranks_out = selected_match.ranks;
     }
 
-    FunctionBinding * chosen = refresh_candidate_at(selected_candidate_index);
+    const auto refresh_selected_candidate = [&]() -> FunctionBinding *
+    {
+      FunctionBinding * refreshed =
+          refresh_candidate_at(selected_candidate_index);
+      if(refreshed ||
+         candidate_refresh_keys[selected_candidate_index].type) {
+        return refreshed;
+      }
+
+      // The enclosing borrow keeps a just-retired binding alive.  Build the
+      // comparatively expensive lookup key only on the rare invalidation path,
+      // then reacquire the replacement from its owner/scope registry.
+      FunctionBinding * retained = candidates[selected_candidate_index];
+      if(!retained) {
+        return nullptr;
+      }
+      candidate_refresh_keys[selected_candidate_index] =
+          function_candidate_refresh_key(*retained);
+      return refresh_candidate_at(selected_candidate_index);
+    };
+
+    FunctionBinding * chosen = refresh_selected_candidate();
     if(!chosen) {
       throw logic_error("selected candidate invalidated during class completion");
     }
     selected_match.function = chosen;
-    // Argument conversion rematerialization can complete/reset a selected
-    // member's owner even when that owner was complete during initial lookup.
-    // Snapshot the selected entity now so it can be reacquired afterward
-    // without paying to retain refresh keys for every complete-class candidate.
-    if(instantiate_bodies &&
-       chosen->owner_class &&
-       !candidate_refresh_keys[selected_candidate_index].owner_class) {
-      candidate_refresh_keys[selected_candidate_index] =
-          function_candidate_refresh_key(*chosen);
-    }
     string by_value_validation_detail;
     if(!validate_selected_by_value_class_arguments(ctx,
                                                    scope,
@@ -15640,7 +15682,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                                    by_value_validation_detail)) {
       throw logic_error(by_value_validation_detail);
     }
-    chosen = refresh_candidate_at(selected_candidate_index);
+    chosen = refresh_selected_candidate();
     if(!chosen) {
       throw logic_error("selected candidate invalidated during argument validation");
     }
@@ -15665,7 +15707,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       throw logic_error("failed to rematerialize selected call conversions");
     }
     if(instantiate_bodies) {
-      chosen = refresh_candidate_at(selected_candidate_index);
+      chosen = refresh_selected_candidate();
       if(!chosen) {
         throw logic_error("selected candidate invalidated during call rematerialization");
       }

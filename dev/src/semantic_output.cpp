@@ -3380,12 +3380,12 @@ bool should_emit_class_vtables(
   const VTableKeyFunctionDecision key_function =
       vtable_key_function_decision(ctx, info, class_output_readiness);
   const bool has_nonlocal_virtual_owner = key_function.kind == VTK_EXTERNAL;
-  if(has_nonlocal_virtual_owner && info.rtti_required) {
+  if(has_nonlocal_virtual_owner) {
     if(parser_trace::enabled("output.class")) {
       parser_trace::note("output.class",
                          string(),
                          string("vtable-decision class=") + info.qualified_name +
-                             " emit=no reason=external-key-function-rtti");
+                             " emit=no reason=external-key-function");
     }
     return false;
   }
@@ -4065,6 +4065,23 @@ private:
   bool active_;
 };
 
+struct ScopedFunctionBindingBorrow
+{
+  explicit ScopedFunctionBindingBorrow(SemanticContext & ctx)
+      : ctx_(ctx)
+  {
+    ctx_.begin_function_binding_borrow();
+  }
+
+  ~ScopedFunctionBindingBorrow()
+  {
+    ctx_.end_function_binding_borrow();
+  }
+
+private:
+  SemanticContext & ctx_;
+};
+
 void analyze_required_vtable_output(SemanticContext & ctx,
                                     OutputState & state,
                                     ClassInfo & info,
@@ -4646,6 +4663,7 @@ void analyze_function_body_semantics_impl(SemanticContext & ctx,
   if(!function_body_semantics_available(ctx, binding, include_special_members)) {
     return;
   }
+  ScopedFunctionBindingBorrow binding_borrow(ctx);
 
   TypePtr function_type = strip_top_level_cv(binding.type);
   if(!function_type || function_type->kind != Type::TK_FUNCTION) {
