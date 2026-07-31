@@ -13,11 +13,10 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `120 / 147`
-- current cursor: `#121 libs/type_index/test`
-- active compiler frontier: C++03-declared Boost.Tuple passes cleanly in the
-  forced C++11 lane after repairing dynamic guarded scalar-array local-static
-  storage; Boost.TypeIndex is next
+- completed suites: `121 / 147`
+- current cursor: `#122 libs/type_traits/test`
+- active compiler frontier: C++11 Boost.TypeIndex passes cleanly without a
+  compiler or fixture change; Boost.TypeTraits is next
 
 ## Baseline Gates
 
@@ -394,24 +393,25 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 118 | `libs/tokenizer/test` | pass | `(no compiler change)` | Boost declares C++03 and runs in the stable forced C++11 lane. The exact four-job `pch=off` graph finds 445 targets, updates all 42 requested targets, records six passing tests, and exits successfully with no failed or skipped action in 15.77s; log `/private/tmp/boost-frontier-v2-suite-118-tokenizer-intake.log`. | No compiler or fixture change is required. The graph peaks at 207,257,600 B RSS and 516,096 B footprint, records zero process swaps, and leaves system swap unchanged. Validation and immutable frozen-source/51-header performance evidence remain inherited from the Thread commit. C++ actions invoke CPPGM built by Homebrew Clang 22, and host paths use explicitly pinned Clang; printed `gcc.*`/`gcc-cppgm` strings are legacy Boost.Build adapter labels only. |
 | 119 | `libs/tti/test` | pass | `(this commit)` | Boost declares C++03 and runs in the stable forced C++11 lane. The authoritative exact four-job `pch=off` graph finds 2,634 targets, updates all 449 requested targets, records 146 passing tests and all 85 deliberate failures as failed-as-expected, and exits successfully in 120.73s; log `/private/tmp/boost-frontier-v2-suite-119-tti-final-packaged.log`. | Three typed repairs preserve explicit member-function template-id selection for member-pointer NTTPs, validate template-template parameter kinds while retaining the narrow hosted integer-sequence extension, and make type-id parsing transactional so a failed member-pointer owner cannot leak a partial function type. The regressions are four, seven, and three header-free C++11 lines; PA22 uses no `<type_traits>`, refs are empty or compact, and the unknown-owner negative has an empty ref. The PA9-excluded direct-LowIR report passes `6719/6719`, including PA37 `7/7`; all configured strict comparisons pass. All 23 text-reparse categories remain zero and all 14 audit tests pass. PA26 placement/hygiene is clean; PA22 reports only four unrelated pre-existing findings and does not flag the new reducer. The graph peaks at 303,378,432 B RSS and 516,096 B footprint with zero process swaps and unchanged system swap. The immutable candidate-only frozen-source/51-header gate records 199,552,996,682 instructions, 953,860,096 B RSS, and 671,993,856 B footprint: -24.29%, -26.21%, and -33.46% from epoch `9764b3835`; report `/private/tmp/cppgm-boost-frontier-v2-suite-119-tti-final-packaged.json`; no parent compiler or live project header was measured. C++ actions invoke CPPGM built by Homebrew Clang 22 and all host paths are explicitly pinned to Clang; printed `gcc.*`/`gcc-cppgm` strings remain legacy adapter labels only. |
 | 120 | `libs/tuple/test` | pass | `(this commit)` | Boost declares C++03 and runs in the stable forced C++11 lane. The initial exact four-job `pch=off` graph finds 278 targets, requests 49 updates, passes six tests, and leaves only `io_test.o` failed plus three downstream skips; log `/private/tmp/boost-frontier-v2-suite-120-tuple-intake.log`. The final exact graph finds the same 278 targets, updates all 28 currently requested targets, records seven passing tests, and exits successfully in 14.19s; log `/private/tmp/boost-frontier-v2-suite-120-tuple-final.log`. | `format_info::get_stream_index` has a function-local `static const int[3]` initialized by three `std::ios::xalloc()` calls. Global collection rejected the non-constant braced list before the existing guarded function-body array initializer could run. Guarded scalar arrays whose braced initializer is not static data now receive zero-initialized storage; the already retained initializer executes at first use and sets the existing guard. Namespace globals, constant local arrays, and class arrays retain their established paths. The PA20:300 owner is three header-free C++11 lines including its validation tag with a 929-byte LowIR ref and no `<type_traits>`. The PA9-excluded direct-LowIR report passes `6720/6720`, including PA37 `7/7`; all configured strict comparisons pass. All 23 text-reparse categories remain zero and all 14 audit tests pass. PA20 placement and local hygiene have no finding. The graph peaks at 222,191,616 B RSS and 516,096 B footprint with zero process swaps and unchanged system swap. The immutable candidate-only frozen-source/51-header gate records 199,588,978,333 instructions, 952,836,096 B RSS, and 677,203,968 B footprint: -24.27%, -26.29%, and -32.94% from epoch `9764b3835`; report `/private/tmp/cppgm-boost-frontier-v2-suite-120-tuple-final.json`; no parent compiler or live project header was measured. C++ actions invoke CPPGM built by Homebrew Clang 22 and all host paths are explicitly pinned to Clang; printed `gcc.*`/`gcc-cppgm` strings remain legacy adapter labels only. |
+| 121 | `libs/type_index/test` | pass | `(no compiler change)` | Boost requires C++11 rvalue references and runs in the stable forced C++11 lane. The exact four-job `pch=off` graph finds 1,200 targets, updates all 268 requested targets, records 34 passing tests and handles all four deliberate compile/link failures as failed-as-expected, and exits successfully in 62.03s; log `/private/tmp/boost-frontier-v2-suite-121-type-index-intake.log`. | No compiler or fixture change is required. Targets named `constexpr14_*` are names only: every compile command remains explicitly `-std=c++11`, and their guarded C++11 paths pass. The graph peaks at 256,073,728 B RSS and 516,096 B footprint, records zero process swaps, and leaves system swap unchanged. Validation and immutable frozen-source/51-header performance evidence are inherited from the immediately preceding Tuple commit. C++ actions invoke CPPGM built by Homebrew Clang 22, and all host C/assembly/link paths are explicitly pinned to Clang; printed `gcc.*`/`gcc-cppgm` strings remain legacy Boost.Build adapter labels only. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#121 libs/type_index/test`
-- focused target: `#121 libs/type_index/test` exact forced `pch=off` graph intake
-- last closed suite: `#120 libs/tuple/test` (`pass`)
+- suite: `#122 libs/type_traits/test`
+- focused target: `#122 libs/type_traits/test` exact forced `pch=off` graph intake
+- last closed suite: `#121 libs/type_index/test` (`pass`)
 - failure phase: not yet established
 - diagnostic: pending exact intake
 - reduced repro: not applicable yet
 - owning PA/cluster: pending
 - implementation area: pending
-- performance risk: RTTI/type-index graph; use ordinary four-job parallelism
-  with live memory and swap monitoring
-- language lane: Boost.TypeIndex requires C++11 rvalue references and runs in
-  the stable forced C++11 lane
+- performance risk: large template-trait graph; begin with ordinary four-job
+  parallelism and monitor individual and aggregate RSS plus swap continuously
+- language lane: Boost.TypeTraits has no suite-level standard requirement and
+  runs in the stable forced C++11 lane
 - next action: run the exact Clang-pinned `pch=off` forced graph and isolate the
   first compiler-owned frontier, if any
 
@@ -827,6 +827,20 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Tuple dynamic guarded scalar-array local-static initialization | Global collection tried to encode every braced scalar-array initializer as static data. For a function-local guarded array initialized by calls, static-data collection failed and threw before the existing first-use initializer could consume the retained braced expression. Only that guarded non-constant scalar-array case now emits zero storage; declaration execution evaluates the existing structured initializer into the storage and sets the existing guard. Constant arrays, namespace globals, and class-array paths are unchanged. | `pa20/tests/general/300-dynamic-local-static-scalar-array-init.t`, three header-free C++11 lines including the validation tag with a 929-byte ref and no `<type_traits>` | The pre-fix compiler rejects the minimized `static int values[1] = {next()}` with `unsupported global array initializer`; Homebrew Clang 22 accepts it. Exact Tuple `io_test` fails at the three `std::ios::xalloc()` calls and passes compile, link, and runtime after the repair. | Focused PA20, exact `io_test`, complete Tuple, strict, PA9-excluded direct-LowIR, placement/hygiene, zero-reparse/audit, warning, and performance gates pass. | -24.27% instructions, -26.29% RSS, and -32.94% footprint in the final immutable frozen-source/51-header report | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-31`: Closed Boost.TypeIndex without a compiler or fixture change.
+  The suite requires C++11 rvalue references, and the exact four-job
+  forced-C++11 `pch=off` graph finds 1,200 targets, updates all 268 requested
+  targets, records 34 passing tests and all four deliberate failures as
+  failed-as-expected, and exits successfully in 62.03s. It peaks at
+  256,073,728 B RSS and 516,096 B footprint with zero process swaps and
+  unchanged system swap. Targets named `constexpr14_*` still compile under the
+  explicit `-std=c++11` lane; no C++14 suite exception was introduced. Suite
+  121 is closed and the cursor advances to Boost.TypeTraits. Validation and
+  immutable frozen-source/51-header performance evidence are inherited from
+  the immediately preceding Tuple commit. CPPGM is built by Homebrew Clang 22,
+  all host paths are Clang-pinned, and printed `gcc.*`/`gcc-cppgm` names
+  remain B2 adapter labels only.
 
 - `2026-07-31`: Closed C++03-declared Boost.Tuple in the forced C++11 lane
   after repairing dynamic guarded scalar-array local-static initialization.
@@ -4740,7 +4754,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-# Suite 121 requires C++11 rvalue references and runs in the forced C++11 lane.
+# Suite 122 has no suite-level standard requirement and runs in forced C++11.
 /usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=4 CXXSTD=11 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
@@ -4749,5 +4763,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh -a pch=off libs/type_index/test
+  ./run-cppgm-b2.sh -a pch=off libs/type_traits/test
 ```
