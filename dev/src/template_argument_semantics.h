@@ -97,7 +97,8 @@ bool resolve_template_template_argument_syntax(
     const cpp_decl::TemplateArgumentSyntax & syntax,
     std::size_t expected_parameter_count,
     bool allow_dependent_placeholders,
-    template_model::TemplateArgument & out);
+    template_model::TemplateArgument & out,
+    const template_model::TemplateParameterInfo * expected_parameter = nullptr);
 
 bool resolve_type_argument_syntax_type(template_api::TemplateServices & services,
                                        template_api::TemplateEnvironmentHandle scope,

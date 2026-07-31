@@ -37,37 +37,6 @@ using namespace template_model;
 
 namespace {
 
-int lazy_template_application_depth = 0;
-
-struct ScopedLazyTemplateApplication
-{
-  ScopedLazyTemplateApplication()
-  {
-    ++lazy_template_application_depth;
-  }
-
-  ~ScopedLazyTemplateApplication()
-  {
-    --lazy_template_application_depth;
-  }
-};
-
-struct DeducedState
-{
-  std::map<std::string, TypePtr> types;
-  std::map<std::string, std::vector<TypePtr> > type_packs;
-  std::map<std::string, long long> values;
-  std::map<std::string, TemplateArgument> value_arguments;
-  std::map<std::string, std::vector<long long> > value_packs;
-  std::map<std::string, ClassTemplateDecl *> class_templates;
-  std::map<std::string, AliasTemplateDecl *> alias_templates;
-  std::map<std::string, TemplateArgument> template_template_arguments;
-};
-
-bool template_template_parameter_accepts_parameters(
-    const TemplateParameterInfo & parameter,
-    const std::vector<TemplateParameterInfo> & actual_parameters);
-
 bool template_template_parameter_element_matches(
     const TemplateParameterInfo & expected,
     const std::vector<TemplateParameterInfo> & expected_parameters,
@@ -78,13 +47,32 @@ bool template_template_parameter_element_matches(
     return false;
   }
   if(expected.kind == TemplateParameterInfo::TP_NON_TYPE) {
-    return expected.value_type &&
-           actual.value_type &&
-           semantic_lookup::same_function_template_entity_type(
-               expected.value_type,
-               expected_parameters,
-               actual.value_type,
-               actual_parameters);
+    if(expected.value_type &&
+       actual.value_type &&
+       semantic_lookup::same_function_template_entity_type(
+           expected.value_type,
+           expected_parameters,
+           actual.value_type,
+           actual_parameters)) {
+      return true;
+    }
+
+    // Hosted integer-sequence adapters pass template<class T, T...> to a
+    // template<class, int...> parameter before applying it as Base<int, ...>.
+    // Retain that GCC-compatible extension without weakening parameter-kind
+    // matching: only a non-type pack controlled by an earlier type parameter
+    // receives the relaxed type match.
+    if(!expected.parameter_pack ||
+       !actual.parameter_pack ||
+       !actual.value_type) {
+      return false;
+    }
+    TypePtr actual_value_type = strip_top_level_cv(actual.value_type);
+    const TemplateParameterInfo * controlling_parameter =
+        find_template_parameter(actual_parameters, actual_value_type);
+    return controlling_parameter &&
+           controlling_parameter->kind == TemplateParameterInfo::TP_TYPE &&
+           controlling_parameter < &actual;
   }
   if(expected.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
     if(expected.template_parameters && actual.template_parameters) {
@@ -97,6 +85,8 @@ bool template_template_parameter_element_matches(
   }
   return true;
 }
+
+}  // namespace
 
 bool template_template_parameter_accepts_parameters(
     const TemplateParameterInfo & parameter,
@@ -162,6 +152,35 @@ bool template_template_parameter_accepts_parameters(
   }
   return true;
 }
+
+namespace {
+
+int lazy_template_application_depth = 0;
+
+struct ScopedLazyTemplateApplication
+{
+  ScopedLazyTemplateApplication()
+  {
+    ++lazy_template_application_depth;
+  }
+
+  ~ScopedLazyTemplateApplication()
+  {
+    --lazy_template_application_depth;
+  }
+};
+
+struct DeducedState
+{
+  std::map<std::string, TypePtr> types;
+  std::map<std::string, std::vector<TypePtr> > type_packs;
+  std::map<std::string, long long> values;
+  std::map<std::string, TemplateArgument> value_arguments;
+  std::map<std::string, std::vector<long long> > value_packs;
+  std::map<std::string, ClassTemplateDecl *> class_templates;
+  std::map<std::string, AliasTemplateDecl *> alias_templates;
+  std::map<std::string, TemplateArgument> template_template_arguments;
+};
 
 bool scope_is_boost_mp11_namespace_or_inline_child(const Scope * scope)
 {

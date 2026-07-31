@@ -1958,43 +1958,68 @@ bool try_resolve_function_non_type_template_argument_syntax(
   if(!operand || operand->kind != CppAstKind::id_expression) {
     return false;
   }
+  const QualifiedName * qualified = cppast_qualified_name_syntax(*operand);
   if(const TemplateIdSyntax * template_id = cppast_template_id_syntax(*operand)) {
     TypePtr function_type;
-    if(!services.semantic_context ||
-       !non_type_function_target_type(target_type, explicit_address, function_type)) {
-      return false;
-    }
+    TypePtr owner_type;
+    TypePtr member_function_type;
+    const bool function_target =
+        non_type_function_target_type(target_type,
+                                      explicit_address,
+                                      function_type);
+    const bool member_function_target =
+        qualified &&
+        (qualified->rooted || !qualified->qualifiers.empty()) &&
+        non_type_member_function_target_type(target_type,
+                                             explicit_address,
+                                             owner_type,
+                                             member_function_type);
+    if(services.semantic_context &&
+       (function_target || member_function_target)) {
+      std::vector<FunctionBinding *> functions;
+      try {
+        functions =
+            services.semantic_context->lookup_function_template_id_node(
+                scope,
+                *operand,
+                *template_id,
+                semantic_policy::without_body_instantiation());
+      } catch(const TemplateSubstitutionFailure &) {
+        return false;
+      } catch(const SemanticSoftFailure &) {
+        return false;
+      } catch(const SemanticDiagnosticError &) {
+        return false;
+      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+        return false;
+      }
 
-    std::vector<FunctionBinding *> functions;
-    try {
-      functions =
-          services.semantic_context->lookup_function_template_id_node(
-              scope,
-              *operand,
-              *template_id,
-              semantic_policy::without_body_instantiation());
-    } catch(const TemplateSubstitutionFailure &) {
-      return false;
-    } catch(const SemanticSoftFailure &) {
-      return false;
-    } catch(const SemanticDiagnosticError &) {
-      return false;
-    } catch(const semantic_fallback_audit::SemanticFallbackError &) {
-      return false;
-    }
+      FunctionBinding * selected = function_target ?
+          select_non_type_function_argument(functions, function_type) :
+          select_non_type_member_function_argument(functions,
+                                                   owner_type,
+                                                   member_function_type);
+      if(member_function_target &&
+         !selected_member_pointer_function_access_allowed(services,
+                                                          scope,
+                                                          *qualified,
+                                                          *operand,
+                                                          owner_type,
+                                                          selected)) {
+        return false;
+      }
+      if(!bind_non_type_function_argument(services.semantic_context,
+                                          target_type,
+                                          selected,
+                                          operand->value,
+                                          out)) {
+        return false;
+      }
 
-    if(!bind_non_type_function_argument(
-           services.semantic_context,
-           target_type,
-           select_non_type_function_argument(functions, function_type),
-           operand->value,
-           out)) {
-      return false;
+      attach_template_argument_source_syntax(syntax, out);
+      return true;
     }
-    attach_template_argument_source_syntax(syntax, out);
-    return true;
   }
-  const QualifiedName * qualified = cppast_qualified_name_syntax(*operand);
   if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
     TypePtr owner_type;
     TypePtr member_function_type;
@@ -12655,7 +12680,8 @@ bool resolve_template_argument(template_api::TemplateServices & services,
             *syntax,
             parameter.template_parameter_count,
             true,
-            out);
+            out,
+            &parameter);
     attach_template_argument_source_syntax(syntax, out);
     return ok;
   }

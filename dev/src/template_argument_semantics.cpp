@@ -33329,6 +33329,36 @@ bool template_template_argument_matches_parameter_count(
   return argument.dependent;
 }
 
+bool template_template_argument_matches_parameter(
+    const TemplateArgument & argument,
+    size_t expected_parameter_count,
+    const TemplateParameterInfo * expected_parameter)
+{
+  if(argument.dependent) {
+    return true;
+  }
+  const vector<TemplateParameterInfo> * actual_parameters = nullptr;
+  if(argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE &&
+     argument.template_decl) {
+    actual_parameters =
+        &static_cast<AliasTemplateDecl *>(argument.template_decl)->parameters;
+  } else if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE &&
+            argument.template_decl) {
+    actual_parameters =
+        &static_cast<ClassTemplateDecl *>(argument.template_decl)->parameters;
+  }
+  if(!actual_parameters) {
+    return false;
+  }
+  if(expected_parameter) {
+    return template_specialization::
+        template_template_parameter_accepts_parameters(*expected_parameter,
+                                                       *actual_parameters);
+  }
+  return expected_parameter_count == static_cast<size_t>(-1) ||
+         actual_parameters->size() == expected_parameter_count;
+}
+
 bool lookup_bound_template_template_argument(Scope & scope,
                                              const string & name,
                                              size_t expected_parameter_count,
@@ -33705,7 +33735,8 @@ bool resolve_template_template_argument_syntax(
     const TemplateArgumentSyntax & syntax,
     size_t expected_parameter_count,
     bool allow_dependent_placeholders,
-    TemplateArgument & out)
+    TemplateArgument & out,
+    const TemplateParameterInfo * expected_parameter)
 {
   out = TemplateArgument();
   const string trimmed = normalize_template_template_argument_lookup_text(text);
@@ -33717,7 +33748,14 @@ bool resolve_template_template_argument_syntax(
                                                       expected_parameter_count,
                                                       allow_dependent_placeholders,
                                                       out)) {
-    return true;
+    if(template_template_argument_matches_parameter(out,
+                                                    expected_parameter_count,
+                                                    expected_parameter)) {
+      return true;
+    }
+    out = TemplateArgument();
+    out.text = trimmed;
+    return false;
   }
   const function<const QualifiedName *(const CppAstNode &)> find_qualified =
       [&](const CppAstNode & node) -> const QualifiedName *
@@ -33756,6 +33794,13 @@ bool resolve_template_template_argument_syntax(
                                              expected_parameter_count,
                                              allow_dependent_placeholders,
                                              out)) {
+    if(!template_template_argument_matches_parameter(out,
+                                                     expected_parameter_count,
+                                                     expected_parameter)) {
+      out = TemplateArgument();
+      out.text = trimmed;
+      return false;
+    }
     if(!out.source_syntax) {
       out.source_syntax.reset(new TemplateArgumentSyntax(syntax));
     }
@@ -33764,9 +33809,13 @@ bool resolve_template_template_argument_syntax(
   if(qualified) {
     AliasTemplateDecl * alias_template =
         lookup_alias_template_impl(services, raw_scope, *qualified);
+    TemplateArgument alias_argument;
+    alias_argument.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
+    alias_argument.template_decl = alias_template;
     if(alias_template &&
-       (expected_parameter_count == static_cast<size_t>(-1) ||
-        alias_template->parameters.size() == expected_parameter_count)) {
+       template_template_argument_matches_parameter(alias_argument,
+                                                    expected_parameter_count,
+                                                    expected_parameter)) {
       out.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
       out.template_decl = alias_template;
       template_scope::set_template_argument_entity_identity_from_decl(out,
@@ -33783,9 +33832,13 @@ bool resolve_template_template_argument_syntax(
     }
     ClassTemplateDecl * class_template =
         lookup_class_template_impl(services, raw_scope, *qualified);
+    TemplateArgument class_argument;
+    class_argument.kind = TemplateArgument::TA_CLASS_TEMPLATE;
+    class_argument.template_decl = class_template;
     if(class_template &&
-       (expected_parameter_count == static_cast<size_t>(-1) ||
-        class_template->parameters.size() == expected_parameter_count)) {
+       template_template_argument_matches_parameter(class_argument,
+                                                    expected_parameter_count,
+                                                    expected_parameter)) {
       out.kind = TemplateArgument::TA_CLASS_TEMPLATE;
       out.template_decl = class_template;
       template_scope::set_template_argument_entity_identity_from_decl(out,

@@ -14,6 +14,10 @@
 
 namespace template_specialization {
 
+bool template_template_parameter_accepts_parameters(
+    const template_model::TemplateParameterInfo & parameter,
+    const std::vector<template_model::TemplateParameterInfo> & actual_parameters);
+
 struct AliasSubstitutionFailure
 {
   enum Kind

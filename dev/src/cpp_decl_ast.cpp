@@ -589,6 +589,7 @@ bool parse_type_id_ast(const CppAstNode & node,
                        const AstDeclHooks & hooks,
                        TypePtr & out)
 {
+  out.reset();
   if(node.kind != CppAstKind::type_id) {
     return false;
   }
@@ -601,17 +602,29 @@ bool parse_type_id_ast(const CppAstNode & node,
     return false;
   }
 
-  if(!parse_type_specifier_seq_ast(node.children[0], hooks, out)) {
+  TypePtr parsed;
+  if(!parse_type_specifier_seq_ast(node.children[0], hooks, parsed)) {
     return false;
   }
 
   const CppAstNode * abstract = find_child(node, CppAstKind::abstract_declarator);
   if(!abstract) {
+    out = parsed;
     return true;
   }
 
   string ignored_name;
-  return parse_declarator_core(*abstract, hooks, out, ignored_name, out, false);
+  TypePtr declared;
+  if(!parse_declarator_core(*abstract,
+                            hooks,
+                            parsed,
+                            ignored_name,
+                            declared,
+                            false)) {
+    return false;
+  }
+  out = declared;
+  return true;
 }
 
 namespace {

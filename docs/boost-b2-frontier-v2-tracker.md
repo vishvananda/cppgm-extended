@@ -13,11 +13,11 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `118 / 147`
-- current cursor: `#119 libs/tti/test`
-- active compiler frontier: C++03-declared Boost.Tokenizer passes cleanly in
-  the forced C++11 lane without a compiler or fixture change; C++03-declared
-  Boost.TTI is next
+- completed suites: `119 / 147`
+- current cursor: `#120 libs/tuple/test`
+- active compiler frontier: C++03-declared Boost.TTI passes cleanly in the
+  forced C++11 lane after three typed semantic repairs; C++03-declared
+  Boost.Tuple is next
 
 ## Baseline Gates
 
@@ -392,23 +392,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 116 | `libs/throw_exception/test` | pass | `(no compiler change)` | Boost declares C++03 and runs in the stable forced C++11 lane. The exact four-job `pch=off` graph finds 789 targets, updates all 194 requested targets, records 24 passing tests, and exits successfully with no failed or skipped action in 45.27s; log `/private/tmp/boost-frontier-v2-suite-116-throw-exception-intake.log`. | No compiler or fixture change is required. The graph peaks at 232,337,408 B RSS and 520,192 B footprint, records zero process swaps, and leaves system swap unchanged. Validation and the immutable frozen-source/51-header performance evidence are inherited from the immediately preceding Thread commit. C++ actions invoke CPPGM built by Homebrew Clang 22, and all host paths are explicitly pinned to Clang; printed `gcc.*`/`gcc-cppgm` strings are legacy Boost.Build adapter labels only. |
 | 117 | `libs/timer/test` | pass | `(no compiler change)` | Boost declares C++03 and runs in the stable forced C++11 lane. The exact four-job `pch=off` graph finds 1,870 targets, updates all 56 requested targets, records seven passing tests, and exits successfully with no failed or skipped action in 23.57s; log `/private/tmp/boost-frontier-v2-suite-117-timer-intake.log`. | No compiler or fixture change is required. The graph peaks at 220,299,264 B RSS and 516,096 B footprint, records zero process swaps, and leaves system swap unchanged. Validation and immutable frozen-source/51-header performance evidence remain inherited from the Thread commit. C++ actions invoke CPPGM built by Homebrew Clang 22, and host C/assembly/link actions use explicitly pinned Clang paths; printed `gcc.*`/`gcc-cppgm` strings are legacy Boost.Build adapter labels only. |
 | 118 | `libs/tokenizer/test` | pass | `(no compiler change)` | Boost declares C++03 and runs in the stable forced C++11 lane. The exact four-job `pch=off` graph finds 445 targets, updates all 42 requested targets, records six passing tests, and exits successfully with no failed or skipped action in 15.77s; log `/private/tmp/boost-frontier-v2-suite-118-tokenizer-intake.log`. | No compiler or fixture change is required. The graph peaks at 207,257,600 B RSS and 516,096 B footprint, records zero process swaps, and leaves system swap unchanged. Validation and immutable frozen-source/51-header performance evidence remain inherited from the Thread commit. C++ actions invoke CPPGM built by Homebrew Clang 22, and host paths use explicitly pinned Clang; printed `gcc.*`/`gcc-cppgm` strings are legacy Boost.Build adapter labels only. |
+| 119 | `libs/tti/test` | pass | `(this commit)` | Boost declares C++03 and runs in the stable forced C++11 lane. The authoritative exact four-job `pch=off` graph finds 2,634 targets, updates all 449 requested targets, records 146 passing tests and all 85 deliberate failures as failed-as-expected, and exits successfully in 120.73s; log `/private/tmp/boost-frontier-v2-suite-119-tti-final-packaged.log`. | Three typed repairs preserve explicit member-function template-id selection for member-pointer NTTPs, validate template-template parameter kinds while retaining the narrow hosted integer-sequence extension, and make type-id parsing transactional so a failed member-pointer owner cannot leak a partial function type. The regressions are four, seven, and three header-free C++11 lines; PA22 uses no `<type_traits>`, refs are empty or compact, and the unknown-owner negative has an empty ref. The PA9-excluded direct-LowIR report passes `6719/6719`, including PA37 `7/7`; all configured strict comparisons pass. All 23 text-reparse categories remain zero and all 14 audit tests pass. PA26 placement/hygiene is clean; PA22 reports only four unrelated pre-existing findings and does not flag the new reducer. The graph peaks at 303,378,432 B RSS and 516,096 B footprint with zero process swaps and unchanged system swap. The immutable candidate-only frozen-source/51-header gate records 199,552,996,682 instructions, 953,860,096 B RSS, and 671,993,856 B footprint: -24.29%, -26.21%, and -33.46% from epoch `9764b3835`; report `/private/tmp/cppgm-boost-frontier-v2-suite-119-tti-final-packaged.json`; no parent compiler or live project header was measured. C++ actions invoke CPPGM built by Homebrew Clang 22 and all host paths are explicitly pinned to Clang; printed `gcc.*`/`gcc-cppgm` strings remain legacy adapter labels only. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#119 libs/tti/test`
-- focused target: `#119 libs/tti/test` exact forced `pch=off` graph intake
-- last closed suite: `#118 libs/tokenizer/test` (`pass`)
+- suite: `#120 libs/tuple/test`
+- focused target: `#120 libs/tuple/test` exact forced `pch=off` graph intake
+- last closed suite: `#119 libs/tti/test` (`pass`)
 - failure phase: not yet established
 - diagnostic: pending exact intake
 - reduced repro: not applicable yet
 - owning PA/cluster: pending
 - implementation area: pending
-- performance risk: template-introspection graph; use ordinary four-job
-  parallelism with live memory and swap monitoring
-- language lane: Boost.TTI declares C++03 and runs in the stable forced C++11
+- performance risk: tuple/template graph; use ordinary four-job parallelism
+  with live memory and swap monitoring
+- language lane: Boost.Tuple declares C++03 and runs in the stable forced C++11
   lane
 - next action: run the exact Clang-pinned `pch=off` forced graph and isolate the
   first compiler-owned frontier, if any
@@ -819,8 +820,24 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Constructor array-prefix unwind chaining | Constructor lowering wrapped subobject calls only when the direct callee body contained a throw and could nest a constructor-specific landing pad around an ordinary scope-cleanup pad. That missed transitive/separately compiled throws and risked treating `_Unwind_Resume` as a fresh exception. Potential throwing now follows typed `noexcept` metadata, and the ordinary call wrapper combines scope and already-constructed-subobject cleanups in one chain. | Existing `pa15/tests/general/300-synthesized-array-member-lifecycle.t`; its LowIR ref gains only the standards-required reverse destruction of already-constructed array elements when a later constructor throws | The pre-fix Statechart constructor path leaked completed subobjects or entered an invalid nested unwind shape. The updated PA15 LowIR explicitly destroys element zero after element one throws and elements one then zero after element two throws. | PA15 and the final `4262/4262` direct report pass; all configured strict, reparse, script, warning, and diff gates pass. The ref change has a direct language-semantics rationale rather than arbitrary output churn. | measured with the complete Statechart closure in the final immutable frozen-source/51-header report; no parent or live header measured | `(this commit)` |
 | fixed | External key-function vtable ownership | Vtable suppression for a class whose key function is defined in another translation unit was incorrectly conditional on whether RTTI output happened to be required locally. The typed key-function decision now unconditionally leaves vtable ownership with the key-function translation unit. | `pa29/tests/general/300-inherited-template-slot-respects-key-function-owner.t`, a compact two-TU C++11 runtime/link owner with no headers or `<type_traits>` | Statechart PingPong emitted a duplicate secondary thunk from the non-owner TU. The fixed exact target and the two-TU reducer link and run with the vtable emitted only beside `derived::key`. | PA29 participates in the final `4262/4262` report; strict Clang C++11, placement, all 23 reparse categories, and the exact Statechart graph pass. | measured with the complete Statechart closure in the final immutable frozen-source/51-header report; no parent or live header measured | `(this commit)` |
 | fixed | Preemptible weak definition address lowering | The object backend treated every local weak definition as directly addressable. Under Mach weak coalescing/interposition, a reference to an exported weak function or data definition must use the same indirect path as an imported/preemptible symbol. Weak exports are now excluded from the direct-definition sets used by address and memory-reference lowering; block-local labels remain direct. | Existing PA32 `200-extern-c-variable-definition-inherits-prior-linkage` object inspection now requires `imported_data_got alias` and excludes `data_pcrel`; the object-expectation helper gains a Mach canonical C-symbol control | Statechart DllTest gave its inline static ID a TU-local address instead of observing the coalesced definition. The fixed exact target passes, and both PA32 object variants record the required GOT relocation class. | PA32 participates in the final `4262/4262` report; all 168 script tests pass with one intentional skip, including the checker control; placement, strict, reparse, warning, and exact Statechart gates pass. | measured with the complete Statechart closure in the final immutable frozen-source/51-header report; no parent or live header measured | `(this commit)` |
+| fixed | TTI explicit qualified member-function template address as an NTTP | A qualified `E::template f<int>` operand was recognized as a template-id, but function-pointer-only selection rejected the member-pointer target and the fallback later looked up the literal leaf `f<int>` instead of consuming the explicit template-id result. Qualified member-function pointer targets now use the existing structured template-id lookup, select the instantiated member by the typed owner and function target, check access, and bind the stable function value. | `pa26/tests/general/300-qualified-member-function-template-address-nttp.t`, four header-free C++11 lines with an empty ref | The exact TTI SFINAE form and the minimized direct `helper<&A::template f<int>>` fail before the fix. Homebrew Clang 22 and the fixed compiler accept the reducer. | Focused PA26, the complete TTI graph, strict, PA9-excluded direct-LowIR, placement, zero-reparse/audit, warning, and performance gates pass. | -24.29% instructions, -26.21% RSS, and -33.46% footprint in the final immutable frozen-source/51-header report | `(this commit)` |
+| fixed | TTI template-template parameter-kind validation with hosted integer-sequence compatibility | Direct template-template argument binding compared only arity even though the specialization engine already had structured matching for type, non-type, and nested template parameters. The direct path now uses that matcher, rejecting a `template<int>` member where `template<class>` is required. The matcher retains CPPGM's hosted C++11 compatibility for the narrow `template<class T, T...>` integer-sequence form passed to `template<class, int...>`: only a non-type pack controlled by an earlier type parameter receives the relaxed type match, while parameter kinds remain exact. | `pa22/tests/general/300-member-template-parameter-kind-sfinae.t`, seven header-free C++11 lines with no `<type_traits>` and a compact LowIR ref; existing PA34 `700-hosted-integer-pack-tuple-defer-compile.t` is the hosted compatibility control | The pre-fix compiler incorrectly admits the mismatched TTI member template. The initial strict matcher repairs TTI but exposes the existing PA34 hosted compatibility case; the narrow dependent-pack rule makes both controls pass. | Focused PA22/PA34, complete TTI, strict, broad direct-LowIR, reparse/audit, placement, warning, and performance gates pass. PA22 placement retains only four unrelated pre-existing findings. | measured with the final TTI closure; no parent compiler or live header measured | `(this commit)` |
+| fixed | Failed member-pointer type-id parsing leaked a partial function type | `parse_type_id_ast` mutated its output while walking declarator suffixes. If a nested member-pointer owner lookup failed, it returned false but left the already-built function type in the caller-visible output; callers that checked the type object accepted `X<void (Missing::*)()>` as `X<void()>`. Type-id parsing now builds in local transactional state, clears output on entry, and publishes the type only after the complete declarator succeeds. | `pa26/tests/general/300-unknown-member-pointer-owner-bad.t`, three header-free C++11 lines with an empty ref | CPPGM previously accepts the minimized unknown-owner form and both TTI compile-fail variants; Homebrew Clang 22 rejects them. The fixed compiler rejects all three before partial type state escapes. | Focused PA26, both TTI negative variants, the authoritative TTI graph, strict, broad direct-LowIR, placement, zero-reparse/audit, warning, and performance gates pass. | measured with the final TTI closure; no parent compiler or live header measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-31`: Closed C++03-declared Boost.TTI after three typed semantic
+  repairs. The authoritative four-job forced-C++11 `pch=off` graph finds 2,634
+  targets, updates all 449 requested targets, records 146 passing tests and 85
+  deliberate failures as failed-as-expected, and exits successfully in
+  120.73s. It peaks at 303,378,432 B RSS and 516,096 B footprint with zero
+  process swaps and unchanged system swap. The final PA9-excluded direct-LowIR
+  report passes `6719/6719`, all configured strict suites pass, and the
+  candidate-only immutable compiler/source/51-header gate records -24.29%
+  instructions, -26.21% RSS, and -33.46% footprint. Suite 119 is closed and
+  the cursor advances to C++03-declared Boost.Tuple. CPPGM is built by
+  Homebrew Clang 22, all host paths are Clang-pinned, and printed
+  `gcc.*`/`gcc-cppgm` names remain B2 adapter labels only.
 
 - `2026-07-31`: Closed C++03-declared Boost.Tokenizer without a compiler or
   fixture change. The exact four-job forced-C++11 `pch=off` graph finds 445
@@ -4707,7 +4724,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-# Suite 119 declares C++03 and runs in the stable forced C++11 lane.
+# Suite 120 declares C++03 and runs in the stable forced C++11 lane.
 /usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=4 CXXSTD=11 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
@@ -4716,5 +4733,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh -a pch=off libs/tti/test
+  ./run-cppgm-b2.sh -a pch=off libs/tuple/test
 ```
