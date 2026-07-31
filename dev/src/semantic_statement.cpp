@@ -2804,6 +2804,7 @@ void analyze_statement_impl(SemanticContext & ctx,
     }
     if(!node.children.empty()) {
       ExprInfo thrown = ctx.analyze_expression(scope, node.children[0]);
+      thrown = adjust_exception_operand_type(ctx, thrown);
       TypePtr thrown_type = catch_match_type(thrown.type);
       if(thrown_type) {
         validate_throw_object_initialization(ctx,

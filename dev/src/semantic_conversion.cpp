@@ -1431,6 +1431,23 @@ static void set_standard_converted_prvalue_result(SemanticContext & ctx,
   out.node.children.push_back(expr.node);
 }
 
+ExprInfo adjust_exception_operand_type(SemanticContext & ctx,
+                                       const ExprInfo & expr)
+{
+  TypePtr source = strip_top_level_cv(remove_reference_type(expr.type));
+  if(!source ||
+     (source->kind != Type::TK_ARRAY && source->kind != Type::TK_FUNCTION)) {
+    return expr;
+  }
+
+  TypePtr adjusted = source->kind == Type::TK_ARRAY ?
+      make_pointer(source->inner) :
+      make_pointer(source);
+  ExprInfo out;
+  set_standard_converted_prvalue_result(ctx, adjusted, expr, out);
+  return out;
+}
+
 void apply_standard_conversion_result_metadata(SemanticContext & ctx,
                                                const TypePtr & target,
                                                const ExprInfo & expr,

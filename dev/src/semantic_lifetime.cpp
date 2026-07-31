@@ -2482,6 +2482,11 @@ void append_constructor_call_action(SemanticContext & ctx,
   std::deque<CppAstNode> synthesized_nodes;
   const vector<const CppAstNode *> expanded_arg_nodes =
       expand_initializer_argument_nodes(ctx, scope, arg_nodes, synthesized_nodes);
+  // A parenthesized pack that expands to no arguments leaves T(), which is
+  // value-initialization even though the retained initializer was nonempty.
+  const bool effective_value_initializes_result =
+      value_initializes_result ||
+      (!direct_braced_init && !arg_nodes.empty() && expanded_arg_nodes.empty());
   const std::string object_use_location =
       callsem_node_source_location_text(object_ptr.node);
   std::string constructor_use_location =
@@ -2624,7 +2629,7 @@ void append_constructor_call_action(SemanticContext & ctx,
   set_callsem_resolved_name(action, function_output_name(*ctor));
   action.trivial_lifecycle = action_result.trivial_lifecycle;
   action.children.push_back(std::move(action_result.call_expr.node));
-  if(value_initializes_result &&
+  if(effective_value_initializes_result &&
      constructor_lifecycle_service::value_initialization_requires_zero_init(*ctor)) {
     action.children.back().value_initializes_result = true;
   }

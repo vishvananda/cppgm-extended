@@ -4476,6 +4476,7 @@ ExprInfo analyze_throw_expression(SemanticContext & ctx,
   result.node = make_dump_node(CallSemKind::throw_statement);
   if(!node.children.empty()) {
     ExprInfo thrown = ctx.analyze_expression(scope, node.children[0]);
+    thrown = adjust_exception_operand_type(ctx, thrown);
     result.node.children.push_back(std::move(thrown.node));
   }
   set_expr_metadata(result.node, result.type, result.category);

@@ -13,11 +13,10 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `112 / 147`
-- current cursor: `#113 libs/system/test`
-- active compiler frontier: C++11 Boost.StaticString passes without a compiler
-  change, and C++14 Boost.StlInterfaces is skipped by language policy;
-  C++11-declared Boost.System is next
+- completed suites: `113 / 147`
+- current cursor: `#114 libs/test/test`
+- active compiler frontier: C++11 Boost.System passes after three typed
+  compiler repairs; C++11-declared Boost.Test is next
 
 ## Baseline Gates
 
@@ -384,22 +383,25 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 110 | `libs/static_assert/test` | pass | `(no compiler change)` | Boost declares C++03 and runs in the stable forced C++11 lane. The exact two-job `pch=off` graph finds 462 targets, rebuilds all 81 requested targets, passes the positive runtime and example targets, handles all ten deliberate compile failures as failed-as-expected, and exits successfully in 11.01s; log `/private/tmp/boost-frontier-v2-suite-110-static-assert-intake.log`. | No compiler or fixture change is required. The graph peaks at 219,152,384 B RSS and 38,469,632 B footprint with zero process swaps. Validation and immutable frozen-source/51-header performance evidence are inherited from the immediately preceding Statechart commit. C++ actions invoke CPPGM and all host paths are explicitly pinned to Homebrew Clang 22; `gcc.*` and `gcc-cppgm` are legacy adapter labels only. |
 | 111 | `libs/static_string/test` | pass | `(no compiler change)` | Boost declares C++11. The exact two-job `pch=off` graph finds 223 targets, rebuilds all 15 requested targets, compiles, links, and runs `static_string`, and exits successfully in 70.38s; log `/private/tmp/boost-frontier-v2-suite-111-static-string-intake.log`. | No compiler or fixture change is required. The single heavy compile peaks at 1,049,440,256 B RSS and the graph records zero process swaps and unchanged system swap. Validation and immutable frozen-source/51-header performance evidence remain inherited from the Statechart commit. C++ actions invoke CPPGM and host actions use explicitly pinned Homebrew Clang 22 paths; printed `gcc.*` strings are adapter labels only. |
 | 112 | `libs/stl_interfaces/test` | skipped-language | `(no compiler change)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/stl_interfaces/meta/libraries.json`. | CPPGM's supported source-language lane remains C++11. Per the established frontier policy, no graph was run and no compiler work is inferred from historical results. The cursor advances directly to C++11 Boost.System. |
+| 113 | `libs/system/test` | pass | `(this commit)` | Boost declares C++11. The initial exact forced four-job `pch=off` graph exposed ten failed targets in three families: six `error_code_test` variants linked with array RTTI for a thrown string literal, `result_value_construct2` left an empty-pack aggregate member uninitialized, and `detail_is_aggregate_test` plus both `unwrap_and_construct` variants lacked a working dependent `__is_aggregate`. The final exact final-binary graph updates all 873 requested targets, records 208 passing runtime tests, and exits successfully in 431.58s; log `/private/tmp/boost-frontier-v2-suite-113-system-final-rtti.log`. It peaks at 324,497,408 B RSS and 55,812,096 B footprint, records zero process swaps, and leaves system swap no higher than intake. | Three typed closures repair the graph. Throw operands now receive the standard array/function-to-pointer adjustment; Itanium by-value pointer handlers bind the pointer returned by `__cxa_begin_catch` directly, and generated non-runtime pointer RTTI is selected when the host ABI does not preprovide it. A parenthesized initializer pack that expands to zero arguments now retains `T()` value-initialization. `__is_aggregate` is advertised and evaluated from the existing typed class aggregate-constructor model, with array/nonclass handling. The four header-free C++11 owners are 4, 7, 6, and 7 lines across PA25, PA22, and PA34; none uses `<type_traits>`. The owning direct report passes `775/775`; all 978 configured strict comparisons pass; the PA9-excluded broad direct-LowIR report passes `4266/4266`, including PA37 `7/7`. Normal, all ten individual cache-disabled modes, and all-disabled mode are byte-identical for every reducer. All 23 reparse categories, 14 reparse unit tests, and 168 script tests with one intentional skip pass. The new tests add no placement/hygiene finding; PA22 retains only its four documented unrelated pre-existing findings. All reducers are warning-clean under Homebrew Clang 22 in strict C++11 mode. The immutable candidate-only frozen-source/51-header gate records 199,761,955,768 instructions, 947,425,280 B RSS, and 664,891,392 B footprint: -24.21%, -26.71%, and -34.16% from epoch `9764b3835`; report `/private/tmp/cppgm-boost-frontier-v2-system-final.json`. The validator verified the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured. CPPGM was built by Homebrew Clang 22 and every host path was explicitly pinned to Clang; printed `gcc.*` and `gcc-cppgm` strings are legacy Boost.Build adapter labels only. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#113 libs/system/test`
-- focused target: `#113 libs/system/test` exact forced `pch=off` graph intake
-- last closed suite: `#112 libs/stl_interfaces/test` (`skipped-language`)
+- suite: `#114 libs/test/test`
+- focused target: `#114 libs/test/test` exact forced `pch=off` graph intake
+- last closed suite: `#113 libs/system/test` (`pass`)
 - failure phase: not yet established
 - diagnostic: pending exact intake
 - reduced repro: not applicable yet
 - owning PA/cluster: pending
 - implementation area: pending
-- performance risk: ordinary parallelism with live memory monitoring
-- language lane: Boost.System declares C++11 and runs in the stable C++11 lane
+- performance risk: broad graph; use ordinary four-job parallelism with live
+  memory and swap monitoring
+- language lane: Boost.Test declares C++11; individually guarded C++14/C++17
+  targets remain outside the stable C++11 graph
 - next action: run the exact Clang-pinned `pch=off` forced graph and isolate the
   first compiler-owned frontier, if any
 
@@ -410,6 +412,9 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | System exception operand decay and host pointer EH ABI | Throw analysis retained array and function operand types instead of applying the standard exception-object adjustment. After typed decay, host lowering also loaded through the value returned by `__cxa_begin_catch` for a by-value pointer handler, and assumed the runtime supplied RTTI for every mangleable nonclass type. The shared conversion layer now emits ordinary structured array/function-to-pointer conversion metadata at both throw entry points. Itanium by-value pointer catches store the adjusted returned pointer directly, and RTTI selection uses a generated typed definition for non-runtime pointer categories such as function pointers while retaining host RTTI for fundamental pointers. | `pa25/tests/general/100-throw-string-literal-decays-to-pointer.t` and `100-throw-function-decays-to-pointer.t`, four and seven header-free C++11 lines | Six System `error_code_test` variants linked with undefined typeinfo for `char const[6]` from `throw "oops!"`. The function control additionally exposed undefined `_ZTIPFvvE`, and the first pointer-handler lowering crashed by loading through the returned function pointer. | Both PA25 tests pass exact direct LowIR, strict Clang C++11, native link, and runtime. The function object defines weak `_ZTIFvvE` and `_ZTIPFvvE`; the string case continues to use host `_ZTIPKc`. Complete System and all package gates pass. | measured with the complete System closure: -24.21% instructions, -26.71% RSS, and -34.16% footprint | `(this commit)` |
+| fixed | System empty initializer-pack value-initialization | Constructor analysis retained a syntactically nonempty parenthesized initializer even when its sole pack expanded to no arguments, so `T(pack...)` missed the `T()` value-initialization zero-init step. After structured pack expansion, a parenthesized raw-nonempty/effective-empty initializer now uses the existing value-initialization path; direct braced initialization is deliberately unchanged. | `pa22/tests/spec/100-empty-pack-member-value-initializes-aggregate.t`, six header-free C++11 lines with no `<type_traits>` | `result_value_construct2` default-constructed an aggregate result through an empty forwarding pack and observed an uninitialized scalar member. The reduced program returned a garbage value before the fix and zero afterward. | The focused owner, PA22 direct report, strict, cache parity, broad, placement review, and complete System graph pass. | measured with the complete System closure | `(this commit)` |
+| fixed | System dependent `__is_aggregate` | The parser recognized the Clang builtin trait form, but the preprocessor did not advertise it and semantic evaluation had no case, even though CPPGM's hosted compatibility macros caused Boost to select the builtin. The builtin is now advertised and evaluated structurally: arrays are aggregates, nonclasses are not, and completed class/union types reuse the existing typed aggregate-constructor synthesis predicate. | `pa34/tests/compile/700-dependent-builtin-is-aggregate.t`, seven header-free C++11 lines with no `<type_traits>` | `detail_is_aggregate_test` failed at `std::integral_constant<bool, __is_aggregate(X1)>`. Both `unwrap_and_construct` failures were downstream fallout: direct member-template controls already passed, and enabling the typed builtin closed both without lookup changes. | A C++11 class/union/array matrix agrees with Clang 22; the PA34 owner, cache parity, broad, placement, and complete System graph pass. | measured with the complete System closure | `(this commit)` |
 | fixed | SmartPtr nullable virtual-base pointer conversion and forwarded call result | Imported virtual-base adjustment unconditionally indexed through null pointers, while a nested call-result path also reapplied an already forwarded base offset. Typed lowering now preserves null only for operands whose semantic shape may be null and requests the forwarded virtual root before applying the final offset exactly once. Statically non-null object-address paths retain their former straight-line LowIR. | `pa32/tests/general/200-host-null-virtual-base-template-conversion.t` and `200-call-pointer-vbase-nested-method.t`; the existing PA27 reference-pointer owner records the nullable hidden-offset branches | The intake crashes the null converting-constructor target and misaddresses the nested method result. The saved PA27 path indexes a pointer loaded through a reference without preserving null. | Both PA32 runtimes, PA27 direct `39/39`, complete SmartPtr, broad/strict, cache, and structural gates pass. The sole PA27 ref change is the principled nullable branch. | included in the final SmartPtr frozen-source/51-header gate | `(this commit)` |
 | fixed | SmartPtr late template static-member output | A demanded static data definition was queued only after its enclosing class had already emitted output. A materialized template class can need a member definition earlier in the same output fixpoint, so the queue predicate now follows template identity and the existing in-progress/emitted guards rather than prior enclosing-definition emission. | `pa18/tests/general/300-nested-class-demand-outer-static-member-definition.t`, nine lines / 241 bytes of header-free C++11 | The nested class calls the enclosing static accessor but the saved compiler omits `pool<int>::data`; Clang and the fixed compiler link and return zero. | PA18, complete SmartPtr, strict, broad, cache parity, placement, and warning gates pass. | included in the final SmartPtr gate | `(this commit)` |
 | fixed | SmartPtr deleting destructor virtual-base lifetime | Generated deleting-destructor entry points ran non-virtual bases and fields but skipped virtual bases because only the complete entry point entered that loop. All non-base destructor entry points now destroy virtual bases; the base entry point still omits them. | `pa32/tests/general/200-delete-virtual-base-through-base.t`, four implementation lines | Deleting a derived object through its virtual base fails to run the virtual-base destructor before the fix; Clang and the fixed runtime destroy it once. | PA32 runtime, complete SmartPtr, broad/strict, and cache controls pass. | included in the final SmartPtr gate | `(this commit)` |
@@ -795,6 +800,24 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Preemptible weak definition address lowering | The object backend treated every local weak definition as directly addressable. Under Mach weak coalescing/interposition, a reference to an exported weak function or data definition must use the same indirect path as an imported/preemptible symbol. Weak exports are now excluded from the direct-definition sets used by address and memory-reference lowering; block-local labels remain direct. | Existing PA32 `200-extern-c-variable-definition-inherits-prior-linkage` object inspection now requires `imported_data_got alias` and excludes `data_pcrel`; the object-expectation helper gains a Mach canonical C-symbol control | Statechart DllTest gave its inline static ID a TU-local address instead of observing the coalesced definition. The fixed exact target passes, and both PA32 object variants record the required GOT relocation class. | PA32 participates in the final `4262/4262` report; all 168 script tests pass with one intentional skip, including the checker control; placement, strict, reparse, warning, and exact Statechart gates pass. | measured with the complete Statechart closure in the final immutable frozen-source/51-header report; no parent or live header measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-30`: Closed C++11 Boost.System after three typed compiler repair
+  families. The final exact four-job final-binary graph updates all 873
+  requested targets, records 208 passing runtime tests, and exits successfully
+  in 431.58s at 324,497,408 B maximum RSS and 55,812,096 B footprint with zero
+  process swaps. Throw operands now apply the standard array/function-to-pointer
+  adjustment, host by-value pointer catches bind the Itanium returned value
+  directly, and non-runtime function-pointer RTTI uses the emitted definition.
+  Empty initializer packs retain `T()` value-initialization, and dependent
+  `__is_aggregate` uses the existing typed aggregate-class model. The four
+  header-free C++11 owners are 4--7 lines and use no `<type_traits>`. The owner,
+  strict, PA9-excluded broad direct-LowIR, cache-parity, reparse, script,
+  placement-review, and strict Clang gates pass. The candidate-only performance
+  gate verifies immutable source plus all 51 frozen headers and records -24.21%
+  instructions, -26.71% RSS, and -34.16% footprint; no parent compiler or live
+  project header was measured. Suite 113 is closed and the cursor advances to
+  C++11 Boost.Test. CPPGM and host actions remain explicitly pinned to Homebrew
+  Clang 22; `gcc.*` and `gcc-cppgm` are only legacy Boost.Build adapter labels.
 
 - `2026-07-30`: Closed C++11 Boost.StaticString without a compiler or fixture
   change, then skipped C++14 Boost.StlInterfaces by the established language

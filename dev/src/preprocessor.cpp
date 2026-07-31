@@ -827,6 +827,7 @@ bool is_supported_builtin_type_trait_name(const string & name)
       "__has_trivial_destructor",
       "__has_virtual_destructor",
       "__is_abstract",
+      "__is_aggregate",
       "__is_arithmetic",
       "__is_array",
       "__is_assignable",

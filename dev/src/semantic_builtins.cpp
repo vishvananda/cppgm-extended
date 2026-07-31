@@ -2921,6 +2921,23 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
     out = (info && class_info_is_abstract(*info)) ? 1 : 0;
     return true;
   }
+  if(name == "__is_aggregate") {
+    if(base->kind == Type::TK_ARRAY) {
+      out = 1;
+      return true;
+    }
+    if(!is_named_class_type(ctx, base) &&
+       !is_named_union_type(ctx, base)) {
+      out = 0;
+      return true;
+    }
+    ClassInfo * info = ctx.complete_class_type(base);
+    if(!info || !info->complete) {
+      return false;
+    }
+    out = semantic_class_model::can_synthesize_aggregate_constructor(*info) ? 1 : 0;
+    return true;
+  }
   if(name == "__is_polymorphic") {
     ClassInfo * info = ctx.complete_class_type(base);
     out = (info && info->is_polymorphic) ? 1 : 0;
@@ -2946,6 +2963,7 @@ bool is_supported_builtin_type_trait_name(const std::string & name)
       "__has_trivial_destructor",
       "__has_virtual_destructor",
       "__is_abstract",
+      "__is_aggregate",
       "__is_arithmetic",
       "__is_array",
       "__is_assignable",

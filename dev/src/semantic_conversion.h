@@ -43,6 +43,8 @@ enum ConversionRank : int
 };
 
 cpp_decl::TypePtr value_conversion_type(const ExprInfo & expr);
+ExprInfo adjust_exception_operand_type(SemanticContext & ctx,
+                                       const ExprInfo & expr);
 ConversionRank standard_conversion_rank_non_reference(const cpp_decl::TypePtr & target,
                                                       const ExprInfo & expr);
 ConversionRank standard_conversion_rank(const cpp_decl::TypePtr & target,

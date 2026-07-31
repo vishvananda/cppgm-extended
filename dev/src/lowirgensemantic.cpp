@@ -2000,6 +2000,25 @@ bool is_host_runtime_rtti_class_type(const TypePtr & type)
   return is_host_runtime_rtti_class_name(qualified_name);
 }
 
+bool is_host_runtime_rtti_nonclass_type(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     is_nullptr_scalar_type(base)) {
+    return true;
+  }
+  if(base->kind != Type::TK_POINTER || !base->inner) {
+    return false;
+  }
+  TypePtr pointee = strip_top_level_cv(base->inner);
+  return pointee &&
+         (pointee->kind == Type::TK_FUNDAMENTAL ||
+          is_nullptr_scalar_type(pointee));
+}
+
 bool is_standard_library_class_name(const string & input_name)
 {
   const string qualified_name = canonical_host_runtime_rtti_class_name(input_name);
@@ -6317,6 +6336,11 @@ private:
          !is_host_runtime_rtti_class_type(type)) {
         return internal_symbol;
       }
+    }
+    if(emit_runtime_support_ &&
+       rtti_definition_symbols_.count(internal_symbol) != 0 &&
+       !is_host_runtime_rtti_nonclass_type(type)) {
+      return internal_symbol;
     }
     const string host_symbol = symbol_linkage::typeinfo_symbol_for_type(type);
     if(host_symbol.empty()) {
@@ -15246,7 +15270,8 @@ private:
 
   void bind_catch_variable(const CallSemNode & variable,
                            const string & source_ptr,
-                           long long source_offset)
+                           long long source_offset,
+                           bool source_is_pointer_value = false)
   {
     VariableBinding binding = create_variable_binding(variable.text, variable.semantic_type);
     register_local_binding(variable.text, binding);
@@ -15268,6 +15293,14 @@ private:
                                     emit_storage_address(binding.slots[0]),
                                     adjusted_ptr);
       register_class_object_cleanup(binding);
+      return;
+    }
+
+    if(source_is_pointer_value) {
+      const string stored_value =
+          emit_debug_named_local_value(variable.text, binding.lowir_type, adjusted_ptr);
+      emit_line("store " + binding.lowir_type + " " + stored_value + ", " +
+                binding.slots[0]);
       return;
     }
 
@@ -17278,9 +17311,19 @@ private:
               use_host_eh_runtime() ? host_catch_storage :
                                       emit_temp_assignment("ptr", string("load ptr ") +
                                                                  match_ptr_slot);
+          const TypePtr catch_value_type =
+              strip_top_level_cv(remove_reference_type(variable->semantic_type));
+          // The Itanium host runtime returns the adjusted pointer value itself
+          // from __cxa_begin_catch for a by-value pointer handler.
+          const bool host_pointer_catch_value =
+              use_host_eh_runtime() &&
+              !is_reference_type(variable->semantic_type) &&
+              catch_value_type &&
+              catch_value_type->kind == Type::TK_POINTER;
           bind_catch_variable(*variable,
                               catch_object,
-                              0);
+                              0,
+                              host_pointer_catch_value);
         } else if(materialize_unnamed_catch_object) {
           const string catch_object =
               use_host_eh_runtime() ? host_catch_storage :
