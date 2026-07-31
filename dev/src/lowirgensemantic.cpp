@@ -23375,10 +23375,14 @@ private:
           return;
         }
         if(!append_global_array_initializer_items(global.data_items, base, init)) {
-          if(is_unreferenced_unsupported_constexpr_global(node)) {
+          if(guarded_array) {
+            global.data_items.push_back(
+                string("zero ") + to_string(backend_storage_size(node.semantic_type)));
+          } else if(is_unreferenced_unsupported_constexpr_global(node)) {
             return;
+          } else {
+            throw logic_error("unsupported global array initializer for " + node.text);
           }
-          throw logic_error("unsupported global array initializer for " + node.text);
         }
       } else if(guarded_array &&
                 all_of(node.children.begin(),
