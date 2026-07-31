@@ -169,6 +169,23 @@ FunctionTypeRefQualifier function_type_ref_qualifier_from_method_ref(
   return FTRQ_NONE;
 }
 
+bool declaration_list_has_function_type_syntax(const CppAstNode * declarators)
+{
+  if(!declarators) {
+    return false;
+  }
+  for(size_t i = 0; i < declarators->children.size(); ++i) {
+    const CppAstNode & init_declarator = declarators->children[i];
+    if(init_declarator.kind == CppAstKind::init_declarator &&
+       !init_declarator.children.empty() &&
+       find_child_kind(init_declarator.children[0],
+                       CppAstKind::parameter_clause)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 TypePtr explicit_instantiation_member_template_deduction_target(
     const FunctionTemplateDecl & decl,
     const TypePtr & target_type)
@@ -16350,6 +16367,11 @@ private:
                                              substituted_expression,
                                              preserve_nested_pack_expansions)) {
           argument.expression.reset(new CppAstNode(substituted_expression));
+          const string structured_text = trim_space(
+              describe_expression_for_diagnostic(substituted_expression));
+          if(!structured_text.empty()) {
+            argument.text = structured_text;
+          }
         }
       }
       if(argument.template_id) {
@@ -16358,6 +16380,11 @@ private:
                                                   type_replacements,
                                                   value_replacements,
                                                   preserve_nested_pack_expansions);
+      }
+    }
+    if(syntax.argument_syntaxes.size() == syntax.arguments.size()) {
+      for(size_t i = 0; i < syntax.arguments.size(); ++i) {
+        syntax.arguments[i] = syntax.argument_syntaxes[i].text;
       }
     }
   }
@@ -16482,6 +16509,12 @@ private:
   {
     if(preserve_nested_pack_expansions &&
        node.kind == CppAstKind::pack_expansion_expression) {
+      out = clone_pack_substitution_node(node);
+      return true;
+    }
+    // Expanding a use of a pack substitutes each selected element, but the
+    // operand of sizeof... continues to denote the complete pack.
+    if(node.kind == CppAstKind::sizeof_pack_expression) {
       out = clone_pack_substitution_node(node);
       return true;
     }
@@ -21211,6 +21244,9 @@ private:
     out.has_auto = decl_spec_contains_auto(out.resolved_specifiers);
     const bool declaration_is_typedef =
         decl_spec_contains_token(out.resolved_specifiers, KW_TYPEDEF);
+    const bool reference_preparsed_class_templates =
+        declaration_is_typedef ||
+        declaration_list_has_function_type_syntax(declarators);
     Scope * decl_spec_scope = &scope;
     if(declarators && declarators->children.size() == 1) {
       const CppAstNode & init_decl = declarators->children[0];
@@ -21233,7 +21269,7 @@ private:
                         *decl_spec_scope,
                         out.declaration_is_typedef,
                         out.base,
-                        declaration_is_typedef);
+                        reference_preparsed_class_templates);
     return true;
   }
 
@@ -21585,13 +21621,16 @@ private:
     out.has_auto = decl_spec_contains_auto(out.resolved_specifiers);
     const bool declaration_is_typedef =
         decl_spec_contains_token(out.resolved_specifiers, KW_TYPEDEF);
+    const bool reference_preparsed_class_templates =
+        declaration_is_typedef ||
+        declaration_list_has_function_type_syntax(declarators);
     out.parsed_decl_spec =
         out.has_auto ||
         parse_decl_spec(out.resolved_specifiers,
                         scope,
                         out.declaration_is_typedef,
                         out.base,
-                        declaration_is_typedef);
+                        reference_preparsed_class_templates);
     return true;
   }
 
@@ -22297,6 +22336,7 @@ private:
         return false;
       }
       out = apply_constexpr_object_qualifier(specifiers, out, is_typedef);
+      out = apply_initializer_array_bound(*this, scope, out, initializer);
       return true;
     }
 

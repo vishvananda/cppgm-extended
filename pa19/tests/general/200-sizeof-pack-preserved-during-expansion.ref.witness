@@ -1,0 +1,16 @@
+translation-unit
+  function-call at pa19/tests/general/200-sizeof-pack-preserved-during-expansion.t:9:21
+    callee expand
+    selected instantiation
+    bind #1 = <0> source=explicit
+template-closure-events
+  ensure-definition
+    entity expand
+  function-instantiation
+    entity expand
+  function-instantiation
+    entity value
+  require-definition
+    entity expand
+  require-definition
+    entity value

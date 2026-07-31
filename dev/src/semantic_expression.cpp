@@ -3296,11 +3296,29 @@ void collect_implicit_lambda_capture_names(SemanticContext & ctx,
               if(!current->class_info) {
                 continue;
               }
-              if(!lookup_visible_member_functions(*current->class_info, lookup_name)
-                      .functions.empty() ||
-                 !lookup_visible_member_function_templates(*current->class_info, lookup_name)
-                      .templates.empty()) {
-                append_capture_name("this", out, seen);
+              const MemberCallableLookupResult member_callables =
+                  lookup_visible_member_callables(*current->class_info, lookup_name);
+              if(!member_callables.functions.empty() ||
+                 !member_callables.templates.empty()) {
+                bool requires_implicit_object = false;
+                for(size_t i = 0; i < member_callables.functions.size(); ++i) {
+                  if(member_callables.functions[i] &&
+                     member_callables.functions[i]->is_method) {
+                    requires_implicit_object = true;
+                    break;
+                  }
+                }
+                for(size_t i = 0;
+                    !requires_implicit_object && i < member_callables.templates.size();
+                    ++i) {
+                  if(member_callables.templates[i] &&
+                     !member_callables.templates[i]->is_static_member) {
+                    requires_implicit_object = true;
+                  }
+                }
+                if(requires_implicit_object) {
+                  append_capture_name("this", out, seen);
+                }
                 break;
               }
             }
@@ -7662,6 +7680,39 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
               return true;
             };
 
+        const auto try_convert_pointer_class_operand_for_arithmetic =
+            [&](const ExprInfo & class_expr,
+                bool class_complete,
+                const ExprInfo & integral_expr,
+                bool class_is_lhs,
+                ExprInfo & converted_out,
+                ConversionRank & converted_rank_out) -> bool
+            {
+              if(!class_complete ||
+                 !is_integral_or_unscoped_enum_type(
+                     value_conversion_type(integral_expr))) {
+                return false;
+              }
+              if(!node_has_simple_type(node, OP_PLUS) &&
+                 !(node_has_simple_type(node, OP_MINUS) && class_is_lhs)) {
+                return false;
+              }
+
+              TypePtr converted_pointer_type;
+              if(!try_builtin_pointer_operand_conversion(
+                     ctx,
+                     scope,
+                     class_expr,
+                     converted_out,
+                     converted_pointer_type,
+                     conversion_options) ||
+                 !is_complete_object_pointer_type(ctx, converted_pointer_type)) {
+                return false;
+              }
+              converted_rank_out = CR_USER_DEFINED;
+              return true;
+            };
+
         const auto try_convert_single_class_operand =
             [&](const ExprInfo & class_expr,
                 bool class_complete,
@@ -7729,6 +7780,32 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           ConversionRank converted_rank = CR_BAD;
           TypePtr target;
           if(lhs_class &&
+             try_convert_pointer_class_operand_for_arithmetic(lhs_expr,
+                                                               lhs_class,
+                                                               rhs_expr,
+                                                               true,
+                                                               converted,
+                                                               converted_rank)) {
+            lhs_expr = converted;
+            if(ranks_out) {
+              ranks_out->push_back(converted_rank);
+              ranks_out->push_back(CR_EXACT);
+            }
+            return true;
+          } else if(rhs_class &&
+                    try_convert_pointer_class_operand_for_arithmetic(rhs_expr,
+                                                                      rhs_class,
+                                                                      lhs_expr,
+                                                                      false,
+                                                                      converted,
+                                                                      converted_rank)) {
+            rhs_expr = converted;
+            if(ranks_out) {
+              ranks_out->push_back(CR_EXACT);
+              ranks_out->push_back(converted_rank);
+            }
+            return true;
+          } else if(lhs_class &&
              try_convert_class_operand_for_pointer_arithmetic(lhs_expr,
                                                               lhs_class,
                                                               rhs_expr,
@@ -7802,9 +7879,11 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
 
         std::vector<Candidate> candidates;
         std::vector<TypePtr> targets = builtin_numeric_conversion_targets();
-        if(node_has_simple_type(node, OP_EQ) || node_has_simple_type(node, OP_NE) ||
-           node_has_simple_type(node, OP_LT) || node_has_simple_type(node, OP_GT) ||
-           node_has_simple_type(node, OP_LE) || node_has_simple_type(node, OP_GE)) {
+        const bool pointer_comparison =
+            node_has_simple_type(node, OP_EQ) || node_has_simple_type(node, OP_NE) ||
+            node_has_simple_type(node, OP_LT) || node_has_simple_type(node, OP_GT) ||
+            node_has_simple_type(node, OP_LE) || node_has_simple_type(node, OP_GE);
+        if(node_has_simple_type(node, OP_MINUS) || pointer_comparison) {
           const auto append_pointer_conversion_target =
               [&](const ExprInfo & expr)
               {
@@ -7828,6 +7907,8 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
               };
           append_pointer_conversion_target(lhs_expr);
           append_pointer_conversion_target(rhs_expr);
+        }
+        if(pointer_comparison) {
           targets.push_back(builtin_common_object_pointer_target());
         }
         for(size_t i = 0; i < targets.size(); ++i) {

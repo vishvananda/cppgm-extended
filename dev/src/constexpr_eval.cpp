@@ -482,6 +482,55 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
   }
 
   if(node.kind == CppAstKind::unary_expression && node.children.size() == 1 && node.has_token) {
+    if(node.simple_type == OP_STAR) {
+      const auto unparenthesized = [](const CppAstNode * current)
+      {
+        while(current &&
+              current->kind == CppAstKind::parenthesized_expression &&
+              current->children.size() == 1) {
+          current = &current->children[0];
+        }
+        return current;
+      };
+      const CppAstNode * pointer_expr = unparenthesized(&node.children[0]);
+      if(pointer_expr &&
+         pointer_expr->kind == CppAstKind::cast_expression &&
+         pointer_expr->children.size() == 2 &&
+         pointer_expr->children[0].kind == CppAstKind::type_id) {
+        TypePtr pointer_type;
+        const CppAstNode * address_expr =
+            unparenthesized(&pointer_expr->children[1]);
+        const CppAstNode * object_expr =
+            address_expr &&
+            address_expr->kind == CppAstKind::unary_expression &&
+            address_expr->children.size() == 1 &&
+            address_expr->has_token &&
+            address_expr->simple_type == OP_AMP ?
+                unparenthesized(&address_expr->children[0]) :
+                nullptr;
+        ConstexprValue object_value;
+        if(object_expr &&
+           object_expr->kind == CppAstKind::id_expression &&
+           hooks_.parse_type_id &&
+           hooks_.parse_type_id(pointer_expr->children[0], pointer_type) &&
+           pointer_type &&
+           pointer_type->kind == Type::TK_POINTER &&
+           pointer_type->inner &&
+           eval_expr(*object_expr, object_value) &&
+           (object_value.kind == ConstexprValue::CV_INTEGRAL ||
+            object_value.kind == ConstexprValue::CV_FLOATING) &&
+           object_value.type &&
+           type_equals(strip_top_level_cv(remove_reference_type(object_value.type)),
+                       strip_top_level_cv(pointer_type->inner))) {
+          // Darwin's wait-status macros read a named constant through
+          // `*(T *)&value`.  Clang folds that system-header idiom.  Preserve
+          // the named scalar when the cast changes only cv qualification;
+          // representation-changing pointer casts remain unevaluated.
+          out = object_value;
+          return true;
+        }
+      }
+    }
     if(node.simple_type == OP_STAR &&
        is_this_expression(node.children[0]) &&
        current_this_object(out)) {

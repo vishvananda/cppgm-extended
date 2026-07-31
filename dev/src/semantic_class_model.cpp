@@ -1585,6 +1585,27 @@ bool try_resolve_instantiated_base_type_node(SemanticContext & ctx,
       !ctx.text_mentions_dependent_non_namespace_binding_names(scope, node.value))) {
     return false;
   }
+  bool exact_parameter_name = false;
+  for(std::size_t i = 0; i < substitution_parameters->size(); ++i) {
+    const template_model::TemplateParameterInfo & parameter =
+        (*substitution_parameters)[i];
+    if(parameter.name == node.value ||
+       std::find(parameter.alternate_names.begin(),
+                 parameter.alternate_names.end(),
+                 node.value) != parameter.alternate_names.end()) {
+      exact_parameter_name = true;
+      break;
+    }
+  }
+  if(exact_parameter_name) {
+    TypePtr bound_type = ctx.lookup_type(scope,
+                                         node.value,
+                                         allow_incomplete_lookup);
+    if(bound_type && !ctx.type_depends_on_template_parameter(bound_type)) {
+      out = bound_type;
+      return true;
+    }
+  }
   for(std::size_t i = 0; i < substitution_arguments->size(); ++i) {
     const template_model::TemplateArgument & argument =
         (*substitution_arguments)[i];
@@ -11032,6 +11053,10 @@ void ensure_class_reference_static_asserts(SemanticContext & ctx,
                                            ClassInfo & info)
 {
   if(info.complete || info.reference_members_collected ||
+     info.full_member_collection_in_progress ||
+     info.reference_member_collection_in_progress ||
+     info.reference_type_member_collection_in_progress ||
+     !info.reference_named_members_in_progress.empty() ||
      class_instantiation_is_dependent(ctx, info)) {
     return;
   }
@@ -11040,6 +11065,10 @@ void ensure_class_reference_static_asserts(SemanticContext & ctx,
   const CppAstNode * reference_node =
       info.template_output_node ? info.template_output_node : info.class_node;
   if(!reference_node || info.complete || info.reference_members_collected ||
+     info.full_member_collection_in_progress ||
+     info.reference_member_collection_in_progress ||
+     info.reference_type_member_collection_in_progress ||
+     !info.reference_named_members_in_progress.empty() ||
      class_instantiation_is_dependent(ctx, info)) {
     return;
   }

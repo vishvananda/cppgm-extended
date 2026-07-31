@@ -1053,6 +1053,11 @@ bool try_builtin_pointer_operand_conversion(SemanticContext & ctx,
       {
         TypePtr result_base =
             strip_top_level_cv(remove_reference_type(result_type));
+        if(result_base && result_base->kind == Type::TK_ARRAY) {
+          result_base = make_pointer(result_base->inner);
+        } else if(result_base && result_base->kind == Type::TK_FUNCTION) {
+          result_base = make_pointer(result_base);
+        }
         if(!result_base || result_base->kind != Type::TK_POINTER) {
           return;
         }

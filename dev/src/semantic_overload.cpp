@@ -6603,6 +6603,26 @@ ExprInfo make_call_result(SemanticContext & ctx,
   return result;
 }
 
+void require_complete_evaluated_call_result(SemanticContext & ctx,
+                                            const TypePtr & result_type,
+                                            ValueCategory result_category)
+{
+  if(result_category != VC_PRVALUE) {
+    return;
+  }
+  TypePtr object_type = strip_top_level_cv(remove_reference_type(result_type));
+  if(!object_type || object_type->kind != Type::TK_NAMED) {
+    return;
+  }
+  ClassInfo * info = ctx.class_info_for_type(object_type);
+  if(!info || info->class_kind == "enum") {
+    return;
+  }
+  if(!ctx.complete_class_type(object_type)) {
+    throw logic_error("incomplete function call result");
+  }
+}
+
 ExprInfo make_builtin_call_result(SemanticContext & ctx,
                                   const string & name,
                                   const TypePtr & result_type,
@@ -13365,6 +13385,11 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
   if(!result_value_category_for_function_result(function_type->inner, result_category)) {
     throw_internal_error("invalid function result", std::string(), "overload");
   }
+  if(instantiate_bodies) {
+    require_complete_evaluated_call_result(ctx,
+                                           function_type->inner,
+                                           result_category);
+  }
   vector<FunctionBinding *> assignment_built_candidates;
   assignment_built_candidates.reserve(assignment_candidates.size());
   for(size_t i = 0; i < assignment_candidates.size(); ++i) {
@@ -14055,6 +14080,11 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                                             result_category)) {
                 throw logic_error("invalid conversion-function-pointer call result");
               }
+              if(instantiate_bodies) {
+                require_complete_evaluated_call_result(ctx,
+                                                       selected_function_type->inner,
+                                                       result_category);
+              }
               surrogate_result = make_call_result(ctx,
                                                   selected_function_type->inner,
                                                   result_category,
@@ -14229,6 +14259,11 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         if(!result_value_category_for_function_result(function_type->inner,
                                                       result_category)) {
           throw logic_error("invalid function result");
+        }
+        if(instantiate_bodies) {
+          require_complete_evaluated_call_result(ctx,
+                                                 function_type->inner,
+                                                 result_category);
         }
         if(direct_function_binding) {
           if(direct_function_binding->is_deleted) {
@@ -14473,6 +14508,11 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     ValueCategory result_category = VC_PRVALUE;
     if(!result_value_category_for_function_result(callable_function_type->inner, result_category)) {
       throw logic_error("pointer-to-member call result category");
+    }
+    if(instantiate_bodies) {
+      require_complete_evaluated_call_result(ctx,
+                                             callable_function_type->inner,
+                                             result_category);
     }
     return make_call_result(ctx,
                             callable_function_type->inner,
@@ -15786,6 +15826,11 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     ValueCategory result_category = VC_PRVALUE;
     if(!result_value_category_for_function_result(function_type->inner, result_category)) {
       throw_internal_error("invalid function result", std::string(), "overload");
+    }
+    if(instantiate_bodies) {
+      require_complete_evaluated_call_result(ctx,
+                                             function_type->inner,
+                                             result_category);
     }
     if(template_witness_source_capture_enabled_for_calls(ctx)) {
       std::string witness_use_location =

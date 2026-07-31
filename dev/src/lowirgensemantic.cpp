@@ -1526,11 +1526,18 @@ bool matches_constructor_entry_type_for_lowir(const TypePtr & entry_type,
   if(!base || base->kind != Type::TK_FUNCTION || !is_void_type(base->inner)) {
     return false;
   }
-  if(base->params.size() == 1) {
-    return same_class_reference_parameter_for_lowir(class_type, base->params[0], ref_kind);
-  }
   if(base->params.empty()) {
     return false;
+  }
+  // Some entries omit the implicit object parameter.  In either stored
+  // shape, the class reference must be the first explicit parameter of a
+  // copy/move constructor.  Looking through every later parameter can mistake
+  // an unrelated converting constructor such as C(tag, C const&) for C's
+  // copy constructor.
+  if(same_class_reference_parameter_for_lowir(class_type,
+                                              base->params[0],
+                                              ref_kind)) {
+    return true;
   }
   // The implicit-object (`this`) parameter must belong to the class being
   // looked up. Otherwise a converting constructor of a *different*
@@ -1541,12 +1548,10 @@ bool matches_constructor_entry_type_for_lowir(const TypePtr & entry_type,
   if(!same_class_pointer_parameter_for_lowir(class_type, base->params[0])) {
     return false;
   }
-  for(size_t i = 1; i < base->params.size(); ++i) {
-    if(same_class_reference_parameter_for_lowir(class_type, base->params[i], ref_kind)) {
-      return true;
-    }
-  }
-  return false;
+  return base->params.size() >= 2 &&
+         same_class_reference_parameter_for_lowir(class_type,
+                                                  base->params[1],
+                                                  ref_kind);
 }
 
 bool matches_destructor_entry_type_for_lowir(const TypePtr & entry_type,
@@ -7504,7 +7509,7 @@ private:
 
       const auto emit_branch_value = [&](const CallSemNode & branch)
       {
-        push_cleanup_scope();
+        push_cleanup_scope(true);
         if(emit_special_class_value_to_target(branch, target_ptr)) {
           if(current_block_) {
             emit_scope_cleanups(cleanup_scopes_.back());
@@ -7888,12 +7893,19 @@ private:
                                      const string & source_ptr)
   {
     const string symbol = move_constructor_symbol(class_type);
-    if(!symbol.empty() &&
-       !special_member_symbol_has_trivial_lifecycle(symbol)) {
-      note_generated_function_reference(symbol);
-      emit_line("call void " + symbol + "(" + target_ptr + ", " + source_ptr + ")");
+    if(!symbol.empty()) {
+      if(!special_member_symbol_has_trivial_lifecycle(symbol)) {
+        note_generated_function_reference(symbol);
+        emit_line("call void " + symbol + "(" + target_ptr + ", " + source_ptr + ")");
+      } else if(!is_empty_class_storage_type(class_type)) {
+        emit_line("copyobj " + storage_span_text(class_type) + " " +
+                  source_ptr + ", " + target_ptr);
+      }
       return;
     }
+    // An absent move constructor permits copy construction from the xvalue.
+    // A present trivial move constructor does not: it has already selected the
+    // transfer operation, whose lowering is the storage copy above.
     const string copy_symbol = copy_constructor_symbol(class_type);
     if(!copy_symbol.empty() &&
        !special_member_symbol_has_trivial_lifecycle(copy_symbol)) {
