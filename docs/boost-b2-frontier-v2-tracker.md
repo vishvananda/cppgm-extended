@@ -13,11 +13,11 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `116 / 147`
-- current cursor: `#117 libs/timer/test`
-- active compiler frontier: C++03-declared Boost.ThrowException passes cleanly
-  in the forced C++11 lane without a compiler or fixture change; C++03-declared
-  Boost.Timer is next
+- completed suites: `118 / 147`
+- current cursor: `#119 libs/tti/test`
+- active compiler frontier: C++03-declared Boost.Tokenizer passes cleanly in
+  the forced C++11 lane without a compiler or fixture change; C++03-declared
+  Boost.TTI is next
 
 ## Baseline Gates
 
@@ -390,23 +390,25 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 114 | `libs/test/test` | pass | `(this commit)` | Boost declares C++11. The final exact forced four-job `pch=off` graph finds 12,132 targets, requests 1,517 updates, updates 1,513, records 323 passing tests and 132 deliberate failures as failed-as-expected, and leaves exactly one failed update plus three downstream skips. The sole miss is `basic_cstring-test.o`, whose use of `std::basic_string<unsigned char>` is independently rejected by Homebrew Clang 22 because libc++ leaves `std::char_traits<unsigned char>` undefined; as with Phoenix's host-reproduced upstream defect, it is not charged to CPPGM. Log `/private/tmp/boost-frontier-v2-suite-114-test-final-narrow.log`; elapsed time is 4,957.21s, maximum RSS is 1,224,421,376 B, process swaps are zero, system swap is unchanged, and live sampling shows every per-TU crest releases. | The compiler-owned closure covers predefined `__COUNTER__`, exact delete conversion, function-template/reference and redeclaration identity, local enum/template identity, late friend access, capture dependency, runtime virtual-base hidden arguments, weak external thunks, function-pointer NTTP RTTI, exact named-member demand, and constructor-unwind cleanup emission. The authoritative graph passes both former failures, `assertion-construction-test` and `unit_test_example_12`. Reducers are compact C++11 owners in PA5, PA16, PA18, PA25, PA32, PA33, and PA35; the PA16 owner is in its audited `400` conversion-operator cluster, PA35 owns the one hosted `<memory>` probe, and no PA22 test uses `<type_traits>`. Six PA27 refs change for the principled reason that virtual-base hidden arguments now load the runtime offset through vtable slot `-24` rather than hard-coding `+4`/`+8`. The final PA9-excluded direct-LowIR report passes `4277/4277`, including PA37 `7/7`; all 978 configured strict comparisons pass. All 23 text-reparse categories and all 168 script tests pass with one intentional skip. The candidate-only frozen-source/51-header gate records 199,714,287,717 instructions, 949,374,976 B RSS, and 662,855,680 B footprint: -24.22%, -26.56%, and -34.36% from immutable epoch `9764b3835`; no parent or live project header was measured. C++ actions invoke CPPGM, host C/assembly/link actions use explicit Homebrew Clang 22 paths, and printed `gcc.*`/`gcc-cppgm` strings remain legacy adapter labels only. |
 | 115 | `libs/thread/test` | pass | `(this commit)` | Boost declares C++11. The authoritative exact four-job `pch=off` graph finds 21,066 targets, requests 4,226 updates, updates 4,218, records 778 passing tests and 42 deliberate failures as failed-as-expected, and leaves exactly two failed compile updates plus six downstream skips. Both failures are variants of `sync/futures/make_ready_future_pass.cpp`, whose raw invalid UTF-8 byte is independently rejected by Homebrew Clang 22; they are classified `skipped-source-encoding` rather than charged to CPPGM. Log `/private/tmp/boost-frontier-v2-suite-115-thread-authoritative-final.log`; elapsed time is 2,882.37s, maximum RSS is 1,048,879,104 B, footprint is 156,356,608 B, process swaps are zero, and system swap is unchanged. | Six typed closures repair replaceable operator-new exception-spec equivalence, losing converting-constructor validation/output, renamed owner-template parameters, unrelated-base virtual override selection, repeated function-result substitution, and zero-parameter copy/move-constructor candidate matching. The final graph passes all five previously failing packaged-task/lambda variants. Seven compact C++11 owners span PA16, PA21, PA22, PA27, and PA34; PA22 uses no `<type_traits>`, and the PA27 owner is six lines with a 2,978-byte ref. The PA9-excluded direct-LowIR report passes `4284/4284`, including PA37 `7/7`; all configured strict comparisons pass. All 23 text-reparse categories remain zero and all 168 script tests pass with one intentional skip. Homebrew Clang 22 accepts the semantic reducers warning-clean. The immutable candidate-only frozen-source/51-header gate records 199,782,607,157 instructions, 954,146,816 B RSS, and 669,814,784 B footprint: -24.20%, -26.19%, and -33.67% from epoch `9764b3835`; no parent compiler or live project header was measured. CPPGM was built by Homebrew Clang 22, C++ actions invoke CPPGM, and host C/assembly/link actions use explicitly pinned Clang paths; printed `gcc.*`/`gcc-cppgm` strings remain legacy adapter labels only. |
 | 116 | `libs/throw_exception/test` | pass | `(no compiler change)` | Boost declares C++03 and runs in the stable forced C++11 lane. The exact four-job `pch=off` graph finds 789 targets, updates all 194 requested targets, records 24 passing tests, and exits successfully with no failed or skipped action in 45.27s; log `/private/tmp/boost-frontier-v2-suite-116-throw-exception-intake.log`. | No compiler or fixture change is required. The graph peaks at 232,337,408 B RSS and 520,192 B footprint, records zero process swaps, and leaves system swap unchanged. Validation and the immutable frozen-source/51-header performance evidence are inherited from the immediately preceding Thread commit. C++ actions invoke CPPGM built by Homebrew Clang 22, and all host paths are explicitly pinned to Clang; printed `gcc.*`/`gcc-cppgm` strings are legacy Boost.Build adapter labels only. |
+| 117 | `libs/timer/test` | pass | `(no compiler change)` | Boost declares C++03 and runs in the stable forced C++11 lane. The exact four-job `pch=off` graph finds 1,870 targets, updates all 56 requested targets, records seven passing tests, and exits successfully with no failed or skipped action in 23.57s; log `/private/tmp/boost-frontier-v2-suite-117-timer-intake.log`. | No compiler or fixture change is required. The graph peaks at 220,299,264 B RSS and 516,096 B footprint, records zero process swaps, and leaves system swap unchanged. Validation and immutable frozen-source/51-header performance evidence remain inherited from the Thread commit. C++ actions invoke CPPGM built by Homebrew Clang 22, and host C/assembly/link actions use explicitly pinned Clang paths; printed `gcc.*`/`gcc-cppgm` strings are legacy Boost.Build adapter labels only. |
+| 118 | `libs/tokenizer/test` | pass | `(no compiler change)` | Boost declares C++03 and runs in the stable forced C++11 lane. The exact four-job `pch=off` graph finds 445 targets, updates all 42 requested targets, records six passing tests, and exits successfully with no failed or skipped action in 15.77s; log `/private/tmp/boost-frontier-v2-suite-118-tokenizer-intake.log`. | No compiler or fixture change is required. The graph peaks at 207,257,600 B RSS and 516,096 B footprint, records zero process swaps, and leaves system swap unchanged. Validation and immutable frozen-source/51-header performance evidence remain inherited from the Thread commit. C++ actions invoke CPPGM built by Homebrew Clang 22, and host paths use explicitly pinned Clang; printed `gcc.*`/`gcc-cppgm` strings are legacy Boost.Build adapter labels only. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#117 libs/timer/test`
-- focused target: `#117 libs/timer/test` exact forced `pch=off` graph intake
-- last closed suite: `#116 libs/throw_exception/test` (`pass`)
+- suite: `#119 libs/tti/test`
+- focused target: `#119 libs/tti/test` exact forced `pch=off` graph intake
+- last closed suite: `#118 libs/tokenizer/test` (`pass`)
 - failure phase: not yet established
 - diagnostic: pending exact intake
 - reduced repro: not applicable yet
 - owning PA/cluster: pending
 - implementation area: pending
-- performance risk: small timer/chrono compiled-library graph; use ordinary
-  four-job parallelism with live memory and swap monitoring
-- language lane: Boost.Timer declares C++03 and runs in the stable forced C++11
+- performance risk: template-introspection graph; use ordinary four-job
+  parallelism with live memory and swap monitoring
+- language lane: Boost.TTI declares C++03 and runs in the stable forced C++11
   lane
 - next action: run the exact Clang-pinned `pch=off` forced graph and isolate the
   first compiler-owned frontier, if any
@@ -819,6 +821,28 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Preemptible weak definition address lowering | The object backend treated every local weak definition as directly addressable. Under Mach weak coalescing/interposition, a reference to an exported weak function or data definition must use the same indirect path as an imported/preemptible symbol. Weak exports are now excluded from the direct-definition sets used by address and memory-reference lowering; block-local labels remain direct. | Existing PA32 `200-extern-c-variable-definition-inherits-prior-linkage` object inspection now requires `imported_data_got alias` and excludes `data_pcrel`; the object-expectation helper gains a Mach canonical C-symbol control | Statechart DllTest gave its inline static ID a TU-local address instead of observing the coalesced definition. The fixed exact target passes, and both PA32 object variants record the required GOT relocation class. | PA32 participates in the final `4262/4262` report; all 168 script tests pass with one intentional skip, including the checker control; placement, strict, reparse, warning, and exact Statechart gates pass. | measured with the complete Statechart closure in the final immutable frozen-source/51-header report; no parent or live header measured | `(this commit)` |
 
 ## Decision Log
+
+- `2026-07-31`: Closed C++03-declared Boost.Tokenizer without a compiler or
+  fixture change. The exact four-job forced-C++11 `pch=off` graph finds 445
+  targets, updates all 42 requested targets, records six passing tests, and
+  exits with no failed or skipped action in 15.77s. It peaks at 207,257,600 B
+  RSS and 516,096 B footprint, records zero process swaps, and leaves system
+  swap unchanged. Suite 118 is closed and the cursor advances to
+  C++03-declared Boost.TTI. Validation and immutable frozen-source/51-header
+  performance evidence remain inherited from the Thread commit. CPPGM is built
+  by Homebrew Clang 22, all host paths are Clang-pinned, and printed
+  `gcc.*`/`gcc-cppgm` names remain B2 adapter labels only.
+
+- `2026-07-31`: Closed C++03-declared Boost.Timer without a compiler or
+  fixture change. The exact four-job forced-C++11 `pch=off` graph finds 1,870
+  targets, updates all 56 requested targets, records seven passing tests, and
+  exits with no failed or skipped action in 23.57s. It peaks at 220,299,264 B
+  RSS and 516,096 B footprint, records zero process swaps, and leaves system
+  swap unchanged. Suite 117 is closed and the cursor advances to
+  C++03-declared Boost.Tokenizer. Validation and immutable frozen-source/
+  51-header performance evidence remain inherited from the Thread commit.
+  CPPGM is built by Homebrew Clang 22, all host paths are Clang-pinned, and
+  printed `gcc.*`/`gcc-cppgm` names remain B2 adapter labels only.
 
 - `2026-07-31`: Closed C++03-declared Boost.ThrowException without a compiler
   or fixture change. The exact four-job forced-C++11 `pch=off` graph finds 789
@@ -4683,7 +4707,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-# Suite 117 declares C++03 and runs in the stable forced C++11 lane.
+# Suite 119 declares C++03 and runs in the stable forced C++11 lane.
 /usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=4 CXXSTD=11 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
@@ -4692,5 +4716,5 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh -a pch=off libs/timer/test
+  ./run-cppgm-b2.sh -a pch=off libs/tti/test
 ```
