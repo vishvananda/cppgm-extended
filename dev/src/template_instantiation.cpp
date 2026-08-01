@@ -10584,6 +10584,22 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     }
     return false;
   };
+  const auto binding_signature_is_concrete =
+      [&](const FunctionBinding & binding) -> bool
+  {
+    if(!binding.type ||
+       template_argument_semantics::type_depends_on_template_parameter(
+           ctx, binding.type)) {
+      return false;
+    }
+    for(std::size_t i = 0; i < binding.params.size(); ++i) {
+      if(template_argument_semantics::type_depends_on_template_parameter(
+             ctx, binding.params[i].second)) {
+        return false;
+      }
+    }
+    return true;
+  };
   const auto refresh_cached_dependent_parameter_clause =
       [&](FunctionTemplateDecl & pattern_decl,
           Scope & refreshed_scope,
@@ -10744,6 +10760,18 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                             arguments,
                                             effective_pack_sizes,
                                             false);
+    const bool exact_pack_state =
+        !pack_sizes ||
+        found->second->instantiation_pack_sizes == *pack_sizes;
+    if(!include_body &&
+       !explicit_specialization &&
+       exact_pack_state &&
+       found->second->instantiated_signature_finalized &&
+       found->second->source_template == cache_source_decl &&
+       ctx.function_binding_is_live(found->second) &&
+       !template_arguments_are_dependent_for_instantiation(ctx, arguments)) {
+      return found->second;
+    }
     Scope * cache_instantiation_context_scope =
         function_template_instantiation_context_scope(*cache_source_decl);
   Scope * owner_member_instantiation_scope =
@@ -10940,6 +10968,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       apply_function_instantiation_intent(
           ctx, found->second, InstantiatedFunctionOutputMode::TrackOnly);
     }
+    found->second->instantiated_signature_finalized =
+        !template_arguments_are_dependent_for_instantiation(ctx, arguments) &&
+        (!instantiation_owner || !instantiation_owner->dependent_instantiation) &&
+        binding_signature_is_concrete(*found->second);
     return found->second;
   }
 
@@ -11657,7 +11689,13 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       bool result_type_still_dependent =
           template_argument_semantics::type_depends_on_template_parameter(ctx,
                                                                          result_type);
-      if(result_type_still_dependent) {
+      // A pack-dependent trailing result has an authoritative AST pattern
+      // below.  Recovering the retained dependent Type first revisits its
+      // expression graph in the current scope, only to discard that result and
+      // rebind the source pattern.  Besides duplicating the work, retained
+      // call-expression metadata can refer to an earlier specialization.
+      if(result_type_still_dependent &&
+         !can_rebind_result_pattern_after_recovery_failure) {
         TypePtr recovered_substituted_result;
         bool recovered_result = false;
         if(has_member_trailing_return_scope &&
@@ -12147,6 +12185,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     if(binding &&
        source_decl->is_inherited_constructor &&
        binding->is_constructor) {
+      binding->inherited_constructor_access_class =
+          source_decl->inherited_constructor_access_class;
       refresh_instantiated_inherited_constructor_initializer(ctx,
                                                             inst_scope,
                                                             *source_decl,
@@ -12291,6 +12331,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   record_function_template_instantiation_cache_entry(*binding,
                                                      *source_decl,
                                                      cache_key);
+  binding->instantiated_signature_finalized =
+      !dependent_template_arguments &&
+      (!instantiation_owner || !instantiation_owner->dependent_instantiation) &&
+      binding_signature_is_concrete(*binding);
   if((include_body || explicit_specialization) &&
      (binding->has_definition || explicit_specialization)) {
     apply_function_instantiation_intent(

@@ -45,6 +45,13 @@ struct FunctionRegistryState
       late_required_class_static_function_set;
   std::vector<semantic_model::FunctionBinding *> & synthetic_functions;
   std::vector<semantic_model::FunctionBinding *> & deferred_constexpr_functions;
+  std::vector<semantic_model::FunctionBinding *> &
+      pending_function_semantic_validation;
+  std::unordered_set<semantic_model::FunctionBinding *> &
+      queued_function_semantic_validation;
+  std::unordered_set<semantic_model::FunctionBinding *> &
+      completed_function_semantic_validation;
+  std::size_t & function_semantic_validation_index;
   std::unordered_set<const semantic_model::FunctionBinding *> & live_functions;
   std::vector<std::unique_ptr<semantic_model::FunctionBinding> > &
       retired_functions;

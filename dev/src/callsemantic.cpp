@@ -3935,6 +3935,10 @@ private:
         late_required_class_static_function_set,
         synthetic_functions,
         deferred_constexpr_functions,
+        pending_function_semantic_validation_,
+        queued_function_semantic_validation_,
+        completed_function_semantic_validation_,
+        function_semantic_validation_index_,
         live_functions,
         retired_functions,
         active_function_binding_borrows};
@@ -16092,6 +16096,8 @@ private:
     out.source_text = source.source_text;
     out.pack_expansion = source.pack_expansion;
     out.dependent = source.dependent;
+    out.substituted_from_template_binding =
+        source.substituted_from_template_binding;
     out.has_source_token_start = source.has_source_token_start;
     out.source_token_start = source.source_token_start;
     out.source_location_id = source.source_location_id;
@@ -30841,7 +30847,7 @@ private:
       const string & constructor_name,
       const CppAstNode & using_node,
       const CppAstNode * ctor_initializer,
-      MemberAccess access) override
+      MemberAccess) override
   {
     if(!owner.member_scope) {
       return nullptr;
@@ -30866,9 +30872,15 @@ private:
         base_template.pattern_scope :
         base_template.declaring_scope;
     inherited->name = constructor_name;
-    inherited->access = access;
+    inherited->access = base_template.access;
     inherited->is_constructor = true;
     inherited->is_inherited_constructor = true;
+    inherited->inherited_constructor_access_class =
+        base_template.inherited_constructor_access_class ?
+            base_template.inherited_constructor_access_class :
+            (base_template.declaring_scope ?
+                 base_template.declaring_scope->class_info :
+                 nullptr);
     inherited->is_destructor = false;
     inherited->is_static_member = false;
     inherited->declaration_node = &using_node;
@@ -32655,6 +32667,8 @@ private:
 
     if(witness::enabled(template_witness_context()) &&
        template_api::template_witness_declval_call_source_capture_enabled() &&
+       !template_argument_semantics::argument_syntax_uses_bound_template_type(
+           scope, *arg_syntax) &&
        !type_depends_on_template_parameter(declval_type)) {
       std::string public_location =
           template_api::normalize_template_witness_source_location(use_location);

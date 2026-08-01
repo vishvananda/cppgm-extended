@@ -66,6 +66,26 @@ void erase_function_pointer(std::vector<FunctionBinding *> & bindings,
                  bindings.end());
 }
 
+void erase_function_pointer_from_indexed_queue(
+    std::vector<FunctionBinding *> & bindings,
+    std::size_t & index,
+    FunctionBinding * binding)
+{
+  std::size_t removed_before_index = 0;
+  std::vector<FunctionBinding *>::iterator out = bindings.begin();
+  for(std::size_t i = 0; i < bindings.size(); ++i) {
+    if(bindings[i] == binding) {
+      if(i < index) {
+        ++removed_before_index;
+      }
+      continue;
+    }
+    *out++ = bindings[i];
+  }
+  bindings.erase(out, bindings.end());
+  index -= std::min(index, removed_before_index);
+}
+
 void erase_function_pointer_map(std::map<std::string, std::vector<FunctionBinding *> > & bindings,
                                 FunctionBinding * binding)
 {
@@ -530,6 +550,12 @@ void discard_function_binding(FunctionRegistryState & state,
   state.late_required_class_static_function_set.erase(binding);
   erase_function_pointer(state.synthetic_functions, binding);
   erase_function_pointer(state.deferred_constexpr_functions, binding);
+  erase_function_pointer_from_indexed_queue(
+      state.pending_function_semantic_validation,
+      state.function_semantic_validation_index,
+      binding);
+  state.queued_function_semantic_validation.erase(binding);
+  state.completed_function_semantic_validation.erase(binding);
   erase_function_binding_from_template_instantiation_caches(binding);
   erase_function_binding_from_owner_lookups(binding);
   release_function_symbol_reservation(state, binding);

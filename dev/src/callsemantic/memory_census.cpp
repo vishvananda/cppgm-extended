@@ -2099,6 +2099,11 @@ void census_semantic_cache(const semantic_cache::SemanticCache & cache,
       it != cache.identifier_token_cache.end();
       ++it) {
     bytes += unordered_set_storage_bytes(it->second.names);
+    bytes += vector_storage_bytes(it->second.owned_names);
+    for(size_t i = 0; i < it->second.owned_names.size(); ++i) {
+      bytes += sizeof(string) +
+               string_storage_bytes(*it->second.owned_names[i]);
+    }
   }
   census.note("cache.identifier_tokens", bytes, cache.identifier_token_cache.size());
 

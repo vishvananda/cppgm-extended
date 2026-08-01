@@ -6636,12 +6636,13 @@ bool make_associated_friend_lookup_cache_key(
   return !out.name.empty();
 }
 
-void lookup_associated_friend_candidates_for_type(
+bool lookup_associated_friend_candidates_for_type_impl(
     SemanticContext & ctx,
     const TypePtr & type,
     const string & name,
     vector<FunctionBinding *> * functions_out,
-    vector<FunctionTemplateDecl *> * templates_out)
+    vector<FunctionTemplateDecl *> * templates_out,
+    set<const Type *> & visited_types)
 {
   AssociatedFriendLookupCacheKey key;
   const bool have_key = make_associated_friend_lookup_cache_key(type, name, key);
@@ -6655,14 +6656,18 @@ void lookup_associated_friend_candidates_for_type(
       if(templates_out) {
         append_unique_function_templates(*templates_out, cached->second.templates);
       }
-      return;
+      return true;
     }
   }
 
   TypePtr base = have_key ? key.type : associated_namespace_scope_cache_key_type(type);
   if(!base) {
-    return;
+    return true;
   }
+  if(!visited_types.insert(base.get()).second) {
+    return true;
+  }
+  bool cacheable = true;
   switch(base->kind) {
   case Type::TK_CV:
   case Type::TK_ATOMIC:
@@ -6671,23 +6676,33 @@ void lookup_associated_friend_candidates_for_type(
   case Type::TK_LVALUE_REFERENCE:
   case Type::TK_RVALUE_REFERENCE:
   case Type::TK_ARRAY:
-    lookup_associated_friend_candidates_for_type(
-        ctx, base->inner, name, functions_out, templates_out);
-    return;
+    return lookup_associated_friend_candidates_for_type_impl(
+        ctx, base->inner, name, functions_out, templates_out, visited_types);
   case Type::TK_MEMBER_POINTER:
-    lookup_associated_friend_candidates_for_type(
-        ctx, base->owner, name, functions_out, templates_out);
-    lookup_associated_friend_candidates_for_type(
-        ctx, base->inner, name, functions_out, templates_out);
-    return;
+    cacheable =
+        lookup_associated_friend_candidates_for_type_impl(
+            ctx, base->owner, name, functions_out, templates_out, visited_types) &&
+        cacheable;
+    return lookup_associated_friend_candidates_for_type_impl(
+               ctx, base->inner, name, functions_out, templates_out, visited_types) &&
+           cacheable;
   case Type::TK_FUNCTION:
-    lookup_associated_friend_candidates_for_type(
-        ctx, base->inner, name, functions_out, templates_out);
+    cacheable =
+        lookup_associated_friend_candidates_for_type_impl(
+            ctx, base->inner, name, functions_out, templates_out, visited_types) &&
+        cacheable;
     for(size_t i = 0; i < base->params.size(); ++i) {
-      lookup_associated_friend_candidates_for_type(
-          ctx, base->params[i], name, functions_out, templates_out);
+      cacheable =
+          lookup_associated_friend_candidates_for_type_impl(
+              ctx,
+              base->params[i],
+              name,
+              functions_out,
+              templates_out,
+              visited_types) &&
+          cacheable;
     }
-    return;
+    return cacheable;
   case Type::TK_FUNDAMENTAL:
   case Type::TK_NAMED:
     break;
@@ -6698,13 +6713,13 @@ void lookup_associated_friend_candidates_for_type(
      base->named_rare().named_member_owner_type) {
     base = strip_top_level_cv(base->named_rare().named_member_owner_type);
     if(!base) {
-      return;
+      return true;
     }
   }
 
   ClassInfo * info = ctx.class_info_for_type(base);
   if(!info) {
-    return;
+    return true;
   }
   if(!info->complete &&
      !info->reference_members_collected &&
@@ -6724,6 +6739,20 @@ void lookup_associated_friend_candidates_for_type(
   collect_associated_friend_function_templates_for_class(
       info, name, visited_templates, entry.templates);
 
+  for(size_t i = 0; i < info->instantiation_arguments.size(); ++i) {
+    if(info->instantiation_arguments[i].type) {
+      cacheable =
+          lookup_associated_friend_candidates_for_type_impl(
+              ctx,
+              info->instantiation_arguments[i].type,
+              name,
+              &entry.functions,
+              &entry.templates,
+              visited_types) &&
+          cacheable;
+    }
+  }
+
   if(functions_out) {
     append_unique_functions(*functions_out, entry.functions);
   }
@@ -6731,9 +6760,12 @@ void lookup_associated_friend_candidates_for_type(
     append_unique_function_templates(*templates_out, entry.templates);
   }
 
+  set<const ClassInfo *> visited_cacheable;
+  cacheable =
+      associated_friend_lookup_cacheable_class(info, visited_cacheable) &&
+      cacheable;
   if(have_key) {
-    set<const ClassInfo *> visited_cacheable;
-    if(associated_friend_lookup_cacheable_class(info, visited_cacheable)) {
+    if(cacheable) {
       AssociatedFriendLookupCache & cache = associated_friend_lookup_cache();
       if(cache.size() > 262144) {
         cache.clear();
@@ -6741,6 +6773,24 @@ void lookup_associated_friend_candidates_for_type(
       cache[key] = entry;
     }
   }
+  return cacheable;
+}
+
+void lookup_associated_friend_candidates_for_type(
+    SemanticContext & ctx,
+    const TypePtr & type,
+    const string & name,
+    vector<FunctionBinding *> * functions_out,
+    vector<FunctionTemplateDecl *> * templates_out)
+{
+  set<const Type *> visited_types;
+  lookup_associated_friend_candidates_for_type_impl(
+      ctx,
+      type,
+      name,
+      functions_out,
+      templates_out,
+      visited_types);
 }
 
 }  // namespace

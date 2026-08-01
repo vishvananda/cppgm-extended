@@ -40,6 +40,7 @@
 #include "semantic_utils.h"
 #include "symbol_linkage.h"
 #include "template_api.h"
+#include "template_argument_semantics.h"
 #include "template_model.h"
 #include "template_witness.h"
 
@@ -2246,6 +2247,8 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
          ctx.template_witness_context(),
          witness::FunctionCallEmissionOrigin::DeclvalCall) &&
      template_api::template_witness_declval_call_source_capture_enabled() &&
+     !template_argument_semantics::argument_syntax_uses_bound_template_type(
+         scope, *arg_syntax) &&
      !ctx.type_depends_on_template_parameter(declval_type)) {
     std::string public_location =
         normalize_template_witness_location(use_location);
@@ -11929,8 +11932,13 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
       candidate_rejection = candidate->name + ": explicit constructor not allowed";
       return;
     }
+    const ClassInfo * access_class =
+        candidate->is_inherited_constructor &&
+                candidate->inherited_constructor_access_class ?
+            candidate->inherited_constructor_access_class :
+            &target_info;
     if(!member_access_allowed(&scope, current_class_scope(scope), current_function_scope(scope),
-                              &target_info, candidate->access, MA_PUBLIC)) {
+                              access_class, candidate->access, MA_PUBLIC)) {
       candidate_rejection = candidate->name + ": member access not allowed";
       return;
     }
@@ -12338,8 +12346,13 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
       }
       return;
     }
+    const ClassInfo * access_class =
+        candidate->is_inherited_constructor &&
+                candidate->inherited_constructor_access_class ?
+            candidate->inherited_constructor_access_class :
+            &target_info;
     if(!member_access_allowed(&scope, current_class_scope(scope), current_function_scope(scope),
-                              &target_info, candidate->access, MA_PUBLIC)) {
+                              access_class, candidate->access, MA_PUBLIC)) {
       candidate_rejection = candidate->name + ": inaccessible";
       if(parser_trace::enabled("overload")) {
         ostringstream trace;

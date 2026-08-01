@@ -89,13 +89,23 @@ struct IdentifierTokenSet
 {
   typedef InternedTextAtom InternedName;
 
+  static const std::size_t maximum_globally_interned_identifier_length = 128;
+
   bool contains(const std::string & name) const
   {
     if(name.empty()) {
       return false;
     }
     InternedName atom = find_text_atom(name);
-    return atom && names.find(atom) != names.end();
+    if(atom && names.find(atom) != names.end()) {
+      return true;
+    }
+    for(std::size_t i = 0; i < owned_names.size(); ++i) {
+      if(*owned_names[i] == name) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void reserve(std::size_t count)
@@ -111,7 +121,30 @@ struct IdentifierTokenSet
     names.insert(name);
   }
 
+  void insert(const char * data, std::size_t length)
+  {
+    if(length <= maximum_globally_interned_identifier_length) {
+      insert(intern_text_atom(data, length));
+      return;
+    }
+    for(std::size_t i = 0; i < owned_names.size(); ++i) {
+      if(owned_names[i]->size() == length &&
+         owned_names[i]->compare(0, length, data, length) == 0) {
+        return;
+      }
+    }
+    std::shared_ptr<const std::string> owned(
+        new const std::string(data, length));
+    names.insert(owned.get());
+    owned_names.push_back(owned);
+  }
+
   std::unordered_set<InternedName> names;
+  // Large synthesized identifiers are generally unique. Keep them alive only
+  // as long as the token set that needs them instead of retaining them in the
+  // process-global atom pool. Shared ownership preserves pointer stability
+  // when cached token sets are copied.
+  std::vector<std::shared_ptr<const std::string> > owned_names;
 };
 
 IdentifierTokenSet collect_identifier_tokens(const std::string & text);

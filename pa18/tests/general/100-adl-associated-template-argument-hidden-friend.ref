@@ -1,0 +1,23 @@
+function @inspect(%__param0 : obj<1x1>) -> i32 [binding=weak, object=_Z7inspect3boxI4itemE] {
+  slot $__param0 : obj<1x1>
+
+  block ^entry:
+    return i32 0
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $argobj__1 : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $argobj__1
+    call void @box_item___box(%t1)
+    %t2 = call i32 @inspect($argobj__1)
+    return i32 %t2
+}
+function @box_item___box(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3boxI4itemEC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+alias object _ZN3boxI4itemEC2Ev = @box_item___box

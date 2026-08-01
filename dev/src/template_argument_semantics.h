@@ -416,6 +416,10 @@ bool resolve_type_argument_input(template_api::TemplateServices & services,
                                  bool reference_class_templates_only,
                                  cpp_decl::TypePtr & out);
 
+bool argument_syntax_uses_bound_template_type(
+    semantic_model::Scope & scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax);
+
 enum StandardMetaMemberTypeResolution
 {
   STANDARD_META_MEMBER_NOT_APPLICABLE,

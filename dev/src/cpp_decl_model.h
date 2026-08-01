@@ -39,6 +39,10 @@ struct TemplateArgumentSyntax
   std::string source_text;
   bool pack_expansion = false;
   bool dependent = false;
+  // The structured argument has been rewritten from a template binding.
+  // Witness source-use policy must use this provenance instead of comparing
+  // rendered source and substituted spellings.
+  bool substituted_from_template_binding = false;
   bool source_defaulted = false;
   bool has_source_token_start = false;
   std::size_t source_token_start = 0;

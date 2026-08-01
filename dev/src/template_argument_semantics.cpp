@@ -13875,6 +13875,9 @@ bool substitute_bound_template_template_names_in_argument_syntax(
       changed = true;
     }
   }
+  if(changed) {
+    syntax.substituted_from_template_binding = true;
+  }
   return changed;
 }
 
@@ -15486,6 +15489,19 @@ void thread_type_replacements_into_template_argument_syntax(
     const TemplateArgumentSyntax & source_arg,
     const map<string, TypePtr> & type_replacements)
 {
+  // This structured identifier walk exists only to classify witness events.
+  // Keep it completely off the normal compilation path.
+  if(template_api::current_template_witness_session() &&
+     template_api::template_witness_declval_call_source_capture_enabled()) {
+    for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+        it != type_replacements.end();
+        ++it) {
+      if(argument_syntax_mentions_identifier(source_arg, it->first)) {
+        target_arg.substituted_from_template_binding = true;
+        break;
+      }
+    }
+  }
   string pack_name;
   if(direct_type_pack_expansion_argument(source_arg, pack_name)) {
     auto replacement =
@@ -15619,6 +15635,7 @@ TemplateArgumentSyntax make_expanded_type_pack_argument_syntax(
     TemplateArgumentSyntax out =
         clone_argument_syntax_for_template_substitution(
             *source_argument->source_syntax);
+    out.substituted_from_template_binding = true;
     if(out.source_text.empty()) {
       out.source_text = source.text;
     }
@@ -15631,6 +15648,7 @@ TemplateArgumentSyntax make_expanded_type_pack_argument_syntax(
     return out;
   }
   TemplateArgumentSyntax out = source;
+  out.substituted_from_template_binding = true;
   const string text = reparseable_type_argument_text(type);
   if(out.source_text.empty()) {
     out.source_text = source.text;
@@ -17169,6 +17187,7 @@ bool substitute_dependent_argument_syntax_with_replacements(
     changed = true;
   }
   if(changed) {
+    syntax.substituted_from_template_binding = true;
     populate_template_argument_component_syntax_from_nodes(syntax);
     const string structured_text = current_structured_argument_text(syntax);
     if(!structured_text.empty()) {
@@ -25818,6 +25837,7 @@ bool expand_bound_packs_in_argument_syntax(
     syntax.pack_expansion = false;
   }
   if(changed) {
+    syntax.substituted_from_template_binding = true;
     if(!preserved_resolved_type) {
       syntax.resolved_type.reset();
     }
@@ -25897,17 +25917,6 @@ bool expand_bound_packs_in_expression_node(
         changed = true;
       }
     }
-  }
-  CppAstNode expanded;
-  bool expanded_changed = false;
-  if(expand_pack_expressions_in_decltype_operand(scope,
-                                                 services,
-                                                 node,
-                                                 expanded,
-                                                 expanded_changed) &&
-     expanded_changed) {
-    node = expanded;
-    changed = true;
   }
   if(changed) {
     node.semantic_type.reset();
@@ -26033,6 +26042,7 @@ void substitute_type_pack_template_id_arguments(
       if(!argument_syntax_mentions_identifier(argument, it->first)) {
         continue;
       }
+      argument.substituted_from_template_binding = true;
       if(argument.pack_expansion) {
         pack_expansion_consumed = true;
       }
@@ -26486,6 +26496,27 @@ void collect_bound_type_replacements_in_node(Scope & scope,
   }
 }
 
+bool argument_syntax_uses_bound_template_type_impl(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  if(syntax.substituted_from_template_binding) {
+    return true;
+  }
+  map<string, TypePtr> replacements;
+  if(syntax.type_id) {
+    collect_bound_type_replacements_in_node(scope,
+                                            *syntax.type_id,
+                                            replacements);
+  }
+  if(syntax.expression) {
+    collect_bound_type_replacements_in_node(scope,
+                                            *syntax.expression,
+                                            replacements);
+  }
+  return !replacements.empty();
+}
+
 void collect_bound_value_replacements_in_node(Scope & scope,
                                               const CppAstNode & node,
                                               map<string, ValueBinding> & replacements)
@@ -26846,6 +26877,9 @@ bool substitute_bound_replacements_in_argument_syntax(Scope & scope,
   }
   if(thread_type_id_template_arguments_into_expression(syntax)) {
     changed = true;
+  }
+  if(changed) {
+    syntax.substituted_from_template_binding = true;
   }
   if(changed && syntax.template_id) {
     syntax.text = template_id_syntax_lookup_text(*syntax.template_id);
@@ -28808,6 +28842,13 @@ string replace_identifier_token_text_preserving_sizeof_pack_operands(
 }
 
 }  // namespace
+
+bool argument_syntax_uses_bound_template_type(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  return argument_syntax_uses_bound_template_type_impl(scope, syntax);
+}
 
 void clear_pack_element_source_provenance(CppAstNode & node)
 {
@@ -42183,7 +42224,15 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
   TypePtr evaluated;
   const semantic_expression::ScopedUnevaluatedOperand
       unevaluated_operand;
-  if(evaluate_dependent_type_expression_leaf(services, scope, request, evaluated) &&
+  // The leaf evaluator is a shortcut for simple decltype operands.  A call is
+  // already a complete expression tree and is handled authoritatively by the
+  // semantic evaluator below.  Running the leaf call resolver first
+  // instantiates every nested overload candidate, then repeats the same work
+  // in the normal evaluator.
+  const bool use_leaf_evaluator =
+      request_expr->kind != CppAstKind::call_expression;
+  if(use_leaf_evaluator &&
+     evaluate_dependent_type_expression_leaf(services, scope, request, evaluated) &&
      evaluated &&
      !service_type_depends_on_template_parameter(services, evaluated)) {
     if(comma_prefix_mentions_template_dependency &&
@@ -42197,6 +42246,13 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
     out = evaluated;
     return true;
   }
+  // Source-level function-call uses are captured by the witness traversal.
+  // Resolving a decltype operand here is semantic evaluation, so its internal
+  // overload work must not add a second call event (or manufacture one while
+  // replaying a bound template result pattern).  The pause is inactive and
+  // constant-time when no witness session exists.
+  const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
+      function_call_source_capture_pause;
   if(service_evaluate_dependent_type_expression(services, request, evaluated) &&
      evaluated &&
      !service_type_depends_on_template_parameter(services, evaluated)) {

@@ -619,6 +619,7 @@ struct FunctionBinding
   bool is_force_inline = false;
   bool is_constructor = false;
   bool is_inherited_constructor = false;
+  ClassInfo * inherited_constructor_access_class = nullptr;
   bool is_destructor = false;
   bool is_conversion_operator = false;
   bool is_defaulted = false;
@@ -631,6 +632,11 @@ struct FunctionBinding
   bool is_volatile_method = false;
   RefQualifier ref_qualifier = RQ_NONE;
   bool is_deleted = false;
+  // Once the owning class is complete, the deleted state of an explicitly
+  // defaulted special member is structural and cannot change.  Remember that
+  // finalization so ordinary overload lookup does not re-walk the same base
+  // and field graph.
+  bool defaulted_deletion_state_finalized = false;
   bool is_virtual = false;
   bool is_virtual_specified = false;
   bool is_pure_virtual = false;
@@ -675,6 +681,10 @@ struct FunctionBinding
   bool is_explicit_specialization = false;
   std::map<std::string, std::size_t> instantiation_pack_sizes;
   std::string template_instantiation_key;
+  // A concrete function-template specialization has one immutable signature.
+  // Signature-only overload probes may reuse it without rebuilding the
+  // template argument scope once initial substitution and validation finish.
+  bool instantiated_signature_finalized = false;
   std::unique_ptr<FunctionTemplateInstantiationCacheEntries>
       instantiation_cache_entries;
   mutable SourceDeclAnchorCache declaration_anchor;
@@ -1175,6 +1185,7 @@ struct FunctionTemplateDecl
   MemberAccess access = MA_PUBLIC;
   bool is_constructor = false;
   bool is_inherited_constructor = false;
+  ClassInfo * inherited_constructor_access_class = nullptr;
   bool is_destructor = false;
   bool is_conversion_operator = false;
   bool is_static_member = false;

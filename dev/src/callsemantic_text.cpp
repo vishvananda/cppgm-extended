@@ -748,7 +748,7 @@ bool is_identifier_text(const string & text)
 IdentifierTokenSet collect_identifier_tokens(const string & text)
 {
   IdentifierTokenSet out;
-  out.reserve(text.size() / 4 + 1);
+  out.reserve(std::min<std::size_t>(text.size() / 4 + 1, 32));
   size_t i = 0;
   while(i < text.size()) {
     const unsigned char ch = static_cast<unsigned char>(text[i]);
@@ -764,7 +764,7 @@ IdentifierTokenSet collect_identifier_tokens(const string & text)
       }
       ++i;
     }
-    out.insert(intern_text_atom(text.data() + start, i - start));
+    out.insert(text.data() + start, i - start);
   }
   return out;
 }

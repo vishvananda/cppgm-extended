@@ -2868,7 +2868,7 @@ bool collect_inherited_constructors(SemanticContext & ctx,
                                                                        explicit_params));
 
       ClassFunctionOptions options;
-      options.access = access;
+      options.access = base_ctor->access;
       options.is_constructor = true;
       options.is_inherited_constructor = true;
       options.is_explicit = base_ctor->is_explicit;
@@ -2891,6 +2891,10 @@ bool collect_inherited_constructors(SemanticContext & ctx,
       inherited->has_definition = true;
       inherited->is_deleted = false;
       inherited->is_inherited_constructor = true;
+      inherited->inherited_constructor_access_class =
+          base_ctor->inherited_constructor_access_class ?
+              base_ctor->inherited_constructor_access_class :
+              base_ctor->owner_class;
       ctx.upgrade_function_symbol_linkage(inherited,
                                           synthesized_class_member_symbol_linkage(info));
     }
@@ -4944,11 +4948,13 @@ void refresh_defaulted_default_constructor_state(SemanticContext & ctx,
        !binding->is_constructor ||
        !binding->is_defaulted ||
        binding->synthesized ||
+       binding->defaulted_deletion_state_finalized ||
        binding->params.size() != 1) {
       continue;
     }
     binding->is_deleted = implicit_default_constructor_is_deleted(ctx, info);
     binding->has_definition = !binding->is_deleted;
+    binding->defaulted_deletion_state_finalized = true;
   }
 }
 
@@ -5417,11 +5423,13 @@ void refresh_defaulted_move_assignment_state(SemanticContext & ctx,
       if(!binding ||
          !binding->is_move_assignment ||
          !binding->is_defaulted ||
-         binding->synthesized) {
+         binding->synthesized ||
+         binding->defaulted_deletion_state_finalized) {
         continue;
       }
       binding->is_deleted = defaulted_move_assignment_is_deleted(ctx, info);
       binding->has_definition = !binding->is_deleted;
+      binding->defaulted_deletion_state_finalized = true;
     }
   }
 }
@@ -5441,11 +5449,13 @@ void refresh_defaulted_copy_assignment_state(SemanticContext & ctx,
       if(!binding ||
          !binding->is_copy_assignment ||
          !binding->is_defaulted ||
-         binding->synthesized) {
+         binding->synthesized ||
+         binding->defaulted_deletion_state_finalized) {
         continue;
       }
       binding->is_deleted = defaulted_copy_assignment_is_deleted(ctx, info, false);
       binding->has_definition = !binding->is_deleted;
+      binding->defaulted_deletion_state_finalized = true;
     }
   }
 }
