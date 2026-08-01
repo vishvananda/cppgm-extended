@@ -12132,9 +12132,11 @@ private:
     }
 
     vector<FunctionBinding *> out;
-    semantic_lookup::lookup_functions_in_scopes(vector<Scope *>(1, target),
-                                                qualified.name,
-                                                out);
+    vector<FunctionTemplateDecl *> ignored_templates;
+    semantic_lookup::lookup_qualified_namespace_callables(*target,
+                                                          qualified.name,
+                                                          out,
+                                                          ignored_templates);
     return out;
   }
 
@@ -13264,8 +13266,11 @@ private:
                                                            out);
         return out;
       }
-      semantic_lookup::lookup_function_templates_in_scopes(
-          vector<Scope *>(1, qualified_scope), leaf_name, out);
+      vector<FunctionBinding *> ignored_functions;
+      semantic_lookup::lookup_qualified_namespace_callables(*qualified_scope,
+                                                            leaf_name,
+                                                            ignored_functions,
+                                                            out);
       return out;
       }
     }
@@ -13410,8 +13415,11 @@ private:
                                                          out);
       return out;
     }
-    semantic_lookup::lookup_function_templates_in_scopes(
-        vector<Scope *>(1, current_scope), leaf_name, out);
+    vector<FunctionBinding *> ignored_functions;
+    semantic_lookup::lookup_qualified_namespace_callables(*current_scope,
+                                                          leaf_name,
+                                                          ignored_functions,
+                                                          out);
     return out;
   }
 
@@ -17264,7 +17272,11 @@ private:
               return lookup_direct_functions(target, lookup_name);
             }
             vector<FunctionBinding *> out;
-            semantic_lookup::lookup_functions_in_scopes(vector<Scope *>(1, &target), lookup_name, out);
+            vector<FunctionTemplateDecl *> ignored_templates;
+            semantic_lookup::lookup_qualified_namespace_callables(target,
+                                                                  lookup_name,
+                                                                  out,
+                                                                  ignored_templates);
             return out;
           });
       filter_function_candidates_visible_from_node(out, use_node, &scope);
@@ -17527,8 +17539,11 @@ private:
           }
         }
       } else {
-        semantic_lookup::lookup_functions_in_scopes(
-            vector<Scope *>(1, lookup_scope), leaf_name, out);
+        vector<FunctionTemplateDecl *> ignored_templates;
+        semantic_lookup::lookup_qualified_namespace_callables(*lookup_scope,
+                                                              leaf_name,
+                                                              out,
+                                                              ignored_templates);
       }
       filter_ordinary_candidates(out);
       return out;
@@ -17699,9 +17714,13 @@ private:
                 if(target.class_info) {
                   return semantic_lookup::lookup_direct_function_templates(target, lookup_name);
                 }
+                vector<FunctionBinding *> ignored_functions;
                 vector<FunctionTemplateDecl *> out;
-                semantic_lookup::lookup_function_templates_in_scopes(
-                    vector<Scope *>(1, &target), lookup_name, out);
+                semantic_lookup::lookup_qualified_namespace_callables(
+                    target,
+                    lookup_name,
+                    ignored_functions,
+                    out);
                 return out;
               });
     } else {

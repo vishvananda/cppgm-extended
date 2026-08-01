@@ -266,6 +266,15 @@ void X86Assembler::emit_lock_cmpxchg_m64_r64(const X86Memory & dst, X64Register 
   emit_modrm_mem(src & 7, dst);
 }
 
+void X86Assembler::emit_lock_cmpxchg16b_m128(const X86Memory & dst)
+{
+  emit_lock_prefix();
+  emit_rex(true, 0, 0, dst.base);
+  emit_u8(0x0F);
+  emit_u8(0xC7);
+  emit_modrm_mem(1, dst);
+}
+
 void X86Assembler::emit_lea_r64_m(X64Register dst, const X86Memory & src)
 {
   emit_rex(true, dst, 0, src.base);

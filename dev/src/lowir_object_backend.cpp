@@ -2015,6 +2015,42 @@ void emit_instruction(X86Assembler & out,
       throw logic_error("unsupported lock_cmpxchg destination");
     }
 
+    case mir::Instruction::MI_LOCK_CMPXCHG16B: {
+      if(inst.operands.size() != 5 ||
+         inst.operands[1].kind != mir::Operand::OP_REG ||
+         inst.operands[1].reg != XR_RAX ||
+         inst.operands[2].kind != mir::Operand::OP_REG ||
+         inst.operands[2].reg != XR_RDX ||
+         inst.operands[3].kind != mir::Operand::OP_REG ||
+         inst.operands[3].reg != XR_RBX ||
+         inst.operands[4].kind != mir::Operand::OP_REG ||
+         inst.operands[4].reg != XR_RCX) {
+        throw logic_error("invalid lock_cmpxchg16b implicit registers");
+      }
+      const mir::Operand & dst = inst.operands[0];
+      if(dst.kind == mir::Operand::OP_FRAME) {
+        out.emit_lock_cmpxchg16b_m128(frame_memory(dst.offset));
+        return;
+      }
+      if(dst.kind == mir::Operand::OP_DEREF) {
+        out.emit_lock_cmpxchg16b_m128(
+            X86Memory(dst.reg, static_cast<int32_t>(dst.offset)));
+        return;
+      }
+      if(dst.kind == mir::Operand::OP_GLOBAL) {
+        out.emit_lock_cmpxchg16b_m128(
+            emit_global_memory(out,
+                               dst.text,
+                               XR_R11,
+                               fixups,
+                               use_indirect_rel32_for_imported_symbol(target,
+                                                                    defined_globals,
+                                                                    dst.text)));
+        return;
+      }
+      throw logic_error("unsupported lock_cmpxchg16b destination");
+    }
+
     case mir::Instruction::MI_LEA: {
       const mir::Operand & src = inst.operands[1];
       if(src.kind == mir::Operand::OP_FRAME) {

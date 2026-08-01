@@ -216,6 +216,16 @@ bool is_i128_scalar_type(const string & type)
   return type == "i128" || type == "u128";
 }
 
+bool is_supported_atomic_instruction_type(const lir::Instruction & inst)
+{
+  if(is_atomic_scalar_type(inst.type.text)) {
+    return true;
+  }
+  return is_i128_scalar_type(inst.type.text) &&
+      (inst.kind == lir::Instruction::IK_ATOMIC_LOAD ||
+       inst.kind == lir::Instruction::IK_ATOMIC_COMPARE_EXCHANGE);
+}
+
 bool is_integer_scalar_type(const string & type)
 {
   return type == "i1" || type == "i8" || type == "u8" ||
@@ -3470,7 +3480,7 @@ private:
               inst.kind == lir::Instruction::IK_ATOMIC_ADD_FETCH ||
               inst.kind == lir::Instruction::IK_ATOMIC_EXCHANGE ||
               inst.kind == lir::Instruction::IK_ATOMIC_COMPARE_EXCHANGE) &&
-             !is_atomic_scalar_type(inst.type.text)) {
+             !is_supported_atomic_instruction_type(inst)) {
             throw lir::ParseError("unsupported atomic scalar type " + inst.type.text);
           }
           if(inst.kind == lir::Instruction::IK_CONVERT) {
@@ -6003,6 +6013,24 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
 
       case lir::Instruction::IK_ATOMIC_LOAD: {
         const long long order = atomic_order_value(inst.second);
+        if(is_i128_scalar_type(inst.type.text)) {
+          emit_zero_register(XR_RAX, out);
+          emit_zero_register(XR_RDX, out);
+          emit_zero_register(XR_RBX, out);
+          emit_zero_register(XR_RCX, out);
+          emit_load_value(layout, inst.first, "ptr", XR_R11, out);
+          mi = make_instruction(mir::Instruction::MI_LOCK_CMPXCHG16B);
+          mi.type = inst.type.text;
+          mi.operands.push_back(deref(XR_R11));
+          mi.operands.push_back(reg(XR_RAX));
+          mi.operands.push_back(reg(XR_RDX));
+          mi.operands.push_back(reg(XR_RBX));
+          mi.operands.push_back(reg(XR_RCX));
+          out.push_back(mi);
+          (void)order;
+          emit_store_i128_temp(layout, inst.dest, XR_RAX, XR_RDX, out);
+          return;
+        }
         const X64Register * direct_base =
             direct_pointer_base_register(layout, inst.first);
         if(direct_base == nullptr) {
@@ -6139,6 +6167,33 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
       case lir::Instruction::IK_ATOMIC_COMPARE_EXCHANGE: {
         if(inst.args.size() != 2) {
           throw lir::ParseError("atomic_compare_exchange requires two order operands");
+        }
+        if(is_i128_scalar_type(inst.type.text)) {
+          emit_load_value(layout, inst.second, "ptr", XR_R10, out);
+          emit_load_i128_from_address_register(XR_R10, XR_RAX, XR_RDX, out);
+          emit_load_i128_value(layout, inst.third, inst.type.text, XR_RBX, XR_RCX, out);
+          emit_load_value(layout, inst.first, "ptr", XR_R11, out);
+          mi = make_instruction(mir::Instruction::MI_LOCK_CMPXCHG16B);
+          mi.type = inst.type.text;
+          mi.operands.push_back(deref(XR_R11));
+          mi.operands.push_back(reg(XR_RAX));
+          mi.operands.push_back(reg(XR_RDX));
+          mi.operands.push_back(reg(XR_RBX));
+          mi.operands.push_back(reg(XR_RCX));
+          out.push_back(mi);
+          // MOV stores preserve the compare-exchange flags, so the expected
+          // object can be updated before materializing the success bit.
+          emit_store_i128_to_address_register(XR_R10, XR_RAX, XR_RDX, out);
+          mi = make_instruction(mir::Instruction::MI_SETCC);
+          mi.condition = XC_E;
+          mi.operands.push_back(reg(XR_RAX));
+          out.push_back(mi);
+          mi = make_instruction(mir::Instruction::MI_MOVZX);
+          mi.operands.push_back(reg(XR_RAX));
+          mi.operands.push_back(reg(XR_RAX));
+          out.push_back(mi);
+          emit_store_temp(layout, inst.dest, XR_RAX, out);
+          return;
         }
         emit_load_value(layout, inst.first, "ptr", XR_RCX, out);
         emit_load_value(layout, inst.second, "ptr", XR_RDX, out);

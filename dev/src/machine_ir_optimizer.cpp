@@ -255,6 +255,16 @@ void collect_instruction_effects(const mir::Instruction & inst,
       defs.regs.insert(XR_RAX);
       return;
 
+    case mir::Instruction::MI_LOCK_CMPXCHG16B:
+      note_address_operand(inst.operands[0], uses);
+      note_read_operand(inst.operands[1], uses);
+      note_read_operand(inst.operands[2], uses);
+      note_read_operand(inst.operands[3], uses);
+      note_read_operand(inst.operands[4], uses);
+      note_write_operand(inst.operands[1], defs);
+      note_write_operand(inst.operands[2], defs);
+      return;
+
     case mir::Instruction::MI_LEA:
       note_write_operand(inst.operands[0], defs);
       note_address_operand(inst.operands[1], uses);
@@ -545,6 +555,12 @@ void rewrite_instruction_reads(mir::Instruction & inst,
     case mir::Instruction::MI_LOCK_CMPXCHG:
       rewrite_read_operand(inst.operands[0], reg_aliases, xmm_aliases, changed);
       rewrite_read_operand(inst.operands[1], reg_aliases, xmm_aliases, changed);
+      return;
+
+    case mir::Instruction::MI_LOCK_CMPXCHG16B:
+      // The four value registers are fixed by the x86 instruction.  Only its
+      // address may participate in ordinary copy propagation.
+      rewrite_read_operand(inst.operands[0], reg_aliases, xmm_aliases, changed);
       return;
 
     case mir::Instruction::MI_LEA:

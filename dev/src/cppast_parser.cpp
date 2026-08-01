@@ -1874,6 +1874,9 @@ void apply_leading_declaration_attributes(CppAstNode & node,
   if(attributes.has_always_inline_attribute) {
     node.has_always_inline_attribute = true;
   }
+  if(attributes.maximum_field_alignment != 0) {
+    node.maximum_field_alignment = attributes.maximum_field_alignment;
+  }
   if(!cppast_gnu_section_name(attributes).empty()) {
     mutable_cppast_gnu_section_segment(node) =
         cppast_gnu_section_segment(attributes);
@@ -1958,6 +1961,14 @@ bool is_gnu_aligned_attribute_name(const RecogToken & token)
          (token.source == "aligned" ||
           token.source == "__aligned" ||
           token.source == "__aligned__");
+}
+
+bool is_gnu_packed_attribute_name(const RecogToken & token)
+{
+  return token.is_identifier() &&
+         (token.source == "packed" ||
+          token.source == "__packed" ||
+          token.source == "__packed__");
 }
 
 bool attribute_specifier_has_always_inline(
@@ -2999,6 +3010,11 @@ bool CppAstParser::parse_declaration(CppAstNode & out)
   const auto try_core = [&](size_t core_start) -> bool
   {
     pos = core_start;
+    if(parse_pragma_pack_marker(out)) {
+      return true;
+    }
+
+    pos = core_start;
     if(parse_empty_declaration(out)) {
       return true;
     }
@@ -3100,6 +3116,51 @@ bool CppAstParser::parse_declaration(CppAstNode & out)
 
   pos = start;
   return false;
+}
+
+bool CppAstParser::parse_pragma_pack_marker(CppAstNode & out)
+{
+  if(!peek().is_identifier()) {
+    return false;
+  }
+  const string marker = peek().source;
+  const string push_prefix = "__cppgm_pragma_pack_push_";
+  const size_t start = pos;
+  if(marker == "__cppgm_pragma_pack_pop") {
+    if(!peek(1).is_simple(OP_SEMICOLON)) {
+      return false;
+    }
+    pos += 2;
+    if(pack_alignment_stack.empty()) {
+      current_pack_alignment = 0;
+    } else {
+      current_pack_alignment = pack_alignment_stack.back();
+      pack_alignment_stack.pop_back();
+    }
+    out = make_node(CppAstKind::empty_declaration);
+    set_span(out, start);
+    return true;
+  }
+  if(marker.compare(0, push_prefix.size(), push_prefix) != 0 ||
+     !peek(1).is_simple(OP_SEMICOLON)) {
+    return false;
+  }
+
+  const string alignment_text = marker.substr(push_prefix.size());
+  size_t alignment = 0;
+  if(alignment_text == "1") alignment = 1;
+  else if(alignment_text == "2") alignment = 2;
+  else if(alignment_text == "4") alignment = 4;
+  else if(alignment_text == "8") alignment = 8;
+  else if(alignment_text == "16") alignment = 16;
+  else return false;
+
+  pos += 2;
+  pack_alignment_stack.push_back(current_pack_alignment);
+  current_pack_alignment = alignment;
+  out = make_node(CppAstKind::empty_declaration);
+  set_span(out, start);
+  return true;
 }
 
 bool CppAstParser::parse_explicit_instantiation(CppAstNode & out)
@@ -4418,6 +4479,10 @@ void CppAstParser::note_attribute_specifier(CppAstNode * annotated,
       }
       continue;
     }
+    if(gnu_attribute_paren_depth == 2 &&
+       is_gnu_packed_attribute_name(token)) {
+      annotated->maximum_field_alignment = 1;
+    }
     if(gnu_attribute_paren_depth != 2 ||
        !is_gnu_aligned_attribute_name(token) ||
        i + 1 >= end ||
@@ -4996,6 +5061,11 @@ bool CppAstParser::parse_class_specifier(CppAstNode & out)
   }
   out.children.push_back(make_token_node(CppAstKind::class_key, class_key_token));
   apply_leading_declaration_attributes(out, attributes);
+  if(current_pack_alignment != 0 &&
+     (out.maximum_field_alignment == 0 ||
+      current_pack_alignment < out.maximum_field_alignment)) {
+    out.maximum_field_alignment = current_pack_alignment;
+  }
   if(peek().is_final()) {
     out.is_final_specifier = true;
     ++pos;

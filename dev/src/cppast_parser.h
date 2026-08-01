@@ -57,6 +57,7 @@ protected:
                                          std::size_t name_end,
                                          CppAstNode & out);
   bool parse_declaration(CppAstNode & out);
+  bool parse_pragma_pack_marker(CppAstNode & out);
   bool parse_empty_declaration(CppAstNode & out);
   bool parse_namespace_declaration(CppAstNode & out);
   bool parse_explicit_instantiation(CppAstNode & out);
@@ -387,6 +388,8 @@ protected:
   void inherit_name_lookup_state_from(const CppAstParser & parent);
 
   std::string error_msg;
+  std::size_t current_pack_alignment = 0;
+  std::vector<std::size_t> pack_alignment_stack;
   std::size_t template_declaration_depth = 0;
   std::vector<NameSet> template_type_parameter_scopes;
   std::vector<NameSet> template_value_parameter_scopes;

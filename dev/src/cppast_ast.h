@@ -693,6 +693,7 @@ struct CppAstNode
   bool has_exclude_from_explicit_instantiation = false;
   bool has_weak_attribute = false;
   bool has_always_inline_attribute = false;
+  std::size_t maximum_field_alignment = 0;
   CppAstLazyVector<CppAstNode> alignment_specifier_nodes;
   bool is_final_specifier = false;
   bool uses_assignment_form = false;

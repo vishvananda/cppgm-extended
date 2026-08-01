@@ -164,6 +164,13 @@ void dump_instruction(ostringstream & out, const Instruction & inst)
           << operand_text(inst.operands[0]) << ", "
           << operand_text(inst.operands[1]);
       break;
+    case Instruction::MI_LOCK_CMPXCHG16B:
+      out << "lock_cmpxchg16b " << operand_text(inst.operands[0])
+          << ", expected=" << operand_text(inst.operands[2]) << ":"
+          << operand_text(inst.operands[1])
+          << ", desired=" << operand_text(inst.operands[4]) << ":"
+          << operand_text(inst.operands[3]);
+      break;
     case Instruction::MI_LEA:
       out << "lea " << operand_text(inst.operands[0]) << ", "
           << operand_text(inst.operands[1]);

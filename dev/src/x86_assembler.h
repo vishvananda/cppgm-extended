@@ -54,6 +54,7 @@ public:
   void emit_lock_cmpxchg_m16_r64(const X86Memory & dst, X64Register src);
   void emit_lock_cmpxchg_m32_r64(const X86Memory & dst, X64Register src);
   void emit_lock_cmpxchg_m64_r64(const X86Memory & dst, X64Register src);
+  void emit_lock_cmpxchg16b_m128(const X86Memory & dst);
   void emit_lea_r64_m(X64Register dst, const X86Memory & src);
   std::size_t emit_lea_r64_rip_rel32_placeholder(X64Register dst);
   std::size_t emit_mov_r64_rip_rel32_placeholder(X64Register dst);

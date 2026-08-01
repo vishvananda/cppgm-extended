@@ -54,7 +54,7 @@ function @stream__async_read_some(%this : ptr, %buffer : ptr [pass=reference], %
     store ptr %handler, $handler
     %t1 = call ptr @declval_int_()
     %t2 = load ptr $handler
-    %t3 = call i32 @async_initiate__ov2(%t1, %t2)
+    %t3 = call i32 @async_initiate(%t1, %t2)
     return i32 %t3
 }
 function @stream__async_read_some__ov2(%this : ptr, %buffer : ptr [pass=reference], %handler : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6stream15async_read_someIiRFviEEEDTcl14async_initiateIT0_S1_Ecl7declvalIiEEscS3_fp0_EERKT_OS3_] {
@@ -68,10 +68,10 @@ function @stream__async_read_some__ov2(%this : ptr, %buffer : ptr [pass=referenc
     store ptr %handler, $handler
     %t1 = call ptr @declval_int_()
     %t2 = load ptr $handler
-    %t3 = call i32 @async_initiate__ov3(%t1, %t2)
+    %t3 = call i32 @async_initiate__ov2(%t1, %t2)
     return i32 %t3
 }
-function @async_initiate__ov2(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
+function @async_initiate(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
   slot $initiation : ptr
   slot $token : ptr
 
@@ -83,7 +83,7 @@ function @async_initiate__ov2(%initiation : ptr [pass=reference], %token : ptr [
     %t3 = call i32 @async_result_void_____int___void_int____initiate(%t1, %t2)
     return i32 %t3
 }
-function @async_initiate__ov3(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIRFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
+function @async_initiate__ov2(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIRFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
   slot $initiation : ptr
   slot $token : ptr
 

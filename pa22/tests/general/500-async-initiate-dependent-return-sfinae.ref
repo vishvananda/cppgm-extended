@@ -35,10 +35,10 @@ function @timer_int___async_wait(%this : ptr, %token : ptr [pass=reference]) -> 
     store i32 0, $initiation
     %t1 = addr $initiation
     %t2 = load ptr $token
-    %t3 = call i32 @async_initiate__ov5(%t1, %t2)
+    %t3 = call i32 @async_initiate(%t1, %t2)
     return i32 %t3
 }
-function @async_initiate__ov5(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIiJFviEEiEDTclsr11enable_if_tIXsr11enable_if_tIXsr25are_completion_signaturesIDpT0_EE5valueE12has_initiateIT_JS2_EEEE5valueE12async_resultIS4_JS2_EEEE8initiatescT1_fp_scS4_fp0_EEOS8_RN13type_identityIS4_E4typeE] {
+function @async_initiate(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIiJFviEEiEDTclsr11enable_if_tIXsr11enable_if_tIXsr25are_completion_signaturesIDpT0_EE5valueE12has_initiateIT_JS2_EEEE5valueE12async_resultIS4_JS2_EEEE8initiatescT1_fp_scS4_fp0_EEOS8_RN13type_identityIS4_E4typeE] {
   slot $initiation : ptr
   slot $token : ptr
 

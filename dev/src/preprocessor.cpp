@@ -1960,6 +1960,38 @@ void Preprocessor::finish_pragma_operator()
   handle_pragma_op_literal(literal, DirectiveState::Start);
 }
 
+void Preprocessor::inject_pragma_pack_marker(const string & marker)
+{
+  InjectedTokens injected;
+  injected.has_resume_state = false;
+  injected.resume_state = DirectiveState::Start;
+  injected.tokens.push_back(EPPToken{PP_IDENTIFIER, marker});
+  injected.tokens.push_back(EPPToken{PP_PREPROCESSING_OP, ";"});
+  injections.push_back(std::move(injected));
+}
+
+void Preprocessor::finish_pragma_pack_directive()
+{
+  const vector<EPPToken> expanded = expand_directive_tokens();
+  vector<string> parts;
+  for(size_t i = 0; i < expanded.size(); ++i) {
+    if(expanded[i].type != PP_WHITESPACE && expanded[i].type != PP_NEW_LINE) {
+      parts.push_back(expanded[i].data);
+    }
+  }
+
+  if(parts.size() == 5 && parts[0] == "(" && parts[1] == "push" &&
+     parts[2] == "," && parts[4] == ")" &&
+     (parts[3] == "1" || parts[3] == "2" || parts[3] == "4" ||
+      parts[3] == "8" || parts[3] == "16")) {
+    inject_pragma_pack_marker("__cppgm_pragma_pack_push_" + parts[3]);
+  } else if(parts.size() == 3 && parts[0] == "(" && parts[1] == "pop" &&
+            parts[2] == ")") {
+    inject_pragma_pack_marker("__cppgm_pragma_pack_pop");
+  }
+  directive_state = DirectiveState::Start;
+}
+
 bool Preprocessor::process(const EPPTokenType type, const string & data,
                            bool allow_macro_start)
 {
@@ -2136,6 +2168,8 @@ bool Preprocessor::process(const EPPTokenType type, const string & data,
         }
 
         directive_state = DirectiveState::Once;
+      } else if(data == "pack") {
+        begin_collected_directive(DirectiveState::PragmaPack);
       } else if(data == "cppgm_mock_unknown") {
         directive_state = DirectiveState::Ignore;
       } else {
@@ -2145,6 +2179,13 @@ bool Preprocessor::process(const EPPTokenType type, const string & data,
       directive_state = DirectiveState::Start;
     } else if(type != PP_WHITESPACE) {
       directive_state = DirectiveState::Ignore;
+    }
+    break;
+  case DirectiveState::PragmaPack:
+    if(type == PP_NEW_LINE) {
+      finish_pragma_pack_directive();
+    } else {
+      append_directive_token(type, data);
     }
     break;
   case DirectiveState::Once:

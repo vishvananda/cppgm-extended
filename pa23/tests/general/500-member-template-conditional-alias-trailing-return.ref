@@ -66,10 +66,10 @@ function @basic_stream_socket_tcp__executor___async_write_some(%this : ptr, %buf
     store ptr %token, $token
     %t1 = call ptr @declval_int_()
     %t2 = load ptr $token
-    %t3 = call i32 @async_initiate__ov2(%t1, %t2)
+    %t3 = call i32 @async_initiate(%t1, %t2)
     return i32 %t3
 }
-function @async_initiate__ov2(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
+function @async_initiate(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
   slot $initiation : ptr
   slot $token : ptr
 

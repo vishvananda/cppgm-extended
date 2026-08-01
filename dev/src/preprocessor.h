@@ -70,12 +70,14 @@ protected:
                               DefineReplacement, DefineParam, DefineSep,
                               DefineVa, Undef, UndefIdent, If, Elif,
                               NotIf, Else, EndIf, Error, Warning, Include,
-                              Once, IncludeNext, Line, Ignore, Pragma,
+                              Once, IncludeNext, Line, Ignore, Pragma, PragmaPack,
                               PragmaOp, PragmaOpLit, PragmaOpEnd};
 
   enum struct DefinedState {None, Start, Paren, NoParen, End};
   enum struct IfState {Start, If, NoElif, Else};
   void finish_pragma_operator();
+  void finish_pragma_pack_directive();
+  void inject_pragma_pack_marker(const std::string & marker);
   void handle_pragma_op_literal(const std::string & data,
                                 DirectiveState resume_state);
   void begin_collected_directive(DirectiveState state);

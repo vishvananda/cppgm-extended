@@ -1801,12 +1801,10 @@ bool lookup_qualified_function_callable_candidates_node(
     return !functions.empty() || !templates.empty();
   }
 
-  semantic_lookup::lookup_functions_in_scopes(std::vector<Scope *>(1, target),
-                                              qualified.name,
-                                              functions);
-  semantic_lookup::lookup_function_templates_in_scopes(std::vector<Scope *>(1, target),
-                                                       qualified.name,
-                                                       templates);
+  semantic_lookup::lookup_qualified_namespace_callables(*target,
+                                                        qualified.name,
+                                                        functions,
+                                                        templates);
   return !functions.empty() || !templates.empty();
 }
 
@@ -3387,6 +3385,7 @@ std::uint64_t cppast_node_syntax_fingerprint(const CppAstNode * node,
   hash_combine(seed, node->has_using_if_exists);
   hash_combine(seed, node->has_exclude_from_explicit_instantiation);
   hash_combine(seed, node->has_always_inline_attribute);
+  hash_combine(seed, node->maximum_field_alignment);
   hash_string_vector_syntax(seed, cppast_abi_tags(*node));
   hash_string_vector_syntax(seed, cppast_alignment_specifiers(*node));
   hash_cppast_node_vector_syntax(seed,

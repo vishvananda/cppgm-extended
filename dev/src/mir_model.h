@@ -143,6 +143,7 @@ struct Instruction
     MI_LOCK_XADD,
     MI_XCHG,
     MI_LOCK_CMPXCHG,
+    MI_LOCK_CMPXCHG16B,
     MI_LEA,
     MI_FMOV,
     MI_FNEG,

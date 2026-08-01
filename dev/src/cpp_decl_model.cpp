@@ -1686,8 +1686,14 @@ size_t type_alignment(const TypePtr & type)
     throw logic_error("named type alignment unavailable");
 
   case Type::TK_CV:
-  case Type::TK_ATOMIC:
     return type_alignment(type->inner);
+
+  case Type::TK_ATOMIC:
+    // The x86-64 lock-free 16-byte representation requires cmpxchg16b
+    // alignment even when the represented class itself is only 8-byte aligned.
+    return type_size(type->inner) == 16 ?
+        max<size_t>(16, type_alignment(type->inner)) :
+        type_alignment(type->inner);
 
   case Type::TK_POINTER:
   case Type::TK_BLOCK_POINTER:

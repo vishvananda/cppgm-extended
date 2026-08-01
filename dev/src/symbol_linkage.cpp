@@ -3755,6 +3755,7 @@ static CppAstNode clone_ast_node_for_mangling(const CppAstNode & source)
   out.has_exclude_from_explicit_instantiation =
       source.has_exclude_from_explicit_instantiation;
   out.has_always_inline_attribute = source.has_always_inline_attribute;
+  out.maximum_field_alignment = source.maximum_field_alignment;
   if(!cppast_asm_label(source).empty()) {
     mutable_cppast_asm_label(out) = cppast_asm_label(source);
   }

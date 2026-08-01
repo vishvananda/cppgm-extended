@@ -6106,6 +6106,89 @@ void lookup_function_templates_in_scopes(const vector<Scope *> & scopes,
 
 namespace {
 
+bool qualified_namespace_scope_has_direct_name(Scope & scope,
+                                               const string & name)
+{
+  if(scope.named_types.find(name) != scope.named_types.end() ||
+     scope.values.find(name) != scope.values.end() ||
+     scope.namespace_bindings.find(name) != scope.namespace_bindings.end() ||
+     scope.class_templates.find(name) != scope.class_templates.end() ||
+     scope.alias_templates.find(name) != scope.alias_templates.end() ||
+     scope.variable_templates.find(name) != scope.variable_templates.end()) {
+    return true;
+  }
+
+  for(size_t i = 0; i < scope.namespace_children.size(); ++i) {
+    Scope & child = *scope.namespace_children[i];
+    if(namespace_child_injected_for_direct_lookup(child) &&
+       qualified_namespace_scope_has_direct_name(child, name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void lookup_qualified_namespace_callables_impl(
+    Scope & scope,
+    const string & name,
+    set<const Scope *> & visited,
+    vector<FunctionBinding *> & functions,
+    vector<FunctionTemplateDecl *> & templates)
+{
+  if(!visited.insert(&scope).second) {
+    return;
+  }
+
+  const vector<FunctionBinding *> direct_functions =
+      lookup_direct_functions(scope, name);
+  const vector<FunctionTemplateDecl *> direct_templates =
+      lookup_direct_function_templates(scope, name);
+  if(!direct_functions.empty() || !direct_templates.empty() ||
+     qualified_namespace_scope_has_direct_name(scope, name)) {
+    append_unique_functions(functions, direct_functions);
+    append_unique_function_templates(templates, direct_templates);
+    return;
+  }
+
+  for(size_t i = 0; i < scope.using_directives.size(); ++i) {
+    lookup_qualified_namespace_callables_impl(*scope.using_directives[i],
+                                              name,
+                                              visited,
+                                              functions,
+                                              templates);
+  }
+  for(size_t i = 0; i < scope.namespace_children.size(); ++i) {
+    Scope & child = *scope.namespace_children[i];
+    if(namespace_child_injected_for_direct_lookup(child)) {
+      lookup_qualified_namespace_callables_impl(child,
+                                                name,
+                                                visited,
+                                                functions,
+                                                templates);
+    }
+  }
+}
+
+}  // namespace
+
+void lookup_qualified_namespace_callables(
+    Scope & scope,
+    const string & name,
+    vector<FunctionBinding *> & functions,
+    vector<FunctionTemplateDecl *> & templates)
+{
+  functions.clear();
+  templates.clear();
+  set<const Scope *> visited;
+  lookup_qualified_namespace_callables_impl(scope,
+                                            name,
+                                            visited,
+                                            functions,
+                                            templates);
+}
+
+namespace {
+
 bool function_binding_visible_to_adl_from_node(
     const Scope & associated_scope,
     const string & name,
@@ -7142,7 +7225,11 @@ void collect_function_templates(SemanticContext & ctx,
     collect_direct_function_templates(*target, qualified.name, out);
     return;
   }
-  lookup_function_templates_in_scopes(vector<Scope *>(1, target), qualified.name, out);
+  vector<FunctionBinding *> ignored_functions;
+  lookup_qualified_namespace_callables(*target,
+                                       qualified.name,
+                                       ignored_functions,
+                                       out);
 }
 
 void collect_function_templates(SemanticContext &,

@@ -3237,7 +3237,8 @@ bool is_sign_extended_integer_type(const LowType & type)
 
 string instruction_result_storage_type(const Instruction & instruction)
 {
-  if(instruction.kind == Instruction::IK_CMP) {
+  if(instruction.kind == Instruction::IK_CMP ||
+     instruction.kind == Instruction::IK_ATOMIC_COMPARE_EXCHANGE) {
     return "i64";
   }
   if(instruction.kind == Instruction::IK_BINARY &&

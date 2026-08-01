@@ -4278,11 +4278,24 @@ size_t evaluate_declared_alignment(SemanticContext & ctx,
   return out;
 }
 
+size_t maximum_field_alignment(const ClassInfo & info)
+{
+  const CppAstNode * node = info.class_node ? info.class_node : info.template_output_node;
+  return node ? node->maximum_field_alignment : 0;
+}
+
+size_t cap_class_member_alignment(const ClassInfo & info, size_t alignment)
+{
+  const size_t maximum = maximum_field_alignment(info);
+  return maximum == 0 ? alignment : std::min(alignment, maximum);
+}
+
 size_t effective_field_alignment(SemanticContext & ctx,
                                  ClassInfo & info,
                                  const FieldInfo & field)
 {
-  const size_t natural_alignment = cpp_decl::type_alignment(field.type);
+  const size_t natural_alignment =
+      cap_class_member_alignment(info, cpp_decl::type_alignment(field.type));
   const size_t declared_alignment =
       evaluate_declared_alignment(ctx,
                                   *info.member_scope,
@@ -8009,7 +8022,7 @@ void finalize_class_layout(SemanticContext & ctx,
 
   if(info.has_own_vptr) {
     class_size = 8;
-    class_alignment = 8;
+    class_alignment = cap_class_member_alignment(info, 8);
   }
 
   std::vector<SubobjectInfo> placed_nonvirtual_subobjects;
@@ -8019,7 +8032,8 @@ void finalize_class_layout(SemanticContext & ctx,
       {
         size_t base_alignment = 0;
         try {
-          base_alignment = cpp_decl::type_alignment(base.type->type);
+          base_alignment = cap_class_member_alignment(
+              info, cpp_decl::type_alignment(base.type->type));
         } catch(const std::logic_error & e) {
           std::ostringstream out;
           out << e.what() << " [class " << info.qualified_name
@@ -8247,7 +8261,8 @@ void finalize_class_layout(SemanticContext & ctx,
   std::map<ClassInfo *, size_t> virtual_offsets;
   for(size_t i = 0; i < virtual_bases.size(); ++i) {
     ClassInfo * base = virtual_bases[i];
-    const size_t base_alignment = base->nonvirtual_alignment;
+    const size_t base_alignment =
+        cap_class_member_alignment(info, base->nonvirtual_alignment);
     const size_t base_size = base->nonvirtual_size;
     class_size = align_up(class_size, base_alignment);
     virtual_offsets[base] = class_size;

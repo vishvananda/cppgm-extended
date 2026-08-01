@@ -301,6 +301,11 @@ void lookup_functions_in_scopes(const std::vector<Scope *> & scopes,
 void lookup_function_templates_in_scopes(const std::vector<Scope *> & scopes,
                                          const std::string & name,
                                          std::vector<FunctionTemplateDecl *> & out);
+void lookup_qualified_namespace_callables(
+    Scope & scope,
+    const std::string & name,
+    std::vector<FunctionBinding *> & functions,
+    std::vector<FunctionTemplateDecl *> & templates);
 void lookup_adl_functions_in_scopes(const std::vector<Scope *> & scopes,
                                     const std::string & name,
                                     std::vector<FunctionBinding *> & out,
