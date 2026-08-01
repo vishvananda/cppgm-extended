@@ -9367,9 +9367,10 @@ bool try_expand_alias_template_pattern_structurally(
       bool pattern_const = false;
       bool pattern_volatile = false;
       top_level_cv_flags(pattern, pattern_cv_base, pattern_const, pattern_volatile);
+      // The alias target scope controls lookup, not whether the selected class
+      // specialization is materially instantiated.
       const bool materialize_selected_class_template =
-          materialize_class_template_targets ||
-          selected_arguments_need_alias_target_scope;
+          materialize_class_template_targets;
 
       if(materialize_selected_class_template) {
         for(std::size_t i = 0; i < substituted_arguments.size(); ++i) {

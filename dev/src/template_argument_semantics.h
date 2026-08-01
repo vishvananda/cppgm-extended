@@ -209,6 +209,10 @@ void note_structured_bool_value_member_for_type_if_needed(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const cpp_decl::TypePtr & type);
+void note_alias_target_structured_bool_value_member_for_witness_capture(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const cpp_decl::TypePtr & type);
 
 void note_structured_bool_value_dependencies_for_class_info(
     template_api::TemplateServices & services,

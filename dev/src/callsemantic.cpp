@@ -14060,6 +14060,14 @@ private:
                       services,
                       template_api::make_template_environment(use_scope),
                       arguments);
+              // The normal alias path remains reference-only.  Source witness
+              // capture additionally retains the conservative value closure
+              // of a variadic alias target.
+              template_argument_semantics::
+                  note_alias_target_structured_bool_value_member_for_witness_capture(
+                      services,
+                      template_api::make_template_environment(use_scope),
+                      resolved_alias);
             });
       }
 

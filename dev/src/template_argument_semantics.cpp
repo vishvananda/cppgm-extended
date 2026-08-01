@@ -6607,7 +6607,10 @@ void append_member_value_binding_dependency(
   dependency.entity =
       class_symbol_or_output_name_for_witness(*owner) + "::" + member_name;
   dependency.decl_location = decl_location;
-  dependency.value_scope = binding.declaration_scope;
+  dependency.value_scope =
+      binding.declaration_scope ?
+          binding.declaration_scope :
+          owner->member_scope.get();
   dependency.value_name = member_name;
   dependency.entity_has_template_identity =
       template_api::value_or_owner_has_template_identity(&binding) ||
@@ -6911,7 +6914,10 @@ void append_static_member_value_dependency_for_type(
       class_symbol_or_output_name_for_witness(*dependency_owner) + "::" +
       member.binding->name;
   dependency.decl_location = decl_location;
-  dependency.value_scope = member.binding->declaration_scope;
+  dependency.value_scope =
+      member.binding->declaration_scope ?
+          member.binding->declaration_scope :
+          dependency_owner->member_scope.get();
   dependency.value_name = member.binding->name;
   dependency.entity_has_template_identity =
       template_api::value_or_owner_has_template_identity(member.binding) ||
@@ -7948,6 +7954,133 @@ void note_structured_bool_value_member_if_needed(
     note_structured_bool_value_member_if_needed(services, *prepared_info);
     return;
   }
+}
+
+void note_alias_target_structured_bool_value_member_for_witness_capture_impl(
+    template_api::TemplateServices & services,
+    const TypePtr & type)
+{
+  if(!witness::source_capture_enabled(services.witness_context) ||
+     !services.semantic_context ||
+     !type) {
+    return;
+  }
+  ClassInfo * info =
+      template_api::find_named_type_class_info(service_type_system(services).model,
+                                               type);
+  if(!info) {
+    return;
+  }
+  bool has_type_parameter_pack = false;
+  if(info->source_template) {
+    for(size_t i = 0; i < info->source_template->parameters.size(); ++i) {
+      const TemplateParameterInfo & parameter =
+          info->source_template->parameters[i];
+      if(parameter.kind == TemplateParameterInfo::TP_TYPE &&
+         parameter.parameter_pack) {
+        has_type_parameter_pack = true;
+        break;
+      }
+    }
+  }
+  if(!has_type_parameter_pack) {
+    return;
+  }
+  const witness::ScopedTemplateWitnessTypeLookupPause type_lookup_pause;
+  const ScopedTemplateValueDependencyLifecycleResume lifecycle_resume;
+  services.semantic_context->ensure_class_reference_named_member(
+      *info,
+      kStructuredBoolResultMemberName);
+  semantic_lookup::MemberValueLookupResult value_member =
+      semantic_lookup::lookup_member_value(
+          *info,
+          kStructuredBoolResultMemberName);
+  set<const ValueBinding *> visited;
+  std::function<void(const ValueBinding &)> note_value_closure;
+  note_value_closure = [&](const ValueBinding & binding) -> void
+  {
+    if(!visited.insert(&binding).second) {
+      return;
+    }
+    const ClassInfo * owner =
+        binding.owner_class ? binding.owner_class :
+        (binding.declaration_scope ? binding.declaration_scope->class_info : nullptr);
+    if(!owner) {
+      return;
+    }
+    vector<TemplateValueDependency> direct_dependency;
+    append_member_value_binding_dependency(
+        services,
+        *owner,
+        binding,
+        direct_dependency);
+    note_template_value_dependencies_for_witness(
+        *services.semantic_context,
+        direct_dependency);
+    if(!binding.constant_initializer ||
+       !binding.constant_initializer_scope) {
+      return;
+    }
+
+    const CppAstNode * initializer = binding.constant_initializer;
+    CppAstNode substituted_initializer;
+    const vector<TemplateParameterInfo> * parameters = nullptr;
+    const vector<TemplateArgument> * arguments = nullptr;
+    if(owner->source_template) {
+      parameters = &owner->source_template->parameters;
+      arguments = &owner->instantiation_arguments;
+      if(owner->has_instantiation_binding_arguments) {
+        for(size_t i = 0;
+            i < owner->source_template->partial_specializations.size();
+            ++i) {
+          const PartialClassTemplateSpecializationDecl & partial =
+              owner->source_template->partial_specializations[i];
+          if(partial.class_node == owner->template_output_node) {
+            parameters = &partial.parameters;
+            break;
+          }
+        }
+        arguments = &class_instantiation_binding_arguments(*owner);
+      }
+    }
+    if(parameters &&
+       arguments &&
+       substitute_expression_node_for_template_arguments(
+           *binding.constant_initializer_scope,
+           *initializer,
+           *parameters,
+           *arguments,
+           substituted_initializer)) {
+      initializer = &substituted_initializer;
+    }
+
+    vector<TemplateValueDependency> nested_dependencies;
+    append_non_bool_static_value_dependencies_in_expression_ast_impl(
+        services,
+        template_api::make_template_environment(
+            *binding.constant_initializer_scope),
+        *initializer,
+        nested_dependencies);
+    note_template_value_dependencies_for_witness(
+        *services.semantic_context,
+        nested_dependencies);
+    for(size_t i = 0; i < nested_dependencies.size(); ++i) {
+      const TemplateValueDependency & dependency = nested_dependencies[i];
+      if(!dependency.value_scope || dependency.value_name.empty()) {
+        continue;
+      }
+      map<string, ValueBinding>::iterator nested =
+          dependency.value_scope->values.find(dependency.value_name);
+      if(nested != dependency.value_scope->values.end()) {
+        note_value_closure(nested->second);
+      }
+    }
+  };
+  if(value_member.binding &&
+     value_member.binding->kind != ValueBinding::VK_FIELD) {
+    note_value_closure(*value_member.binding);
+  }
+  note_structured_bool_value_member_if_needed(services, *info);
 }
 
 void note_structured_bool_value_member_if_needed(
@@ -13954,6 +14087,16 @@ void note_structured_bool_value_member_for_type_if_needed(
     const TypePtr & type)
 {
   note_structured_bool_value_member_if_needed(services, scope, type);
+}
+
+void note_alias_target_structured_bool_value_member_for_witness_capture(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle,
+    const TypePtr & type)
+{
+  note_alias_target_structured_bool_value_member_for_witness_capture_impl(
+      services,
+      type);
 }
 
 void note_template_value_dependencies_for_witness(
@@ -20852,13 +20995,15 @@ bool try_resolve_alias_template_id_locally(
     {
       const witness::ScopedTemplateWitnessSourceCapturePause
           source_capture_pause;
+      // Forming an alias target for a reference-only use must not complete the
+      // class-template-id named by that target.
       if(!template_decl_ast::parse_type_id(
              services,
              inst_scope,
              inst_scope,
              *type_id_node,
              parsed,
-             false) ||
+             request.allow_class_templates) ||
          !parsed) {
         if(parser_trace::enabled("template.resolve")) {
           std::ostringstream trace;
