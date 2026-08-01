@@ -300,6 +300,10 @@ std::string earliest_source_location_for_node(SemanticContext & ctx,
 bool is_trivial_constructor_binding(SemanticContext & ctx, FunctionBinding & binding);
 FunctionBinding * copy_constructor_for(ClassInfo & info);
 FunctionBinding * move_constructor_for(ClassInfo & info);
+void append_direct_materialization_initialization_action_to_pointer(
+    const ExprInfo & target_ptr,
+    ExprInfo source,
+    DumpNode & out);
 
 void note_skipped_template_lifecycle_definition(SemanticContext & ctx,
                                                 FunctionBinding * binding)
@@ -2621,6 +2625,15 @@ void append_constructor_call_action(SemanticContext & ctx,
     }
   }
   FunctionBinding * ctor = selection.ctor;
+  if(constructor_lifecycle_service::selected_constructor_allows_direct_materialization(
+         info,
+         selection)) {
+    append_direct_materialization_initialization_action_to_pointer(
+        object_ptr,
+        std::move(selection.converted_args[0]),
+        out);
+    return;
+  }
   const bool trivial_ctor = ctor && is_trivial_constructor_binding(ctx, *ctor);
   constructor_lifecycle_service::ConstructorActionResult action_result =
       constructor_lifecycle_service::prepare_selected_constructor_action(
@@ -2758,10 +2771,10 @@ void append_trivial_storage_prefix_copy_action(const ExprInfo & target_ptr,
   out.children.push_back(std::move(action));
 }
 
-void append_direct_materialization_initialization_action(SemanticContext & ctx,
-                                                         const ExprInfo & target,
-                                                         ExprInfo source,
-                                                         DumpNode & out)
+void append_direct_materialization_initialization_action_to_pointer(
+    const ExprInfo & target_ptr,
+    ExprInfo source,
+    DumpNode & out)
 {
   DumpNode callee = make_dump_node(CallSemKind::callee, "<direct-materialization>");
   set_expr_metadata(callee,
@@ -2772,7 +2785,7 @@ void append_direct_materialization_initialization_action(SemanticContext & ctx,
                                  "<direct-materialization>");
   set_expr_metadata(call, make_fundamental(FT_VOID), VC_PRVALUE);
   call.children.push_back(std::move(callee));
-  call.children.push_back(ctx.make_address_of_expr(target).node);
+  call.children.push_back(target_ptr.node);
   call.children.push_back(std::move(source.node));
 
   DumpNode action = make_dump_node(CallSemKind::constructor_action,
@@ -2780,6 +2793,17 @@ void append_direct_materialization_initialization_action(SemanticContext & ctx,
   action.trivial_lifecycle = true;
   action.children.push_back(std::move(call));
   out.children.push_back(std::move(action));
+}
+
+void append_direct_materialization_initialization_action(SemanticContext & ctx,
+                                                         const ExprInfo & target,
+                                                         ExprInfo source,
+                                                         DumpNode & out)
+{
+  append_direct_materialization_initialization_action_to_pointer(
+      ctx.make_address_of_expr(target),
+      std::move(source),
+      out);
 }
 
 BitFieldStorageKey bit_field_storage_key(const FieldInfo & field)

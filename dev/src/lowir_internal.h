@@ -30,6 +30,7 @@ bool is_object_type(const LowType & type);
 std::size_t type_size(const LowType & type);
 std::size_t type_alignment(const LowType & type);
 bool is_sign_extended_integer_type(const LowType & type);
+std::string instruction_result_storage_type(const Instruction & instruction);
 const char * symbol_role_text(SymbolRole role);
 const char * language_linkage_text(LanguageLinkageMode linkage);
 const char * symbol_binding_text(SymbolBindingMode binding);

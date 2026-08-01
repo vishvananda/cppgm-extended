@@ -109,6 +109,10 @@ void select_constructor_for_direct_braced_init_into(
     ConstructorSelectionResult & out,
     const ConstructorSelectionOptions & options = ConstructorSelectionOptions());
 
+bool selected_constructor_allows_direct_materialization(
+    const semantic_model::ClassInfo & target,
+    const ConstructorSelectionResult & selection);
+
 CallableEmissionDecision require_selected_constructor(
     OutputRequirementContext & ctx,
     const ConstructorSelectionResult & result,

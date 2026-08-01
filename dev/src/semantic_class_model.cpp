@@ -2844,7 +2844,15 @@ bool collect_inherited_constructors(SemanticContext & ctx,
   if(found != base->type->methods.end()) {
     for(std::size_t i = 0; i < found->second.size(); ++i) {
       FunctionBinding * base_ctor = found->second[i];
-      if(!base_ctor || !base_ctor->is_constructor || base_ctor->is_deleted) {
+      // A constructor using-declaration does not inherit the base class's
+      // copy or move constructors.  The derived class gets its own special
+      // members instead; admitting the base signatures here can make a
+      // conversion to the derived class spuriously ambiguous.
+      if(!base_ctor ||
+         !base_ctor->is_constructor ||
+         base_ctor->is_copy_constructor ||
+         base_ctor->is_move_constructor ||
+         base_ctor->is_deleted) {
         continue;
       }
 

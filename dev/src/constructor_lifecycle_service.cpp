@@ -241,6 +241,31 @@ void select_constructor_for_direct_braced_init_into(
                                                                           options);
 }
 
+bool selected_constructor_allows_direct_materialization(
+    const ClassInfo & target,
+    const ConstructorSelectionResult & selection)
+{
+  if(!selection.ctor ||
+     (!selection.ctor->is_copy_constructor &&
+      !selection.ctor->is_move_constructor) ||
+     selection.converted_args.size() != 1) {
+    return false;
+  }
+
+  const ExprInfo & source = selection.converted_args[0];
+  cpp_decl::TypePtr source_type =
+      strip_top_level_cv(remove_reference_type(source.type));
+  cpp_decl::TypePtr target_type = strip_top_level_cv(target.type);
+  const bool direct_class_value =
+      source.node.kind == CallSemKind::call_expression ||
+      source.node.kind == CallSemKind::closure_object ||
+      source.node.kind == CallSemKind::initializer_list_object;
+  return source.category == VC_PRVALUE &&
+         source_type && target_type &&
+         type_equals(source_type, target_type) &&
+         direct_class_value;
+}
+
 CallableEmissionDecision require_selected_constructor(
     OutputRequirementContext & ctx,
     const ConstructorSelectionResult & result,

@@ -1157,6 +1157,7 @@ vector<string> collect_nonterminator_structural_successor_labels(const lir::Bloc
 typedef unordered_map<string, lir::Operand> ValueEnvironment;
 typedef unordered_map<string, lir::InstructionDebugLocation> ValueDebugLocationEnvironment;
 typedef unordered_set<string> BooleanTempSet;
+typedef unordered_map<string, string> TempTypeMap;
 struct FunctionOptimizationContext;
 struct ReassociableIntegerProducer
 {
@@ -2075,11 +2076,43 @@ bool match_reassociable_binary_with_constant(const lir::Instruction & instructio
                                              lir::Operand & base_operand,
                                              uint64_t & constant_bits);
 
+bool instruction_has_propagatable_value(const lir::Instruction & instruction,
+                                        const TempTypeMap & temp_types,
+                                        const BooleanTempSet & boolean_temps)
+{
+  if(instruction.kind == lir::Instruction::IK_CONST) {
+    return true;
+  }
+  if(instruction.kind != lir::Instruction::IK_COPY) {
+    return false;
+  }
+  if(instruction.first.kind != lir::Operand::OP_TEMP) {
+    return true;
+  }
+
+  const TempTypeMap::const_iterator source_type =
+      temp_types.find(instruction.first.text);
+  // A LowIR copy can explicitly change the interpretation of the bits. Keep
+  // that typed boundary: replacing a ptr destination with its i64 source, for
+  // example, makes a later store target the source temp's spill slot.
+  if(source_type != temp_types.end() &&
+     source_type->second == instruction.type.text) {
+    return true;
+  }
+
+  // A comparison result is canonically 0 or 1, so copying it between integer
+  // widths does not truncate or change its interpretation.
+  return boolean_temps.count(instruction.first.text) != 0 &&
+         instruction.type.text != "ptr" &&
+         is_foldable_integer_type(instruction.type.text);
+}
+
 bool process_instruction_no_debug(ValueEnvironment & environment,
                                   BooleanTempSet & boolean_temps,
                                   ProducerEnvironment & producers,
                                   ExpressionCache & expression_cache,
                                   lir::Instruction & instruction,
+                                  const TempTypeMap & temp_types,
                                   bool track_expression_cache = true,
                                   bool track_reassociation = true)
 {
@@ -2125,8 +2158,9 @@ bool process_instruction_no_debug(ValueEnvironment & environment,
     if(track_expression_cache) {
       invalidate_expression_cache(expression_cache, instruction.dest);
     }
-    if((instruction.kind == lir::Instruction::IK_CONST ||
-        instruction.kind == lir::Instruction::IK_COPY) &&
+    if(instruction_has_propagatable_value(instruction,
+                                          temp_types,
+                                          boolean_temps) &&
        !is_generated_debug_value_temp(instruction.dest)) {
       environment[instruction.dest] = instruction.first;
     }
@@ -2619,6 +2653,7 @@ bool process_instruction(ValueEnvironment & environment,
                          ProducerEnvironment & producers,
                          ExpressionCache & expression_cache,
                          lir::Instruction & instruction,
+                         const TempTypeMap & temp_types,
                          const lir::InstructionDebugLocation * fallback_debug_location = nullptr,
                          bool track_expression_cache = true,
                          bool track_reassociation = true,
@@ -2630,6 +2665,7 @@ bool process_instruction(ValueEnvironment & environment,
                                         producers,
                                         expression_cache,
                                         instruction,
+                                        temp_types,
                                         track_expression_cache,
                                         track_reassociation);
   }
@@ -2683,8 +2719,9 @@ bool process_instruction(ValueEnvironment & environment,
     if(track_expression_cache) {
       invalidate_expression_cache(expression_cache, instruction.dest);
     }
-    if((instruction.kind == lir::Instruction::IK_CONST ||
-        instruction.kind == lir::Instruction::IK_COPY) &&
+    if(instruction_has_propagatable_value(instruction,
+                                          temp_types,
+                                          boolean_temps) &&
        !is_generated_debug_value_temp(instruction.dest)) {
       environment[instruction.dest] = instruction.first;
       if(track_debug_locations && instruction.debug_location.present()) {
@@ -2782,6 +2819,7 @@ ValueBlockAnalysis analyze_value_block(const lir::Block & block,
                                        const ValueDebugLocationEnvironment & input_debug_locations,
                                        const BooleanTempSet & input_boolean_temps,
                                        const ExpressionCache & input_cache,
+                                       const TempTypeMap & temp_types,
                                        const lir::InstructionDebugLocation * fallback_debug_location = nullptr,
                                        bool track_expression_cache = true,
                                        bool track_reassociation = true,
@@ -2828,6 +2866,7 @@ ValueBlockAnalysis analyze_value_block(const lir::Block & block,
                         producers,
                         analysis.out_expression_cache,
                         simulated,
+                        temp_types,
                         fallback_debug_location,
                         track_expression_cache,
                         track_reassociation,
@@ -2848,6 +2887,7 @@ bool simplify_block_instructions(lir::Block & block,
                                  const ValueDebugLocationEnvironment & input_debug_locations,
                                  const BooleanTempSet & input_boolean_temps,
                                  const ExpressionCache & input_expression_cache,
+                                 const TempTypeMap & temp_types,
                                  const lir::InstructionDebugLocation * fallback_debug_location = nullptr,
                                  bool track_expression_cache = true,
                                  bool track_debug_locations = true,
@@ -2884,6 +2924,7 @@ bool simplify_block_instructions(lir::Block & block,
         producers,
         expression_cache,
         instruction,
+        temp_types,
         fallback_debug_location,
         track_expression_cache,
         true,
@@ -3119,6 +3160,7 @@ struct FunctionOptimizationContext
 {
   BlockIndexMap block_index;
   FunctionControlFlow control_flow;
+  TempTypeMap temp_types;
   size_t function_instruction_total = 0;
   bool track_analysis_expression_cache = false;
   bool track_analysis_reassociation = false;
@@ -3337,6 +3379,28 @@ FunctionOptimizationContext collect_function_optimization_context(const lir::Fun
 
   for(size_t i = 0; i < function.blocks.size(); ++i) {
     context.function_instruction_total += function.blocks[i].instructions.size();
+  }
+  context.temp_types.reserve(function.params.size() +
+                             context.function_instruction_total);
+  const auto record_temp_type = [&context](const string & name,
+                                           const string & type) {
+    const pair<TempTypeMap::iterator, bool> inserted =
+        context.temp_types.insert(make_pair(name, type));
+    if(!inserted.second && inserted.first->second != type) {
+      inserted.first->second.clear();
+    }
+  };
+  for(size_t i = 0; i < function.params.size(); ++i) {
+    record_temp_type(function.params[i].name, function.params[i].type.text);
+  }
+  for(size_t i = 0; i < function.blocks.size(); ++i) {
+    for(size_t ii = 0; ii < function.blocks[i].instructions.size(); ++ii) {
+      const lir::Instruction & instruction = function.blocks[i].instructions[ii];
+      if(!instruction.dest.empty()) {
+        record_temp_type(instruction.dest,
+                         lir::instruction_result_storage_type(instruction));
+      }
+    }
   }
 
   context.track_analysis_expression_cache =
@@ -4209,6 +4273,7 @@ bool propagate_known_values_across_blocks(lir::Function & function,
                                            input.in_debug_locations(),
                                            input.in_boolean_temps(),
                                            input.in_expression_cache(),
+                                           context->temp_types,
                                            fallback_debug_location,
                                            context->track_cleanup_expression_cache,
                                            context->track_debug_locations);
@@ -4499,6 +4564,7 @@ ValueDataflowState compute_value_dataflow(const lir::Function & function,
           *input_debug_locations,
           *input_boolean_temps,
           *input_expression_cache,
+          context->temp_types,
           fallback_debug_location,
           context->track_analysis_expression_cache,
           context->track_analysis_reassociation,
@@ -5697,6 +5763,7 @@ SlotBlockAnalysis analyze_slot_block(const lir::Block & block,
                                      const ValueEnvironment & input_environment,
                                      const ValueDebugLocationEnvironment & input_debug_locations,
                                      const BooleanTempSet & input_boolean_temps,
+                                     const TempTypeMap & temp_types,
                                      const lir::InstructionDebugLocation * fallback_debug_location = nullptr,
                                      bool track_debug_locations = true)
 {
@@ -5754,6 +5821,7 @@ SlotBlockAnalysis analyze_slot_block(const lir::Block & block,
                         producers,
                         expression_cache,
                         simulated,
+                        temp_types,
                         fallback_debug_location,
                         true,
                         true,
@@ -5975,6 +6043,7 @@ bool promote_simple_slots(lir::Function & function,
                                           input.in_environment(),
                                           input.in_debug_locations(),
                                           input.in_boolean_temps(),
+                                          context.temp_types,
                                           fallback_debug_location,
                                           context.track_debug_locations);
       } else {

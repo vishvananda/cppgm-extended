@@ -7619,16 +7619,24 @@ private:
         throw logic_error("missing initializer_list element type");
       }
 
+      const string & static_backing_symbol =
+          callsem_initializer_list_backing_symbol(node);
+      vector<string> static_backing_cleanup_slots;
       string begin_ptr = "0";
       if(!node.children.empty()) {
         if(is_complete_class_value_type(element_object_type)) {
           const size_t element_stride = backend_storage_size(element_object_type);
-          const string element_storage =
-              new_hidden_slot(lowir_storage_type_for_span(element_stride * node.children.size(),
-                                                          backend_storage_alignment(
-                                                              element_object_type)),
-                              "initlist");
-          begin_ptr = emit_storage_address(element_storage);
+          if(static_backing_symbol.empty()) {
+            const string element_storage =
+                new_hidden_slot(
+                    lowir_storage_type_for_span(element_stride * node.children.size(),
+                                                backend_storage_alignment(
+                                                    element_object_type)),
+                    "initlist");
+            begin_ptr = emit_storage_address(element_storage);
+          } else {
+            begin_ptr = emit_storage_address(static_backing_symbol);
+          }
           for(size_t i = 0; i < node.children.size(); ++i) {
             const string element_ptr =
                 emit_byte_offset_address(begin_ptr, i * element_stride);
@@ -7646,17 +7654,25 @@ private:
             }
             register_initializer_list_backing_cleanup(element_object_type,
                                                       element_ptr);
+            if(!static_backing_symbol.empty()) {
+              static_backing_cleanup_slots.push_back(element_ptr);
+            }
           }
         } else {
           const string element_type =
               lowir_memory_type_for(strip_top_level_cv(element_object_type));
           const size_t element_stride = backend_storage_size(element_object_type);
-          const string element_storage =
-              new_hidden_slot(lowir_storage_type_for_span(element_stride * node.children.size(),
-                                                          backend_storage_alignment(
-                                                              element_object_type)),
-                              "initlist");
-          begin_ptr = emit_storage_address(element_storage);
+          if(static_backing_symbol.empty()) {
+            const string element_storage =
+                new_hidden_slot(
+                    lowir_storage_type_for_span(element_stride * node.children.size(),
+                                                backend_storage_alignment(
+                                                    element_object_type)),
+                    "initlist");
+            begin_ptr = emit_storage_address(element_storage);
+          } else {
+            begin_ptr = emit_storage_address(static_backing_symbol);
+          }
           for(size_t i = 0; i < node.children.size(); ++i) {
             const string value =
                 emit_scalar_storage_value(element_object_type, node.children[i]);
@@ -7664,6 +7680,11 @@ private:
                       emit_byte_offset_address(begin_ptr, i * element_stride));
           }
         }
+      }
+
+      if(!static_backing_cleanup_slots.empty()) {
+        (void)take_materialized_temporary_cleanups(
+            static_backing_cleanup_slots);
       }
 
       emit_line("store ptr " + begin_ptr + ", " +
@@ -12562,10 +12583,21 @@ private:
       }
       string nothrow_end_label;
       begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
-      emit_line("store " +
-                lowir_memory_type_for(result_type->inner) + " " +
-                emit_scalar_storage_value(result_type->inner, node.children[1]) + ", " +
-                object_ptr);
+      TypePtr object_type = strip_top_level_cv(result_type->inner);
+      TypePtr source_type =
+          strip_top_level_cv(remove_reference_type(node.children[1].semantic_type));
+      if(is_complete_class_value_type(object_type)) {
+        if(node.children[1].value_category != CVC_PRVALUE ||
+           !source_type || !type_equals(object_type, source_type)) {
+          throw logic_error("new-expression direct materialization type mismatch");
+        }
+        emit_storage_value_to_target(object_type, node.children[1], object_ptr);
+      } else {
+        emit_line("store " +
+                  lowir_memory_type_for(result_type->inner) + " " +
+                  emit_scalar_storage_value(result_type->inner, node.children[1]) + ", " +
+                  object_ptr);
+      }
       finish_nothrow_new_initialization(nothrow_end_label);
       return object_ptr;
     }
@@ -19026,6 +19058,53 @@ private:
     call.children.push_back(make_global_object_address_expr(variable));
     call.children.push_back(source);
 
+    CallSemNode & materialization = call.children.back();
+    if(!variable.is_thread_local &&
+       materialization.kind == CallSemKind::initializer_list_object &&
+       !materialization.children.empty()) {
+      TypePtr element_type =
+          strip_top_level_cv(remove_reference_type(
+              callsem_initializer_list_element_type(materialization)));
+      if(!element_type) {
+        throw logic_error("global initializer_list missing element type");
+      }
+      const TypePtr backing_array_type =
+          make_array(element_type, true, materialization.children.size());
+      ostringstream backing_name;
+      backing_name << "@__cppgm_initlist_backing_"
+                   << (++initializer_list_backing_counter_);
+      const string backing_symbol = backing_name.str();
+
+      LowIRGlobal backing_global = make_data_global(backing_symbol);
+      backing_global.data_items.push_back(
+          string("zero ") + to_string(backend_storage_size(backing_array_type)));
+      globals_.push_back(backing_global);
+
+      GlobalBinding backing_binding;
+      backing_binding.semantic_type = backing_array_type;
+      backing_binding.lowir_type = "i64";
+      backing_binding.storage = backing_symbol;
+      backing_binding.symbol =
+          symbol_linkage::make_internal_symbol_identity(
+              backing_symbol, symbol_linkage::SL_INTERNAL);
+      global_bindings_[backing_symbol] = backing_binding;
+      set_callsem_initializer_list_backing_symbol(materialization,
+                                                   backing_symbol);
+
+      CallSemNode & backing_variable =
+          make_synthetic_node(CallSemKind::variable, backing_symbol.substr(1));
+      backing_variable.semantic_type = backing_array_type;
+      backing_variable.value_category = CVC_LVALUE;
+      set_callsem_symbol(backing_variable, backing_binding.symbol);
+      const string dtor = destructor_symbol(element_type);
+      for(size_t i = 0; i < materialization.children.size(); ++i) {
+        append_global_array_destructor_action(backing_variable,
+                                              backing_array_type,
+                                              i,
+                                              dtor);
+      }
+    }
+
     CallSemNode & action =
         make_synthetic_node(CallSemKind::constructor_action, "<global-materialization>");
     action.trivial_lifecycle = true;
@@ -19970,6 +20049,7 @@ private:
   mutable unordered_set<string> generated_function_symbol_cache_;
   mutable size_t generated_function_symbol_cache_size_ = static_cast<size_t>(-1);
   size_t string_literal_counter_ = 0;
+  size_t initializer_list_backing_counter_ = 0;
   bool validate_closure_ = false;
   bool emit_runtime_support_ = false;
   bool enable_debug_value_names_ = false;

@@ -281,6 +281,7 @@ struct CallSemRareStrings
   std::string vtt_object_symbol;
   std::string runtime_bridge_symbol;
   std::string local_static_guard_symbol;
+  std::string initializer_list_backing_symbol;
   std::string section_segment;
   std::string section_name;
 };
@@ -908,6 +909,24 @@ inline void set_callsem_local_static_guard_symbol(CallSemNode & node,
     return;
   }
   ensure_callsem_rare_strings(node).local_static_guard_symbol = value;
+}
+
+inline const std::string &
+callsem_initializer_list_backing_symbol(const CallSemNode & node)
+{
+  return node.extra && node.extra->rare_strings ?
+      node.extra->rare_strings->initializer_list_backing_symbol :
+      callsem_empty_extra_string();
+}
+
+inline void set_callsem_initializer_list_backing_symbol(
+    CallSemNode & node,
+    const std::string & value)
+{
+  if(value.empty() && (!node.extra || !node.extra->rare_strings)) {
+    return;
+  }
+  ensure_callsem_rare_strings(node).initializer_list_backing_symbol = value;
 }
 
 inline const std::string & callsem_section_segment(const CallSemNode & node)

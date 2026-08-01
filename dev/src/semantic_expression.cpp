@@ -4306,6 +4306,20 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
   if(!ctor.ctor) {
     throw NoViableConstructorError("no viable constructor for new-expression");
   }
+
+  ExprInfo result;
+  result.type = result_type;
+  result.category = VC_PRVALUE;
+  result.node = make_dump_node(CallSemKind::new_expression);
+  ctx.set_expr_info_metadata(result, result.type, result.category);
+  result.node.children.push_back(std::move(object_ptr.node));
+  if(constructor_lifecycle_service::selected_constructor_allows_direct_materialization(
+         *class_info,
+         ctor)) {
+    result.node.children.push_back(std::move(ctor.converted_args[0].node));
+    return result;
+  }
+
   constructor_lifecycle_service::ConstructorActionResult ctor_action;
   constructor_lifecycle_service::prepare_selected_constructor_action_into(
       ctx,
@@ -4315,12 +4329,6 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
       OutputReason::NewExpression,
       ctor_action);
 
-  ExprInfo result;
-  result.type = result_type;
-  result.category = VC_PRVALUE;
-  result.node = make_dump_node(CallSemKind::new_expression);
-  ctx.set_expr_info_metadata(result, result.type, result.category);
-  result.node.children.push_back(std::move(object_ptr.node));
   result.node.children.push_back(make_bound_callee_node(ctx, *ctor_action.ctor));
   for(size_t i = 1; i < ctor_action.call_args.size(); ++i) {
     result.node.children.push_back(std::move(ctor_action.call_args[i].node));

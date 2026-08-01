@@ -3235,6 +3235,19 @@ bool is_sign_extended_integer_type(const LowType & type)
   return type.text == "i8" || type.text == "i16" || type.text == "i32";
 }
 
+string instruction_result_storage_type(const Instruction & instruction)
+{
+  if(instruction.kind == Instruction::IK_CMP) {
+    return "i64";
+  }
+  if(instruction.kind == Instruction::IK_BINARY &&
+     instruction.op == "sub" &&
+     instruction.type.text == "ptr") {
+    return "i64";
+  }
+  return instruction.type.text;
+}
+
 const char * symbol_role_text(SymbolRole role)
 {
   switch(role) {
