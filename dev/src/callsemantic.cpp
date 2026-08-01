@@ -31623,6 +31623,7 @@ private:
                                               const vector<pair<string, TypePtr> > & params,
                                               const vector<const CppAstNode *> & default_arguments,
                                               const TypePtr & result_type,
+                                              bool defer_implicit_result_type,
                                               bool mutable_lambda,
                                               const CppAstNode * declarator,
                                               const CppAstNode * body,
@@ -31904,6 +31905,42 @@ private:
     call_operator->lexical_access_class = current_class_scope(scope);
     call_operator->lexical_access_function = current_function_scope(scope);
     synthetic_functions.push_back(call_operator);
+
+    if(defer_implicit_result_type) {
+      TypePtr deduced_result;
+      if(!semantic_output::deduce_function_body_implicit_return_type(
+             *this,
+             *info->member_scope,
+             *call_operator,
+             deduced_result) ||
+         !deduced_result) {
+        throw logic_error("undeduced lambda return type");
+      }
+      vector<TypePtr> explicit_param_types;
+      explicit_param_types.reserve(params.size());
+      for(size_t i = 0; i < params.size(); ++i) {
+        explicit_param_types.push_back(params[i].second);
+      }
+      declared_type = make_function(deduced_result,
+                                    explicit_param_types,
+                                    false);
+      TypePtr effective_type =
+          method_function_type(info->type,
+                               !mutable_lambda,
+                               false,
+                               declared_type);
+      if(!effective_type ||
+         effective_type->params.size() != call_operator->params.size()) {
+        throw logic_error("invalid deferred lambda call operator type");
+      }
+      call_operator->declared_type = declared_type;
+      call_operator->type = effective_type;
+      for(size_t i = 0; i < call_operator->params.size(); ++i) {
+        call_operator->params[i].second = effective_type->params[i];
+      }
+      upgrade_function_symbol_linkage(call_operator,
+                                      call_operator->symbol.linkage);
+    }
 
     ensure_implicit_special_members(*info);
     finalize_class_virtuals(*info);

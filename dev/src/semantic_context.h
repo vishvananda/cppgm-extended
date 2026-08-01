@@ -290,6 +290,7 @@ public:
       const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
       const std::vector<const CppAstNode *> & default_arguments,
       const cpp_decl::TypePtr & result_type,
+      bool defer_implicit_result_type,
       bool mutable_lambda,
       const CppAstNode * declarator,
       const CppAstNode * body,

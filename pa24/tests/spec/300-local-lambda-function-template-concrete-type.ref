@@ -15,10 +15,10 @@ function @__lambda_main_t45_47__operator__(%this : ptr) -> i32 [binding=weak, ob
     store ptr %this, $this
     %t1 = addr $x
     %t2 = addr $x
-    %t3 = call i32 @use__ov2(%t2)
+    %t3 = call i32 @use(%t2)
     return i32 %t3
 }
-function @use__ov2(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z3useIZZ4mainENK3$_0clEvE5localEiR3boxIT_E] {
+function @use(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z3useIZZ4mainENK3$_0clEvE5localEiR3boxIT_E] {
   slot $__param0 : ptr
 
   block ^entry:

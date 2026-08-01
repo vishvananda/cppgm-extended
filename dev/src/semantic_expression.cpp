@@ -3504,6 +3504,7 @@ struct PreparedLambdaExpression
   vector<pair<string, TypePtr> > params;
   vector<const CppAstNode *> default_arguments;
   TypePtr result_type;
+  bool defer_implicit_result_type = false;
   bool mutable_lambda = false;
   LambdaCaptureDefaultMode default_capture = LCD_NONE;
   vector<pair<string, bool> > captures;
@@ -3537,6 +3538,21 @@ bool lambda_body_contains_local_class_declaration(const CppAstNode & node)
   }
   for(size_t i = 0; i < node.children.size(); ++i) {
     if(lambda_body_contains_local_class_declaration(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool lambda_body_creates_local_type(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::class_specifier ||
+     node.kind == CppAstKind::class_forward_declaration ||
+     node.kind == CppAstKind::lambda_expression) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(lambda_body_creates_local_type(node.children[i])) {
       return true;
     }
   }
@@ -3640,6 +3656,13 @@ PreparedLambdaExpression prepare_lambda_expression(SemanticContext & ctx,
     } else if(!prepared.body->children.empty()) {
       if(!lambda_body_contains_outer_return_statement(*prepared.body)) {
         prepared.result_type = make_fundamental(FT_VOID);
+      } else if(lambda_body_creates_local_type(*prepared.body)) {
+        // A returned lambda or local class is owned by this closure's
+        // operator(), which does not exist yet.  Deduce after synthesizing the
+        // closure so the local type has the same owner during deduction and
+        // later body emission.
+        prepared.result_type = make_fundamental(FT_VOID);
+        prepared.defer_implicit_result_type = true;
       } else {
         vector<ExprInfo> return_exprs;
         bool saw_void_return = false;
@@ -3672,6 +3695,9 @@ PreparedLambdaExpression prepare_lambda_expression(SemanticContext & ctx,
   } else if(!prepared.body->children.empty()) {
     if(!lambda_body_contains_outer_return_statement(*prepared.body)) {
       prepared.result_type = make_fundamental(FT_VOID);
+    } else if(lambda_body_creates_local_type(*prepared.body)) {
+      prepared.result_type = make_fundamental(FT_VOID);
+      prepared.defer_implicit_result_type = true;
     } else {
       vector<ExprInfo> return_exprs;
       bool saw_void_return = false;
@@ -3757,6 +3783,7 @@ ExprInfo build_lambda_closure_expression(SemanticContext & ctx,
                                           prepared.params,
                                           prepared.default_arguments,
                                           prepared.result_type,
+                                          prepared.defer_implicit_result_type,
                                           prepared.mutable_lambda,
                                           prepared.declarator,
                                           durable_body,

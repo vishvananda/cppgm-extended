@@ -29,6 +29,7 @@
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
 #include "semantic_parameter_recovery.h"
+#include "semantic_conversion.h"
 #include "semantic_scope_mutation.h"
 #include "semantic_statement.h"
 #include "semantic_template_function.h"
@@ -4763,6 +4764,64 @@ void analyze_function_body_semantics_impl(SemanticContext & ctx,
   }
 }
 
+bool deduce_function_body_implicit_return_type_impl(
+    SemanticContext & ctx,
+    Scope & scope,
+    FunctionBinding & binding,
+    TypePtr & out)
+{
+  if(!binding.body) {
+    return false;
+  }
+
+  Scope function_scope(&scope);
+  function_scope.class_info = binding.owner_class;
+  function_scope.function = &binding;
+  template_scope::overlay_scope_bindings(function_scope,
+                                         scope,
+                                         template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
+  const vector<TypePtr> parameter_object_types =
+      recover_function_parameter_object_types(ctx, function_scope, binding);
+  for(size_t i = 0; i < binding.params.size(); ++i) {
+    bind_function_parameter_lookup(function_scope,
+                                   binding,
+                                   i,
+                                   &parameter_object_types);
+  }
+  bind_function_parameter_pack_sizes(ctx, function_scope, binding);
+  bind_function_parameter_value_packs(ctx, function_scope, binding);
+
+  vector<semantic_conversion::ExprInfo> return_exprs;
+  bool saw_void_return = false;
+  semantic_statement::collect_return_expressions(ctx,
+                                                 function_scope,
+                                                 *binding.body,
+                                                 return_exprs,
+                                                 saw_void_return);
+  if(return_exprs.empty()) {
+    out = make_fundamental(FT_VOID);
+    return true;
+  }
+  if(saw_void_return) {
+    return false;
+  }
+
+  TypePtr deduced;
+  for(size_t i = 0; i < return_exprs.size(); ++i) {
+    TypePtr candidate = semantic_conversion::value_conversion_type(return_exprs[i]);
+    if(!candidate) {
+      return false;
+    }
+    if(!deduced) {
+      deduced = candidate;
+    } else if(!type_equals(deduced, candidate)) {
+      return false;
+    }
+  }
+  out = deduced;
+  return static_cast<bool>(out);
+}
+
 void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
                                                       Scope & scope,
                                                       FunctionBinding & binding)
@@ -6150,6 +6209,18 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
 }
 
 }  // namespace
+
+bool deduce_function_body_implicit_return_type(
+    SemanticContext & ctx,
+    Scope & scope,
+    FunctionBinding & binding,
+    TypePtr & out)
+{
+  return deduce_function_body_implicit_return_type_impl(ctx,
+                                                        scope,
+                                                        binding,
+                                                        out);
+}
 
 void analyze_function_binding_output(SemanticContext & ctx,
                                      OutputState & state,

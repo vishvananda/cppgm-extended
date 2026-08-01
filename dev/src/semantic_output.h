@@ -86,6 +86,12 @@ void analyze_function_body_for_witness_semantics(SemanticContext & ctx,
                                                  semantic_model::Scope & scope,
                                                  semantic_model::FunctionBinding & binding);
 
+bool deduce_function_body_implicit_return_type(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    semantic_model::FunctionBinding & binding,
+    cpp_decl::TypePtr & out);
+
 void validate_function_body_and_cache_output(SemanticContext & ctx,
                                              semantic_model::Scope & scope,
                                              semantic_model::FunctionBinding & binding);
