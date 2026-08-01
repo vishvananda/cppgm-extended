@@ -11522,6 +11522,29 @@ private:
     }
 
     TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
+    if(node.kind == CppAstKind::braced_init_list &&
+       !is_reference_type(strip_top_level_cv(target))) {
+      const bool scalar_list_target =
+          target_base &&
+          (is_integral_type(target_base) ||
+           is_floating_type(target_base) ||
+           is_named_enum_type(target_base) ||
+           is_pointer_type(target_base) ||
+           target_base->kind == Type::TK_MEMBER_POINTER);
+      if(scalar_list_target) {
+        if(node.children.empty()) {
+          out = make_value_initialized_expr(target);
+          return true;
+        }
+        if(node.children.size() != 1 ||
+           semantic_lifetime::scalar_list_initialization_has_narrowing_conversion(
+               *this, scope, node.children[0], target)) {
+          return false;
+        }
+        out = analyze_expression_for_target(scope, node.children[0], target);
+        return can_copy_initialize(target, out);
+      }
+    }
     ClassInfo * target_class = complete_class_type(target_base);
     if(target_class) {
       std::function<bool(const TypePtr &, const CppAstNode &, ExprInfo &)>

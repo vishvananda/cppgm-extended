@@ -1576,7 +1576,7 @@ SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & 
     if(move && assignment_binding_accepts_rhs(
                    ctx, scope, *move, rhs, lhs_category)) {
       result.binding = move;
-      result.assignable = !move->is_deleted;
+      result.assignable = !move->is_deleted && move->access == MA_PUBLIC;
       return result;
     }
   }
@@ -1592,12 +1592,13 @@ SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & 
              find_class_assignment_operator_for_trait(
                  ctx, scope, target, rhs, lhs_category)) {
         result.binding = alternate;
-        result.assignable = !alternate->is_deleted;
+        result.assignable =
+            !alternate->is_deleted && alternate->access == MA_PUBLIC;
         return result;
       }
     }
     result.binding = copy;
-    result.assignable = !copy->is_deleted;
+    result.assignable = !copy->is_deleted && copy->access == MA_PUBLIC;
   }
   return result;
 }

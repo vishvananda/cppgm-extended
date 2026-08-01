@@ -8760,6 +8760,21 @@ bool unqualified_functional_cast_type_hides_outer_functions(
     return false;
   }
 
+  if(ClassInfo * lexical_class = current_class_scope(scope)) {
+    const MemberCallableLookupResult visible =
+        lookup_visible_member_callables(*lexical_class, name);
+    for(size_t i = 0; i < visible.functions.size(); ++i) {
+      if(visible.functions[i] && !visible.functions[i]->is_constructor) {
+        return false;
+      }
+    }
+    for(size_t i = 0; i < visible.templates.size(); ++i) {
+      if(visible.templates[i] && !visible.templates[i]->is_constructor) {
+        return false;
+      }
+    }
+  }
+
   for(Scope * current = &scope; current; current = current->parent) {
     if(semantic_lookup::lookup_direct_value(*current, name)) {
       return false;

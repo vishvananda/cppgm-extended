@@ -8368,7 +8368,8 @@ bool pointer_like_dereference_result(
   }
 
   const bool source_is_const =
-      semantic_conversion::is_const_object_type(source_arg.type);
+      semantic_conversion::is_const_object_type(
+          remove_reference_type(source_arg.type));
   FunctionBinding * selected = nullptr;
   int selected_cv_rank = 2;
   bool selected_ambiguous = false;
@@ -36260,6 +36261,50 @@ bool standard_constructibility_shorthand_types(const string & name,
   return false;
 }
 
+bool standard_constructibility_shorthand_has_public_special_member(
+    template_api::TemplateServices & services,
+    const string & name,
+    const TypePtr & type)
+{
+  if(!services.semantic_context) {
+    return false;
+  }
+  TypePtr object_type = strip_top_level_cv(type);
+  if(!object_type) {
+    return false;
+  }
+  if(object_type->kind == Type::TK_ARRAY) {
+    return (name == "is_default_constructible") &&
+        object_type->has_bound &&
+        standard_constructibility_shorthand_has_public_special_member(
+            services, name, object_type->inner);
+  }
+  if(object_type->kind != Type::TK_NAMED) {
+    return true;
+  }
+
+  SemanticContext & ctx = *services.semantic_context;
+  ClassInfo * info = ctx.complete_class_type(object_type);
+  if(!info || info->class_kind == "enum" || !info->member_scope) {
+    return info && info->class_kind == "enum";
+  }
+  semantic_class_model::ensure_implicit_special_members(ctx, *info);
+
+  FunctionBinding * ctor = nullptr;
+  if(name == "is_default_constructible") {
+    ctor = ctx.select_default_constructor_for_builtin_trait(*info->member_scope,
+                                                            *info);
+  } else if(name == "is_copy_constructible") {
+    ctor = semantic_class_model::ensure_implicit_copy_constructor(ctx, *info);
+  } else if(name == "is_move_constructible") {
+    ctor = semantic_class_model::ensure_implicit_move_constructor(ctx, *info);
+    if(!ctor) {
+      ctor = semantic_class_model::ensure_implicit_copy_constructor(ctx, *info);
+    }
+  }
+  return ctor && !ctor->is_deleted && ctor->access == MA_PUBLIC;
+}
+
 bool evaluate_standard_constructibility_shorthand_type(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -36296,15 +36341,21 @@ bool evaluate_standard_constructibility_shorthand_type(
      !require_nothrow) {
     if(name == "is_default_constructible" &&
        semantic_class_model::is_trivially_default_constructible_type_for_host_abi(
-           *services.semantic_context, type)) {
+           *services.semantic_context, type) &&
+       standard_constructibility_shorthand_has_public_special_member(
+           services, name, type)) {
       value = 1;
     } else if(name == "is_copy_constructible" &&
               semantic_class_model::is_trivially_copy_constructible_type_for_host_abi(
-                  *services.semantic_context, type)) {
+                  *services.semantic_context, type) &&
+              standard_constructibility_shorthand_has_public_special_member(
+                  services, name, type)) {
       value = 1;
     } else if(name == "is_move_constructible" &&
               semantic_class_model::is_trivially_move_constructible_type_for_host_abi(
-                  *services.semantic_context, type)) {
+                  *services.semantic_context, type) &&
+              standard_constructibility_shorthand_has_public_special_member(
+                  services, name, type)) {
       value = 1;
     }
   }
@@ -42185,41 +42236,55 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
     return true;
   }
 
-  const string base_use_location =
-      template_public_use_location_or(services.witness_context, string());
-  size_t use_offset = 0;
-  const string call_callee = first_call_callee_name(*request_expr);
-  if(!call_callee.empty()) {
-    const size_t callee_offset =
-        find_identifier_occurrence(node.value, call_callee, 0);
-    if(callee_offset != string::npos) {
-      use_offset = callee_offset;
+  string dependent_expression_use_location;
+  const bool capture_dependent_expression_source =
+      witness::source_capture_enabled(services.witness_context) ||
+      witness::function_call_recording_enabled(
+          services.witness_context,
+          witness::FunctionCallEmissionOrigin::DeclvalCall);
+  if(capture_dependent_expression_source) {
+    const string base_use_location =
+        template_public_use_location_or(services.witness_context, string());
+    size_t use_offset = 0;
+    const string call_callee = first_call_callee_name(*request_expr);
+    if(!call_callee.empty()) {
+      const size_t callee_offset =
+          find_identifier_occurrence(node.value, call_callee, 0);
+      if(callee_offset != string::npos) {
+        use_offset = callee_offset;
+      }
     }
-  }
-  if(expr.kind == CppAstKind::new_expression) {
-    const size_t placement_declval_offset =
-        find_identifier_occurrence(node.value, "declval", 0);
-    if(placement_declval_offset != string::npos) {
-      use_offset = placement_declval_offset;
+    if(expr.kind == CppAstKind::new_expression) {
+      const size_t placement_declval_offset =
+          find_identifier_occurrence(node.value, "declval", 0);
+      if(placement_declval_offset != string::npos) {
+        use_offset = placement_declval_offset;
+      }
     }
+    const string token_use_location =
+        witness::source_capture_enabled(services.witness_context) ?
+            template_api::template_witness_detail::
+                source_location_for_identifier_token_on_or_after(
+                services.witness_context,
+                base_use_location,
+                request_expr->kind == CppAstKind::new_expression ?
+                    string("declval") :
+                    call_callee) :
+            string();
+    dependent_expression_use_location =
+        !token_use_location.empty() ?
+            token_use_location :
+            source_location_with_text_offset(base_use_location,
+                                             node.value,
+                                             use_offset);
   }
-  const string token_use_location =
-      witness::source_capture_enabled(services.witness_context) ?
-          template_api::template_witness_detail::
-              source_location_for_identifier_token_on_or_after(
-              services.witness_context,
-              base_use_location,
-              request_expr->kind == CppAstKind::new_expression ? string("declval") : call_callee) :
-          string();
 
   template_api::TemplateDependentTypeExprRequest request;
   request.scope = &scope;
   request.kind = is_typeof ? template_api::TDTEK_TYPEOF_EXPR :
                              template_api::TDTEK_DECLTYPE;
   request.operand_was_parenthesized = operand_was_parenthesized;
-  request.use_location = !token_use_location.empty() ?
-      token_use_location :
-      source_location_with_text_offset(base_use_location, node.value, use_offset);
+  request.use_location = dependent_expression_use_location;
   request.operand = *request_expr;
   TypePtr evaluated;
   const semantic_expression::ScopedUnevaluatedOperand

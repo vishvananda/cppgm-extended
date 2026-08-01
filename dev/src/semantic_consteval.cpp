@@ -2027,6 +2027,22 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
       if(referred.kind == constant_eval::ConstexprValue::CV_ADDRESSABLE) {
         return false;
       }
+      if(ctx.complete_class_type(target_base)) {
+        CppAstNode direct_init;
+        direct_init.kind = CppAstKind::paren_initializer;
+        direct_init.children.push_back(*payload);
+        if(evaluate_class_typed_initializer(ctx,
+                                            scope,
+                                            evaluator,
+                                            direct_init,
+                                            target_base,
+                                            referred)) {
+          referred.type = target;
+          out = referred;
+          return true;
+        }
+        return false;
+      }
     }
     if(!evaluate_typed_initializer_value(ctx, scope, evaluator, node, target_base, referred)) {
       return false;

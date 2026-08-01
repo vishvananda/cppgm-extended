@@ -9012,7 +9012,12 @@ void collect_class_friend_declaration(SemanticContext & ctx,
   TypePtr base;
   const CppAstNode filtered_specifiers =
       filtered_class_member_decl_specifiers(resolved_specifiers);
-  if(!ctx.parse_decl_spec(filtered_specifiers, *info.member_scope, is_typedef, base) || is_typedef) {
+  if(!ctx.parse_decl_spec(filtered_specifiers,
+                          *info.member_scope,
+                          is_typedef,
+                          base,
+                          true) ||
+     is_typedef) {
     return;
   }
   for(size_t j = 0; j < declarators->children.size(); ++j) {

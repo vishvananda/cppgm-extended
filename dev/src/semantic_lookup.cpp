@@ -5464,6 +5464,23 @@ bool class_has_friend_class_access(const ClassInfo * current_class,
   return false;
 }
 
+bool class_has_enclosing_class_access(const ClassInfo * current_class,
+                                      const ClassInfo * declared_in)
+{
+  for(const ClassInfo * current = current_class; current; ) {
+    if(current == declared_in) {
+      return true;
+    }
+    const ClassInfo * enclosing =
+        current->enclosing_scope ? current->enclosing_scope->class_info : nullptr;
+    if(enclosing == current) {
+      return false;
+    }
+    current = enclosing;
+  }
+  return false;
+}
+
 bool scope_has_friend_class_access(const Scope * scope, const ClassInfo * declared_in)
 {
   for(const Scope * current = scope; current; current = current->parent) {
@@ -5483,7 +5500,7 @@ bool scope_has_class_access(const Scope * scope,
     if(!current_class) {
       continue;
     }
-    if(current_class == declared_in) {
+    if(class_has_enclosing_class_access(current_class, declared_in)) {
       return true;
     }
     if(is_same_or_derived(current_class, declared_in)) {
@@ -5509,14 +5526,14 @@ bool member_access_allowed(const Scope * lexical_scope,
     if(!access_class) {
       return false;
     }
-    if(access_class == declared_in) {
+    if(class_has_enclosing_class_access(access_class, declared_in)) {
+      return true;
+    }
+    if(class_has_friend_class_access(access_class, declared_in)) {
       return true;
     }
     if(is_same_or_derived(access_class, declared_in)) {
       return member_access != MA_PRIVATE;
-    }
-    if(class_has_friend_class_access(access_class, declared_in)) {
-      return true;
     }
     return false;
   };

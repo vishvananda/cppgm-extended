@@ -123,7 +123,7 @@ protected:
   bool allow_initial_bom;
 };
 
-struct FullTranslator : UTF8Translator {
+struct FullTranslator : BufferedIterator {
   FullTranslator(CodePointIterator & source);
   int operator*() override;
 protected:

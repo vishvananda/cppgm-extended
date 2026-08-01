@@ -16,6 +16,13 @@ if [ -n "${CPPGM_APP_ARGS:-}" ]; then
 fi
 
 test_args=()
+if [ -f "${2%.t}.system-includes" ]; then
+  while IFS= read -r system_include_dir; do
+    if [ -n "$system_include_dir" ]; then
+      test_args+=("-isystem" "$system_include_dir")
+    fi
+  done < "${2%.t}.system-includes"
+fi
 if [ -f "${2%.t}.no-exceptions" ]; then
   test_args+=("-fno-exceptions")
 fi

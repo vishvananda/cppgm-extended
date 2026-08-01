@@ -851,7 +851,7 @@ inline void FullTranslator::translate_trigraph_ucn_splice()
 }
 
 FullTranslator::FullTranslator(CodePointIterator & source) :
-  UTF8Translator(source)
+  BufferedIterator(source)
 {}
 
 int FullTranslator::operator*()
@@ -870,7 +870,10 @@ int FullTranslator::operator*()
         return value;
       }
     } else {
-      translate_utf8();
+      ln = source.ln;
+      ch = source.ch;
+      buffer.push_back(value);
+      ++source;
     }
   }
   return buffer.front();
@@ -1156,7 +1159,7 @@ inline int match_whitespace(BufferedIterator & it)
 PPTokenizer::PPTokenizer(streambuf * buf) :
   norm(buf),
   raw(norm),
-  translator(norm),
+  translator(raw),
   // cast is to avoid a copy constructor
   buffer(static_cast<CodePointIterator &>(translator)),
   header_state(HeaderState::Start)
