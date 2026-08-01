@@ -884,29 +884,38 @@ TypePtr conversion_function_template_deduction_target_type(const TypePtr & targe
 }
 
 vector<TypePtr> conversion_function_template_deduction_target_types(
-    const TypePtr & target)
+    const TypePtr & target,
+    bool prefer_object_result)
 {
   vector<TypePtr> targets;
-  if(target) {
-    targets.push_back(conversion_function_template_deduction_target_type(target));
-  }
-
   TypePtr base = strip_top_level_cv(target);
+  TypePtr object_target;
   if(base &&
      (base->kind == Type::TK_LVALUE_REFERENCE ||
       base->kind == Type::TK_RVALUE_REFERENCE)) {
-    TypePtr object_target = strip_top_level_cv(base->inner);
-    if(object_target) {
-      bool duplicate = false;
-      for(size_t i = 0; i < targets.size(); ++i) {
-        if(type_equals(targets[i], object_target)) {
-          duplicate = true;
-          break;
-        }
+    object_target = strip_top_level_cv(base->inner);
+  }
+
+  if(prefer_object_result && object_target) {
+    targets.push_back(object_target);
+  }
+  if(target &&
+     (!object_target ||
+      targets.empty() ||
+      !type_equals(targets.front(), target))) {
+    targets.push_back(conversion_function_template_deduction_target_type(target));
+  }
+
+  if(object_target) {
+    bool duplicate = false;
+    for(size_t i = 0; i < targets.size(); ++i) {
+      if(type_equals(targets[i], object_target)) {
+        duplicate = true;
+        break;
       }
-      if(!duplicate) {
-        targets.push_back(object_target);
-      }
+    }
+    if(!duplicate) {
+      targets.push_back(object_target);
     }
   }
 
@@ -3072,7 +3081,9 @@ bool try_argument_conversion(SemanticContext & ctx,
         }
 
         vector<TypePtr> conversion_targets =
-            conversion_function_template_deduction_target_types(target);
+            conversion_function_template_deduction_target_types(
+                target,
+                options.prefer_conversion_function_object_result);
         for(size_t target_index = 0;
             target_index < conversion_targets.size();
             ++target_index) {

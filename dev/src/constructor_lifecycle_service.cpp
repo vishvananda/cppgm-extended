@@ -31,15 +31,18 @@ ConstructorSelectionOptions derive_selection_options(
     break;
   case ConstructorIntent::NonExplicitConstruction:
     options.allow_explicit = false;
+    options.prefer_conversion_function_object_result = true;
     break;
   case ConstructorIntent::CopyListInitialization:
     options.allow_explicit = false;
     break;
   case ConstructorIntent::AggregateConstruction:
     options.allow_explicit = false;
+    options.allow_aggregate = true;
     options.allow_partial_aggregate = profile.allow_partial_aggregate;
     break;
   case ConstructorIntent::AggregatePartialMatch:
+    options.allow_aggregate = true;
     options.allow_partial_aggregate = profile.allow_partial_aggregate;
     break;
   }
@@ -140,6 +143,11 @@ void apply_selection_profile(ConstructorSelectionOptions & options,
       options.allow_user_defined && derived.allow_user_defined;
   options.instantiate_bodies =
       options.instantiate_bodies && derived.instantiate_bodies;
+  options.prefer_conversion_function_object_result =
+      options.prefer_conversion_function_object_result ||
+      derived.prefer_conversion_function_object_result;
+  options.allow_aggregate =
+      options.allow_aggregate || derived.allow_aggregate;
   options.allow_partial_aggregate =
       options.allow_partial_aggregate || derived.allow_partial_aggregate;
   options.allow_explicit =

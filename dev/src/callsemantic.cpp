@@ -11617,6 +11617,14 @@ private:
             ctor_options,
             constructor_lifecycle_service::direct_initialization_profile(
                 "target-aware construction"));
+        if(!direct_braced_ctor_init &&
+           semantic_class_model::can_synthesize_aggregate_constructor(
+               *target_class)) {
+          constructor_lifecycle_service::apply_selection_profile(
+              ctor_options,
+              constructor_lifecycle_service::aggregate_partial_match_profile(
+                  "target-aware aggregate construction"));
+        }
         ctor_options.use_location = preferred_source_location_for_node(node);
         ScopedTemplateUseLocation use_location_guard(
             preferred_source_location_for_node(node));

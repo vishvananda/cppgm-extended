@@ -88,7 +88,8 @@ struct ArgumentConversionOptions
         instantiate_user_defined_bodies(instantiate_user_defined_bodies_in),
         materialize_user_defined_output(materialize_user_defined_output_in),
         materialize_standard_adjustments(true),
-        allow_explicit(allow_explicit_in)
+        allow_explicit(allow_explicit_in),
+        prefer_conversion_function_object_result(false)
   {}
 
   bool allow_user_defined;
@@ -96,6 +97,7 @@ struct ArgumentConversionOptions
   bool materialize_user_defined_output;
   bool materialize_standard_adjustments;
   bool allow_explicit;
+  bool prefer_conversion_function_object_result;
   std::string source_use_location;
 };
 
@@ -106,6 +108,8 @@ struct ConstructorSelectionOptions
   std::string source_witness_location;
   bool allow_user_defined = true;
   bool instantiate_bodies = true;
+  bool prefer_conversion_function_object_result = false;
+  bool allow_aggregate = false;
   bool allow_partial_aggregate = false;
   bool allow_explicit = true;
   bool initializer_list_only = false;

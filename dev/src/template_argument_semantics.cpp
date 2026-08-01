@@ -42237,12 +42237,15 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
   }
 
   string dependent_expression_use_location;
-  const bool capture_dependent_expression_source =
-      witness::source_capture_enabled(services.witness_context) ||
+  const bool capture_template_witness_source =
+      witness::source_capture_enabled(services.witness_context);
+  const bool capture_declval_call_source =
       witness::function_call_recording_enabled(
           services.witness_context,
           witness::FunctionCallEmissionOrigin::DeclvalCall);
-  if(capture_dependent_expression_source) {
+  if(capture_template_witness_source || capture_declval_call_source) {
+    // Source reconstruction is witness-only: keep the recursive AST walk and
+    // source-text searches off the normal semantic path.
     const string base_use_location =
         template_public_use_location_or(services.witness_context, string());
     size_t use_offset = 0;
@@ -42262,7 +42265,7 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
       }
     }
     const string token_use_location =
-        witness::source_capture_enabled(services.witness_context) ?
+        capture_template_witness_source ?
             template_api::template_witness_detail::
                 source_location_for_identifier_token_on_or_after(
                 services.witness_context,

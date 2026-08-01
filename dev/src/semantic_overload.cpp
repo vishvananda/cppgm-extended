@@ -1807,6 +1807,9 @@ ArgumentConversionOptions constructor_rematerialization_conversion_options(
       semantic_policy::rematerialization_conversion(options);
   conversion_options.allow_explicit =
       constructor_argument_may_use_explicit_conversion(info, binding, options);
+  conversion_options.prefer_conversion_function_object_result =
+      options.prefer_conversion_function_object_result &&
+      constructor_is_class_copy_or_move_candidate(info, binding);
   return conversion_options;
 }
 
@@ -5254,7 +5257,8 @@ unsigned argument_conversion_option_bits(const ArgumentConversionOptions & optio
          (options.instantiate_user_defined_bodies ? 2u : 0u) |
          (options.materialize_user_defined_output ? 4u : 0u) |
          (options.allow_explicit ? 8u : 0u) |
-         (options.materialize_standard_adjustments ? 16u : 0u);
+         (options.materialize_standard_adjustments ? 16u : 0u) |
+         (options.prefer_conversion_function_object_result ? 32u : 0u);
 }
 
 string cached_constructor_conversion_key(ClassInfo & target_class,
@@ -11926,9 +11930,11 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
   const std::size_t aggregate_count =
       semantic_class_model::aggregate_element_count(target_info);
   if(!options.initializer_list_only &&
+     options.allow_aggregate &&
      source_args.size() == aggregate_count) {
     semantic_class_model::ensure_implicit_aggregate_constructor(ctx, target_info);
   } else if(!options.initializer_list_only &&
+            options.allow_aggregate &&
             options.allow_partial_aggregate &&
             source_args.size() < aggregate_count) {
     semantic_class_model::ensure_implicit_aggregate_constructor(ctx,
@@ -11943,6 +11949,10 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
       return;
     }
     string & candidate_rejection = state.current_rejection();
+    if(candidate->is_aggregate_constructor && !options.allow_aggregate) {
+      candidate_rejection = candidate->name + ": aggregate constructor not considered";
+      return;
+    }
     if(binding_declares_explicit_function(*candidate) && !options.allow_explicit) {
       candidate_rejection = candidate->name + ": explicit constructor not allowed";
       return;
@@ -12003,6 +12013,9 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                                        options));
       conversion_options.materialize_standard_adjustments =
           !options.instantiate_bodies;
+      conversion_options.prefer_conversion_function_object_result =
+          options.prefer_conversion_function_object_result &&
+          class_copy_or_move_candidate;
       try
       {
         if(j + explicit_param_offset < function_type->params.size()) {
@@ -12326,9 +12339,12 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
   const std::size_t aggregate_count =
       semantic_class_model::aggregate_element_count(target_info);
   if(!options.initializer_list_only &&
+     options.allow_aggregate &&
      effective_arg_nodes.size() == aggregate_count) {
     semantic_class_model::ensure_implicit_aggregate_constructor(ctx, target_info);
   } else if(!options.initializer_list_only &&
+            options.allow_aggregate &&
+            options.allow_partial_aggregate &&
             !effective_arg_nodes.empty() &&
             effective_arg_nodes.size() < aggregate_count) {
     semantic_class_model::ensure_implicit_aggregate_constructor(ctx,
@@ -12350,6 +12366,17 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
       return;
     }
     string & candidate_rejection = state.current_rejection();
+    if(candidate->is_aggregate_constructor && !options.allow_aggregate) {
+      candidate_rejection = candidate->name + ": aggregate constructor not considered";
+      if(parser_trace::enabled("overload")) {
+        ostringstream trace;
+        trace << "ctor-action-skip class=" << target_info.qualified_name
+              << " candidate=" << candidate->name
+              << " reason=aggregate-constructor-not-considered";
+        parser_trace::note("overload", std::string(), trace.str());
+      }
+      return;
+    }
     if(binding_declares_explicit_function(*candidate) && !options.allow_explicit) {
       candidate_rejection = candidate->name + ": explicit constructor not allowed";
       if(parser_trace::enabled("overload")) {
@@ -12530,6 +12557,9 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
                                                         options));
         conversion_options.materialize_standard_adjustments =
             !options.instantiate_bodies;
+        conversion_options.prefer_conversion_function_object_result =
+            options.prefer_conversion_function_object_result &&
+            class_copy_or_move_candidate;
         try
         {
           if(has_fixed_param) {
@@ -12897,6 +12927,12 @@ FunctionBinding * select_constructor_for_direct_braced_init(
   {
     ConstructorSelectionOptions expanded_options = options;
     expanded_options.initializer_list_only = false;
+    if(semantic_class_model::can_synthesize_aggregate_constructor(*target_info)) {
+      constructor_lifecycle_service::apply_selection_profile(
+          expanded_options,
+          constructor_lifecycle_service::aggregate_construction_profile(
+              "direct braced aggregate construction"));
+    }
     if(expanded_arg_nodes.size() == 1 &&
        expanded_arg_nodes[0]->kind == CppAstKind::braced_init_list) {
       const vector<const CppAstNode *> nested_args =

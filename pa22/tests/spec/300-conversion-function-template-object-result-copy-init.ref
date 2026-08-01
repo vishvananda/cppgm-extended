@@ -1,0 +1,27 @@
+global @seed [binding=strong, object=_Z4seed] = {
+  f32 0
+}
+global @x [binding=internal, object=_ZL1x] = {
+  f32 0.0F
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = addr @x
+    call void @X__operatorT(%t1, %t2)
+    %t3 = addr $value
+    return i32 0
+}
+function @X__operatorT(%ret : ptr [pass=indirect_result], %this : ptr) -> void [binding=weak, object=_ZNK1XcvT_I1AEEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    copyobj 4x4 %t2, %ret
+    return void
+}
