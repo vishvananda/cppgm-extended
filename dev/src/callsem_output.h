@@ -342,6 +342,7 @@ struct CallSemNode
       is_virtual_dispatch(false),
       is_virtual_member_function(false),
       is_constructor(false),
+      is_delegating_constructor(false),
       is_destructor(false),
       is_conversion_operator(false),
       is_const_method(false),
@@ -409,6 +410,7 @@ struct CallSemNode
   std::uint64_t is_virtual_dispatch : 1;
   std::uint64_t is_virtual_member_function : 1;
   std::uint64_t is_constructor : 1;
+  std::uint64_t is_delegating_constructor : 1;
   std::uint64_t is_destructor : 1;
   std::uint64_t is_conversion_operator : 1;
   std::uint64_t is_const_method : 1;

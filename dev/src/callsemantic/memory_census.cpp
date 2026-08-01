@@ -2247,6 +2247,7 @@ bool callsem_flags_equal(const CallSemNode & lhs, const CallSemNode & rhs)
          lhs.is_virtual_dispatch == rhs.is_virtual_dispatch &&
          lhs.is_virtual_member_function == rhs.is_virtual_member_function &&
          lhs.is_constructor == rhs.is_constructor &&
+         lhs.is_delegating_constructor == rhs.is_delegating_constructor &&
          lhs.is_destructor == rhs.is_destructor &&
          lhs.is_const_method == rhs.is_const_method &&
          lhs.is_volatile_method == rhs.is_volatile_method &&
@@ -2294,6 +2295,7 @@ uint64_t hash_callsem_flags(const CallSemNode & node)
   hash = hash_mix(hash, node.is_virtual_dispatch ? 1 : 0);
   hash = hash_mix(hash, node.is_virtual_member_function ? 1 : 0);
   hash = hash_mix(hash, node.is_constructor ? 1 : 0);
+  hash = hash_mix(hash, node.is_delegating_constructor ? 1 : 0);
   hash = hash_mix(hash, node.is_destructor ? 1 : 0);
   hash = hash_mix(hash, node.is_const_method ? 1 : 0);
   hash = hash_mix(hash, node.is_volatile_method ? 1 : 0);

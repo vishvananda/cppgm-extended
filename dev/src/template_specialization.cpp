@@ -12377,7 +12377,11 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                      CppAstKind::decltype_specifier) &&
                  template_argument_syntax_contains_ast_kind(
                      *pattern_syntax,
-                     CppAstKind::call_expression));
+                     CppAstKind::call_expression)) ||
+                (pattern_syntax &&
+                 template_argument_syntax_contains_ast_kind(
+                     *pattern_syntax,
+                     CppAstKind::array_suffix));
             concrete_expression_recheck_state = required ? 2 : 1;
           }
           pattern_requires_concrete_expression_recheck =

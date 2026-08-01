@@ -2053,12 +2053,45 @@ int compare_standard_conversion_preference(const TypePtr & lhs_param,
   return 0;
 }
 
+ValueCategory reference_binding_result_category(const TypePtr & param,
+                                                const ExprInfo & arg)
+{
+  if(arg.category != VC_LVALUE) {
+    return arg.category;
+  }
+
+  TypePtr param_base = strip_top_level_cv(param);
+  if(!param_base ||
+     (param_base->kind != Type::TK_LVALUE_REFERENCE &&
+      param_base->kind != Type::TK_RVALUE_REFERENCE)) {
+    return arg.category;
+  }
+
+  TypePtr source_type = reference_binding_source_type(arg);
+  const bool direct_binding =
+      same_type_with_compatible_top_cv(param_base->inner, source_type) &&
+      (param_base->kind == Type::TK_LVALUE_REFERENCE ||
+       rvalue_reference_accepts_source_category(param_base->inner,
+                                                arg.category));
+  if(!direct_binding && standard_conversion_rank(param, arg) != CR_BAD) {
+    // A viable reference conversion from a non-reference-compatible lvalue
+    // first forms a converted temporary. Overload ranking therefore compares
+    // the final binding as a binding to an rvalue, not to the source lvalue.
+    return VC_PRVALUE;
+  }
+  return arg.category;
+}
+
 int compare_reference_binding_preference(const TypePtr & lhs_param,
                                          const ExprInfo & lhs_arg,
                                          const TypePtr & rhs_param,
                                          const ExprInfo & rhs_arg)
 {
-  if(lhs_arg.category != rhs_arg.category) {
+  const ValueCategory lhs_category =
+      reference_binding_result_category(lhs_param, lhs_arg);
+  const ValueCategory rhs_category =
+      reference_binding_result_category(rhs_param, rhs_arg);
+  if(lhs_category != rhs_category) {
     return 0;
   }
 
@@ -2069,7 +2102,7 @@ int compare_reference_binding_preference(const TypePtr & lhs_param,
   const bool rhs_lref = rhs_base && rhs_base->kind == Type::TK_LVALUE_REFERENCE;
   const bool rhs_rref = rhs_base && rhs_base->kind == Type::TK_RVALUE_REFERENCE;
 
-  if(lhs_arg.category == VC_LVALUE) {
+  if(lhs_category == VC_LVALUE) {
     TypePtr lhs_source =
         strip_top_level_cv(reference_binding_source_type(lhs_arg));
     TypePtr rhs_source =

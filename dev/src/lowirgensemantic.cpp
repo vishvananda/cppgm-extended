@@ -6690,10 +6690,16 @@ private:
     }
 
     const CallSemNode & target_arg = call.children[1];
-    if(target_arg.kind != CallSemKind::unary_expression ||
-       !callsem_has_token(target_arg, OP_AMP) ||
-       target_arg.children.size() != 1 ||
-       !node_references_constructor_this_subobject(target_arg.children[0])) {
+    const bool constructs_this_subobject =
+        target_arg.kind == CallSemKind::unary_expression &&
+        callsem_has_token(target_arg, OP_AMP) &&
+        target_arg.children.size() == 1 &&
+        node_references_constructor_this_subobject(target_arg.children[0]);
+    const bool delegates_to_this =
+        action.is_delegating_constructor &&
+        target_arg.kind == CallSemKind::id_expression &&
+        target_arg.text == "this";
+    if(!constructs_this_subobject && !delegates_to_this) {
       return false;
     }
 

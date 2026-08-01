@@ -5005,6 +5005,7 @@ void append_constructor_generated_statements(SemanticContext & ctx,
                                            initializer_is_empty_value_initializer(
                                                &init.children[1]),
                                        function_node);
+        function_node.children.back().is_delegating_constructor = true;
         return;
       }
     }
