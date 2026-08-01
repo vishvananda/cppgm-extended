@@ -15,9 +15,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite count: `147`
 - completed suites: `124 / 147`
 - current cursor: `#125 libs/unordered/test`
-- active compiler frontier: the nested `pointer_traits` lookup and concurrent
-  FOA replay pathologies are repaired in focused C++11 targets; the suite stays
-  open pending an exact clean four-job replay
+- active compiler frontier: exact C++11 Boost.Unordered now has four remaining
+  failed actions: concurrent constructor and serialization runtimes plus
+  `insert` constructibility and `visit` nested-lambda compile failures
 
 ## Baseline Gates
 
@@ -402,7 +402,7 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 122 | `libs/type_traits/test` | pass | `(this commit)` | Boost has no suite-level requirement above C++11 and runs in the stable forced C++11 lane. The authoritative exact four-job `pch=off` graph finds 3,934 targets, updates all 850 requested targets, records 218 passing test targets, handles all 22 deliberate compile failures as failed-as-expected, and exits successfully with no failed or skipped update in 1,208.62s; log `/private/tmp/boost-frontier-v2-suite-122-type-traits-final-4.log`. | The closure repairs scalar pseudo-destructors, concrete defaulted-NTTP SFINAE, function-reference categories, abstract/deleted/array/class traits, wide enums and qualified enum lookup, union nothrow analysis, `remove_all_extents` cv, list narrowing, invalid operator probes, captureless-lambda pointer comparison, GNU alignment, and member-pointer RTTI. The 21 new C++11 owners are one to eight lines; PA22 uses neither `<type_traits>` nor compiler trait builtins, and its ten reducers are byte-identical in normal, all eleven individual cache-disabled, and all-disabled modes. The PA9-excluded direct-LowIR report passes `4308/4308`, including PA37 `7/7`; all 978 configured strict comparisons pass. All 23 text-reparse categories and all 25 audit unit tests pass. New PA24/PA34/PA35 placement is clean; PA22 retains only four unrelated pre-existing findings; PA14 retains one unrelated pre-existing finding. The only LowIR ref change marks the synthesized scalar-only union assignment `[unwind=no]`. The PA27 large-ref audit remains limited to two already-minimal object-model owners (five and 22 source lines), so no ref was expanded or added there. Homebrew Clang 22 accepts all 19 positive reducers warning-clean under strict C++11 and rejects the two intended incomplete-type negatives. The graph peaks at 1,360,035,840 B process RSS; live compiler RSS peaks at 1,246,752 KiB individually and 2,197,708 KiB in aggregate only while 16 Boost/report workers overlap. Process swaps remain zero and system swap is unchanged. The immutable candidate-only frozen-source/51-header gate records 199,646,800,283 instructions, 955,756,544 B RSS, and 669,970,432 B footprint: -24.25%, -26.06%, and -33.66% from epoch `9764b3835`; report `/private/tmp/cppgm-boost-frontier-v2-type-traits-final.json`; neither the parent compiler nor live project headers were measured. CPPGM was built by Homebrew Clang 22, C++ actions invoke CPPGM, and host C/assembly/link actions use explicitly pinned Clang paths; printed `gcc.*`, `gcc.link`, and `gcc-cppgm` strings remain legacy Boost.Build adapter labels only. |
 | 123 | `libs/typeof/test` | pass | `(no compiler change)` | Boost declares C++11. The logged exact four-job `pch=off` replay finds 646 targets, updates all 91 requested targets, records 41 passing tests, and exits successfully with no failed or skipped action in 12.00s; log `/private/tmp/boost-frontier-v2-suite-123-typeof-intake.log`. The immediately preceding fresh forced run updated 214 targets and also passed in 12.29s. | No compiler or fixture change is required. The graph peaks at 210,874,368 B RSS and 516,096 B footprint, records zero process swaps, and leaves system swap unchanged. Validation and immutable frozen-source/51-header performance evidence are inherited from the TypeTraits commit. C++ actions invoke CPPGM built by Homebrew Clang 22 and all host paths are explicitly pinned to Clang; printed `gcc.*`/`gcc-cppgm` strings are legacy Boost.Build adapter labels only. |
 | 124 | `libs/units/test` | skipped-language | `(no compiler change)` | Units has no suite-level `cxxstd` metadata, but its project-wide `/boost/units//boost_units` requirement includes `/boost/math//boost_math_tr1`. Boost.Math 1.91 unconditionally requires both its C++11 feature set and C++14 constexpr, `decltype(auto)`, generic lambdas, return-type deduction, variable templates, and C++14 type traits in `libs/math/build/Jamfile.v2`. Under the forced C++11 lane B2 therefore propagates `<build>no` from `boost_math_tr1` through `boost_units` to all 47 declared Units tests. | The exact Clang-pinned forced-C++11 request exits successfully after finding only the non-build target in 5.23s; it is explicitly not credited as a pass. Debug-building evidence in `/private/tmp/units-debug-building.log` identifies `boost_math_tr1` as the source of `<build>no`; the intake log is `/private/tmp/boost-frontier-v2-suite-124-units-intake.log`. A temporary local suite alias confirmed that target selection was not the cause and was fully removed. Per the C++11-only frontier policy, no compiler work or C++14 exception is introduced. The cursor advances to C++11 Boost.Unordered. Actual compiler and host paths remain Homebrew Clang 22; printed `gcc.*`/`gcc-cppgm` names are legacy adapter labels only. |
-| 125 | `libs/unordered/test` | frontier | `(this commit)` | The last exact four-job forced-C++11 `pch=off` graph, at `1a84e533c`, passed 148 tests and left 23 failed updates with 65 skips. The current package repairs that graph's address-sensitive stale-function lookup root and the shared FOA construction/replay path in focused targets. Exact `cfoa_try_emplace_tests` now compiles, links, and runs; its formerly 6--9 GiB translation unit peaks at 1,434,112,000 B with zero swaps. A clean exact full replay remains required before reclassifying the suite. | New compact owners cover ADL through a template argument (PA18, 10 source lines) and inherited-constructor access (PA15:500, nine source lines). The existing 16-line PA22 dependent-`decltype` pack test is the minimal algorithmic replay owner, so no long Boost-shaped reducer was added. PA9-excluded direct LowIR passes `4323/4323`, configured strict passes `982/982`, all 23 text-reparse categories and all 14 audit unit tests pass, and the two new tests pass strict Clang C++11 warnings. The final frozen-source/51-header gate improves to -26.35% instructions, -26.98% RSS, and -35.29% footprint. CPPGM and all host actions use Homebrew Clang 22; `gcc.*`/`gcc-cppgm` are adapter labels only. |
+| 125 | `libs/unordered/test` | frontier | `e12f8cd01` | The exact four-job forced-C++11 `pch=off` graph after the third package passes 167 tests, handles all four deliberate compile failures as failed-as-expected, and leaves four failed updates with eight skips, down from 23/65. Every mmap and interprocess-concurrency target passes. The remaining failures are `cfoa_constructor_tests` runtime (initializer-list sizes/copies), `cfoa_insert_tests` compile (`raii` constructibility), `cfoa_visit_tests` compile (nested-lambda return identity), and the first-case `cfoa_serialization_tests` segfault. The run takes 1,426.23s, reports 1,691,561,984 B maximum RSS and zero process swaps; log `/private/tmp/boost-frontier-v2-suite-125-unordered-post-e12f8cd01.log`. | The package repairs address-sensitive retired-function validation, ADL through class-template arguments, inherited-constructor access ownership, and the FOA dependent-`decltype` algorithmic blowup. Exact `cfoa_try_emplace_tests` passes, and its formerly 6--9 GiB TU peaks at 1,434,112,000 B. Sampled four-job CPPGM aggregate RSS rose and fell with translation units, peaking at about 2.04 GiB; the largest sampled individual was 1.17 GiB. macOS system swap grew from 1,074.75 to 2,557.75 MiB while free memory improved from 56% to 60%, with Docker limited to two 1.3 MiB helpers and no VM process. PA9-excluded direct LowIR passes `4323/4323`, configured strict passes `982/982`, audit and warning gates pass, and frozen-source/51-header performance is -26.35% instructions, -26.98% RSS, and -35.29% footprint. CPPGM and host actions use Homebrew Clang 22; `gcc.*`/`gcc-cppgm` are adapter labels only. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
@@ -410,25 +410,25 @@ Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 ## Active Frontier
 
 - suite: `#125 libs/unordered/test`
-- focused target: exact full forced `pch=off` replay on the packaged compiler
+- focused target: `cfoa_constructor_tests` and `cfoa_insert_tests`
 - last closed suite: `#124 libs/units/test` (`skipped-language`)
-- failure phase: focused compile, link, and runtime roots from the last graph
-  are repaired; the exact clean graph must determine whether anything remains
-- diagnostic: redundant dependent trailing-result recovery, a duplicate
-  call-expression leaf pass, and repeated pack expansion caused the FOA
-  algorithmic blowup; the cleaned `cfoa_try_emplace_tests` target now passes
-- reduced repro: the existing 16-line PA22 dependent-`decltype` pack test plus
-  compact PA15 inherited-access and PA18 template-argument ADL owners
-- owning PA/cluster: PA15, PA18, and PA22
-- implementation area: function lifetime/validation, ADL, inherited access,
-  concrete signature reuse, structured template replay, and witness provenance
-- performance risk: the exact fixed `cfoa_try_emplace_tests` target peaks at
-  1,434,112,000 B RSS with zero swaps, while its 36-line algorithmic reducer is
-  53,977,088 B; monitor aggregate RSS during the four-job full replay
+- failure phase: two compile and two runtime roots remain; construction and
+  constructibility are the first pair to reduce together
+- diagnostic: concurrent initializer-list construction produces map size 6 and
+  set size 14 instead of 11, while a related insert trait rejects constructing
+  `raii` from `raii_convertible&`
+- reduced repro: pending reduction from the two exact construction targets
+- owning PA/cluster: likely PA16 value construction or PA22 constructibility;
+  place only after the reduced language rule is clear
+- implementation area: initializer-list materialization, class construction,
+  and constructibility evaluation; nested-lambda identity and serialization
+  are independent later roots
+- performance risk: the full graph reports 1,691,561,984 B maximum RSS and zero
+  process swaps; sampled compiler RSS is bounded and releases between TUs
 - language lane: Boost.Unordered declares C++11 and runs in the stable forced
   C++11 lane
-- next action: rerun the exact Clang-pinned four-job graph on the clean commit,
-  then isolate the first remaining compiler-owned failure
+- next action: compare and reduce `cfoa_constructor_tests` and
+  `cfoa_insert_tests`, testing whether they share one construction root
 
 ## Fix Ledger
 
@@ -869,6 +869,22 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | TypeTraits incomplete builtin class-trait diagnostics before LowIR | Template-side builtin folding treated missing class information as false for polymorphic/abstract/virtual-destructor queries, and `__is_base_of` admitted a distinct incomplete derived type. Invalid programs therefore survived to LowIR and four deliberate compile-fail targets crashed in constructor matching. Structural evaluation now defers incomplete class-info traits to semantic evaluation, and typed `__is_base_of` rejects the incomplete derived case before lowering. | PA34 `500-builtin-incomplete-derived-base-of-bad.t` and `500-builtin-incomplete-polymorphic-bad.t`, one line each with zero-byte refs and compact diagnostics | `is_base_of_fail`, `is_copy_assignable_fail`, `is_polymorphic_fail`, and `is_virtual_base_of_fail` segfaulted in LowIR instead of failing compilation. | Both negative owners and all four exact failures reject cleanly; PA34, broad, strict, Clang negative controls, and the full graph pass. | measured with the complete TypeTraits closure | `(this commit)` |
 
 ## Decision Log
+
+- `2026-08-01`: The exact Clang-pinned four-job replay at `e12f8cd01`
+  confirms the lookup and memory package. It passes 167 tests and all four
+  deliberate failures, leaving four failed updates and eight skips instead of
+  23/65. Every mmap and interprocess-concurrency target passes, including the
+  formerly address-sensitive variants, and the pathological `try_emplace`
+  target completes. Remaining roots are concurrent initializer-list
+  construction runtime, `raii_convertible&` constructibility in insert, nested
+  lambda return identity in visit, and the known first-case serialization
+  segfault. The 1,426.23s graph reports 1,691,561,984 B maximum RSS and zero
+  process swaps. Sampled aggregate compiler RSS is bounded at about 2.04 GiB
+  across four jobs and falls between units; the largest sampled process is
+  1.17 GiB. System swap grows by 1,483 MiB while reported free memory improves
+  from 56% to 60%; Docker has no VM process and only two 1.3 MiB helpers. Log:
+  `/private/tmp/boost-frontier-v2-suite-125-unordered-post-e12f8cd01.log`.
+  Construction runtime and constructibility are the next paired diagnostic.
 
 - `2026-08-01`: Packaged the third C++11 Boost.Unordered closure for an exact
   full replay. Retired speculative functions no longer survive in semantic
@@ -4922,8 +4938,8 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-# Suite 125 declares C++11.
-/usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=4 CXXSTD=11 \
+# Suite 125 declares C++11. Reduce the paired construction roots first.
+/usr/bin/time -lp /usr/local/bin/timeout 3600 env JOBS=2 CXXSTD=11 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CC=/usr/local/opt/llvm/bin/clang \
@@ -4931,5 +4947,7 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh -a pch=off libs/unordered/test
+  ./run-cppgm-b2.sh -a pch=off \
+    libs/unordered/test//cfoa_constructor_tests \
+    libs/unordered/test//cfoa_insert_tests
 ```
