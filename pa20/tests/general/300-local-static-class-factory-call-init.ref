@@ -1,0 +1,89 @@
+global @factory_calls : i32 [binding=strong, object=_Z13factory_calls] = 0
+global @__local_static__read_cached__cached__tokens60_66 [binding=internal] = {
+  zero 24
+}
+global @__local_static__read_cached__cached__tokens60_66__guard : i64 [binding=internal] = zero
+
+function @make_wide(%ret : ptr [pass=indirect_result], %seed : i64) -> void [binding=strong, object=_Z9make_widel] {
+  slot $seed : i64
+
+  block ^entry:
+    store i64 %seed, $seed
+    %t1 = load i32 @factory_calls
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @factory_calls
+    %t3 = load i64 $seed
+    %t4 = index i8 [projection=field] %ret, 0
+    store i64 %t3, %t4
+    %t5 = load i64 $seed
+    %t6 = binary add i64 %t5, 1
+    %t7 = index i8 [projection=field] %ret, 8
+    store i64 %t6, %t7
+    %t8 = load i64 $seed
+    %t9 = binary add i64 %t8, 2
+    %t10 = index i8 [projection=field] %ret, 16
+    store i64 %t9, %t10
+    return void
+}
+function @read_cached(%seed : i64) -> i64 [binding=strong, object=_Z11read_cachedl] {
+  slot $seed : i64
+
+  block ^entry:
+    store i64 %seed, $seed
+    %t1 = load i64 @__local_static__read_cached__cached__tokens60_66__guard
+    %t2 = cmp ne i64 %t1, 0
+    branch %t2, ^local_static_ready_1, ^local_static_init_2
+
+  block ^local_static_init_2:
+    %t3 = addr @__local_static__read_cached__cached__tokens60_66
+    %t4 = load i64 $seed
+    call void @make_wide(%t3, %t4)
+    store i64 1, @__local_static__read_cached__cached__tokens60_66__guard
+    jump ^local_static_ready_1
+
+  block ^local_static_ready_1:
+    %t5 = addr @__local_static__read_cached__cached__tokens60_66
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load i64 %t6
+    %t8 = addr @__local_static__read_cached__cached__tokens60_66
+    %t9 = index i8 [projection=field] %t8, 16
+    %t10 = load i64 %t9
+    %t11 = binary add i64 %t7, %t10
+    return i64 %t11
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i64 @read_cached(7)
+    %t2 = cmp ne i64 %t1, 16
+    branch %t2, ^if_then_1, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t3 = load i32 @factory_calls
+    %t4 = cmp ne i32 %t3, 1
+    branch %t4, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t5 = call i64 @read_cached(9)
+    %t6 = cmp ne i64 %t5, 16
+    branch %t6, ^if_then_5, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t7 = load i32 @factory_calls
+    %t8 = cmp ne i32 %t7, 1
+    branch %t8, ^if_then_5, ^if_else_6
+
+  block ^if_then_5:
+    return i32 2
+
+  block ^if_else_6:
+    jump ^if_end_7
+
+  block ^if_end_7:
+    return i32 0
+}

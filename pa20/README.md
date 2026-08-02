@@ -177,7 +177,8 @@ C++11 `constexpr` forms that later template and library code expect:
   static data members
 - function-local static objects over the supported LowIR subset:
   - constant initialization when the initializer is a constant expression
-  - dynamic class-object local statics with the required guard/check behavior
+  - dynamic class-object local statics with the required guard/check behavior, including
+    direct initialization from a class-prvalue factory call
 
 PA20 also owns the semantic validation side of C++11 `constexpr`, not just evaluation. In
 particular, the compiler should enforce the C++11-facing rules that matter for the

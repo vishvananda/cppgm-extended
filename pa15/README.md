@@ -246,7 +246,8 @@ PA15 supports the following in addition to the PA14 procedural subset:
   hidden-friend ADL when the arguments stay within the supported class subset
 - in-class member-function definitions
 - out-of-class definitions for ordinary non-static member functions when the parser accepts
-  them as ordinary qualified function definitions
+  them as ordinary qualified function definitions, including a leading return type that
+  names a private nested type in the member's class context
 - constructors and destructors defined inside the class body
 - implicit default constructors and destructors when no user-declared one exists
 - demand-driven LowIR emission of the ctor/dtor helpers required by the supported lifetime
@@ -257,7 +258,8 @@ PA15 supports the following in addition to the PA14 procedural subset:
 - non-static default member initializers for the supported scalar and supported
   class/aggregate subobject construction forms, with explicit constructor member-initializers
   taking precedence
-- aggregate initialization for the supported PA15 object subset
+- aggregate initialization for the supported PA15 object subset, including namespace-scope
+  aggregate arrays whose elements contain string-literal pointer members
 - local and namespace-scope class object lifetime:
   - constructor execution at declaration time / program startup
   - destructor execution at block exit, `return`, loop exit, and program shutdown
