@@ -1,0 +1,55 @@
+start:
+	move64 bp sp;
+	call fn____cppgm_init;
+	call fn__main;
+	isub64 sp sp 8;
+	move64 [sp] x64;
+	call fn____cppgm_fini;
+	move64 x64 [sp];
+	iadd64 sp sp 8;
+	syscall1 t64 60 x64;
+
+fn____cppgm_init:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+fn____cppgm_init__entry:
+	move64 x64 7;
+	move64 [g__g] x64;
+	jump fn____cppgm_init__epilogue;
+fn____cppgm_init__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;
+
+fn____cppgm_fini:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+fn____cppgm_fini__entry:
+	jump fn____cppgm_fini__epilogue;
+fn____cppgm_fini__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;
+
+fn__main:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+	isub64 sp sp 8;
+fn__main__entry:
+	move64 x64 [g__g];
+	move64 [bp-8] x64;
+	move64 x64 [bp-8];
+	jump fn__main__epilogue;
+fn__main__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;
+
+g__g:
+	data64 0;

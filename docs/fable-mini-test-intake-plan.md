@@ -220,8 +220,10 @@ Required fields:
 - reduction status and reduced source path
 - duplicate search results and closest existing tests
 - proposed assignment, suite, and ownership reason
-- portability class: `standard-c++11`, `gnu-extension`, `hosted-portable`, or
-  `hosted-implementation-specific`
+- portability class: `standard-c++11`, `gnu-extension`, `lowir-contract`,
+  `hosted-portable`, or `hosted-implementation-specific`; use
+  `lowir-contract` only for a raw LowIR fixture whose portability boundary is
+  the checked-in LowIR specification rather than a host C++ implementation
 - reference provenance and focused validation results
 - final disposition, destination, and intake commit
 

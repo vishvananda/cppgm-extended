@@ -1,0 +1,24 @@
+global @values [binding=strong, object=_Z6values] = {
+  zero 12
+}
+global @middle : ptr [binding=strong, object=_Z6middle] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load ptr @middle
+    %t2 = addr @values
+    %t3 = unary decay ptr %t2
+    %t4 = binary sub ptr %t1, %t3
+    %t5 = binary div i64 %t4, 4
+    %t6 = binary sub i64 %t5, 1
+    %t7 = convert trunc i32 i64 %t6
+    return i32 %t7
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @values
+    %t2 = unary decay ptr %t1
+    %t3 = index i32 [projection=array_element] %t2, 1
+    store ptr %t3, @middle
+    return void
+}

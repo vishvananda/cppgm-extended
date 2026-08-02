@@ -1,0 +1,1 @@
+ERROR: tests/spec/200-bad-call-signature-symbol-metadata.t:9: call signature metadata does not allow symbol metadata
