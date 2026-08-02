@@ -192,6 +192,11 @@ To complete PA25, implement these goals:
    The compiler should lower supported polymorphic single-inheritance pointer casts into
    ordinary LowIR control flow without introducing new IR operations.
 
+5. Full-expression cleanup through condition control flow.
+   Temporary-owning call arguments inside nested `&&` and `||` expressions
+   should be destroyed exactly on evaluated paths, and every nested logical
+   result used by an outer condition should retain a valid LowIR result slot.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA25:
