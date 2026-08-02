@@ -208,6 +208,8 @@ PA18 supports the following in addition to the PA17 subset:
 - `typename` and `template` disambiguators where they are needed by the PA18
   dependent-name subset
 - explicit template-id use for supported class templates and function templates
+- explicit type arguments using the ordinary PA11 declarator/type forms,
+  including function types
 - ordinary lookup and using-declaration behavior for supported templates,
   including repeated using-declarations of the same template and preservation
   of an ordinarily visible function template when hidden non-template friends
@@ -216,6 +218,14 @@ PA18 supports the following in addition to the PA17 subset:
   from ordinary argument types, without function-template partial ordering or
   SFINAE
 - on-demand instantiation of the supported class-template and function-template cases
+- declaration-owned template-parameter scopes across nested instantiations and
+  out-of-class member-definition bodies, including definition-time rejection
+  of a declaration that redeclares an active template parameter even when the
+  member is never instantiated
+- compatible function-template declarations and definitions in either order
+- dependent-base lookup provenance attached to the particular base-specifier,
+  so a nested class with a fixed base keeps ordinary base lookup and a local
+  class in a function template independently classifies its own dependent base
 - out-of-class definitions of nested classes declared inside the supported class templates,
   when those nested classes stay within the already supported PA15-PA17 class/value/
   polymorphic machinery

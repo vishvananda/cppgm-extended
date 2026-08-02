@@ -1,0 +1,21 @@
+function @select() -> i32 [binding=strong, object=_Z6selectv] {
+  block ^entry:
+    return i32 0
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = addr $value
+    %t3 = call i32 @derived_dependent_base_int____run(%t2)
+    return i32 %t3
+}
+function @derived_dependent_base_int____run(%this : ptr) -> i32 [binding=weak, object=_ZN7derivedI14dependent_baseIiEE3runEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = call i32 @select()
+    return i32 %t1
+}
