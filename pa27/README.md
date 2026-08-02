@@ -163,7 +163,9 @@ PA27 supports the following in addition to the PA26 subset:
   subobject addresses through existing value-semantics machinery
 - polymorphic multiple inheritance with separate vtable views for non-primary polymorphic
   bases
-- virtual dispatch through non-primary polymorphic base pointers and references
+- virtual dispatch through primary views whose virtual-base ABI carries
+  function/adjustment rows, and through non-primary polymorphic base pointers
+  and references
 - pointer-form `dynamic_cast<T*>` across sibling polymorphic bases in the supported object
   model
 - `typeid(expr)` through supported non-primary polymorphic base lvalue views
@@ -178,9 +180,10 @@ To complete PA27, implement these goals:
    Complete objects with a virtual diamond should expose one shared base-subobject at a
    deterministic offset.
 
-2. Non-primary polymorphic dispatch.
-   Calling a virtual through a later polymorphic base must lower through the correct vtable
-   view and apply the required `this` adjustment.
+2. Polymorphic dispatch over adjusted vtable views.
+   Calling a virtual through a class with virtual-base adjustment rows must select the
+   requested logical slot. Calling through a later polymorphic base must lower through the
+   correct vtable view and apply the required `this` adjustment.
 
 3. Sibling cross-cast support.
    Pointer-form `dynamic_cast` across sibling polymorphic bases should lower into the

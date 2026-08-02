@@ -1,0 +1,58 @@
+function @read(%elements : ptr, %subscript : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4readP7elementRi] {
+  slot $elements : ptr
+  slot $subscript : ptr
+
+  block ^entry:
+    store ptr %elements, $elements
+    store ptr %subscript, $subscript
+    %t1 = load ptr $elements
+    %t2 = load ptr $subscript
+    %t3 = load i32 %t2
+    %t4 = binary mul i64 %t3, 4
+    %t5 = index i8 [projection=array_element] %t1, %t4
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load i32 %t6
+    return i32 %t7
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $values : obj<4x4>
+  slot $subscript : i32
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $values
+    call void @element__element__ov4(%t1, 7)
+    store i32 0, $subscript
+    %t2 = addr $values
+    %t3 = unary decay ptr %t2
+    %t4 = addr $subscript
+    %t5 = call i32 @read(%t3, %t4)
+    %t6 = cmp eq i32 %t5, 7
+    branch %t6, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load i32 $cond__1
+    return i32 %t7
+}
+function @element__element__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN7elementC1Ei] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+alias object _ZN7elementC2Ei = @element__element__ov4
