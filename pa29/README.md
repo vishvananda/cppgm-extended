@@ -282,6 +282,10 @@ To complete PA29, implement these goals:
    and `-L`/`-l` subset.
 7. Full-language-through-toolchain validation for previously implemented
    language features.
+   The supported wide-integer extension is included in that runtime surface:
+   truth conversion of `__int128` values must inspect the complete value, and
+   mixed signed/unsigned 128-bit comparisons must follow the usual arithmetic
+   conversions independently of operand order.
 8. Source-driven runtime-program validation without host-library dependence.
 
 ### Out Of Scope

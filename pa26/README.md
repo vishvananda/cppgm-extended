@@ -191,6 +191,8 @@ To complete PA26, implement these goals:
 4. Member pointer lowering over non-virtual layouts.
    Member pointer values should preserve the selected member target and supported base
    adjustment so `.*` and `->*` lower through the correct object address.
+   Their contextual conversion to `bool` must distinguish a non-null target from a null
+   member pointer without treating the adjustment word as an independent truth value.
 
 5. Remaining single-vptr RTTI case.
    `dynamic_cast<void*>` should lower for the existing polymorphic single-inheritance ABI
