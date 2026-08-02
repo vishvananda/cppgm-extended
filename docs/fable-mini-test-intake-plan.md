@@ -403,6 +403,16 @@ Use these destination rules:
 | PA37 | `o0`, `o1`, `o2`, `driver/o1`, `driver/o2`, `object-roundtrip`, or the matching debug-info bucket |
 | PA38 | `o1`, `o2`, or the matching debug-info bucket |
 
+Treat PA35 and PA36 as expensive hosted integration tiers, not default homes
+for student-added regressions. A PA35 addition must assert a distinct
+compile-time behavior of a hosted C++ header workload; mere successful
+compilation of an unused construct is not enough when existing PA35 coverage
+already reaches the same header machinery. A PA36 addition must execute and
+check distinct runtime or link behavior emitted from hosted headers. Reduce
+header-independent language, ABI, EH, or backend bugs to their earlier owning
+assignment. Keep a PA35 or PA36 test only when that hosted integration is
+essential and the case materially increases coverage over the existing suite.
+
 Follow the numbering and naming style of the selected local suite. Rename
 generic source-run names such as `900-*` or `final-audit-*` when they do not
 describe the reduced behavior. Do not keep a second copy under
