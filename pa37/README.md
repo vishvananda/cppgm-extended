@@ -169,7 +169,8 @@ running optimizing transforms.
 - preservation of exceptional handler targets and exception-structure blocks
   while doing CFG cleanup
 - conservative inlining of small direct calls, including `unwind=no` callees
-  inside EH regions only when the caller EH shape can be preserved
+  inside EH regions only when the caller EH shape can be preserved; a callee
+  containing its own EH instructions must remain a call even at caller EH depth zero
 - removal of no-op EH markers in functions known not to unwind when the
   protected region contains no operation that can transfer to the handler
 - dead-code elimination for unused pure temp-producing instructions
