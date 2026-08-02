@@ -288,7 +288,9 @@ To complete PA29, implement these goals:
    The supported wide-integer extension is included in that runtime surface:
    truth conversion of `__int128` values must inspect the complete value, and
    mixed signed/unsigned 128-bit comparisons must follow the usual arithmetic
-   conversions independently of operand order.
+   conversions independently of operand order. Bitwise complement and left,
+   logical-right, and arithmetic-right shifts must also work for runtime counts,
+   including counts on either side of the 64-bit half boundary.
 8. Source-driven runtime-program validation without host-library dependence.
 
 ### Out Of Scope

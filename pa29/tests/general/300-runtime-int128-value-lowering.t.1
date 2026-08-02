@@ -21,6 +21,32 @@ unsigned long long high_u128(U128 value)
   return (unsigned long long)(value >> 64);
 }
 
+U128 variable_left_shift(U128 value, int count)
+{
+  return value << count;
+}
+
+U128 variable_logical_right_shift(U128 value, int count)
+{
+  return value >> count;
+}
+
+I128 variable_arithmetic_right_shift(I128 value, int count)
+{
+  return value >> count;
+}
+
+U128 bitwise_complement(U128 value)
+{
+  return ~value;
+}
+
+bool has_halves(U128 value, unsigned long long high,
+                unsigned long long low)
+{
+  return high_u128(value) == high && low_u128(value) == low;
+}
+
 I128 make_signed()
 {
   return (((I128)1) << 66) + 5;
@@ -97,6 +123,60 @@ int main()
   if(low_i128(widened) != 18446744073709551615ULL ||
      high_i128(widened) != -1LL) {
     return 11;
+  }
+
+  struct ShiftCase {
+    int count;
+    unsigned long long left_high;
+    unsigned long long left_low;
+    unsigned long long logical_high;
+    unsigned long long logical_low;
+    unsigned long long arithmetic_high;
+    unsigned long long arithmetic_low;
+  };
+
+  const ShiftCase shift_cases[] = {
+    {0, 0, 1,
+     0x8000000000000000ULL, 0,
+     0x8000000000000000ULL, 0},
+    {1, 0, 2,
+     0x4000000000000000ULL, 0,
+     0xc000000000000000ULL, 0},
+    {63, 0, 0x8000000000000000ULL,
+     1, 0,
+     0xffffffffffffffffULL, 0},
+    {64, 1, 0,
+     0, 0x8000000000000000ULL,
+     0xffffffffffffffffULL, 0x8000000000000000ULL},
+    {65, 2, 0,
+     0, 0x4000000000000000ULL,
+     0xffffffffffffffffULL, 0xc000000000000000ULL},
+    {127, 0x8000000000000000ULL, 0,
+     0, 1,
+     0xffffffffffffffffULL, 0xffffffffffffffffULL}
+  };
+
+  U128 high_bit = ((U128)1) << 127;
+  for(int i = 0; i < 6; ++i) {
+    const ShiftCase &test = shift_cases[i];
+    if(!has_halves(variable_left_shift((U128)1, test.count),
+                   test.left_high, test.left_low)) {
+      return 12;
+    }
+    if(!has_halves(variable_logical_right_shift(high_bit, test.count),
+                   test.logical_high, test.logical_low)) {
+      return 13;
+    }
+    if(!has_halves((U128)variable_arithmetic_right_shift((I128)high_bit,
+                                                        test.count),
+                   test.arithmetic_high, test.arithmetic_low)) {
+      return 14;
+    }
+  }
+
+  if(!has_halves(bitwise_complement((U128)0),
+                 0xffffffffffffffffULL, 0xffffffffffffffffULL)) {
+    return 15;
   }
 
   return 0;
