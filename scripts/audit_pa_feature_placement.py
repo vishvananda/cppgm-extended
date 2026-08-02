@@ -14,7 +14,9 @@ import argparse
 import csv
 import json
 import re
+import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
@@ -137,6 +139,9 @@ LATE_PLACEMENT_BROAD_FEATURES = {
     "template.type",
     "template.class",
     "template.function",
+}
+LATE_PLACEMENT_ANCHOR_FEATURES = {
+    "host.eh_object",
 }
 
 TEMPLATE_CONCEPT_BY_FEATURE = {
@@ -318,6 +323,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("exception.try_catch",
                 (rx(r"\btry\s*\{"), rx(r"\bcatch\s*\("), rx(r"\bthrow\b")),
                 ref_patterns=(rx(r"\b__cxa_(?:throw|begin_catch|rethrow)\b|\bexception_selector\b"),)),
+    FeatureRule("host.eh_object", ()),
     FeatureRule("lookup.adl", (rx(r"\bfriend\b|\boperator\s+(?!new\b|delete\b)"),)),
     FeatureRule("operator.overload", (rx(r"\boperator\s*(?!(?:new|delete)\b)(?:[+\-*/%<>=!&|^~,\[\]()]+|[A-Za-z_][A-Za-z0-9_:<>]*)"),)),
     FeatureRule("class.using_declaration", (rx(r"\busing\s+[A-Za-z_][A-Za-z0-9_:<>]*::[A-Za-z_]"),)),
@@ -1210,6 +1216,87 @@ def scan_lowir_eh_review(root: Path, pas: Iterable[str]) -> list[LowIREHFinding]
     return findings
 
 
+def scan_generated_lowir_eh_review(
+    root: Path,
+    compiler: Path,
+    tests: Iterable[Path],
+) -> list[LowIREHFinding]:
+    """Probe selected host tests whose checked oracle does not contain LowIR."""
+    findings: list[LowIREHFinding] = []
+    cache: dict[Path, tuple[int, str, str]] = {}
+    with tempfile.TemporaryDirectory(prefix="cppgm-placement-lowir.") as temp_dir:
+        output_root = Path(temp_dir)
+        for path in tests:
+            relative_path = path.relative_to(root).as_posix()
+            sources = numbered_test_source_files_for(path)
+            if not sources:
+                findings.append(LowIREHFinding(
+                    path=relative_path,
+                    kind="lowir-probe-failed",
+                    evidence="no numbered .t.N source companions",
+                ))
+                continue
+            for index, source in enumerate(sources):
+                cached = cache.get(source)
+                if cached is None:
+                    output = output_root / f"probe-{len(cache)}-{index}.lowir"
+                    try:
+                        completed = subprocess.run(
+                            [
+                                str(compiler),
+                                "--emit-lowir",
+                                "-O0",
+                                "-o",
+                                str(output),
+                                str(source),
+                            ],
+                            cwd=root,
+                            capture_output=True,
+                            text=True,
+                            timeout=60,
+                            check=False,
+                        )
+                        lowir = read_text(output) if completed.returncode == 0 and output.exists() else ""
+                        cached = (completed.returncode, lowir, completed.stderr)
+                    except (OSError, subprocess.TimeoutExpired) as error:
+                        cached = (1, "", str(error))
+                    cache[source] = cached
+                returncode, lowir, stderr = cached
+                source_relative = source.relative_to(root).as_posix()
+                if returncode != 0:
+                    detail = " ".join(stderr.split())[:160]
+                    evidence = f"generated:{source_relative}:exit={returncode}"
+                    if detail:
+                        evidence += f":{detail}"
+                    findings.append(LowIREHFinding(
+                        path=relative_path,
+                        kind="lowir-probe-failed",
+                        evidence=evidence,
+                    ))
+                    continue
+                control = LOWIR_EH_CONTROL_RE.search(lowir)
+                runtime = LOWIR_EH_RUNTIME_DECL_RE.search(lowir)
+                if not control and not runtime:
+                    continue
+                evidence_parts = []
+                control_evidence = lowir_eh_evidence(control)
+                runtime_evidence = lowir_eh_evidence(runtime)
+                if control_evidence:
+                    evidence_parts.append(f"generated:{source_relative}:{control_evidence}")
+                if runtime_evidence:
+                    evidence_parts.append(f"generated:{source_relative}:{runtime_evidence}")
+                findings.append(LowIREHFinding(
+                    path=relative_path,
+                    kind=(
+                        "generated-eh-control"
+                        if control
+                        else "generated-eh-runtime-declaration-only"
+                    ),
+                    evidence=", ".join(evidence_parts),
+                ))
+    return findings
+
+
 def pa24_lowir_side_effect_findings(path: Path, source: str, ref_text: str) -> list[HygieneFinding]:
     relative = path.as_posix()
     findings: list[HygieneFinding] = []
@@ -1412,6 +1499,17 @@ def ref_text_for(path: Path) -> str:
     return ""
 
 
+def numbered_test_source_files_for(path: Path) -> list[Path]:
+    prefix = f"{path.name}."
+    return [
+        sidecar
+        for sidecar in sorted(path.parent.glob(f"{path.name}.*"))
+        if sidecar.is_file()
+        and sidecar.name.startswith(prefix)
+        and sidecar.name[len(prefix):].isdigit()
+    ]
+
+
 def companion_source_text_for(path: Path) -> str:
     """Return same-stem source sidecars that can carry the tested behavior."""
     sidecar_suffixes = (
@@ -1425,13 +1523,37 @@ def companion_source_text_for(path: Path) -> str:
         ".cpp",
         ".cxx",
     )
+    numbered_sources = set(numbered_test_source_files_for(path))
     chunks: list[str] = []
     for sidecar in sorted(path.parent.glob(f"{path.stem}.*")):
         if sidecar == path or sidecar.suffix.startswith(".ref"):
             continue
-        if sidecar.name.endswith(sidecar_suffixes):
+        if (
+            sidecar.name.endswith(sidecar_suffixes)
+            or sidecar in numbered_sources
+        ):
             chunks.append(read_text(sidecar))
     return "\n".join(chunks)
+
+
+def host_eh_object_evidence(path: Path, current_pa: str, source: str) -> str:
+    """Identify the PA31 host-object layer without relying on its filename."""
+    if current_pa != "pa31" or not numbered_test_source_files_for(path):
+        return ""
+    stripped_source = strip_string_literals(strip_comments(source))
+    source_match = SOURCE_EXCEPTION_RE.search(stripped_source)
+    if source_match:
+        return f"harness:cppgm++ -c, source:{source_match.group(0)}"
+    inspect_ref = path.with_suffix(".ref.inspect")
+    if inspect_ref.exists():
+        inspect_match = re.search(
+            r"\b(?:lsda|host_(?:lsda|unwind)|__gxx_personality_v0|"
+            r"_Unwind_Resume|__cxa_(?:throw|begin_catch|end_catch))\b",
+            read_text(inspect_ref),
+        )
+        if inspect_match:
+            return f"ref.inspect:{inspect_match.group(0)}"
+    return ""
 
 
 def is_lowir_test(pa: str) -> bool:
@@ -1549,6 +1671,12 @@ def late_placement_candidate(
 ) -> dict[str, object] | None:
     current_key = placement_key(current_pa, current_cluster)
     if current_key is None:
+        return None
+    if any(
+        str(placement["feature"]) in LATE_PLACEMENT_ANCHOR_FEATURES
+        and placement.get("owner_pa") == current_pa
+        for placement in placements
+    ):
         return None
     owner_entries: list[tuple[tuple[int, int], str, FeatureMeta, dict[str, object]]] = []
     for placement in placements:
@@ -1690,6 +1818,12 @@ def row_for(path: Path,
     current_pa = current_pa_for(relative_path)
     current_cluster = cluster_for(path)
     raw_hits = detect_features(detection_source, ref_text, relative_path.as_posix())
+    host_eh_evidence = host_eh_object_evidence(path, current_pa, detection_source)
+    if host_eh_evidence:
+        raw_hits["host.eh_object"] = FeatureHit(
+            "host.eh_object",
+            [host_eh_evidence],
+        )
     hits: dict[str, FeatureHit] = {}
     path_hints: dict[str, list[str]] = {}
     for feature_id, hit in raw_hits.items():
@@ -1749,6 +1883,48 @@ def row_for(path: Path,
     return row
 
 
+def add_row_feature(
+    row: dict[str, object],
+    feature_id: str,
+    evidence: str,
+    features: dict[str, FeatureMeta],
+) -> None:
+    """Attach evidence discovered after the initial source/reference scan."""
+    detected = list(row["detected_features"])  # type: ignore[arg-type]
+    if feature_id in detected:
+        return
+    meta = features.get(feature_id)
+    if meta is None:
+        return
+    current_pa = str(row["current_pa"])
+    current_cluster = row["current_cluster"]
+    status, reason = placement_for(meta, current_pa, current_cluster)  # type: ignore[arg-type]
+    placements = list(row["placements"])  # type: ignore[arg-type]
+    placements.append({
+        "feature": feature_id,
+        "status": status,
+        "reason": reason,
+        "owner_pa": meta.owner_pa,
+        "owner_cluster": meta.owner_cluster,
+        "evidence": [evidence],
+    })
+    detected.append(feature_id)
+    row["detected_features"] = sorted(detected)
+    row["placements"] = placements
+    row["needs_review"] = bool(row["needs_review"]) or status in {
+        "violation",
+        "cluster-early",
+        "backend-owner",
+        "unknown-feature",
+    }
+    row["late_placement_candidate"] = late_placement_candidate(
+        placements,
+        current_pa,
+        current_cluster,  # type: ignore[arg-type]
+        features,
+    )
+
+
 def markdown_report(rows: list[dict[str, object]],
                     missing_rules: list[str],
                     include_ok: bool,
@@ -1784,10 +1960,12 @@ def markdown_report(rows: list[dict[str, object]],
         lines.append("## LowIR EH Review Findings")
         lines.append("")
         lines.append(
-            "These are non-failing review leads for source-to-LowIR tests whose "
-            "source has no explicit `try`, `catch`, or `throw`, but whose "
-            "reference output contains comparison-visible EH LowIR. `unwind=` "
-            "metadata is ignored."
+            "These are review leads for comparison-visible EH LowIR. The "
+            "`eh-control` and runtime-only kinds come from checked LowIR refs; "
+            "the `generated-*` kinds come only from explicitly requested "
+            "compiler probes of host-test `.t.N` sources. The script reports "
+            "probe failures because they provide no safe negative evidence. "
+            "`unwind=` metadata is ignored."
         )
         lines.append("")
         lines.append("| Test | Kind | Evidence |")
@@ -2228,6 +2406,21 @@ def main(argv: list[str]) -> int:
         action="store_true",
         help="exit nonzero when a test uses a feature before its owning PA/cluster",
     )
+    parser.add_argument(
+        "--lowir-probe-app",
+        type=Path,
+        help="compiler used only for explicitly selected --probe-lowir-test anchors",
+    )
+    parser.add_argument(
+        "--probe-lowir-test",
+        action="append",
+        type=Path,
+        default=[],
+        help=(
+            "repo-relative host-test .t anchor to inspect with --emit-lowir; "
+            "repeat for ambiguous tests"
+        ),
+    )
     args = parser.parse_args(argv)
 
     root = args.root.resolve()
@@ -2245,6 +2438,49 @@ def main(argv: list[str]) -> int:
     rows = [row_for(path, root, features) for path in tests]
     hygiene_findings = scan_test_hygiene(root, hygiene_pas)
     lowir_eh_findings = scan_lowir_eh_review(root, hygiene_pas)
+    if args.probe_lowir_test:
+        if args.lowir_probe_app is None:
+            print(
+                "error: --probe-lowir-test requires --lowir-probe-app",
+                file=sys.stderr,
+            )
+            return 2
+        compiler = (
+            args.lowir_probe_app
+            if args.lowir_probe_app.is_absolute()
+            else root / args.lowir_probe_app
+        ).resolve()
+        if not compiler.is_file():
+            print(f"error: LowIR probe compiler not found: {compiler}", file=sys.stderr)
+            return 2
+        probe_tests: list[Path] = []
+        for requested in args.probe_lowir_test:
+            path = requested if requested.is_absolute() else root / requested
+            path = path.resolve()
+            try:
+                relative = path.relative_to(root)
+            except ValueError:
+                print(f"error: LowIR probe test is outside the root: {path}", file=sys.stderr)
+                return 2
+            if not path.is_file() or path.suffix != ".t":
+                print(f"error: LowIR probe test is not a .t anchor: {relative}", file=sys.stderr)
+                return 2
+            probe_tests.append(path)
+        lowir_eh_findings.extend(
+            scan_generated_lowir_eh_review(root, compiler, probe_tests)
+        )
+        rows_by_path = {str(row["path"]): row for row in rows}
+        for finding in lowir_eh_findings:
+            if finding.kind != "generated-eh-control":
+                continue
+            row = rows_by_path.get(finding.path)
+            if row is not None and row["current_pa"] == "pa31":
+                add_row_feature(
+                    row,
+                    "host.eh_object",
+                    finding.evidence,
+                    features,
+                )
     if args.feature:
         wanted = set(args.feature)
         rows = [
@@ -2283,11 +2519,22 @@ def main(argv: list[str]) -> int:
         print(report, end="")
     if args.fail_on_early:
         early_findings = early_placement_findings(rows)
-        if early_findings or hygiene_findings:
+        probe_failures = [
+            finding
+            for finding in lowir_eh_findings
+            if finding.kind == "lowir-probe-failed"
+        ]
+        if early_findings or hygiene_findings or probe_failures:
             if hygiene_findings:
                 emit_hygiene_errors(hygiene_findings)
             if early_findings:
                 emit_early_placement_errors(early_findings)
+            for finding in probe_failures:
+                print(
+                    f"error: LowIR placement probe failed for {finding.path}: "
+                    f"{finding.evidence}",
+                    file=sys.stderr,
+                )
             return 1
     return 0
 

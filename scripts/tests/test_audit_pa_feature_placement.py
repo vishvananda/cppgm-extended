@@ -311,6 +311,67 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
                 ],
             )
 
+    def test_companion_source_includes_numbered_host_translation_units(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            anchor = root / "pa31" / "tests" / "general" / "200-numbered-source.t"
+            write(anchor, "")
+            write(anchor.parent / f"{anchor.name}.1", "int main() { throw 1; }\n")
+            write(anchor.parent / f"{anchor.name}.2", "int helper() { return 2; }\n")
+            write(anchor.with_suffix(".ref.stdout"), "ignored\n")
+
+            source = audit.companion_source_text_for(anchor)
+            self.assertIn("throw 1", source)
+            self.assertIn("int helper", source)
+            self.assertNotIn("ignored", source)
+
+    def test_generated_lowir_review_probes_only_selected_host_tests(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            selected = root / "pa31" / "tests" / "general" / "200-selected.t"
+            unselected = root / "pa31" / "tests" / "general" / "200-unselected.t"
+            write(selected, "")
+            write(selected.parent / f"{selected.name}.1", "// hidden-eh\nint main() { return 0; }\n")
+            write(unselected, "")
+            write(unselected.parent / f"{unselected.name}.1", "// hidden-eh\nint main() { return 0; }\n")
+
+            compiler = root / "fake-cppgm++"
+            write(compiler, textwrap.dedent(
+                """\
+                #!/usr/bin/env python3
+                from pathlib import Path
+                import sys
+
+                output = Path(sys.argv[sys.argv.index("-o") + 1])
+                output.write_text("function @main() {\\n  eh_try ^cleanup\\n  eh_end\\n}\\n")
+                """
+            ))
+            compiler.chmod(0o755)
+
+            findings = audit.scan_generated_lowir_eh_review(
+                root,
+                compiler,
+                [selected],
+            )
+            self.assertEqual(len(findings), 1)
+            self.assertEqual(findings[0].path, "pa31/tests/general/200-selected.t")
+            self.assertEqual(findings[0].kind, "generated-eh-control")
+            self.assertIn("200-selected.t.1:eh_try", findings[0].evidence)
+
+    def test_pa31_explicit_exception_source_has_host_object_layer(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            anchor = root / "pa31" / "tests" / "general" / "100-host-object.t"
+            write(anchor, "")
+            write(anchor.parent / f"{anchor.name}.1", "int main() { throw 1; }\n")
+            source = audit.companion_source_text_for(anchor)
+
+            self.assertEqual(
+                audit.host_eh_object_evidence(anchor, "pa31", source),
+                "harness:cppgm++ -c, source:throw",
+            )
+            self.assertEqual(audit.host_eh_object_evidence(anchor, "pa25", source), "")
+
 
 if __name__ == "__main__":
     unittest.main()
