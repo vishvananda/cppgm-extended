@@ -408,6 +408,13 @@ The placement audit is a conservative review tool, not an owner oracle. Read
 every source unit manually, especially `.t.N` files and shared headers that a
 static scan may not associate with the marker file.
 
+Do not leave a known false-positive placement finding attached to an accepted
+intake test. Narrow or otherwise improve the placement detector when its rule
+conflates the owning behavior with incidental syntax. If the match is caused
+only by an incidental local identifier, rename that identifier instead. Rerun
+the audit and require the accepted fixture to be clear of the false finding;
+recording a manual waiver is not sufficient.
+
 For syntax-tree, witness, ABI-fact, or other representation-layer suites, the
 audit may detect a later semantic or lowering feature merely because its syntax
 appears in the input. That is not by itself a placement failure when the test's

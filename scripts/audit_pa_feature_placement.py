@@ -466,7 +466,11 @@ RULES: tuple[FeatureRule, ...] = (
                 (rx(r"\b(?:enable_if|void_t|sfinae|SFINAE|detected_or|detector|is_detected)\b"),),
                 path_patterns=(rx(r"(?:candidate-drop|substitution)"),)),
     FeatureRule("template.conversion_deduction",
-                (rx(r"\btemplate\s*<[^>]*>[^;{]*operator\s+[A-Za-z_]"),),
+                (rx(r"\btemplate\s*<[^>]*>[^;{]*operator\s+[A-Za-z_]"),
+                 rx(r"\bstatic_cast\s*<[^>]+>\s*\(|"
+                    r"\b[A-Za-z_][A-Za-z0-9_:<>]*(?:\s*[*&])?\s+"
+                    r"[A-Za-z_][A-Za-z0-9_]*\s*=\s*[A-Za-z_][A-Za-z0-9_]*\s*;")),
+                all_patterns=True,
                 use_raw=True),
     FeatureRule("template.constructor_deduction", (),
                 path_patterns=(rx(r"constructor-template|converting-ctor|ctor-template"),)),

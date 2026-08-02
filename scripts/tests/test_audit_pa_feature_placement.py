@@ -226,6 +226,38 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             audit.detect_features(function_local),
         )
 
+    def test_conversion_template_deduction_requires_a_conversion_use(self) -> None:
+        declaration_only = textwrap.dedent(
+            """\
+            struct box {
+              template<class T> operator T() const;
+            };
+            template<class T> box::operator T() const { return T(); }
+            int main() { return 0; }
+            """
+        )
+        copy_initialization = textwrap.dedent(
+            """\
+            struct box {
+              template<class T> operator T() const { return T(); }
+            };
+            int main() {
+              box source;
+              int result = source;
+              return result;
+            }
+            """
+        )
+
+        self.assertNotIn(
+            "template.conversion_deduction",
+            audit.detect_features(declaration_only),
+        )
+        self.assertIn(
+            "template.conversion_deduction",
+            audit.detect_features(copy_initialization),
+        )
+
     def test_lowir_eh_review_reports_hidden_source_to_lowir_output(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
