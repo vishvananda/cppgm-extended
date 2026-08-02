@@ -276,6 +276,9 @@ PA16 supports the following in addition to the PA15 subset:
 - class temporaries created earlier in an enclosing full expression remain
   alive across nested conditional and short-circuit branch edges, and are
   destroyed at the end of that full expression
+- a class prvalue bound directly to a local reference remains alive until the
+  reference's scope ends and is destroyed there rather than at the end of the
+  declaration's full expression
 - class-valued `if` condition declarations are constructed only on paths that
   reach the declaration and remain alive through the complete selection
   statement, including braceless nested statements
