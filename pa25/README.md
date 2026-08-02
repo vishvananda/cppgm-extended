@@ -201,6 +201,9 @@ To complete PA25, implement these goals:
    EH-bearing aggregate construction should invoke nontrivial member constructors
    instead of representation-copying those members, so cleanup state describes
    the subobjects that were constructed.
+   A caller-created copy for a destructible class value parameter transfers to
+   the callee. The callee destroys that parameter, while the caller keeps only
+   the unwind cleanup needed for objects it still owns.
 
 ### Out Of Scope
 

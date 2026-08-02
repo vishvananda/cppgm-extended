@@ -428,6 +428,27 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         )
         self.assertIn("exception.aggregate_cleanup", hits)
 
+    def test_class_value_argument_with_eh_has_transfer_cleanup_feature(self) -> None:
+        source = textwrap.dedent(
+            """\
+            struct value {
+              value();
+              value(const value &);
+              ~value();
+            };
+            int consume(value argument) { return 0; }
+            int main() { value source; return consume(source); }
+            """
+        )
+        hits = audit.detect_features(
+            source,
+            "function @consume(%argument : ptr [pass=by_address]) -> i32 {\n"
+            "  call void @value___value(%argument)\n}\n"
+            "function @main() {\n  eh_try ^cleanup\n  eh_end\n}\n",
+            "pa25/tests/general/200-class-value-argument-cleanup.t",
+        )
+        self.assertIn("exception.class_value_argument_cleanup", hits)
+
 
 if __name__ == "__main__":
     unittest.main()

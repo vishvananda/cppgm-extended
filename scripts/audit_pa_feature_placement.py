@@ -327,6 +327,7 @@ RULES: tuple[FeatureRule, ...] = (
                 ref_patterns=(rx(r"\b__cxa_(?:throw|begin_catch|rethrow)\b|\bexception_selector\b"),)),
     FeatureRule("exception.guarded_static_cleanup", ()),
     FeatureRule("exception.aggregate_cleanup", ()),
+    FeatureRule("exception.class_value_argument_cleanup", ()),
     FeatureRule("host.eh_object", ()),
     FeatureRule("host.object_interop", ()),
     FeatureRule("host.object_attribute", ()),
@@ -1090,6 +1091,33 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
         hits["exception.aggregate_cleanup"] = FeatureHit(
             "exception.aggregate_cleanup",
             ["source:aggregate return with destructor", "ref:EH control"],
+        )
+    destructible_classes = re.findall(
+        r"~([A-Za-z_][A-Za-z0-9_]*)\s*\(",
+        code,
+    )
+    class_value_parameter = next(
+        (
+            class_name
+            for class_name in destructible_classes
+            if re.search(
+                rf"\(\s*{re.escape(class_name)}\s+[A-Za-z_][A-Za-z0-9_]*\s*\)",
+                code,
+            )
+        ),
+        None,
+    )
+    if (
+        class_value_parameter
+        and re.search(r"pass=by_address", ref_text)
+        and LOWIR_EH_CONTROL_RE.search(ref_text)
+    ):
+        hits["exception.class_value_argument_cleanup"] = FeatureHit(
+            "exception.class_value_argument_cleanup",
+            [
+                f"source:{class_value_parameter} value parameter with destructor",
+                "ref:indirect class argument with EH control",
+            ],
         )
     return hits
 
