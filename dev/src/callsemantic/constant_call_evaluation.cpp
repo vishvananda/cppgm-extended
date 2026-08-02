@@ -7,6 +7,7 @@
 #include "semantic_builtins.h"
 #include "semantic_consteval.h"
 #include "semantic_conversion.h"
+#include "semantic_errors.h"
 #include "semantic_lookup.h"
 #include "semantic_template_function.h"
 #include "semantic_utils.h"
@@ -256,6 +257,106 @@ bool constexpr_template_specialization_matches_argument_types(
   return true;
 }
 
+bool constexpr_call_argument_nodes(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode * argument_list,
+    std::vector<CppAstNode> & expanded_storage,
+    std::vector<const CppAstNode *> & out)
+{
+  out.clear();
+  expanded_storage.clear();
+  if(!argument_list) {
+    return true;
+  }
+
+  bool has_pack_expansion = false;
+  for(std::size_t i = 0; i < argument_list->children.size(); ++i) {
+    if(argument_list->children[i].kind == CppAstKind::pack_expansion_expression) {
+      has_pack_expansion = true;
+      break;
+    }
+  }
+  if(!has_pack_expansion) {
+    out.reserve(argument_list->children.size());
+    for(std::size_t i = 0; i < argument_list->children.size(); ++i) {
+      out.push_back(&argument_list->children[i]);
+    }
+    return true;
+  }
+
+  for(std::size_t i = 0; i < argument_list->children.size(); ++i) {
+    const CppAstNode & argument = argument_list->children[i];
+    if(argument.kind != CppAstKind::pack_expansion_expression) {
+      expanded_storage.push_back(argument);
+      continue;
+    }
+    std::vector<CppAstNode> expanded;
+    if(!ctx.expand_pack_argument_node(scope, argument, expanded)) {
+      return false;
+    }
+    expanded_storage.insert(expanded_storage.end(),
+                            expanded.begin(),
+                            expanded.end());
+  }
+  out.reserve(expanded_storage.size());
+  for(std::size_t i = 0; i < expanded_storage.size(); ++i) {
+    out.push_back(&expanded_storage[i]);
+  }
+  return true;
+}
+
+bool convert_constexpr_call_arguments(
+    SemanticContext & ctx,
+    Scope & scope,
+    constant_eval::Evaluator & evaluator,
+    const CppAstNode * argument_list,
+    const FunctionBinding & binding,
+    std::size_t explicit_param_offset,
+    std::vector<constant_eval::ConstexprValue> & args)
+{
+  const std::size_t available_params =
+      binding.params.size() > explicit_param_offset ?
+          binding.params.size() - explicit_param_offset : 0;
+  const std::size_t converted_count =
+      std::min(args.size(), available_params);
+  std::vector<CppAstNode> expanded_storage;
+  std::vector<const CppAstNode *> source_args;
+  bool source_args_built = false;
+  for(std::size_t i = 0; i < converted_count; ++i) {
+    const TypePtr & target = binding.params[i + explicit_param_offset].second;
+    if(!target) {
+      continue;
+    }
+    constant_eval::ConstexprValue converted;
+    if(constant_eval::constexpr_value_cast(args[i], target, converted)) {
+      args[i] = converted;
+      continue;
+    }
+
+    // Most arguments need only the value-level cast above.  Preserve the
+    // source expression for the less common user-defined conversion case so
+    // constexpr converting constructors can be evaluated before parameter
+    // binding.
+    if(!source_args_built) {
+      if(!constexpr_call_argument_nodes(ctx,
+                                        scope,
+                                        argument_list,
+                                        expanded_storage,
+                                        source_args)) {
+        return false;
+      }
+      source_args_built = true;
+    }
+    if(i >= source_args.size() ||
+       !evaluator.eval_initializer(*source_args[i], converted, target)) {
+      return false;
+    }
+    args[i] = converted;
+  }
+  return true;
+}
+
 }  // namespace
 
 bool evaluate_constant_call_expression_value(
@@ -296,19 +397,8 @@ bool evaluate_constant_call_expression_value(
         }
 
         long long trait_value = 0;
-        if(builtin_types.size() == 1 &&
-           ctx.evaluate_builtin_type_trait(scope, builtin_name, builtin_types[0], trait_value)) {
-          out = constant_eval::make_integral_value(
-              trait_value,
-              semantic_builtins::builtin_type_trait_result_type(builtin_name));
-          return true;
-        }
-        if(builtin_types.size() == 2 &&
-           ctx.evaluate_builtin_binary_type_trait(scope,
-                                                  builtin_name,
-                                                  builtin_types[0],
-                                                  builtin_types[1],
-                                                  trait_value)) {
+        if(ctx.evaluate_builtin_type_trait(
+               scope, builtin_name, builtin_types, trait_value)) {
           out = constant_eval::make_integral_value(
               trait_value,
               semantic_builtins::builtin_type_trait_result_type(builtin_name));
@@ -643,7 +733,19 @@ bool evaluate_constant_call_expression_value(
     return true;
   }
 
-  if(callee.kind == CppAstKind::id_expression) {
+  const cpp_decl::QualifiedName * callee_qualified_name =
+      cppast_qualified_name_syntax(callee);
+  const bool callee_is_unqualified =
+      !callee_qualified_name ||
+      (!callee_qualified_name->rooted &&
+       callee_qualified_name->qualifiers.empty());
+  const bool unqualified_callee_names_value =
+      callee.kind == CppAstKind::id_expression &&
+      !cppast_template_id_syntax(callee) &&
+      callee_is_unqualified &&
+      ctx.lookup_value(scope, callee.value);
+  if(callee.kind == CppAstKind::id_expression &&
+     !unqualified_callee_names_value) {
     const TemplateIdSyntax * template_id =
         cppast_template_id_syntax(callee);
     std::vector<FunctionBinding *> candidates =
@@ -709,12 +811,23 @@ bool evaluate_constant_call_expression_value(
              args[arg_index].kind == constant_eval::ConstexprValue::CV_ADDRESSABLE) ?
                 VC_LVALUE :
                 VC_PRVALUE;
-        long long integral_value = 0;
         expr.null_pointer_constant =
-            args[arg_index].kind == constant_eval::ConstexprValue::CV_NULLPTR ||
-            (constant_eval::constexpr_value_to_integral(args[arg_index], integral_value) &&
-             integral_value == 0);
-        if(!can_copy_initialize(ctx, candidate->params[arg_index].second, expr)) {
+            args[arg_index].kind == constant_eval::ConstexprValue::CV_NULLPTR;
+        bool can_initialize = false;
+        try {
+          can_initialize =
+              can_copy_initialize(ctx, candidate->params[arg_index].second, expr);
+        } catch(const ExplicitSpecializationAfterInstantiationError &) {
+          throw;
+        } catch(const std::logic_error &) {
+          // A conversion probe can encounter an ambiguity (for example an
+          // unrelated specialization whose parameter is an ambiguous base of
+          // this argument).  That rejects this candidate; it is not a hard
+          // error unless overload resolution ultimately selects the
+          // conversion.
+          can_initialize = false;
+        }
+        if(!can_initialize) {
           matches = false;
           break;
         }
@@ -724,7 +837,11 @@ bool evaluate_constant_call_expression_value(
       }
     }
 
-    if(viable.size() == 1) {
+    // A constexpr value does not retain the source expression's value
+    // category.  Let the ordinary typed overload path select among explicit
+    // template-id overloads rather than using the value-only fast path to
+    // mistake a named lvalue for a prvalue (notably `forward<T>(x)`).
+    if(viable.size() == 1 && (!template_id || candidates.size() == 1)) {
       FunctionBinding * binding = viable[0];
       if(binding->builtin_constant_evaluation_kind == BCEK_EXPECT &&
          args.size() == 2) {
@@ -757,6 +874,15 @@ bool evaluate_constant_call_expression_value(
       const constant_eval::Hooks call_hooks =
           semantic_consteval::build_hooks(ctx, constexpr_call_scope);
       std::vector<constant_eval::ConstexprValue> final_args = args;
+      if(!convert_constexpr_call_arguments(ctx,
+                                           scope,
+                                           evaluator,
+                                           argument_list,
+                                           *binding,
+                                           0,
+                                           final_args)) {
+        return false;
+      }
       for(std::size_t i = final_args.size(); i < binding->params.size(); ++i) {
         if(i >= binding->default_arguments.size() || !binding->default_arguments[i]) {
           return false;
@@ -871,6 +997,15 @@ bool evaluate_constant_call_expression_value(
       semantic_consteval::build_hooks(ctx, constexpr_call_scope);
   std::vector<constant_eval::ConstexprValue> final_args = args;
   const std::size_t explicit_param_offset = binding->is_method ? 1u : 0u;
+  if(!convert_constexpr_call_arguments(ctx,
+                                       scope,
+                                       evaluator,
+                                       argument_list,
+                                       *binding,
+                                       explicit_param_offset,
+                                       final_args)) {
+    return false;
+  }
   for(std::size_t i = final_args.size() + explicit_param_offset;
       i < binding->params.size();
       ++i) {

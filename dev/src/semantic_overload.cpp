@@ -14495,7 +14495,13 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     callee_expr.type = make_pointer(callable_function_type);
     callee_expr.category = VC_PRVALUE;
     ctx.set_expr_info_metadata(callee_expr, callee_expr.type, callee_expr.category);
-    set_callsem_materialization_source_type(callee_expr.node, member_pointer_expr.type);
+    // The callee is materialized from the member-pointer value.  Preserve its
+    // representation type, but not the reference category of an expression
+    // such as `static_cast<PMF&&>(pmf)`: LowIR must load the member-pointer
+    // representation through that reference before lowering the call.
+    set_callsem_materialization_source_type(
+        callee_expr.node,
+        remove_reference_type(member_pointer_expr.type));
 
     ValueCategory result_category = VC_PRVALUE;
     if(!result_value_category_for_function_result(callable_function_type->inner, result_category)) {

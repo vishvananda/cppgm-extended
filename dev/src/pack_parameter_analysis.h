@@ -18,6 +18,12 @@ std::vector<std::pair<std::string, const std::vector<cpp_decl::TypePtr> *> >
 referenced_named_type_packs(semantic_model::Scope & scope,
                             const CppAstNode & parameter);
 
+std::vector<std::pair<
+    std::string,
+    const std::vector<semantic_model::ValueBinding> *> >
+referenced_named_value_packs(semantic_model::Scope & scope,
+                             const CppAstNode & parameter);
+
 bool infer_named_type_pack_size(semantic_model::Scope & scope,
                                 const CppAstNode & parameter,
                                 std::size_t & out_pack_size);

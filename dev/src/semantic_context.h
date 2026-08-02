@@ -441,6 +441,11 @@ public:
                                            const std::string & name,
                                            const cpp_decl::TypePtr & type,
                                            long long & value) = 0;
+  virtual bool evaluate_builtin_type_trait(
+      semantic_model::Scope & scope,
+      const std::string & name,
+      const std::vector<cpp_decl::TypePtr> & types,
+      long long & value) = 0;
   virtual bool evaluate_builtin_binary_type_trait(semantic_model::Scope & scope,
                                                   const std::string & name,
                                                   const cpp_decl::TypePtr & lhs,

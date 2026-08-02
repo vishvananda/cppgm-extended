@@ -24,6 +24,8 @@
 #include "semantic_trace.h"
 #include "semantic_utils.h"
 #include "template_api.h"
+#include "template_argument_semantics.h"
+#include "template_services.h"
 #include "types.h"
 
 namespace semantic_builtins {
@@ -1062,8 +1064,7 @@ bool copy_or_move_construction_type_is_nothrow(
     return true;
   }
   if(!move &&
-     semantic_class_model::is_trivially_copy_constructible_type_for_host_abi(
-         ctx, base)) {
+     is_trivially_copy_constructible_type_for_language(ctx, base)) {
     return true;
   }
   if(base->kind != Type::TK_NAMED) {
@@ -1930,6 +1931,19 @@ bool try_expand_builtin_type_trait_call_arg(SemanticContext & ctx,
                                             std::vector<TypePtr> & types)
 {
   types.clear();
+  if(template_argument_semantics::type_id_node_contains_pack_expansion_syntax(arg)) {
+    const bool structurally_expanded = template_api::with_template_services(
+        ctx,
+        [&](template_api::TemplateServices & services)
+        {
+          return template_argument_semantics::expand_builtin_type_trait_type_arg(
+              services, scope, arg, types);
+        });
+    if(structurally_expanded) {
+      return true;
+    }
+    types.clear();
+  }
   if(arg.kind == CppAstKind::pack_expansion_expression && arg.children.size() == 1) {
     const CppAstNode & inner = arg.children[0];
     if(inner.kind == CppAstKind::id_expression) {
@@ -1945,6 +1959,25 @@ bool try_expand_builtin_type_trait_call_arg(SemanticContext & ctx,
     }
     types.push_back(inner_type);
     return true;
+  }
+
+  if(template_argument_semantics::type_id_node_contains_pack_expansion_syntax(arg)) {
+    CppAstNode expanded_arg;
+    const bool expanded = template_api::with_template_services(
+        ctx,
+        [&](template_api::TemplateServices & services)
+        {
+          return template_argument_semantics::expand_bound_packs_in_type_id_node(
+              services, scope, arg, expanded_arg);
+        });
+    TypePtr expanded_type;
+    if(expanded &&
+       try_parse_builtin_type_trait_call_arg(
+           ctx, scope, expanded_arg, expanded_type) &&
+       expanded_type) {
+      types.push_back(expanded_type);
+      return true;
+    }
   }
 
   TypePtr type;
@@ -2802,6 +2835,13 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
     return true;
   }
 
+  if(name == "__has_nothrow_copy") {
+    std::set<FunctionBinding *> visiting;
+    out = copy_or_move_construction_type_is_nothrow(
+              ctx, scope, type, false, visiting) ? 1 : 0;
+    return true;
+  }
+
   if(name == "__is_destructible" || name == "__is_nothrow_destructible") {
     out = is_destructible_type(ctx, base) ? 1 : 0;
     return true;
@@ -2962,6 +3002,9 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
     return true;
   }
   if(name == "__is_empty") {
+    if(ctx.type_depends_on_template_parameter(base)) {
+      return false;
+    }
     ClassInfo * info = ctx.complete_class_type(base);
     if(!info) {
       out = 0;
@@ -3028,6 +3071,7 @@ bool is_supported_builtin_type_trait_name(const std::string & name)
   static const std::set<std::string> supported = {
       "__array_rank",
       "__has_trivial_destructor",
+      "__has_nothrow_copy",
       "__has_virtual_destructor",
       "__is_abstract",
       "__is_aggregate",
@@ -3040,6 +3084,7 @@ bool is_supported_builtin_type_trait_name(const std::string & name)
       "__is_const",
       "__is_constructible",
       "__is_convertible",
+      "__is_convertible_to",
       "__is_destructible",
       "__is_empty",
       "__is_enum",
@@ -3723,6 +3768,9 @@ bool try_parse_builtin_type_trait_call(SemanticContext & ctx,
     trait_name.clear();
     return false;
   }
+  if(trait_name == "__is_convertible_to") {
+    trait_name = "__is_convertible";
+  }
 
   for(size_t i = 0; i < node.children[1].children.size(); ++i) {
     std::vector<TypePtr> expanded;
@@ -3759,6 +3807,9 @@ bool try_parse_builtin_type_trait_expression(SemanticContext & ctx,
   }
 
   trait_name = node.value;
+  if(trait_name == "__is_convertible_to") {
+    trait_name = "__is_convertible";
+  }
   for(size_t i = 0; i < node.children.size(); ++i) {
     std::vector<TypePtr> expanded;
     if(!try_expand_builtin_type_trait_call_arg(ctx, scope, node.children[i], expanded)) {

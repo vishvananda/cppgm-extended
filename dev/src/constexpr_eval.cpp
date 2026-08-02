@@ -284,6 +284,7 @@ bool Evaluator::eval_initializer(const CppAstNode & node,
   }
 
   if(payload->kind == CppAstKind::paren_initializer ||
+     payload->kind == CppAstKind::paren_argument_list ||
      payload->kind == CppAstKind::braced_init_list) {
     if(payload->children.size() != 1) {
       return false;
@@ -465,8 +466,36 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
     return true;
   }
 
-  if(is_this_expression(node) && current_this_object(out)) {
-    return true;
+  if(is_this_expression(node)) {
+    ConstexprValue object;
+    if(current_this_object(object)) {
+      TypePtr semantic_this_type = node.semantic_type;
+      if(!semantic_this_type && object.type) {
+        semantic_this_type = make_pointer(remove_reference_type(object.type));
+      }
+      TypePtr this_type = strip_top_level_cv(semantic_this_type);
+      if(this_type &&
+         this_type->kind == Type::TK_POINTER &&
+         this_type->inner &&
+         is_reference_type(strip_top_level_cv(this_type->inner))) {
+        // The implicit object can be represented as a reference while
+        // evaluating a call through a named lvalue.  `this` points to the
+        // referred object; C++ never forms a pointer-to-reference type.
+        semantic_this_type =
+            make_pointer(remove_reference_type(this_type->inner));
+        this_type = strip_top_level_cv(semantic_this_type);
+      }
+      if(this_type && this_type->kind == Type::TK_POINTER) {
+        out = make_pointer_value(semantic_this_type,
+                                 object.storage_identity,
+                                 0);
+        out.pointer_pointee_object =
+            std::shared_ptr<const ConstexprValue>(new ConstexprValue(object));
+      } else {
+        out = object;
+      }
+      return true;
+    }
   }
 
   if(node.kind == CppAstKind::id_expression) {
@@ -573,6 +602,20 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
        operand.pointer_offset < operand.array_elements.size()) {
       out = operand.array_elements[operand.pointer_offset];
       return true;
+    }
+    if(node.simple_type == OP_STAR &&
+       operand.kind == ConstexprValue::CV_POINTER &&
+       operand.pointer_offset == 0 &&
+       operand.pointer_pointee_object) {
+      TypePtr pointer_type = strip_top_level_cv(remove_reference_type(operand.type));
+      if(pointer_type &&
+         pointer_type->kind == Type::TK_POINTER &&
+         pointer_type->inner) {
+        out = *operand.pointer_pointee_object;
+        out.type = pointer_type->inner;
+        out.storage_identity = operand.storage_identity;
+        return true;
+      }
     }
     if(node.simple_type == OP_STAR &&
        operand.kind == ConstexprValue::CV_POINTER &&
@@ -688,7 +731,7 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
       return false;
     }
     if(eval_expr(node.children[1], value) &&
-       constexpr_value_cast(value, target, out)) {
+       constexpr_value_explicit_cast(value, target, out)) {
       return true;
     }
     return hooks_.evaluate_typed_initializer &&
@@ -699,12 +742,21 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
   }
 
   if(node.kind == CppAstKind::assignment_expression && node.children.size() == 2 && node.has_token) {
+    ConstexprValue current;
+    const bool have_current =
+        node.children[0].kind == CppAstKind::id_expression &&
+        lookup_value(node.children[0].value, &node.children[0], current);
+    const bool may_be_overloaded =
+        node.children[0].kind != CppAstKind::id_expression ||
+        (have_current && type_can_select_overloaded_operator(current.type));
+    if(may_be_overloaded &&
+       hooks_.evaluate_special_expression &&
+       hooks_.evaluate_special_expression(*this, node, out)) {
+      return true;
+    }
     if(node.children[0].kind != CppAstKind::id_expression) {
       return false;
     }
-    ConstexprValue current;
-    const bool have_current =
-        lookup_value(node.children[0].value, &node.children[0], current);
     ConstexprValue rhs;
     if(have_current &&
        (node.children[1].kind == CppAstKind::initializer ||
@@ -1252,6 +1304,12 @@ bool Evaluator::call(const FunctionInfo & function,
         hooks_ = saved_hooks;
       }
       return false;
+    }
+    if(this_object.storage_identity.empty()) {
+      assign_storage_identity(
+          this_object,
+          "<cppgm-constexpr-this:" +
+              std::to_string(next_temporary_identity_++) + ">");
     }
 
     frames_.back().has_this_object = true;

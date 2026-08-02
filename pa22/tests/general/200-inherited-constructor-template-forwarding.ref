@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @arg__arg(%t1, 7)
     %t2 = addr $d
     %t3 = addr $a
-    call void @derived_int___derived__ov3(%t2, %t3)
+    call void @derived_int___derived__ov4(%t2, %t3)
     %t4 = addr $d
     %t5 = index i8 [projection=base_subobject] %t4, 0
     %t6 = index i8 [projection=field] %t5, 0
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @derived_int___derived__ov3(%this : ptr, %u : ptr [pass=reference]) -> void [binding=weak, object=_ZN7derivedIiEC1I3argEEOT_] {
+function @derived_int___derived__ov4(%this : ptr, %u : ptr [pass=reference]) -> void [binding=weak, object=_ZN7derivedIiEC1I3argEEOT_] {
   slot $this : ptr
   slot $u : ptr
 
@@ -69,5 +69,5 @@ function @arg__arg(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3argC
     store i32 %t1, %t3
     return void
 }
-alias object _ZN7derivedIiEC2I3argEEOT_ = @derived_int___derived__ov3
+alias object _ZN7derivedIiEC2I3argEEOT_ = @derived_int___derived__ov4
 alias object _ZN3argC2Ei = @arg__arg

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -533,6 +534,7 @@ struct CppAstNameLookupSnapshot
 {
   typedef template_angle_lookup::NameSet NameSet;
   typedef std::vector<NameSet> NameSetStack;
+  typedef std::unordered_map<std::string, NameSet> NamespaceNameMap;
 
   NameSetStack template_type_parameter_scopes;
   NameSetStack template_value_parameter_scopes;
@@ -542,6 +544,11 @@ struct CppAstNameLookupSnapshot
   std::vector<std::string> class_name_stack;
   std::vector<std::string> namespace_path_stack;
   std::vector<bool> namespace_inline_stack;
+  NamespaceNameMap namespace_template_name_scopes;
+  NamespaceNameMap namespace_template_value_name_scopes;
+  NamespaceNameMap namespace_type_name_scopes;
+  NamespaceNameMap namespace_value_name_scopes;
+  std::unordered_map<std::string, std::string> namespace_alias_targets;
 };
 
 struct CppAstRareStrings

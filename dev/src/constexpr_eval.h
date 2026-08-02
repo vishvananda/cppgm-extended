@@ -102,6 +102,7 @@ private:
   Hooks hooks_;
   std::vector<Frame> frames_;
   std::size_t call_depth_ = 0;
+  std::size_t next_temporary_identity_ = 0;
   bool overloaded_operator_operand_probe_ = false;
 
   bool eval_expr_inner(const CppAstNode & node, ConstexprValue & out);

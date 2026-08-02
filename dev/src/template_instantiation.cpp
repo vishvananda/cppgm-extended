@@ -6320,37 +6320,48 @@ bool expand_instantiated_function_parameter_clause(
     const bool is_pack_parameter =
         declarator && declarator_has_parameter_pack(*declarator);
 
+    const auto append_single_parameter =
+        [&](const CppAstNode & single_parameter) -> bool
+        {
+          CppAstNode single_clause;
+          single_clause.kind = CppAstKind::parameter_clause;
+          single_clause.children.push_back(single_parameter);
+          std::vector<std::pair<std::string, TypePtr> > single_params;
+          std::vector<const CppAstNode *> single_defaults;
+          std::vector<TypePtr> single_parameter_object_types;
+          if(!ctx.parse_parameter_clause(
+                 parameter_scope,
+                 single_clause,
+                 single_params,
+                 &single_defaults,
+                 true,
+                 parameter_object_types ?
+                     &single_parameter_object_types : nullptr) ||
+             single_params.size() != 1) {
+            return false;
+          }
+          params.push_back(single_params[0]);
+          if(parameter_object_types) {
+            if(single_parameter_object_types.size() != 1) {
+              return false;
+            }
+            parameter_object_types->push_back(single_parameter_object_types[0]);
+          }
+          default_args.push_back(cpp_decl::find_child(parameter,
+                                                      CppAstKind::default_argument));
+          template_scope::bind_parameter_value(
+              parameter_scope,
+              single_params[0].first,
+              parameter_object_types ?
+                  single_parameter_object_types[0] :
+                  single_params[0].second);
+          return true;
+        };
+
     if(!is_pack_parameter) {
-      CppAstNode single_clause;
-      single_clause.kind = CppAstKind::parameter_clause;
-      single_clause.children.push_back(parameter);
-      std::vector<std::pair<std::string, TypePtr> > single_params;
-      std::vector<const CppAstNode *> single_defaults;
-      std::vector<TypePtr> single_parameter_object_types;
-      if(!ctx.parse_parameter_clause(parameter_scope,
-                                     single_clause,
-                                     single_params,
-                                     &single_defaults,
-                                     true,
-                                     parameter_object_types ?
-                                         &single_parameter_object_types : nullptr) ||
-         single_params.size() != 1) {
+      if(!append_single_parameter(parameter)) {
         return false;
       }
-      params.push_back(single_params[0]);
-      if(parameter_object_types) {
-        if(single_parameter_object_types.size() != 1) {
-          return false;
-        }
-        parameter_object_types->push_back(single_parameter_object_types[0]);
-      }
-      default_args.push_back(cpp_decl::find_child(parameter,
-                                                  CppAstKind::default_argument));
-      template_scope::bind_parameter_value(parameter_scope,
-                                           single_params[0].first,
-                                           parameter_object_types ?
-                                               single_parameter_object_types[0] :
-                                               single_params[0].second);
       continue;
     }
 
@@ -6362,13 +6373,32 @@ bool expand_instantiated_function_parameter_clause(
     const std::vector<std::pair<std::string, const std::vector<TypePtr> *> > packs =
         pack_parameter_analysis::referenced_named_type_packs(parameter_scope,
                                                              stripped_parameter);
-    if(packs.empty()) {
-      return false;
+    const std::vector<std::pair<
+        std::string,
+        const std::vector<ValueBinding> *> > value_packs =
+            pack_parameter_analysis::referenced_named_value_packs(
+                parameter_scope, stripped_parameter);
+    if(packs.empty() && value_packs.empty()) {
+      // `T&&...` with scalar T is one unnamed T&& parameter followed by a C
+      // varargs ellipsis (Clang models it as `void (T&&, ...)`).  The parser's
+      // declarator marker is shared with a true function parameter pack, so
+      // only expand it when the stripped pattern actually names a bound type
+      // pack.
+      if(!append_single_parameter(stripped_parameter)) {
+        return false;
+      }
+      continue;
     }
 
-    const std::size_t pack_size = packs[0].second->size();
+    const std::size_t pack_size =
+        !packs.empty() ? packs[0].second->size() : value_packs[0].second->size();
     for(std::size_t j = 1; j < packs.size(); ++j) {
       if(packs[j].second->size() != pack_size) {
+        return false;
+      }
+    }
+    for(std::size_t j = 0; j < value_packs.size(); ++j) {
+      if(value_packs[j].second->size() != pack_size) {
         return false;
       }
     }
@@ -6384,9 +6414,30 @@ bool expand_instantiated_function_parameter_clause(
                                         (*(packs[pack].second))[pack_index]);
       }
 
+      std::map<std::string, ValueBinding> value_replacements;
+      for(std::size_t pack = 0; pack < value_packs.size(); ++pack) {
+        const ValueBinding & value =
+            (*(value_packs[pack].second))[pack_index];
+        template_scope::bind_value(single_scope,
+                                   value_packs[pack].first,
+                                   value,
+                                   true);
+        value_replacements[value_packs[pack].first] = value;
+      }
+
+      CppAstNode expanded_parameter = stripped_parameter;
+      if(!value_replacements.empty()) {
+        CppAstNode substituted;
+        if(!template_argument_semantics::substitute_value_pack_bindings_in_node(
+               stripped_parameter, value_replacements, substituted)) {
+          return false;
+        }
+        expanded_parameter = substituted;
+      }
+
       CppAstNode single_clause;
       single_clause.kind = CppAstKind::parameter_clause;
-      single_clause.children.push_back(stripped_parameter);
+      single_clause.children.push_back(expanded_parameter);
       std::vector<std::pair<std::string, TypePtr> > single_params;
       std::vector<const CppAstNode *> single_defaults;
       std::vector<TypePtr> single_parameter_object_types;

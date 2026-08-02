@@ -8156,6 +8156,14 @@ private:
       }
     }
 
+    // A reference data member is represented by referent storage even though
+    // its semantic type is a reference.  Ordinary scalar parameters already
+    // produce their value from emit_rvalue and must not be addressed again.
+    if(is_reference_type(arg.semantic_type) &&
+       !is_reference_type(param_type) &&
+       scalar_value_uses_reference_member_storage(arg)) {
+      return emit_scalar_storage_value(param_type, arg);
+    }
     return emit_scalar_value_conversion(emit_rvalue(arg),
                                         arg.semantic_type,
                                         param_type,
@@ -9935,8 +9943,11 @@ private:
          !is_indirect_value_type(target_type) &&
          !is_function_type(target_base) &&
          target_base->kind != Type::TK_ARRAY) {
-        const TypePtr loaded_type =
-            materialization_source_type_for(node, referent_type);
+        // The lvalue address denotes the referred object, even when the
+        // expression itself came from reference-field storage.  Materializing
+        // through the representation type would load the stored pointer a
+        // second time (and, for example, pass ptr where a double is required).
+        const TypePtr loaded_type = referent_type;
         const string memory_type = lowir_memory_type_for(loaded_type);
         const string loaded_value =
             emit_temp_assignment(memory_type,
@@ -9953,6 +9964,30 @@ private:
                                         node.semantic_type,
                                         target_type,
                                         true);
+  }
+
+  bool scalar_value_uses_reference_member_storage(
+      const CallSemNode & node) const
+  {
+    if(node.kind == CallSemKind::member_expression) {
+      return node.is_reference_storage && !node.is_reference_storage_target;
+    }
+    if(node.kind == CallSemKind::cast_expression &&
+       node.children.size() == 1) {
+      return is_reference_type(node.semantic_type) ||
+             scalar_value_uses_reference_member_storage(node.children[0]);
+    }
+    if(node.kind == CallSemKind::binary_expression &&
+       callsem_has_token(node, OP_COMMA) &&
+       node.children.size() == 2) {
+      return scalar_value_uses_reference_member_storage(node.children[1]);
+    }
+    if(node.kind == CallSemKind::conditional_expression &&
+       node.children.size() == 3) {
+      return scalar_value_uses_reference_member_storage(node.children[1]) ||
+             scalar_value_uses_reference_member_storage(node.children[2]);
+    }
+    return false;
   }
 
   TypePtr materialization_source_type_for(const CallSemNode & node,

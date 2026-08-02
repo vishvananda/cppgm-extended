@@ -5627,6 +5627,11 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
       }
     }
     if(can_fold) {
+      if(witness::source_capture_enabled(ctx.template_witness_context())) {
+        template_api::note_template_member_value_instantiation_if_needed(
+            ctx,
+            binding);
+      }
       ExprInfo result;
       result.type = strip_top_level_cv(binding.type);
       result.category = VC_PRVALUE;
@@ -8835,13 +8840,8 @@ ExprInfo analyze_type_trait_expression(SemanticContext & ctx,
     }
 
     long long value = 0;
-    bool evaluated = false;
-    if(types.size() == 1) {
-      evaluated = ctx.evaluate_builtin_type_trait(scope, builtin_name, types[0], value);
-    } else if(types.size() == 2) {
-      evaluated = ctx.evaluate_builtin_binary_type_trait(
-          scope, builtin_name, types[0], types[1], value);
-    }
+    const bool evaluated =
+        ctx.evaluate_builtin_type_trait(scope, builtin_name, types, value);
     if(!evaluated) {
       throw logic_error("unsupported builtin type trait expression");
     }

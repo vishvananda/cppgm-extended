@@ -1479,6 +1479,11 @@ private:
   struct SyntheticLambdaKey
   {
     const CppAstNode * node = nullptr;
+    size_t token_start = 0;
+    size_t token_end = 0;
+    uint32_t source_location_id = 0;
+    CppAstKind node_kind = CppAstKind::invalid;
+    bool has_source_anchor = false;
     size_t scope_key = 0;
     const FunctionBinding * function = nullptr;
     const ClassInfo * class_info = nullptr;
@@ -1487,7 +1492,22 @@ private:
 
     bool operator<(const SyntheticLambdaKey & other) const
     {
-      if(node != other.node) {
+      if(has_source_anchor != other.has_source_anchor) {
+        return has_source_anchor < other.has_source_anchor;
+      }
+      if(has_source_anchor && token_start != other.token_start) {
+        return token_start < other.token_start;
+      }
+      if(has_source_anchor && token_end != other.token_end) {
+        return token_end < other.token_end;
+      }
+      if(has_source_anchor && source_location_id != other.source_location_id) {
+        return source_location_id < other.source_location_id;
+      }
+      if(has_source_anchor && node_kind != other.node_kind) {
+        return node_kind < other.node_kind;
+      }
+      if(!has_source_anchor && node != other.node) {
         return std::less<const CppAstNode *>()(node, other.node);
       }
       if(scope_key != other.scope_key) {
@@ -6110,20 +6130,86 @@ private:
     Scope qualifier_scope(binding.declaration_scope, "<function-qualifier>");
     qualifier_scope.class_info = binding.owner_class;
     qualifier_scope.function = &binding;
+
+    // Exception specifications on function-template specializations are
+    // evaluated after deduction.  Rebind the specialization arguments here,
+    // including zero-length packs, so a type pack used only by the noexcept
+    // operand remains structurally available even when it produced no
+    // function parameters.
+    if(binding.source_template && binding.has_instantiation_arguments) {
+      template_api::binding::bind_template_arguments_into_scope(
+          *this,
+          qualifier_scope,
+          binding.source_template->parameters,
+          binding.instantiation_arguments,
+          binding.instantiation_pack_sizes.empty() ?
+              nullptr :
+              &binding.instantiation_pack_sizes);
+    }
+
+    const size_t explicit_offset =
+        function_binding_explicit_parameter_offset(binding);
+    size_t pack_start = binding.params.size();
+    string pack_name;
+    if(binding.source_template &&
+       binding.source_template->has_trailing_function_parameter_pack &&
+       !binding.source_template->params_pattern.empty()) {
+      const size_t pattern_index =
+          binding.source_template->params_pattern.size() - 1;
+      pack_start = explicit_offset + pattern_index;
+      pack_name = function_template_parameter_alias_name(
+          *binding.source_template, pattern_index);
+      if(pack_name.empty()) {
+        pack_name = binding.source_template->params_pattern[pattern_index].first;
+      }
+    }
+
+    map<string, size_t> seen_parameter_names;
+    map<string, vector<ValueBinding> > parameters_by_alias;
     for(size_t i = 0; i < binding.params.size(); ++i) {
       const string binding_name = function_parameter_binding_name(binding, i);
       if(binding_name.empty()) {
         continue;
       }
       const string alias_name = function_parameter_alias_name(binding, i);
-      const string output_name = !alias_name.empty() ? alias_name : binding_name;
+      const string source_name = !alias_name.empty() ? alias_name : binding_name;
+      const size_t occurrence = ++seen_parameter_names[source_name];
+      const string output_name = occurrence == 1 ? binding_name :
+          source_name + "__pack" + to_string(occurrence);
       ValueBinding parameter(ValueBinding::VK_PARAMETER,
                              output_name,
                              binding.params[i].second);
-      qualifier_scope.values[binding_name] = parameter;
-      if(!alias_name.empty() && alias_name != binding_name) {
+      qualifier_scope.values[output_name] = parameter;
+      if(!alias_name.empty()) {
+        parameters_by_alias[alias_name].push_back(parameter);
+      }
+      if(!alias_name.empty() &&
+         alias_name != output_name &&
+         qualifier_scope.values.find(alias_name) == qualifier_scope.values.end()) {
         qualifier_scope.values[alias_name] = parameter;
       }
+      if(!pack_name.empty() && i >= pack_start) {
+        qualifier_scope.named_value_packs[pack_name].push_back(parameter);
+      }
+    }
+    if(!pack_name.empty()) {
+      qualifier_scope.named_pack_sizes[pack_name] =
+          qualifier_scope.named_value_packs[pack_name].size();
+    }
+    for(map<string, vector<ValueBinding> >::const_iterator it =
+            parameters_by_alias.begin();
+        it != parameters_by_alias.end();
+        ++it) {
+      if(it->second.size() < 2 ||
+         qualifier_scope.named_value_packs.find(it->first) !=
+             qualifier_scope.named_value_packs.end()) {
+        continue;
+      }
+      // Instantiated non-template members can still contain an expanded
+      // parameter pack.  Repeated source aliases retain that structure even
+      // when there is no FunctionTemplateDecl available to name the pack.
+      qualifier_scope.named_value_packs[it->first] = it->second;
+      qualifier_scope.named_pack_sizes[it->first] = it->second.size();
     }
     return qualifier_scope;
   }
@@ -6190,6 +6276,15 @@ private:
                                    long long & out) override
   {
     return semantic_builtins::evaluate_builtin_type_trait(*this, scope, name, type, out);
+  }
+
+  bool evaluate_builtin_type_trait(Scope & scope,
+                                   const string & name,
+                                   const vector<TypePtr> & types,
+                                   long long & out) override
+  {
+    return semantic_builtins::evaluate_builtin_type_trait(
+        *this, scope, name, types, out);
   }
 
   bool is_supported_builtin_type_trait_name(const string & name)
@@ -11326,9 +11421,8 @@ private:
     return semantic_conversion::can_copy_initialize(*this, target, expr);
   }
 
-  bool classify_null_pointer_constant(Scope & scope,
-                                      const CppAstNode & node,
-                                      const ExprInfo & expr)
+  bool is_null_pointer_constant(const CppAstNode & node,
+                                const ExprInfo & expr)
   {
     if(!expr.type || expr.category != VC_PRVALUE) {
       return false;
@@ -11352,25 +11446,23 @@ private:
       return true;
     }
 
-    constant_eval::ConstexprValue value;
-    try
-    {
-      if(!evaluate_constant_expression_value(scope, node, value)) {
-        return false;
-      }
+    const CppAstNode * literal = &node;
+    while(literal->kind == CppAstKind::parenthesized_expression &&
+          literal->children.size() == 1) {
+      literal = &literal->children[0];
     }
-    catch(const ExplicitSpecializationAfterInstantiationError &)
-    {
-      throw;
-    }
-    catch(const logic_error &)
-    {
+    if(literal->kind != CppAstKind::literal) {
       return false;
     }
-
-    long long integral_value = 0;
-    return constant_eval::constexpr_value_to_integral(value, integral_value) &&
-           integral_value == 0;
+    if(base->kind == Type::TK_FUNDAMENTAL &&
+       (base->fundamental == FT_CHAR ||
+        base->fundamental == FT_WCHAR_T ||
+        base->fundamental == FT_CHAR16_T ||
+        base->fundamental == FT_CHAR32_T)) {
+      return false;
+    }
+    return (expr.node.has_int_value && callsem_int_value(expr.node) == 0) ||
+           (expr.node.has_uint_value && callsem_uint_value(expr.node) == 0);
   }
 
   bool try_analyze_target_aware_expression(Scope & scope,
@@ -30993,7 +31085,7 @@ private:
     }
     ScopedTemplateUseLocation use_location_guard(use_location);
     ExprInfo result = semantic_expression::analyze_expression(*this, scope, node);
-    result.null_pointer_constant = classify_null_pointer_constant(scope, node, result);
+    result.null_pointer_constant = is_null_pointer_constant(node, result);
     return result;
   }
 
@@ -31408,6 +31500,15 @@ private:
   {
     SyntheticLambdaKey key;
     key.node = &node;
+    key.has_source_anchor =
+        node.token_end >= node.token_start &&
+        !(node.token_start == 0 && node.token_end == 0);
+    if(key.has_source_anchor) {
+      key.token_start = node.token_start;
+      key.token_end = node.token_end;
+      key.source_location_id = node.source_location_id;
+      key.node_kind = node.kind;
+    }
     key.function = current_function_scope(scope);
     key.class_info = current_class_scope(scope);
     if(key.function) {

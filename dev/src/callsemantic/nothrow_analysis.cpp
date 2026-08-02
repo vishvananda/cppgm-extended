@@ -4,6 +4,7 @@
 #include "callsemantic_internal.h"
 #include "semantic_class_model.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -607,6 +608,41 @@ bool callsem_node_can_throw(
         return false;
       }
       return true;
+    }
+    const std::size_t argument_count = node.children.size() - 1;
+    const std::size_t parameter_count = binding->params.size();
+    const std::size_t matched_count = std::min(argument_count, parameter_count);
+    for(std::size_t i = 0; i < matched_count; ++i) {
+      const CallSemNode & argument = node.children[i + 1];
+      TypePtr parameter_type = strip_top_level_cv(binding->params[i].second);
+      TypePtr argument_type = strip_top_level_cv(
+          remove_reference_type(argument.semantic_type));
+      TypePtr parameter_object_type = strip_top_level_cv(
+          remove_reference_type(parameter_type));
+      if(!parameter_type ||
+         is_reference_type(parameter_type) ||
+         !parameter_object_type ||
+         parameter_object_type->kind != Type::TK_NAMED ||
+         !argument_type ||
+         !type_equals(parameter_object_type, argument_type) ||
+         argument.value_category == CVC_PRVALUE) {
+        continue;
+      }
+
+      // A same-class lvalue/xvalue passed to a by-value parameter performs a
+      // copy/move construction even when overload resolution needs no
+      // conversion node.  Account for that implicit parameter construction
+      // in the potentially-throwing-expression analysis.
+      const bool move = argument.value_category == CVC_XVALUE;
+      const TypePtr construction_type = move ?
+          remove_reference_type(argument.semantic_type) :
+          parameter_object_type;
+      if(!copy_or_move_construction_is_nothrow(construction_type,
+                                               move,
+                                               visiting,
+                                               callbacks)) {
+        return true;
+      }
     }
     return !function_binding_is_nothrow(*binding, visiting, callbacks);
   }

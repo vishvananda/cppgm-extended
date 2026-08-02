@@ -1158,6 +1158,9 @@ bool constexpr_value_cast(const ConstexprValue & value,
       return true;
     }
     if(constexpr_aggregate_base_subobject_value(value, target, out)) {
+      out.aggregate_complete_object = value.aggregate_complete_object ?
+          value.aggregate_complete_object :
+          std::shared_ptr<const ConstexprValue>(new ConstexprValue(value));
       return true;
     }
     return false;
@@ -1275,6 +1278,24 @@ bool constexpr_value_cast(const ConstexprValue & value,
     return false;
   }
   return cast_integral_to_target(integral, base, out);
+}
+
+bool constexpr_value_explicit_cast(const ConstexprValue & value,
+                                   const TypePtr & target,
+                                   ConstexprValue & out)
+{
+  if(constexpr_value_cast(value, target, out)) {
+    return true;
+  }
+  if(value.kind != ConstexprValue::CV_AGGREGATE ||
+     !value.aggregate_complete_object ||
+     !constexpr_aggregate_base_subobject_value(
+         *value.aggregate_complete_object, target, out)) {
+    return false;
+  }
+  out.aggregate_complete_object = value.aggregate_complete_object;
+  out.type = target;
+  return true;
 }
 
 bool constexpr_value_apply_unary(ETokenType op,

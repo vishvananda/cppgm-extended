@@ -2397,34 +2397,42 @@ void expand_base_template_argument_syntax_groups(
     const std::string arg_pattern = arg_text + "...";
     std::vector<std::string> expanded_arg_texts =
         ctx.expand_bound_expression_pack_texts(scope, arg_pattern);
-    const bool arg_did_expand =
+    const bool text_did_expand =
         expanded_arg_texts.size() == expansion_count &&
         !(expanded_arg_texts.size() == 1 &&
           semantic_utils::trim_space(expanded_arg_texts[0]) == arg_pattern);
+    if(expanded_arg_texts.size() != expansion_count) {
+      expanded_arg_texts.assign(expansion_count, arg_text);
+    }
 
     std::vector<TemplateArgumentSyntax> expanded_arg_syntaxes;
+    template_api::with_template_services(
+        ctx,
+        [&](template_api::TemplateServices & services)
+        {
+          expanded_arg_syntaxes =
+              template_argument_semantics::expand_type_pack_argument_syntaxes(
+                  services,
+                  scope,
+                  source_arg,
+                  expanded_arg_texts);
+        });
+    const bool structured_did_expand =
+        expanded_arg_syntaxes.size() == expansion_count;
+    const bool arg_did_expand = text_did_expand || structured_did_expand;
     if(arg_did_expand) {
-      template_api::with_template_services(
-          ctx,
-          [&](template_api::TemplateServices & services)
-          {
-            expanded_arg_syntaxes =
-                template_argument_semantics::expand_type_pack_argument_syntaxes(
-                    services,
-                    scope,
-                    source_arg,
-                    expanded_arg_texts);
-          });
       any_expanded = true;
     }
 
     for(std::size_t i = 0; i < expansion_count; ++i) {
       TemplateArgumentSyntax arg_syntax =
-          arg_did_expand && i < expanded_arg_syntaxes.size() ?
+          structured_did_expand ?
               expanded_arg_syntaxes[i] :
               source_arg;
-      if(arg_did_expand) {
+      if(arg_did_expand && !structured_did_expand) {
         arg_syntax.text = semantic_utils::trim_space(expanded_arg_texts[i]);
+      }
+      if(arg_did_expand) {
         std::string pack_name;
         const std::vector<TypePtr> * pack = nullptr;
         if(simple_template_argument_pack_name(source_arg, pack_name) &&
@@ -2448,7 +2456,8 @@ std::vector<std::string> expand_base_name_pack_texts(
     const CppAstNode & base_name,
     std::vector<std::vector<TemplateArgumentSyntax> > * expanded_arg_syntaxes = nullptr,
     std::vector<TypePtr> * expanded_base_types = nullptr,
-    bool * expanded_pack = nullptr)
+    bool * expanded_pack = nullptr,
+    std::size_t * expanded_qualifier_template_index = nullptr)
 {
   if(expanded_arg_syntaxes) {
     expanded_arg_syntaxes->clear();
@@ -2458,6 +2467,9 @@ std::vector<std::string> expand_base_name_pack_texts(
   }
   if(expanded_pack) {
     *expanded_pack = false;
+  }
+  if(expanded_qualifier_template_index) {
+    *expanded_qualifier_template_index = std::string::npos;
   }
   const std::string trimmed = semantic_utils::trim_space(base_name.value);
   if(trimmed.empty()) {
@@ -2494,6 +2506,26 @@ std::vector<std::string> expand_base_name_pack_texts(
                                                   *base_template_syntax,
                                                   expanded.size(),
                                                   *expanded_arg_syntaxes);
+    } else {
+      for(std::size_t i = 0;
+          i < base_name.qualifier_template_id_syntaxes.size();
+          ++i) {
+        std::vector<std::vector<TemplateArgumentSyntax> > qualifier_arguments;
+        expand_base_template_argument_syntax_groups(
+            ctx,
+            scope,
+            base_name.qualifier_template_id_syntaxes[i],
+            expanded.size(),
+            qualifier_arguments);
+        if(qualifier_arguments.empty()) {
+          continue;
+        }
+        expanded_arg_syntaxes->swap(qualifier_arguments);
+        if(expanded_qualifier_template_index) {
+          *expanded_qualifier_template_index = i;
+        }
+        break;
+      }
     }
   }
   return expanded;
@@ -2502,10 +2534,41 @@ std::vector<std::string> expand_base_name_pack_texts(
 CppAstNode expanded_base_name_node_with_argument_syntaxes(
     const CppAstNode & source,
     const std::string & expanded_text,
-    const std::vector<TemplateArgumentSyntax> & argument_syntaxes)
+    const std::vector<TemplateArgumentSyntax> & argument_syntaxes,
+    std::size_t qualifier_template_index = std::string::npos)
 {
   CppAstNode expanded = source;
   expanded.value = expanded_text;
+  if(qualifier_template_index != std::string::npos &&
+     qualifier_template_index < expanded.qualifier_template_id_syntaxes.size()) {
+    TemplateIdSyntax & template_id =
+        expanded.qualifier_template_id_syntaxes[qualifier_template_index];
+    template_id.arguments.clear();
+    template_id.argument_syntaxes = argument_syntaxes;
+    template_id.arguments.reserve(argument_syntaxes.size());
+    for(std::size_t i = 0; i < argument_syntaxes.size(); ++i) {
+      template_id.arguments.push_back(
+          semantic_utils::trim_space(argument_syntaxes[i].text));
+    }
+    if(expanded.qualified_name_syntax &&
+       qualifier_template_index <
+           expanded.qualified_name_syntax->qualifiers.size()) {
+      std::string qualifier =
+          template_api::qualified_name_text(template_id.name) + "<";
+      for(std::size_t i = 0; i < template_id.arguments.size(); ++i) {
+        if(i != 0) {
+          qualifier += ",";
+        }
+        qualifier += template_id.arguments[i];
+      }
+      qualifier += ">";
+      expanded.qualified_name_syntax->qualifiers[qualifier_template_index] =
+          qualifier;
+      expanded.value =
+          template_api::qualified_name_text(*expanded.qualified_name_syntax);
+    }
+    return expanded;
+  }
   const TemplateIdSyntax * source_template_id = cppast_template_id_syntax(source);
   if(!source_template_id) {
     return expanded;
@@ -7007,18 +7070,19 @@ void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode
     if(!base_name) {
       throw std::logic_error("invalid base-specifier");
     }
-
     std::vector<std::string> base_names;
     std::vector<std::vector<TemplateArgumentSyntax> > expanded_base_arg_syntaxes;
     std::vector<TypePtr> expanded_base_types;
     bool expanded_base_pack = false;
+    std::size_t expanded_base_qualifier_template_index = std::string::npos;
     if(is_pack_expansion) {
       base_names = expand_base_name_pack_texts(ctx,
                                                *info.member_scope,
                                                *base_name,
                                                &expanded_base_arg_syntaxes,
                                                &expanded_base_types,
-                                               &expanded_base_pack);
+                                               &expanded_base_pack,
+                                               &expanded_base_qualifier_template_index);
     }
     if(base_names.empty()) {
       if(is_pack_expansion && expanded_base_pack) {
@@ -7076,7 +7140,8 @@ void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode
             expanded_base_name_node_with_argument_syntaxes(
                 *base_name,
                 base_names[i],
-                *expanded_arg_syntaxes);
+                *expanded_arg_syntaxes,
+                expanded_base_qualifier_template_index);
         base_node_for_lookup = &expanded_base_node;
       }
       TypePtr base_type;
@@ -7181,13 +7246,15 @@ void parse_reference_base_clause(SemanticContext & ctx,
     std::vector<std::vector<TemplateArgumentSyntax> > expanded_base_arg_syntaxes;
     std::vector<TypePtr> expanded_base_types;
     bool expanded_base_pack = false;
+    std::size_t expanded_base_qualifier_template_index = std::string::npos;
     if(is_pack_expansion) {
       base_names = expand_base_name_pack_texts(ctx,
                                                *info.member_scope,
                                                *base_name,
                                                &expanded_base_arg_syntaxes,
                                                &expanded_base_types,
-                                               &expanded_base_pack);
+                                               &expanded_base_pack,
+                                               &expanded_base_qualifier_template_index);
     }
     if(base_names.empty()) {
       if(is_pack_expansion && expanded_base_pack) {
@@ -7245,7 +7312,8 @@ void parse_reference_base_clause(SemanticContext & ctx,
             expanded_base_name_node_with_argument_syntaxes(
                 *base_name,
                 base_names[i],
-                *expanded_arg_syntaxes);
+                *expanded_arg_syntaxes,
+                expanded_base_qualifier_template_index);
         base_node_for_lookup = &expanded_base_node;
       }
       TypePtr base_type;
@@ -13288,7 +13356,13 @@ void ensure_implicit_special_members(SemanticContext & ctx,
         ++it) {
       for(size_t i = 0; i < it->second.size(); ++i) {
         const FunctionBinding * binding = it->second[i];
-        if(binding->is_constructor && !binding->synthesized) {
+        // Inheriting constructors does not suppress the derived class's
+        // implicitly-declared default constructor.  The inherited bindings
+        // live in the derived class's method set, but they are not
+        // user-declared constructors of that class.
+        if(binding->is_constructor &&
+           !binding->synthesized &&
+           !binding->is_inherited_constructor) {
           return true;
         }
       }
@@ -13300,7 +13374,9 @@ void ensure_implicit_special_members(SemanticContext & ctx,
         ++it) {
       for(size_t i = 0; i < it->second.size(); ++i) {
         const FunctionTemplateDecl * decl = it->second[i];
-        if(decl && decl->is_constructor) {
+        if(decl &&
+           decl->is_constructor &&
+           !decl->is_inherited_constructor) {
           return true;
         }
       }
@@ -13319,7 +13395,18 @@ void ensure_implicit_special_members(SemanticContext & ctx,
                                       make_function(make_fundamental(FT_VOID),
                                                     effective_params,
                                                     false));
-    if(!ctor) {
+    if(ctor && ctor->is_inherited_constructor) {
+      // A zero-argument base constructor can already have introduced this
+      // signature into the derived overload set.  The derived class still
+      // receives its own implicit default constructor, which hides that
+      // inherited signature.  Reuse the canonical binding as the implicit
+      // special member so downstream trait and exception-spec analysis does
+      // not mistake it for a user-provided constructor.
+      ctor->is_inherited_constructor = false;
+      ctor->inherited_constructor_access_class = nullptr;
+      ctor->is_explicit = false;
+      ctor->synthesized = true;
+    } else if(!ctor) {
       ClassFunctionOptions options;
       options.access = MA_PUBLIC;
       options.is_constructor = true;

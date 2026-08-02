@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -31,8 +32,17 @@ struct ConstexprValue
   long double floating_value = 0.0L;
   std::string storage_identity;
   std::size_t pointer_offset = 0;
+  // A constexpr pointer may carry the value of the object it designates when
+  // that object exists only inside the evaluator (not in named storage).
+  // Sharing the pointee keeps copies of `this` from duplicating an aggregate's
+  // complete member representation.
+  std::shared_ptr<const ConstexprValue> pointer_pointee_object;
   std::vector<std::pair<std::string, ConstexprValue> > aggregate_members;
   std::vector<bool> aggregate_member_is_base;
+  // A base-subobject value keeps the complete object that owns it so an
+  // explicit, semantically validated base-to-derived cast can recover the
+  // enclosing object during constant evaluation.
+  std::shared_ptr<const ConstexprValue> aggregate_complete_object;
   std::vector<ConstexprValue> array_elements;
 };
 
@@ -79,6 +89,9 @@ bool constexpr_value_to_unsigned_integral(const ConstexprValue & value,
 bool constexpr_value_cast(const ConstexprValue & value,
                           const cpp_decl::TypePtr & target,
                           ConstexprValue & out);
+bool constexpr_value_explicit_cast(const ConstexprValue & value,
+                                   const cpp_decl::TypePtr & target,
+                                   ConstexprValue & out);
 bool constexpr_value_apply_unary(ETokenType op,
                                  const ConstexprValue & operand,
                                  ConstexprValue & out);

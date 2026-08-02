@@ -1990,11 +1990,11 @@ void collect_required_return_statement_support(SemanticContext & ctx,
     }
   } else if(is_complete_class_value_type_for_output(expr.semantic_type)) {
     info = ctx.complete_class_type(expr.semantic_type);
-    if(should_implicitly_move_return_object_for_output(expr) &&
-       semantic_conversion::class_value_transfer_prefers_nonconst_move(
-           return_type,
-           expr.semantic_type,
-           CVC_XVALUE)) {
+    const CallValueCategory transfer_category =
+        should_implicitly_move_return_object_for_output(expr) ?
+            CVC_XVALUE : expr.value_category;
+    if(semantic_conversion::class_value_transfer_prefers_nonconst_move(
+           return_type, expr.semantic_type, transfer_category)) {
       ctor = info ? find_or_ensure_move_constructor_binding(ctx, *info) : nullptr;
     }
     if(!ctor) {

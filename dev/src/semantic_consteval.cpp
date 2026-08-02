@@ -1057,19 +1057,8 @@ bool evaluate_builtin_or_type_trait_expression(SemanticContext & ctx,
         }
 
         long long trait_value = 0;
-        if(builtin_types.size() == 1 &&
-           ctx.evaluate_builtin_type_trait(scope, builtin_name, builtin_types[0], trait_value)) {
-          value = constant_eval::make_integral_value(
-              trait_value,
-              semantic_builtins::builtin_type_trait_result_type(builtin_name));
-          return true;
-        }
-        if(builtin_types.size() == 2 &&
-           ctx.evaluate_builtin_binary_type_trait(scope,
-                                                  builtin_name,
-                                                  builtin_types[0],
-                                                  builtin_types[1],
-                                                  trait_value)) {
+        if(ctx.evaluate_builtin_type_trait(
+               scope, builtin_name, builtin_types, trait_value)) {
           value = constant_eval::make_integral_value(
               trait_value,
               semantic_builtins::builtin_type_trait_result_type(builtin_name));
@@ -1328,7 +1317,7 @@ bool evaluate_constexpr_constructor(SemanticContext & ctx,
       !binding.is_deleted;
   if((!binding.is_constexpr &&
       !zero_arg_default_constructor &&
-      !implicit_constexpr_copy_or_move_constructor) ||
+     !implicit_constexpr_copy_or_move_constructor) ||
      !binding.owner_class) {
     return false;
   }
@@ -1353,6 +1342,19 @@ bool evaluate_constexpr_constructor(SemanticContext & ctx,
   if(implicit_constexpr_copy_or_move_constructor) {
     TypePtr result_type = target ? target : info->type;
     if(constant_eval::constexpr_value_cast(args[0], result_type, out)) {
+      return true;
+    }
+    // A reference to a constant object can retain only its storage identity.
+    // The synthesized copy of a class with no base or member subobjects does
+    // not need to read that storage, so it still produces the complete empty
+    // class value.
+    if(args[0].kind == constant_eval::ConstexprValue::CV_ADDRESSABLE &&
+       info->bases.empty() &&
+       info->fields.empty()) {
+      out = constant_eval::make_aggregate_value(
+          result_type,
+          std::vector<std::pair<std::string,
+                                constant_eval::ConstexprValue> >());
       return true;
     }
     return false;
@@ -1736,7 +1738,15 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
     // runtime expression (for example an allocator parameter) just re-enters
     // the same path indefinitely.
     if(source_type && type_equals(source_type, target_base)) {
-      return false;
+      constant_eval::ConstexprValue source_value;
+      const bool addressable_fieldless_source =
+          info->bases.empty() &&
+          info->fields.empty() &&
+          eval_initializer_or_soft_fail(evaluator, *args[0], source_value) &&
+          source_value.kind == constant_eval::ConstexprValue::CV_ADDRESSABLE;
+      if(!addressable_fieldless_source) {
+        return false;
+      }
     }
   }
   if(node.kind == CppAstKind::braced_init_list &&
@@ -2019,9 +2029,15 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
   if(is_reference_type(strip_top_level_cv(target))) {
     constant_eval::ConstexprValue referred;
     const CppAstNode * payload = unwrap_initializer_payload(node);
+    if(payload &&
+       (payload->kind == CppAstKind::paren_initializer ||
+        payload->kind == CppAstKind::paren_argument_list) &&
+       payload->children.size() == 1) {
+      payload = &payload->children[0];
+    }
     if(payload && evaluator.eval_expr(*payload, referred)) {
       constant_eval::ConstexprValue converted;
-      if(constant_eval::constexpr_value_cast(referred, target_base, converted)) {
+      if(constant_eval::constexpr_value_cast(referred, target, converted)) {
         if(converted.storage_identity.empty()) {
           converted.storage_identity = referred.storage_identity;
           converted.pointer_offset = referred.pointer_offset;
@@ -2032,6 +2048,55 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
         return true;
       }
       if(referred.kind == constant_eval::ConstexprValue::CV_ADDRESSABLE) {
+        TypePtr target_reference = strip_top_level_cv(target);
+        TypePtr source_reference = strip_top_level_cv(referred.type);
+        TypePtr target_object = target_reference ? target_reference->inner : TypePtr();
+        TypePtr source_object = source_reference &&
+                                (source_reference->kind == Type::TK_LVALUE_REFERENCE ||
+                                 source_reference->kind == Type::TK_RVALUE_REFERENCE) ?
+                                    source_reference->inner :
+                                    referred.type;
+        TypePtr target_unqualified;
+        TypePtr source_unqualified;
+        bool target_const = false;
+        bool target_volatile = false;
+        bool source_const = false;
+        bool source_volatile = false;
+        const bool category_compatible =
+            target_reference &&
+            (target_reference->kind == Type::TK_LVALUE_REFERENCE ||
+             (target_reference->kind == Type::TK_RVALUE_REFERENCE &&
+              source_reference &&
+              source_reference->kind == Type::TK_RVALUE_REFERENCE));
+        if(category_compatible &&
+           top_level_cv_flags(target_object,
+                              target_unqualified,
+                              target_const,
+                              target_volatile) &&
+           top_level_cv_flags(source_object,
+                              source_unqualified,
+                              source_const,
+                              source_volatile) &&
+           (!source_const || target_const) &&
+           (!source_volatile || target_volatile)) {
+          ClassInfo * source_class = ctx.complete_class_type(source_unqualified);
+          ClassInfo * target_class = ctx.complete_class_type(target_unqualified);
+          std::size_t base_offset = 0;
+          MemberAccess base_access = MA_PUBLIC;
+          if(source_class &&
+             target_class &&
+             source_class != target_class &&
+             find_unique_base_path(*source_class,
+                                   target_class,
+                                   base_offset,
+                                   base_access)) {
+            converted = referred;
+            converted.type = target;
+            converted.pointer_offset += base_offset;
+            out = converted;
+            return true;
+          }
+        }
         return false;
       }
       if(ctx.complete_class_type(target_base)) {
@@ -2148,8 +2213,8 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
                                           evaluator,
                                           *payload,
                                           value,
-                                          target,
-                                          out)) {
+                                           target,
+                                           out)) {
     return false;
   }
   out.type = target;
@@ -2162,9 +2227,13 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
                                                        const CppAstNode & expr,
                                                        constant_eval::ConstexprValue & out)
 {
+  const bool binary_like =
+      (expr.kind == CppAstKind::binary_expression ||
+       expr.kind == CppAstKind::assignment_expression) &&
+      expr.children.size() == 2;
   const auto overloaded_operator_name = [&]() -> std::string
   {
-    if(expr.kind == CppAstKind::binary_expression && expr.children.size() == 2) {
+    if(binary_like) {
       if(node_has_simple_type(expr, OP_PLUS)) return "operator+";
       if(node_has_simple_type(expr, OP_MINUS)) return "operator-";
       if(node_has_simple_type(expr, OP_STAR)) return "operator*";
@@ -2183,6 +2252,17 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
       if(node_has_simple_type(expr, OP_GT)) return "operator>";
       if(node_has_simple_type(expr, OP_LE)) return "operator<=";
       if(node_has_simple_type(expr, OP_GE)) return "operator>=";
+      if(node_has_simple_type(expr, OP_ASS)) return "operator=";
+      if(node_has_simple_type(expr, OP_STARASS)) return "operator*=";
+      if(node_has_simple_type(expr, OP_DIVASS)) return "operator/=";
+      if(node_has_simple_type(expr, OP_MODASS)) return "operator%=";
+      if(node_has_simple_type(expr, OP_PLUSASS)) return "operator+=";
+      if(node_has_simple_type(expr, OP_MINUSASS)) return "operator-=";
+      if(node_has_simple_type(expr, OP_RSHIFTASS)) return "operator>>=";
+      if(node_has_simple_type(expr, OP_LSHIFTASS)) return "operator<<=";
+      if(node_has_simple_type(expr, OP_BANDASS)) return "operator&=";
+      if(node_has_simple_type(expr, OP_XORASS)) return "operator^=";
+      if(node_has_simple_type(expr, OP_BORASS)) return "operator|=";
       return std::string();
     }
     if(expr.kind == CppAstKind::unary_expression && expr.children.size() == 1) {
@@ -2199,7 +2279,7 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
     return false;
   }
 
-  if(expr.kind == CppAstKind::binary_expression && expr.children.size() == 2) {
+  if(binary_like && expr.kind == CppAstKind::binary_expression) {
     constant_eval::ConstexprValue lhs;
     constant_eval::ConstexprValue rhs;
     if(evaluator.eval_expr(expr.children[0], lhs) &&
@@ -2295,7 +2375,7 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
         const std::size_t explicit_param_offset = binding->is_method ? 1u : 0u;
         std::vector<const CppAstNode *> explicit_arg_nodes;
         constant_eval::ConstexprValue implicit_object;
-        if(expr.kind == CppAstKind::binary_expression) {
+        if(binary_like) {
           if(treat_first_operand_as_implicit_object && binding->is_method) {
             constant_eval::ConstexprValue lhs;
             if(!evaluator.eval_expr(expr.children[0], lhs)) {
@@ -2370,7 +2450,7 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
   CppAstNode arguments;
   arguments.kind = CppAstKind::paren_argument_list;
   arguments.children.push_back(expr.children[0]);
-  if(expr.kind == CppAstKind::binary_expression) {
+  if(binary_like) {
     arguments.children.push_back(expr.children[1]);
   }
 
@@ -2399,7 +2479,7 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
 
   CppAstNode member_args;
   member_args.kind = CppAstKind::paren_argument_list;
-  if(expr.kind == CppAstKind::binary_expression) {
+  if(binary_like) {
     member_args.children.push_back(expr.children[1]);
   }
 
@@ -3871,7 +3951,11 @@ constant_eval::Hooks build_hooks(SemanticContext & ctx,
         if(evaluate_constexpr_member_call_expression(ctx, scope, evaluator, call, value)) {
           return true;
         }
-        return ctx.evaluate_constant_call_expression_value(scope, evaluator, call, args, value);
+        return ctx.evaluate_constant_call_expression_value(scope,
+                                                           evaluator,
+                                                           call,
+                                                           args,
+                                                           value);
       };
   return hooks;
 }

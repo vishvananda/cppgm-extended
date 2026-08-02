@@ -39,7 +39,7 @@ function @begin(%ret : ptr [pass=indirect_result], %empty : u8) -> void [binding
     %t3 = call ptr @iterator__operator__(%t2)
     store ptr %t3, $call__1
     %t4 = load ptr $call__1
-    call void @iterator__iterator__ov2(%ret, %t4)
+    call void @iterator__iterator__ov3(%ret, %t4)
     call void @iterator___iterator(%t2)
     eh_end
     jump ^call_unwind_end_7
@@ -114,7 +114,7 @@ function @member___member(%this : ptr) -> void [binding=weak, object=_ZN6memberD
     store i32 %t2, @count
     return void
 }
-function @iterator__iterator__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN8iteratorC1ERKS_] {
+function @iterator__iterator__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN8iteratorC1ERKS_] {
   slot $this : ptr
   slot $other : ptr
 
@@ -154,5 +154,5 @@ alias object _ZN8iteratorC2Ev = @iterator__iterator
 alias object _ZN6memberC2Ev = @member__member
 alias object _ZN6memberC2ERKS_ = @member__member__ov2
 alias object _ZN6memberD2Ev = @member___member
-alias object _ZN8iteratorC2ERKS_ = @iterator__iterator__ov2
+alias object _ZN8iteratorC2ERKS_ = @iterator__iterator__ov3
 alias object _ZN8iteratorD2Ev = @iterator___iterator

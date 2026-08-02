@@ -1,11 +1,13 @@
 #pragma once
 
 #include "class_template_mangle_parameters.h"
+#include <algorithm>
 #include <cstdlib>
 #include <set>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 #include "parser_trace.h"
 #include "class_template_mangle_info.h"
@@ -404,25 +406,86 @@ inline bool try_leaf_resolve_type_lookup(TemplateTypeSystem & type_system,
   return false;
 }
 
-inline std::size_t & recursive_template_semantic_query_depth()
+enum RecursiveTemplateSemanticQueryOperation
 {
-  static thread_local std::size_t depth = 0;
-  return depth;
+  RTSQ_INITIALIZER = 1,
+  RTSQ_DECLTYPE,
+  RTSQ_TYPEOF,
+  RTSQ_BUILTIN_TRAIT_BASE = 16
+};
+
+// A fixed nesting limit rejects valid trailing-decltype chains and can turn
+// the first rejected inner query into exponential substitution retries.  Keep
+// the active typed/source identity instead: only the same semantic query in
+// the same instantiation scope is a cycle.  The high cap remains an emergency
+// guard for a chain whose identities never repeat.
+struct RecursiveTemplateSemanticQueryKey
+{
+  const semantic_model::Scope * scope = nullptr;
+  unsigned operation = 0;
+  CppAstKind node_kind = CppAstKind::invalid;
+  std::size_t token_start = 0;
+  std::size_t token_end = 0;
+  uint32_t source_location_id = 0;
+  const cpp_decl::Type * first_type = nullptr;
+  const cpp_decl::Type * second_type = nullptr;
+  std::size_t type_count = 0;
+
+  bool operator==(const RecursiveTemplateSemanticQueryKey & other) const
+  {
+    return scope == other.scope &&
+           operation == other.operation &&
+           node_kind == other.node_kind &&
+           token_start == other.token_start &&
+           token_end == other.token_end &&
+           source_location_id == other.source_location_id &&
+           first_type == other.first_type &&
+           second_type == other.second_type &&
+           type_count == other.type_count;
+  }
+};
+
+inline std::vector<RecursiveTemplateSemanticQueryKey> &
+active_recursive_template_semantic_queries()
+{
+  static thread_local std::vector<RecursiveTemplateSemanticQueryKey> active;
+  return active;
+}
+
+inline RecursiveTemplateSemanticQueryKey recursive_template_expression_query_key(
+    const semantic_model::Scope * scope,
+    unsigned operation,
+    const CppAstNode & node,
+    const cpp_decl::TypePtr & target_type = cpp_decl::TypePtr())
+{
+  RecursiveTemplateSemanticQueryKey key;
+  key.scope = scope;
+  key.operation = operation;
+  key.node_kind = node.kind;
+  key.token_start = node.token_start;
+  key.token_end = node.token_end;
+  key.source_location_id = node.source_location_id;
+  key.first_type = target_type.get();
+  key.type_count = target_type ? 1 : 0;
+  return key;
 }
 
 struct ScopedRecursiveTemplateSemanticQuery
 {
-  static const std::size_t kMaxDepth = 8;
+  static const std::size_t kMaxDepth = 256;
 
   bool active = false;
 
-  ScopedRecursiveTemplateSemanticQuery()
+  explicit ScopedRecursiveTemplateSemanticQuery(
+      const RecursiveTemplateSemanticQueryKey & key)
   {
-    std::size_t & depth = recursive_template_semantic_query_depth();
-    if(depth >= kMaxDepth) {
+    std::vector<RecursiveTemplateSemanticQueryKey> & queries =
+        active_recursive_template_semantic_queries();
+    if(queries.size() >= kMaxDepth ||
+       std::find(queries.begin(), queries.end(), key) != queries.end()) {
       return;
     }
-    ++depth;
+    queries.push_back(key);
     active = true;
   }
 
@@ -431,9 +494,10 @@ struct ScopedRecursiveTemplateSemanticQuery
     if(!active) {
       return;
     }
-    std::size_t & depth = recursive_template_semantic_query_depth();
-    if(depth > 0) {
-      --depth;
+    std::vector<RecursiveTemplateSemanticQueryKey> & queries =
+        active_recursive_template_semantic_queries();
+    if(!queries.empty()) {
+      queries.pop_back();
     }
   }
 };
@@ -514,7 +578,9 @@ public:
   bool evaluate_initializer_constant_value(const TemplateConstantEvaluationRequest & request,
                                            constant_eval::ConstexprValue & out) override
   {
-    ScopedRecursiveTemplateSemanticQuery query;
+    const ScopedRecursiveTemplateSemanticQuery query(
+        recursive_template_expression_query_key(
+            request.scope, RTSQ_INITIALIZER, request.expr, request.target_type));
     if(!query.active) {
       return false;
     }
@@ -676,7 +742,11 @@ public:
   bool evaluate_dependent_type_expression(const TemplateDependentTypeExprRequest & request,
                                   cpp_decl::TypePtr & out) override
   {
-    ScopedRecursiveTemplateSemanticQuery query;
+    const ScopedRecursiveTemplateSemanticQuery query(
+        recursive_template_expression_query_key(
+            request.scope,
+            request.kind == TDTEK_DECLTYPE ? RTSQ_DECLTYPE : RTSQ_TYPEOF,
+            request.operand));
     if(!query.active) {
       return false;
     }
@@ -769,7 +839,14 @@ public:
   bool evaluate_semantic_builtin_type_trait(const TemplateSemanticBuiltinTraitRequest & request,
                                             long long & out) override
   {
-    ScopedRecursiveTemplateSemanticQuery query;
+    RecursiveTemplateSemanticQueryKey query_key;
+    query_key.scope = request.scope;
+    query_key.operation =
+        RTSQ_BUILTIN_TRAIT_BASE + static_cast<unsigned>(request.trait);
+    query_key.type_count = request.types.size();
+    query_key.first_type = request.types.empty() ? nullptr : request.types[0].get();
+    query_key.second_type = request.types.size() < 2 ? nullptr : request.types[1].get();
+    const ScopedRecursiveTemplateSemanticQuery query(query_key);
     if(!query.active) {
       return false;
     }
@@ -794,13 +871,8 @@ public:
     switch(request.trait) {
     case TSBTT_IS_CONSTRUCTIBLE:
     case TSBTT_IS_NOTHROW_CONSTRUCTIBLE:
-      if(request.types.size() == 1) {
-        return ctx_.evaluate_builtin_type_trait(
-            *request.scope, name, request.types[0], out);
-      }
-      return request.types.size() == 2 &&
-             ctx_.evaluate_builtin_binary_type_trait(
-                 *request.scope, name, request.types[0], request.types[1], out);
+      return ctx_.evaluate_builtin_type_trait(
+          *request.scope, name, request.types, out);
 
     case TSBTT_IS_ASSIGNABLE:
     case TSBTT_IS_NOTHROW_ASSIGNABLE:

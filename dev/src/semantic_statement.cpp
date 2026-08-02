@@ -1680,11 +1680,21 @@ void analyze_condition_node(SemanticContext & ctx,
                               : condition_type_ok(ctx, scope, expr))) {
     throw logic_error("invalid condition expression");
   }
-  long long constant_value = 0;
-  if(ctx.evaluate_constant_expression(scope, child, constant_value)) {
-    set_callsem_int_value(expr.node, constant_value);
-    if(constant_value >= 0) {
-      set_callsem_uint_value(expr.node, static_cast<unsigned long long>(constant_value));
+  // An ordinary runtime condition does not require a constant expression.
+  // Speculatively interpreting arbitrary calls here duplicates semantic work
+  // and can recursively evaluate large constexpr adaptor graphs even though
+  // LowIR still emits the original expression.  Required constant-expression
+  // contexts (including if constexpr) evaluate through their owning paths.
+  // Witness capture additionally records non-ODR constant member uses, so
+  // preserve the former evaluation only while that capture is active.
+  if(witness::source_capture_enabled(ctx.template_witness_context())) {
+    long long constant_value = 0;
+    if(ctx.evaluate_constant_expression(scope, child, constant_value)) {
+      set_callsem_int_value(expr.node, constant_value);
+      if(constant_value >= 0) {
+        set_callsem_uint_value(
+            expr.node, static_cast<unsigned long long>(constant_value));
+      }
     }
   }
   out.children.push_back(std::move(expr.node));
@@ -2387,7 +2397,7 @@ void analyze_range_for_statement(SemanticContext & ctx,
   Scope body_scope(&scope);
   DumpNode outer = make_located_dump_node(CallSemKind::compound_statement, node);
   DumpNode range_base = range_expr.node;
-  string range_name = range_expr.node.text;
+  CppAstNode range_id = range_init.children[0];
   if(range_init.children[0].kind == CppAstKind::braced_init_list ||
      range_expr.category != VC_LVALUE ||
      range_expr.node.kind != CallSemKind::id_expression) {
@@ -2405,7 +2415,7 @@ void analyze_range_for_statement(SemanticContext & ctx,
     append_hidden_variable_declaration(
         outer, hidden_range, hidden_range_type, std::move(range_expr.node));
     range_base = make_id_expr_node(hidden_range, range_expr.type);
-    range_name = hidden_range;
+    range_id = make_id_expr_ast_node(hidden_range);
   }
 
   string loop_name;
@@ -2425,7 +2435,6 @@ void analyze_range_for_statement(SemanticContext & ctx,
     const bool use_member_begin_end =
         class_has_range_member_name(ctx, range_info, "begin") &&
         class_has_range_member_name(ctx, range_info, "end");
-    const CppAstNode range_id = make_id_expr_ast_node(range_name);
     ExprInfo begin_expr;
     ExprInfo end_expr;
     if(use_member_begin_end) {

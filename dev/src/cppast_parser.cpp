@@ -1679,6 +1679,7 @@ bool is_builtin_type_trait_identifier(const RecogToken & token)
          token.source == "__is_trivial" ||
          token.source == "__has_trivial_constructor" ||
          token.source == "__has_trivial_destructor" ||
+         token.source == "__has_nothrow_copy" ||
          token.source == "__has_virtual_destructor" ||
          token.source == "__has_unique_object_representations" ||
          token.source == "__is_abstract" ||
@@ -1712,6 +1713,7 @@ bool is_builtin_type_trait_identifier(const RecogToken & token)
          token.source == "__is_assignable" ||
          token.source == "__is_nothrow_assignable" ||
          token.source == "__is_convertible" ||
+         token.source == "__is_convertible_to" ||
          token.source == "__is_nothrow_convertible" ||
          token.source == "__is_constructible" ||
          token.source == "__is_nothrow_constructible" ||
@@ -2570,6 +2572,60 @@ CppAstParser::snapshot_name_lookup_state(const NameSet * used_names) const
   snapshot->class_name_stack = class_name_stack;
   snapshot->namespace_path_stack = namespace_path_stack;
   snapshot->namespace_inline_stack = namespace_inline_stack;
+
+  const auto snapshot_namespace_names =
+      [used_names](const std::unordered_map<std::string, NameSet> & source,
+                   CppAstNameLookupSnapshot::NamespaceNameMap & out) -> void
+  {
+    out.clear();
+    for(std::unordered_map<std::string, NameSet>::const_iterator scope =
+            source.begin();
+        scope != source.end();
+        ++scope) {
+      NameSet retained;
+      if(!used_names) {
+        retained = scope->second;
+      } else if(used_names->size() < scope->second.size()) {
+        for(NameSet::const_iterator name = used_names->begin();
+            name != used_names->end();
+            ++name) {
+          if(scope->second.count(*name) != 0) {
+            retained.insert(*name);
+          }
+        }
+      } else {
+        for(NameSet::const_iterator name = scope->second.begin();
+            name != scope->second.end();
+            ++name) {
+          if(used_names->count(*name) != 0) {
+            retained.insert(*name);
+          }
+        }
+      }
+      if(!retained.empty()) {
+        out[scope->first] = retained;
+      }
+    }
+  };
+  snapshot_namespace_names(namespace_template_name_scopes,
+                           snapshot->namespace_template_name_scopes);
+  snapshot_namespace_names(namespace_template_value_name_scopes,
+                           snapshot->namespace_template_value_name_scopes);
+  snapshot_namespace_names(namespace_type_name_scopes,
+                           snapshot->namespace_type_name_scopes);
+  snapshot_namespace_names(namespace_value_name_scopes,
+                           snapshot->namespace_value_name_scopes);
+  for(std::unordered_map<std::string, std::string>::const_iterator alias =
+          namespace_alias_targets.begin();
+      alias != namespace_alias_targets.end();
+      ++alias) {
+    const std::size_t split = alias->first.rfind("::");
+    const std::string name =
+        split == std::string::npos ? alias->first : alias->first.substr(split + 2);
+    if(!used_names || used_names->count(name) != 0) {
+      snapshot->namespace_alias_targets[alias->first] = alias->second;
+    }
+  }
   return snapshot;
 }
 
@@ -2584,7 +2640,12 @@ void CppAstParser::restore_name_lookup_state_from(
   class_name_stack = snapshot.class_name_stack;
   namespace_path_stack = snapshot.namespace_path_stack;
   namespace_inline_stack = snapshot.namespace_inline_stack;
-
+  namespace_template_name_scopes = snapshot.namespace_template_name_scopes;
+  namespace_template_value_name_scopes =
+      snapshot.namespace_template_value_name_scopes;
+  namespace_type_name_scopes = snapshot.namespace_type_name_scopes;
+  namespace_value_name_scopes = snapshot.namespace_value_name_scopes;
+  namespace_alias_targets = snapshot.namespace_alias_targets;
   materialized_inherited_template_type_parameter_scopes.clear();
   materialized_inherited_template_value_parameter_scopes.clear();
   materialized_inherited_template_name_scopes.clear();

@@ -25,6 +25,7 @@
 #include "semantic_context.h"
 #include "semantic_conversion.h"
 #include "semantic_errors.h"
+#include "semantic_expression.h"
 #include "semantic_fallback_audit.h"
 #include "semantic_hotspot.h"
 #include "semantic_lookup.h"
@@ -789,6 +790,31 @@ std::vector<std::string> source_argument_texts_for_template_id_syntax(
   }
   for(std::size_t i = syntax_count; i < syntax.arguments.size(); ++i) {
     out.push_back(trim_space(syntax.arguments[i]));
+  }
+  return out;
+}
+
+std::vector<std::string> semantic_argument_texts_for_template_id_syntax(
+    const TemplateIdSyntax & syntax)
+{
+  std::vector<std::string> out;
+  const std::size_t count =
+      std::max(syntax.argument_syntaxes.size(), syntax.arguments.size());
+  out.reserve(count);
+  for(std::size_t i = 0; i < count; ++i) {
+    std::string text;
+    if(i < syntax.argument_syntaxes.size()) {
+      const TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
+      text = trim_space(argument.text);
+      if(argument.pack_expansion &&
+         (text.size() < 3 || text.substr(text.size() - 3) != "...")) {
+        text += "...";
+      }
+    }
+    if(text.empty() && i < syntax.arguments.size()) {
+      text = trim_space(syntax.arguments[i]);
+    }
+    out.push_back(text);
   }
   return out;
 }
@@ -6070,7 +6096,7 @@ bool make_shallow_bound_alias_template_id_argument(
   }
 
   const std::vector<std::string> arg_texts =
-      source_argument_texts_for_template_id_syntax(syntax);
+      semantic_argument_texts_for_template_id_syntax(syntax);
   if(arg_texts.size() != syntax.argument_syntaxes.size()) {
     return false;
   }
@@ -6240,8 +6266,12 @@ bool resolve_bound_template_template_id_argument_syntax(
     return false;
   }
 
+  // The source syntax can preserve the pack pattern for witness output after
+  // substitution.  Semantic resolution must use each argument's current text;
+  // replaying the preserved pattern once per expanded element multiplies the
+  // pack (for example, three Ts elements become nine arguments).
   const std::vector<std::string> arg_texts =
-      source_argument_texts_for_template_id_syntax(syntax);
+      semantic_argument_texts_for_template_id_syntax(syntax);
   template_argument_semantics::ExpandedTemplateArgumentInputs expanded_inputs =
       template_argument_semantics::expand_template_argument_inputs(
           services, scope, arg_texts, &syntax.argument_syntaxes);
@@ -10895,6 +10925,68 @@ bool finalize_deduced_function_template_arguments(
             (default_mentions_template_placeholders ||
              default_mentions_dependent_bindings ||
              default_should_defer_lookup);
+        // A consumed expansion can retain its dependent declaration surface.
+        // Resolve the concrete substituted AST for SFINAE and carry that
+        // result forward; replaying the preserved pattern would reintroduce
+        // the already-consumed pack.
+        if(have_substituted_default_syntax &&
+           substituted_default_is_structurally_dependent &&
+           !should_defer_original_default_text &&
+           semantic_expression::unevaluated_operand_active() &&
+           template_argument_semantics::
+               type_id_node_contains_pack_expansion_syntax(child) &&
+           template_argument_semantics::
+               type_id_node_contains_call_expression_syntax(child) &&
+           template_argument_semantics::type_id_node_contains_decltype_syntax(
+               child)) {
+          if(prepared_default_syntax.type_id) {
+            template_api::with_template_services(
+                ctx,
+                [&](template_api::TemplateServices & services)
+                {
+                  template_argument_semantics::
+                      clear_cppast_template_syntax_dependent_flags(
+                          services,
+                          template_api::make_template_environment(bound_scope),
+                          *prepared_default_syntax.type_id);
+                });
+          }
+          TemplateArgument validated_default;
+          bool validated = false;
+          {
+            const template_api::ScopedTemplateWitnessSourceCapturePause
+                source_capture_pause;
+            try {
+              validated =
+                  !prepared_default_text.empty() &&
+                  resolve_template_argument(ctx,
+                                            bound_scope,
+                                            bound_scope,
+                                            decl.parameters[i],
+                                            prepared_default_text,
+                                            &prepared_default_syntax,
+                                            validated_default);
+            } catch(const TemplateSubstitutionFailure &) {
+              validated = false;
+            }
+          }
+          if(!validated ||
+             !validated_default.type ||
+             template_argument_semantics::type_depends_on_template_parameter(
+                 ctx, validated_default.type)) {
+            trace_finalize_failure(
+                std::string("concrete-expanded-default-validation-failed name=") +
+                decl.parameters[i].name +
+                " text=" + prepared_default_text);
+            return false;
+          }
+          arg = validated_default;
+          resolved_default = true;
+          if(witness::source_capture_enabled(ctx.template_witness_context())) {
+            template_argument_semantics::note_template_value_dependencies_for_witness(
+                ctx, arg.mutable_rare().value_dependencies);
+          }
+        }
         if(parser_trace::enabled("template.resolve")) {
           std::ostringstream trace;
           trace << "default-type-arg template=" << decl.name

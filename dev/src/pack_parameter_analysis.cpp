@@ -195,6 +195,29 @@ referenced_named_type_packs(Scope & scope, const CppAstNode & parameter)
   return packs;
 }
 
+std::vector<std::pair<std::string, const std::vector<ValueBinding> *> >
+referenced_named_value_packs(Scope & scope, const CppAstNode & parameter)
+{
+  const std::string parameter_name = parameter_declaration_name(parameter);
+  std::vector<std::pair<std::string, const std::vector<ValueBinding> *> > packs;
+  std::set<std::string> seen_pack_names;
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+    for(const auto & pack : current->named_value_packs) {
+      if(pack.first.empty() ||
+         pack.first == parameter_name ||
+         !seen_pack_names.insert(pack.first).second ||
+         !ast_node_mentions_identifier(parameter, pack.first)) {
+        continue;
+      }
+      packs.push_back(std::make_pair(pack.first, &pack.second));
+    }
+  }
+  return packs;
+}
+
 bool parameter_references_template_parameter_pack(
     const CppAstNode & parameter,
     const std::vector<TemplateParameterInfo> & template_parameters)

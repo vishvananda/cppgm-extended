@@ -529,7 +529,10 @@ bool expand_parameter_declaration_pack_nodes(
   }
 
   std::vector<std::pair<std::string, const std::vector<TypePtr> *> > packs;
+  std::vector<std::pair<std::string, const std::vector<ValueBinding> *> >
+      value_packs;
   std::set<std::string> seen_pack_names;
+  std::set<std::string> seen_value_pack_names;
   for(Scope * current = &scope; current; current = current->parent) {
     if(current->namespace_scope || current->parent == nullptr) {
       break;
@@ -547,15 +550,34 @@ bool expand_parameter_declaration_pack_nodes(
       seen_pack_names.insert(pack_name);
       packs.push_back(std::make_pair(pack_name, &pack->second));
     }
+    for(std::map<std::string, std::vector<ValueBinding> >::const_iterator pack =
+            current->named_value_packs.begin();
+        pack != current->named_value_packs.end();
+        ++pack) {
+      const std::string & pack_name = pack->first;
+      if(pack_name.empty() ||
+         seen_value_pack_names.count(pack_name) != 0 ||
+         !ast_node_mentions_pack_identifier(stripped, pack_name)) {
+        continue;
+      }
+      seen_value_pack_names.insert(pack_name);
+      value_packs.push_back(std::make_pair(pack_name, &pack->second));
+    }
   }
 
-  if(packs.empty()) {
+  if(packs.empty() && value_packs.empty()) {
     return false;
   }
 
-  const std::size_t pack_size = packs[0].second->size();
+  const std::size_t pack_size =
+      !packs.empty() ? packs[0].second->size() : value_packs[0].second->size();
   for(std::size_t i = 1; i < packs.size(); ++i) {
     if(packs[i].second->size() != pack_size) {
+      return false;
+    }
+  }
+  for(std::size_t i = 0; i < value_packs.size(); ++i) {
+    if(value_packs[i].second->size() != pack_size) {
       return false;
     }
   }
@@ -565,12 +587,28 @@ bool expand_parameter_declaration_pack_nodes(
     for(std::size_t j = 0; j < packs.size(); ++j) {
       type_replacements[packs[j].first] = (*(packs[j].second))[i];
     }
-    CppAstNode expanded;
-    if(!substitute_type_pack_node_ast(type_system,
-                                      stripped,
-                                      type_replacements,
-                                      expanded)) {
-      return false;
+    std::map<std::string, ValueBinding> value_replacements;
+    for(std::size_t j = 0; j < value_packs.size(); ++j) {
+      value_replacements[value_packs[j].first] =
+          (*(value_packs[j].second))[i];
+    }
+
+    CppAstNode expanded = stripped;
+    if(!type_replacements.empty()) {
+      if(!substitute_type_pack_node_ast(type_system,
+                                        stripped,
+                                        type_replacements,
+                                        expanded)) {
+        return false;
+      }
+    }
+    if(!value_replacements.empty()) {
+      CppAstNode value_expanded;
+      if(!template_argument_semantics::substitute_value_pack_bindings_in_node(
+             expanded, value_replacements, value_expanded)) {
+        return false;
+      }
+      expanded = value_expanded;
     }
     expanded_parameters.push_back(expanded);
   }
