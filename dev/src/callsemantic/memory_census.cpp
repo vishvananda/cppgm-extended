@@ -1877,6 +1877,7 @@ size_t partial_class_template_specialization_payload_bytes(
                  vector_storage_bytes(decl.arg_syntaxes) +
                  map_storage_bytes(decl.static_member_definitions) +
                  map_storage_bytes(decl.witness_static_member_definitions) +
+                 map_storage_bytes(decl.member_class_definitions) +
                  map_storage_bytes(decl.member_function_definitions) +
                  map_storage_bytes(decl.member_function_template_definitions);
   for(size_t i = 0; i < decl.parameters.size(); ++i) {
@@ -1896,6 +1897,12 @@ size_t partial_class_template_specialization_payload_bytes(
   for(map<string, OutOfClassStaticMemberDecl>::const_iterator
           it = decl.witness_static_member_definitions.begin();
       it != decl.witness_static_member_definitions.end();
+      ++it) {
+    bytes += string_storage_bytes(it->first);
+  }
+  for(map<string, OutOfClassMemberClassDecl>::const_iterator
+          it = decl.member_class_definitions.begin();
+      it != decl.member_class_definitions.end();
       ++it) {
     bytes += string_storage_bytes(it->first);
   }

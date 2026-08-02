@@ -346,9 +346,17 @@ public:
         if(!current_scope.class_info || !current_scope.class_info->source_template) {
           return nullptr;
         }
+        ClassTemplateDecl & source_template =
+            *current_scope.class_info->source_template;
+        PartialClassTemplateSpecializationDecl * partial =
+            find_partial_specialization_decl(source_template,
+                                             current_scope.class_info);
+        const map<string, OutOfClassMemberClassDecl> & definitions =
+            partial ? partial->member_class_definitions :
+                      source_template.member_class_definitions;
         map<string, OutOfClassMemberClassDecl>::const_iterator found =
-            current_scope.class_info->source_template->member_class_definitions.find(class_name);
-        if(found == current_scope.class_info->source_template->member_class_definitions.end() ||
+            definitions.find(class_name);
+        if(found == definitions.end() ||
            !found->second.class_node ||
            found->second.class_node->kind == CppAstKind::class_forward_declaration) {
           return nullptr;
@@ -392,9 +400,35 @@ public:
           ClassTemplateDecl * owner_template =
               lookup_class_template(*owner_scope, owner_template_name);
           if(owner_template) {
+            PartialClassTemplateSpecializationDecl * owner_partial = nullptr;
+            const TemplateIdSyntax * owner_template_id =
+                cppast_qualifier_template_id_syntax(
+                    inner, owner_qualifier_index);
+            if(owner_template_id) {
+              const vector<string> owner_arg_texts =
+                  template_id_argument_texts_preserving_spacing(
+                      *owner_template_id);
+              for(size_t i = 0;
+                  i < owner_template->partial_specializations.size();
+                  ++i) {
+                PartialClassTemplateSpecializationDecl & candidate =
+                    owner_template->partial_specializations[i];
+                if(partial_class_specialization_patterns_redeclare_same(
+                       candidate,
+                       pattern_scope,
+                       owner_arg_texts,
+                       owner_template_id->argument_syntaxes,
+                       *owner_template)) {
+                  owner_partial = &candidate;
+                  break;
+                }
+              }
+            }
+            map<string, OutOfClassMemberClassDecl> & definitions =
+                owner_partial ? owner_partial->member_class_definitions :
+                                owner_template->member_class_definitions;
             OutOfClassMemberClassDecl & stored =
-                owner_template->member_class_definitions[
-                    effective_qualified_class_name->name];
+                definitions[effective_qualified_class_name->name];
             if(stored.class_node &&
                stored.class_node != &inner &&
                stored.class_node->kind != CppAstKind::class_forward_declaration &&
@@ -1212,14 +1246,14 @@ public:
               }
             }
           }
-          const bool partial_owner =
-              owner_template_decl &&
-              owner &&
-              owner->template_output_node &&
-              owner->template_output_node != owner_template_decl->class_node;
           PartialClassTemplateSpecializationDecl * owner_partial_decl =
-              partial_owner && owner_template_decl ?
-                  find_partial_specialization_decl(*owner_template_decl, owner) :
+              owner_template_decl ?
+                  find_qualified_owner_partial_specialization_decl(
+                      *owner_template_decl,
+                      owner,
+                      pattern_scope,
+                      qualified_member,
+                      declarator_identifier) :
                   nullptr;
           Scope * owner_partial_scope =
               owner_partial_decl ?
@@ -1339,10 +1373,11 @@ public:
           stored.qualified_name = inner.value;
           stored.qualified_name_syntax = qualified_member;
           stored.owner_output_node =
-              matches_partial_owner_template_parameters && owner_partial_decl ?
-                  owner_partial_decl->class_node :
-                  out_of_class_member_owner_output_node(owner,
-                                                        owner_template_decl);
+              out_of_class_member_owner_output_node(
+                  owner,
+                  owner_template_decl,
+                  matches_partial_owner_template_parameters ?
+                      owner_partial_decl : nullptr);
           stored.specifiers = find_child_kind(inner, CppAstKind::decl_specifier_seq);
           stored.declarator = declarator;
           stored.body = find_function_body_node(inner);
@@ -2591,14 +2626,16 @@ public:
                 *owner->enclosing_scope,
                 owner_is_template_id ? owner_template_name : owner->name);
           }
-          const bool partial_owner =
-              owner_template_decl &&
-              owner->template_output_node &&
-              owner->template_output_node != owner_template_decl->class_node;
           PartialClassTemplateSpecializationDecl * owner_partial_decl =
-              partial_owner && owner_template_decl ?
-                  find_partial_specialization_decl(*owner_template_decl, owner) :
+              owner_template_decl ?
+                  find_qualified_owner_partial_specialization_decl(
+                      *owner_template_decl,
+                      owner,
+                      pattern_scope,
+                      qualified_member,
+                      function_identifier) :
                   nullptr;
+          const bool partial_owner = owner_partial_decl != nullptr;
           Scope * owner_partial_scope =
               owner_partial_decl ?
                   (owner_partial_decl->pattern_scope ?
@@ -2901,7 +2938,10 @@ public:
               stored.pattern_scope = &pattern_scope;
               stored.qualified_name = qualified_member_text;
               stored.qualified_name_syntax = qualified_member;
-              stored.owner_output_node = owner_partial_decl->class_node;
+              stored.owner_output_node =
+                  out_of_class_member_owner_output_node(owner,
+                                                        owner_template_decl,
+                                                        owner_partial_decl);
               stored.specifiers = specifiers;
               stored.declarator = declarator;
               stored.body = body;
@@ -4449,18 +4489,42 @@ private:
 
   const CppAstNode * out_of_class_member_owner_output_node(
       const ClassInfo * owner,
-      const ClassTemplateDecl * owner_template_decl) const
+      const ClassTemplateDecl * owner_template_decl,
+      const PartialClassTemplateSpecializationDecl * selected_partial = nullptr) const
   {
     if(owner &&
        owner_template_decl &&
        owner->enclosing_scope &&
        owner->enclosing_scope->class_info) {
+      const PartialClassTemplateSpecializationDecl * partial = selected_partial;
+      const ClassInfo * definition_owner =
+          owner->enclosing_scope->class_info;
+      if(!partial &&
+         definition_owner->template_output_node &&
+         definition_owner->template_output_node !=
+             owner_template_decl->class_node) {
+        for(size_t i = 0;
+            i < owner_template_decl->partial_specializations.size();
+            ++i) {
+          if(owner_template_decl->partial_specializations[i].class_node ==
+             definition_owner->template_output_node) {
+            partial = &owner_template_decl->partial_specializations[i];
+            break;
+          }
+        }
+      }
+      const map<string, OutOfClassMemberClassDecl> & definitions =
+          partial ? partial->member_class_definitions :
+                    owner_template_decl->member_class_definitions;
       map<string, OutOfClassMemberClassDecl>::const_iterator found =
-          owner_template_decl->member_class_definitions.find(owner->name);
-      if(found != owner_template_decl->member_class_definitions.end() &&
+          definitions.find(owner->name);
+      if(found != definitions.end() &&
          found->second.class_node) {
         return found->second.class_node;
       }
+    }
+    if(selected_partial && selected_partial->class_node) {
+      return selected_partial->class_node;
     }
     return owner && owner->template_output_node ? owner->template_output_node :
            (owner && owner->class_node ? owner->class_node :
@@ -5490,6 +5554,57 @@ private:
       const ClassInfo * owner)
   {
     return callsemantic::find_partial_specialization_decl(decl, owner);
+  }
+
+  PartialClassTemplateSpecializationDecl *
+  find_qualified_owner_partial_specialization_decl(
+      ClassTemplateDecl & decl,
+      const ClassInfo * owner,
+      Scope & pattern_scope,
+      const QualifiedName & qualified_member,
+      const CppAstNode * identifier)
+  {
+    if(PartialClassTemplateSpecializationDecl * direct =
+           find_partial_specialization_decl(decl, owner)) {
+      return direct;
+    }
+    if(!identifier) {
+      return nullptr;
+    }
+    for(std::size_t qualifier_index = 0;
+        qualifier_index < qualified_member.qualifiers.size();
+        ++qualifier_index) {
+      std::string qualifier_name;
+      if(!qualifier_template_name(identifier,
+                                  qualifier_index,
+                                  qualifier_name) ||
+         qualifier_name != decl.name) {
+        continue;
+      }
+      const TemplateIdSyntax * owner_template_id =
+          cppast_qualifier_template_id_syntax(*identifier, qualifier_index);
+      if(!owner_template_id) {
+        return nullptr;
+      }
+      const vector<string> owner_arg_texts =
+          template_id_argument_texts_preserving_spacing(*owner_template_id);
+      for(std::size_t partial_index = 0;
+          partial_index < decl.partial_specializations.size();
+          ++partial_index) {
+        PartialClassTemplateSpecializationDecl & candidate =
+            decl.partial_specializations[partial_index];
+        if(partial_class_specialization_patterns_redeclare_same(
+               candidate,
+               pattern_scope,
+               owner_arg_texts,
+               owner_template_id->argument_syntaxes,
+               decl)) {
+          return &candidate;
+        }
+      }
+      return nullptr;
+    }
+    return nullptr;
   }
 
   void append_function_declaration_abi_tags(vector<string> & tags,

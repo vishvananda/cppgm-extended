@@ -6985,13 +6985,20 @@ const PartialClassTemplateSpecializationDecl * selected_partial_specialization(
     ClassTemplateDecl & decl,
     const ClassInfo & info)
 {
-  if(!info.template_output_node || info.template_output_node == decl.class_node) {
-    return nullptr;
-  }
-
-  for(std::size_t i = 0; i < decl.partial_specializations.size(); ++i) {
-    if(decl.partial_specializations[i].class_node == info.template_output_node) {
-      return &decl.partial_specializations[i];
+  for(const ClassInfo * current = &info;
+      current;
+      current = current->enclosing_scope ?
+          current->enclosing_scope->class_info : nullptr) {
+    if(current->source_template != &decl ||
+       !current->template_output_node ||
+       current->template_output_node == decl.class_node) {
+      continue;
+    }
+    for(std::size_t i = 0; i < decl.partial_specializations.size(); ++i) {
+      if(decl.partial_specializations[i].class_node ==
+         current->template_output_node) {
+        return &decl.partial_specializations[i];
+      }
     }
   }
   return nullptr;
@@ -10387,18 +10394,9 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
      source_decl->declaring_scope &&
      source_decl->declaring_scope->class_info &&
      !source_decl->body) {
-    std::map<std::string,
-             std::vector<OutOfClassMemberFunctionTemplateDefinition> >::const_iterator stored =
-        instantiation_owner->source_template->member_function_template_definitions.find(
-            source_decl->name);
     const PartialClassTemplateSpecializationDecl * partial =
         selected_partial_specialization(*instantiation_owner->source_template,
                                         *instantiation_owner);
-    if(stored != instantiation_owner->source_template->member_function_template_definitions.end()) {
-      maybe_apply_stored_out_of_class_member_function_template_definition(ctx,
-                                                                          stored->second,
-                                                                          *source_decl);
-    }
     if(partial) {
       std::map<std::string,
                std::vector<OutOfClassMemberFunctionTemplateDefinition> >::const_iterator
@@ -10407,6 +10405,18 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         maybe_apply_stored_out_of_class_member_function_template_definition(ctx,
                                                                             partial_stored->second,
                                                                             *source_decl);
+      }
+    } else {
+      std::map<std::string,
+               std::vector<OutOfClassMemberFunctionTemplateDefinition> >::const_iterator stored =
+          instantiation_owner->source_template->member_function_template_definitions.find(
+              source_decl->name);
+      if(stored !=
+         instantiation_owner->source_template->member_function_template_definitions.end()) {
+        maybe_apply_stored_out_of_class_member_function_template_definition(
+            ctx,
+            stored->second,
+            *source_decl);
       }
     }
     apply_out_of_class_member_function_template_definitions(ctx,

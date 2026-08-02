@@ -403,16 +403,21 @@ PartialClassTemplateSpecializationDecl * find_partial_specialization_decl(
     ClassTemplateDecl & decl,
     const ClassInfo * owner)
 {
-  if(!owner ||
-     !owner->template_output_node ||
-     owner->template_output_node == decl.class_node) {
-    return nullptr;
-  }
-  for(size_t i = 0; i < decl.partial_specializations.size(); ++i) {
-    PartialClassTemplateSpecializationDecl & partial =
-        decl.partial_specializations[i];
-    if(partial.class_node == owner->template_output_node) {
-      return &partial;
+  for(const ClassInfo * current = owner;
+      current;
+      current = current->enclosing_scope ?
+          current->enclosing_scope->class_info : nullptr) {
+    if(current->source_template != &decl ||
+       !current->template_output_node ||
+       current->template_output_node == decl.class_node) {
+      continue;
+    }
+    for(size_t i = 0; i < decl.partial_specializations.size(); ++i) {
+      PartialClassTemplateSpecializationDecl & partial =
+          decl.partial_specializations[i];
+      if(partial.class_node == current->template_output_node) {
+        return &partial;
+      }
     }
   }
   return nullptr;

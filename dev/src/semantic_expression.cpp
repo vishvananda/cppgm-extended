@@ -3197,8 +3197,23 @@ void collect_implicit_lambda_capture_names(SemanticContext & ctx,
 {
   const auto binding_requires_lambda_capture = [](const ValueBinding & binding) -> bool
   {
-    return !binding.declaration_node ||
-           binding.declaration_node->kind != CppAstKind::enumerator;
+    if(binding.declaration_node &&
+       binding.declaration_node->kind == CppAstKind::enumerator) {
+      return false;
+    }
+    if(binding.kind == ValueBinding::VK_PARAMETER ||
+       binding.kind == ValueBinding::VK_FIELD) {
+      return true;
+    }
+    if(binding.owner_class ||
+       binding.is_thread_local ||
+       !binding.symbol.internal_symbol.empty() ||
+       !binding.symbol.object_symbol.empty()) {
+      return false;
+    }
+    return !binding.declaration_scope ||
+           (!binding.declaration_scope->namespace_scope &&
+            binding.declaration_scope->parent != nullptr);
   };
 
   if(node.kind == CppAstKind::lambda_expression) {

@@ -1716,11 +1716,19 @@ bool nested_member_class_owner_definition_available(
   }
   const semantic_model::ClassInfo * owner =
       info.enclosing_scope->class_info;
+  if(owner->is_explicit_specialization) {
+    return false;
+  }
   const semantic_model::ClassTemplateDecl * owner_template =
       owner->source_template;
+  const semantic_model::PartialClassTemplateSpecializationDecl * partial =
+      selected_partial_log_decl(owner);
+  const std::map<std::string, semantic_model::OutOfClassMemberClassDecl> &
+      definitions = partial ? partial->member_class_definitions :
+                              owner_template->member_class_definitions;
   std::map<std::string, semantic_model::OutOfClassMemberClassDecl>::const_iterator
-      found = owner_template->member_class_definitions.find(info.name);
-  return found != owner_template->member_class_definitions.end() &&
+      found = definitions.find(info.name);
+  return found != definitions.end() &&
          found->second.class_node &&
          found->second.class_node->kind != CppAstKind::class_forward_declaration;
 }
@@ -6461,10 +6469,18 @@ bool prepare_nested_member_class_reference_from_owner_definition(
   }
 
   semantic_model::ClassInfo * owner = nested->enclosing_scope->class_info;
+  if(owner->is_explicit_specialization) {
+    return false;
+  }
   semantic_model::ClassTemplateDecl * owner_template = owner->source_template;
+  const semantic_model::PartialClassTemplateSpecializationDecl * partial =
+      selected_partial_log_decl(owner);
+  const std::map<std::string, semantic_model::OutOfClassMemberClassDecl> &
+      definitions = partial ? partial->member_class_definitions :
+                              owner_template->member_class_definitions;
   std::map<std::string, semantic_model::OutOfClassMemberClassDecl>::const_iterator
-      member_def = owner_template->member_class_definitions.find(nested->name);
-  if(member_def == owner_template->member_class_definitions.end() ||
+      member_def = definitions.find(nested->name);
+  if(member_def == definitions.end() ||
      !member_def->second.class_node ||
      member_def->second.class_node->kind == CppAstKind::class_forward_declaration ||
      incoming_template_parameter_count <= member_def->second.parameters.size()) {
@@ -6478,12 +6494,18 @@ bool prepare_nested_member_class_reference_from_owner_definition(
     nested->class_node = member_def->second.class_node;
     nested->is_final = member_def->second.class_node->is_final_specifier;
   }
-  if(nested->member_scope && owner->has_instantiation_binding_arguments) {
+  const std::vector<template_model::TemplateArgument> & owner_arguments =
+      class_instantiation_binding_arguments(*owner);
+  if(nested->member_scope &&
+     owner->has_instantiation_binding_arguments &&
+     template_model::template_arguments_fully_bind_parameters(
+         member_def->second.parameters,
+         owner_arguments)) {
     template_api::binding::bind_template_arguments_into_scope(
         ctx,
         *nested->member_scope,
         member_def->second.parameters,
-        class_instantiation_binding_arguments(*owner));
+        owner_arguments);
   }
   if(!nested->complete) {
     ctx.ensure_class_reference_members(*nested);
@@ -6508,9 +6530,17 @@ TemplateNestedMemberClassCompletionResult complete_nested_member_class_from_owne
 
   semantic_model::ClassTemplateDecl * owner_template =
       nested->enclosing_scope->class_info->source_template;
+  if(nested->enclosing_scope->class_info->is_explicit_specialization) {
+    return result;
+  }
+  const semantic_model::PartialClassTemplateSpecializationDecl * partial =
+      selected_partial_log_decl(nested->enclosing_scope->class_info);
+  const std::map<std::string, semantic_model::OutOfClassMemberClassDecl> &
+      definitions = partial ? partial->member_class_definitions :
+                              owner_template->member_class_definitions;
   std::map<std::string, semantic_model::OutOfClassMemberClassDecl>::const_iterator
-      member_def = owner_template->member_class_definitions.find(nested->name);
-  if(member_def == owner_template->member_class_definitions.end() ||
+      member_def = definitions.find(nested->name);
+  if(member_def == definitions.end() ||
      !member_def->second.class_node ||
      member_def->second.class_node->kind == CppAstKind::class_forward_declaration) {
     return result;
@@ -6524,15 +6554,21 @@ TemplateNestedMemberClassCompletionResult complete_nested_member_class_from_owne
     nested->is_final = member_def->second.class_node->is_final_specifier;
   }
   semantic_model::ClassInfo * owner = nested->enclosing_scope->class_info;
+  const std::vector<template_model::TemplateArgument> * owner_arguments =
+      owner ? &class_instantiation_binding_arguments(*owner) : nullptr;
   if(!nested->complete &&
      nested->member_scope &&
      owner &&
-     owner->has_instantiation_binding_arguments) {
+     owner->has_instantiation_binding_arguments &&
+     owner_arguments &&
+     template_model::template_arguments_fully_bind_parameters(
+         member_def->second.parameters,
+         *owner_arguments)) {
     template_api::binding::bind_template_arguments_into_scope(
         ctx,
         *nested->member_scope,
         member_def->second.parameters,
-        class_instantiation_binding_arguments(*owner));
+        *owner_arguments);
   }
   if(!nested->complete) {
     ctx.populate_class_info(*nested, *member_def->second.class_node);
