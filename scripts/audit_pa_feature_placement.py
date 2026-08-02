@@ -142,7 +142,9 @@ LATE_PLACEMENT_BROAD_FEATURES = {
 }
 LATE_PLACEMENT_ANCHOR_FEATURES = {
     "host.eh_object",
+    "host.object_interop",
 }
+HOST_OBJECT_ATTRIBUTE_NAMES = {"noinline", "section", "weak"}
 
 TEMPLATE_CONCEPT_BY_FEATURE = {
     "template.type": "basic-template",
@@ -324,6 +326,8 @@ RULES: tuple[FeatureRule, ...] = (
                 (rx(r"\btry\s*\{"), rx(r"\bcatch\s*\("), rx(r"\bthrow\b")),
                 ref_patterns=(rx(r"\b__cxa_(?:throw|begin_catch|rethrow)\b|\bexception_selector\b"),)),
     FeatureRule("host.eh_object", ()),
+    FeatureRule("host.object_interop", ()),
+    FeatureRule("host.object_attribute", ()),
     FeatureRule("lookup.adl", (rx(r"\bfriend\b|\boperator\s+(?!new\b|delete\b)"),)),
     FeatureRule("operator.overload", (rx(r"\boperator\s*(?!(?:new|delete)\b)(?:[+\-*/%<>=!&|^~,\[\]()]+|[A-Za-z_][A-Za-z0-9_:<>]*)"),)),
     FeatureRule("class.using_declaration", (rx(r"\busing\s+[A-Za-z_][A-Za-z0-9_:<>]*::[A-Za-z_]"),)),
@@ -1045,6 +1049,27 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
         for evidence in lambda_hit.evidence:
             if evidence not in hit.evidence:
                 hit.evidence.append(evidence)
+    host_object_attributes = re.findall(
+        r"__attribute__\s*\(\(\s*([A-Za-z_][A-Za-z0-9_]*)",
+        code,
+    )
+    if host_object_attributes:
+        host_object_attribute_names = set(host_object_attributes)
+        recognized = sorted(host_object_attribute_names & HOST_OBJECT_ATTRIBUTE_NAMES)
+        if recognized:
+            hits["host.object_attribute"] = FeatureHit(
+                "host.object_attribute",
+                [f"source:__attribute__(({name}))" for name in recognized],
+            )
+        if host_object_attribute_names <= HOST_OBJECT_ATTRIBUTE_NAMES:
+            hits.pop("support.attribute", None)
+        if (
+            test_path.startswith("pa32/tests/")
+            and "section" in host_object_attribute_names
+        ):
+            predefined = hits.get("support.host_predefined_macro")
+            if predefined and all("__APPLE__" in item for item in predefined.evidence):
+                hits.pop("support.host_predefined_macro", None)
     if "/pa30/tests/abi/" in test_path or test_path.startswith("pa30/tests/abi/"):
         hits.pop("template.builtin_traits", None)
     return hits
@@ -1556,6 +1581,23 @@ def host_eh_object_evidence(path: Path, current_pa: str, source: str) -> str:
     return ""
 
 
+def host_object_interop_evidence(path: Path, current_pa: str) -> str:
+    """Identify an asserted PA32 host-object layer without anchoring every test."""
+    if current_pa != "pa32" or not numbered_test_source_files_for(path):
+        return ""
+    anchor = read_text(path)
+    marker = re.search(r"\b(?:host-object|compiler-object)\b", anchor, re.IGNORECASE)
+    if marker:
+        return f"anchor-contract:{marker.group(0).lower()}"
+    base_name = path.with_suffix("").name
+    inspect_sidecars = sorted(path.parent.glob(f"{base_name}.inspect.*"))
+    if inspect_sidecars:
+        return f"harness:{inspect_sidecars[0].name}"
+    if path.with_suffix(".ref.inspect").exists():
+        return f"harness:{path.with_suffix('.ref.inspect').name}"
+    return ""
+
+
 def is_lowir_test(pa: str) -> bool:
     number = pa_number(pa)
     return number in LOWIR_SOURCE_PAS if number is not None else False
@@ -1823,6 +1865,12 @@ def row_for(path: Path,
         raw_hits["host.eh_object"] = FeatureHit(
             "host.eh_object",
             [host_eh_evidence],
+        )
+    host_object_evidence = host_object_interop_evidence(path, current_pa)
+    if host_object_evidence:
+        raw_hits["host.object_interop"] = FeatureHit(
+            "host.object_interop",
+            [host_object_evidence],
         )
     hits: dict[str, FeatureHit] = {}
     path_hints: dict[str, list[str]] = {}

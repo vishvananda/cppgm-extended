@@ -372,6 +372,29 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             )
             self.assertEqual(audit.host_eh_object_evidence(anchor, "pa25", source), "")
 
+    def test_pa32_host_object_attributes_do_not_require_pa34_attribute_support(self) -> None:
+        hits = audit.detect_features(
+            "__attribute__((weak)) int value;\n"
+            "__attribute__((section(\"data\"))) int placed;\n"
+            "__attribute__((noinline)) int function();\n",
+            test_path="pa32/tests/general/200-object-attributes.t",
+        )
+        self.assertIn("host.object_attribute", hits)
+        self.assertNotIn("support.attribute", hits)
+
+    def test_pa32_host_object_anchor_is_an_explicit_layer_assertion(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            anchor = root / "pa32" / "tests" / "general" / "200-host-object.t"
+            write(anchor, "# The host-object path must preserve member moves.\n")
+            write(anchor.parent / f"{anchor.name}.1", "int main() { return 0; }\n")
+
+            self.assertEqual(
+                audit.host_object_interop_evidence(anchor, "pa32"),
+                "anchor-contract:host-object",
+            )
+            self.assertEqual(audit.host_object_interop_evidence(anchor, "pa31"), "")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,24 @@
-#include <sstream>
-struct B : std::ostringstream { virtual ~B(); };
-struct D : B { ~D(); };
-D::~D() {}
-int main() { D value; }
+struct A
+{
+  virtual ~A();
+};
+
+struct B : virtual A
+{
+  virtual ~B();
+};
+
+struct D : B
+{
+  ~D();
+};
+
+D::~D()
+{
+}
+
+int main()
+{
+  D value;
+  (void)value;
+}
