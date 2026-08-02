@@ -245,6 +245,8 @@ PA16 supports the following in addition to the PA15 subset:
   lowering
 - direct `copyobj` lowering of supported trivial class copy/move construction at the call
   site instead of forcing a separate synthesized trivial constructor call
+- empty class objects and subobjects use the same address-based class copy paths as
+  other class objects; lowering must not invent a scalar payload for an empty class
 - temporary class-object materialization in the common cases required by:
   - copy initialization from function results
   - pass-by-value call arguments
