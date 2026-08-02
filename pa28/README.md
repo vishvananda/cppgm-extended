@@ -443,6 +443,11 @@ To complete PA28, implement these goals:
    cases should compile and run correctly but do not require the exact spill/register
    strategy used by the reference implementation.
 
+   The same correctness requirement applies through control-flow joins and loop
+   backedges. Incoming parameters, values computed before a loop, and values recomputed
+   on each iteration must retain their current value across calls without a later
+   iteration overwriting an earlier spill home.
+
 10. Keep mixed-width conversion and floating-bool materialization explicit.
    Mixed integer/float conversion chains should keep their conversion family and width
    visible in MIR, and floating compare results used as values may materialize booleans
