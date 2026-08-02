@@ -201,6 +201,9 @@ To complete PA25, implement these goals:
    EH-bearing aggregate construction should invoke nontrivial member constructors
    instead of representation-copying those members, so cleanup state describes
    the subobjects that were constructed.
+   Construction and destruction cleanup dependencies on class-template
+   destructors should be demanded only after a recursively containing type is
+   complete, and should retain that concrete owner in emitted cleanup calls.
    A caller-created copy for a destructible class value parameter transfers to
    the callee. The callee destroys that parameter, while the caller keeps only
    the unwind cleanup needed for objects it still owns.
