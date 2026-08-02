@@ -245,6 +245,9 @@ This validates:
   compilation
 - cross-translation-unit data relocations that feed indirect calls
 - namespace-scope startup hooks across translation units
+- coalescible ODR emission when an out-of-class class-template member
+  definition from a shared header is instantiated in multiple translation
+  units
 
 ### Assignment Boundary
 
