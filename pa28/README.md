@@ -435,6 +435,10 @@ To complete PA28, implement these goals:
    is acceptable when pressure or an ABI boundary requires it, as long as the generated
    program is correct and the checked structural MIR cases still match their oracles.
 
+   A numeric immediate written without a decimal point still follows the declared LowIR
+   type in a floating store or return. It must be materialized as the requested floating
+   value rather than routed through an integer-only move path.
+
 9. Implement call-boundary correctness without requiring a clever allocator.
    PA28 must respect the native calling convention for direct calls, indirect calls,
    mixed GPR/XMM arguments, variadic register-save state, stack arguments, scalar and
