@@ -25,5 +25,5 @@ check: $(RUN_CHECK_DEPS)
 		echo "Usage: make check TEST=<checked-in-test-file>"; \
 		exit 1; \
 	fi
-	@CPPGM_CHECK_MODE=1 $(CHECK_RUN)
-	@CPPGM_CHECK_MODE=1 CPPGM_CHECK_AUTO_KEEP_GOING=1 $(CHECK_COMPARE)
+	@export CPPGM_CHECK_MODE=1; $(CHECK_RUN)
+	@export CPPGM_CHECK_MODE=1 CPPGM_CHECK_AUTO_KEEP_GOING=1; $(CHECK_COMPARE)
