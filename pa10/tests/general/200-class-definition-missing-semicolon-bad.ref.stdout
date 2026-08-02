@@ -1,0 +1,1 @@
+ERROR: tests/general/200-class-definition-missing-semicolon-bad.t: expected declaration near KW_STRUCT:struct at token 0 at tests/general/200-class-definition-missing-semicolon-bad.t:1:1

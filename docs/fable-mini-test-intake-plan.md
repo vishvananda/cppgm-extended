@@ -417,6 +417,12 @@ family wholesale.
 - Match the destination harness's conventions for `.t`, `.t.N`, `.shared.h`,
   `.stdin`, `.args`, `.env`, compile status, implementation status, program
   status, stdout, stderr, and canonical LowIR or object facts.
+- Retain a failing fixture's generated `.ref.stdout` or `.ref.stderr` sidecar
+  when the assignment export compares that file set. Do not drop such a
+  sidecar merely because the local assignment README treats diagnostic text as
+  non-semantic; export compatibility is part of the fixture contract. Record
+  the generating reference binary so any exact diagnostic oracle remains
+  reproducible.
 - Keep source-run references as evidence until the expected result is
   understood, then generate the local canonical references from a clean host
   build of this repository's relevant tool. This tree becomes the student
