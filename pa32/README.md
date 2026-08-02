@@ -208,6 +208,9 @@ object files within the supported subset:
    code.
 5. Interoperate with host-built objects, archives, shared libraries, and tested
    `thread_local` variables through practical function/global boundaries.
+6. Preserve the earlier class-value semantics in host-object mode. Compiler-object
+   metadata must not append a whole-object representation copy after a nontrivial
+   memberwise copy or move body.
 
 If the host linker rejects generated objects as ordinary objects, fix the
 host-compatible object-emission path.
