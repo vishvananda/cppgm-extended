@@ -131,6 +131,10 @@ Definition forms:
 - `let-entity <id> ...`: an entity fact used by entity-valued template
   arguments and dependent expressions
 
+Template-parameter and other ABI indices are nonnegative decimal integers.
+Negative or otherwise malformed index spellings are invalid facts and must be
+rejected.
+
 Target forms:
 
 - `type ...`
