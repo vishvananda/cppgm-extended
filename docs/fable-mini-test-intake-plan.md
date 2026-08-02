@@ -398,20 +398,22 @@ Use these destination rules:
 | PA30 | `abi` |
 | PA31 and PA33 | `general` |
 | PA34 | `preproc`, `compile`, or `run` |
-| PA35 | `compile` or `run` |
+| PA35 | `compile` |
 | PA36 | `link` |
 | PA37 | `o0`, `o1`, `o2`, `driver/o1`, `driver/o2`, `object-roundtrip`, or the matching debug-info bucket |
 | PA38 | `o1`, `o2`, or the matching debug-info bucket |
 
 Treat PA35 and PA36 as expensive hosted integration tiers, not default homes
-for student-added regressions. A PA35 addition must assert a distinct
-compile-time behavior of a hosted C++ header workload; mere successful
-compilation of an unused construct is not enough when existing PA35 coverage
-already reaches the same header machinery. A PA36 addition must execute and
-check distinct runtime or link behavior emitted from hosted headers. Reduce
-header-independent language, ABI, EH, or backend bugs to their earlier owning
-assignment. Keep a PA35 or PA36 test only when that hosted integration is
-essential and the case materially increases coverage over the existing suite.
+for student-added regressions. Put a new PA35 intake test in `compile`, and make
+it assert a distinct compile-time behavior of a hosted C++ header workload;
+mere successful compilation of an unused construct is not enough when existing
+PA35 coverage already reaches the same header machinery. Put a new PA36 intake
+test in `link`, and make it execute and check distinct runtime or link behavior
+emitted from hosted headers. Reduce header-independent language, ABI, EH, or
+backend bugs to their earlier owning assignment. Keep a PA35 or PA36 test only
+when that hosted integration is essential and the case materially increases
+coverage over the existing suite. Do not add a PA35/PA36 test merely to retain
+the source repository's original placement.
 
 Follow the numbering and naming style of the selected local suite. Rename
 generic source-run names such as `900-*` or `final-audit-*` when they do not
