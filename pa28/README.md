@@ -345,7 +345,13 @@ PA14-PA27, including:
 - object-lowered ABI forms emitted by source-to-LowIR assignments:
   - hidden destination-pointer returns
   - lowered object parameters carried as `ptr`
+- direct one- and two-eightbyte object parameters and results in the supported
+  x86-64 ABI, including padded homes for partial second eightbytes
+- supported variadic calls and `va_start` register-save state for GPR and XMM
+  arguments, including the caller-provided vector-register count
 - structured vtable/global table data emitted by source-to-LowIR lowering
+- structured global alignment derived from typed data items; raw `zero` byte
+  padding inside mixed data does not independently raise alignment
 
 Within this milestone, PA28 should successfully compile the LowIR emitted by PA14-PA27 into
 host-native executables, without requiring CY86 as the primary output format.
@@ -431,10 +437,11 @@ To complete PA28, implement these goals:
 
 9. Implement call-boundary correctness without requiring a clever allocator.
    PA28 must respect the native calling convention for direct calls, indirect calls,
-   mixed GPR/XMM arguments, stack arguments, returned values, and values that remain live
-   across calls. The tests intentionally check some high-pressure call cases by program
-   behaviour only; those cases should compile and run correctly but do not require the
-   exact spill/register strategy used by the reference implementation.
+   mixed GPR/XMM arguments, variadic register-save state, stack arguments, scalar and
+   direct-object returned values, and values that remain live across calls. The tests
+   intentionally check some high-pressure call cases by program behaviour only; those
+   cases should compile and run correctly but do not require the exact spill/register
+   strategy used by the reference implementation.
 
 10. Keep mixed-width conversion and floating-bool materialization explicit.
    Mixed integer/float conversion chains should keep their conversion family and width
