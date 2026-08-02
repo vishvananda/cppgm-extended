@@ -1,0 +1,15 @@
+global @selected : ptr [binding=strong, object=_Z8selected] = addr @choose
+
+function @choose(%__param0 : i32) -> i32 [binding=strong, object=_Z6choosei] {
+  slot $__param0 : i32
+
+  block ^entry:
+    store i32 %__param0, $__param0
+    return i32 0
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load ptr @selected
+    %t2 = call i32 %t1(1) as (%arg0 : i32) -> i32
+    return i32 %t2
+}
