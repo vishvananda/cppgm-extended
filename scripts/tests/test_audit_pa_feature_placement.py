@@ -420,6 +420,29 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             )
             self.assertEqual(audit.host_object_interop_evidence(anchor, "pa31"), "")
 
+    def test_pa33_abi_tag_inspection_uses_host_abi_attribute_owner(self) -> None:
+        hits = audit.detect_features(
+            'struct Tagged { ~Tagged() __attribute__((__abi_tag__("tag"))); };',
+            test_path="pa33/tests/general/200-host-abi-tag-dtor.t",
+        )
+        self.assertIn("host.abi_name_attribute", hits)
+        self.assertNotIn("support.attribute", hits)
+
+    def test_pa33_builtin_transform_mangling_uses_host_abi_owner(self) -> None:
+        hits = audit.detect_features(
+            "template<class T> using decay_alias = __decay(T);",
+            test_path="pa33/tests/general/200-host-builtin-transform-mangling.t",
+        )
+        self.assertIn("host.abi_builtin_type", hits)
+        self.assertNotIn("template.builtin_traits", hits)
+
+    def test_pa34_run_has_hosted_runtime_owner(self) -> None:
+        hits = audit.detect_features(
+            "int main() { return 0; }",
+            test_path="pa34/tests/run/800-hosted-runtime.t",
+        )
+        self.assertIn("hosted.runtime_compat", hits)
+
     def test_dynamic_local_static_with_eh_has_guarded_cleanup_feature(self) -> None:
         source = textwrap.dedent(
             """\

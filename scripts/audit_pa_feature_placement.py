@@ -333,6 +333,9 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("host.eh_object", ()),
     FeatureRule("host.object_interop", ()),
     FeatureRule("host.object_attribute", ()),
+    FeatureRule("host.abi_name_attribute", ()),
+    FeatureRule("host.abi_builtin_type", ()),
+    FeatureRule("hosted.runtime_compat", ()),
     FeatureRule("lookup.adl", (rx(r"\bfriend\b|\boperator\s+(?!new\b|delete\b)"),)),
     FeatureRule("operator.overload", (rx(r"\boperator\s*(?!(?:new|delete)\b)(?:[+\-*/%<>=!&|^~,\[\]()]+|[A-Za-z_][A-Za-z0-9_:<>]*)"),)),
     FeatureRule("class.using_declaration", (rx(r"\busing\s+[A-Za-z_][A-Za-z0-9_:<>]*::[A-Za-z_]"),)),
@@ -1075,6 +1078,30 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             predefined = hits.get("support.host_predefined_macro")
             if predefined and all("__APPLE__" in item for item in predefined.evidence):
                 hits.pop("support.host_predefined_macro", None)
+    if (
+        test_path.startswith("pa33/tests/")
+        and re.search(r"\b__abi_tag__?\s*\(", code)
+    ):
+        hits["host.abi_name_attribute"] = FeatureHit(
+            "host.abi_name_attribute",
+            ["source:ABI tag on inspected host symbol"],
+        )
+        hits.pop("support.attribute", None)
+    if (
+        test_path.startswith("pa33/tests/")
+        and re.search(r"(?:abi|mangl)", test_path)
+        and re.search(r"\b__(?:decay|remove|add|underlying_type)\b", code)
+    ):
+        hits["host.abi_builtin_type"] = FeatureHit(
+            "host.abi_builtin_type",
+            ["source:builtin transform in inspected host ABI name"],
+        )
+        hits.pop("template.builtin_traits", None)
+    if test_path.startswith("pa34/tests/run/"):
+        hits["hosted.runtime_compat"] = FeatureHit(
+            "hosted.runtime_compat",
+            ["harness:PA34 hosted link/run"],
+        )
     if "/pa30/tests/abi/" in test_path or test_path.startswith("pa30/tests/abi/"):
         hits.pop("template.builtin_traits", None)
     if (
