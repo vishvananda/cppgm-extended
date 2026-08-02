@@ -14364,6 +14364,30 @@ private:
         member_pointer_access_type->kind == Type::TK_MEMBER_POINTER &&
         !is_function_type(member_pointer_access_type->inner);
 
+    TypePtr call_function_type;
+    const bool call_returns_reference =
+        node.kind == CallSemKind::call_expression &&
+        !node.children.empty() &&
+        resolve_callable_function_type(node.children[0].semantic_type,
+                                       call_function_type) &&
+        call_function_type &&
+        is_reference_type(call_function_type->inner);
+    if(call_returns_reference) {
+      return emit_call_expression_raw(node);
+    }
+
+    if(node.kind == CallSemKind::binary_expression &&
+       callsem_has_token(node, OP_COMMA)) {
+      if(node.children.size() != 2) {
+        throw logic_error("binary-expression arity");
+      }
+      emit_discarded_expression(node.children[0]);
+      if(!current_block_) {
+        return "0";
+      }
+      return emit_lvalue_address(node.children[1]);
+    }
+
     TypePtr node_base = strip_top_level_cv(remove_reference_type(node.semantic_type));
     if(node.value_category != CVC_LVALUE &&
        !is_reference_type(node.semantic_type) &&
@@ -14688,18 +14712,6 @@ private:
       return field_storage;
     }
 
-    TypePtr call_function_type;
-    const bool call_returns_reference =
-        node.kind == CallSemKind::call_expression &&
-        !node.children.empty() &&
-        resolve_callable_function_type(node.children[0].semantic_type,
-                                       call_function_type) &&
-        call_function_type &&
-        is_reference_type(call_function_type->inner);
-    if(call_returns_reference) {
-      return emit_call_expression_raw(node);
-    }
-
     const TypePtr indirect_result_object_type =
         node.kind == CallSemKind::call_expression ?
             indirect_call_result_object_type(node) :
@@ -14734,18 +14746,6 @@ private:
         throw logic_error("assignment-expression missing result address");
       }
       return emit_lvalue_storage_operand_address(result_address);
-    }
-
-    if(node.kind == CallSemKind::binary_expression &&
-       callsem_has_token(node, OP_COMMA)) {
-      if(node.children.size() != 2) {
-        throw logic_error("binary-expression arity");
-      }
-      emit_discarded_expression(node.children[0]);
-      if(!current_block_) {
-        return "0";
-      }
-      return emit_lvalue_address(node.children[1]);
     }
 
     if(node.kind == CallSemKind::unary_expression && callsem_has_token(node, OP_STAR) &&

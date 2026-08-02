@@ -1,0 +1,34 @@
+function @operatornew(%__param0 : i64, %p : ptr) -> ptr [unwind=no, binding=strong, object=_ZnwmPv] {
+  slot $__param0 : i64
+  slot $p : ptr
+
+  block ^entry:
+    store i64 %__param0, $__param0
+    store ptr %p, $p
+    %t1 = load ptr $p
+    return ptr %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $storage : u32
+
+  block ^entry:
+    %t1 = convert sext i64 i32 4
+    %t2 = addr $storage
+    %t3 = call ptr @operatornew(%t1, %t2)
+    call void @table__table__ov4(%t3, 1)
+    return i32 0
+}
+function @table__table__ov4(%this : ptr, %size : u32) -> void [unwind=no, binding=weak, object=_ZN5tableC1Ej] {
+  slot $this : ptr
+  slot $size : u32
+
+  block ^entry:
+    store ptr %this, $this
+    store u32 %size, $size
+    %t1 = load u32 $size
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store u32 %t1, %t3
+    return void
+}
+alias object _ZN5tableC2Ej = @table__table__ov4

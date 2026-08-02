@@ -1106,6 +1106,8 @@ void build_template_argument_syntax_from_range(
      tokens.peek(template_id_range.second - 1).is_simple(OP_DOTS)) {
     --template_id_range.second;
   }
+  const bool template_id_pack_expansion =
+      template_id_range.second != range.second;
 
   cpp_decl::TemplateIdSyntax nested_template_id;
   if(build_template_id_syntax_from_range(tokens,
@@ -1115,6 +1117,7 @@ void build_template_argument_syntax_from_range(
                                          parser_context)) {
     argument.template_id.reset(
         new cpp_decl::TemplateIdSyntax(std::move(nested_template_id)));
+    argument.pack_expansion = template_id_pack_expansion;
     qualified_name_parser::QualifiedNameParseResult parsed;
     const bool parsed_qualified_name =
         qualified_name_parser::parse_qualified_name(
@@ -1165,6 +1168,8 @@ void build_template_argument_syntax_from_range(
           parsed_type_argument.source_token_start = argument.source_token_start;
           parsed_type_argument.source_location_id = argument.source_location_id;
           parsed_type_argument.template_id = argument.template_id;
+          parsed_type_argument.pack_expansion =
+              parsed_type_argument.pack_expansion || template_id_pack_expansion;
           if(argument.expression && !parsed_type_argument.expression) {
             parsed_type_argument.expression = argument.expression;
           }
@@ -1371,7 +1376,8 @@ bool build_template_id_syntax_from_range(
 
     out = cpp_decl::TemplateIdSyntax();
     out.name = build_qualified_name_syntax(head_tokens, head_parsed);
-    out.source_location_id = tokens[range.first].location_id;
+    out.source_location_id =
+        tokens[range.first + head_parsed.name_template_head_component.first].location_id;
     qualified_name_parser::QualifiedNameParseResult original_head_parsed;
     if(qualified_name_parser::parse_qualified_name(
            tokens,

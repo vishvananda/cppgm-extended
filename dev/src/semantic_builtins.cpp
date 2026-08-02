@@ -10,6 +10,7 @@
 #include <stdexcept>
 
 #include "builtin_type_transforms.h"
+#include "callsemantic/type_trait_analysis.h"
 #include "cpp_decl_ast.h"
 #include "cpp_decl_bridge.h"
 #include "cpp_decl_model.h"
@@ -65,6 +66,32 @@ ExprInfo make_builtin_trait_expr_info(const TypePtr & source)
         VC_PRVALUE;
   }
   return expr;
+}
+
+bool is_trivially_copy_constructible_type_for_language(
+    SemanticContext & ctx,
+    const TypePtr & type)
+{
+  callsemantic::TypeTraitCallbacks callbacks;
+  callbacks.class_info_for_type =
+      [&ctx](const TypePtr & candidate) -> ClassInfo *
+      {
+        return ctx.complete_class_type(candidate);
+      };
+  return callsemantic::is_trivially_copy_constructible_type(type, callbacks);
+}
+
+bool is_trivially_move_constructible_type_for_language(
+    SemanticContext & ctx,
+    const TypePtr & type)
+{
+  callsemantic::TypeTraitCallbacks callbacks;
+  callbacks.class_info_for_type =
+      [&ctx](const TypePtr & candidate) -> ClassInfo *
+      {
+        return ctx.complete_class_type(candidate);
+      };
+  return callsemantic::is_trivially_move_constructible_type(type, callbacks);
 }
 
 TypePtr make_dependent_builtin_type_transform_type_impl(
@@ -3367,12 +3394,6 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
       rhs_expr.category = VC_PRVALUE;
     }
 
-    ExprInfo converted;
-    if(!try_argument_conversion(ctx, scope, target, rhs_expr, converted)) {
-      out = 0;
-      return true;
-    }
-
     TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
     TypePtr source_base = strip_top_level_cv(remove_reference_type(source));
     if(!target_base || !source_base) {
@@ -3386,9 +3407,37 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
       return true;
     }
 
+    if(is_reference_type(target)) {
+      ExprInfo converted;
+      out = try_argument_conversion(ctx, scope, target, rhs_expr, converted) ? 1 : 0;
+      return true;
+    }
+
     if(target_base->kind == Type::TK_FUNDAMENTAL ||
        is_scalar_or_member_pointer_type(ctx, target_base)) {
+      ExprInfo converted;
+      if(!try_argument_conversion(ctx, scope, target, rhs_expr, converted)) {
+        out = 0;
+        return true;
+      }
       out = 1;
+      return true;
+    }
+
+    constructor_lifecycle_service::ConstructorSelectionResult direct_selection;
+    if(!try_direct_class_construction_for_trait(
+           ctx, scope, target, rhs_expr, direct_selection) ||
+       !direct_selection.ctor ||
+       direct_selection.ctor->is_deleted) {
+      out = 0;
+      return true;
+    }
+    const bool implicit_like_constructor =
+        direct_selection.ctor->synthesized ||
+        direct_selection.ctor->is_defaulted ||
+        direct_selection.ctor->is_aggregate_constructor;
+    if(!implicit_like_constructor) {
+      out = 0;
       return true;
     }
 
@@ -3397,12 +3446,10 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
         same_type_with_compatible_top_cv(target_base, source->inner);
     out = (type_equals(target_base, source_base) &&
            (move_construction ?
-                semantic_class_model::
-                    is_trivially_move_constructible_type_for_host_abi(
-                        ctx, target_base) :
-                semantic_class_model::
-                    is_trivially_copy_constructible_type_for_host_abi(
-                        ctx, target_base))) ? 1 : 0;
+                is_trivially_move_constructible_type_for_language(
+                    ctx, target_base) :
+                is_trivially_copy_constructible_type_for_language(
+                    ctx, target_base))) ? 1 : 0;
     return true;
   }
 

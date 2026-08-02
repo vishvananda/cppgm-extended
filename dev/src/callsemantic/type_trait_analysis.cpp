@@ -252,6 +252,112 @@ bool is_trivially_copy_constructible_type(const TypePtr & type,
   return true;
 }
 
+bool is_trivially_move_constructible_type(const TypePtr & type,
+                                          const TypeTraitCallbacks & callbacks)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  if(is_reference_type(base)) {
+    return true;
+  }
+  if(is_array_type(base)) {
+    return is_trivially_move_constructible_type(base->inner, callbacks);
+  }
+  if(base->kind == Type::TK_FUNCTION || is_void_type(base)) {
+    return false;
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     is_scalar_or_member_pointer_type_impl(base, callbacks)) {
+    return true;
+  }
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+  ClassInfo * info = callbacks.class_info_for_type(base);
+  if(!info) {
+    return false;
+  }
+  if(info->class_kind == "enum") {
+    return true;
+  }
+  if(!info->complete ||
+     info->is_polymorphic ||
+     !is_trivially_destructible_type(base, callbacks)) {
+    return false;
+  }
+
+  FunctionBinding * move_ctor = nullptr;
+  std::map<std::string, std::vector<FunctionBinding *> >::iterator constructors =
+      info->methods.find(info->name);
+  if(constructors != info->methods.end()) {
+    for(std::size_t i = 0; i < constructors->second.size(); ++i) {
+      FunctionBinding * binding = constructors->second[i];
+      if(binding &&
+         binding->is_constructor &&
+         binding->params.size() == 2 &&
+         is_same_class_reference_parameter(info->type,
+                                           binding->params[1].second,
+                                           Type::TK_RVALUE_REFERENCE)) {
+        move_ctor = binding;
+        break;
+      }
+    }
+  }
+
+  if(move_ctor &&
+     (move_ctor->is_deleted ||
+      (!move_ctor->synthesized && !move_ctor->is_defaulted))) {
+    return false;
+  }
+  if(!move_ctor) {
+    bool implicit_move_suppressed = false;
+    for(std::map<std::string, std::vector<FunctionBinding *> >::const_iterator it =
+            info->methods.begin();
+        it != info->methods.end() && !implicit_move_suppressed;
+        ++it) {
+      for(std::size_t i = 0; i < it->second.size(); ++i) {
+        const FunctionBinding * binding = it->second[i];
+        if(!binding || binding->synthesized) {
+          continue;
+        }
+        const bool copy_constructor =
+            binding->is_constructor &&
+            binding->params.size() == 2 &&
+            is_same_class_reference_parameter(info->type,
+                                              binding->params[1].second,
+                                              Type::TK_LVALUE_REFERENCE);
+        if(binding->is_destructor ||
+           copy_constructor ||
+           binding->is_copy_assignment ||
+           binding->is_move_assignment) {
+          implicit_move_suppressed = true;
+          break;
+        }
+      }
+    }
+    if(implicit_move_suppressed) {
+      return is_trivially_copy_constructible_type(base, callbacks);
+    }
+  }
+
+  for(std::size_t i = 0; i < info->bases.size(); ++i) {
+    if(info->bases[i].is_virtual ||
+       !is_trivially_move_constructible_type(info->bases[i].type->type,
+                                             callbacks)) {
+      return false;
+    }
+  }
+  for(std::size_t i = 0; i < info->fields.size(); ++i) {
+    if(!is_trivially_move_constructible_type(info->fields[i].type,
+                                             callbacks)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool is_trivially_copy_assignable_type(const TypePtr & type,
                                        const TypeTraitCallbacks & callbacks)
 {

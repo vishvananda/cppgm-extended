@@ -200,6 +200,16 @@ bool evaluate_method_call_implicit_object(
        callee.children[0].value == "this") {
       return evaluator.current_this_object(out);
     }
+    if(node_has_simple_type(callee, OP_ARROW)) {
+      CppAstNode dereference;
+      dereference.kind = CppAstKind::unary_expression;
+      dereference.has_token = true;
+      dereference.token_kind = RT_SIMPLE;
+      dereference.simple_type = OP_STAR;
+      dereference.value = "*";
+      dereference.children.push_back(callee.children[0]);
+      return evaluator.eval_expr(dereference, out);
+    }
     return evaluator.eval_expr(callee.children[0], out);
   }
 

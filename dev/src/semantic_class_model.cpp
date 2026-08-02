@@ -563,7 +563,8 @@ bool has_virtual_destructor_for_host_abi(const ClassInfo & info)
 }
 
 bool implicit_copy_constructor_is_deleted(SemanticContext & ctx,
-                                          ClassInfo & info);
+                                          ClassInfo & info,
+                                          bool implicit_declaration);
 bool implicit_move_constructor_is_deleted(SemanticContext & ctx,
                                           ClassInfo & info);
 FunctionBinding * find_constructor_binding(ClassInfo & info,
@@ -5116,10 +5117,12 @@ bool type_allows_defaulted_move_construction(SemanticContext & ctx,
                                              const TypePtr & type);
 
 bool implicit_copy_constructor_is_deleted(SemanticContext & ctx,
-                                          ClassInfo & info)
+                                          ClassInfo & info,
+                                          bool implicit_declaration)
 {
-  if(has_user_declared_move_constructor(info) ||
-     has_user_declared_move_assignment(info)) {
+  if(implicit_declaration &&
+     (has_user_declared_move_constructor(info) ||
+      has_user_declared_move_assignment(info))) {
     return true;
   }
 
@@ -5225,7 +5228,10 @@ bool type_allows_defaulted_move_construction(SemanticContext & ctx,
       }
     }
 
-    if(!ctor || ctor->is_deleted) {
+    if(ctor && ctor->is_deleted) {
+      return false;
+    }
+    if(!ctor) {
       ctor = find_constructor_binding(*info, Type::TK_LVALUE_REFERENCE);
       if(!ctor) {
         ctor = ensure_implicit_copy_constructor(ctx, *info);
@@ -5235,6 +5241,37 @@ bool type_allows_defaulted_move_construction(SemanticContext & ctx,
   }
 
   return base->kind != Type::TK_FUNCTION && !is_void_type(base);
+}
+
+void refresh_defaulted_copy_and_move_constructor_state(SemanticContext & ctx,
+                                                       ClassInfo & info)
+{
+  if(!info.complete) {
+    return;
+  }
+  std::map<std::string, std::vector<FunctionBinding *> >::iterator methods =
+      info.methods.find(info.name);
+  if(methods == info.methods.end()) {
+    return;
+  }
+  for(size_t i = 0; i < methods->second.size(); ++i) {
+    FunctionBinding * binding = methods->second[i];
+    if(!binding ||
+       !binding->is_defaulted ||
+       binding->synthesized ||
+       binding->defaulted_deletion_state_finalized) {
+      continue;
+    }
+    if(binding->is_copy_constructor) {
+      binding->is_deleted = implicit_copy_constructor_is_deleted(ctx, info, false);
+    } else if(binding->is_move_constructor) {
+      binding->is_deleted = implicit_move_constructor_is_deleted(ctx, info);
+    } else {
+      continue;
+    }
+    binding->has_definition = !binding->is_deleted;
+    binding->defaulted_deletion_state_finalized = true;
+  }
 }
 
 FunctionBinding * find_assignment_operator(ClassInfo & info, bool want_move)
@@ -13191,7 +13228,28 @@ void ensure_implicit_special_members(SemanticContext & ctx,
     semantic_hotspot::note_semantic_query("ensure_implicit_special_members", query.str());
   }
   if(info.implicit_special_members_ensured) {
+    if(info.complete) {
+      FunctionBinding * copy_ctor =
+          find_constructor_binding(info, Type::TK_LVALUE_REFERENCE);
+      if(copy_ctor &&
+         copy_ctor->synthesized &&
+         !copy_ctor->defaulted_deletion_state_finalized) {
+        copy_ctor->is_deleted = implicit_copy_constructor_is_deleted(ctx, info, true);
+        copy_ctor->has_definition = !copy_ctor->is_deleted;
+        copy_ctor->defaulted_deletion_state_finalized = true;
+      }
+      FunctionBinding * move_ctor =
+          find_constructor_binding(info, Type::TK_RVALUE_REFERENCE);
+      if(move_ctor &&
+         move_ctor->synthesized &&
+         !move_ctor->defaulted_deletion_state_finalized) {
+        move_ctor->is_deleted = implicit_move_constructor_is_deleted(ctx, info);
+        move_ctor->has_definition = !move_ctor->is_deleted;
+        move_ctor->defaulted_deletion_state_finalized = true;
+      }
+    }
     refresh_defaulted_default_constructor_state(ctx, info);
+    refresh_defaulted_copy_and_move_constructor_state(ctx, info);
     refresh_defaulted_copy_assignment_state(ctx, info);
     refresh_defaulted_move_assignment_state(ctx, info);
     return;
@@ -13259,6 +13317,7 @@ void ensure_implicit_special_members(SemanticContext & ctx,
   }
 
   refresh_defaulted_default_constructor_state(ctx, info);
+  refresh_defaulted_copy_and_move_constructor_state(ctx, info);
 
   const std::string dtor_name = destructor_member_name_for_class(ctx, info);
   if(info.methods.find(dtor_name) == info.methods.end()) {
@@ -13302,9 +13361,12 @@ FunctionBinding * ensure_implicit_copy_constructor(SemanticContext & ctx,
                                                   false));
   if(existing) {
     existing->is_copy_constructor = true;
-    if(existing->synthesized && info.complete) {
-      existing->is_deleted = implicit_copy_constructor_is_deleted(ctx, info);
+    if(existing->synthesized &&
+       info.complete &&
+       !existing->defaulted_deletion_state_finalized) {
+      existing->is_deleted = implicit_copy_constructor_is_deleted(ctx, info, true);
       existing->has_definition = !existing->is_deleted;
+      existing->defaulted_deletion_state_finalized = true;
     }
     return existing;
   }
@@ -13323,8 +13385,9 @@ FunctionBinding * ensure_implicit_copy_constructor(SemanticContext & ctx,
   ctor->synthesized = true;
   ctor->is_copy_constructor = true;
   if(info.complete) {
-    ctor->is_deleted = implicit_copy_constructor_is_deleted(ctx, info);
+    ctor->is_deleted = implicit_copy_constructor_is_deleted(ctx, info, true);
     ctor->has_definition = !ctor->is_deleted;
+    ctor->defaulted_deletion_state_finalized = true;
   } else {
     ctor->has_definition = true;
   }
@@ -13348,9 +13411,12 @@ FunctionBinding * ensure_implicit_move_constructor(SemanticContext & ctx,
                                                   false));
   if(existing) {
     existing->is_move_constructor = true;
-    if(existing->synthesized && info.complete) {
+    if(existing->synthesized &&
+       info.complete &&
+       !existing->defaulted_deletion_state_finalized) {
       existing->is_deleted = implicit_move_constructor_is_deleted(ctx, info);
       existing->has_definition = !existing->is_deleted;
+      existing->defaulted_deletion_state_finalized = true;
     }
     return existing;
   }
@@ -13378,6 +13444,7 @@ FunctionBinding * ensure_implicit_move_constructor(SemanticContext & ctx,
   if(info.complete) {
     ctor->is_deleted = implicit_move_constructor_is_deleted(ctx, info);
     ctor->has_definition = !ctor->is_deleted;
+    ctor->defaulted_deletion_state_finalized = true;
   } else {
     ctor->has_definition = true;
   }

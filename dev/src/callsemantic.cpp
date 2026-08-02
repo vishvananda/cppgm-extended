@@ -32724,7 +32724,6 @@ private:
 
   bool try_analyze_declval_call_expression(Scope & scope,
                                            const CppAstNode & node,
-                                           const std::string & use_location,
                                            ExprInfo & out)
   {
     if(node.children.empty() || node.children[0].kind != CppAstKind::id_expression) {
@@ -32740,67 +32739,36 @@ private:
     }
 
     const TemplateIdSyntax * template_id = cppast_template_id_syntax(node.children[0]);
-	    if(!template_id ||
-	       template_id->name.name != "declval" ||
-	       template_id->arguments.size() != 1) {
-	      return false;
-	    }
+    if(!template_id ||
+       template_id->name.name != "declval" ||
+       template_id->arguments.size() != 1) {
+      return false;
+    }
 
-	    TypePtr declval_type;
-	    const TemplateArgumentSyntax * arg_syntax =
-	        template_id->argument_syntaxes.size() == 1 ?
-	            &template_id->argument_syntaxes[0] :
-	            nullptr;
-	    if(!template_api::type::resolve_type_argument_input(*this,
-	                                                       scope,
-	                                                       arg_syntax,
-	                                                       true,
-	                                                       declval_type) ||
-	       !declval_type) {
-	      return false;
-	    }
+    TypePtr declval_type;
+    const TemplateArgumentSyntax * arg_syntax =
+        template_id->argument_syntaxes.size() == 1 ?
+            &template_id->argument_syntaxes[0] :
+            nullptr;
+    if(!template_api::type::resolve_type_argument_input(*this,
+                                                       scope,
+                                                       arg_syntax,
+                                                       true,
+                                                       declval_type) ||
+       !declval_type) {
+      return false;
+    }
 
     if(witness::enabled(template_witness_context()) &&
        template_api::template_witness_declval_call_source_capture_enabled() &&
        !template_argument_semantics::argument_syntax_uses_bound_template_type(
            scope, *arg_syntax) &&
        !type_depends_on_template_parameter(declval_type)) {
-      std::string public_location =
-          template_api::normalize_template_witness_source_location(use_location);
-      const std::vector<WitnessUseLocationSearch> declval_location_searches = {
-        WitnessUseLocationSearch(WITNESS_USE_LOCATION_NAME_IN_SUBTREE, &node)
-      };
-      const std::string node_declval_location =
-          select_witness_use_location(declval_location_searches, "declval");
-      if(!node_declval_location.empty() &&
-         source_location_identifier_followed_by(node_declval_location, "declval", '<')) {
-        public_location = node_declval_location;
-      }
-      if(!public_location.empty() &&
-         !source_location_points_at_identifier(public_location, "declval")) {
-        const std::string same_line_declval_location =
-            template_api::template_witness_detail::
-                source_location_for_identifier_token_on_or_after(
-                    template_witness_context(),
-                    public_location,
-                    "declval",
-                    true);
-        if(!same_line_declval_location.empty()) {
-          public_location =
-              template_api::normalize_template_witness_source_location(
-                  same_line_declval_location);
-        }
-      }
-      if(public_location.empty()) {
-        public_location = template_api::normalize_template_witness_source_location(
-            template_public_use_location_or(std::string()));
-      }
-      if(!source_location_points_at_identifier(public_location, "declval")) {
-        public_location.clear();
-      }
-      if(!source_location_identifier_followed_by(public_location, "declval", '<')) {
-        public_location.clear();
-      }
+      const std::string public_location =
+          template_api::normalize_template_witness_source_location(
+              template_api::template_witness_detail::source_location_for_location_id(
+                  template_witness_context(),
+                  template_id->source_location_id));
       if(!public_location.empty()) {
         witness::FunctionCallSourceDecision decision;
         decision.origin = witness::FunctionCallEmissionOrigin::DeclvalCall;
@@ -32860,14 +32828,8 @@ private:
     const semantic_overload::CallAnalysisOptions effective_options =
         semantic_policy::apply_analysis_policy(analysis_policy_, options);
     ExprInfo declval_expr;
-    std::string declval_use_location =
-        effective_options.hints ? effective_options.hints->use_location : string();
-    if(declval_use_location.empty()) {
-      declval_use_location = template_public_use_location_or(std::string());
-    }
     if(try_analyze_declval_call_expression(scope,
                                            node,
-                                           declval_use_location,
                                            declval_expr)) {
       return declval_expr;
     }

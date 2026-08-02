@@ -3391,7 +3391,8 @@ bool expand_instantiated_function_parameter_clause(
     Scope & inst_scope,
     const CppAstNode & parameter_clause,
     std::vector<std::pair<std::string, TypePtr> > & params,
-    std::vector<const CppAstNode *> & default_args);
+    std::vector<const CppAstNode *> & default_args,
+    std::vector<TypePtr> * parameter_object_types = nullptr);
 
 TypePtr instantiate_stored_member_declared_type(
     SemanticContext & ctx,
@@ -6291,10 +6292,14 @@ bool expand_instantiated_function_parameter_clause(
     Scope & inst_scope,
     const CppAstNode & parameter_clause,
     std::vector<std::pair<std::string, TypePtr> > & params,
-    std::vector<const CppAstNode *> & default_args)
+    std::vector<const CppAstNode *> & default_args,
+    std::vector<TypePtr> * parameter_object_types)
 {
   params.clear();
   default_args.clear();
+  if(parameter_object_types) {
+    parameter_object_types->clear();
+  }
 
   Scope parameter_scope(&inst_scope, "<parameter-clause>", false);
   initialize_instantiated_function_parameter_scope(parameter_scope,
@@ -6321,20 +6326,31 @@ bool expand_instantiated_function_parameter_clause(
       single_clause.children.push_back(parameter);
       std::vector<std::pair<std::string, TypePtr> > single_params;
       std::vector<const CppAstNode *> single_defaults;
+      std::vector<TypePtr> single_parameter_object_types;
       if(!ctx.parse_parameter_clause(parameter_scope,
                                      single_clause,
                                      single_params,
                                      &single_defaults,
-                                     true) ||
+                                     true,
+                                     parameter_object_types ?
+                                         &single_parameter_object_types : nullptr) ||
          single_params.size() != 1) {
         return false;
       }
       params.push_back(single_params[0]);
+      if(parameter_object_types) {
+        if(single_parameter_object_types.size() != 1) {
+          return false;
+        }
+        parameter_object_types->push_back(single_parameter_object_types[0]);
+      }
       default_args.push_back(cpp_decl::find_child(parameter,
                                                   CppAstKind::default_argument));
       template_scope::bind_parameter_value(parameter_scope,
                                            single_params[0].first,
-                                           single_params[0].second);
+                                           parameter_object_types ?
+                                               single_parameter_object_types[0] :
+                                               single_params[0].second);
       continue;
     }
 
@@ -6373,15 +6389,24 @@ bool expand_instantiated_function_parameter_clause(
       single_clause.children.push_back(stripped_parameter);
       std::vector<std::pair<std::string, TypePtr> > single_params;
       std::vector<const CppAstNode *> single_defaults;
+      std::vector<TypePtr> single_parameter_object_types;
       if(!ctx.parse_parameter_clause(single_scope,
                                      single_clause,
                                      single_params,
                                      &single_defaults,
-                                     true) ||
+                                     true,
+                                     parameter_object_types ?
+                                         &single_parameter_object_types : nullptr) ||
          single_params.size() != 1) {
         return false;
       }
       params.push_back(single_params[0]);
+      if(parameter_object_types) {
+        if(single_parameter_object_types.size() != 1) {
+          return false;
+        }
+        parameter_object_types->push_back(single_parameter_object_types[0]);
+      }
       default_args.push_back(cpp_decl::find_child(parameter,
                                                   CppAstKind::default_argument));
     }
@@ -6437,7 +6462,8 @@ bool build_instantiated_function_parameter_pack_fallback(
     std::string & name,
     TypePtr & type,
     std::vector<std::pair<std::string, TypePtr> > & params,
-    std::vector<const CppAstNode *> & default_args)
+    std::vector<const CppAstNode *> & default_args,
+    std::vector<TypePtr> * parameter_object_types)
 {
   if(!decl.declarator || !decl.has_trailing_function_parameter_pack) {
     return false;
@@ -6451,7 +6477,8 @@ bool build_instantiated_function_parameter_pack_fallback(
                                                     inst_scope,
                                                     *parameter_clause,
                                                     params,
-                                                    default_args)) {
+                                                    default_args,
+                                                    parameter_object_types)) {
     return false;
   }
   name = decl.name;
@@ -6480,7 +6507,8 @@ bool refresh_instantiated_function_parameter_clause(
     FunctionTemplateDecl & decl,
     TypePtr & type,
     std::vector<std::pair<std::string, TypePtr> > & params,
-    std::vector<const CppAstNode *> & default_args)
+    std::vector<const CppAstNode *> & default_args,
+    std::vector<TypePtr> & parameter_object_types)
 {
   (void)default_args;
   const CppAstNode * parameter_clause = function_template_parameter_clause(decl);
@@ -6494,7 +6522,8 @@ bool refresh_instantiated_function_parameter_clause(
                                                     inst_scope,
                                                     *parameter_clause,
                                                     refreshed_params,
-                                                    refreshed_default_args)) {
+                                                    refreshed_default_args,
+                                                    &parameter_object_types)) {
     return false;
   }
 
@@ -11171,6 +11200,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   std::string name;
   TypePtr type;
   std::vector<std::pair<std::string, TypePtr> > params;
+  std::vector<TypePtr> parameter_object_types;
   std::vector<const CppAstNode *> default_args;
   const auto instantiation_context = [&]() -> std::string
   {
@@ -11213,7 +11243,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                        inst_scope,
                                                        *parameter_clause,
                                                        expanded_params,
-                                                       expanded_default_args)) {
+                                                       expanded_default_args,
+                                                       &parameter_object_types)) {
         params.swap(expanded_params);
         default_args.swap(expanded_default_args);
       } else {
@@ -11236,7 +11267,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                        inst_scope,
                                                        *parameter_clause,
                                                        expanded_params,
-                                                       expanded_default_args)) {
+                                                       expanded_default_args,
+                                                       &parameter_object_types)) {
         params.swap(expanded_params);
         default_args.swap(expanded_default_args);
       } else {
@@ -11264,7 +11296,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                        inst_scope,
                                                        *parameter_clause,
                                                        expanded_params,
-                                                       expanded_default_args)) {
+                                                       expanded_default_args,
+                                                       &parameter_object_types)) {
         params.swap(expanded_params);
         default_args.swap(expanded_default_args);
       } else {
@@ -11306,7 +11339,14 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       default_args.swap(parsed.default_arguments);
     } catch(const TemplateSubstitutionFailure &) {
       if(!build_instantiated_function_parameter_pack_fallback(
-             ctx, inst_scope, *source_decl, name, type, params, default_args)) {
+             ctx,
+             inst_scope,
+             *source_decl,
+             name,
+             type,
+             params,
+             default_args,
+             &parameter_object_types)) {
         throw;
       }
     }
@@ -11316,7 +11356,13 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         [&]()
         {
           refresh_instantiated_function_parameter_clause(
-              ctx, inst_scope, *source_decl, type, params, default_args);
+              ctx,
+              inst_scope,
+              *source_decl,
+              type,
+              params,
+              default_args,
+              parameter_object_types);
         },
         instantiation_context);
   }
@@ -12132,6 +12178,13 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   }
   const std::vector<std::string> parameter_aliases =
       instantiate_function_parameter_aliases(*source_decl, params);
+  if(parameter_object_types.size() != params.size()) {
+    parameter_object_types.clear();
+    parameter_object_types.reserve(params.size());
+    for(std::size_t i = 0; i < params.size(); ++i) {
+      parameter_object_types.push_back(params[i].second);
+    }
+  }
 
   const bool source_template_body_suppressed_by_owner =
       !explicit_specialization &&
@@ -12229,6 +12282,18 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     if(!binding) {
       throw std::logic_error("missing instantiated function");
     }
+  }
+  const std::size_t explicit_param_offset =
+      function_binding_explicit_parameter_offset(*binding);
+  if(binding->params.size() == explicit_param_offset + parameter_object_types.size()) {
+    binding->parameter_object_types.clear();
+    binding->parameter_object_types.reserve(binding->params.size());
+    for(std::size_t i = 0; i < explicit_param_offset; ++i) {
+      binding->parameter_object_types.push_back(binding->params[i].second);
+    }
+    binding->parameter_object_types.insert(binding->parameter_object_types.end(),
+                                           parameter_object_types.begin(),
+                                           parameter_object_types.end());
   }
   binding->is_deleted = binding->is_deleted || source_decl->is_deleted;
   apply_instantiated_parameter_aliases(*binding, parameter_aliases);

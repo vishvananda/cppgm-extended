@@ -597,6 +597,10 @@ struct FunctionBinding
   cpp_decl::TypePtr type;
   Scope * declaration_scope = nullptr;
   std::vector<std::pair<std::string, cpp_decl::TypePtr> > params;
+  // Function signatures discard top-level cv-qualification from by-value
+  // parameters.  Retain the corresponding parameter object types for uses
+  // inside the function body, where that qualification remains observable.
+  std::vector<cpp_decl::TypePtr> parameter_object_types;
   std::vector<std::string> parameter_aliases;
   std::vector<const CppAstNode *> default_arguments;
   const CppAstNode * declaration_node = nullptr;

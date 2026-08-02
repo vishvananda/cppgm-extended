@@ -153,19 +153,6 @@ bool source_location_points_at_identifier(SemanticContext & ctx,
           identifier);
 }
 
-bool source_location_identifier_followed_by(SemanticContext & ctx,
-                                            const std::string & location,
-                                            const std::string & identifier,
-                                            char ch)
-{
-  return template_api::template_witness_detail::
-      source_location_identifier_token_followed_by(
-          ctx.template_witness_context(),
-          location,
-          identifier,
-          std::string(1, ch));
-}
-
 bool source_location_has_identifier_on_or_after(SemanticContext & ctx,
                                                 const std::string & location,
                                                 const std::string & identifier)
@@ -2209,7 +2196,6 @@ bool binding_declares_explicit_function(const FunctionBinding & binding)
 bool try_analyze_declval_call_expression(SemanticContext & ctx,
                                          Scope & scope,
                                          const CppAstNode & node,
-                                         const std::string & use_location,
                                          ExprInfo & out)
 {
   if(node.children.empty() || node.children[0].kind != CppAstKind::id_expression) {
@@ -2253,43 +2239,11 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
      !template_argument_semantics::argument_syntax_uses_bound_template_type(
          scope, *arg_syntax) &&
      !ctx.type_depends_on_template_parameter(declval_type)) {
-    std::string public_location =
-        normalize_template_witness_location(use_location);
-    const std::string node_declval_location =
+    const std::string public_location =
         normalize_template_witness_location(
-            source_location_for_name_in_subtree(ctx, node, "declval", false));
-    if(source_location_points_at_identifier(ctx,
-                                            node_declval_location,
-                                            "declval") &&
-       source_location_identifier_followed_by(ctx,
-                                              node_declval_location,
-                                              "declval",
-                                              '<')) {
-      public_location = node_declval_location;
-    }
-    if(!public_location.empty() &&
-       !source_location_points_at_identifier(ctx, public_location, "declval")) {
-      const std::string same_line_declval_location =
-          template_api::template_witness_detail::
-              source_location_for_identifier_token_on_or_after(
-                  ctx.template_witness_context(),
-                  public_location,
-                  "declval",
-                  true);
-      if(!same_line_declval_location.empty()) {
-        public_location = normalize_template_witness_location(
-            same_line_declval_location);
-      }
-    }
-    if(!source_location_points_at_identifier(ctx, public_location, "declval")) {
-      public_location.clear();
-    }
-    if(!source_location_identifier_followed_by(ctx,
-                                               public_location,
-                                               "declval",
-                                               '<')) {
-      public_location.clear();
-    }
+            template_api::template_witness_detail::source_location_for_location_id(
+                ctx.template_witness_context(),
+                template_id->source_location_id));
     if(!public_location.empty()) {
       witness::FunctionCallSourceDecision decision;
       decision.origin = witness::FunctionCallEmissionOrigin::DeclvalCall;
@@ -13496,18 +13450,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           refine_fragment_use_location(ctx, node, hints->use_location) :
           std::string();
   ExprInfo declval_expr;
-  std::string direct_declval_use_location =
-      !hint_use_location.empty() ?
-          hint_use_location :
-          (hints && !hints->use_location.empty() ? hints->use_location : std::string());
-  if(direct_declval_use_location.empty()) {
-    direct_declval_use_location =
-        refine_fragment_use_location(ctx, node, parser_trace::current_use_location());
-  }
   if(try_analyze_declval_call_expression(ctx,
                                          scope,
                                          node,
-                                         direct_declval_use_location,
                                          declval_expr)) {
     return declval_expr;
   }
@@ -13590,26 +13535,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       return;
     }
     ExprInfo ignored_declval_expr;
-    const std::string child_use_location =
-        refine_fragment_use_location(ctx,
-                                     child,
-                                     !hint_use_location.empty() ?
-                                         hint_use_location :
-                                         parser_trace::current_use_location());
-    const std::string child_declval_location =
-        normalize_template_witness_location(
-            source_location_for_name_in_subtree(ctx, child, "declval", false));
-    std::string effective_child_use_location = child_use_location;
-    if(effective_child_use_location.empty() &&
-       source_location_points_at_identifier(ctx,
-                                            child_declval_location,
-                                            "declval")) {
-      effective_child_use_location = child_declval_location;
-    }
     try_analyze_declval_call_expression(ctx,
                                         scope,
                                         child,
-                                        effective_child_use_location,
                                         ignored_declval_expr);
   };
   note_direct_declval_source_call(callee_node);

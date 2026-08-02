@@ -24,6 +24,8 @@ bool is_trivially_destructible_type(const cpp_decl::TypePtr & type,
                                     const TypeTraitCallbacks & callbacks);
 bool is_trivially_copy_constructible_type(const cpp_decl::TypePtr & type,
                                           const TypeTraitCallbacks & callbacks);
+bool is_trivially_move_constructible_type(const cpp_decl::TypePtr & type,
+                                          const TypeTraitCallbacks & callbacks);
 bool is_trivially_copy_assignable_type(const cpp_decl::TypePtr & type,
                                        const TypeTraitCallbacks & callbacks);
 

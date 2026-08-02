@@ -14441,6 +14441,11 @@ bool expression_node_mentions_identifier(const CppAstNode & node,
                                          const string & name);
 bool argument_syntax_mentions_identifier(const TemplateArgumentSyntax & syntax,
                                          const string & name);
+bool argument_syntax_mentions_pack_expansion_identifier(
+    const TemplateArgumentSyntax & syntax,
+    const string & name,
+    bool include_current_pack,
+    bool skip_nested_pack_expansions);
 string replace_identifier_token_text(const string & text,
                                      const string & name,
                                      const string & replacement,
@@ -15819,7 +15824,10 @@ void collect_referenced_type_pack_names(
     if(it->first.empty()) {
       continue;
     }
-    if(argument_syntax_mentions_identifier(argument, it->first) &&
+    if(argument_syntax_mentions_pack_expansion_identifier(argument,
+                                                          it->first,
+                                                          true,
+                                                          true) &&
        find(out.begin(), out.end(), it->first) == out.end()) {
       out.push_back(it->first);
     }

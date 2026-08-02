@@ -964,6 +964,13 @@ constexpr_function_parameters_impl(FunctionBinding & binding)
 {
   ensure_function_parameter_aliases(binding);
   std::vector<std::pair<std::string, TypePtr> > params = binding.params;
+  if(binding.parameter_object_types.size() == params.size()) {
+    for(std::size_t i = 0; i < params.size(); ++i) {
+      if(binding.parameter_object_types[i]) {
+        params[i].second = binding.parameter_object_types[i];
+      }
+    }
+  }
   std::map<std::string, std::size_t> seen;
   for(std::size_t i = 0; i < params.size(); ++i) {
     params[i].first = constexpr_parameter_unique_name(binding, i, seen);
@@ -2111,7 +2118,14 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
     if(!evaluator.eval_expr(payload->children[0], value)) {
       return false;
     }
-    return constant_eval::constexpr_value_cast(value, target, out);
+    return constant_eval::constexpr_value_cast(value, target, out) ||
+           evaluate_constexpr_target_conversion(ctx,
+                                                scope,
+                                                evaluator,
+                                                payload->children[0],
+                                                value,
+                                                target,
+                                                out);
   }
 
   constant_eval::ConstexprValue value;
@@ -2947,6 +2961,16 @@ bool evaluate_constexpr_target_conversion(SemanticContext & ctx,
                                                converted,
                                                rank,
                                                conversion_options);
+  }
+  long long integral_value = 0;
+  if(converted_ok &&
+     (target_base->kind == Type::TK_POINTER ||
+      target_base->kind == Type::TK_MEMBER_POINTER) &&
+     constant_eval::constexpr_value_to_integral(source_value, integral_value) &&
+     integral_value == 0) {
+    out = constant_eval::make_nullptr_value();
+    out.type = target;
+    return true;
   }
   if(!converted_ok ||
      converted.node.kind != CallSemKind::call_expression ||

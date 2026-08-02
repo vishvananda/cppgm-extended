@@ -2456,6 +2456,16 @@ vector<const CppAstNode *> new_initializer_argument_nodes(const CppAstNode & nod
   return args;
 }
 
+bool new_initializer_is_braced(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::braced_init_list) {
+    return true;
+  }
+  return node.kind == CppAstKind::initializer &&
+         node.children.size() == 1 &&
+         new_initializer_is_braced(node.children[0]);
+}
+
 vector<const CppAstNode *> expand_new_argument_nodes(SemanticContext & ctx,
                                                      Scope & scope,
                                                      const vector<const CppAstNode *> & args,
@@ -4210,7 +4220,10 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
   }
 
   vector<const CppAstNode *> ctor_arg_nodes;
-  if(const CppAstNode * initializer = find_child(node, CppAstKind::initializer)) {
+  const CppAstNode * initializer = find_child(node, CppAstKind::initializer);
+  const bool braced_new_initializer =
+      initializer && new_initializer_is_braced(*initializer);
+  if(initializer) {
     ctor_arg_nodes = new_initializer_argument_nodes(*initializer);
   } else if(implied_empty_initializer) {
     ctor_arg_nodes.clear();
@@ -4319,10 +4332,17 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
 
   constructor_lifecycle_service::ConstructorSelectionResult ctor;
   {
-    const ConstructorSelectionOptions ctor_options =
+    ConstructorSelectionOptions ctor_options =
         constructor_lifecycle_service::selection_options_for(
             constructor_lifecycle_service::direct_initialization_profile(
                 "new-expression"));
+    if(braced_new_initializer &&
+       semantic_class_model::can_synthesize_aggregate_constructor(*class_info)) {
+      constructor_lifecycle_service::apply_selection_profile(
+          ctor_options,
+          constructor_lifecycle_service::aggregate_construction_profile(
+              "braced new-expression"));
+    }
     constructor_lifecycle_service::select_constructor_into(ctx,
                                                            scope,
                                                            *class_info,

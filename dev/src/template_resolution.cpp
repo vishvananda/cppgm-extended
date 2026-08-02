@@ -503,16 +503,20 @@ bool make_substituted_default_template_argument_syntax(
     TemplateArgumentSyntax & syntax)
 {
   CppAstNode substituted;
-  if(!template_argument_semantics::substitute_expression_node_for_template_arguments(
-         scope, node, parameters, arguments, substituted)) {
-    return false;
-  }
   if(parameter.kind != TemplateParameterInfo::TP_NON_TYPE) {
-    CppAstNode expanded;
-    if(template_argument_semantics::expand_bound_packs_in_type_id_node(
-           services, scope, substituted, expanded)) {
-      substituted = expanded;
+    if(!template_argument_semantics::substitute_type_id_node_for_template_arguments(
+           services,
+           scope,
+           node,
+           parameters,
+           arguments,
+           substituted)) {
+      return false;
     }
+  } else if(!template_argument_semantics::
+                 substitute_expression_node_for_template_arguments(
+                     scope, node, parameters, arguments, substituted)) {
+    return false;
   }
   std::string text = default_type_argument_text_from_ast(parameter, substituted);
   if(text.empty()) {
