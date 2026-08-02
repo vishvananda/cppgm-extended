@@ -395,6 +395,24 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             )
             self.assertEqual(audit.host_object_interop_evidence(anchor, "pa31"), "")
 
+    def test_dynamic_local_static_with_eh_has_guarded_cleanup_feature(self) -> None:
+        source = textwrap.dedent(
+            """\
+            struct value { value(int); };
+            int read() {
+              static value item(value(1));
+              return 0;
+            }
+            """
+        )
+        hits = audit.detect_features(
+            source,
+            "global @__local_static__read__item = zero\n"
+            "function @read() {\n  eh_try ^cleanup\n  eh_end\n}\n",
+            "pa25/tests/general/200-guarded-static.t",
+        )
+        self.assertIn("exception.guarded_static_cleanup", hits)
+
 
 if __name__ == "__main__":
     unittest.main()

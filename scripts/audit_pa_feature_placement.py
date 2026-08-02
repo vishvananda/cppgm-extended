@@ -325,6 +325,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("exception.try_catch",
                 (rx(r"\btry\s*\{"), rx(r"\bcatch\s*\("), rx(r"\bthrow\b")),
                 ref_patterns=(rx(r"\b__cxa_(?:throw|begin_catch|rethrow)\b|\bexception_selector\b"),)),
+    FeatureRule("exception.guarded_static_cleanup", ()),
     FeatureRule("host.eh_object", ()),
     FeatureRule("host.object_interop", ()),
     FeatureRule("host.object_attribute", ()),
@@ -1072,6 +1073,14 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
                 hits.pop("support.host_predefined_macro", None)
     if "/pa30/tests/abi/" in test_path or test_path.startswith("pa30/tests/abi/"):
         hits.pop("template.builtin_traits", None)
+    if (
+        re.search(r"__local_static__|local_static_(?:init|ready)", ref_text)
+        and LOWIR_EH_CONTROL_RE.search(ref_text)
+    ):
+        hits["exception.guarded_static_cleanup"] = FeatureHit(
+            "exception.guarded_static_cleanup",
+            ["source:function-local dynamic class static", "ref:EH control"],
+        )
     return hits
 
 
