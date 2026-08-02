@@ -450,6 +450,9 @@ To complete PA28, implement these goals:
    cases should compile and run correctly but do not require the exact spill/register
    strategy used by the reference implementation.
 
+   An integer-only call still clobbers caller-saved XMM registers, so a live `f32` or
+   `f64` value must survive that call even when no floating argument or result is present.
+
    Hidden indirect-result arguments can shift ordinary pointer and reference parameters
    into different ABI registers. Forwarding those parameters after earlier scratch-using
    operations must preserve their original values too.

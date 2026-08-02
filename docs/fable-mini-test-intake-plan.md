@@ -28,11 +28,13 @@ separate implementation task. Do not weaken the test or change production code
 as part of an intake batch.
 
 This repository is the source of the student reference binaries when it is
-exported. Generate intake references with a clean host-compiler build of the
-relevant `dev/` binary from the frozen intake target commit. Use that same
-binary for reference generation and current-tree validation. References from
-Fable and Mini remain evidence for reconstructing the intended behavior; they
-are not the canonical source for a newly intaked fixture.
+exported. Generate intake references with the normal `dev/` binary built from
+the frozen intake target commit by the intended host compiler. Use that same
+binary for reference generation and current-tree validation. Do not create a
+separate reference object root, and do not clean or rebuild unchanged objects
+solely for intake. References from Fable and Mini remain evidence for
+reconstructing the intended behavior; they are not the canonical source for a
+newly intaked fixture.
 
 ## Intake Rules
 
@@ -48,9 +50,11 @@ are not the canonical source for a newly intaked fixture.
 7. Prefer standard C++11 and test-owned helper types. Keep hosted or
    implementation-specific dependencies only when they are the behavior under
    test.
-8. Regenerate references through the repository's reference workflow, using a
-   clean host build of this tree's relevant reference binary. Do not use a
-   stale in-tree binary or copy a run reference as the new canonical oracle.
+8. Regenerate references through the repository's reference workflow, using
+   this tree's normal relevant `dev/` binary built with the intended host
+   compiler. Verify the binary and build configuration before use, but do not
+   clean or rebuild unchanged objects. Do not copy a run reference as the new
+   canonical oracle.
 9. Keep PA1 through PA9 at `catalog-pa1-pa9` during the first pass.
 
 ## Course-Tree Inventory
@@ -439,19 +443,23 @@ family wholesale.
   the generating reference binary so any exact diagnostic oracle remains
   reproducible.
 - Keep source-run references as evidence until the expected result is
-  understood, then generate the local canonical references from a clean host
-  build of this repository's relevant tool. This tree becomes the student
-  reference binary on export.
-- Build the normal `dev/` tool from the frozen target commit, then pass that
-  same binary through the assignment's `ref-test` workflow and use it for the
-  current-tree checks. For example:
+  understood, then generate the local canonical references from this
+  repository's normal host-built tool. This tree becomes the student reference
+  binary on export.
+- Build the normal `dev/` tool from the frozen target commit with the intended
+  host compiler when it is not already current. Do not clean first and do not
+  create a separate reference object root. Pass that same binary through the
+  assignment's `ref-test` workflow and use it for the current-tree checks. Once
+  the tool is current, skip the redundant dev rebuild in focused runs. For
+  example:
 
   ```sh
   make -C dev cppgm++ CXX="$CPPGM_HOST_CXX" \
     CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
   make -C paNN ref-test TEST='tests/<suite>/<test>.t' \
-    REF_TEST_APP=../dev/cppgm++
-  make -C paNN check TEST='tests/<suite>/<test>.t'
+    REF_TEST_APP=../dev/cppgm++ CPPGM_SKIP_DEV_REBUILD=1
+  make -C paNN check TEST='tests/<suite>/<test>.t' \
+    CPPGM_SKIP_DEV_REBUILD=1
   ```
 
   On macOS, use the repository's intended Homebrew LLVM compiler explicitly:
@@ -492,16 +500,16 @@ family wholesale.
   current pipeline agrees with Clang but a source-run reference does not, treat
   the source-run reference as incorrect and do not preserve it.
 
-  Establish that clean host-compiler build once when the frozen source commit
-  or compiler configuration changes. During test-only intake batches, reuse
-  the existing normal object tree for reference generation and root
-  `test-report` validation; do not run a clean target merely to validate a new
-  test or README edit. Incremental frontend relinking is expected and does not
-  require recompiling unchanged objects.
-- A source-run reference may be compared against the clean target build as a
+  Establish the correctly configured host-compiler build once when the frozen
+  source commit or compiler configuration changes. During test-only intake
+  batches, reuse the existing normal object tree for reference generation and
+  root `test-report` validation; do not run a clean target merely to validate a
+  new test or README edit. Incremental frontend relinking is expected and does
+  not require recompiling unchanged objects.
+- A source-run reference may be compared against the normal target build as a
   provenance and compatibility control, but it must not replace local
   reference generation.
-- If the clean target build disagrees with independently established intended
+- If the normal target build disagrees with independently established intended
   behavior, mark the row `blocked-current-bug` and handle the production fix
   separately before regenerating the reference. Do not encode a known compiler
   bug into the oracle.
@@ -516,7 +524,7 @@ Makefile, for example:
 
 ```sh
 make -C paNN ref-test TEST='tests/<suite>/<test>.t' \
-  REF_TEST_APP=../dev/<clean-host-built-tool>
+  REF_TEST_APP=../dev/<host-built-tool> CPPGM_SKIP_DEV_REBUILD=1
 ```
 
 Later assignments route tests by bucket. Check that Makefile before generating
@@ -528,8 +536,7 @@ Run the narrowest checks first:
 
 1. Independent C++11 validation or the documented hosted/extension check.
 2. Historical fail/pass proof when the source history supports it.
-3. Reference generation from the clean host-built target binary recorded for
-   the batch.
+3. Reference generation from the recorded normal host-built target binary.
 4. Re-read the owning assignment README against the final reduced source and
    oracle. Confirm the behavior is already an explicit student expectation or
    land the minimal README clarification before accepting the family.
