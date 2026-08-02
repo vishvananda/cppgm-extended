@@ -273,6 +273,9 @@ PA16 supports the following in addition to the PA15 subset:
   cv-combined glvalue operands, lvalue/prvalue conversion, and destruction of a
   containing branch temporary only after its selected member result has been
   materialized
+- class temporaries created earlier in an enclosing full expression remain
+  alive across nested conditional and short-circuit branch edges, and are
+  destroyed at the end of that full expression
 - non-template conversion operators that participate in the existing overload
   and conversion machinery
 

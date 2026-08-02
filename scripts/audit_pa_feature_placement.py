@@ -363,7 +363,9 @@ RULES: tuple[FeatureRule, ...] = (
                 ref_patterns=()),
     FeatureRule("value.ref_qualified_member", (rx(r"\)\s*(?:const\s*)?[&]{1,2}\s*(?:;|\{|->|noexcept)"),)),
     FeatureRule("value.delegating_ctor",
-                (rx(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\([^)]*\)\s*:\s*\1\s*\("),)),
+                (rx(r"^[ \t]*(?:[A-Za-z_][A-Za-z0-9_]*(?:\s*<[^;{}()]*>)?\s*::\s*)*"
+                    r"([A-Za-z_][A-Za-z0-9_]*)\s*\([^;{}]*\)\s*:\s*\1\s*"
+                    r"\([^;{}]*\)\s*\{"),)),
     FeatureRule("class.union", (rx(r"\bunion\b"),)),
     FeatureRule("expr.array_new_delete", (rx(r"\bnew\s+[^\[]*\[|\bdelete\s*\["),),
                 ref_patterns=(rx(r"operator_(?:new|delete)_array|delete_array|array_cookie"),)),

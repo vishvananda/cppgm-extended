@@ -198,6 +198,28 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             audit.detect_features(pointer_parameter),
         )
 
+    def test_delegating_constructor_ignores_conditional_prvalues(self) -> None:
+        conditional = (
+            "int result = value() + (choose ? value() : value());"
+        )
+        delegating = textwrap.dedent(
+            """\
+            struct value {
+              value(int);
+              value() : value(0) {}
+            };
+            """
+        )
+
+        self.assertNotIn(
+            "value.delegating_ctor",
+            audit.detect_features(conditional),
+        )
+        self.assertIn(
+            "value.delegating_ctor",
+            audit.detect_features(delegating),
+        )
+
     def test_dynamic_local_static_ignores_class_static_member_array(self) -> None:
         class_static = textwrap.dedent(
             """\
