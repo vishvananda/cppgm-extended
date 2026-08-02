@@ -12705,29 +12705,102 @@ void CppAstParser::note_using_imports(const CppAstNode & node)
       return;
     }
 
-    const auto template_found = namespace_template_name_scopes.find(target_key);
-    if(template_found != namespace_template_name_scopes.end()) {
-      template_name_scopes.back().insert(template_found->second.begin(),
-                                         template_found->second.end());
-      changed = true;
+    // A using-directive makes names visible at the nearest common ancestor
+    // namespace; it does not redeclare them in the lexical scope containing
+    // the directive.  Keep any name already declared in a nearer namespace
+    // from being duplicated into the current block, where it would acquire an
+    // incorrectly high lookup rank.
+    vector<string> target_parts;
+    for(size_t start = 0; start < target_key.size();) {
+      const size_t split = target_key.find("::", start);
+      target_parts.push_back(target_key.substr(
+          start, split == string::npos ? string::npos : split - start));
+      if(split == string::npos) {
+        break;
+      }
+      start = split + 2;
     }
+    size_t common_namespace_depth = 0;
+    while(common_namespace_depth < namespace_path_stack.size() &&
+          common_namespace_depth < target_parts.size() &&
+          namespace_path_stack[common_namespace_depth] ==
+              target_parts[common_namespace_depth]) {
+      ++common_namespace_depth;
+    }
+    const int import_rank = static_cast<int>(common_namespace_depth);
+    const auto hidden_by_nearer_namespace_name =
+        [&](text_intern::Atom atom) -> bool
+    {
+      const int nearest_value = std::max(
+          nearest_name_scope_index(&value_name_scopes,
+                                   inherited_value_name_scopes,
+                                   atom),
+          nearest_name_scope_index(&template_value_parameter_scopes,
+                                   inherited_template_value_parameter_scopes,
+                                   atom));
+      const int nearest_non_value = std::max(
+          std::max(nearest_name_scope_index(&type_name_scopes,
+                                            inherited_type_name_scopes,
+                                            atom),
+                   nearest_name_scope_index(&template_type_parameter_scopes,
+                                            inherited_template_type_parameter_scopes,
+                                            atom)),
+          nearest_name_scope_index(&template_name_scopes,
+                                   inherited_template_name_scopes,
+                                   atom));
+      return std::max(nearest_value, nearest_non_value) > import_rank;
+    };
+    const auto template_found = namespace_template_name_scopes.find(target_key);
     const auto template_value_found =
         namespace_template_value_name_scopes.find(target_key);
-    if(template_value_found != namespace_template_value_name_scopes.end()) {
-      template_value_parameter_scopes.back().insert(template_value_found->second.begin(),
-                                                    template_value_found->second.end());
-      changed = true;
-    }
     const auto type_found = namespace_type_name_scopes.find(target_key);
+    const auto value_found = namespace_value_name_scopes.find(target_key);
+    NameSet hidden_import_names;
+    const auto collect_hidden_imports =
+        [&](const NameSet & source) -> void
+    {
+      for(NameSet::const_iterator it = source.begin(); it != source.end(); ++it) {
+        if(hidden_by_nearer_namespace_name(*it)) {
+          hidden_import_names.insert(*it);
+        }
+      }
+    };
+    if(template_found != namespace_template_name_scopes.end()) {
+      collect_hidden_imports(template_found->second);
+    }
+    if(template_value_found != namespace_template_value_name_scopes.end()) {
+      collect_hidden_imports(template_value_found->second);
+    }
     if(type_found != namespace_type_name_scopes.end()) {
-      type_name_scopes.back().insert(type_found->second.begin(),
-                                     type_found->second.end());
+      collect_hidden_imports(type_found->second);
+    }
+    if(value_found != namespace_value_name_scopes.end()) {
+      collect_hidden_imports(value_found->second);
+    }
+    const auto insert_visible_imports =
+        [&](NameSet & destination, const NameSet & source) -> void
+    {
+      for(NameSet::const_iterator it = source.begin(); it != source.end(); ++it) {
+        if(hidden_import_names.count(*it) == 0) {
+          destination.insert(*it);
+        }
+      }
+    };
+    if(template_found != namespace_template_name_scopes.end()) {
+      insert_visible_imports(template_name_scopes.back(), template_found->second);
       changed = true;
     }
-    const auto value_found = namespace_value_name_scopes.find(target_key);
+    if(template_value_found != namespace_template_value_name_scopes.end()) {
+      insert_visible_imports(template_value_parameter_scopes.back(),
+                             template_value_found->second);
+      changed = true;
+    }
+    if(type_found != namespace_type_name_scopes.end()) {
+      insert_visible_imports(type_name_scopes.back(), type_found->second);
+      changed = true;
+    }
     if(value_found != namespace_value_name_scopes.end()) {
-      value_name_scopes.back().insert(value_found->second.begin(),
-                                      value_found->second.end());
+      insert_visible_imports(value_name_scopes.back(), value_found->second);
       changed = true;
     }
   } else if(node.kind == CppAstKind::using_declaration) {

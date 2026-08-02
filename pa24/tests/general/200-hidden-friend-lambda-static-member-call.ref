@@ -1,3 +1,5 @@
+declare function @holder_int___key(%arg0 : i32) -> u8 [binding=strong, object=_ZN6holderIiE3keyEi]
+
 function @use(%value : ptr [pass=reference]) -> u8 [binding=strong, object=_Z3useRK6holderIiE] {
   slot $value : ptr
 

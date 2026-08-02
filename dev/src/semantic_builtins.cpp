@@ -1268,6 +1268,23 @@ FunctionBinding * find_assignment_operator_for_trait(ClassInfo & info, bool want
   return nullptr;
 }
 
+bool assignment_binding_accepts_lhs_cv(const FunctionBinding & binding,
+                                       const TypePtr & target)
+{
+  TypePtr object_type = remove_reference_type(target);
+  if(!object_type) {
+    object_type = target;
+  }
+  TypePtr base;
+  bool cv_const = false;
+  bool cv_volatile = false;
+  if(!top_level_cv_flags(object_type, base, cv_const, cv_volatile)) {
+    return false;
+  }
+  return (!cv_const || binding.is_const_method) &&
+         (!cv_volatile || binding.is_volatile_method);
+}
+
 bool assignment_binding_accepts_rhs(SemanticContext & ctx,
                                     Scope & scope,
                                     const FunctionBinding & binding,
@@ -1417,6 +1434,9 @@ FunctionBinding * find_class_assignment_operator_for_trait(SemanticContext & ctx
       [&](FunctionBinding * binding) -> void
       {
         if(!binding || binding == best) {
+          return;
+        }
+        if(!assignment_binding_accepts_lhs_cv(*binding, target)) {
           return;
         }
         TypePtr function_type = strip_top_level_cv(binding->type);
@@ -1600,7 +1620,8 @@ SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & 
   if(rhs.category != VC_LVALUE) {
     ctx.ensure_implicit_move_assignment(*info);
     FunctionBinding * move = find_assignment_operator_for_trait(*info, true);
-    if(move && assignment_binding_accepts_rhs(
+    if(move && assignment_binding_accepts_lhs_cv(*move, target) &&
+       assignment_binding_accepts_rhs(
                    ctx, scope, *move, rhs, lhs_category)) {
       result.binding = move;
       result.assignable = !move->is_deleted && move->access == MA_PUBLIC;
@@ -1612,7 +1633,8 @@ SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & 
   if(!copy) {
     copy = ctx.ensure_implicit_copy_assignment(*info);
   }
-  if(copy && assignment_binding_accepts_rhs(
+  if(copy && assignment_binding_accepts_lhs_cv(*copy, target) &&
+     assignment_binding_accepts_rhs(
                  ctx, scope, *copy, rhs, lhs_category)) {
     if(copy->is_deleted) {
       if(FunctionBinding * alternate =
@@ -1626,6 +1648,15 @@ SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & 
     }
     result.binding = copy;
     result.assignable = !copy->is_deleted && copy->access == MA_PUBLIC;
+    return result;
+  }
+
+  if(FunctionBinding * alternate =
+         find_class_assignment_operator_for_trait(
+             ctx, scope, target, rhs, lhs_category)) {
+    result.binding = alternate;
+    result.assignable =
+        !alternate->is_deleted && alternate->access == MA_PUBLIC;
   }
   return result;
 }
@@ -3112,11 +3143,6 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
       return true;
     }
 
-    if(is_const_object_type(target)) {
-      out = 0;
-      return true;
-    }
-
     TypePtr rhs_base = strip_top_level_cv(rhs);
     if(!rhs_base) {
       return false;
@@ -3166,11 +3192,6 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
     TypePtr target;
     ValueCategory lhs_category = VC_LVALUE;
     if(!prepare_assignment_trait_lhs(ctx, lhs, target, lhs_category)) {
-      out = 0;
-      return true;
-    }
-
-    if(is_const_object_type(target)) {
       out = 0;
       return true;
     }

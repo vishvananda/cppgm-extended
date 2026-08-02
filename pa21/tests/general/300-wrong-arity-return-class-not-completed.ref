@@ -1,0 +1,29 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $tmpobj__1 : obj<1x1>
+  slot $refarg__2 : i32
+
+  block ^entry:
+    %t1 = addr $tmpobj__1
+    call void @function_operation___function(%t1)
+    store i32 1, $refarg__2
+    %t2 = addr $refarg__2
+    %t3 = call i32 @function_operation___operator____ov2(%t1, %t2)
+    return i32 %t3
+}
+function @function_operation___function(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8functionI9operationEC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @function_operation___operator____ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK8functionI9operationEclIiEEiRKT_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return i32 0
+}
+alias object _ZN8functionI9operationEC2Ev = @function_operation___function

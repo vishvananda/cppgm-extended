@@ -5302,6 +5302,7 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     if(!qualifier_template_id &&
        i == 0 &&
        lone_template_id &&
+       lone_template_id->name.qualifiers.size() == i &&
        !lone_template_id->name.name.empty()) {
       const string qualifier_head =
           unqualified_member_name(

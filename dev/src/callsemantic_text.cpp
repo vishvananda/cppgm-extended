@@ -641,20 +641,7 @@ bool is_pure_virtual_initializer(const CppAstNode & initializer)
 
   const CppAstNode & child = initializer.children[0];
   return child.kind == CppAstKind::literal &&
-         semantic_utils::trim_space(node_text(child)) == "0";
-}
-
-bool subtree_contains_pure_virtual_initializer(const CppAstNode & node)
-{
-  if(is_pure_virtual_initializer(node)) {
-    return true;
-  }
-  for(size_t i = 0; i < node.children.size(); ++i) {
-    if(subtree_contains_pure_virtual_initializer(node.children[i])) {
-      return true;
-    }
-  }
-  return false;
+         child.value == "0";
 }
 
 bool declaration_node_is_pure_virtual(const CppAstNode * declaration_node)
@@ -671,17 +658,7 @@ bool declaration_node_is_pure_virtual(const CppAstNode * declaration_node)
 
   const CppAstNode * initializer =
       cpp_decl::find_child(*declaration_node, CppAstKind::initializer);
-  if(initializer && is_pure_virtual_initializer(*initializer)) {
-    return true;
-  }
-
-  std::string compact = semantic_utils::trim_space(node_text(*declaration_node));
-  compact = remove_space_chars(compact);
-  if(!compact.empty() && compact[compact.size() - 1] == ';') {
-    compact.resize(compact.size() - 1);
-  }
-  return compact.size() >= 2 &&
-         compact.compare(compact.size() - 2, 2, "=0") == 0;
+  return initializer && is_pure_virtual_initializer(*initializer);
 }
 
 bool contains_identifier_token(const string & text, const string & name)

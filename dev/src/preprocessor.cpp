@@ -1967,6 +1967,7 @@ void Preprocessor::inject_pragma_pack_marker(const string & marker)
   injected.resume_state = DirectiveState::Start;
   injected.tokens.push_back(EPPToken{PP_IDENTIFIER, marker});
   injected.tokens.push_back(EPPToken{PP_PREPROCESSING_OP, ";"});
+  injected.tokens.push_back(EPPToken{PP_NEW_LINE, "\n"});
   injections.push_back(std::move(injected));
 }
 

@@ -2961,7 +2961,7 @@ VTableKeyFunctionDecision vtable_key_function_decision(
       if(!binding ||
          !binding->is_virtual ||
          binding->owner_class != &info ||
-         binding->is_pure_virtual ||
+         is_pure_virtual_function_binding(*binding) ||
          binding->is_deleted ||
          template_api::function_binding_has_source_template_identity(binding) ||
          output_function_symbol_linkage(*binding) != symbol_linkage::SL_EXTERNAL) {
@@ -3415,7 +3415,8 @@ bool should_emit_class_vtables(
       parser_trace::note("output.class",
                          string(),
                          string("vtable-decision class=") + info.qualified_name +
-                             " emit=no reason=external-key-function");
+                             " emit=no reason=external-key-function=" +
+                             key_function.name);
     }
     return false;
   }
@@ -4848,6 +4849,13 @@ void analyze_class_simple_declaration_output(SemanticContext & ctx,
     return;
   }
 
+  const auto should_emit_member_declaration =
+      [&](const FunctionBinding & binding) -> bool
+      {
+        return !info.source_template ||
+               binding.output_requirements != ORK_NONE;
+      };
+
   bool all_bound_function_decls = !declarators->children.empty();
   bool has_bound_function_decl = false;
   bool has_unbound_function_like_decl = false;
@@ -4881,6 +4889,10 @@ void analyze_class_simple_declaration_output(SemanticContext & ctx,
       if(!binding) {
         continue;
       }
+      if(!should_emit_member_declaration(*binding)) {
+        emitted.insert(binding);
+        continue;
+      }
       analyze_function_declaration_output(ctx, *binding, out);
       emitted.insert(binding);
     }
@@ -4910,6 +4922,10 @@ void analyze_class_simple_declaration_output(SemanticContext & ctx,
     }
     if(FunctionBinding * binding =
            find_class_member_binding_by_node(bindings_by_node, init_decl)) {
+      if(!should_emit_member_declaration(*binding)) {
+        emitted.insert(binding);
+        continue;
+      }
       analyze_function_declaration_output(ctx, *binding, out);
       emitted.insert(binding);
       continue;

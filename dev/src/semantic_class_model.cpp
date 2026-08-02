@@ -5783,7 +5783,7 @@ bool is_pure_virtual_initializer(const CppAstNode & initializer)
 
   const CppAstNode & child = initializer.children[0];
   return child.kind == CppAstKind::literal &&
-         semantic_utils::trim_space(node_text(child)) == "0";
+         child.value == "0";
 }
 
 bool method_syntax_allows_pure_virtual_initializer(const MethodSyntaxInfo & syntax)
@@ -7644,6 +7644,10 @@ void finalize_class_virtuals(SemanticContext & ctx, ClassInfo & info)
 
     if(binding->is_virtual_specified || overridden) {
       binding->is_virtual = true;
+      binding->is_pure_virtual =
+          binding->is_pure_virtual ||
+          callsemantic_internal::declaration_node_is_pure_virtual(
+              binding->declaration_node);
       const bool overrides_primary_root_slot =
           overridden &&
           overridden->has_virtual_slot &&
@@ -9002,6 +9006,24 @@ void collect_class_friend_function_definition(SemanticContext & ctx,
                                    decl_spec_contains_token(*specifiers, KW_CONSTEXPR));
 }
 
+void recover_typedef_function_parameters(
+    const TypePtr & type,
+    const CppAstNode * parameter_clause,
+    std::vector<std::pair<std::string, TypePtr> > & params)
+{
+  if(parameter_clause || !params.empty()) {
+    return;
+  }
+  TypePtr function_type = strip_top_level_cv(type);
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    return;
+  }
+  params.reserve(function_type->params.size());
+  for(size_t i = 0; i < function_type->params.size(); ++i) {
+    params.push_back(make_pair(std::string(), function_type->params[i]));
+  }
+}
+
 void collect_class_friend_declaration(SemanticContext & ctx,
                                       ClassInfo & info,
                                       const CppAstNode & node)
@@ -9105,6 +9127,7 @@ void collect_class_friend_declaration(SemanticContext & ctx,
            *info.member_scope, *parameter_clause, params, &default_args, true)) {
       continue;
     }
+    recover_typedef_function_parameters(friend_type, parameter_clause, params);
 
     if(!register_friend_function_template_binding(
            ctx,
@@ -9292,6 +9315,7 @@ void collect_class_simple_declaration(SemanticContext & ctx,
         throw std::logic_error("unsupported member parameter-clause" +
                                diagnostic_location_for_member(ctx, init_decl, &node));
       }
+      recover_typedef_function_parameters(member_type, parameter_clause, params);
       if(is_static_member || class_function_name_is_implicitly_static(member_name)) {
         FunctionRegistrationRequest request;
         request.owner_class = &info;
@@ -9994,6 +10018,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
              *info.member_scope, *parameter_clause, params, &default_args, true)) {
         continue;
       }
+      recover_typedef_function_parameters(member_type, parameter_clause, params);
 
       if(is_static_member || class_function_name_is_implicitly_static(member_name)) {
         FunctionRegistrationRequest request;
@@ -12032,6 +12057,7 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
              *info.member_scope, *parameter_clause, params, &default_args, true)) {
         throw std::logic_error("unsupported dependent member parameter-clause");
       }
+      recover_typedef_function_parameters(member_type, parameter_clause, params);
       if(is_static_member || class_function_name_is_implicitly_static(member_name)) {
         FunctionRegistrationRequest request;
         request.owner_class = &info;

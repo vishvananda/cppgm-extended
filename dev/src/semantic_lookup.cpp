@@ -761,7 +761,9 @@ bool member_lookup_present(const MemberFunctionLookupResult & result)
 
 bool member_lookup_present(const MemberCallableLookupResult & result)
 {
-  return !result.functions.empty() || !result.templates.empty();
+  return result.hiding_value ||
+         !result.functions.empty() ||
+         !result.templates.empty();
 }
 
 bool member_lookup_present(const MemberClassTemplateLookupResult & result)
@@ -796,6 +798,9 @@ bool member_lookup_requires_unique_subobject(const MemberFunctionLookupResult & 
 
 bool member_lookup_requires_unique_subobject(const MemberCallableLookupResult & result)
 {
+  if(result.hiding_value && result.hiding_value->kind == ValueBinding::VK_FIELD) {
+    return true;
+  }
   for(size_t i = 0; i < result.functions.size(); ++i) {
     if(result.functions[i] && result.functions[i]->is_method) {
       return true;
@@ -4851,6 +4856,14 @@ MemberCallableLookupResult lookup_visible_member_callables(ClassInfo & info,
         MemberCallableLookupResult result;
         bool direct_function_set_has_using_imports = false;
         if(current.member_scope) {
+          map<string, ValueBinding>::const_iterator found_value =
+              current.member_scope->values.find(name);
+          if(found_value != current.member_scope->values.end()) {
+            // Class member lookup stops in the first class that declares the
+            // name, regardless of whether that declaration is a function. A
+            // callable data member therefore hides same-named base methods.
+            result.hiding_value = &found_value->second;
+          }
           const vector<FunctionBinding *> * found_functions =
               find_direct_function_set(*current.member_scope, name);
           if(found_functions && !found_functions->empty()) {

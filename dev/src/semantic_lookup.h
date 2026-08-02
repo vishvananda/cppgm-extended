@@ -42,6 +42,7 @@ struct MemberCallableLookupResult
 {
   std::vector<FunctionBinding *> functions;
   std::vector<FunctionTemplateDecl *> templates;
+  const ValueBinding * hiding_value = nullptr;
   const ClassInfo * declared_in = nullptr;
   MemberAccess path_access = MA_PUBLIC;
   std::size_t path_offset = 0;

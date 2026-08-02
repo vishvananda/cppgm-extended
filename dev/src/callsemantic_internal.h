@@ -79,7 +79,6 @@ bool parse_elaborated_class_lookup_name(const std::string & text,
 bool declarator_has_parameter_pack(const CppAstNode & declarator);
 bool declarator_has_trailing_function_parameter_pack(const CppAstNode & declarator);
 bool is_pure_virtual_initializer(const CppAstNode & initializer);
-bool subtree_contains_pure_virtual_initializer(const CppAstNode & node);
 bool declaration_node_is_pure_virtual(const CppAstNode * declaration_node);
 bool contains_identifier_token(const std::string & text, const std::string & name);
 bool identifier_is_qualified_component(const std::string & text, std::size_t pos);

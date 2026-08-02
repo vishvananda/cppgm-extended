@@ -439,6 +439,44 @@ DumpNode make_integer_literal_node(long long value)
   return node;
 }
 
+bool make_constexpr_integral_literal_node(
+    const constant_eval::ConstexprValue & value,
+    const TypePtr & type,
+    DumpNode & out)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  TypePtr integral_base = base;
+  if(base && base->kind == Type::TK_NAMED && base->named_enum_underlying_type) {
+    integral_base = strip_top_level_cv(base->named_enum_underlying_type);
+  }
+  if(!integral_base || !is_integral_type(integral_base) ||
+     (integral_base->kind == Type::TK_FUNDAMENTAL &&
+      (integral_base->fundamental == FT_INT128 ||
+       integral_base->fundamental == FT_UINT128))) {
+    return false;
+  }
+
+  out = make_dump_node(CallSemKind::literal, string());
+  if(is_unsigned_integral_type(integral_base)) {
+    unsigned long long integral = 0;
+    if(!constant_eval::constexpr_value_to_unsigned_integral(value, integral)) {
+      return false;
+    }
+    out.text = to_string(integral);
+    set_callsem_uint_value(out, integral);
+  } else {
+    long long integral = 0;
+    if(!constant_eval::constexpr_value_to_integral(value, integral)) {
+      return false;
+    }
+    out.text = to_string(integral);
+    set_callsem_int_value(out, integral);
+  }
+  out.semantic_type = type;
+  out.value_category = CVC_PRVALUE;
+  return true;
+}
+
 CppAstNode make_identifier_node(const string & name)
 {
   CppAstNode node;
@@ -2116,6 +2154,12 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
                                                   *initializer,
                                                   type,
                                                   constexpr_static_value);
+      DumpNode constexpr_static_initializer_node;
+      const bool has_constexpr_integral_static_initializer =
+          has_constant_static_initializer &&
+          make_constexpr_integral_literal_node(constexpr_static_value,
+                                               type,
+                                               constexpr_static_initializer_node);
       const symbol_linkage::SymbolLinkage local_static_linkage =
           use_global_static_storage ? local_static_storage_linkage(scope) :
                                       symbol_linkage::SL_INTERNAL;
@@ -2200,7 +2244,10 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
             var_node,
             object_use_location);
       } else if(use_global_static_storage) {
-        if(initializer) {
+        if(has_constexpr_integral_static_initializer) {
+          var_node.children.push_back(
+              std::move(constexpr_static_initializer_node));
+        } else if(initializer) {
           semantic_lifetime::analyze_initializer(ctx, scope, type, *initializer, var_node);
         }
       } else if(ctx.complete_class_type(type) ||
