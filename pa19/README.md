@@ -214,6 +214,9 @@ PA19 supports the following in addition to the PA18 subset:
   metaprogramming subset
 - `static_assert` declarations whose condition is in the supported integral constant subset,
   including conditions that remain template-dependent until instantiation
+- inline virtual members required by a concrete class-template vtable are
+  instantiated even without a direct source call; unrelated non-virtual member
+  bodies remain demand-driven
 
 Within this milestone, PA19 should produce valid LowIR for ordinary metaprogramming code
 over the supported PA18 language subset. That LowIR is intended to be accepted
