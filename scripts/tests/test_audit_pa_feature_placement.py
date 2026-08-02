@@ -280,6 +280,27 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             audit.detect_features(copy_initialization),
         )
 
+    def test_class_template_conversion_member_is_not_conversion_template(self) -> None:
+        class_template_member = textwrap.dedent(
+            """\
+            template<class T>
+            struct box {
+              operator bool() const;
+            };
+            template<class T>
+            box<T>::operator bool() const { return true; }
+            int main() {
+              box<int> source;
+              return static_cast<bool>(source) ? 0 : 1;
+            }
+            """
+        )
+
+        self.assertNotIn(
+            "template.conversion_deduction",
+            audit.detect_features(class_template_member),
+        )
+
     def test_lowir_eh_review_reports_hidden_source_to_lowir_output(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
