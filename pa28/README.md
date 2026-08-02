@@ -458,6 +458,10 @@ To complete PA28, implement these goals:
    or unsigned integer arithmetic should show the expected post-operation normalization
    instead of silently widening into an untyped 64-bit path.
 
+   Narrow values returned across a call boundary or loaded from frame storage must also
+   be normalized before a wider comparison or `switch`; stale upper bits must not affect
+   branch or case selection.
+
 12. Keep the conservative `f80` path explicit rather than implicit.
    PA28 does not need to treat `f80` like ordinary XMM-resident `f32`/`f64`, but its
    conversions and truncation/extension path should still stay visible and testable in
