@@ -201,7 +201,8 @@ Reference:
 To complete PA32, implement ordinary host-toolchain interoperability of emitted
 object files within the supported subset:
 
-1. Emit host-linker-compatible relocatable objects.
+1. Emit host-linker-compatible relocatable objects, including PIE-safe GOT
+   materialization for the addresses of imported data and functions.
 2. Expose a hosted entrypoint through the host CRT.
 3. Preserve cross-translation-unit behavior under host link.
 4. Emit target-correct duplicate-definition semantics for header and template

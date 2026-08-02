@@ -187,7 +187,9 @@ runtime-helper object surface for `cppgm++ -c` within the supported subset:
 4. Emit LSDA/call-site/action/type-info facts sufficient for basic catch and
    cleanup paths.
 5. Preserve cleanup/resume paths using `_Unwind_Resume`.
-6. Keep private course-only exception runtime symbols out of host-EH objects.
+6. Keep private course-only exception runtime symbols out of host-EH objects,
+   and encode the host personality without a direct PC-relative data relocation
+   that would make a default-PIE host link unsafe.
 7. Close full-expression EH regions before control-flow joins and require
    matching protected-call state at statement, conditional, short-circuit, and
    loop merges.
