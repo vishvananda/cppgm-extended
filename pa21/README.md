@@ -157,6 +157,9 @@ implemented language surface, including:
 - current-specialization identity in the supported class-template and
   specialization cases
 - explicit-instantiation declarations and definitions over the supported surface
+- an explicit-instantiation declaration for a class specialization suppresses
+  non-inline instantiation but keeps a locally used in-class inline or defaulted
+  member definition available
 - integration with PA19 explicit specialization declarations/definitions when
   they interact with the PA21 specialization graph
 - collection/ownership behavior for constructor/member-template specializations
