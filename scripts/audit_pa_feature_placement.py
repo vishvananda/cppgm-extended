@@ -326,6 +326,7 @@ RULES: tuple[FeatureRule, ...] = (
                 (rx(r"\btry\s*\{"), rx(r"\bcatch\s*\("), rx(r"\bthrow\b")),
                 ref_patterns=(rx(r"\b__cxa_(?:throw|begin_catch|rethrow)\b|\bexception_selector\b"),)),
     FeatureRule("exception.guarded_static_cleanup", ()),
+    FeatureRule("exception.aggregate_cleanup", ()),
     FeatureRule("host.eh_object", ()),
     FeatureRule("host.object_interop", ()),
     FeatureRule("host.object_attribute", ()),
@@ -1080,6 +1081,15 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
         hits["exception.guarded_static_cleanup"] = FeatureHit(
             "exception.guarded_static_cleanup",
             ["source:function-local dynamic class static", "ref:EH control"],
+        )
+    if (
+        re.search(r"\breturn\s*\{", code)
+        and re.search(r"~[A-Za-z_][A-Za-z0-9_]*\s*\(", code)
+        and LOWIR_EH_CONTROL_RE.search(ref_text)
+    ):
+        hits["exception.aggregate_cleanup"] = FeatureHit(
+            "exception.aggregate_cleanup",
+            ["source:aggregate return with destructor", "ref:EH control"],
         )
     return hits
 

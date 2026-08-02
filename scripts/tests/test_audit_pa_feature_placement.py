@@ -413,6 +413,21 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         )
         self.assertIn("exception.guarded_static_cleanup", hits)
 
+    def test_aggregate_return_with_eh_has_aggregate_cleanup_feature(self) -> None:
+        source = textwrap.dedent(
+            """\
+            struct member { member(int); ~member(); };
+            struct aggregate { member value; };
+            aggregate make() { return { member(1) }; }
+            """
+        )
+        hits = audit.detect_features(
+            source,
+            "function @make() {\n  eh_try ^cleanup\n  eh_end\n}\n",
+            "pa25/tests/general/200-aggregate-cleanup.t",
+        )
+        self.assertIn("exception.aggregate_cleanup", hits)
+
 
 if __name__ == "__main__":
     unittest.main()
