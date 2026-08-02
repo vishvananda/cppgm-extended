@@ -196,6 +196,8 @@ To complete PA25, implement these goals:
    Temporary-owning call arguments inside nested `&&` and `||` expressions
    should be destroyed exactly on evaluated paths, and every nested logical
    result used by an outer condition should retain a valid LowIR result slot.
+   Guarded local-static initialization should destroy initializer temporaries
+   on the initialization edge before that edge joins the already-initialized path.
 
 ### Out Of Scope
 
