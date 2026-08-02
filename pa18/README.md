@@ -217,7 +217,10 @@ PA18 supports the following in addition to the PA17 subset:
 - basic template argument deduction for direct supported function-template calls
   from ordinary argument types, without function-template partial ordering or
   SFINAE
-- on-demand instantiation of the supported class-template and function-template cases
+- on-demand instantiation of the supported class-template and function-template cases,
+  including deferring unused conversion-function bodies and dependent defaulted
+  special-member dependencies, and waiting until an out-of-line owning destructor
+  is defined before demanding a completeness-dependent member destructor
 - instantiated specializations reuse supported PA16 rvalue-reference return
   paths and PA17 virtual-destructor lifetime without changing their value
   category or object-lifetime behavior
