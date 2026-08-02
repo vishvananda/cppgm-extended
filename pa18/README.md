@@ -208,6 +208,10 @@ PA18 supports the following in addition to the PA17 subset:
 - `typename` and `template` disambiguators where they are needed by the PA18
   dependent-name subset
 - explicit template-id use for supported class templates and function templates
+- ordinary lookup and using-declaration behavior for supported templates,
+  including repeated using-declarations of the same template and preservation
+  of an ordinarily visible function template when hidden non-template friends
+  share its name
 - basic template argument deduction for direct supported function-template calls
   from ordinary argument types, without function-template partial ordering or
   SFINAE
