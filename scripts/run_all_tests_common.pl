@@ -746,6 +746,14 @@ sub witness_test_has_successful_reference
 	return $status eq "EXIT_SUCCESS";
 }
 
+sub witness_test_has_reference
+{
+	my ($test) = @_;
+	my $reference = $test;
+	$reference =~ s/\.t$/.ref.witness/;
+	return -f $reference;
+}
+
 sub filter_witness_tests
 {
 	my ($tests) = @_;
@@ -800,6 +808,10 @@ my @tests = collect_tests($tests, $patterns{$mode});
 if ($mode eq 'witness_t' && $suffix eq 'ref')
 {
 	@tests = @{filter_witness_tests(\@tests)};
+}
+elsif ($mode eq 'witness_t')
+{
+	@tests = grep { witness_test_has_reference($_) } @tests;
 }
 my $ntests = scalar(@tests);
 if (!$verbose && !$keep_going)

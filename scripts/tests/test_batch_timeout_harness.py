@@ -341,6 +341,61 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
             self.assertEqual((tests / "basic.my").read_text(), "generated output\n")
             self.assertEqual((tests / "basic.my.stdout").read_text(), "stdout log\nstderr log\n")
 
+    def test_witness_run_skips_tests_without_witness_reference(self):
+        with tempfile.TemporaryDirectory(prefix="run-witness-filter.") as temp_dir:
+            pa = Path(temp_dir) / "pa22"
+            tests = pa / "tests"
+            app = pa / "fake_witness.py"
+            invocation_log = pa / "invocations.log"
+
+            tests.mkdir(parents=True)
+            selected = tests / "selected.t"
+            skipped = tests / "skipped.t"
+            selected.write_text("selected\n")
+            skipped.write_text("skipped\n")
+            (tests / "selected.ref.witness").write_text("witness\n")
+            (tests / "selected.ref.exit_status").write_text("EXIT_SUCCESS\n")
+            (tests / "skipped.ref.exit_status").write_text("EXIT_SUCCESS\n")
+            (tests / "skipped.my.exit_status").write_text("EXIT_SUCCESS\n")
+
+            app.write_text(
+                "#!/usr/bin/env python3\n"
+                "import os\n"
+                "from pathlib import Path\n"
+                "import sys\n"
+                "\n"
+                "source = Path(sys.argv[-1])\n"
+                "with open(os.environ['CPPGM_WITNESS_INVOCATION_LOG'], 'a') as fh:\n"
+                "    fh.write(source.name + '\\n')\n"
+                "Path(sys.argv[sys.argv.index('-o') + 1]).write_text('lowir\\n')\n"
+                "Path(sys.argv[sys.argv.index('--witness') + 1]).write_text('witness\\n')\n"
+                "sys.exit(1 if source.name == 'skipped.t' else 0)\n"
+            )
+            app.chmod(0o755)
+
+            env = os.environ.copy()
+            env["CPPGM_TEST_JOBS"] = "1"
+            env["CPPGM_WITNESS_INVOCATION_LOG"] = str(invocation_log)
+            result = run(
+                "perl",
+                str(REPO_ROOT / "scripts" / "run_all_tests_common.pl"),
+                "witness_t",
+                str(app),
+                "my",
+                "tests",
+                cwd=pa,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stderr, "")
+            self.assertEqual(invocation_log.read_text(), "selected.t\n")
+            self.assertEqual((tests / "selected.my.exit_status").read_text(), "EXIT_SUCCESS\n")
+            self.assertEqual((tests / "skipped.my.exit_status").read_text(), "EXIT_SUCCESS\n")
+            self.assertFalse((tests / "skipped.my.witness").exists())
+
     def test_pa9_driver_mode_runs_without_shell_wrapper(self):
         with tempfile.TemporaryDirectory(prefix="pa9-driver-no-wrapper.") as temp_dir:
             temp = Path(temp_dir)
