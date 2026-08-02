@@ -162,7 +162,9 @@ PA25 supports the following in addition to the PA24 subset:
   values, including class objects whose existing copy-construction path is supported
 - default `[=]` and `[&]` captures over the same supported local-value and `this` subset
 - explicit `this` capture for supported member-function cases
-- `std::initializer_list<T>` interoperation for the supported non-class element subset
+- `std::initializer_list<T>` interoperation for supported scalar elements and
+  class elements whose construction, copy, and destruction stay within the
+  PA15/PA16/PA23 object and template subset
 - `typeid(type-id)`
 - `typeid(expr)` for supported polymorphic lvalue expressions
 - `dynamic_cast<T*>(expr)` for supported polymorphic single-inheritance pointer conversions
@@ -197,7 +199,8 @@ The following are explicitly out of scope for PA25:
 - init-captures
 - class captures that require unsupported copy construction, destruction, or object-model
   features
-- `std::initializer_list` with class element types
+- `std::initializer_list` class elements that require unsupported construction,
+  copy, destruction, or later object-model behavior
 - `typeid` cases that require `bad_typeid`
 - `dynamic_cast` reference forms
 - `dynamic_cast<void*>`
