@@ -336,7 +336,10 @@ specific internal representation.
 Substitution is part of the ABI grammar, not just text de-duplication. The
 encoder should record substitutions in the order required by the Itanium ABI
 and should compare structured facts when deciding whether a component can reuse
-an existing slot.
+an existing slot. Structural comparison must retain encoding-significant facts
+such as array bounds, integral-expression values, and type-trait operands while
+still recognizing equivalent value arguments and canonical spellings of the
+same named type.
 
 Avoid building names by assembling large ad hoc strings that are later
 reparsed. Some ABI facts contain source spellings, but type structure,
