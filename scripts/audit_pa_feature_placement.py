@@ -329,6 +329,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("exception.aggregate_cleanup", ()),
     FeatureRule("exception.class_value_argument_cleanup", ()),
     FeatureRule("exception.throw_operand_cleanup", ()),
+    FeatureRule("exception.handler_branch_cleanup", ()),
     FeatureRule("host.eh_object", ()),
     FeatureRule("host.object_interop", ()),
     FeatureRule("host.object_attribute", ()),
@@ -1130,6 +1131,16 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             "exception.throw_operand_cleanup",
             ["source:class throw operand with destructor", "ref:EH throw control"],
         )
+    if (
+        re.search(r"\bcatch\s*\([^)]*\)\s*\{[^{}]*\bif\s*\(", code)
+        and re.search(r"~[A-Za-z_][A-Za-z0-9_]*\s*\(", code)
+        and re.search(r"^\s*eh_cleanup\b", ref_text, re.MULTILINE)
+        and LOWIR_EH_CONTROL_RE.search(ref_text)
+    ):
+        hits["exception.handler_branch_cleanup"] = FeatureHit(
+            "exception.handler_branch_cleanup",
+            ["source:branched typed handler with outer destructor", "ref:EH cleanup control"],
+        )
     return hits
 
 
@@ -1303,6 +1314,7 @@ def scan_generated_lowir_eh_review(
     root: Path,
     compiler: Path,
     tests: Iterable[Path],
+    generated_lowir_by_test: dict[str, str] | None = None,
 ) -> list[LowIREHFinding]:
     """Probe selected host tests whose checked oracle does not contain LowIR."""
     findings: list[LowIREHFinding] = []
@@ -1357,6 +1369,11 @@ def scan_generated_lowir_eh_review(
                         evidence=evidence,
                     ))
                     continue
+                if generated_lowir_by_test is not None:
+                    existing = generated_lowir_by_test.get(relative_path, "")
+                    generated_lowir_by_test[relative_path] = (
+                        lowir if not existing else f"{existing}\n{lowir}"
+                    )
                 control = LOWIR_EH_CONTROL_RE.search(lowir)
                 runtime = LOWIR_EH_RUNTIME_DECL_RE.search(lowir)
                 if not control and not runtime:
@@ -1378,6 +1395,28 @@ def scan_generated_lowir_eh_review(
                     evidence=", ".join(evidence_parts),
                 ))
     return findings
+
+
+def generated_lowir_feature_hits(
+    source: str,
+    lowir: str,
+    test_path: str,
+) -> dict[str, FeatureHit]:
+    """Run checked-reference feature rules over an explicitly probed LowIR unit."""
+    result: dict[str, FeatureHit] = {}
+    for feature_id, hit in detect_features(source, lowir, test_path).items():
+        if not any(evidence.startswith("ref:") for evidence in hit.evidence):
+            continue
+        result[feature_id] = FeatureHit(
+            feature_id,
+            [
+                evidence.replace("ref:", "generated:", 1)
+                if evidence.startswith("ref:")
+                else evidence
+                for evidence in hit.evidence
+            ],
+        )
+    return result
 
 
 def pa24_lowir_side_effect_findings(path: Path, source: str, ref_text: str) -> list[HygieneFinding]:
@@ -2572,10 +2611,31 @@ def main(argv: list[str]) -> int:
                 print(f"error: LowIR probe test is not a .t anchor: {relative}", file=sys.stderr)
                 return 2
             probe_tests.append(path)
-        lowir_eh_findings.extend(
-            scan_generated_lowir_eh_review(root, compiler, probe_tests)
-        )
+        generated_lowir_by_test: dict[str, str] = {}
+        lowir_eh_findings.extend(scan_generated_lowir_eh_review(
+            root,
+            compiler,
+            probe_tests,
+            generated_lowir_by_test,
+        ))
         rows_by_path = {str(row["path"]): row for row in rows}
+        for relative_path, lowir in generated_lowir_by_test.items():
+            row = rows_by_path.get(relative_path)
+            if row is None:
+                continue
+            path = root / relative_path
+            source = read_text(path) + "\n" + companion_source_text_for(path)
+            for feature_id, hit in generated_lowir_feature_hits(
+                source,
+                lowir,
+                relative_path,
+            ).items():
+                add_row_feature(
+                    row,
+                    feature_id,
+                    ", ".join(hit.evidence),
+                    features,
+                )
         for finding in lowir_eh_findings:
             if finding.kind != "generated-eh-control":
                 continue

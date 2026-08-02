@@ -348,15 +348,40 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             ))
             compiler.chmod(0o755)
 
+            generated = {}
             findings = audit.scan_generated_lowir_eh_review(
                 root,
                 compiler,
                 [selected],
+                generated,
             )
             self.assertEqual(len(findings), 1)
             self.assertEqual(findings[0].path, "pa31/tests/general/200-selected.t")
             self.assertEqual(findings[0].kind, "generated-eh-control")
             self.assertIn("200-selected.t.1:eh_try", findings[0].evidence)
+            self.assertIn("function @main", generated["pa31/tests/general/200-selected.t"])
+
+    def test_generated_lowir_uses_checked_reference_feature_detection(self) -> None:
+        source = textwrap.dedent(
+            """\
+            struct guard { ~guard(); };
+            void run() {
+              guard value;
+              try { throw 1; }
+              catch (int) { if (true) throw 2; }
+            }
+            """
+        )
+        hits = audit.generated_lowir_feature_hits(
+            source,
+            "function @run() {\n  eh_try ^catch\n  eh_cleanup ^outer\n  eh_end\n}\n",
+            "pa31/tests/general/200-handler-branch.t",
+        )
+        self.assertIn("exception.handler_branch_cleanup", hits)
+        self.assertTrue(any(
+            evidence.startswith("generated:")
+            for evidence in hits["exception.handler_branch_cleanup"].evidence
+        ))
 
     def test_pa31_explicit_exception_source_has_host_object_layer(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:

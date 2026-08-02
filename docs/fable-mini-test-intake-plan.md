@@ -559,9 +559,10 @@ Run the narrowest checks first:
 
    The audit scans numbered host-test sources such as `.t.1` and `.t.2`.
    Generating LowIR for each later-assignment test makes the normal audit slow.
-   Probe one host test if source and history review leave its placement
-   ambiguous because its checked oracle has no LowIR. Repeat the final option
-   for other ambiguous anchors:
+   Probe one host test only if source and history review leave its placement
+   ambiguous because its checked oracle has no LowIR. The generated unit runs
+   through the same source-and-reference feature detector used for checked
+   LowIR. Repeat the final option for other ambiguous anchors:
 
    ```sh
    python3 scripts/audit_pa_feature_placement.py \
@@ -577,9 +578,10 @@ Run the narrowest checks first:
    Use this targeted fallback when history links a regression to cleanup,
    unwind, protected-region merging, LSDA, or another EH-sensitive compiler
    change but the source has no explicit `try`, `catch`, or `throw`. If the
-   probe finds EH, preserve the EH assertion as a checked LowIR test or keep the
-   test at the host-EH milestone. A failed probe makes `--fail-on-early` fail;
-   it provides no evidence that the test lacks EH behavior.
+   probe finds EH or another later-owned LowIR feature, preserve that assertion
+   in the destination test or keep the test at the later milestone. A failed
+   probe makes `--fail-on-early` fail; it provides no evidence that the test
+   lacks the generated behavior.
 
 7. The full owning assignment report:
 
