@@ -469,6 +469,29 @@ family wholesale.
   validation record. Do not maintain a separate reference object tree when the
   normal `dev/` binary is also the compiler under test.
 
+  For PA30 ABI-name tests, validate the spelling against the intended Homebrew
+  Clang before accepting a reference. Start from a small real C++ declaration,
+  compile it with Clang and inspect the exact emitted symbol, then run the same
+  source through `dev/cppgm++ --emit-abi-facts`. Trim that emitted fact file to
+  the single name under test and require `dev/abimangle` to reproduce Clang's
+  symbol exactly. `c++filt` is useful for checking that a symbol denotes the
+  intended entity, but the Clang symbol is the oracle.
+
+  Treat the emitted text as semantic-model evidence, not as the preferred
+  checked-in fixture spelling. After proving the emitted facts reproduce the
+  Clang symbol, minimize the reducer within the PA30 fact grammar and prove the
+  minimized facts produce the same symbol. Omit a `case` label for a one-case
+  file, replace serializer-generated `__abi_*` binders with short descriptive
+  identifiers, and prefer compact `function`, `function path`, and inline type
+  forms when they describe the same target. Keep separate definitions and
+  references when their graph relationship is what the reducer tests; binder
+  spellings themselves never participate in the ABI name.
+
+  If `abimangle` or `--emit-abi-facts` disagrees with Clang, record a current
+  compiler bug instead of generating the mismatching local reference. If the
+  current pipeline agrees with Clang but a source-run reference does not, treat
+  the source-run reference as incorrect and do not preserve it.
+
   Establish that clean host-compiler build once when the frozen source commit
   or compiler configuration changes. During test-only intake batches, reuse
   the existing normal object tree for reference generation and root

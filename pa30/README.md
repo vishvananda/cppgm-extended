@@ -131,6 +131,11 @@ Definition forms:
 - `let-entity <id> ...`: an entity fact used by entity-valued template
   arguments and dependent expressions
 
+Definition identifiers are file-local binders. Their spelling does not
+participate in the ABI name; use a short descriptive identifier and refer to it
+consistently. Whether two uses refer to one definition or to separately
+defined structural facts can still matter to the case being described.
+
 Template-parameter and other ABI indices are nonnegative decimal integers.
 Negative or otherwise malformed index spellings are invalid facts and must be
 rejected.
@@ -241,7 +246,10 @@ situations:
 An implementation should handle Itanium substitution ordering, nested names,
 local-name contexts, template parameter references, template arguments,
 dependent expressions, ABI tags, special names, and every target form covered
-by the tests.
+by the tests. Ordering remains deterministic when substitutions arise inside
+dependent expressions, qualified member-template owners, and local-name
+contexts. Multiple ABI tags use canonical order, and local entities support the
+same special-member terminals as their nonlocal counterparts.
 
 Reference:
 
