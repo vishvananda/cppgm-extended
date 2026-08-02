@@ -2,13 +2,13 @@
 // argument from one parameter while another parameter is a non-deduced alias.
 
 template<bool Condition, class T = void>
-struct enable_if {};
+struct conditional_type {};
 
 template<class T>
-struct enable_if<true, T> { typedef T type; };
+struct conditional_type<true, T> { typedef T type; };
 
 template<bool Condition, class T = int>
-using constraint_t = typename enable_if<Condition, T>::type;
+using constraint_t = typename conditional_type<Condition, T>::type;
 
 struct property {};
 struct base {};

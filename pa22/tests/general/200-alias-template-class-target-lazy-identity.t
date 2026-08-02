@@ -16,8 +16,16 @@ struct assign<L1<T...>, L2<U...> > {
 template<class L1, class L2>
 using assign_t = typename assign<L1, L2>::type;
 
+template<class L, class R> struct same_type {
+  static const bool value = false;
+};
+
+template<class T> struct same_type<T, T> {
+  static const bool value = true;
+};
+
 int main() {
   typedef assign_t<tuple<int>, list<int[]> > rebound;
-  static_assert(__is_same(rebound, tuple<int[]>), "");
+  static_assert(same_type<rebound, tuple<int[]> >::value, "");
   return 0;
 }

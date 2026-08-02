@@ -1,3 +1,7 @@
+// VALIDATION: compile-pass
+// A lazy alias must recompute a hosted builtin base-class trait after its
+// dependent pack has been substituted.
+
 namespace std {
 template<class B, class D>
 struct is_base_of { static const bool value = __is_base_of(B, D); };

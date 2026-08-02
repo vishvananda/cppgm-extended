@@ -416,13 +416,12 @@ the audit and require the accepted fixture to be clear of the false finding;
 recording a manual waiver is not sufficient.
 
 For syntax-tree, witness, ABI-fact, or other representation-layer suites, the
-audit may detect a later semantic or lowering feature merely because its syntax
-appears in the input. That is not by itself a placement failure when the test's
-oracle asserts only the earlier representation contract and the owning README
-requires that syntax. Record each such detector result and the manual layer
-review. Move the test only when its oracle actually depends on the later
-feature. Do not treat this representation-layer rule as a general waiver for a
-real later-feature dependency.
+audit may initially detect a later semantic or lowering feature merely because
+its syntax appears in the input. When the oracle asserts only the earlier
+representation contract and the owning README requires that syntax, encode
+that distinction in the detector so the audit reports the fixture clean. Do
+not retain a representation-layer waiver. Move the test when its oracle really
+depends on the later feature.
 
 ### 6. Construct the Local Fixture and References
 
@@ -528,11 +527,12 @@ Run the narrowest checks first:
      --fail-on-early
    ```
 
-   If the repository-wide command also reports pre-existing findings, inspect
-   the JSON row for every new family. The intake gate passes only when each new
-   finding is either fixed or explicitly shown to be a representation-layer
-   false positive under the rule above; retain the full audit output as batch
-   evidence.
+   The complete affected-assignment audit must exit successfully. Do not carry
+   a finding merely because it predates the intake batch. Fix detector false
+   positives, rename incidental trigger identifiers, reduce later features, or
+   move genuine later-owner tests until the audit is clean. If a cleanup moves
+   a test to another assignment, run and retain the audit for both the source
+   and destination assignments.
 
 7. The full owning assignment report:
 
