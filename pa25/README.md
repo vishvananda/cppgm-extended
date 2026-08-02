@@ -198,6 +198,9 @@ To complete PA25, implement these goals:
    result used by an outer condition should retain a valid LowIR result slot.
    Guarded local-static initialization should destroy initializer temporaries
    on the initialization edge before that edge joins the already-initialized path.
+   EH-bearing aggregate construction should invoke nontrivial member constructors
+   instead of representation-copying those members, so cleanup state describes
+   the subobjects that were constructed.
 
 ### Out Of Scope
 

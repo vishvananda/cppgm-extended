@@ -1,0 +1,199 @@
+function @make_aggregate(%ret : ptr [pass=indirect_result]) -> void [binding=strong, object=_Z14make_aggregatev] {
+  slot $arg__1 : obj<16x8>
+  slot $arg__2 : obj<16x8>
+
+  block ^entry:
+    eh_try ^call_unwind_dispatch_1
+    %t1 = addr $arg__1
+    call void @Member__Member(%t1, 2)
+    %t2 = addr $arg__2
+    call void @Member__Member(%t2, 3)
+    call void @Aggregate__Aggregate__ov2(%ret, 1, %t1, %t2)
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^call_unwind_dispatch_1:
+    resume
+
+  block ^call_unwind_end_2:
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<40x8>
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+  slot $land__4 : i64
+  slot $land__5 : i64
+
+  block ^entry:
+    %t1 = addr $value
+    call void @make_aggregate(%t1)
+    %t2 = addr $value
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 %t3
+    %t5 = cmp eq i32 %t4, 1
+    branch %t5, ^land_rhs_13, ^land_short_14
+
+  block ^land_rhs_13:
+    %t6 = addr $value
+    %t7 = index i8 [projection=field] %t6, 8
+    %t8 = index i8 [projection=field] %t7, 8
+    %t9 = load i32 %t8
+    %t10 = cmp eq i32 %t9, 2
+    %t11 = cmp ne i64 %t10, 0
+    store i64 %t11, $land__5
+    jump ^land_end_15
+
+  block ^land_short_14:
+    store i64 0, $land__5
+    jump ^land_end_15
+
+  block ^land_end_15:
+    %t12 = load i64 $land__5
+    branch %t12, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t13 = addr $value
+    %t14 = index i8 [projection=field] %t13, 8
+    %t15 = index i8 [projection=field] %t14, 0
+    %t16 = load ptr %t15
+    %t17 = addr $value
+    %t18 = index i8 [projection=field] %t17, 8
+    %t19 = index i8 [projection=field] %t18, 8
+    %t20 = cmp eq ptr %t16, %t19
+    %t21 = cmp ne i64 %t20, 0
+    store i64 %t21, $land__4
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store i64 0, $land__4
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t22 = load i64 $land__4
+    branch %t22, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t23 = addr $value
+    %t24 = index i8 [projection=field] %t23, 24
+    %t25 = index i8 [projection=field] %t24, 8
+    %t26 = load i32 %t25
+    %t27 = cmp eq i32 %t26, 3
+    %t28 = cmp ne i64 %t27, 0
+    store i64 %t28, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t29 = load i64 $land__3
+    branch %t29, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t30 = addr $value
+    %t31 = index i8 [projection=field] %t30, 24
+    %t32 = index i8 [projection=field] %t31, 0
+    %t33 = load ptr %t32
+    %t34 = addr $value
+    %t35 = index i8 [projection=field] %t34, 24
+    %t36 = index i8 [projection=field] %t35, 8
+    %t37 = cmp eq ptr %t33, %t36
+    %t38 = cmp ne i64 %t37, 0
+    store i64 %t38, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t39 = load i64 $land__2
+    branch %t39, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t40 = load i32 $cond__1
+    return i32 %t40
+}
+function @Member__Member(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN6MemberC1Ei] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store ptr %t2, %t4
+    %t5 = load i32 $value
+    %t6 = load ptr $this
+    %t7 = index i8 [projection=field] %t6, 8
+    store i32 %t5, %t7
+    return void
+}
+function @Aggregate__Aggregate__ov2(%this : ptr, %prefix : i32, %first : ptr [pass=by_address], %second : ptr [pass=by_address]) -> void [binding=weak, object=_ZN9AggregateC1Ei6MemberS0_] {
+  slot $this : ptr
+  slot $prefix : i32
+  slot $first : obj<16x8>
+  slot $second : obj<16x8>
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %prefix, $prefix
+    %t1 = load i32 $prefix
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 8
+    call void @Member__Member__ov2(%t5, %first)
+    %t6 = load ptr $this
+    %t7 = index i8 [projection=field] %t6, 24
+    call void @Member__Member__ov2(%t7, %second)
+    call void @Member___Member(%second)
+    call void @Member___Member(%first)
+    return void
+}
+function @Member__Member__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN6MemberC1ERKS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store ptr %t2, %t4
+    %t5 = load ptr $other
+    %t6 = index i8 [projection=field] %t5, 8
+    %t7 = load i32 %t6
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=field] %t8, 8
+    store i32 %t7, %t9
+    return void
+}
+function @Member___Member(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6MemberD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+alias object _ZN6MemberC2Ei = @Member__Member
+alias object _ZN9AggregateC2Ei6MemberS0_ = @Aggregate__Aggregate__ov2
+alias object _ZN6MemberC2ERKS_ = @Member__Member__ov2
+alias object _ZN6MemberD2Ev = @Member___Member
