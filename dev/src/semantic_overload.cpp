@@ -10239,9 +10239,10 @@ bool collect_dependent_overloaded_function_id_placeholder(
   }
 
   static const TypePtr placeholder_type =
-      make_named("<unresolved overloaded function id>",
-                 "__cppgm_unresolved_overloaded_function_id",
-                 true);
+      make_semantic_named("<unresolved overloaded function id>",
+                          Type::NSK_OVERLOADED_FUNCTION_SET,
+                          std::string(),
+                          true);
   ExprInfo placeholder;
   placeholder.type = placeholder_type;
   placeholder.category = VC_LVALUE;

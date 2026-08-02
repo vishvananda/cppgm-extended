@@ -170,7 +170,8 @@ struct Type
     NSK_DEPENDENT_TYPE,
     NSK_DEPENDENT_ALIAS,
     NSK_DEPENDENT_DECLTYPE,
-    NSK_DEPENDENT_TYPEOF
+    NSK_DEPENDENT_TYPEOF,
+    NSK_OVERLOADED_FUNCTION_SET
   };
 
   explicit Type(Kind kind)
@@ -282,6 +283,7 @@ bool named_type_is_dependent_alias(const TypePtr & type);
 bool named_type_is_dependent_type(const TypePtr & type);
 bool named_type_is_dependent_decltype(const TypePtr & type);
 bool named_type_is_dependent_typeof(const TypePtr & type);
+bool named_type_is_overloaded_function_set(const TypePtr & type);
 bool named_type_has_dependent_semantic(const TypePtr & type);
 bool named_type_key_contains_dependent_semantic(const TypePtr & type);
 bool named_type_key_contains_partial_order_placeholder(const TypePtr & type);

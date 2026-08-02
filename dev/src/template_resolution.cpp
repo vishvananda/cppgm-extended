@@ -11910,6 +11910,15 @@ bool argument_is_braced_init_list_for_deduction(const ExprInfo & arg)
   return arg.node.kind == CallSemKind::braced_init_list;
 }
 
+bool argument_is_unresolved_overloaded_function_set(const ExprInfo & arg)
+{
+  if(!arg.type) {
+    return false;
+  }
+  TypePtr type = strip_top_level_cv(remove_reference_type(arg.type));
+  return named_type_is_overloaded_function_set(type);
+}
+
 bool initializer_list_deduction_pattern_element(SemanticContext & ctx,
                                                 const TypePtr & pattern,
                                                 TypePtr & element)
@@ -15778,6 +15787,29 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
             return false;
           }
           if(structured_arg && structured_arg->source_defaulted) {
+            if(structured_arg->source_syntax &&
+               !structured_arg->source_syntax->source_defaulted &&
+               parameter.default_argument &&
+               !parameter.default_argument->children.empty()) {
+              const TemplateArgumentSyntax & source =
+                  *structured_arg->source_syntax;
+              const CppAstNode & declared_default =
+                  parameter.default_argument->children[0];
+              const bool different_location =
+                  source.source_location_id != 0 &&
+                  declared_default.source_location_id != 0 &&
+                  source.source_location_id != declared_default.source_location_id;
+              const bool different_token =
+                  source.has_source_token_start &&
+                  declared_default.token_end > declared_default.token_start &&
+                  source.source_token_start != declared_default.token_start;
+              if(different_location || different_token) {
+                // The bound value originated as a default of an enclosing
+                // template, but this template-id spells it explicitly.  Its
+                // default provenance does not belong to this parameter.
+                return false;
+              }
+            }
             return true;
           }
           if(!parameter.default_argument ||
@@ -17420,6 +17452,22 @@ bool deduce_function_template_arguments_uncached(
                                                         original_pattern);
         continue;
       }
+      if(argument_is_unresolved_overloaded_function_set(args[i])) {
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "deduction-skip-overloaded-function-set template=" << decl.name
+                << " param_index=" << pattern_index
+                << " pattern=" << describe_type(original_pattern);
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        original_pattern);
+        continue;
+      }
       TypePtr pattern = prepare_function_template_deduction_pattern(
           ctx, decl.parameters, bound_scope, original_pattern);
       const TypePtr parameter_scope_pattern = pattern;
@@ -18051,6 +18099,23 @@ bool deduce_function_template_arguments_with_explicit(
         if(parser_trace::enabled("template.resolve")) {
           std::ostringstream trace;
           trace << "explicit-deduction-skip-nondeduced template=" << decl.name
+                << " param_index=" << pattern_index
+                << " pattern=" << describe_type(original_pattern);
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        original_pattern);
+        continue;
+      }
+      if(argument_is_unresolved_overloaded_function_set(args[i])) {
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "explicit-deduction-skip-overloaded-function-set template="
+                << decl.name
                 << " param_index=" << pattern_index
                 << " pattern=" << describe_type(original_pattern);
           parser_trace::note("template.resolve", std::string(), trace.str());

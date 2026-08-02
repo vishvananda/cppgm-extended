@@ -1,0 +1,22 @@
+function @select(%__param0 : ptr) -> i32 [binding=strong, object=_Z6selectPFRiS_E] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return i32 0
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = addr @source__function
+    %t2 = unary decay ptr %t1
+    %t3 = call i32 @select(%t2)
+    return i32 %t3
+}
+function @source__function(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN6source8functionIiEERT_S2_] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
+}

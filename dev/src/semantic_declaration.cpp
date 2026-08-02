@@ -979,6 +979,22 @@ void collect_using_declaration(SemanticContext & ctx,
     return;
   }
 
+  // A using-declaration in a dependent reference class can be revisited while
+  // collecting an out-of-line member-template definition, before the base
+  // specialization has concrete members to import.  Preserve the declaration
+  // for the eventual concrete class instantiation instead of diagnosing the
+  // still-dependent target as missing.
+  TypePtr unresolved_using_owner = using_target_class ?
+      using_target_class->type :
+      semantic_lookup::resolve_qualified_owner_type_node(ctx,
+                                                         scope,
+                                                         qualified,
+                                                         *target);
+  if(unresolved_using_owner &&
+     ctx.type_depends_on_template_parameter(unresolved_using_owner)) {
+    return;
+  }
+
   Scope * debug_namespace = nullptr;
   if(!qualified.qualifiers.empty()) {
     QualifiedName qualifier_name;

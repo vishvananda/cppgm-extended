@@ -304,6 +304,7 @@ NamedSemanticClassification classify_named_semantic_key(const string & key)
       {"dependent alias ", Type::NSK_DEPENDENT_ALIAS},
       {"dependent decltype ", Type::NSK_DEPENDENT_DECLTYPE},
       {"dependent typeof ", Type::NSK_DEPENDENT_TYPEOF},
+      {"overloaded-function-set ", Type::NSK_OVERLOADED_FUNCTION_SET},
   };
 
   for(size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); ++i) {
@@ -336,6 +337,8 @@ const char * semantic_prefix_for_kind(Type::NamedSemanticKind kind)
     return "dependent decltype ";
   case Type::NSK_DEPENDENT_TYPEOF:
     return "dependent typeof ";
+  case Type::NSK_OVERLOADED_FUNCTION_SET:
+    return "overloaded-function-set ";
   case Type::NSK_ORDINARY:
     return "";
   }
@@ -984,6 +987,11 @@ bool named_type_is_dependent_typeof(const TypePtr & type)
   return named_type_has_kind(type, Type::NSK_DEPENDENT_TYPEOF);
 }
 
+bool named_type_is_overloaded_function_set(const TypePtr & type)
+{
+  return named_type_has_kind(type, Type::NSK_OVERLOADED_FUNCTION_SET);
+}
+
 bool named_type_has_dependent_semantic(const TypePtr & type)
 {
   const Type * base = named_base_ptr(type);
@@ -998,6 +1006,7 @@ bool named_type_has_dependent_semantic(const TypePtr & type)
   case Type::NSK_DEPENDENT_DECLTYPE:
   case Type::NSK_DEPENDENT_TYPEOF:
     return true;
+  case Type::NSK_OVERLOADED_FUNCTION_SET:
   case Type::NSK_ORDINARY:
     return false;
   }

@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `135 / 147`
-- current cursor: `#136 libs/icl/test`
-- active compiler frontier: exact forced-C++11 Boost.ICL intake pending
+- completed suites: `136 / 147`
+- current cursor: `#137 libs/integer/test`
+- active compiler frontier: exact forced-C++11 Boost.Integer intake pending
 - final replay gate: after suite 147, force-rebuild suites 1--40 against the
   final compiler and record every changed outcome before declaring V2 complete
 
@@ -48,7 +48,7 @@ suite evidence and performance measurements.
 | B2 wrapper | `/Users/vishvananda/boost_1_91_0/run-cppgm-b2.sh` |
 | B2 adapter | `gcc-cppgm`; this is a GCC-command-line-compatible Boost.Build adapter name, not the host compiler. Its C++ compile action invokes CPPGM and its host actions invoke the Clang paths above. |
 | compiler under test | `/Users/vishvananda/cppgm-extended/dev/cppgm++` |
-| default suite jobs | `2`; memory sampling shows ordinary MP11 units release between translation units and do not accumulate RSS |
+| default suite jobs | `12`; sample aggregate and per-child RSS on every substantial graph, and narrow only when a suite's measured single-TU profile makes full-machine overlap unsafe |
 | default suite timeout | `14400s` for large suites; shorter only for focused diagnostics |
 
 ## Fixed Performance Baseline
@@ -280,6 +280,7 @@ differences other than the output path.
 | `(Boost.Wave typed parser, semantic, output, and initializer closure)` | Correct using-directive rank/hiding from reopened namespaces, preserve typedef-declared member-function parameters, stop direct callable data members from exposing hidden base methods, evaluate cv-qualified assignment candidates, carry pure-virtual state structurally into vtable ownership, omit undemanded instantiated member declarations, and preserve already-evaluated typed integral constants for template-local static initialization | -29.95% | -31.47% | -38.92% | versus Variant2, instructions improve by 9,299,672,704, RSS by 46,112,768 B, and footprint by 36,806,656 B; every cumulative signal improves. Source capture metadata remains separately guarded and no longer authorizes otherwise unused LowIR declarations. | `/private/tmp/cppgm-boost-frontier-v2-wave-final-candidate.json` | pass; three-run candidate medians are 184,611,217,136 instructions, 885,800,960 B RSS, and 616,808,448 B footprint. The candidate-only gate verified exact immutable epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured and every run recorded zero swaps. |
 | `(Boost.Coroutine2 nested-partial ownership and lambda capture closure)` | Keep out-of-class nested class and member definitions on the selected enclosing partial specialization, carry that typed owner through instantiation and output anchoring, and restrict implicit lambda capture to automatic locals, parameters, and fields rather than namespace/static objects | -29.69% | -30.70% | -36.96% | versus the Wave checkpoint, instructions move +687,265,888 while RSS moves +9,969,664 B and footprint +19,816,448 B; all three immutable-baseline signals remain strongly improved | `/private/tmp/cppgm-boost-frontier-v2-coroutine2-final.json` | pass; the isolated candidate records 185,298,483,024 instructions, 895,770,624 B RSS, and 636,624,896 B footprint. The candidate-only gate verified epoch `9764b3835`, the exact frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; no parent compiler or live project header was measured and the process recorded zero swaps. |
 | `(Boost.HOF algorithmic, constexpr, pack, and lowering closure)` | Replace false recursive-query depth rejection with exact active semantic-query identity, eliminate ordinary runtime-condition constexpr work, preserve nested type/value pack ownership and concrete defaulted-`decltype` SFINAE, bind aliases through their exact selected owners, and complete typed constexpr/nothrow/reference lowering with all witness work capture-guarded | -31.16% | -31.80% | -39.15% | versus the committed Coroutine2 checkpoint, instructions improve by 3,853,500,997 (-2.08%), RSS by 14,192,640 B (-1.58%), and footprint by 22,134,784 B (-3.48%). Versus the earlier HOF pathology checkpoint, instructions improve by 12,667,351,543 (-6.53%), RSS by 62,255,104 B (-6.60%), and footprint by 38,977,536 B (-5.96%). | `/private/tmp/cppgm-boost-frontier-v2-hof-final-perf.json` | pass; isolated three-run medians are 181,444,982,027 instructions, 881,577,984 B RSS, and 614,490,112 B footprint. The candidate-only gate verified exact epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; all three processes recorded zero swaps, and neither the parent compiler nor live project headers were measured. |
+| `(Boost.ICL dependent-using, explicit-default, and overload-set nondeduction closure)` | Defer a missing using target only when its structured owner type is still dependent; reject inherited `source_defaulted` provenance when the current template-id has a distinct explicit source location; and represent unresolved overload sets with a typed semantic kind so function-template deduction treats them as nondeduced instead of instantiating traits on a fabricated type | -31.18% | -30.94% | -37.52% | versus the HOF checkpoint, instructions improve by 57,829,184 (-0.032%), while RSS moves +11,067,392 B (+1.26%) and footprint +16,457,728 B (+2.68%); all immutable-baseline gates remain strongly improved and within tolerance | `/private/tmp/cppgm-boost-frontier-v2-icl-authoritative-perf.json` | pass; isolated three-run medians are 181,387,152,843 instructions, 892,645,376 B RSS, and 630,947,840 B footprint. The candidate-only gate verified exact epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; all three processes recorded zero swaps, and neither the parent compiler nor live project headers were measured. |
 
 ## Suite Cursor
 
@@ -423,23 +424,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 133 | `libs/coroutine2/test` | pass | `(this commit)` | The authoritative exact two-job forced-C++11 `pch=off` graph finds 2,254 targets, updates all 39 requested targets, and passes every compile, link, and runtime action in 144.71s; log `/private/tmp/boost-frontier-v2-suite-133-coroutine2-full-final.log`. | Two seven-line PA21 owners distinguish primary and partial-specialization out-of-class nested definitions; the PA25 lambda owner is seven source lines. All are header-free C++11, and PA22 is untouched. The PA9-excluded direct-LowIR report passes `6831/6831`; configured strict suites pass with zero failures; all 13 normal/cache-disabled configurations are byte-identical for all three reducers; placement, strict Clang C++11, text-reparse, audit, warning, diff, and frozen-header performance gates pass. The graph peaks at 510,603,264 B RSS with zero process swaps. CPPGM and host actions use Homebrew Clang 22. |
 | 134 | `libs/histogram/test` | skipped-language | `(no compiler change)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/histogram/meta/libraries.json`. | CPPGM's source-language lane remains C++11, so the suite is skipped by policy rather than being run with a broader language mode. The cursor advances to C++11 Boost.HOF. |
 | 135 | `libs/hof/test` | pass | `(this commit)` | The authoritative exact four-job forced-C++11 `pch=off` graph finds and updates all 204 requested targets, records 51 passing runtime actions, and exits successfully in 925.36s; log `/private/tmp/boost-frontier-v2-suite-135-hof-final.log`. | The closure replaces a fixed recursive-template-query depth cutoff with exact active semantic-query identity, removes speculative constexpr evaluation from ordinary runtime conditions, repairs nested type/value pack substitution and defaulted `decltype` pack SFINAE, completes typed constexpr/nothrow/builtin-trait behavior, and fixes the typed reference/member-pointer lowering exposed by HOF. Thirteen compact header-free C++11 owners span PA12, PA16, PA18, PA20, PA21, PA22, PA26, and PA34; the largest is 17 lines, PA22 includes neither `<type_traits>` nor compiler-trait tests, and placement review reports zero findings for the relocated combined-feature owners. The exact graph peaks at 1,356,038,144 B RSS with zero process swaps; long `lazy` and `protect` units remain CPU-active, bounded, and release fully. The final direct-LowIR, strict, cache-disabled, text-reparse, script, warning, diff, and frozen-header performance gates are recorded below. CPPGM was built by Homebrew Clang 22.1.0 with libc++, and every host path was pinned to Homebrew Clang; printed `gcc.*`/`gcc-cppgm` names remain Boost.Build adapter labels only. |
+| 136 | `libs/icl/test` | pass | `(this commit)` | The authoritative exact 12-job forced-C++11 `pch=off` graph updates all 163 requested compiler-side targets, records 15 passing runtime actions, has no compile or link failure, and reaches exactly 35 runtime failures plus their 35 dependent skips in 666.63s; log `/private/tmp/boost-frontier-v2-suite-136-icl-authoritative-final.log`. The Homebrew-Clang 22 control independently records the same 15 passes and the exact same 35 runtime-failure target names (empty sorted-set diff); log `/private/tmp/boost-frontier-v2-suite-136-icl-full-homebrew-clang-control.log`. | The closure repairs dependent using-declaration collection, stale explicit/default template-argument provenance, and the standard nondeduced treatment of an overload set containing function templates. The last defect was the algorithmic source of ICL's pathological trait expansion: the old compiler deduced a fabricated overload-set type for `std::endl` into generic ICL `operator<<` candidates and eagerly instantiated deep `is_interval` chains. A compact trigger fell from still-growing 1.78 GiB after 51s to 7.86s/296 MiB; the exact former outliers finish in 17--23s at 491--572 MiB. Three header-free C++11 owners are 15--21 lines, PA22 uses no `<type_traits>`, and the saved parent fails each. Direct LowIR passes `4382/4382`, all configured strict comparisons and 168 script tests pass, all 23 reparse categories remain zero, and 13 normal/cache-disabled modes are byte-identical for every owner. The graph's process-tree maximum is 1,520,070,656 B with zero process swaps; live sampling peaks at 6,453,940 KiB aggregate and shows complete release. Full 12-way overlap did cause 1,660,619 pages (6,801,895,424 B) of system swap-out, which is recorded as a parallelism cost rather than a compiler leak. CPPGM and every host path use Homebrew Clang 22; `gcc-cppgm` remains only the adapter label. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#136 libs/icl/test`
+- suite: `#137 libs/integer/test`
 - focused target: exact full-suite intake
-- last closed suite: `#135 libs/hof/test` (`pass`)
+- last closed suite: `#136 libs/icl/test` (`pass`)
 - failure phase: intake pending
 - diagnostic: pending exact forced-C++11 replay
 - reduced repro: not applicable until a compiler-owned failure is identified
 - owning PA/cluster: pending intake
 - implementation area: pending intake
-- performance risk: container-heavy template suite; begin with four jobs and sample aggregate RSS
-- language lane: Boost.ICL declares C++03 and runs in the stable forced-C++11 lane
-- next action: run the exact Clang-pinned four-job `pch=off` Boost.ICL graph; after suite 147, force suites 1--40 against the final compiler before final closure
+- performance risk: low survey risk; retain full-machine jobs but continue aggregate and per-child sampling
+- language lane: Boost.Integer declares C++03 and runs in the stable forced-C++11 lane; its named C++14 constexpr compile probe is feature-guarded by `BOOST_NO_CXX14_CONSTEXPR`
+- next action: run the exact Clang-pinned 12-job `pch=off` Boost.Integer graph; after suite 147, force suites 1--40 against the final compiler before final closure
 
 ## Fix Ledger
 
@@ -914,9 +916,37 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | HOF constexpr object, call-pack, and conversion semantics | Constexpr evaluation lost complete-object identity across base-subobject references, duplicated ephemeral pointees, bound call arguments before expanding packs or applying user conversions, and could select overloads from value-only categories that erased named-lvalue information. Constant values now share ephemeral pointees and carry complete-object ownership for base subobjects; explicit validated base recovery, pack expansion, typed overload selection, and argument conversion use the existing structured semantic data. | Five compact PA20 positive/negative owners (5--14 lines) cover CRTP base roundtrips, callable shadowing, empty-class copy, overloaded assignment, and the non-literal null-pointer boundary; the ambiguous-base conversion control is correctly placed at PA26:100 | Current CPPGM and Homebrew Clang 22 agree under C++11. The ambiguous-base case is a rejected conversion candidate, not a hard failure of unrelated overload resolution. | PA20/PA26 direct comparisons, the broad report, strict suites, placement review, and all-cache-disabled owner report pass. | included in the complete HOF frozen-source/51-header result | `(this commit)` |
 | fixed | HOF nothrow traits, inherited construction, and pack-only exception specifications | Function-template exception analysis omitted packs used only in `noexcept`, same-class by-value arguments skipped implicit copy/move construction, and inherited constructors were mistaken for user-declared derived constructors, suppressing the derived implicit default constructor. Parameter scopes now retain type/value packs including empty packs, nothrow analysis accounts for implicit parameter construction, `__has_nothrow_copy` uses the typed constructor model, and inherited signatures no longer suppress the derived implicit special member. | `pa34/tests/compile/500-builtin-nothrow-copy-user-provided.t`, seven lines / 121 bytes with an empty compile ref, plus existing PA16/PA22 inherited-constructor controls | The trait owner is in PA34's builtin-trait cluster rather than PA22; PA22 remains free of both `<type_traits>` and compiler-trait tests. | Focused PA16/PA22/PA34, strict, broad, placement, cache-disabled, warning, and exact HOF gates pass. Existing LowIR changes are limited to required zero-initialization, corrected explicit-specialization parameter naming, and stable constructor ordinals/symbol-equivalent definitions. | included in the complete HOF frozen-source/51-header result | `(this commit)` |
 | fixed | HOF typed reference/member-pointer lowering and initial-parse metadata | A reference data member passed by value could be lowered as its stored pointer, while applying storage materialization indiscriminately to ordinary scalar parameters introduced redundant address/load operations. A reference-cast member-function pointer also retained the reference wrapper as its representation type. Call lowering now distinguishes typed reference-member storage at the call boundary, storage lowering retains reference-cast semantics, and member-pointer materialization removes only the expression reference. Parser rollback snapshots also retain structured namespace-alias targets, and range-for lowering carries the original AST id instead of rebuilding it from display text. | `pa16/tests/general/200-scalar-reference-member-forward-by-value.t` (10 lines), `pa18/tests/general/100-xvalue-return-demands-template-move-constructor.t` (10 lines), and the compact PA12 enum null-pointer negative | PA14 reference casts, PA15 inherited scalar forwarding, and the PA16 reference-member owner form a three-way LowIR boundary; all compare exactly. The PA26 member-template pointer ref changes only definition order after class-completion rematerialization; bodies and symbols are identical. | Focused PA14/15/16/18/26 and final broad direct-LowIR pass. The text-reparse audit is zero and no semantic spelling match was added. | included in the complete HOF frozen-source/51-header result | `(this commit)` |
+| fixed | ICL dependent using-declaration collection | Collecting an out-of-class member-template definition can revisit a using-declaration while its base owner is still dependent and has no concrete members to import. After every typed lookup fails, the collector now resolves the retained qualified owner node and defers the missing-target diagnostic only when that owner type still depends on a template parameter. The pre-existing `using_if_exists` short circuit remains earlier, so the new owner work does not affect that path. | `pa21/tests/spec/300-dependent-using-operator-out-of-class-member-template.t`, 19 lines / 424 bytes, header-free C++11 with an empty LowIR ref | The saved parent reports `unknown using-declaration target` while collecting the member-template definition; current CPPGM and Homebrew Clang 22 accept it. | PA21 placement is clean; direct LowIR, strict, all 13 cache configurations, broad, reparse, scripts, warning, and exact ICL gates pass. The fix uses only retained qualified AST and typed owner state. | included in the complete ICL frozen-source/51-header result | `(this commit)` |
+| fixed | ICL explicit template argument with stale default provenance | A structured argument inherited `source_defaulted` from an enclosing template binding even when the current template-id spelled that argument explicitly. Default-aware deduction therefore treated a derived base's explicit allocator template as though it were the local constructor template's default. The matcher now compares retained source-location and token identities against the current parameter's declared default and rejects provenance belonging to a different source node. | `pa22/tests/spec/300-derived-base-constructor-deduction-explicit-default-binding.t`, 21 lines / 509 bytes, header-free C++11 with no `<type_traits>` and a 22-line ref | The saved parent reports no viable constructor for `target<>(derived)`; current CPPGM and Homebrew Clang 22 accept the exact explicit-default binding. | The owner is individually placement-clean; PA21/PA22 direct LowIR, strict, all 13 cache configurations, broad, reparse, scripts, Clang C++11, warning, and exact ICL gates pass. No spelling comparison or source reparse is added. | included in the complete ICL frozen-source/51-header result | `(this commit)` |
+| fixed | ICL function-template overload-set nondeduction pathology | The dependent call path represented an unresolved function/template overload set as an ordinary fabricated named type. Function-template deduction consequently bound that type to generic ICL stream candidates and eagerly instantiated deep `is_interval<T>` trait chains for `std::endl`. The placeholder now carries a dedicated structured semantic kind, and both ordinary and explicit function-template deduction treat it as a nondeduced argument before pattern preparation. | `pa22/tests/spec/300-overloaded-function-template-argument-nondeduced.t`, 15 lines / 443 bytes, header-free C++11 with no `<type_traits>` and a 22-line ref | The saved parent deduces the fabricated type and fires the reducer's `static_assert` trap. The exact reduced ICL/iostream trigger was still growing at 1.78 GiB after 51s; after the fix it finishes in 7.86s at about 296 MiB. Clang finishes the same trigger in 1.88s at 118 MiB. | The owner is individually placement-clean; direct LowIR passes `4382/4382`, configured strict comparisons all pass, normal plus eleven individual cache-disabled modes plus all-off are byte-identical, all 23 reparse categories remain zero, 168 script tests pass, and the exact ICL compile/link graph closes. Trace evidence records 15 structured nondeduction events, including five ICL stream candidates. | -31.18% instructions, -30.94% RSS, and -37.52% footprint in `/private/tmp/cppgm-boost-frontier-v2-icl-authoritative-perf.json` | `(this commit)` |
 
 ## Decision Log
 
+- `2026-08-02`: Closed suite 136, Boost.ICL. The final exact 12-job
+  forced-C++11 `pch=off` graph has no compiler or link failure, records 15
+  passing runtime actions, and reaches the exact same 35 runtime failures and
+  35 dependent skips as the independent Homebrew-Clang 22 control; the sorted
+  failure-target diff is empty. The cppgm graph completes in 666.63s at
+  1,520,070,656 B maximum process RSS and zero process swaps. Live sampling
+  peaks at 6,453,940 KiB aggregate and shows complete worker release, while
+  the 12-way overlap causes 1,660,619 pages of system swap-out; that paging is
+  retained as parallelism evidence rather than misclassified as a compiler
+  leak. The real compiler pathology was algorithmic: the dependent call path
+  deduced a fabricated ordinary type from the `std::endl` overload set into
+  generic ICL stream candidates and instantiated deep trait chains. A typed
+  overload-set semantic kind restores standard nondeduction and reduces the
+  compact trigger from still growing at 1.78 GiB after 51s to 7.86s/296 MiB.
+  Two independent structured fixes cover a dependent using owner and stale
+  explicit/default provenance. The three minimal owners are 15--21 lines,
+  header-free C++11, and PA22 uses no `<type_traits>`. The saved parent fails
+  all three. The authoritative PA9-excluded direct-LowIR report passes
+  `4382/4382`; all configured strict comparisons, all 13 cache modes for each
+  owner, all 168 script tests, placement review, warning checks, and all 23
+  zero-reparse categories pass. The immutable candidate-only gate records
+  -31.18% instructions, -30.94% RSS, and -37.52% footprint after verifying the
+  frozen source and exactly 51 headers; no parent or live header was measured.
+  CPPGM and all host paths use Homebrew Clang 22. The cursor advances to
+  C++03-declared Boost.Integer in the forced-C++11 lane.
 - `2026-08-02`: Closed suite 135, Boost.HOF. The exact four-job forced-C++11
   graph updates all 204 targets and passes all 51 runtime actions in 925.36s at
   1,356,038,144 B maximum RSS with zero process swaps. The final compiler is
@@ -5140,9 +5170,10 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-# Suite 135 Boost.HOF is closed. Suite 136 Boost.ICL declares C++03 and runs
-# in the stable forced-C++11 lane. Begin with the exact four-job full intake.
-/usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=4 CXXSTD=11 \
+# Suite 136 Boost.ICL is closed. Suite 137 Boost.Integer declares C++03 and
+# runs in the stable forced-C++11 lane. Its C++14 constexpr probe is guarded
+# off under this configuration. Begin with the exact 12-job full intake.
+/usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=12 CXXSTD=11 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CC=/usr/local/opt/llvm/bin/clang \
@@ -5151,7 +5182,7 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   ./run-cppgm-b2.sh -a pch=off \
-    libs/icl/test
+    libs/integer/test
 ```
 
 After suite 147 closes, repeat the same exact forced, Clang-pinned C++11 lane
