@@ -218,6 +218,11 @@ PA18 supports the following in addition to the PA17 subset:
   from ordinary argument types, without function-template partial ordering or
   SFINAE
 - on-demand instantiation of the supported class-template and function-template cases
+- instantiated specializations reuse supported PA16 rvalue-reference return
+  paths and PA17 virtual-destructor lifetime without changing their value
+  category or object-lifetime behavior
+- distinct local-class identities for separate function-template
+  specializations
 - declaration-owned template-parameter scopes across nested instantiations and
   out-of-class member-definition bodies, including definition-time rejection
   of a declaration that redeclares an active template parameter even when the
@@ -235,6 +240,8 @@ PA18 supports the following in addition to the PA17 subset:
   class/method/codegen machinery
 - template-backed overload participation where the non-template PA12-PA17 machinery already
   exists, including function-template operator overloads
+- ordinary member typedef hiding and injected-name lookup during re-entrant
+  class-template instantiation
 
 Within this milestone, PA18 should produce valid LowIR for ordinary generic code over the
 supported PA17 subset. That LowIR is intended to be accepted by the later PA28

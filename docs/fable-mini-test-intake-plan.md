@@ -462,6 +462,13 @@ family wholesale.
   compiler, build command, and resulting binary hash in the tracker or batch
   validation record. Do not maintain a separate reference object tree when the
   normal `dev/` binary is also the compiler under test.
+
+  Establish that clean host-compiler build once when the frozen source commit
+  or compiler configuration changes. During test-only intake batches, reuse
+  the existing normal object tree for reference generation and root
+  `test-report` validation; do not run a clean target merely to validate a new
+  test or README edit. Incremental frontend relinking is expected and does not
+  require recompiling unchanged objects.
 - A source-run reference may be compared against the clean target build as a
   provenance and compatibility control, but it must not replace local
   reference generation.

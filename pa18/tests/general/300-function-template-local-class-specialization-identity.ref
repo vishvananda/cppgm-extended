@@ -1,0 +1,153 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $integers : obj<8x4>
+  slot $longs : obj<16x8>
+
+  block ^entry:
+    %t1 = addr $integers
+    store i32 0, %t1
+    %t2 = index i8 %t1, 4
+    store i32 0, %t2
+    %t3 = addr $longs
+    store i64 0, %t3
+    %t4 = index i8 %t3, 8
+    store i64 0, %t4
+    %t5 = addr $integers
+    %t6 = unary decay ptr %t5
+    %t7 = addr $integers
+    %t8 = unary decay ptr %t7
+    %t9 = binary mul i64 2, 4
+    %t10 = index i8 %t8, %t9
+    call void @visit(%t6, %t10)
+    %t11 = addr $longs
+    %t12 = unary decay ptr %t11
+    %t13 = addr $longs
+    %t14 = unary decay ptr %t13
+    %t15 = binary mul i64 2, 8
+    %t16 = index i8 %t14, %t15
+    call void @visit__ov2(%t12, %t16)
+    return i32 0
+}
+function @visit(%first : ptr, %last : ptr) -> void [binding=weak, object=_Z5visitIiEvPT_S1_] {
+  slot $first : ptr
+  slot $last : ptr
+  slot $value : obj<16x8>
+
+  block ^entry:
+    store ptr %first, $first
+    store ptr %last, $last
+    %t1 = addr $value
+    %t2 = load ptr $first
+    %t3 = addr $value
+    %t4 = index i8 [projection=field] %t3, 0
+    store ptr %t2, %t4
+    %t5 = load ptr $last
+    %t6 = addr $value
+    %t7 = index i8 [projection=field] %t6, 8
+    store ptr %t5, %t7
+    %t8 = addr $value
+    call void @cleanup__local_10684534965950084766___cleanup(%t8)
+    return void
+}
+function @visit__ov2(%first : ptr, %last : ptr) -> void [binding=weak, object=_Z5visitIlEvPT_S1_] {
+  slot $first : ptr
+  slot $last : ptr
+  slot $value : obj<16x8>
+
+  block ^entry:
+    store ptr %first, $first
+    store ptr %last, $last
+    %t1 = addr $value
+    %t2 = load ptr $first
+    %t3 = addr $value
+    %t4 = index i8 [projection=field] %t3, 0
+    store ptr %t2, %t4
+    %t5 = load ptr $last
+    %t6 = addr $value
+    %t7 = index i8 [projection=field] %t6, 8
+    store ptr %t5, %t7
+    %t8 = addr $value
+    call void @cleanup__local_10938030531441296179___cleanup(%t8)
+    return void
+}
+function @cleanup__local_10684534965950084766___cleanup(%this : ptr) -> void [binding=weak, object=_ZZ5visitIiEvPT_S1_EN7cleanupD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    jump ^while_cond_1
+
+  block ^while_cond_1:
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 8
+    %t6 = load ptr %t5
+    %t7 = cmp ne ptr %t3, %t6
+    branch %t7, ^while_body_2, ^while_end_3
+
+  block ^while_body_2:
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load ptr %t9
+    call void @observe(%t10)
+    %t11 = load ptr $this
+    %t12 = index i8 [projection=field] %t11, 0
+    %t13 = load ptr %t12
+    %t14 = binary mul i64 1, 4
+    %t15 = index i8 %t13, %t14
+    store ptr %t15, %t12
+    jump ^while_cond_1
+
+  block ^while_end_3:
+    return void
+}
+function @cleanup__local_10938030531441296179___cleanup(%this : ptr) -> void [binding=weak, object=_ZZ5visitIlEvPT_S1_EN7cleanupD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    jump ^while_cond_1
+
+  block ^while_cond_1:
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 8
+    %t6 = load ptr %t5
+    %t7 = cmp ne ptr %t3, %t6
+    branch %t7, ^while_body_2, ^while_end_3
+
+  block ^while_body_2:
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load ptr %t9
+    call void @observe__ov2(%t10)
+    %t11 = load ptr $this
+    %t12 = index i8 [projection=field] %t11, 0
+    %t13 = load ptr %t12
+    %t14 = binary mul i64 1, 8
+    %t15 = index i8 %t13, %t14
+    store ptr %t15, %t12
+    jump ^while_cond_1
+
+  block ^while_end_3:
+    return void
+}
+function @observe(%__param0 : ptr) -> void [binding=weak, object=_Z7observeIiEvPT_] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return void
+}
+function @observe__ov2(%__param0 : ptr) -> void [binding=weak, object=_Z7observeIlEvPT_] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return void
+}
+alias object _ZZ5visitIiEvPT_S1_EN7cleanupD2Ev = @cleanup__local_10684534965950084766___cleanup
+alias object _ZZ5visitIlEvPT_S1_EN7cleanupD2Ev = @cleanup__local_10938030531441296179___cleanup
