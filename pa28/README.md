@@ -454,6 +454,10 @@ To complete PA28, implement these goals:
    into different ABI registers. Forwarding those parameters after earlier scratch-using
    operations must preserve their original values too.
 
+   Atomic operations are subject to the same pressure correctness requirement. Producing
+   an atomic operation's returned old value in a loop must remain executable when its
+   address and source values occupy the available general-purpose registers.
+
    The same correctness requirement applies through control-flow joins and loop
    backedges. Incoming parameters, values computed before a loop, and values recomputed
    on each iteration must retain their current value across calls without a later
