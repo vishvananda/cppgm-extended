@@ -204,6 +204,9 @@ To complete PA25, implement these goals:
    A caller-created copy for a destructible class value parameter transfers to
    the callee. The callee destroys that parameter, while the caller keeps only
    the unwind cleanup needed for objects it still owns.
+   Once an exception object has been initialized, destroy the throw operand's
+   temporaries and remove them from later unwind snapshots. A temporary from an
+   untaken throw branch must not appear in a sibling call's cleanup path.
 
 ### Out Of Scope
 

@@ -449,6 +449,25 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         )
         self.assertIn("exception.class_value_argument_cleanup", hits)
 
+    def test_class_throw_operand_with_eh_has_operand_cleanup_feature(self) -> None:
+        source = textwrap.dedent(
+            """\
+            struct text { ~text(); };
+            struct error { error(text); };
+            void raise(bool take) {
+              if (take) throw error(text());
+              throw 1;
+            }
+            """
+        )
+        hits = audit.detect_features(
+            source,
+            "declare function @__cxa_throw() -> void [role=eh_throw]\n"
+            "function @raise() {\n  eh_try ^cleanup\n  eh_end\n}\n",
+            "pa25/tests/general/200-throw-operand-cleanup.t",
+        )
+        self.assertIn("exception.throw_operand_cleanup", hits)
+
 
 if __name__ == "__main__":
     unittest.main()

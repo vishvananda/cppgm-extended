@@ -328,6 +328,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("exception.guarded_static_cleanup", ()),
     FeatureRule("exception.aggregate_cleanup", ()),
     FeatureRule("exception.class_value_argument_cleanup", ()),
+    FeatureRule("exception.throw_operand_cleanup", ()),
     FeatureRule("host.eh_object", ()),
     FeatureRule("host.object_interop", ()),
     FeatureRule("host.object_attribute", ()),
@@ -1118,6 +1119,16 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
                 f"source:{class_value_parameter} value parameter with destructor",
                 "ref:indirect class argument with EH control",
             ],
+        )
+    if (
+        re.search(r"\bthrow\s+[A-Za-z_][A-Za-z0-9_]*\s*\(", code)
+        and re.search(r"~[A-Za-z_][A-Za-z0-9_]*\s*\(", code)
+        and re.search(r"role=eh_throw", ref_text)
+        and LOWIR_EH_CONTROL_RE.search(ref_text)
+    ):
+        hits["exception.throw_operand_cleanup"] = FeatureHit(
+            "exception.throw_operand_cleanup",
+            ["source:class throw operand with destructor", "ref:EH throw control"],
         )
     return hits
 
