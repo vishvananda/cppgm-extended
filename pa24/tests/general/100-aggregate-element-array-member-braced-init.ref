@@ -1,0 +1,217 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $levels : obj<60x4>
+  slot $argarr__1 : obj<16x4>
+  slot $argarr__2 : obj<16x4>
+  slot $argarr__3 : obj<16x4>
+  slot $cond__4 : i32
+  slot $land__5 : i64
+  slot $land__6 : i64
+  slot $land__7 : i64
+  slot $land__8 : i64
+  slot $land__9 : i64
+  slot $land__10 : i64
+
+  block ^entry:
+    %t1 = addr $levels
+    %t2 = addr $argarr__1
+    store i32 0, %t2
+    %t3 = index i8 %t2, 4
+    store i32 0, %t3
+    %t4 = index i8 %t2, 8
+    store i32 0, %t4
+    %t5 = index i8 %t2, 12
+    store i32 0, %t5
+    call void @level__level__ov2(%t1, %t2, 1)
+    %t6 = index i8 %t1, 20
+    %t7 = addr $argarr__2
+    store i32 1, %t7
+    %t8 = index i8 %t7, 4
+    store i32 2, %t8
+    %t9 = index i8 %t7, 8
+    store i32 0, %t9
+    %t10 = index i8 %t7, 12
+    store i32 0, %t10
+    call void @level__level__ov2(%t6, %t7, 2)
+    %t11 = index i8 %t1, 40
+    %t12 = addr $argarr__3
+    store i32 0, %t12
+    %t13 = index i8 %t12, 4
+    store i32 0, %t13
+    %t14 = index i8 %t12, 8
+    store i32 0, %t14
+    %t15 = index i8 %t12, 12
+    store i32 0, %t15
+    call void @level__level__ov2(%t11, %t12, 0)
+    %t16 = addr $levels
+    %t17 = unary decay ptr %t16
+    %t18 = binary mul i64 0, 20
+    %t19 = index i8 [projection=array_element] %t17, %t18
+    %t20 = index i8 [projection=field] %t19, 0
+    %t21 = unary decay ptr %t20
+    %t22 = index i32 [projection=array_element] %t21, 0
+    %t23 = load i32 %t22
+    %t24 = cmp eq i32 %t23, 0
+    branch %t24, ^land_rhs_19, ^land_short_20
+
+  block ^land_rhs_19:
+    %t25 = addr $levels
+    %t26 = unary decay ptr %t25
+    %t27 = binary mul i64 0, 20
+    %t28 = index i8 [projection=array_element] %t26, %t27
+    %t29 = index i8 [projection=field] %t28, 0
+    %t30 = unary decay ptr %t29
+    %t31 = index i32 [projection=array_element] %t30, 3
+    %t32 = load i32 %t31
+    %t33 = cmp eq i32 %t32, 0
+    %t34 = cmp ne i64 %t33, 0
+    store i64 %t34, $land__10
+    jump ^land_end_21
+
+  block ^land_short_20:
+    store i64 0, $land__10
+    jump ^land_end_21
+
+  block ^land_end_21:
+    %t35 = load i64 $land__10
+    branch %t35, ^land_rhs_16, ^land_short_17
+
+  block ^land_rhs_16:
+    %t36 = addr $levels
+    %t37 = unary decay ptr %t36
+    %t38 = binary mul i64 1, 20
+    %t39 = index i8 [projection=array_element] %t37, %t38
+    %t40 = index i8 [projection=field] %t39, 0
+    %t41 = unary decay ptr %t40
+    %t42 = index i32 [projection=array_element] %t41, 0
+    %t43 = load i32 %t42
+    %t44 = cmp eq i32 %t43, 1
+    %t45 = cmp ne i64 %t44, 0
+    store i64 %t45, $land__9
+    jump ^land_end_18
+
+  block ^land_short_17:
+    store i64 0, $land__9
+    jump ^land_end_18
+
+  block ^land_end_18:
+    %t46 = load i64 $land__9
+    branch %t46, ^land_rhs_13, ^land_short_14
+
+  block ^land_rhs_13:
+    %t47 = addr $levels
+    %t48 = unary decay ptr %t47
+    %t49 = binary mul i64 1, 20
+    %t50 = index i8 [projection=array_element] %t48, %t49
+    %t51 = index i8 [projection=field] %t50, 0
+    %t52 = unary decay ptr %t51
+    %t53 = index i32 [projection=array_element] %t52, 1
+    %t54 = load i32 %t53
+    %t55 = cmp eq i32 %t54, 2
+    %t56 = cmp ne i64 %t55, 0
+    store i64 %t56, $land__8
+    jump ^land_end_15
+
+  block ^land_short_14:
+    store i64 0, $land__8
+    jump ^land_end_15
+
+  block ^land_end_15:
+    %t57 = load i64 $land__8
+    branch %t57, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t58 = addr $levels
+    %t59 = unary decay ptr %t58
+    %t60 = binary mul i64 1, 20
+    %t61 = index i8 [projection=array_element] %t59, %t60
+    %t62 = index i8 [projection=field] %t61, 0
+    %t63 = unary decay ptr %t62
+    %t64 = index i32 [projection=array_element] %t63, 3
+    %t65 = load i32 %t64
+    %t66 = cmp eq i32 %t65, 0
+    %t67 = cmp ne i64 %t66, 0
+    store i64 %t67, $land__7
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store i64 0, $land__7
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t68 = load i64 $land__7
+    branch %t68, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t69 = addr $levels
+    %t70 = unary decay ptr %t69
+    %t71 = binary mul i64 2, 20
+    %t72 = index i8 [projection=array_element] %t70, %t71
+    %t73 = index i8 [projection=field] %t72, 0
+    %t74 = unary decay ptr %t73
+    %t75 = index i32 [projection=array_element] %t74, 0
+    %t76 = load i32 %t75
+    %t77 = cmp eq i32 %t76, 0
+    %t78 = cmp ne i64 %t77, 0
+    store i64 %t78, $land__6
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__6
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t79 = load i64 $land__6
+    branch %t79, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t80 = addr $levels
+    %t81 = unary decay ptr %t80
+    %t82 = binary mul i64 2, 20
+    %t83 = index i8 [projection=array_element] %t81, %t82
+    %t84 = index i8 [projection=field] %t83, 16
+    %t85 = load i32 %t84
+    %t86 = cmp eq i32 %t85, 0
+    %t87 = cmp ne i64 %t86, 0
+    store i64 %t87, $land__5
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__5
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t88 = load i64 $land__5
+    branch %t88, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__4
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__4
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t89 = load i32 $cond__4
+    return i32 %t89
+}
+function @level__level__ov2(%this : ptr, %operators : ptr [pass=decay], %count : i32) -> void [unwind=no, binding=weak, object=_ZN5levelC1EA4_5tokeni] {
+  slot $this : ptr
+  slot $operators : ptr
+  slot $count : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %operators, $operators
+    store i32 %count, $count
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $operators
+    copyobj 16x4 %t3, %t2
+    %t4 = load i32 $count
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 16
+    store i32 %t4, %t6
+    return void
+}
+alias object _ZN5levelC2EA4_5tokeni = @level__level__ov2

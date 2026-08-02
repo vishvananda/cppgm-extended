@@ -176,6 +176,8 @@ PA24 supports the following in addition to the PA23 subset:
 - direct braced-init expressions over the supported scalar / array / class subset when the
   earlier PA15-PA23 object/value semantics already define the target
 - braced initialization of bounded arrays with compile-time known size
+- arrays of aggregate elements whose array members receive nested braced
+  sub-lists, including zero-initialization of omitted member elements
 - direct aggregate construction when the target aggregate type is already supported by the
   earlier object-model assignments
 - ordinary function-call argument conversion through non-explicit converting constructors
