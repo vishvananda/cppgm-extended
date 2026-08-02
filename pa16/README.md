@@ -276,6 +276,9 @@ PA16 supports the following in addition to the PA15 subset:
 - class temporaries created earlier in an enclosing full expression remain
   alive across nested conditional and short-circuit branch edges, and are
   destroyed at the end of that full expression
+- class-valued `if` condition declarations are constructed only on paths that
+  reach the declaration and remain alive through the complete selection
+  statement, including braceless nested statements
 - non-template conversion operators that participate in the existing overload
   and conversion machinery
 
