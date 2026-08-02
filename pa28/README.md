@@ -434,9 +434,9 @@ To complete PA28, implement these goals:
    `f64` operations should stay on the floating-register path. A conservative stack spill
    is acceptable when pressure or an ABI boundary requires it, as long as the generated
    program is correct and the checked structural MIR cases still match their oracles.
-   Lowering operations with fixed scratch registers, including integer division and shifts,
-   must preserve still-live frame addresses and incoming parameters before reusing those
-   registers.
+   Lowering operations with fixed scratch registers, including integer comparisons,
+   division, and shifts, must preserve still-live frame addresses and incoming parameters
+   before reusing those registers.
 
    A numeric immediate written without a decimal point still follows the declared LowIR
    type in a floating store or return. It must be materialized as the requested floating
@@ -449,6 +449,10 @@ To complete PA28, implement these goals:
    intentionally check some high-pressure call cases by program behaviour only; those
    cases should compile and run correctly but do not require the exact spill/register
    strategy used by the reference implementation.
+
+   Hidden indirect-result arguments can shift ordinary pointer and reference parameters
+   into different ABI registers. Forwarding those parameters after earlier scratch-using
+   operations must preserve their original values too.
 
    The same correctness requirement applies through control-flow joins and loop
    backedges. Incoming parameters, values computed before a loop, and values recomputed
