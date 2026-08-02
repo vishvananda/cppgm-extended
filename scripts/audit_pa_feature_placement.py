@@ -257,6 +257,12 @@ def rx(pattern: str) -> re.Pattern[str]:
     return re.compile(pattern, re.MULTILINE | re.DOTALL)
 
 
+DYNAMIC_CLASS_STATIC_RE = rx(
+    r"\bstatic\b[^;{}]*[A-Z][A-Za-z0-9_:<>]*[^;{}]*=\s*\{"
+    r"[^{}]*[A-Z][A-Za-z0-9_:<>]*\s*\("
+)
+
+
 RULES: tuple[FeatureRule, ...] = (
     FeatureRule("lowir.procedural", (rx(r"\bint\s+main\s*\("),),
                 ref_patterns=(rx(r"^function\s+@",),)),
@@ -265,7 +271,7 @@ RULES: tuple[FeatureRule, ...] = (
                 use_raw=True,
                 ref_patterns=(rx(r"__local_static__|local_static_(?:init|ready)|__guard"),)),
     FeatureRule("lowir.procedural.local_static.dynamic_class",
-                (rx(r"\bstatic\b[^;{}]*[A-Z][A-Za-z0-9_:<>]*[^;{}]*=\s*\{[^{}]*[A-Z][A-Za-z0-9_:<>]*\s*\("),),
+                (DYNAMIC_CLASS_STATIC_RE,),
                 use_raw=True,
                 ref_patterns=(rx(r"__local_static__.*(?:C[12]E|copyobj)|(?:C[12]E|copyobj).*__local_static__"),)),
     FeatureRule("lowir.procedural.float_conversion",
@@ -956,6 +962,41 @@ def evidence_partition(evidence: Iterable[str]) -> tuple[list[str], list[str]]:
     return source_ref, path
 
 
+def inside_function_body(code: str, position: int) -> bool:
+    """Return whether position is inside a function rather than a class body."""
+    contexts: list[str] = []
+    segment_start = 0
+    for index, character in enumerate(code[:position]):
+        if character == "{":
+            prefix = code[segment_start:index].strip()
+            parent = contexts[-1] if contexts else "namespace"
+            if re.search(r"\b(?:class|struct|union)\b[^;{}]*$", prefix):
+                context = "class"
+            elif (
+                re.search(r"\)\s*(?:const\s*)?(?:noexcept(?:\s*\([^)]*\))?\s*)?$", prefix)
+                and not re.search(r"\b(?:if|for|while|switch|catch)\s*\([^{};]*\)\s*$", prefix)
+            ):
+                context = "function"
+            else:
+                context = parent
+            contexts.append(context)
+            segment_start = index + 1
+        elif character == "}":
+            if contexts:
+                contexts.pop()
+            segment_start = index + 1
+        elif character == ";":
+            segment_start = index + 1
+    return bool(contexts and contexts[-1] == "function")
+
+
+def has_function_local_dynamic_class_static(code: str) -> bool:
+    return any(
+        inside_function_body(code, match.start())
+        for match in DYNAMIC_CLASS_STATIC_RE.finditer(code)
+    )
+
+
 def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dict[str, FeatureHit]:
     no_comments = strip_comments(source)
     code = strip_string_literals(no_comments)
@@ -975,6 +1016,11 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             matched.extend(match_rule_patterns(rule.path_patterns, test_path, rule.all_patterns, "path"))
         if rule.feature_id == "class.member_pointer" and overloaded_arrow_star_without_member_pointer(code):
             matched = [evidence for evidence in matched if "->*" not in evidence]
+        if (
+            rule.feature_id == "lowir.procedural.local_static.dynamic_class"
+            and not has_function_local_dynamic_class_static(code)
+        ):
+            matched = [evidence for evidence in matched if not evidence.startswith("source:")]
         if rule.feature_id == "class.inheritance.multiple" and has_top_level_base_comma(code):
             matched.append("source:<multiple base-specifiers>")
         if matched:

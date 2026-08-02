@@ -198,6 +198,34 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             audit.detect_features(pointer_parameter),
         )
 
+    def test_dynamic_local_static_ignores_class_static_member_array(self) -> None:
+        class_static = textwrap.dedent(
+            """\
+            struct Entry { constexpr Entry(int) {} };
+            template<class T> struct Tables {
+              static constexpr Entry rows[1] = {Entry(1)};
+            };
+            """
+        )
+        function_local = textwrap.dedent(
+            """\
+            struct Entry { Entry(int) {} };
+            int read() {
+              static Entry rows[1] = {Entry(1)};
+              return 0;
+            }
+            """
+        )
+
+        self.assertNotIn(
+            "lowir.procedural.local_static.dynamic_class",
+            audit.detect_features(class_static),
+        )
+        self.assertIn(
+            "lowir.procedural.local_static.dynamic_class",
+            audit.detect_features(function_local),
+        )
+
     def test_lowir_eh_review_reports_hidden_source_to_lowir_output(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)

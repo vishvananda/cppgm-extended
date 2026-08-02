@@ -1,0 +1,17 @@
+ERROR: unsupported constexpr variable initializer at tests/general/300-bad-constexpr-aggregate-runtime-member.t:13:16 [top-level declaration 2 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier KW_CONSTEXPR:constexpr
+    decl-specifier TT_IDENTIFIER:pair
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier value
+      initializer
+        braced-init-list
+          call-expression
+            id-expression runtime_value
+            argument-list
+          literal 2
+}]
+Diagnostic context:
+collect_simple_declaration [constexpr pair value={runtime_value(),2};] at tests/general/300-bad-constexpr-aggregate-runtime-member.t:13:1
