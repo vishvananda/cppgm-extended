@@ -162,6 +162,8 @@ Required metadata families:
 - function `arity`, `effects`, `unwind`, and `return`
 - parameter `pass`, `capture`, `access`, and `alias`
 - index `projection`
+- function and instruction `!dbg(file, line, column)` locations with positive
+  source line and column numbers
 
 The metadata is part of the textual LowIR contract because later compiler
 stages must be able to preserve semantic call-boundary and symbol-boundary
@@ -230,6 +232,9 @@ Reject structurally malformed LowIR, including:
 - undefined temporaries, slots, globals, functions, or blocks where PA13
   requires a definition
 - invalid metadata values
+- symbol-boundary metadata attached to an instruction or call site
+- zero line or column values in function or instruction debug locations
+- more than one `tls_for` wrapper for the same thread-local global
 - parameter metadata that is not legal for the parameter type
 - `indirect_result` parameters that are not first or are used on non-`void`
   functions

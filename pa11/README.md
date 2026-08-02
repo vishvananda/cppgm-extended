@@ -188,8 +188,12 @@ PA11 must support:
 
 - namespace, template-parameter, class, enum, function, and block scopes
 - named namespace reopening
-- named class declarations and forward declarations
+- named class declarations and forward declarations, including compatible
+  `struct` / `class` redeclarations of the same non-union class
 - named enum declarations and scoped opaque enum declarations
+- elaborated class and enum type specifiers in supported declarations;
+  elaborated class lookup may find a type hidden by an ordinary-name binding,
+  while an elaborated enum specifier must name an existing enumeration
 - namespace-scope anonymous class, union, and enum specifiers when the same
   declaration immediately introduces a usable type name
 - template declarations with type and template-template parameter scopes
@@ -212,7 +216,8 @@ PA11 must support:
 - semantic disambiguation of `sizeof(T)` when lookup determines that `T` names a
   type
 - enumerator values with the supported simple integral constant-evaluation
-  subset
+  subset, including short-circuit `&&` and `||` evaluation that does not
+  evaluate an unselected operand
 - `static_assert` over the supported integral constant-expression subset
 - `constexpr` object declarations treated as `const` objects for PA11 type and
   constant-value purposes

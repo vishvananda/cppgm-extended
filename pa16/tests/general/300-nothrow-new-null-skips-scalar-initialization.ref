@@ -1,0 +1,50 @@
+global @std__nothrow [binding=strong, object=_ZSt7nothrow] = {
+  zero 1
+}
+
+function @operatornew(%__param0 : i64, %__param1 : ptr [pass=reference]) -> ptr [unwind=no, binding=strong, object=_ZnwmRKSt9nothrow_t] {
+  slot $__param0 : i64
+  slot $__param1 : ptr
+
+  block ^entry:
+    store i64 %__param0, $__param0
+    store ptr %__param1, $__param1
+    return ptr 0
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $pointer : ptr
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = convert sext i64 i32 4
+    %t2 = addr @std__nothrow
+    %t3 = call ptr @operatornew(%t1, %t2)
+    %t4 = cmp ne ptr %t3, 0
+    branch %t4, ^new_init_1, ^new_end_2
+
+  block ^new_init_1:
+    store i32 7, %t3
+    jump ^new_end_2
+
+  block ^new_end_2:
+    store ptr %t3, $pointer
+    %t5 = load ptr $pointer
+    %t6 = cmp eq ptr %t5, 0
+    branch %t6, ^cond_then_3, ^cond_else_4
+
+  block ^cond_then_3:
+    store i32 0, $cond__1
+    jump ^cond_end_5
+
+  block ^cond_else_4:
+    store i32 1, $cond__1
+    jump ^cond_end_5
+
+  block ^cond_end_5:
+    %t7 = load i32 $cond__1
+    return i32 %t7
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    return void
+}

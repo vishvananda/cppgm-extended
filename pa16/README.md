@@ -252,14 +252,25 @@ PA16 supports the following in addition to the PA15 subset:
 - direct reuse of the indirect return destination for supported `return local;` cases when
   the named local is the returned complete object
 - ref-qualified member functions and out-of-class definitions of ref-qualified
-  members
+  members, including xvalue propagation through non-static data-member access
+- rvalue-reference overload ranking after supported scalar pointer conversions,
+  including null-pointer and pointer-qualification conversions
 - delegating constructors
 - out-of-class constructor definitions
 - out-of-class destructor definitions
-- scalar `new` / `delete` expressions over the supported object subset
+- scalar `new` / `delete` expressions over the supported object subset,
+  including class-specific allocation/deallocation selection, explicit global
+  qualification, and suppression of scalar initialization after a supported
+  non-throwing allocation returns null
 - array `new` / `delete[]` expressions over the supported object subset
 - union definitions and union object lifetime in the supported non-template
-  class subset
+  class subset, including block-scope anonymous-member injection and an
+  explicit variant initializer taking precedence over another variant's
+  default member initializer
+- conditional class-value cases in the supported copy/move subset, including
+  cv-combined glvalue operands, lvalue/prvalue conversion, and destruction of a
+  containing branch temporary only after its selected member result has been
+  materialized
 - non-template conversion operators that participate in the existing overload
   and conversion machinery
 

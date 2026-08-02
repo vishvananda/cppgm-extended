@@ -3,4 +3,4 @@ enum class kind { value };
 }
 
 using api::kind;
-decltype((kind::value)) selected;
+decltype(kind::value) selected;

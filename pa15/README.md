@@ -224,7 +224,8 @@ PA15 supports the following in addition to the PA14 procedural subset:
   class subset
 - complete object layout for non-static data members in declaration order, including:
   - empty classes
-  - alignment and padding
+  - alignment and padding, including preservation of a stronger requested
+    class alignment while laying out a direct base and members
   - ordinary integral and enum bit-fields, including zero-width unnamed separators
   - self-referential pointer members
   - previously completed class-type members
@@ -263,7 +264,9 @@ PA15 supports the following in addition to the PA14 procedural subset:
 - recursive member/base construction and destruction for supported class-type subobjects
 - anonymous struct/union members, including injected member lookup and layout in
   the supported class subset
-- bit-field member access, assignment, and initializer lowering
+- bit-field member access, assignment, initializer, and built-in increment/decrement
+  lowering; reads of explicitly signed integral and signed-underlying enum bit-fields
+  preserve the represented negative value
 - pseudo-destructor and explicit destructor-name syntax over supported scalar
   and class expressions
 - standard `alignas` and `alignof`

@@ -371,11 +371,18 @@ The source run's assignment number is a hint. It is not placement authority.
    reducer.
 3. Read the candidate assignment README and the placement tracker used by
    `scripts/audit_pa_feature_placement.py`.
-4. Select the earliest assignment that owns the primary assertion and all
+4. Compare the primary assertion with the assignment's stated student-facing
+   requirements. If the README does not already cover that behavior, make the
+   smallest clear contract edit needed to state the additional expectation.
+   Do not prescribe an implementation strategy or promise a diagnostic format
+   unless that exact text is intentionally part of the exported oracle. Record
+   the README section reviewed, and any edit made, in the tracker validation
+   evidence for the family.
+5. Select the earliest assignment that owns the primary assertion and all
    remaining support features.
-5. If a later feature is incidental, reduce it away. If it is essential, move
+6. If a later feature is incidental, reduce it away. If it is essential, move
    the test to that later owner.
-6. Choose the local suite by matching adjacent tests and harness behavior.
+7. Choose the local suite by matching adjacent tests and harness behavior.
 
 Use these destination rules:
 
@@ -487,13 +494,16 @@ Run the narrowest checks first:
 2. Historical fail/pass proof when the source history supports it.
 3. Reference generation from the clean host-built target binary recorded for
    the batch.
-4. Focused current-compiler execution:
+4. Re-read the owning assignment README against the final reduced source and
+   oracle. Confirm the behavior is already an explicit student expectation or
+   land the minimal README clarification before accepting the family.
+5. Focused current-compiler execution:
 
    ```sh
    make -C paNN check TEST='tests/<suite>/<test>.t'
    ```
 
-5. Placement audit over normal assignment tests:
+6. Placement audit over normal assignment tests:
 
    ```sh
    python3 scripts/audit_pa_feature_placement.py \
@@ -510,25 +520,25 @@ Run the narrowest checks first:
    false positive under the rule above; retain the full audit output as batch
    evidence.
 
-6. The full owning assignment report:
+7. The full owning assignment report:
 
    ```sh
    ACTIVE_TEST_REPORT_PAS='paNN' make test-report
    ```
 
-7. For LowIR-sensitive tests, repeat the focused and owner checks with:
+8. For LowIR-sensitive tests, repeat the focused and owner checks with:
 
    ```sh
    CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='paNN' \
      make test-report
    ```
 
-8. Run `make test-report-through-paNN` when shared frontend behavior, lowering,
+9. Run `make test-report-through-paNN` when shared frontend behavior, lowering,
    object generation, hosted runtime behavior, or optimizer behavior makes
    earlier preservation relevant.
-9. Run the PA37 or PA38 debug-info and bucket-specific targets when the test
+10. Run the PA37 or PA38 debug-info and bucket-specific targets when the test
    belongs to those optional surfaces.
-10. Finish with `git diff --check` and inspect `git status --short` for
+11. Finish with `git diff --check` and inspect `git status --short` for
     generated artifacts.
 
 A placement audit pass does not replace the manual ownership review. A failure

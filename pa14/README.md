@@ -228,9 +228,12 @@ This PA14 milestone supports the following:
 - a required `main` definition
 - functions returning integral, pointer, or `bool` results from the supported PA12 subset
 - up to four parameters in the supported PA12 procedural type subset
-- global integral/pointer/function-pointer objects with constant initializers or zero-init
+- global integral/pointer/function-pointer objects with constant initializers or zero-init,
+  including object addresses and constant array-element addresses
 - local scalar objects, scalar/function references, function pointers/references, and bounded
-  arrays in the supported PA12 procedural type subset
+  arrays in the supported PA12 procedural type subset; an omitted array bound is inferred
+  from its initializer, missing elements are zero-initialized, and excess elements are
+  rejected
 - expression statements
 - `return`
 - `if` / `else`
@@ -241,7 +244,8 @@ This PA14 milestone supports the following:
 - `do`
 - `for`
 - `break` / `continue`
-- direct calls to resolved non-template namespace-scope functions
+- direct calls to resolved non-template namespace-scope functions, including supported
+  default arguments resolved in the declaration context where the default was introduced
 - calls through function pointers and function references in the PA12 subset
 - lvalue references, including reference parameters, reference locals, reference
   returns, and aliasing through supported calls
@@ -265,6 +269,9 @@ This PA14 milestone supports the following:
   - simple assignment to supported lvalues
   - built-in arithmetic, bitwise, shift, logical, comparison, conditional, comma, and
     subscript forms from the PA12 procedural subset
+
+Compiler-generated slots and helper names must remain distinct from source
+identifiers so a source declaration cannot redirect an internal temporary.
 
 The generated LowIR for this supported subset is intended to be accepted by the
 later PA28 `lowir2native` backend. PA13 `lowir2cy86` remains a useful optional
