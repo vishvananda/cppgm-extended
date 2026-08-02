@@ -249,7 +249,10 @@ dependent expressions, ABI tags, special names, and every target form covered
 by the tests. Ordering remains deterministic when substitutions arise inside
 dependent expressions, qualified member-template owners, and local-name
 contexts. Multiple ABI tags use canonical order, and local entities support the
-same special-member terminals as their nonlocal counterparts.
+same special-member terminals as their nonlocal counterparts. A local lambda
+used as a function-template argument retains the enclosing function as its
+local-name context; it is not represented as a named class under its call
+operator.
 
 Reference:
 
