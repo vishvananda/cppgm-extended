@@ -188,6 +188,9 @@ runtime-helper object surface for `cppgm++ -c` within the supported subset:
    cleanup paths.
 5. Preserve cleanup/resume paths using `_Unwind_Resume`.
 6. Keep private course-only exception runtime symbols out of host-EH objects.
+7. Close full-expression EH regions before control-flow joins and require
+   matching protected-call state at statement, conditional, short-circuit, and
+   loop merges.
 
 If object inspection shows missing or malformed host EH metadata for a basic
 throw/catch/cleanup case, fix the host-EH lowering or object-emission path.
