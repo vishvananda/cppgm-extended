@@ -6698,25 +6698,6 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
       (binding->is_method || binding->is_constructor || binding->is_destructor);
   const bool source_template_binding =
       template_api::function_binding_has_source_template_identity(binding);
-  bool template_type_collides_with_non_template = false;
-  if(source_template_binding &&
-     class_method_binding &&
-     !lookup_name.empty()) {
-    const map<string, vector<FunctionBinding *> >::const_iterator found =
-        binding->owner_class->methods.find(lookup_name);
-    if(found != binding->owner_class->methods.end()) {
-      for(size_t i = 0; i < found->second.size(); ++i) {
-        FunctionBinding * candidate = found->second[i];
-        if(candidate &&
-           !template_api::function_binding_has_source_template_identity(candidate) &&
-           candidate->ref_qualifier == binding->ref_qualifier &&
-           type_equals(candidate->type, binding->type)) {
-          template_type_collides_with_non_template = true;
-          break;
-        }
-      }
-    }
-  }
 
   FunctionBinding * resolved = nullptr;
   if(class_method_binding && !lookup_name.empty()) {
@@ -6729,9 +6710,8 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
     const FunctionTemplateRegistrationIdentity identity =
         template_api::function_binding_registration_identity(*binding);
     if(!resolved ||
-       (template_type_collides_with_non_template &&
-        !template_api::function_binding_matches_instantiation_identity(
-            *resolved, identity))) {
+       !template_api::function_binding_matches_instantiation_identity(
+           *resolved, identity)) {
       if(class_method_binding) {
         resolved = template_api::find_defined_class_function_matching_template_identity(
             ctx,
@@ -6845,7 +6825,6 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
                                     resolved->type);
     const bool matching_template_identity =
         !template_api::function_binding_has_source_template_identity(resolved) ||
-        !template_type_collides_with_non_template ||
         (exported &&
          template_api::function_binding_matches_instantiation_identity(
              *exported,

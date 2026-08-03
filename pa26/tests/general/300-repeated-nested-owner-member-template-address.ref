@@ -1,0 +1,100 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = addr $value
+    call void @owner_int___select(%t2)
+    %t3 = addr $value
+    call void @owner_int___select__ov2(%t3)
+    %t4 = addr $value
+    call void @owner_int___select__ov3(%t4)
+    return i32 0
+}
+function @owner_int___select(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6selectIcEEvv] {
+  slot $this : ptr
+  slot $value : obj<16x8>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $value
+    %t2 = addr @owner_int___nested__function
+    %t3 = copy i64 %t2
+    %t4 = convert zext i128 i64 %t3
+    %t5 = addr $value
+    %t6 = index i8 [projection=field] %t5, 0
+    store i128 %t4, %t6
+    %t7 = addr $value
+    %t8 = addr $value
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load i128 %t9
+    %t11 = convert trunc i64 i128 %t10
+    %t12 = copy ptr %t11
+    call void %t12(%t7) as (%arg0 : ptr) -> void
+    return void
+}
+function @owner_int___select__ov2(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6selectIsEEvv] {
+  slot $this : ptr
+  slot $value : obj<16x8>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $value
+    %t2 = addr @owner_int___nested__function__ov2
+    %t3 = copy i64 %t2
+    %t4 = convert zext i128 i64 %t3
+    %t5 = addr $value
+    %t6 = index i8 [projection=field] %t5, 0
+    store i128 %t4, %t6
+    %t7 = addr $value
+    %t8 = addr $value
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load i128 %t9
+    %t11 = convert trunc i64 i128 %t10
+    %t12 = copy ptr %t11
+    call void %t12(%t7) as (%arg0 : ptr) -> void
+    return void
+}
+function @owner_int___select__ov3(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6selectIlEEvv] {
+  slot $this : ptr
+  slot $value : obj<16x8>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $value
+    %t2 = addr @owner_int___nested__function__ov3
+    %t3 = copy i64 %t2
+    %t4 = convert zext i128 i64 %t3
+    %t5 = addr $value
+    %t6 = index i8 [projection=field] %t5, 0
+    store i128 %t4, %t6
+    %t7 = addr $value
+    %t8 = addr $value
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load i128 %t9
+    %t11 = convert trunc i64 i128 %t10
+    %t12 = copy ptr %t11
+    call void %t12(%t7) as (%arg0 : ptr) -> void
+    return void
+}
+function @owner_int___nested__function(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIcEEvv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @owner_int___nested__function__ov2(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIsEEvv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @owner_int___nested__function__ov3(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIlEEvv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
