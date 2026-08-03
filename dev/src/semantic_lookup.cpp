@@ -1342,6 +1342,22 @@ void ensure_class_reference_members_if_needed(SemanticContext & ctx,
   ctx.ensure_class_reference_members(info);
 }
 
+void ensure_class_reference_named_member_if_needed(SemanticContext & ctx,
+                                                    Scope & scope,
+                                                    ClassInfo & info,
+                                                    const string & name)
+{
+  if(info.complete ||
+     info.reference_members_collected ||
+     info.reference_member_collection_in_progress ||
+     info.reference_named_members_collected.count(name) != 0 ||
+     info.reference_named_members_in_progress.count(name) != 0 ||
+     is_self_full_collection_scope(scope, info)) {
+    return;
+  }
+  ctx.ensure_class_reference_named_member(info, name);
+}
+
 template<typename Result, typename Lookup, typename Present>
 Result lookup_inline_namespace_children(Scope & scope,
                                         const Lookup & lookup,
@@ -7686,6 +7702,11 @@ const ValueBinding * lookup_value_binding_in_type_scope(SemanticContext & ctx,
     return nullptr;
   }
 
+  ensure_class_reference_named_member_if_needed(ctx,
+                                                scope,
+                                                *qualifier_info,
+                                                qualified.name);
+
   Scope * target = qualifier_info->member_scope.get();
   map<string, ValueBinding>::const_iterator found = target->values.find(qualified.name);
   if(found != target->values.end()) {
@@ -7792,6 +7813,12 @@ const ValueBinding * lookup_qualified_value_binding(SemanticContext & ctx,
     if(ClassInfo * completed = ctx.complete_class_type(target->class_info->type)) {
       target = completed->member_scope.get();
     }
+  }
+  if(target->class_info) {
+    ensure_class_reference_named_member_if_needed(ctx,
+                                                  scope,
+                                                  *target->class_info,
+                                                  qualified.name);
   }
   map<string, ValueBinding>::const_iterator found = target->values.find(qualified.name);
   if(found != target->values.end()) {

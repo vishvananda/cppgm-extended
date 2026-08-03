@@ -59,7 +59,10 @@ bool hosted_decl_specifier_alias(const CppAstNode & node,
 
 string ast_named_type_lookup_text(const CppAstNode & node)
 {
-  if(node.kind == CppAstKind::type_name && !node.value.empty()) {
+  if(!node.value.empty() &&
+     (node.kind == CppAstKind::type_name ||
+      node.kind == CppAstKind::decl_specifier ||
+      node.kind == CppAstKind::type_specifier)) {
     return node.value;
   }
   return node_text(node);

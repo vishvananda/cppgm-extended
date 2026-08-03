@@ -9470,6 +9470,18 @@ bool structured_bool_constant_value_for_class_info(
     return true;
   }
 
+  if(services &&
+     services->semantic_context &&
+     !witness::enabled(services->witness_context) &&
+     !info.reference_members_collected &&
+     info.reference_named_members_collected.count(
+         kStructuredBoolResultMemberName) == 0 &&
+     !info.reference_member_collection_in_progress) {
+    services->semantic_context->ensure_class_reference_named_member(
+        const_cast<ClassInfo &>(info),
+        kStructuredBoolResultMemberName);
+  }
+
   if(class_member_direct_bool_value(info.member_scope.get(),
                                     "value",
                                     out,
@@ -28217,7 +28229,8 @@ ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices & 
       });
 }
 
-bool lookup_value_binding_in_resolved_scope(Scope & target,
+bool lookup_value_binding_in_resolved_scope(template_api::TemplateServices & services,
+                                            Scope & target,
                                             const string & member_name,
                                             const ValueBinding *& out);
 
@@ -28273,7 +28286,7 @@ bool lookup_concrete_member_template_value_binding_syntax(
     return false;
   }
   return lookup_value_binding_in_resolved_scope(
-      *value_scope, qualified.name, out);
+      services, *value_scope, qualified.name, out);
 }
 
 bool lookup_leaf_variable_template_binding_in_resolved_scope(
@@ -28348,7 +28361,8 @@ bool lookup_leaf_variable_template_binding_in_resolved_scope(
   return true;
 }
 
-bool lookup_value_binding_in_resolved_scope(Scope & target,
+bool lookup_value_binding_in_resolved_scope(template_api::TemplateServices & services,
+                                            Scope & target,
                                             const string & member_name,
                                             const ValueBinding *& out)
 {
@@ -28356,6 +28370,20 @@ bool lookup_value_binding_in_resolved_scope(Scope & target,
   if(found != target.values.end()) {
     out = &found->second;
     return true;
+  }
+  if(!witness::enabled(services.witness_context) &&
+     services.semantic_context &&
+     target.class_info &&
+     !target.class_info->reference_members_collected &&
+     target.class_info->reference_named_members_collected.count(member_name) == 0 &&
+     !target.class_info->reference_member_collection_in_progress) {
+    services.semantic_context->ensure_class_reference_named_member(
+        *target.class_info, member_name);
+    found = target.values.find(member_name);
+    if(found != target.values.end()) {
+      out = &found->second;
+      return true;
+    }
   }
   if(target.class_info) {
     semantic_lookup::MemberValueLookupResult member =
@@ -28413,25 +28441,9 @@ bool lookup_leaf_qualified_value_binding_from_owner_type(
     }
   }
 
-  if(lookup_value_binding_in_resolved_scope(*target, qualified.name, out)) {
+  if(lookup_value_binding_in_resolved_scope(
+         services, *target, qualified.name, out)) {
     return true;
-  }
-
-  // Preparing an included class for type lookup intentionally collects only
-  // its type-bearing members.  A concrete qualified value lookup must demand
-  // the named value as well; otherwise success depends on whether an earlier
-  // expression happened to populate the class's value bindings.
-  if(!witness::enabled(services.witness_context) &&
-     services.semantic_context &&
-     target->class_info &&
-     !target->class_info->reference_members_collected &&
-     target->class_info->reference_named_members_collected.count(
-         qualified.name) == 0 &&
-     !target->class_info->reference_member_collection_in_progress) {
-    services.semantic_context->ensure_class_reference_named_member(
-        *target->class_info, qualified.name);
-    return lookup_value_binding_in_resolved_scope(
-        *target, qualified.name, out);
   }
   return false;
 }
@@ -28558,7 +28570,8 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
     }
   }
 
-  if(lookup_value_binding_in_resolved_scope(*target, qualified.name, out)) {
+  if(lookup_value_binding_in_resolved_scope(
+         services, *target, qualified.name, out)) {
     return true;
   }
   return lookup_leaf_qualified_value_binding_via_owner_prefix(
@@ -28625,7 +28638,8 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
     }
   }
 
-  if(lookup_value_binding_in_resolved_scope(*target, qualified.name, out)) {
+  if(lookup_value_binding_in_resolved_scope(
+         services, *target, qualified.name, out)) {
     return true;
   }
   if(lookup_leaf_variable_template_binding_in_resolved_scope(

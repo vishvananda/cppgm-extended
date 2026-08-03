@@ -7484,7 +7484,8 @@ private:
                            bool allow_dependent_class_qualifiers,
                            template_api::ClassTemplateSourceUseMode source_use_mode =
                                template_api::ClassTemplateSourceUseMode::EmitClassUse,
-                           const QualifiedName * structured_name = nullptr)
+                           const QualifiedName * structured_name = nullptr,
+                           std::size_t source_token_start = 0)
   {
     DIAG_CONTEXT("lookup_type [" + name + "]");
     const string trimmed_name = trim_space(name);
@@ -8013,7 +8014,8 @@ private:
                            reference_class_templates_only,
                            allow_dependent_class_qualifiers,
                            template_api::ClassTemplateSourceUseMode::EmitClassUse,
-                           structured_name);
+                           structured_name,
+                           source_token_start);
       if(cv_base) {
         return apply_cv(cv_base, top_const, top_volatile);
       }
@@ -8253,7 +8255,8 @@ private:
                   return direct;
                 }
                 return lookup_inline_children(target);
-              });
+              },
+              source_token_start);
         };
     const auto current_injected_class_type =
         [&]() -> TypePtr
@@ -12158,10 +12161,16 @@ private:
   template<typename Result, typename DirectLookup>
   Result lookup_unqualified_generic(Scope & scope,
                                     const string & name,
-                                    const DirectLookup & direct_lookup)
+                                    const DirectLookup & direct_lookup,
+                                    std::size_t source_token_start = 0)
   {
     return cpp_scope_lookup::lookup_unqualified<Result>(
-        scope, name, direct_lookup, lookup_result_present<Result>);
+        scope,
+        name,
+        direct_lookup,
+        lookup_result_present<Result>,
+        nullptr,
+        source_token_start);
   }
 
   template<typename Result, typename FinalLookup>
@@ -19597,7 +19606,8 @@ private:
                             reference_class_templates_only,
                             false,
                             template_api::ClassTemplateSourceUseMode::EmitClassUse,
-                            qualified_lookup);
+                            qualified_lookup,
+                            node.token_start);
   }
 
   AstDeclHooks make_decl_hooks(Scope & scope,
@@ -19611,7 +19621,10 @@ private:
         [this, &scope, reference_class_templates_only](const CppAstNode & node)
         {
           const string lookup_name =
-              node.kind == CppAstKind::type_name && !node.value.empty() ?
+              !node.value.empty() &&
+                  (node.kind == CppAstKind::type_name ||
+                   node.kind == CppAstKind::decl_specifier ||
+                   node.kind == CppAstKind::type_specifier) ?
                   node.value :
                   node_text(node);
           TypePtr result =

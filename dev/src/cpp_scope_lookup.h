@@ -33,6 +33,30 @@ bool direct_declaration_hides_using_directives(const ScopeT &, long)
   return false;
 }
 
+template<typename ScopeT>
+auto using_directive_visible_at_token(const ScopeT & scope,
+                                      std::size_t directive_index,
+                                      std::size_t source_token_start,
+                                      int)
+    -> decltype(scope.using_directives[directive_index].first_token_start,
+                bool())
+{
+  const std::size_t first_token_start =
+      scope.using_directives[directive_index].first_token_start;
+  return source_token_start == 0 ||
+         first_token_start == 0 ||
+         first_token_start <= source_token_start;
+}
+
+template<typename ScopeT>
+bool using_directive_visible_at_token(const ScopeT &,
+                                      std::size_t,
+                                      std::size_t,
+                                      long)
+{
+  return true;
+}
+
 template<typename Result,
          typename ScopeT,
          typename DirectLookup,
@@ -44,7 +68,8 @@ void collect_lookup_from_using_directives(ScopeT & scope,
                                           const HasResult & has_result,
                                           bool & found,
                                           Result & value,
-                                          bool & ambiguous)
+                                          bool & ambiguous,
+                                          std::size_t source_token_start = 0)
 {
   if(!visited.insert(&scope).second) {
     return;
@@ -52,6 +77,10 @@ void collect_lookup_from_using_directives(ScopeT & scope,
 
   for(size_t i = 0; i < scope.using_directives.size(); ++i) {
     ScopeT * imported = scope.using_directives[i];
+    if(!using_directive_visible_at_token(
+           scope, i, source_token_start, 0)) {
+      continue;
+    }
     Result direct = direct_lookup(*imported, name);
     if(has_result(direct)) {
       if(!found) {
@@ -71,7 +100,8 @@ void collect_lookup_from_using_directives(ScopeT & scope,
         has_result,
         found,
         value,
-        ambiguous);
+        ambiguous,
+        source_token_start);
     if(ambiguous) {
       return;
     }
@@ -86,7 +116,8 @@ Result lookup_unqualified(ScopeT & scope,
                           const std::string & name,
                           const DirectLookup & direct_lookup,
                           const HasResult & has_result,
-                          bool * ambiguous_result = nullptr)
+                          bool * ambiguous_result = nullptr,
+                          std::size_t source_token_start = 0)
 {
   for(ScopeT * current = &scope; current; current = current->parent) {
     bool found_at_level = false;
@@ -110,7 +141,8 @@ Result lookup_unqualified(ScopeT & scope,
         has_result,
         found_at_level,
         result_at_level,
-        ambiguous_at_level);
+        ambiguous_at_level,
+        source_token_start);
     if(ambiguous_at_level) {
       if(ambiguous_result) {
         *ambiguous_result = true;

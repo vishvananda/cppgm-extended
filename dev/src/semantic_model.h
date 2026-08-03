@@ -45,6 +45,26 @@ struct ClassTemplateSpecializationDecl;
 struct PartialClassTemplateSpecializationDecl;
 struct VariableTemplateSpecializationDecl;
 struct Scope;
+
+struct UsingDirectiveEntry
+{
+  UsingDirectiveEntry() = default;
+
+  UsingDirectiveEntry(Scope * target,
+                      std::size_t first_token_start = 0)
+    : target(target),
+      first_token_start(first_token_start)
+  {}
+
+  operator Scope *() const
+  {
+    return target;
+  }
+
+  Scope * target = nullptr;
+  std::size_t first_token_start = 0;
+};
+
 // Index of durable type scopes keyed by their mangled name. Used only for keyed
 // lookup (never iterated for output), so it is hashed rather than ordered.
 typedef std::unordered_map<std::string, Scope *> TypeScopeIndexMap;
@@ -568,7 +588,10 @@ struct Scope
   std::set<const CppAstNode *> collected_template_declarations;
   LazyMap<std::string, AliasTemplateDecl *> alias_templates;
   LazyMap<std::string, VariableTemplateDecl *> variable_templates;
-  std::vector<Scope *> using_directives;
+  // Namespace collection is eager so declarations remain available to lazy
+  // class completion. Retain when each using-directive first became visible
+  // alongside its target so scopes without directives pay no extra storage.
+  std::vector<UsingDirectiveEntry> using_directives;
   std::vector<std::unique_ptr<Scope> > namespace_children;
   std::size_t instance_id;
   std::size_t binding_fingerprint_epoch = 0;

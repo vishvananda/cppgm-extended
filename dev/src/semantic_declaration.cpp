@@ -829,7 +829,8 @@ void collect_using_directive(SemanticContext & ctx,
     throw logic_error("unknown using-directive target");
   }
 
-  semantic_scope_mutation::add_using_directive_if_needed(scope, *target_namespace);
+  semantic_scope_mutation::add_using_directive_if_needed(
+      scope, *target_namespace, node.token_start);
 }
 
 void collect_using_declaration(SemanticContext & ctx,
@@ -1159,7 +1160,8 @@ void collect_namespace_definition(SemanticContext & ctx,
   }
 
   if(node.value == "<unnamed>") {
-    semantic_scope_mutation::add_using_directive_if_needed(scope, *target);
+    semantic_scope_mutation::add_using_directive_if_needed(
+        scope, *target, node.token_start);
   }
 
   if(is_inline_namespace) {

@@ -10240,7 +10240,8 @@ bool type_mentions_function_template_parameter(
   switch(base->kind) {
   case Type::TK_NAMED:
   {
-    if(find_template_parameter(parameters, base)) {
+    if(named_type_is_template_parameter(base) &&
+       find_template_parameter(parameters, base)) {
       return true;
     }
     if(dependent_alias_arguments_mention_function_template_parameter(
@@ -10319,7 +10320,8 @@ bool type_mentions_function_template_parameter(
   switch(base->kind) {
   case Type::TK_NAMED:
   {
-    if(find_template_parameter(parameters, base)) {
+    if(named_type_is_template_parameter(base) &&
+       find_template_parameter(parameters, base)) {
       return true;
     }
     if(dependent_alias_arguments_mention_function_template_parameter(

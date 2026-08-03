@@ -196,6 +196,14 @@ bool recover_parameter_clause_arguments(const CppAstNode & node, vector<CppAstNo
     return false;
   }
   for(size_t i = 0; i < node.children.size(); ++i) {
+    if(node.children[i].kind == CppAstKind::parameter_pack ||
+       node.children[i].kind == CppAstKind::ellipsis) {
+      if(out.empty()) {
+        return false;
+      }
+      out.back() = make_pack_expansion_expression(out.back());
+      continue;
+    }
     CppAstNode arg;
     if(!recover_parameter_expression(node.children[i], arg)) {
       return false;

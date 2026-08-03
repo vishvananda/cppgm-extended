@@ -2456,22 +2456,6 @@ void collect_required_full_expression_temporary_support(SemanticContext & ctx,
   require_temporary_destructor_definition(ctx, *info);
 }
 
-bool ast_subtree_contains_kind(const CppAstNode * node, CppAstKind kind)
-{
-  if(!node) {
-    return false;
-  }
-  if(node->kind == kind) {
-    return true;
-  }
-  for(size_t i = 0; i < node->children.size(); ++i) {
-    if(ast_subtree_contains_kind(&node->children[i], kind)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 void collect_required_discarded_temporary_support(SemanticContext & ctx,
                                                   const CallSemNode & node,
                                                   Scope * resolution_scope)
@@ -2489,16 +2473,114 @@ void collect_required_discarded_temporary_support(SemanticContext & ctx,
   require_temporary_destructor_definition(ctx, *info);
 }
 
+bool callsem_node_references_constructor_this_subobject(const CallSemNode & node)
+{
+  if(node.kind == CallSemKind::id_expression) {
+    return node.text == "this";
+  }
+  return (node.kind == CallSemKind::member_expression ||
+          node.kind == CallSemKind::subscript_expression) &&
+         !node.children.empty() &&
+         callsem_node_references_constructor_this_subobject(node.children[0]);
+}
+
+bool constructor_action_registers_this_subobject_cleanup(const CallSemNode & node)
+{
+  if(node.kind != CallSemKind::constructor_action || node.children.size() != 1) {
+    return false;
+  }
+
+  const CallSemNode & call = node.children[0];
+  if(call.kind != CallSemKind::call_expression || call.children.size() < 2) {
+    return false;
+  }
+
+  const CallSemNode & target_arg = call.children[1];
+  const bool constructs_this_subobject =
+      target_arg.kind == CallSemKind::unary_expression &&
+      callsem_has_token(target_arg, OP_AMP) &&
+      target_arg.children.size() == 1 &&
+      callsem_node_references_constructor_this_subobject(target_arg.children[0]);
+  const bool delegates_to_this =
+      node.is_delegating_constructor &&
+      target_arg.kind == CallSemKind::id_expression &&
+      target_arg.text == "this";
+  return constructs_this_subobject || delegates_to_this;
+}
+
+bool callsem_node_is_atomic_potentially_throwing_operation(const CallSemNode & node)
+{
+  switch(node.kind) {
+  case CallSemKind::call_expression:
+  case CallSemKind::dynamic_cast_expression:
+  case CallSemKind::throw_statement:
+  case CallSemKind::typeid_expression:
+    return true;
+  default:
+    return false;
+  }
+}
+
+void collect_constructor_actions_requiring_unwind_support(
+    SemanticContext & ctx,
+    Scope & resolution_scope,
+    const CallSemNode & node,
+    vector<const CallSemNode *> & pending_cleanups,
+    set<const CallSemNode *> & required_actions)
+{
+  if(node.kind == CallSemKind::constructor_action) {
+    if(!pending_cleanups.empty()) {
+      set<FunctionBinding *> visiting;
+      if(ctx.callsem_node_can_throw(resolution_scope, node, visiting)) {
+        required_actions.insert(pending_cleanups.begin(), pending_cleanups.end());
+        pending_cleanups.clear();
+      }
+    }
+    if(constructor_action_registers_this_subobject_cleanup(node)) {
+      pending_cleanups.push_back(&node);
+    }
+    return;
+  }
+
+  if(callsem_node_is_atomic_potentially_throwing_operation(node)) {
+    if(!pending_cleanups.empty()) {
+      set<FunctionBinding *> visiting;
+      if(ctx.callsem_node_can_throw(resolution_scope, node, visiting)) {
+        required_actions.insert(pending_cleanups.begin(), pending_cleanups.end());
+        pending_cleanups.clear();
+      }
+    }
+    return;
+  }
+
+  vector<const CallSemNode *> children;
+  append_callsem_recursive_input_children(node, children);
+  for(size_t i = 0; i < children.size(); ++i) {
+    collect_constructor_actions_requiring_unwind_support(ctx,
+                                                         resolution_scope,
+                                                         *children[i],
+                                                         pending_cleanups,
+                                                         required_actions);
+  }
+}
+
 void collect_required_constructor_unwind_support(SemanticContext & ctx,
                                                  const FunctionBinding & active_function,
-                                                 const CallSemNode & node)
+                                                 const CallSemNode & node,
+                                                 const set<const CallSemNode *> * required_actions)
 {
   if(node.kind != CallSemKind::constructor_action ||
      node.children.size() != 1 ||
      !active_function.is_constructor ||
-     !ast_subtree_contains_kind(active_function.body, CppAstKind::throw_statement)) {
+     !required_actions ||
+     required_actions->count(&node) == 0) {
     return;
   }
+
+  // LowIR registers a successfully constructed subobject as an unwind cleanup,
+  // but references that cleanup only when a later operation can throw.  Seed
+  // exactly those destructor definitions so a harmless final initializer does
+  // not perturb ordinary output order.
 
   const CallSemNode & call = node.children[0];
   if(call.kind != CallSemKind::call_expression || call.children.size() < 2) {
@@ -2506,6 +2588,10 @@ void collect_required_constructor_unwind_support(SemanticContext & ctx,
   }
 
   const CallSemNode & target_arg = call.children[1];
+  if(!constructor_action_registers_this_subobject_cleanup(node)) {
+    return;
+  }
+
   TypePtr target_ptr_type = strip_top_level_cv(target_arg.semantic_type);
   if(!target_ptr_type || target_ptr_type->kind != Type::TK_POINTER || !target_ptr_type->inner) {
     return;
@@ -2657,7 +2743,9 @@ void collect_required_callees_from_node(SemanticContext & ctx,
                                         const CallSemNode & node,
                                         const FunctionBinding * active_function = nullptr,
                                         const CallSemNode * parent = nullptr,
-                                        const CallSemNode * function_node = nullptr)
+                                        const CallSemNode * function_node = nullptr,
+                                        const set<const CallSemNode *> *
+                                            constructor_unwind_actions = nullptr)
 {
   if(!active_function && node.kind == CallSemKind::function_definition) {
     return;
@@ -2672,12 +2760,27 @@ void collect_required_callees_from_node(SemanticContext & ctx,
       active_function = ctx.find_function_by_symbol(callsem_symbol(node), node.text, function_type);
     }
   }
+  set<const CallSemNode *> local_constructor_unwind_actions;
+  if(node.kind == CallSemKind::function_definition &&
+     active_function &&
+     active_function->is_constructor &&
+     !constructor_unwind_actions) {
+    if(Scope * resolution_scope = function_output_resolution_scope(active_function)) {
+      vector<const CallSemNode *> pending_cleanups;
+      collect_constructor_actions_requiring_unwind_support(
+          ctx,
+          *resolution_scope,
+          node,
+          pending_cleanups,
+          local_constructor_unwind_actions);
+      constructor_unwind_actions = &local_constructor_unwind_actions;
+    }
+  }
   if(active_function) {
     if(node.kind == CallSemKind::function_definition) {
       collect_required_parameter_materialization_support(ctx, *active_function);
     }
     collect_required_return_statement_support(ctx, *active_function, node, function_node);
-    collect_required_constructor_unwind_support(ctx, *active_function, node);
   }
   Scope * output_resolution_scope = function_output_resolution_scope(active_function);
   collect_required_special_class_materialization_support(ctx, node, output_resolution_scope);
@@ -2710,17 +2813,37 @@ void collect_required_callees_from_node(SemanticContext & ctx,
       } else if(child.kind == CallSemKind::else_node) {
         else_node = &child;
       } else {
-        collect_required_callees_from_node(ctx, child, active_function, &node, function_node);
+        collect_required_callees_from_node(ctx,
+                                           child,
+                                           active_function,
+                                           &node,
+                                           function_node,
+                                           constructor_unwind_actions);
       }
     }
     if(condition) {
-      collect_required_callees_from_node(ctx, *condition, active_function, &node, function_node);
+      collect_required_callees_from_node(ctx,
+                                         *condition,
+                                         active_function,
+                                         &node,
+                                         function_node,
+                                         constructor_unwind_actions);
     }
     if(then_node) {
-      collect_required_callees_from_node(ctx, *then_node, active_function, &node, function_node);
+      collect_required_callees_from_node(ctx,
+                                         *then_node,
+                                         active_function,
+                                         &node,
+                                         function_node,
+                                         constructor_unwind_actions);
     }
     if(else_node) {
-      collect_required_callees_from_node(ctx, *else_node, active_function, &node, function_node);
+      collect_required_callees_from_node(ctx,
+                                         *else_node,
+                                         active_function,
+                                         &node,
+                                         function_node,
+                                         constructor_unwind_actions);
     }
     return;
   }
@@ -2754,7 +2877,18 @@ void collect_required_callees_from_node(SemanticContext & ctx,
   append_callsem_recursive_input_children(node, children);
   for(size_t i = 0; i < children.size(); ++i) {
     collect_required_callees_from_node(
-        ctx, *children[i], active_function, &node, function_node);
+        ctx,
+        *children[i],
+        active_function,
+        &node,
+        function_node,
+        constructor_unwind_actions);
+  }
+  if(active_function) {
+    // Preserve ordinary callee output order, then add the destructor edge that
+    // LowIR's constructor-unwind cleanup will reference.
+    collect_required_constructor_unwind_support(
+        ctx, *active_function, node, constructor_unwind_actions);
   }
 }
 

@@ -10,13 +10,24 @@ namespace semantic_scope_mutation {
 namespace {
 
 bool add_using_directive_raw(semantic_model::Scope & scope,
-                             semantic_model::Scope & target)
+                             semantic_model::Scope & target,
+                             std::size_t source_token_start = 0)
 {
-  if(std::find(scope.using_directives.begin(), scope.using_directives.end(), &target) !=
-     scope.using_directives.end()) {
+  std::vector<semantic_model::UsingDirectiveEntry>::iterator found =
+      std::find(scope.using_directives.begin(),
+                scope.using_directives.end(),
+                &target);
+  if(found != scope.using_directives.end()) {
+    if(source_token_start != 0 &&
+       (found->first_token_start == 0 ||
+        source_token_start < found->first_token_start)) {
+      found->first_token_start = source_token_start;
+      return true;
+    }
     return false;
   }
-  scope.using_directives.push_back(&target);
+  scope.using_directives.push_back(
+      semantic_model::UsingDirectiveEntry(&target, source_token_start));
   return true;
 }
 
@@ -97,9 +108,12 @@ void bind_namespace(semantic_model::Scope & scope,
 }
 
 void add_using_directive_if_needed(semantic_model::Scope & scope,
-                                   semantic_model::Scope & target)
+                                   semantic_model::Scope & target,
+                                   std::size_t source_token_start)
 {
-  if(add_using_directive_raw(scope, target)) {
+  const bool changed =
+      add_using_directive_raw(scope, target, source_token_start);
+  if(changed) {
     note_binding_mutation(scope);
   }
 }

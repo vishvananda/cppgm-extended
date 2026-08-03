@@ -985,7 +985,11 @@ size_t global_alignment(const mir::GlobalDefinition & global)
   if(global.storage_kind == mir::GlobalDefinition::GS_SCALAR) {
     return type_alignment_text(global.type);
   }
-  size_t alignment = 8;
+  // Structured globals do not carry a whole-object type.  Their item types
+  // can prove a stricter alignment, but zero-only storage carries no such
+  // evidence.  Conservatively use LowIR's maximum supported object alignment
+  // so source objects such as arrays of 16-byte-aligned elements remain valid.
+  size_t alignment = 16;
   for(size_t i = 0; i < global.data_items.size(); ++i) {
     const mir::GlobalDefinition::DataItem & item = global.data_items[i];
     if(item.kind == mir::GlobalDefinition::DataItem::ITEM_INTEGER ||

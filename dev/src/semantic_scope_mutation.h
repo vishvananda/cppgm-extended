@@ -38,7 +38,8 @@ void bind_namespace(semantic_model::Scope & scope,
                     std::size_t source_token_start = 0);
 
 void add_using_directive_if_needed(semantic_model::Scope & scope,
-                                   semantic_model::Scope & target);
+                                   semantic_model::Scope & target,
+                                   std::size_t source_token_start = 0);
 
 void import_inline_namespace_members(semantic_model::Scope & scope,
                                      semantic_model::Scope & target);

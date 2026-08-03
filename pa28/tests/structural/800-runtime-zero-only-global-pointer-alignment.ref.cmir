@@ -24,9 +24,9 @@ function @main
   block ^entry
     mov r8, @table
     mov r9, r8
-    mov rdx, 1
+    mov rdx, 15
     or r9, rdx
-    mov <gpr0>, 1
+    mov <gpr0>, 15
     not <gpr0>
     and r9, <gpr0>
     cmp.i64 r9, r8

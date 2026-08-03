@@ -6731,8 +6731,11 @@ bool CppAstParser::parse_decl_specifier_seq(CppAstNode & out)
       string name;
       if(parse_type_name_text(name)) {
         if(pos == type_name_start + 1 && tokens[type_name_start].is_identifier()) {
-          out.children.push_back(make_token_node(CppAstKind::decl_specifier,
-                                                 tokens[type_name_start]));
+          CppAstNode specifier =
+              make_token_node(CppAstKind::decl_specifier,
+                              tokens[type_name_start]);
+          set_span(specifier, type_name_start);
+          out.children.push_back(std::move(specifier));
         } else {
           CppAstNode specifier = make_node(CppAstKind::decl_specifier, name);
           annotate_builtin_type_transform_node(specifier, tokens, type_name_start);
