@@ -176,10 +176,6 @@ function @empty_arg_list__empty_arg_list(%this : ptr) -> void [unwind=no, bindin
     store ptr %this, $this
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}
 alias object _ZN8arg_listI15tagged_argumentI10weight_tag12supplied_mapES_IS0_I15predecessor_tagiE14empty_arg_listEEC2ERKS3_RKS7_ = @arg_list_tagged_argument_weight_tag__supplied_map___arg_list_tagged_argument_predecessor_tag__int___empty_arg_list____arg_list
 alias object _ZN8arg_listI15tagged_argumentI15predecessor_tagiE14empty_arg_listEC2ERKS2_RKS3_ = @arg_list_tagged_argument_predecessor_tag__int___empty_arg_list___arg_list
 alias object _ZN15tagged_argumentI15predecessor_tagiEC2ERKi = @tagged_argument_predecessor_tag__int___tagged_argument

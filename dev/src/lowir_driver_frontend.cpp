@@ -6,6 +6,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -62,7 +63,7 @@ int run_lowir2native_impl(const vector<string> & args)
   }
   optimization_level = normalize_optimization_level(optimization_level);
 
-  const lowir_model::LowirProgram program =
+  lowir_model::LowirProgram program =
       inline_required_lowir_calls(lowir_model::parse_lowir_program_files(srcfiles));
 
   if(!machine_ir_file.empty()) {
@@ -78,7 +79,7 @@ int run_lowir2native_impl(const vector<string> & args)
 
   if(!outfile.empty()) {
     const machine_object::ObjectFile object =
-        build_machine_object(program,
+        build_machine_object(std::move(program),
                             output_target,
                             false,
                             false,

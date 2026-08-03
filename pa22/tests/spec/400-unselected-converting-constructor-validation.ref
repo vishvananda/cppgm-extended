@@ -15,7 +15,3 @@ function @f(%x : ptr [pass=reference]) -> void [binding=strong, object=_Z1fR1AIi
     call void @A_int___A(%t1, %t2)
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}

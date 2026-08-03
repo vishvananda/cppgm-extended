@@ -33008,6 +33008,9 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   };
   if(TypePtr named = strip_top_level_cv(type)) {
     if(named_type_is_template_parameter(named)) {
+      if(keep_local_type_placeholders_dependent) {
+        return DependentNamedTypeResolutionStatus::KeepDependent;
+      }
       vector<string> lookup_names;
       const auto append_lookup_name =
           [&lookup_names](const string & raw) -> void

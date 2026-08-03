@@ -69,8 +69,4 @@ function @outer__inner__shadow_maker__shadow_maker(%this : ptr, %p : ptr) -> voi
     store ptr %t1, %t3
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}
 alias object _ZN5outer5inner12shadow_makerC2EPi = @outer__inner__shadow_maker__shadow_maker

@@ -19155,6 +19155,30 @@ private:
     }
   }
 
+  bool evaluate_default_initializer_constant_value(
+      Scope & scope,
+      const TypePtr & target,
+      constant_eval::ConstexprValue & value) override
+  {
+    try
+    {
+      const ScopedConstantEvaluationOutputSuppression constant_evaluation_output(
+          *this);
+      return semantic_consteval::evaluate_default_initialized_value(*this,
+                                                                    scope,
+                                                                    target,
+                                                                    value);
+    }
+    catch(const ExplicitSpecializationAfterInstantiationError &)
+    {
+      throw;
+    }
+    catch(const logic_error &)
+    {
+      return false;
+    }
+  }
+
   void note_binding_constexpr_value(ValueBinding & binding,
                                     const constant_eval::ConstexprValue & value)
   {

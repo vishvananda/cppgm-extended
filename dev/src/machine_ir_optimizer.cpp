@@ -1,6 +1,7 @@
 #include "machine_ir_optimizer.h"
 
 #include <algorithm>
+#include <bitset>
 #include <map>
 #include <set>
 #include <vector>
@@ -17,8 +18,8 @@ namespace mir_public = mir_model;
 
 struct LiveState
 {
-  set<X64Register> regs;
-  set<XmmRegister> xmms;
+  bitset<16> regs;
+  bitset<8> xmms;
 };
 
 struct BlockControlFlow
@@ -157,13 +158,13 @@ void note_read_operand(const mir::Operand & operand, LiveState & state)
 {
   switch(operand.kind) {
     case mir::Operand::OP_REG:
-      state.regs.insert(operand.reg);
+      state.regs.set(static_cast<size_t>(operand.reg));
       return;
     case mir::Operand::OP_XMM:
-      state.xmms.insert(operand.xmm);
+      state.xmms.set(static_cast<size_t>(operand.xmm));
       return;
     case mir::Operand::OP_DEREF:
-      state.regs.insert(operand.reg);
+      state.regs.set(static_cast<size_t>(operand.reg));
       return;
     default:
       return;
@@ -174,10 +175,10 @@ void note_write_operand(const mir::Operand & operand, LiveState & state)
 {
   switch(operand.kind) {
     case mir::Operand::OP_REG:
-      state.regs.insert(operand.reg);
+      state.regs.set(static_cast<size_t>(operand.reg));
       return;
     case mir::Operand::OP_XMM:
-      state.xmms.insert(operand.xmm);
+      state.xmms.set(static_cast<size_t>(operand.xmm));
       return;
     default:
       return;
@@ -187,27 +188,27 @@ void note_write_operand(const mir::Operand & operand, LiveState & state)
 void note_address_operand(const mir::Operand & operand, LiveState & state)
 {
   if(operand.kind == mir::Operand::OP_DEREF) {
-    state.regs.insert(operand.reg);
+    state.regs.set(static_cast<size_t>(operand.reg));
   }
 }
 
 void note_caller_saved_defs(LiveState & defs)
 {
   for(size_t i = 0; i < sizeof(kCallerSavedRegs) / sizeof(kCallerSavedRegs[0]); ++i) {
-    defs.regs.insert(kCallerSavedRegs[i]);
+    defs.regs.set(static_cast<size_t>(kCallerSavedRegs[i]));
   }
   for(size_t i = 0; i < sizeof(kCallerSavedXmms) / sizeof(kCallerSavedXmms[0]); ++i) {
-    defs.xmms.insert(kCallerSavedXmms[i]);
+    defs.xmms.set(static_cast<size_t>(kCallerSavedXmms[i]));
   }
 }
 
 void note_call_argument_uses(LiveState & uses)
 {
   for(size_t i = 0; i < sizeof(kIntegerArgRegs) / sizeof(kIntegerArgRegs[0]); ++i) {
-    uses.regs.insert(kIntegerArgRegs[i]);
+    uses.regs.set(static_cast<size_t>(kIntegerArgRegs[i]));
   }
   for(size_t i = 0; i < sizeof(kFloatArgRegs) / sizeof(kFloatArgRegs[0]); ++i) {
-    uses.xmms.insert(kFloatArgRegs[i]);
+    uses.xmms.set(static_cast<size_t>(kFloatArgRegs[i]));
   }
 }
 
@@ -252,7 +253,7 @@ void collect_instruction_effects(const mir::Instruction & inst,
       note_address_operand(inst.operands[0], uses);
       note_read_operand(inst.operands[1], uses);
       note_write_operand(inst.operands[1], defs);
-      defs.regs.insert(XR_RAX);
+      defs.regs.set(XR_RAX);
       return;
 
     case mir::Instruction::MI_LOCK_CMPXCHG16B:
@@ -277,8 +278,8 @@ void collect_instruction_effects(const mir::Instruction & inst,
       if(inst.type == "f80") {
         // Native f80 stores use these registers to address globals and clear
         // the six ABI padding bytes after the x87 payload.
-        defs.regs.insert(XR_RAX);
-        defs.regs.insert(XR_R11);
+        defs.regs.set(XR_RAX);
+        defs.regs.set(XR_R11);
       }
       return;
 
@@ -368,17 +369,17 @@ void collect_instruction_effects(const mir::Instruction & inst,
       return;
 
     case mir::Instruction::MI_CQO:
-      uses.regs.insert(XR_RAX);
-      defs.regs.insert(XR_RDX);
+      uses.regs.set(XR_RAX);
+      defs.regs.set(XR_RDX);
       return;
 
     case mir::Instruction::MI_IDIV:
     case mir::Instruction::MI_DIV:
-      uses.regs.insert(XR_RAX);
-      uses.regs.insert(XR_RDX);
+      uses.regs.set(XR_RAX);
+      uses.regs.set(XR_RDX);
       note_read_operand(inst.operands[0], uses);
-      defs.regs.insert(XR_RAX);
-      defs.regs.insert(XR_RDX);
+      defs.regs.set(XR_RAX);
+      defs.regs.set(XR_RDX);
       return;
 
     case mir::Instruction::MI_SHL_CL:
@@ -386,7 +387,7 @@ void collect_instruction_effects(const mir::Instruction & inst,
     case mir::Instruction::MI_SAR_CL:
       note_read_operand(inst.operands[0], uses);
       note_write_operand(inst.operands[0], defs);
-      uses.regs.insert(XR_RCX);
+      uses.regs.set(XR_RCX);
       return;
 
     case mir::Instruction::MI_TLS_ADDR:
@@ -397,7 +398,7 @@ void collect_instruction_effects(const mir::Instruction & inst,
 
     case mir::Instruction::MI_CALL:
       if(inst.call_variadic) {
-        uses.regs.insert(XR_RAX);
+        uses.regs.set(XR_RAX);
       }
       note_call_argument_uses(uses);
       note_caller_saved_defs(defs);
@@ -406,7 +407,7 @@ void collect_instruction_effects(const mir::Instruction & inst,
     case mir::Instruction::MI_CALL_INDIRECT:
       note_read_operand(inst.operands[0], uses);
       if(inst.call_variadic) {
-        uses.regs.insert(XR_RAX);
+        uses.regs.set(XR_RAX);
       }
       note_call_argument_uses(uses);
       note_caller_saved_defs(defs);
@@ -415,18 +416,18 @@ void collect_instruction_effects(const mir::Instruction & inst,
     case mir::Instruction::MI_COPY_BYTES:
       note_read_operand(inst.operands[0], uses);
       note_read_operand(inst.operands[1], uses);
-      defs.regs.insert(XR_RCX);
+      defs.regs.set(XR_RCX);
       if(inst.byte_count > 16) {
-        defs.regs.insert(XR_RDI);
-        defs.regs.insert(XR_RSI);
+        defs.regs.set(XR_RDI);
+        defs.regs.set(XR_RSI);
       }
       return;
 
     case mir::Instruction::MI_ZERO_BYTES:
       note_read_operand(inst.operands[0], uses);
-      defs.regs.insert(XR_RAX);
-      defs.regs.insert(XR_RCX);
-      defs.regs.insert(XR_RDI);
+      defs.regs.set(XR_RAX);
+      defs.regs.set(XR_RCX);
+      defs.regs.set(XR_RDI);
       return;
 
     case mir::Instruction::MI_EH_PUSH:
@@ -477,13 +478,13 @@ void note_implicit_return_uses(const mir::Function & function,
   }
 
   if(is_xmm_return_type(function.return_type)) {
-    uses.xmms.insert(XMM_0);
+    uses.xmms.set(XMM_0);
     return;
   }
 
-  uses.regs.insert(XR_RAX);
+  uses.regs.set(XR_RAX);
   if(is_multi_reg_return_type(function.return_type)) {
-    uses.regs.insert(XR_RDX);
+    uses.regs.set(XR_RDX);
   }
 }
 
@@ -729,14 +730,18 @@ void kill_instruction_defs(const mir::Instruction & inst,
   LiveState uses;
   LiveState defs;
   collect_instruction_effects(inst, uses, defs);
-  for(set<X64Register>::const_iterator it = defs.regs.begin();
-      it != defs.regs.end(); ++it) {
-    kill_reg_alias(*it, reg_aliases);
-    kill_reg_value(*it, reg_values);
+  for(size_t i = 0; i < defs.regs.size(); ++i) {
+    if(!defs.regs.test(i)) {
+      continue;
+    }
+    const X64Register reg = static_cast<X64Register>(i);
+    kill_reg_alias(reg, reg_aliases);
+    kill_reg_value(reg, reg_values);
   }
-  for(set<XmmRegister>::const_iterator it = defs.xmms.begin();
-      it != defs.xmms.end(); ++it) {
-    kill_xmm_alias(*it, xmm_aliases);
+  for(size_t i = 0; i < defs.xmms.size(); ++i) {
+    if(defs.xmms.test(i)) {
+      kill_xmm_alias(static_cast<XmmRegister>(i), xmm_aliases);
+    }
   }
 }
 
@@ -767,9 +772,10 @@ bool fold_block_local_frame_addresses(mir::Block & block)
     LiveState uses;
     LiveState defs;
     collect_instruction_effects(inst, uses, defs);
-    for(set<X64Register>::const_iterator it = defs.regs.begin();
-        it != defs.regs.end(); ++it) {
-      frame_addresses.erase(*it);
+    for(size_t ri = 0; ri < defs.regs.size(); ++ri) {
+      if(defs.regs.test(ri)) {
+        frame_addresses.erase(static_cast<X64Register>(ri));
+      }
     }
 
     if(inst.opcode == mir::Instruction::MI_LEA &&
@@ -857,20 +863,14 @@ bool propagate_block_local_copies(mir::Block & block)
 
 void subtract_live_state(LiveState & dst, const LiveState & remove)
 {
-  for(set<X64Register>::const_iterator it = remove.regs.begin();
-      it != remove.regs.end(); ++it) {
-    dst.regs.erase(*it);
-  }
-  for(set<XmmRegister>::const_iterator it = remove.xmms.begin();
-      it != remove.xmms.end(); ++it) {
-    dst.xmms.erase(*it);
-  }
+  dst.regs &= ~remove.regs;
+  dst.xmms &= ~remove.xmms;
 }
 
 void union_live_state(LiveState & dst, const LiveState & src)
 {
-  dst.regs.insert(src.regs.begin(), src.regs.end());
-  dst.xmms.insert(src.xmms.begin(), src.xmms.end());
+  dst.regs |= src.regs;
+  dst.xmms |= src.xmms;
 }
 
 bool live_state_equal(const LiveState & lhs, const LiveState & rhs)
@@ -1056,18 +1056,8 @@ vector<LiveState> compute_block_live_out(const mir::Function & function)
       LiveState uses;
       LiveState defs;
       collect_instruction_effects(function, function.blocks[i].instructions[j], uses, defs);
-      for(set<X64Register>::const_iterator it = uses.regs.begin();
-          it != uses.regs.end(); ++it) {
-        if(block_def[i].regs.count(*it) == 0) {
-          block_use[i].regs.insert(*it);
-        }
-      }
-      for(set<XmmRegister>::const_iterator it = uses.xmms.begin();
-          it != uses.xmms.end(); ++it) {
-        if(block_def[i].xmms.count(*it) == 0) {
-          block_use[i].xmms.insert(*it);
-        }
-      }
+      block_use[i].regs |= uses.regs & ~block_def[i].regs;
+      block_use[i].xmms |= uses.xmms & ~block_def[i].xmms;
       union_live_state(block_def[i], defs);
     }
   }
@@ -1127,15 +1117,15 @@ bool move_destination_is_live(const mir::Instruction & inst, const LiveState & l
 {
   if(inst.opcode == mir::Instruction::MI_MOV &&
      inst.operands[0].kind == mir::Operand::OP_REG) {
-    return live.regs.count(inst.operands[0].reg) != 0;
+    return live.regs.test(inst.operands[0].reg);
   }
   if(inst.opcode == mir::Instruction::MI_LEA &&
      inst.operands[0].kind == mir::Operand::OP_REG) {
-    return live.regs.count(inst.operands[0].reg) != 0;
+    return live.regs.test(inst.operands[0].reg);
   }
   if(inst.opcode == mir::Instruction::MI_FMOV &&
      inst.operands[0].kind == mir::Operand::OP_XMM) {
-    return live.xmms.count(inst.operands[0].xmm) != 0;
+    return live.xmms.test(inst.operands[0].xmm);
   }
   return true;
 }
@@ -1256,7 +1246,7 @@ bool instruction_reads_reg(const mir::Function & function,
   LiveState uses;
   LiveState defs;
   collect_instruction_effects(function, inst, uses, defs);
-  return uses.regs.count(reg) != 0;
+  return uses.regs.test(reg);
 }
 
 bool instruction_writes_reg(const mir::Instruction & inst, X64Register reg)
@@ -1264,7 +1254,7 @@ bool instruction_writes_reg(const mir::Instruction & inst, X64Register reg)
   LiveState uses;
   LiveState defs;
   collect_instruction_effects(inst, uses, defs);
-  return defs.regs.count(reg) != 0;
+  return defs.regs.test(reg);
 }
 
 bool combine_block_trivial_mov_artifacts(mir::Function & function)
@@ -1317,7 +1307,7 @@ bool combine_block_trivial_mov_artifacts(mir::Function & function)
              candidate.operands[1].reg == first.operands[0].reg &&
              combine_metadata_is_compatible(function, first, candidate)) {
             const bool alias_dead_after_candidate =
-                live_after[jj].regs.count(first.operands[0].reg) == 0 &&
+                !live_after[jj].regs.test(first.operands[0].reg) &&
                 !debug_variable_depends_on_reg_after_instruction(function,
                                                                  first.operands[0].reg,
                                                                  candidate);
@@ -1364,7 +1354,7 @@ bool combine_block_trivial_mov_artifacts(mir::Function & function)
            third.operands[0].kind == mir::Operand::OP_REG &&
            third.operands[1].kind == mir::Operand::OP_REG &&
            third.operands[1].reg == first.operands[0].reg &&
-           live_after[ii + 2].regs.count(first.operands[0].reg) == 0 &&
+           !live_after[ii + 2].regs.test(first.operands[0].reg) &&
            !debug_variable_depends_on_reg_after_instruction(function,
                                                             first.operands[0].reg,
                                                             third) &&
@@ -1399,7 +1389,7 @@ bool combine_block_trivial_mov_artifacts(mir::Function & function)
            second.operands[0].kind == mir::Operand::OP_REG &&
            second.operands[1].kind == mir::Operand::OP_REG &&
            second.operands[1].reg == first.operands[0].reg &&
-           live_after[ii + 1].regs.count(first.operands[0].reg) == 0 &&
+           !live_after[ii + 1].regs.test(first.operands[0].reg) &&
            !debug_variable_depends_on_reg_after_instruction(function,
                                                             first.operands[0].reg,
                                                             second) &&
@@ -1427,7 +1417,7 @@ bool combine_block_trivial_mov_artifacts(mir::Function & function)
           mir::Instruction bypassed = second;
           bypassed.operands[1] = first.operands[1];
 
-          if(live_after[ii + 1].regs.count(first.operands[0].reg) == 0 &&
+          if(!live_after[ii + 1].regs.test(first.operands[0].reg) &&
              !debug_variable_depends_on_reg_after_instruction(function,
                                                               first.operands[0].reg,
                                                               second)) {
@@ -1458,7 +1448,7 @@ bool combine_block_trivial_mov_artifacts(mir::Function & function)
            second.operands[0].kind == mir::Operand::OP_REG &&
            second.operands[1].kind == mir::Operand::OP_REG &&
            second.operands[1].reg == first.operands[0].reg &&
-           live_after[ii + 1].regs.count(first.operands[0].reg) == 0 &&
+           !live_after[ii + 1].regs.test(first.operands[0].reg) &&
            !debug_variable_depends_on_reg_after_instruction(function,
                                                             first.operands[0].reg,
                                                             second) &&
@@ -1483,7 +1473,7 @@ bool combine_block_trivial_mov_artifacts(mir::Function & function)
            second.operands.size() == 2 &&
            second.operands[1].kind == mir::Operand::OP_REG &&
            second.operands[1].reg == first.operands[0].reg &&
-           live_after[ii + 1].regs.count(first.operands[0].reg) == 0 &&
+           !live_after[ii + 1].regs.test(first.operands[0].reg) &&
            !debug_variable_depends_on_reg_after_instruction(function,
                                                             first.operands[0].reg,
                                                             second) &&

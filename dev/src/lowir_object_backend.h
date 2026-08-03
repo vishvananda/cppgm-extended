@@ -7,7 +7,7 @@
 #include "machine_object.h"
 #include "mir_model.h"
 
-machine_object::ObjectFile build_machine_object(const lowir_model::LowirProgram & program,
+machine_object::ObjectFile build_machine_object(lowir_model::LowirProgram program,
                                                 const std::string & output_target,
                                                 bool enable_host_eh = false,
                                                 bool use_macos_static_init_sections = false,

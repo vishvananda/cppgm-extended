@@ -5763,14 +5763,14 @@ void set_resolved_type_template_argument(
     const std::string & dependent_text,
     TemplateArgument & out)
 {
-  out.kind = TemplateArgument::TA_TYPE;
-  out.type = type;
-  out.text =
+  const bool dependent =
       template_argument_semantics::type_depends_on_template_parameter(
           type_system,
-          type) ?
-          dependent_text :
-          deduction_lookup_type_text(type_system, type);
+          type);
+  out.kind = TemplateArgument::TA_TYPE;
+  out.type = type;
+  out.text = dependent ? dependent_text : deduction_lookup_type_text(type_system, type);
+  out.dependent = dependent;
 }
 
 bool type_argument_can_remain_dependent_after_structured_failure(

@@ -44,7 +44,3 @@ function @object__read(%this : ptr) -> u8 [binding=weak, object=_ZNKR6object4rea
     store ptr %this, $this
     return u8 1
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}

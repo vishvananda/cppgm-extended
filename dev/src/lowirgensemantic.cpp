@@ -8371,7 +8371,20 @@ private:
       return false;
     }
 
-    const string symbol = lookup_function_symbol(node.children[0]);
+    return callee_needs_constructor_unwind_wrapper(node.children[0]);
+  }
+
+  bool callee_needs_constructor_unwind_wrapper(const CallSemNode & callee) const
+  {
+    if(!is_constructor_function_ ||
+       constructor_action_depth_ != 0 ||
+       throw_cleanup_emission_depth_ != 0 ||
+       constructor_unwind_cleanups_.empty() ||
+       callee.kind != CallSemKind::callee) {
+      return false;
+    }
+
+    const string symbol = lookup_function_symbol(callee);
     if(!symbol.empty() && throwing_function_symbols_.count(symbol) != 0) {
       return true;
     }
@@ -8382,7 +8395,7 @@ private:
     // can throw transitively through another call or from a separately compiled
     // definition.  The function-boundary noexcept metadata is the sound way to
     // prove that the wrapper can be omitted.
-    return !call_expression_is_known_nothrow(node);
+    return !callee_is_known_nothrow(callee);
   }
 
   bool cleanup_action_needs_host_unwind(const CleanupAction & cleanup) const
@@ -8564,7 +8577,11 @@ private:
       return true;
     }
 
-    const CallSemNode & callee = node.children[0];
+    return callee_is_known_nothrow(node.children[0]);
+  }
+
+  bool callee_is_known_nothrow(const CallSemNode & callee) const
+  {
     if(callee.kind != CallSemKind::callee) {
       return false;
     }
@@ -9352,6 +9369,58 @@ private:
     }
     open_host_unwind_region_for_emitted_call_if_needed(node);
     emit_line(op.str());
+  }
+
+  void emit_void_callee_operation_with_unwind(const CallSemNode & callee,
+                                               const string & operation)
+  {
+    const bool needs_constructor_wrapper =
+        callee_needs_constructor_unwind_wrapper(callee);
+    const bool needs_host_wrapper =
+        use_host_eh_runtime() &&
+        current_scope_has_host_unwind_cleanups() &&
+        !callee_is_known_nothrow(callee);
+    if(shared_host_call_unwind_region_open_ && needs_constructor_wrapper) {
+      close_shared_host_call_unwind_region();
+    }
+    if(!needs_constructor_wrapper && !needs_host_wrapper) {
+      emit_line(operation);
+      return;
+    }
+    if(use_host_eh_runtime() && needs_host_wrapper && !needs_constructor_wrapper) {
+      open_shared_host_call_unwind_region();
+      emit_line(operation);
+      return;
+    }
+
+    const size_t host_dispatch_depth =
+        use_host_eh_runtime() ? host_eh_region_depth_ + 1 : 0;
+    bool created_dispatch = false;
+    const string dispatch_label =
+        shared_call_unwind_dispatch_label(needs_constructor_wrapper,
+                                          host_dispatch_depth,
+                                          created_dispatch);
+    const string end_label =
+        created_dispatch ? new_block("call_unwind_end") : string();
+    emit_line("eh_try " + lowir_block_name(dispatch_label));
+    if(use_host_eh_runtime()) {
+      ++host_eh_region_depth_;
+    }
+    emit_line(operation);
+    emit_line("eh_end");
+    if(use_host_eh_runtime()) {
+      if(host_eh_region_depth_ == 0) {
+        throw logic_error("host EH region depth underflow");
+      }
+      --host_eh_region_depth_;
+    }
+    if(created_dispatch) {
+      terminate("jump " + lowir_block_name(end_label));
+      emit_shared_call_unwind_dispatch_block(dispatch_label,
+                                             needs_constructor_wrapper,
+                                             host_dispatch_depth);
+      start_block(end_label);
+    }
   }
 
   void emit_call_expression_to_target(const CallSemNode & node, const string & target_ptr)
@@ -12676,7 +12745,7 @@ private:
       op << args[i];
     }
     op << ")";
-    emit_line(op.str());
+    emit_void_callee_operation_with_unwind(node.children[1], op.str());
     finish_nothrow_new_initialization(nothrow_end_label);
     return object_ptr;
   }
@@ -19973,6 +20042,275 @@ private:
                                            backend_storage_size(array_type));
   }
 
+  bool constructor_relative_lvalue_offset(const CallSemNode & expr,
+                                          size_t & out) const
+  {
+    if(expr.kind == CallSemKind::unary_expression &&
+       callsem_has_token(expr, OP_AMP) &&
+       expr.children.size() == 1) {
+      return constructor_relative_lvalue_offset(expr.children[0], out);
+    }
+
+    if(expr.kind == CallSemKind::id_expression && expr.text == "this") {
+      out = 0;
+      return true;
+    }
+
+    if(expr.kind == CallSemKind::member_expression &&
+       expr.children.size() == 1 &&
+       expr.has_uint_value &&
+       !expr.is_virtual_base_subobject &&
+       callsem_bit_field_width(expr) == 0) {
+      size_t base_offset = 0;
+      if(!constructor_relative_lvalue_offset(expr.children[0], base_offset)) {
+        return false;
+      }
+      const unsigned long long field_offset = callsem_uint_value(expr);
+      if(field_offset > numeric_limits<size_t>::max() - base_offset) {
+        return false;
+      }
+      out = base_offset + static_cast<size_t>(field_offset);
+      return true;
+    }
+
+    return false;
+  }
+
+  bool append_global_constant_object_data_item(
+      vector<GlobalAggregateArrayDataItem> & items,
+      const GlobalAggregateArrayDataItem & item) const
+  {
+    for(vector<GlobalAggregateArrayDataItem>::iterator it = items.begin();
+        it != items.end();) {
+      const size_t old_end = it->offset + it->size;
+      const size_t new_end = item.offset + item.size;
+      if(item.offset >= old_end || it->offset >= new_end) {
+        ++it;
+        continue;
+      }
+      if(it->offset != item.offset || it->size != item.size) {
+        return false;
+      }
+      it = items.erase(it);
+    }
+    items.push_back(item);
+    return true;
+  }
+
+  const CallSemNode * resolve_static_constructor_argument(
+      const CallSemNode & value,
+      const vector<map<string, const CallSemNode *> > & argument_bindings) const
+  {
+    const CallSemNode * resolved = &value;
+    for(size_t level = argument_bindings.size(); level > 0; --level) {
+      if(resolved->kind != CallSemKind::id_expression) {
+        break;
+      }
+      map<string, const CallSemNode *>::const_iterator found =
+          argument_bindings[level - 1].find(resolved->text);
+      if(found != argument_bindings[level - 1].end() && found->second != nullptr) {
+        resolved = found->second;
+      }
+    }
+    return resolved;
+  }
+
+  bool collect_global_constant_constructor_assignment(
+      const CallSemNode & statement,
+      size_t object_offset,
+      const vector<map<string, const CallSemNode *> > & argument_bindings,
+      vector<GlobalAggregateArrayDataItem> & items)
+  {
+    if(statement.kind != CallSemKind::expression_statement ||
+       statement.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & assignment = statement.children[0];
+    if(assignment.kind != CallSemKind::assignment_expression ||
+       assignment.children.size() != 2 ||
+       !callsem_has_token(assignment, OP_ASS)) {
+      return false;
+    }
+
+    size_t relative_offset = 0;
+    if(!constructor_relative_lvalue_offset(assignment.children[0], relative_offset) ||
+       relative_offset > numeric_limits<size_t>::max() - object_offset) {
+      return false;
+    }
+    TypePtr item_type = remove_reference_type(assignment.children[0].semantic_type);
+    TypePtr item_base = strip_top_level_cv(item_type);
+    if(!item_type ||
+       (item_base &&
+        (item_base->kind == Type::TK_ARRAY ||
+         is_complete_class_value_type(item_base)))) {
+      return false;
+    }
+
+    const CallSemNode * value =
+        resolve_static_constructor_argument(assignment.children[1], argument_bindings);
+    GlobalAggregateArrayDataItem item;
+    item.offset = object_offset + relative_offset;
+    item.size = backend_storage_size(item_type);
+    if(!format_global_data_item_for_value(item_type, *value, item.text)) {
+      return false;
+    }
+    return append_global_constant_object_data_item(items, item);
+  }
+
+  bool collect_global_constant_constructor_call(
+      const CallSemNode & call,
+      size_t object_offset,
+      vector<map<string, const CallSemNode *> > & argument_bindings,
+      set<string> & active_constructors,
+      vector<GlobalAggregateArrayDataItem> & items)
+  {
+    if(call.kind != CallSemKind::call_expression ||
+       call.children.size() < 2 ||
+       call.children[0].kind != CallSemKind::callee ||
+       !is_constructor_function_name(call.children[0].text)) {
+      return false;
+    }
+
+    const CallSemNode * constructor =
+        function_node_for_static_constructor_callee(call.children[0]);
+    if(constructor == nullptr) {
+      return false;
+    }
+    const string constructor_symbol = node_internal_symbol(*constructor);
+    if(constructor_symbol.empty() ||
+       !active_constructors.insert(constructor_symbol).second) {
+      return false;
+    }
+
+    vector<const CallSemNode *> params;
+    if(!constructor_static_parameters(*constructor, params) ||
+       params.size() + 1 != call.children.size()) {
+      active_constructors.erase(constructor_symbol);
+      return false;
+    }
+    map<string, const CallSemNode *> bindings;
+    for(size_t i = 1; i < params.size(); ++i) {
+      bindings[params[i]->text] = &call.children[i + 1];
+    }
+    argument_bindings.push_back(bindings);
+
+    const CallSemNode * body = compound_body_child(*constructor);
+    bool success = body != nullptr;
+    for(size_t i = 0; success && i < body->children.size(); ++i) {
+      const CallSemNode & action = body->children[i];
+      if(action.kind == CallSemKind::constructor_action &&
+         action.children.size() == 1) {
+        const CallSemNode & nested_call = action.children[0];
+        if(nested_call.kind != CallSemKind::call_expression ||
+           nested_call.children.size() < 2) {
+          success = false;
+          break;
+        }
+        size_t relative_offset = 0;
+        if(!constructor_relative_lvalue_offset(nested_call.children[1],
+                                               relative_offset) ||
+           relative_offset > numeric_limits<size_t>::max() - object_offset) {
+          success = false;
+          break;
+        }
+        success = collect_global_constant_constructor_call(
+            nested_call,
+            object_offset + relative_offset,
+            argument_bindings,
+            active_constructors,
+            items);
+        continue;
+      }
+      if(action.kind == CallSemKind::vptr_action &&
+         action.children.size() == 1 &&
+         !action.has_vtt_entry_index) {
+        size_t relative_offset = 0;
+        map<string, VTableBinding>::const_iterator table =
+            vtable_bindings_.find(action.text);
+        if(table == vtable_bindings_.end() ||
+           !constructor_relative_lvalue_offset(action.children[0], relative_offset) ||
+           relative_offset > numeric_limits<size_t>::max() - object_offset) {
+          success = false;
+          break;
+        }
+        GlobalAggregateArrayDataItem item;
+        item.offset = object_offset + relative_offset;
+        item.size = backend_storage_size(make_pointer(make_fundamental(FT_VOID)));
+        item.text = string("ptr addr ") +
+                    format_global_address_operand(
+                        table->second.base_symbol,
+                        static_cast<long long>(table->second.address_point_offset));
+        success = append_global_constant_object_data_item(items, item);
+        continue;
+      }
+      success = collect_global_constant_constructor_assignment(
+          action,
+          object_offset,
+          argument_bindings,
+          items);
+    }
+
+    argument_bindings.pop_back();
+    active_constructors.erase(constructor_symbol);
+    return success;
+  }
+
+  bool append_global_constant_class_action_items(
+      vector<string> & data_items,
+      const CallSemNode & variable)
+  {
+    TypePtr base = strip_top_level_cv(variable.semantic_type);
+    if(!variable.is_constant_initialized ||
+       !is_complete_class_value_type(base)) {
+      return false;
+    }
+
+    vector<GlobalAggregateArrayDataItem> items;
+    vector<map<string, const CallSemNode *> > argument_bindings;
+    set<string> active_constructors;
+    bool saw_initializer = variable.children.empty();
+    for(size_t i = 0; i < variable.children.size(); ++i) {
+      const CallSemNode & action = variable.children[i];
+      if(action.kind == CallSemKind::destructor_action) {
+        continue;
+      }
+      if(action.kind == CallSemKind::constructor_action &&
+         action.children.size() == 1) {
+        const CallSemNode & call = action.children[0];
+        if(call.kind != CallSemKind::call_expression || call.children.size() < 2) {
+          return false;
+        }
+        const CallSemNode * target = &call.children[1];
+        if(target->kind == CallSemKind::unary_expression &&
+           callsem_has_token(*target, OP_AMP) &&
+           target->children.size() == 1) {
+          target = &target->children[0];
+        }
+        size_t object_offset = 0;
+        if(!global_object_lvalue_offset(*target, variable, object_offset) ||
+           !collect_global_constant_constructor_call(call,
+                                                     object_offset,
+                                                     argument_bindings,
+                                                     active_constructors,
+                                                     items)) {
+          return false;
+        }
+        saw_initializer = true;
+        continue;
+      }
+      GlobalAggregateArrayDataItem item;
+      if(!collect_global_aggregate_object_assignment(variable, action, item) ||
+         !append_global_constant_object_data_item(items, item)) {
+        return false;
+      }
+      saw_initializer = true;
+    }
+    return saw_initializer &&
+           append_sorted_global_data_items(data_items,
+                                           items,
+                                           backend_storage_size(variable.semantic_type));
+  }
+
   bool append_global_aggregate_array_assignment_items(
       vector<string> & data_items,
       const CallSemNode & variable,
@@ -20167,40 +20505,37 @@ private:
     return entry && entry->has_definition;
   }
 
-  bool known_global_symbol_exists(const string & symbol) const
+  void collect_known_global_symbols(unordered_set<string> & out) const
   {
-    if(generated_global_symbol_exists(symbol)) {
-      return true;
+    out.clear();
+    out.reserve(globals_.size() +
+                global_bindings_.size() +
+                vtable_bindings_.size() +
+                string_literal_symbols_.size() +
+                exception_storage_types_.size());
+    for(size_t i = 0; i < globals_.size(); ++i) {
+      out.insert(globals_[i].name);
     }
     for(map<string, GlobalBinding>::const_iterator it = global_bindings_.begin();
         it != global_bindings_.end();
         ++it) {
-      if(it->second.storage == symbol) {
-        return true;
-      }
+      out.insert(it->second.storage);
     }
     for(map<string, VTableBinding>::const_iterator it = vtable_bindings_.begin();
         it != vtable_bindings_.end();
         ++it) {
-      if(it->second.base_symbol == symbol) {
-        return true;
-      }
+      out.insert(it->second.base_symbol);
     }
     for(map<string, string>::const_iterator it = string_literal_symbols_.begin();
         it != string_literal_symbols_.end();
         ++it) {
-      if(it->second == symbol) {
-        return true;
-      }
+      out.insert(it->second);
     }
     for(auto it = exception_storage_types_.begin();
         it != exception_storage_types_.end();
         ++it) {
-      if(exception_storage_symbol(it->second) == symbol) {
-        return true;
-      }
+      out.insert(exception_storage_symbol(it->second));
     }
-    return false;
   }
 
   bool subtree_contains_kind(const CallSemNode & node, CallSemKind kind) const
@@ -21084,6 +21419,8 @@ private:
 
   void validate_symbol_closure() const
   {
+    unordered_set<string> known_global_symbols;
+    collect_known_global_symbols(known_global_symbols);
     for(set<string>::const_iterator it = referenced_function_symbols_.begin();
         it != referenced_function_symbols_.end();
         ++it) {
@@ -21114,7 +21451,7 @@ private:
     for(set<string>::const_iterator it = referenced_global_symbols_.begin();
         it != referenced_global_symbols_.end();
         ++it) {
-      const bool known_global = known_global_symbol_exists(*it);
+      const bool known_global = known_global_symbols.count(*it) != 0;
       const bool exported = exported_symbols_.count(*it) != 0;
       const bool backend_passthrough = is_backend_passthrough_symbol(*it);
       if(known_global || exported) {
@@ -21145,7 +21482,7 @@ private:
         throw logic_error("lowir exported symbol missing internal name");
       }
       const bool known_function = known_function_symbol_exists(it->first);
-      const bool known_global = known_global_symbol_exists(it->first);
+      const bool known_global = known_global_symbols.count(it->first) != 0;
       const bool external_function = external_function_symbols_.count(it->first) != 0;
       const bool external_object = external_object_symbols_.count(it->first) != 0;
       const bool referenced_function = referenced_function_symbols_.count(it->first) != 0;
@@ -23638,7 +23975,12 @@ private:
           callsem_local_static_guard_symbol(node).empty() &&
           !node.is_thread_local &&
           append_global_aggregate_object_assignment_items(global.data_items, node);
-      if(!constant_aggregate_initializer) {
+      const bool constant_class_initializer =
+          !constant_aggregate_initializer &&
+          callsem_local_static_guard_symbol(node).empty() &&
+          !node.is_thread_local &&
+          append_global_constant_class_action_items(global.data_items, node);
+      if(!constant_aggregate_initializer && !constant_class_initializer) {
         global.data_items.push_back(
             string("zero ") + to_string(backend_storage_size(node.semantic_type)));
       }
@@ -23654,6 +23996,9 @@ private:
             node.children[i].kind == CallSemKind::constructor_action ||
             node.children[i].kind == CallSemKind::expression_statement;
         if(initializer_action) {
+          if(constant_class_initializer) {
+            continue;
+          }
           if(is_redundant_static_zero_initialization_action(node, node.children[i])) {
             continue;
           }

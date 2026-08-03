@@ -43,8 +43,4 @@ function @boost__parameter__aux__default__boost__graph__keywords__tag__color_map
     store ptr %t1, %t3
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}
 alias object _ZN5boost9parameter3aux8default_INS_5graph8keywords3tag9color_mapEKiEC2ERS7_ = @boost__parameter__aux__default__boost__graph__keywords__tag__color_map__int_const___default_

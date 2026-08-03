@@ -23,7 +23,3 @@ function @_GLOBAL__N_1__X__X(%this : ptr) -> void [unwind=no, binding=internal, 
     store ptr %this, $this
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}

@@ -6,6 +6,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -3236,8 +3237,10 @@ class MachineIRBuilder
 public:
   MachineIRBuilder(const lir::Program & program,
                    const string & output_target,
-                   bool enable_host_eh)
-    : program_(program)
+                   bool enable_host_eh,
+                   lir::Program * consumed_program = nullptr)
+    : program_(program),
+      consumed_program_(consumed_program)
   {
     machine_.target = target_text(output_target);
     machine_.exported_symbols = program_.exported_symbols;
@@ -3318,10 +3321,14 @@ private:
     }
     for(size_t i = 0; i < program_.functions.size(); ++i) {
       emit_function(program_.functions[i]);
+      if(consumed_program_) {
+        vector<lir::Block>().swap(consumed_program_->functions[i].blocks);
+      }
     }
-    return machine_;
+    return std::move(machine_);
   }
-  lir::Program program_;
+  const lir::Program & program_;
+  lir::Program * consumed_program_;
   set<string> function_names_;
   set<string> defined_function_names_;
   map<string, vector<lir::Parameter> > function_params_;
@@ -7632,7 +7639,7 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
         }
         ++source_position;
       }
-      out.blocks.push_back(block);
+      out.blocks.push_back(std::move(block));
     }
     for(size_t bi = 0; bi < out.blocks.size(); ++bi) {
       for(size_t ii = 0; ii < out.blocks[bi].instructions.size(); ++ii) {
@@ -7653,7 +7660,7 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
     const size_t callee_saved_bytes = out.callee_saved_regs.size() * 8;
     out.stack_size = (fixed_frame_bytes + layout.scratch_bytes + callee_saved_bytes + 15) &
         ~static_cast<size_t>(15);
-    machine_.functions.push_back(out);
+    machine_.functions.push_back(std::move(out));
   }
 };
 
@@ -7685,4 +7692,15 @@ mir_model::MirProgram build_lowir_machine_ir_object(const lowir::LowirProgram & 
                                                     bool enable_host_eh)
 {
   return MachineIRBuilder(program, output_target, enable_host_eh).build_object();
+}
+
+mir_model::MirProgram build_lowir_machine_ir_object_consuming(
+    lowir::LowirProgram & program,
+    const string & output_target,
+    bool enable_host_eh)
+{
+  return MachineIRBuilder(program,
+                          output_target,
+                          enable_host_eh,
+                          &program).build_object();
 }

@@ -1427,13 +1427,17 @@ void note_live_symbol_name(const string & symbol,
                            const set<string> & function_names,
                            const set<string> & global_names,
                            set<string> & live_functions,
-                           set<string> & live_globals)
+                           set<string> & live_globals,
+                           vector<string> & pending_functions,
+                           vector<string> & pending_globals)
 {
-  if(function_names.count(symbol) != 0) {
-    live_functions.insert(symbol);
+  if(function_names.count(symbol) != 0 &&
+     live_functions.insert(symbol).second) {
+    pending_functions.push_back(symbol);
   }
-  if(global_names.count(symbol) != 0) {
-    live_globals.insert(symbol);
+  if(global_names.count(symbol) != 0 &&
+     live_globals.insert(symbol).second) {
+    pending_globals.push_back(symbol);
   }
 }
 
@@ -1441,14 +1445,18 @@ void note_live_symbol_operand(const lowir_internal::Operand & operand,
                               const set<string> & function_names,
                               const set<string> & global_names,
                               set<string> & live_functions,
-                              set<string> & live_globals)
+                              set<string> & live_globals,
+                              vector<string> & pending_functions,
+                              vector<string> & pending_globals)
 {
   if(operand.kind == lowir_internal::Operand::OP_GLOBAL) {
     note_live_symbol_name(operand.text,
                           function_names,
                           global_names,
                           live_functions,
-                          live_globals);
+                          live_globals,
+                          pending_functions,
+                          pending_globals);
   }
 }
 
@@ -1456,29 +1464,39 @@ void note_live_symbol_references(const lowir_internal::Instruction & instruction
                                  const set<string> & function_names,
                                  const set<string> & global_names,
                                  set<string> & live_functions,
-                                 set<string> & live_globals)
+                                 set<string> & live_globals,
+                                 vector<string> & pending_functions,
+                                 vector<string> & pending_globals)
 {
   note_live_symbol_operand(instruction.first,
                            function_names,
                            global_names,
                            live_functions,
-                           live_globals);
+                           live_globals,
+                           pending_functions,
+                           pending_globals);
   note_live_symbol_operand(instruction.second,
                            function_names,
                            global_names,
                            live_functions,
-                           live_globals);
+                           live_globals,
+                           pending_functions,
+                           pending_globals);
   note_live_symbol_operand(instruction.third,
                            function_names,
                            global_names,
                            live_functions,
-                           live_globals);
+                           live_globals,
+                           pending_functions,
+                           pending_globals);
   for(size_t i = 0; i < instruction.args.size(); ++i) {
     note_live_symbol_operand(instruction.args[i],
                              function_names,
                              global_names,
                              live_functions,
-                             live_globals);
+                             live_globals,
+                             pending_functions,
+                             pending_globals);
   }
 }
 
@@ -1486,14 +1504,18 @@ void note_live_symbol_references(const lowir_internal::Function & function,
                                  const set<string> & function_names,
                                  const set<string> & global_names,
                                  set<string> & live_functions,
-                                 set<string> & live_globals)
+                                 set<string> & live_globals,
+                                 vector<string> & pending_functions,
+                                 vector<string> & pending_globals)
 {
   if(!function.metadata.tls_for_symbol.empty()) {
     note_live_symbol_name(function.metadata.tls_for_symbol,
                           function_names,
                           global_names,
                           live_functions,
-                          live_globals);
+                          live_globals,
+                          pending_functions,
+                          pending_globals);
   }
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
     for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
@@ -1501,7 +1523,9 @@ void note_live_symbol_references(const lowir_internal::Function & function,
                                   function_names,
                                   global_names,
                                   live_functions,
-                                  live_globals);
+                                  live_globals,
+                                  pending_functions,
+                                  pending_globals);
     }
   }
 }
@@ -1510,7 +1534,9 @@ void note_live_symbol_references(const lowir_internal::GlobalDefinition & global
                                  const set<string> & function_names,
                                  const set<string> & global_names,
                                  set<string> & live_functions,
-                                 set<string> & live_globals)
+                                 set<string> & live_globals,
+                                 vector<string> & pending_functions,
+                                 vector<string> & pending_globals)
 {
   if(!global.structured &&
      global.init_kind == lowir_internal::GlobalDefinition::INIT_ADDR) {
@@ -1518,7 +1544,9 @@ void note_live_symbol_references(const lowir_internal::GlobalDefinition & global
                              function_names,
                              global_names,
                              live_functions,
-                             live_globals);
+                             live_globals,
+                             pending_functions,
+                             pending_globals);
   }
   for(size_t i = 0; i < global.data_items.size(); ++i) {
     const lowir_internal::GlobalDefinition::DataItem & item = global.data_items[i];
@@ -1527,7 +1555,9 @@ void note_live_symbol_references(const lowir_internal::GlobalDefinition & global
                             function_names,
                             global_names,
                             live_functions,
-                            live_globals);
+                            live_globals,
+                            pending_functions,
+                            pending_globals);
     }
   }
 }
@@ -1550,56 +1580,53 @@ void prune_unreferenced_object_symbol_definitions(
 
   set<string> live_functions;
   set<string> live_globals;
+  vector<string> pending_functions;
+  vector<string> pending_globals;
   for(size_t i = 0; i < program.functions.size(); ++i) {
     if(object_symbol_definition_is_root(program.functions[i].metadata) ||
        internal_object_function_definition_is_explicit_root(program.functions[i])) {
-      live_functions.insert(program.functions[i].name);
+      if(live_functions.insert(program.functions[i].name).second) {
+        pending_functions.push_back(program.functions[i].name);
+      }
     }
   }
   for(size_t i = 0; i < program.globals.size(); ++i) {
     if(object_symbol_definition_is_root(program.globals[i].metadata)) {
-      live_globals.insert(program.globals[i].name);
+      if(live_globals.insert(program.globals[i].name).second) {
+        pending_globals.push_back(program.globals[i].name);
+      }
     }
   }
 
-  bool changed = true;
-  while(changed) {
-    changed = false;
-    set<string> next_live_functions = live_functions;
-    set<string> next_live_globals = live_globals;
-    for(set<string>::const_iterator it = live_functions.begin();
-        it != live_functions.end();
-        ++it) {
+  size_t next_function = 0;
+  size_t next_global = 0;
+  while(next_function < pending_functions.size() ||
+        next_global < pending_globals.size()) {
+    if(next_function < pending_functions.size()) {
       map<string, const lowir_internal::Function *>::const_iterator found =
-          function_by_name.find(*it);
-      if(found == function_by_name.end()) {
-        continue;
+          function_by_name.find(pending_functions[next_function++]);
+      if(found != function_by_name.end()) {
+        note_live_symbol_references(*found->second,
+                                    function_names,
+                                    global_names,
+                                    live_functions,
+                                    live_globals,
+                                    pending_functions,
+                                    pending_globals);
       }
-      note_live_symbol_references(*found->second,
-                                  function_names,
-                                  global_names,
-                                  next_live_functions,
-                                  next_live_globals);
     }
-    for(set<string>::const_iterator it = live_globals.begin();
-        it != live_globals.end();
-        ++it) {
+    if(next_global < pending_globals.size()) {
       map<string, const lowir_internal::GlobalDefinition *>::const_iterator found =
-          global_by_name.find(*it);
-      if(found == global_by_name.end()) {
-        continue;
+          global_by_name.find(pending_globals[next_global++]);
+      if(found != global_by_name.end()) {
+        note_live_symbol_references(*found->second,
+                                    function_names,
+                                    global_names,
+                                    live_functions,
+                                    live_globals,
+                                    pending_functions,
+                                    pending_globals);
       }
-      note_live_symbol_references(*found->second,
-                                  function_names,
-                                  global_names,
-                                  next_live_functions,
-                                  next_live_globals);
-    }
-    if(next_live_functions.size() != live_functions.size() ||
-       next_live_globals.size() != live_globals.size()) {
-      live_functions.swap(next_live_functions);
-      live_globals.swap(next_live_globals);
-      changed = true;
     }
   }
 
@@ -1790,7 +1817,7 @@ machine_object::ObjectFile build_cpp_object_file(const vector<string> & srcfiles
       debug_info_level);
   PhaseTimer timer("build_machine_object",
                    string("target=") + output_target + " " + source_count_detail(srcfiles));
-  return build_machine_object(program,
+  return build_machine_object(std::move(program),
                               effective_host_output_target(output_target),
                               true,
                               true,
@@ -1808,7 +1835,7 @@ machine_object::ObjectFile build_cpp_lowir_object_file(const vector<string> & sr
       debug_info_level);
   PhaseTimer timer("build_machine_object",
                    string("target=") + output_target + " " + source_count_detail(srcfiles));
-  return build_machine_object(program,
+  return build_machine_object(std::move(program),
                               effective_host_output_target(output_target),
                               true,
                               true,
@@ -1834,15 +1861,17 @@ void write_cpp_object_file(const vector<string> & srcfiles,
                           dep_sink,
                           nullptr,
                           debug_info_level >= 1);
-  lowir_internal::Program program = prepare_object_lowir_program(
-      build_lowir_program(translation_units, true, true, debug_info_level >= 1),
-      optimization_level,
-      debug_info_level);
+  lowir_internal::Program program =
+      build_lowir_program(translation_units, true, true, debug_info_level >= 1);
+  vector<CallSemNode>().swap(translation_units);
+  program = prepare_object_lowir_program(std::move(program),
+                                         optimization_level,
+                                         debug_info_level);
   PhaseTimer timer("write_object_file",
                    string("outfile=") + outfile + " target=" + output_target + " " +
                    source_count_detail(srcfiles));
   machine_object::write_object_file(outfile,
-                                    build_machine_object(program,
+                                    build_machine_object(std::move(program),
                                                          effective_host_output_target(output_target),
                                                          true,
                                                          true,
@@ -1869,7 +1898,7 @@ void write_cpp_lowir_object_file(const vector<string> & srcfiles,
                    string("outfile=") + outfile + " target=" + output_target + " " +
                    source_count_detail(srcfiles));
   machine_object::write_object_file(outfile,
-                                    build_machine_object(program,
+                                    build_machine_object(std::move(program),
                                                          effective_host_output_target(output_target),
                                                          true,
                                                          true,

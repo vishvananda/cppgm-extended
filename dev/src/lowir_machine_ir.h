@@ -17,3 +17,7 @@ mir_model::MirProgram build_lowir_machine_ir_object(
     const lowir_model::LowirProgram & program,
     const std::string & output_target,
     bool enable_host_eh = false);
+mir_model::MirProgram build_lowir_machine_ir_object_consuming(
+    lowir_model::LowirProgram & program,
+    const std::string & output_target,
+    bool enable_host_eh = false);

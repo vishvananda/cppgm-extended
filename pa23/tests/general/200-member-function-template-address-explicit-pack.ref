@@ -55,7 +55,3 @@ function @service_registry__create(%__param0 : ptr [pass=reference], %__param1 :
     %t1 = addr @global_service
     return ptr %t1
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}

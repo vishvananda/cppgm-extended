@@ -49,8 +49,4 @@ function @value__value(%this : ptr) -> void [binding=weak, object=_ZN5valueC1Ev]
     store i32 1, @constructed
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}
 alias object _ZN5valueC2Ev = @value__value

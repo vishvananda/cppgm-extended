@@ -490,6 +490,10 @@ public:
       const CppAstNode & initializer,
       const cpp_decl::TypePtr & target,
       constant_eval::ConstexprValue & value) = 0;
+  virtual bool evaluate_default_initializer_constant_value(
+      semantic_model::Scope & scope,
+      const cpp_decl::TypePtr & target,
+      constant_eval::ConstexprValue & value) = 0;
   virtual std::string make_template_specialization_name(
       const std::string & name,
       const std::vector<template_model::TemplateArgument> & arguments) const = 0;

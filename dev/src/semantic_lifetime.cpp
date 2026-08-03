@@ -2396,24 +2396,20 @@ void append_ctor_subobject_constructor_action(SemanticContext & ctx,
        !args.empty()) {
       size_t expansion_index = 0;
       if(find_ctor_base_pack_expansion_index(owner_info, subobject_class, expansion_index)) {
-        vector<const CppAstNode *> expanded_args;
-        expanded_args.reserve(args.size());
-        bool expansion_ok = true;
-        for(size_t i = 0; i < args.size(); ++i) {
-          CppAstNode wrapped;
-          wrapped.kind = CppAstKind::pack_expansion_expression;
-          wrapped.children.push_back(*args[i]);
-          vector<CppAstNode> nodes;
-          if(!ctx.expand_pack_argument_node(scope, wrapped, nodes) ||
-             expansion_index >= nodes.size()) {
-            expansion_ok = false;
-            break;
-          }
-          pack_expansion_storage.push_back(nodes[expansion_index]);
-          expanded_args.push_back(&pack_expansion_storage.back());
-        }
-        if(expansion_ok && expanded_args.size() == args.size()) {
-          args.swap(expanded_args);
+        CppAstNode wrapped;
+        wrapped.kind = CppAstKind::pack_expansion_expression;
+        wrapped.children.push_back(base_init->children[1]);
+        vector<CppAstNode> expanded_initializers;
+        if(ctx.expand_pack_argument_node(scope, wrapped, expanded_initializers) &&
+           expansion_index < expanded_initializers.size()) {
+          pack_expansion_storage.push_back(expanded_initializers[expansion_index]);
+          const CppAstNode * expanded_initializer = &pack_expansion_storage.back();
+          args = initializer_argument_nodes(*expanded_initializer);
+          const CppAstNode * expanded_payload =
+              unwrap_initializer_payload(expanded_initializer);
+          direct_braced_init =
+              expanded_payload && expanded_payload->kind == CppAstKind::braced_init_list ?
+                  expanded_payload : nullptr;
         }
       }
     }
@@ -4268,37 +4264,15 @@ bool resolve_constructor_base_initializer(
   if(!has_expansion_index) {
     return false;
   }
-  const vector<const CppAstNode *> args =
-      initializer_argument_nodes(base_init->children[1]);
-  vector<CppAstNode> selected_args;
-  selected_args.reserve(args.size());
-  for(size_t i = 0; i < args.size(); ++i) {
-    CppAstNode wrapped;
-    wrapped.kind = CppAstKind::pack_expansion_expression;
-    wrapped.children.push_back(*args[i]);
-    vector<CppAstNode> expanded_args;
-    if(!ctx.expand_pack_argument_node(scope, wrapped, expanded_args) ||
-       expansion_index >= expanded_args.size()) {
-      return false;
-    }
-    selected_args.push_back(expanded_args[expansion_index]);
-  }
-
-  expanded_storage = base_init->children[1];
-  CppAstNode * payload = &expanded_storage;
-  if(payload->kind == CppAstKind::initializer &&
-     payload->children.size() == 1) {
-    payload = &payload->children[0];
-  }
-  if(payload->kind == CppAstKind::paren_initializer ||
-     payload->kind == CppAstKind::paren_argument_list ||
-     payload->kind == CppAstKind::braced_init_list) {
-    payload->children.swap(selected_args);
-  } else if(selected_args.size() == 1) {
-    *payload = selected_args[0];
-  } else {
+  CppAstNode wrapped;
+  wrapped.kind = CppAstKind::pack_expansion_expression;
+  wrapped.children.push_back(base_init->children[1]);
+  vector<CppAstNode> expanded_initializers;
+  if(!ctx.expand_pack_argument_node(scope, wrapped, expanded_initializers) ||
+     expansion_index >= expanded_initializers.size()) {
     return false;
   }
+  expanded_storage = expanded_initializers[expansion_index];
   initializer = &expanded_storage;
   return true;
 }

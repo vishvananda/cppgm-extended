@@ -10,6 +10,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -5376,7 +5377,7 @@ void force_external_binding_for_function_declaration_imports(
 
 }  // namespace
 
-machine_object::ObjectFile build_machine_object(const lowir_model::LowirProgram & program,
+machine_object::ObjectFile build_machine_object(lowir_model::LowirProgram program,
                                                 const string & output_target,
                                                 bool enable_host_eh,
                                                 bool use_macos_static_init_sections,
@@ -5394,10 +5395,12 @@ machine_object::ObjectFile build_machine_object(const lowir_model::LowirProgram 
     }
   }
   machine_ir::Program machine_program =
-      build_lowir_machine_ir_object(program, output_target, enable_host_eh);
+      build_lowir_machine_ir_object_consuming(program,
+                                              output_target,
+                                              enable_host_eh);
+  force_external_binding_for_function_declaration_imports(program, machine_program);
   machine_program =
       optimize_machine_ir_program(std::move(machine_program), optimization_level);
-  force_external_binding_for_function_declaration_imports(program, machine_program);
   if(parser_trace::enabled("object.symbol")) {
     for(size_t i = 0; i < machine_program.functions.size(); ++i) {
       parser_trace::note("object.symbol",
@@ -5994,12 +5997,12 @@ void write_lowir_object_file(const vector<string> & srcfiles,
                              const string & outfile,
                              const string & output_target)
 {
-  const lowir_model::LowirProgram program = lowir_model::parse_lowir_program_files(srcfiles);
+  lowir_model::LowirProgram program = lowir_model::parse_lowir_program_files(srcfiles);
+  const bool enable_host_eh = lowir_program_uses_host_eh_object_mode(program);
   machine_object::write_object_file(outfile,
-                                    build_machine_object(program,
+                                    build_machine_object(std::move(program),
                                                          output_target,
-                                                         lowir_program_uses_host_eh_object_mode(
-                                                             program),
+                                                         enable_host_eh,
                                                          false,
                                                          0,
                                                          0,

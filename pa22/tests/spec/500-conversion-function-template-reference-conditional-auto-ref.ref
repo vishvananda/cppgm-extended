@@ -1,6 +1,6 @@
 global @selected : ptr [binding=internal, object=_ZL8selected] = zero
 global @static_storage_wrapper_callable_tag____value [binding=weak, object=_ZN14static_storageI7wrapperI12callable_tagEE5valueE] = {
-  zero 4
+  i32 11
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -107,8 +107,6 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^condaddr_end_3:
     %t6 = load ptr $condaddr__1
     store ptr %t6, @selected
-    %t7 = addr @static_storage_wrapper_callable_tag____value
-    call void @wrapper_callable_tag___wrapper(%t7)
     return void
 }
 alias object _ZN13deduce_uniqueI10unique_tagEC2Ev = @deduce_unique_unique_tag___deduce_unique

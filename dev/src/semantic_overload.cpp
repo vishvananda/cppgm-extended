@@ -7959,6 +7959,13 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
                                                                  callee_type,
                                                                  *direct_braced_init);
   }
+  if(direct_braced_init &&
+     class_info &&
+     semantic_class_model::can_synthesize_aggregate_constructor(*class_info)) {
+    return ctx.analyze_expression_for_target(scope,
+                                             *direct_braced_init,
+                                             callee_type);
+  }
   if(class_info) {
     if(semantic_class_model::class_info_is_abstract(*class_info)) {
       throw NoViableConstructorError(
@@ -11291,6 +11298,74 @@ bool class_has_initializer_list_constructor_candidate(SemanticContext & ctx,
   return false;
 }
 
+bool constructor_accepts_no_explicit_arguments(const FunctionBinding & candidate)
+{
+  if(!candidate.is_constructor || candidate.is_inherited_constructor) {
+    return false;
+  }
+  TypePtr function_type = strip_top_level_cv(candidate.type);
+  if(!function_type ||
+     function_type->kind != Type::TK_FUNCTION ||
+     function_type->params.empty()) {
+    return false;
+  }
+
+  const size_t explicit_param_offset = 1;
+  size_t required_params = function_type->params.size();
+  while(required_params > explicit_param_offset &&
+        required_params - 1 < candidate.default_arguments.size() &&
+        candidate.default_arguments[required_params - 1]) {
+    --required_params;
+  }
+  return required_params == explicit_param_offset;
+}
+
+bool constructor_template_accepts_no_explicit_arguments(
+    FunctionTemplateDecl & decl)
+{
+  if(!decl.is_constructor ||
+     decl.is_inherited_constructor ||
+     !constructor_template_accepts_argument_count_fast(decl, 0)) {
+    return false;
+  }
+  for(size_t i = 0; i < decl.parameters.size(); ++i) {
+    if(!decl.parameters[i].parameter_pack &&
+       !decl.parameters[i].default_argument) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool class_has_default_constructor_candidate(SemanticContext & ctx,
+                                             ClassInfo & info)
+{
+  semantic_class_model::ensure_implicit_special_members(ctx, info);
+  bool found = false;
+  append_constructor_method_candidates(
+      info,
+      [&](FunctionBinding * candidate)
+      {
+        if(candidate && constructor_accepts_no_explicit_arguments(*candidate)) {
+          found = true;
+        }
+      });
+  if(found) {
+    return true;
+  }
+
+  vector<FunctionTemplateDecl *> constructor_templates =
+      collect_constructor_templates(info);
+  for(size_t i = 0; i < constructor_templates.size(); ++i) {
+    if(constructor_templates[i] &&
+       constructor_template_accepts_no_explicit_arguments(
+           *constructor_templates[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 template <typename AppendCandidate>
 void append_constructor_template_candidates(
     SemanticContext & ctx,
@@ -12847,9 +12922,16 @@ FunctionBinding * select_constructor_for_direct_braced_init(
 {
   ScopedCallSemConstructionPath construction_path("overload.direct-braced-constructor");
   ClassInfo * target_info = canonicalize_constructor_target(ctx, scope, info);
+  target_info = complete_constructor_target_if_ready(ctx, *target_info);
+  vector<const CppAstNode *> expanded_arg_nodes =
+      initializer_argument_nodes(direct_braced_init);
+  const bool skip_initializer_list_phase =
+      expanded_arg_nodes.empty() &&
+      class_has_default_constructor_candidate(ctx, *target_info);
   vector<const CppAstNode *> single_arg_node(1, &direct_braced_init);
   std::string single_arg_error;
-  if(class_has_initializer_list_constructor_candidate(ctx, *target_info)) {
+  if(!skip_initializer_list_phase &&
+     class_has_initializer_list_constructor_candidate(ctx, *target_info)) {
     try
     {
       ConstructorSelectionOptions single_arg_options = options;
@@ -12870,8 +12952,6 @@ FunctionBinding * select_constructor_for_direct_braced_init(
     }
   }
 
-  vector<const CppAstNode *> expanded_arg_nodes =
-      initializer_argument_nodes(direct_braced_init);
   if(expanded_arg_nodes.size() == 1 && expanded_arg_nodes[0] == &direct_braced_init) {
     if(!single_arg_error.empty()) {
       throw NoViableConstructorError(single_arg_error);

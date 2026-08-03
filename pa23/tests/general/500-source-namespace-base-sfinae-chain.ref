@@ -40,7 +40,3 @@ function @boost__nfp__opt_assign(%__param0 : ptr [pass=reference], %__param1 : p
     store ptr %__param1, $__param1
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}

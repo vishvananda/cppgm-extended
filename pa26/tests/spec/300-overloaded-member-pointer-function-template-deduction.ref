@@ -125,8 +125,4 @@ function @boost__reference_wrapper_Stream___reference_wrapper(%this : ptr, %t : 
     store ptr %t1, %t3
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}
 alias object _ZN5boost17reference_wrapperI6StreamEC2ERS1_ = @boost__reference_wrapper_Stream___reference_wrapper

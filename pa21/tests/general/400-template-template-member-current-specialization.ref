@@ -21,7 +21,3 @@ function @Box_int__int__LayoutImpl___f(%this : ptr, %__param1 : ptr [pass=refere
     store ptr %__param1, $__param1
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}

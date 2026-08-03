@@ -29,8 +29,4 @@ function @box__box__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [
     store i32 1, @box__selected
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}
 alias object _ZN3boxC2I5valueEERKT_ = @box__box__ov3

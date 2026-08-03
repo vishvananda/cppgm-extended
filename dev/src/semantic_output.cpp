@@ -3321,6 +3321,20 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
          !semantic_class_model::is_trivially_destructible_type_for_host_abi(
              ctx,
              binding.type));
+    const bool has_constant_class_initializer =
+        !var_node.is_extern_declaration &&
+        initializer_scope &&
+        class_lifetime_type &&
+        ((binding.constant_initializer &&
+          ctx.evaluate_initializer_constant_value(*initializer_scope,
+                                                  *binding.constant_initializer,
+                                                  binding.type,
+                                                  constexpr_value)) ||
+         (!binding.constant_initializer &&
+          ctx.evaluate_default_initializer_constant_value(*initializer_scope,
+                                                          binding.type,
+                                                          constexpr_value)));
+    var_node.is_constant_initialized = has_constant_class_initializer;
     if(binding.constant_initializer &&
        initializer_scope &&
        !ctx.complete_class_type(binding.type) &&
@@ -6250,6 +6264,19 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
                                                  constexpr_value,
                                                  emitted_type,
                                                  literal_node);
+          const bool has_constant_class_initializer =
+              initializer_scope &&
+              namespace_variable_type_has_class_lifetime(ctx, emitted_type) &&
+              ((initializer &&
+                ctx.evaluate_initializer_constant_value(*initializer_scope,
+                                                        *initializer,
+                                                        emitted_type,
+                                                        constexpr_value)) ||
+               (!initializer &&
+                ctx.evaluate_default_initializer_constant_value(*initializer_scope,
+                                                                emitted_type,
+                                                                constexpr_value)));
+          var_node.is_constant_initialized = has_constant_class_initializer;
           if(has_constant_initializer) {
             var_node.children.push_back(std::move(literal_node));
           } else if(namespace_variable_type_has_class_lifetime(ctx, emitted_type)) {

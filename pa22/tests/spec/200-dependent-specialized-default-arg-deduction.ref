@@ -31,7 +31,3 @@ function @boostish__assign_op(%__param0 : ptr [pass=reference], %__param1 : obj<
     store i32 %__param2, $__param2
     return void
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}

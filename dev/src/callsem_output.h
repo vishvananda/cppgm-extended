@@ -354,6 +354,7 @@ struct CallSemNode
       uses_extended_vtable_layout(false),
       is_extern_declaration(false),
       is_static_storage(false),
+      is_constant_initialized(false),
       is_c_linkage(false),
       is_thread_local(false),
       is_inline_namespace(false),
@@ -422,6 +423,7 @@ struct CallSemNode
   std::uint64_t uses_extended_vtable_layout : 1;
   std::uint64_t is_extern_declaration : 1;
   std::uint64_t is_static_storage : 1;
+  std::uint64_t is_constant_initialized : 1;
   std::uint64_t is_c_linkage : 1;
   std::uint64_t is_thread_local : 1;
   std::uint64_t is_inline_namespace : 1;
