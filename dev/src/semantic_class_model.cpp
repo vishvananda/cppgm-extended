@@ -9635,6 +9635,17 @@ void collect_expression_value_reference_names(
     std::set<const CppAstNode *> & visited,
     std::set<std::string> & out);
 
+void collect_direct_type_lookup_name(const QualifiedName & name,
+                                     std::set<std::string> & out)
+{
+  if(name.rooted) {
+    return;
+  }
+  if(name.qualifiers.empty() && !name.name.empty()) {
+    out.insert(name.name);
+  }
+}
+
 void collect_type_id_value_reference_names(
     const CppAstNode & node,
     std::set<const CppAstNode *> & visited,
@@ -9643,13 +9654,14 @@ void collect_type_id_value_reference_names(
   if(!visited.insert(&node).second) {
     return;
   }
-  if(node.kind == CppAstKind::id_expression) {
-    const QualifiedName * name = cppast_qualified_name_syntax(node);
-    if(name && !name->rooted && name->qualifiers.empty() && !name->name.empty()) {
-      out.insert(name->name);
-    } else if(!name && callsemantic_internal::is_identifier_text(node.value)) {
-      out.insert(node.value);
-    }
+  // A parsed type name can retain its QualifiedName on a type-name or
+  // decl-specifier node rather than an id-expression node.
+  const QualifiedName * name = cppast_qualified_name_syntax(node);
+  if(name) {
+    collect_direct_type_lookup_name(*name, out);
+  } else if(node.kind == CppAstKind::id_expression &&
+            callsemantic_internal::is_identifier_text(node.value)) {
+    out.insert(node.value);
   }
   if(const TemplateIdSyntax * syntax = cppast_template_id_syntax(node)) {
     collect_template_argument_value_reference_names(*syntax, visited, out);
