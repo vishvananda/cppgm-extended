@@ -2074,7 +2074,9 @@ bool function_binding_has_template_or_body_definition_source(
 bool function_binding_is_declaration_only_template(
     const semantic_model::FunctionBinding & binding)
 {
-  return binding.source_template && !binding.source_template->body;
+  return binding.source_template &&
+         (!binding.source_template->body ||
+          (binding.is_explicit_specialization && !binding.has_definition));
 }
 
 bool function_binding_has_empty_template_identity(

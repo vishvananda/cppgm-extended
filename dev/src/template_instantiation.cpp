@@ -10974,6 +10974,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       found->second->definition_suppresses_declaration_abi_tags = false;
     } else if(include_body &&
               effective_template_body(*cache_source_decl) &&
+              !found->second->is_explicit_specialization &&
               !found->second->suppress_implicit_instantiation_definition &&
               !suppressed_by_owner &&
               !found->second->has_definition) {

@@ -2125,7 +2125,11 @@ public:
               return;
             }
           }
-          if(inner.kind != CppAstKind::function_definition) {
+          const bool explicit_function_template_specialization_declaration =
+              function_identifier &&
+              cppast_template_id_syntax(*function_identifier);
+          if(inner.kind != CppAstKind::function_definition &&
+             !explicit_function_template_specialization_declaration) {
             return;
           }
         }

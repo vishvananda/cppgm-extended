@@ -124,15 +124,17 @@ bool function_has_tracked_template_body(
 bool function_needs_template_definition_acquisition(
     const semantic_model::FunctionBinding & binding)
 {
-  return !binding.has_definition ||
-         template_api::function_binding_has_template_identity(&binding);
+  return !binding.is_explicit_specialization &&
+         (!binding.has_definition ||
+          template_api::function_binding_has_template_identity(&binding));
 }
 
 bool function_needs_source_template_definition_acquisition(
     const semantic_model::FunctionBinding & binding)
 {
-  return !binding.has_definition ||
-         template_api::function_binding_has_source_template_identity(&binding);
+  return !binding.is_explicit_specialization &&
+         (!binding.has_definition ||
+          template_api::function_binding_has_source_template_identity(&binding));
 }
 
 bool owner_class_instantiation_waits_for_non_dependent_arguments(
