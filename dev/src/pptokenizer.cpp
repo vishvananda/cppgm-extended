@@ -828,11 +828,17 @@ inline void FullTranslator::translate_trigraph_ucn_splice()
         break;
       ++*this;
       ++*this;
-      value = 0;
+      unsigned long long code_point = 0;
       for(int i = 0; i < num; ++i) {
         next = pop();
-        value = (value << 4) + hex_to_value(next);
+        code_point = (code_point << 4) +
+                     static_cast<unsigned long long>(hex_to_value(next));
       }
+      if(code_point >= 0x110000 ||
+         (code_point >= 0xD800 && code_point < 0xE000)) {
+        throw logic_error("Invalid unicode escape value");
+      }
+      value = static_cast<int>(code_point);
       buffer.push_front(value);
       break;
     } else if (next == '\n') {

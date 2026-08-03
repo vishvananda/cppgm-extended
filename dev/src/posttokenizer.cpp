@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <stdexcept>
@@ -8,6 +9,26 @@ using namespace std;
 
 #include "types.h"
 #include "posttokenizer.h"
+
+inline bool valid_unicode_scalar_value(char32_t value)
+{
+  return value < 0x110000 && (value < 0xD800 || value >= 0xE000);
+}
+
+inline bool valid_course_character_code_points(const QuoteLiteralData & data)
+{
+  for(size_t i = 0; i < data.contents.size(); ++i) {
+    if(!valid_unicode_scalar_value(data.contents[i])) {
+      return false;
+    }
+  }
+  for(size_t i = 0; i < data.string_units.size(); ++i) {
+    if(data.string_units[i] >= 0x110000) {
+      return false;
+    }
+  }
+  return true;
+}
 
 inline bool lookup_identifier_token_type(const string & data,
                                          ETokenType & token_type)
@@ -782,7 +803,11 @@ inline void PostTokenizer::emit_float_literal(const string& data)
   string ud_suffix;
   EFundamentalType literal_type = FT_DOUBLE;
   if(!split_floating_literal(data, value, literal_type, ud_suffix)) {
-    return push_invalid(data);
+    // PP-number scanning only has a lexical float/integer hint.  An
+    // exponent-looking identifier in an integer UDL suffix (for example
+    // `123_e3`) can set that hint even though phase 7 classifies the token as
+    // a user-defined integer literal.
+    return emit_int_literal(data);
   }
 
   if(ud_suffix.size()) {
@@ -832,13 +857,32 @@ inline void PostTokenizer::emit_int_literal(const string& data)
 inline void PostTokenizer::emit_quote_literal(const string& data)
 {
   QuoteLiteralData qdata;
-  parse_quote_literal(data, qdata);
+  try {
+    parse_quote_literal(data, qdata);
+  } catch(const exception &) {
+    const size_t single_quote = data.find('\'');
+    const size_t double_quote = data.find('"');
+    if(single_quote != string::npos &&
+       (double_quote == string::npos || single_quote < double_quote)) {
+      emit_next_string();
+      return push_invalid(data);
+    }
+    if(n_data.size()) {
+      n_data += ' ';
+    }
+    n_data.append(data);
+    n_valid = false;
+    return;
+  }
   if(qdata.quote == '\'') {
+    emit_next_string();
+    if(!valid_course_character_code_points(qdata)) {
+      return push_invalid(data);
+    }
     if(qdata.contents.size() != 1) {
       unsigned int value = 0;
       if(allow_ordinary_multicharacter_literals &&
          ordinary_multicharacter_literal_value(qdata, value)) {
-        emit_next_string();
         return push_literal(data, FT_INT, &value, sizeof(value));
       }
       return push_invalid(data);
@@ -846,7 +890,6 @@ inline void PostTokenizer::emit_quote_literal(const string& data)
     auto c = qdata.contents[0];
     if(c < 0 || c >= 0x110000 || (c >= 0xD800 && c < 0xE000))
       return push_invalid(data);
-    emit_next_string();
     emit_encoded(data, qdata.quote,
                  (qdata.enc == '\'' && c > 127) ? 'i' : qdata.enc,
                  qdata.contents, qdata.ud_suffix);
@@ -920,7 +963,15 @@ inline void PostTokenizer::emit_next_string()
   } else if(!n_valid) {
     push_invalid(n_data);
   } else {
-    emit_encoded(n_data, '"', n_encoding, n_contents, n_suffix);
+    try {
+      const QuoteLiteralData literal = parse_quote_literal(n_data);
+      emit_string_units(n_data,
+                        n_encoding,
+                        quote_literal_string_units(literal),
+                        n_suffix);
+    } catch(const exception &) {
+      push_invalid(n_data);
+    }
   }
   n_data.clear();
   n_encoding = '"';
@@ -987,3 +1038,62 @@ inline void PostTokenizer::emit_encoded(const string& data, char quote,
     break;
   }
 };
+
+inline void PostTokenizer::emit_string_units(
+    const string& data,
+    char enc,
+    const vector<unsigned long long>& units,
+    const string& ud_suffix)
+{
+  EFundamentalType type = FT_CHAR;
+  size_t element_size = 1;
+  unsigned long long max_value = UCHAR_MAX;
+  switch(enc) {
+  case 'u':
+    type = FT_CHAR16_T;
+    element_size = 2;
+    max_value = 0xffffU;
+    break;
+  case 'U':
+    type = FT_CHAR32_T;
+    element_size = 4;
+    max_value = 0xffffffffULL;
+    break;
+  case 'L':
+    type = FT_WCHAR_T;
+    element_size = 4;
+    max_value = 0xffffffffULL;
+    break;
+  default:
+    break;
+  }
+
+  vector<unsigned char> bytes((units.size() + 1) * element_size, 0);
+  for(size_t i = 0; i < units.size(); ++i) {
+    if(units[i] > max_value) {
+      return push_invalid(data);
+    }
+    for(size_t byte = 0; byte < element_size; ++byte) {
+      bytes[i * element_size + byte] =
+          static_cast<unsigned char>((units[i] >> (byte * CHAR_BIT)) & 0xffU);
+    }
+  }
+
+  if(!ud_suffix.empty()) {
+    if(ud_suffix[0] != '_') {
+      return push_invalid(data);
+    }
+    push_ud_string_array(data,
+                         ud_suffix,
+                         units.size() + 1,
+                         type,
+                         bytes.data(),
+                         bytes.size());
+  } else {
+    push_literal_array(data,
+                       units.size() + 1,
+                       type,
+                       bytes.data(),
+                       bytes.size());
+  }
+}

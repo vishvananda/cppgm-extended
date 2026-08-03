@@ -40,13 +40,13 @@ literal "π" array of 3 char CF8000
 simple ; OP_SEMICOLON
 literal "𝄞" array of 5 char F09D849E00
 simple ; OP_SEMICOLON
-literal "\x3C0" array of 3 char CF8000
+invalid "\x3C0"
 simple ; OP_SEMICOLON
-literal "\x1D11E" array of 5 char F09D849E00
+invalid "\x1D11E"
 simple ; OP_SEMICOLON
 literal "\101" array of 2 char 4100
 simple ; OP_SEMICOLON
-literal "aπ𝄞\'\"\?\\\a\b\f\n\r\t\vπ𝄞\x3C0\x1D11E\101" array of 32 char 61CF80F09D849E27223F5C07080C0A0D090BCF80F09D849ECF80F09D849E4100
+invalid "aπ𝄞\'\"\?\\\a\b\f\n\r\t\vπ𝄞\x3C0\x1D11E\101"
 simple ; OP_SEMICOLON
 literal u8"a" array of 2 char 6100
 simple ; OP_SEMICOLON
@@ -80,13 +80,13 @@ literal u8"π" array of 3 char CF8000
 simple ; OP_SEMICOLON
 literal u8"𝄞" array of 5 char F09D849E00
 simple ; OP_SEMICOLON
-literal u8"\x3C0" array of 3 char CF8000
+invalid u8"\x3C0"
 simple ; OP_SEMICOLON
-literal u8"\x1D11E" array of 5 char F09D849E00
+invalid u8"\x1D11E"
 simple ; OP_SEMICOLON
 literal u8"\101" array of 2 char 4100
 simple ; OP_SEMICOLON
-literal u8"aπ𝄞\'\"\?\\\a\b\f\n\r\t\vπ𝄞\x3C0\x1D11E\101" array of 32 char 61CF80F09D849E27223F5C07080C0A0D090BCF80F09D849ECF80F09D849E4100
+invalid u8"aπ𝄞\'\"\?\\\a\b\f\n\r\t\vπ𝄞\x3C0\x1D11E\101"
 simple ; OP_SEMICOLON
 literal u"a" array of 2 char16_t 61000000
 simple ; OP_SEMICOLON
@@ -122,11 +122,11 @@ literal u"𝄞" array of 3 char16_t 34D81EDD0000
 simple ; OP_SEMICOLON
 literal u"\x3C0" array of 2 char16_t C0030000
 simple ; OP_SEMICOLON
-literal u"\x1D11E" array of 3 char16_t 34D81EDD0000
+invalid u"\x1D11E"
 simple ; OP_SEMICOLON
 literal u"\101" array of 2 char16_t 41000000
 simple ; OP_SEMICOLON
-literal u"aπ𝄞\'\"\?\\\a\b\f\n\r\t\vπ𝄞\x3C0\x1D11E\101" array of 23 char16_t 6100C00334D81EDD270022003F005C00070008000C000A000D0009000B00C00334D81EDDC00334D81EDD41000000
+invalid u"aπ𝄞\'\"\?\\\a\b\f\n\r\t\vπ𝄞\x3C0\x1D11E\101"
 simple ; OP_SEMICOLON
 literal U"a" array of 2 char32_t 6100000000000000
 simple ; OP_SEMICOLON

@@ -1720,6 +1720,52 @@ void Preprocessor::finish_if_directive()
         continue;
       }
 
+      // Some hosted headers expand a function-like macro to an expression
+      // containing `defined`.  GCC and Clang accept this extension, so handle
+      // the generated operator after macro expansion as well as the ordinary
+      // pre-expansion path in emit().
+      if(item.data == "defined") {
+        size_t next = i + 1;
+        while(next < results.size() && results[next].type == PP_WHITESPACE) {
+          ++next;
+        }
+        bool parenthesized = false;
+        if(next < results.size() &&
+           results[next].type == PP_PREPROCESSING_OP &&
+           results[next].data == "(") {
+          parenthesized = true;
+          ++next;
+          while(next < results.size() &&
+                results[next].type == PP_WHITESPACE) {
+            ++next;
+          }
+        }
+        if(next >= results.size() ||
+           !is_defined_operand_token(results[next].type,
+                                     results[next].data)) {
+          throw logic_error("Expected identifier in defined expression.");
+        }
+        const string operand = results[next].data;
+        ++next;
+        while(next < results.size() && results[next].type == PP_WHITESPACE) {
+          ++next;
+        }
+        if(parenthesized) {
+          if(next >= results.size() ||
+             results[next].type != PP_PREPROCESSING_OP ||
+             results[next].data != ")") {
+            throw logic_error("Expected end paren in defined expression.");
+          }
+          ++next;
+        }
+        rewritten.push_back(EPPToken{
+            PP_INT_LITERAL,
+            (macroizer.macro_exists(operand) ||
+             is_predefined_builtin_probe_name(operand)) ? "1" : "0"});
+        i = next - 1;
+        continue;
+      }
+
       vector<EPPToken> argument;
       size_t next = 0;
       if((item.data == "__has_include" || item.data == "__has_include_next") &&

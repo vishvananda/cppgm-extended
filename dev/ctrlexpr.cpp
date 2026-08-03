@@ -35,9 +35,11 @@ struct DebugRunner : IPPTokenStream
           if(error.size()) {
             emit_stderr(error);
             emit_stdout("error");
+            calculator.reset();
             defined_state = DefinedState::None;
             error = string();
             empty = true;
+            break;
           }
           if(empty)
             break;
@@ -106,6 +108,7 @@ struct DebugRunner : IPPTokenStream
       if(type == PP_NEW_LINE) {
         emit_stderr(e.what());
         emit_stdout("error");
+        calculator.reset();
         defined_state = DefinedState::None;
         error = string();
         empty = true;

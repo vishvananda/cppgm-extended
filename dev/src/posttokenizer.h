@@ -350,4 +350,9 @@ protected:
       const void * result, std::size_t size, std::size_t length);
   inline void emit_encoded(const std::string& data, char quote, char enc,
       const std::u32string& result, const std::string& ud_suffix);
+  inline void emit_string_units(
+      const std::string& data,
+      char enc,
+      const std::vector<unsigned long long>& units,
+      const std::string& ud_suffix);
 };

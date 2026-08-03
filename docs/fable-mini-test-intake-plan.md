@@ -126,9 +126,24 @@ newly intaked fixture.
   relevant `dev/` binary and keep failure output when the assignment export
   compares it. Do not copy run references or discard an apparently redundant
   stream without checking the early harness.
-- Run the placement audit with course tests included, then manually compare
-  the reducer with the owning assignment README. Make the smallest README edit
-  needed when the intaked behavior adds a student expectation.
+- Do not run the semantic/LowIR placement audit for PA1 through PA9. Those
+  files are inputs to milestone-specific frontends, so later C++ feature
+  spellings are token data rather than evidence of later semantic ownership.
+  Determine ownership by reading the fixed assignment README, adjacent tests,
+  and the real early harness instead.
+- Treat the PA1-through-PA9 READMEs as fixed assignment specifications during
+  ordinary intake. If a candidate exercises behavior not required there, do
+  not add it as a new student obligation; place an intentional hosted/GNU
+  extension in its later owner when one exists, otherwise reject it. An
+  explicitly approved correction to an erroneous or ambiguous assignment
+  contract is a separate change: validate it against the relevant standard
+  compilers, update the instructions and checked-in oracle together, and
+  record that evidence in the tracker.
+- When a run reference and the current compiler agree on behavior that
+  contradicts the fixed README, treat that agreement as a compiler bug rather
+  than validation. Reduce the contradiction, fix the normal `dev/` compiler,
+  and add the smallest positive or negative course regression required by the
+  existing specification. Generate its canonical reference only after the fix.
 
 ## Course-Tree Inventory
 
@@ -451,14 +466,17 @@ The source run's assignment number is a hint. It is not placement authority.
 1. Name the primary assertion in one sentence.
 2. List every language, runtime, ABI, backend, or optimizer feature left in the
    reducer.
-3. Read the candidate assignment README and the placement tracker used by
-   `scripts/audit_pa_feature_placement.py`.
+3. Read the candidate assignment README. For PA10 and later, also read the
+   placement tracker used by `scripts/audit_pa_feature_placement.py`.
 4. Compare the primary assertion with the assignment's stated student-facing
-   requirements. If the README does not already cover that behavior, make the
-   smallest clear contract edit needed to state the additional expectation.
-   Do not prescribe an implementation strategy or promise a diagnostic format
-   unless that exact text is intentionally part of the exported oracle. Record
-   the README section reviewed, and any edit made, in the tracker validation
+   requirements. PA1-through-PA9 READMEs are fixed during ordinary intake:
+   reject or move behavior they do not cover unless an assignment-contract
+   correction has been explicitly approved and validated. For PA10 and later,
+   make the smallest clear contract edit needed when an accepted behavior adds
+   a student expectation. Do not
+   prescribe an implementation strategy or promise a diagnostic format unless
+   that exact text is intentionally part of the exported oracle. Record the
+   README section reviewed, and any edit made, in the tracker validation
    evidence for the family.
 5. Select the earliest assignment that owns the primary assertion and all
    remaining support features.
@@ -503,9 +521,10 @@ describe the reduced behavior. For PA10 and later, do not keep a second copy
 under `cppgm.tests/course`. For PA1 through PA9, that course directory is the
 only accepted destination.
 
-The placement audit is a conservative review tool, not an owner oracle. Read
-every source unit manually, especially `.t.N` files and shared headers that a
-static scan may not associate with the marker file.
+For PA10 and later, the placement audit is a conservative review tool, not an
+owner oracle. Read every source unit manually, especially `.t.N` files and
+shared headers that a static scan may not associate with the marker file. Do
+not use the semantic/LowIR placement audit for PA1 through PA9.
 
 Do not leave a known false-positive placement finding attached to an accepted
 intake test. Narrow or otherwise improve the placement detector when its rule
@@ -633,15 +652,20 @@ Run the narrowest checks first:
 2. Historical fail/pass proof when the source history supports it.
 3. Reference generation from the recorded normal host-built target binary.
 4. Re-read the owning assignment README against the final reduced source and
-   oracle. Confirm the behavior is already an explicit student expectation or
-   land the minimal README clarification before accepting the family.
+   oracle. For PA1 through PA9, require the behavior to be an existing explicit
+   student expectation and do not edit the README during ordinary intake. If
+   an assignment-contract correction was explicitly approved, validate the
+   corrected rule independently and update the README and checked-in oracle in
+   the same batch. For PA10 and later, land a minimal clarification when the
+   accepted behavior adds an expectation.
 5. Focused current-compiler execution:
 
    ```sh
    make -C paNN check TEST='tests/<suite>/<test>.t'
    ```
 
-6. Placement audit over normal assignment tests:
+6. For PA10 and later, run the placement audit over normal assignment tests.
+   Skip this step for PA1 through PA9:
 
    ```sh
    python3 scripts/audit_pa_feature_placement.py \
@@ -706,9 +730,9 @@ Run the narrowest checks first:
 11. Finish with `git diff --check` and inspect `git status --short` for
     generated artifacts.
 
-A placement audit pass does not replace the manual ownership review. A failure
-requires more reduction or a later owner. Do not suppress a real finding to
-keep the proposed path.
+For PA10 and later, a placement audit pass does not replace the manual
+ownership review. A failure requires more reduction or a later owner. Do not
+suppress a real finding to keep the proposed path.
 
 ### 8. Land Small, Reviewable Batches
 
@@ -753,8 +777,8 @@ An accepted test must satisfy all of these conditions:
   `paN/tests` suite for PA10 through PA38
 - all necessary multi-file and input sidecars are present
 - its references come from the correct canonical source
-- the focused test, placement audit plus manual layer review, and owning
-  assignment report pass
+- the focused test and owning assignment report pass; for PA10 and later, the
+  placement audit plus manual layer review also pass
 - broader LowIR, through-PA, hosted, debug-info, or optimization checks pass
   when applicable
 - no generated files or source-run artifacts remain in the change

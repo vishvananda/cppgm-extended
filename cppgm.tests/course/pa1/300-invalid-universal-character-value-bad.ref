@@ -1,0 +1,3 @@
+identifier 2 ok
+new-line 0 
+ERROR:1:3:Invalid unicode escape value

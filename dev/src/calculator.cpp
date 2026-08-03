@@ -115,6 +115,13 @@ vector<unordered_set<ECalcTokenType, hash<int> > > BinaryOps =
 Calculator::Calculator()
 {}
 
+void Calculator::reset()
+{
+  tokens.clear();
+  token = CalcToken();
+  error.clear();
+}
+
 void Calculator::accumulate(const EPPTokenType type, const string & data)
 {
   if(error.size())
@@ -164,9 +171,7 @@ bool Calculator::try_calculate(string& error_out)
   error_out.clear();
   if(error.size()) {
     error_out = error;
-    error.clear();
-    tokens.clear();
-    token = CalcToken();
+    reset();
     return false;
   }
   if(not tokens.size()) {
@@ -175,8 +180,7 @@ bool Calculator::try_calculate(string& error_out)
   }
   try {
     auto reduced = reduce();
-    tokens.clear();
-    token = CalcToken();
+    reset();
     if(!reduced.error.empty()) {
       error_out = reduced.error;
       return false;
@@ -189,8 +193,7 @@ bool Calculator::try_calculate(string& error_out)
     value = reduced.value.unsigned_value;
     return value != 0;
   } catch(expr_error& e) {
-    tokens.clear();
-    token = CalcToken();
+    reset();
     error_out = e.what();
     return false;
   }
@@ -222,7 +225,7 @@ inline void Calculator::acc_int_literal(const string& data)
       else
         store_unsigned(result);
     }
-  } catch (expr_error & e) {
+  } catch (const logic_error & e) {
     error = e.what();
   }
 }
@@ -332,11 +335,13 @@ inline CalcToken Calculator::unary()
     if(token.type !=  CT_RPAREN)
       throw(expr_error("Unmatched left paren"));
     next();
-  } else if(op == CT_LPAREN) {
+  } else if(op == CT_RPAREN) {
     throw(expr_error("Unmatched right paren"));
-  } else {
+  } else if(op == INT_SIGNED || op == INT_UNSIGNED) {
     result = tokens.front();
     next();
+  } else {
+    throw(expr_error("Expected primary expression"));
   }
   return result;
 }
@@ -355,12 +360,16 @@ inline void Calculator::next()
 inline CalcToken Calculator::reduce()
 {
   token = tokens.front();
-  return ternary(BinaryOps.begin());
+  CalcToken result = ternary(BinaryOps.begin());
+  if(token.type != CT_END) {
+    throw expr_error("Unexpected trailing tokens");
+  }
+  return result;
 }
 
 inline void Calculator::store_unsigned(uintmax_t value)
 {
-  CalcToken token = {};
+  CalcToken token;
   token.type = INT_UNSIGNED;
   token.value.unsigned_value = value;
   tokens.push_back(token);
@@ -368,7 +377,7 @@ inline void Calculator::store_unsigned(uintmax_t value)
 
 inline void Calculator::store_signed(intmax_t value)
 {
-  CalcToken token = {};
+  CalcToken token;
   token.type = INT_SIGNED;
   token.value.signed_value = value;
   tokens.push_back(token);
@@ -376,7 +385,7 @@ inline void Calculator::store_signed(intmax_t value)
 
 inline void Calculator::store_symbol(ECalcTokenType symbol)
 {
-  CalcToken token = {};
+  CalcToken token;
   token.type = symbol;
   tokens.push_back(token);
 }

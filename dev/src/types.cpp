@@ -101,6 +101,11 @@ bool is_hex_digit_char(char c)
          (c >= 'A' && c <= 'F');
 }
 
+bool is_literal_suffix_byte(unsigned char c)
+{
+  return isalnum(c) || c == '_' || c >= 0x80;
+}
+
 unsigned long long parse_integer_digits(const string & value,
                                         unsigned int start,
                                         unsigned int base)
@@ -191,21 +196,42 @@ void append_encoded_code_point_units(char enc,
   }
 }
 
-void append_code_point(char enc,
-                       char32_t value,
+struct QuoteLiteralElement
+{
+  unsigned long long value;
+  bool numeric_escape;
+};
+
+void append_code_point(char32_t value,
                        u32string & contents,
-                       vector<unsigned long long> & string_units)
+                       vector<QuoteLiteralElement> & elements)
 {
   contents.push_back(value);
-  append_encoded_code_point_units(enc, value, string_units);
+  elements.push_back(QuoteLiteralElement{
+      static_cast<unsigned long long>(value), false});
 }
 
 void append_numeric_escape(unsigned long long value,
                            u32string & contents,
-                           vector<unsigned long long> & string_units)
+                           vector<QuoteLiteralElement> & elements)
 {
   contents.push_back(static_cast<char32_t>(value));
-  string_units.push_back(value);
+  elements.push_back(QuoteLiteralElement{value, true});
+}
+
+void encode_quote_elements(char enc,
+                           const vector<QuoteLiteralElement> & elements,
+                           vector<unsigned long long> & string_units)
+{
+  string_units.clear();
+  for(size_t i = 0; i < elements.size(); ++i) {
+    if(elements[i].numeric_escape) {
+      string_units.push_back(elements[i].value);
+    } else {
+      append_encoded_code_point_units(
+          enc, static_cast<char32_t>(elements[i].value), string_units);
+    }
+  }
 }
 
 unsigned long long parse_fixed_hex_escape(const u32string & data,
@@ -236,14 +262,18 @@ unsigned long long parse_variable_hex_escape(const u32string & data,
   bool any = false;
   while(pos + 1 < data.size()) {
     const char32_t c = data[pos + 1];
+    unsigned long long digit = 0;
     try {
-      value = (value << 4) +
-              static_cast<unsigned long long>(hex_to_value(c));
-      any = true;
-      ++pos;
+      digit = static_cast<unsigned long long>(hex_to_value(c));
     } catch(const logic_error &) {
       break;
     }
+    if(value > (ULLONG_MAX - digit) / 16U) {
+      throw logic_error("hex escape out of range");
+    }
+    value = value * 16U + digit;
+    any = true;
+    ++pos;
   }
   if(!any) {
     throw logic_error("invalid hex escape");
@@ -271,18 +301,17 @@ unsigned long long parse_octal_escape(const u32string & data,
 
 void decode_quote_payload(const string & payload,
                           bool raw,
-                          char enc,
                           u32string & contents,
-                          vector<unsigned long long> & string_units)
+                          vector<QuoteLiteralElement> & elements)
 {
   contents.clear();
-  string_units.clear();
+  elements.clear();
 
   const u32string decoded = decode_utf8(payload);
   for(size_t i = 0; i < decoded.size(); ++i) {
     const char32_t c = decoded[i];
     if(raw || c != '\\') {
-      append_code_point(enc, c, contents, string_units);
+      append_code_point(c, contents, elements);
       continue;
     }
 
@@ -296,55 +325,53 @@ void decode_quote_payload(const string & payload,
     case '\"':
     case '\\':
     case '\?':
-      append_code_point(enc, escaped, contents, string_units);
+      append_code_point(escaped, contents, elements);
       break;
     case 'a':
-      append_code_point(enc, '\a', contents, string_units);
+      append_code_point('\a', contents, elements);
       break;
     case 'b':
-      append_code_point(enc, '\b', contents, string_units);
+      append_code_point('\b', contents, elements);
       break;
     case 'f':
-      append_code_point(enc, '\f', contents, string_units);
+      append_code_point('\f', contents, elements);
       break;
     case 'n':
-      append_code_point(enc, '\n', contents, string_units);
+      append_code_point('\n', contents, elements);
       break;
     case 'r':
-      append_code_point(enc, '\r', contents, string_units);
+      append_code_point('\r', contents, elements);
       break;
     case 't':
-      append_code_point(enc, '\t', contents, string_units);
+      append_code_point('\t', contents, elements);
       break;
     case 'v':
-      append_code_point(enc, '\v', contents, string_units);
+      append_code_point('\v', contents, elements);
       break;
     case 'x':
       append_numeric_escape(parse_variable_hex_escape(decoded, i),
                             contents,
-                            string_units);
+                            elements);
       break;
     case 'u':
-      append_code_point(enc,
-                        static_cast<char32_t>(
+      append_code_point(static_cast<char32_t>(
                             parse_fixed_hex_escape(decoded, i, 4)),
                         contents,
-                        string_units);
+                        elements);
       break;
     case 'U':
-      append_code_point(enc,
-                        static_cast<char32_t>(
+      append_code_point(static_cast<char32_t>(
                             parse_fixed_hex_escape(decoded, i, 8)),
                         contents,
-                        string_units);
+                        elements);
       break;
     default:
       if(escaped >= '0' && escaped <= '7') {
         append_numeric_escape(parse_octal_escape(decoded, i, escaped),
                               contents,
-                              string_units);
+                              elements);
       } else {
-        append_code_point(enc, 0, contents, string_units);
+        append_code_point(0, contents, elements);
       }
       break;
     }
@@ -490,68 +517,89 @@ bool split_floating_literal(const string& text,
                             string& ud_suffix)
 {
   size_t pos = 0;
-  bool is_hex = text.size() >= 2 &&
-                text[0] == '0' &&
-                (text[1] == 'x' || text[1] == 'X');
-  bool saw_dot = false;
-  bool saw_exp = false;
-  bool saw_digit = false;
-
+  const bool is_hex = text.size() >= 2 &&
+                      text[0] == '0' &&
+                      (text[1] == 'x' || text[1] == 'X');
   if(is_hex) {
     pos = 2;
-  } else if(pos < text.size() && text[pos] == '.') {
-    saw_dot = true;
-    ++pos;
-  } else {
-    while(pos < text.size() && std::isdigit(static_cast<unsigned char>(text[pos]))) {
-      saw_digit = true;
+    const size_t integer_start = pos;
+    while(pos < text.size() && is_hex_digit_char(text[pos])) {
       ++pos;
     }
-  }
-
-  for(; pos < text.size(); ++pos) {
-    const char c = text[pos];
-    if(c == '.' && !saw_dot) {
-      saw_dot = true;
-      continue;
-    }
-    if(is_hex ?
-           std::isxdigit(static_cast<unsigned char>(c)) != 0 :
-           std::isdigit(static_cast<unsigned char>(c)) != 0) {
-      saw_digit = true;
-      continue;
-    }
-    if(!saw_exp &&
-       ((!is_hex && (c == 'e' || c == 'E')) ||
-        (is_hex && (c == 'p' || c == 'P')))) {
-      saw_exp = true;
-      if(pos + 1 < text.size() && (text[pos + 1] == '+' || text[pos + 1] == '-')) {
+    const bool has_integer_digits = pos != integer_start;
+    bool has_fractional_digits = false;
+    if(pos < text.size() && text[pos] == '.') {
+      ++pos;
+      const size_t fractional_start = pos;
+      while(pos < text.size() && is_hex_digit_char(text[pos])) {
         ++pos;
       }
-      continue;
+      has_fractional_digits = pos != fractional_start;
     }
-    break;
-  }
-
-  if(!saw_digit) {
-    return false;
-  }
-
-  // Integer literals like `1L` and `1LL` must not take the floating-literal
-  // path just because they share suffix letters with `long double`.
-  const bool has_floating_syntax = is_hex ? saw_exp : (saw_dot || saw_exp);
-  if(!has_floating_syntax) {
-    return false;
+    if(!has_integer_digits && !has_fractional_digits) {
+      return false;
+    }
+    if(pos >= text.size() || (text[pos] != 'p' && text[pos] != 'P')) {
+      return false;
+    }
+    ++pos;
+    if(pos < text.size() && (text[pos] == '+' || text[pos] == '-')) {
+      ++pos;
+    }
+    const size_t exponent_start = pos;
+    while(pos < text.size() &&
+          isdigit(static_cast<unsigned char>(text[pos]))) {
+      ++pos;
+    }
+    if(pos == exponent_start) {
+      return false;
+    }
+  } else {
+    const size_t integer_start = pos;
+    while(pos < text.size() &&
+          isdigit(static_cast<unsigned char>(text[pos]))) {
+      ++pos;
+    }
+    const bool has_integer_digits = pos != integer_start;
+    bool saw_dot = false;
+    bool has_fractional_digits = false;
+    if(pos < text.size() && text[pos] == '.') {
+      saw_dot = true;
+      ++pos;
+      const size_t fractional_start = pos;
+      while(pos < text.size() &&
+            isdigit(static_cast<unsigned char>(text[pos]))) {
+        ++pos;
+      }
+      has_fractional_digits = pos != fractional_start;
+    }
+    if(!has_integer_digits && !has_fractional_digits) {
+      return false;
+    }
+    bool saw_exponent = false;
+    if(pos < text.size() && (text[pos] == 'e' || text[pos] == 'E')) {
+      saw_exponent = true;
+      ++pos;
+      if(pos < text.size() && (text[pos] == '+' || text[pos] == '-')) {
+        ++pos;
+      }
+      const size_t exponent_start = pos;
+      while(pos < text.size() &&
+            isdigit(static_cast<unsigned char>(text[pos]))) {
+        ++pos;
+      }
+      if(pos == exponent_start) {
+        return false;
+      }
+    }
+    if(!saw_dot && !saw_exponent) {
+      return false;
+    }
   }
 
   value = text.substr(0, pos);
   ud_suffix.clear();
   type = FT_DOUBLE;
-
-  if(!value.empty() &&
-     (value[value.size() - 1] == '+' || value[value.size() - 1] == '-')) {
-    return false;
-  }
 
   if(pos == text.size()) {
     return true;
@@ -596,13 +644,17 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
   out.string_units.clear();
   out.ud_suffix.clear();
   const auto parse_single_quote_literal =
-      [&](size_t start_pos, QuoteLiteralData & piece, size_t & next_pos) -> bool
+      [&](size_t start_pos,
+          QuoteLiteralData & piece,
+          vector<QuoteLiteralElement> & elements,
+          size_t & next_pos) -> bool
   {
     piece.quote = '\0';
     piece.enc = '\0';
     piece.contents.clear();
     piece.string_units.clear();
     piece.ud_suffix.clear();
+    elements.clear();
 
     size_t pos = start_pos;
     while(pos < data.size() &&
@@ -672,12 +724,12 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
         return false;
       }
     }
-    decode_quote_payload(payload, raw, piece.enc, piece.contents, piece.string_units);
+    decode_quote_payload(payload, raw, piece.contents, elements);
+    encode_quote_elements(piece.enc, elements, piece.string_units);
 
     size_t suffix_pos = end_quote + 1;
     while(suffix_pos < data.size() &&
-          (isalnum(static_cast<unsigned char>(data[suffix_pos])) ||
-           data[suffix_pos] == '_')) {
+      is_literal_suffix_byte(static_cast<unsigned char>(data[suffix_pos]))) {
       piece.ud_suffix.push_back(data[suffix_pos]);
       ++suffix_pos;
     }
@@ -693,10 +745,12 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
 
   size_t pos = 0;
   bool first = true;
+  vector<QuoteLiteralElement> all_elements;
   while(true) {
     QuoteLiteralData piece;
+    vector<QuoteLiteralElement> piece_elements;
     size_t next_pos = pos;
-    if(!parse_single_quote_literal(pos, piece, next_pos)) {
+    if(!parse_single_quote_literal(pos, piece, piece_elements, next_pos)) {
       break;
     }
 
@@ -716,11 +770,12 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
       }
     }
     out.contents.append(piece.contents);
-    out.string_units.insert(out.string_units.end(),
-                            piece.string_units.begin(),
-                            piece.string_units.end());
+    all_elements.insert(all_elements.end(),
+                        piece_elements.begin(),
+                        piece_elements.end());
     pos = next_pos;
   }
+  encode_quote_elements(out.enc, all_elements, out.string_units);
 }
 
 EFundamentalType string_literal_element_type(const QuoteLiteralData & literal)

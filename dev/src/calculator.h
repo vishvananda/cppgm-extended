@@ -12,6 +12,7 @@
 
 enum ECalcTokenType
 {
+  CT_END,
   CT_LPAREN,
   CT_RPAREN,
   CT_BOR,
@@ -60,6 +61,11 @@ struct CalcToken
   ECalcTokenType type;
   mixed value;
   std::string error;
+
+  CalcToken() : type(CT_END)
+  {
+    value.unsigned_value = 0;
+  }
 
   inline void copy_error(const CalcToken& rhs) {
     if(error.empty() && !rhs.error.empty()) {
@@ -244,6 +250,7 @@ struct Calculator
   Calculator();
   void accumulate(const EPPTokenType type,
                   const std::string & data = std::string());
+  void reset();
   bool calculate();
   bool try_calculate(std::string& error_out);
   unsigned long long value;

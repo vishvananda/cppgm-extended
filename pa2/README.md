@@ -259,7 +259,24 @@ The same as for character-literal except extract the `ud-suffix` first
 
 #### string-literal
 
-First decode escape sequences (in non-raw literals) so that each `string-literal` are sequences of code points.
+First determine the encoding of the complete maximal sequence as described
+below. Source characters and `universal-character-names` in each non-raw
+`string-literal` are encoded into code units using that encoding. Simple
+escape sequences contribute the code unit for the character they name.
+
+Octal and hexadecimal escape sequences are numeric escape sequences. A
+numeric escape sequence contributes exactly one code unit whose value is the
+value of the escape; it is not interpreted as a Unicode code point and then
+re-encoded. The value must be representable in the unsigned integer type
+corresponding to the sequence's element type, otherwise the complete
+`string-literal` sequence is ill-formed and must be output as `invalid`. Under
+the course ABI, the code-unit widths are 8 bits for `char`, 16 bits for
+`char16_t`, and 32 bits for `char32_t` and `wchar_t`.
+
+For example, `"\\x3C0"` is invalid because `0x3C0` does not fit in one
+`char` code unit, while `u"\\x3C0"`, `U"\\x3C0"`, and `L"\\x3C0"` are
+valid. `"\\u03C0"` is also valid because a `universal-character-name` is
+encoded rather than treated as a numeric escape.
 
 You then need to consider maximal consequtive sequences of both kinds (user-defined and non-user-defined) together and apply the phase 6 rules about string concatenation.
 
