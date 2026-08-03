@@ -22,7 +22,7 @@ fi
 if [ -f "${2%.t}.cxx-standard" ]; then
   read -r cxx_standard < "${2%.t}.cxx-standard"
   case "$cxx_standard" in
-    c++11|c++14) test_args+=("-std=$cxx_standard") ;;
+    c++11|c++14|c++17) test_args+=("-std=$cxx_standard") ;;
     *) echo "unsupported C++ standard sidecar: $cxx_standard" >&2; exit 2 ;;
   esac
 fi

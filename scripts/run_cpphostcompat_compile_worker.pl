@@ -59,7 +59,7 @@ sub process_one_test
 	{
 		my @standards = read_word_list("$test_base.cxx-standard");
 		die "Expected one C++ standard in $test_base.cxx-standard\n"
-			if scalar(@standards) != 1 || $standards[0] !~ m/^c\+\+(?:11|14)$/;
+			if scalar(@standards) != 1 || $standards[0] !~ m/^c\+\+(?:11|14|17)$/;
 		push @test_flags, "-std=$standards[0]";
 	}
 	my $build_timeout = get_timeout_from_env("CPPGM_BUILD_TEST_TIMEOUT_SEC", 45);

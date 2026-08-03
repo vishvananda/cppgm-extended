@@ -121,7 +121,7 @@ resolving `-I` path. Eleven focused checks pass, references are byte-stable acro
 two generations, the affected report passes 1102/1102, PA18 strict comparison
 passes 190 cases, and all affected placement audits are clean.
 
-The PA35-through-PA37 review closes all 122 source rows. Ten source families
+The PA35-through-PA37 review accounts for all 122 source rows. Ten source families
 remain as six compact fixtures: one PA34 builtin-trait compile case, two PA35
 hosted-header compile cases, two PA36 hosted runtime cases, and one PA16
 inherited-constructor value-initialization regression. The PA35 utility cases
@@ -131,19 +131,34 @@ constructor case moved to PA16 after placement review showed that placement new
 is first owned there; replacing `__SIZE_TYPE__` with standard `unsigned long`
 kept the reducer independent of PA34.
 
-The older `weak_from_this` case is outside the assignment's C++11 mode: Clang
-and GCC both reject it under C++11 and accept it under C++17. The hard-coded
-`sizeof(std::string) == 32` case is a libstdc++ object-layout dependency rather
-than a portable hosted contract. Both were rejected. The remaining PA35 and
-PA36 rows map to concrete current compile or runtime cases. Every PA37 reducer
+The older `weak_from_this` case records a hosted-library compatibility gap. The
+original review used strict `-std=c++11`; the assignment and Centaur default to
+`-std=gnu++11`. GCC 16/libstdc++ exposes
+`std::enable_shared_from_this::weak_from_this` in that GNU mode when
+`__STRICT_ANSI__` is absent. Clang 22/libc++ exposes it in C++17. The tracker
+keeps the row open for its PA35 hosted-header portion. PA34 owns the
+standard-mode and predefined-macro surface, while PA35 owns the full `<memory>`
+compile.
+
+PA34 now accepts `c++17` in its structured language-mode sidecar. The focused
+`500-cxx17-mode-gated-weak-from-this-member` fixture checks the mode-gated
+member surface without including `<memory>`. Each existing deduction-guide
+fixture carries a comment identifying its post-C++11 syntax as a hosted STL
+compatibility concession. The new fixture covers the PA34 part of the lead. We
+keep the full libc++ `<memory>` case deferred because
+`cppgm++ -std=gnu++17` fails earlier while parsing that header. The hard-coded
+`sizeof(std::string) == 32` case remains a rejected libstdc++ object-layout
+dependency. The remaining PA35 and PA36 rows map to concrete current compile or
+runtime cases. Every PA37 reducer
 maps to an existing optimizer oracle, so no LowIR or MIR reference was removed
-or replaced. The current PA34, PA35, and PA36 READMEs already state the hosted
-compile and runtime expectations, and PA16 already states the relevant
-defaulted-special-member and value-semantics contract; no README edit was
-needed. Six focused checks pass, accepted references are stable across two
-generations, the PA16 report passes 216/216, the PA34-through-PA37 report passes
-613/613 after final artifact intake, and all affected placement audits are
-clean.
+or replaced. The PA34 README now lists C++17 among the structured standard-mode
+sidecar values. The existing PA35, PA36, and PA16 assignment text covers the
+remaining hosted, runtime, and value-semantics expectations. The new fixture
+passes its focused check and the full PA34 report passes 358/358. Its reference
+matches across two generations from the Homebrew-Clang-built `dev/cppgm++`.
+The rebased PA18/PA21/PA22/PA23/PA34 report passes 1736/1736, and the strict
+PA18/PA21/PA22/PA23 comparison passes 863 cases. The earlier PA16 report passed
+216/216. All affected placement audits are clean.
 
 The eleven PA39 standalone reducers also received a final evidence review.
 The first two portable layout reducers compile with the current `dev/cppgm++`,
