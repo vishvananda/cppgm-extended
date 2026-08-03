@@ -51,6 +51,49 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             "violation",
         )
 
+    def test_pa12_semantic_output_does_not_claim_lowir_body_ownership(self) -> None:
+        procedural = audit.FeatureMeta(
+            "lowir.procedural", "pa14", 100, "", ""
+        )
+        condition = audit.FeatureMeta(
+            "stmt.condition_declaration", "pa14", 100, "", ""
+        )
+
+        self.assertEqual(
+            audit.placement_for(procedural, "pa12", 300)[0],
+            "semantic-surface",
+        )
+        self.assertEqual(
+            audit.placement_for(condition, "pa12", 300)[0],
+            "semantic-surface",
+        )
+        self.assertEqual(
+            audit.placement_for(condition, "pa11", 300)[0],
+            "violation",
+        )
+
+    def test_default_argument_detector_ignores_condition_declarations(self) -> None:
+        declarations = "int f(int value = 1);\nvoid g(int = 2);\n"
+        conditions = textwrap.dedent(
+            """\
+            int f() {
+              if (int value = get(1)) return value;
+              for (int index = 0; index != 2; ++index) {}
+              return 0;
+            }
+            """
+        )
+
+        self.assertIn("function.default_argument", audit.detect_features(declarations))
+        self.assertNotIn("function.default_argument", audit.detect_features(conditions))
+
+    def test_operator_detector_requires_an_operator_function_id(self) -> None:
+        identifier = "int operator_arrow_dispatch_(int value);\n"
+        overload = "struct value { value &operator+=(int); };\n"
+
+        self.assertNotIn("operator.overload", audit.detect_features(identifier))
+        self.assertIn("operator.overload", audit.detect_features(overload))
+
     def test_hygiene_reports_compile_flags_sidecar(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)

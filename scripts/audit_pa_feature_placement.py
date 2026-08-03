@@ -151,9 +151,11 @@ HOST_OBJECT_ATTRIBUTE_NAMES = {"noinline", "section", "weak"}
 # output.  A declaration can therefore contain a class, array, template, or
 # value-semantics spelling long before the later source-to-LowIR owner is
 # reached.  Those spellings are placement evidence in PA14+, but are only
-# semantic-surface inputs in these pre-LowIR assignments.  Keep statement,
-# exception, hosted, ABI, object, and LowIR families out of this exemption so
-# genuinely misplaced tests still fail the audit.
+# semantic-surface inputs in these pre-LowIR assignments.  PA12 additionally
+# models ordinary function bodies, floating types, and declaration conditions,
+# so their later LowIR feature ids are semantic-surface evidence there.  Keep
+# exceptions, hosted behavior, ABI, objects, and other LowIR-only families out
+# of this exemption so genuinely misplaced tests still fail the audit.
 PRE_LOWIR_SEMANTIC_SURFACE_PREFIXES = (
     "call.",
     "class.",
@@ -165,6 +167,11 @@ PRE_LOWIR_SEMANTIC_SURFACE_PREFIXES = (
     "value.",
 )
 PRE_LOWIR_SEMANTIC_SURFACE_FEATURES = {"static_assert"}
+PA12_SEMANTIC_SURFACE_FEATURES = {
+    "lowir.procedural",
+    "lowir.procedural.float_conversion",
+    "stmt.condition_declaration",
+}
 
 TEMPLATE_CONCEPT_BY_FEATURE = {
     "template.type": "basic-template",
@@ -340,7 +347,18 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("expr.new_delete", (rx(r"(?<!operator )\bnew\s+(?!;)|(?<!operator )\bdelete\s+(?:\[\]\s*)?[A-Za-z_(]"),),
                 ref_patterns=(rx(r"operator_(?:new|delete)|cppgm_builtin_operator_(?:new|delete)|delete_nonnull"),)),
     FeatureRule("expr.pseudo_destructor", (rx(r"\.\s*~|->\s*~"),)),
-    FeatureRule("function.default_argument", (rx(r"\([^)]*(?<!!)(?<![<>=])=(?!=)[^)]*\)"),)),
+    FeatureRule(
+        "function.default_argument",
+        (
+            rx(
+                r"\b(?!(?:if|for|while|switch|catch)\b)"
+                r"(?:[A-Za-z_~][A-Za-z0-9_:<>~]*|operator\s*[^\s(]+)\s*"
+                r"\([^;{}]*(?<!!)(?<![<>=])=(?!=)[^;{}]*\)\s*"
+                r"(?:;|\{|const\b|volatile\b|noexcept\b|->|"
+                r"=\s*(?:default|delete)\b)"
+            ),
+        ),
+    ),
     FeatureRule("function.noexcept", (rx(r"\bnoexcept\b"),)),
     FeatureRule("exception.try_catch",
                 (rx(r"\btry\s*\{"), rx(r"\bcatch\s*\("), rx(r"\bthrow\b")),
@@ -357,7 +375,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("host.abi_builtin_type", ()),
     FeatureRule("hosted.runtime_compat", ()),
     FeatureRule("lookup.adl", (rx(r"\bfriend\b|\boperator\s+(?!new\b|delete\b)"),)),
-    FeatureRule("operator.overload", (rx(r"\boperator\s*(?!(?:new|delete)\b)(?:[+\-*/%<>=!&|^~,\[\]()]+|[A-Za-z_][A-Za-z0-9_:<>]*)"),)),
+    FeatureRule("operator.overload", (rx(r"\boperator(?![A-Za-z0-9_])\s*(?!(?:new|delete)\b)(?:[+\-*/%<>=!&|^~,\[\]()]+|[A-Za-z_][A-Za-z0-9_:<>]*)"),)),
     FeatureRule("class.using_declaration", (rx(r"\busing\s+[A-Za-z_][A-Za-z0-9_:<>]*::[A-Za-z_]"),)),
     FeatureRule("class.inheriting_constructor",
                 (rx(r"\busing\s+(?:[A-Za-z_][A-Za-z0-9_:<>]*::)*([A-Za-z_][A-Za-z0-9_]*)::\1\s*;"),)),
@@ -1751,10 +1769,11 @@ def is_lowir_test(pa: str) -> bool:
     return number in LOWIR_SOURCE_PAS if number is not None else False
 
 
-def is_pre_lowir_semantic_surface(feature_id: str) -> bool:
+def is_pre_lowir_semantic_surface(feature_id: str, current_pa: str) -> bool:
     return (
         feature_id in PRE_LOWIR_SEMANTIC_SURFACE_FEATURES
         or feature_id.startswith(PRE_LOWIR_SEMANTIC_SURFACE_PREFIXES)
+        or (current_pa == "pa12" and feature_id in PA12_SEMANTIC_SURFACE_FEATURES)
     )
 
 
@@ -1766,7 +1785,7 @@ def placement_for(feature: FeatureMeta, current_pa: str, current_cluster: int | 
     if (
         PRE_LOWIR_SEMANTIC_PA_MIN <= current_num <= SEMANTIC_ONLY_PA_MAX
         and current_num < owner_num
-        and is_pre_lowir_semantic_surface(feature.feature_id)
+        and is_pre_lowir_semantic_surface(feature.feature_id, current_pa)
     ):
         return (
             "semantic-surface",
