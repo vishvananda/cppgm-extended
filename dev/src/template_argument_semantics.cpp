@@ -33130,6 +33130,13 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
       CppAstNode fresh_expr_node =
           clone_expression_node_for_template_substitution(*expr_node);
       clear_substituted_type_id_cached_semantics(fresh_expr_node);
+      // A dependent decltype can retain a pack expansion inside structured
+      // template-id syntax rather than as an expression-level expansion node
+      // (for example, context<T...>).  Rebind that syntax from the current
+      // instantiation before evaluating the saved expression.
+      expand_bound_packs_in_expression_node(services,
+                                            raw_scope,
+                                            fresh_expr_node);
       TypePtr resolved_expr_type;
       if(parse_decltype_or_typeof_node(
              services,
