@@ -670,7 +670,7 @@ void track_embedded_local_class_output(SemanticContext & ctx,
     if(child.value.empty()) {
       continue;
     }
-    TypePtr type = ctx.lookup_type(scope, child.value);
+    TypePtr type = ctx.lookup_type_node(scope, child, child.value);
     ClassInfo * info = type ? ctx.class_info_for_type(type) : nullptr;
     if(!info) {
       continue;
