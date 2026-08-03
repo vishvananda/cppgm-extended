@@ -12300,6 +12300,16 @@ bool expand_dependent_alias_pattern_for_partial_order(
       DeductionContextOps(ctx), scope, pattern, out);
 }
 
+bool function_parameter_is_nondeduced_type_context_for_partial_order(
+    SemanticContext & ctx,
+    const FunctionTemplateDecl & decl,
+    std::size_t parameter_index,
+    const TypePtr & pattern)
+{
+  return function_parameter_is_nondeduced_type_context(
+      ctx, decl, parameter_index, pattern);
+}
+
 bool make_shallow_bound_alias_template_id_type(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

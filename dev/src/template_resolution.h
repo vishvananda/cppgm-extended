@@ -32,6 +32,12 @@ bool expand_dependent_alias_pattern_for_partial_order(
     const cpp_decl::TypePtr & pattern,
     cpp_decl::TypePtr & out);
 
+bool function_parameter_is_nondeduced_type_context_for_partial_order(
+    SemanticContext & ctx,
+    const semantic_model::FunctionTemplateDecl & decl,
+    std::size_t parameter_index,
+    const cpp_decl::TypePtr & pattern);
+
 bool resolve_template_argument(template_api::TemplateServices & services,
                                template_api::TemplateEnvironmentHandle argument_scope,
                                template_api::TemplateEnvironmentHandle parameter_scope,

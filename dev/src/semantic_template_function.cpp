@@ -213,6 +213,11 @@ bool function_template_accepts_transformed_parameter_types(
     const std::size_t pattern_index =
         has_trailing_pack && i >= fixed_count ? fixed_count : i;
     cpp_decl::TypePtr pattern = decl.params_pattern[pattern_index].second;
+    if(template_resolution::
+           function_parameter_is_nondeduced_type_context_for_partial_order(
+               ctx, decl, pattern_index, pattern)) {
+      continue;
+    }
     cpp_decl::TypePtr actual = actual_params[i];
     cpp_decl::TypePtr expanded_alias;
     if(deduction_scope &&
