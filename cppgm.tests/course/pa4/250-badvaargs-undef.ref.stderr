@@ -1,1 +1,1 @@
-ERROR: invalid __VA_ARGS__ use
+ERROR:Illegal use of __VA_ARGS__

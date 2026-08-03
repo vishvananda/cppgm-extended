@@ -183,6 +183,46 @@ bool declarator_has_parameter_pack(const CppAstNode * declarator)
          declarator_has_parameter_pack(&nested->children[0]);
 }
 
+bool recover_parenthesized_parameter_name(const CppAstNode & declarator,
+                                          const AstDeclHooks & hooks,
+                                          string & name)
+{
+  if(declarator.kind != CppAstKind::declarator ||
+     declarator.children.size() != 1 ||
+     declarator.children[0].kind != CppAstKind::parameter_clause) {
+    return false;
+  }
+
+  const CppAstNode & clause = declarator.children[0];
+  if(clause.children.size() != 1 ||
+     clause.children[0].kind != CppAstKind::parameter_declaration) {
+    return false;
+  }
+
+  const CppAstNode & parameter = clause.children[0];
+  if(parameter.children.size() != 1 ||
+     parameter.children[0].kind != CppAstKind::decl_specifier_seq) {
+    return false;
+  }
+
+  const CppAstNode & specifiers = parameter.children[0];
+  if(specifiers.children.size() != 1) {
+    return false;
+  }
+
+  const CppAstNode & identifier = specifiers.children[0];
+  if(identifier.kind != CppAstKind::decl_specifier ||
+     !identifier.has_token ||
+     identifier.token_kind != RT_IDENTIFIER ||
+     identifier.value.empty() ||
+     lookup_type_from_ast_node(hooks, identifier)) {
+    return false;
+  }
+
+  name = identifier.value;
+  return true;
+}
+
 bool node_names_parameter_pack_type(const AstDeclHooks & hooks,
                                     const CppAstNode & node)
 {
@@ -519,7 +559,8 @@ bool parse_parameter_clause_ast(
     if(declarator) {
       try
       {
-        if(!parse_declarator_core(*declarator, hooks, base, name, type, false)) {
+        if(!recover_parenthesized_parameter_name(*declarator, hooks, name) &&
+           !parse_declarator_core(*declarator, hooks, base, name, type, false)) {
           return false;
         }
       }

@@ -1,0 +1,4 @@
+preproc 1
+sof course/pa5/300-defined-operator-misuse.t
+identifier RIGHT
+eof

@@ -1,0 +1,8 @@
+1 translation units
+start translation unit course/pa7/320-parenthesized-array-abstract.t
+start unnamed namespace
+variable a array of 3 int
+variable b array of 2 array of 4 const char
+function f function of (pointer to int, pointer to array of 7 int) returning void
+end namespace
+end translation unit

@@ -1,1 +1,1 @@
-ERROR: __VA_ARGS__ in macro parameter list
+ERROR:Illegal use of __VA_ARGS__

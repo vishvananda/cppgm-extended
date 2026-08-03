@@ -1,0 +1,6 @@
+1 translation units
+start translation unit course/pa7/600-deep-parenthesized-declarator.t
+start unnamed namespace
+variable x int
+end namespace
+end translation unit
