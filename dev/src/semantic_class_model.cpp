@@ -9730,22 +9730,19 @@ void collect_template_argument_value_reference_names(
   }
 }
 
-bool materialize_direct_class_value_references(SemanticContext & ctx,
-                                               ClassInfo & info,
-                                               const CppAstNode & type_id)
+void collect_direct_class_value_reference_names(
+    const ClassInfo & info,
+    const CppAstNode & type_id,
+    std::set<std::string> & out)
 {
   const CppAstNode * class_node =
       info.template_output_node ? info.template_output_node : info.class_node;
   if(!class_node) {
-    return false;
+    return;
   }
   std::set<const CppAstNode *> visited;
   std::set<std::string> names;
   collect_type_id_value_reference_names(type_id, visited, names);
-  bool found_direct_reference = false;
-  // Type-id parsing under witness capture does not demand lazy class values.
-  // Ask for direct declarations here; the active declaration guard below
-  // preserves the enclosing typedef's point-of-declaration boundary.
   for(std::set<std::string>::const_iterator it = names.begin();
       it != names.end();
       ++it) {
@@ -9758,11 +9755,26 @@ bool materialize_direct_class_value_references(SemanticContext & ctx,
                           member, *it);
                     });
     if(directly_declared) {
-      found_direct_reference = true;
-      semantic_class_model::ensure_class_reference_named_member(ctx, info, *it);
+      out.insert(*it);
     }
   }
-  return found_direct_reference;
+}
+
+bool materialize_direct_class_value_references(SemanticContext & ctx,
+                                               ClassInfo & info,
+                                               const CppAstNode & type_id)
+{
+  std::set<std::string> names;
+  collect_direct_class_value_reference_names(info, type_id, names);
+  // Type-id parsing under witness capture does not demand lazy class values.
+  // Ask for direct declarations here; the active declaration guard below
+  // preserves the enclosing typedef's point-of-declaration boundary.
+  for(std::set<std::string>::const_iterator it = names.begin();
+      it != names.end();
+      ++it) {
+    semantic_class_model::ensure_class_reference_named_member(ctx, info, *it);
+  }
+  return !names.empty();
 }
 
 bool rebind_concrete_class_typedef(
@@ -9794,6 +9806,17 @@ bool rebind_concrete_class_typedef(
      !arguments ||
      !template_model::template_arguments_fully_bind_parameters(*parameters,
                                                                 *arguments)) {
+    return false;
+  }
+
+  std::set<std::string> direct_class_value_references;
+  collect_direct_class_value_reference_names(info,
+                                             type_id,
+                                             direct_class_value_references);
+  // Rebinding exists to preserve the declaration boundary of same-class
+  // names. A typedef that only mentions template parameters already has its
+  // final parsed type, so cloning and substituting its syntax cannot help.
+  if(direct_class_value_references.empty()) {
     return false;
   }
 
