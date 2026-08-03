@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `139 / 147`
-- current cursor: `#140 libs/io/test`
-- active compiler frontier: exact forced-C++11 Boost.IO intake pending
+- completed suites: `140 / 147`
+- current cursor: `#141 libs/iostreams/test`
+- active compiler frontier: exact forced-C++11 Boost.Iostreams intake pending
 - final replay gate: after suite 147, force-rebuild suites 1--40 against the
   final compiler and record every changed outcome before declaring V2 complete
 
@@ -431,23 +431,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 137 | `libs/integer/test` | pass | `(this commit)` | The authoritative exact 12-job forced-C++11 `pch=off` graph finds 2,588 targets, updates all 85 requested targets, records 24 passing test actions and all seven deliberate compile failures as failed-as-expected, and exits successfully in 31.07s; log `/private/tmp/boost-frontier-v2-suite-137-integer-after-pa33-uaf.log`. | Required lookup of `A<1>::type` now instantiates the selected specialization and diagnoses its class-scope `static_assert`, matching Clang and all Boost.Integer negative tests. ASan also exposed an independent heap use-after-free in an existing PA33 local-class dependent-result RTTI fixture: LowIR mangling retained an analyzer-owned `ClassTemplateDecl *` beyond analyzer teardown. The fix consumes the specialization's structured retained mangling metadata while preserving the legacy substitution order; the isolated ASan fixture and a 29-request ASan batch shard pass, direct LowIR passes `4383/4383` without reference drift, and all 982 strict comparisons pass. The exact graph peaks at 309,862,400 B RSS with zero process swaps. The immutable frozen-source/51-header gate records -31.05% instructions, -31.48% RSS, and -39.58% footprint. CPPGM and host actions use Homebrew Clang 22; printed `gcc.*`/`gcc-cppgm` names remain adapter labels only. |
 | 138 | `libs/interprocess/test` | pass | `(this commit)` | Boost.Interprocess declares C++03 and runs in the stable forced-C++11 lane. The authoritative exact eight-job forced `pch=off` graph updates all 389 requested targets, records 95 passing test actions, and exits successfully in 395.40s; log `/private/tmp/boost-frontier-v2-suite-138-interprocess-precise-final.log`. | The closure repairs structured identifier decl-specifiers and declaration-order visibility, local nested pack expansion, direct-member lookup through an alias specialization, same-spelled concrete/template-parameter identity, zero-only structured-global alignment, and constructor-unwind destructor output dependencies. Five compact header-free C++11 semantic owners plus the strengthened PA28 structural owner cover the behavior; PA22 uses no `<type_traits>`. The PA9-excluded direct-LowIR report passes `4388/4388`; the sole full-report miss is the known load-sensitive PA9 timeout and its isolated rerun passes `11/11`. All 983 configured strict comparisons, all 168 script tests with one intentional skip, all 23 zero-reparse categories, and normal plus eleven individual cache-disabled modes plus all-off pass. The exact graph peaks at 1,736,007,680 B process RSS with zero process swaps. Eight-way overlap causes 60,236 pages (235.3 MiB) of system swap-out, so future record reruns should use six jobs. Homebrew Clang 22 builds CPPGM and performs every host action. |
 | 139 | `libs/intrusive/test` | pass | `(this commit)` | Boost.Intrusive declares C++03 and runs in the stable forced-C++11 lane. After the lowering repair, the authoritative exact six-job forced `pch=off` graph finds 1,184 targets, updates all 153 currently requested targets, records 36 passing test actions, and exits successfully in 223.30s; log `/private/tmp/boost-frontier-v2-suite-139-intrusive-after-member-pointer-fix.log`. | The intake's 18 runtime crashes all came from one deterministic data-member-pointer lowering defect: a surrounding reference cast made ordinary embedded-hook storage look like a reference field, so CPPGM loaded the hook's null first word instead of taking its address. The six-line PA26 owner uses no headers or `<type_traits>`. PA26 passes `93/93`; the PA9-excluded direct-LowIR report passes `4389/4389`, isolated PA9 passes `11/11`, and all 983 strict comparisons pass. Normal, all eleven individual cache/memo-disabled modes, and all-off are byte-identical; all 23 reparse categories, PA26 placement/hygiene, and all 168 script tests pass. An isolated Homebrew-Clang ASan compiler force-rebuilds and passes `virtual_base_test` plus its Container dependencies with no sanitizer report. The final graph peaks at 1,259,167,744 B RSS with zero process swaps and unchanged system swapout count. Homebrew Clang 22 builds CPPGM and performs every host action. |
+| 140 | `libs/io/test` | pass | `(no compiler change)` | Boost.IO declares C++03 and passes in the stable forced-C++11 lane. The authoritative exact 12-job forced `pch=off` graph finds 253 targets, updates all 56 requested targets, records eight passing test actions, and exits successfully in 13.23s; log `/private/tmp/boost-frontier-v2-suite-140-io-intake.log`. | No compiler or fixture change is required. The graph peaks at 194,871,296 B maximum RSS, every process records zero swaps, and the system swapout counter remains exactly 400,837,260. Actual C++ actions invoke CPPGM built by Homebrew Clang 22 and host actions use explicitly pinned Homebrew Clang paths; printed `gcc.*` and `gcc-cppgm` names remain adapter labels only. Validation is inherited from the immediately preceding fully packaged Intrusive commit. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#140 libs/io/test`
+- suite: `#141 libs/iostreams/test`
 - focused target: exact full-suite intake
-- last closed suite: `#139 libs/intrusive/test` (`pass`)
+- last closed suite: `#140 libs/io/test` (`pass`)
 - failure phase: intake pending
 - diagnostic: pending exact forced-C++11 replay
 - reduced repro: not applicable until a compiler-owned failure is identified
 - owning PA/cluster: pending intake
 - implementation area: pending intake
 - performance risk: unknown intake risk; use full-machine jobs while sampling aggregate and per-child RSS, and narrow immediately if overlap approaches system-memory pressure
-- language lane: Boost.IO declares C++03 and runs in the stable forced-C++11 lane
-- next action: run the exact Clang-pinned 12-job `pch=off` Boost.IO graph; after suite 147, force suites 1--40 against the final compiler before final closure
+- language lane: Boost.Iostreams declares C++03 and runs in the stable forced-C++11 lane
+- next action: run the exact Clang-pinned 12-job `pch=off` Boost.Iostreams graph; after suite 147, force suites 1--40 against the final compiler before final closure
 
 ## Fix Ledger
 
@@ -937,6 +938,14 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-02`: Closed suite 140, Boost.IO, without a compiler or fixture
+  change. The exact 12-job forced-C++11 `pch=off` graph finds 253 targets,
+  updates all 56 requested targets, records eight passing test actions, and
+  exits successfully in 13.23s at 194,871,296 B maximum RSS. Every process
+  records zero swaps and the system swapout counter stays exactly 400,837,260.
+  Validation is inherited from the immediately preceding fully packaged
+  Intrusive commit. CPPGM and all host actions use Homebrew Clang 22. The
+  cursor advances to C++03-declared Boost.Iostreams in the forced-C++11 lane.
 - `2026-08-02`: Closed suite 139, Boost.Intrusive. The authoritative exact
   six-job forced-C++11 `pch=off` graph updates all 153 requested targets,
   records 36 passing test actions, and exits successfully in 223.30s at
@@ -5227,7 +5236,7 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-# Suite 139 Boost.Intrusive is closed. Suite 140 Boost.IO declares C++03 and
+# Suite 140 Boost.IO is closed. Suite 141 Boost.Iostreams declares C++03 and
 # runs in the stable forced-C++11 lane. Begin with the exact 12-job
 # full intake.
 /usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=12 CXXSTD=11 \
@@ -5239,7 +5248,7 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   ./run-cppgm-b2.sh -a pch=off \
-    libs/io/test
+    libs/iostreams/test
 ```
 
 After suite 147 closes, repeat the same exact forced, Clang-pinned C++11 lane
