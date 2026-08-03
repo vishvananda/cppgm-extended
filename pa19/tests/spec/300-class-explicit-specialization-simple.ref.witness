@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa19/tests/spec/300-class-explicit-specialization-simple.t:18:3
+  class-use at tests/spec/300-class-explicit-specialization-simple.t:18:3
     template box
     selected explicit
     bind #1 = int source=explicit

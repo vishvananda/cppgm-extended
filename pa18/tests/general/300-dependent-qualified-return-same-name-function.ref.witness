@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/general/300-dependent-qualified-return-same-name-function.t:37:10
+  function-call at tests/general/300-dependent-qualified-return-same-name-function.t:37:10
     callee boost::fusion::remove
     selected instantiation
     bind #1 = X source=explicit

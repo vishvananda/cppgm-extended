@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/100-local-using-declaration-hides-using-directive-template.t:22:11
+  class-use at tests/general/100-local-using-declaration-hides-using-directive-template.t:22:11
     template mpl::vector
     selected primary
     bind #1 = Y source=explicit

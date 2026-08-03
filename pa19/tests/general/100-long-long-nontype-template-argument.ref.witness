@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa19/tests/general/100-long-long-nontype-template-argument.t:4:9
+  class-use at tests/general/100-long-long-nontype-template-argument.t:4:9
     template R
     selected primary
     bind #1 = 1 source=explicit

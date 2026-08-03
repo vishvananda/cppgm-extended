@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa21/tests/general/300-hidden-friend-template-call-adl.t:20:10
+  function-call at tests/general/300-hidden-friend-template-call-adl.t:20:10
     callee apply
     selected instantiation
     bind #1 = Value source=deduced

@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/general/100-function-reference-template-parameter.t:14:10
+  function-call at tests/general/100-function-reference-template-parameter.t:14:10
     callee apply
     selected instantiation
     bind #1 = int (int) source=deduced

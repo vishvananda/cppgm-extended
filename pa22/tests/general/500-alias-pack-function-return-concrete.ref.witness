@@ -1,13 +1,13 @@
 translation-unit
-  alias-use at pa22/tests/general/500-alias-pack-function-return-concrete.t:34:1
+  alias-use at tests/general/500-alias-pack-function-return-concrete.t:34:1
     template tuple_element_t
     bind #1 = I source=explicit
     bind #2 = tuple<T...> source=explicit
-  class-use at pa22/tests/general/500-alias-pack-function-return-concrete.t:48:3
+  class-use at tests/general/500-alias-pack-function-return-concrete.t:48:3
     template tuple
     selected primary
     bind #1 = <First, Second> source=explicit
-  function-call at pa22/tests/general/500-alias-pack-function-return-concrete.t:49:11
+  function-call at tests/general/500-alias-pack-function-return-concrete.t:49:11
     callee get
     selected instantiation
     bind #1 = 1 source=explicit

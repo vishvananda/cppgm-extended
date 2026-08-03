@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa21/tests/spec/300-explicit-instantiation-class.t:22:3
+  class-use at tests/spec/300-explicit-instantiation-class.t:22:3
     template holder
     selected primary
     bind #1 = int source=explicit

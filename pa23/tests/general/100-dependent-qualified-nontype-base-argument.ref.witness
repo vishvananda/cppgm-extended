@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/general/100-dependent-qualified-nontype-base-argument.t:38:11
+  class-use at tests/general/100-dependent-qualified-nontype-base-argument.t:38:11
     template bool_constant
     selected primary
     bind #1 = false source=explicit
-  class-use at pa23/tests/general/100-dependent-qualified-nontype-base-argument.t:43:3
+  class-use at tests/general/100-dependent-qualified-nontype-base-argument.t:43:3
     template Table
     selected primary
     bind #1 = Traits source=explicit

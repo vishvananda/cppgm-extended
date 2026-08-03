@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa23/tests/general/100-dependent-reference-alias-default-nontype.t:29:21
+  class-use at tests/general/100-dependent-reference-alias-default-nontype.t:29:21
     template Box
     selected primary
     bind #1 = int source=explicit
-  class-use at pa23/tests/general/100-dependent-reference-alias-default-nontype.t:29:37
+  class-use at tests/general/100-dependent-reference-alias-default-nontype.t:29:37
     template Block
     selected primary
     bind #1 = int source=explicit
-  class-use at pa23/tests/general/100-dependent-reference-alias-default-nontype.t:32:3
+  class-use at tests/general/100-dependent-reference-alias-default-nontype.t:32:3
     template Box
     selected primary
     bind #1 = int source=explicit

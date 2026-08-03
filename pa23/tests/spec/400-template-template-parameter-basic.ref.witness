@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/spec/400-template-template-parameter-basic.t:18:10
+  class-use at tests/spec/400-template-template-parameter-basic.t:18:10
     template apply
     selected primary
     bind #1 = box source=explicit

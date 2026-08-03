@@ -1,10 +1,10 @@
 translation-unit
-  function-call at pa23/tests/spec/200-pack-fallback-partial-ordering.t:18:10
+  function-call at tests/spec/200-pack-fallback-partial-ordering.t:18:10
     callee pick
     selected instantiation
     bind #1 = int source=deduced
     drop pick reason=better_candidate_selected
-  function-call at pa23/tests/spec/200-pack-fallback-partial-ordering.t:18:29
+  function-call at tests/spec/200-pack-fallback-partial-ordering.t:18:29
     callee pick
     selected instantiation
     bind #1 = int source=deduced

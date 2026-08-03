@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa23/tests/spec/500-nondeduced-qualified-member-type-allows-conversion.t:27:11
+  function-call at tests/spec/500-nondeduced-qualified-member-type-allows-conversion.t:27:11
     callee nondeduced_qualified_member_type_conversion::next
     selected instantiation
     bind #1 = const char * source=deduced

@@ -1,19 +1,19 @@
 translation-unit
-  alias-use at pa21/tests/general/400-alias-pack-expansion-through-alias.t:30:18
+  alias-use at tests/general/400-alias-pack-expansion-through-alias.t:30:18
     template IsOneOf
     bind #1 = Tp source=explicit
     bind #2 = signed char source=explicit
-  alias-use at pa21/tests/general/400-alias-pack-expansion-through-alias.t:33:20
+  alias-use at tests/general/400-alias-pack-expansion-through-alias.t:33:20
     template IsOneOf
     bind #1 = Tp source=explicit
     bind #2 = unsigned char source=explicit
-  alias-use at pa21/tests/general/400-alias-pack-expansion-through-alias.t:37:30
+  alias-use at tests/general/400-alias-pack-expansion-through-alias.t:37:30
     template IsSigned
     bind #1 = Tp source=explicit
-  alias-use at pa21/tests/general/400-alias-pack-expansion-through-alias.t:37:44
+  alias-use at tests/general/400-alias-pack-expansion-through-alias.t:37:44
     template IsUnsigned
     bind #1 = Tp source=explicit
-  alias-use at pa21/tests/general/400-alias-pack-expansion-through-alias.t:40:10
+  alias-use at tests/general/400-alias-pack-expansion-through-alias.t:40:10
     template IsStandardInteger
     bind #1 = int source=explicit
 template-closure-events

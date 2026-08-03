@@ -1,11 +1,11 @@
 translation-unit
-  class-use at pa21/tests/general/300-function-signature-partial-specialization-functor-assignment.t:48:3
+  class-use at tests/general/300-function-signature-partial-specialization-functor-assignment.t:48:3
     template callable_box
     selected partial
     bind #1 = int (int) source=explicit
     specialize #1 = int source=deduced
     specialize #2 = int source=deduced
-  function-call at pa21/tests/general/300-function-signature-partial-specialization-functor-assignment.t:49:6
+  function-call at tests/general/300-function-signature-partial-specialization-functor-assignment.t:49:6
     callee callable_box<int (int)>::assign
     selected instantiation
     bind #1 = add_one source=deduced

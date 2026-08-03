@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/spec/300-using-alias-forward-template-member-layout.t:12:19
+  class-use at tests/spec/300-using-alias-forward-template-member-layout.t:12:19
     template String
     selected primary
     bind #1 = int source=explicit

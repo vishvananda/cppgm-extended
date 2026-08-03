@@ -1,31 +1,31 @@
 translation-unit
-  class-use at pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:63:5
+  class-use at tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:63:5
     template boost::mpl::aux::arity_tag
     selected primary
     bind #1 = 0 source=explicit
-  class-use at pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:66:14
+  class-use at tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:66:14
     template boost::mpl::aux::arity_tag
     selected primary
     bind #1 = 1 source=explicit
-  class-use at pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:66:68
+  class-use at tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:66:68
     template boost::mpl::aux::arity_tag
     selected primary
     bind #1 = 1 source=explicit
-  class-use at pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:69:14
+  class-use at tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:69:14
     template boost::mpl::aux::arity_tag
     selected primary
     bind #1 = 2 source=explicit
-  class-use at pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:70:46
+  class-use at tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:70:46
     template boost::mpl::aux::arity_tag
     selected primary
     bind #1 = 2 source=explicit
-  class-use at pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:103:15
+  class-use at tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:103:15
     template boost::mpl::lambda
     selected explicit
     bind #1 = mpl_::na source=defaulted
     bind #2 = mpl_::na source=defaulted
     bind #3 = mpl_::int_<-1> source=defaulted
-  class-use at pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:103:43
+  class-use at tests/spec/300-defaulted-type-arg-specialization-nontype-value.t:103:43
     template boost::mpl::lambda<>::apply
     selected primary
     bind #1 = int source=explicit

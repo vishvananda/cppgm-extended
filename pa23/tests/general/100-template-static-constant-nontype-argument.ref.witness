@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa23/tests/general/100-template-static-constant-nontype-argument.t:9:11
+  class-use at tests/general/100-template-static-constant-nontype-argument.t:9:11
     template Box
     selected primary
     bind #1 = 9223372036854775807 source=explicit
-  class-use at pa23/tests/general/100-template-static-constant-nontype-argument.t:13:3
+  class-use at tests/general/100-template-static-constant-nontype-argument.t:13:3
     template Limits
     selected primary
     bind #1 = 0 source=explicit
-  class-use at pa23/tests/general/100-template-static-constant-nontype-argument.t:13:3
+  class-use at tests/general/100-template-static-constant-nontype-argument.t:13:3
     template Box
     selected primary
     bind #1 = 9223372036854775807 source=deduced

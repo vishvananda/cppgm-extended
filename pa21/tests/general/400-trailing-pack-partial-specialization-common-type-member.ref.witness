@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa21/tests/general/400-trailing-pack-partial-specialization-common-type-member.t:44:18
+  class-use at tests/general/400-trailing-pack-partial-specialization-common-type-member.t:44:18
     template common
     selected partial
     bind #1 = <int, int, long> source=explicit
@@ -7,7 +7,7 @@ translation-unit
     specialize #2 = int source=deduced
     specialize #3 = long source=deduced
     specialize #4 = <> source=deduced
-  class-use at pa21/tests/general/400-trailing-pack-partial-specialization-common-type-member.t:45:18
+  class-use at tests/general/400-trailing-pack-partial-specialization-common-type-member.t:45:18
     template common
     selected partial
     bind #1 = <int, int, long, long> source=explicit

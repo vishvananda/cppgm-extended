@@ -1,15 +1,15 @@
 translation-unit
-  variable-use at pa23/tests/general/400-shared-partial-specialization-variable-selection.t:9:28
+  variable-use at tests/general/400-shared-partial-specialization-variable-selection.t:9:28
     template pick_v
     selected partial
     bind #1 = int source=deduced
     bind #2 = int * source=deduced
     specialize #1 = int source=deduced
-  class-use at pa23/tests/general/400-shared-partial-specialization-variable-selection.t:12:15
+  class-use at tests/general/400-shared-partial-specialization-variable-selection.t:12:15
     template Check
     selected primary
     bind #1 = int source=explicit
-  class-use at pa23/tests/general/400-shared-partial-specialization-variable-selection.t:15:10
+  class-use at tests/general/400-shared-partial-specialization-variable-selection.t:15:10
     template Check
     selected primary
     bind #1 = int source=explicit

@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa22/tests/spec/100-explicit-template-argument-overload-rejects-short-candidate.t:37:3
+  class-use at tests/spec/100-explicit-template-argument-overload-rejects-short-candidate.t:37:3
     template holder
     selected primary
     bind #1 = int source=explicit
-  function-call at pa22/tests/spec/100-explicit-template-argument-overload-rejects-short-candidate.t:38:27
+  function-call at tests/spec/100-explicit-template-argument-overload-rejects-short-candidate.t:38:27
     callee holder<int>::pick
     selected instantiation
     bind #1 = int source=explicit

@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa18/tests/general/100-template-move-only-byvalue-argument-does-not-copy.t:20:10
+  class-use at tests/general/100-template-move-only-byvalue-argument-does-not-copy.t:20:10
     template box
     selected primary
     bind #1 = move_only source=explicit
-  class-use at pa18/tests/general/100-template-move-only-byvalue-argument-does-not-copy.t:29:3
+  class-use at tests/general/100-template-move-only-byvalue-argument-does-not-copy.t:29:3
     template box
     selected primary
     bind #1 = move_only source=explicit
-  class-use at pa18/tests/general/100-template-move-only-byvalue-argument-does-not-copy.t:30:27
+  class-use at tests/general/100-template-move-only-byvalue-argument-does-not-copy.t:30:27
     template box
     selected primary
     bind #1 = move_only source=explicit

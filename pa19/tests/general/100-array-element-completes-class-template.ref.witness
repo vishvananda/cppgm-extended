@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa19/tests/general/100-array-element-completes-class-template.t:2:22
+  class-use at tests/general/100-array-element-completes-class-template.t:2:22
     template Elem
     selected primary
     bind #1 = int source=explicit

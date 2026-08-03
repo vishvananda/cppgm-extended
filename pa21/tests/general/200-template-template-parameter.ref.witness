@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa21/tests/general/200-template-template-parameter.t:7:14
+  class-use at tests/general/200-template-template-parameter.t:7:14
     template Holder
     selected primary
     bind #1 = Box source=explicit

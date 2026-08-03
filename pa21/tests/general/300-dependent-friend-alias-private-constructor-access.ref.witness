@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa21/tests/general/300-dependent-friend-alias-private-constructor-access.t:16:11
+  class-use at tests/general/300-dependent-friend-alias-private-constructor-access.t:16:11
     template Ref
     selected primary
     bind #1 = V source=explicit

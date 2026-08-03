@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa18/tests/general/100-defaulted-move-constructor-reference-member.t:14:3
+  class-use at tests/general/100-defaulted-move-constructor-reference-member.t:14:3
     template RefPair
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/100-defaulted-move-constructor-reference-member.t:15:3
+  class-use at tests/general/100-defaulted-move-constructor-reference-member.t:15:3
     template RefPair
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/100-defaulted-move-constructor-reference-member.t:15:34
+  class-use at tests/general/100-defaulted-move-constructor-reference-member.t:15:34
     template RefPair
     selected primary
     bind #1 = int source=explicit

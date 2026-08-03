@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/spec/300-late-explicit-specialization-type-argument-does-not-eagerly-instantiate.t:19:18
+  class-use at tests/spec/300-late-explicit-specialization-type-argument-does-not-eagerly-instantiate.t:19:18
     template n::plus
     selected explicit
     bind #1 = void source=defaulted
-  class-use at pa23/tests/spec/300-late-explicit-specialization-type-argument-does-not-eagerly-instantiate.t:38:13
+  class-use at tests/spec/300-late-explicit-specialization-type-argument-does-not-eagerly-instantiate.t:38:13
     template n::flag
     selected partial
     bind #1 = int source=explicit
@@ -12,7 +12,7 @@ translation-unit
     bind #4 = int source=explicit
     specialize #1 = int source=deduced
     specialize #2 = int source=deduced
-  class-use at pa23/tests/spec/300-late-explicit-specialization-type-argument-does-not-eagerly-instantiate.t:38:26
+  class-use at tests/spec/300-late-explicit-specialization-type-argument-does-not-eagerly-instantiate.t:38:26
     template n::plus
     selected explicit
     bind #1 = void source=defaulted

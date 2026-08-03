@@ -1,0 +1,16 @@
+translation-unit
+  function-call at tests/spec/200-function-style-local-init-nested-pack-expansion.t:5:21
+    callee f
+    selected instantiation
+    bind #1 = <int> source=deduced
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  function-instantiation
+    entity id
+  require-definition
+    entity f
+  require-definition
+    entity id

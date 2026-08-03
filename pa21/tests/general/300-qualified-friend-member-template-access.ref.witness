@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa21/tests/general/300-qualified-friend-member-template-access.t:28:3
+  class-use at tests/general/300-qualified-friend-member-template-access.t:28:3
     template Iter
     selected primary
     bind #1 = int source=explicit
     bind #2 = false source=explicit
-  function-call at pa21/tests/general/300-qualified-friend-member-template-access.t:30:10
+  function-call at tests/general/300-qualified-friend-member-template-access.t:30:10
     callee Copy::operator()
     selected instantiation
     bind #1 = int source=deduced

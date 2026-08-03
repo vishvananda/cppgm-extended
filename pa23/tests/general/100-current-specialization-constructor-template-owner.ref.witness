@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa23/tests/general/100-current-specialization-constructor-template-owner.t:15:3
+  class-use at tests/general/100-current-specialization-constructor-template-owner.t:15:3
     template holder
     selected primary
     bind #1 = int source=explicit
-  class-use at pa23/tests/general/100-current-specialization-constructor-template-owner.t:15:19
+  class-use at tests/general/100-current-specialization-constructor-template-owner.t:15:19
     template holder
     selected primary
     bind #1 = int source=explicit
-  function-call at pa23/tests/general/100-current-specialization-constructor-template-owner.t:15:19
+  function-call at tests/general/100-current-specialization-constructor-template-owner.t:15:19
     callee holder<int>::make
     selected instantiation
     bind #1 = int source=deduced

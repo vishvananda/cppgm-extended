@@ -1,37 +1,37 @@
 translation-unit
-  class-use at pa18/tests/general/300-member-rvalue-subscript-overload-binding.t:6:28
+  class-use at tests/general/300-member-rvalue-subscript-overload-binding.t:6:28
     template Box
     selected primary
     bind #1 = bool source=explicit
-  class-use at pa18/tests/general/300-member-rvalue-subscript-overload-binding.t:7:28
+  class-use at tests/general/300-member-rvalue-subscript-overload-binding.t:7:28
     template Box
     selected primary
     bind #1 = bool source=explicit
-  class-use at pa18/tests/general/300-member-rvalue-subscript-overload-binding.t:8:22
+  class-use at tests/general/300-member-rvalue-subscript-overload-binding.t:8:22
     template Box
     selected primary
     bind #1 = bool source=explicit
-  class-use at pa18/tests/general/300-member-rvalue-subscript-overload-binding.t:9:22
+  class-use at tests/general/300-member-rvalue-subscript-overload-binding.t:9:22
     template Box
     selected primary
     bind #1 = bool source=explicit
-  class-use at pa18/tests/general/300-member-rvalue-subscript-overload-binding.t:13:34
+  class-use at tests/general/300-member-rvalue-subscript-overload-binding.t:13:34
     template Box
     selected primary
     bind #1 = bool source=explicit
-  class-use at pa18/tests/general/300-member-rvalue-subscript-overload-binding.t:16:34
+  class-use at tests/general/300-member-rvalue-subscript-overload-binding.t:16:34
     template Box
     selected primary
     bind #1 = bool source=explicit
-  class-use at pa18/tests/general/300-member-rvalue-subscript-overload-binding.t:19:28
+  class-use at tests/general/300-member-rvalue-subscript-overload-binding.t:19:28
     template Box
     selected primary
     bind #1 = bool source=explicit
-  class-use at pa18/tests/general/300-member-rvalue-subscript-overload-binding.t:22:28
+  class-use at tests/general/300-member-rvalue-subscript-overload-binding.t:22:28
     template Box
     selected primary
     bind #1 = bool source=explicit
-  class-use at pa18/tests/general/300-member-rvalue-subscript-overload-binding.t:25:3
+  class-use at tests/general/300-member-rvalue-subscript-overload-binding.t:25:3
     template Box
     selected primary
     bind #1 = int source=explicit

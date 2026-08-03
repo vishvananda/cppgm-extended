@@ -1,0 +1,16 @@
+translation-unit
+  function-call at tests/spec/100-qualified-function-template-id-parenthesized-initializer.t:31:10
+    callee run
+    selected instantiation
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity run
+  function-instantiation
+    entity helper::id
+  function-instantiation
+    entity run
+  require-definition
+    entity helper::id
+  require-definition
+    entity run

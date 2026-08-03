@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/100-conversion-completes-template.t:14:3
+  class-use at tests/general/100-conversion-completes-template.t:14:3
     template From
     selected primary
     bind #1 = int source=explicit

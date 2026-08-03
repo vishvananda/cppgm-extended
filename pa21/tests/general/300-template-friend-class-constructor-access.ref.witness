@@ -1,20 +1,20 @@
 translation-unit
-  class-use at pa21/tests/general/300-template-friend-class-constructor-access.t:30:9
+  class-use at tests/general/300-template-friend-class-constructor-access.t:30:9
     template S
     selected primary
     bind #1 = char source=explicit
     bind #2 = traits<char> source=explicit
     bind #3 = int source=explicit
-  class-use at pa21/tests/general/300-template-friend-class-constructor-access.t:30:17
+  class-use at tests/general/300-template-friend-class-constructor-access.t:30:17
     template traits
     selected primary
     bind #1 = char source=explicit
-  class-use at pa21/tests/general/300-template-friend-class-constructor-access.t:31:9
+  class-use at tests/general/300-template-friend-class-constructor-access.t:31:9
     template V
     selected primary
     bind #1 = char source=explicit
     bind #2 = traits<char> source=defaulted
-  class-use at pa21/tests/general/300-template-friend-class-constructor-access.t:31:17
+  class-use at tests/general/300-template-friend-class-constructor-access.t:31:17
     template traits
     selected primary
     bind #1 = char source=explicit

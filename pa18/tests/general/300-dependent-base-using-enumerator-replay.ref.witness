@@ -1,0 +1,5 @@
+translation-unit
+  class-use at tests/general/300-dependent-base-using-enumerator-replay.t:16:10
+    template derived
+    selected primary
+    bind #1 = int source=explicit

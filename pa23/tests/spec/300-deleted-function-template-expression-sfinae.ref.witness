@@ -1,13 +1,13 @@
 translation-unit
-  alias-use at pa23/tests/spec/300-deleted-function-template-expression-sfinae.t:17:29
+  alias-use at tests/spec/300-deleted-function-template-expression-sfinae.t:17:29
     template void_t
     bind #1 = decltype(deleted_probe(declval<T>())) source=explicit
-  class-use at pa23/tests/spec/300-deleted-function-template-expression-sfinae.t:36:11
+  class-use at tests/spec/300-deleted-function-template-expression-sfinae.t:36:11
     template has_deleted_probe
     selected primary
     bind #1 = int source=explicit
     bind #2 = void source=defaulted
-  function-call at pa23/tests/spec/300-deleted-function-template-expression-sfinae.t:37:10
+  function-call at tests/spec/300-deleted-function-template-expression-sfinae.t:37:10
     callee call_deleted_probe
     selected instantiation
     bind #1 = int source=deduced

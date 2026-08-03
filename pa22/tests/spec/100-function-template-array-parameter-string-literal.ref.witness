@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/spec/100-function-template-array-parameter-string-literal.t:56:3
+  function-call at tests/spec/100-function-template-array-parameter-string-literal.t:56:3
     callee delimiter
     selected instantiation
     bind #1 = char source=deduced

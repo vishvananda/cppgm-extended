@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa22/tests/spec/500-template-template-piecewise-partial-ordering.t:49:3
+  class-use at tests/spec/500-template-template-piecewise-partial-ordering.t:49:3
     template fixed_pair
     selected primary
     bind #1 = int source=explicit
     bind #2 = int source=explicit
-  function-call at pa22/tests/spec/500-template-template-piecewise-partial-ordering.t:50:10
+  function-call at tests/spec/500-template-template-piecewise-partial-ordering.t:50:10
     callee fixed_dispatch
     selected instantiation
     bind #1 = fixed_alloc source=deduced
@@ -14,24 +14,24 @@ translation-unit
     bind #5 = int source=deduced
     bind #6 = int source=deduced
     drop fixed_dispatch reason=better_candidate_selected
-  class-use at pa22/tests/spec/500-template-template-piecewise-partial-ordering.t:51:25
+  class-use at tests/spec/500-template-template-piecewise-partial-ordering.t:51:25
     template fixed_tuple
     selected primary
     bind #1 = int source=explicit
     bind #2 = fixed_null_type source=defaulted
     bind #3 = fixed_null_type source=defaulted
-  class-use at pa22/tests/spec/500-template-template-piecewise-partial-ordering.t:52:25
+  class-use at tests/spec/500-template-template-piecewise-partial-ordering.t:52:25
     template fixed_tuple
     selected primary
     bind #1 = int source=explicit
     bind #2 = fixed_null_type source=defaulted
     bind #3 = fixed_null_type source=defaulted
-  class-use at pa22/tests/spec/500-template-template-piecewise-partial-ordering.t:95:3
+  class-use at tests/spec/500-template-template-piecewise-partial-ordering.t:95:3
     template variadic_pair
     selected primary
     bind #1 = int source=explicit
     bind #2 = int source=explicit
-  function-call at pa22/tests/spec/500-template-template-piecewise-partial-ordering.t:96:10
+  function-call at tests/spec/500-template-template-piecewise-partial-ordering.t:96:10
     callee variadic_dispatch
     selected instantiation
     bind #1 = variadic_alloc source=deduced
@@ -41,13 +41,13 @@ translation-unit
     bind #5 = int source=deduced
     bind #6 = int source=deduced
     drop variadic_dispatch reason=better_candidate_selected
-  class-use at pa22/tests/spec/500-template-template-piecewise-partial-ordering.t:98:14
+  class-use at tests/spec/500-template-template-piecewise-partial-ordering.t:98:14
     template variadic_tuple
     selected primary
     bind #1 = int source=explicit
     bind #2 = variadic_null_type source=defaulted
     bind #3 = variadic_null_type source=defaulted
-  class-use at pa22/tests/spec/500-template-template-piecewise-partial-ordering.t:99:14
+  class-use at tests/spec/500-template-template-piecewise-partial-ordering.t:99:14
     template variadic_tuple
     selected primary
     bind #1 = int source=explicit

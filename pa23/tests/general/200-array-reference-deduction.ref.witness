@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa23/tests/general/200-array-reference-deduction.t:10:10
+  function-call at tests/general/200-array-reference-deduction.t:10:10
     callee length
     selected instantiation
     bind #1 = int source=deduced

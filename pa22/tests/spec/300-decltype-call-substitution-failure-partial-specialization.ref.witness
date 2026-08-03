@@ -1,11 +1,11 @@
 translation-unit
-  class-use at pa22/tests/spec/300-decltype-call-substitution-failure-partial-specialization.t:19:16
+  class-use at tests/spec/300-decltype-call-substitution-failure-partial-specialization.t:19:16
     template core_convertible
     selected primary
     bind #1 = nat source=explicit
     bind #2 = bool source=explicit
     bind #3 = void source=defaulted
-  class-use at pa22/tests/spec/300-decltype-call-substitution-failure-partial-specialization.t:21:15
+  class-use at tests/spec/300-decltype-call-substitution-failure-partial-specialization.t:21:15
     template core_convertible
     selected partial
     bind #1 = int source=explicit
@@ -13,7 +13,7 @@ translation-unit
     bind #3 = void source=defaulted
     specialize #1 = int source=deduced
     specialize #2 = bool source=deduced
-  class-use at pa22/tests/spec/300-decltype-call-substitution-failure-partial-specialization.t:26:10
+  class-use at tests/spec/300-decltype-call-substitution-failure-partial-specialization.t:26:10
     template core_convertible
     selected partial
     bind #1 = int source=explicit

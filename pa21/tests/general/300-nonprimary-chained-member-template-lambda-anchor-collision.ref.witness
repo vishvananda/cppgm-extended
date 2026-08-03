@@ -1,0 +1,20 @@
+translation-unit
+template-closure-events
+  ensure-definition
+    entity nonprimary_chained_lambda::first<>::old
+  ensure-definition
+    entity nonprimary_chained_lambda::second<>::postcondition
+  ensure-definition
+    entity nonprimary_chained_lambda::second<>::~second
+  function-instantiation
+    entity nonprimary_chained_lambda::first<>::old
+  function-instantiation
+    entity nonprimary_chained_lambda::second<>::postcondition
+  function-instantiation
+    entity nonprimary_chained_lambda::second<>::~second
+  require-definition
+    entity nonprimary_chained_lambda::first<>::old
+  require-definition
+    entity nonprimary_chained_lambda::second<>::postcondition
+  require-definition
+    entity nonprimary_chained_lambda::second<>::~second

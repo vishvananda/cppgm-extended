@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/general/300-dependent-enable-if-return-sizeof-less.t:20:10
+  function-call at tests/general/300-dependent-enable-if-return-sizeof-less.t:20:10
     callee narrow
     selected instantiation
     bind #1 = unsigned int source=deduced

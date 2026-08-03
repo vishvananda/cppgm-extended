@@ -1,20 +1,20 @@
 translation-unit
-  class-use at pa21/tests/general/100-nested-pack-expansion-outer-type-pack.t:34:18
+  class-use at tests/general/100-nested-pack-expansion-outer-type-pack.t:34:18
     template impl
     selected partial
     bind #1 = list<A, B> source=explicit
     bind #2 = <> source=deduced
     specialize #1 = <A, B> source=deduced
     specialize #2 = <> source=deduced
-  class-use at pa21/tests/general/100-nested-pack-expansion-outer-type-pack.t:34:23
+  class-use at tests/general/100-nested-pack-expansion-outer-type-pack.t:34:23
     template list
     selected primary
     bind #1 = <A, B> source=explicit
-  class-use at pa21/tests/general/100-nested-pack-expansion-outer-type-pack.t:35:9
+  class-use at tests/general/100-nested-pack-expansion-outer-type-pack.t:35:9
     template list
     selected primary
     bind #1 = <A, B> source=explicit
-  class-use at pa21/tests/general/100-nested-pack-expansion-outer-type-pack.t:39:10
+  class-use at tests/general/100-nested-pack-expansion-outer-type-pack.t:39:10
     template is_same
     selected partial
     bind #1 = list<A, B> source=explicit

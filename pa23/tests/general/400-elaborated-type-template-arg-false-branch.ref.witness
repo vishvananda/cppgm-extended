@@ -1,14 +1,14 @@
 translation-unit
-  alias-use at pa23/tests/general/400-elaborated-type-template-arg-false-branch.t:16:25
+  alias-use at tests/general/400-elaborated-type-template-arg-false-branch.t:16:25
     template If
     bind #1 = B source=explicit
     bind #2 = struct PrivateNat source=explicit
     bind #3 = Iter<B> source=explicit
-  class-use at pa23/tests/general/400-elaborated-type-template-arg-false-branch.t:22:3
+  class-use at tests/general/400-elaborated-type-template-arg-false-branch.t:22:3
     template Iter
     selected primary
     bind #1 = false source=explicit
-  class-use at pa23/tests/general/400-elaborated-type-template-arg-false-branch.t:23:3
+  class-use at tests/general/400-elaborated-type-template-arg-false-branch.t:23:3
     template Iter
     selected primary
     bind #1 = false source=explicit

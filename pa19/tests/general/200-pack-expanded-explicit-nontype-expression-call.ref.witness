@@ -1,17 +1,17 @@
 translation-unit
-  class-use at pa19/tests/general/200-pack-expanded-explicit-nontype-expression-call.t:14:14
+  class-use at tests/general/200-pack-expanded-explicit-nontype-expression-call.t:14:14
     template tag
     selected primary
     bind #1 = 1 source=explicit
-  class-use at pa19/tests/general/200-pack-expanded-explicit-nontype-expression-call.t:14:22
+  class-use at tests/general/200-pack-expanded-explicit-nontype-expression-call.t:14:22
     template tag
     selected primary
     bind #1 = 2 source=explicit
-  function-call at pa19/tests/general/200-pack-expanded-explicit-nontype-expression-call.t:31:3
+  function-call at tests/general/200-pack-expanded-explicit-nontype-expression-call.t:31:3
     callee expand
     selected instantiation
     bind #1 = <0, 1> source=deduced
-  class-use at pa19/tests/general/200-pack-expanded-explicit-nontype-expression-call.t:31:10
+  class-use at tests/general/200-pack-expanded-explicit-nontype-expression-call.t:31:10
     template sequence
     selected primary
     bind #1 = <0, 1> source=explicit

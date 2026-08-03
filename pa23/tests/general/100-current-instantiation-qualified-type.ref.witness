@@ -1,15 +1,15 @@
 translation-unit
-  class-use at pa23/tests/general/100-current-instantiation-qualified-type.t:15:15
+  class-use at tests/general/100-current-instantiation-qualified-type.t:15:15
     template is_same
     selected partial
     bind #1 = int source=explicit
     bind #2 = int source=explicit
     specialize #1 = int source=deduced
-  class-use at pa23/tests/general/100-current-instantiation-qualified-type.t:15:23
+  class-use at tests/general/100-current-instantiation-qualified-type.t:15:23
     template Holder
     selected primary
     bind #1 = int source=explicit
-  class-use at pa23/tests/general/100-current-instantiation-qualified-type.t:19:3
+  class-use at tests/general/100-current-instantiation-qualified-type.t:19:3
     template Holder
     selected primary
     bind #1 = int source=explicit

@@ -1,5 +1,5 @@
 translation-unit
-  variable-use at pa21/tests/general/200-shared-partial-specialization-variable-selection-runtime.t:12:10
+  variable-use at tests/general/200-shared-partial-specialization-variable-selection-runtime.t:12:10
     template pick_v
     selected partial
     bind #1 = int source=deduced

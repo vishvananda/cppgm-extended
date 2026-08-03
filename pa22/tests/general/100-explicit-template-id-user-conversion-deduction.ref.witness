@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa22/tests/general/100-explicit-template-id-user-conversion-deduction.t:23:3
+  class-use at tests/general/100-explicit-template-id-user-conversion-deduction.t:23:3
     template S
     selected primary
     bind #1 = int source=explicit
     bind #2 = int source=explicit
-  function-call at pa22/tests/general/100-explicit-template-id-user-conversion-deduction.t:24:10
+  function-call at tests/general/100-explicit-template-id-user-conversion-deduction.t:24:10
     callee helper
     selected instantiation
     bind #1 = int source=explicit

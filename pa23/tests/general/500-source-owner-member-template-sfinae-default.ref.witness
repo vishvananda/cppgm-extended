@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/general/500-source-owner-member-template-sfinae-default.t:63:3
+  class-use at tests/general/500-source-owner-member-template-sfinae-default.t:63:3
     template string_like
     selected primary
     bind #1 = char source=explicit
-  function-call at pa23/tests/general/500-source-owner-member-template-sfinae-default.t:65:12
+  function-call at tests/general/500-source-owner-member-template-sfinae-default.t:65:12
     callee string_like<char>::insert
     selected instantiation
     bind #1 = view_like source=deduced

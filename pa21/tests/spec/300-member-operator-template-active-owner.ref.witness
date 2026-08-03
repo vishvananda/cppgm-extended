@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa21/tests/spec/300-member-operator-template-active-owner.t:90:22
+  class-use at tests/spec/300-member-operator-template-active-owner.t:90:22
     template active_owner_case::buffer
     selected primary
     bind #1 = active_owner_case::item source=explicit
     bind #2 = active_owner_case::allocator<active_owner_case::item> source=explicit
-  class-use at pa21/tests/spec/300-member-operator-template-active-owner.t:92:26
+  class-use at tests/spec/300-member-operator-template-active-owner.t:92:26
     template active_owner_case::allocator
     selected primary
     bind #1 = active_owner_case::item source=explicit

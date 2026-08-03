@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/spec/300-nested-owner-definition-deferred-field-layout.t:3:12
+  class-use at tests/spec/300-nested-owner-definition-deferred-field-layout.t:3:12
     template A
     selected primary
     bind #1 = int source=explicit

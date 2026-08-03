@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/300-out-of-class-member-alias-return-signature.t:41:3
+  class-use at tests/general/300-out-of-class-member-alias-return-signature.t:41:3
     template tree
     selected primary
     bind #1 = int source=explicit

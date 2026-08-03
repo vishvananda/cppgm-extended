@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/general/200-function-template-default-parameter-instantiation.t:7:10
+  function-call at tests/general/200-function-template-default-parameter-instantiation.t:7:10
     callee add
     selected instantiation
     bind #1 = int source=explicit

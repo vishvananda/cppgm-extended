@@ -1,18 +1,18 @@
 translation-unit
-  alias-use at pa22/tests/general/300-inherited-variable-template-enable-if-return.t:32:10
+  alias-use at tests/general/300-inherited-variable-template-enable-if-return.t:32:10
     template enable_if_t
     bind #1 = can_construct<Alloc, T, Args...> source=explicit
-  variable-use at pa22/tests/general/300-inherited-variable-template-enable-if-return.t:32:22
+  variable-use at tests/general/300-inherited-variable-template-enable-if-return.t:32:22
     template traits_base::can_construct
     selected primary
     bind #1 = Alloc source=deduced
     bind #2 = X source=deduced
     bind #3 = <int> source=deduced
-  class-use at pa22/tests/general/300-inherited-variable-template-enable-if-return.t:50:3
+  class-use at tests/general/300-inherited-variable-template-enable-if-return.t:50:3
     template traits
     selected primary
     bind #1 = Alloc source=explicit
-  function-call at pa22/tests/general/300-inherited-variable-template-enable-if-return.t:50:3
+  function-call at tests/general/300-inherited-variable-template-enable-if-return.t:50:3
     callee traits<Alloc>::construct
     selected instantiation
     bind #1 = X source=deduced

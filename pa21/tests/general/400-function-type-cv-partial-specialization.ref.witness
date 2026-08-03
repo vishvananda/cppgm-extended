@@ -1,23 +1,23 @@
 translation-unit
-  class-use at pa21/tests/general/400-function-type-cv-partial-specialization.t:28:15
+  class-use at tests/general/400-function-type-cv-partial-specialization.t:28:15
     template holder
     selected partial
     bind #1 = void () source=explicit
     specialize #1 = void source=deduced
     specialize #2 = <> source=deduced
-  class-use at pa21/tests/general/400-function-type-cv-partial-specialization.t:29:15
+  class-use at tests/general/400-function-type-cv-partial-specialization.t:29:15
     template holder
     selected partial
     bind #1 = void () const source=explicit
     specialize #1 = void source=deduced
     specialize #2 = <> source=deduced
-  class-use at pa21/tests/general/400-function-type-cv-partial-specialization.t:30:15
+  class-use at tests/general/400-function-type-cv-partial-specialization.t:30:15
     template holder
     selected partial
     bind #1 = void () volatile source=explicit
     specialize #1 = void source=deduced
     specialize #2 = <> source=deduced
-  class-use at pa21/tests/general/400-function-type-cv-partial-specialization.t:34:10
+  class-use at tests/general/400-function-type-cv-partial-specialization.t:34:10
     template holder
     selected partial
     bind #1 = void () source=explicit

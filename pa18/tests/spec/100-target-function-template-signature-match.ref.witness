@@ -1,0 +1,8 @@
+translation-unit
+template-closure-events
+  ensure-definition
+    entity select
+  function-instantiation
+    entity select
+  require-definition
+    entity select

@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/100-using-directive-template-member-type-typedef.t:36:16
+  class-use at tests/general/100-using-directive-template-member-type-typedef.t:36:16
     template boost::move_detail::aligned_storage
     selected primary
     bind #1 = 4 source=explicit

@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/spec/100-namespace-template-forward-definition-parameter-rename.t:8:9
+  class-use at tests/spec/100-namespace-template-forward-definition-parameter-rename.t:8:9
     template N::fpos
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/spec/100-namespace-template-forward-definition-parameter-rename.t:22:3
+  class-use at tests/spec/100-namespace-template-forward-definition-parameter-rename.t:22:3
     template N::fpos
     selected primary
     bind #1 = int source=deduced

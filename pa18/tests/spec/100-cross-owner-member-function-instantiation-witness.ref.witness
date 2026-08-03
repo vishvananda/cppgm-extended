@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/spec/100-cross-owner-member-function-instantiation-witness.t:24:3
+  class-use at tests/spec/100-cross-owner-member-function-instantiation-witness.t:24:3
     template box
     selected primary
     bind #1 = int source=explicit
-  function-call at pa18/tests/spec/100-cross-owner-member-function-instantiation-witness.t:25:10
+  function-call at tests/spec/100-cross-owner-member-function-instantiation-witness.t:25:10
     callee call_touch
     selected instantiation
     bind #1 = int source=deduced

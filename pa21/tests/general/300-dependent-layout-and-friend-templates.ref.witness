@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa21/tests/general/300-dependent-layout-and-friend-templates.t:35:9
+  class-use at tests/general/300-dependent-layout-and-friend-templates.t:35:9
     template Holder
     selected primary
     bind #1 = char source=explicit
-  class-use at pa21/tests/general/300-dependent-layout-and-friend-templates.t:36:9
+  class-use at tests/general/300-dependent-layout-and-friend-templates.t:36:9
     template S
     selected primary
     bind #1 = int source=explicit

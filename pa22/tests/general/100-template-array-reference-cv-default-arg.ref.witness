@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/general/100-template-array-reference-cv-default-arg.t:84:9
+  function-call at tests/general/100-template-array-reference-cv-default-arg.t:84:9
     callee operator<<
     selected instantiation
     bind #1 = char[4] source=deduced

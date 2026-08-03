@@ -1,21 +1,21 @@
 translation-unit
-  class-use at pa21/tests/general/300-static-constexpr-function-template-pointer-array.t:36:18
+  class-use at tests/general/300-static-constexpr-function-template-pointer-array.t:36:18
     template table
     selected primary
     bind #1 = void source=defaulted
-  class-use at pa21/tests/general/300-static-constexpr-function-template-pointer-array.t:39:20
+  class-use at tests/general/300-static-constexpr-function-template-pointer-array.t:39:20
     template table
     selected primary
     bind #1 = void source=defaulted
-  class-use at pa21/tests/general/300-static-constexpr-function-template-pointer-array.t:42:20
+  class-use at tests/general/300-static-constexpr-function-template-pointer-array.t:42:20
     template table
     selected primary
     bind #1 = void source=defaulted
-  class-use at pa21/tests/general/300-static-constexpr-function-template-pointer-array.t:46:10
+  class-use at tests/general/300-static-constexpr-function-template-pointer-array.t:46:10
     template table
     selected primary
     bind #1 = void source=defaulted
-  class-use at pa21/tests/general/300-static-constexpr-function-template-pointer-array.t:47:10
+  class-use at tests/general/300-static-constexpr-function-template-pointer-array.t:47:10
     template table
     selected primary
     bind #1 = void source=defaulted

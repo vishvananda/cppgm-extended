@@ -1,33 +1,33 @@
 translation-unit
-  class-use at pa22/tests/general/400-function-assignment-invocable-and-helper.t:7:9
+  class-use at tests/general/400-function-assignment-invocable-and-helper.t:7:9
     template integral_constant
     selected primary
     bind #1 = bool source=explicit
     bind #2 = true source=explicit
-  class-use at pa22/tests/general/400-function-assignment-invocable-and-helper.t:8:9
+  class-use at tests/general/400-function-assignment-invocable-and-helper.t:8:9
     template integral_constant
     selected primary
     bind #1 = bool source=explicit
     bind #2 = false source=explicit
-  alias-use at pa22/tests/general/400-function-assignment-invocable-and-helper.t:64:1
+  alias-use at tests/general/400-function-assignment-invocable-and-helper.t:64:1
     template expand_to_true
     bind #1 = enable_if_t<Pred::value>... source=explicit
-  alias-use at pa22/tests/general/400-function-assignment-invocable-and-helper.t:64:16
+  alias-use at tests/general/400-function-assignment-invocable-and-helper.t:64:16
     template enable_if_t
     bind #1 = Pred::value source=explicit
-  alias-use at pa22/tests/general/400-function-assignment-invocable-and-helper.t:81:16
+  alias-use at tests/general/400-function-assignment-invocable-and-helper.t:81:16
     template And
     bind #1 = is_invocable_r<R, F &, Args...> source=explicit
-  alias-use at pa22/tests/general/400-function-assignment-invocable-and-helper.t:86:16
+  alias-use at tests/general/400-function-assignment-invocable-and-helper.t:86:16
     template And
     bind #1 = is_invocable_r<R, F &, Args...> source=explicit
-  class-use at pa22/tests/general/400-function-assignment-invocable-and-helper.t:91:3
+  class-use at tests/general/400-function-assignment-invocable-and-helper.t:91:3
     template function
     selected partial
     bind #1 = void (int) source=explicit
     specialize #1 = void source=deduced
     specialize #2 = <int> source=deduced
-  function-call at pa22/tests/general/400-function-assignment-invocable-and-helper.t:99:5
+  function-call at tests/general/400-function-assignment-invocable-and-helper.t:99:5
     callee function<void (int)>::operator=
     selected instantiation
     bind #1 = G source=deduced

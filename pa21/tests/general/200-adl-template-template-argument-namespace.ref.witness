@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa21/tests/general/200-adl-template-template-argument-namespace.t:8:15
+  class-use at tests/general/200-adl-template-template-argument-namespace.t:8:15
     template Wrap
     selected primary
     bind #1 = N::Alloc source=explicit
-  class-use at pa21/tests/general/200-adl-template-template-argument-namespace.t:14:3
+  class-use at tests/general/200-adl-template-template-argument-namespace.t:14:3
     template Wrap
     selected primary
     bind #1 = N::Alloc source=explicit

@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/spec/100-function-template-cv-reference-extra-qualifier.t:29:11
+  function-call at tests/spec/100-function-template-cv-reference-extra-qualifier.t:29:11
     callee cref_like
     selected instantiation
     bind #1 = volatile int source=deduced

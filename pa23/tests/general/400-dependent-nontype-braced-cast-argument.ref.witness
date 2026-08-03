@@ -1,9 +1,9 @@
 translation-unit
-  alias-use at pa23/tests/general/400-dependent-nontype-braced-cast-argument.t:16:1
+  alias-use at tests/general/400-dependent-nontype-braced-cast-argument.t:16:1
     template take_from_value
     bind #1 = int source=explicit
     bind #2 = index<1> source=explicit
-  class-use at pa23/tests/general/400-dependent-nontype-braced-cast-argument.t:16:22
+  class-use at tests/general/400-dependent-nontype-braced-cast-argument.t:16:22
     template index
     selected primary
     bind #1 = 1 source=explicit

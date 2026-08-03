@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/300-out-of-class-nested-template-owner-constructor.t:13:3
+  class-use at tests/general/300-out-of-class-nested-template-owner-constructor.t:13:3
     template outer
     selected primary
     bind #1 = int source=explicit

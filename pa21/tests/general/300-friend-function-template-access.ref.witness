@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa21/tests/general/300-friend-function-template-access.t:24:3
+  class-use at tests/general/300-friend-function-template-access.t:24:3
     template Box
     selected primary
     bind #1 = int source=explicit
-  function-call at pa21/tests/general/300-friend-function-template-access.t:25:10
+  function-call at tests/general/300-friend-function-template-access.t:25:10
     callee read
     selected instantiation
     bind #1 = int source=deduced

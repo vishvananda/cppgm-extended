@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/100-current-specialization-member-body-cast-compare.t:20:3
+  class-use at tests/general/100-current-specialization-member-body-cast-compare.t:20:3
     template holder
     selected primary
     bind #1 = unsigned int source=explicit

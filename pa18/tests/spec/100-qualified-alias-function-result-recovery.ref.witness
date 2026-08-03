@@ -1,24 +1,24 @@
 translation-unit
-  class-use at pa18/tests/spec/100-qualified-alias-function-result-recovery.t:15:9
+  class-use at tests/spec/100-qualified-alias-function-result-recovery.t:15:9
     template api::text
     selected primary
     bind #1 = char source=explicit
-  class-use at pa18/tests/spec/100-qualified-alias-function-result-recovery.t:34:1
+  class-use at tests/spec/100-qualified-alias-function-result-recovery.t:34:1
     template api::pair
     selected primary
     bind #1 = const api::text<char> source=explicit
     bind #2 = api::tag source=explicit
-  class-use at pa18/tests/spec/100-qualified-alias-function-result-recovery.t:37:10
+  class-use at tests/spec/100-qualified-alias-function-result-recovery.t:37:10
     template api::pair
     selected primary
     bind #1 = const api::text<char> source=explicit
     bind #2 = api::tag source=explicit
-  class-use at pa18/tests/spec/100-qualified-alias-function-result-recovery.t:43:8
+  class-use at tests/spec/100-qualified-alias-function-result-recovery.t:43:8
     template api::pair
     selected primary
     bind #1 = const api::text<char> source=explicit
     bind #2 = api::tag source=explicit
-  function-call at pa18/tests/spec/100-qualified-alias-function-result-recovery.t:43:46
+  function-call at tests/spec/100-qualified-alias-function-result-recovery.t:43:46
     callee api::make_pairish
     selected instantiation
     bind #1 = int source=deduced

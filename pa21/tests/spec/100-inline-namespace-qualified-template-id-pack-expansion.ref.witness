@@ -1,14 +1,14 @@
 translation-unit
-  class-use at pa21/tests/spec/100-inline-namespace-qualified-template-id-pack-expansion.t:86:12
+  class-use at tests/spec/100-inline-namespace-qualified-template-id-pack-expansion.t:86:12
     template library::tuple
     selected primary
     bind #1 = <int, double> source=explicit
-  function-call at pa21/tests/spec/100-inline-namespace-qualified-template-id-pack-expansion.t:87:10
+  function-call at tests/spec/100-inline-namespace-qualified-template-id-pack-expansion.t:87:10
     callee library::apply
     selected instantiation
     bind #1 = library::tuple<int, double> source=deduced
     bind #2 = <0, 1> source=deduced
-  class-use at pa21/tests/spec/100-inline-namespace-qualified-template-id-pack-expansion.t:87:41
+  class-use at tests/spec/100-inline-namespace-qualified-template-id-pack-expansion.t:87:41
     template library::indices
     selected primary
     bind #1 = <0, 1> source=explicit

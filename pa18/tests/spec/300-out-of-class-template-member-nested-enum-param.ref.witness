@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/spec/300-out-of-class-template-member-nested-enum-param.t:25:3
+  class-use at tests/spec/300-out-of-class-template-member-nested-enum-param.t:25:3
     template Box
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/spec/300-out-of-class-template-member-nested-enum-param.t:26:19
+  class-use at tests/spec/300-out-of-class-template-member-nested-enum-param.t:26:19
     template Box
     selected primary
     bind #1 = int source=explicit

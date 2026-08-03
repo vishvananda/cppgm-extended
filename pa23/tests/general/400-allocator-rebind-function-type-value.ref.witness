@@ -1,23 +1,23 @@
 translation-unit
-  alias-use at pa23/tests/general/400-allocator-rebind-function-type-value.t:49:9
+  alias-use at tests/general/400-allocator-rebind-function-type-value.t:49:9
     template std::__allocator_traits_rebind_t
     bind #1 = allocator_type source=explicit
     bind #2 = _Tp source=explicit
-  class-use at pa23/tests/general/400-allocator-rebind-function-type-value.t:70:14
+  class-use at tests/general/400-allocator-rebind-function-type-value.t:70:14
     template std::allocator
     selected primary
     bind #1 = int (*)(int) source=explicit
-  class-use at pa23/tests/general/400-allocator-rebind-function-type-value.t:71:14
+  class-use at tests/general/400-allocator-rebind-function-type-value.t:71:14
     template std::allocator_traits
     selected primary
     bind #1 = std::allocator<int (*)(int)> source=explicit
-  class-use at pa23/tests/general/400-allocator-rebind-function-type-value.t:79:10
+  class-use at tests/general/400-allocator-rebind-function-type-value.t:79:10
     template std::is_same
     selected partial
     bind #1 = std::allocator<int (*)(int)> source=explicit
     bind #2 = std::allocator<int (*)(int)> source=explicit
     specialize #1 = std::allocator<int (*)(int)> source=deduced
-  alias-use at pa23/tests/general/400-allocator-rebind-function-type-value.t:81:9
+  alias-use at tests/general/400-allocator-rebind-function-type-value.t:81:9
     template rebind_alloc_t
     bind #1 = traits_type source=explicit
     bind #2 = typename traits_type::value_type source=explicit

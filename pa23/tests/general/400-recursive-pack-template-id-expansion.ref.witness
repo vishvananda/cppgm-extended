@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/400-recursive-pack-template-id-expansion.t:34:10
+  class-use at tests/general/400-recursive-pack-template-id-expansion.t:34:10
     template find
     selected partial
     bind #1 = list<A, B> source=explicit
@@ -7,7 +7,7 @@ translation-unit
     specialize #1 = A source=deduced
     specialize #2 = <B> source=deduced
     specialize #3 = 6 source=deduced
-  class-use at pa23/tests/general/400-recursive-pack-template-id-expansion.t:34:15
+  class-use at tests/general/400-recursive-pack-template-id-expansion.t:34:15
     template list
     selected primary
     bind #1 = <A, B> source=explicit

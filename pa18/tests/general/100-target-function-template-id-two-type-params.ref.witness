@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa18/tests/general/100-target-function-template-id-two-type-params.t:12:18
+  class-use at tests/general/100-target-function-template-id-two-type-params.t:12:18
     template Stream
     selected primary
     bind #1 = Char source=explicit
     bind #2 = Traits source=explicit
-  class-use at pa18/tests/general/100-target-function-template-id-two-type-params.t:15:3
+  class-use at tests/general/100-target-function-template-id-two-type-params.t:15:3
     template Stream
     selected primary
     bind #1 = Char source=deduced

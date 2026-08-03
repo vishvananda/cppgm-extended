@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/100-function-template-ref-cv-sfinae-overload.t:51:10
+  class-use at tests/general/100-function-template-ref-cv-sfinae-overload.t:51:10
     template caller
     selected primary
     bind #1 = const int source=explicit

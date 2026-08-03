@@ -1,11 +1,11 @@
 translation-unit
-  class-use at pa22/tests/spec/200-defaulted-class-template-argument-prefix-deduction.t:31:3
+  class-use at tests/spec/200-defaulted-class-template-argument-prefix-deduction.t:31:3
     template queue
     selected primary
     bind #1 = int source=explicit
     bind #2 = vec<int> source=defaulted
     bind #3 = less<int> source=defaulted
-  function-call at pa22/tests/spec/200-defaulted-class-template-argument-prefix-deduction.t:32:13
+  function-call at tests/spec/200-defaulted-class-template-argument-prefix-deduction.t:32:13
     callee operator+=
     selected instantiation
     bind #1 = int source=deduced

@@ -1,15 +1,15 @@
 translation-unit
-  class-use at pa21/tests/spec/100-nontype-static-outdef-value-member-preserves-type.t:31:16
+  class-use at tests/spec/100-nontype-static-outdef-value-member-preserves-type.t:31:16
     template ratio
     selected primary
     bind #1 = 1 source=explicit
     bind #2 = 1000000000 source=explicit
-  class-use at pa21/tests/spec/100-nontype-static-outdef-value-member-preserves-type.t:34:16
+  class-use at tests/spec/100-nontype-static-outdef-value-member-preserves-type.t:34:16
     template ratio
     selected primary
     bind #1 = 1 source=explicit
     bind #2 = 1000000000 source=explicit
-  class-use at pa21/tests/spec/100-nontype-static-outdef-value-member-preserves-type.t:36:18
+  class-use at tests/spec/100-nontype-static-outdef-value-member-preserves-type.t:36:18
     template ratio
     selected primary
     bind #1 = 1 source=explicit

@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa22/tests/spec/300-inherited-qualified-declval-detector.t:24:15
+  class-use at tests/spec/300-inherited-qualified-declval-detector.t:24:15
     template trait
     selected primary
     bind #1 = int source=explicit

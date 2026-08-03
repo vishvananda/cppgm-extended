@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa22/tests/general/300-dependent-enable-if-return-nontype-less-pack.t:41:3
+  class-use at tests/general/300-dependent-enable-if-return-nontype-less-pack.t:41:3
     template tuple
     selected primary
     bind #1 = <first, second> source=explicit
-  function-call at pa22/tests/general/300-dependent-enable-if-return-nontype-less-pack.t:42:10
+  function-call at tests/general/300-dependent-enable-if-return-nontype-less-pack.t:42:10
     callee find
     selected instantiation
     bind #1 = second source=explicit

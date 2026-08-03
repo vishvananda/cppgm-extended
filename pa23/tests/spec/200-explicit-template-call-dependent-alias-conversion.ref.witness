@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa23/tests/spec/200-explicit-template-call-dependent-alias-conversion.t:27:10
+  function-call at tests/spec/200-explicit-template-call-dependent-alias-conversion.t:27:10
     callee std::copy_n
     selected instantiation
     bind #1 = std::classic_alg_policy source=explicit

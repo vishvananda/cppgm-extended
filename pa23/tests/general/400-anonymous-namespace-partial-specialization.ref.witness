@@ -1,8 +1,8 @@
 translation-unit
-  alias-use at pa23/tests/general/400-anonymous-namespace-partial-specialization.t:29:1
+  alias-use at tests/general/400-anonymous-namespace-partial-specialization.t:29:1
     template GetNodeValueTypeT
     bind #1 = OpaqueValue<int, Payload> source=explicit
-  class-use at pa23/tests/general/400-anonymous-namespace-partial-specialization.t:29:19
+  class-use at tests/general/400-anonymous-namespace-partial-specialization.t:29:19
     template OpaqueValue
     selected primary
     bind #1 = int source=explicit

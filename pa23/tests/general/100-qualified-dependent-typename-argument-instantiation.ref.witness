@@ -1,15 +1,15 @@
 translation-unit
-  class-use at pa23/tests/general/100-qualified-dependent-typename-argument-instantiation.t:22:24
+  class-use at tests/general/100-qualified-dependent-typename-argument-instantiation.t:22:24
     template boost::integral_constant
     selected primary
     bind #1 = bool source=explicit
     bind #2 = false source=explicit
-  class-use at pa23/tests/general/100-qualified-dependent-typename-argument-instantiation.t:35:27
+  class-use at tests/general/100-qualified-dependent-typename-argument-instantiation.t:35:27
     template boost::integral_constant
     selected primary
     bind #1 = bool source=explicit
     bind #2 = true source=explicit
-  class-use at pa23/tests/general/100-qualified-dependent-typename-argument-instantiation.t:46:22
+  class-use at tests/general/100-qualified-dependent-typename-argument-instantiation.t:46:22
     template boost::is_convertible
     selected primary
     bind #1 = tag source=explicit

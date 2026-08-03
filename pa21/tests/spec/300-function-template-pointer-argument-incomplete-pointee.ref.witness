@@ -1,0 +1,16 @@
+translation-unit
+  function-call at tests/spec/300-function-template-pointer-argument-incomplete-pointee.t:5:14
+    callee call::execute
+    selected instantiation
+    bind #1 = lazy<n> source=deduced
+  class-use at tests/spec/300-function-template-pointer-argument-incomplete-pointee.t:5:40
+    template lazy
+    selected primary
+    bind #1 = n source=explicit
+template-closure-events
+  ensure-definition
+    entity call::execute
+  function-instantiation
+    entity call::execute
+  require-definition
+    entity call::execute

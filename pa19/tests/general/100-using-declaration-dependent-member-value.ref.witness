@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa19/tests/general/100-using-declaration-dependent-member-value.t:20:16
+  class-use at tests/general/100-using-declaration-dependent-member-value.t:20:16
     template __is_integer_nonstrict
     selected primary
     bind #1 = long source=explicit

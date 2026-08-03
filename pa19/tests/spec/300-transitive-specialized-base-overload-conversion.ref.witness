@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa19/tests/spec/300-transitive-specialized-base-overload-conversion.t:10:21
+  function-call at tests/spec/300-transitive-specialized-base-overload-conversion.t:10:21
     callee make
     selected instantiation
     bind #1 = int source=explicit

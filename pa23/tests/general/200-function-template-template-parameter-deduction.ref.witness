@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/general/200-function-template-template-parameter-deduction.t:29:3
+  class-use at tests/general/200-function-template-template-parameter-deduction.t:29:3
     template ttp_deduce::box
     selected primary
     bind #1 = double source=explicit
-  function-call at pa23/tests/general/200-function-template-template-parameter-deduction.t:30:7
+  function-call at tests/general/200-function-template-template-parameter-deduction.t:30:7
     callee ttp_deduce::pass
     selected instantiation
     bind #1 = double source=deduced

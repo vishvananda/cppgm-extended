@@ -1,9 +1,9 @@
 translation-unit
-  function-call at pa21/tests/general/300-member-template-assignment-not-special-member.t:41:3
+  function-call at tests/general/300-member-template-assignment-not-special-member.t:41:3
     callee assign_rvalue
     selected instantiation
     bind #1 = box source=deduced
-  function-call at pa21/tests/general/300-member-template-assignment-not-special-member.t:42:3
+  function-call at tests/general/300-member-template-assignment-not-special-member.t:42:3
     callee assign_const_lvalue
     selected instantiation
     bind #1 = box source=deduced

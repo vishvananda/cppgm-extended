@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa22/tests/general/100-derived-base-template-deduction.t:19:3
+  class-use at tests/general/100-derived-base-template-deduction.t:19:3
     template D
     selected primary
     bind #1 = int source=explicit
-  function-call at pa22/tests/general/100-derived-base-template-deduction.t:20:10
+  function-call at tests/general/100-derived-base-template-deduction.t:20:10
     callee probe
     selected instantiation
     bind #1 = int source=deduced

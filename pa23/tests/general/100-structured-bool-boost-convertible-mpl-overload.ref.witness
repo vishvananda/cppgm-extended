@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa23/tests/general/100-structured-bool-boost-convertible-mpl-overload.t:84:11
+  class-use at tests/general/100-structured-bool-boost-convertible-mpl-overload.t:84:11
     template bool_
     selected primary
     bind #1 = false source=explicit
-  class-use at pa23/tests/general/100-structured-bool-boost-convertible-mpl-overload.t:85:10
+  class-use at tests/general/100-structured-bool-boost-convertible-mpl-overload.t:85:10
     template bool_
     selected primary
     bind #1 = true source=explicit
-  class-use at pa23/tests/general/100-structured-bool-boost-convertible-mpl-overload.t:87:27
+  class-use at tests/general/100-structured-bool-boost-convertible-mpl-overload.t:87:27
     template has_fold_case
     selected primary
     bind #1 = traits source=explicit

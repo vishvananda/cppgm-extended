@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa23/tests/general/200-function-template-forwarding-pack-array-ref.t:10:10
+  function-call at tests/general/200-function-template-forwarding-pack-array-ref.t:10:10
     callee f
     selected instantiation
     bind #1 = <const char (&)[2], int> source=deduced

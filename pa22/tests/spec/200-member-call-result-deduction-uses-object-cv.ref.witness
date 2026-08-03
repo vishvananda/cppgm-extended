@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/spec/200-member-call-result-deduction-uses-object-cv.t:28:10
+  function-call at tests/spec/200-member-call-result-deduction-uses-object-cv.t:28:10
     callee same_mutable
     selected instantiation
     bind #1 = int source=deduced

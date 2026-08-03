@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa22/tests/spec/300-namespaced-injected-owner-inherited-member-template.t:11:14
+  class-use at tests/spec/300-namespaced-injected-owner-inherited-member-template.t:11:14
     template n::c
     selected primary
     bind #1 = n::c<int> source=explicit
-  class-use at pa22/tests/spec/300-namespaced-injected-owner-inherited-member-template.t:11:19
+  class-use at tests/spec/300-namespaced-injected-owner-inherited-member-template.t:11:19
     template n::c
     selected primary
     bind #1 = int source=explicit
-  function-call at pa22/tests/spec/300-namespaced-injected-owner-inherited-member-template.t:15:5
+  function-call at tests/spec/300-namespaced-injected-owner-inherited-member-template.t:15:5
     callee n::c<n::c<int>>::b::f
     selected instantiation
     bind #1 = int source=explicit

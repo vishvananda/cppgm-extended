@@ -1,9 +1,9 @@
 translation-unit
-  function-call at pa23/tests/general/200-forwarding-reference-deduction.t:27:10
+  function-call at tests/general/200-forwarding-reference-deduction.t:27:10
     callee classify
     selected instantiation
     bind #1 = int & source=deduced
-  function-call at pa23/tests/general/200-forwarding-reference-deduction.t:27:30
+  function-call at tests/general/200-forwarding-reference-deduction.t:27:30
     callee classify
     selected instantiation
     bind #1 = int source=deduced

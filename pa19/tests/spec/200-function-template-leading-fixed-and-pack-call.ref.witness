@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa19/tests/spec/200-function-template-leading-fixed-and-pack-call.t:12:10
+  function-call at tests/spec/200-function-template-leading-fixed-and-pack-call.t:12:10
     callee f
     selected instantiation
     bind #1 = int source=deduced

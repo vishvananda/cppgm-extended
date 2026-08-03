@@ -1,10 +1,10 @@
 translation-unit
-  function-call at pa22/tests/spec/300-expression-sfinae-decltype-member-comma.t:30:10
+  function-call at tests/spec/300-expression-sfinae-decltype-member-comma.t:30:10
     callee has_value
     selected instantiation
     bind #1 = present source=deduced
     drop has_value reason=worse_conversion
-  function-call at pa22/tests/spec/300-expression-sfinae-decltype-member-comma.t:30:32
+  function-call at tests/spec/300-expression-sfinae-decltype-member-comma.t:30:32
     callee has_value
     selected instantiation
     bind #1 = missing source=deduced

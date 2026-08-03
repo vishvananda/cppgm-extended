@@ -1,33 +1,33 @@
 translation-unit
-  class-use at pa21/tests/general/300-friend-existing-template-private-ctor-access.t:58:6
+  class-use at tests/general/300-friend-existing-template-private-ctor-access.t:58:6
     template n::basic_string
     selected primary
     bind #1 = char source=explicit
     bind #2 = n::traits<char> source=explicit
     bind #3 = n::alloc<char> source=explicit
-  class-use at pa21/tests/general/300-friend-existing-template-private-ctor-access.t:58:28
+  class-use at tests/general/300-friend-existing-template-private-ctor-access.t:58:28
     template n::traits
     selected primary
     bind #1 = char source=explicit
-  class-use at pa21/tests/general/300-friend-existing-template-private-ctor-access.t:58:45
+  class-use at tests/general/300-friend-existing-template-private-ctor-access.t:58:45
     template n::alloc
     selected primary
     bind #1 = char source=explicit
-  class-use at pa21/tests/general/300-friend-existing-template-private-ctor-access.t:59:6
+  class-use at tests/general/300-friend-existing-template-private-ctor-access.t:59:6
     template n::basic_string
     selected primary
     bind #1 = char source=explicit
     bind #2 = n::traits<char> source=explicit
     bind #3 = n::alloc<char> source=explicit
-  class-use at pa21/tests/general/300-friend-existing-template-private-ctor-access.t:59:28
+  class-use at tests/general/300-friend-existing-template-private-ctor-access.t:59:28
     template n::traits
     selected primary
     bind #1 = char source=explicit
-  class-use at pa21/tests/general/300-friend-existing-template-private-ctor-access.t:59:45
+  class-use at tests/general/300-friend-existing-template-private-ctor-access.t:59:45
     template n::alloc
     selected primary
     bind #1 = char source=explicit
-  function-call at pa21/tests/general/300-friend-existing-template-private-ctor-access.t:59:66
+  function-call at tests/general/300-friend-existing-template-private-ctor-access.t:59:66
     callee n::operator+
     selected instantiation
     bind #1 = char source=deduced

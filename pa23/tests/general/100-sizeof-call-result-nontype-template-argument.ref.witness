@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/100-sizeof-call-result-nontype-template-argument.t:38:20
+  class-use at tests/general/100-sizeof-call-result-nontype-template-argument.t:38:20
     template is_complete
     selected primary
     bind #1 = sequence source=explicit

@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/general/300-class-template-static-member-out-of-class-definition.t:10:12
+  class-use at tests/general/300-class-template-static-member-out-of-class-definition.t:10:12
     template D
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/300-class-template-static-member-out-of-class-definition.t:13:10
+  class-use at tests/general/300-class-template-static-member-out-of-class-definition.t:13:10
     template D
     selected primary
     bind #1 = int source=explicit

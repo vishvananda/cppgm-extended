@@ -1,0 +1,16 @@
+translation-unit
+  function-call at tests/spec/300-dependent-member-template-ref-qualified-overload.t:8:37
+    callee g
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity g
+  function-instantiation
+    entity X::f
+  function-instantiation
+    entity g
+  require-definition
+    entity X::f
+  require-definition
+    entity g

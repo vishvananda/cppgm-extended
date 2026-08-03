@@ -1,17 +1,17 @@
 translation-unit
-  class-use at pa23/tests/general/100-selected-specialization-special-member-body.t:19:8
+  class-use at tests/general/100-selected-specialization-special-member-body.t:19:8
     template Box
     selected explicit
     bind #1 = bool source=explicit
-  class-use at pa23/tests/general/100-selected-specialization-special-member-body.t:19:19
+  class-use at tests/general/100-selected-specialization-special-member-body.t:19:19
     template Box
     selected explicit
     bind #1 = bool source=explicit
-  class-use at pa23/tests/general/100-selected-specialization-special-member-body.t:25:3
+  class-use at tests/general/100-selected-specialization-special-member-body.t:25:3
     template Box
     selected explicit
     bind #1 = bool source=explicit
-  class-use at pa23/tests/general/100-selected-specialization-special-member-body.t:26:3
+  class-use at tests/general/100-selected-specialization-special-member-body.t:26:3
     template Box
     selected explicit
     bind #1 = bool source=explicit

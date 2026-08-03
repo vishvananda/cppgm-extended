@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/spec/100-pointer-cv-partial-specialization-conflict.t:23:10
+  class-use at tests/spec/100-pointer-cv-partial-specialization-conflict.t:23:10
     template Match
     selected partial
     bind #1 = const P * source=explicit

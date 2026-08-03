@@ -1,0 +1,13 @@
+translation-unit
+  function-call at tests/general/400-array-bound-expression-is-nondeduced.t:13:3
+    callee translate
+    selected instantiation
+    bind #1 = int source=deduced
+    bind #2 = 3 source=deduced
+template-closure-events
+  ensure-definition
+    entity translate
+  function-instantiation
+    entity translate
+  require-definition
+    entity translate

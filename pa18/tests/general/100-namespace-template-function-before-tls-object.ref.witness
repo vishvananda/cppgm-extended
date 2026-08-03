@@ -1,9 +1,9 @@
 translation-unit
-  function-call at pa18/tests/general/100-namespace-template-function-before-tls-object.t:14:10
+  function-call at tests/general/100-namespace-template-function-before-tls-object.t:14:10
     callee ns::force
     selected instantiation
     bind #1 = int source=deduced
-  class-use at pa18/tests/general/100-namespace-template-function-before-tls-object.t:17:14
+  class-use at tests/general/100-namespace-template-function-before-tls-object.t:17:14
     template ns::Helper
     selected primary
     bind #1 = int source=explicit

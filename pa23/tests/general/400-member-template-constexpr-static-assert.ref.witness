@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa23/tests/general/400-member-template-constexpr-static-assert.t:13:5
+  class-use at tests/general/400-member-template-constexpr-static-assert.t:13:5
     template check_pair_construction
     selected primary
     bind #1 = unsigned long source=explicit
     bind #2 = unsigned long source=explicit
-  function-call at pa23/tests/general/400-member-template-constexpr-static-assert.t:13:5
+  function-call at tests/general/400-member-template-constexpr-static-assert.t:13:5
     callee check_pair_construction<unsigned long, unsigned long>::is_pair_constructible
     selected instantiation
     bind #1 = unsigned long source=explicit

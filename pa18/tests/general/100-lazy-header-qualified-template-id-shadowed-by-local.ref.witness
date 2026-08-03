@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/general/100-lazy-header-qualified-template-id-shadowed-by-local.t:5:10
+  function-call at tests/general/100-lazy-header-qualified-template-id-shadowed-by-local.t:5:10
     callee lazy_qualified_shadow::classify
     selected instantiation
     bind #1 = char source=deduced

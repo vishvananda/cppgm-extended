@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa18/tests/general/100-local-type-cross-namespace-operator-template.t:24:8
+  class-use at tests/general/100-local-type-cross-namespace-operator-template.t:24:8
     template lib::WrapIter
     selected primary
     bind #1 = Local * source=explicit
-  class-use at pa18/tests/general/100-local-type-cross-namespace-operator-template.t:25:8
+  class-use at tests/general/100-local-type-cross-namespace-operator-template.t:25:8
     template lib::WrapIter
     selected primary
     bind #1 = Local * source=explicit
-  function-call at pa18/tests/general/100-local-type-cross-namespace-operator-template.t:26:12
+  function-call at tests/general/100-local-type-cross-namespace-operator-template.t:26:12
     callee lib::operator==
     selected instantiation
     bind #1 = Local * source=deduced

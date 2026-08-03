@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/general/300-reused-template-body-qualified-member-type-arg.t:24:3
+  class-use at tests/general/300-reused-template-body-qualified-member-type-arg.t:24:3
     template Use
     selected primary
     bind #1 = n::A source=explicit
-  class-use at pa18/tests/general/300-reused-template-body-qualified-member-type-arg.t:25:3
+  class-use at tests/general/300-reused-template-body-qualified-member-type-arg.t:25:3
     template Use
     selected primary
     bind #1 = n::B source=explicit

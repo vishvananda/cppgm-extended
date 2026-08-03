@@ -1,24 +1,24 @@
 translation-unit
-  class-use at pa23/tests/general/100-direct-namespace-wins-over-using-directive.t:61:32
+  class-use at tests/general/100-direct-namespace-wins-over-using-directive.t:61:32
     template meta::mpl::aux::largest_int
     selected primary
     bind #1 = long source=explicit
     bind #2 = long source=explicit
-  class-use at pa23/tests/general/100-direct-namespace-wins-over-using-directive.t:75:20
+  class-use at tests/general/100-direct-namespace-wins-over-using-directive.t:75:20
     template meta::mpl::impl
     selected explicit
     bind #1 = meta::mpl::tag source=explicit
     bind #2 = meta::mpl::tag source=explicit
-  class-use at pa23/tests/general/100-direct-namespace-wins-over-using-directive.t:76:7
+  class-use at tests/general/100-direct-namespace-wins-over-using-directive.t:76:7
     template meta::mpl::impl<meta::mpl::tag, meta::mpl::tag>::apply
     selected primary
     bind #1 = local::constant<7> source=explicit
     bind #2 = local::constant<3> source=explicit
-  class-use at pa23/tests/general/100-direct-namespace-wins-over-using-directive.t:76:20
+  class-use at tests/general/100-direct-namespace-wins-over-using-directive.t:76:20
     template local::constant
     selected primary
     bind #1 = 7 source=explicit
-  class-use at pa23/tests/general/100-direct-namespace-wins-over-using-directive.t:76:40
+  class-use at tests/general/100-direct-namespace-wins-over-using-directive.t:76:40
     template local::constant
     selected primary
     bind #1 = 3 source=explicit

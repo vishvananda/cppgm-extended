@@ -298,10 +298,10 @@ string normalize_witness_path(const string & path)
     cache[path] = "libc++/" + value.substr(libcxx_pos + libcxx_marker.size());
     return cache[path];
   }
-  static const std::regex pa_regex("(pa\\d+/(tests|course)/.*)$");
+  static const std::regex pa_regex("(^|/)pa[0-9]+/((tests|course)/.*)$");
   std::smatch match;
   if(std::regex_search(value, match, pa_regex)) {
-    cache[path] = match[1].str();
+    cache[path] = match[2].str();
     return cache[path];
   }
   cache[path] = value;
@@ -5121,6 +5121,17 @@ string render_events_text(const vector<WitnessEvent> & events,
                           bool debug)
 {
   vector<WitnessEvent> ordered = events;
+  for(size_t i = 0; i < ordered.size(); ++i) {
+    ordered[i].location = source_location_compare_key(ordered[i].location);
+    ordered[i].selected_decl_location =
+        source_location_compare_key(ordered[i].selected_decl_location);
+    ordered[i].guide_decl_location =
+        source_location_compare_key(ordered[i].guide_decl_location);
+    for(size_t j = 0; j < ordered[i].drops.size(); ++j) {
+      ordered[i].drops[j].location =
+          source_location_compare_key(ordered[i].drops[j].location);
+    }
+  }
   sort_events(ordered);
   std::ostringstream out;
   out << "translation-unit\n";

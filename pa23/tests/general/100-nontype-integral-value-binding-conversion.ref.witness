@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/100-nontype-integral-value-binding-conversion.t:16:15
+  class-use at tests/general/100-nontype-integral-value-binding-conversion.t:16:15
     template engine
     selected primary
     bind #1 = unsigned int source=explicit

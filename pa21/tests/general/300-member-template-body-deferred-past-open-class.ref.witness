@@ -1,0 +1,16 @@
+translation-unit
+  class-use at tests/general/300-member-template-body-deferred-past-open-class.t:26:3
+    template box
+    selected primary
+    bind #1 = node source=explicit
+template-closure-events
+  ensure-definition
+    entity box<node>::demand
+  function-instantiation
+    entity box<node>::assign
+  function-instantiation
+    entity box<node>::demand
+  require-definition
+    entity box<node>::assign
+  require-definition
+    entity box<node>::demand

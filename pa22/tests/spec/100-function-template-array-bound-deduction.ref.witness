@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/spec/100-function-template-array-bound-deduction.t:13:10
+  function-call at tests/spec/100-function-template-array-bound-deduction.t:13:10
     callee array_size
     selected instantiation
     bind #1 = int source=deduced

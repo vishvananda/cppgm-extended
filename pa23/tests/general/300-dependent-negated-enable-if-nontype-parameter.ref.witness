@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/general/300-dependent-negated-enable-if-nontype-parameter.t:37:10
+  class-use at tests/general/300-dependent-negated-enable-if-nontype-parameter.t:37:10
     template fn
     selected primary
     bind #1 = int source=explicit
-  function-call at pa23/tests/general/300-dependent-negated-enable-if-nontype-parameter.t:37:20
+  function-call at tests/general/300-dependent-negated-enable-if-nontype-parameter.t:37:20
     callee fn<int>::f
     selected instantiation
     bind #1 = int source=deduced

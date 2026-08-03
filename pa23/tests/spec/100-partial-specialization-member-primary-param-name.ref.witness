@@ -1,9 +1,9 @@
 translation-unit
-  function-call at pa23/tests/spec/100-partial-specialization-member-primary-param-name.t:30:10
+  function-call at tests/spec/100-partial-specialization-member-primary-param-name.t:30:10
     callee accepts_known_digits
     selected instantiation
     bind #1 = known_digits<10> source=deduced
-  class-use at pa23/tests/spec/100-partial-specialization-member-primary-param-name.t:30:34
+  class-use at tests/spec/100-partial-specialization-member-primary-param-name.t:30:34
     template known_digits
     selected partial
     bind #1 = 10 source=explicit

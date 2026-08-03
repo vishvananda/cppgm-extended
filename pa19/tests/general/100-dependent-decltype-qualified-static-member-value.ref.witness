@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa19/tests/general/100-dependent-decltype-qualified-static-member-value.t:10:15
+  class-use at tests/general/100-dependent-decltype-qualified-static-member-value.t:10:15
     template wrap
     selected primary
     bind #1 = S source=explicit
-  class-use at pa19/tests/general/100-dependent-decltype-qualified-static-member-value.t:13:10
+  class-use at tests/general/100-dependent-decltype-qualified-static-member-value.t:13:10
     template wrap
     selected primary
     bind #1 = S source=explicit

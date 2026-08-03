@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa19/tests/general/100-cast-nontype-template-argument.t:4:11
+  class-use at tests/general/100-cast-nontype-template-argument.t:4:11
     template X
     selected primary
     bind #1 = char16_t source=explicit

@@ -1,23 +1,23 @@
 translation-unit
-  class-use at pa23/tests/general/100-constructor-template-direct-other-specialization.t:14:3
+  class-use at tests/general/100-constructor-template-direct-other-specialization.t:14:3
     template duration
     selected primary
     bind #1 = int source=explicit
     bind #2 = tag<2> source=explicit
-  class-use at pa23/tests/general/100-constructor-template-direct-other-specialization.t:14:17
+  class-use at tests/general/100-constructor-template-direct-other-specialization.t:14:17
     template tag
     selected primary
     bind #1 = 2 source=explicit
-  class-use at pa23/tests/general/100-constructor-template-direct-other-specialization.t:15:3
+  class-use at tests/general/100-constructor-template-direct-other-specialization.t:15:3
     template duration
     selected primary
     bind #1 = long source=explicit
     bind #2 = tag<1> source=explicit
-  class-use at pa23/tests/general/100-constructor-template-direct-other-specialization.t:15:18
+  class-use at tests/general/100-constructor-template-direct-other-specialization.t:15:18
     template tag
     selected primary
     bind #1 = 1 source=explicit
-  function-call at pa23/tests/general/100-constructor-template-direct-other-specialization.t:15:26
+  function-call at tests/general/100-constructor-template-direct-other-specialization.t:15:26
     callee duration<long, tag<1>>::duration
     selected instantiation
     bind #1 = int source=deduced

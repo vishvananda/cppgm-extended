@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa23/tests/spec/200-inherited-template-param-shadow-forward.t:42:7
+  class-use at tests/spec/200-inherited-template-param-shadow-forward.t:42:7
     template ns::Pair
     selected primary
     bind #1 = unsigned long source=explicit
     bind #2 = unsigned long source=explicit
-  function-call at pa23/tests/spec/200-inherited-template-param-shadow-forward.t:42:42
+  function-call at tests/spec/200-inherited-template-param-shadow-forward.t:42:42
     callee ns::Pair<unsigned long, unsigned long>::Pair
     selected instantiation
     bind #1 = unsigned int source=deduced

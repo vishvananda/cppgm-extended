@@ -1,14 +1,14 @@
 translation-unit
-  alias-use at pa22/tests/spec/300-structured-type-id-bool-template-sfinae.t:38:3
+  alias-use at tests/spec/300-structured-type-id-bool-template-sfinae.t:38:3
     template enable_if_t
     bind #1 = is_convertible<iter_category_t<InIter>, input_iterator_tag>::value source=explicit
-  alias-use at pa22/tests/spec/300-structured-type-id-bool-template-sfinae.t:38:30
+  alias-use at tests/spec/300-structured-type-id-bool-template-sfinae.t:38:30
     template iter_category_t
     bind #1 = InIter source=explicit
-  alias-use at pa22/tests/spec/300-structured-type-id-bool-template-sfinae.t:41:32
+  alias-use at tests/spec/300-structured-type-id-bool-template-sfinae.t:41:32
     template RequireInputIter
     bind #1 = InIter source=explicit
-  function-call at pa22/tests/spec/300-structured-type-id-bool-template-sfinae.t:52:10
+  function-call at tests/spec/300-structured-type-id-bool-template-sfinae.t:52:10
     callee f
     selected instantiation
     bind #1 = int * source=deduced

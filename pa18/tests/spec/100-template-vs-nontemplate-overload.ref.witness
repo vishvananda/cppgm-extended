@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/spec/100-template-vs-nontemplate-overload.t:17:28
+  function-call at tests/spec/100-template-vs-nontemplate-overload.t:17:28
     callee choose
     selected instantiation
     bind #1 = long source=deduced

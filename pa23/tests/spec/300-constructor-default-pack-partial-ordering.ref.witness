@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/spec/300-constructor-default-pack-partial-ordering.t:55:3
+  class-use at tests/spec/300-constructor-default-pack-partial-ordering.t:55:3
     template in_place_type_t
     selected primary
     bind #1 = int source=explicit
-  function-call at pa23/tests/spec/300-constructor-default-pack-partial-ordering.t:56:12
+  function-call at tests/spec/300-constructor-default-pack-partial-ordering.t:56:12
     callee any_like::any_like
     selected instantiation
     bind #1 = int source=deduced

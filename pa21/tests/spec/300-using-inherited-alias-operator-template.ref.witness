@@ -1,12 +1,12 @@
 translation-unit
-  class-use at pa21/tests/spec/300-using-inherited-alias-operator-template.t:21:19
+  class-use at tests/spec/300-using-inherited-alias-operator-template.t:21:19
     template extends
     selected primary
     bind #1 = expr source=explicit
     bind #2 = mark_tag source=explicit
     bind #3 = domain source=explicit
     bind #4 = 0 source=defaulted
-  function-call at pa21/tests/spec/300-using-inherited-alias-operator-template.t:29:16
+  function-call at tests/spec/300-using-inherited-alias-operator-template.t:29:16
     callee extends<expr, mark_tag, domain>::operator=
     selected instantiation
     bind #1 = int source=deduced

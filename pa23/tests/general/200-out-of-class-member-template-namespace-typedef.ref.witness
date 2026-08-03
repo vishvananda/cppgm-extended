@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/200-out-of-class-member-template-namespace-typedef.t:24:6
+  class-use at tests/general/200-out-of-class-member-template-namespace-typedef.t:24:6
     template N::Holder
     selected primary
     bind #1 = int source=explicit

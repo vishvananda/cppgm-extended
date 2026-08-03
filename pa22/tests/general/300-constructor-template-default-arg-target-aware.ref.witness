@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/general/300-constructor-template-default-arg-target-aware.t:16:10
+  function-call at tests/general/300-constructor-template-default-arg-target-aware.t:16:10
     callee box::box
     selected instantiation
     bind #1 = iter source=deduced

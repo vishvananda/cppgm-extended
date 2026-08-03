@@ -1,29 +1,29 @@
 translation-unit
-  class-use at pa23/tests/general/100-function-type-not-pointer-partial-specialization.t:18:15
+  class-use at tests/general/100-function-type-not-pointer-partial-specialization.t:18:15
     template pick
     selected primary
     bind #1 = void () source=explicit
     bind #2 = void source=explicit
-  class-use at pa23/tests/general/100-function-type-not-pointer-partial-specialization.t:19:15
+  class-use at tests/general/100-function-type-not-pointer-partial-specialization.t:19:15
     template pick
     selected partial
     bind #1 = void (*)() source=explicit
     bind #2 = void source=explicit
     specialize #1 = void source=deduced
     specialize #2 = void source=deduced
-  class-use at pa23/tests/general/100-function-type-not-pointer-partial-specialization.t:20:15
+  class-use at tests/general/100-function-type-not-pointer-partial-specialization.t:20:15
     template pick
     selected primary
     bind #1 = void (...) source=explicit
     bind #2 = void source=explicit
-  class-use at pa23/tests/general/100-function-type-not-pointer-partial-specialization.t:21:15
+  class-use at tests/general/100-function-type-not-pointer-partial-specialization.t:21:15
     template pick
     selected partial
     bind #1 = void (*)(...) source=explicit
     bind #2 = void source=explicit
     specialize #1 = void source=deduced
     specialize #2 = void source=deduced
-  class-use at pa23/tests/general/100-function-type-not-pointer-partial-specialization.t:25:10
+  class-use at tests/general/100-function-type-not-pointer-partial-specialization.t:25:10
     template pick
     selected primary
     bind #1 = void () source=explicit

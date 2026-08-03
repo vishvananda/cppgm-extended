@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/spec/300-unqualified-call-skips-dependent-base.t:30:3
+  class-use at tests/spec/300-unqualified-call-skips-dependent-base.t:30:3
     template two_phase_derived
     selected primary
     bind #1 = int source=explicit

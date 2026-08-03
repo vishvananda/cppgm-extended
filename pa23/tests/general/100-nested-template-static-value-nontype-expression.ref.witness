@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/general/100-nested-template-static-value-nontype-expression.t:52:15
+  class-use at tests/general/100-nested-template-static-value-nontype-expression.t:52:15
     template take
     selected primary
     bind #1 = 128 source=explicit
-  class-use at pa23/tests/general/100-nested-template-static-value-nontype-expression.t:52:20
+  class-use at tests/general/100-nested-template-static-value-nontype-expression.t:52:20
     template calculate_alignment_ct
     selected primary
     bind #1 = unsigned long source=explicit

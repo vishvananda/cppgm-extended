@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/spec/300-namespace-qualified-template-id-static-call.t:24:10
+  function-call at tests/spec/300-namespace-qualified-template-id-static-call.t:24:10
     callee call_pointer_to
     selected instantiation
     bind #1 = int source=deduced

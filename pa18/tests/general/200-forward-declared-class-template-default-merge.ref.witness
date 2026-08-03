@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/200-forward-declared-class-template-default-merge.t:7:9
+  class-use at tests/general/200-forward-declared-class-template-default-merge.t:7:9
     template duration
     selected primary
     bind #1 = long long source=explicit

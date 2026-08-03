@@ -1,22 +1,22 @@
 translation-unit
-  class-use at pa21/tests/spec/300-member-call-template-hides-inherited-instantiation.t:45:3
+  class-use at tests/spec/300-member-call-template-hides-inherited-instantiation.t:45:3
     template iter
     selected primary
     bind #1 = int source=explicit
-  class-use at pa21/tests/spec/300-member-call-template-hides-inherited-instantiation.t:48:3
+  class-use at tests/spec/300-member-call-template-hides-inherited-instantiation.t:48:3
     template unrolled
     selected primary
     bind #1 = void source=explicit
-  function-call at pa21/tests/spec/300-member-call-template-hides-inherited-instantiation.t:48:3
+  function-call at tests/spec/300-member-call-template-hides-inherited-instantiation.t:48:3
     callee unrolled<void>::call
     selected instantiation
     bind #1 = iter<int> source=deduced
     bind #2 = base_fn source=deduced
-  class-use at pa21/tests/spec/300-member-call-template-hides-inherited-instantiation.t:51:3
+  class-use at tests/spec/300-member-call-template-hides-inherited-instantiation.t:51:3
     template unrolled
     selected primary
     bind #1 = void source=explicit
-  function-call at pa21/tests/spec/300-member-call-template-hides-inherited-instantiation.t:51:3
+  function-call at tests/spec/300-member-call-template-hides-inherited-instantiation.t:51:3
     callee unrolled<void>::call
     selected instantiation
     bind #1 = iter<int> source=deduced

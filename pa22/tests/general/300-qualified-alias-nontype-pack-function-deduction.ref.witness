@@ -1,13 +1,13 @@
 translation-unit
-  alias-use at pa22/tests/general/300-qualified-alias-nontype-pack-function-deduction.t:21:33
+  alias-use at tests/general/300-qualified-alias-nontype-pack-function-deduction.t:21:33
     template sequence::index_sequence
     bind #1 = I... source=explicit
-  class-use at pa22/tests/general/300-qualified-alias-nontype-pack-function-deduction.t:30:13
+  class-use at tests/general/300-qualified-alias-nontype-pack-function-deduction.t:30:13
     template sequence::integer_sequence
     selected primary
     bind #1 = unsigned long source=explicit
     bind #2 = <0, 1> source=explicit
-  function-call at pa22/tests/general/300-qualified-alias-nontype-pack-function-deduction.t:31:10
+  function-call at tests/general/300-qualified-alias-nontype-pack-function-deduction.t:31:10
     callee dispatch
     selected instantiation
     bind #1 = int source=explicit

@@ -1,0 +1,12 @@
+translation-unit
+  function-call at tests/spec/300-inherited-member-template-call-during-static-assert-validation.t:18:12
+    callee base::fail
+    selected instantiation
+    bind #1 = char[1] source=deduced
+template-closure-events
+  ensure-definition
+    entity base::fail
+  function-instantiation
+    entity base::fail
+  require-definition
+    entity base::fail

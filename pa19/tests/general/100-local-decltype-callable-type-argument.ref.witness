@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa19/tests/general/100-local-decltype-callable-type-argument.t:19:21
+  class-use at tests/general/100-local-decltype-callable-type-argument.t:19:21
     template array
     selected primary
     bind #1 = int source=explicit
     bind #2 = 10 source=explicit
-  function-call at pa19/tests/general/100-local-decltype-callable-type-argument.t:34:10
+  function-call at tests/general/100-local-decltype-callable-type-argument.t:34:10
     callee run
     selected instantiation
     bind #1 = factory source=explicit

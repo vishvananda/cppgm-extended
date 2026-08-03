@@ -1,17 +1,17 @@
 translation-unit
-  class-use at pa18/tests/general/200-defaulted-template-arg-base-reference-chain.t:12:3
+  class-use at tests/general/200-defaulted-template-arg-base-reference-chain.t:12:3
     template Chain
     selected primary
     bind #1 = int source=explicit
     bind #2 = Empty source=defaulted
     bind #3 = void source=defaulted
-  class-use at pa18/tests/general/200-defaulted-template-arg-base-reference-chain.t:13:3
+  class-use at tests/general/200-defaulted-template-arg-base-reference-chain.t:13:3
     template Chain
     selected primary
     bind #1 = char source=explicit
     bind #2 = Chain<int> source=explicit
     bind #3 = void source=defaulted
-  class-use at pa18/tests/general/200-defaulted-template-arg-base-reference-chain.t:13:15
+  class-use at tests/general/200-defaulted-template-arg-base-reference-chain.t:13:15
     template Chain
     selected primary
     bind #1 = int source=explicit

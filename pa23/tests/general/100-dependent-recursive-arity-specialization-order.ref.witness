@@ -1,17 +1,17 @@
 translation-unit
-  class-use at pa23/tests/general/100-dependent-recursive-arity-specialization-order.t:18:15
+  class-use at tests/general/100-dependent-recursive-arity-specialization-order.t:18:15
     template detail::arity_impl
     selected primary
     bind #1 = int source=explicit
-  class-use at pa23/tests/general/100-dependent-recursive-arity-specialization-order.t:39:9
+  class-use at tests/general/100-dependent-recursive-arity-specialization-order.t:39:9
     template cons
     selected primary
     bind #1 = nil source=explicit
-  class-use at pa23/tests/general/100-dependent-recursive-arity-specialization-order.t:45:3
+  class-use at tests/general/100-dependent-recursive-arity-specialization-order.t:45:3
     template check
     selected primary
     bind #1 = 0 source=explicit
-  class-use at pa23/tests/general/100-dependent-recursive-arity-specialization-order.t:45:9
+  class-use at tests/general/100-dependent-recursive-arity-specialization-order.t:45:9
     template arity
     selected primary
     bind #1 = cons<nil> source=explicit

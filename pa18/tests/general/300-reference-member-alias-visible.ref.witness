@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/300-reference-member-alias-visible.t:3:1
+  class-use at tests/general/300-reference-member-alias-visible.t:3:1
     template Vec
     selected primary
     bind #1 = int source=explicit

@@ -1,5 +1,5 @@
 translation-unit
-  variable-use at pa21/tests/general/300-variable-template-forwarding-partial-top-const.t:5:47
+  variable-use at tests/general/300-variable-template-forwarding-partial-top-const.t:5:47
     template v
     selected partial
     bind #1 = int source=deduced
@@ -7,7 +7,7 @@ translation-unit
     bind #3 = <int, int> source=deduced
     specialize #1 = int source=deduced
     specialize #2 = int source=deduced
-  variable-use at pa21/tests/general/300-variable-template-forwarding-partial-top-const.t:17:15
+  variable-use at tests/general/300-variable-template-forwarding-partial-top-const.t:17:15
     template v
     selected partial
     bind #1 = int source=deduced

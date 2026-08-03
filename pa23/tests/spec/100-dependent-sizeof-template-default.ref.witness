@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/spec/100-dependent-sizeof-template-default.t:12:10
+  class-use at tests/spec/100-dependent-sizeof-template-default.t:12:10
     template sized
     selected primary
     bind #1 = int source=explicit

@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa22/tests/spec/300-constructor-template-cross-specialization.t:17:3
+  class-use at tests/spec/300-constructor-template-cross-specialization.t:17:3
     template wrap
     selected primary
     bind #1 = int source=explicit
-  class-use at pa22/tests/spec/300-constructor-template-cross-specialization.t:18:3
+  class-use at tests/spec/300-constructor-template-cross-specialization.t:18:3
     template wrap
     selected primary
     bind #1 = long source=explicit
-  function-call at pa22/tests/spec/300-constructor-template-cross-specialization.t:18:14
+  function-call at tests/spec/300-constructor-template-cross-specialization.t:18:14
     callee wrap<long>::wrap
     selected instantiation
     bind #1 = int source=deduced

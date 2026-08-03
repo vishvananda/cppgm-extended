@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/200-empty-pack-member-template-owner-key.t:33:3
+  class-use at tests/general/200-empty-pack-member-template-owner-key.t:33:3
     template List
     selected primary
     bind #1 = int source=explicit

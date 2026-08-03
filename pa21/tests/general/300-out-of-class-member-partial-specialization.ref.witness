@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa21/tests/general/300-out-of-class-member-partial-specialization.t:20:22
+  class-use at tests/general/300-out-of-class-member-partial-specialization.t:20:22
     template outer::inner
     selected partial
     bind #1 = int source=explicit

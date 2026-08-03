@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/general/300-template-static-member-storage-definition-preserves-inclass-initializer.t:11:11
+  class-use at tests/general/300-template-static-member-storage-definition-preserves-inclass-initializer.t:11:11
     template Box
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/300-template-static-member-storage-definition-preserves-inclass-initializer.t:14:3
+  class-use at tests/general/300-template-static-member-storage-definition-preserves-inclass-initializer.t:14:3
     template Box
     selected primary
     bind #1 = int source=explicit

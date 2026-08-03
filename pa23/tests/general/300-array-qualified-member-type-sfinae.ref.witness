@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa23/tests/general/300-array-qualified-member-type-sfinae.t:51:10
+  function-call at tests/general/300-array-qualified-member-type-sfinae.t:51:10
     callee boost::size
     selected instantiation
     bind #1 = char[4] source=deduced

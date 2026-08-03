@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/general/300-qualified-type-explicit-argument-rejects-nontype-overload.t:7:14
+  function-call at tests/general/300-qualified-type-explicit-argument-rejects-nontype-overload.t:7:14
     callee n::op::g
     selected instantiation
     bind #1 = int source=deduced

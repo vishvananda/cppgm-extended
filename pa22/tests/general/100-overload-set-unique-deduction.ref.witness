@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/general/100-overload-set-unique-deduction.t:19:10
+  function-call at tests/general/100-overload-set-unique-deduction.t:19:10
     callee apply
     selected instantiation
     bind #1 = int source=deduced

@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa19/tests/general/100-dependent-nontype-vtable-redecl-owned-syntax.t:17:3
+  class-use at tests/general/100-dependent-nontype-vtable-redecl-owned-syntax.t:17:3
     template Control
     selected primary
     bind #1 = int source=explicit

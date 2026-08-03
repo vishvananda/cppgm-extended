@@ -1,22 +1,22 @@
 translation-unit
-  class-use at pa23/tests/spec/100-dependent-template-id-qualified-member-source-owner.t:46:14
+  class-use at tests/spec/100-dependent-template-id-qualified-member-source-owner.t:46:14
     template ns::is_fast
     selected partial
     bind #1 = ns::tag<ns::box<char, int, ns::alloc<char>>> source=explicit
     specialize #1 = char source=deduced
     specialize #2 = int source=deduced
     specialize #3 = ns::alloc<char> source=deduced
-  class-use at pa23/tests/spec/100-dependent-template-id-qualified-member-source-owner.t:46:26
+  class-use at tests/spec/100-dependent-template-id-qualified-member-source-owner.t:46:26
     template ns::tag
     selected primary
     bind #1 = ns::box<char, int, ns::alloc<char>> source=explicit
-  class-use at pa23/tests/spec/100-dependent-template-id-qualified-member-source-owner.t:46:34
+  class-use at tests/spec/100-dependent-template-id-qualified-member-source-owner.t:46:34
     template ns::box
     selected primary
     bind #1 = char source=explicit
     bind #2 = int source=explicit
     bind #3 = ns::alloc<char> source=explicit
-  class-use at pa23/tests/spec/100-dependent-template-id-qualified-member-source-owner.t:46:53
+  class-use at tests/spec/100-dependent-template-id-qualified-member-source-owner.t:46:53
     template ns::alloc
     selected primary
     bind #1 = char source=explicit

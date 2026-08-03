@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa18/tests/general/100-template-function-pointer-rvalue-argument-emits-move.t:10:12
+  class-use at tests/general/100-template-function-pointer-rvalue-argument-emits-move.t:10:12
     template holder
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/100-template-function-pointer-rvalue-argument-emits-move.t:24:3
+  class-use at tests/general/100-template-function-pointer-rvalue-argument-emits-move.t:24:3
     template holder
     selected primary
     bind #1 = int source=explicit
-  function-call at pa18/tests/general/100-template-function-pointer-rvalue-argument-emits-move.t:26:10
+  function-call at tests/general/100-template-function-pointer-rvalue-argument-emits-move.t:26:10
     callee invoke
     selected instantiation
     bind #1 = holder<int> source=deduced

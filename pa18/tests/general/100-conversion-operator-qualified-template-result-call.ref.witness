@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/general/100-conversion-operator-qualified-template-result-call.t:21:14
+  class-use at tests/general/100-conversion-operator-qualified-template-result-call.t:21:14
     template N::Vec
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/100-conversion-operator-qualified-template-result-call.t:25:3
+  class-use at tests/general/100-conversion-operator-qualified-template-result-call.t:25:3
     template Lazy
     selected primary
     bind #1 = int source=explicit

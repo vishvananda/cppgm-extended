@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/100-inherited-constructor-using-alias-template.t:25:3
+  class-use at tests/general/100-inherited-constructor-using-alias-template.t:25:3
     template YHolder
     selected primary
     bind #1 = YTraits source=explicit

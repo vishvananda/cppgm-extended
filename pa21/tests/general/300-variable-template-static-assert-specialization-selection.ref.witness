@@ -1,5 +1,5 @@
 translation-unit
-  variable-use at pa21/tests/general/300-variable-template-static-assert-specialization-selection.t:14:15
+  variable-use at tests/general/300-variable-template-static-assert-specialization-selection.t:14:15
     template v
     selected partial
     bind #1 = int source=deduced

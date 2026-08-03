@@ -1,15 +1,15 @@
 translation-unit
-  class-use at pa18/tests/spec/100-inline-namespace-function-template-parameter-scope.t:15:9
+  class-use at tests/spec/100-inline-namespace-function-template-parameter-scope.t:15:9
     template s::c::duration
     selected primary
     bind #1 = long long source=explicit
     bind #2 = s::c::nano source=explicit
-  class-use at pa18/tests/spec/100-inline-namespace-function-template-parameter-scope.t:16:9
+  class-use at tests/spec/100-inline-namespace-function-template-parameter-scope.t:16:9
     template s::c::duration
     selected primary
     bind #1 = long long source=explicit
     bind #2 = s::c::milli source=explicit
-  function-call at pa18/tests/spec/100-inline-namespace-function-template-parameter-scope.t:41:10
+  function-call at tests/spec/100-inline-namespace-function-template-parameter-scope.t:41:10
     callee s::c::greater
     selected instantiation
     bind #1 = long long source=deduced

@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/100-constructor-template-same-owner-nontype-parameter.t:14:3
+  class-use at tests/general/100-constructor-template-same-owner-nontype-parameter.t:14:3
     template X
     selected primary
     bind #1 = int source=explicit
@@ -7,7 +7,7 @@ translation-unit
     bind #3 = int & source=explicit
     bind #4 = int ** source=explicit
     bind #5 = 1024 source=explicit
-  class-use at pa23/tests/general/100-constructor-template-same-owner-nontype-parameter.t:15:3
+  class-use at tests/general/100-constructor-template-same-owner-nontype-parameter.t:15:3
     template X
     selected primary
     bind #1 = int source=explicit
@@ -15,7 +15,7 @@ translation-unit
     bind #3 = const int & source=explicit
     bind #4 = const int *const * source=explicit
     bind #5 = 1024 source=explicit
-  function-call at pa23/tests/general/100-constructor-template-same-owner-nontype-parameter.t:15:63
+  function-call at tests/general/100-constructor-template-same-owner-nontype-parameter.t:15:63
     callee X<int, const int *, const int &, const int *const *, 1024>::X
     selected instantiation
     bind #1 = int * source=deduced

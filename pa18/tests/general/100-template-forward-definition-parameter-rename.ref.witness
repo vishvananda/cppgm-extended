@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/general/100-template-forward-definition-parameter-rename.t:2:9
+  class-use at tests/general/100-template-forward-definition-parameter-rename.t:2:9
     template Box
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/100-template-forward-definition-parameter-rename.t:11:3
+  class-use at tests/general/100-template-forward-definition-parameter-rename.t:11:3
     template Box
     selected primary
     bind #1 = int source=deduced

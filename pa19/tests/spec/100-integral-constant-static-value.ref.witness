@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa19/tests/spec/100-integral-constant-static-value.t:10:15
+  class-use at tests/spec/100-integral-constant-static-value.t:10:15
     template integral_constant
     selected primary
     bind #1 = int source=explicit

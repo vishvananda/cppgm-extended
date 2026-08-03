@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa22/tests/general/100-bound-structured-template-arg-deduction.t:27:3
+  class-use at tests/general/100-bound-structured-template-arg-deduction.t:27:3
     template reverse_iterator
     selected primary
     bind #1 = int * source=explicit
-  class-use at pa22/tests/general/100-bound-structured-template-arg-deduction.t:28:3
+  class-use at tests/general/100-bound-structured-template-arg-deduction.t:28:3
     template reverse_iterator
     selected primary
     bind #1 = int * source=explicit
-  function-call at pa22/tests/general/100-bound-structured-template-arg-deduction.t:29:10
+  function-call at tests/general/100-bound-structured-template-arg-deduction.t:29:10
     callee dispatch
     selected instantiation
     bind #1 = reverse_iterator<int *> source=deduced

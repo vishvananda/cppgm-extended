@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/general/100-qualified-using-directive-function-template-call.t:35:10
+  function-call at tests/general/100-qualified-using-directive-function-template-call.t:35:10
     callee lib::algorithm::call_begin
     selected instantiation
     bind #1 = range_like source=deduced

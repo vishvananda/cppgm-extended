@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/general/200-local-alias-bound-type-forwarding.t:24:12
+  class-use at tests/general/200-local-alias-bound-type-forwarding.t:24:12
     template Outer
     selected primary
     bind #1 = int * source=explicit
-  function-call at pa23/tests/general/200-local-alias-bound-type-forwarding.t:24:12
+  function-call at tests/general/200-local-alias-bound-type-forwarding.t:24:12
     callee Outer<int *>::mv
     selected instantiation
     bind #1 = int **& source=deduced

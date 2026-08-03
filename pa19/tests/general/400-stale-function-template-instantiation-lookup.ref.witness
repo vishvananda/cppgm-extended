@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa19/tests/general/400-stale-function-template-instantiation-lookup.t:22:3
+  class-use at tests/general/400-stale-function-template-instantiation-lookup.t:22:3
     template node
     selected primary
     bind #1 = int source=explicit
-  function-call at pa19/tests/general/400-stale-function-template-instantiation-lookup.t:24:10
+  function-call at tests/general/400-stale-function-template-instantiation-lookup.t:24:10
     callee descend
     selected instantiation
     bind #1 = int source=deduced

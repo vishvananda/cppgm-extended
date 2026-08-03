@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/100-namespace-qualified-class-template-definition.t:14:13
+  class-use at tests/general/100-namespace-qualified-class-template-definition.t:14:13
     template outer::v::C
     selected primary
     bind #1 = int source=explicit

@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa22/tests/general/300-defaulted-sfinae-ctor-candidate-drop.t:19:18
+  class-use at tests/general/300-defaulted-sfinae-ctor-candidate-drop.t:19:18
     template base
     selected primary
     bind #1 = int source=explicit
-  class-use at pa22/tests/general/300-defaulted-sfinae-ctor-candidate-drop.t:21:9
+  class-use at tests/general/300-defaulted-sfinae-ctor-candidate-drop.t:21:9
     template base
     selected primary
     bind #1 = int source=explicit
-  class-use at pa22/tests/general/300-defaulted-sfinae-ctor-candidate-drop.t:25:9
+  class-use at tests/general/300-defaulted-sfinae-ctor-candidate-drop.t:25:9
     template base
     selected primary
     bind #1 = int source=explicit

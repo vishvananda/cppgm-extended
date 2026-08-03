@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa19/tests/general/100-dependent-static-member-function-call.t:7:10
+  class-use at tests/general/100-dependent-static-member-function-call.t:7:10
     template duration_values
     selected primary
     bind #1 = int source=explicit

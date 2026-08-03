@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa21/tests/general/300-qualified-preselected-member-template-call.t:38:3
+  class-use at tests/general/300-qualified-preselected-member-template-call.t:38:3
     template static_xpression
     selected primary
     bind #1 = matcher source=explicit

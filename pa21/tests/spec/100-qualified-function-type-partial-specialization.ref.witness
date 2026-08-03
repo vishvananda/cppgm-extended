@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa21/tests/spec/100-qualified-function-type-partial-specialization.t:19:3
+  class-use at tests/spec/100-qualified-function-type-partial-specialization.t:19:3
     template Function
     selected partial
     bind #1 = N::Binding *(N::Binding *) source=explicit

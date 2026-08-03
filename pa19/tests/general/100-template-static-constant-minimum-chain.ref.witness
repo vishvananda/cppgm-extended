@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa19/tests/general/100-template-static-constant-minimum-chain.t:11:3
+  class-use at tests/general/100-template-static-constant-minimum-chain.t:11:3
     template Limits
     selected primary
     bind #1 = 0 source=explicit

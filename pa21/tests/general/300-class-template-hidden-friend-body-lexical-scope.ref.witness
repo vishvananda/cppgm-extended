@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa21/tests/general/300-class-template-hidden-friend-body-lexical-scope.t:15:3
+  class-use at tests/general/300-class-template-hidden-friend-body-lexical-scope.t:15:3
     template pair_box
     selected primary
     bind #1 = first source=explicit
     bind #2 = second source=explicit
-  class-use at pa21/tests/general/300-class-template-hidden-friend-body-lexical-scope.t:16:3
+  class-use at tests/general/300-class-template-hidden-friend-body-lexical-scope.t:16:3
     template pair_box
     selected primary
     bind #1 = second source=explicit

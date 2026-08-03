@@ -1,32 +1,32 @@
 translation-unit
-  class-use at pa21/tests/general/100-template-id-pointee-cv-class-partial-specialization.t:24:10
+  class-use at tests/general/100-template-id-pointee-cv-class-partial-specialization.t:24:10
     template Match
     selected partial
     bind #1 = const Box<int, long> * source=explicit
     bind #2 = const Box<int, long> * source=explicit
     specialize #1 = const Box<int, long> source=deduced
-  class-use at pa21/tests/general/100-template-id-pointee-cv-class-partial-specialization.t:24:22
+  class-use at tests/general/100-template-id-pointee-cv-class-partial-specialization.t:24:22
     template Box
     selected primary
     bind #1 = int source=explicit
     bind #2 = long source=explicit
-  class-use at pa21/tests/general/100-template-id-pointee-cv-class-partial-specialization.t:24:45
+  class-use at tests/general/100-template-id-pointee-cv-class-partial-specialization.t:24:45
     template Box
     selected primary
     bind #1 = int source=explicit
     bind #2 = long source=explicit
-  class-use at pa21/tests/general/100-template-id-pointee-cv-class-partial-specialization.t:26:16
+  class-use at tests/general/100-template-id-pointee-cv-class-partial-specialization.t:26:16
     template Match
     selected partial
     bind #1 = const Box<int, long> * source=explicit
     bind #2 = const Box<int, long> * source=explicit
     specialize #1 = const Box<int, long> source=deduced
-  class-use at pa21/tests/general/100-template-id-pointee-cv-class-partial-specialization.t:26:28
+  class-use at tests/general/100-template-id-pointee-cv-class-partial-specialization.t:26:28
     template Box
     selected primary
     bind #1 = int source=explicit
     bind #2 = long source=explicit
-  class-use at pa21/tests/general/100-template-id-pointee-cv-class-partial-specialization.t:26:51
+  class-use at tests/general/100-template-id-pointee-cv-class-partial-specialization.t:26:51
     template Box
     selected primary
     bind #1 = int source=explicit

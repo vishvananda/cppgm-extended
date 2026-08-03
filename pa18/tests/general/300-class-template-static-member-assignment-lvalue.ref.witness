@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa18/tests/general/300-class-template-static-member-assignment-lvalue.t:18:15
+  class-use at tests/general/300-class-template-static-member-assignment-lvalue.t:18:15
     template Box
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/300-class-template-static-member-assignment-lvalue.t:22:3
+  class-use at tests/general/300-class-template-static-member-assignment-lvalue.t:22:3
     template Box
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/300-class-template-static-member-assignment-lvalue.t:23:10
+  class-use at tests/general/300-class-template-static-member-assignment-lvalue.t:23:10
     template Box
     selected primary
     bind #1 = int source=explicit

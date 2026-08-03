@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/300-nested-class-demand-outer-inline-static-definition.t:5:14
+  class-use at tests/general/300-nested-class-demand-outer-inline-static-definition.t:5:14
     template c
     selected primary
     bind #1 = int source=explicit

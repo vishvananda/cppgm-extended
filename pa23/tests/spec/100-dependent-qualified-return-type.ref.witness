@@ -1,11 +1,11 @@
 translation-unit
-  class-use at pa23/tests/spec/100-dependent-qualified-return-type.t:30:3
+  class-use at tests/spec/100-dependent-qualified-return-type.t:30:3
     template tuple
     selected partial
     bind #1 = 0 source=explicit
     bind #2 = int source=explicit
     specialize #1 = int source=deduced
-  function-call at pa23/tests/spec/100-dependent-qualified-return-type.t:32:10
+  function-call at tests/spec/100-dependent-qualified-return-type.t:32:10
     callee get
     selected instantiation
     bind #1 = 0 source=explicit

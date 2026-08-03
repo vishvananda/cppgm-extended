@@ -1,0 +1,24 @@
+translation-unit
+  class-use at tests/general/100-forwarding-reference-preserves-top-const-function-pointer.t:71:10
+    template constforwarding_top_::manager
+    selected primary
+    bind #1 = int (*)() source=explicit
+template-closure-events
+  ensure-definition
+    entity constforwarding_top_::manager<int (*)()>::clone
+  function-instantiation
+    entity constforwarding_top_::forward
+  function-instantiation
+    entity constforwarding_top_::manager<int (*)()>::clone
+  function-instantiation
+    entity constforwarding_top_::manager<int (*)()>::create
+  function-instantiation
+    entity constforwarding_top_::manager<int (*)()>::init
+  require-definition
+    entity constforwarding_top_::forward
+  require-definition
+    entity constforwarding_top_::manager<int (*)()>::clone
+  require-definition
+    entity constforwarding_top_::manager<int (*)()>::create
+  require-definition
+    entity constforwarding_top_::manager<int (*)()>::init

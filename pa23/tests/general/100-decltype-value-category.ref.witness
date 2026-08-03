@@ -1,11 +1,11 @@
 translation-unit
-  class-use at pa23/tests/general/100-decltype-value-category.t:20:17
+  class-use at tests/general/100-decltype-value-category.t:20:17
     template is_same
     selected partial
     bind #1 = int source=explicit
     bind #2 = int source=explicit
     specialize #1 = int source=deduced
-  class-use at pa23/tests/general/100-decltype-value-category.t:21:17
+  class-use at tests/general/100-decltype-value-category.t:21:17
     template is_same
     selected partial
     bind #1 = int & source=explicit

@@ -20,6 +20,8 @@ BIND_RE = re.compile(r"^(bind|specialize) (.+?) = (.*) source=([A-Za-z0-9_]+)$")
 DROP_RE = re.compile(r"^drop (.+?) at (.+?) reason=(.+)$")
 IDENT_CHAR_RE = re.compile(r"[A-Za-z0-9_]")
 DECL_PREFIX_RE = re.compile(r".*\b(?:class|struct|union)\s*$")
+ASSIGNMENT_SOURCE_PATH_RE = re.compile(
+    r"(?:^|/)pa[0-9]+/((?:tests|course)/.*)$")
 
 STD_SOURCE_ALIASES = {
     "std::basic_string": "std::string",
@@ -50,6 +52,25 @@ PRIMARY_BINDING_ORDER = {
     "_allocator": 2,
     "_alloc": 2,
 }
+
+
+def normalize_witness_path(path: str) -> str:
+    value = path.replace("\\", "/")
+    libcxx_marker = "/include/c++/v1/"
+    libcxx_pos = value.find(libcxx_marker)
+    if libcxx_pos != -1:
+        return "libc++/" + value[libcxx_pos + len(libcxx_marker):]
+    assignment_match = ASSIGNMENT_SOURCE_PATH_RE.search(value)
+    if assignment_match:
+        return assignment_match.group(1)
+    return value
+
+
+def normalize_witness_location(location: str) -> str:
+    parts = location.rsplit(":", 2)
+    if len(parts) != 3 or not parts[1].isdigit() or not parts[2].isdigit():
+        return location
+    return f"{normalize_witness_path(parts[0])}:{parts[1]}:{parts[2]}"
 
 
 def split_top_level(text: str, separator: str = ",") -> List[str]:
@@ -1669,7 +1690,7 @@ def public_event_render_key(event: Dict) -> Tuple:
     )
     return (
         event.get("kind", ""),
-        event.get("location", ""),
+        normalize_witness_location(event.get("location", "")),
         normalize_template_log_entity(event.get("selected", event.get("template", ""))),
         normalize_template_log_entity(event.get("template", "")),
         normalize_template_log_entity(event.get("resolved", "")),
@@ -1701,7 +1722,8 @@ def public_render_events(document: Dict, debug: bool) -> List[Dict]:
 def render_emit_templates_text_impl(document: Dict, debug: bool) -> str:
     lines: List[str] = ["translation-unit"]
     for event in public_render_events(document, debug):
-        lines.append(f"  {header_from_kind(event['kind'])} at {event.get('location', '')}")
+        location = normalize_witness_location(event.get("location", ""))
+        lines.append(f"  {header_from_kind(event['kind'])} at {location}")
         if event["kind"] == "function_call":
             callee = event.get('selected', event.get('template', ''))
             lines.append(f"    callee {normalize_template_log_entity(callee)}")
@@ -1712,7 +1734,8 @@ def render_emit_templates_text_impl(document: Dict, debug: bool) -> str:
         if event.get("selection"):
             lines.append(f"    selected {event['selection']}")
         if debug and event.get("selected_decl_location"):
-            lines.append(f"    decl {event['selected_decl_location']}")
+            decl_location = normalize_witness_location(event["selected_decl_location"])
+            lines.append(f"    decl {decl_location}")
         if debug and "candidates_built" in event:
             lines.append(f"    candidates_built {event['candidates_built']}")
         if debug and "candidates_viable" in event:
@@ -1734,11 +1757,14 @@ def render_emit_templates_text_impl(document: Dict, debug: bool) -> str:
         if event.get("guide"):
             lines.append(f"    guide {normalize_template_log_entity(event['guide'])}")
         if debug and event.get("guide_decl_location"):
-            lines.append(f"    guide_decl {event['guide_decl_location']}")
+            guide_decl = normalize_witness_location(event["guide_decl_location"])
+            lines.append(f"    guide_decl {guide_decl}")
         for drop in event.get("drops", []):
             line = f"    drop {normalize_template_log_entity(drop.get('candidate', ''))}"
             if debug:
-                line += f" at {drop.get('candidate_decl_location', '')}"
+                drop_location = normalize_witness_location(
+                    drop.get("candidate_decl_location", ""))
+                line += f" at {drop_location}"
             line += f" reason={drop.get('reason', '')}"
             lines.append(line)
     closure_events = list(document.get("closure_events", []))
@@ -1760,18 +1786,20 @@ def render_emit_templates_text_impl(document: Dict, debug: bool) -> str:
                 public_seen.add(key)
             line = f"  {kind}"
             if debug:
-                line += f" at {event.get('location', '')}"
+                line += f" at {normalize_witness_location(event.get('location', ''))}"
             lines.append(line)
             if event.get("entity"):
                 lines.append(f"    entity {entity}")
             if debug and event.get("decl_location"):
-                lines.append(f"    decl {event['decl_location']}")
+                decl_location = normalize_witness_location(event["decl_location"])
+                lines.append(f"    decl {decl_location}")
             if debug and event.get("reason"):
                 lines.append(f"    reason {event['reason']}")
             if debug and event.get("trigger"):
                 lines.append(f"    trigger {event['trigger']}")
             if debug and event.get("trigger_decl"):
-                lines.append(f"    trigger_decl {event['trigger_decl']}")
+                trigger_decl = normalize_witness_location(event["trigger_decl"])
+                lines.append(f"    trigger_decl {trigger_decl}")
             if debug and event.get("detail"):
                 lines.append(f"    detail {event['detail']}")
     return "\n".join(lines) + "\n"

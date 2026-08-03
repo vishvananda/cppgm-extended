@@ -1,24 +1,24 @@
 translation-unit
-  class-use at pa19/tests/general/100-structured-nothrow-invocable-cache-default.t:8:9
+  class-use at tests/general/100-structured-nothrow-invocable-cache-default.t:8:9
     template std::integral_constant
     selected primary
     bind #1 = bool source=explicit
     bind #2 = true source=explicit
-  class-use at pa19/tests/general/100-structured-nothrow-invocable-cache-default.t:9:9
+  class-use at tests/general/100-structured-nothrow-invocable-cache-default.t:9:9
     template std::integral_constant
     selected primary
     bind #1 = bool source=explicit
     bind #2 = false source=explicit
-  class-use at pa19/tests/general/100-structured-nothrow-invocable-cache-default.t:38:8
+  class-use at tests/general/100-structured-nothrow-invocable-cache-default.t:38:8
     template std::hash
     selected primary
     bind #1 = X * source=explicit
-  class-use at pa19/tests/general/100-structured-nothrow-invocable-cache-default.t:41:15
+  class-use at tests/general/100-structured-nothrow-invocable-cache-default.t:41:15
     template std::cache_default
     selected primary
     bind #1 = X * source=explicit
     bind #2 = std::hash<X *> source=explicit
-  class-use at pa19/tests/general/100-structured-nothrow-invocable-cache-default.t:41:39
+  class-use at tests/general/100-structured-nothrow-invocable-cache-default.t:41:39
     template std::hash
     selected primary
     bind #1 = X * source=explicit

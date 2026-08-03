@@ -1,15 +1,15 @@
 translation-unit
-  class-use at pa18/tests/general/100-reopened-namespace-function-template-parameter-scope.t:11:9
+  class-use at tests/general/100-reopened-namespace-function-template-parameter-scope.t:11:9
     template A::B::duration
     selected primary
     bind #1 = long long source=explicit
     bind #2 = A::B::nano source=explicit
-  class-use at pa18/tests/general/100-reopened-namespace-function-template-parameter-scope.t:12:9
+  class-use at tests/general/100-reopened-namespace-function-template-parameter-scope.t:12:9
     template A::B::duration
     selected primary
     bind #1 = long long source=explicit
     bind #2 = A::B::milli source=explicit
-  function-call at pa18/tests/general/100-reopened-namespace-function-template-parameter-scope.t:31:10
+  function-call at tests/general/100-reopened-namespace-function-template-parameter-scope.t:31:10
     callee A::B::greater
     selected instantiation
     bind #1 = long long source=deduced

@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa21/tests/spec/300-dependent-super-member-template-chain.t:30:17
+  class-use at tests/spec/300-dependent-super-member-template-chain.t:30:17
     template layer
     selected primary
     bind #1 = terminal source=explicit
-  class-use at pa21/tests/spec/300-dependent-super-member-template-chain.t:34:16
+  class-use at tests/spec/300-dependent-super-member-template-chain.t:34:16
     template layer
     selected primary
     bind #1 = second source=explicit
-  function-call at pa21/tests/spec/300-dependent-super-member-template-chain.t:43:18
+  function-call at tests/spec/300-dependent-super-member-template-chain.t:43:18
     callee layer<second>::insert_
     selected instantiation
     bind #1 = tag source=deduced

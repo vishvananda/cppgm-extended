@@ -1,19 +1,19 @@
 translation-unit
-  class-use at pa18/tests/general/300-reference-member-same-template-name.t:26:3
+  class-use at tests/general/300-reference-member-same-template-name.t:26:3
     template cons
     selected primary
     bind #1 = short source=explicit
     bind #2 = nil source=explicit
-  class-use at pa18/tests/general/300-reference-member-same-template-name.t:28:3
+  class-use at tests/general/300-reference-member-same-template-name.t:28:3
     template iter
     selected primary
     bind #1 = cons<short, nil> source=explicit
-  class-use at pa18/tests/general/300-reference-member-same-template-name.t:28:8
+  class-use at tests/general/300-reference-member-same-template-name.t:28:8
     template cons
     selected primary
     bind #1 = short source=explicit
     bind #2 = nil source=explicit
-  function-call at pa18/tests/general/300-reference-member-same-template-name.t:29:3
+  function-call at tests/general/300-reference-member-same-template-name.t:29:3
     callee deref
     selected instantiation
     bind #1 = cons<short, nil> source=deduced

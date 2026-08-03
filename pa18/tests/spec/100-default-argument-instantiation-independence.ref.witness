@@ -1,9 +1,9 @@
 translation-unit
-  function-call at pa18/tests/spec/100-default-argument-instantiation-independence.t:24:10
+  function-call at tests/spec/100-default-argument-instantiation-independence.t:24:10
     callee sum
     selected instantiation
     bind #1 = int source=deduced
-  function-call at pa18/tests/spec/100-default-argument-instantiation-independence.t:24:28
+  function-call at tests/spec/100-default-argument-instantiation-independence.t:24:28
     callee sum
     selected instantiation
     bind #1 = int source=deduced

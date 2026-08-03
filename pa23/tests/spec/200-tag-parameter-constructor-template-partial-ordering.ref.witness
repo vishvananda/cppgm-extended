@@ -1,17 +1,17 @@
 translation-unit
-  function-call at pa23/tests/spec/200-tag-parameter-constructor-template-partial-ordering.t:66:9
+  function-call at tests/spec/200-tag-parameter-constructor-template-partial-ordering.t:66:9
     callee Count::Count
     selected instantiation
     bind #1 = int * source=deduced
     bind #2 = Deleter source=deduced
     drop Count::Count reason=too_many_arguments
     drop Count::Count reason=non_deduced_mismatch
-  function-call at pa23/tests/spec/200-tag-parameter-constructor-template-partial-ordering.t:67:3
+  function-call at tests/spec/200-tag-parameter-constructor-template-partial-ordering.t:67:3
     callee make_holder
     selected instantiation
     bind #1 = int * source=deduced
     bind #2 = tag<Deleter> source=deduced
-  class-use at pa23/tests/spec/200-tag-parameter-constructor-template-partial-ordering.t:67:25
+  class-use at tests/spec/200-tag-parameter-constructor-template-partial-ordering.t:67:25
     template tag
     selected primary
     bind #1 = Deleter source=explicit

@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa21/tests/spec/300-extern-template-overload-type-selects-target.t:20:10
+  function-call at tests/spec/300-extern-template-overload-type-selects-target.t:20:10
     callee pick
     selected instantiation
     bind #1 = int source=deduced

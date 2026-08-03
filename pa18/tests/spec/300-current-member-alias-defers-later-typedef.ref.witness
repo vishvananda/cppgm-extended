@@ -1,0 +1,5 @@
+translation-unit
+  class-use at tests/spec/300-current-member-alias-defers-later-typedef.t:30:9
+    template basic
+    selected primary
+    bind #1 = int source=explicit

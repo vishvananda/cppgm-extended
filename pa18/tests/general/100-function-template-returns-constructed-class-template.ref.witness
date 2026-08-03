@@ -1,17 +1,17 @@
 translation-unit
-  class-use at pa18/tests/general/100-function-template-returns-constructed-class-template.t:25:3
+  class-use at tests/general/100-function-template-returns-constructed-class-template.t:25:3
     template allocation_result
     selected primary
     bind #1 = int source=explicit
-  function-call at pa18/tests/general/100-function-template-returns-constructed-class-template.t:25:33
+  function-call at tests/general/100-function-template-returns-constructed-class-template.t:25:33
     callee allocate_at_least
     selected instantiation
     bind #1 = int source=deduced
-  class-use at pa18/tests/general/100-function-template-returns-constructed-class-template.t:26:3
+  class-use at tests/general/100-function-template-returns-constructed-class-template.t:26:3
     template allocation_result
     selected primary
     bind #1 = Node source=explicit
-  function-call at pa18/tests/general/100-function-template-returns-constructed-class-template.t:26:35
+  function-call at tests/general/100-function-template-returns-constructed-class-template.t:26:35
     callee allocate_at_least
     selected instantiation
     bind #1 = Node source=deduced

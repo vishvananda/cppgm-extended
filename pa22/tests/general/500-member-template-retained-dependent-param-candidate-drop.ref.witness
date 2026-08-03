@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa22/tests/general/500-member-template-retained-dependent-param-candidate-drop.t:77:3
+  class-use at tests/general/500-member-template-retained-dependent-param-candidate-drop.t:77:3
     template string_like
     selected primary
     bind #1 = char source=explicit
-  function-call at pa22/tests/general/500-member-template-retained-dependent-param-candidate-drop.t:78:10
+  function-call at tests/general/500-member-template-retained-dependent-param-candidate-drop.t:78:10
     callee run_insert
     selected instantiation
     bind #1 = string_like<char> source=deduced

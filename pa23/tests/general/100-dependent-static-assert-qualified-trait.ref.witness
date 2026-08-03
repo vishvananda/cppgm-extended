@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/100-dependent-static-assert-qualified-trait.t:23:3
+  class-use at tests/general/100-dependent-static-assert-qualified-trait.t:23:3
     template box
     selected primary
     bind #1 = int source=explicit

@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/general/400-function-type-pack-out-of-class-constructor.t:11:1
+  class-use at tests/general/400-function-type-pack-out-of-class-constructor.t:11:1
     template Function
     selected explicit
     bind #1 = type-parameter-0-0 (type-parameter-0-1...) source=explicit
-  class-use at pa23/tests/general/400-function-type-pack-out-of-class-constructor.t:14:3
+  class-use at tests/general/400-function-type-pack-out-of-class-constructor.t:14:3
     template Function
     selected partial
     bind #1 = void (int) source=explicit

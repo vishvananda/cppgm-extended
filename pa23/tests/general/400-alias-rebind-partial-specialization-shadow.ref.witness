@@ -1,30 +1,30 @@
 translation-unit
-  alias-use at pa23/tests/general/400-alias-rebind-partial-specialization-shadow.t:49:9
+  alias-use at tests/general/400-alias-rebind-partial-specialization-shadow.t:49:9
     template std::__allocator_traits_rebind_t
     bind #1 = allocator_type source=explicit
     bind #2 = _Tp source=explicit
-  class-use at pa23/tests/general/400-alias-rebind-partial-specialization-shadow.t:55:8
+  class-use at tests/general/400-alias-rebind-partial-specialization-shadow.t:55:8
     template std::allocator
     selected primary
     bind #1 = int source=explicit
-  class-use at pa23/tests/general/400-alias-rebind-partial-specialization-shadow.t:56:8
+  class-use at tests/general/400-alias-rebind-partial-specialization-shadow.t:56:8
     template std::allocator_traits
     selected primary
     bind #1 = std::allocator<int> source=explicit
-  class-use at pa23/tests/general/400-alias-rebind-partial-specialization-shadow.t:56:30
+  class-use at tests/general/400-alias-rebind-partial-specialization-shadow.t:56:30
     template std::allocator
     selected primary
     bind #1 = int source=explicit
-  alias-use at pa23/tests/general/400-alias-rebind-partial-specialization-shadow.t:56:48
+  alias-use at tests/general/400-alias-rebind-partial-specialization-shadow.t:56:48
     template std::allocator_traits<std::allocator<int>>::rebind_alloc
     bind #1 = void * source=explicit
-  function-call at pa23/tests/general/400-alias-rebind-partial-specialization-shadow.t:56:68
+  function-call at tests/general/400-alias-rebind-partial-specialization-shadow.t:56:68
     callee std::allocator<void *>::allocator
     selected instantiation
     bind #1 = int source=deduced
     drop std::allocator<void *>::allocator reason=too_many_arguments
     drop std::allocator<void *>::allocator reason=worse_conversion
-  class-use at pa23/tests/general/400-alias-rebind-partial-specialization-shadow.t:57:8
+  class-use at tests/general/400-alias-rebind-partial-specialization-shadow.t:57:8
     template std::allocator
     selected primary
     bind #1 = void * source=explicit

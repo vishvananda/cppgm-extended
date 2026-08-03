@@ -1,12 +1,12 @@
 translation-unit
-  alias-use at pa22/tests/general/300-explicit-template-call-transitive-base-deduction.t:32:1
+  alias-use at tests/general/300-explicit-template-call-transitive-base-deduction.t:32:1
     template ns::enable_if_t
     bind #1 = (I >= sizeof...(Types)) source=explicit
-  class-use at pa22/tests/general/300-explicit-template-call-transitive-base-deduction.t:38:7
+  class-use at tests/general/300-explicit-template-call-transitive-base-deduction.t:38:7
     template ns::tuple
     selected primary
     bind #1 = <int *, int> source=explicit
-  function-call at pa22/tests/general/300-explicit-template-call-transitive-base-deduction.t:39:9
+  function-call at tests/general/300-explicit-template-call-transitive-base-deduction.t:39:9
     callee ns::helper
     selected instantiation
     bind #1 = 1 source=explicit

@@ -1,9 +1,9 @@
 translation-unit
-  function-call at pa23/tests/general/400-explicit-function-template-type-arg-drops-nontype-overload.t:16:13
+  function-call at tests/general/400-explicit-function-template-type-arg-drops-nontype-overload.t:16:13
     callee foo::bar
     selected instantiation
     bind #1 = char source=explicit
-  function-call at pa23/tests/general/400-explicit-function-template-type-arg-drops-nontype-overload.t:17:13
+  function-call at tests/general/400-explicit-function-template-type-arg-drops-nontype-overload.t:17:13
     callee foo::bar
     selected instantiation
     bind #1 = 2 source=explicit

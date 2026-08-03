@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/general/300-constructor-template-defaulted-forwarding-lvalue-order.t:58:7
+  function-call at tests/general/300-constructor-template-defaulted-forwarding-lvalue-order.t:58:7
     callee box::box
     selected instantiation
     bind #1 = value source=deduced

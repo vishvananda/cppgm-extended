@@ -1,18 +1,18 @@
 translation-unit
-  class-use at pa23/tests/general/400-cross-instantiation-member-template-source-owner.t:41:3
+  class-use at tests/general/400-cross-instantiation-member-template-source-owner.t:41:3
     template box
     selected primary
     bind #1 = long long source=explicit
-  function-call at pa23/tests/general/400-cross-instantiation-member-template-source-owner.t:41:22
+  function-call at tests/general/400-cross-instantiation-member-template-source-owner.t:41:22
     callee convert
     selected instantiation
     bind #1 = double_tag source=explicit
     bind #2 = traits<double_tag> source=defaulted
-  class-use at pa23/tests/general/400-cross-instantiation-member-template-source-owner.t:42:3
+  class-use at tests/general/400-cross-instantiation-member-template-source-owner.t:42:3
     template box
     selected primary
     bind #1 = int source=explicit
-  function-call at pa23/tests/general/400-cross-instantiation-member-template-source-owner.t:42:16
+  function-call at tests/general/400-cross-instantiation-member-template-source-owner.t:42:16
     callee convert
     selected instantiation
     bind #1 = float_tag source=explicit

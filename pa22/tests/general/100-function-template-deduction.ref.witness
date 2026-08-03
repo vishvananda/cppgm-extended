@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/general/100-function-template-deduction.t:4:21
+  function-call at tests/general/100-function-template-deduction.t:4:21
     callee add1
     selected instantiation
     bind #1 = int source=deduced

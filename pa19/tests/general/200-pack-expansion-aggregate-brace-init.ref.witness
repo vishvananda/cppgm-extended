@@ -1,10 +1,10 @@
 translation-unit
-  function-call at pa19/tests/general/200-pack-expansion-aggregate-brace-init.t:16:10
+  function-call at tests/general/200-pack-expansion-aggregate-brace-init.t:16:10
     callee construct
     selected instantiation
     bind #1 = empty source=explicit
     bind #2 = <> source=deduced
-  function-call at pa19/tests/general/200-pack-expansion-aggregate-brace-init.t:16:31
+  function-call at tests/general/200-pack-expansion-aggregate-brace-init.t:16:31
     callee construct
     selected instantiation
     bind #1 = pair_value source=explicit

@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa22/tests/spec/300-dependent-noexcept-result-specialization.t:12:19
+  class-use at tests/spec/300-dependent-noexcept-result-specialization.t:12:19
     template constant
     selected primary
     bind #1 = false source=explicit
-  class-use at pa22/tests/spec/300-dependent-noexcept-result-specialization.t:20:15
+  class-use at tests/spec/300-dependent-noexcept-result-specialization.t:20:15
     template detector
     selected primary
     bind #1 = int source=explicit

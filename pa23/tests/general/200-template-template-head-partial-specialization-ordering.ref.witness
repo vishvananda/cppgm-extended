@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa23/tests/general/200-template-template-head-partial-specialization-ordering.t:17:31
+  class-use at tests/general/200-template-template-head-partial-specialization-ordering.t:17:31
     template int_
     selected primary
     bind #1 = 2 source=explicit
-  class-use at pa23/tests/general/200-template-template-head-partial-specialization-ordering.t:22:34
+  class-use at tests/general/200-template-template-head-partial-specialization-ordering.t:22:34
     template int_
     selected primary
     bind #1 = 2 source=explicit
-  class-use at pa23/tests/general/200-template-template-head-partial-specialization-ordering.t:32:15
+  class-use at tests/general/200-template-template-head-partial-specialization-ordering.t:32:15
     template lambda
     selected partial
     bind #1 = bind1<predicate<item, item>, item> source=explicit
@@ -16,21 +16,21 @@ translation-unit
     specialize #1 = predicate<item, item> source=deduced
     specialize #2 = item source=deduced
     specialize #3 = tag source=deduced
-  class-use at pa23/tests/general/200-template-template-head-partial-specialization-ordering.t:32:22
+  class-use at tests/general/200-template-template-head-partial-specialization-ordering.t:32:22
     template bind1
     selected primary
     bind #1 = predicate<item, item> source=explicit
     bind #2 = item source=explicit
-  class-use at pa23/tests/general/200-template-template-head-partial-specialization-ordering.t:32:28
+  class-use at tests/general/200-template-template-head-partial-specialization-ordering.t:32:28
     template predicate
     selected primary
     bind #1 = item source=explicit
     bind #2 = item source=explicit
-  class-use at pa23/tests/general/200-template-template-head-partial-specialization-ordering.t:32:63
+  class-use at tests/general/200-template-template-head-partial-specialization-ordering.t:32:63
     template int_
     selected primary
     bind #1 = 2 source=explicit
-  class-use at pa23/tests/general/200-template-template-head-partial-specialization-ordering.t:37:10
+  class-use at tests/general/200-template-template-head-partial-specialization-ordering.t:37:10
     template lambda
     selected partial
     bind #1 = bind1<predicate<item, item>, item> source=explicit
@@ -39,17 +39,17 @@ translation-unit
     specialize #1 = predicate<item, item> source=deduced
     specialize #2 = item source=deduced
     specialize #3 = tag source=deduced
-  class-use at pa23/tests/general/200-template-template-head-partial-specialization-ordering.t:37:17
+  class-use at tests/general/200-template-template-head-partial-specialization-ordering.t:37:17
     template bind1
     selected primary
     bind #1 = predicate<item, item> source=explicit
     bind #2 = item source=explicit
-  class-use at pa23/tests/general/200-template-template-head-partial-specialization-ordering.t:37:23
+  class-use at tests/general/200-template-template-head-partial-specialization-ordering.t:37:23
     template predicate
     selected primary
     bind #1 = item source=explicit
     bind #2 = item source=explicit
-  class-use at pa23/tests/general/200-template-template-head-partial-specialization-ordering.t:37:58
+  class-use at tests/general/200-template-template-head-partial-specialization-ordering.t:37:58
     template int_
     selected primary
     bind #1 = 2 source=explicit

@@ -1,17 +1,17 @@
 translation-unit
-  class-use at pa23/tests/general/400-member-template-explicit-local-typedef-call.t:8:15
+  class-use at tests/general/400-member-template-explicit-local-typedef-call.t:8:15
     template Flag
     selected primary
     bind #1 = false source=explicit
-  class-use at pa23/tests/general/400-member-template-explicit-local-typedef-call.t:12:15
+  class-use at tests/general/400-member-template-explicit-local-typedef-call.t:12:15
     template Flag
     selected primary
     bind #1 = true source=explicit
-  class-use at pa23/tests/general/400-member-template-explicit-local-typedef-call.t:19:12
+  class-use at tests/general/400-member-template-explicit-local-typedef-call.t:19:12
     template Flag
     selected primary
     bind #1 = false source=explicit
-  function-call at pa23/tests/general/400-member-template-explicit-local-typedef-call.t:34:10
+  function-call at tests/general/400-member-template-explicit-local-typedef-call.t:34:10
     callee call_member_template
     selected instantiation
     bind #1 = int source=explicit

@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/spec/100-local-member-call-constructor-template-instantiation.t:57:3
+  class-use at tests/spec/100-local-member-call-constructor-template-instantiation.t:57:3
     template mini_vec
     selected primary
     bind #1 = local source=explicit
-  function-call at pa23/tests/spec/100-local-member-call-constructor-template-instantiation.t:58:10
+  function-call at tests/spec/100-local-member-call-constructor-template-instantiation.t:58:10
     callee call_erase
     selected instantiation
     bind #1 = local source=deduced

@@ -1,0 +1,12 @@
+translation-unit
+  class-use at tests/general/300-typedef-function-member-definition-parameter.t:3:14
+    template X
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity X<int>::f
+  function-instantiation
+    entity X<int>::f
+  require-definition
+    entity X<int>::f

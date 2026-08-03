@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/general/100-nested-class-specialization-symbols.t:15:3
+  class-use at tests/general/100-nested-class-specialization-symbols.t:15:3
     template Box
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/100-nested-class-specialization-symbols.t:16:3
+  class-use at tests/general/100-nested-class-specialization-symbols.t:16:3
     template Box
     selected primary
     bind #1 = char source=explicit

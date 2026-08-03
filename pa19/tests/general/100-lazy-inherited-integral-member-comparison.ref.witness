@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa19/tests/general/100-lazy-inherited-integral-member-comparison.t:17:16
+  class-use at tests/general/100-lazy-inherited-integral-member-comparison.t:17:16
     template equal_to
     selected primary
     bind #1 = level<int> source=explicit
-  class-use at pa19/tests/general/100-lazy-inherited-integral-member-comparison.t:17:25
+  class-use at tests/general/100-lazy-inherited-integral-member-comparison.t:17:25
     template level
     selected primary
     bind #1 = int source=explicit

@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa19/tests/general/100-reference-member-constant-alias.t:12:9
+  class-use at tests/general/100-reference-member-constant-alias.t:12:9
     template duration1
     selected primary
     bind #1 = ratio1<7> source=explicit
-  class-use at pa19/tests/general/100-reference-member-constant-alias.t:12:19
+  class-use at tests/general/100-reference-member-constant-alias.t:12:19
     template ratio1
     selected primary
     bind #1 = 7 source=explicit

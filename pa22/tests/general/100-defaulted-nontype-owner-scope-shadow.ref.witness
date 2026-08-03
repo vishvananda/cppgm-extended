@@ -1,9 +1,9 @@
 translation-unit
-  function-call at pa22/tests/general/100-defaulted-nontype-owner-scope-shadow.t:93:10
+  function-call at tests/general/100-defaulted-nontype-owner-scope-shadow.t:93:10
     callee exercise
     selected instantiation
     bind #1 = first_type source=explicit
-  function-call at pa22/tests/general/100-defaulted-nontype-owner-scope-shadow.t:94:10
+  function-call at tests/general/100-defaulted-nontype-owner-scope-shadow.t:94:10
     callee exercise
     selected instantiation
     bind #1 = second_type source=explicit

@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/general/100-copy-lookup-requires-first-explicit-reference.t:7:1
+  class-use at tests/general/100-copy-lookup-requires-first-explicit-reference.t:7:1
     template iterator
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/100-copy-lookup-requires-first-explicit-reference.t:7:33
+  class-use at tests/general/100-copy-lookup-requires-first-explicit-reference.t:7:33
     template iterator
     selected primary
     bind #1 = int source=explicit

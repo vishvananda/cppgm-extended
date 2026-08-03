@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa23/tests/general/100-partial-specialization-reference-top-level-const-mismatch.t:4:16
+  class-use at tests/general/100-partial-specialization-reference-top-level-const-mismatch.t:4:16
     template is_same
     selected primary
     bind #1 = char *& source=explicit
     bind #2 = char *const & source=explicit
-  class-use at pa23/tests/general/100-partial-specialization-reference-top-level-const-mismatch.t:5:16
+  class-use at tests/general/100-partial-specialization-reference-top-level-const-mismatch.t:5:16
     template is_same
     selected primary
     bind #1 = const char *& source=explicit

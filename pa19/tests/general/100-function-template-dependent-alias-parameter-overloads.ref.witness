@@ -1,10 +1,10 @@
 translation-unit
-  function-call at pa19/tests/general/100-function-template-dependent-alias-parameter-overloads.t:19:22
+  function-call at tests/general/100-function-template-dependent-alias-parameter-overloads.t:19:22
     callee select
     selected instantiation
     bind #1 = X source=deduced
     drop select reason=bad_conversion
-  function-call at pa19/tests/general/100-function-template-dependent-alias-parameter-overloads.t:23:17
+  function-call at tests/general/100-function-template-dependent-alias-parameter-overloads.t:23:17
     callee select
     selected instantiation
     bind #1 = X source=deduced

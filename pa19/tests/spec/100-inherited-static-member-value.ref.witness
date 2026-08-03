@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa19/tests/spec/100-inherited-static-member-value.t:11:19
+  class-use at tests/spec/100-inherited-static-member-value.t:11:19
     template integral_constant
     selected primary
     bind #1 = bool source=explicit
     bind #2 = false source=explicit
-  class-use at pa19/tests/spec/100-inherited-static-member-value.t:17:10
+  class-use at tests/spec/100-inherited-static-member-value.t:17:10
     template constis_
     selected primary
     bind #1 = char source=explicit

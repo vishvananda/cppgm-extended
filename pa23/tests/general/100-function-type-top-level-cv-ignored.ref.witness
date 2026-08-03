@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa23/tests/general/100-function-type-top-level-cv-ignored.t:16:15
+  class-use at tests/general/100-function-type-top-level-cv-ignored.t:16:15
     template check
     selected primary
     bind #1 = int source=explicit
-  class-use at pa23/tests/general/100-function-type-top-level-cv-ignored.t:17:15
+  class-use at tests/general/100-function-type-top-level-cv-ignored.t:17:15
     template check
     selected primary
     bind #1 = int () source=explicit
-  class-use at pa23/tests/general/100-function-type-top-level-cv-ignored.t:21:10
+  class-use at tests/general/100-function-type-top-level-cv-ignored.t:21:10
     template check
     selected primary
     bind #1 = int () source=explicit

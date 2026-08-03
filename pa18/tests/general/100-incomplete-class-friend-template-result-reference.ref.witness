@@ -1,0 +1,5 @@
+translation-unit
+  class-use at tests/general/100-incomplete-class-friend-template-result-reference.t:3:22
+    template result
+    selected primary
+    bind #1 = item source=explicit

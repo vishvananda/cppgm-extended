@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa21/tests/general/300-out-of-class-member-function-template-definition.t:17:3
+  class-use at tests/general/300-out-of-class-member-function-template-definition.t:17:3
     template box
     selected primary
     bind #1 = char source=explicit
-  function-call at pa21/tests/general/300-out-of-class-member-function-template-definition.t:18:13
+  function-call at tests/general/300-out-of-class-member-function-template-definition.t:18:13
     callee box<char>::value
     selected instantiation
     bind #1 = int source=deduced

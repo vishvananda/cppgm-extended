@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/300-defaulted-enable-if-template-parameter-selection.t:32:3
+  class-use at tests/general/300-defaulted-enable-if-template-parameter-selection.t:32:3
     template allocator
     selected primary
     bind #1 = int source=explicit

@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa22/tests/spec/100-explicit-template-id-forward-reference-overload.t:49:10
+  function-call at tests/spec/100-explicit-template-id-forward-reference-overload.t:49:10
     callee forward
     selected instantiation
     bind #1 = int & source=explicit

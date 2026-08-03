@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa18/tests/spec/300-dependent-adl-point-of-instantiation.t:21:10
+  class-use at tests/spec/300-dependent-adl-point-of-instantiation.t:21:10
     template lib::tag
     selected primary
     bind #1 = int source=explicit
-  function-call at pa18/tests/spec/300-dependent-adl-point-of-instantiation.t:30:10
+  function-call at tests/spec/300-dependent-adl-point-of-instantiation.t:30:10
     callee call_pick
     selected instantiation
     bind #1 = lib::tag<int> source=deduced
-  class-use at pa18/tests/spec/300-dependent-adl-point-of-instantiation.t:30:25
+  class-use at tests/spec/300-dependent-adl-point-of-instantiation.t:30:25
     template lib::tag
     selected primary
     bind #1 = int source=explicit

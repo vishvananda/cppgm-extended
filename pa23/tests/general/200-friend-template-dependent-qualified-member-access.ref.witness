@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/general/200-friend-template-dependent-qualified-member-access.t:39:3
+  class-use at tests/general/200-friend-template-dependent-qualified-member-access.t:39:3
     template Iter
     selected primary
     bind #1 = Vec source=explicit
-  function-call at pa23/tests/general/200-friend-template-dependent-qualified-member-access.t:40:3
+  function-call at tests/general/200-friend-template-dependent-qualified-member-access.t:40:3
     callee use
     selected instantiation
     bind #1 = Vec source=deduced

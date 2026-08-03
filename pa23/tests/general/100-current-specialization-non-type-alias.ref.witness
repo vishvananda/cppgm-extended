@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/100-current-specialization-non-type-alias.t:8:1
+  class-use at tests/general/100-current-specialization-non-type-alias.t:8:1
     template ratio
     selected primary
     bind #1 = 1 source=explicit

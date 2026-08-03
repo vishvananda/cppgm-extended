@@ -1,21 +1,21 @@
 translation-unit
-  class-use at pa23/tests/spec/100-local-constructor-template-member-typedef.t:39:3
+  class-use at tests/spec/100-local-constructor-template-member-typedef.t:39:3
     template mini_vec
     selected primary
     bind #1 = local source=explicit
-  class-use at pa23/tests/spec/100-local-constructor-template-member-typedef.t:39:3
+  class-use at tests/spec/100-local-constructor-template-member-typedef.t:39:3
     template wrap
     selected primary
     bind #1 = local * source=deduced
-  class-use at pa23/tests/spec/100-local-constructor-template-member-typedef.t:40:3
+  class-use at tests/spec/100-local-constructor-template-member-typedef.t:40:3
     template mini_vec
     selected primary
     bind #1 = local source=explicit
-  class-use at pa23/tests/spec/100-local-constructor-template-member-typedef.t:40:3
+  class-use at tests/spec/100-local-constructor-template-member-typedef.t:40:3
     template wrap
     selected primary
     bind #1 = const local * source=deduced
-  function-call at pa23/tests/spec/100-local-constructor-template-member-typedef.t:40:35
+  function-call at tests/spec/100-local-constructor-template-member-typedef.t:40:35
     callee wrap<const local *>::wrap
     selected instantiation
     bind #1 = local * source=deduced

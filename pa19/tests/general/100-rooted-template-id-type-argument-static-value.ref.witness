@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa19/tests/general/100-rooted-template-id-type-argument-static-value.t:11:17
+  class-use at tests/general/100-rooted-template-id-type-argument-static-value.t:11:17
     template trait
     selected primary
     bind #1 = arg<int> source=explicit
-  class-use at pa19/tests/general/100-rooted-template-id-type-argument-static-value.t:11:26
+  class-use at tests/general/100-rooted-template-id-type-argument-static-value.t:11:26
     template arg
     selected primary
     bind #1 = int source=explicit

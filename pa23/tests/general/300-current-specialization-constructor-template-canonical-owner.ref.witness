@@ -1,23 +1,23 @@
 translation-unit
-  class-use at pa23/tests/general/300-current-specialization-constructor-template-canonical-owner.t:37:3
+  class-use at tests/general/300-current-specialization-constructor-template-canonical-owner.t:37:3
     template duration_like
     selected primary
     bind #1 = long long source=explicit
-  function-call at pa23/tests/general/300-current-specialization-constructor-template-canonical-owner.t:37:28
+  function-call at tests/general/300-current-specialization-constructor-template-canonical-owner.t:37:28
     callee duration_like<long long>::duration_like
     selected instantiation
     bind #1 = long long source=deduced
     drop duration_like<long long>::duration_like reason=bad_conversion
     drop duration_like<long long>::duration_like reason=non_deduced_mismatch
-  class-use at pa23/tests/general/300-current-specialization-constructor-template-canonical-owner.t:38:3
+  class-use at tests/general/300-current-specialization-constructor-template-canonical-owner.t:38:3
     template duration_like
     selected primary
     bind #1 = int source=explicit
-  class-use at pa23/tests/general/300-current-specialization-constructor-template-canonical-owner.t:38:28
+  class-use at tests/general/300-current-specialization-constructor-template-canonical-owner.t:38:28
     template duration_like
     selected primary
     bind #1 = int source=explicit
-  function-call at pa23/tests/general/300-current-specialization-constructor-template-canonical-owner.t:38:28
+  function-call at tests/general/300-current-specialization-constructor-template-canonical-owner.t:38:28
     callee duration_like<int>::cast
     selected instantiation
     bind #1 = long long source=deduced

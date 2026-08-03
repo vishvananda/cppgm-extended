@@ -1,15 +1,15 @@
 translation-unit
-  alias-use at pa23/tests/general/400-dependent-alias-reference-top-level-const-mismatch.t:7:15
+  alias-use at tests/general/400-dependent-alias-reference-top-level-const-mismatch.t:7:15
     template add_lvalue_reference_t
     bind #1 = T source=explicit
-  alias-use at pa23/tests/general/400-dependent-alias-reference-top-level-const-mismatch.t:7:42
+  alias-use at tests/general/400-dependent-alias-reference-top-level-const-mismatch.t:7:42
     template add_lvalue_reference_t
     bind #1 = const T source=explicit
-  class-use at pa23/tests/general/400-dependent-alias-reference-top-level-const-mismatch.t:10:16
+  class-use at tests/general/400-dependent-alias-reference-top-level-const-mismatch.t:10:16
     template check
     selected primary
     bind #1 = char * source=explicit
-  class-use at pa23/tests/general/400-dependent-alias-reference-top-level-const-mismatch.t:11:16
+  class-use at tests/general/400-dependent-alias-reference-top-level-const-mismatch.t:11:16
     template check
     selected primary
     bind #1 = const char * source=explicit

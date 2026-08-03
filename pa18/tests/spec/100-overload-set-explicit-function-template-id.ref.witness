@@ -1,0 +1,12 @@
+translation-unit
+  function-call at tests/spec/100-overload-set-explicit-function-template-id.t:17:10
+    callee choose
+    selected instantiation
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity choose
+  function-instantiation
+    entity choose
+  require-definition
+    entity choose

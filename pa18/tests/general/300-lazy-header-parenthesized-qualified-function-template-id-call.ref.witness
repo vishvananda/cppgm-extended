@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/300-lazy-header-parenthesized-qualified-function-template-id-call.t:5:30
+  class-use at tests/general/300-lazy-header-parenthesized-qualified-function-template-id-call.t:5:30
     template LazyTemplateIdUser::TemplateIdBox
     selected primary
     bind #1 = int source=explicit

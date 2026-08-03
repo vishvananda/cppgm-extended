@@ -1,36 +1,36 @@
 translation-unit
-  alias-use at pa21/tests/general/400-member-alias-template-owner-rebind-cache.t:68:42
+  alias-use at tests/general/400-member-alias-template-owner-rebind-cache.t:68:42
     template allocator_traits::rebind_alloc
     bind #1 = T source=explicit
-  class-use at pa21/tests/general/400-member-alias-template-owner-rebind-cache.t:73:3
+  class-use at tests/general/400-member-alias-template-owner-rebind-cache.t:73:3
     template allocator_traits
     selected primary
     bind #1 = standard_allocator<void> source=explicit
-  class-use at pa21/tests/general/400-member-alias-template-owner-rebind-cache.t:73:20
+  class-use at tests/general/400-member-alias-template-owner-rebind-cache.t:73:20
     template standard_allocator
     selected primary
     bind #1 = void source=explicit
-  alias-use at pa21/tests/general/400-member-alias-template-owner-rebind-cache.t:73:48
+  alias-use at tests/general/400-member-alias-template-owner-rebind-cache.t:73:48
     template allocator_traits<standard_allocator<void>>::rebind_traits
     bind #1 = double source=explicit
-  class-use at pa21/tests/general/400-member-alias-template-owner-rebind-cache.t:77:15
+  class-use at tests/general/400-member-alias-template-owner-rebind-cache.t:77:15
     template is_same
     selected partial
     bind #1 = simple_allocator<double> source=explicit
     bind #2 = simple_allocator<double> source=explicit
     specialize #1 = simple_allocator<double> source=deduced
-  class-use at pa21/tests/general/400-member-alias-template-owner-rebind-cache.t:78:15
+  class-use at tests/general/400-member-alias-template-owner-rebind-cache.t:78:15
     template allocator_traits
     selected primary
     bind #1 = simple_allocator<int> source=explicit
-  class-use at pa21/tests/general/400-member-alias-template-owner-rebind-cache.t:78:32
+  class-use at tests/general/400-member-alias-template-owner-rebind-cache.t:78:32
     template simple_allocator
     selected primary
     bind #1 = int source=explicit
-  alias-use at pa21/tests/general/400-member-alias-template-owner-rebind-cache.t:78:57
+  alias-use at tests/general/400-member-alias-template-owner-rebind-cache.t:78:57
     template allocator_traits<simple_allocator<int>>::rebind_traits
     bind #1 = double source=explicit
-  class-use at pa21/tests/general/400-member-alias-template-owner-rebind-cache.t:79:15
+  class-use at tests/general/400-member-alias-template-owner-rebind-cache.t:79:15
     template simple_allocator
     selected primary
     bind #1 = double source=explicit

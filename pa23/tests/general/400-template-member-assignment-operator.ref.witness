@@ -1,11 +1,11 @@
 translation-unit
-  class-use at pa23/tests/general/400-template-member-assignment-operator.t:16:3
+  class-use at tests/general/400-template-member-assignment-operator.t:16:3
     template F
     selected partial
     bind #1 = void () source=explicit
     specialize #1 = void source=deduced
     specialize #2 = <> source=deduced
-  function-call at pa23/tests/general/400-template-member-assignment-operator.t:17:5
+  function-call at tests/general/400-template-member-assignment-operator.t:17:5
     callee F<void ()>::operator=
     selected instantiation
     bind #1 = Fun source=deduced

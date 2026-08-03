@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa23/tests/general/100-current-class-static-member-nontype-argument-body-check.t:20:3
+  class-use at tests/general/100-current-class-static-member-nontype-argument-body-check.t:20:3
     template engine
     selected primary
     bind #1 = unsigned int source=explicit

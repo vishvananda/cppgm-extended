@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/general/100-required-template-special-member-emission.t:15:5
+  class-use at tests/general/100-required-template-special-member-emission.t:15:5
     template box
     selected primary
     bind #1 = int source=explicit
-  class-use at pa18/tests/general/100-required-template-special-member-emission.t:16:5
+  class-use at tests/general/100-required-template-special-member-emission.t:16:5
     template box
     selected primary
     bind #1 = int source=explicit

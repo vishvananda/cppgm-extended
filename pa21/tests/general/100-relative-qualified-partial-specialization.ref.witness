@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa21/tests/general/100-relative-qualified-partial-specialization.t:23:17
+  class-use at tests/general/100-relative-qualified-partial-specialization.t:23:17
     template outer::common_type
     selected partial
     bind #1 = outer::chrono::duration<int, int> source=explicit
@@ -8,12 +8,12 @@ translation-unit
     specialize #2 = int source=deduced
     specialize #3 = int source=deduced
     specialize #4 = int source=deduced
-  class-use at pa21/tests/general/100-relative-qualified-partial-specialization.t:24:29
+  class-use at tests/general/100-relative-qualified-partial-specialization.t:24:29
     template outer::chrono::duration
     selected primary
     bind #1 = int source=explicit
     bind #2 = int source=explicit
-  class-use at pa21/tests/general/100-relative-qualified-partial-specialization.t:25:29
+  class-use at tests/general/100-relative-qualified-partial-specialization.t:25:29
     template outer::chrono::duration
     selected primary
     bind #1 = int source=explicit

@@ -82,6 +82,10 @@ Adjacent `.ref.witness` files are generated from the patched Clang witness
 materialization flow. They are intentionally a public, student-facing
 projection rather than a dump of every compiler-internal trace field.
 
+Source locations start at `tests/` or `course/`. The Clang and compiler
+renderers remove the checkout prefix and outer `paNN/` directory so moving a
+test between assignments does not change its witness output.
+
 The public `translation-unit` section records source-visible decisions:
 
 - template use kind and source use location

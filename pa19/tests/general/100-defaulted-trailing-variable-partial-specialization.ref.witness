@@ -1,5 +1,5 @@
 translation-unit
-  variable-use at pa19/tests/general/100-defaulted-trailing-variable-partial-specialization.t:7:15
+  variable-use at tests/general/100-defaulted-trailing-variable-partial-specialization.t:7:15
     template same_v
     selected partial
     bind #1 = char source=deduced

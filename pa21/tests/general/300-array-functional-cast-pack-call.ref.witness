@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa21/tests/general/300-array-functional-cast-pack-call.t:15:3
+  function-call at tests/general/300-array-functional-cast-pack-call.t:15:3
     callee run_pack
     selected instantiation
     bind #1 = <char, short, int> source=explicit

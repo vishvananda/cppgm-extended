@@ -1,0 +1,13 @@
+translation-unit
+  function-call at tests/spec/100-constructor-template-braced-array-bound-deduction.t:32:17
+    callee stream_parser::stream_parser
+    selected instantiation
+    bind #1 = 17 source=deduced
+    drop stream_parser::stream_parser reason=too_many_arguments
+template-closure-events
+  ensure-definition
+    entity stream_parser::stream_parser
+  function-instantiation
+    entity stream_parser::stream_parser
+  require-definition
+    entity stream_parser::stream_parser

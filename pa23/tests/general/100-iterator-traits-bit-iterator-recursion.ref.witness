@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/general/100-iterator-traits-bit-iterator-recursion.t:28:3
+  class-use at tests/general/100-iterator-traits-bit-iterator-recursion.t:28:3
     template iterator_traits
     selected primary
     bind #1 = bit_iterator<Container, false, 0> source=explicit
-  class-use at pa23/tests/general/100-iterator-traits-bit-iterator-recursion.t:28:19
+  class-use at tests/general/100-iterator-traits-bit-iterator-recursion.t:28:19
     template bit_iterator
     selected primary
     bind #1 = Container source=explicit

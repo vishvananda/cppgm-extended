@@ -1,9 +1,9 @@
 translation-unit
-  variable-use at pa23/tests/general/100-default-nontype-arg-declaration-scope-variable-template-partial.t:11:28
+  variable-use at tests/general/100-default-nontype-arg-declaration-scope-variable-template-partial.t:11:28
     template N::vt
     selected primary
     bind #1 = Alloc source=deduced
-  class-use at pa23/tests/general/100-default-nontype-arg-declaration-scope-variable-template-partial.t:22:25
+  class-use at tests/general/100-default-nontype-arg-declaration-scope-variable-template-partial.t:22:25
     template N::P
     selected partial
     bind #1 = Alloc source=explicit

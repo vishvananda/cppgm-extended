@@ -1,13 +1,13 @@
 translation-unit
-  class-use at pa19/tests/general/100-local-variable-template-keeps-concrete-class-instantiation.t:13:3
+  class-use at tests/general/100-local-variable-template-keeps-concrete-class-instantiation.t:13:3
     template flag
     selected primary
     bind #1 = true source=explicit
-  variable-use at pa19/tests/general/100-local-variable-template-keeps-concrete-class-instantiation.t:13:11
+  variable-use at tests/general/100-local-variable-template-keeps-concrete-class-instantiation.t:13:11
     template N::flag_v
     selected primary
     bind #1 = N::Alloc<C> source=deduced
-  class-use at pa19/tests/general/100-local-variable-template-keeps-concrete-class-instantiation.t:13:21
+  class-use at tests/general/100-local-variable-template-keeps-concrete-class-instantiation.t:13:21
     template N::Alloc
     selected primary
     bind #1 = C source=explicit

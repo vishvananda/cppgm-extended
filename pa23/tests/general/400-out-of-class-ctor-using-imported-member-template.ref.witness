@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/general/400-out-of-class-ctor-using-imported-member-template.t:48:3
+  class-use at tests/general/400-out-of-class-ctor-using-imported-member-template.t:48:3
     template Table
     selected primary
     bind #1 = int source=explicit
-  function-call at pa23/tests/general/400-out-of-class-ctor-using-imported-member-template.t:48:14
+  function-call at tests/general/400-out-of-class-ctor-using-imported-member-template.t:48:14
     callee Table<int>::Table
     selected instantiation
     bind #1 = int * source=deduced

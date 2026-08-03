@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa19/tests/general/200-function-template-pack-ref-return.t:19:6
+  class-use at tests/general/200-function-template-pack-ref-return.t:19:6
     template N::tuple
     selected primary
     bind #1 = <int &> source=explicit
-  function-call at pa19/tests/general/200-function-template-pack-ref-return.t:19:23
+  function-call at tests/general/200-function-template-pack-ref-return.t:19:23
     callee N::forward_as_tuple
     selected instantiation
     bind #1 = <int &> source=deduced

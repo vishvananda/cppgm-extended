@@ -1,0 +1,12 @@
+translation-unit
+  function-call at tests/general/100-function-template-definition-before-redeclaration.t:15:10
+    callee identity
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity identity
+  function-instantiation
+    entity identity
+  require-definition
+    entity identity

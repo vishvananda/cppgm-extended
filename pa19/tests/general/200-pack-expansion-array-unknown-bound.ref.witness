@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa19/tests/general/200-pack-expansion-array-unknown-bound.t:10:3
+  function-call at tests/general/200-pack-expansion-array-unknown-bound.t:10:3
     callee run
     selected instantiation
     bind #1 = <0, 1> source=explicit

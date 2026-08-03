@@ -1,0 +1,16 @@
+translation-unit
+  function-call at tests/general/200-nested-call-pack-expansion-same-pack.t:4:21
+    callee nested
+    selected instantiation
+    bind #1 = <int, int> source=deduced
+template-closure-events
+  ensure-definition
+    entity nested
+  function-instantiation
+    entity nested
+  function-instantiation
+    entity sum
+  require-definition
+    entity nested
+  require-definition
+    entity sum

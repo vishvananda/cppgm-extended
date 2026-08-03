@@ -1,21 +1,21 @@
 translation-unit
-  class-use at pa23/tests/general/100-default-nontype-qualified-function-lookup.t:24:1
+  class-use at tests/general/100-default-nontype-qualified-function-lookup.t:24:1
     template boost::proto::detail::sized_type
     selected primary
     bind #1 = 1 source=explicit
-  class-use at pa23/tests/general/100-default-nontype-qualified-function-lookup.t:25:1
+  class-use at tests/general/100-default-nontype-qualified-function-lookup.t:25:1
     template boost::proto::detail::sized_type
     selected primary
     bind #1 = 4 source=explicit
-  class-use at pa23/tests/general/100-default-nontype-qualified-function-lookup.t:25:34
+  class-use at tests/general/100-default-nontype-qualified-function-lookup.t:25:34
     template boost::proto::detail::domain_
     selected explicit
     bind #1 = boost::proto::detail::default_domain source=explicit
-  class-use at pa23/tests/general/100-default-nontype-qualified-function-lookup.t:25:61
+  class-use at tests/general/100-default-nontype-qualified-function-lookup.t:25:61
     template boost::proto::detail::domain_
     selected explicit
     bind #1 = boost::proto::detail::default_domain source=explicit
-  class-use at pa23/tests/general/100-default-nontype-qualified-function-lookup.t:36:37
+  class-use at tests/general/100-default-nontype-qualified-function-lookup.t:36:37
     template boost::proto::detail::common_domain2
     selected primary
     bind #1 = boost::proto::detail::default_domain source=explicit

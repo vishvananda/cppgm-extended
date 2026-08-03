@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa23/tests/spec/400-dependent-member-template-call.t:22:3
+  class-use at tests/spec/400-dependent-member-template-call.t:22:3
     template wrapper
     selected primary
     bind #1 = int source=explicit
-  function-call at pa23/tests/spec/400-dependent-member-template-call.t:23:10
+  function-call at tests/spec/400-dependent-member-template-call.t:23:10
     callee run
     selected instantiation
     bind #1 = int source=deduced

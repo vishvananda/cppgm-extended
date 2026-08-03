@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa19/tests/general/100-defaulted-nontype-class-alias-rewrite.t:33:1
+  class-use at tests/general/100-defaulted-nontype-class-alias-rewrite.t:33:1
     template Deque
     selected primary
     bind #1 = int source=explicit

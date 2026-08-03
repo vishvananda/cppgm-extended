@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa19/tests/general/200-instantiated-function-fixed-prefix-pack-tail.t:12:10
+  class-use at tests/general/200-instantiated-function-fixed-prefix-pack-tail.t:12:10
     template Box
     selected primary
     bind #1 = <> source=deduced
-  class-use at pa19/tests/general/200-instantiated-function-fixed-prefix-pack-tail.t:12:30
+  class-use at tests/general/200-instantiated-function-fixed-prefix-pack-tail.t:12:30
     template Box
     selected primary
     bind #1 = <int, float> source=explicit

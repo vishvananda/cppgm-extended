@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa21/tests/general/200-lazy-header-constexpr-static-assert.t:7:20
+  class-use at tests/general/200-lazy-header-constexpr-static-assert.t:7:20
     template needs_complete
     selected primary
     bind #1 = G source=explicit

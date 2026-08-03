@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/general/300-explicit-type-arg-dependent-template-cv-suffix.t:33:3
+  class-use at tests/general/300-explicit-type-arg-dependent-template-cv-suffix.t:33:3
     template basic_regex
     selected primary
     bind #1 = int source=explicit
-  function-call at pa18/tests/general/300-explicit-type-arg-dependent-template-cv-suffix.t:34:3
+  function-call at tests/general/300-explicit-type-arg-dependent-template-cv-suffix.t:34:3
     callee by_ref
     selected instantiation
     bind #1 = int source=deduced

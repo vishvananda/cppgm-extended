@@ -1,11 +1,11 @@
 translation-unit
-  class-use at pa22/tests/general/400-conversion-function-template-prefers-nontemplate.t:26:3
+  class-use at tests/general/400-conversion-function-template-prefers-nontemplate.t:26:3
     template box
     selected primary
     bind #1 = int source=explicit
     bind #2 = long source=explicit
     bind #3 = char source=explicit
-  class-use at pa22/tests/general/400-conversion-function-template-prefers-nontemplate.t:27:7
+  class-use at tests/general/400-conversion-function-template-prefers-nontemplate.t:27:7
     template source
     selected primary
     bind #1 = int source=explicit

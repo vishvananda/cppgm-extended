@@ -1,10 +1,10 @@
 translation-unit
-  class-use at pa18/tests/general/300-class-template-default-cache-isolation.t:20:3
+  class-use at tests/general/300-class-template-default-cache-isolation.t:20:3
     template first_like
     selected primary
     bind #1 = int source=explicit
     bind #2 = int * source=defaulted
-  class-use at pa18/tests/general/300-class-template-default-cache-isolation.t:21:3
+  class-use at tests/general/300-class-template-default-cache-isolation.t:21:3
     template second_like
     selected primary
     bind #1 = int source=explicit

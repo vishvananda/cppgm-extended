@@ -1,18 +1,18 @@
 translation-unit
-  alias-use at pa21/tests/general/400-alias-pack-nontype-expression-fast-path.t:19:20
+  alias-use at tests/general/400-alias-pack-nontype-expression-fast-path.t:19:20
     template bool_
     bind #1 = T::value != 0 source=explicit
-  alias-use at pa21/tests/general/400-alias-pack-nontype-expression-fast-path.t:41:16
+  alias-use at tests/general/400-alias-pack-nontype-expression-fast-path.t:41:16
     template size_
     bind #1 = cx_plus(mp_to_bool<P<T>>::value...) source=explicit
-  alias-use at pa21/tests/general/400-alias-pack-nontype-expression-fast-path.t:41:30
+  alias-use at tests/general/400-alias-pack-nontype-expression-fast-path.t:41:30
     template mp_to_bool
     bind #1 = P<T> source=explicit
-  class-use at pa21/tests/general/400-alias-pack-nontype-expression-fast-path.t:55:11
+  class-use at tests/general/400-alias-pack-nontype-expression-fast-path.t:55:11
     template list
     selected primary
     bind #1 = <X, X> source=explicit
-  alias-use at pa21/tests/general/400-alias-pack-nontype-expression-fast-path.t:56:11
+  alias-use at tests/general/400-alias-pack-nontype-expression-fast-path.t:56:11
     template count_if
     bind #1 = L source=explicit
     bind #2 = pred source=explicit

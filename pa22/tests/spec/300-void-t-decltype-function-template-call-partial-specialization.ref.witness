@@ -1,8 +1,8 @@
 translation-unit
-  alias-use at pa22/tests/spec/300-void-t-decltype-function-template-call-partial-specialization.t:21:17
+  alias-use at tests/spec/300-void-t-decltype-function-template-call-partial-specialization.t:21:17
     template void_t
     bind #1 = decltype(g(declval<T &>())) source=explicit
-  class-use at pa22/tests/spec/300-void-t-decltype-function-template-call-partial-specialization.t:25:15
+  class-use at tests/spec/300-void-t-decltype-function-template-call-partial-specialization.t:25:15
     template probe
     selected partial
     bind #1 = int source=explicit

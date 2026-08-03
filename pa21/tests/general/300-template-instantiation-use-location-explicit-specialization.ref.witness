@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa21/tests/general/300-template-instantiation-use-location-explicit-specialization.t:26:18
+  class-use at tests/general/300-template-instantiation-use-location-explicit-specialization.t:26:18
     template Ops
     selected explicit
     bind #1 = Policy source=explicit
-  function-call at pa21/tests/general/300-template-instantiation-use-location-explicit-specialization.t:37:3
+  function-call at tests/general/300-template-instantiation-use-location-explicit-specialization.t:37:3
     callee sift
     selected instantiation
     bind #1 = Local source=deduced

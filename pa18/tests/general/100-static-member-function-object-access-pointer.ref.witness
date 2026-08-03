@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/general/100-static-member-function-object-access-pointer.t:18:10
+  function-call at tests/general/100-static-member-function-object-access-pointer.t:18:10
     callee get_xalloc_index
     selected instantiation
     bind #1 = int source=explicit

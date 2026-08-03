@@ -1,15 +1,15 @@
 translation-unit
-  function-call at pa22/tests/general/200-partial-ordering-ref-vs-const-ref.t:17:10
+  function-call at tests/general/200-partial-ordering-ref-vs-const-ref.t:17:10
     callee pick
     selected instantiation
     bind #1 = int source=deduced
     drop pick reason=worse_conversion
-  function-call at pa22/tests/general/200-partial-ordering-ref-vs-const-ref.t:17:26
+  function-call at tests/general/200-partial-ordering-ref-vs-const-ref.t:17:26
     callee pick
     selected instantiation
     bind #1 = int source=deduced
     drop pick reason=better_candidate_selected
-  function-call at pa22/tests/general/200-partial-ordering-ref-vs-const-ref.t:17:42
+  function-call at tests/general/200-partial-ordering-ref-vs-const-ref.t:17:42
     callee pick
     selected instantiation
     bind #1 = int source=deduced

@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa21/tests/spec/300-member-template-trailing-return-implicit-field.t:31:12
+  function-call at tests/spec/300-member-template-trailing-return-implicit-field.t:31:12
     callee wrapper::call_it
     selected instantiation
     bind #1 = int source=explicit

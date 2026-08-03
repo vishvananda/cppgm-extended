@@ -1,17 +1,17 @@
 translation-unit
-  class-use at pa22/tests/general/300-structured-enable-if-sizeof-pack-value.t:22:14
+  class-use at tests/general/300-structured-enable-if-sizeof-pack-value.t:22:14
     template bool_constant
     selected primary
     bind #1 = true source=explicit
-  alias-use at pa22/tests/general/300-structured-enable-if-sizeof-pack-value.t:27:12
+  alias-use at tests/general/300-structured-enable-if-sizeof-pack-value.t:27:12
     template enable_if_t
     bind #1 = all<bool_constant<sizeof...(T) >= 1>>::value source=explicit
     bind #2 = int source=explicit
-  class-use at pa22/tests/general/300-structured-enable-if-sizeof-pack-value.t:33:3
+  class-use at tests/general/300-structured-enable-if-sizeof-pack-value.t:33:3
     template tuple
     selected primary
     bind #1 = <int> source=explicit
-  function-call at pa22/tests/general/300-structured-enable-if-sizeof-pack-value.t:33:14
+  function-call at tests/general/300-structured-enable-if-sizeof-pack-value.t:33:14
     callee tuple<int>::tuple
     selected instantiation
     bind #1 = void source=defaulted

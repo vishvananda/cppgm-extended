@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa18/tests/general/300-dependent-base-using-member-function.t:15:3
+  class-use at tests/general/300-dependent-base-using-member-function.t:15:3
     template split
     selected primary
     bind #1 = int source=explicit

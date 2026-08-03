@@ -1,0 +1,5 @@
+translation-unit
+  class-use at tests/general/100-repeated-using-declaration-same-template.t:18:3
+    template library::box
+    selected primary
+    bind #1 = int source=explicit

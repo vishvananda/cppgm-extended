@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa21/tests/general/300-nested-member-partial-specialization-survives-reference-reset.t:26:10
+  function-call at tests/general/300-nested-member-partial-specialization-survives-reference-reset.t:26:10
     callee service::make
     selected instantiation
     bind #1 = const object source=deduced

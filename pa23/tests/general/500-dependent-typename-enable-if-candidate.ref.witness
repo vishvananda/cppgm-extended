@@ -1,15 +1,15 @@
 translation-unit
-  class-use at pa23/tests/general/500-dependent-typename-enable-if-candidate.t:107:26
+  class-use at tests/general/500-dependent-typename-enable-if-candidate.t:107:26
     template boost::container::dtl::pair
     selected primary
     bind #1 = int source=explicit
     bind #2 = int source=explicit
-  class-use at pa23/tests/general/500-dependent-typename-enable-if-candidate.t:108:26
+  class-use at tests/general/500-dependent-typename-enable-if-candidate.t:108:26
     template boost::container::dtl::pair
     selected primary
     bind #1 = int source=explicit
     bind #2 = int source=explicit
-  function-call at pa23/tests/general/500-dependent-typename-enable-if-candidate.t:109:10
+  function-call at tests/general/500-dependent-typename-enable-if-candidate.t:109:10
     callee outer
     selected instantiation
     bind #1 = boost::container::dtl::pair<int, int> source=deduced
