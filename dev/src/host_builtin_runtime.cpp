@@ -393,6 +393,16 @@ extern "C" void * cppgm_builtin_memcpy(void * dst, const void * src, unsigned lo
   return dst;
 }
 
+extern "C" void * cppgm_builtin_memset(void * dst, int value, unsigned long n)
+{
+  unsigned char * out = static_cast<unsigned char *>(dst);
+  const unsigned char byte = static_cast<unsigned char>(value);
+  for(unsigned long i = 0; i < n; ++i) {
+    out[i] = byte;
+  }
+  return dst;
+}
+
 extern "C" void * cppgm_builtin_memmove(void * dst, const void * src, unsigned long n)
 {
   unsigned char * out = static_cast<unsigned char *>(dst);

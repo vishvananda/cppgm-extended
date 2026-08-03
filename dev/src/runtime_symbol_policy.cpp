@@ -52,6 +52,7 @@ struct RuntimeSymbolTableEntry
   X("cppgm_builtin_memchr", builtin_memchr, host_libcall, "memchr") \
   X("cppgm_builtin_memcmp", builtin_memcmp, host_libcall, "memcmp") \
   X("cppgm_builtin_memcpy", builtin_memcpy, host_libcall, "memcpy") \
+  X("cppgm_builtin_memset", builtin_memset, host_libcall, "memset") \
   X("cppgm_builtin_memmove", builtin_memmove, host_libcall, "memmove") \
   X("cppgm_builtin_strcmp", builtin_strcmp, host_libcall, "strcmp") \
   X("cppgm_builtin_strchr", builtin_strchr, host_libcall, "strchr") \

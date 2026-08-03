@@ -19875,6 +19875,7 @@ private:
     if(builtin_name == "__builtin_memchr") return "cppgm_builtin_memchr";
     if(builtin_name == "__builtin_memcmp") return "cppgm_builtin_memcmp";
     if(builtin_name == "__builtin_memcpy") return "cppgm_builtin_memcpy";
+    if(builtin_name == "__builtin_memset") return "cppgm_builtin_memset";
     if(builtin_name == "__builtin_memmove") return "cppgm_builtin_memmove";
     if(builtin_name == "__builtin_expect") return "cppgm_builtin_expect";
     if(builtin_name == "__builtin_strcmp") return "cppgm_builtin_strcmp";

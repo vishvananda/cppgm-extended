@@ -38,6 +38,7 @@ enum class RuntimeSymbolRole
   builtin_memchr,
   builtin_memcmp,
   builtin_memcpy,
+  builtin_memset,
   builtin_memmove,
   builtin_strcmp,
   builtin_strchr,

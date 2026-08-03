@@ -2435,6 +2435,7 @@ lowir_internal::FunctionBoundaryMetadata known_function_boundary_metadata(
       break;
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_bzero:
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_memcpy:
+    case runtime_symbol_policy::RuntimeSymbolRole::builtin_memset:
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_memmove:
       out.effects = lowir_internal::CFXM_READWRITE;
       out.unwind = lowir_internal::CUM_NO;
@@ -2473,6 +2474,7 @@ lowir_internal::FunctionBoundaryMetadata known_function_boundary_metadata(
     out.unwind = lowir_internal::CUM_NO;
   } else if(normalized == "__builtin_bzero" ||
             normalized == "__builtin_memcpy" ||
+            normalized == "__builtin_memset" ||
             normalized == "__builtin_memmove") {
     out.effects = lowir_internal::CFXM_READWRITE;
     out.unwind = lowir_internal::CUM_NO;
@@ -2532,6 +2534,9 @@ lowir_internal::ParamCaptureMode known_parameter_capture_mode(const string & sym
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_strcmp:
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_strchr:
       return param_index < 2 ? lowir_internal::PCM_NOCAPTURE : lowir_internal::PCM_DEFAULT;
+    case runtime_symbol_policy::RuntimeSymbolRole::builtin_memset:
+      return param_index == 0 ? lowir_internal::PCM_NOCAPTURE :
+                                lowir_internal::PCM_DEFAULT;
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_strlen:
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_operator_delete:
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_operator_delete_sized:
@@ -2548,7 +2553,8 @@ lowir_internal::ParamCaptureMode known_parameter_capture_mode(const string & sym
 
   const string normalized = runtime_symbol_policy::normalize_lookup_name(symbol);
   if(normalized == "__builtin_bzero" ||
-     normalized == "__builtin_memchr") {
+     normalized == "__builtin_memchr" ||
+     normalized == "__builtin_memset") {
     return param_index == 0 ? lowir_internal::PCM_NOCAPTURE : lowir_internal::PCM_DEFAULT;
   }
   if(normalized == "__builtin_memcmp" ||
@@ -2580,6 +2586,9 @@ lowir_internal::ParamAccessMode known_parameter_access_mode(const string & symbo
       if(param_index == 0) return lowir_internal::PAM_WRITE;
       if(param_index == 1) return lowir_internal::PAM_READ;
       return lowir_internal::PAM_DEFAULT;
+    case runtime_symbol_policy::RuntimeSymbolRole::builtin_memset:
+      return param_index == 0 ? lowir_internal::PAM_WRITE :
+                                lowir_internal::PAM_DEFAULT;
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_memmove:
       if(param_index == 0) return lowir_internal::PAM_READWRITE;
       if(param_index == 1) return lowir_internal::PAM_READ;
@@ -2591,7 +2600,8 @@ lowir_internal::ParamAccessMode known_parameter_access_mode(const string & symbo
   }
 
   const string normalized = runtime_symbol_policy::normalize_lookup_name(symbol);
-  if(normalized == "__builtin_bzero") {
+  if(normalized == "__builtin_bzero" ||
+     normalized == "__builtin_memset") {
     return param_index == 0 ? lowir_internal::PAM_WRITE : lowir_internal::PAM_DEFAULT;
   }
   if(normalized == "__builtin_memchr") {
