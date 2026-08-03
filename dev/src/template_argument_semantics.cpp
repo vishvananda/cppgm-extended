@@ -21171,15 +21171,17 @@ bool try_resolve_alias_template_id_locally(
     {
       const witness::ScopedTemplateWitnessSourceCapturePause
           source_capture_pause;
-      // Forming an alias target for a reference-only use must not complete the
-      // class-template-id named by that target.
+      // Forming an alias target does not require its class layout. Base-class
+      // resolution is the one path that must materialize the target here.
+      const bool reference_alias_target =
+          request.allow_class_templates || !base_specifier_type_lookup_active();
       if(!template_decl_ast::parse_type_id(
              services,
              inst_scope,
              inst_scope,
              *type_id_node,
              parsed,
-             request.allow_class_templates) ||
+             reference_alias_target) ||
          !parsed) {
         if(parser_trace::enabled("template.resolve")) {
           std::ostringstream trace;
