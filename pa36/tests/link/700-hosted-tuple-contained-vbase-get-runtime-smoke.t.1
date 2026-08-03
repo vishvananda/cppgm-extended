@@ -9,9 +9,39 @@ struct Y : virtual X
 {
 };
 
+template<unsigned long I, class Tuple>
+long element(const Tuple& values)
+{
+  return std::get<I>(values);
+}
+
+enum kind { first_kind, second_kind };
+
+struct key
+{
+  kind category;
+  unsigned long first;
+  unsigned long second;
+
+  bool operator<(const key& other) const
+  {
+    return std::tie(category, first, second) <
+      std::tie(other.category, other.first, other.second);
+  }
+};
+
 int main()
 {
   std::tuple<Y> values((Y()));
   Y && y = std::get<0>(static_cast<std::tuple<Y> &&>(values));
-  return (y.*&X::value)() == 7 ? 0 : 1;
+  if ((y.*&X::value)() != 7)
+    return 1;
+
+  const std::tuple<int, long> numbers(3, 5);
+  if (element<1>(numbers) != 5)
+    return 2;
+
+  const key first = {first_kind, 1, 2};
+  const key second = {second_kind, 0, 0};
+  return first < second ? 0 : 3;
 }

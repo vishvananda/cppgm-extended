@@ -413,7 +413,10 @@ emitted from hosted headers. Reduce header-independent language, ABI, EH, or
 backend bugs to their earlier owning assignment. Keep a PA35 or PA36 test only
 when that hosted integration is essential and the case materially increases
 coverage over the existing suite. Do not add a PA35/PA36 test merely to retain
-the source repository's original placement.
+the source repository's original placement. When the new assertion extends the
+same hosted-header path as an existing family, prefer strengthening that family
+without adding another test process, provided the combined runtime oracle stays
+focused and preserves the original assertion.
 
 Follow the numbering and naming style of the selected local suite. Rename
 generic source-run names such as `900-*` or `final-audit-*` when they do not
