@@ -224,7 +224,8 @@ treat the `Assignment Boundary` and `Out Of Scope` sections below as authoritati
 This PA14 milestone supports the following:
 
 - namespace-scope function definitions and declarations in a single generated program,
-  including named namespaces
+  including named namespaces, C language linkage, and deduplication of repeated
+  compatible declarations
 - a required `main` definition
 - functions returning integral, pointer, or `bool` results from the supported PA12 subset
 - up to four parameters in the supported PA12 procedural type subset
@@ -233,7 +234,8 @@ This PA14 milestone supports the following:
 - local scalar objects, scalar/function references, function pointers/references, and bounded
   arrays in the supported PA12 procedural type subset; an omitted array bound is inferred
   from its initializer, missing elements are zero-initialized, and excess elements are
-  rejected
+  rejected; an `extern` array of unknown bound may be referenced without requiring its
+  layout in the current translation unit
 - expression statements
 - `return`
 - `if` / `else`

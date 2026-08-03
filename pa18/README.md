@@ -237,6 +237,9 @@ PA18 supports the following in addition to the PA17 subset:
 - out-of-class definitions of nested classes declared inside the supported class templates,
   when those nested classes stay within the already supported PA15-PA17 class/value/
   polymorphic machinery
+- distinct nested types from different class-template specializations remain distinct in
+  overload resolution, and a dependent local type alias used by `new` resolves to the
+  concrete specialization before constructor selection
 - ordinary PA10 function declarator forms, including trailing return types, on the supported
   function-template cases
 - instantiated specialization names that then participate in the ordinary PA15-PA17

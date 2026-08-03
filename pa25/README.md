@@ -210,6 +210,8 @@ To complete PA25, implement these goals:
    Once an exception object has been initialized, destroy the throw operand's
    temporaries and remove them from later unwind snapshots. A temporary from an
    untaken throw branch must not appear in a sibling call's cleanup path.
+   If a conditional initializer arm throws before the destination object is
+   constructed, do not schedule destruction of that destination on the unwind path.
 
 ### Out Of Scope
 

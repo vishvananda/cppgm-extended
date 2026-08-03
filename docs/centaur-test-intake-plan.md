@@ -2,8 +2,8 @@
 
 ## Status and Scope
 
-Plan created 2026-08-02. Intake execution has reviewed 43 of 272 families:
-sixteen were intaked, twenty are covered by existing tests, four are not
+Plan created 2026-08-02. Intake execution has reviewed 79 of 272 families:
+thirty were intaked, forty-two are covered by existing tests, four are not
 regressions, and three expose current compiler bugs. The frozen source checkout
 points to:
 
@@ -31,8 +31,8 @@ not build a second reference object root, clean unchanged objects, or copy a
 Centaur reference as the canonical oracle.
 
 The completed cohorts have closed four assignment-baseline duplicates, the
-PA4-through-PA9 catalog, the six PA11 semantic-cleanup families, and all 21
-PA12-source families. The
+PA4-through-PA9 catalog, the six PA11 semantic-cleanup families, all 21
+PA12-source families, and all 36 PA14-source families. The
 retained early coverage consists of one PA4 macro paint regression, four PA8
 initialization/linkage additions plus one existing PA8 conversion-family
 extension, and one combined PA9 narrow/wide literal alignment regression.
@@ -57,6 +57,26 @@ oracle was not imported. The PA12 audit now models its semantic-only function
 body surface, fixes broad default-argument and operator-name detectors, and
 passes with no findings after two old using-lookup fixtures were renumbered to
 their `200` cluster.
+
+The PA14-source cohort retains thirteen fixtures for fourteen source rows: six
+PA14 procedural/declaration reducers, a corrected PA15 operator negative, one
+PA16 copy-and-swap temporary case, two PA18 specialization-replay cases, two
+PA22 overload/constructor-template cases, and one PA25 runtime EH cleanup case.
+The other twenty-two rows are covered by concrete current tests, including all
+five bulk-snapshot EH cleanup variants that are not distinct from the existing
+PA25 runtime and LowIR oracles. The retained conditional-initializer case stays
+at PA25 and checks at runtime that a destination whose selected arm throws
+before construction is not destroyed. Centaur's fundamental-only overloaded
+operator positive was invalid C++; Clang and GCC reject it, so the retained
+fixture is the corresponding negative instead of the old symbol oracle.
+
+This cohort also closed two placement-audit defects. The bit-field detector no
+longer treats the `short_array` identifier in a nested conditional as a `short`
+bit-field declaration. A genuinely misplaced multidimensional local-static
+array case was merged into PA20's existing local-static-array fixture and
+removed from PA14. The affected PA14, PA15, PA16, PA18, PA20, PA22, and PA25
+report passes 1431/1431; PA18/PA22 strict comparison passes 361 cases with no
+failures; and the complete affected placement audit has no findings.
 
 ## Frozen History and Initial Inventory
 

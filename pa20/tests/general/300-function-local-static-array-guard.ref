@@ -7,9 +7,17 @@ global @__strlit__2 [binding=internal] = {
   i8 98
   i8 0
 }
+global @__strlit__3 [binding=internal] = {
+  i8 120
+  i8 0
+}
 global @__local_static__f__values__tokens8_18 [binding=internal] = {
   ptr addr @__strlit__1
   ptr addr @__strlit__2
+}
+global @__local_static__f__nested__tokens22_33 [binding=internal] = {
+  i8 120
+  i8 0
 }
 
 function @f() -> i32 [binding=strong, object=_Z1fv] {
@@ -29,7 +37,15 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
     %t13 = convert sext i32 i8 %t6
     %t14 = convert sext i32 i8 %t12
     %t15 = binary add i32 %t13, %t14
-    return i32 %t15
+    %t16 = addr @__local_static__f__nested__tokens22_33
+    %t17 = unary decay ptr %t16
+    %t18 = binary mul i64 0, 2
+    %t19 = index i8 [projection=array_element] %t17, %t18
+    %t20 = index i8 [projection=array_element] %t19, 1
+    %t21 = load i8 %t20
+    %t22 = convert sext i32 i8 %t21
+    %t23 = binary add i32 %t15, %t22
+    return i32 %t23
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

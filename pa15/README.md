@@ -242,6 +242,8 @@ PA15 supports the following in addition to the PA14 procedural subset:
   - member operators such as `operator[]`
   - hidden-friend and namespace-scope non-member operators found through ordinary lookup / ADL
   - chained reference-returning operators such as `operator<<`
+  - rejection of a non-member overloaded operator unless at least one operand has class or
+    enumeration type
 - ordinary non-template non-member function calls found through associated-namespace lookup /
   hidden-friend ADL when the arguments stay within the supported class subset
 - in-class member-function definitions

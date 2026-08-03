@@ -94,6 +94,22 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         self.assertNotIn("operator.overload", audit.detect_features(identifier))
         self.assertIn("operator.overload", audit.detect_features(overload))
 
+    def test_bitfield_detector_does_not_match_short_identifier_in_conditional(self) -> None:
+        conditional = textwrap.dedent(
+            """\
+            char short_array[3];
+            char first_array[4];
+            char *select_array(int index) {
+              return index == 0 ? short_array
+                                : index == 1 ? first_array : short_array;
+            }
+            """
+        )
+        bitfield = "struct flags { unsigned bits : 3; };\n"
+
+        self.assertNotIn("class.layout.bitfield", audit.detect_features(conditional))
+        self.assertIn("class.layout.bitfield", audit.detect_features(bitfield))
+
     def test_hygiene_reports_compile_flags_sidecar(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
