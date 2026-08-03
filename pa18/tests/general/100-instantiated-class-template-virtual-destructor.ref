@@ -24,7 +24,7 @@ global @owner_int___vtable [storage=readonly, binding=weak, object=_ZTV5ownerIiE
   ptr addr @owner_int____owner__deleting_entry
 }
 global @value [binding=strong, object=_Z5value] = {
-  zero 8
+  ptr addr @owner_int___vtable + 16
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -75,12 +75,6 @@ function @owner_int___owner(%this : ptr) -> void [unwind=no, binding=weak, objec
     %t2 = addr @owner_int___vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
-    return void
-}
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    %t1 = addr @value
-    call void @owner_int___owner(%t1)
     return void
 }
 function @__cppgm_fini() -> void [role=fini, binding=internal] {

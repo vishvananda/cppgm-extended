@@ -986,21 +986,25 @@ size_t global_alignment(const mir::GlobalDefinition & global)
   if(global.storage_kind == mir::GlobalDefinition::GS_SCALAR) {
     return type_alignment_text(global.type);
   }
-  // Structured globals do not carry a whole-object type.  Their item types
-  // can prove a stricter alignment, but zero-only storage carries no such
-  // evidence.  Conservatively use LowIR's maximum supported object alignment
-  // so source objects such as arrays of 16-byte-aligned elements remain valid.
-  size_t alignment = 16;
+  // Structured globals do not carry a whole-object type.  Derive alignment
+  // from typed items when any are present; raw zero padding must not raise the
+  // alignment of an otherwise typed object.  Zero-only storage carries no
+  // type evidence, so conservatively use LowIR's maximum supported object
+  // alignment for source objects such as arrays of 16-byte-aligned elements.
+  size_t alignment = 1;
+  bool saw_typed_item = false;
   for(size_t i = 0; i < global.data_items.size(); ++i) {
     const mir::GlobalDefinition::DataItem & item = global.data_items[i];
     if(item.kind == mir::GlobalDefinition::DataItem::ITEM_INTEGER ||
        item.kind == mir::GlobalDefinition::DataItem::ITEM_FLOAT) {
+      saw_typed_item = true;
       alignment = max(alignment, type_alignment_text(item.type));
     } else if(item.kind == mir::GlobalDefinition::DataItem::ITEM_ADDR) {
+      saw_typed_item = true;
       alignment = max(alignment, static_cast<size_t>(8));
     }
   }
-  return alignment;
+  return saw_typed_item ? alignment : 16;
 }
 
 size_t global_size(const mir::GlobalDefinition & global)

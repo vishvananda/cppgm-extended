@@ -73,18 +73,7 @@ function @holder__holder(%this : ptr) -> void [binding=weak, object=_ZN6holderC1
     store ptr %this, $this
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @derived__derived(%t2)
-    return void
-}
-function @derived__derived(%this : ptr) -> void [binding=weak, object=_ZN7derivedC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
     store i64 0, %t2
     return void
 }
 alias object _ZN6holderC2Ev = @holder__holder
-alias object _ZN7derivedC2Ev = @derived__derived

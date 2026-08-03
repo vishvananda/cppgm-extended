@@ -55,7 +55,3 @@ function @add_one__operator__(%this : ptr, %value : i32) -> i32 [binding=weak, o
     %t5 = binary add i32 %t3, %t4
     return i32 %t5
 }
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    return void
-}

@@ -20,7 +20,7 @@ global @box_int___vtable [storage=readonly, binding=weak, object=_ZTV3boxIiE] = 
   ptr addr @box_int___value
 }
 global @value [binding=strong, object=_Z5value] = {
-  zero 8
+  ptr addr @box_int___vtable + 16
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -45,12 +45,6 @@ function @box_int___box(%this : ptr) -> void [unwind=no, binding=weak, object=_Z
     %t2 = addr @box_int___vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
-    return void
-}
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    %t1 = addr @value
-    call void @box_int___box(%t1)
     return void
 }
 alias object _ZN3boxIiEC2Ev = @box_int___box
