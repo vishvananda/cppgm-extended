@@ -32,7 +32,7 @@ C/assembly/link actions. The validation and performance ladder follows
 | Suite | Path | Prior blocker | Status | Evidence |
 |---:|---|---|---|---|
 | 57 | `libs/leaf/test` | missing `nlohmann/json.hpp` | pass | Final forced graph updated 482 targets: 123 tests passed, all 22 negative compilations failed as expected, and there were no skips or unexpected failures. The nlohmann header and positive/negative serialization cases were included. |
-| 51 | `libs/graph_parallel/test` | missing MPI, runner, and Python target | pending | Open MPI 5.0.9 and Python 3.14 are now installed; exact graph pending after LEAF. |
+| 51 | `libs/graph_parallel/test` | missing MPI, runner, and Python target | in progress | Open MPI 5.0.9 and Python 3.14 are installed. The strong-components compile blocker, CSR partial-ordering blocker, repeated member-template output/link blocker, and distributed-vertex runtime blocker are fixed with focused coverage. Exact CSR and connected-components targets pass; the final forced full graph is pending. |
 | 68 | `libs/mpi/test` | missing MPI compiler and runner | pending | `/usr/local/bin/mpic++` and `/usr/local/bin/mpirun` are now available; exact graph pending after Graph Parallel. |
 
 ## Frontier Log
@@ -63,3 +63,33 @@ C/assembly/link actions. The validation and performance ladder follows
   (`/private/tmp/cppgm-boost-reopened-v2/leaf-final-candidate.json`). PA17,
   PA21, and PA23 already document the tested assignment surfaces, so no README
   expansion was needed. The canonical V2 tracker remains unchanged.
+- `2026-08-03`: Advanced the independent cursor to
+  `libs/graph_parallel/test` after committing the LEAF closure. The suite uses
+  the isolated `build-graph-parallel` root and leaves the canonical tracker and
+  active frontier build roots untouched.
+- `2026-08-03`: The first Graph Parallel replay exposed three compiler defects.
+  Dependent elaborated template-ids in function-local typedefs lost their
+  retained lookup nodes; partial ordering tried to deduce a qualified
+  non-deduced parameter; and output resolution collapsed repeated member
+  template specializations with the same function type onto the first body.
+  The fixes and owning regressions landed in PA18, PA22, and PA26 as commits
+  `ea1091429`, `028f55c9a`, and `dec4709d7`. The last fix also corrected the
+  distributed CSR `vertex` overload, whose selected specialization previously
+  emitted the less-specialized sequential body. A header-free PA22 regression
+  now covers that overlapping free-function-template output identity in
+  `5e56b198c`.
+- `2026-08-03`: Focused Graph validation passes on the final compiler. The
+  exact forced `distributed_csr_algorithm_test-1` target rebuilt 107 targets
+  and passed compile, link, and runtime with zero swaps
+  (`graph-parallel-csr-forced-after-template-identity-output-fix.log`). After
+  replacing only its stale generated test object, the two-rank
+  `distributed_connected_components_test-2` target passed; an independent
+  Homebrew Clang C++11 build of the same target also passed
+  (`graph-parallel-connected-components-current-incremental.log` and
+  `graph-parallel-connected-components-clang.log`). The PA22 direct-LowIR
+  report passes `388/388`, strict comparison passes `290` with `98` expected
+  witness skips, and the placement audit reports zero findings. The fixed
+  cumulative performance gate remains passing at -36.97% instructions,
+  -40.09% maximum RSS, and -42.28% peak footprint
+  (`perf-template-identity-output.json`). The final forced full Graph Parallel
+  graph remains the suite-closing gate.
