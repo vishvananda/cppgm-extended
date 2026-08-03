@@ -2031,6 +2031,8 @@ def template_review_for(
         ]
         if pa22_owned_features:
             effective_review_features = sorted(pa22_owned_features)
+    all_concepts = template_concepts_for(review_features)
+    integration_concepts = review_template_concepts(all_concepts, current_pa)
     concepts = template_concepts_for(effective_review_features)
     review_concepts = review_template_concepts(concepts, current_pa)
     template_features = sorted(
@@ -2064,6 +2066,13 @@ def template_review_for(
         "template_concepts": concepts,
         "review_template_concepts": review_concepts,
         "template_concept_arity": len(review_concepts),
+        # PA22 narrows the ordinary ownership view to PA22-owned
+        # features so a single deduction/SFINAE assertion is not displaced by
+        # its prerequisite syntax.  Preserve a second, unfiltered view for the
+        # separate question of whether several completed template mechanisms
+        # may be essential together and therefore belong in PA23 integration.
+        "integration_template_concepts": integration_concepts,
+        "integration_template_concept_arity": len(integration_concepts),
         "later_or_compat_features": later_features,
         "latest_template_owner": owner,
         "template_bucket": bucket,
@@ -2393,6 +2402,7 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         "",
         "The table below was seeded by the template-placement audit mode.",
         "Treat the bucket and cluster as review leads, not final move decisions.",
+        "The composition-concepts column retains earlier prerequisite concepts that PA22's owner-focused view filters out.",
         "Filename-only matches are retained as path hints and do not drive placement failures.",
         "After review starts, do not overwrite this tracker without preserving status and notes.",
         "",
@@ -2436,8 +2446,8 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         "",
         "## Review Queue",
         "",
-        "| Status | Test | Current | Bucket | Concepts For Review | Later/Compat Features | Latest Template Owner | PA23 Cluster | Late Candidate | Late Confidence | Path Hints | Action | Notes |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| Status | Test | Current | Bucket | Concepts For Review | Composition Concepts | Later/Compat Features | Latest Template Owner | PA23 Cluster | Late Candidate | Late Confidence | Path Hints | Action | Notes |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ])
     for row in sorted(rows, key=lambda item: (str(item["template_bucket"]), str(item["path"]))):
         current = f"{row['current_pa']}:{row['current_cluster']}"
@@ -2450,11 +2460,12 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
             if late_candidate else ""
         )
         lines.append(
-            "| [ ] | `{}` | `{}` | `{}` | {} | {} | `{}` | {} | `{}` | `{}` | {} | {} |  |".format(
+            "| [ ] | `{}` | `{}` | `{}` | {} | {} | {} | `{}` | {} | `{}` | `{}` | {} | {} |  |".format(
                 row["path"],
                 current,
                 row["template_bucket"],
                 markdown_cell(row["review_template_concepts"]),
+                markdown_cell(row["integration_template_concepts"]),
                 markdown_cell(row["later_or_compat_features"]),
                 row["latest_template_owner"],
                 markdown_cell(row["suggested_pa23_cluster"]),
@@ -2501,6 +2512,8 @@ def write_csv(path: Path, rows: list[dict[str, object]], template_placement: boo
                 "template_bucket",
                 "template_concept_arity",
                 "review_template_concepts",
+                "integration_template_concept_arity",
+                "integration_template_concepts",
                 "template_features",
                 "later_or_compat_features",
                 "latest_template_owner",
@@ -2523,6 +2536,8 @@ def write_csv(path: Path, rows: list[dict[str, object]], template_placement: boo
                     row["template_bucket"],
                     row["template_concept_arity"],
                     "; ".join(row["review_template_concepts"]),  # type: ignore[arg-type]
+                    row["integration_template_concept_arity"],
+                    "; ".join(row["integration_template_concepts"]),  # type: ignore[arg-type]
                     "; ".join(row["template_features"]),  # type: ignore[arg-type]
                     "; ".join(row["later_or_compat_features"]),  # type: ignore[arg-type]
                     row["latest_template_owner"],

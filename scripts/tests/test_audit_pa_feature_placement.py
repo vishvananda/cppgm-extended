@@ -72,6 +72,54 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             "violation",
         )
 
+    def test_pa22_template_review_retains_prerequisites_for_integration_audit(self) -> None:
+        features = {
+            "template.deduction_full": audit.FeatureMeta(
+                "template.deduction_full", "pa22", 100, "", ""
+            ),
+            "sfinae": audit.FeatureMeta("sfinae", "pa22", 300, "", ""),
+            "template.member_template": audit.FeatureMeta(
+                "template.member_template", "pa21", 300, "", ""
+            ),
+            "template.pack": audit.FeatureMeta(
+                "template.pack", "pa19", 200, "", ""
+            ),
+        }
+
+        review = audit.template_review_for(
+            list(features), [], [], 300, "pa22", features
+        )
+
+        self.assertEqual(
+            review["review_template_concepts"],
+            ["function-deduction", "sfinae"],
+        )
+        self.assertEqual(
+            review["integration_template_concepts"],
+            [
+                "function-deduction",
+                "member-template",
+                "pack-expansion",
+                "sfinae",
+            ],
+        )
+        self.assertEqual(review["integration_template_concept_arity"], 4)
+
+    def test_single_pa22_feature_does_not_gain_integration_concepts(self) -> None:
+        features = {
+            "sfinae": audit.FeatureMeta("sfinae", "pa22", 300, "", ""),
+            "template.substitution": audit.FeatureMeta(
+                "template.substitution", "pa22", 300, "", ""
+            ),
+        }
+
+        review = audit.template_review_for(
+            list(features), [], [], 300, "pa22", features
+        )
+
+        self.assertEqual(review["integration_template_concepts"], ["sfinae"])
+        self.assertEqual(review["integration_template_concept_arity"], 1)
+
     def test_default_argument_detector_ignores_condition_declarations(self) -> None:
         declarations = "int f(int value = 1);\nvoid g(int = 2);\n"
         conditions = textwrap.dedent(

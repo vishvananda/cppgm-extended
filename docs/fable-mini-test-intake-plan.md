@@ -702,6 +702,27 @@ Run the narrowest checks first:
    a test to another assignment, run and retain the audit for both the source
    and destination assignments.
 
+   For intake into PA18 through PA23, also emit the template-placement view and
+   inspect every accepted test's `Concepts For Review` and `Composition
+   Concepts` columns:
+
+   ```sh
+   python3 scripts/audit_pa_feature_placement.py \
+     --pa paNN \
+     --no-course \
+     --template-placement \
+     --markdown-out /tmp/paNN-template-placement.md \
+     --json-out /tmp/paNN-template-placement.json
+   ```
+
+   PA22's ordinary owner view filters prerequisite template
+   mechanisms so a focused deduction or SFINAE test can remain at its
+   single-feature owner. The composition view retains those prerequisites.
+   When two or more concepts are essential to the assertion together, move the
+   test to PA23 and choose its cluster from the reported combination. This is a
+   manual review lead rather than a hard placement failure because template
+   fixtures often use earlier mechanisms only as assertion scaffolding.
+
    The audit scans numbered host-test sources such as `.t.1` and `.t.2`.
    Generating LowIR for each later-assignment test makes the normal audit slow.
    Probe one host test only if source and history review leave its placement
