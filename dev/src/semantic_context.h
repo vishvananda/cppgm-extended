@@ -428,6 +428,13 @@ public:
   virtual const semantic_model::ValueBinding * lookup_value(
       semantic_model::Scope & scope,
       const std::string & name) = 0;
+  virtual const semantic_model::ValueBinding * lookup_value_node(
+      semantic_model::Scope & scope,
+      const CppAstNode &,
+      const std::string & name)
+  {
+    return lookup_value(scope, name);
+  }
   virtual std::vector<std::string> expand_bound_type_pack_texts(
       semantic_model::Scope & scope,
       const std::vector<std::string> & texts) = 0;

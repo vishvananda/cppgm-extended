@@ -5077,7 +5077,8 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
       (cppast_has_qualifier_template_id_syntaxes(node) ||
        !node.qualifier_type_syntaxes.empty());
   const ValueBinding * binding =
-      structured_qualified_lookup ? nullptr : ctx.lookup_value(scope, node.value);
+      structured_qualified_lookup ? nullptr :
+                                    ctx.lookup_value_node(scope, node, node.value);
   if(binding) {
     allow_constant_fold = id_expression_binding_allows_constant_fold(*binding);
     return binding;
@@ -5148,7 +5149,7 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
   }
 
   const ValueBinding * qualified_binding =
-      lookup_qualified_value_binding(ctx, scope, *qualified);
+      lookup_qualified_value_binding_node(ctx, scope, *qualified, node);
   if(qualified_binding) {
     allow_constant_fold =
         id_expression_binding_allows_constant_fold(*qualified_binding);

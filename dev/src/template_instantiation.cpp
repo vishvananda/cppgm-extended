@@ -1099,11 +1099,14 @@ bool substitute_owner_arguments_in_class_type(
       for(std::size_t i = 0; i < dependent_class_arguments.size(); ++i) {
         const DependentAliasTemplateArgumentSyntax & source =
             dependent_class_arguments[i];
+        const bool source_is_non_type =
+            source.has_non_type_value ||
+            source.dependent_value;
         std::string text = semantic_utils::trim_space(source.text.empty() ?
                                                           source.syntax.text :
                                                           source.text);
         TemplateArgumentSyntax syntax = source.syntax;
-        if(source.type) {
+        if(source.type && !source_is_non_type) {
           TypePtr substituted;
           if(template_argument_semantics::substitute_type(scope,
                                                           source.type,
@@ -1119,14 +1122,15 @@ bool substitute_owner_arguments_in_class_type(
             syntax.text = text;
             changed = true;
           }
-        } else {
+        } else if(source_is_non_type) {
           TemplateArgument value_arg;
           TemplateArgument source_arg;
           source_arg.kind = TemplateArgument::TA_VALUE;
           source_arg.text = text;
-          if(i < class_template->parameters.size()) {
-            source_arg.type = class_template->parameters[i].value_type;
-          }
+          source_arg.type = source.type;
+          source_arg.value = source.value;
+          source_arg.dependent = source.dependent_value;
+          source_arg.source_defaulted = source.source_defaulted;
           source_arg.source_syntax.reset(new TemplateArgumentSyntax(source.syntax));
           if(substitute_owner_value_template_argument(parameters,
                                                       arguments,

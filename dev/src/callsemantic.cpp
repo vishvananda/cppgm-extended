@@ -17964,6 +17964,20 @@ private:
 
   const ValueBinding * lookup_value(Scope & scope, const string & name) override
   {
+    return lookup_value_at_token(scope, name, 0);
+  }
+
+  const ValueBinding * lookup_value_node(Scope & scope,
+                                         const CppAstNode & node,
+                                         const string & name) override
+  {
+    return lookup_value_at_token(scope, name, node.token_start);
+  }
+
+  const ValueBinding * lookup_value_at_token(Scope & scope,
+                                             const string & name,
+                                             size_t source_token_start)
+  {
     vector<Scope *> scope_path;
     for(Scope * current = &scope; current; current = current->parent) {
       scope_path.push_back(current);
@@ -18001,6 +18015,10 @@ private:
         }
 
         for(size_t i = 0; i < current_scope.using_directives.size(); ++i) {
+          if(!cpp_scope_lookup::using_directive_visible_at_token(
+                 current_scope, i, source_token_start, 0)) {
+            continue;
+          }
           Scope * imported = current_scope.using_directives[i];
           if(using_directive_injection_scope(origin_scope, *imported) == &lookup_scope) {
             const ValueBinding * direct = semantic_lookup::lookup_direct_value(*imported, name);

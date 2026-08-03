@@ -5324,7 +5324,8 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     qualifier_name.name = qualified.qualifiers[i];
     if(!qualifier_template_id) {
       Scope * namespace_scope =
-          semantic_lookup::lookup_namespace_name(scope, qualifier_name);
+          semantic_lookup::lookup_namespace_name_at_token(
+              scope, qualifier_name, node.token_start);
       if(namespace_scope) {
         current = namespace_scope;
         continue;

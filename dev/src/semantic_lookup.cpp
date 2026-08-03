@@ -1047,13 +1047,18 @@ void collect_decl_lookup_from_using_directives(Scope & scope,
                                                const SameEntity & same_entity,
                                                bool & found,
                                                DeclT *& value,
-                                               bool & ambiguous)
+                                               bool & ambiguous,
+                                               std::size_t source_token_start = 0)
 {
   if(!visited.insert(&scope).second) {
     return;
   }
 
   for(std::size_t i = 0; i < scope.using_directives.size(); ++i) {
+    if(!cpp_scope_lookup::using_directive_visible_at_token(
+           scope, i, source_token_start, 0)) {
+      continue;
+    }
     Scope * imported = scope.using_directives[i];
     DeclT * direct = direct_lookup(*imported, name);
     if(direct) {
@@ -1074,7 +1079,8 @@ void collect_decl_lookup_from_using_directives(Scope & scope,
         same_entity,
         found,
         value,
-        ambiguous);
+        ambiguous,
+        source_token_start);
     if(ambiguous) {
       return;
     }
@@ -1806,7 +1812,8 @@ TypePtr resolve_direct_type_qualifier_impl(SemanticContext & ctx,
 TypePtr lookup_type_from_using_directives_in_scope(SemanticContext & ctx,
                                                    Scope & scope,
                                                    Scope & lookup_scope,
-                                                   const string & name)
+                                                   const string & name,
+                                                   size_t source_token_start = 0)
 {
   if(scope.using_directives.empty()) {
     return TypePtr();
@@ -1834,14 +1841,16 @@ TypePtr lookup_type_from_using_directives_in_scope(SemanticContext & ctx,
       },
       found,
       value,
-      ambiguous);
+      ambiguous,
+      source_token_start);
   return ambiguous ? TypePtr() : value;
 }
 
 TypePtr resolve_type_qualifier_in_qualified_scope(SemanticContext & ctx,
                                                   Scope & scope,
                                                   Scope & lookup_scope,
-                                                  const string & name)
+                                                  const string & name,
+                                                  size_t source_token_start = 0)
 {
   TypePtr direct =
       resolve_direct_type_qualifier_impl(ctx,
@@ -1851,7 +1860,8 @@ TypePtr resolve_type_qualifier_in_qualified_scope(SemanticContext & ctx,
                                          nullptr,
                                          nullptr);
   TypePtr imported =
-      lookup_type_from_using_directives_in_scope(ctx, scope, lookup_scope, name);
+      lookup_type_from_using_directives_in_scope(
+          ctx, scope, lookup_scope, name, source_token_start);
   if(direct && imported && !type_equals(direct, imported)) {
     return TypePtr();
   }
@@ -1862,7 +1872,8 @@ TypePtr lookup_qualifier_type_name(SemanticContext & ctx,
                                    Scope & direct_scope,
                                    Scope & lookup_scope,
                                    const string & text,
-                                   bool allow_direct_lookup)
+                                   bool allow_direct_lookup,
+                                   size_t source_token_start = 0)
 {
   const string trimmed = semantic_utils::trim_space(text);
   if(has_top_level_declarator_syntax(trimmed)) {
@@ -1872,7 +1883,8 @@ TypePtr lookup_qualifier_type_name(SemanticContext & ctx,
   TypePtr type;
   if(allow_direct_lookup) {
     type =
-        resolve_type_qualifier_in_qualified_scope(ctx, direct_scope, lookup_scope, trimmed);
+        resolve_type_qualifier_in_qualified_scope(
+            ctx, direct_scope, lookup_scope, trimmed, source_token_start);
     if(type) {
       return type;
     }
@@ -1887,7 +1899,8 @@ TypePtr lookup_qualifier_type_name(SemanticContext & ctx,
 }
 
 Scope * lookup_namespace_from_using_directives_in_scope(Scope & scope,
-                                                        const string & name)
+                                                        const string & name,
+                                                        size_t source_token_start = 0)
 {
   if(scope.using_directives.empty()) {
     return nullptr;
@@ -1910,7 +1923,8 @@ Scope * lookup_namespace_from_using_directives_in_scope(Scope & scope,
       },
       found,
       value,
-      ambiguous);
+      ambiguous,
+      source_token_start);
   return ambiguous ? nullptr : value;
 }
 
@@ -1936,12 +1950,17 @@ void visit_using_directives_at_injection_scope(
     Scope & current_scope,
     Scope & lookup_scope,
     set<const Scope *> & visited,
-    const Visitor & visitor)
+    const Visitor & visitor,
+    size_t source_token_start = 0)
 {
   if(!visited.insert(&current_scope).second) {
     return;
   }
   for(size_t i = 0; i < current_scope.using_directives.size(); ++i) {
+    if(!cpp_scope_lookup::using_directive_visible_at_token(
+           current_scope, i, source_token_start, 0)) {
+      continue;
+    }
     Scope & imported = *current_scope.using_directives[i];
     if(using_directive_injection_scope(origin_scope, imported) == &lookup_scope) {
       visitor(imported);
@@ -1950,7 +1969,8 @@ void visit_using_directives_at_injection_scope(
                                               imported,
                                               lookup_scope,
                                               visited,
-                                              visitor);
+                                              visitor,
+                                              source_token_start);
   }
 }
 
@@ -1963,7 +1983,8 @@ struct InjectedNamespaceLookup
 InjectedNamespaceLookup lookup_injected_namespace(
     Scope & origin_scope,
     Scope & lookup_scope,
-    const string & name)
+    const string & name,
+    size_t source_token_start = 0)
 {
   InjectedNamespaceLookup result;
   for(Scope * origin = &origin_scope; origin; origin = origin->parent) {
@@ -1990,7 +2011,8 @@ InjectedNamespaceLookup lookup_injected_namespace(
             return;
           }
           result.scope = candidate;
-        });
+        },
+        source_token_start);
     if(result.ambiguous) {
       return result;
     }
@@ -2001,7 +2023,9 @@ InjectedNamespaceLookup lookup_injected_namespace(
   return result;
 }
 
-Scope * lookup_namespace_from_scope(Scope & scope, const string & name)
+Scope * lookup_namespace_from_scope(Scope & scope,
+                                    const string & name,
+                                    size_t source_token_start = 0)
 {
   bool using_directives_seen = false;
   for(Scope * current = &scope; current; current = current->parent) {
@@ -2013,7 +2037,7 @@ Scope * lookup_namespace_from_scope(Scope & scope, const string & name)
     }
     if(current->namespace_scope && using_directives_seen) {
       const InjectedNamespaceLookup imported =
-          lookup_injected_namespace(scope, *current, name);
+          lookup_injected_namespace(scope, *current, name, source_token_start);
       if(imported.ambiguous) {
         return nullptr;
       }
@@ -2043,7 +2067,8 @@ InjectedQualifierLookup lookup_injected_qualifier(
     Scope & lookup_scope,
     Scope & origin_scope,
     Scope & injection_scope,
-    const string & name)
+    const string & name,
+    size_t source_token_start = 0)
 {
   InjectedQualifierLookup result;
   for(Scope * origin = &origin_scope; origin; origin = origin->parent) {
@@ -2086,7 +2111,8 @@ InjectedQualifierLookup lookup_injected_qualifier(
             }
             result.type = type_candidate;
           }
-        });
+        },
+        source_token_start);
     if(result.ambiguous) {
       return result;
     }
@@ -2098,13 +2124,15 @@ InjectedQualifierLookup lookup_injected_qualifier(
 }
 
 Scope * lookup_namespace_member_in_qualified_scope(Scope & scope,
-                                                   const string & name)
+                                                   const string & name,
+                                                   size_t source_token_start = 0)
 {
   Scope * direct = resolve_direct_namespace(scope, name);
   if(direct) {
     return direct;
   }
-  return lookup_namespace_from_using_directives_in_scope(scope, name);
+  return lookup_namespace_from_using_directives_in_scope(
+      scope, name, source_token_start);
 }
 
 bool scope_can_form_definition_path(const Scope & scope)
@@ -2295,7 +2323,8 @@ Scope * resolve_type_qualifier_scope(SemanticContext & ctx,
                                      Scope & scope,
                                      Scope & lookup_scope,
                                      const string & name,
-                                     bool allow_dependent_class_qualifiers)
+                                     bool allow_dependent_class_qualifiers,
+                                     size_t source_token_start = 0)
 {
   bool using_directives_seen = false;
   for(Scope * current = &scope; current; current = current->parent) {
@@ -2346,7 +2375,8 @@ Scope * resolve_type_qualifier_scope(SemanticContext & ctx,
                                              lookup_scope,
                                              scope,
                                              *current,
-                                             name);
+                                             name,
+                                             source_token_start);
       }
       if(imported.ambiguous) {
         return nullptr;
@@ -2386,7 +2416,8 @@ Scope * resolve_type_qualifier_scope(SemanticContext & ctx,
   }
 
   TypePtr as_type =
-      lookup_qualifier_type_name(ctx, scope, lookup_scope, name, false);
+      lookup_qualifier_type_name(
+          ctx, scope, lookup_scope, name, false, source_token_start);
   bool deferred = false;
   return scope_for_resolved_type_qualifier(ctx,
                                            scope,
@@ -2403,7 +2434,8 @@ Scope * resolve_nested_type_qualifier_scope(SemanticContext & ctx,
                                             Scope & scope,
                                             Scope & lookup_scope,
                                             const string & name,
-                                            bool allow_dependent_class_qualifiers)
+                                            bool allow_dependent_class_qualifiers,
+                                            size_t source_token_start = 0)
 {
   Scope * as_namespace = resolve_direct_namespace(scope, name);
   if(as_namespace) {
@@ -2411,7 +2443,8 @@ Scope * resolve_nested_type_qualifier_scope(SemanticContext & ctx,
   }
 
   TypePtr as_type =
-      lookup_qualifier_type_name(ctx, scope, lookup_scope, name, true);
+      lookup_qualifier_type_name(
+          ctx, scope, lookup_scope, name, true, source_token_start);
   bool deferred = false;
   return scope_for_resolved_type_qualifier(ctx,
                                            scope,
@@ -6316,14 +6349,18 @@ void lookup_adl_function_templates_in_scopes(
   }
 }
 
-Scope * lookup_namespace_name(Scope & scope, const QualifiedName & qualified)
+Scope * lookup_namespace_name_at_token(Scope & scope,
+                                       const QualifiedName & qualified,
+                                       size_t source_token_start)
 {
   if(!qualified.rooted && qualified.qualifiers.empty()) {
-    return lookup_namespace_from_scope(scope, qualified.name);
+    return lookup_namespace_from_scope(
+        scope, qualified.name, source_token_start);
   }
 
   Scope * current = qualified.rooted ? root_scope(scope) :
-      lookup_namespace_from_scope(scope, qualified.qualifiers[0]);
+      lookup_namespace_from_scope(
+          scope, qualified.qualifiers[0], source_token_start);
   size_t next = qualified.rooted ? 0 : 1;
   if(!current) {
     return nullptr;
@@ -6332,7 +6369,8 @@ Scope * lookup_namespace_name(Scope & scope, const QualifiedName & qualified)
   while(next < qualified.qualifiers.size()) {
     current = lookup_namespace_member_in_qualified_scope(
         *current,
-        qualified.qualifiers[next]);
+        qualified.qualifiers[next],
+        source_token_start);
     if(!current) {
       return nullptr;
     }
@@ -6343,7 +6381,13 @@ Scope * lookup_namespace_name(Scope & scope, const QualifiedName & qualified)
     return current;
   }
 
-  return lookup_namespace_member_in_qualified_scope(*current, qualified.name);
+  return lookup_namespace_member_in_qualified_scope(
+      *current, qualified.name, source_token_start);
+}
+
+Scope * lookup_namespace_name(Scope & scope, const QualifiedName & qualified)
+{
+  return lookup_namespace_name_at_token(scope, qualified, 0);
 }
 
 namespace {
@@ -7400,7 +7444,8 @@ VariableTemplateDecl * lookup_variable_template_node(
 Scope * resolve_qualified_scope_for_class_or_namespace(SemanticContext & ctx,
                                                        Scope & scope,
                                                        const QualifiedName & qualified,
-                                                       bool allow_dependent_class_qualifiers)
+                                                       bool allow_dependent_class_qualifiers,
+                                                       size_t source_token_start)
 {
   if(!qualified.rooted && qualified.qualifiers.empty()) {
     return qualified.name.empty() ?
@@ -7409,14 +7454,16 @@ Scope * resolve_qualified_scope_for_class_or_namespace(SemanticContext & ctx,
                                      scope,
                                      scope,
                                      qualified.name,
-                                     allow_dependent_class_qualifiers);
+                                     allow_dependent_class_qualifiers,
+                                     source_token_start);
   }
   Scope * current = qualified.rooted ? root_scope(scope) :
       resolve_type_qualifier_scope(ctx,
                                    scope,
                                    scope,
                                    qualified.qualifiers[0],
-                                   allow_dependent_class_qualifiers);
+                                   allow_dependent_class_qualifiers,
+                                   source_token_start);
   size_t next = qualified.rooted ? 0 : 1;
   if(!current) {
     return nullptr;
@@ -7427,7 +7474,8 @@ Scope * resolve_qualified_scope_for_class_or_namespace(SemanticContext & ctx,
         *current,
         scope,
         qualified.qualifiers[next],
-        allow_dependent_class_qualifiers);
+        allow_dependent_class_qualifiers,
+        source_token_start);
     if(!current) {
       return nullptr;
     }
@@ -7737,13 +7785,17 @@ const ValueBinding * lookup_value_binding_in_type_scope(SemanticContext & ctx,
   return nullptr;
 }
 
-const ValueBinding * lookup_qualified_value_binding(SemanticContext & ctx,
-                                                    Scope & scope,
-                                                    const QualifiedName & qualified)
+const ValueBinding * lookup_qualified_value_binding_impl(
+    SemanticContext & ctx,
+    Scope & scope,
+    const QualifiedName & qualified,
+    const CppAstNode * use_node)
 {
   const string qualifier_name = qualified_value_qualifier_text(qualified);
 
-  Scope * target = resolve_qualified_scope_for_class_or_namespace(ctx, scope, qualified);
+  Scope * target = use_node ?
+      ctx.resolve_qualified_scope_for_node(scope, qualified, *use_node, false) :
+      resolve_qualified_scope_for_class_or_namespace(ctx, scope, qualified);
   if(!target) {
     if(!qualifier_name.empty()) {
       TypePtr qualifier_type = ctx.lookup_type(scope, qualifier_name, false);
@@ -7885,6 +7937,13 @@ const ValueBinding * lookup_qualified_value_binding(SemanticContext & ctx,
   return nullptr;
 }
 
+const ValueBinding * lookup_qualified_value_binding(SemanticContext & ctx,
+                                                    Scope & scope,
+                                                    const QualifiedName & qualified)
+{
+  return lookup_qualified_value_binding_impl(ctx, scope, qualified, nullptr);
+}
+
 const ValueBinding * lookup_qualified_value_binding_node(SemanticContext & ctx,
                                                          Scope & scope,
                                                          const QualifiedName & qualified,
@@ -7895,7 +7954,7 @@ const ValueBinding * lookup_qualified_value_binding_node(SemanticContext & ctx,
     qualifier_type_out->reset();
   }
   if(!node_has_structured_qualifier_syntax(node)) {
-    return lookup_qualified_value_binding(ctx, scope, qualified);
+    return lookup_qualified_value_binding_impl(ctx, scope, qualified, &node);
   }
 
   const string qualifier_name = qualified_value_qualifier_text(qualified);

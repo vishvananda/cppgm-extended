@@ -1277,7 +1277,11 @@ public:
     if(!cppast_has_qualifier_template_id_syntaxes(node) &&
        node.qualifier_type_syntaxes.empty()) {
       return semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
-          ctx, scope, qualified, allow_dependent_class_qualifiers);
+          ctx,
+          scope,
+          qualified,
+          allow_dependent_class_qualifiers,
+          node.token_start);
     }
 
     Scope * current = &scope;
@@ -1300,8 +1304,10 @@ public:
       qualifier_name.qualifiers.assign(qualified.qualifiers.begin(),
                                        qualified.qualifiers.begin() + i);
       qualifier_name.name = qualified.qualifiers[i];
-      if(Scope * namespace_scope =
-             semantic_lookup::lookup_namespace_name(scope, qualifier_name)) {
+      Scope * namespace_scope =
+          semantic_lookup::lookup_namespace_name_at_token(
+              scope, qualifier_name, node.token_start);
+      if(namespace_scope) {
         current = namespace_scope;
         resolved_scope = namespace_scope;
         continue;

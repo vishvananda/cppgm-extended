@@ -804,9 +804,18 @@ bool try_analyze_repeated_local_template_probe_statement(
   if(!identifier || !simple_identifier_text(identifier->value)) {
     return false;
   }
-  map<string, ValueBinding>::const_iterator existing =
-      scope.values.find(identifier->value);
-  if(existing == scope.values.end() || !existing->second.type) {
+  const ValueBinding * existing = nullptr;
+  for(Scope * current = &scope;
+      current && !current->namespace_scope;
+      current = current->parent) {
+    map<string, ValueBinding>::const_iterator found =
+        current->values.find(identifier->value);
+    if(found != current->values.end()) {
+      existing = &found->second;
+      break;
+    }
+  }
+  if(!existing || !existing->type) {
     return false;
   }
   const CppAstNode & argument_expression =
@@ -870,7 +879,7 @@ bool try_analyze_repeated_local_template_probe_statement(
   }
   const long long outer_argument = comparison_lhs < comparison_rhs ? 1 : 0;
 
-  ClassInfo * existing_class = ctx.complete_class_type(existing->second.type);
+  ClassInfo * existing_class = ctx.complete_class_type(existing->type);
   if(!existing_class ||
      !existing_class->source_template ||
      existing_class->source_template->name != outer_template_id->name.name ||
@@ -903,9 +912,10 @@ bool try_analyze_repeated_local_template_probe_statement(
   lhs.value = to_string(lhs_value);
   lhs.semantic_type = make_fundamental(FT_INT);
   CppAstNode call =
-      make_call_expr_ast(make_id_expr_ast_node("operator>"),
-                         vector<CppAstNode>{lhs,
-                                            make_id_expr_ast_node(identifier->value)});
+      make_binary_expr_ast_node(OP_GT,
+                                ">",
+                                lhs,
+                                make_id_expr_ast_node(identifier->value));
   try {
     const CppAstNode * owned_call = ctx.own_synthetic_ast(std::move(call));
     ExprInfo expr = ctx.analyze_expression(scope, *owned_call);

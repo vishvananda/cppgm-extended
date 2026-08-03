@@ -13,11 +13,11 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `143 / 147`
-- current cursor: `#144 libs/scope_exit/test`
-- active compiler frontier: exact forced-C++11 Boost.ScopeExit intake pending
-- final replay gate: after suite 147, force-rebuild suites 1--40 against the
-  final compiler and record every changed outcome before declaring V2 complete
+- completed suites: `147 / 147`
+- current cursor: final forced replay of suites `1--40`
+- active compiler frontier: none; ordered suite intake is complete
+- final replay gate: force-rebuild suites 1--40 against the final compiler and
+  record every changed outcome before declaring V2 complete
 
 ## Baseline Gates
 
@@ -437,23 +437,27 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 141 | `libs/iostreams/test` | pass | `(this commit)` | The authoritative exact eight-job forced-C++11 `pch=off` graph finds 5,898 targets, updates all 246 requested targets, records 48 passing test actions including the deliberate compile failure, and exits successfully with no failed or skipped action; log `/private/tmp/boost-frontier-v2-suite-141-iostreams-candidate-pch-off.log`. Compose and tee both compile, link, and run. | Concrete class typedef replay cloned and substituted every retained typedef type-id even when it could not preserve any same-class declaration boundary. Iostreams' 12-way `select` alias therefore paid for deep nested MPL substitution repeatedly. The typed fast path first collects direct same-class value references and skips replay when there are none; it adds no cache, spelling rule, text parse, witness work, or Boost-specific path. Exact `compose_test` drops from more than 33 minutes still running to 39.37s at 1,029,345,280 B RSS and 201.24B instructions; Clang takes 12.21s at 268,763,136 B. Late sampling places the remaining gap in machine-object/MIR construction, not template expansion. The complete direct-LowIR report passes after the two load-sensitive PA3/PA9 timeouts pass `30/30` in isolation; all 983 strict comparisons, 13 cache modes on the existing PA19/PA21 replay owners, all 23 zero-reparse categories, and all 14 audit tests pass. An optimized Homebrew-Clang ASan compiler completes the reduced chain case with no sanitizer or leak report and byte-identical object output. Eight-job overlap swaps out 59,976 pages (234.3 MiB) but every worker releases; future record reruns should use six jobs. CPPGM and all host actions use Homebrew Clang 22. |
 | 142 | `libs/json/test` | pass | `(this commit)` | The authoritative exact four-job forced-C++11 `pch=off` graph finds 2,037 targets, updates all 262 requested targets, passes every compile, link, and runtime action, and exits successfully in 1,081.16s. `parse_into` completes semantic analysis in 456.03s, produces 18,560 LowIR functions and 2,400,131 instructions, writes its object in 127.16s, and passes runtime. | Seven minimal header-free C++11 owners are 4--12 lines across PA19, PA20, PA22, PA25, and PA29; PA22 uses no `<type_traits>`, and the PA19 aggregate owner was moved from PA15 after placement review. The exact Boost MP11 fold remains the necessary witness for one dependent-type repair because every honest header-free approximation passes the saved parent; no misleading large reducer was added. The full graph peaks at 5,551,636,480 B RSS with zero process swaps. Sampling separates the remaining heavy path from templates: semantic memory releases, while LowIR, MIR, and final object/DWARF/EH construction overlap. Streaming and moves remove avoidable retained copies, but a future compact/streaming object emitter would be required for the remaining representation gap. The PA9-excluded direct report's 49 principled LowIR ref updates are 42 removals of an empty internal `__cppgm_init` and seven typed constant-data folds; all nine initial report misses pass in focused recovery, accounting for all 4,396 tests. All 983 strict comparisons, 12 cache modes on eight new translation units, 23 zero-reparse categories, 25 audit tests, placement/hygiene, Homebrew-Clang build, and diff gates pass. The six PA27 refs above 200 lines remain compact 4--11-line VTT/vtable/destructor owners and need no change. The frozen source/51-header gate records -36.38% instructions, -40.47% RSS, and -41.27% footprint. CPPGM and all host actions use Homebrew Clang 22; printed `gcc.*` names are adapter labels only. |
 | 143 | `libs/lambda2/test` | skipped-language | `(no compiler change)` | Boost 1.91 declares `"cxxstd": "14"` in `libs/lambda2/meta/libraries.json`, describes Lambda2 as a C++14 library, and its Jamfile requires `cxx14_return_type_deduction`. | CPPGM's supported source-language lane remains C++11. Per the established policy, the suite is skipped without broadening language acceptance or treating a configuration-only graph as a pass. The cursor advances to Boost.ScopeExit. |
+| 144 | `libs/scope_exit/test` | pass | `(this commit)` | Boost.ScopeExit has no requirement above C++11. The authoritative exact forced `pch=off` graph updates all 136 requested targets, passes every positive compile/link/runtime action and both expected cv-error negatives, and exits successfully in 42.18s; log `/private/tmp/boost-frontier-v2-suite-144-scope-exit-final.log`. | The two intake failures shared one retained ambiguity: a later block-local declaration repeated a template-id whose non-type argument depends on the previous local object. The structured statement recovery looked only in the immediate scope and synthesized a named `operator>` call. It now finds the nearest enclosing local binding and reuses ordinary binary-expression analysis. The PA24 owner is reduced to 15 lines, with its LowIR object shrinking from 8-byte to 1-byte layout. PA24 direct comparison passes `118/118`; the final graph peaks at 229,896,192 B RSS with zero swaps. |
+| 145 | `libs/winapi/test` | blocked-external | `(no compiler change)` | Boost.WinAPI declares C++03, but its Jamfile applies `<build>no` to every compile and runtime test unless `<target-os>` is Windows or Cygwin. On macOS the exact forced-C++11 request therefore finds only the four configuration targets and exercises no compiler-owned source; log `/private/tmp/boost-frontier-v2-suite-145-winapi-intake.log`. | This is an explicit platform gate, not a compiler pass or a language skip. No Windows SDK/runtime is available in the scoped environment, so the suite is recorded `blocked-external` and the cursor advances. |
+| 146 | `libs/xpressive/test` | pass | `(this commit)` | The authoritative exact four-job forced-C++11 `pch=off` graph finds 3,910 targets, updates all 219 requested targets, records 44 passing tests, and exits with no failed or skipped action in 953.61s; log `/private/tmp/boost-frontier-v2-suite-146-xpressive-final.log`. | Defaulted non-type template arguments now preserve their typed value/dependency classification instead of being rewritten as types merely because retained syntax also carries a `TypePtr`; this clears `test_actions`, `test_assert_with_placeholder`, and `test_symbols`. Deferred function-body lookup now filters namespace using-directives by their source token, so the later global `using namespace boost` cannot retroactively make the earlier `detail` qualifier ambiguous in `test_dynamic_grammar`. The regressions are compact header-free C++11 owners in PA22 and PA18:300; PA22 uses no `<type_traits>`. The PA9-excluded direct report passes `4398/4398`, all 983 strict comparisons pass, four cache-disabled controls are byte-identical, all 23 reparse categories remain zero, and all 14 audit tests pass. The graph peaks at 1,705,852,928 B RSS with zero swaps. The immutable frozen-source/51-header gate records -36.42% instructions, -40.39% RSS, and -41.20% footprint; report `/private/tmp/cppgm-boost-frontier-v2-suite146-final-perf.json`. CPPGM and every host path use Homebrew Clang 22; printed `gcc.*` names remain adapter labels only. |
+| 147 | `libs/yap/test` | skipped-language | `(no compiler change)` | Boost 1.91 declares `"cxxstd": "14"` and describes YAP as an expression-template library for C++14 and later. Its Jamfile additionally requires C++14 constexpr, `decltype(auto)`, generic lambdas, and return-type deduction. | CPPGM's source-language lane remains C++11, so the suite is skipped by policy without broadening accepted language syntax. All 147 ordered suites are now classified; the required final forced replay of suites 1--40 remains before V2 closure. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#144 libs/scope_exit/test`
-- focused target: exact full-suite intake
-- last closed suite: `#143 libs/lambda2/test` (`skipped-language`)
-- failure phase: intake pending
-- diagnostic: pending exact forced-C++11 replay
-- reduced repro: not applicable until a compiler-owned failure is identified
-- owning PA/cluster: pending intake
-- implementation area: pending intake
-- performance risk: modest graph; use full 12-job parallelism while retaining aggregate/per-child RSS monitoring
-- language lane: Boost.ScopeExit has no suite-level requirement above C++11 and runs in the stable forced-C++11 lane
-- next action: run the exact Clang-pinned 12-job `pch=off` Boost.ScopeExit graph; after suite 147, force suites 1--40 against the final compiler before final closure
+- suite: final replay gate, ordered suites `1--40`
+- focused target: exact forced-C++11 `pch=off` replay against the final compiler
+- last closed suite: `#147 libs/yap/test` (`skipped-language`)
+- failure phase: no open compiler-owned suite failure
+- diagnostic: all 147 ordered suites are classified
+- reduced repro: not applicable
+- owning PA/cluster: not applicable until a replay changes an outcome
+- implementation area: final validation only
+- performance risk: preserve per-child and aggregate RSS monitoring; choose suite-specific parallelism for known heavy graphs
+- language lane: forced C++11; retain existing `skipped-language` and `blocked-external` classifications
+- next action: force suites 1--40 in order and record every changed outcome before declaring V2 complete
 
 ## Fix Ledger
 
@@ -462,6 +466,9 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 | Status | Suite/target | Root cause and typed fix | Owner regression | Pre-fix evidence | Validation | Perf vs fixed baseline | Commit |
 |---|---|---|---|---|---|---|---|
+| fixed | ScopeExit repeated local template probe | The retained statement ambiguity for a declaration repeated in a nested block consulted only the immediate scope, so it missed the earlier enclosing local whose type selects the `resolve<sizeof(...)>` branch. It also synthesized a named `operator>` call instead of the ordinary binary AST. The recovery now searches enclosing non-namespace scopes for the nearest binding and feeds a structured `OP_GT` node through normal expression analysis. | `pa24/tests/general/400-repeated-local-declaration-template-probe.t`, minimized to 15 header-free C++11 lines with a 10-line LowIR ref | Both `emulation` and `native` failed the same non-type argument evaluation in `test_non_local`; the minimized reducer preserves the required outer/nested declaration ordering. | Focused and full ScopeExit pass; PA24 direct comparison passes `118/118`; final direct/strict/reparse gates pass. | included in final suite result | `(this commit)` |
+| fixed | Xpressive defaulted NTTP value kind | A retained dependent-alias argument may carry a type describing the non-type expression's value type. Owner substitution treated that `TypePtr` as evidence that the argument itself was a type and rewrote default `false` as `bool`. The fix gives explicit non-type/dependent-value facts precedence and preserves typed value, dependency, default provenance, and structured source syntax through ordinary value substitution. | `pa22/tests/spec/300-function-result-defaulted-nontype-value-kind.t`, minimal header-free C++11 with no `<type_traits>` | `test_actions`, `test_assert_with_placeholder`, and `test_symbols` all lost the same boolean placeholder argument; the focused exact targets pass after the typed correction. | PA22 participates in `4398/4398`; all strict suites pass; normal and cache-disabled outputs are identical; focused and full Xpressive pass. | final gate moves instructions -0.05%, RSS +0.13%, and footprint +0.11% versus the Suite 142 checkpoint, all well below tolerances | `(this commit)` |
+| fixed | Xpressive deferred using-directive visibility | Deferred function-body analysis used the completed translation-unit namespace state, so a global `using namespace boost` declared after `test_dynamic_grammar` was applied retroactively. That introduced `boost::detail` beside the function's earlier block-local `using namespace boost::xpressive` and made `detail::regex_impl<...>::instances` ambiguous. Value, namespace, and structured qualifier lookup now carry the original AST token and ignore using-directives whose declaration starts later. No text parse, spelling special case, cache, or eager instantiation is added. | `pa18/tests/general/300-later-using-directive-does-not-affect-function-template-qualifier.t`, eight semantic lines of header-free C++11 at the audited dependent-name owner | The full original TU failed at the downstream `check_frwd` call, while trace and a reduced namespace control showed the callee was valid and the later directive alone caused the qualifier miss. Homebrew Clang accepts the reducer and original source. | The exact target compiles, links, and runs; full Xpressive passes all 44 tests. PA18/22/24 owner report passes `1078/1078`, final direct report `4398/4398`, strict `983/983`, four cache-off modes byte-identical, reparse audit all-zero. | same final frozen-source/51-header gate above | `(this commit)` |
 | fixed | JSON polymorphic static constant initialization | Constexpr class initialization stopped at scalar fields and discarded structurally known base/member/vptr construction. Semantic output now marks constant-initialized class bindings, and LowIR folds typed constructor actions, including the exact virtual-table address point, into static data before any cross-TU dynamic initializer runs. | PA20 `400-constexpr-polymorphic-global-vptr-init`, six lines; PA29 `100-polymorphic-constant-init-cross-tu-order`, two compact source inputs | The saved parent leaves the polymorphic object to dynamic initialization, so a different translation unit can observe it before its constructor runs; exact Boost.JSON `default_resource` fails before `main`. | Owners, direct/strict reports, Clang C++11 controls, cache parity, and the complete JSON graph pass. The seven related LowIR ref changes fold already typed constant values into data rather than arbitrarily changing output. | included in the complete JSON result | `(this commit)` |
 | fixed | JSON constructor selection and unwind closure | Empty `{}` now selects an available default constructor before the initializer-list-only phase as required by C++11, constructor candidates are collected only after completing a direct-braced target, and placement-new constructor failure transfers through the ordinary callee unwind pad so live enclosing automatics are destroyed. | PA22 `300-precompleted-braced-constructor-template` is four lines; PA25 `100-placement-new-constructor-unwind-cleans-scope` and `200-empty-list-selects-default-constructor` are 10 and 12 lines | The saved parent sees only copy/move constructors for the braced target, prefers an initializer-list constructor for empty braces, and omits the enclosing destructor on placement-constructor throw. | All three owners, strict Clang C++11, direct LowIR, all cache modes, and exact JSON pass. | included in the complete JSON result | `(this commit)` |
 | fixed | JSON dependent aggregate and base-pack construction | A dependent aggregate functional cast now enters the existing target-aware braced construction path, while a pack-expanded base mem-initializer expands the entire initializer in lockstep instead of expanding each argument independently. | PA19 `100-aggregate-functional-braced-cast` and `200-lockstep-base-pack-initializer`, both six lines and placement-clean | The saved parent rejects the nested `T{item(0), item(1)}` aggregate target and pairs `base<1>` with `tag<0>` in the base-pack initializer. | PA19 passes `163/163`; Clang C++11, cache parity, direct/strict, and exact JSON pass. | included in the complete JSON result | `(this commit)` |
@@ -5281,10 +5288,9 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-# Suite 142 Boost.JSON is closed and C++14 Boost.Lambda2 is skipped. Suite 144
-# Boost.ScopeExit runs in the stable forced-C++11 lane. Use the full 12-job
-# graph now that no other large build is active.
-/usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=12 CXXSTD=11 \
+# All ordered suites are classified. Run the required final replay in one B2
+# request so shared dependencies are deduplicated while tests remain parallel.
+/usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=6 CXXSTD=11 \
   CPPGM_BOOST_B2_FRONTIER=1 \
   CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
   CC=/usr/local/opt/llvm/bin/clang \
@@ -5293,11 +5299,21 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   ./run-cppgm-b2.sh -a pch=off \
-    libs/scope_exit/test
+    libs/accumulators/test libs/algorithm/test libs/align/test libs/any/test \
+    libs/array/test libs/asio/test libs/assert/test libs/assign/test \
+    libs/atomic/test libs/beast/test libs/bimap/test libs/bind/test \
+    libs/bloom/test libs/callable_traits/test libs/charconv/test \
+    libs/chrono/test libs/circular_buffer/test libs/compat/test \
+    libs/compute/test libs/concept_check/test libs/config/test \
+    libs/container/test libs/container_hash/test libs/context/test \
+    libs/contract/test libs/conversion/test libs/convert/test libs/core/test \
+    libs/coroutine/test libs/crc/test libs/date_time/test libs/decimal/test \
+    libs/describe/test libs/detail/test libs/dll/test \
+    libs/dynamic_bitset/test libs/endian/test libs/exception/test \
+    libs/fiber/test libs/filesystem/test
 ```
 
-After suite 147 closes, repeat the same exact forced, Clang-pinned C++11 lane
-for suites 1--40 from `libs/accumulators/test` through `libs/filesystem/test`.
-That replay is a required V2 completion gate; use the final compiler, do not
-reuse stale B2 objects, and record any result that differs from the original
-suite row.
+This replay is the remaining V2 completion gate. It uses the final compiler,
+force-rebuilds every requested object, and must record any result that differs
+from the original suite row. Raise `JOBS` only when no competing large build is
+active and live aggregate RSS leaves adequate headroom.
