@@ -14,6 +14,7 @@ import argparse
 import csv
 import json
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -1287,6 +1288,42 @@ def hosted_eh_rtti_include(header: str) -> bool:
     return header.strip() in HOSTED_EH_RTTI_HEADERS
 
 
+def test_local_include_override(root: Path, source_path: Path, header: str) -> bool:
+    """Return whether a family-owned -I directory supplies this angle header."""
+    family_name = re.sub(r"\.t(?:\.\d+)?$", "", source_path.name)
+    flags_path = source_path.with_name(f"{family_name}.flags")
+    if not flags_path.exists():
+        return False
+    try:
+        tokens = shlex.split(read_text(flags_path))
+    except ValueError:
+        return False
+    include_dirs: list[str] = []
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "-I" and index + 1 < len(tokens):
+            include_dirs.append(tokens[index + 1])
+            index += 2
+            continue
+        if token.startswith("-I") and len(token) > 2:
+            include_dirs.append(token[2:])
+        index += 1
+    relative = source_path.relative_to(root)
+    current_pa = current_pa_for(relative)
+    pa_root = root / current_pa
+    for include_dir in include_dirs:
+        include_path = Path(include_dir)
+        candidates = [include_path] if include_path.is_absolute() else [
+            root / include_path,
+            pa_root / include_path,
+            source_path.parent / include_path,
+        ]
+        if any((candidate / header).is_file() for candidate in candidates):
+            return True
+    return False
+
+
 # LowIR side-effect checks intentionally avoid broad object-name evidence such
 # as object=_Z...; PA13 treats those names as presentation/backend metadata.
 LOWIR_POLYMORPHIC_RE = re.compile(r"__vtable|_ZTV|__rtti|_ZTI|__typeinfo_name|_ZTS|typeinfo")
@@ -1615,6 +1652,8 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
                 ))
         for match in include_re.finditer(source):
             header = match.group(1).strip()
+            if test_local_include_override(root, path, header):
+                continue
             if number <= HOSTED_EH_RTTI_HEADER_EARLY_PA_MAX and hosted_eh_rtti_include(header):
                 findings.append(HygieneFinding(
                     path=relative,

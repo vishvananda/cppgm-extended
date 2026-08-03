@@ -157,6 +157,27 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
                 ],
             )
 
+    def test_hygiene_allows_family_owned_angle_header_override(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            driver = root / "pa29" / "tests" / "general" / "300-include-order.t"
+            source = driver.with_name("300-include-order.t.1")
+            flags = driver.with_suffix(".flags")
+            override = (
+                root / "pa29" / "tests" / "general" /
+                "300-include-order.inc" / "exception"
+            )
+            write(driver, "user include precedence\n")
+            write(source, "#include <exception>\nint main() { return selected(); }\n")
+            write(flags, "-I tests/general/300-include-order.inc\n")
+            write(override, "int selected() { return 0; }\n")
+
+            findings = audit.scan_test_hygiene(root, ["pa29"])
+            self.assertNotIn(
+                "early-hosted-eh-rtti-header",
+                [finding.kind for finding in findings],
+            )
+
     def test_hygiene_reports_early_exception_ptr_runtime(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
