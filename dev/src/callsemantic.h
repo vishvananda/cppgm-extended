@@ -9,12 +9,14 @@ CallSemNode analyze_calls_translation_unit(
     IRecogTokenSequence & tokens,
     bool expand_output_closure = false,
     bool emit_all_source_function_definitions = false,
-    witness::TemplateWitnessSession * witness_session = nullptr);
+    witness::TemplateWitnessSession * witness_session = nullptr,
+    bool allow_zero_length_arrays = false);
 CallSemNode analyze_calls_translation_unit(
     const std::vector<RecogToken> & tokens,
     bool expand_output_closure = false,
     bool emit_all_source_function_definitions = false,
-    witness::TemplateWitnessSession * witness_session = nullptr);
+    witness::TemplateWitnessSession * witness_session = nullptr,
+    bool allow_zero_length_arrays = false);
 std::string describe_calls_translation_unit(
     IRecogTokenSequence & tokens);
 std::string describe_calls_translation_unit(

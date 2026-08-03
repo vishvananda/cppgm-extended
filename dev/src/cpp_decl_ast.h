@@ -25,6 +25,7 @@ struct AstDeclHooks
   std::function<void(const std::string &, const TypePtr &)> bind_parameter_name;
   bool normalize_function_parameters = false;
   bool allow_virtual_specifier = false;
+  bool allow_zero_length_arrays = false;
 };
 
 bool decl_spec_contains_token(const CppAstNode & node, ETokenType token);

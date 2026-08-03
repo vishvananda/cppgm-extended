@@ -866,12 +866,14 @@ bool parse_declarator_core(const CppAstNode & node,
             evaluated_bound = false;
           }
         }
-        if(evaluated_bound && bound_value > 0) {
+        if(evaluated_bound &&
+           (bound_value > 0 ||
+            (hooks.allow_zero_length_arrays && bound_value == 0))) {
           suffix.has_bound = true;
           suffix.has_evaluated_bound = true;
           suffix.bound_value = static_cast<unsigned long long>(bound_value);
         } else if(parse_array_bound_fallback(child.children[0], literal_bound) &&
-                  literal_bound > 0) {
+                  (literal_bound > 0 || hooks.allow_zero_length_arrays)) {
           suffix.has_bound = true;
           suffix.has_evaluated_bound = true;
           suffix.bound_value = literal_bound;

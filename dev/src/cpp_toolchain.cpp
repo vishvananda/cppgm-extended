@@ -467,7 +467,8 @@ vector<CallSemNode> analyze_cpp_sources(const vector<string> & srcfiles,
     translation_units.push_back(analyze_calls_translation_unit(tokens,
                                                                expand_output_closure,
                                                                false,
-                                                               witness_session));
+                                                               witness_session,
+                                                               true));
     if(dependency_files != nullptr) {
       const vector<string> & local_dependencies = preprocessor.dependency_files();
       for(size_t j = 0; j < local_dependencies.size(); ++j) {

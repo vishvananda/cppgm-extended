@@ -622,10 +622,12 @@ public:
   Analyzer(const CppAstNode & ast,
            bool expand_output_closure = false,
            bool emit_all_source_function_definitions = false,
-           witness::TemplateWitnessSession * witness_session = nullptr)
+           witness::TemplateWitnessSession * witness_session = nullptr,
+           bool allow_zero_length_arrays = false)
     : ast(ast),
       template_witness_session_(witness_session),
-      emit_all_source_function_definitions_(emit_all_source_function_definitions)
+      emit_all_source_function_definitions_(emit_all_source_function_definitions),
+      allow_zero_length_arrays_(allow_zero_length_arrays)
   {
     analysis_policy_.expand_output_closure = expand_output_closure;
   }
@@ -634,11 +636,13 @@ public:
            const vector<RecogToken> & tokens,
            bool expand_output_closure = false,
            bool emit_all_source_function_definitions = false,
-           witness::TemplateWitnessSession * witness_session = nullptr)
+           witness::TemplateWitnessSession * witness_session = nullptr,
+           bool allow_zero_length_arrays = false)
     : ast(ast),
       raw_tokens(&tokens),
       template_witness_session_(witness_session),
-      emit_all_source_function_definitions_(emit_all_source_function_definitions)
+      emit_all_source_function_definitions_(emit_all_source_function_definitions),
+      allow_zero_length_arrays_(allow_zero_length_arrays)
   {
     analysis_policy_.expand_output_closure = expand_output_closure;
   }
@@ -647,12 +651,14 @@ public:
            IRecogTokenSequence & tokens,
            bool expand_output_closure = false,
            bool emit_all_source_function_definitions = false,
-           witness::TemplateWitnessSession * witness_session = nullptr)
+           witness::TemplateWitnessSession * witness_session = nullptr,
+           bool allow_zero_length_arrays = false)
     : ast(ast),
       token_sequence(&tokens),
       source_locations(tokens.source_locations()),
       template_witness_session_(witness_session),
-      emit_all_source_function_definitions_(emit_all_source_function_definitions)
+      emit_all_source_function_definitions_(emit_all_source_function_definitions),
+      allow_zero_length_arrays_(allow_zero_length_arrays)
   {
     analysis_policy_.expand_output_closure = expand_output_closure;
   }
@@ -1430,6 +1436,7 @@ private:
       source_token_index_;
   witness::TemplateWitnessSession * template_witness_session_ = nullptr;
   bool emit_all_source_function_definitions_ = false;
+  bool allow_zero_length_arrays_ = false;
   mutable bool qualified_use_occurrences_built_ = false;
   mutable std::vector<QualifiedUseOccurrence> qualified_use_occurrences_;
   mutable std::unordered_map<std::string, std::string>
@@ -19661,6 +19668,7 @@ private:
         *this,
         scope,
         reference_class_templates_only);
+    hooks.allow_zero_length_arrays = allow_zero_length_arrays_;
     hooks.lookup_type_node =
         [this, &scope, reference_class_templates_only](const CppAstNode & node)
         {
@@ -33602,7 +33610,8 @@ private:
 CallSemNode analyze_calls_translation_unit(IRecogTokenSequence & tokens,
                                            bool expand_output_closure,
                                            bool emit_all_source_function_definitions,
-                                           witness::TemplateWitnessSession * witness_session)
+                                           witness::TemplateWitnessSession * witness_session,
+                                           bool allow_zero_length_arrays)
 {
   DiagnosticContext::clear();
   try {
@@ -33616,7 +33625,8 @@ CallSemNode analyze_calls_translation_unit(IRecogTokenSequence & tokens,
                       tokens,
                       expand_output_closure,
                       emit_all_source_function_definitions,
-                      witness_session);
+                      witness_session,
+                      allow_zero_length_arrays);
     CallSemNode result = analyzer.analyze();
     DiagnosticContext::clear();
     return result;
@@ -33632,7 +33642,8 @@ CallSemNode analyze_calls_translation_unit(IRecogTokenSequence & tokens,
 CallSemNode analyze_calls_translation_unit(const vector<RecogToken> & tokens,
                                            bool expand_output_closure,
                                            bool emit_all_source_function_definitions,
-                                           witness::TemplateWitnessSession * witness_session)
+                                           witness::TemplateWitnessSession * witness_session,
+                                           bool allow_zero_length_arrays)
 {
   DiagnosticContext::clear();
   try {
@@ -33646,7 +33657,8 @@ CallSemNode analyze_calls_translation_unit(const vector<RecogToken> & tokens,
                       tokens,
                       expand_output_closure,
                       emit_all_source_function_definitions,
-                      witness_session);
+                      witness_session,
+                      allow_zero_length_arrays);
     CallSemNode result = analyzer.analyze();
     DiagnosticContext::clear();
     return result;
