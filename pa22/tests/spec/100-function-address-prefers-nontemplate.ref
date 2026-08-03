@@ -1,4 +1,5 @@
 global @selected : ptr [binding=strong, object=_Z8selected] = addr @choose
+global @selected_void : ptr [binding=strong, object=_Z13selected_void] = addr @choose_void
 
 function @choose(%__param0 : i32) -> i32 [binding=strong, object=_Z6choosei] {
   slot $__param0 : i32
@@ -7,9 +8,15 @@ function @choose(%__param0 : i32) -> i32 [binding=strong, object=_Z6choosei] {
     store i32 %__param0, $__param0
     return i32 0
 }
+function @choose_void() -> void [binding=strong, object=_Z11choose_voidv] {
+  block ^entry:
+    return void
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = load ptr @selected
-    %t2 = call i32 %t1(1) as (%arg0 : i32) -> i32
-    return i32 %t2
+    %t1 = load ptr @selected_void
+    call void %t1() as () -> void
+    %t2 = load ptr @selected
+    %t3 = call i32 %t2(1) as (%arg0 : i32) -> i32
+    return i32 %t3
 }

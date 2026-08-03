@@ -12,4 +12,12 @@ translation-unit
         binary-expression prvalue int OP_PLUS:+
           literal prvalue int 1
           literal prvalue int 1
+  function-definition h function of () returning int
+    compound-statement
+      simple-declaration
+        variable values array of 5 int
+      return-statement
+        binary-expression prvalue unsigned long int OP_PLUS:+
+          literal prvalue int 1
+          sizeof-expression prvalue unsigned long int
 end translation unit

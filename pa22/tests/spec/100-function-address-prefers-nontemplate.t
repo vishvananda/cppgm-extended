@@ -18,7 +18,24 @@ typedef int (*choice)(int);
 
 choice selected = choose;
 
+template<class T>
+T choose_void(T const&)
+{
+  return T();
+}
+
+void choose_void()
+{
+}
+
+typedef void (*void_choice)();
+
+// Substituting void into the template candidate would form const void&.  That
+// invalid candidate is discarded before the ordinary overload is selected.
+void_choice selected_void = choose_void;
+
 int main()
 {
+  selected_void();
   return selected(1);
 }

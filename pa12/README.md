@@ -253,8 +253,9 @@ PA12 must support:
 - compound statements, `if` / `else`, `switch`, `while`, `do`, `for`, `break`,
   and `continue`
 - expression conditions and declaration conditions of the form `T x = expr`
-- supported integral `constexpr` complete objects and the course-supported
-  `__builtin_constant_p` query over propagated integral expressions
+- supported integral `constexpr` complete objects, enumerator constants, and
+  the course-supported `__builtin_constant_p` query over propagated integral
+  expressions
 - rejection of type, call-arity, and control-flow violations within this
   supported slice, including mismatched indirect-call arity, `default` outside
   a switch, a value returned from a `void` function, invalid scoped-enum

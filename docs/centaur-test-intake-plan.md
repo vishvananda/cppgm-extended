@@ -2,9 +2,10 @@
 
 ## Status and Scope
 
-Plan created 2026-08-02. Intake execution has reviewed 22 of 272 families:
-eleven were intaked, nine are covered by existing tests, and two expose
-current compiler bugs. The frozen source checkout points to:
+Plan created 2026-08-02. Intake execution has reviewed 43 of 272 families:
+sixteen were intaked, twenty are covered by existing tests, four are not
+regressions, and three expose current compiler bugs. The frozen source checkout
+points to:
 
 - source: `vishvananda/cppgm-run-centaur`
 - source commit: `debefcdce18b4be64a8011a85239629a47665b5f`
@@ -30,7 +31,8 @@ not build a second reference object root, clean unchanged objects, or copy a
 Centaur reference as the canonical oracle.
 
 The completed cohorts have closed four assignment-baseline duplicates, the
-PA4-through-PA9 catalog, and the six PA11 semantic-cleanup families. The
+PA4-through-PA9 catalog, the six PA11 semantic-cleanup families, and all 21
+PA12-source families. The
 retained early coverage consists of one PA4 macro paint regression, four PA8
 initialization/linkage additions plus one existing PA8 conversion-family
 extension, and one combined PA9 narrow/wide literal alignment regression.
@@ -43,6 +45,18 @@ fixture should reject, while the PA8 README requires four-byte mock-function
 alignment after a char. The current compiler accepts or emits the old behavior
 for both, so their tracker rows remain `blocked-current-bug` and no incorrect
 reference was added.
+
+The PA12 cohort adds three conversion/call negatives, strengthens the existing
+enumerator-constant query, and extends PA22's function-address selection case
+with invalid `const void&` substitution. Eleven old cases are already covered,
+and four bulk-snapshot sources provide no distinct regression. Centaur's
+successful braced-list/ellipsis reference is wrong: Clang and GCC reject it,
+while the current LowIR driver skips validation when the invalid non-template
+class is unused. That row remains `blocked-current-bug`; the incorrect Centaur
+oracle was not imported. The PA12 audit now models its semantic-only function
+body surface, fixes broad default-argument and operator-name detectors, and
+passes with no findings after two old using-lookup fixtures were renumbered to
+their `200` cluster.
 
 ## Frozen History and Initial Inventory
 
