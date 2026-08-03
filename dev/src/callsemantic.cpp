@@ -28464,7 +28464,14 @@ private:
                       candidate_param,
                       lhs_type_parameters,
                       incoming_param,
-                      rhs_type_parameters);
+                      rhs_type_parameters) ||
+                  semantic_lookup::same_function_template_entity_type_in_scopes(
+                      candidate_param,
+                      lhs_type_parameters,
+                      decl_scope,
+                      incoming_param,
+                      rhs_type_parameters,
+                      scope);
               if(!type_match) {
                 if(parser_trace::enabled("template.resolve")) {
                   ostringstream trace;
@@ -28603,11 +28610,18 @@ private:
               return false;
             }
             for(size_t j = 0; j < params.size(); ++j) {
-              if(!out_of_class_special_member_template_param_types_match(
-                     decl->params_pattern[j].second,
-                     lhs_type_parameters,
-                     params[j].second,
-                     rhs_type_parameters)) {
+              if(!(out_of_class_special_member_template_param_types_match(
+                       decl->params_pattern[j].second,
+                       lhs_type_parameters,
+                       params[j].second,
+                       rhs_type_parameters) ||
+                   semantic_lookup::same_function_template_entity_type_in_scopes(
+                       decl->params_pattern[j].second,
+                       lhs_type_parameters,
+                       decl_scope,
+                       params[j].second,
+                       rhs_type_parameters,
+                       scope))) {
                 return false;
               }
             }
