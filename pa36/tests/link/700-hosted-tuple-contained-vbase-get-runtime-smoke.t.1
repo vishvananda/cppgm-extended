@@ -1,3 +1,4 @@
+#include <string>
 #include <tuple>
 
 struct X
@@ -43,5 +44,10 @@ int main()
 
   const key first = {first_kind, 1, 2};
   const key second = {second_kind, 0, 0};
-  return first < second ? 0 : 3;
+  if (!(first < second))
+    return 3;
+
+  const std::string text("value");
+  std::tuple<const std::string&> reference(text);
+  return &std::get<0>(reference) == &text ? 0 : 4;
 }
