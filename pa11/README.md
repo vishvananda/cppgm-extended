@@ -211,7 +211,7 @@ PA11 must support:
   the supported declaration forms
 - fundamental, class, enum, cv-qualified, pointer, reference, array, and
   function types
-- array bounds formed from integer literals, `sizeof(type-id)`, and
+- array bounds formed from positive integer literals, `sizeof(type-id)`, and
   `alignof(type-id)`
 - semantic disambiguation of `sizeof(T)` when lookup determines that `T` names a
   type

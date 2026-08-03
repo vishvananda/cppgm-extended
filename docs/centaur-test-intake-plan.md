@@ -2,8 +2,8 @@
 
 ## Status and Scope
 
-Plan created 2026-08-02. Intake execution has reviewed 16 of 272 families:
-seven were intaked, seven are covered by existing tests, and two expose
+Plan created 2026-08-02. Intake execution has reviewed 22 of 272 families:
+eleven were intaked, nine are covered by existing tests, and two expose
 current compiler bugs. The frozen source checkout points to:
 
 - source: `vishvananda/cppgm-run-centaur`
@@ -29,11 +29,16 @@ normal Homebrew-Clang-built binary used to validate the current compiler. Do
 not build a second reference object root, clean unchanged objects, or copy a
 Centaur reference as the canonical oracle.
 
-The first completed cohorts closed four assignment-baseline duplicates and the
-PA4-through-PA9 catalog. The retained early coverage consists of one PA4 macro
-paint regression, four PA8 initialization/linkage additions plus one existing
-PA8 conversion-family extension, and one combined PA9 narrow/wide literal
-alignment regression. Clang and GCC show that Centaur's PA7 inline-reopen
+The completed cohorts have closed four assignment-baseline duplicates, the
+PA4-through-PA9 catalog, and the six PA11 semantic-cleanup families. The
+retained early coverage consists of one PA4 macro paint regression, four PA8
+initialization/linkage additions plus one existing PA8 conversion-family
+extension, and one combined PA9 narrow/wide literal alignment regression.
+PA11 adds one combined anonymous-type identity test and three focused negative
+semantic tests. The zero-bound array case exposed a current compiler bug,
+fixed separately in `c990a0ac2`; its audit also required teaching the
+placement checker that PA10-PA12 type-semantic output does not exercise later
+LowIR/runtime owners. Clang and GCC show that Centaur's PA7 inline-reopen
 fixture should reject, while the PA8 README requires four-byte mock-function
 alignment after a char. The current compiler accepts or emits the old behavior
 for both, so their tracker rows remain `blocked-current-bug` and no incorrect
