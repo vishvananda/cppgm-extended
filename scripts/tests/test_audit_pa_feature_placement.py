@@ -158,6 +158,31 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         self.assertNotIn("class.layout.bitfield", audit.detect_features(conditional))
         self.assertIn("class.layout.bitfield", audit.detect_features(bitfield))
 
+    def test_vmi_rtti_requires_cast_or_typeid_source_for_pa27_detection(self) -> None:
+        ordinary_polymorphic_rtti = textwrap.dedent(
+            """\
+            struct base {};
+            struct derived : base { virtual int value(); };
+            """
+        )
+        vmi_ref = (
+            "declare global @__external_rtti_vtable____vmi_class_type_info "
+            "[object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]\n"
+        )
+
+        self.assertNotIn(
+            "rtti.dynamic_cast.multi_vptr",
+            audit.detect_features(ordinary_polymorphic_rtti, vmi_ref),
+        )
+        self.assertIn(
+            "rtti.dynamic_cast.multi_vptr",
+            audit.detect_features(
+                ordinary_polymorphic_rtti
+                + "base *convert(derived *p) { return dynamic_cast<base *>(p); }\n",
+                vmi_ref,
+            ),
+        )
+
     def test_hygiene_reports_compile_flags_sidecar(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)

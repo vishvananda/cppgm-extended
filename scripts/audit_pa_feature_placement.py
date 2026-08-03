@@ -1086,6 +1086,14 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             and not has_function_local_dynamic_class_static(code)
         ):
             matched = [evidence for evidence in matched if not evidence.startswith("source:")]
+        if (
+            rule.feature_id == "rtti.dynamic_cast.multi_vptr"
+            and not re.search(r"\b(?:dynamic_cast|typeid)\s*(?:<|\()", code)
+        ):
+            # __vmi_class_type_info describes any polymorphic multiple-
+            # inheritance RTTI object.  It is not by itself evidence that the
+            # test exercises PA27 dynamic_cast/typeid behavior.
+            matched = [evidence for evidence in matched if not evidence.startswith("ref:")]
         if rule.feature_id == "class.inheritance.multiple" and has_top_level_base_comma(code):
             matched.append("source:<multiple base-specifiers>")
         if matched:
