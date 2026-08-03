@@ -27,6 +27,7 @@ DEFAULT_PAS = tuple(f"pa{i}" for i in range(14, 28))
 LOCAL_TEST_HYGIENE_PAS = tuple(f"pa{i}" for i in range(10, 40))
 STRICT_TEMPLATE_PAS = ("pa18", "pa19", "pa21", "pa22", "pa23")
 SEMANTIC_ONLY_PA_MAX = 12
+PRE_LOWIR_SEMANTIC_PA_MIN = 10
 LOWIR_SOURCE_PAS = set(range(14, 28))
 SOURCE_EH_LOWIR_OWNER_PA = 25
 BACKEND_ONLY_PAS = {28}
@@ -145,6 +146,25 @@ LATE_PLACEMENT_ANCHOR_FEATURES = {
     "host.object_interop",
 }
 HOST_OBJECT_ATTRIBUTE_NAMES = {"noinline", "section", "weak"}
+
+# PA10-PA12 consume C++ source but stop at AST, type/scope, or call-semantic
+# output.  A declaration can therefore contain a class, array, template, or
+# value-semantics spelling long before the later source-to-LowIR owner is
+# reached.  Those spellings are placement evidence in PA14+, but are only
+# semantic-surface inputs in these pre-LowIR assignments.  Keep statement,
+# exception, hosted, ABI, object, and LowIR families out of this exemption so
+# genuinely misplaced tests still fail the audit.
+PRE_LOWIR_SEMANTIC_SURFACE_PREFIXES = (
+    "call.",
+    "class.",
+    "constexpr.",
+    "expr.",
+    "lang.",
+    "lookup.",
+    "template.",
+    "value.",
+)
+PRE_LOWIR_SEMANTIC_SURFACE_FEATURES = {"static_assert"}
 
 TEMPLATE_CONCEPT_BY_FEATURE = {
     "template.type": "basic-template",
@@ -1731,11 +1751,28 @@ def is_lowir_test(pa: str) -> bool:
     return number in LOWIR_SOURCE_PAS if number is not None else False
 
 
+def is_pre_lowir_semantic_surface(feature_id: str) -> bool:
+    return (
+        feature_id in PRE_LOWIR_SEMANTIC_SURFACE_FEATURES
+        or feature_id.startswith(PRE_LOWIR_SEMANTIC_SURFACE_PREFIXES)
+    )
+
+
 def placement_for(feature: FeatureMeta, current_pa: str, current_cluster: int | None) -> tuple[str, str]:
     current_num = pa_number(current_pa)
     owner_num = pa_number(feature.owner_pa)
     if current_num is None or owner_num is None:
         return "review", "non-PA path or owner"
+    if (
+        PRE_LOWIR_SEMANTIC_PA_MIN <= current_num <= SEMANTIC_ONLY_PA_MAX
+        and current_num < owner_num
+        and is_pre_lowir_semantic_surface(feature.feature_id)
+    ):
+        return (
+            "semantic-surface",
+            "pre-LowIR AST/type/call output does not exercise the later "
+            "source-to-LowIR or runtime owner",
+        )
     if current_num >= 14 and owner_num <= SEMANTIC_ONLY_PA_MAX:
         return (
             "semantic-owner",
@@ -2031,7 +2068,11 @@ def row_for(path: Path,
             "evidence": hits[feature_id].evidence,
         })
     review_statuses = {"violation", "cluster-early", "backend-owner", "unknown-feature"}
-    semantic_notes = [p for p in placements if p["status"] == "semantic-owner"]
+    semantic_notes = [
+        p
+        for p in placements
+        if p["status"] in {"semantic-owner", "semantic-surface"}
+    ]
     late_candidate = late_placement_candidate(placements, current_pa, current_cluster, features)
     row = {
         "path": path.relative_to(root).as_posix(),
@@ -2568,7 +2609,11 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--feature", action="append", help="only report tests matching this feature id")
     parser.add_argument("--include-course", action="store_true", default=True)
     parser.add_argument("--no-course", action="store_false", dest="include_course")
-    parser.add_argument("--include-ok", action="store_true", help="include ok/semantic-owner rows in markdown")
+    parser.add_argument(
+        "--include-ok",
+        action="store_true",
+        help="include ok and semantic-stage rows in markdown",
+    )
     parser.add_argument(
         "--template-placement",
         action="store_true",

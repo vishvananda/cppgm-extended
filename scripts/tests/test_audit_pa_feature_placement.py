@@ -30,6 +30,27 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_pre_lowir_semantic_surface_does_not_claim_later_runtime_owner(self) -> None:
+        class_feature = audit.FeatureMeta(
+            "class.basic", "pa15", 100, "", ""
+        )
+        exception_feature = audit.FeatureMeta(
+            "exception.try_catch", "pa25", 100, "", ""
+        )
+
+        self.assertEqual(
+            audit.placement_for(class_feature, "pa11", 200)[0],
+            "semantic-surface",
+        )
+        self.assertEqual(
+            audit.placement_for(class_feature, "pa14", 200)[0],
+            "violation",
+        )
+        self.assertEqual(
+            audit.placement_for(exception_feature, "pa11", 200)[0],
+            "violation",
+        )
+
     def test_hygiene_reports_compile_flags_sidecar(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
