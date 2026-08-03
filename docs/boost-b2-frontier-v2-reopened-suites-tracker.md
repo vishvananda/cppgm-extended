@@ -10,6 +10,7 @@ interleaving with its active suite cursor.
 
 - branch: `boost-frontier-v2-test-intake`
 - starting commit: `3373a8dcc`
+- finalized upstream base: `222a0ab0f`
 - compiler under test:
   `/Users/vishvananda/cppgm-test-intake/dev/cppgm++`
 - host compiler: Homebrew Clang 22.1.0 at
@@ -73,11 +74,11 @@ C/assembly/link actions. The validation and performance ladder follows
   non-deduced parameter; and output resolution collapsed repeated member
   template specializations with the same function type onto the first body.
   The fixes and owning regressions landed in PA18, PA22, and PA26 as commits
-  `ea1091429`, `028f55c9a`, and `dec4709d7`. The last fix also corrected the
+  `ae9ddf1db`, `2f09d66c2`, and `d157f251b`. The last fix also corrected the
   distributed CSR `vertex` overload, whose selected specialization previously
   emitted the less-specialized sequential body. A header-free PA22 regression
   now covers that overlapping free-function-template output identity in
-  `5e56b198c`.
+  `9e17a42e9`.
 - `2026-08-03`: Focused Graph validation passes on the final compiler. The
   exact forced `distributed_csr_algorithm_test-1` target rebuilt 107 targets
   and passed compile, link, and runtime with zero swaps
@@ -93,3 +94,17 @@ C/assembly/link actions. The validation and performance ladder follows
   -40.09% maximum RSS, and -42.28% peak footprint
   (`perf-template-identity-output.json`). The final forced full Graph Parallel
   graph remains the suite-closing gate.
+- `2026-08-03`: Rebased the independent lane onto finalized upstream commit
+  `222a0ab0f` and rebuilt `dev/cppgm++` incrementally with Homebrew Clang 22.1.0.
+  The combined PA18/PA22/PA24 hard placement audit scanned 792 tests with zero
+  placement or hygiene findings; manual template-composition review keeps the
+  new PA18 lookup and PA22 substitution tests at their single-feature owners,
+  and keeps the revised repeated local declaration probe in PA24's
+  post-template language-closure integration suite. The focused direct-LowIR
+  report passes `792/792`; strict comparison passes PA18 `263`, PA19 `145`,
+  PA21 `234`, PA22 `290`, and PA23 `369`; all 23 text-reparse categories remain
+  zero and all 14 audit unit tests pass; and the full direct-LowIR report passes
+  `4746/4746`. Existing PA18, PA22, and PA24 assignment text already covers the
+  tested lookup, substitution, and integration surfaces, so no README change
+  is needed. The final forced Graph Parallel graph and refreshed performance
+  gate remain pending after the active canonical frontier replay finishes.
