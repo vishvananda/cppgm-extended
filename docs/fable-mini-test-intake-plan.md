@@ -34,11 +34,15 @@ gates recorded in the tracker passed.
 ## Scope
 
 Use the Fable and Mini run repositories as evidence sources for new regression
-tests. Do not merge their `cppgm.tests` trees into this repository. Accepted
-tests belong in the normal `paN/tests` assignment suites.
+tests. Do not merge their `cppgm.tests` trees into this repository. In the
+completed PA10-through-PA38 pass, accepted tests belong in the normal
+`paN/tests` assignment suites. In the PA1-through-PA9 pass, accepted tests stay
+in `cppgm.tests/course/paN`, which is the early-assignment course-test surface.
 
-The first intake pass covers PA10 through PA38. PA1 through PA9 are cataloged
-below and remain untouched until a separate second pass.
+The first intake pass covers PA10 through PA38. The second pass starts from the
+PA1-through-PA9 catalog below and applies the same evidence, reduction,
+duplication, ownership, README, reference, and validation requirements with
+the early-assignment destination and harness rules stated below.
 
 Source snapshots used for the initial inventory:
 
@@ -75,7 +79,10 @@ newly intaked fixture.
 3. Reduce the test to one compiler claim before deciding where it belongs.
 4. Put the result in the earliest assignment that owns the primary claim and
    every feature that remains in the reducer.
-5. Add the result under `paN/tests`, never under `cppgm.tests/course`.
+5. For PA10 through PA38, add the result under `paN/tests`, never under
+   `cppgm.tests/course`. For PA1 through PA9, keep accepted tests under
+   `cppgm.tests/course/paN`, even when the source family originally appeared in
+   a run repository's assignment-local `paN/tests` tree.
 6. Reject exact and near duplicates unless the new test reaches a distinct
    semantic, lowering, ABI, runtime, or optimizer path.
 7. Prefer standard C++11 and test-owned helper types. Keep hosted or
@@ -86,7 +93,42 @@ newly intaked fixture.
    compiler. Verify the binary and build configuration before use, but do not
    clean or rebuild unchanged objects. Do not copy a run reference as the new
    canonical oracle.
-9. Keep PA1 through PA9 at `catalog-pa1-pa9` during the first pass.
+9. Keep PA1 through PA9 at `catalog-pa1-pa9` during the first pass. During the
+   second pass, replace each catalog disposition with its reviewed result.
+
+### PA1 Through PA9 Course-Test Rules
+
+- Keep accepted families in the flat `cppgm.tests/course/paN` directory used
+  by that assignment's harness. Do not move them into `paN/tests` and do not
+  retain a second assignment-local copy from a run repository.
+- Treat the numeric filename prefix as a coverage band, not a globally unique
+  sequence number. Choose the band by comparing the reduced behavior with the
+  nearest tests in both `paN/tests` and `cppgm.tests/course/paN`; reuse a band
+  when several descriptive names belong at the same complexity or boundary
+  level. Do not preserve source-run numbers such as `460`, `900`, or `901`
+  merely because they were the next sequential identifier in that run.
+- Normalize the existing PA1-through-PA9 course families in the same pass so
+  the directory has one coherent scheme. Rename each complete family
+  atomically, including references, statuses, streams, inputs, environment
+  files, headers, and numbered units. Update path-sensitive reference text and
+  validate the renamed family through its real harness. These mechanical
+  renames do not create new intake candidates or tracker rows.
+- Give every accepted family a descriptive behavior name after the band. A
+  filename must remain understandable without consulting the tracker.
+- Preserve the assignment's actual early harness contract. PA1 through PA4
+  compare their token or expression output and exit status, PA2 through PA4
+  may also retain diagnostic streams, PA5 has preprocessing path and multi-file
+  sidecars, PA6 checks recognition output, and PA7 through PA9 use their own
+  namespace or CY86 formats. Retain every stdout, stderr, status, input,
+  argument, header, or numbered translation-unit sidecar required by that
+  harness.
+- Generate canonical references with this tree's normal Homebrew-Clang-built
+  relevant `dev/` binary and keep failure output when the assignment export
+  compares it. Do not copy run references or discard an apparently redundant
+  stream without checking the early harness.
+- Run the placement audit with course tests included, then manually compare
+  the reducer with the owning assignment README. Make the smallest README edit
+  needed when the intaked behavior adds a student expectation.
 
 ## Course-Tree Inventory
 
@@ -192,11 +234,11 @@ After provenance filtering, neither run contributes a PA10-through-PA38 test
 source from `pa*/tests`. The PA10-through-PA38 candidate inventory comes from
 run-authored `cppgm.tests/course` additions only.
 
-## Deferred PA1 Through PA9 Catalog
+## PA1 Through PA9 Second-Pass Catalog
 
 These names record the logical source families that are absent by path from the
-clean intake base. Do not reduce, relocate, regenerate references for, or import
-them during the first pass.
+clean intake base. They were untouched during the first pass and form the
+complete starting queue for the second pass.
 
 ### Fable
 
@@ -279,7 +321,8 @@ Use these dispositions:
 - `ready`: reduced, placed, portable or justified, and referenceable
 - `blocked-reference`: the required canonical reference cannot be produced
 - `blocked-current-bug`: the reducer exposes an unfixed target bug
-- `intaked`: accepted in `paN/tests` with all required checks passing
+- `intaked`: accepted in the active pass's destination (`cppgm.tests/course/paN`
+  for PA1 through PA9, otherwise `paN/tests`) with all required checks passing
 
 `covered-exact`, `covered-near`, and `not-a-regression` rows must cite concrete
 evidence. Do not use them as shortcuts for difficult cases.
@@ -342,8 +385,9 @@ adding the test:
 
 1. Search `pa*/tests` by filename terms, operators, type shapes, relevant
    standard concepts, expected symbols, and output fragments.
-2. Search `cppgm.tests/course` as duplicate evidence even though it is not an
-   intake destination.
+2. Search `cppgm.tests/course` as duplicate evidence. It is also the intake
+   destination for PA1 through PA9, so compare against the live destination
+   again immediately before landing an early-assignment batch.
 3. Check recent target history for tests added after the source run snapshot.
 4. Compare normalized sources after removing comments, renaming local
    identifiers, and discarding irrelevant declarations.
@@ -426,6 +470,7 @@ Use these destination rules:
 
 | Range | Normal destination |
 |---|---|
+| PA1-PA9 | flat `cppgm.tests/course/paN`, using the nearest assignment-local numbering band and the assignment's early harness sidecars |
 | PA10-PA27 | `paN/tests/spec` for a narrow assignment or N3485 rule; `paN/tests/general` for cross-rule regressions |
 | PA28 | `behavior`, `structural`, or `strict`, based on the asserted native-backend contract |
 | PA29 | `general`, with all required translation units and link/run sidecars |
@@ -454,8 +499,9 @@ focused and preserves the original assertion.
 
 Follow the numbering and naming style of the selected local suite. Rename
 generic source-run names such as `900-*` or `final-audit-*` when they do not
-describe the reduced behavior. Do not keep a second copy under
-`cppgm.tests/course`.
+describe the reduced behavior. For PA10 and later, do not keep a second copy
+under `cppgm.tests/course`. For PA1 through PA9, that course directory is the
+only accepted destination.
 
 The placement audit is a conservative review tool, not an owner oracle. Read
 every source unit manually, especially `.t.N` files and shared headers that a
@@ -675,8 +721,8 @@ Recommended order:
 2. PA28 through PA33 backend, separate-compilation, ABI, and object reducers
 3. PA34 through PA36 hosted preprocessing, compile, runtime, and link reducers
 4. PA37 and PA38 optimizer and machine-backend reducers
-5. PA1 through PA9 only after a second-pass plan reviews their harnesses and
-   placement risks
+5. PA1 through PA9 by owning assignment, using their course-test destinations
+   and assignment-specific harnesses
 
 Before each batch, rerun the duplicate search against the current target. New
 tests may have landed since the initial inventory.
@@ -684,7 +730,7 @@ tests may have landed since the initial inventory.
 Use one commit per feature cluster or owning assignment. Each commit should
 contain only:
 
-- reduced tests in `paN/tests`
+- reduced tests in the destination appropriate to the active pass
 - required canonical references and input sidecars
 - tracker rows for those tests
 - a small README clarification when assignment ownership was genuinely unclear
@@ -703,7 +749,8 @@ An accepted test must satisfy all of these conditions:
 - it is reduced enough that the asserted behavior is clear
 - no existing test already covers the same compiler path and oracle
 - its C++11, GNU-extension, or hosted-specific status is explicit
-- it lives in the correct `paN/tests` suite
+- it lives in `cppgm.tests/course/paN` for PA1 through PA9 or the correct
+  `paN/tests` suite for PA10 through PA38
 - all necessary multi-file and input sidecars are present
 - its references come from the correct canonical source
 - the focused test, placement audit plus manual layer review, and owning
@@ -713,5 +760,8 @@ An accepted test must satisfy all of these conditions:
 - no generated files or source-run artifacts remain in the change
 
 The first pass is complete when every PA10-through-PA38 candidate has a
-disposition, every accepted test has landed through the gates above, and the
-PA1-through-PA9 catalog remains unchanged for its separate review.
+disposition and every accepted test has landed through the gates above. The
+second pass is complete when all 59 PA1-through-PA9 catalog rows have reviewed
+dispositions, every accepted family has landed in its normalized course-test
+name with the required early-harness sidecars, and PA1 through PA9 pass both
+focused and assignment-level validation.
