@@ -14733,15 +14733,21 @@ private:
       const string offset =
           emit_temp_assignment("i64",
                                string("binary sub i64 ") + encoded_offset + ", 1");
+      const bool member_stores_reference =
+          is_reference_type(member_pointer_type->inner);
       const string field_storage =
           emit_index_address_with_projection("i8",
                                              base,
                                              offset,
-                                             is_reference_type(node.semantic_type) ?
+                                             member_stores_reference ?
                                                  lowir_internal::IPK_REFERENCE_FIELD :
                                                  lowir_internal::IPK_FIELD,
                                              false);
-      if(is_reference_type(node.semantic_type)) {
+      // A surrounding reference cast can annotate the member-access result as
+      // a reference even when the selected data member is ordinary object
+      // storage.  Only the pointer-to-member's declared member type determines
+      // whether the field itself stores a referent pointer.
+      if(member_stores_reference) {
         return emit_temp_assignment("ptr", string("load ptr ") + field_storage);
       }
       return field_storage;

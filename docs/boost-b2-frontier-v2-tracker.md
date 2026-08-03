@@ -13,9 +13,9 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - Boost release: `1.91.0`
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
-- completed suites: `138 / 147`
-- current cursor: `#139 libs/intrusive/test`
-- active compiler frontier: exact forced-C++11 Boost.Intrusive intake pending
+- completed suites: `139 / 147`
+- current cursor: `#140 libs/io/test`
+- active compiler frontier: exact forced-C++11 Boost.IO intake pending
 - final replay gate: after suite 147, force-rebuild suites 1--40 against the
   final compiler and record every changed outcome before declaring V2 complete
 
@@ -283,6 +283,7 @@ differences other than the output path.
 | `(Boost.ICL dependent-using, explicit-default, and overload-set nondeduction closure)` | Defer a missing using target only when its structured owner type is still dependent; reject inherited `source_defaulted` provenance when the current template-id has a distinct explicit source location; and represent unresolved overload sets with a typed semantic kind so function-template deduction treats them as nondeduced instead of instantiating traits on a fabricated type | -31.18% | -30.94% | -37.52% | versus the HOF checkpoint, instructions improve by 57,829,184 (-0.032%), while RSS moves +11,067,392 B (+1.26%) and footprint +16,457,728 B (+2.68%); all immutable-baseline gates remain strongly improved and within tolerance | `/private/tmp/cppgm-boost-frontier-v2-icl-authoritative-perf.json` | pass; isolated three-run medians are 181,387,152,843 instructions, 892,645,376 B RSS, and 630,947,840 B footprint. The candidate-only gate verified exact epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; all three processes recorded zero swaps, and neither the parent compiler nor live project headers were measured. |
 | `(Boost.Integer qualified-member instantiation and retained-mangle lifetime closure)` | Instantiate a concrete class specialization when a required qualified member type is selected, and preserve dependent class-template mangling through the specialization's self-contained retained metadata after analyzer teardown instead of dereferencing its analyzer-owned declaration | -31.05% | -31.48% | -39.58% | versus the ICL checkpoint, instructions move +334,684,927 (+0.18%) while RSS improves by 6,909,952 B (-0.77%) and footprint by 20,742,144 B (-3.29%); the lifetime repair preserves the established Itanium substitution order and all direct LowIR text | `/private/tmp/cppgm-boost-frontier-v2-integer-pa33-uaf-candidate.json` | pass; isolated three-run medians are 181,721,837,770 instructions, 885,735,424 B RSS, and 610,205,696 B footprint. The candidate-only gate verified exact epoch `9764b3835`, frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; neither the parent compiler nor live project headers were measured. |
 | `(Boost.Interprocess structured lookup, packs, layout, and unwind closure)` | Preserve identifier decl-specifier source positions, enforce point-of-declaration visibility for using-directives, recover local function-style nested packs, demand a direct class member before base lookup, distinguish concrete named types from same-spelled template parameters, align zero-only structured globals, and emit constructor-unwind destructor dependencies only for constructed subobjects preceding a potentially throwing action | -31.26% | -31.44% | -39.06% | versus Boost.Integer, instructions improve by 553,225,964 while RSS moves +462,848 B and footprint +5,226,496 B; every immutable-baseline signal remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-interprocess-final.json` | pass; isolated three-run candidate medians are 181,168,611,806 instructions, 886,198,272 B RSS, and 615,432,192 B footprint. The candidate-only gate verified exact epoch `9764b3835`, frozen source hash `ab00b2e1c3c7463baf9d8e1e7fc754b9cde2c18749568616062011f31e7daba2`, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; neither the parent compiler nor live project headers were measured, and every compiler process recorded zero swaps. |
+| `(Boost.Intrusive data-member-pointer lvalue lowering)` | Determine reference-field storage from the pointer-to-member's declared member type rather than a surrounding cast's reference-valued expression annotation | -31.14% | -31.30% | -37.61% | versus the Interprocess checkpoint, instructions move +330,558,857 (+0.18%), RSS +1,904,640 B (+0.21%), and footprint +14,655,488 B (+2.38%); every immutable-baseline gate remains strongly improved | `/private/tmp/cppgm-boost-frontier-v2-intrusive-member-pointer.json` | pass; isolated three-run candidate medians are 181,499,170,663 instructions, 888,102,912 B RSS, and 630,087,680 B footprint. The candidate-only gate verified exact epoch `9764b3835`, the frozen source, all 51 frozen headers, and closure hash `7c8a5445f33f04b314de98e6a099de4d75124b4bb032fc97ee5055e56d4827c8`; neither the parent compiler nor live project headers were measured. |
 
 ## Suite Cursor
 
@@ -429,23 +430,24 @@ row when a suite is attempted. Do not prepopulate passes from V1.
 | 136 | `libs/icl/test` | pass | `(this commit)` | The authoritative exact 12-job forced-C++11 `pch=off` graph updates all 163 requested compiler-side targets, records 15 passing runtime actions, has no compile or link failure, and reaches exactly 35 runtime failures plus their 35 dependent skips in 666.63s; log `/private/tmp/boost-frontier-v2-suite-136-icl-authoritative-final.log`. The Homebrew-Clang 22 control independently records the same 15 passes and the exact same 35 runtime-failure target names (empty sorted-set diff); log `/private/tmp/boost-frontier-v2-suite-136-icl-full-homebrew-clang-control.log`. | The closure repairs dependent using-declaration collection, stale explicit/default template-argument provenance, and the standard nondeduced treatment of an overload set containing function templates. The last defect was the algorithmic source of ICL's pathological trait expansion: the old compiler deduced a fabricated overload-set type for `std::endl` into generic ICL `operator<<` candidates and eagerly instantiated deep `is_interval` chains. A compact trigger fell from still-growing 1.78 GiB after 51s to 7.86s/296 MiB; the exact former outliers finish in 17--23s at 491--572 MiB. Three header-free C++11 owners are 15--21 lines, PA22 uses no `<type_traits>`, and the saved parent fails each. Direct LowIR passes `4382/4382`, all configured strict comparisons and 168 script tests pass, all 23 reparse categories remain zero, and 13 normal/cache-disabled modes are byte-identical for every owner. The graph's process-tree maximum is 1,520,070,656 B with zero process swaps; live sampling peaks at 6,453,940 KiB aggregate and shows complete release. Full 12-way overlap did cause 1,660,619 pages (6,801,895,424 B) of system swap-out, which is recorded as a parallelism cost rather than a compiler leak. CPPGM and every host path use Homebrew Clang 22; `gcc-cppgm` remains only the adapter label. |
 | 137 | `libs/integer/test` | pass | `(this commit)` | The authoritative exact 12-job forced-C++11 `pch=off` graph finds 2,588 targets, updates all 85 requested targets, records 24 passing test actions and all seven deliberate compile failures as failed-as-expected, and exits successfully in 31.07s; log `/private/tmp/boost-frontier-v2-suite-137-integer-after-pa33-uaf.log`. | Required lookup of `A<1>::type` now instantiates the selected specialization and diagnoses its class-scope `static_assert`, matching Clang and all Boost.Integer negative tests. ASan also exposed an independent heap use-after-free in an existing PA33 local-class dependent-result RTTI fixture: LowIR mangling retained an analyzer-owned `ClassTemplateDecl *` beyond analyzer teardown. The fix consumes the specialization's structured retained mangling metadata while preserving the legacy substitution order; the isolated ASan fixture and a 29-request ASan batch shard pass, direct LowIR passes `4383/4383` without reference drift, and all 982 strict comparisons pass. The exact graph peaks at 309,862,400 B RSS with zero process swaps. The immutable frozen-source/51-header gate records -31.05% instructions, -31.48% RSS, and -39.58% footprint. CPPGM and host actions use Homebrew Clang 22; printed `gcc.*`/`gcc-cppgm` names remain adapter labels only. |
 | 138 | `libs/interprocess/test` | pass | `(this commit)` | Boost.Interprocess declares C++03 and runs in the stable forced-C++11 lane. The authoritative exact eight-job forced `pch=off` graph updates all 389 requested targets, records 95 passing test actions, and exits successfully in 395.40s; log `/private/tmp/boost-frontier-v2-suite-138-interprocess-precise-final.log`. | The closure repairs structured identifier decl-specifiers and declaration-order visibility, local nested pack expansion, direct-member lookup through an alias specialization, same-spelled concrete/template-parameter identity, zero-only structured-global alignment, and constructor-unwind destructor output dependencies. Five compact header-free C++11 semantic owners plus the strengthened PA28 structural owner cover the behavior; PA22 uses no `<type_traits>`. The PA9-excluded direct-LowIR report passes `4388/4388`; the sole full-report miss is the known load-sensitive PA9 timeout and its isolated rerun passes `11/11`. All 983 configured strict comparisons, all 168 script tests with one intentional skip, all 23 zero-reparse categories, and normal plus eleven individual cache-disabled modes plus all-off pass. The exact graph peaks at 1,736,007,680 B process RSS with zero process swaps. Eight-way overlap causes 60,236 pages (235.3 MiB) of system swap-out, so future record reruns should use six jobs. Homebrew Clang 22 builds CPPGM and performs every host action. |
+| 139 | `libs/intrusive/test` | pass | `(this commit)` | Boost.Intrusive declares C++03 and runs in the stable forced-C++11 lane. After the lowering repair, the authoritative exact six-job forced `pch=off` graph finds 1,184 targets, updates all 153 currently requested targets, records 36 passing test actions, and exits successfully in 223.30s; log `/private/tmp/boost-frontier-v2-suite-139-intrusive-after-member-pointer-fix.log`. | The intake's 18 runtime crashes all came from one deterministic data-member-pointer lowering defect: a surrounding reference cast made ordinary embedded-hook storage look like a reference field, so CPPGM loaded the hook's null first word instead of taking its address. The six-line PA26 owner uses no headers or `<type_traits>`. PA26 passes `93/93`; the PA9-excluded direct-LowIR report passes `4389/4389`, isolated PA9 passes `11/11`, and all 983 strict comparisons pass. Normal, all eleven individual cache/memo-disabled modes, and all-off are byte-identical; all 23 reparse categories, PA26 placement/hygiene, and all 168 script tests pass. An isolated Homebrew-Clang ASan compiler force-rebuilds and passes `virtual_base_test` plus its Container dependencies with no sanitizer report. The final graph peaks at 1,259,167,744 B RSS with zero process swaps and unchanged system swapout count. Homebrew Clang 22 builds CPPGM and performs every host action. |
 
 Allowed statuses are `pending`, `running`, `frontier`, `blocked-external`,
 `skipped-language`, and `pass`. A timeout is evidence, not a pass.
 
 ## Active Frontier
 
-- suite: `#139 libs/intrusive/test`
+- suite: `#140 libs/io/test`
 - focused target: exact full-suite intake
-- last closed suite: `#138 libs/interprocess/test` (`pass`)
+- last closed suite: `#139 libs/intrusive/test` (`pass`)
 - failure phase: intake pending
 - diagnostic: pending exact forced-C++11 replay
 - reduced repro: not applicable until a compiler-owned failure is identified
 - owning PA/cluster: pending intake
 - implementation area: pending intake
 - performance risk: unknown intake risk; use full-machine jobs while sampling aggregate and per-child RSS, and narrow immediately if overlap approaches system-memory pressure
-- language lane: Boost.Intrusive declares C++03 and runs in the stable forced-C++11 lane
-- next action: run the exact Clang-pinned 12-job `pch=off` Boost.Intrusive graph; after suite 147, force suites 1--40 against the final compiler before final closure
+- language lane: Boost.IO declares C++03 and runs in the stable forced-C++11 lane
+- next action: run the exact Clang-pinned 12-job `pch=off` Boost.IO graph; after suite 147, force suites 1--40 against the final compiler before final closure
 
 ## Fix Ledger
 
@@ -931,9 +933,31 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 | fixed | Interprocess concrete type versus same-spelled function-template parameter | Function-template parameter detection now requires the named type to carry semantic template-parameter identity; a concrete class with the same spelling as an owner argument is no longer treated as dependent. | `pa22/tests/spec/300-member-template-parameter-hides-owner-argument-name.t`, compact header-free C++11 with no `<type_traits>` and a patched-Clang witness | The saved compiler substitutes the enclosing argument through the member template's distinct same-spelled parameter. Clang and the fixed compiler preserve the member template parameter. | PA22 direct and strict witness comparison, all 13 cache configurations, broad, placement, and zero-reparse gates pass. | included in the complete Interprocess result | `(this commit)` |
 | fixed | Interprocess zero-only structured-global alignment | When a structured global has no nonzero initializer bytes from which to infer storage width, object lowering now uses the established 16-byte fallback alignment instead of under-aligning pointer-bearing storage. | `pa28/tests/structural/800-runtime-zero-only-global-pointer-alignment.t`, strengthened to observe pointer alignment | The prior fixture did not distinguish a coincidentally aligned address from the required object alignment; the strengthened owner exposes the under-aligned zero-only global. | PA28 structural MIR/CMIR refs change only to the required alignment, PA37 object roundtrip remains `7/7`, and broad plus exact Interprocess pass. | included in the complete Interprocess result | `(this commit)` |
 | fixed | Interprocess constructor-unwind destructor output dependency | Structured constructor analysis tracks successfully constructed `this` subobjects forward and requires their destructors only when a later constructor action can throw. Destructor demand is emitted after ordinary callee discovery, preserving stable LowIR order and avoiding both missing unwind symbols and eager output. | `pa29/tests/general/200-template-member-destructor-required-by-constructor-unwind.t`, compact two-input C++11 link/runtime owner | The saved compiler omits a template member destructor used only by constructor unwind. A broad every-action demand fixed the link but dirtied unrelated output, so the accepted rule uses the exact potentially-throwing boundary. | PA15 and PA29 focused reports pass `311/311`; the broad report, all 983 strict comparisons, cache parity, exact `iunordered_set_test`, and complete Interprocess graph pass. | -31.26% instructions, -31.44% RSS, and -39.06% footprint in `/private/tmp/cppgm-boost-frontier-v2-interprocess-final.json` | `(this commit)` |
+| fixed | Intrusive data-member-pointer reference-cast address | Data-member-pointer lvalue lowering used the semantic type of the complete `.*` expression to decide whether the selected field stored a referent pointer. A surrounding nested reference cast therefore made an ordinary embedded object member look like reference storage and emitted a load from the field instead of its address. The lowering now derives storage representation from the pointer-to-member's declared member type; casts still control the result type but cannot change field representation. | `pa26/tests/general/300-data-member-pointer-reference-cast-address.t`, six lines / 238 bytes, header-free C++11 with no `<type_traits>` and a 1,005-byte LowIR ref | The saved compiler returns the wrong address for the reducer and all 18 affected Intrusive containers crash after passing a null hook node to `list_node_traits::get_next`. LLDB shows the generated `to_node_ptr` loading the zero-initialized first word at member offset 56; Homebrew Clang instead adds 56 and passes the address. | PA26 direct LowIR passes `93/93`; normal, all eleven individual cache/memo-off modes, and all-off are byte-identical; Clang C++11, placement/hygiene, all 23 zero-reparse categories, all 168 script tests, `4389/4389` PA9-excluded broad, isolated PA9 `11/11`, and all 983 strict comparisons pass. Exact Intrusive passes all 36 actions. The isolated ASan compiler also passes the reducer and a forced `virtual_base_test` rebuild with no sanitizer diagnostic. | -31.14% instructions, -31.30% RSS, and -37.61% footprint in `/private/tmp/cppgm-boost-frontier-v2-intrusive-member-pointer.json` | `(this commit)` |
 
 ## Decision Log
 
+- `2026-08-02`: Closed suite 139, Boost.Intrusive. The authoritative exact
+  six-job forced-C++11 `pch=off` graph updates all 153 requested targets,
+  records 36 passing test actions, and exits successfully in 223.30s at
+  1,259,167,744 B maximum RSS with zero process swaps and unchanged system
+  swapout count. All 18 intake runtime crashes were the same deterministic
+  lowering error: the `.*` result inherited a surrounding reference cast, and
+  LowIR mistook an ordinary embedded hook member for reference storage. Field
+  representation now follows the pointer-to-member's declared member type.
+  The six-line PA26 owner is header-free C++11 and uses no `<type_traits>`.
+  An isolated Homebrew-Clang ASan compiler force-rebuilds `virtual_base_test`
+  and its Container dependencies, passes the runtime test, and reports no
+  address or leak error; peak ASan RSS is 2,037,170,176 B with zero process
+  swaps. PA26 passes `93/93`; the PA9-excluded direct report passes
+  `4389/4389`, isolated PA9 passes `11/11`, and all 983 configured strict
+  comparisons pass. All 13 normal/cache configurations are byte-identical,
+  all 23 reparse categories remain zero, placement/hygiene is clean, and all
+  168 script tests pass with one intentional skip. The immutable candidate-
+  only gate records -31.14% instructions, -31.30% RSS, and -37.61% footprint;
+  the parent compiler and live project headers were not measured. CPPGM and
+  all host actions use Homebrew Clang 22. The cursor advances to C++03-declared
+  Boost.IO in the forced-C++11 lane.
 - `2026-08-02`: Closed suite 138, Boost.Interprocess. The authoritative exact
   eight-job forced-C++11 `pch=off` graph updates all 389 requested targets,
   records 95 passing test actions, and exits successfully in 395.40s at
@@ -5203,8 +5227,8 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ```sh
 cd /Users/vishvananda/boost_1_91_0
-# Suite 138 Boost.Interprocess is closed. Suite 139 Boost.Intrusive declares
-# C++03 and runs in the stable forced-C++11 lane. Begin with the exact 12-job
+# Suite 139 Boost.Intrusive is closed. Suite 140 Boost.IO declares C++03 and
+# runs in the stable forced-C++11 lane. Begin with the exact 12-job
 # full intake.
 /usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=12 CXXSTD=11 \
   CPPGM_BOOST_B2_FRONTIER=1 \
@@ -5215,7 +5239,7 @@ cd /Users/vishvananda/boost_1_91_0
   CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
   CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
   ./run-cppgm-b2.sh -a pch=off \
-    libs/intrusive/test
+    libs/io/test
 ```
 
 After suite 147 closes, repeat the same exact forced, Clang-pinned C++11 lane
