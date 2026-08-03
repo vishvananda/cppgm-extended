@@ -397,6 +397,32 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             audit.detect_features(function_local),
         )
 
+    def test_local_static_ref_detector_ignores_guard_class_symbols(self) -> None:
+        source = textwrap.dedent(
+            """\
+            struct guard { guard(); ~guard(); };
+            void build() { guard cleanup; }
+            """
+        )
+        ref_text = textwrap.dedent(
+            """\
+            declare function @guard__guard(%arg0 : ptr) -> void
+            declare function @guard___guard(%arg0 : ptr) -> void
+            """
+        )
+
+        self.assertNotIn(
+            "lowir.procedural.local_static",
+            audit.detect_features(source, ref_text),
+        )
+        self.assertIn(
+            "lowir.procedural.local_static",
+            audit.detect_features(
+                "int read();",
+                "global @__local_static__read__value__guard : i64 = zero\n",
+            ),
+        )
+
     def test_conversion_template_deduction_requires_a_conversion_use(self) -> None:
         declaration_only = textwrap.dedent(
             """\

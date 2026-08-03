@@ -304,7 +304,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("lowir.procedural.local_static",
                 (rx(r"\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+[A-Za-z_][A-Za-z0-9_:<>]*\s*\([^;{}]*\)\s*\{[^{}]*\bstatic\b[^{};]*[=;]"),),
                 use_raw=True,
-                ref_patterns=(rx(r"__local_static__|local_static_(?:init|ready)|__guard"),)),
+                ref_patterns=(rx(r"__local_static__|local_static_(?:init|ready)"),)),
     FeatureRule("lowir.procedural.local_static.dynamic_class",
                 (DYNAMIC_CLASS_STATIC_RE,),
                 use_raw=True,
