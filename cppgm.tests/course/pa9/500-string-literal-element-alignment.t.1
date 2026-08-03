@@ -1,0 +1,10 @@
+narrow_base: data8 0;
+narrow: "abc";
+wide_base: data8 0;
+wide: U"ab";
+start:
+	isub64 t64 narrow narrow_base;
+	isub64 x64 wide wide_base;
+	iadd64 t64 t64 x64;
+	isub64 t64 t64 5;
+	syscall1 t64 60 t64;
