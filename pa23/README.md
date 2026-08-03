@@ -158,6 +158,8 @@ PA23 owns integration among already-introduced template features, including:
 
 - dependent names combined with alias, variable, partial-specialization, or
   deduction behavior
+- imported constants retained as defaults in nested member templates when the
+  enclosing template is instantiated
 - function-template deduction combined with packs, non-deduced contexts,
   explicit arguments, conversion templates, or constructor templates
 - SFINAE and substitution behavior combined with alias templates, partial
