@@ -1,35 +1,38 @@
 # Fable and Mini Test Intake Plan
 
-## First-Pass Status
+## Intake Status
 
-The PA10-through-PA38 intake pass completed on 2026-08-02. The tracker contains
-505 logical families and no remaining `needs-evidence`, `needs-reduction`, or
-`ready` rows. Of those families, 220 were intaked, 63 remain documented as
-current compiler bugs, two are unreferenceable contracts, 17 are covered by
-existing tests, and five are not regressions. The other rows record 128
-assignment-export imports, 11 reference-only repairs, and the 59 PA1-through-
-PA9 families deferred to the separately planned second pass. Every completed
-decision row records the actual commit that made the decision; the tracker does
-not retain contextual `(this commit)` placeholders.
+Both intake passes completed on 2026-08-02. The tracker contains 505 logical
+families and no remaining `catalog-pa1-pa9`, `needs-evidence`,
+`needs-reduction`, or `ready` rows. Of those families, 274 were intaked, 63
+remain documented as current compiler bugs, two are unreferenceable contracts,
+21 are covered by existing tests, and six are not regressions. The other rows
+record 128 assignment-export imports and 11 reference-only repairs. Every
+completed decision row records the actual commit that made the decision; the
+tracker does not retain contextual `(this commit)` placeholders.
 
 A final source-ledger audit reproduced the plan's inventory from the frozen
-repositories: 286 PA10-through-PA38 course families, 59 deferred PA1-through-
-PA9 families, 128 assignment-export imports, and 11 reference-only repairs.
-Every one of the 1,204 newly added course-tree files is named by a tracker
-family, every claimed source sidecar exists at its recorded source commit, and
-all 827 listed intake destination entries exist under `paN/tests`.
+repositories: 286 PA10-through-PA38 course families, 59 PA1-through-PA9
+families, 128 assignment-export imports, and 11 reference-only repairs. Every
+PA1-through-PA9 family now has a reviewed disposition: 54 were intaked, four
+are covered by another retained test, and one is not a regression. In the
+first-pass ledger, every one of the 1,204 newly added course-tree files is named
+by a tracker family, every claimed source sidecar exists at its recorded source
+commit, and all 827 listed destination entries exist under `paN/tests`.
 
 Canonical references came from this repository's normal Homebrew-Clang-built
-`dev/` binaries, which are the student reference binaries on export. The final
-tree still matches the frozen `dev/` source at
-`b40c7e61724380e8ad1be3a67501323c42ecff3f`; no production compiler source was
-changed during intake.
+`dev/` binaries, which are the student reference binaries on export. Intake
+found one standards-valid PA7 parenthesized-parameter case that the current
+compiler rejected. Clang and GCC confirmed the source, the shared structured
+declarator parser was corrected, and the canonical reference was generated
+only after the fix.
 
-The final root report passed 4603 of 4605 tests under full assignment
-parallelism. Its only misses were the known load-sensitive PA3 and PA9
-timeouts; a serial rerun of those assignments passed 30 of 30. All focused,
+The PA4-through-PA9 second-pass batch passed 300 of 300 tests with the intended
+Homebrew Clang build, and the earlier PA1-through-PA3 batches passed their
+focused and assignment reports. The final broad report remains the gate after
+the separately tracked PA3 and PA9 timeout optimizations. All focused,
 placement, owning-assignment, hosted, LowIR optimizer, and machine optimizer
-gates recorded in the tracker passed.
+gates already recorded in the tracker passed.
 
 ## Scope
 
@@ -39,8 +42,8 @@ completed PA10-through-PA38 pass, accepted tests belong in the normal
 `paN/tests` assignment suites. In the PA1-through-PA9 pass, accepted tests stay
 in `cppgm.tests/course/paN`, which is the early-assignment course-test surface.
 
-The first intake pass covers PA10 through PA38. The second pass starts from the
-PA1-through-PA9 catalog below and applies the same evidence, reduction,
+The first intake pass covered PA10 through PA38. The second pass started from
+the PA1-through-PA9 catalog below and applied the same evidence, reduction,
 duplication, ownership, README, reference, and validation requirements with
 the early-assignment destination and harness rules stated below.
 
@@ -289,9 +292,9 @@ complete starting queue for the second pass.
   `902-negated-wchar-extension`, `903-unparenthesized-negative-immediate`,
   `904-unparenthesized-label-offset`, `905-negative-memory-literal`
 
-The second pass must start from this catalog and repeat the evidence,
-duplication, reduction, ownership, and reference checks. It must also account
-for the distinct PA1 through PA9 harness formats before moving any file.
+The second pass started from this catalog and repeated the evidence,
+duplication, reduction, ownership, and reference checks. It also accounted for
+the distinct PA1 through PA9 harness formats before moving any file.
 
 ## Tracker
 
