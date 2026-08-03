@@ -1,0 +1,34 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @sink
+  abi
+    param %x -> rdi : i64
+    return void -> void
+  frame
+    stack_size 16
+    scratch_bytes 0
+    param-slot %x -> [rbp-<off0>] : i64
+
+  block ^entry
+    store.i64 [rbp-<off0>], rdi
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+
+  block ^entry
+    mov r8, 20
+    add r8, 22
+    mov rdi, r8
+    call @sink
+    mov rax, 0
+    ret rax

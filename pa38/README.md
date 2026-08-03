@@ -130,6 +130,9 @@ semantic-preserving rewrites where safe:
 - coalesce block-local integer and floating-point register copies
 - remove redundant move chains and simple return shuffles
 - clean up call-result and call-argument copies
+- retain register copies that are still required for ABI call-argument setup,
+  distinct bulk-copy source/destination operands, or values live into successor
+  blocks
 - rematerialize cheap integer immediates into supported arithmetic,
   zero-compare, and call-argument instruction forms
 - collapse conditional-branch plus unconditional-jump block tails when one

@@ -1,0 +1,39 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+global @value
+  storage scalar i64
+  init i64 77
+
+global @value_ptr
+  storage scalar ptr
+  init addr @value
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+
+  block ^entry
+    load.ptr r8, @value_ptr
+    mov r9, r8
+    cmp.ptr r8, r8
+    je ^check
+
+  block ^bad
+    mov rax, 1
+    ret rax
+
+  block ^check
+    load.i64 r8, [r9]
+    mov rdx, 77
+    cmp.i64 r8, rdx
+    setne r8
+    movzx r8, r8
+    ret r8
