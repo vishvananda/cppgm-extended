@@ -2,11 +2,12 @@
 
 ## Status and Scope
 
-Plan created 2026-08-02. Intake execution has reviewed 139 of 272 families:
-forty-nine were intaked, eighty-two are covered by existing tests, five are not
-regressions, and three expose current compiler bugs. Eleven PA39 reducer rows
-remain evidence artifacts rather than reviewed runnable tests. The frozen source checkout
-points to:
+Plan created 2026-08-02. Intake execution has reviewed all 272 families:
+sixty-one were intaked, one hundred ninety-four are covered by existing tests,
+seven are not regressions, three expose current compiler bugs, and seven are
+reviewed PA39 evidence artifacts that do not define runnable assignment tests.
+No row remains `needs-evidence`, `needs-reduction`, or `ready`. The frozen
+source checkout points to:
 
 - source: `vishvananda/cppgm-run-centaur`
 - source commit: `debefcdce18b4be64a8011a85239629a47665b5f`
@@ -119,6 +120,52 @@ a family-local angle-header override only when that family's `.flags` supplies a
 resolving `-I` path. Eleven focused checks pass, references are byte-stable across
 two generations, the affected report passes 1102/1102, PA18 strict comparison
 passes 190 cases, and all affected placement audits are clean.
+
+The PA35-through-PA37 review closes all 122 source rows. Ten source families
+remain as six compact fixtures: one PA34 builtin-trait compile case, two PA35
+hosted-header compile cases, two PA36 hosted runtime cases, and one PA16
+inherited-constructor value-initialization regression. The PA35 utility cases
+share one `std::swap` union-storage fixture, while the PA36 algorithm and
+numeric-conversion pairs each share one runtime fixture. The inherited
+constructor case moved to PA16 after placement review showed that placement new
+is first owned there; replacing `__SIZE_TYPE__` with standard `unsigned long`
+kept the reducer independent of PA34.
+
+The older `weak_from_this` case is outside the assignment's C++11 mode: Clang
+and GCC both reject it under C++11 and accept it under C++17. The hard-coded
+`sizeof(std::string) == 32` case is a libstdc++ object-layout dependency rather
+than a portable hosted contract. Both were rejected. The remaining PA35 and
+PA36 rows map to concrete current compile or runtime cases. Every PA37 reducer
+maps to an existing optimizer oracle, so no LowIR or MIR reference was removed
+or replaced. The current PA34, PA35, and PA36 READMEs already state the hosted
+compile and runtime expectations, and PA16 already states the relevant
+defaulted-special-member and value-semantics contract; no README edit was
+needed. Six focused checks pass, accepted references are stable across two
+generations, the PA16 report passes 216/216, the PA34-through-PA37 report passes
+613/613 after final artifact intake, and all affected placement audits are
+clean.
+
+The eleven PA39 standalone reducers also received a final evidence review.
+The first two portable layout reducers compile with the current `dev/cppgm++`,
+Homebrew Clang 22.1.0, and GCC 16, and are covered by existing PA18 template
+layout, subscript, and constructor-initializer tests. Six source-include
+reducers name obsolete monolithic compiler implementation files and cannot be
+made into stable assignment fixtures without replacing the artifact with a
+different public-language reducer; their tracker rows instead name the current
+semantic tests covering the public rule. The weak-order stress input has no
+checked oracle, instruction-count baseline, or stable threshold, so the
+repository performance gate remains its proper regression mechanism rather
+than PA37 test output.
+
+The final two PA39 reducers exposed the one distinct gap: no current hosted
+runtime test called ordered-container erase. They are combined into
+`pa36/tests/link/700-hosted-map-set-erase-runtime.t`, which checks both
+`map::erase(iterator)` and `set<T*>::erase(key)` body closure and runtime
+behavior. Clang and GCC accept and run the C++11 control, the canonical
+references are byte-stable, the focused PA36 check passes, and the PA36
+placement audit is clean. PA36's existing hosted header-emission and
+link/runtime contract already covers this expectation, so no README edit was
+needed.
 
 ## Frozen History and Initial Inventory
 
