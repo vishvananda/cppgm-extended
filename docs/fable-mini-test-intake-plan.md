@@ -4,9 +4,20 @@
 
 The PA10-through-PA38 intake pass completed on 2026-08-02. The tracker contains
 505 logical families and no remaining `needs-evidence`, `needs-reduction`, or
-`ready` rows. Of those families, 220 were intaked; 63 remain documented as
-current compiler bugs and two as unreferenceable contracts. The 59 PA1-through-
-PA9 families remain deferred to the separately planned second pass.
+`ready` rows. Of those families, 220 were intaked, 63 remain documented as
+current compiler bugs, two are unreferenceable contracts, 17 are covered by
+existing tests, and five are not regressions. The other rows record 128
+assignment-export imports, 11 reference-only repairs, and the 59 PA1-through-
+PA9 families deferred to the separately planned second pass. Every completed
+decision row records the actual commit that made the decision; the tracker does
+not retain contextual `(this commit)` placeholders.
+
+A final source-ledger audit reproduced the plan's inventory from the frozen
+repositories: 286 PA10-through-PA38 course families, 59 deferred PA1-through-
+PA9 families, 128 assignment-export imports, and 11 reference-only repairs.
+Every one of the 1,204 newly added course-tree files is named by a tracker
+family, every claimed source sidecar exists at its recorded source commit, and
+all 827 listed intake destination entries exist under `paN/tests`.
 
 Canonical references came from this repository's normal Homebrew-Clang-built
 `dev/` binaries, which are the student reference binaries on export. The final
@@ -244,10 +255,13 @@ Required fields:
 - reduction status and reduced source path
 - duplicate search results and closest existing tests
 - proposed assignment, suite, and ownership reason
-- portability class: `standard-c++11`, `gnu-extension`, `lowir-contract`,
-  `hosted-portable`, or `hosted-implementation-specific`; use
-  `lowir-contract` only for a raw LowIR fixture whose portability boundary is
-  the checked-in LowIR specification rather than a host C++ implementation
+- portability class: `standard-c++11`, `post-c++11`, `gnu-extension`,
+  `lowir-contract`, `hosted-portable`, or
+  `hosted-implementation-specific`; use `post-c++11` only when a rejected or
+  covered source depends on later-standard language forms that are outside the
+  C++11 assignment contract, and use `lowir-contract` only for a raw LowIR
+  fixture whose portability boundary is the checked-in LowIR specification
+  rather than a host C++ implementation
 - reference provenance and focused validation results
 - final disposition, destination, and intake commit
 
