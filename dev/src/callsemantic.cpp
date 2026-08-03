@@ -19397,6 +19397,11 @@ private:
         source_type_lookup_guard;
     const QualifiedName * qualified_lookup =
         cppast_qualified_name_syntax(node);
+    const template_argument_semantics::
+        ScopedRequiredQualifiedTypeResolution required_qualified_type(
+            qualified_lookup &&
+            (qualified_lookup->rooted ||
+             !qualified_lookup->qualifiers.empty()));
     const template_api::ScopedTemplateWitnessQualifiedMemberTypeLookup
         qualified_member_type_lookup_guard(
             qualified_lookup &&

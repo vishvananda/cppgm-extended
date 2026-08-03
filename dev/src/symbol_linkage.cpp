@@ -10183,20 +10183,54 @@ static bool try_build_dependent_class_template_type_ir(
      !dependent_class_template_metadata_should_drive_mangling(type, mangle_ctx)) {
     return false;
   }
+  const ClassTemplateSpecializationMangleInfo * retained =
+      named_type_class_template_specialization_mangle_info_ptr(type);
   const semantic_model::ClassTemplateDecl * class_template =
-      static_cast<const semantic_model::ClassTemplateDecl *>(class_template_decl);
-  if(!class_template) {
+      retained ? nullptr :
+                 static_cast<const semantic_model::ClassTemplateDecl *>(
+                     class_template_decl);
+  if(!retained && !class_template) {
     return false;
   }
 
   QualifiedName prefix;
+  const QualifiedName * prefix_ptr = nullptr;
+  const vector<TemplateParameterInfo> * parameters = nullptr;
+  string base_name;
+  if(retained) {
+    // Analyzer owns the source declaration and its scope. LowIR runs after
+    // Analyzer teardown, so use only the structured metadata retained with
+    // the type while preserving this path's established substitution order.
+    if(retained->template_name_syntax.rooted) {
+      return false;
+    }
+    const vector<string> & qualifiers =
+        retained->template_name_syntax.qualifiers;
+    if(!qualifiers.empty()) {
+      prefix.qualifiers.assign(qualifiers.begin(), qualifiers.end() - 1);
+      prefix.name = qualifiers.back();
+      prefix_ptr = &prefix;
+    } else if(!retained->template_scope_prefix.empty()) {
+      // Do not reconstruct semantic scope from its display text.
+      return false;
+    }
+    parameters = semantic_model::class_template_mangle_parameters(*retained);
+    base_name = trim_space(retained->template_name);
+  } else {
+    prefix_ptr =
+        scope_prefix_syntax_for_template_decl(class_template->declaring_scope,
+                                              prefix) ?
+            &prefix :
+            nullptr;
+    parameters = &class_template->parameters;
+    base_name = trim_space(class_template->name);
+  }
+  if(base_name.empty()) {
+    return false;
+  }
+
   vector<abi_mangle::Type::NameComponent> prefix_components;
   string canonical_prefix;
-  const QualifiedName * prefix_ptr =
-      scope_prefix_syntax_for_template_decl(class_template->declaring_scope,
-                                            prefix) ?
-          &prefix :
-          nullptr;
   if(!build_name_prefix_components_ir(prefix_ptr,
                                       prefix_components,
                                       canonical_prefix)) {
@@ -10205,13 +10239,12 @@ static bool try_build_dependent_class_template_type_ir(
 
   vector<abi_mangle::Type::ClassTemplateArgument> arguments;
   if(!build_dependent_template_arguments_ir(dependent_arguments,
-                                            &class_template->parameters,
+                                            parameters,
                                             mangle_ctx,
                                             arguments)) {
     return false;
   }
 
-  const string base_name = trim_space(class_template->name);
   vector<abi_mangle::SubstitutionKey> argument_keys;
   const bool needs_argument_substitution =
       !(mangle_ctx && mangle_ctx->suppress_type_substitution_keys);

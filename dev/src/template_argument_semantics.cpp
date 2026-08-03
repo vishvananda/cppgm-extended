@@ -1105,14 +1105,12 @@ bool required_qualified_type_resolution_active()
   return validating_required_qualified_type_owner();
 }
 
-ScopedRequiredQualifiedTypeResolution::
-    ScopedRequiredQualifiedTypeResolution()
+void ScopedRequiredQualifiedTypeResolution::enter()
 {
   ++required_qualified_type_resolution_depth;
 }
 
-ScopedRequiredQualifiedTypeResolution::
-    ~ScopedRequiredQualifiedTypeResolution()
+void ScopedRequiredQualifiedTypeResolution::leave()
 {
   if(required_qualified_type_resolution_depth != 0) {
     --required_qualified_type_resolution_depth;

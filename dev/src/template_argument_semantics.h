@@ -50,13 +50,31 @@ bool required_qualified_type_resolution_active();
 class ScopedRequiredQualifiedTypeResolution
 {
 public:
-  ScopedRequiredQualifiedTypeResolution();
-  ~ScopedRequiredQualifiedTypeResolution();
+  explicit ScopedRequiredQualifiedTypeResolution(bool active = true)
+    : active_(active)
+  {
+    if(active_) {
+      enter();
+    }
+  }
+
+  ~ScopedRequiredQualifiedTypeResolution()
+  {
+    if(active_) {
+      leave();
+    }
+  }
 
   ScopedRequiredQualifiedTypeResolution(
       const ScopedRequiredQualifiedTypeResolution &) = delete;
   ScopedRequiredQualifiedTypeResolution & operator=(
       const ScopedRequiredQualifiedTypeResolution &) = delete;
+
+private:
+  static void enter();
+  static void leave();
+
+  bool active_;
 };
 
 class ScopedBaseSpecifierTypeLookup
