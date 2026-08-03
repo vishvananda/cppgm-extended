@@ -29,10 +29,26 @@ only after the fix.
 
 The PA4-through-PA9 second-pass batch passed 300 of 300 tests with the intended
 Homebrew Clang build, and the earlier PA1-through-PA3 batches passed their
-focused and assignment reports. The final broad report remains the gate after
-the separately tracked PA3 and PA9 timeout optimizations. All focused,
-placement, owning-assignment, hosted, LowIR optimizer, and machine optimizer
-gates already recorded in the tracker passed.
+focused and assignment reports. After the PA3 and PA9 timeout optimizations,
+the final root report passed 4655 of 4655 tests under full assignment
+parallelism. All focused, placement, owning-assignment, hosted, LowIR optimizer,
+and machine optimizer gates recorded in the tracker passed.
+
+The two load-sensitive stress cases were optimized from the run repositories'
+implementation evidence without changing their checked output:
+
+- PA3 `300-triple.t` now uses fixed operator classification, precedence
+  climbing, reusable indexed token storage, and block-sized stdin ingestion.
+  Local `time -lp` measurement fell from 19,383,152,194 to 6,208,773,797
+  retired instructions and from 2.26 to 0.84 seconds. Peak footprint rose from
+  about 11 MB to 32 MB because the 11 MB input is deliberately held in memory
+  instead of passing through locked character-at-a-time stdio.
+- PA9 `300-binary-calculator.t.1` keeps contractual statement-label addresses
+  while placing executable bodies on cache lines isolated from writable data.
+  Exact direct control transfers and the entry point target those bodies;
+  indirect transfers retain label-address entry sleds. Local runtime fell from
+  3.42 to 0.31 seconds and elapsed cycles from 12,070,404,945 to 864,494,196,
+  confirming removal of self-modifying-code machine clears.
 
 ## Scope
 
