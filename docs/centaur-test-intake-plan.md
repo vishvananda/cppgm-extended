@@ -2,9 +2,10 @@
 
 ## Status and Scope
 
-Plan created 2026-08-02. Intake execution has reviewed 106 of 272 families:
-thirty-eight were intaked, fifty-eight are covered by existing tests, four are not
-regressions, and three expose current compiler bugs. The frozen source checkout
+Plan created 2026-08-02. Intake execution has reviewed 139 of 272 families:
+forty-nine were intaked, eighty-two are covered by existing tests, five are not
+regressions, and three expose current compiler bugs. Eleven PA39 reducer rows
+remain evidence artifacts rather than reviewed runnable tests. The frozen source checkout
 points to:
 
 - source: `vishvananda/cppgm-run-centaur`
@@ -97,6 +98,27 @@ and GCC independently reject its nonconstant evaluation under C++14, while the
 other retained cases are standard C++11. The PA15-through-PA25 affected report
 passes 2184/2184, PA18/PA21/PA22 strict comparison passes 524 cases with no
 failures, and the affected placement audit has no findings.
+
+The PA29-through-PA34 review retains eleven source families. PA29 adds a
+duplicate-helper link failure and a user-include-versus-internal-shim precedence
+case. PA18 gains definition-time checking for an unused qualified inline member;
+PA25's default-capture fixture now includes a catch-local declared inside the
+lambda. PA32 adds parameter-pack symbol and qualified-inline-member host-link
+coverage. PA33 adds key-function order, indirect-result EH cleanup, and
+resume-versus-later-local regressions, while its existing noexcept test now makes
+the throwing noexcept function the first body lowered. PA34 adds
+`__has_builtin(__builtin_memset)` coverage and the corresponding compiler support.
+
+The other twenty-four rows are covered by concrete current tests, generally at
+an earlier semantic or machine owner. Centaur's accepting PA34
+`__is_invocable`/`__is_invocable_r` probe is not a valid current oracle: both
+Homebrew Clang 22.1.0 and GCC 16 reject those spellings. The hosted zero-length
+member extension remains accepted by `cppgm++`, while PA11's standard
+zero-bound declarator negative remains strict. The placement audit now recognizes
+a family-local angle-header override only when that family's `.flags` supplies a
+resolving `-I` path. Eleven focused checks pass, references are byte-stable across
+two generations, the affected report passes 1102/1102, PA18 strict comparison
+passes 190 cases, and all affected placement audits are clean.
 
 ## Frozen History and Initial Inventory
 
