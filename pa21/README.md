@@ -151,7 +151,8 @@ implemented language surface, including:
 - template-template parameters and template-template argument matching
 - member templates, including templated member operators and templated call
   operators
-- friend templates in the supported class-template/function-template subset
+- friend templates in the supported class-template/function-template subset, including a
+  friend type template-id whose non-type argument is a dependent constant expression
 - class partial specialization
 - partial-specialization ordering and specialization selection
 - current-specialization identity in the supported class-template and

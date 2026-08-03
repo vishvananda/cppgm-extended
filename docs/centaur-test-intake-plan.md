@@ -2,8 +2,8 @@
 
 ## Status and Scope
 
-Plan created 2026-08-02. Intake execution has reviewed 79 of 272 families:
-thirty were intaked, forty-two are covered by existing tests, four are not
+Plan created 2026-08-02. Intake execution has reviewed 106 of 272 families:
+thirty-eight were intaked, fifty-eight are covered by existing tests, four are not
 regressions, and three expose current compiler bugs. The frozen source checkout
 points to:
 
@@ -32,7 +32,8 @@ Centaur reference as the canonical oracle.
 
 The completed cohorts have closed four assignment-baseline duplicates, the
 PA4-through-PA9 catalog, the six PA11 semantic-cleanup families, all 21
-PA12-source families, and all 36 PA14-source families. The
+PA12-source families, all 36 PA14-source families, and all 27 remaining
+PA15-through-PA25 source families. The
 retained early coverage consists of one PA4 macro paint regression, four PA8
 initialization/linkage additions plus one existing PA8 conversion-family
 extension, and one combined PA9 narrow/wide literal alignment regression.
@@ -77,6 +78,25 @@ array case was merged into PA20's existing local-static-array fixture and
 removed from PA14. The affected PA14, PA15, PA16, PA18, PA20, PA22, and PA25
 report passes 1431/1431; PA18/PA22 strict comparison passes 361 cases with no
 failures; and the complete affected placement audit has no findings.
+
+The remaining PA15-through-PA25 review retains seven fixtures for eight source
+rows: a PA17 first-vptr/base-offset runtime case, a PA18 dependent-base
+enumerator using-declaration, two PA20 constexpr negatives, a PA21 friend type
+template-id, and two PA23 integration fixtures. The two Centaur default-argument
+tests are combined because they assert one rule: dependent defaults are
+materialized after overload selection. Nineteen rows are already covered,
+including near-verbatim current cases for inherited conversion, cv-reference
+partial ordering, cv-pointer ambiguity, array-bound deduction, defaulted
+non-type alias SFINAE, and both PA24/PA25 member-template lambda forms. The
+PA21-source temporary-cleanup case remains covered at PA25 so its EH behavior is
+not lost through early placement.
+
+Failure stdout remains checked in for both PA20 negatives. The executed-local
+declaration case uses the constexpr-body extension documented by PA20; Clang
+and GCC independently reject its nonconstant evaluation under C++14, while the
+other retained cases are standard C++11. The PA15-through-PA25 affected report
+passes 2184/2184, PA18/PA21/PA22 strict comparison passes 524 cases with no
+failures, and the affected placement audit has no findings.
 
 ## Frozen History and Initial Inventory
 

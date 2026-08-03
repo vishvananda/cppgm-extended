@@ -198,7 +198,8 @@ PA17 supports the following in addition to the PA16 subset:
 - derived classes whose direct base is already polymorphic and therefore already carries the
   shared vpointer at offset `0`
 - derived classes with non-polymorphic direct bases that introduce the first supported
-  vpointer at offset `0`
+  vpointer at offset `0`; ordinary pointer/reference conversion to such a base uses the
+  resulting nonzero base-subobject offset and preserves its data members
 - virtual member functions in the ordinary non-template class cases
 - overriding of inherited virtual members by exact signature match in the current class model
 - covariant pointer/reference return overrides when the class hierarchy is in

@@ -213,7 +213,8 @@ PA18 supports the following in addition to the PA17 subset:
 - ordinary lookup and using-declaration behavior for supported templates,
   including repeated using-declarations of the same template and preservation
   of an ordinarily visible function template when hidden non-template friends
-  share its name
+  share its name, and replay of a dependent-base using-declaration that names an
+  enumerator used by another enumerator
 - basic template argument deduction for direct supported function-template calls
   from ordinary argument types, without function-template partial ordering or
   SFINAE

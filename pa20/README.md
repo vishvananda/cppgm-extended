@@ -190,6 +190,10 @@ supported language subset, such as:
   initialization
 - invalid `constexpr` declarations should fail during semantic analysis instead of being
   accepted and only failing later during use
+- an executed declaration whose initializer is not constant invalidates the enclosing
+  constant evaluation even when the declared value is not read
+- a member call on a temporary is constant only when construction of that temporary is
+  itself a valid constant expression
 
 The implementation may support a strict superset of C++11 evaluation rules internally,
 such as local variables, assignment, and loops inside constexpr evaluation. That is fine
