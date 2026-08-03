@@ -171,6 +171,9 @@ running optimizing transforms.
 - conservative inlining of small direct calls, including `unwind=no` callees
   inside EH regions only when the caller EH shape can be preserved; a callee
   containing its own EH instructions must remain a call even at caller EH depth zero
+- preservation of object-parameter copies and isolated return-merge slots and
+  continuations when direct calls with object or nested multi-block callees are
+  inlined
 - removal of no-op EH markers in functions known not to unwind when the
   protected region contains no operation that can transfer to the handler
 - dead-code elimination for unused pure temp-producing instructions
@@ -187,6 +190,10 @@ limited to slots accessed through direct `store` and `load` operations whose
 current value can be tracked without introducing phi nodes. Beyond the direct
 slot cleanup already allowed at `-O1`, `-O2` also removes dead stores to
 promoted slots when no observable load can see the stored value.
+
+Slot-value forwarding and promotion remain an `-O2` responsibility. At `-O1`,
+a live load whose value is consumed along multiple successor paths must remain
+unless an ordinary non-slot propagation rule independently proves each use.
 
 ### Validation Modes
 
