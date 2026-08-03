@@ -123,6 +123,8 @@ bool has_weak_linkage(const SymbolIdentity & symbol);
 std::string mangle_symbol_name(const std::string & text);
 std::string internal_symbol_from_name(const std::string & name);
 bool type_needs_structural_internal_symbol(const cpp_decl::TypePtr & type);
+bool type_needs_structural_vtable_internal_symbol(
+    const cpp_decl::TypePtr & type);
 std::string internal_symbol_from_type_encoding(const std::string & prefix,
                                                const cpp_decl::TypePtr & type);
 std::string thread_local_wrapper_internal_symbol(const std::string & variable_internal_symbol);

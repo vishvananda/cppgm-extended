@@ -5292,7 +5292,7 @@ void append_vtable_output_node(SemanticContext & ctx,
     }
     string internal_symbol =
         symbol_linkage::internal_symbol_from_name(table.key + "::vtable");
-    if(symbol_linkage::type_needs_structural_internal_symbol(rtti_base)) {
+    if(symbol_linkage::type_needs_structural_vtable_internal_symbol(rtti_base)) {
       const string structural_symbol =
           symbol_linkage::internal_symbol_from_type_encoding("__vtable_type",
                                                              rtti_base);
@@ -5403,9 +5403,19 @@ void analyze_vtt_output(SemanticContext & ctx,
   }
 
   DumpNode vtt_node = make_dump_node(CallSemKind::vtt_definition, info.qualified_name);
+  string internal_symbol =
+      symbol_linkage::internal_symbol_from_name(info.qualified_name + "::__vtt");
+  if(info.type &&
+     symbol_linkage::type_needs_structural_vtable_internal_symbol(info.type)) {
+    const string structural_symbol =
+        symbol_linkage::internal_symbol_from_type_encoding("__vtt_type", info.type);
+    if(!structural_symbol.empty()) {
+      internal_symbol = structural_symbol;
+    }
+  }
   set_dump_symbol(vtt_node,
                   symbol_linkage::make_object_symbol_identity(
-                      symbol_linkage::internal_symbol_from_name(info.qualified_name + "::__vtt"),
+                      internal_symbol,
                       vtt_object_symbol,
                       symbol_linkage::SL_WEAK));
   for(size_t i = 0; i < entries.size(); ++i) {

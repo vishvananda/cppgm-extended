@@ -19371,6 +19371,16 @@ static bool type_needs_structural_internal_symbol_impl(
                                                       active_types);
 
   case Type::TK_NAMED:
+    if(const Type::LambdaMangleMetadata * metadata =
+           named_type_lambda_mangle_metadata(base)) {
+      // Named local/unnamed entities need their enclosing ABI context to
+      // distinguish otherwise identical display names.  Lambda display names
+      // already carry their source identity, so keep their established RTTI
+      // LowIR names unless a vtable-specific caller asks for full structure.
+      if(!metadata->local_source_name.empty()) {
+        return true;
+      }
+    }
     active_types.push_back(base.get());
     {
       const bool needs =
@@ -19391,6 +19401,13 @@ bool type_needs_structural_internal_symbol(const TypePtr & type)
 {
   vector<const Type *> active_types;
   return type_needs_structural_internal_symbol_impl(type, active_types);
+}
+
+bool type_needs_structural_vtable_internal_symbol(const TypePtr & type)
+{
+  const TypePtr base = strip_top_level_cv(type);
+  return (base && named_type_lambda_mangle_metadata(base)) ||
+         type_needs_structural_internal_symbol(type);
 }
 
 string internal_symbol_from_type_encoding(const string & prefix,

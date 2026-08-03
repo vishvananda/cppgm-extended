@@ -4797,17 +4797,30 @@ void record_placed_nonvirtual_subobjects(std::vector<SubobjectInfo> & placed,
   }
 }
 
+std::string vtable_class_key(const ClassInfo & info)
+{
+  if(info.type &&
+     symbol_linkage::type_needs_structural_vtable_internal_symbol(info.type)) {
+    std::string encoding;
+    if(symbol_linkage::mangle_itanium_type_encoding(info.type, encoding) &&
+       !encoding.empty()) {
+      return std::string("__vtable_type::") + encoding;
+    }
+  }
+  return class_internal_output_qualified_name(info);
+}
+
 std::string vtable_view_key(const ClassInfo & dynamic_class,
                             const ClassInfo & view_class,
                             size_t offset)
 {
   if(offset == 0) {
-    return class_internal_output_qualified_name(dynamic_class);
+    return vtable_class_key(dynamic_class);
   }
   std::ostringstream out;
-  out << class_internal_output_qualified_name(dynamic_class)
+  out << vtable_class_key(dynamic_class)
       << "::__view__"
-      << class_internal_output_qualified_name(view_class)
+      << vtable_class_key(view_class)
       << "__" << offset;
   return out.str();
 }
@@ -7805,9 +7818,9 @@ std::string construction_vtable_key(const ClassInfo & dynamic_class,
                                     size_t base_offset)
 {
   std::ostringstream out;
-  out << class_internal_output_qualified_name(dynamic_class)
+  out << vtable_class_key(dynamic_class)
       << "::__construction__"
-      << class_internal_output_qualified_name(base_class)
+      << vtable_class_key(base_class)
       << "__"
       << base_offset;
   return out.str();
