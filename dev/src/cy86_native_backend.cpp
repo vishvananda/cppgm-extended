@@ -18,6 +18,9 @@ namespace cy86_internal {
 const int kNativeTemp0Disp = -16;
 const int kNativeTemp1Disp = -32;
 const int kNativeTemp2Disp = -48;
+const uint64_t kNativeCacheLineSize = 64;
+const uint64_t kNativeCodeGuardLines = 2;
+const uint64_t kNativeEntryJumpSize = 5;
 
 ProgramOutputTarget parse_output_target(const string & output_target)
 {
@@ -41,7 +44,9 @@ ProgramOutputTarget parse_output_target(const string & output_target)
 struct NativeLayout
 {
   vector<uint64_t> statement_offsets;
+  vector<uint64_t> statement_body_offsets;
   LabelMap label_vaddrs;
+  LabelMap label_body_vaddrs;
   uint64_t image_base;
   uint64_t entry_offset;
   uint64_t payload_size;
@@ -53,6 +58,37 @@ struct NativeLayout
   {
   }
 };
+
+bool native_direct_control_target(const Operand & operand,
+                                  const LabelMap & body_labels,
+                                  uint64_t * target)
+{
+  if(operand.kind != OPERAND_IMMEDIATE ||
+     operand.expr.base_kind != EB_LABEL ||
+     operand.expr.has_offset) {
+    return false;
+  }
+  LabelMap::const_iterator it = body_labels.find(operand.expr.name);
+  if(it == body_labels.end()) {
+    throw logic_error("unknown native control target: " + operand.expr.name);
+  }
+  *target = it->second;
+  return true;
+}
+
+void patch_native_rel32(X86Assembler & out,
+                        size_t immediate_offset,
+                        uint64_t body_vaddr,
+                        uint64_t target_vaddr)
+{
+  int64_t displacement = static_cast<int64_t>(target_vaddr)
+                       - static_cast<int64_t>(body_vaddr + immediate_offset + 4);
+  if(displacement < INT32_MIN || displacement > INT32_MAX) {
+    throw logic_error("native rel32 control target out of range");
+  }
+  out.patch_u32(immediate_offset,
+                static_cast<uint32_t>(static_cast<int32_t>(displacement)));
+}
 
 NativeTarget native_target_for_output(ProgramOutputTarget target)
 {
@@ -624,21 +660,40 @@ vector<unsigned char> build_native_data_bytes(const Statement & statement,
 void emit_native_opcode(X86Assembler & out,
                         const Statement & statement,
                         const LabelMap & labels,
+                        const LabelMap & body_labels,
+                        uint64_t body_vaddr,
                         NativeTarget target)
 {
   size_t width_bytes = opcode_width_bytes(statement.width_bits);
 
   switch(statement.exec_kind) {
-  case EK_JUMP:
+  case EK_JUMP: {
+    uint64_t direct_target = 0;
+    if(native_direct_control_target(statement.operands[0],
+                                    body_labels,
+                                    &direct_target)) {
+      size_t patch = out.emit_jmp_rel32_placeholder();
+      patch_native_rel32(out, patch, body_vaddr, direct_target);
+      return;
+    }
     emit_native_load_uint_operand(out, statement.operands[0], 8,
                                   XR_RAX, XR_R11, labels);
     out.emit_jmp_r64(XR_RAX);
     return;
+  }
 
   case EK_JUMPIF: {
     emit_native_load_uint_operand(out, statement.operands[0], 1,
                                   XR_RAX, XR_R11, labels);
     out.emit_test_r64_r64(XR_RAX, XR_RAX);
+    uint64_t direct_target = 0;
+    if(native_direct_control_target(statement.operands[1],
+                                    body_labels,
+                                    &direct_target)) {
+      size_t patch = out.emit_jcc_rel32_placeholder(XC_NE);
+      patch_native_rel32(out, patch, body_vaddr, direct_target);
+      return;
+    }
     size_t skip = out.emit_jcc_rel32_placeholder(XC_E);
     emit_native_load_uint_operand(out, statement.operands[1], 8,
                                   XR_RAX, XR_R11, labels);
@@ -647,11 +702,20 @@ void emit_native_opcode(X86Assembler & out,
     return;
   }
 
-  case EK_CALL:
+  case EK_CALL: {
+    uint64_t direct_target = 0;
+    if(native_direct_control_target(statement.operands[0],
+                                    body_labels,
+                                    &direct_target)) {
+      size_t patch = out.emit_call_rel32_placeholder();
+      patch_native_rel32(out, patch, body_vaddr, direct_target);
+      return;
+    }
     emit_native_load_uint_operand(out, statement.operands[0], 8,
                                   XR_RAX, XR_R11, labels);
     out.emit_call_r64(XR_RAX);
     return;
+  }
 
   case EK_RET:
     out.emit_ret();
@@ -991,19 +1055,27 @@ void emit_native_opcode(X86Assembler & out,
 
 vector<unsigned char> build_native_opcode_bytes(const Statement & statement,
                                                 const LabelMap & labels,
+                                                const LabelMap & body_labels,
+                                                uint64_t body_vaddr,
                                                 NativeTarget target)
 {
   X86Assembler out;
-  emit_native_opcode(out, statement, labels, target);
+  emit_native_opcode(out,
+                     statement,
+                     labels,
+                     body_labels,
+                     body_vaddr,
+                     target);
   return out.bytes();
 }
 
 size_t measure_native_opcode_size(const Statement & statement,
                                   const LabelMap & labels,
+                                  const LabelMap & body_labels,
                                   NativeTarget target)
 {
   X86Assembler out(true);
-  emit_native_opcode(out, statement, labels, target);
+  emit_native_opcode(out, statement, labels, body_labels, 0, target);
   return out.size();
 }
 
@@ -1011,11 +1083,13 @@ NativeLayout layout_native_program(const Program & program, NativeTarget target)
 {
   NativeLayout layout;
   layout.statement_offsets.resize(program.statements.size(), 0);
+  layout.statement_body_offsets.resize(program.statements.size(), 0);
   layout.image_base = native_image_base(target);
 
   LabelMap zero_labels;
   zero_labels.reserve(program.labels.size());
   layout.label_vaddrs.reserve(program.labels.size());
+  layout.label_body_vaddrs.reserve(program.labels.size());
   for(size_t i = 0; i < program.statements.size(); ++i) {
     for(size_t j = 0; j < program.statements[i].labels.size(); ++j) {
       zero_labels[program.statements[i].labels[j]] = 0;
@@ -1029,12 +1103,38 @@ NativeLayout layout_native_program(const Program & program, NativeTarget target)
     const Statement & statement = program.statements[i];
     offset = align_up(offset, statement.alignment);
     layout.statement_offsets[i] = offset;
+
+    const bool is_code = statement.kind == SK_OPCODE;
+    const bool after_data = i != 0 &&
+                            is_code &&
+                            program.statements[i - 1].kind != SK_OPCODE;
+    uint64_t body_offset = offset;
+    uint64_t statement_vaddr = layout.image_base + offset;
+    if(after_data && statement_vaddr % kNativeCacheLineSize != 0) {
+      uint64_t body_vaddr = align_up(statement_vaddr + kNativeEntryJumpSize,
+                                     kNativeCacheLineSize);
+      body_offset = body_vaddr - layout.image_base;
+    }
+    layout.statement_body_offsets[i] = body_offset;
+
     for(size_t j = 0; j < statement.labels.size(); ++j) {
       layout.label_vaddrs[statement.labels[j]] = layout.image_base + offset;
+      layout.label_body_vaddrs[statement.labels[j]] =
+          layout.image_base + body_offset;
     }
 
-    if(statement.kind == SK_OPCODE) {
-      offset += measure_native_opcode_size(statement, zero_labels, target);
+    if(is_code) {
+      offset = body_offset + measure_native_opcode_size(statement,
+                                                        zero_labels,
+                                                        zero_labels,
+                                                        target);
+      const bool before_data = i + 1 != program.statements.size() &&
+                               program.statements[i + 1].kind != SK_OPCODE;
+      if(before_data) {
+        uint64_t end_vaddr = layout.image_base + offset;
+        offset += align_up(end_vaddr, kNativeCacheLineSize) - end_vaddr;
+        offset += kNativeCodeGuardLines * kNativeCacheLineSize;
+      }
     } else {
       offset += statement.size;
     }
@@ -1042,12 +1142,24 @@ NativeLayout layout_native_program(const Program & program, NativeTarget target)
 
   layout.payload_size = offset;
   if(program.has_entry) {
-    LabelMap::const_iterator start = layout.label_vaddrs.find("start");
-    layout.entry_offset = start == layout.label_vaddrs.end()
-        ? layout.statement_offsets.front()
+    LabelMap::const_iterator start = layout.label_body_vaddrs.find("start");
+    layout.entry_offset = start == layout.label_body_vaddrs.end()
+        ? layout.statement_body_offsets.front()
         : start->second - layout.image_base;
   }
   return layout;
+}
+
+void write_native_u32(vector<unsigned char> & bytes,
+                      size_t offset,
+                      uint32_t value)
+{
+  if(offset + 4 > bytes.size()) {
+    throw logic_error("native payload patch out of range");
+  }
+  for(size_t i = 0; i < 4; ++i) {
+    bytes[offset + i] = static_cast<unsigned char>(value >> (8 * i));
+  }
 }
 
 vector<unsigned char> build_native_payload(const Program & program,
@@ -1063,12 +1175,35 @@ vector<unsigned char> build_native_payload(const Program & program,
 
   for(size_t i = 0; i < program.statements.size(); ++i) {
     const Statement & statement = program.statements[i];
-    vector<unsigned char> bytes = statement.kind == SK_OPCODE
-        ? build_native_opcode_bytes(statement, layout.label_vaddrs, target)
+    const bool is_code = statement.kind == SK_OPCODE;
+    const uint64_t statement_offset = layout.statement_offsets[i];
+    const uint64_t body_offset = layout.statement_body_offsets[i];
+    if(is_code && body_offset != statement_offset) {
+      uint64_t jump_end = statement_offset + kNativeEntryJumpSize;
+      uint64_t displacement = body_offset - jump_end;
+      if(displacement > static_cast<uint64_t>(INT32_MAX)) {
+        throw logic_error("native entry sled target out of range");
+      }
+      payload[statement_offset] = 0xE9;
+      write_native_u32(payload,
+                       statement_offset + 1,
+                       static_cast<uint32_t>(displacement));
+    }
+
+    vector<unsigned char> bytes = is_code
+        ? build_native_opcode_bytes(statement,
+                                    layout.label_vaddrs,
+                                    layout.label_body_vaddrs,
+                                    layout.image_base + body_offset,
+                                    target)
         : build_native_data_bytes(statement, layout.label_vaddrs);
+    const uint64_t destination = is_code ? body_offset : statement_offset;
+    if(destination + bytes.size() > payload.size()) {
+      throw logic_error("native statement exceeds payload layout");
+    }
     copy(bytes.begin(),
          bytes.end(),
-         payload.begin() + layout.statement_offsets[i]);
+         payload.begin() + destination);
   }
 
   return payload;
