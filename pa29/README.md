@@ -143,7 +143,8 @@ For PA29, object files are identified by implementation-supported object-like
 filenames such as `.o` or `.obj`. The checked-in tests use `.obj`.
 
 `-I` adds user include search paths for any C++ source files compiled in that
-invocation. The tests use `-I` with quoted includes.
+invocation. These paths apply to quoted and angle-bracket includes and are
+searched before compiler-provided shim include paths.
 
 `-L` and `-l` search implementation-supported object-like libraries. The tests use simple helper objects named like `lib<name>.o` in a harness-created
 library directory.
@@ -175,7 +176,8 @@ with failure.
 
 Important PA29 error cases include:
 
-- duplicate global symbol definitions
+- duplicate global symbol definitions, including definitions imported from
+  separate helper objects or libraries
 - unresolved external symbols
 - missing `main`
 

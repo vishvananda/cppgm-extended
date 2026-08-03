@@ -5,6 +5,13 @@ typedef void (*terminate_handler)();
 terminate_handler set_terminate(terminate_handler) noexcept;
 }  // namespace std
 
+void throw_int();
+
+void no_escape() noexcept
+{
+  throw_int();
+}
+
 void mark_terminate()
 {
   _Exit(7);
@@ -13,11 +20,6 @@ void mark_terminate()
 void throw_int()
 {
   throw 1;
-}
-
-void no_escape() noexcept
-{
-  throw_int();
 }
 
 int main()

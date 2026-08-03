@@ -178,7 +178,8 @@ To complete PA25, implement these goals:
 1. Capturing lambda lowering.
    Explicit by-copy captures should materialize deterministic closure-object LowIR and the
    resulting closure object should be callable through the existing class/method lowering
-   path.
+   path. A catch parameter declared inside a lambda body is local to that body and is not an
+   implicit capture.
 
 2. `std::initializer_list` interoperation.
    Supported braced-list calls should materialize deterministic lowered storage and expose

@@ -231,6 +231,7 @@ PA18 supports the following in addition to the PA17 subset:
   out-of-class member-definition bodies, including definition-time rejection
   of a declaration that redeclares an active template parameter even when the
   member is never instantiated
+- definition-time semantic checking of unused qualified inline member bodies
 - compatible function-template declarations and definitions in either order
 - dependent-base lookup provenance attached to the particular base-specifier,
   so a nested class with a fixed base keeps ordinary base lookup and a local
