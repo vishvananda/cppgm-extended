@@ -1,5 +1,25 @@
 # Fable and Mini Test Intake Plan
 
+## First-Pass Status
+
+The PA10-through-PA38 intake pass completed on 2026-08-02. The tracker contains
+505 logical families and no remaining `needs-evidence`, `needs-reduction`, or
+`ready` rows. Of those families, 220 were intaked; 63 remain documented as
+current compiler bugs and two as unreferenceable contracts. The 59 PA1-through-
+PA9 families remain deferred to the separately planned second pass.
+
+Canonical references came from this repository's normal Homebrew-Clang-built
+`dev/` binaries, which are the student reference binaries on export. The final
+tree still matches the frozen `dev/` source at
+`b40c7e61724380e8ad1be3a67501323c42ecff3f`; no production compiler source was
+changed during intake.
+
+The final root report passed 4603 of 4605 tests under full assignment
+parallelism. Its only misses were the known load-sensitive PA3 and PA9
+timeouts; a serial rerun of those assignments passed 30 of 30. All focused,
+placement, owning-assignment, hosted, LowIR optimizer, and machine optimizer
+gates recorded in the tracker passed.
+
 ## Scope
 
 Use the Fable and Mini run repositories as evidence sources for new regression
