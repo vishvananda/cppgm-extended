@@ -1,0 +1,104 @@
+function @library__both(%left : ptr [pass=reference], %right : ptr [pass=reference]) -> u8 [binding=strong, object=_ZN7library4bothERKNS_5matchES2_] {
+  slot $left : ptr
+  slot $right : ptr
+  slot $land__1 : i64
+
+  block ^entry:
+    store ptr %left, $left
+    store ptr %right, $right
+    %t1 = load ptr $left
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = call i64 @library__safe_bool_library__match___operatorbool_type(%t2)
+    branch %t3, ^land_rhs_1, ^land_short_2
+
+  block ^land_rhs_1:
+    %t4 = load ptr $right
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t6 = call i64 @library__safe_bool_library__match___operatorbool_type(%t5)
+    %t7 = cmp ne i64 %t6, 0
+    store i64 %t7, $land__1
+    jump ^land_end_3
+
+  block ^land_short_2:
+    store i64 0, $land__1
+    jump ^land_end_3
+
+  block ^land_end_3:
+    %t8 = load i64 $land__1
+    return u8 %t8
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+  slot $arg__2 : obj<8x4>
+  slot $arg__3 : obj<8x4>
+
+  block ^entry:
+    %t1 = addr $arg__2
+    call void @library__match__match(%t1, 1)
+    %t2 = addr $arg__3
+    call void @library__match__match(%t2, 1)
+    %t3 = call u8 @library__both(%t1, %t2)
+    branch %t3, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t4 = load i32 $cond__1
+    return i32 %t4
+}
+function @library__safe_bool_library__match___operatorbool_type(%this : ptr) -> i64 [binding=weak, object=_ZNK7library9safe_boolINS_5matchEEcvMN7library5matchEiEv] {
+  slot $this : ptr
+  slot $cond__1 : i64
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = call u8 @library__match__valid(%t1)
+    branch %t2, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    %t3 = const i64 1
+    store i64 %t3, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i64 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t4 = load i64 $cond__1
+    return i64 %t4
+}
+function @library__match__match(%this : ptr, %value : u8) -> void [binding=weak, object=_ZN7library5matchC1Eb] {
+  slot $this : ptr
+  slot $value : u8
+
+  block ^entry:
+    store ptr %this, $this
+    store u8 %value, $value
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    %t3 = load u8 $value
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 4
+    store u8 %t3, %t5
+    return void
+}
+function @library__match__valid(%this : ptr) -> u8 [binding=weak, object=_ZNK7library5match5validEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 4
+    %t3 = load u8 %t2
+    return u8 %t3
+}
+alias object _ZN7library5matchC2Eb = @library__match__match

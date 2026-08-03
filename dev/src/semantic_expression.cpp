@@ -8307,6 +8307,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
     throw logic_error(deferred_operator_builtin_fallback_error);
   }
   if(deferred_operator_builtin_fallback &&
+     !selected_builtin_class_conversion &&
      (has_non_enum_class_value_type(lhs) || has_non_enum_class_value_type(rhs)) &&
      !legal_builtin_comma_fallback) {
     if(parser_trace::enabled("overload")) {
