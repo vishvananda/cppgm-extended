@@ -8178,8 +8178,10 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
 
   bool selected_builtin_class_conversion = false;
   if(have_rhs) {
-    const bool preserve_builtin_comma_operands =
-        node_has_simple_type(node, OP_COMMA);
+    const bool preserve_builtin_operands =
+        node_has_simple_type(node, OP_COMMA) ||
+        node_has_simple_type(node, OP_LAND) ||
+        node_has_simple_type(node, OP_LOR);
     ArgumentConversionOptions builtin_probe_options =
         semantic_policy::without_user_defined_body_instantiation();
     builtin_probe_options.materialize_user_defined_output = false;
@@ -8189,7 +8191,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
     ExprInfo builtin_rhs_probe = rhs;
     vector<ConversionRank> builtin_ranks;
     const bool builtin_probe_ok =
-        (preserve_builtin_comma_operands ||
+        (preserve_builtin_operands ||
          try_builtin_binary_class_conversions(builtin_lhs_probe,
                                               builtin_rhs_probe,
                                               &builtin_ranks,
@@ -8231,7 +8233,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
                                ctx.source_location_for_node(node),
                                trace.str());
           }
-          if(!preserve_builtin_comma_operands &&
+          if(!preserve_builtin_operands &&
              !try_builtin_binary_class_conversions(
                  lhs,
                  rhs,
@@ -8250,7 +8252,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           return overloaded_result;
         }
       } else if(!deferred_shift_rhs) {
-        if(!preserve_builtin_comma_operands &&
+        if(!preserve_builtin_operands &&
            !try_builtin_binary_class_conversions(
                lhs,
                rhs,
@@ -8277,7 +8279,9 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
     if(deferred_shift_rhs) {
       throw logic_error(deferred_shift_rhs_error);
     }
-    if(!node_has_simple_type(node, OP_COMMA)) {
+    if(!node_has_simple_type(node, OP_COMMA) &&
+       !node_has_simple_type(node, OP_LAND) &&
+       !node_has_simple_type(node, OP_LOR)) {
       try_builtin_binary_class_conversions(
           lhs,
           rhs,
