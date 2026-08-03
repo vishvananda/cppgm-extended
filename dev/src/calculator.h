@@ -1,11 +1,10 @@
 #pragma once
 
 #include <climits>
+#include <cstddef>
 #include <cstdint>
-#include <deque>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 #include "pptokenizer.h"
@@ -261,22 +260,17 @@ protected:
   inline void acc_int_literal(const std::string& data);
   inline void acc_preprocessing_op_or_punc(const std::string& data);
   inline void acc_quote_literal(const std::string& data);
-  inline CalcToken ternary(
-      std::vector<std::unordered_set<ECalcTokenType,
-                                     std::hash<int> > >::iterator it);
-  inline CalcToken get_result(
-      std::vector<std::unordered_set<ECalcTokenType,
-                                     std::hash<int> > >::iterator it);
-  inline CalcToken binary(std::vector<std::unordered_set<ECalcTokenType,
-                          std::hash<int> > >::iterator it);
+  inline CalcToken ternary();
+  inline CalcToken binary(int minimum_precedence);
   inline CalcToken unary();
   inline void next();
+  inline ECalcTokenType current_type() const;
   inline CalcToken reduce();
   inline void store_unsigned(std::uintmax_t value);
   inline void store_signed(std::intmax_t value);
   inline void store_symbol(ECalcTokenType symbol);
 
-  std::deque<CalcToken> tokens;
-  CalcToken token;
+  std::vector<CalcToken> tokens;
+  std::size_t token_index = 0;
   std::string error;
 };

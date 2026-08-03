@@ -1,9 +1,6 @@
 #include <iostream>
 #include <cstdint>
 #include <stdexcept>
-#include <unordered_map>
-#include <deque>
-#include <typeinfo>
 
 using namespace std;
 
@@ -11,106 +8,106 @@ using namespace std;
 #include "types.h"
 #include "calculator.h"
 
-const unordered_map<string, ECalcTokenType> StringToCalcTokenTypeMap =
+namespace {
+
+bool calc_token_type(const string & data, ECalcTokenType & type)
 {
-  // primary
-  {"(", CT_LPAREN},
-  {")", CT_RPAREN},
+  if(data.size() == 1) {
+    switch(data[0]) {
+    case '(': type = CT_LPAREN; return true;
+    case ')': type = CT_RPAREN; return true;
+    case '!': type = CT_LNOT; return true;
+    case '~': type = CT_COMPL; return true;
+    case '*': type = CT_STAR; return true;
+    case '/': type = CT_DIV; return true;
+    case '%': type = CT_MOD; return true;
+    case '+': type = CT_PLUS; return true;
+    case '-': type = CT_MINUS; return true;
+    case '<': type = CT_LT; return true;
+    case '>': type = CT_GT; return true;
+    case '&': type = CT_AMP; return true;
+    case '^': type = CT_XOR; return true;
+    case '|': type = CT_BOR; return true;
+    case '?': type = CT_QMARK; return true;
+    case ':': type = CT_COLON; return true;
+    default: return false;
+    }
+  }
+  if(data.size() == 2) {
+    if(data == "<<") type = CT_LSHIFT;
+    else if(data == ">>") type = CT_RSHIFT;
+    else if(data == "<=") type = CT_LE;
+    else if(data == ">=") type = CT_GE;
+    else if(data == "==") type = CT_EQ;
+    else if(data == "!=") type = CT_NE;
+    else if(data == "&&") type = CT_LAND;
+    else if(data == "||") type = CT_LOR;
+    else if(data == "or") type = CT_LOR;
+    else return false;
+    return true;
+  }
+  if(data == "not") type = CT_LNOT;
+  else if(data == "compl") type = CT_COMPL;
+  else if(data == "not_eq") type = CT_NE;
+  else if(data == "bitand") type = CT_AMP;
+  else if(data == "xor") type = CT_XOR;
+  else if(data == "bitor") type = CT_BOR;
+  else if(data == "and") type = CT_LAND;
+  else return false;
+  return true;
+}
 
-  // unary
-  {"!", CT_LNOT},
-  {"not", CT_LNOT},
-  {"~", CT_COMPL},
-  {"compl", CT_COMPL},
-  // CT_PLUS
-  // CT_MINUS
-
-  // multiplicative
-  {"*", CT_STAR},
-  {"/", CT_DIV},
-  {"%", CT_MOD},
-
-  // additative
-  {"+", CT_PLUS},
-  {"-", CT_MINUS},
-
-  // shift
-  {"<<", CT_LSHIFT},
-  {">>", CT_RSHIFT},
-
-  // relational
-  {"<", CT_LT},
-  {">", CT_GT},
-  {"<=", CT_LE},
-  {">=", CT_GE},
-
-  // equality
-  {"==", CT_EQ},
-  {"!=", CT_NE},
-  {"not_eq", CT_NE},
-
-  // and
-  {"&", CT_AMP},
-  {"bitand", CT_AMP},
-
-  // xor
-  {"^", CT_XOR},
-  {"xor", CT_XOR},
-
-  // or
-  {"|", CT_BOR},
-  {"bitor", CT_BOR},
-
-  // land
-  {"&&", CT_LAND},
-  {"and", CT_LAND},
-
-  // lor
-  {"||", CT_LOR},
-  {"or", CT_LOR},
-
-  // controlling
-  {"?", CT_QMARK},
-  {":", CT_COLON},
-};
-
-typedef CalcToken & (CalcToken::*token_op)(const CalcToken&);
-
-unordered_map<ECalcTokenType, token_op, hash<int> > TypeToOpMap =
+int binary_precedence(ECalcTokenType type)
 {
-  {CT_LOR, &CalcToken::lor},
-  {CT_LAND, &CalcToken::land},
-  {CT_EQ, &CalcToken::eq},
-  {CT_NE, &CalcToken::ne},
-  {CT_LT, &CalcToken::lt},
-  {CT_GT, &CalcToken::gt},
-  {CT_LE, &CalcToken::le},
-  {CT_GE, &CalcToken::ge},
-  {CT_BOR, &CalcToken::operator|=},
-  {CT_XOR, &CalcToken::operator^=},
-  {CT_AMP, &CalcToken::operator&=},
-  {CT_LSHIFT, &CalcToken::operator<<=},
-  {CT_RSHIFT, &CalcToken::operator>>=},
-  {CT_PLUS, &CalcToken::operator+=},
-  {CT_MINUS, &CalcToken::operator-=},
-  {CT_STAR, &CalcToken::operator*=},
-  {CT_DIV, &CalcToken::operator/=},
-  {CT_MOD, &CalcToken::operator%=}
-};
+  switch(type) {
+  case CT_LOR: return 1;
+  case CT_LAND: return 2;
+  case CT_BOR: return 3;
+  case CT_XOR: return 4;
+  case CT_AMP: return 5;
+  case CT_EQ:
+  case CT_NE: return 6;
+  case CT_LT:
+  case CT_GT:
+  case CT_LE:
+  case CT_GE: return 7;
+  case CT_LSHIFT:
+  case CT_RSHIFT: return 8;
+  case CT_PLUS:
+  case CT_MINUS: return 9;
+  case CT_STAR:
+  case CT_DIV:
+  case CT_MOD: return 10;
+  default: return 0;
+  }
+}
 
-vector<unordered_set<ECalcTokenType, hash<int> > > BinaryOps =
+void apply_binary(CalcToken & lhs, ECalcTokenType type, const CalcToken & rhs)
 {
-  {CT_LOR},
-  {CT_LAND},
-  {CT_BOR},
-  {CT_XOR},
-  {CT_AMP},
-  {CT_EQ, CT_NE},
-  {CT_LT, CT_GT, CT_LE, CT_GE},
-  {CT_LSHIFT, CT_RSHIFT},
-  {CT_PLUS, CT_MINUS},
-  {CT_STAR, CT_DIV, CT_MOD}
-};
+  switch(type) {
+  case CT_LOR: lhs.lor(rhs); break;
+  case CT_LAND: lhs.land(rhs); break;
+  case CT_EQ: lhs.eq(rhs); break;
+  case CT_NE: lhs.ne(rhs); break;
+  case CT_LT: lhs.lt(rhs); break;
+  case CT_GT: lhs.gt(rhs); break;
+  case CT_LE: lhs.le(rhs); break;
+  case CT_GE: lhs.ge(rhs); break;
+  case CT_BOR: lhs |= rhs; break;
+  case CT_XOR: lhs ^= rhs; break;
+  case CT_AMP: lhs &= rhs; break;
+  case CT_LSHIFT: lhs <<= rhs; break;
+  case CT_RSHIFT: lhs >>= rhs; break;
+  case CT_PLUS: lhs += rhs; break;
+  case CT_MINUS: lhs -= rhs; break;
+  case CT_STAR: lhs *= rhs; break;
+  case CT_DIV: lhs /= rhs; break;
+  case CT_MOD: lhs %= rhs; break;
+  default: throw logic_error("invalid calculator binary operator");
+  }
+}
+
+}  // namespace
 
 Calculator::Calculator()
 {}
@@ -118,7 +115,7 @@ Calculator::Calculator()
 void Calculator::reset()
 {
   tokens.clear();
-  token = CalcToken();
+  token_index = 0;
   error.clear();
 }
 
@@ -201,9 +198,9 @@ bool Calculator::try_calculate(string& error_out)
 
 inline void Calculator::acc_identifier(const string& data)
 {
-  auto it = StringToCalcTokenTypeMap.find(data);
-  if(it != StringToCalcTokenTypeMap.end()) {
-    store_symbol(it->second);
+  ECalcTokenType type;
+  if(calc_token_type(data, type)) {
+    store_symbol(type);
   } else if(data == "true") {
     store_signed(1);
   } else {
@@ -232,9 +229,9 @@ inline void Calculator::acc_int_literal(const string& data)
 
 inline void Calculator::acc_preprocessing_op_or_punc(const string& data)
 {
-  auto it = StringToCalcTokenTypeMap.find(data);
-  if(it != StringToCalcTokenTypeMap.end()) {
-    store_symbol(it->second);
+  ECalcTokenType type;
+  if(calc_token_type(data, type)) {
+    store_symbol(type);
   } else {
     error = string("Illegal symbol: ") + data;
   }
@@ -270,18 +267,17 @@ inline void Calculator::acc_quote_literal(const string& data)
   }
 }
 
-inline CalcToken Calculator::ternary(
-    vector<unordered_set<ECalcTokenType, hash<int> > >::iterator it)
+inline CalcToken Calculator::ternary()
 {
   CalcToken result, lhs, rhs;
-  result = binary(it);
-  if(token.type == CT_QMARK) {
+  result = binary(1);
+  if(current_type() == CT_QMARK) {
     next();
-    lhs = ternary(it);
-    if(token.type != CT_COLON)
+    lhs = ternary();
+    if(current_type() != CT_COLON)
         throw(expr_error("Missing colon in ternary operation"));
     next();
-    rhs = ternary(it);
+    rhs = ternary();
     if(result.value.signed_value)
       result = lhs;
     else
@@ -292,25 +288,17 @@ inline CalcToken Calculator::ternary(
   return result;
 }
 
-inline CalcToken Calculator::get_result(
-    vector<unordered_set<ECalcTokenType, hash<int> > >::iterator it)
+inline CalcToken Calculator::binary(int minimum_precedence)
 {
-  if(it + 1 != BinaryOps.end())
-    return binary(it + 1);
-  else
-    return unary();
-}
-
-inline CalcToken Calculator::binary(
-    vector<unordered_set<ECalcTokenType, hash<int> > >::iterator it)
-{
-  CalcToken result, rhs;
-  result = get_result(it);
-  for(auto op = token.type; it->count(op); op = token.type) {
+  CalcToken result = unary();
+  for(;;) {
+    const ECalcTokenType op = current_type();
+    const int precedence = binary_precedence(op);
+    if(precedence < minimum_precedence)
+      break;
     next();
-    rhs = get_result(it);
-    auto method = TypeToOpMap.at(op);
-    (result.*method)(rhs);
+    const CalcToken rhs = binary(precedence + 1);
+    apply_binary(result, op, rhs);
   }
   return result;
 }
@@ -318,7 +306,7 @@ inline CalcToken Calculator::binary(
 inline CalcToken Calculator::unary()
 {
   CalcToken result;
-  auto op = token.type;
+  const ECalcTokenType op = current_type();
   if(op == CT_LNOT || op == CT_COMPL || op == CT_PLUS || op == CT_MINUS) {
     next();
     result = unary();
@@ -331,14 +319,14 @@ inline CalcToken Calculator::unary()
     }
   } else if(op == CT_LPAREN) {
     next();
-    result = ternary(BinaryOps.begin());
-    if(token.type !=  CT_RPAREN)
+    result = ternary();
+    if(current_type() != CT_RPAREN)
       throw(expr_error("Unmatched left paren"));
     next();
   } else if(op == CT_RPAREN) {
     throw(expr_error("Unmatched right paren"));
   } else if(op == INT_SIGNED || op == INT_UNSIGNED) {
-    result = tokens.front();
+    result = tokens[token_index];
     next();
   } else {
     throw(expr_error("Expected primary expression"));
@@ -348,20 +336,21 @@ inline CalcToken Calculator::unary()
 
 inline void Calculator::next()
 {
-  if(tokens.empty())
+  if(token_index >= tokens.size())
     throw expr_error("Not enough arguments for operator");
-  tokens.pop_front();
-  if(tokens.empty())
-    token = CalcToken();
-  else
-    token = tokens.front();
+  ++token_index;
+}
+
+inline ECalcTokenType Calculator::current_type() const
+{
+  return token_index < tokens.size() ? tokens[token_index].type : CT_END;
 }
 
 inline CalcToken Calculator::reduce()
 {
-  token = tokens.front();
-  CalcToken result = ternary(BinaryOps.begin());
-  if(token.type != CT_END) {
+  token_index = 0;
+  CalcToken result = ternary();
+  if(current_type() != CT_END) {
     throw expr_error("Unexpected trailing tokens");
   }
   return result;

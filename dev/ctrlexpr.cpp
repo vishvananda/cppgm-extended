@@ -6,6 +6,7 @@ using namespace std;
 
 #include "calculator.h"
 #include "pptokenizer.h"
+#include "tool_stdin.h"
 
 struct DebugRunner : IPPTokenStream
 {
@@ -131,11 +132,12 @@ int main(int argc, char** argv)
 {
   (void)argc;
   (void)argv;
-  cin.sync_with_stdio(false);
-  cin.tie(nullptr);
   cerr << nounitbuf;
+  const string input = read_all_stdin();
+  MemoryInputBuffer input_buffer(input);
   DebugRunner runner;
-  PPTokenizer tokenizer(cin.rdbuf());
+  runner.stdout_buffer.reserve(input.size() / 4);
+  PPTokenizer tokenizer(&input_buffer);
   try {
     stream_pp_tokens(tokenizer, runner);
   } catch (exception& e) {
