@@ -665,11 +665,20 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         hits = audit.detect_features(
             "__attribute__((weak)) int value;\n"
             "__attribute__((section(\"data\"))) int placed;\n"
+            "__attribute__((visibility(\"default\"))) int exported;\n"
             "__attribute__((noinline)) int function();\n",
             test_path="pa32/tests/general/200-object-attributes.t",
         )
         self.assertIn("host.object_attribute", hits)
         self.assertNotIn("support.attribute", hits)
+
+    def test_visibility_attribute_outside_pa32_retains_pa34_owner(self) -> None:
+        hits = audit.detect_features(
+            "__attribute__((visibility(\"default\"))) int exported;\n",
+            test_path="pa21/tests/general/300-attribute.t",
+        )
+        self.assertNotIn("host.object_attribute", hits)
+        self.assertIn("support.attribute", hits)
 
     def test_pa32_host_object_anchor_is_an_explicit_layer_assertion(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:

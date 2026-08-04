@@ -2,33 +2,17 @@
 
 namespace library
 {
-template<class T>
 struct parser {};
 
-template<class A, class B>
-int operator&&(parser<A> const&, parser<B> const&);
+int operator&&(parser const&, parser const&);
 
-template<class Derived>
-struct safe_bool
+struct match
 {
-  typedef int Derived::* bool_type;
-
-  operator bool_type() const
-  {
-    return static_cast<Derived const*>(this)->valid()
-        ? &Derived::marker
-        : 0;
-  }
-};
-
-struct match : safe_bool<match>
-{
-  int marker;
   bool state;
 
-  explicit match(bool value) : marker(0), state(value) {}
+  explicit match(bool value) : state(value) {}
 
-  bool valid() const
+  operator bool() const
   {
     return state;
   }

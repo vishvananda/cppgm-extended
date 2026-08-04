@@ -147,6 +147,7 @@ LATE_PLACEMENT_ANCHOR_FEATURES = {
     "host.object_interop",
 }
 HOST_OBJECT_ATTRIBUTE_NAMES = {"noinline", "section", "weak"}
+PA32_HOST_OBJECT_ATTRIBUTE_NAMES = HOST_OBJECT_ATTRIBUTE_NAMES | {"visibility"}
 
 # PA10-PA12 consume C++ source but stop at AST, type/scope, or call-semantic
 # output.  A declaration can therefore contain a class, array, template, or
@@ -1132,13 +1133,18 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
     )
     if host_object_attributes:
         host_object_attribute_names = set(host_object_attributes)
-        recognized = sorted(host_object_attribute_names & HOST_OBJECT_ATTRIBUTE_NAMES)
+        recognized_names = (
+            PA32_HOST_OBJECT_ATTRIBUTE_NAMES
+            if test_path.startswith("pa32/tests/")
+            else HOST_OBJECT_ATTRIBUTE_NAMES
+        )
+        recognized = sorted(host_object_attribute_names & recognized_names)
         if recognized:
             hits["host.object_attribute"] = FeatureHit(
                 "host.object_attribute",
                 [f"source:__attribute__(({name}))" for name in recognized],
             )
-        if host_object_attribute_names <= HOST_OBJECT_ATTRIBUTE_NAMES:
+        if host_object_attribute_names <= recognized_names:
             hits.pop("support.attribute", None)
         if (
             test_path.startswith("pa32/tests/")

@@ -1,19 +1,19 @@
 # Boost B2 Frontier V2 Reopened Suites Tracker
 
-This tracker is intentionally separate from
-`docs/boost-b2-frontier-v2-tracker.md`. It records the independent validation
-of the three V2 suites that were previously blocked by missing host
-dependencies, so the results can be merged into the canonical tracker without
-interleaving with its active suite cursor.
+This tracker records the independent validation of the three V2 suites that
+were previously blocked by missing host dependencies. The completed results
+are now merged into `docs/boost-b2-frontier-v2-tracker.md`.
 
 ## Isolation
 
 - branch: `boost-frontier-v2-test-intake`
 - starting commit: `3373a8dcc`
-- finalized upstream base: `222a0ab0f`
+- original finalized upstream base: `222a0ab0f`
+- final rebased upstream base: `459f087e3`
 - compiler under test:
   `/Users/vishvananda/cppgm-test-intake/dev/cppgm++`
-- final compiler commit: `58d4643c9`
+- measured pre-rebase compiler commit: `58d4643c9`
+- rebased specialization/SFINAE fix: `853d33cfa`
 - host compiler: Homebrew Clang 22.1.0 at
   `/usr/local/opt/llvm/bin/clang++`
 - Boost tree: `/Users/vishvananda/boost_1_91_0`
@@ -21,8 +21,7 @@ interleaving with its active suite cursor.
 - logs: `/private/tmp/cppgm-boost-reopened-v2/logs`
 - B2 configuration:
   `/private/tmp/cppgm-boost-reopened-v2-user-config.jam`
-- canonical tracker policy: unchanged until these independent rows are ready
-  to merge
+- canonical tracker merge: complete for suites 51, 57, and 68
 
 Every credited run uses an isolated `--build-dir`, `-a`, `pch=off`, forced
 C++11, `CPPGM_B2_CXX` pinned to this worktree's absolute compiler path, and
@@ -172,5 +171,26 @@ validation and performance ladder follows `docs/boost-b2-frontier-v2-plan.md`.
   scans. The frozen three-run performance gate passes at -36.80%
   instructions, -44.35% maximum RSS, and -41.43% peak footprint
   (`/private/tmp/cppgm-boost-reopened-v2/perf-final-mpi.json`). All three
-  reopened suites are now closed; the canonical V2 tracker remains unchanged
-  for later merge.
+  reopened suites are now closed.
+- `2026-08-04`: Rebased the lane onto final frontier commit `459f087e3` and
+  rebuilt incrementally with Homebrew Clang 22. The hard placement audit
+  scanned 2,987 tests across every PA changed by the rebase plus PA29. It found
+  an overbuilt PA16 logical-conversion reducer, a header-free template
+  integration case placed late in PA34, and a PA32 host-object `visibility`
+  false positive. The first test was reduced to PA16's conversion-operator
+  owner, the second moved to PA23:500, and the narrowed PA32 rule clears the
+  false positive. All 37 placement-audit unit tests pass, and the PA23/PA34
+  direct-LowIR report passes 860/860.
+- `2026-08-04`: The post-rebase direct-LowIR report passed 4,763 of 4,764 tests.
+  Its only mismatch was a stale PA14 reference for static global address
+  lowering after upstream commit `73ba41b79`. Regenerating that one reference
+  from this tree's `dev/cppgm++` makes the focused PA14 report pass 108/108.
+  The user waived a second full report.
+- `2026-08-04`: The focused MPI sanity check compiled `broadcast.cpp`,
+  `cartesian_communicator.cpp`, and `graph_communicator.cpp` in 8.46s, 8.22s,
+  and 8.81s with zero swaps. Rebased commit `9b3411f9b` owns the reported
+  `check_const_loading<const boost::mpi::content>` repair: declaration-only
+  explicit specializations no longer acquire the primary body. Commit
+  `853d33cfa` supplies the later external specialization-output and ambiguous
+  inherited-member SFINAE fixes. The canonical tracker now records the three
+  reopened suite passes.

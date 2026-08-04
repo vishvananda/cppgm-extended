@@ -1,0 +1,11 @@
+declare function @B_H___operator__(%arg0 : ptr) -> void [binding=weak, object=_ZN1BI1HEclEv]
+
+function @use(%value : ptr [pass=reference]) -> void [binding=strong, object=_Z3useR1BI1HE] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    call void @B_H___operator__(%t1)
+    return void
+}
