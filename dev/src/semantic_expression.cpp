@@ -2666,18 +2666,29 @@ bool try_overloaded_unary_operator(SemanticContext & ctx,
         }
         if(node_has_simple_type(node, OP_PLUS) ||
            node_has_simple_type(node, OP_MINUS) ||
-           node_has_simple_type(node, OP_COMPL)) {
+           node_has_simple_type(node, OP_COMPL) ||
+           node_has_simple_type(node, OP_STAR)) {
           ArgumentConversionOptions builtin_probe_options =
               semantic_policy::without_user_defined_body_instantiation();
           builtin_probe_options.materialize_user_defined_output = false;
           builtin_probe_options.materialize_standard_adjustments = false;
           ExprInfo converted_probe;
-          if(try_builtin_unary_class_conversion(ctx,
-                                                scope,
-                                                node,
-                                                operand,
-                                                converted_probe,
-                                                builtin_probe_options)) {
+          if(node_has_simple_type(node, OP_STAR)) {
+            TypePtr pointer_type;
+            if(try_builtin_pointer_operand_conversion(ctx,
+                                                      scope,
+                                                      operand,
+                                                      converted_probe,
+                                                      pointer_type,
+                                                      builtin_probe_options)) {
+              return true;
+            }
+          } else if(try_builtin_unary_class_conversion(ctx,
+                                                       scope,
+                                                       node,
+                                                       operand,
+                                                       converted_probe,
+                                                       builtin_probe_options)) {
             return true;
           }
         }
@@ -6888,6 +6899,18 @@ ExprInfo analyze_unary_expression(SemanticContext & ctx,
     result.category = VC_PRVALUE;
   } else if(node_has_simple_type(node, OP_STAR)) {
     TypePtr operand_type = value_conversion_type(operand);
+    if(!operand_type || operand_type->kind != Type::TK_POINTER) {
+      ExprInfo converted_operand;
+      TypePtr converted_pointer_type;
+      if(try_builtin_pointer_operand_conversion(ctx,
+                                                scope,
+                                                operand,
+                                                converted_operand,
+                                                converted_pointer_type)) {
+        operand = converted_operand;
+        operand_type = converted_pointer_type;
+      }
+    }
     if(!operand_type || operand_type->kind != Type::TK_POINTER) {
       throw logic_error("indirection requires pointer");
     }
