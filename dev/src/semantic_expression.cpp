@@ -1685,6 +1685,21 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
                                           *qualified,
                                           operand_node,
                                           &qualifier_type);
+  // A lazy class lookup can expose a field before its final offset is known.
+  // Member-pointer constants encode that offset immediately, so refresh the
+  // binding after completing the owning layout.
+  if(value_binding &&
+     value_binding->kind == ValueBinding::VK_FIELD &&
+     value_binding->owner_class &&
+     value_binding->owner_class->type &&
+     !value_binding->owner_class->type->named_has_layout) {
+    ctx.complete_class_type(value_binding->owner_class->type);
+    value_binding = lookup_qualified_value_binding_node(ctx,
+                                                        scope,
+                                                        *qualified,
+                                                        operand_node,
+                                                        &qualifier_type);
+  }
   ValueBinding retained_value_binding;
   if(value_binding) {
     retained_value_binding = *value_binding;
