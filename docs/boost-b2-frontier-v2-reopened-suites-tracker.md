@@ -33,8 +33,8 @@ C/assembly/link actions. The validation and performance ladder follows
 | Suite | Path | Prior blocker | Status | Evidence |
 |---:|---|---|---|---|
 | 57 | `libs/leaf/test` | missing `nlohmann/json.hpp` | pass | Final forced graph updated 482 targets: 123 tests passed, all 22 negative compilations failed as expected, and there were no skips or unexpected failures. The nlohmann header and positive/negative serialization cases were included. |
-| 51 | `libs/graph_parallel/test` | missing MPI, runner, and Python target | in progress | Open MPI 5.0.9 and Python 3.14 are installed. The strong-components compile blocker, CSR partial-ordering blocker, repeated member-template output/link blocker, and distributed-vertex runtime blocker are fixed with focused coverage. Exact CSR and connected-components targets pass; the final forced full graph is pending. |
-| 68 | `libs/mpi/test` | missing MPI compiler and runner | pending | `/usr/local/bin/mpic++` and `/usr/local/bin/mpirun` are now available; exact graph pending after Graph Parallel. |
+| 51 | `libs/graph_parallel/test` | missing MPI, runner, and Python target | pass | The final forced C++11 replay updated all 207 targets: 25 MPI-backed runtime tests passed, both examples compiled and linked, and there were no failures or skips. The run took 4,341.72 seconds with 2,318,970,880 B maximum RSS and zero swaps. |
+| 68 | `libs/mpi/test` | missing MPI compiler and runner | in progress | `/usr/local/bin/mpic++` and `/usr/local/bin/mpirun` are now available. Graph Parallel and its refreshed performance gate pass; the isolated forced MPI replay is next. |
 
 ## Frontier Log
 
@@ -108,3 +108,19 @@ C/assembly/link actions. The validation and performance ladder follows
   tested lookup, substitution, and integration surfaces, so no README change
   is needed. The final forced Graph Parallel graph and refreshed performance
   gate remain pending after the active canonical frontier replay finishes.
+- `2026-08-03`: Closed `libs/graph_parallel/test` with the isolated final
+  forced replay (`-a -j1`, C++11, PCH off, static, hidden visibility). B2
+  updated all 207 targets; all 25 MPI-backed runtime tests passed; both Graph
+  Parallel examples compiled and linked; and there were no failures or skips.
+  This forced pass includes the previously failing strong-components,
+  connected-components, shortest-paths, distributed CSR algorithm, and
+  betweenness-centrality cases, so it exercises every compiler fix found by
+  the suite. The run took 4,341.72 seconds with 2,318,970,880 B maximum RSS and
+  zero swaps
+  (`graph-parallel-full-forced-after-final-rebase.log`). The post-rebase
+  repository gates remain the placement, focused, strict, text-reparse, and
+  full direct-LowIR passes recorded above. The refreshed frozen three-run
+  performance gate also passes at -37.12% instructions, -41.11% maximum RSS,
+  and -42.28% peak footprint
+  (`/private/tmp/cppgm-boost-reopened-v2/perf-final-rebase-graph.json`). The
+  independent cursor now advances to `libs/mpi/test`.
