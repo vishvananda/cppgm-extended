@@ -25082,7 +25082,7 @@ private:
                                                             false)
       const override
   {
-    if(scope_has_internal_namespace_linkage(scope) ||
+    if((scope_has_internal_namespace_linkage(scope) && !is_c_linkage) ||
        (!scope.class_info && declaration_marks_static(declaration_node))) {
       return symbol_linkage::SL_INTERNAL;
     }
