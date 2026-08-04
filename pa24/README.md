@@ -213,7 +213,9 @@ To complete PA24, implement these goals:
 4. Range-for lowering.
    Range-for over arrays, braced-init lists, and supported user-defined `begin` / `end`
    ranges should lower into ordinary loop/control-flow structure in LowIR, including
-   ordinary reference loop declarations such as `const int&` and `const auto&`.
+   ordinary reference loop declarations such as `const int&` and `const auto&`. A
+   materialized class prvalue used as the range remains alive through the loop and is
+   destroyed when the complete range-for statement ends.
 
 The test suite also exercises a small remaining ordinary-language closure cluster here:
 direct braced-init expressions, direct aggregate construction, supported integral / enum

@@ -222,6 +222,7 @@ TEMPLATE_LATER_OR_COMPAT_FEATURES = {
     "support.preprocessor_probe",
     "support.attribute",
     "support.auto",
+    "support.bodyless_placeholder_return",
     "support.range_for",
     "exception.try_catch",
 }
@@ -419,6 +420,16 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("support.auto",
                 (rx(r"\bauto\s+(?:[*&]\s*)?[A-Za-z_][A-Za-z0-9_]*\s*(?:=|;|,|\[)|"
                     r"\bauto\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*(?!->)(?:noexcept\s*)?(?:\{|;)"),)),
+    FeatureRule(
+        "support.bodyless_placeholder_return",
+        (
+            rx(
+                r"\bauto\s+[A-Za-z_][A-Za-z0-9_:]*\s*\([^;{}]*\)\s*"
+                r"(?:(?:const|volatile|noexcept|override|final)\s*)*"
+                r"(?:=\s*(?:delete|default)\s*)?;"
+            ),
+        ),
+    ),
     FeatureRule("rtti.typeid", (rx(r"\btypeid\s*\("),)),
     FeatureRule("rtti.dynamic_cast.pointer",
                 (rx(r"\bdynamic_cast\s*<"),),

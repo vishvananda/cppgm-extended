@@ -4725,7 +4725,10 @@ private:
               << " mentions-dependent=" << (mentions_dependent_names ? "yes" : "no");
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
-      return dependent_fallback();
+      if(dependent_fallback()) {
+        return true;
+      }
+      throw;
     }
   }
 
@@ -9981,6 +9984,18 @@ private:
   {
     if(!is_constexpr) {
       return;
+    }
+    bool is_defaulted = false;
+    bool is_deleted = false;
+    if(declaration_node) {
+      special_definition_flags(*declaration_node, is_defaulted, is_deleted);
+      const CppAstNode * special_initializer =
+          find_descendant_kind(*declaration_node,
+                               CppAstKind::special_initializer);
+      if(is_deleted ||
+         (special_initializer && special_initializer->value == "delete")) {
+        return;
+      }
     }
     TypePtr function_type = strip_top_level_cv(type);
     if(!function_type || function_type->kind != Type::TK_FUNCTION) {

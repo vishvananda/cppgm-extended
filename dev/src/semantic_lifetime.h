@@ -86,6 +86,13 @@ void require_reference_bound_temporary_destructor_if_needed(
     const cpp_decl::TypePtr & target,
     const semantic_conversion::ExprInfo & expr);
 
+void append_named_object_destructor_action(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    const std::string & name,
+    const cpp_decl::TypePtr & type,
+    CallSemNode & out);
+
 void append_constructor_generated_statements(SemanticContext & ctx,
                                              semantic_model::Scope & scope,
                                              semantic_model::FunctionBinding & binding,

@@ -173,6 +173,8 @@ static void collect_declared_names_for_template_body(
   }
 
   if(node.kind == CppAstKind::simple_declaration ||
+     node.kind == CppAstKind::structured_binding_declaration ||
+     node.kind == CppAstKind::range_declaration ||
      node.kind == CppAstKind::for_init_statement ||
      node.kind == CppAstKind::condition) {
     const CppAstNode * specifiers =
@@ -187,6 +189,15 @@ static void collect_declared_names_for_template_body(
     const CppAstNode * identifier = find_child_kind(node, CppAstKind::identifier);
     if(identifier && !identifier->value.empty()) {
       declared_names.insert(identifier->value);
+    }
+  }
+
+  if(node.kind == CppAstKind::structured_binding_identifier_list) {
+    for(std::size_t i = 0; i < node.children.size(); ++i) {
+      if(node.children[i].kind == CppAstKind::identifier &&
+         !node.children[i].value.empty()) {
+        declared_names.insert(node.children[i].value);
+      }
     }
   }
 
@@ -1681,6 +1692,52 @@ static bool template_body_has_invalid_nondependent_id_expression(
   }
 
   if(node.kind == CppAstKind::call_expression &&
+     !node.children.empty() &&
+     node.children[0].kind == CppAstKind::id_expression &&
+     node.children[0].value == "__builtin_bit_cast") {
+    for(std::size_t i = 1; i < node.children.size(); ++i) {
+      const CppAstNode & child = node.children[i];
+      if(child.kind == CppAstKind::argument_list ||
+         child.kind == CppAstKind::paren_argument_list) {
+        for(std::size_t argument_index = 1;
+            argument_index < child.children.size();
+            ++argument_index) {
+          if(template_body_has_invalid_nondependent_id_expression(
+                 ctx,
+                 scope,
+                 child.children[argument_index],
+                 visible_names,
+                 type_parameter_names,
+                 template_parameter_names,
+                 dependent_type_names,
+                 visible_value_types,
+                 dependent_value_names,
+                 offending_node,
+                 offending_name)) {
+            return true;
+          }
+        }
+        continue;
+      }
+      if(template_body_has_invalid_nondependent_id_expression(
+             ctx,
+             scope,
+             child,
+             visible_names,
+             type_parameter_names,
+             template_parameter_names,
+             dependent_type_names,
+             visible_value_types,
+             dependent_value_names,
+             offending_node,
+             offending_name)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  if(node.kind == CppAstKind::call_expression &&
      call_expression_has_adl_candidate(ctx, scope, node, visible_value_types)) {
     for(std::size_t i = 1; i < node.children.size(); ++i) {
       if(template_body_has_invalid_nondependent_id_expression(ctx,
@@ -1747,7 +1804,9 @@ static bool template_body_has_invalid_nondependent_id_expression(
                                                               offending_name)) {
         return true;
       }
-      if(node.children[i].kind == CppAstKind::simple_declaration) {
+      if(node.children[i].kind == CppAstKind::simple_declaration ||
+         node.children[i].kind == CppAstKind::structured_binding_declaration ||
+         node.children[i].kind == CppAstKind::enum_specifier) {
         collect_dependent_type_names_from_template_body_declaration(
             ctx,
             node.children[i],

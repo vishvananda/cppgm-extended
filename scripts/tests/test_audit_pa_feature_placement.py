@@ -135,6 +135,29 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         self.assertIn("function.default_argument", audit.detect_features(declarations))
         self.assertNotIn("function.default_argument", audit.detect_features(conditions))
 
+    def test_bodyless_placeholder_return_is_hosted_compatibility(self) -> None:
+        deleted = "inline constexpr auto blocked(long double) = delete;\n"
+        declaration = "auto inspect(int);\n"
+        definition = "auto inspect(int value) { return value; }\n"
+        trailing = "auto inspect(int value) -> int;\n"
+
+        self.assertIn(
+            "support.bodyless_placeholder_return",
+            audit.detect_features(deleted),
+        )
+        self.assertIn(
+            "support.bodyless_placeholder_return",
+            audit.detect_features(declaration),
+        )
+        self.assertNotIn(
+            "support.bodyless_placeholder_return",
+            audit.detect_features(definition),
+        )
+        self.assertNotIn(
+            "support.bodyless_placeholder_return",
+            audit.detect_features(trailing),
+        )
+
     def test_operator_detector_requires_an_operator_function_id(self) -> None:
         identifier = "int operator_arrow_dispatch_(int value);\n"
         overload = "struct value { value &operator+=(int); };\n"

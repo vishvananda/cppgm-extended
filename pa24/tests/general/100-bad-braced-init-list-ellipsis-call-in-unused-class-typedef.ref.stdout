@@ -1,0 +1,21 @@
+ERROR: no viable overload for call helper with 1 argument(s) [candidates Probe::helper:function of (lvalue-reference to int) returning int owner=Probe method=no params={:lvalue-reference to int} defaults={<none>} reject=argument analysis failed: unsupported braced-init-list expression; Probe::helper:function of (...) returning char owner=Probe method=no params={} defaults={} reject=argument analysis failed: unsupported braced-init-list expression] [args ] [top-level declaration 0 kind=class-specifier value=Probe text=Probe]
+Diagnostic context:
+collect_class_declaration [Probe] at tests/general/100-bad-braced-init-list-ellipsis-call-in-unused-class-typedef.t:5:1
+  ensure_class_reference_members [Probe]
+    populate_class_reference_members [Probe]
+      reference_class_member [simple-declaration] text=[] ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier KW_TYPEDEF:typedef
+    decl-specifier decltype(helper({}))
+      call-expression
+        id-expression helper
+        argument-list
+          braced-init-list
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier type
+}
+        analyze_call_expression [] at tests/general/100-bad-braced-init-list-ellipsis-call-in-unused-class-typedef.t:10:20
+          analyze_expression [] at tests/general/100-bad-braced-init-list-ellipsis-call-in-unused-class-typedef.t:10:27
+            semantic_expression::analyze_expression [] at tests/general/100-bad-braced-init-list-ellipsis-call-in-unused-class-typedef.t:10:27

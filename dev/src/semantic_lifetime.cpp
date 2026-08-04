@@ -4229,6 +4229,22 @@ void require_reference_bound_temporary_destructor_if_needed(
   require_destructor_action_if_needed(ctx, expr_object_type);
 }
 
+void append_named_object_destructor_action(SemanticContext & ctx,
+                                           Scope & scope,
+                                           const string & name,
+                                           const TypePtr & type,
+                                           DumpNode & out)
+{
+  ClassInfo * info = ctx.complete_class_type(type);
+  if(!info) {
+    return;
+  }
+  ExprInfo object =
+      ctx.analyze_id_expression(scope, synthetic_identifier_node(name));
+  append_destructor_action(
+      ctx, *info, ctx.make_address_of_expr(object), nullptr, true, out);
+}
+
 bool resolve_constructor_base_initializer(
     SemanticContext & ctx,
     Scope & scope,

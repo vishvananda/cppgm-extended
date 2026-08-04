@@ -236,8 +236,9 @@ To complete PA34, implement hosted compatibility for:
 - semantic and lowering compatibility for hosted source patterns used by those
   headers, including post-declarator parameter
   attributes, explicit specializations of primary-template member functions,
-  non-standard hex-float compile acceptance on ordinary floating types, and
-  `[[no_unique_address]]` empty-member layout through generated copy operations
+  bodyless C++14 placeholder-return declarations selected by a test's language
+  mode, non-standard hex-float compile acceptance on ordinary floating types,
+  and `[[no_unique_address]]` empty-member layout through generated copy operations
 - lightweight hosted C-wrapper header and C runtime interop smokes where the
   header surface is mostly builtin macros/functions or ordinary C declarations
   (`<cassert>`, `<cmath>`, `<cstddef>`, `<cstdio>`, `<cstdlib>`, `<cstring>`,

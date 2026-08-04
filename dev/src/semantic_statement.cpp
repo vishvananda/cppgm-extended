@@ -625,10 +625,10 @@ DumpNode make_subscript_expr_node(const DumpNode & base,
   return node;
 }
 
-void append_hidden_variable_declaration(DumpNode & outer,
-                                        const string & name,
-                                        const TypePtr & type,
-                                        DumpNode initializer)
+DumpNode & append_hidden_variable_declaration(DumpNode & outer,
+                                              const string & name,
+                                              const TypePtr & type,
+                                              DumpNode initializer)
 {
   DumpNode decl = make_dump_node(CallSemKind::simple_declaration);
   DumpNode var = make_dump_node(CallSemKind::variable, name);
@@ -636,6 +636,7 @@ void append_hidden_variable_declaration(DumpNode & outer,
   var.children.push_back(std::move(initializer));
   decl.children.push_back(std::move(var));
   outer.children.push_back(std::move(decl));
+  return outer.children.back().children.back();
 }
 
 bool class_has_range_member_name(SemanticContext & ctx,
@@ -2472,8 +2473,16 @@ void analyze_range_for_statement(SemanticContext & ctx,
         body_scope,
         hidden_range,
         ValueBinding(ValueBinding::VK_VARIABLE, hidden_range, hidden_range_type));
-    append_hidden_variable_declaration(
+    DumpNode & hidden_range_variable = append_hidden_variable_declaration(
         outer, hidden_range, hidden_range_type, std::move(range_expr.node));
+    if(range_expr.category == VC_PRVALUE) {
+      semantic_lifetime::append_named_object_destructor_action(
+          ctx,
+          body_scope,
+          hidden_range,
+          hidden_range_type,
+          hidden_range_variable);
+    }
     range_base = make_id_expr_node(hidden_range, range_expr.type);
     range_id = make_id_expr_ast_node(hidden_range);
   }
