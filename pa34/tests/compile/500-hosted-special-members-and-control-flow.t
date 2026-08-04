@@ -1,6 +1,10 @@
+// The if-constexpr and alias initializer forms below are newer than C++11,
+// but PA34 accepts them because hosted standard-library headers use them.
+
 template<class T>
 struct Trait {
   static const bool value = false;
+  int operator()() const { return 1; }
 };
 
 template<class T>
@@ -62,7 +66,7 @@ int discard_alias_branch() {
 template<class T>
 int alias_if() {
   if constexpr (using A = Trait<T>; A::value) {
-    return 1;
+    return A()();
   }
   return 0;
 }

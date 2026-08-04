@@ -3,7 +3,8 @@ struct switch_condition_body {
   int run() {
     switch(int tag = 0) {
     case 0:
-      return tag;
+      int value = tag;
+      return value;
     default:
       return 1;
     }

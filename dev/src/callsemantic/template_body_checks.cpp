@@ -206,6 +206,26 @@ static void collect_declared_names_for_template_body(
   }
 }
 
+static const CppAstNode * declaration_exposed_by_label(
+    const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::case_statement && node.children.size() == 2) {
+    return declaration_exposed_by_label(node.children[1]);
+  }
+  if((node.kind == CppAstKind::default_statement ||
+      node.kind == CppAstKind::labeled_statement) &&
+     node.children.size() == 1) {
+    return declaration_exposed_by_label(node.children[0]);
+  }
+  if(node.kind == CppAstKind::simple_declaration ||
+     node.kind == CppAstKind::structured_binding_declaration ||
+     node.kind == CppAstKind::enum_specifier ||
+     node.kind == CppAstKind::alias_declaration) {
+    return &node;
+  }
+  return nullptr;
+}
+
 static bool subtree_has_template_id_syntax(const CppAstNode & node)
 {
   if(const TemplateIdSyntax * template_id = cppast_template_id_syntax(node)) {
@@ -852,6 +872,15 @@ static void collect_declared_type_names_for_template_body(
       node.kind == CppAstKind::enum_specifier) &&
      !node.value.empty()) {
     type_names.insert(node.value);
+  }
+
+  if(node.kind == CppAstKind::for_init_statement ||
+     node.kind == CppAstKind::condition) {
+    for(std::size_t i = 0; i < node.children.size(); ++i) {
+      collect_declared_type_names_for_template_body(node.children[i],
+                                                    type_names);
+    }
+    return;
   }
 
   if(node.kind != CppAstKind::simple_declaration) {
@@ -1804,31 +1833,32 @@ static bool template_body_has_invalid_nondependent_id_expression(
                                                               offending_name)) {
         return true;
       }
-      if(node.children[i].kind == CppAstKind::simple_declaration ||
-         node.children[i].kind == CppAstKind::structured_binding_declaration ||
-         node.children[i].kind == CppAstKind::enum_specifier) {
+      const CppAstNode * declaration =
+          declaration_exposed_by_label(node.children[i]);
+      if(declaration) {
         collect_dependent_type_names_from_template_body_declaration(
             ctx,
-            node.children[i],
+            *declaration,
             template_parameter_names,
             sequential_dependent_type_names);
-        collect_declared_names_for_template_body(node.children[i],
+        collect_declared_names_for_template_body(*declaration,
                                                  sequential_visible);
         collect_declared_value_types_for_template_body(ctx,
                                                        sequential_scope,
-                                                       node.children[i],
+                                                       *declaration,
                                                        sequential_visible,
                                                        sequential_value_types);
         collect_dependent_declared_value_names_for_template_body(
             ctx,
             sequential_scope,
-            node.children[i],
+            *declaration,
             template_parameter_names,
             sequential_dependent_type_names,
             sequential_dependent_value_names);
       }
-      collect_declared_type_names_for_template_body(node.children[i],
-                                                    sequential_type_names);
+      collect_declared_type_names_for_template_body(
+          declaration ? *declaration : node.children[i],
+          sequential_type_names);
     }
     return false;
   }
@@ -1925,6 +1955,7 @@ static bool template_body_has_invalid_nondependent_id_expression(
      node.kind == CppAstKind::while_statement ||
      node.kind == CppAstKind::switch_statement) {
     AtomNameSet control_visible = visible_names;
+    AtomNameSet control_type_names = type_parameter_names;
     AtomNameSet control_dependent_type_names = dependent_type_names;
     AtomNameSet control_dependent_value_names = dependent_value_names;
     for(std::size_t i = 0; i < node.children.size(); ++i) {
@@ -1933,7 +1964,7 @@ static bool template_body_has_invalid_nondependent_id_expression(
                                                               scope,
                                                               child,
                                                               control_visible,
-                                                              type_parameter_names,
+                                                              control_type_names,
                                                               template_parameter_names,
                                                               control_dependent_type_names,
                                                               visible_value_types,
@@ -1950,6 +1981,8 @@ static bool template_body_has_invalid_nondependent_id_expression(
             template_parameter_names,
             control_dependent_type_names);
         collect_declared_names_for_template_body(child, control_visible);
+        collect_declared_type_names_for_template_body(child,
+                                                      control_type_names);
         collect_dependent_declared_value_names_for_template_body(
             ctx,
             scope,
@@ -2131,21 +2164,27 @@ bool function_template_body_has_invalid_nondependent_lookup(
                                                  visible_value_types);
 
   for(Scope * current = &scope; current; current = current->parent) {
-    if(!current->class_info || !current->class_info->class_node) {
+    if(!current->class_info) {
       continue;
     }
-    const CppAstNode & class_node = *current->class_info->class_node;
-    collect_class_member_names_for_template_body(class_node, visible_names);
-    collect_class_member_type_names_for_template_body(class_node, type_names);
+    const CppAstNode * class_node = current->class_info->class_node;
+    if(!class_node && current->class_info->source_template) {
+      class_node = current->class_info->source_template->class_node;
+    }
+    if(!class_node) {
+      continue;
+    }
+    collect_class_member_names_for_template_body(*class_node, visible_names);
+    collect_class_member_type_names_for_template_body(*class_node, type_names);
     collect_base_class_names_for_template_body(ctx,
                                                scope,
-                                               class_node,
+                                               *class_node,
                                                visible_names,
                                                type_names,
                                                parameter_names);
     collect_class_member_value_types_for_template_body(ctx,
                                                        scope,
-                                                       class_node,
+                                                       *class_node,
                                                        visible_value_types);
     break;
   }
