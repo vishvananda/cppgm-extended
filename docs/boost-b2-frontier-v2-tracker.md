@@ -961,6 +961,12 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Closed the clean final replay of suite 39. Fiber completes its
+  architecture, C++11, threading, ICU, atomic, and host-capability checks,
+  finds the single bookkeeping target, and exits successfully in 23.25s at
+  175,038,464 B maximum RSS with zero process swaps and unchanged system
+  swapouts. This remains a configuration-only suite on the current host. No
+  compiler, test, or reference change is required.
 - `2026-08-04`: Closed the clean final replay of suite 38 independently
   because Exception previously exposed several semantic defects and expensive
   JSON translation units. The six-job graph finds 4646 targets, rebuilds all
