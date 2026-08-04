@@ -10201,6 +10201,24 @@ bool materialize_leaf_member_constant_binding(
   }
   const bool owner_value_evaluation_incomplete =
       class_member_value_evaluation_incomplete(value_binding_owner_class(binding));
+  if(value_binding_has_constexpr_value(binding)) {
+    if(binding.owner_class && !owner_value_evaluation_incomplete) {
+      require_structured_bool_value_member_output_if_needed(
+          services, *binding.owner_class);
+    }
+    if(note_value_instantiation &&
+       services.semantic_context &&
+       !owner_value_evaluation_incomplete) {
+      template_api::note_template_member_value_instantiation_if_needed(
+          *services.semantic_context,
+          binding);
+    }
+    if(note_value_instantiation && !owner_value_evaluation_incomplete) {
+      note_non_bool_static_value_dependency_for_witness(services, binding);
+    }
+    out = value_binding_constexpr_value(binding);
+    return out.kind != constant_eval::ConstexprValue::CV_INVALID;
+  }
   if(binding.has_constant_value) {
     if(binding.owner_class && !owner_value_evaluation_incomplete) {
       require_structured_bool_value_member_output_if_needed(
@@ -10220,24 +10238,6 @@ bool materialize_leaf_member_constant_binding(
         binding.constant_value,
         binding.type ? binding.type : make_fundamental(FT_INT));
     return true;
-  }
-  if(value_binding_has_constexpr_value(binding)) {
-    if(binding.owner_class && !owner_value_evaluation_incomplete) {
-      require_structured_bool_value_member_output_if_needed(
-          services, *binding.owner_class);
-    }
-    if(note_value_instantiation &&
-       services.semantic_context &&
-       !owner_value_evaluation_incomplete) {
-      template_api::note_template_member_value_instantiation_if_needed(
-          *services.semantic_context,
-          binding);
-    }
-    if(note_value_instantiation && !owner_value_evaluation_incomplete) {
-      note_non_bool_static_value_dependency_for_witness(services, binding);
-    }
-    out = value_binding_constexpr_value(binding);
-    return out.kind != constant_eval::ConstexprValue::CV_INVALID;
   }
   const bool can_evaluate_collection_constant =
       owner_value_evaluation_incomplete &&

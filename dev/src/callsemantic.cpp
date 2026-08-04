@@ -9971,6 +9971,55 @@ private:
     return same_type_with_compatible_top_cv(param_type, class_type);
   }
 
+  void validate_constexpr_function_declaration(
+      const TypePtr & type,
+      const vector<pair<string, TypePtr> > & explicit_params,
+      bool is_constructor,
+      bool is_constexpr,
+      const CppAstNode * declaration_node,
+      const ClassInfo * incomplete_lexical_class = nullptr)
+  {
+    if(!is_constexpr) {
+      return;
+    }
+    TypePtr function_type = strip_top_level_cv(type);
+    if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+      throw logic_error("constexpr declaration requires a function type" +
+                        semantic_trace::current_location_note(*this,
+                                                              declaration_node));
+    }
+    const auto is_incomplete_lexical_class_type =
+        [&](const TypePtr & candidate) -> bool
+    {
+      TypePtr base = strip_top_level_cv(remove_reference_type(candidate));
+      return incomplete_lexical_class &&
+             !incomplete_lexical_class->complete &&
+             incomplete_lexical_class->type &&
+             base &&
+             type_equals(base, strip_top_level_cv(incomplete_lexical_class->type));
+    };
+    if(!is_constructor &&
+       function_type->inner &&
+       !is_incomplete_lexical_class_type(function_type->inner) &&
+       !type_depends_on_template_parameter(function_type->inner) &&
+       !semantic_builtins::is_cpp11_literal_type(*this, function_type->inner)) {
+      throw logic_error("constexpr function requires a literal return type" +
+                        semantic_trace::current_location_note(*this,
+                                                              declaration_node));
+    }
+    for(size_t i = 0; i < explicit_params.size(); ++i) {
+      const TypePtr & parameter_type = explicit_params[i].second;
+      if(parameter_type &&
+         !is_incomplete_lexical_class_type(parameter_type) &&
+         !type_depends_on_template_parameter(parameter_type) &&
+         !semantic_builtins::is_cpp11_literal_type(*this, parameter_type)) {
+        throw logic_error("constexpr function requires literal parameter types" +
+                          semantic_trace::current_location_note(*this,
+                                                                declaration_node));
+      }
+    }
+  }
+
   FunctionBinding * register_class_function(ClassInfo & info,
                                             const string & simple_name,
                                             const TypePtr & declared_type,
@@ -10036,7 +10085,6 @@ private:
         throw logic_error("invalid member function type");
       }
     }
-
     const string symbol_qualified_name =
         info.qualified_name + "::" + simple_name;
     unique_ptr<FunctionBinding> binding(new FunctionBinding());
@@ -10634,7 +10682,7 @@ private:
                       flags.is_constexpr,
                       template_identity,
                       prefer_overload_suffix,
-                      nullptr,
+                      &info,
                       nullptr);
     FunctionBinding * binding =
         find_matching_static_member_function(*info.member_scope,
@@ -25864,6 +25912,12 @@ private:
        function_type->function_ref_qualifier != FTRQ_NONE) {
       throw logic_error("ref-qualifier requires a non-static member function");
     }
+    validate_constexpr_function_declaration(type,
+                                            params,
+                                            false,
+                                            is_constexpr,
+                                            declaration_node,
+                                            lexical_access_class);
     if(scope.namespace_bindings.count(name) != 0) {
       throw logic_error("declaration conflicts with namespace name " + name);
     }

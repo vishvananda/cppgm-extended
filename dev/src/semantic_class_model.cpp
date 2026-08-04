@@ -19,6 +19,7 @@
 #include "callsemantic/template_source_utils.h"
 #include "parser_trace.h"
 #include "semantic_declaration.h"
+#include "semantic_builtins.h"
 #include "semantic_conversion.h"
 #include "semantic_context.h"
 #include "semantic_dependent_type.h"
@@ -8583,6 +8584,89 @@ void validate_class_member_function_static_asserts(SemanticContext & ctx,
   }
 }
 
+bool is_literal_type_in_completed_class(SemanticContext & ctx,
+                                        const ClassInfo & info,
+                                        const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  TypePtr owner = strip_top_level_cv(info.type);
+  if(base && owner && type_equals(base, owner)) {
+    return semantic_builtins::is_cpp11_literal_type(ctx, info.type);
+  }
+  return semantic_builtins::is_cpp11_literal_type(ctx, type);
+}
+
+void validate_constexpr_function_literal_types(SemanticContext & ctx,
+                                               ClassInfo & info,
+                                               const FunctionBinding * function,
+                                               std::size_t first_parameter)
+{
+  if(!function || !function->is_constexpr || function->is_deleted ||
+     template_api::function_binding_has_template_identity(function)) {
+    return;
+  }
+  TypePtr function_type = strip_top_level_cv(function->type);
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    throw std::logic_error("constexpr declaration requires a function type" +
+                           semantic_trace::current_location_note(
+                               ctx, function->declaration_node));
+  }
+  if(!function->is_constructor &&
+     !function->is_destructor &&
+     function_type->inner &&
+     !ctx.type_depends_on_template_parameter(function_type->inner) &&
+     !is_literal_type_in_completed_class(ctx, info, function_type->inner)) {
+    throw std::logic_error("constexpr function requires a literal return type" +
+                           semantic_trace::current_location_note(
+                               ctx, function->declaration_node));
+  }
+  for(std::size_t parameter_index = first_parameter;
+      parameter_index < function->params.size();
+      ++parameter_index) {
+    const TypePtr & parameter_type = function->params[parameter_index].second;
+    if(parameter_type &&
+       !ctx.type_depends_on_template_parameter(parameter_type) &&
+       !is_literal_type_in_completed_class(ctx, info, parameter_type)) {
+      throw std::logic_error("constexpr function requires literal parameter types" +
+                             semantic_trace::current_location_note(
+                                 ctx, function->declaration_node));
+    }
+  }
+}
+
+void validate_constexpr_member_literal_types(SemanticContext & ctx,
+                                             ClassInfo & info)
+{
+  for(std::size_t method_index = 0;
+      method_index < info.method_declaration_order.size();
+      ++method_index) {
+    validate_constexpr_function_literal_types(
+        ctx, info, info.method_declaration_order[method_index], 1);
+  }
+  for(std::size_t friend_index = 0;
+      friend_index < info.friend_functions.size();
+      ++friend_index) {
+    validate_constexpr_function_literal_types(
+        ctx, info, info.friend_functions[friend_index], 0);
+  }
+  if(!info.member_scope) {
+    return;
+  }
+  for(std::map<std::string, std::vector<FunctionBinding *> >::const_iterator set =
+          info.member_scope->function_sets.begin();
+      set != info.member_scope->function_sets.end();
+      ++set) {
+    for(std::size_t function_index = 0;
+        function_index < set->second.size();
+        ++function_index) {
+      FunctionBinding * function = set->second[function_index];
+      if(function && function->owner_class == &info && !function->is_method) {
+        validate_constexpr_function_literal_types(ctx, info, function, 0);
+      }
+    }
+  }
+}
+
 bool rebind_concrete_class_typedef(SemanticContext & ctx,
                                    ClassInfo & info,
                                    const CppAstNode & specifiers,
@@ -8603,6 +8687,109 @@ bool class_definition_has_member_function_static_assert(const CppAstNode & node)
     }
   }
   return false;
+}
+
+bool class_definition_has_constexpr_special_member(const CppAstNode & node)
+{
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.kind != CppAstKind::special_member_definition &&
+       child.kind != CppAstKind::special_member_declaration) {
+      continue;
+    }
+    const CppAstNode * specifiers =
+        find_child(child, CppAstKind::decl_specifier_seq);
+    if(!specifiers) {
+      specifiers = find_child(child, CppAstKind::member_specifiers);
+    }
+    if(specifiers && decl_spec_contains_token(*specifiers, KW_CONSTEXPR)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool constructor_has_member_initializer(const FunctionBinding & constructor,
+                                        const std::string & member_name)
+{
+  if(!constructor.ctor_initializer) {
+    return false;
+  }
+  for(std::size_t i = 0;
+      i < constructor.ctor_initializer->children.size();
+      ++i) {
+    const CppAstNode * id =
+        find_child(constructor.ctor_initializer->children[i],
+                   CppAstKind::mem_initializer_id);
+    if(id && id->value == member_name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool constexpr_default_initialization_produces_value(
+    SemanticContext & ctx,
+    const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  if(!base) {
+    return false;
+  }
+  if(base->kind == Type::TK_ARRAY) {
+    return base->inner &&
+           constexpr_default_initialization_produces_value(ctx, base->inner);
+  }
+  return base->kind == Type::TK_NAMED &&
+         !semantic_lookup::is_named_enum_type(ctx, base);
+}
+
+void validate_constexpr_constructor_initialization(SemanticContext & ctx,
+                                                   ClassInfo & info)
+{
+  for(std::size_t method_index = 0;
+      method_index < info.method_declaration_order.size();
+      ++method_index) {
+    const FunctionBinding * constructor =
+        info.method_declaration_order[method_index];
+    if(!constructor ||
+       !constructor->is_constructor ||
+       !constructor->is_constexpr ||
+       constructor->is_deleted ||
+       constructor->is_defaulted ||
+       constructor->synthesized ||
+       constructor->delegating_constructor_target) {
+      continue;
+    }
+    std::size_t initialized_union_members = 0;
+    for(std::size_t field_index = 0;
+        field_index < info.fields.size();
+        ++field_index) {
+      const FieldInfo & field = info.fields[field_index];
+      const bool initialized =
+          field.default_initializer ||
+          constructor_has_member_initializer(*constructor, field.name);
+      if(is_union_class_info(info)) {
+        if(initialized) {
+          ++initialized_union_members;
+        }
+        continue;
+      }
+      if(!initialized &&
+         !constexpr_default_initialization_produces_value(ctx, field.type)) {
+        throw std::logic_error(
+            "constexpr constructor must initialize every scalar data member" +
+            semantic_trace::current_location_note(ctx,
+                                                  constructor->declaration_node));
+      }
+    }
+    if(is_union_class_info(info) && initialized_union_members != 1) {
+      throw std::logic_error(
+          "constexpr union constructor must initialize exactly one member" +
+          semantic_trace::current_location_note(ctx,
+                                                constructor->declaration_node));
+    }
+  }
 }
 
 bool function_definition_is_static_constexpr_member(const CppAstNode & node)
@@ -13382,6 +13569,8 @@ void populate_class_info(SemanticContext & ctx,
         semantic_metrics::CDK_CLASS_LAYOUT);
     finalize_class_layout(ctx, info);
   }
+  validate_constexpr_constructor_initialization(ctx, info);
+  validate_constexpr_member_literal_types(ctx, info);
   validate_class_member_function_static_asserts(ctx, info);
   info.reference_members_collected = true;
   template_api::note_anonymous_member_class_events_if_owner_logged(ctx, info);
@@ -13435,6 +13624,7 @@ void collect_class_declaration(SemanticContext & ctx,
 
   if(class_instantiation_is_dependent(ctx, *info) ||
      class_definition_has_member_function_static_assert(node) ||
+     class_definition_has_constexpr_special_member(node) ||
      class_definition_needs_virtual_validation(node) ||
      semantic_lookup::current_function_scope(*target_scope) != nullptr) {
     populate_class_info(ctx, *info, node);

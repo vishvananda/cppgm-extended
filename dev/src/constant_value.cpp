@@ -439,7 +439,16 @@ bool constexpr_pointer_add(const ConstexprValue & pointer_value,
   if(offset < 0) {
     out.pointer_offset -= static_cast<size_t>(-offset);
   } else {
+    if(static_cast<unsigned long long>(offset) >
+       static_cast<unsigned long long>(std::numeric_limits<size_t>::max() -
+                                       out.pointer_offset)) {
+      return false;
+    }
     out.pointer_offset += static_cast<size_t>(offset);
+  }
+  if(!out.array_elements.empty() &&
+     out.pointer_offset > out.array_elements.size()) {
+    return false;
   }
   return true;
 }
@@ -1330,6 +1339,30 @@ bool constexpr_value_cast(const ConstexprValue & value,
     return cast_integral_to_target(static_cast<SignedIntegralValue>(numeric), base, out);
   }
 
+  if(value.kind == ConstexprValue::CV_INTEGRAL &&
+     base->kind == Type::TK_FUNDAMENTAL &&
+     (base->fundamental == FT_FLOAT ||
+      base->fundamental == FT_DOUBLE ||
+      base->fundamental == FT_LONG_DOUBLE)) {
+    long double numeric = 0.0L;
+    if(!value_to_floating(value, numeric)) {
+      return false;
+    }
+    switch(base->fundamental) {
+    case FT_FLOAT:
+      out = make_floating_value(static_cast<float>(numeric), base);
+      return true;
+    case FT_DOUBLE:
+      out = make_floating_value(static_cast<double>(numeric), base);
+      return true;
+    case FT_LONG_DOUBLE:
+      out = make_floating_value(numeric, base);
+      return true;
+    default:
+      break;
+    }
+  }
+
   SignedIntegralValue integral;
   integral = 0;
   if(!integral_value_to_signed_bits(value, integral)) {
@@ -1530,35 +1563,38 @@ bool constexpr_value_apply_binary(ETokenType op,
   }
 
   if(lhs.kind == ConstexprValue::CV_FLOATING || rhs.kind == ConstexprValue::CV_FLOATING) {
+    const TypePtr result_type = common_arithmetic_type(lhs.type, rhs.type);
+    ConstexprValue converted_lhs;
+    ConstexprValue converted_rhs;
     long double lhs_value = 0.0L;
     long double rhs_value = 0.0L;
-    if(!value_to_floating(lhs, lhs_value) || !value_to_floating(rhs, rhs_value)) {
+    if(!result_type ||
+       !constexpr_value_cast(lhs, result_type, converted_lhs) ||
+       !constexpr_value_cast(rhs, result_type, converted_rhs) ||
+       !value_to_floating(converted_lhs, lhs_value) ||
+       !value_to_floating(converted_rhs, rhs_value)) {
       return false;
     }
 
     switch(op) {
     case OP_PLUS:
-      return constexpr_value_cast(make_floating_value(lhs_value + rhs_value,
-                                                      common_arithmetic_type(lhs.type, rhs.type)),
-                                  common_arithmetic_type(lhs.type, rhs.type),
+      return constexpr_value_cast(make_floating_value(lhs_value + rhs_value, result_type),
+                                  result_type,
                                   out);
     case OP_MINUS:
-      return constexpr_value_cast(make_floating_value(lhs_value - rhs_value,
-                                                      common_arithmetic_type(lhs.type, rhs.type)),
-                                  common_arithmetic_type(lhs.type, rhs.type),
+      return constexpr_value_cast(make_floating_value(lhs_value - rhs_value, result_type),
+                                  result_type,
                                   out);
     case OP_STAR:
-      return constexpr_value_cast(make_floating_value(lhs_value * rhs_value,
-                                                      common_arithmetic_type(lhs.type, rhs.type)),
-                                  common_arithmetic_type(lhs.type, rhs.type),
+      return constexpr_value_cast(make_floating_value(lhs_value * rhs_value, result_type),
+                                  result_type,
                                   out);
     case OP_DIV:
       if(rhs_value == 0.0L) {
         return false;
       }
-      return constexpr_value_cast(make_floating_value(lhs_value / rhs_value,
-                                                      common_arithmetic_type(lhs.type, rhs.type)),
-                                  common_arithmetic_type(lhs.type, rhs.type),
+      return constexpr_value_cast(make_floating_value(lhs_value / rhs_value, result_type),
+                                  result_type,
                                   out);
     case OP_LT: out = make_integral_value(lhs_value < rhs_value, make_fundamental(FT_BOOL)); return true;
     case OP_GT: out = make_integral_value(lhs_value > rhs_value, make_fundamental(FT_BOOL)); return true;

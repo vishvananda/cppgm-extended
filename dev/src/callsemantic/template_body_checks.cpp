@@ -1902,6 +1902,11 @@ static bool template_body_has_invalid_nondependent_id_expression(
       return false;
     }
 
+    if(visible_names.contains(node.value) &&
+       !type_parameter_names.contains(node.value)) {
+      return false;
+    }
+
     if(type_parameter_names.contains(node.value) ||
        id_expression_names_known_type_for_template_body(ctx, scope, node)) {
       offending_node = &node;
@@ -1909,8 +1914,7 @@ static bool template_body_has_invalid_nondependent_id_expression(
       return true;
     }
 
-    if(visible_names.contains(node.value) ||
-       ctx.lookup_value(scope, node.value) ||
+    if(ctx.lookup_value(scope, node.value) ||
        id_expression_names_ordinary_function(ctx, scope, node.value)) {
       return false;
     }

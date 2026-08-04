@@ -979,6 +979,49 @@ bool is_literal_type(SemanticContext & ctx, const TypePtr & type)
      !is_trivially_destructible_type(ctx, base)) {
     return false;
   }
+  bool has_user_declared_constructor = false;
+  bool has_constexpr_noncopy_constructor = false;
+  for(std::map<std::string, std::vector<FunctionBinding *> >::const_iterator it =
+          info->methods.begin();
+      it != info->methods.end();
+      ++it) {
+    for(std::size_t i = 0; i < it->second.size(); ++i) {
+      const FunctionBinding * constructor = it->second[i];
+      if(!constructor ||
+         !constructor->is_constructor ||
+         constructor->synthesized ||
+         constructor->is_inherited_constructor) {
+        continue;
+      }
+      has_user_declared_constructor = true;
+      if(constructor->is_constexpr &&
+         !constructor->is_copy_constructor &&
+         !constructor->is_move_constructor &&
+         !constructor->is_deleted) {
+        has_constexpr_noncopy_constructor = true;
+      }
+    }
+  }
+  for(std::map<std::string, std::vector<FunctionTemplateDecl *> >::const_iterator it =
+          info->member_scope->function_templates.begin();
+      it != info->member_scope->function_templates.end();
+      ++it) {
+    for(std::size_t i = 0; i < it->second.size(); ++i) {
+      const FunctionTemplateDecl * constructor = it->second[i];
+      if(!constructor ||
+         !constructor->is_constructor ||
+         constructor->is_inherited_constructor) {
+        continue;
+      }
+      has_user_declared_constructor = true;
+      if(constructor->is_constexpr && !constructor->is_deleted) {
+        has_constexpr_noncopy_constructor = true;
+      }
+    }
+  }
+  if(has_user_declared_constructor && !has_constexpr_noncopy_constructor) {
+    return false;
+  }
   for(size_t i = 0; i < info->bases.size(); ++i) {
     if(!is_literal_type(ctx, info->bases[i].type->type)) {
       return false;
@@ -2018,6 +2061,11 @@ TypePtr remove_builtin_cv_qualification(const TypePtr & type,
 }
 
 }  // namespace
+
+bool is_cpp11_literal_type(SemanticContext & ctx, const TypePtr & type)
+{
+  return is_literal_type(ctx, type);
+}
 
 TypePtr make_dependent_builtin_type_transform_type(
     const std::string & builtin_name,

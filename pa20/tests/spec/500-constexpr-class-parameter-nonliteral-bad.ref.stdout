@@ -1,0 +1,16 @@
+ERROR: constexpr function requires literal parameter types at tests/spec/500-constexpr-class-parameter-nonliteral-bad.t:8:1 [top-level declaration 1 kind=function-definition ast={function-definition
+  decl-specifier-seq
+    decl-specifier KW_CONSTEXPR:constexpr
+    decl-specifier KW_INT:int
+  declarator
+    identifier invalid_parameter
+    parameter-clause
+      parameter-declaration
+        decl-specifier-seq
+          decl-specifier TT_IDENTIFIER:nonliteral
+  compound-statement
+    return-statement
+      literal 0
+}]
+Diagnostic context:
+collect_function_definition [constexpr int invalid_parameter(nonliteral){return 0;}] at tests/spec/500-constexpr-class-parameter-nonliteral-bad.t:8:1

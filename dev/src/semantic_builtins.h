@@ -32,6 +32,8 @@ cpp_decl::TypePtr gnu_complex_type_for_component(const cpp_decl::TypePtr & compo
 bool is_gnu_complex_type(const cpp_decl::TypePtr & type,
                          cpp_decl::TypePtr * component_type = nullptr);
 bool is_builtin_va_list_type(const cpp_decl::TypePtr & type);
+bool is_cpp11_literal_type(SemanticContext & ctx,
+                           const cpp_decl::TypePtr & type);
 
 bool expression_is_nothrow(SemanticContext & ctx,
                            semantic_model::Scope & scope,
