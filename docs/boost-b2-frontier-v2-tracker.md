@@ -961,6 +961,15 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Grouped the clean final-replay closures for suites 31 and 32.
+  The six-job DateTime/Decimal request finds 2384 targets, rebuilds all 272
+  requested targets, records all 59 DateTime actions as passing, and handles
+  all four deliberate failures as failed-as-expected. Both Decimal C++14
+  `decltype(auto)` configurations remain correctly unavailable in the C++11
+  lane, so that suite completes its bookkeeping target without admitting a
+  newer language mode. The request has no unexpected failure or skip and exits
+  in 276.72s at 493,072,384 B maximum RSS with zero process swaps and unchanged
+  system swapouts. No compiler, test, or reference change is required.
 - `2026-08-04`: Grouped the clean final-replay closures for suites 29 and 30
   after running each historically sensitive graph independently. Coroutine
   finds 3237 targets, rebuilds all 70 requested targets, passes both
