@@ -961,6 +961,17 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Grouped only clean final-replay closures for suites 25--27.
+  The isolated six-job Contract graph rebuilds all 877 requested targets,
+  records all 214 test actions as passing, handles all 33 deliberate failures
+  as failed-as-expected, and exits in 1097.73s at 828,067,840 B maximum RSS
+  with zero process swaps. The combined Conversion/Convert request finds 369
+  targets, rebuilds all 18 requested targets, records five Conversion passing
+  actions and both deliberate failures as failed-as-expected, completes
+  Convert's configuration-only bookkeeping, and exits in 21.45s at
+  200,216,576 B maximum RSS with zero process swaps. Neither request has an
+  unexpected failure or skip, and system swapouts remain unchanged. No
+  compiler, test, or reference change is part of this clean group.
 - `2026-08-04`: Grouped the independently clean final-replay closures for
   suites 23 and 24. The six-job ContainerHash/Context request updates all 341
   targets, records 77 ContainerHash passes and its one deliberate failure as
