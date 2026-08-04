@@ -201,10 +201,12 @@ void remove_hidden_using_base_member_function_candidates(
     const ClassInfo & current);
 MemberClassTemplateLookupResult lookup_member_class_template(SemanticContext & ctx,
                                                              ClassInfo & info,
-                                                             const std::string & name);
+                                                             const std::string & name,
+                                                             Scope * lexical_scope = nullptr);
 MemberAliasTemplateLookupResult lookup_member_alias_template(SemanticContext & ctx,
                                                              ClassInfo & info,
-                                                             const std::string & name);
+                                                             const std::string & name,
+                                                             Scope * lexical_scope = nullptr);
 MemberVariableTemplateLookupResult lookup_member_variable_template(
     SemanticContext & ctx,
     ClassInfo & info,
@@ -214,6 +216,10 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
                                           const std::string & name,
                                           bool ensure_current_reference_members = true,
                                           Scope * lexical_scope = nullptr);
+bool cached_member_type_access_allowed(SemanticContext & ctx,
+                                       ClassInfo & info,
+                                       const std::string & name,
+                                       Scope & lexical_scope);
 bool resolve_qualified_member_target(SemanticContext & ctx,
                                      Scope & scope,
                                      ClassInfo & object_class,

@@ -1558,6 +1558,7 @@ struct AliasTemplateDecl
   Scope * declaring_scope = nullptr;
   Scope * pattern_scope = nullptr;
   std::string name;
+  MemberAccess access = MA_PUBLIC;
   const CppAstNode * type_id = nullptr;
   cpp_decl::TypePtr resolved_type_pattern;
   std::size_t gnu_ext_vector_type_parameter_index =
@@ -1679,6 +1680,7 @@ struct ClassTemplateDecl
   Scope * declaring_scope = nullptr;
   Scope * pattern_scope = nullptr;
   std::string name;
+  MemberAccess access = MA_PUBLIC;
   const CppAstNode * class_node = nullptr;
   std::vector<template_model::TemplateParameterInfo> parameters;
   // ABI metadata retained past Analyzer teardown shares one immutable

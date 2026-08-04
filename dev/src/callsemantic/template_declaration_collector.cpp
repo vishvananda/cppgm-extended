@@ -870,6 +870,7 @@ public:
       decl->declaring_scope = class_template_scope;
       decl->pattern_scope = &pattern_scope;
       decl->name = class_template_name;
+      decl->access = access;
       decl->class_node = effective_class_node;
       decl->parameters = template_parameters;
       decl->comes_from_standard_include_path =
@@ -913,6 +914,7 @@ public:
       decl->declaring_scope = &scope;
       decl->pattern_scope = &pattern_scope;
       decl->name = inner.value;
+      decl->access = access;
       decl->type_id = type_id;
       decl->parameters = template_parameters;
       const string & gnu_ext_vector_type_argument_identifier =

@@ -4947,16 +4947,21 @@ MemberCallableLookupResult lookup_visible_member_callables(ClassInfo & info,
 
 MemberClassTemplateLookupResult lookup_member_class_template(SemanticContext & ctx,
                                                              ClassInfo & info,
-                                                             const string & name)
+                                                             const string & name,
+                                                             Scope * lexical_scope)
 {
-  return lookup_member_in_hierarchy<MemberClassTemplateLookupResult>(
+  MemberClassTemplateLookupResult result =
+      lookup_member_in_hierarchy<MemberClassTemplateLookupResult>(
       info,
       [&ctx, &name](ClassInfo & current) -> MemberClassTemplateLookupResult
       {
         if(!current.member_scope) {
           return MemberClassTemplateLookupResult();
         }
-        if(!current.reference_members_collected &&
+        map<string, ClassTemplateDecl *>::iterator found =
+            current.member_scope->class_templates.find(name);
+        if(found == current.member_scope->class_templates.end() &&
+           !current.reference_members_collected &&
            current.reference_named_members_collected.count(name) == 0 &&
            !current.reference_member_collection_in_progress) {
           ctx.ensure_class_reference_named_member(current, name);
@@ -4964,8 +4969,7 @@ MemberClassTemplateLookupResult lookup_member_class_template(SemanticContext & c
         if(!current.member_scope) {
           return MemberClassTemplateLookupResult();
         }
-        map<string, ClassTemplateDecl *>::iterator found =
-            current.member_scope->class_templates.find(name);
+        found = current.member_scope->class_templates.find(name);
         if(found == current.member_scope->class_templates.end()) {
           return MemberClassTemplateLookupResult();
         }
@@ -4974,20 +4978,35 @@ MemberClassTemplateLookupResult lookup_member_class_template(SemanticContext & c
         result.declared_in = &current;
         return result;
       });
+  if(result.class_template && lexical_scope && result.declared_in &&
+     !member_access_allowed(lexical_scope,
+                            current_class_scope(*lexical_scope),
+                            current_function_scope(*lexical_scope),
+                            result.declared_in,
+                            result.class_template->access,
+                            result.path_access)) {
+    return MemberClassTemplateLookupResult();
+  }
+  return result;
 }
 
 MemberAliasTemplateLookupResult lookup_member_alias_template(SemanticContext & ctx,
                                                              ClassInfo & info,
-                                                             const string & name)
+                                                             const string & name,
+                                                             Scope * lexical_scope)
 {
-  return lookup_member_in_hierarchy<MemberAliasTemplateLookupResult>(
+  MemberAliasTemplateLookupResult result =
+      lookup_member_in_hierarchy<MemberAliasTemplateLookupResult>(
       info,
       [&ctx, &name](ClassInfo & current) -> MemberAliasTemplateLookupResult
       {
         if(!current.member_scope) {
           return MemberAliasTemplateLookupResult();
         }
-        if(!current.reference_members_collected &&
+        map<string, AliasTemplateDecl *>::iterator found =
+            current.member_scope->alias_templates.find(name);
+        if(found == current.member_scope->alias_templates.end() &&
+           !current.reference_members_collected &&
            current.reference_named_members_collected.count(name) == 0 &&
            !current.reference_member_collection_in_progress) {
           ctx.ensure_class_reference_named_member(current, name);
@@ -4995,8 +5014,7 @@ MemberAliasTemplateLookupResult lookup_member_alias_template(SemanticContext & c
         if(!current.member_scope) {
           return MemberAliasTemplateLookupResult();
         }
-        map<string, AliasTemplateDecl *>::iterator found =
-            current.member_scope->alias_templates.find(name);
+        found = current.member_scope->alias_templates.find(name);
         if(found == current.member_scope->alias_templates.end()) {
           return MemberAliasTemplateLookupResult();
         }
@@ -5005,6 +5023,16 @@ MemberAliasTemplateLookupResult lookup_member_alias_template(SemanticContext & c
         result.declared_in = &current;
         return result;
       });
+  if(result.alias_template && lexical_scope && result.declared_in &&
+     !member_access_allowed(lexical_scope,
+                            current_class_scope(*lexical_scope),
+                            current_function_scope(*lexical_scope),
+                            result.declared_in,
+                            result.alias_template->access,
+                            result.path_access)) {
+    return MemberAliasTemplateLookupResult();
+  }
+  return result;
 }
 
 MemberVariableTemplateLookupResult lookup_member_variable_template(SemanticContext & ctx,
@@ -5378,6 +5406,35 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
       declared_in->member_scope->named_types.find(name)->second);
   result.declared_in = declared_in;
   return result;
+}
+
+bool cached_member_type_access_allowed(SemanticContext & ctx,
+                                       ClassInfo & info,
+                                       const string & name,
+                                       Scope & lexical_scope)
+{
+  if(info.member_scope) {
+    Scope::NamedTypeMap::const_iterator direct =
+        info.member_scope->named_types.find(name);
+    if(direct != info.member_scope->named_types.end()) {
+      return member_access_allowed(&lexical_scope,
+                                   current_class_scope(lexical_scope),
+                                   current_function_scope(lexical_scope),
+                                   &info,
+                                   named_type_access_for_lookup(
+                                       *info.member_scope, name),
+                                   MA_PUBLIC);
+    }
+  }
+  const MemberTypeLookupResult unrestricted =
+      lookup_member_type(ctx, info, name, false, nullptr);
+  if(!unrestricted.type) {
+    // This helper is only an access guard for already structured lookup.
+    // A spelling that is not a cached or inherited member may still be
+    // resolved by the caller's specialization-aware fallback.
+    return true;
+  }
+  return lookup_member_type(ctx, info, name, false, &lexical_scope).type != nullptr;
 }
 
 bool function_has_friend_access(const FunctionBinding * current_function,
