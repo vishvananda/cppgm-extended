@@ -14,10 +14,12 @@ zero credited Boost suites. V1 pass/fail state is historical only.
 - suite inventory: `docs/boost-b2-suite-status-20260511.md`
 - suite count: `147`
 - completed suites: `147 / 147`
-- current cursor: final forced replay of suites `1--40`
+- completed: `2026-08-04`
+- current cursor: complete; no ordered suite or replay remains
 - active compiler frontier: none; ordered suite intake is complete
-- final replay gate: force-rebuild suites 1--40 against the final compiler and
-  record every changed outcome before declaring V2 complete
+- final replay gate: pass; suites 1--40 were force-rebuilt against the final
+  packaged compiler, replay-exposed defects were closed independently, and all
+  final outcomes are recorded below
 
 ## Baseline Gates
 
@@ -961,6 +963,21 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Completed the V2 final replay gate with suite 40. The isolated
+  six-job Filesystem graph finds 3562 targets, rebuilds all 168 requested
+  targets, records all 32 test actions as passing, handles the deliberate
+  `cf_path_nullptr_test` failure as failed-as-expected, and has no unexpected
+  failure or skip. It exits in 153.92s at 832,057,344 B maximum RSS with zero
+  process swaps. System swapouts advance by 101,728 pages during the initial
+  concurrent wave, then remain fixed while aggregate compiler RSS releases and
+  `memory_pressure -Q` continues to report 45% free; the replay itself remains
+  successful. Together with the recorded closures for suites 1--39, this
+  completes the required final force-rebuild against the packaged compiler.
+  Replayed suites that exposed errors were fixed, validated, and committed
+  independently; only clean closures were grouped. V2 is complete at 147/147
+  classified suites with no remaining compiler frontier, test failure, or
+  replay command. No compiler, test, or reference change is required for this
+  final clean suite.
 - `2026-08-04`: Closed the clean final replay of suite 39. Fiber completes its
   architecture, C++11, threading, ICU, atomic, and host-capability checks,
   finds the single bookkeeping target, and exits successfully in 23.25s at
@@ -5419,36 +5436,9 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
   fixed-baseline performance result improves to +0.68% instructions. Suite 3 is
   closed; the cursor advances to `libs/any/test`.
 
-## Next Commands
+## Completion
 
-```sh
-cd /Users/vishvananda/boost_1_91_0
-# All ordered suites are classified. Run the required final replay in one B2
-# request so shared dependencies are deduplicated while tests remain parallel.
-/usr/bin/time -lp /usr/local/bin/timeout 14400 env JOBS=6 CXXSTD=11 \
-  CPPGM_BOOST_B2_FRONTIER=1 \
-  CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ \
-  CC=/usr/local/opt/llvm/bin/clang \
-  CXX=/usr/local/opt/llvm/bin/clang++ \
-  CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang \
-  CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  ./run-cppgm-b2.sh -a pch=off \
-    libs/accumulators/test libs/algorithm/test libs/align/test libs/any/test \
-    libs/array/test libs/asio/test libs/assert/test libs/assign/test \
-    libs/atomic/test libs/beast/test libs/bimap/test libs/bind/test \
-    libs/bloom/test libs/callable_traits/test libs/charconv/test \
-    libs/chrono/test libs/circular_buffer/test libs/compat/test \
-    libs/compute/test libs/concept_check/test libs/config/test \
-    libs/container/test libs/container_hash/test libs/context/test \
-    libs/contract/test libs/conversion/test libs/convert/test libs/core/test \
-    libs/coroutine/test libs/crc/test libs/date_time/test libs/decimal/test \
-    libs/describe/test libs/detail/test libs/dll/test \
-    libs/dynamic_bitset/test libs/endian/test libs/exception/test \
-    libs/fiber/test libs/filesystem/test
-```
-
-This replay is the remaining V2 completion gate. It uses the final compiler,
-force-rebuilds every requested object, and must record any result that differs
-from the original suite row. Raise `JOBS` only when no competing large build is
-active and live aggregate RSS leaves adequate headroom.
+The ordered Boost V2 intake is complete at `147 / 147`, and the required final
+force-replay of suites 1--40 is complete against the packaged compiler. There
+is no remaining Boost command or active compiler frontier in this tracker; the
+branch is ready for review and integration.
