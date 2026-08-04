@@ -238,7 +238,8 @@ static bool emit_itanium_function_encoding_with_substitutions(
     const TypePtr & type,
     const FunctionSymbolOptions & options,
     string & out,
-    vector<abi_mangle::SubstitutionSlot> * substitution_slots = nullptr);
+    vector<abi_mangle::SubstitutionSlot> * substitution_slots = nullptr,
+    abi_mangle::AbiMangleTarget * captured_target = nullptr);
 
 static size_t count_scope_operators(const string & text)
 {
@@ -329,42 +330,32 @@ std::string virtual_override_thunk_object_symbol_for_function(
     const FunctionSymbolOptions & options,
     long long this_adjust,
     bool has_result_adjust,
-    long long result_adjust)
+    long long result_adjust,
+    bool result_adjust_virtual,
+    long long result_vcall_offset)
 {
   if(is_c_linkage) {
     return string();
   }
-  string function_encoding;
+  string ignored_function_encoding;
   string out;
+  abi_mangle::AbiMangleTarget target;
   if(!emit_itanium_function_encoding_with_substitutions(qualified_name,
                                                        display_name,
                                                        type,
                                                        options,
-                                                       function_encoding,
-                                                       nullptr) ||
-     !abi_mangle::emit_virtual_override_thunk_symbol_from_encoding(
-         function_encoding,
-         this_adjust,
-         has_result_adjust,
-         result_adjust,
-         out)) {
+                                                       ignored_function_encoding,
+                                                       nullptr,
+                                                       &target)) {
     return string();
   }
-  return out;
-}
-
-std::string virtual_override_thunk_object_symbol_for_object_symbol(
-    const string & target_object_symbol,
-    long long this_adjust,
-    bool has_result_adjust,
-    long long result_adjust)
-{
-  string out;
-  if(!abi_mangle::emit_virtual_override_thunk_symbol(target_object_symbol,
-                                                     this_adjust,
-                                                     has_result_adjust,
-                                                     result_adjust,
-                                                     out)) {
+  target.kind = abi_mangle::ABI_MANGLE_THUNK;
+  target.this_adjust = this_adjust;
+  target.has_result_adjust = has_result_adjust;
+  target.result_adjust = result_adjust;
+  target.result_adjust_virtual = result_adjust_virtual;
+  target.result_vcall_offset = result_vcall_offset;
+  if(!abi_mangle::emit_mangle_target_symbol(target, out)) {
     return string();
   }
   return out;
@@ -381,31 +372,21 @@ std::string virtual_base_override_thunk_object_symbol_for_function(
   if(is_c_linkage) {
     return string();
   }
-  string function_encoding;
+  string ignored_function_encoding;
   string out;
+  abi_mangle::AbiMangleTarget target;
   if(!emit_itanium_function_encoding_with_substitutions(qualified_name,
                                                        display_name,
                                                        type,
                                                        options,
-                                                       function_encoding,
-                                                       nullptr) ||
-     !abi_mangle::emit_virtual_base_override_thunk_symbol_from_encoding(
-         function_encoding,
-         vcall_offset,
-         out)) {
+                                                       ignored_function_encoding,
+                                                       nullptr,
+                                                       &target)) {
     return string();
   }
-  return out;
-}
-
-std::string virtual_base_override_thunk_object_symbol_for_object_symbol(
-    const string & target_object_symbol,
-    long long vcall_offset)
-{
-  string out;
-  if(!abi_mangle::emit_virtual_base_override_thunk_symbol(target_object_symbol,
-                                                          vcall_offset,
-                                                          out)) {
+  target.kind = abi_mangle::ABI_MANGLE_VIRTUAL_BASE_THUNK;
+  target.vcall_offset = vcall_offset;
+  if(!abi_mangle::emit_mangle_target_symbol(target, out)) {
     return string();
   }
   return out;
@@ -1249,7 +1230,8 @@ static bool emit_itanium_function_encoding_with_substitutions(
     const TypePtr & type,
     const FunctionSymbolOptions & options,
     string & out,
-    vector<abi_mangle::SubstitutionSlot> * substitution_slots);
+    vector<abi_mangle::SubstitutionSlot> * substitution_slots,
+    abi_mangle::AbiMangleTarget * captured_target);
 static bool build_itanium_function_context_encoding_ir(
     const QualifiedName & qualified,
     const string & display_name,
@@ -19433,7 +19415,8 @@ static bool emit_itanium_function_encoding_with_substitutions(
     const TypePtr & type,
     const FunctionSymbolOptions & options,
     string & out,
-    vector<abi_mangle::SubstitutionSlot> * substitution_slots)
+    vector<abi_mangle::SubstitutionSlot> * substitution_slots,
+    abi_mangle::AbiMangleTarget * captured_target)
 {
   string candidate;
   MangleSubstitutionState state;
@@ -19444,7 +19427,9 @@ static bool emit_itanium_function_encoding_with_substitutions(
                                           type,
                                           options,
                                           candidate,
-                                          substitution_slots ? &state : nullptr) ||
+                                          substitution_slots ? &state : nullptr,
+                                          false,
+                                          captured_target) ||
      !abi_mangle::object_symbol_body(candidate, out)) {
     return false;
   }

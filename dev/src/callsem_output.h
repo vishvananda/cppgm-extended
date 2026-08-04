@@ -299,6 +299,9 @@ struct CallSemRarePayload
   symbol_linkage::SpecialMemberEntryPointKind special_member_entry_point_kind =
       symbol_linkage::SMEK_COMPLETE;
   long long result_adjust = 0;
+  long long result_vcall_offset = 0;
+  unsigned long long result_virtual_base_index = 0;
+  unsigned long long host_vcall_offset_count = 0;
   long long virtual_dispatch_view_offset = 0;
   unsigned long long bit_field_width = 0;
   unsigned long long bit_field_offset = 0;
@@ -333,6 +336,7 @@ struct CallSemNode
       has_uint_value(false),
       has_int_value(false),
       has_result_adjust(false),
+      has_virtual_result_adjust(false),
       is_bit_field(false),
       is_reference_storage(false),
       is_reference_storage_target(false),
@@ -403,6 +407,7 @@ struct CallSemNode
   std::uint64_t has_uint_value : 1;
   std::uint64_t has_int_value : 1;
   std::uint64_t has_result_adjust : 1;
+  std::uint64_t has_virtual_result_adjust : 1;
   std::uint64_t is_bit_field : 1;
   std::uint64_t is_reference_storage : 1;
   std::uint64_t is_reference_storage_target : 1;
@@ -741,6 +746,54 @@ inline void set_callsem_result_adjust(CallSemNode & node, long long value)
     return;
   }
   ensure_callsem_rare_payload(node).result_adjust = value;
+}
+
+inline long long callsem_result_vcall_offset(const CallSemNode & node)
+{
+  const CallSemRarePayload * payload = callsem_rare_payload(node);
+  return payload ? payload->result_vcall_offset : 0;
+}
+
+inline void set_callsem_result_vcall_offset(CallSemNode & node, long long value)
+{
+  if(value == 0 && !callsem_rare_payload(node)) {
+    return;
+  }
+  ensure_callsem_rare_payload(node).result_vcall_offset = value;
+}
+
+inline unsigned long long callsem_result_virtual_base_index(
+    const CallSemNode & node)
+{
+  const CallSemRarePayload * payload = callsem_rare_payload(node);
+  return payload ? payload->result_virtual_base_index : 0;
+}
+
+inline void set_callsem_result_virtual_base_index(
+    CallSemNode & node,
+    unsigned long long value)
+{
+  if(value == 0 && !callsem_rare_payload(node)) {
+    return;
+  }
+  ensure_callsem_rare_payload(node).result_virtual_base_index = value;
+}
+
+inline unsigned long long callsem_host_vcall_offset_count(
+    const CallSemNode & node)
+{
+  const CallSemRarePayload * payload = callsem_rare_payload(node);
+  return payload ? payload->host_vcall_offset_count : 0;
+}
+
+inline void set_callsem_host_vcall_offset_count(
+    CallSemNode & node,
+    unsigned long long value)
+{
+  if(value == 0 && !callsem_rare_payload(node)) {
+    return;
+  }
+  ensure_callsem_rare_payload(node).host_vcall_offset_count = value;
 }
 
 inline long long callsem_virtual_dispatch_view_offset(const CallSemNode & node)

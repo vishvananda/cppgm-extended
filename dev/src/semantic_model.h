@@ -772,6 +772,10 @@ struct SubobjectInfo
 struct VTableSlotInfo
 {
   FunctionBinding * function = nullptr;
+  // The virtual declaration that owns the slot's callable contract.  The
+  // final overrider can have a covariant result, so retaining only `function`
+  // loses the result type promised to callers through this slot.
+  FunctionBinding * contract_function = nullptr;
   long long this_adjust = 0;
 };
 
@@ -816,6 +820,9 @@ struct ClassInfo
   std::vector<BaseInfo> bases;
   std::vector<AnonymousMemberClassInfo> anonymous_member_classes;
   std::vector<FunctionBinding *> vtable_entries;
+  // Parallel to vtable_entries.  An override replaces the entry but preserves
+  // the original typed slot contract for covariant-result lowering.
+  std::vector<FunctionBinding *> vtable_entry_contracts;
   std::vector<SubobjectInfo> complete_subobjects;
   std::vector<SubobjectInfo> virtual_base_subobjects;
   std::vector<VTableInfo> vtables;

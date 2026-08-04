@@ -3764,23 +3764,263 @@ bool class_rtti_has_external_key_function(SemanticContext & ctx, ClassInfo & inf
          VTK_EXTERNAL;
 }
 
-long long compute_vtable_entry_result_adjustment(SemanticContext & ctx,
-                                                 const FunctionBinding & slot_binding,
-                                                 const FunctionBinding & final_binding)
+struct VTableEntryResultAdjustment
 {
+  long long fixed_adjust = 0;
+  bool is_virtual = false;
+  unsigned long long virtual_base_index = 0;
+  long long host_vcall_offset = 0;
+};
+
+struct CovariantBaseProjection
+{
+  size_t matches = 0;
+  size_t offset = 0;
+  ClassInfo * virtual_base = nullptr;
+  size_t virtual_suffix_offset = 0;
+};
+
+void collect_covariant_base_projections(
+    const ClassInfo & layout_root,
+    const ClassInfo & current,
+    const ClassInfo & target,
+    size_t current_offset,
+    ClassInfo * crossed_virtual_base,
+    size_t crossed_virtual_base_offset,
+    set<const ClassInfo *> & visited_virtual_bases,
+    CovariantBaseProjection & out)
+{
+  if(&current == &target) {
+    ++out.matches;
+    if(out.matches == 1) {
+      out.offset = current_offset;
+      out.virtual_base = crossed_virtual_base;
+      out.virtual_suffix_offset = crossed_virtual_base ?
+          current_offset - crossed_virtual_base_offset : 0;
+    }
+    return;
+  }
+
+  for(size_t i = 0; i < current.bases.size(); ++i) {
+    const BaseInfo & edge = current.bases[i];
+    if(!edge.type) {
+      continue;
+    }
+    size_t child_offset = current_offset + edge.offset;
+    ClassInfo * child_virtual_base = crossed_virtual_base;
+    size_t child_virtual_base_offset = crossed_virtual_base_offset;
+    if(edge.is_virtual) {
+      if(!visited_virtual_bases.insert(edge.type).second) {
+        continue;
+      }
+      bool found_layout = false;
+      for(size_t v = 0; v < layout_root.virtual_base_subobjects.size(); ++v) {
+        const SubobjectInfo & subobject = layout_root.virtual_base_subobjects[v];
+        if(subobject.type == edge.type) {
+          child_offset = subobject.offset;
+          found_layout = true;
+          break;
+        }
+      }
+      if(!found_layout) {
+        continue;
+      }
+      child_virtual_base = edge.type;
+      child_virtual_base_offset = child_offset;
+    }
+    collect_covariant_base_projections(layout_root,
+                                       *edge.type,
+                                       target,
+                                       child_offset,
+                                       child_virtual_base,
+                                       child_virtual_base_offset,
+                                       visited_virtual_bases,
+                                       out);
+  }
+}
+
+bool same_host_vcall_contract_owner(const ClassInfo * lhs,
+                                    const ClassInfo * rhs)
+{
+  if(lhs == rhs) {
+    return true;
+  }
+  if(!lhs || !rhs) {
+    return false;
+  }
+  if(lhs->semantic_identity_id == rhs->semantic_identity_id) {
+    return true;
+  }
+  return lhs->type && rhs->type && type_equals(lhs->type, rhs->type);
+}
+
+bool same_host_vcall_contract(const FunctionBinding & lhs,
+                              const FunctionBinding & rhs)
+{
+  if(!same_host_vcall_contract_owner(lhs.owner_class, rhs.owner_class)) {
+    return false;
+  }
+  if(lhs.is_destructor || rhs.is_destructor) {
+    return lhs.is_destructor && rhs.is_destructor;
+  }
+  TypePtr lhs_type = strip_top_level_cv(lhs.declared_type ? lhs.declared_type : lhs.type);
+  TypePtr rhs_type = strip_top_level_cv(rhs.declared_type ? rhs.declared_type : rhs.type);
+  if(!lhs_type || !rhs_type ||
+     lhs_type->kind != Type::TK_FUNCTION ||
+     rhs_type->kind != Type::TK_FUNCTION ||
+     lhs.display_name != rhs.display_name ||
+     lhs.is_const_method != rhs.is_const_method ||
+     lhs.is_volatile_method != rhs.is_volatile_method ||
+     lhs.ref_qualifier != rhs.ref_qualifier ||
+     lhs_type->variadic != rhs_type->variadic ||
+     lhs_type->params.size() != rhs_type->params.size()) {
+    return false;
+  }
+  for(size_t i = 0; i < lhs_type->params.size(); ++i) {
+    if(!type_equals(lhs_type->params[i], rhs_type->params[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool is_virtual_base_vtable_contract(const ClassInfo & info,
+                                     const FunctionBinding * candidate)
+{
+  if(!candidate) {
+    return false;
+  }
+  for(size_t v = 0; v < info.virtual_base_subobjects.size(); ++v) {
+    const ClassInfo * virtual_base = info.virtual_base_subobjects[v].type;
+    if(!virtual_base) {
+      continue;
+    }
+    const vector<FunctionBinding *> & contracts =
+        virtual_base->vtable_entry_contracts.size() ==
+                virtual_base->vtable_entries.size() ?
+            virtual_base->vtable_entry_contracts :
+            virtual_base->vtable_entries;
+    for(size_t i = 0; i < contracts.size(); ++i) {
+      if(contracts[i] && same_host_vcall_contract(*contracts[i], *candidate)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+const ClassInfo * host_nearly_empty_virtual_primary_base(const ClassInfo & info)
+{
+  // The Itanium host ABI may choose a nearly-empty virtual base as an
+  // indirect primary base.  The internal class layout keeps virtual bases in
+  // their own subobjects, but its host vtable still needs the vcall prefix
+  // inherited along that primary path so ABI offsets and thunk names agree
+  // with Clang.  On the supported x86_64 host, a vptr-only base occupies one
+  // eight-byte slot.
+  for(size_t i = 0; i < info.bases.size(); ++i) {
+    const BaseInfo & base = info.bases[i];
+    if(!base.is_virtual && base.type && base.type->is_polymorphic) {
+      return host_nearly_empty_virtual_primary_base(*base.type);
+    }
+  }
+  for(size_t i = 0; i < info.virtual_base_subobjects.size(); ++i) {
+    const ClassInfo * virtual_base = info.virtual_base_subobjects[i].type;
+    if(virtual_base && virtual_base->is_polymorphic &&
+       virtual_base->nonvirtual_size <= 8ULL) {
+      return virtual_base;
+    }
+  }
+  return nullptr;
+}
+
+unsigned long long host_virtual_primary_vcall_offset_count(const ClassInfo & info)
+{
+  const ClassInfo * virtual_primary =
+      host_nearly_empty_virtual_primary_base(info);
+  if(!virtual_primary) {
+    return 0;
+  }
+  const vector<FunctionBinding *> & slots =
+      virtual_primary->vtable_entry_contracts.size() ==
+              virtual_primary->vtable_entries.size() ?
+          virtual_primary->vtable_entry_contracts :
+          virtual_primary->vtable_entries;
+  vector<const FunctionBinding *> contracts;
+  for(size_t i = 0; i < slots.size(); ++i) {
+    const FunctionBinding * candidate = slots[i];
+    if(!candidate) {
+      continue;
+    }
+    bool duplicate = false;
+    for(size_t retained = 0; retained < contracts.size(); ++retained) {
+      if(same_host_vcall_contract(*candidate, *contracts[retained])) {
+        duplicate = true;
+        break;
+      }
+    }
+    if(!duplicate) {
+      contracts.push_back(candidate);
+    }
+  }
+  return static_cast<unsigned long long>(contracts.size());
+}
+
+unsigned long long host_vcall_offset_count(const ClassInfo & info,
+                                           const VTableInfo & table)
+{
+  if(table.view_offset == 0) {
+    return host_virtual_primary_vcall_offset_count(info);
+  }
+  vector<const FunctionBinding *> contracts;
+  for(size_t i = 0; i < table.slots.size(); ++i) {
+    const FunctionBinding * candidate = table.slots[i].contract_function ?
+        table.slots[i].contract_function : table.slots[i].function;
+    if(!is_virtual_base_vtable_contract(info, candidate)) {
+      continue;
+    }
+    bool duplicate = false;
+    for(size_t retained = 0; retained < contracts.size(); ++retained) {
+      if(same_host_vcall_contract(*candidate, *contracts[retained])) {
+        duplicate = true;
+        break;
+      }
+    }
+    if(!duplicate) {
+      contracts.push_back(candidate);
+    }
+  }
+  return static_cast<unsigned long long>(contracts.size());
+}
+
+unsigned long long host_primary_vcall_offset_count(const ClassInfo & info)
+{
+  for(size_t i = 0; i < info.vtables.size(); ++i) {
+    if(info.vtables[i].view_offset == 0) {
+      return host_vcall_offset_count(info, info.vtables[i]);
+    }
+  }
+  return 0;
+}
+
+VTableEntryResultAdjustment compute_vtable_entry_result_adjustment(
+    SemanticContext & ctx,
+    const FunctionBinding & slot_binding,
+    const FunctionBinding & final_binding)
+{
+  VTableEntryResultAdjustment result;
   TypePtr slot_type = strip_top_level_cv(slot_binding.type);
   TypePtr final_type = strip_top_level_cv(final_binding.type);
   if(!slot_type || !final_type ||
      slot_type->kind != Type::TK_FUNCTION ||
      final_type->kind != Type::TK_FUNCTION ||
      type_equals(slot_type->inner, final_type->inner)) {
-    return 0;
+    return result;
   }
 
   TypePtr slot_return = strip_top_level_cv(slot_type->inner);
   TypePtr final_return = strip_top_level_cv(final_type->inner);
   if(!slot_return || !final_return) {
-    return 0;
+    return result;
   }
 
   const bool pointer_form =
@@ -3790,13 +4030,13 @@ long long compute_vtable_entry_result_adjustment(SemanticContext & ctx,
       slot_return->kind == Type::TK_LVALUE_REFERENCE &&
       final_return->kind == Type::TK_LVALUE_REFERENCE;
   if(!pointer_form && !reference_form) {
-    return 0;
+    return result;
   }
 
   TypePtr slot_object = strip_top_level_cv(slot_return->inner);
   TypePtr final_object = strip_top_level_cv(final_return->inner);
   if(!slot_object || !final_object || type_equals(slot_object, final_object)) {
-    return 0;
+    return result;
   }
 
   ClassInfo * slot_class = ctx.complete_class_type(slot_object);
@@ -3808,15 +4048,47 @@ long long compute_vtable_entry_result_adjustment(SemanticContext & ctx,
     final_class = ctx.class_info_for_type(final_object);
   }
   if(!slot_class || !final_class) {
-    return 0;
+    return result;
   }
 
-  size_t offset = 0;
-  MemberAccess access = MA_PUBLIC;
-  if(!find_unique_base_path(*final_class, slot_class, offset, access)) {
-    return 0;
+  CovariantBaseProjection projection;
+  set<const ClassInfo *> visited_virtual_bases;
+  collect_covariant_base_projections(*final_class,
+                                     *final_class,
+                                     *slot_class,
+                                     0,
+                                     nullptr,
+                                     0,
+                                     visited_virtual_bases,
+                                     projection);
+  if(projection.matches != 1) {
+    return result;
   }
-  return static_cast<long long>(offset);
+  if(!projection.virtual_base) {
+    result.fixed_adjust = static_cast<long long>(projection.offset);
+    return result;
+  }
+
+  size_t virtual_index = final_class->virtual_base_subobjects.size();
+  for(size_t i = 0; i < final_class->virtual_base_subobjects.size(); ++i) {
+    if(final_class->virtual_base_subobjects[i].type == projection.virtual_base) {
+      virtual_index = i;
+      break;
+    }
+  }
+  if(virtual_index == final_class->virtual_base_subobjects.size()) {
+    return result;
+  }
+  result.fixed_adjust = static_cast<long long>(projection.virtual_suffix_offset);
+  result.is_virtual = true;
+  result.virtual_base_index = static_cast<unsigned long long>(virtual_index);
+  const unsigned long long slots_from_address_point =
+      static_cast<unsigned long long>(final_class->virtual_base_subobjects.size() -
+                                      virtual_index) +
+      host_primary_vcall_offset_count(*final_class) + 2ULL;
+  result.host_vcall_offset =
+      -static_cast<long long>(slots_from_address_point * 8ULL);
+  return result;
 }
 
 void append_named_function_candidates(ostringstream & out,
@@ -5309,6 +5581,8 @@ void append_vtable_output_node(SemanticContext & ctx,
   table_node.is_primary_vtable = table.view_offset == 0;
   table_node.is_virtual_base_subobject = is_virtual_base_view(info, table);
   table_node.uses_extended_vtable_layout = table.use_extended_layout;
+  set_callsem_host_vcall_offset_count(table_node,
+                                      host_vcall_offset_count(info, table));
   set_callsem_uint_value(table_node, table.view_offset);
   append_dump_virtual_base_layout(table_node, &info);
   if(table_symbol) {
@@ -5345,10 +5619,7 @@ void append_vtable_output_node(SemanticContext & ctx,
   }
   for(size_t i = 0; i < table.slots.size(); ++i) {
     const VTableSlotInfo & slot = table.slots[i];
-    FunctionBinding * base_virtual =
-        table.view_type && i < table.view_type->vtable_entries.size() ?
-            table.view_type->vtable_entries[i] :
-            nullptr;
+    FunctionBinding * base_virtual = slot.contract_function;
     FunctionBinding * slot_function =
         semantic_template_function::acquire_required_function_definition_binding(
             ctx, slot.function, *info.member_scope);
@@ -5403,11 +5674,18 @@ void append_vtable_output_node(SemanticContext & ctx,
       if(table_node.uses_extended_vtable_layout && base_virtual->is_destructor) {
         set_callsem_resolved_name(entry_node, base_virtual->name);
       }
-      const long long result_adjust =
+      const VTableEntryResultAdjustment result_adjust =
           compute_vtable_entry_result_adjustment(ctx, *base_virtual, *slot_function);
-      if(result_adjust != 0) {
+      if(result_adjust.fixed_adjust != 0 || result_adjust.is_virtual) {
         entry_node.has_result_adjust = true;
-        set_callsem_result_adjust(entry_node, result_adjust);
+        set_callsem_result_adjust(entry_node, result_adjust.fixed_adjust);
+        if(result_adjust.is_virtual) {
+          entry_node.has_virtual_result_adjust = true;
+          set_callsem_result_virtual_base_index(
+              entry_node, result_adjust.virtual_base_index);
+          set_callsem_result_vcall_offset(
+              entry_node, result_adjust.host_vcall_offset);
+        }
       }
     }
     table_node.children.push_back(std::move(entry_node));

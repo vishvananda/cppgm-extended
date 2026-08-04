@@ -7438,6 +7438,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.bases.clear();
   info.anonymous_member_classes.clear();
   info.vtable_entries.clear();
+  info.vtable_entry_contracts.clear();
   info.complete_subobjects.clear();
   info.virtual_base_subobjects.clear();
   info.vtables.clear();
@@ -7629,6 +7630,7 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
   info.bases.clear();
   info.anonymous_member_classes.clear();
   info.vtable_entries.clear();
+  info.vtable_entry_contracts.clear();
   info.complete_subobjects.clear();
   info.virtual_base_subobjects.clear();
   info.vtables.clear();
@@ -7724,10 +7726,40 @@ void finalize_class_virtuals(SemanticContext & ctx, ClassInfo & info)
 
   std::vector<FunctionBinding *> slots =
       primary_base ? primary_base->vtable_entries : std::vector<FunctionBinding *>();
+  std::vector<FunctionBinding *> slot_contracts =
+      primary_base ? primary_base->vtable_entry_contracts :
+                     std::vector<FunctionBinding *>();
+  if(slot_contracts.size() != slots.size()) {
+    slot_contracts = slots;
+  }
   bool root_virtuals = !slots.empty();
 
+  std::vector<FunctionBinding *> ordered_methods;
+  if(!primary_base) {
+    // A class that introduces its own primary vptr still carries inherited
+    // virtual-base destructor slots before virtuals newly declared by the
+    // class.  Implicit destructors are collected after source members, so
+    // visit only those inherited destructor overrides first rather than
+    // assigning an unrelated new virtual the inherited slot number.
+    for(size_t i = 0; i < info.method_declaration_order.size(); ++i) {
+      FunctionBinding * binding = info.method_declaration_order[i];
+      if(binding && binding->is_destructor &&
+         find_overridden_virtual(ctx, info, *binding)) {
+        ordered_methods.push_back(binding);
+      }
+    }
+  }
   for(size_t i = 0; i < info.method_declaration_order.size(); ++i) {
     FunctionBinding * binding = info.method_declaration_order[i];
+    if(!binding ||
+       find(ordered_methods.begin(), ordered_methods.end(), binding) ==
+           ordered_methods.end()) {
+      ordered_methods.push_back(binding);
+    }
+  }
+
+  for(size_t i = 0; i < ordered_methods.size(); ++i) {
+    FunctionBinding * binding = ordered_methods[i];
     if(!binding) {
       continue;
     }
@@ -7762,6 +7794,10 @@ void finalize_class_virtuals(SemanticContext & ctx, ClassInfo & info)
           overridden &&
           overridden->has_virtual_slot &&
           overridden->virtual_slot < slots.size() &&
+          slots[overridden->virtual_slot] &&
+          virtual_function_overrides(ctx,
+                                     *slots[overridden->virtual_slot],
+                                     *overridden) &&
           owner_on_primary_polymorphic_path(info, *overridden);
       if(overrides_primary_root_slot) {
         binding->has_virtual_slot = true;
@@ -7792,8 +7828,10 @@ void finalize_class_virtuals(SemanticContext & ctx, ClassInfo & info)
         binding->has_virtual_slot = true;
         binding->virtual_slot = slots.size();
         slots.push_back(binding);
+        slot_contracts.push_back(binding);
         if(has_secondary_virtual_destructor_slot(*binding)) {
           slots.push_back(binding);
+          slot_contracts.push_back(binding);
         }
         root_virtuals = true;
       }
@@ -7814,6 +7852,7 @@ void finalize_class_virtuals(SemanticContext & ctx, ClassInfo & info)
   }
 
   info.vtable_entries = slots;
+  info.vtable_entry_contracts = slot_contracts;
   info.has_own_vptr = !primary_base && (root_virtuals || any_polymorphic_base);
   info.is_polymorphic = info.has_own_vptr || !slots.empty() || any_polymorphic_base;
   retarget_polymorphic_imported_destructors_to_base_entry(info);
@@ -8471,6 +8510,9 @@ void finalize_class_layout(SemanticContext & ctx,
       }
       VTableSlotInfo slot;
       slot.function = final;
+      slot.contract_function =
+          i < info.vtable_entry_contracts.size() ?
+              info.vtable_entry_contracts[i] : base_virtual;
       slot.this_adjust =
           static_cast<long long>(target_offset) - static_cast<long long>(root.view_offset);
       root.slots.push_back(slot);
@@ -8498,6 +8540,9 @@ void finalize_class_layout(SemanticContext & ctx,
       }
       VTableSlotInfo slot;
       slot.function = final;
+      slot.contract_function =
+          j < subobject.type->vtable_entry_contracts.size() ?
+              subobject.type->vtable_entry_contracts[j] : base_virtual;
       slot.this_adjust =
           static_cast<long long>(target_offset) - static_cast<long long>(subobject.offset);
       table.slots.push_back(slot);

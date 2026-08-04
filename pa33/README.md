@@ -15,7 +15,8 @@ The tested ABI/runtime surface includes:
 
 - virtual dispatch, vtable ownership, and imported/exported vtables
 - RTTI object ownership and `dynamic_cast` / `typeid`
-- covariant return adjustment
+- covariant return adjustment, including layout-finalized fixed adjustments and
+  virtual-base result projection through the returned object's vtable
 - richer host exception handling in the exercised
   rethrow/cleanup/noexcept/RTTI subset
 - host-compatible unwind and relocation facts where the tests inspect objects

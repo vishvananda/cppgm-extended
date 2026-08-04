@@ -224,8 +224,10 @@ struct VTableEntryThunkRequest
   TypePtr function_type;
   long long this_adjust = 0;
   long long return_adjust = 0;
+  long long return_virtual_adjust_offset = 0;
   long long virtual_adjust_offset = 0;
   bool uses_vcall_offset_adjust = false;
+  bool uses_virtual_return_adjust = false;
   bool has_exported_symbol = false;
   symbol_linkage::SymbolIdentity exported_symbol;
 };
@@ -327,6 +329,7 @@ struct VTableBinding
 {
   string base_symbol;
   unsigned long long address_point_offset = 0;
+  unsigned long long host_vcall_offset_count = 0;
 };
 
 struct CleanupAction
@@ -516,6 +519,8 @@ string vtable_entry_thunk_symbol(const string & target_symbol,
                                  const string & kind,
                                  long long this_adjust,
                                  long long return_adjust,
+                                 long long return_virtual_adjust_offset,
+                                 bool uses_virtual_return_adjust,
                                  long long virtual_adjust_offset,
                                  bool uses_vcall_offset_adjust)
 {
@@ -523,6 +528,10 @@ string vtable_entry_thunk_symbol(const string & target_symbol,
   out << target_symbol << "::" << kind
       << "::this_" << signed_adjustment_key(this_adjust)
       << "::return_" << signed_adjustment_key(return_adjust);
+  if(uses_virtual_return_adjust) {
+    out << "::return_vcall_"
+        << signed_adjustment_key(return_virtual_adjust_offset);
+  }
   if(uses_vcall_offset_adjust) {
     out << "::vcall_" << signed_adjustment_key(virtual_adjust_offset);
   }
@@ -535,50 +544,37 @@ symbol_linkage::FunctionSymbolOptions vtable_entry_function_symbol_options(
 string simple_lookup_name(const string & text);
 
 string virtual_override_thunk_object_symbol_for_vtable_entry(
-    const symbol_linkage::SymbolIdentity & target_symbol,
     const CallSemNode & entry,
     long long this_adjust,
     bool has_result_adjust,
-    long long result_adjust)
+    long long result_adjust,
+    bool result_adjust_virtual,
+    long long result_vcall_offset)
 {
-  string out =
-      symbol_linkage::virtual_override_thunk_object_symbol_for_object_symbol(
-          target_symbol.object_symbol,
-          this_adjust,
-          has_result_adjust,
-          result_adjust);
-  if(!out.empty()) {
+  if(callsem_qualified_name_syntax(entry)) {
+    const string target_name = callsem_resolved_name(entry).empty() ?
+        entry.text.str() :
+        callsem_resolved_name(entry);
+    string out = symbol_linkage::virtual_override_thunk_object_symbol_for_function(
+        *callsem_qualified_name_syntax(entry),
+        simple_lookup_name(target_name),
+        entry.is_c_linkage,
+        entry.semantic_type,
+        vtable_entry_function_symbol_options(entry),
+        this_adjust,
+        has_result_adjust,
+        result_adjust,
+        result_adjust_virtual,
+        result_vcall_offset);
     return out;
   }
-  if(!callsem_qualified_name_syntax(entry)) {
-    return string();
-  }
-  const string target_name = callsem_resolved_name(entry).empty() ?
-      entry.text.str() :
-      callsem_resolved_name(entry);
-  return symbol_linkage::virtual_override_thunk_object_symbol_for_function(
-      *callsem_qualified_name_syntax(entry),
-      simple_lookup_name(target_name),
-      entry.is_c_linkage,
-      entry.semantic_type,
-      vtable_entry_function_symbol_options(entry),
-      this_adjust,
-      has_result_adjust,
-      result_adjust);
+  return string();
 }
 
 string virtual_base_override_thunk_object_symbol_for_vtable_entry(
-    const symbol_linkage::SymbolIdentity & target_symbol,
     const CallSemNode & entry,
     long long vcall_offset)
 {
-  string out =
-      symbol_linkage::virtual_base_override_thunk_object_symbol_for_object_symbol(
-          target_symbol.object_symbol,
-          vcall_offset);
-  if(!out.empty()) {
-    return out;
-  }
   if(!callsem_qualified_name_syntax(entry)) {
     return string();
   }
@@ -4125,8 +4121,16 @@ private:
     const auto emit_adjusted_pointer = [&]() -> string
     {
       const string vptr = emit_temp_assignment("ptr", string("load ptr ") + object_ptr);
+      unsigned long long host_vcall_offset_count = 0;
+      if(emit_runtime_support_) {
+        map<string, VTableBinding>::const_iterator table = vtables_.find(class_name);
+        if(table != vtables_.end()) {
+          host_vcall_offset_count = table->second.host_vcall_offset_count;
+        }
+      }
       const size_t slots_from_address_point =
-          runtime_layout->size() - layout_index + 2;
+          runtime_layout->size() - layout_index +
+          static_cast<size_t>(host_vcall_offset_count) + 2;
       const long long slot_offset =
           -static_cast<long long>(slots_from_address_point * 8);
       const string offset_slot =
@@ -20965,7 +20969,10 @@ private:
     const CallSemVirtualBaseLayout & virtual_base_layout =
         callsem_virtual_base_layout(node);
     if(!virtual_base_layout.empty()) {
-      return (static_cast<unsigned long long>(virtual_base_layout.size()) + 2ULL) * 8ULL;
+      const unsigned long long vcall_count = emit_runtime_support_ ?
+          callsem_host_vcall_offset_count(node) : 0ULL;
+      return (static_cast<unsigned long long>(virtual_base_layout.size()) +
+              vcall_count + 2ULL) * 8ULL;
     }
     return (node.is_primary_vtable || emit_runtime_support_) ? 16ULL : 0ULL;
   }
@@ -21912,7 +21919,21 @@ private:
       entry.instructions.push_back("return void");
     } else {
       string result_value = emit_value(call.str());
-      if(request.return_adjust != 0 &&
+      if(request.uses_virtual_return_adjust &&
+         (is_pointer_type(function_type->inner) ||
+          is_reference_type(function_type->inner))) {
+        const string vtable_ptr = emit_value(string("load ptr ") + result_value);
+        const string adjust_ptr = emit_value(
+            string("index i8 ") + vtable_ptr + ", " +
+            to_string(request.return_virtual_adjust_offset));
+        const string dynamic_adjust = emit_value(string("load i64 ") + adjust_ptr);
+        result_value = emit_value(string("index i8 ") + result_value + ", " +
+                                  dynamic_adjust);
+        if(request.return_adjust != 0) {
+          result_value = emit_value(string("index i8 ") + result_value + ", " +
+                                    to_string(request.return_adjust));
+        }
+      } else if(request.return_adjust != 0 &&
          (is_pointer_type(function_type->inner) || is_reference_type(function_type->inner))) {
         result_value = emit_value(string("index i8 ") + result_value + ", " +
                                   to_string(request.return_adjust));
@@ -23607,11 +23628,20 @@ private:
         node.is_primary_vtable || !virtual_base_layout.empty() || emit_runtime_support_;
     if(has_host_vtable_prefix) {
       binding.address_point_offset = host_vtable_address_point_offset(node);
+      binding.host_vcall_offset_count = emit_runtime_support_ ?
+          callsem_host_vcall_offset_count(node) : 0ULL;
       for(size_t i = 0; i < virtual_base_layout.size(); ++i) {
         const long long virtual_base_offset =
             static_cast<long long>(virtual_base_layout[i].second) -
             static_cast<long long>(view_offset);
         global.data_items.push_back(string("i64 ") + to_string(virtual_base_offset));
+      }
+      if(emit_runtime_support_) {
+        for(unsigned long long i = 0;
+            i < callsem_host_vcall_offset_count(node);
+            ++i) {
+          global.data_items.push_back("i64 0");
+        }
       }
       const long long offset_to_top = -static_cast<long long>(view_offset);
       global.data_items.push_back(string("i64 ") + to_string(offset_to_top));
@@ -23658,12 +23688,16 @@ private:
       const bool needs_entry_thunk =
           (!node.uses_extended_vtable_layout && this_adjust != 0) ||
           (node.children[i].has_result_adjust &&
-           callsem_result_adjust(node.children[i]) != 0);
+           (callsem_result_adjust(node.children[i]) != 0 ||
+            node.children[i].has_virtual_result_adjust));
       const bool needs_host_export_thunk =
           !node.is_virtual_base_subobject &&
           symbol_linkage::has_exported_object_symbol(exported_symbol) &&
           exported_symbol.object_symbol != "__cxa_pure_virtual" &&
-          this_adjust != 0;
+          (this_adjust != 0 ||
+           (node.children[i].has_result_adjust &&
+            (callsem_result_adjust(node.children[i]) != 0 ||
+             node.children[i].has_virtual_result_adjust)));
       symbol_linkage::SymbolIdentity virtual_export_symbol;
       const bool needs_host_virtual_export_thunk =
           node.uses_extended_vtable_layout &&
@@ -23680,23 +23714,44 @@ private:
         const long long thunk_return_adjust = node.children[i].has_result_adjust ?
             callsem_result_adjust(node.children[i]) :
             0;
+        const bool thunk_uses_virtual_return_adjust =
+            node.children[i].has_virtual_result_adjust;
+        long long thunk_return_virtual_adjust_offset =
+            callsem_result_vcall_offset(node.children[i]);
+        if(thunk_uses_virtual_return_adjust && !emit_runtime_support_) {
+          const size_t virtual_index = static_cast<size_t>(
+              callsem_result_virtual_base_index(node.children[i]));
+          const CallSemVirtualBaseLayout & layout = callsem_virtual_base_layout(node);
+          if(virtual_index >= layout.size()) {
+            throw logic_error(
+                "covariant result virtual base is absent from vtable layout");
+          }
+          const size_t slots_from_address_point =
+              layout.size() - virtual_index + 2;
+          thunk_return_virtual_adjust_offset =
+              -static_cast<long long>(slots_from_address_point * 8);
+        }
         const string thunk_symbol =
             vtable_entry_thunk_symbol(entry_symbol,
                                       "vtable_return_adjust",
                                       thunk_this_adjust,
                                       thunk_return_adjust,
+                                      thunk_return_virtual_adjust_offset,
+                                      thunk_uses_virtual_return_adjust,
                                       0,
                                       false);
         symbol_linkage::SymbolIdentity thunk_exported_symbol;
         if(needs_host_export_thunk) {
           const string thunk_object_symbol =
               virtual_override_thunk_object_symbol_for_vtable_entry(
-                  exported_symbol,
                   node.children[i],
                   this_adjust,
                   node.children[i].has_result_adjust &&
-                      callsem_result_adjust(node.children[i]) != 0,
-                  callsem_result_adjust(node.children[i]));
+                      (callsem_result_adjust(node.children[i]) != 0 ||
+                       node.children[i].has_virtual_result_adjust),
+                  callsem_result_adjust(node.children[i]),
+                  node.children[i].has_virtual_result_adjust,
+                  callsem_result_vcall_offset(node.children[i]));
           if(!thunk_object_symbol.empty()) {
             thunk_exported_symbol =
                 symbol_linkage::make_object_symbol_identity(thunk_symbol,
@@ -23713,6 +23768,10 @@ private:
           request.function_type = node.children[i].semantic_type;
           request.this_adjust = thunk_this_adjust;
           request.return_adjust = thunk_return_adjust;
+          request.return_virtual_adjust_offset =
+              thunk_return_virtual_adjust_offset;
+          request.uses_virtual_return_adjust =
+              thunk_uses_virtual_return_adjust;
           if(!thunk_exported_symbol.object_symbol.empty()) {
             request.has_exported_symbol = true;
             request.exported_symbol = thunk_exported_symbol;
@@ -23720,6 +23779,10 @@ private:
         } else if(request.target_symbol != entry_symbol ||
                   request.this_adjust != thunk_this_adjust ||
                   request.return_adjust != thunk_return_adjust ||
+                  request.return_virtual_adjust_offset !=
+                      thunk_return_virtual_adjust_offset ||
+                  request.uses_virtual_return_adjust !=
+                      thunk_uses_virtual_return_adjust ||
                   request.uses_vcall_offset_adjust ||
                   request.virtual_adjust_offset != 0) {
           throw logic_error("conflicting vtable entry thunk request " + thunk_symbol);
@@ -23747,12 +23810,15 @@ private:
                                       this_adjust,
                                       0,
                                       0,
+                                      false,
+                                      0,
                                       false);
         const string thunk_object_symbol =
             virtual_override_thunk_object_symbol_for_vtable_entry(
-                exported_symbol,
                 node.children[i],
                 this_adjust,
+                false,
+                0,
                 false,
                 0);
         if(!thunk_object_symbol.empty()) {
@@ -23773,6 +23839,8 @@ private:
           } else if(request.target_symbol != entry_symbol ||
                     request.this_adjust != this_adjust ||
                     request.return_adjust != 0 ||
+                    request.return_virtual_adjust_offset != 0 ||
+                    request.uses_virtual_return_adjust ||
                     request.uses_vcall_offset_adjust ||
                     request.virtual_adjust_offset != 0 ||
                     !request.has_exported_symbol ||
@@ -23794,11 +23862,12 @@ private:
                                       "host_virtual_export_thunk",
                                       0,
                                       0,
+                                      0,
+                                      false,
                                       -24,
                                       true);
         const string thunk_object_symbol =
             virtual_base_override_thunk_object_symbol_for_vtable_entry(
-                virtual_export_symbol,
                 node.children[i],
                 -24);
         if(!thunk_object_symbol.empty()) {
@@ -23821,6 +23890,8 @@ private:
           } else if(request.target_symbol != entry_symbol ||
                     request.this_adjust != 0 ||
                     request.return_adjust != 0 ||
+                    request.return_virtual_adjust_offset != 0 ||
+                    request.uses_virtual_return_adjust ||
                     !request.uses_vcall_offset_adjust ||
                     request.virtual_adjust_offset != -24 ||
                     !request.has_exported_symbol ||
@@ -23898,6 +23969,7 @@ private:
         throw logic_error("missing VTT table binding " + node.children[i].text);
       }
       const unsigned long long addend =
+          emit_runtime_support_ ? found->second.address_point_offset :
           node.children[i].has_uint_value ? callsem_uint_value(node.children[i]) :
                                             found->second.address_point_offset;
       global.data_items.push_back(string("ptr addr ") +

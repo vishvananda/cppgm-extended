@@ -171,6 +171,16 @@ Target forms:
 - `thunk ... function ...`
 - `virtual-base-thunk ... function ...`
 
+The thunk target uses `thunk <this-adjust> function ...` when only `this`
+needs adjustment and `thunk <this-adjust> <result-adjust> function ...` for a
+fixed covariant-result adjustment.  A covariant result reached through a
+virtual base uses the typed form
+`thunk <this-adjust> virtual-result <fixed-adjust> <vcall-offset> function ...`.
+The fixed component is applied after loading the dynamic adjustment from the
+returned object's vtable at the supplied vcall-offset slot.  Production ABI
+symbol construction and fact-file mangling must use the same typed thunk
+target; the text form is its public scaffold serialization.
+
 Function operator terminals use semantic names, not raw Itanium terminal
 fragments:
 

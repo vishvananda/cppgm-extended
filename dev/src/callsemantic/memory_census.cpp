@@ -1662,6 +1662,7 @@ void census_class_info(const ClassInfo * info,
                  vector_storage_bytes(info->method_declaration_order) +
                  vector_storage_bytes(info->bases) +
                  vector_storage_bytes(info->vtable_entries) +
+                 vector_storage_bytes(info->vtable_entry_contracts) +
                  vector_storage_bytes(info->complete_subobjects) +
                  vector_storage_bytes(info->virtual_base_subobjects) +
                  vector_storage_bytes(info->vtables) +
@@ -2249,6 +2250,7 @@ bool callsem_flags_equal(const CallSemNode & lhs, const CallSemNode & rhs)
          lhs.has_uint_value == rhs.has_uint_value &&
          lhs.has_int_value == rhs.has_int_value &&
          lhs.has_result_adjust == rhs.has_result_adjust &&
+         lhs.has_virtual_result_adjust == rhs.has_virtual_result_adjust &&
          lhs.is_bit_field == rhs.is_bit_field &&
          lhs.is_reference_storage == rhs.is_reference_storage &&
          lhs.is_reference_storage_target == rhs.is_reference_storage_target &&
@@ -2298,6 +2300,7 @@ uint64_t hash_callsem_flags(const CallSemNode & node)
   hash = hash_mix(hash, node.has_uint_value ? 1 : 0);
   hash = hash_mix(hash, node.has_int_value ? 1 : 0);
   hash = hash_mix(hash, node.has_result_adjust ? 1 : 0);
+  hash = hash_mix(hash, node.has_virtual_result_adjust ? 1 : 0);
   hash = hash_mix(hash, node.is_bit_field ? 1 : 0);
   hash = hash_mix(hash, node.is_reference_storage ? 1 : 0);
   hash = hash_mix(hash, node.is_reference_storage_target ? 1 : 0);
@@ -2368,6 +2371,12 @@ bool callsem_shallow_exact_equal(const CallSemNode & lhs, const CallSemNode & rh
          callsem_uint_value(lhs) == callsem_uint_value(rhs) &&
          callsem_int_value(lhs) == callsem_int_value(rhs) &&
          callsem_result_adjust(lhs) == callsem_result_adjust(rhs) &&
+         callsem_result_vcall_offset(lhs) ==
+             callsem_result_vcall_offset(rhs) &&
+         callsem_result_virtual_base_index(lhs) ==
+             callsem_result_virtual_base_index(rhs) &&
+         callsem_host_vcall_offset_count(lhs) ==
+             callsem_host_vcall_offset_count(rhs) &&
          callsem_virtual_dispatch_view_offset(lhs) ==
              callsem_virtual_dispatch_view_offset(rhs) &&
          callsem_bit_field_width(lhs) == callsem_bit_field_width(rhs) &&
@@ -2423,6 +2432,9 @@ uint64_t hash_callsem_shallow_exact(const CallSemNode & node)
   hash = hash_mix(hash, callsem_uint_value(node));
   hash = hash_mix(hash, static_cast<uint64_t>(callsem_int_value(node)));
   hash = hash_mix(hash, static_cast<uint64_t>(callsem_result_adjust(node)));
+  hash = hash_mix(hash, static_cast<uint64_t>(callsem_result_vcall_offset(node)));
+  hash = hash_mix(hash, callsem_result_virtual_base_index(node));
+  hash = hash_mix(hash, callsem_host_vcall_offset_count(node));
   hash = hash_mix(
       hash,
       static_cast<uint64_t>(callsem_virtual_dispatch_view_offset(node)));
@@ -3063,6 +3075,11 @@ private:
        callsem_uint_value(lhs) != callsem_uint_value(rhs) ||
        callsem_int_value(lhs) != callsem_int_value(rhs) ||
        callsem_result_adjust(lhs) != callsem_result_adjust(rhs) ||
+       callsem_result_vcall_offset(lhs) != callsem_result_vcall_offset(rhs) ||
+       callsem_result_virtual_base_index(lhs) !=
+           callsem_result_virtual_base_index(rhs) ||
+       callsem_host_vcall_offset_count(lhs) !=
+           callsem_host_vcall_offset_count(rhs) ||
        callsem_virtual_dispatch_view_offset(lhs) !=
            callsem_virtual_dispatch_view_offset(rhs) ||
        callsem_bit_field_width(lhs) != callsem_bit_field_width(rhs) ||
@@ -3461,6 +3478,11 @@ string callsem_provenance_variation_mask(const CallSemNode & lhs,
      callsem_uint_value(lhs) != callsem_uint_value(rhs) ||
      callsem_int_value(lhs) != callsem_int_value(rhs) ||
      callsem_result_adjust(lhs) != callsem_result_adjust(rhs) ||
+     callsem_result_vcall_offset(lhs) != callsem_result_vcall_offset(rhs) ||
+     callsem_result_virtual_base_index(lhs) !=
+         callsem_result_virtual_base_index(rhs) ||
+     callsem_host_vcall_offset_count(lhs) !=
+         callsem_host_vcall_offset_count(rhs) ||
      callsem_bit_field_width(lhs) != callsem_bit_field_width(rhs) ||
      callsem_bit_field_offset(lhs) != callsem_bit_field_offset(rhs) ||
      callsem_bit_field_storage_size(lhs) != callsem_bit_field_storage_size(rhs) ||

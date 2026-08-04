@@ -297,6 +297,8 @@ struct AbiTargetRecord
   long long this_adjust = 0;
   bool has_result_adjust = false;
   long long result_adjust = 0;
+  bool result_adjust_virtual = false;
+  long long result_vcall_offset = 0;
   long long vcall_offset = 0;
 };
 

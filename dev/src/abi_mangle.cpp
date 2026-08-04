@@ -1611,7 +1611,19 @@ void apply_fact_words(model::AbiFactCase & fact_case,
     fact_case.target.kind = ABI_MANGLE_THUNK;
     fact_case.target.this_adjust = parse_signed_integer(words[1]);
     size_t function_begin = 2;
-    if(words[function_begin] != "function") {
+    if(words[function_begin] == "virtual-result") {
+      if(function_begin + 3 >= words.size()) {
+        throw logic_error(
+            "virtual-result thunk requires fixed and vcall offsets plus a function target");
+      }
+      fact_case.target.has_result_adjust = true;
+      fact_case.target.result_adjust_virtual = true;
+      fact_case.target.result_adjust =
+          parse_signed_integer(words[function_begin + 1]);
+      fact_case.target.result_vcall_offset =
+          parse_signed_integer(words[function_begin + 2]);
+      function_begin += 3;
+    } else if(words[function_begin] != "function") {
       fact_case.target.has_result_adjust = true;
       fact_case.target.result_adjust = parse_signed_integer(words[function_begin]);
       ++function_begin;
@@ -1918,6 +1930,8 @@ string mangle_case(const model::AbiFactCase & fact_case)
                                            fact_case.target.this_adjust,
                                            fact_case.target.has_result_adjust,
                                            fact_case.target.result_adjust,
+                                           fact_case.target.result_adjust_virtual,
+                                           fact_case.target.result_vcall_offset,
                                            out)) {
       throw logic_error("unable to encode ABI fact thunk symbol");
     }
@@ -3065,7 +3079,13 @@ struct FactSerializer
       words.push_back("thunk");
       words.push_back(to_string(target.this_adjust));
       if(target.has_result_adjust) {
-        words.push_back(to_string(target.result_adjust));
+        if(target.result_adjust_virtual) {
+          words.push_back("virtual-result");
+          words.push_back(to_string(target.result_adjust));
+          words.push_back(to_string(target.result_vcall_offset));
+        } else {
+          words.push_back(to_string(target.result_adjust));
+        }
       }
       words.push_back("function");
       words.push_back("encoding");
@@ -3117,6 +3137,19 @@ string mangle_model_fact_file(const model::AbiFactFile & file)
     out << mangle_case(file.cases[i]) << "\n";
   }
   return out.str();
+}
+
+bool emit_mangle_target_symbol(const AbiMangleTarget & target,
+                               string & out)
+{
+  model::AbiFactCase fact_case;
+  fact_case.target = target;
+  try {
+    out = mangle_case(fact_case);
+  } catch(const logic_error &) {
+    return false;
+  }
+  return !out.empty();
 }
 
 vector<vector<string> > serialize_mangle_target_records(
@@ -4339,7 +4372,19 @@ AbiFactRecord parse_fact_record_words_with_context(
     record.target.kind = ABI_TARGET_FACT_THUNK;
     record.target.this_adjust = parse_signed_integer(words[1]);
     size_t function_begin = 2;
-    if(words[function_begin] != "function") {
+    if(words[function_begin] == "virtual-result") {
+      if(function_begin + 3 >= words.size()) {
+        throw logic_error(
+            "virtual-result thunk requires fixed and vcall offsets plus a function target");
+      }
+      record.target.has_result_adjust = true;
+      record.target.result_adjust_virtual = true;
+      record.target.result_adjust =
+          parse_signed_integer(words[function_begin + 1]);
+      record.target.result_vcall_offset =
+          parse_signed_integer(words[function_begin + 2]);
+      function_begin += 3;
+    } else if(words[function_begin] != "function") {
       record.target.has_result_adjust = true;
       record.target.result_adjust = parse_signed_integer(words[function_begin]);
       ++function_begin;
@@ -4710,7 +4755,13 @@ vector<string> words_from_fact_record(const AbiFactRecord & record)
       words.push_back("thunk");
       words.push_back(to_string(record.target.this_adjust));
       if(record.target.has_result_adjust) {
-        words.push_back(to_string(record.target.result_adjust));
+        if(record.target.result_adjust_virtual) {
+          words.push_back("virtual-result");
+          words.push_back(to_string(record.target.result_adjust));
+          words.push_back(to_string(record.target.result_vcall_offset));
+        } else {
+          words.push_back(to_string(record.target.result_adjust));
+        }
       }
       append_function_target_words(record.target.function, words, true);
       return words;

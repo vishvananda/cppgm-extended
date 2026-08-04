@@ -4476,11 +4476,20 @@ inline std::string encode_nonvirtual_call_offset(long long value)
   return std::string("h") + encode_abi_offset(value) + "_";
 }
 
+inline std::string encode_virtual_call_offset(long long fixed_adjust,
+                                              long long vcall_offset)
+{
+  return std::string("v") + encode_abi_offset(fixed_adjust) + "_" +
+         encode_abi_offset(vcall_offset) + "_";
+}
+
 inline bool emit_virtual_override_thunk_symbol_from_encoding(
     const std::string & target_body,
     long long this_adjust,
     bool has_result_adjust,
     long long result_adjust,
+    bool result_adjust_virtual,
+    long long result_vcall_offset,
     std::string & out);
 
 inline bool emit_virtual_base_override_thunk_symbol_from_encoding(
@@ -4493,6 +4502,8 @@ inline bool emit_virtual_override_thunk_symbol(
     long long this_adjust,
     bool has_result_adjust,
     long long result_adjust,
+    bool result_adjust_virtual,
+    long long result_vcall_offset,
     std::string & out)
 {
   std::string target_body;
@@ -4503,6 +4514,8 @@ inline bool emit_virtual_override_thunk_symbol(
                                                           this_adjust,
                                                           has_result_adjust,
                                                           result_adjust,
+                                                          result_adjust_virtual,
+                                                          result_vcall_offset,
                                                           out);
 }
 
@@ -4511,6 +4524,8 @@ inline bool emit_virtual_override_thunk_symbol_from_encoding(
     long long this_adjust,
     bool has_result_adjust,
     long long result_adjust,
+    bool result_adjust_virtual,
+    long long result_vcall_offset,
     std::string & out)
 {
   if(target_body.empty()) {
@@ -4519,7 +4534,9 @@ inline bool emit_virtual_override_thunk_symbol_from_encoding(
   if(has_result_adjust) {
     out = "_ZTc";
     out += encode_nonvirtual_call_offset(this_adjust);
-    out += encode_nonvirtual_call_offset(result_adjust);
+    out += result_adjust_virtual ?
+        encode_virtual_call_offset(result_adjust, result_vcall_offset) :
+        encode_nonvirtual_call_offset(result_adjust);
     out += target_body;
     return true;
   }
