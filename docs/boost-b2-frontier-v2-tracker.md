@@ -961,6 +961,15 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Closed the clean final replay of suite 38 independently
+  because Exception previously exposed several semantic defects and expensive
+  JSON translation units. The six-job graph finds 4646 targets, rebuilds all
+  217 requested targets, records all 54 test actions as passing, handles all
+  four deliberate failures as failed-as-expected, and has no unexpected
+  failure or skip. The nlohmann JSON target compiles, links, and runs within the
+  complete graph. The request exits in 184.05s at 819,212,288 B maximum RSS
+  with zero process swaps and unchanged system swapouts. No compiler, test, or
+  reference change is required.
 - `2026-08-04`: Closed the clean final replay of suite 37. The six-job Endian
   request finds 840 targets, rebuilds all 184 requested targets, passes all 47
   compile/link/runtime actions across intrinsic and non-intrinsic variants,
