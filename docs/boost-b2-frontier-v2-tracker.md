@@ -961,6 +961,15 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Grouped the clean final-replay closures for suites 33 and 34.
+  The six-job Describe/Detail request finds 1460 targets, rebuilds all 230
+  requested targets, records all 61 test actions as passing, and handles all
+  four deliberate failures as failed-as-expected. Both C++14 Describe
+  configurations remain unavailable in the C++11 lane, while both C++11
+  scoped-enum checks remain available. The request has no unexpected failure
+  or skip and exits in 95.52s at 220,700,672 B maximum RSS with zero process
+  swaps and unchanged system swapouts. No compiler, test, or reference change
+  is required.
 - `2026-08-04`: Grouped the clean final-replay closures for suites 31 and 32.
   The six-job DateTime/Decimal request finds 2384 targets, rebuilds all 272
   requested targets, records all 59 DateTime actions as passing, and handles
