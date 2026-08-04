@@ -8851,6 +8851,36 @@ private:
     }
   }
 
+  void emit_throw_cleanups_below_active_host_cleanup(
+      size_t cleanup_index,
+      const string & excluded_destroy_ptr = string())
+  {
+    for(size_t i = cleanup_index; i-- > 0;) {
+      const vector<CleanupAction> & scope = cleanup_scopes_[i];
+      const bool active_host_cleanup = cleanup_scope_host_unwind_cleanup_[i];
+      if(excluded_destroy_ptr.empty()) {
+        emit_scope_cleanups(scope, !active_host_cleanup);
+      } else {
+        emit_scope_cleanups_excluding_destroy_at_ptr(scope,
+                                                     excluded_destroy_ptr,
+                                                     !active_host_cleanup);
+      }
+      if(active_host_cleanup) {
+        emit_line("eh_end");
+      }
+      const bool crossed_try_boundary =
+          any_of(scope.begin(),
+                 scope.end(),
+                 [](const CleanupAction & cleanup)
+                 {
+                   return cleanup.kind == CleanupAction::CK_EH_END;
+                 });
+      if(crossed_try_boundary) {
+        break;
+      }
+    }
+  }
+
   void emit_host_eh_unwind_to_depth(size_t current_depth, size_t target_depth)
   {
     close_shared_host_call_unwind_region();
@@ -8893,6 +8923,8 @@ private:
                                                    excluded_destroy_ptr);
     }
     emit_line("eh_end");
+    emit_throw_cleanups_below_active_host_cleanup(cleanup_index,
+                                                  excluded_destroy_ptr);
     if(has_host_eh_dispatch_target()) {
       terminate("jump " + lowir_block_name(host_eh_dispatch_labels_.back()));
     } else if(include_constructor_unwind_cleanups &&
