@@ -998,6 +998,28 @@ bool array_decay_value_binding_compatible_with_non_type_target(
                                           array_type->inner);
 }
 
+bool object_reference_value_binding_compatible_with_non_type_target(
+    const TypePtr & target_type,
+    const ValueBinding & binding)
+{
+  TypePtr reference_type = strip_top_level_cv(target_type);
+  if(!reference_type ||
+     (reference_type->kind != Type::TK_LVALUE_REFERENCE &&
+      reference_type->kind != Type::TK_RVALUE_REFERENCE) ||
+     !reference_type->inner ||
+     !binding.type ||
+     binding.kind != ValueBinding::VK_VARIABLE ||
+     binding.is_bit_field ||
+     binding.is_thread_local) {
+    return false;
+  }
+  if(binding.declaration_scope && binding.declaration_scope->function) {
+    return false;
+  }
+  return same_type_with_compatible_top_cv(reference_type->inner,
+                                          remove_reference_type(binding.type));
+}
+
 bool bind_object_pointer_non_type_template_argument(
     const std::string & text,
     const TypePtr & target_type,
@@ -1229,6 +1251,24 @@ bool bind_value_binding_non_type_template_argument(
         return true;
       }
     }
+  }
+
+  if(object_reference_value_binding_compatible_with_non_type_target(
+         target_type,
+         binding)) {
+    if(out_binding) {
+      *out_binding = &binding;
+    }
+    out.kind = TemplateArgument::TA_VALUE;
+    out.type = target_type;
+    out.value = 0;
+    TemplateArgument::RareData & rare = out.mutable_rare();
+    rare.function_value = nullptr;
+    rare.function_internal_symbol.clear();
+    rare.value_binding = &binding;
+    out.text = fallback_text;
+    out.dependent = false;
+    return true;
   }
 
   if(binding.has_constant_value) {
@@ -2345,22 +2385,6 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
                                                       out,
                                                       out_binding)) {
       return true;
-    }
-  }
-
-  if(target_type->kind == Type::TK_LVALUE_REFERENCE ||
-     target_type->kind == Type::TK_RVALUE_REFERENCE) {
-    const ValueBinding * binding = lookup_unqualified_value(services, scope, trimmed);
-    if(binding && binding->type) {
-      TypePtr bound_type = strip_top_level_cv(remove_reference_type(binding->type));
-      if(type_equals(bound_type, target_base)) {
-        out.kind = TemplateArgument::TA_VALUE;
-        out.type = target_type;
-        out.mutable_rare().value_binding = binding;
-        out.text = trimmed;
-        out.dependent = false;
-        return true;
-      }
     }
   }
 

@@ -37,13 +37,13 @@ function @api__v1____try_key_extraction(%__with_key : obj<1x1>, %__without_key :
     %t4 = addr $argobj__3
     %t5 = addr $__without_key
     %t6 = load ptr $__args
-    %t7 = call ptr @forward(%t6)
+    %t7 = call ptr @forward__ov3(%t6)
     %t8 = load ptr $__args__pack2
-    %t9 = call ptr @forward__ov2(%t8)
+    %t9 = call ptr @forward__ov4(%t8)
     %t10 = call i32 @api__v1____try_key_extraction_impl__ov2($argobj__1, $argobj__2, $argobj__3, %t7, %t9)
     return i32 %t10
 }
-function @forward(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7forwardIRiEOT_RN10remove_refIS1_E4typeE] {
+function @forward__ov3(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7forwardIRiEOT_RN10remove_refIS1_E4typeE] {
   slot $t : ptr
 
   block ^entry:
@@ -51,7 +51,7 @@ function @forward(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7for
     %t1 = load ptr $t
     return ptr %t1
 }
-function @forward__ov2(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7forwardIRmEOT_RN10remove_refIS1_E4typeE] {
+function @forward__ov4(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7forwardIRmEOT_RN10remove_refIS1_E4typeE] {
   slot $t : ptr
 
   block ^entry:
@@ -72,9 +72,9 @@ function @api__v1____try_key_extraction_impl__ov2(%__param0 : obj<1x1>, %__with_
     %t1 = addr $__with_key
     %t2 = load ptr $__arg1
     %t3 = load ptr $__arg1
-    %t4 = call ptr @forward(%t3)
+    %t4 = call ptr @forward__ov3(%t3)
     %t5 = load ptr $__arg2
-    %t6 = call ptr @forward__ov2(%t5)
+    %t6 = call ptr @forward__ov4(%t5)
     %t7 = call i32 @WithKey__operator__(%t1, %t2, %t4, %t6)
     return i32 %t7
 }

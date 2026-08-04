@@ -1,0 +1,38 @@
+ERROR: duplicate default template argument at tests/general/300-bad-noexcept-alpha-redeclaration-default.t:9:1 [previous declaration at tests/general/300-bad-noexcept-alpha-redeclaration-default.t:5:1] [top-level declaration 1 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier U
+        default-template-argument
+          type-id
+            type-specifier-seq
+              type-specifier KW_INT:int
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier inspect
+      parameter-clause
+        parameter-declaration
+          decl-specifier-seq
+            decl-specifier TT_IDENTIFIER:U
+          declarator
+            identifier value
+      function-qualifier noexcept(sizeof(U)!=0)
+        binary-expression OP_NE:!=
+          sizeof-expression
+            type-id
+              type-specifier-seq
+                type-name U
+          literal 0
+    compound-statement
+      return-statement
+        cast-expression OP_LPAREN:
+          type-id
+            type-specifier-seq
+              type-specifier KW_INT:int
+          id-expression value
+}]
+Diagnostic context:
+collect_template_declaration [template<class U=int>int inspect(U value)noexcept(sizeof(U)!=0){return(int)value;}] at tests/general/300-bad-noexcept-alpha-redeclaration-default.t:8:1

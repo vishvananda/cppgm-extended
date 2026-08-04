@@ -44,6 +44,15 @@ bool function_template_body_has_invalid_nondependent_lookup(
     const CppAstNode *& offending_node,
     std::string & offending_name);
 
+bool function_template_signature_has_invalid_nondependent_lookup(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    const CppAstNode & declarator,
+    const CppAstNode & result_type_pattern,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const CppAstNode *& offending_node,
+    std::string & offending_name);
+
 bool subtree_alias_redeclares_template_parameter(
     const CppAstNode & node,
     const std::set<std::string> & parameter_names,

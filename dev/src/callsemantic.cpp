@@ -11698,6 +11698,27 @@ private:
     }
 
     TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
+    TypePtr direct_target = strip_top_level_cv(target);
+    if(node.kind == CppAstKind::braced_init_list &&
+       node.children.empty() &&
+       direct_target &&
+       (direct_target->kind == Type::TK_LVALUE_REFERENCE ||
+        direct_target->kind == Type::TK_RVALUE_REFERENCE)) {
+      const bool scalar_list_target =
+          target_base &&
+          (is_integral_type(target_base) ||
+           is_floating_type(target_base) ||
+           is_named_enum_type(target_base) ||
+           is_pointer_type(target_base) ||
+           target_base->kind == Type::TK_MEMBER_POINTER);
+      const bool reference_accepts_temporary =
+          direct_target->kind == Type::TK_RVALUE_REFERENCE ||
+          is_const_object_type(direct_target->inner);
+      if(scalar_list_target && reference_accepts_temporary) {
+        out = make_value_initialized_expr(target_base);
+        return true;
+      }
+    }
     if(node.kind == CppAstKind::braced_init_list &&
        !is_reference_type(strip_top_level_cv(target))) {
       const bool scalar_list_target =

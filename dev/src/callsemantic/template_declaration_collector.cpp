@@ -80,6 +80,55 @@ const CppAstNode * function_parameter_clause_in_declarator(const CppAstNode & no
   return found;
 }
 
+bool ast_contains_comma_expression(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::binary_expression &&
+     node.has_token &&
+     node.simple_type == OP_COMMA) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_contains_comma_expression(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const TemplateIdSyntax * direct_result_template_id(
+    const CppAstNode & result_type_pattern)
+{
+  if(result_type_pattern.kind != CppAstKind::type_id) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < result_type_pattern.children.size(); ++i) {
+    const CppAstNode & child = result_type_pattern.children[i];
+    if(child.kind != CppAstKind::type_specifier_seq &&
+       child.kind != CppAstKind::decl_specifier_seq) {
+      continue;
+    }
+    for(size_t j = 0; j < child.children.size(); ++j) {
+      if(child.children[j].kind == CppAstKind::type_name) {
+        return cppast_template_id_syntax(child.children[j]);
+      }
+    }
+  }
+  return nullptr;
+}
+
+bool template_parameter_names_template(
+    const vector<TemplateParameterInfo> & parameters,
+    const string & name)
+{
+  for(size_t i = 0; i < parameters.size(); ++i) {
+    if(parameters[i].kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+       parameters[i].name == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool declarator_has_direct_child_kind(const CppAstNode & node, CppAstKind kind)
 {
   for(size_t i = 0; i < node.children.size(); ++i) {
@@ -4079,6 +4128,42 @@ public:
     }
     const vector<const CppAstNode *> normalized_default_args =
         normalize_default_arguments(params, default_args);
+    if(declarator && ast_contains_comma_expression(result_type_pattern)) {
+      const CppAstNode * offending_node = nullptr;
+      std::string offending_name;
+      if(function_template_signature_has_invalid_nondependent_lookup(
+             *this,
+             pattern_scope,
+             *declarator,
+             result_type_pattern,
+             template_parameters,
+             offending_node,
+             offending_name)) {
+        throw logic_error(
+            string("unknown non-dependent name in function template signature") +
+            (offending_name.empty() ? string() : " " + offending_name) +
+            semantic_trace::current_location_note(
+                *this,
+                offending_node ? offending_node : &result_type_pattern));
+      }
+    }
+    if(const TemplateIdSyntax * direct_template_id =
+           direct_result_template_id(result_type_pattern)) {
+      const QualifiedName & template_name = direct_template_id->name;
+      if(!template_name.rooted &&
+         template_name.qualifiers.empty() &&
+         !template_parameter_names_template(template_parameters,
+                                            template_name.name) &&
+         !lookup_class_template(pattern_scope, template_name.name) &&
+         !lookup_alias_template(pattern_scope, template_name.name)) {
+        throw logic_error(
+            string("unknown non-dependent template name in function template signature ") +
+            template_name.name +
+            semantic_trace::current_location_note(
+                *this,
+                &result_type_pattern));
+      }
+    }
     if(body && declarator) {
       const CppAstNode * offending_node = nullptr;
       std::string offending_name;
@@ -4125,6 +4210,21 @@ public:
                                            candidate_traits.ref_qualifier,
                                            candidate_traits.is_deleted)) {
         continue;
+      }
+      for(size_t parameter_index = 0;
+          parameter_index < existing->parameters.size() &&
+          parameter_index < template_parameters.size();
+          ++parameter_index) {
+        if(existing->parameters[parameter_index].default_argument &&
+           template_parameters[parameter_index].default_argument) {
+          throw logic_error(
+              string("duplicate default template argument") +
+              semantic_trace::current_location_note(*this, &inner) +
+              semantic_trace::node_location_note(
+                  *this,
+                  "previous declaration",
+                  existing->declaration_node));
+        }
       }
       if(parser_trace::enabled("destroy.collect") &&
          name == "destroy" &&

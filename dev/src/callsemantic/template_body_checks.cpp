@@ -2117,6 +2117,25 @@ bool function_template_body_has_invalid_nondependent_lookup(
       offending_name);
 }
 
+bool function_template_signature_has_invalid_nondependent_lookup(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & declarator,
+    const CppAstNode & result_type_pattern,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const CppAstNode *& offending_node,
+    std::string & offending_name)
+{
+  return function_template_body_has_invalid_nondependent_lookup(
+      ctx,
+      scope,
+      declarator,
+      result_type_pattern,
+      parameters,
+      offending_node,
+      offending_name);
+}
+
 bool subtree_alias_redeclares_template_parameter(
     const CppAstNode & node,
     const std::set<std::string> & parameter_names,
