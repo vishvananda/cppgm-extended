@@ -13203,11 +13203,15 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   bool type_mentions_dependent_bindings = false;
   const bool has_structured_type_syntax =
       syntax && (syntax->resolved_type || syntax->type_id || syntax->template_id);
-  const bool prefer_type_id_for_qualified_template_id =
+  const std::string structured_type_id_text =
+      syntax && !syntax->text.empty() ? syntax->text : trimmed;
+  const bool prefer_type_id_for_decorated_template_id =
       syntax &&
       syntax->type_id &&
       syntax->template_id &&
-      !syntax->template_id->qualifier_template_id_syntaxes.empty();
+      (!bare_template_id_syntax_for_type_argument(*syntax->type_id,
+                                                  structured_type_id_text) ||
+       !syntax->template_id->qualifier_template_id_syntaxes.empty());
   const auto compute_type_dependency_flags =
       [&]() -> void
   {
@@ -13294,7 +13298,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       return false;
     }
   }
-  if(prefer_type_id_for_qualified_template_id) {
+  if(prefer_type_id_for_decorated_template_id) {
     try_parse_type_id_syntax();
   }
   const TemplateIdSyntax * structured_template_id =
@@ -15783,12 +15787,19 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         const auto argument_text_matches_parameter_default =
             [&](const TemplateParameterInfo & parameter,
                 const std::string & arg_text,
-                const TemplateArgument * structured_arg) -> bool
+                const TemplateArgument * structured_arg,
+                bool require_matching_default_provenance) -> bool
         {
-          if(find_direct_template_parameter_from_arg(arg_text).parameter) {
+          const DirectTemplateParameterMatch direct_match =
+              find_direct_template_parameter_from_structured_arg(arg_text,
+                                                                 structured_arg);
+          if(direct_match.parameter &&
+             direct_match_is_structurally_direct(direct_match,
+                                                 structured_arg)) {
             return false;
           }
           if(structured_arg && structured_arg->source_defaulted) {
+            bool matching_default_provenance = true;
             if(structured_arg->source_syntax &&
                !structured_arg->source_syntax->source_defaulted &&
                parameter.default_argument &&
@@ -15809,10 +15820,15 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                 // The bound value originated as a default of an enclosing
                 // template, but this template-id spells it explicitly.  Its
                 // default provenance does not belong to this parameter.
-                return false;
+                matching_default_provenance = false;
               }
             }
-            return true;
+            if(matching_default_provenance) {
+              return true;
+            }
+            if(require_matching_default_provenance) {
+              return false;
+            }
           }
           if(!parameter.default_argument ||
              parameter.default_argument->children.empty()) {
@@ -15851,7 +15867,8 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                 const std::vector<TemplateArgument> * structured_args,
                 std::vector<std::string> & out_args,
                 std::vector<TemplateArgument> & out_structured_args,
-                std::size_t min_keep) -> bool
+                std::size_t min_keep,
+                bool require_matching_default_provenance) -> bool
         {
           if(!source_template ||
              source_template->parameters.size() < args.size()) {
@@ -15865,13 +15882,19 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                 source_template->parameters[keep - 1];
             const TemplateArgument * structured_arg =
                 have_structured_args ? &(*structured_args)[keep - 1] : nullptr;
-            if(find_direct_template_parameter_from_arg(args[keep - 1]).parameter) {
+            const DirectTemplateParameterMatch direct_match =
+                find_direct_template_parameter_from_structured_arg(
+                    args[keep - 1], structured_arg);
+            if(direct_match.parameter &&
+               direct_match_is_structurally_direct(direct_match,
+                                                   structured_arg)) {
               break;
             }
             bool matches_default =
                 argument_text_matches_parameter_default(parameter,
                                                        args[keep - 1],
-                                                       structured_arg);
+                                                       structured_arg,
+                                                       require_matching_default_provenance);
             if(!matches_default &&
                parameter.default_argument &&
                !parameter.default_argument->children.empty()) {
@@ -16144,7 +16167,8 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                                        pattern_structured_args,
                                        pattern_visible_args_storage,
                                        pattern_visible_structured_args_storage,
-                                       0);
+                                       0,
+                                       true);
         if(pattern_trimmed_source_defaulted_tail) {
           pattern_args_ptr = &pattern_visible_args_storage;
           pattern_structured_args =
@@ -16283,7 +16307,8 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                                       actual_match_structured_args,
                                       actual_visible_args_storage,
                                       actual_visible_structured_args_storage,
-                                      pattern_args.size())) {
+                                      pattern_args.size(),
+                                      false)) {
           actual_match_args = &actual_visible_args_storage;
           actual_match_structured_args =
               actual_visible_structured_args_storage.size() ==

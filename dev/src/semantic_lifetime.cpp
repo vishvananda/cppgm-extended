@@ -1397,8 +1397,7 @@ bool analyze_direct_class_materialization_initializer(SemanticContext & ctx,
                                                       const CppAstNode * initializer,
                                                       ExprInfo & out)
 {
-  if(!initializer || initializer->kind != CppAstKind::initializer ||
-     initializer->children.size() != 1) {
+  if(!initializer) {
     return false;
   }
 
@@ -1406,9 +1405,10 @@ bool analyze_direct_class_materialization_initializer(SemanticContext & ctx,
   if(!payload) {
     return false;
   }
-  // A braced initializer in a declaration constructs the target object
-  // directly.  It is not a separate class prvalue whose move/copy constructor
-  // must be validated for an elided materialization.
+  // A class-valued initializer clause constructs the target object directly,
+  // including when an aggregate member contributes the clause without an
+  // `initializer` wrapper.  It is not a separate class prvalue that should be
+  // reinterpreted as one constructor argument.
   if(payload->kind != CppAstKind::call_expression &&
      payload->kind != CppAstKind::lambda_expression) {
     return false;

@@ -377,45 +377,46 @@ bool try_direct_class_construction_for_trait(
   }
 }
 
-bool try_non_explicit_class_construction_for_trait(
+ClassInfo * complete_nonreference_class_target_for_trait(
     SemanticContext & ctx,
-    Scope & scope,
-    const TypePtr & target,
-    const ExprInfo & arg,
-    constructor_lifecycle_service::ConstructorSelectionResult & selection)
+    const TypePtr & target)
 {
   TypePtr target_base = strip_top_level_cv(target);
   if(!target_base || is_reference_type(target_base) ||
      target_base->kind != Type::TK_NAMED) {
-    return false;
+    return nullptr;
   }
 
   ClassInfo * info = ctx.complete_class_type(target_base);
   if(!info || !info->complete) {
-    return false;
+    return nullptr;
   }
-  if(class_info_is_abstract(*info)) {
-    selection = constructor_lifecycle_service::ConstructorSelectionResult();
-    return true;
-  }
+  return info;
+}
 
+void select_class_materialization_for_convertible_trait(
+    SemanticContext & ctx,
+    Scope & scope,
+    ClassInfo & target,
+    const ExprInfo & arg,
+    constructor_lifecycle_service::ConstructorSelectionResult & selection)
+{
   std::vector<ExprInfo> args;
   args.push_back(arg);
   ConstructorSelectionOptions options =
       constructor_lifecycle_service::selection_options_for(
-          constructor_lifecycle_service::non_explicit_construction_profile(
-              "__is_convertible"));
-  options.instantiate_bodies = false;
+          constructor_lifecycle_service::user_defined_conversion_constructor_probe_profile(
+              "__is_convertible result materialization",
+              false));
   try
   {
     constructor_lifecycle_service::select_constructor_from_exprs_into(
-        ctx, scope, *info, args, selection, options);
+        ctx, scope, target, args, selection, options);
   }
   catch(const std::logic_error &)
   {
     selection = constructor_lifecycle_service::ConstructorSelectionResult();
   }
-  return true;
 }
 
 bool try_direct_class_construction_for_trait(
@@ -3319,45 +3320,58 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
 
     ExprInfo source_expr = make_builtin_trait_expr_info(lhs);
 
-    constructor_lifecycle_service::ConstructorSelectionResult copy_selection;
-    if(try_non_explicit_class_construction_for_trait(
-           ctx, scope, rhs, source_expr, copy_selection)) {
-      if(!copy_selection.ctor || copy_selection.ctor->is_deleted) {
-        out = 0;
-        return true;
-      }
-      if(name == "__is_nothrow_convertible") {
-        std::set<FunctionBinding *> visiting;
-        bool can_throw = false;
-        for(size_t i = 0; i < copy_selection.converted_args.size(); ++i) {
-          if(ctx.callsem_node_can_throw(scope,
-                                        copy_selection.converted_args[i].node,
-                                        visiting)) {
-            can_throw = true;
-            break;
-          }
-        }
-        if(!can_throw) {
-          can_throw = !function_binding_is_nothrow(ctx,
-                                                   scope,
-                                                   *copy_selection.ctor,
-                                                   visiting);
-        }
-        out = can_throw ? 0 : 1;
-      } else {
-        out = 1;
-      }
-      return true;
-    }
-
+    ArgumentConversionSelection conversion_selection;
+    ArgumentConversionOptions conversion_options =
+        semantic_policy::default_argument_conversion();
+    conversion_options.selection_out = &conversion_selection;
     ExprInfo converted;
-    if(!try_argument_conversion(ctx, scope, rhs, source_expr, converted)) {
+    if(!try_argument_conversion(ctx,
+                                scope,
+                                rhs,
+                                source_expr,
+                                converted,
+                                conversion_options)) {
       out = 0;
       return true;
     }
+
+    ClassInfo * target_class = complete_nonreference_class_target_for_trait(ctx, rhs);
+    if(target_class && class_info_is_abstract(*target_class)) {
+      out = 0;
+      return true;
+    }
+    if((conversion_selection.constructor &&
+        conversion_selection.constructor->is_deleted) ||
+       (conversion_selection.conversion_function &&
+        conversion_selection.conversion_function->is_deleted)) {
+      out = 0;
+      return true;
+    }
+
+    constructor_lifecycle_service::ConstructorSelectionResult materialization;
+    if(target_class && !conversion_selection.constructor) {
+      select_class_materialization_for_convertible_trait(
+          ctx, scope, *target_class, converted, materialization);
+      if(!materialization.ctor || materialization.ctor->is_deleted) {
+        out = 0;
+        return true;
+      }
+    }
+
     if(name == "__is_nothrow_convertible") {
       std::set<FunctionBinding *> visiting;
-      out = ctx.callsem_node_can_throw(scope, converted.node, visiting) ? 0 : 1;
+      bool can_throw = ctx.callsem_node_can_throw(scope, converted.node, visiting);
+      for(size_t i = 0;
+          !can_throw && i < materialization.converted_args.size();
+          ++i) {
+        can_throw = ctx.callsem_node_can_throw(
+            scope, materialization.converted_args[i].node, visiting);
+      }
+      if(!can_throw && materialization.ctor) {
+        can_throw = !function_binding_is_nothrow(
+            ctx, scope, *materialization.ctor, visiting);
+      }
+      out = can_throw ? 0 : 1;
     } else {
       out = 1;
     }

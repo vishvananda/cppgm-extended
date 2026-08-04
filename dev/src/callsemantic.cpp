@@ -21784,6 +21784,12 @@ private:
          has_declarators) {
         continue;
       }
+      if(child.kind == CppAstKind::enum_specifier &&
+         !child.value.empty() &&
+         has_declarators &&
+         !child.enum_has_definition) {
+        continue;
+      }
 
       const bool synthesized_embedded_name = child.value.empty();
       string effective_name = child.value;
@@ -24217,6 +24223,17 @@ private:
                                      candidate_parameters,
                                      candidate_template_scope,
                                      alias_expanded_results_match);
+      if(existing.is_deleted != candidate_is_deleted &&
+         !semantic_lookup::same_function_template_entity_result_pattern(
+             existing.result_type_pattern,
+             existing.parameters,
+             candidate_result_type_pattern,
+             candidate_parameters)) {
+        // A failed dependent result lookup can recover to the same semantic
+        // fallback type on both declarations.  Do not let that fallback merge
+        // a valid overload with a distinct deleted return-SFINAE overload.
+        return false;
+      }
       if(semantic_results_match) {
         return true;
       }

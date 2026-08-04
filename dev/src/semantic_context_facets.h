@@ -78,6 +78,12 @@ struct CallableEmissionDecision
   bool mark_output_required_now = false;
 };
 
+struct ArgumentConversionSelection
+{
+  semantic_model::FunctionBinding * constructor = nullptr;
+  semantic_model::FunctionBinding * conversion_function = nullptr;
+};
+
 struct ArgumentConversionOptions
 {
   ArgumentConversionOptions(bool allow_user_defined_in = true,
@@ -89,7 +95,8 @@ struct ArgumentConversionOptions
         materialize_user_defined_output(materialize_user_defined_output_in),
         materialize_standard_adjustments(true),
         allow_explicit(allow_explicit_in),
-        prefer_conversion_function_object_result(false)
+        prefer_conversion_function_object_result(false),
+        selection_out(nullptr)
   {}
 
   bool allow_user_defined;
@@ -98,6 +105,7 @@ struct ArgumentConversionOptions
   bool materialize_standard_adjustments;
   bool allow_explicit;
   bool prefer_conversion_function_object_result;
+  ArgumentConversionSelection * selection_out;
   std::string source_use_location;
 };
 

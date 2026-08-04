@@ -9336,7 +9336,9 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                                        info,
                                        prepared_decl.resolved_specifiers,
                                        init_decl.children[0],
-                                       rebound_alias)) {
+                                       rebound_alias) &&
+         (ctx.type_depends_on_template_parameter(member_type) ||
+          !ctx.type_depends_on_template_parameter(rebound_alias))) {
         alias = rebound_alias;
       }
       alias = canonicalize_member_typedef_type(
@@ -10060,7 +10062,9 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
              info,
              filtered_specifiers,
              init_decl.children[0],
-             rebound_alias)) {
+             rebound_alias) &&
+         (ctx.type_depends_on_template_parameter(member_type) ||
+          !ctx.type_depends_on_template_parameter(rebound_alias))) {
         alias = rebound_alias;
       }
       try {

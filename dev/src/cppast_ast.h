@@ -695,6 +695,7 @@ struct CppAstNode
   bool has_exception_type_id_syntaxes = false;
   CppAstLazyVector<CppAstNode> exception_type_id_syntaxes;
   bool linkage_has_braces = false;
+  bool enum_has_definition = false;
   bool has_no_unique_address = false;
   bool has_using_if_exists = false;
   bool has_exclude_from_explicit_instantiation = false;

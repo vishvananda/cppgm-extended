@@ -8957,7 +8957,15 @@ bool callable_object_structured_invocation_result(
                 binding->params[0].first == "this" ?
             1 :
             0;
-    if(binding->params.size() != arg_exprs.size() + explicit_offset) {
+    const size_t supplied_param_count = arg_exprs.size() + explicit_offset;
+    size_t required_param_count = binding->params.size();
+    while(required_param_count > explicit_offset &&
+          required_param_count - 1 < binding->default_arguments.size() &&
+          binding->default_arguments[required_param_count - 1]) {
+      --required_param_count;
+    }
+    if(supplied_param_count < required_param_count ||
+       supplied_param_count > binding->params.size()) {
       continue;
     }
     if(semantic_conversion::is_const_object_type(callable_expr.type) &&

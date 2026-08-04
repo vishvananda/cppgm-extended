@@ -10509,6 +10509,11 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
   if(best_more_specialized && !current_more_specialized) {
     return 1;
   }
+  const int direct_cv_template_id_specificity =
+      compare_direct_cv_parameter_template_id_specificity(current, best);
+  if(direct_cv_template_id_specificity != 0) {
+    return direct_cv_template_id_specificity;
+  }
   const int placeholder_specificity =
       compare_transformed_partial_argument_placeholder_specificity(current_transformed,
                                                                   best_transformed);
@@ -10519,11 +10524,6 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
       compare_direct_template_parameter_constraint_specificity(current, best);
   if(direct_constraint_specificity != 0) {
     return direct_constraint_specificity;
-  }
-  const int direct_cv_template_id_specificity =
-      compare_direct_cv_parameter_template_id_specificity(current, best);
-  if(direct_cv_template_id_specificity != 0) {
-    return direct_cv_template_id_specificity;
   }
   const int template_id_head_specificity =
       compare_template_id_head_specificity(current, best);

@@ -2650,6 +2650,9 @@ bool try_argument_conversion(SemanticContext & ctx,
                              ConversionRank & rank,
                              const ArgumentConversionOptions & options)
 {
+  if(options.selection_out) {
+    *options.selection_out = ArgumentConversionSelection();
+  }
   if(semantic_metrics::AnalyzerCounters * counters = ctx.performance_counters()) {
     ++counters->conversion_attempts;
   }
@@ -3335,6 +3338,10 @@ bool try_argument_conversion(SemanticContext & ctx,
                                           selected.source_expr,
                                           selected_conversion_function,
                                           options.source_use_location);
+  }
+  if(options.selection_out) {
+    options.selection_out->constructor = selected.constructor;
+    options.selection_out->conversion_function = selected_conversion_function;
   }
   rank = CR_USER_DEFINED;
   return true;

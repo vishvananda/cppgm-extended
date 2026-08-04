@@ -5323,6 +5323,7 @@ bool CppAstParser::parse_enum_specifier(CppAstNode & out)
     pos = start;
     return false;
   }
+  out.enum_has_definition = true;
 
   while(!at_eof() && !peek().is_simple(OP_RBRACE)) {
     if(!consume_identifier()) {
