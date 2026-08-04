@@ -8650,7 +8650,8 @@ void validate_constexpr_function_literal_types(SemanticContext & ctx,
                                                std::size_t first_parameter)
 {
   if(!function || !function->is_constexpr || function->is_deleted ||
-     template_api::function_binding_has_template_identity(function)) {
+     template_api::function_binding_has_template_identity(function) ||
+     template_api::class_has_template_identity(&info)) {
     return;
   }
   TypePtr function_type = strip_top_level_cv(function->type);

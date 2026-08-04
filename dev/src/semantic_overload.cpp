@@ -5278,6 +5278,9 @@ bool try_cached_overload_argument_conversion(
                   CachedArgumentConversionKeyHash> & conversion_cache)
 {
   ScopedCallSemConstructionPath construction_path("overload.cached-conversion");
+  if(!target || !source_arg.type) {
+    return false;
+  }
   if(source_identity) {
     CachedArgumentConversionKey cache_key;
     cache_key.target_type = target.get();
@@ -5349,10 +5352,6 @@ bool try_cached_overload_argument_conversion(
     out = inherited;
     rank = semantic_conversion::inheritance_conversion_rank(ctx, target, source_arg);
     return true;
-  }
-
-  if(!target || !source_arg.type) {
-    return false;
   }
 
   if(options.allow_explicit ||

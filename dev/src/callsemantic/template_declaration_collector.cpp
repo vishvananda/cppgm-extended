@@ -31,6 +31,7 @@
 #include "witness_api.h"
 
 #include <algorithm>
+#include <exception>
 #include <map>
 #include <memory>
 #include <set>
@@ -259,6 +260,29 @@ bool declaration_has_deleted_definition(const CppAstNode & node)
   return false;
 }
 
+class CollectedTemplateDeclarationExceptionRollback
+{
+public:
+  CollectedTemplateDeclarationExceptionRollback(Scope & scope,
+                                                const CppAstNode & node)
+    : scope_(scope),
+      node_(node),
+      unwinding_on_entry_(std::uncaught_exception())
+  {}
+
+  ~CollectedTemplateDeclarationExceptionRollback()
+  {
+    if(!unwinding_on_entry_ && std::uncaught_exception()) {
+      scope_.collected_template_declarations.erase(&node_);
+    }
+  }
+
+private:
+  Scope & scope_;
+  const CppAstNode & node_;
+  bool unwinding_on_entry_;
+};
+
 class TemplateDeclarationCollector
 {
 public:
@@ -303,6 +327,8 @@ public:
       record_template_parameter_clause_source_uses(scope, node);
       return;
     }
+    const CollectedTemplateDeclarationExceptionRollback collection_rollback(
+        scope, node);
     const CppAstNode * parameters = find_child_kind(node, CppAstKind::template_parameter_clause);
     if(!parameters || node.children.empty()) {
       throw logic_error("template-declaration missing children");

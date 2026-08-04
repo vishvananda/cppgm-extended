@@ -22,6 +22,50 @@ struct unwrap_iter_impl {
   static Iter unwrap(Iter i) { return i; }
 };
 
+template<class Iter, bool = false>
+struct selected_unwrap_iter_impl;
+
+template<class Iter>
+struct selected_unwrap_iter_impl<Iter, false> {
+  typedef Iter result_type;
+  static result_type unwrap(Iter i) { return i; }
+};
+
+template<class Iter, class Impl = selected_unwrap_iter_impl<Iter> >
+decltype(Impl::unwrap(declval<Iter>())) selected_unwrap_iter(Iter i) {
+  return Impl::unwrap(i);
+}
+
+template<class Iter,
+         class Unwrapped = decltype(selected_unwrap_iter(declval<Iter>()))>
+Unwrapped selected_unwrap_range(Iter first, Iter) {
+  return selected_unwrap_iter(first);
+}
+
+template<class T>
+struct wrapped_iter {
+  T value;
+};
+
+template<class T>
+T to_address(wrapped_iter<T> value) {
+  return value.value;
+}
+
+template<class Iter, bool = true>
+struct address_unwrap_impl;
+
+template<class Iter>
+struct address_unwrap_impl<Iter, true> {
+  typedef decltype(to_address(declval<Iter>())) result_type;
+  static result_type unwrap(Iter value) { return to_address(value); }
+};
+
+template<class Iter, class Impl = address_unwrap_impl<Iter> >
+decltype(Impl::unwrap(declval<Iter>())) address_unwrap_iter(Iter value) {
+  return Impl::unwrap(value);
+}
+
 template<class Iter, class Impl = unwrap_iter_impl<Iter>, int = 0>
 decltype(Impl::unwrap(declval<Iter>())) unwrap_iter(Iter i) {
   return Impl::unwrap(i);
@@ -81,5 +125,8 @@ int dst[2];
 
 int main() {
   lib::copy_unwrap_iters<lib::copy_impl>(src, src + 2, dst);
+  lib::selected_unwrap_range(src, src + 2);
+  lib::wrapped_iter<int *> wrapped = {src};
+  lib::address_unwrap_iter(wrapped);
   return dst[1] - 2;
 }

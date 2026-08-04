@@ -42910,8 +42910,8 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
   if(dependent_decltype_operand_should_defer(*request_expr) &&
      (request_expr_mentions_bound_template_dependency ||
       (request_expr_mentions_structured_template_dependency &&
-       (request_expr_text_still_depends ||
-        request_expr_has_structured_dependent_member_access))) &&
+       request_expr_text_still_depends &&
+       request_expr_has_structured_dependent_member_access)) &&
      dependent_fallback(true)) {
     return true;
   }

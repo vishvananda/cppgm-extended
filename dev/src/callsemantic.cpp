@@ -10003,9 +10003,12 @@ private:
       bool is_constructor,
       bool is_constexpr,
       const CppAstNode * declaration_node,
+      const FunctionTemplateRegistrationIdentity & template_identity,
       const ClassInfo * incomplete_lexical_class = nullptr)
   {
-    if(!is_constexpr) {
+    if(!is_constexpr ||
+       template_identity.has_decl() ||
+       template_api::class_has_template_identity(incomplete_lexical_class)) {
       return;
     }
     bool is_defaulted = false;
@@ -25986,6 +25989,7 @@ private:
                                             false,
                                             is_constexpr,
                                             declaration_node,
+                                            template_identity,
                                             constexpr_lexical_class);
     if(scope.namespace_bindings.count(name) != 0) {
       throw logic_error("declaration conflicts with namespace name " + name);

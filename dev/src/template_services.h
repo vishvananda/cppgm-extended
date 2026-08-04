@@ -831,7 +831,13 @@ public:
         out = info.type;
       }
       return out != nullptr;
-    } catch(const std::logic_error &) {
+    } catch(const std::logic_error & error) {
+      if(parser_trace::enabled("template.resolve")) {
+        parser_trace::note("template.resolve",
+                           request.use_location,
+                           std::string("dependent-type-expression-failed error=") +
+                               error.what());
+      }
       return false;
     }
   }
