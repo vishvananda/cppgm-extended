@@ -4972,6 +4972,64 @@ string make_inline_name(const string & original, size_t inline_site_id)
          "__" + original.substr(1);
 }
 
+void advance_inline_site_id_past_name(const string & name,
+                                      size_t & next_inline_site_id)
+{
+  const string marker = "__o1inl";
+  size_t search_from = 0;
+  while(search_from < name.size()) {
+    const size_t marker_pos = name.find(marker, search_from);
+    if(marker_pos == string::npos) {
+      return;
+    }
+
+    const size_t digit_begin = marker_pos + marker.size();
+    size_t digit_end = digit_begin;
+    size_t inline_site_id = 0;
+    bool overflow = false;
+    while(digit_end < name.size() &&
+          name[digit_end] >= '0' && name[digit_end] <= '9') {
+      const size_t digit = static_cast<size_t>(name[digit_end] - '0');
+      if(inline_site_id >
+         (numeric_limits<size_t>::max() - digit) / static_cast<size_t>(10)) {
+        overflow = true;
+      } else if(!overflow) {
+        inline_site_id = inline_site_id * 10 + digit;
+      }
+      ++digit_end;
+    }
+
+    if(!overflow && digit_end != digit_begin &&
+       digit_end + 1 < name.size() && name[digit_end] == '_' &&
+       name[digit_end + 1] == '_') {
+      if(inline_site_id == numeric_limits<size_t>::max()) {
+        throw logic_error("inline site id space exhausted");
+      }
+      next_inline_site_id = max(next_inline_site_id, inline_site_id + 1);
+    }
+    search_from = marker_pos + marker.size();
+  }
+}
+
+size_t next_inline_site_id_after_existing_names(const lir::Function & function)
+{
+  size_t next_inline_site_id = 0;
+  for(size_t i = 0; i < function.params.size(); ++i) {
+    advance_inline_site_id_past_name(function.params[i].name, next_inline_site_id);
+  }
+  for(size_t i = 0; i < function.slots.size(); ++i) {
+    advance_inline_site_id_past_name(function.slots[i].first, next_inline_site_id);
+  }
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    advance_inline_site_id_past_name(function.blocks[bi].label, next_inline_site_id);
+    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+      advance_inline_site_id_past_name(function.blocks[bi].instructions[ii].dest,
+                                       next_inline_site_id);
+    }
+  }
+  return next_inline_site_id;
+}
+
 string make_inline_continuation_label(size_t inline_site_id)
 {
   return "^__o1inl" + to_string(inline_site_id) + "__cont";
@@ -5284,6 +5342,10 @@ bool inline_direct_call_at(lir::Function & function,
                                         renamed_temps,
                                         renamed_slots,
                                         renamed_labels);
+            // The merge slot belongs to the caller. A pre-inlined callee can
+            // already contain a generated slot with the same spelling, so do
+            // not let callee-slot rewriting redirect this synthetic copy.
+            copyobj.second = make_slot_operand(return_slot_name);
             cloned_block.instructions.push_back(copyobj);
           } else {
             lir::Instruction copyobj =
@@ -5314,6 +5376,9 @@ bool inline_direct_call_at(lir::Function & function,
                                         renamed_temps,
                                         renamed_slots,
                                         renamed_labels);
+            // As with an aggregate merge slot, this is newly allocated caller
+            // storage rather than an operand inherited from the callee.
+            store.second = make_slot_operand(return_slot_name);
             cloned_block.instructions.push_back(store);
           } else {
             lir::Instruction copy =
@@ -6199,6 +6264,10 @@ lowir::LowirProgram inline_required_lowir_calls(lowir::LowirProgram program)
       find_recursive_function_names(program.functions);
   vector<size_t> next_inline_site_ids(program.functions.size(), 0);
   for(size_t i = 0; i < program.functions.size(); ++i) {
+    next_inline_site_ids[i] =
+        next_inline_site_id_after_existing_names(program.functions[i]);
+  }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
     while(inline_small_direct_calls(program.functions[i],
                                     function_boundaries,
                                     function_definitions,
@@ -6244,6 +6313,10 @@ lowir::LowirProgram optimize_lowir_program(lowir::LowirProgram optimized,
   // Earlier callers may only become inlineable after later callees are
   // simplified in the same O1 run, so iterate a small whole-program fixpoint.
   vector<size_t> next_inline_site_ids(optimized.functions.size(), 0);
+  for(size_t i = 0; i < optimized.functions.size(); ++i) {
+    next_inline_site_ids[i] =
+        next_inline_site_id_after_existing_names(optimized.functions[i]);
+  }
   const size_t max_o1_inline_rounds = 4;
   for(size_t round = 0; round < max_o1_inline_rounds; ++round) {
     bool round_changed = false;
