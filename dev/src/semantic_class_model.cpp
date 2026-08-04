@@ -7730,10 +7730,11 @@ void finalize_class_virtuals(SemanticContext & ctx, ClassInfo & info)
           callsemantic_internal::declaration_node_is_pure_virtual(
               binding->declaration_node);
       const bool overrides_primary_root_slot =
+          primary_base &&
           overridden &&
           overridden->has_virtual_slot &&
           overridden->virtual_slot < slots.size() &&
-          (!primary_base || owner_on_primary_polymorphic_path(info, *overridden));
+          owner_on_primary_polymorphic_path(info, *overridden);
       if(overrides_primary_root_slot) {
         binding->has_virtual_slot = true;
         binding->virtual_slot = overridden->virtual_slot;
