@@ -1,17 +1,17 @@
 translation-unit
-  class-use at pa21/tests/general/300-nested-template-late-member-definition-after-use.t:4:22
+  class-use at tests/general/300-nested-template-late-member-definition-after-use.t:4:22
     template outer
     selected primary
     bind #1 = int source=explicit
-  class-use at pa21/tests/general/300-nested-template-late-member-definition-after-use.t:4:34
+  class-use at tests/general/300-nested-template-late-member-definition-after-use.t:4:34
     template outer<int>::inner
     selected primary
     bind #1 = long source=explicit
-  class-use at pa21/tests/general/300-nested-template-late-member-definition-after-use.t:7:14
+  class-use at tests/general/300-nested-template-late-member-definition-after-use.t:7:14
     template outer
     selected primary
     bind #1 = int source=explicit
-  class-use at pa21/tests/general/300-nested-template-late-member-definition-after-use.t:7:26
+  class-use at tests/general/300-nested-template-late-member-definition-after-use.t:7:26
     template outer<int>::inner
     selected primary
     bind #1 = long source=explicit
