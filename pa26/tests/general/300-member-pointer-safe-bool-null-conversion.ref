@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @result__operatorbool_type(%this : ptr) -> i64 [binding=weak, object=_ZNK6resultcvMN6result5dummyEiEv] {
+function @result__operatorbool_type(%this : ptr) -> i64 [binding=weak, object=_ZNK6resultcvMNS_5dummyEiEv] {
   slot $this : ptr
   slot $cond__1 : i64
 

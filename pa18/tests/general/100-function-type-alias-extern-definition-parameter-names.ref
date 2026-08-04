@@ -1,4 +1,4 @@
-function @boost__atomics__detail__find_address_generic(%addr : ptr, %addrs : ptr, %size : i64) -> i64 [binding=strong, object=_ZN5boost7atomics6detail20find_address_genericEPKVvPKS3_m] {
+function @boost__atomics__detail__find_address_generic(%addr : ptr, %addrs : ptr, %size : i64) -> i64 [binding=strong, object=_ZN5boost7atomics6detail20find_address_genericEPVKvPKS3_m] {
   slot $addr : ptr
   slot $addrs : ptr
   slot $size : i64

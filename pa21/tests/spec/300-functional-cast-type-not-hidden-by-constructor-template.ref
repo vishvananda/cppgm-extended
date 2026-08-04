@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @use($argobj__2)
     return i32 0
 }
-function @O_int___operatorO_Tconst__(%this : ptr) -> obj<1x1> [binding=weak, object=_ZNKR1OIiEcv1OIRKiEEv] {
+function @O_int___operatorO_Tconst__(%this : ptr) -> obj<1x1> [binding=weak, object=_ZNKR1OIiEcvS_IRKiEEv] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
 

@@ -75,7 +75,7 @@ function @convertible_to_arg2__convertible_to_arg1__empty_base____convertible_to
     call void @arg2__arg2(%t4)
     return void
 }
-function @convertible_to_arg2__convertible_to_arg1__empty_base____operatorconstT_(%this : ptr) -> ptr [binding=weak, object=_ZNK14convertible_toI4arg2S_I4arg110empty_baseEEcvRK4arg2Ev] {
+function @convertible_to_arg2__convertible_to_arg1__empty_base____operatorconstT_(%this : ptr) -> ptr [binding=weak, object=_ZNK14convertible_toI4arg2S_I4arg110empty_baseEEcvRKS0_Ev] {
   slot $this : ptr
 
   block ^entry:
@@ -94,7 +94,7 @@ function @convertible_to_arg1__empty_base___convertible_to__base_entry(%this : p
     call void @arg1__arg1(%t2)
     return void
 }
-function @convertible_to_arg1__empty_base___operatorconstT_(%this : ptr) -> ptr [binding=weak, object=_ZNK14convertible_toI4arg110empty_baseEcvRK4arg1Ev] {
+function @convertible_to_arg1__empty_base___operatorconstT_(%this : ptr) -> ptr [binding=weak, object=_ZNK14convertible_toI4arg110empty_baseEcvRKS0_Ev] {
   slot $this : ptr
 
   block ^entry:

@@ -13,7 +13,7 @@ function @make(%s : obj<1x1>) -> obj<1x1> [binding=strong, object=_Z4make1SIc6tr
     copyobj 1x1 %t3, %t1
     return obj<1x1> $retobj__1
 }
-function @S_char__traits_char___int___operatorSelfView(%this : ptr) -> obj<1x1> [binding=weak, object=_ZNK1SIc6traitsIcEiEcv1VIc6traitsIcEEEv] {
+function @S_char__traits_char___int___operatorSelfView(%this : ptr) -> obj<1x1> [binding=weak, object=_ZNK1SIc6traitsIcEiEcv1VIcS1_EEv] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
   slot $argobj__2 : obj<1x1>

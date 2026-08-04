@@ -54,7 +54,7 @@ function @leaf__result_char___result(%this : ptr, %input : i32) -> void [binding
     store i32 %t1, %t3
     return void
 }
-function @leaf__result_char___error_result__operatorresult_U_(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK4leaf6resultIcE12error_resultcvN4leaf6resultIT_EEIiEEv] {
+function @leaf__result_char___error_result__operatorresult_U_(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK4leaf6resultIcE12error_resultcvNS0_IT_EEIiEEv] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
