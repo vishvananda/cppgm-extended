@@ -8130,6 +8130,29 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
                                                scope,
                                                *direct_braced_init,
                                                expanded_storage);
+    TypePtr vector_element_type;
+    size_t vector_size_bytes = 0;
+    if(named_type_is_gnu_vector(callee_type,
+                                &vector_element_type,
+                                &vector_size_bytes)) {
+      if(!ctx.semantic_validation_only()) {
+        throw logic_error("GNU vector literal lowering is not implemented");
+      }
+      const size_t lane_count = vector_size_bytes / type_size(vector_element_type);
+      if(elements.size() > lane_count) {
+        throw logic_error("too many GNU vector literal elements");
+      }
+      for(size_t i = 0; i < elements.size(); ++i) {
+        if(semantic_lifetime::scalar_list_initialization_has_narrowing_conversion(
+               ctx, scope, *elements[i], vector_element_type)) {
+          throw logic_error("narrowing GNU vector list-initialization");
+        }
+        ctx.analyze_expression_for_target(scope,
+                                          *elements[i],
+                                          vector_element_type);
+      }
+      return ctx.make_value_initialized_expr(callee_type);
+    }
     if(elements.empty()) {
       return ctx.make_value_initialized_expr(callee_type);
     }
@@ -15349,6 +15372,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
             }
           }
           out << "]";
+        }
+        if(lookup_callee_node.value.compare(0, 10, "__builtin_") == 0) {
+          throw UnsupportedBuiltinFunctionError(out.str());
         }
         throw UnknownFunctionError(out.str());
       }

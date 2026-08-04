@@ -133,6 +133,8 @@ struct Type
         named_dependent_template_template_arguments;
     std::shared_ptr<ClassTemplateSpecializationMangleInfo>
         named_class_template_specialization_mangle_info;
+    TypePtr gnu_vector_element_type;
+    std::size_t gnu_vector_size_bytes = 0;
     semantic_model::ClassInfo * named_class_info = nullptr;
     TypePtr named_member_owner_type;
     std::string named_member_name;
@@ -258,6 +260,11 @@ TypePtr make_semantic_named(const std::string & display_name,
 TypePtr make_template_parameter_type(const std::string & display_name,
                                      const std::string & semantic_payload,
                                      const std::string & source_name);
+TypePtr make_gnu_vector_type(const TypePtr & element_type,
+                             std::size_t size_bytes);
+bool named_type_is_gnu_vector(const TypePtr & type,
+                              TypePtr * element_type = nullptr,
+                              std::size_t * size_bytes = nullptr);
 TypePtr make_dependent_type_expression_type(
     const std::string & display_name,
     Type::NamedSemanticKind semantic_kind,

@@ -343,7 +343,13 @@ bool parse_type_specifier_seq_ast(const CppAstNode & node,
     }
   }
 
-  return acc.finalize(out);
+  if(!acc.finalize(out)) {
+    return false;
+  }
+  if(hooks.apply_type_specifier_attributes) {
+    out = hooks.apply_type_specifier_attributes(node, out);
+  }
+  return static_cast<bool>(out);
 }
 
 bool parse_decl_spec_ast(const CppAstNode & node,
@@ -435,7 +441,13 @@ bool parse_decl_spec_ast(const CppAstNode & node,
     }
   }
 
-  return acc.finalize(out);
+  if(!acc.finalize(out)) {
+    return false;
+  }
+  if(hooks.apply_type_specifier_attributes) {
+    out = hooks.apply_type_specifier_attributes(node, out);
+  }
+  return static_cast<bool>(out);
 }
 
 bool parse_parameter_clause_ast(
@@ -927,6 +939,13 @@ bool parse_declarator_core(const CppAstNode & node,
       out = make_array(out, suffix.has_bound,
                        suffix.has_bound ? static_cast<size_t>(suffix.bound_value) : 0,
                        suffix.bound_text);
+    }
+  }
+
+  if(hooks.apply_declarator_attributes) {
+    out = hooks.apply_declarator_attributes(node, out);
+    if(!out) {
+      return false;
     }
   }
 

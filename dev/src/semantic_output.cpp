@@ -3520,6 +3520,27 @@ bool should_emit_free_function_definition(SemanticContext & ctx,
   return true;
 }
 
+bool should_validate_suppressed_inline_definition(
+    SemanticContext & ctx,
+    const FunctionBinding & binding)
+{
+  if(!binding.has_definition ||
+     !binding.body ||
+     binding.owner_class ||
+     binding.lexical_access_class ||
+     template_api::function_binding_has_source_template_identity(&binding)) {
+    return false;
+  }
+  const CppAstNode * declaration =
+      binding.definition_node ? binding.definition_node : binding.declaration_node;
+  return (binding.is_inline ||
+          node_decl_spec_contains_token(declaration, KW_INLINE) ||
+          node_decl_spec_contains_token(declaration, KW_CONSTEXPR)) &&
+         !ctx.definition_comes_from_standard_include_path(declaration,
+                                                         binding.body,
+                                                         binding.is_defaulted);
+}
+
 bool should_emit_namespace_variable_definition(SemanticContext & ctx,
                                                const ValueBinding * binding,
                                                const CppAstNode & declaration_node,
@@ -6174,6 +6195,9 @@ void analyze_function_definition(SemanticContext & ctx,
     throw logic_error("missing function binding");
   }
   if(!should_emit_free_function_definition(ctx, *binding)) {
+    if(should_validate_suppressed_inline_definition(ctx, *binding)) {
+      ctx.request_function_definition_semantic_validation(binding);
+    }
     return;
   }
   analyze_function_binding_output_impl(ctx, state, scope, *binding, out);
@@ -6692,6 +6716,9 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
         throw logic_error("missing function binding");
       }
       if(!should_emit_free_function_definition(ctx, *binding)) {
+        if(should_validate_suppressed_inline_definition(ctx, *binding)) {
+          ctx.request_function_definition_semantic_validation(binding);
+        }
         return;
       }
       analyze_function_binding_output_impl(ctx, state, scope, *binding, out);

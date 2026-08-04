@@ -239,6 +239,14 @@ To complete PA34, implement hosted compatibility for:
   bodyless C++14 placeholder-return declarations selected by a test's language
   mode, non-standard hex-float compile acceptance on ordinary floating types,
   and `[[no_unique_address]]` empty-member layout through generated copy operations
+- semantic validation of primary-source GNU inline function bodies even when
+  emission is deferred; an unimplemented reserved compiler builtin may defer
+  its wrapper, but ordinary lookup and type errors in an unused wrapper must
+  still be diagnosed
+- typed retention of a scalar GNU `vector_size` typedef's byte width for
+  compile-time layout queries and semantic validation of unused inline wrapper
+  literals; runtime vector operations and vector-expression lowering are not
+  required
 - lightweight hosted C-wrapper header and C runtime interop smokes where the
   header surface is mostly builtin macros/functions or ordinary C declarations
   (`<cassert>`, `<cmath>`, `<cstddef>`, `<cstdio>`, `<cstdlib>`, `<cstring>`,

@@ -133,6 +133,15 @@ struct UnknownFunctionError : SemanticSoftFailure
   using SemanticSoftFailure::SemanticSoftFailure;
 };
 
+// An otherwise unknown function whose reserved builtin spelling identifies a
+// hosted compiler intrinsic outside the implemented surface.  Keep this
+// distinct from an ordinary lookup failure so validation of an unused inline
+// wrapper may defer the intrinsic without hiding unrelated semantic errors.
+struct UnsupportedBuiltinFunctionError : UnknownFunctionError
+{
+  using UnknownFunctionError::UnknownFunctionError;
+};
+
 struct NotDataMemberExpressionError : SemanticSoftFailure
 {
   using SemanticSoftFailure::SemanticSoftFailure;

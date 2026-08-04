@@ -3441,6 +3441,7 @@ std::uint64_t cppast_node_syntax_fingerprint(const CppAstNode * node,
   hash_combine(seed, node->has_exclude_from_explicit_instantiation);
   hash_combine(seed, node->has_always_inline_attribute);
   hash_combine(seed, node->maximum_field_alignment);
+  hash_combine(seed, cppast_gnu_vector_size_bytes(*node));
   hash_string_vector_syntax(seed, cppast_abi_tags(*node));
   hash_string_vector_syntax(seed, cppast_alignment_specifiers(*node));
   hash_cppast_node_vector_syntax(seed,

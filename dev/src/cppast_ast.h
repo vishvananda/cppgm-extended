@@ -572,7 +572,8 @@ struct CppAstSparseData
         conversion_type_id_syntax(other.conversion_type_id_syntax),
         base_type_syntax(other.base_type_syntax),
         abi_tags(other.abi_tags),
-        alignment_specifiers(other.alignment_specifiers)
+        alignment_specifiers(other.alignment_specifiers),
+        gnu_vector_size_bytes(other.gnu_vector_size_bytes)
   {}
 
   std::size_t reference_count;
@@ -583,6 +584,7 @@ struct CppAstSparseData
   std::shared_ptr<CppAstNode> base_type_syntax;
   CppAstLazyVector<std::string> abi_tags;
   CppAstLazyVector<std::string> alignment_specifiers;
+  std::size_t gnu_vector_size_bytes = 0;
 };
 
 class CppAstSparseDataPtr
@@ -756,6 +758,17 @@ inline CppAstLazyVector<std::string> & mutable_cppast_alignment_specifiers(
     CppAstNode & node)
 {
   return mutable_cppast_sparse_data(node).alignment_specifiers;
+}
+
+inline std::size_t cppast_gnu_vector_size_bytes(const CppAstNode & node)
+{
+  return node.sparse_data ? node.sparse_data->gnu_vector_size_bytes : 0;
+}
+
+inline void set_cppast_gnu_vector_size_bytes(CppAstNode & node,
+                                             std::size_t bytes)
+{
+  mutable_cppast_sparse_data(node).gnu_vector_size_bytes = bytes;
 }
 
 inline const std::string & cppast_builtin_type_transform_name(

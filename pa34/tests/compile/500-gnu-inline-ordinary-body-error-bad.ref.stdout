@@ -1,0 +1,8 @@
+ERROR: unknown id-expression nonexistent_identifier [template-id no] [scope ] [bindings ]
+Diagnostic context:
+analyze_statement [return-statement] at tests/compile/500-gnu-inline-ordinary-body-error-bad.t:1:1
+  analyze_expression_for_target [nonexistent_identifier -> int] at tests/compile/500-gnu-inline-ordinary-body-error-bad.t:1:1
+    semantic_expression::analyze_expression_for_target [nonexistent_identifier -> int] at tests/compile/500-gnu-inline-ordinary-body-error-bad.t:1:1
+      analyze_expression [nonexistent_identifier] at tests/compile/500-gnu-inline-ordinary-body-error-bad.t:1:1
+        semantic_expression::analyze_expression [nonexistent_identifier] at tests/compile/500-gnu-inline-ordinary-body-error-bad.t:1:1
+          analyze_id_expression [nonexistent_identifier] at tests/compile/500-gnu-inline-ordinary-body-error-bad.t:1:1

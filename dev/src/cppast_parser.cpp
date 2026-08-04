@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -1885,6 +1886,10 @@ void apply_leading_declaration_attributes(CppAstNode & node,
   if(attributes.maximum_field_alignment != 0) {
     node.maximum_field_alignment = attributes.maximum_field_alignment;
   }
+  if(cppast_gnu_vector_size_bytes(attributes) != 0) {
+    set_cppast_gnu_vector_size_bytes(
+        node, cppast_gnu_vector_size_bytes(attributes));
+  }
   if(!cppast_gnu_section_name(attributes).empty()) {
     mutable_cppast_gnu_section_segment(node) =
         cppast_gnu_section_segment(attributes);
@@ -1902,6 +1907,11 @@ void apply_leading_declaration_attributes(CppAstNode & node,
 
   for(size_t i = 0; i < node.children.size(); ++i) {
     CppAstNode & child = node.children[i];
+    if(child.kind == CppAstKind::decl_specifier_seq &&
+       cppast_gnu_vector_size_bytes(attributes) != 0) {
+      set_cppast_gnu_vector_size_bytes(
+          child, cppast_gnu_vector_size_bytes(attributes));
+    }
     if(child.kind != CppAstKind::init_declarator_list) {
       continue;
     }
@@ -1977,6 +1987,58 @@ bool is_gnu_packed_attribute_name(const RecogToken & token)
          (token.source == "packed" ||
           token.source == "__packed" ||
           token.source == "__packed__");
+}
+
+bool is_gnu_vector_size_attribute_name(const RecogToken & token)
+{
+  return token.is_identifier() &&
+         (token.source == "vector_size" ||
+          token.source == "__vector_size" ||
+          token.source == "__vector_size__");
+}
+
+bool gnu_attribute_specifier_vector_size(
+    const IRecogTokenSequence & tokens,
+    std::size_t start,
+    std::size_t end,
+    std::size_t & bytes)
+{
+  bytes = 0;
+  int paren_depth = 0;
+  for(std::size_t i = start; i + 3 < end; ++i) {
+    const RecogToken & token = tokens.peek(i);
+    if(token.is_simple(OP_LPAREN)) {
+      ++paren_depth;
+      continue;
+    }
+    if(token.is_simple(OP_RPAREN)) {
+      if(paren_depth > 0) {
+        --paren_depth;
+      }
+      continue;
+    }
+    if(paren_depth != 2 || !is_gnu_vector_size_attribute_name(token) ||
+       !tokens.peek(i + 1).is_simple(OP_LPAREN) ||
+       !tokens.peek(i + 2).is_literal() ||
+       !tokens.peek(i + 3).is_simple(OP_RPAREN)) {
+      continue;
+    }
+    unsigned long long parsed = 0;
+    string suffix;
+    try {
+      if(classify_int(tokens.peek(i + 2).source, parsed, suffix) == FT_VOID ||
+         !suffix.empty() || parsed == 0 ||
+         parsed > static_cast<unsigned long long>(
+             std::numeric_limits<std::size_t>::max())) {
+        return false;
+      }
+    } catch(const logic_error &) {
+      return false;
+    }
+    bytes = static_cast<std::size_t>(parsed);
+    return true;
+  }
+  return false;
 }
 
 bool attribute_specifier_has_always_inline(
@@ -4533,6 +4595,13 @@ void CppAstParser::note_attribute_specifier(CppAstNode * annotated,
   if(attribute_specifier_has_always_inline(tokens, start, end)) {
     annotated->has_always_inline_attribute = true;
   }
+  std::size_t gnu_vector_size_bytes = 0;
+  if(gnu_attribute_specifier_vector_size(tokens,
+                                         start,
+                                         end,
+                                         gnu_vector_size_bytes)) {
+    set_cppast_gnu_vector_size_bytes(*annotated, gnu_vector_size_bytes);
+  }
   int gnu_attribute_paren_depth = 0;
   for(std::size_t i = start; i < end; ++i) {
     const RecogToken & token = tokens.peek(i);
@@ -4781,6 +4850,10 @@ void apply_trailing_declarator_extensions(CppAstNode & target,
       mutable_cppast_abi_tags(target).mutable_vector(),
       extensions);
   append_cppast_alignment_specifiers(target, extensions);
+  if(cppast_gnu_vector_size_bytes(extensions) != 0) {
+    set_cppast_gnu_vector_size_bytes(
+        target, cppast_gnu_vector_size_bytes(extensions));
+  }
 }
 
 bool CppAstParser::parse_namespace_declaration(CppAstNode & out)
@@ -4960,6 +5033,14 @@ bool CppAstParser::parse_using_or_alias_declaration(CppAstNode & out)
       if(!gnu_ext_vector_type_argument_identifier.empty()) {
         mutable_cppast_gnu_ext_vector_type_argument_identifier(out) =
             gnu_ext_vector_type_argument_identifier;
+      }
+      if(cppast_gnu_vector_size_bytes(attributes) != 0) {
+        set_cppast_gnu_vector_size_bytes(
+            out, cppast_gnu_vector_size_bytes(attributes));
+        if(!type_id.children.empty()) {
+          set_cppast_gnu_vector_size_bytes(
+              type_id.children[0], cppast_gnu_vector_size_bytes(attributes));
+        }
       }
       out.children.push_back(std::move(type_id));
       set_span(out, start);

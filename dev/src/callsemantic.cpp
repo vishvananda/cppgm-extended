@@ -3623,6 +3623,11 @@ private:
     enqueue_function_semantic_validation(binding);
   }
 
+  bool semantic_validation_only() const override
+  {
+    return function_semantic_validation_active_;
+  }
+
   void drain_function_semantic_validations()
   {
     if(function_semantic_validation_active_ ||
@@ -3684,11 +3689,29 @@ private:
          completed_function_semantic_validation_.count(current) != 0) {
         continue;
       }
-      if(semantic_output::validate_function_body_for_semantic_use(
-             *this, *validation_parent, *current)) {
+      try {
+        if(semantic_output::validate_function_body_for_semantic_use(
+               *this, *validation_parent, *current)) {
+          completed_function_semantic_validation_.insert(current);
+        } else {
+          queued_function_semantic_validation_.erase(current);
+        }
+      } catch(const UnsupportedBuiltinFunctionError &) {
+        const CppAstNode * declaration =
+            current->definition_node ? current->definition_node :
+                                       current->declaration_node;
+        const bool primary_inline_wrapper =
+            (current->is_inline || declaration_marks_inline(declaration)) &&
+            !current->owner_class &&
+            !current->lexical_access_class &&
+            !template_api::function_binding_has_source_template_identity(current) &&
+            !definition_comes_from_standard_include_path(declaration,
+                                                         current->body,
+                                                         current->is_defaulted);
+        if(!primary_inline_wrapper) {
+          throw;
+        }
         completed_function_semantic_validation_.insert(current);
-      } else {
-        queued_function_semantic_validation_.erase(current);
       }
     }
   }
@@ -19818,6 +19841,14 @@ private:
     hooks.parse_decltype_specifier = [this, &scope](const CppAstNode & node, TypePtr & out) {
       return parse_decltype_specifier(scope, node, out);
     };
+    const auto apply_gnu_vector_attribute =
+        [](const CppAstNode & node, const TypePtr & type) -> TypePtr
+        {
+          const size_t bytes = cppast_gnu_vector_size_bytes(node);
+          return bytes == 0 ? type : make_gnu_vector_type(type, bytes);
+        };
+    hooks.apply_type_specifier_attributes = apply_gnu_vector_attribute;
+    hooks.apply_declarator_attributes = apply_gnu_vector_attribute;
     return hooks;
   }
 

@@ -16,6 +16,10 @@ struct AstDeclHooks
   std::function<TypePtr(const CppAstNode &)> lookup_type_node;
   std::function<bool(const TypePtr &)> ignore_semantic_type;
   std::function<bool(const CppAstNode &, TypePtr &)> parse_decltype_specifier;
+  std::function<TypePtr(const CppAstNode &, const TypePtr &)>
+      apply_type_specifier_attributes;
+  std::function<TypePtr(const CppAstNode &, const TypePtr &)>
+      apply_declarator_attributes;
   std::function<bool(const CppAstNode &, long long &)> evaluate_constant_expression;
   std::function<bool(const CppAstNode &)> array_bound_is_dependent;
   std::function<bool(const CppAstNode &,

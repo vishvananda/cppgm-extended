@@ -851,6 +851,41 @@ TypePtr make_template_parameter_type(const string & display_name,
   return result;
 }
 
+TypePtr make_gnu_vector_type(const TypePtr & element_type,
+                             size_t size_bytes)
+{
+  TypePtr element = strip_top_level_cv(element_type);
+  if(!element || element->kind != Type::TK_FUNDAMENTAL ||
+     element->fundamental == FT_VOID ||
+     element->fundamental == FT_NULLPTR_T ||
+     size_bytes == 0 || size_bytes % type_size(element) != 0) {
+    throw logic_error("invalid GNU vector_size element type or byte width");
+  }
+  const size_t lane_count = size_bytes / type_size(element);
+  if((lane_count & (lane_count - 1)) != 0) {
+    throw logic_error("GNU vector_size lane count must be a power of two");
+  }
+
+  ostringstream identity;
+  identity << "$gnu-vector:" << template_argument_type_text(element)
+           << ":" << size_bytes;
+  ostringstream display;
+  display << "GNU vector<" << template_argument_type_text(element)
+          << ", " << size_bytes << ">";
+  TypePtr result = make_named(display.str(),
+                              identity.str(),
+                              true,
+                              true,
+                              size_bytes,
+                              size_bytes);
+  TypePtr base = strip_top_level_cv(result);
+  base->definitely_not_class = true;
+  Type::NamedRareMetadata & rare = base->mutable_named_rare_metadata();
+  rare.gnu_vector_element_type = element_type;
+  rare.gnu_vector_size_bytes = size_bytes;
+  return result;
+}
+
 TypePtr make_dependent_type_expression_type(const string & display_name,
                                             Type::NamedSemanticKind semantic_kind,
                                             const string & semantic_payload,
@@ -990,6 +1025,24 @@ bool named_type_is_dependent_typeof(const TypePtr & type)
 bool named_type_is_overloaded_function_set(const TypePtr & type)
 {
   return named_type_has_kind(type, Type::NSK_OVERLOADED_FUNCTION_SET);
+}
+
+bool named_type_is_gnu_vector(const TypePtr & type,
+                              TypePtr * element_type,
+                              size_t * size_bytes)
+{
+  const Type * base = named_base_ptr(type);
+  if(!base || !base->named_rare().gnu_vector_element_type ||
+     base->named_rare().gnu_vector_size_bytes == 0) {
+    return false;
+  }
+  if(element_type) {
+    *element_type = base->named_rare().gnu_vector_element_type;
+  }
+  if(size_bytes) {
+    *size_bytes = base->named_rare().gnu_vector_size_bytes;
+  }
+  return true;
 }
 
 bool named_type_has_dependent_semantic(const TypePtr & type)
