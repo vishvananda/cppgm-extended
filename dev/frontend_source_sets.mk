@@ -70,8 +70,9 @@ FRONTEND_OBJ_BASENAMES_recog := \
 	text_intern \
 	types
 
-# nsdecl: 83 shared object(s)
+# nsdecl: 84 shared object(s)
 FRONTEND_OBJ_BASENAMES_nsdecl := \
+	abi_mangle \
 	calculator \
 	callsem_output \
 	callsemantic \
@@ -163,8 +164,9 @@ FRONTEND_OBJ_BASENAMES_nsdecl := \
 	template_type_ops \
 	types
 
-# nsinit: 84 shared object(s)
+# nsinit: 85 shared object(s)
 FRONTEND_OBJ_BASENAMES_nsinit := \
+	abi_mangle \
 	calculator \
 	callsem_output \
 	callsemantic \
@@ -400,8 +402,9 @@ FRONTEND_OBJ_BASENAMES_cppgm++ := \
 	witness_api \
 	x86_assembler
 
-# lowiropt: 22 shared object(s)
+# lowiropt: 23 shared object(s)
 FRONTEND_OBJ_BASENAMES_lowiropt := \
+	abi_mangle \
 	cli_batch_frontend \
 	cpp_decl_bridge \
 	cpp_decl_model \
@@ -425,8 +428,9 @@ FRONTEND_OBJ_BASENAMES_lowiropt := \
 	text_intern \
 	types
 
-# lowir2cy86: 31 shared object(s)
+# lowir2cy86: 32 shared object(s)
 FRONTEND_OBJ_BASENAMES_lowir2cy86 := \
+	abi_mangle \
 	calculator \
 	cpp_decl_bridge \
 	cpp_decl_model \
@@ -460,8 +464,9 @@ FRONTEND_OBJ_BASENAMES_lowir2cy86 := \
 	types \
 	x86_assembler
 
-# lowir2native: 40 shared object(s)
+# lowir2native: 41 shared object(s)
 FRONTEND_OBJ_BASENAMES_lowir2native := \
+	abi_mangle \
 	calculator \
 	cli_batch_frontend \
 	cpp_decl_bridge \
@@ -506,8 +511,9 @@ FRONTEND_OBJ_BASENAMES_lowir2native := \
 	types \
 	x86_assembler
 
-# mobjroundtrip: 18 shared object(s)
+# mobjroundtrip: 19 shared object(s)
 FRONTEND_OBJ_BASENAMES_mobjroundtrip := \
+	abi_mangle \
 	cpp_decl_bridge \
 	cpp_decl_model \
 	encoding \
