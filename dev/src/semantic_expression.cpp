@@ -3040,6 +3040,12 @@ bool parse_lambda_capture_list(const string & introducer,
 void collect_declared_names(const CppAstNode & node,
                             std::set<std::string> & declared_names)
 {
+  // A declaration initializer may contain a lambda whose declarations belong
+  // to the nested call operator, not the enclosing lambda body.
+  if(node.kind == CppAstKind::lambda_expression) {
+    return;
+  }
+
   if(node.kind == CppAstKind::declarator && node.value.empty()) {
     const CppAstNode * identifier = find_child_kind(node, CppAstKind::identifier);
     if(identifier && !identifier->value.empty()) {
