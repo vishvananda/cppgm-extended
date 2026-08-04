@@ -7446,6 +7446,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.friend_function_templates.clear();
   info.friend_access_function_templates.clear();
   info.deferred_member_aliases.clear();
+  info.typedef_member_declaration_sites.clear();
   info.is_polymorphic = false;
   info.rtti_required = false;
   info.friend_class_names.clear();
@@ -7475,6 +7476,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   }
 
   info.member_scope->named_types.clear();
+  info.member_scope->named_type_access.clear();
   info.member_scope->named_type_packs.clear();
   info.member_scope->named_value_packs.clear();
   info.member_scope->named_pack_sizes.clear();
@@ -7486,6 +7488,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.member_scope->values.clear();
   info.member_scope->namespace_bindings.clear();
   info.member_scope->function_sets.clear();
+  info.member_scope->function_set_access_overrides.clear();
   info.member_scope->class_templates.clear();
   info.member_scope->function_templates.clear();
   info.member_scope->collected_template_declarations.clear();

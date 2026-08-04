@@ -81,6 +81,26 @@ static TypePtr lookup_template_body_value_type(
   return found == value_types.end() ? TypePtr() : found->second;
 }
 
+static void collect_visible_scope_values_for_template_body(
+    Scope & scope,
+    AtomNameSet & names,
+    TemplateBodyValueTypes & value_types)
+{
+  for(Scope * current = &scope; current; current = current->parent) {
+    for(std::map<std::string, ValueBinding>::const_iterator value =
+            current->values.begin();
+        value != current->values.end();
+        ++value) {
+      names.insert(value->first);
+      if(!lookup_template_body_value_type(value_types, value->first)) {
+        record_template_body_value_type(value_types,
+                                        value->first,
+                                        value->second.type);
+      }
+    }
+  }
+}
+
 bool declarator_declared_identifier(const CppAstNode & node,
                                     std::string & out)
 {
@@ -1969,6 +1989,9 @@ bool class_member_body_has_invalid_nondependent_lookup(
                                              parameter_names);
   Scope lookup_scope(&scope, "", false);
   TemplateBodyValueTypes member_value_types;
+  collect_visible_scope_values_for_template_body(scope,
+                                                 member_names,
+                                                 member_value_types);
   AtomNameSet dependent_type_names =
       type_template_parameter_names(parameters);
   collect_dependent_type_names_for_class_template_body(ctx,
@@ -2044,6 +2067,29 @@ bool function_template_body_has_invalid_nondependent_lookup(
   AtomNameSet dependent_type_names = type_names;
   AtomNameSet dependent_value_names;
   TemplateBodyValueTypes visible_value_types;
+  collect_visible_scope_values_for_template_body(scope,
+                                                 visible_names,
+                                                 visible_value_types);
+
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(!current->class_info || !current->class_info->class_node) {
+      continue;
+    }
+    const CppAstNode & class_node = *current->class_info->class_node;
+    collect_class_member_names_for_template_body(class_node, visible_names);
+    collect_class_member_type_names_for_template_body(class_node, type_names);
+    collect_base_class_names_for_template_body(ctx,
+                                               scope,
+                                               class_node,
+                                               visible_names,
+                                               type_names,
+                                               parameter_names);
+    collect_class_member_value_types_for_template_body(ctx,
+                                                       scope,
+                                                       class_node,
+                                                       visible_value_types);
+    break;
+  }
 
   collect_declared_names_for_template_body(declarator, visible_names);
   collect_declared_value_types_for_template_body(ctx,
