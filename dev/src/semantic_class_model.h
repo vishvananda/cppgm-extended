@@ -182,6 +182,9 @@ void collect_vtt_entries(SemanticContext & ctx,
                          std::vector<std::pair<std::string, unsigned long long> > & out);
 void finalize_class_layout(SemanticContext & ctx,
                            semantic_model::ClassInfo & info);
+void validate_constexpr_constructor_definition(
+    SemanticContext & ctx,
+    const semantic_model::FunctionBinding & binding);
 void populate_class_info(SemanticContext & ctx,
                          semantic_model::ClassInfo & info,
                          const CppAstNode & node);

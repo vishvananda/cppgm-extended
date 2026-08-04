@@ -8803,6 +8803,7 @@ void validate_constexpr_constructor_initialization(SemanticContext & ctx,
     if(!constructor ||
        !constructor->is_constructor ||
        !constructor->is_constexpr ||
+       !constructor->has_definition ||
        constructor->is_deleted ||
        constructor->is_defaulted ||
        constructor->synthesized ||
@@ -9505,6 +9506,15 @@ void collect_class_friend_declaration(SemanticContext & ctx,
 }
 
 }  // namespace
+
+void validate_constexpr_constructor_definition(
+    SemanticContext & ctx,
+    const FunctionBinding & binding)
+{
+  if(binding.owner_class) {
+    validate_constexpr_constructor_initialization(ctx, *binding.owner_class);
+  }
+}
 
 void collect_class_simple_declaration(SemanticContext & ctx,
                                       ClassInfo & info,

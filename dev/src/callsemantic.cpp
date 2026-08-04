@@ -30363,6 +30363,8 @@ private:
                                   function_template_registration_identity(*method_binding),
                                   false,
                                   method_binding->lexical_access_class));
+      semantic_class_model::validate_constexpr_constructor_definition(
+          *this, *method_binding);
       ClassInfo * owner_class = method_binding->owner_class;
       const std::vector<TemplateArgument> * origin_arguments =
           class_template_origin_arguments(owner_class);
@@ -30666,6 +30668,8 @@ private:
                                 function_template_registration_identity(*binding),
                                 false,
                                 binding->lexical_access_class));
+    semantic_class_model::validate_constexpr_constructor_definition(
+        *this, *binding);
   }
 
   void collect_deduction_guide_declaration(
