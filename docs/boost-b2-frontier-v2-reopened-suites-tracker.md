@@ -13,6 +13,7 @@ interleaving with its active suite cursor.
 - finalized upstream base: `222a0ab0f`
 - compiler under test:
   `/Users/vishvananda/cppgm-test-intake/dev/cppgm++`
+- final compiler commit: `58d4643c9`
 - host compiler: Homebrew Clang 22.1.0 at
   `/usr/local/opt/llvm/bin/clang++`
 - Boost tree: `/Users/vishvananda/boost_1_91_0`
@@ -23,10 +24,10 @@ interleaving with its active suite cursor.
 - canonical tracker policy: unchanged until these independent rows are ready
   to merge
 
-Every run uses an isolated `--build-dir`, `-a`, `pch=off`, forced C++11,
-CPPGM for C++ actions, and explicitly pinned Homebrew Clang paths for host
-C/assembly/link actions. The validation and performance ladder follows
-`docs/boost-b2-frontier-v2-plan.md`.
+Every credited run uses an isolated `--build-dir`, `-a`, `pch=off`, forced
+C++11, `CPPGM_B2_CXX` pinned to this worktree's absolute compiler path, and
+explicitly pinned Homebrew Clang paths for host C/assembly/link actions. The
+validation and performance ladder follows `docs/boost-b2-frontier-v2-plan.md`.
 
 ## Suite Status
 
@@ -34,7 +35,7 @@ C/assembly/link actions. The validation and performance ladder follows
 |---:|---|---|---|---|
 | 57 | `libs/leaf/test` | missing `nlohmann/json.hpp` | pass | Final forced graph updated 482 targets: 123 tests passed, all 22 negative compilations failed as expected, and there were no skips or unexpected failures. The nlohmann header and positive/negative serialization cases were included. |
 | 51 | `libs/graph_parallel/test` | missing MPI, runner, and Python target | pass | The final forced C++11 replay updated all 207 targets: 25 MPI-backed runtime tests passed, both examples compiled and linked, and there were no failures or skips. The run took 4,341.72 seconds with 2,318,970,880 B maximum RSS and zero swaps. |
-| 68 | `libs/mpi/test` | missing MPI compiler and runner | in progress | `/usr/local/bin/mpic++` and `/usr/local/bin/mpirun` are now available. Graph Parallel and its refreshed performance gate pass; the isolated forced MPI replay is next. |
+| 68 | `libs/mpi/test` | missing MPI compiler and runner | pass | The final pinned forced C++11 replay updated all 458 requested targets. All 94 MPI runtime tests passed, including the ten paths that did not pass in the initial survey; there were no failures or skips. The run took 7,501.86 seconds with 1,363,877,888 B maximum RSS and zero swaps. |
 
 ## Frontier Log
 
@@ -124,3 +125,52 @@ C/assembly/link actions. The validation and performance ladder follows
   and -42.28% peak footprint
   (`/private/tmp/cppgm-boost-reopened-v2/perf-final-rebase-graph.json`). The
   independent cursor now advances to `libs/mpi/test`.
+- `2026-08-03`: The initial full `libs/mpi/test` survey found 8,828 targets,
+  scheduled 1,360 updates, updated 1,329, passed 83 MPI tests, failed ten
+  targets, and skipped 21 dependents. Nine link failures covered
+  `broadcast_test` ranks 2 and 17 plus all seven `skeleton_content_test`
+  ranks: namespace-scope explicit function-template specializations were
+  retained as local object bindings and five definitions were not required
+  for output, so the static MPI archive lacked externally linkable broadcast
+  symbols. `sendrecv_vector-2` failed earlier in compilation because the
+  ambiguous inherited `marker` lookup used by a partial-specialization
+  constraint escaped instead of discarding that candidate.
+- `2026-08-03`: Commit `58d4643c9` fixes both typed causes. Externally linked
+  explicit specializations no longer prefer local object binding, and defined
+  namespace-scope explicit specializations require output while unused inline
+  specializations from include paths retain lazy suppression. Ambiguous member
+  lookup now has a typed soft-failure category that partial-specialization
+  matching rejects as substitution failure; ordinary ambiguous lookup remains
+  a hard diagnostic. Header-free PA29 and PA22 regressions cover the separate
+  object and SFINAE behavior. Clang 22 and GCC 13 accept and run both controls.
+  PA22 and PA29 already document the owning substitution and separate-object
+  surfaces, so no README edit is needed. The multiple-inheritance placement
+  detector was narrowed to require materialized object behavior instead of a
+  type-only multiply-derived declaration; all 36 placement-audit tests pass.
+- `2026-08-03`: An unpinned verification attempt was discarded after it
+  exposed the B2 wrapper's default compiler path: it points at the active
+  `cppgm-extended` worktree, whose binary was rebuilt during that attempt and
+  produced the known `check_const_loading<const boost::mpi::content>` static
+  assertion. The attempt was stopped immediately and receives no validation
+  credit. The plan now requires every survey and direct B2 command to pin
+  `CPPGM_B2_CXX` and both host tools explicitly. The correctly pinned focused
+  replay rebuilt 98 targets and passed `version_test-1`,
+  `sendrecv_vector-2`, `broadcast_test-2`, and `skeleton_content_test-2`
+  through compile, link, and MPI runtime in 695.61 seconds, with
+  1,072,766,976 B maximum RSS and zero swaps.
+- `2026-08-03`: Closed `libs/mpi/test` on the explicitly pinned compiler at
+  `58d4643c9`. The exact serialized forced replay (`-a -j1`, C++11, PCH off,
+  static, hidden visibility) found 8,828 targets and updated all 458 requested
+  targets. All 94 MPI runtime tests passed with no failure or skip, including
+  both broadcast ranks, all seven skeleton/content ranks, and
+  `sendrecv_vector-2`. The run took 7,501.86 seconds with 1,363,877,888 B
+  maximum RSS and zero swaps
+  (`mpi-full-forced-pinned-intake-final.log`). Repository validation passes
+  the full direct-LowIR report `4748/4748`, all 1,301 configured strict
+  comparisons, all 23 zero-count text-reparse categories and 14 audit tests,
+  all 36 placement-audit tests, and clean PA22/PA29 placement and hygiene
+  scans. The frozen three-run performance gate passes at -36.80%
+  instructions, -44.35% maximum RSS, and -41.43% peak footprint
+  (`/private/tmp/cppgm-boost-reopened-v2/perf-final-mpi.json`). All three
+  reopened suites are now closed; the canonical V2 tracker remains unchanged
+  for later merge.

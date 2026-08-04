@@ -83,6 +83,13 @@ Run suites in the numeric order already parsed by
 `scripts/run_boost_b2_suite_survey.py`. Use a forced `-a` rebuild so a V1 B2
 cache cannot turn a stale target into a V2 pass.
 
+Every survey or direct B2 command must set `CPPGM_B2_CXX`,
+`CPPGM_B2_HOST_CC`, and `CPPGM_B2_HOST_CXX` in that command's environment.
+Do not rely on the wrapper's default compiler path: it points at the canonical
+frontier worktree and that binary may be rebuilt by another active run. For an
+independent worktree, use its absolute `dev/cppgm++` path and record the pinned
+compiler commit in the tracker.
+
 Start V2 with:
 
 ```sh
