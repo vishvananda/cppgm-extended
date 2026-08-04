@@ -10649,7 +10649,9 @@ bool merge_deduced_pack_arguments(SemanticContext & ctx,
                                   DeducedTypeMap & temp_deduced_types,
                                   DeducedValueMap & temp_deduced_values,
                                   DeducedPackArgumentMap & temp_deduced_pack_arguments,
-                                  DeducedPackArgumentMap & deduced_pack_arguments)
+                                  DeducedPackArgumentMap & deduced_pack_arguments,
+                                  const std::set<std::string> * constrained_pack_names = nullptr,
+                                  std::size_t constrained_pack_index = 0)
 {
   bool appended_any = false;
   for(std::size_t i = 0; i < decl.parameters.size(); ++i) {
@@ -10657,16 +10659,19 @@ bool merge_deduced_pack_arguments(SemanticContext & ctx,
     if(!parameter.parameter_pack || parameter.name.empty()) {
       continue;
     }
+    const bool constrain_to_prior_deduction =
+        constrained_pack_names &&
+        constrained_pack_names->count(parameter.name) != 0;
+    const bool has_scalar_type =
+        temp_deduced_types.find(parameter.name) != temp_deduced_types.end();
+    const bool has_scalar_value =
+        temp_deduced_values.find(parameter.name) != temp_deduced_values.end();
     DeducedPackArgumentMap::iterator pack_found =
         temp_deduced_pack_arguments.find(parameter.name);
     if(pack_found != temp_deduced_pack_arguments.end()) {
       if(pack_found->second.empty()) {
         return false;
       }
-      const bool has_scalar_type =
-          temp_deduced_types.find(parameter.name) != temp_deduced_types.end();
-      const bool has_scalar_value =
-          temp_deduced_values.find(parameter.name) != temp_deduced_values.end();
       if((has_scalar_type || has_scalar_value) &&
          (pack_found->second.size() != 1 ||
           !pack_argument_matches_scalar_deduction(ctx,
@@ -10677,18 +10682,48 @@ bool merge_deduced_pack_arguments(SemanticContext & ctx,
                                                   pack_found->second[0]))) {
         return false;
       }
-      if(append_deduced_pack_arguments(parameter,
-                                       pack_found->second,
-                                       deduced_pack_arguments)) {
+      if(constrain_to_prior_deduction) {
+        DeducedPackArgumentMap::const_iterator prior =
+            deduced_pack_arguments.find(parameter.name);
+        if(prior == deduced_pack_arguments.end() ||
+           pack_found->second.size() != 1 ||
+           constrained_pack_index >= prior->second.size() ||
+           !template_arguments_equivalent(
+               prior->second[constrained_pack_index],
+               pack_found->second[0])) {
+          return false;
+        }
+        appended_any = true;
+      } else if(append_deduced_pack_arguments(parameter,
+                                              pack_found->second,
+                                              deduced_pack_arguments)) {
         appended_any = true;
       }
       temp_deduced_pack_arguments.erase(pack_found);
+    } else if(constrain_to_prior_deduction) {
+      if(!has_scalar_type && !has_scalar_value) {
+        continue;
+      }
+      DeducedPackArgumentMap::const_iterator prior =
+          deduced_pack_arguments.find(parameter.name);
+      if(prior == deduced_pack_arguments.end() ||
+         constrained_pack_index >= prior->second.size() ||
+         !pack_argument_matches_scalar_deduction(
+             ctx,
+             bound_scope,
+             parameter,
+             temp_deduced_types,
+             temp_deduced_values,
+             prior->second[constrained_pack_index])) {
+        return false;
+      }
+      appended_any = true;
     } else if(append_deduced_pack_argument(ctx,
-                                           bound_scope,
-                                           parameter,
-                                           temp_deduced_types,
-                                           temp_deduced_values,
-                                           deduced_pack_arguments)) {
+                                          bound_scope,
+                                          parameter,
+                                          temp_deduced_types,
+                                          temp_deduced_values,
+                                          deduced_pack_arguments)) {
       appended_any = true;
     }
     temp_deduced_types.erase(parameter.name);
@@ -17487,6 +17522,7 @@ bool deduce_function_template_arguments_uncached(
     Scope initial_bound_scope = bound_scope;
     const std::size_t deduction_count =
         function_template_deduction_parameter_count(decl, args.size());
+    std::set<std::string> packs_deduced_before_trailing_parameters;
     for(std::size_t i = 0; i < deduction_count; ++i) {
       bind_known_deductions_into_scope(ctx,
                                        bound_scope,
@@ -17498,6 +17534,14 @@ bool deduce_function_template_arguments_uncached(
           uses_trailing_function_parameter_pack(decl) &&
           !decl.params_pattern.empty() &&
           i + 1 >= decl.params_pattern.size();
+      if(deducing_pack_element && i + 1 == decl.params_pattern.size()) {
+        for(DeducedPackArgumentMap::const_iterator it =
+                deduced_pack_arguments.begin();
+            it != deduced_pack_arguments.end();
+            ++it) {
+          packs_deduced_before_trailing_parameters.insert(it->first);
+        }
+      }
       const std::size_t pattern_index =
           deducing_pack_element && !decl.params_pattern.empty() ?
               decl.params_pattern.size() - 1 :
@@ -17721,7 +17765,9 @@ bool deduce_function_template_arguments_uncached(
                                          temp_deduced_types,
                                          temp_deduced_values,
                                          temp_deduced_pack_arguments,
-                                         deduced_pack_arguments)) {
+                                         deduced_pack_arguments,
+                                         &packs_deduced_before_trailing_parameters,
+                                         i + 1 - decl.params_pattern.size())) {
           return false;
         }
       } else {
@@ -18144,6 +18190,7 @@ bool deduce_function_template_arguments_with_explicit(
 
     const std::size_t deduction_count =
         function_template_deduction_parameter_count(decl, args.size());
+    std::set<std::string> packs_deduced_before_trailing_parameters;
     for(std::size_t i = 0; i < deduction_count; ++i) {
       bind_known_deductions_into_scope(ctx,
                                        bound_scope,
@@ -18157,6 +18204,14 @@ bool deduce_function_template_arguments_with_explicit(
           uses_trailing_function_parameter_pack(decl) &&
           !decl.params_pattern.empty() &&
           i + 1 >= decl.params_pattern.size();
+      if(deducing_pack_element && i + 1 == decl.params_pattern.size()) {
+        for(DeducedPackArgumentMap::const_iterator it =
+                deduced_pack_arguments.begin();
+            it != deduced_pack_arguments.end();
+            ++it) {
+          packs_deduced_before_trailing_parameters.insert(it->first);
+        }
+      }
       const std::size_t pattern_index =
           deducing_pack_element && !decl.params_pattern.empty() ?
               decl.params_pattern.size() - 1 :
@@ -18366,7 +18421,9 @@ bool deduce_function_template_arguments_with_explicit(
                                          temp_deduced_types,
                                          temp_deduced_values,
                                          temp_deduced_pack_arguments,
-                                         deduced_pack_arguments)) {
+                                         deduced_pack_arguments,
+                                         &packs_deduced_before_trailing_parameters,
+                                         i + 1 - decl.params_pattern.size())) {
           return false;
         }
       } else {

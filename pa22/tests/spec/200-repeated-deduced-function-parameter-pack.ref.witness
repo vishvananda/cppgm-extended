@@ -1,0 +1,14 @@
+translation-unit
+  function-call at tests/spec/200-repeated-deduced-function-parameter-pack.t:7:21
+    callee call
+    selected instantiation
+    bind #1 = long source=explicit
+    bind #2 = char source=explicit
+    bind #3 = <int> source=deduced
+template-closure-events
+  ensure-definition
+    entity call
+  function-instantiation
+    entity call
+  require-definition
+    entity call
