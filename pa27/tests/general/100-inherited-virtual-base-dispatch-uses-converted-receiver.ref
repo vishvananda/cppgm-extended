@@ -65,10 +65,11 @@ global @__rtti_struct_derived [storage=readonly, binding=weak, object=_ZTI7deriv
   ptr addr @__rtti_struct_empty_base
   i64 2
   ptr addr @__rtti_struct_virtual_base
-  i64 -6141
+  i64 -8189
 }
 global @derived__vtable [storage=readonly, binding=weak, object=_ZTV7derived] = {
   i64 8
+  i64 0
   i64 0
   ptr addr @__rtti_struct_derived
 }
@@ -79,7 +80,7 @@ global @derived____view__virtual_base__8__vtable [storage=readonly, binding=weak
   ptr addr @virtual_base__function
 }
 global @derived____vtt [storage=readonly, binding=weak, object=_ZTT7derived, object_root=yes] = {
-  ptr addr @derived__vtable + 24
+  ptr addr @derived__vtable + 32
   ptr addr @derived____view__virtual_base__8__vtable + 24
 }
 global @called : i32 [binding=strong, object=_Z6called] = zero
@@ -93,7 +94,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @derived__derived(%t1)
     %t2 = addr $value
     %t3 = load ptr %t2
-    %t4 = index i8 %t3, -24
+    %t4 = index i8 %t3, -32
     %t5 = load i64 %t4
     %t6 = index i8 %t2, %t5
     %t7 = index i8 [projection=base_subobject] %t6, 0
@@ -134,11 +135,11 @@ function @derived__derived(%this : ptr) -> void [unwind=no, binding=weak, object
     call void @virtual_base__virtual_base__base_entry(%t2)
     %t3 = load ptr $this
     %t4 = addr @derived__vtable
-    %t5 = index i8 %t4, 24
+    %t5 = index i8 %t4, 32
     store ptr %t5, %t3
     %t6 = load ptr $this
     %t7 = load ptr %t6
-    %t8 = index i8 %t7, -24
+    %t8 = index i8 %t7, -32
     %t9 = load i64 %t8
     %t10 = index i8 %t6, %t9
     %t11 = index i8 [projection=base_subobject] %t10, 0

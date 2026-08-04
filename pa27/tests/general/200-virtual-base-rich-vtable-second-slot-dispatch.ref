@@ -30,10 +30,11 @@ global @__rtti_struct_derived [storage=readonly, binding=weak, object=_ZTI7deriv
   i32 0
   i32 1
   ptr addr @__rtti_struct_root
-  i64 -6141
+  i64 -8189
 }
 global @derived__vtable [storage=readonly, binding=weak, object=_ZTV7derived] = {
   i64 8
+  i64 0
   i64 0
   ptr addr @__rtti_struct_derived
   ptr addr @derived__first
@@ -46,7 +47,7 @@ global @derived____view__root__8__vtable [storage=readonly, binding=weak, object
   ptr addr @root__anchor
 }
 global @derived____vtt [storage=readonly, binding=weak, object=_ZTT7derived, object_root=yes] = {
-  ptr addr @derived__vtable + 24
+  ptr addr @derived__vtable + 32
   ptr addr @derived____view__root__8__vtable + 24
 }
 global @root__vtable [storage=readonly, binding=weak, object=_ZTV4root] = {

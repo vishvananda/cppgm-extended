@@ -250,6 +250,32 @@ void append_dump_virtual_base_layout(DumpNode & node, const ClassInfo * info)
   }
 }
 
+void append_vtable_virtual_base_layout(DumpNode & node,
+                                       const ClassInfo & dynamic_class,
+                                       const VTableInfo & table)
+{
+  const ClassInfo * view_class = table.view_type ? table.view_type : &dynamic_class;
+  for(size_t i = 0; i < view_class->virtual_base_subobjects.size(); ++i) {
+    const SubobjectInfo & view_base = view_class->virtual_base_subobjects[i];
+    if(!view_base.type) {
+      continue;
+    }
+    size_t dynamic_offset = table.view_offset + view_base.offset;
+    for(size_t j = 0; j < dynamic_class.virtual_base_subobjects.size(); ++j) {
+      const SubobjectInfo & dynamic_base =
+          dynamic_class.virtual_base_subobjects[j];
+      if(dynamic_base.type == view_base.type ||
+         (dynamic_base.type &&
+          dynamic_base.type->qualified_name == view_base.type->qualified_name)) {
+        dynamic_offset = dynamic_base.offset;
+        break;
+      }
+    }
+    mutable_callsem_virtual_base_layout(node).push_back(
+        make_pair(view_base.type->qualified_name, dynamic_offset));
+  }
+}
+
 bool is_virtual_base_view(const ClassInfo & info, const VTableInfo & table)
 {
   if(table.view_offset == 0 || !table.view_type) {
@@ -5584,7 +5610,7 @@ void append_vtable_output_node(SemanticContext & ctx,
   set_callsem_host_vcall_offset_count(table_node,
                                       host_vcall_offset_count(info, table));
   set_callsem_uint_value(table_node, table.view_offset);
-  append_dump_virtual_base_layout(table_node, &info);
+  append_vtable_virtual_base_layout(table_node, info, table);
   if(table_symbol) {
     set_dump_symbol(table_node, *table_symbol);
   } else if(table_node.is_primary_vtable &&

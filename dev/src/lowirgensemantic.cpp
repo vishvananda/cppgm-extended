@@ -3257,6 +3257,8 @@ public:
   LowIRFunctionBuilder(const CallSemNode & function_node,
                        const map<string, GlobalBinding> & globals,
                        const map<string, VTableBinding> & vtables,
+                       const map<string, unsigned long long> &
+                           class_host_vcall_offset_counts,
                        const map<string, string> & function_symbols,
                        const vector<FunctionSymbolEntry> & function_symbol_entries,
                        const FunctionSymbolLookupIndex & function_symbol_lookup_index,
@@ -3285,6 +3287,7 @@ public:
     : function_node_(&function_node)
     , globals_(globals)
     , vtables_(vtables)
+    , class_host_vcall_offset_counts_(class_host_vcall_offset_counts)
     , function_symbols_(function_symbols)
     , function_symbol_entries_(function_symbol_entries)
     , function_symbol_lookup_index_(function_symbol_lookup_index)
@@ -3466,6 +3469,8 @@ public:
   LowIRFunctionBuilder(const string & qualified_name,
                        const map<string, GlobalBinding> & globals,
                        const map<string, VTableBinding> & vtables,
+                       const map<string, unsigned long long> &
+                           class_host_vcall_offset_counts,
                        const map<string, string> & function_symbols,
                        const vector<FunctionSymbolEntry> & function_symbol_entries,
                        const FunctionSymbolLookupIndex & function_symbol_lookup_index,
@@ -3494,6 +3499,7 @@ public:
     : function_node_(nullptr)
     , globals_(globals)
     , vtables_(vtables)
+    , class_host_vcall_offset_counts_(class_host_vcall_offset_counts)
     , function_symbols_(function_symbols)
     , function_symbol_entries_(function_symbol_entries)
     , function_symbol_lookup_index_(function_symbol_lookup_index)
@@ -4123,9 +4129,10 @@ private:
       const string vptr = emit_temp_assignment("ptr", string("load ptr ") + object_ptr);
       unsigned long long host_vcall_offset_count = 0;
       if(emit_runtime_support_) {
-        map<string, VTableBinding>::const_iterator table = vtables_.find(class_name);
-        if(table != vtables_.end()) {
-          host_vcall_offset_count = table->second.host_vcall_offset_count;
+        map<string, unsigned long long>::const_iterator count =
+            class_host_vcall_offset_counts_.find(class_name);
+        if(count != class_host_vcall_offset_counts_.end()) {
+          host_vcall_offset_count = count->second;
         }
       }
       const size_t slots_from_address_point =
@@ -4758,6 +4765,7 @@ private:
   const CallSemNode * function_node_;
   const map<string, GlobalBinding> & globals_;
   const map<string, VTableBinding> & vtables_;
+  const map<string, unsigned long long> & class_host_vcall_offset_counts_;
   const map<string, string> & function_symbols_;
   const vector<FunctionSymbolEntry> & function_symbol_entries_;
   const FunctionSymbolLookupIndex & function_symbol_lookup_index_;
@@ -17950,6 +17958,7 @@ public:
           LowIRFunctionBuilder(thread_local_init_actions_[i].first,
                                global_bindings_,
                                vtable_bindings_,
+                               class_host_vcall_offset_counts_,
                                function_symbols_,
                                function_symbol_entries_,
                                function_symbol_lookup_index(),
@@ -17979,6 +17988,7 @@ public:
       referenced_function_symbols_.insert(lowir_name("__cppgm_init"));
       functions_.push_back(
           LowIRFunctionBuilder("__cppgm_init", global_bindings_, vtable_bindings_,
+                               class_host_vcall_offset_counts_,
                                function_symbols_, function_symbol_entries_,
                                function_symbol_lookup_index(),
                                function_symbol_nodes_,
@@ -18010,6 +18020,7 @@ public:
       referenced_function_symbols_.insert(lowir_name("__cppgm_fini"));
       functions_.push_back(
           LowIRFunctionBuilder("__cppgm_fini", global_bindings_, vtable_bindings_,
+                               class_host_vcall_offset_counts_,
                                function_symbols_, function_symbol_entries_,
                                function_symbol_lookup_index(),
                                function_symbol_nodes_,
@@ -20438,6 +20449,7 @@ private:
   vector<LowIRFunction> functions_;
   map<string, GlobalBinding> global_bindings_;
   map<string, VTableBinding> vtable_bindings_;
+  map<string, unsigned long long> class_host_vcall_offset_counts_;
   map<string, string> function_symbols_;
   vector<FunctionSymbolEntry> function_symbol_entries_;
   map<string, const CallSemNode *> function_symbol_nodes_;
@@ -20968,13 +20980,15 @@ private:
   {
     const CallSemVirtualBaseLayout & virtual_base_layout =
         callsem_virtual_base_layout(node);
-    if(!virtual_base_layout.empty()) {
+    const bool has_host_vtable_prefix =
+        node.is_primary_vtable || !virtual_base_layout.empty() || emit_runtime_support_;
+    if(has_host_vtable_prefix) {
       const unsigned long long vcall_count = emit_runtime_support_ ?
           callsem_host_vcall_offset_count(node) : 0ULL;
       return (static_cast<unsigned long long>(virtual_base_layout.size()) +
               vcall_count + 2ULL) * 8ULL;
     }
-    return (node.is_primary_vtable || emit_runtime_support_) ? 16ULL : 0ULL;
+    return 0ULL;
   }
 
   long long host_virtual_base_rtti_offset(const CallSemNode & node,
@@ -22962,6 +22976,7 @@ private:
     }
     LowIRFunction function =
         LowIRFunctionBuilder(node, global_bindings_, vtable_bindings_,
+                             class_host_vcall_offset_counts_,
                              function_symbols_, function_symbol_entries_,
                              function_symbol_lookup_index(),
                              function_symbol_nodes_,
@@ -23630,18 +23645,32 @@ private:
       binding.address_point_offset = host_vtable_address_point_offset(node);
       binding.host_vcall_offset_count = emit_runtime_support_ ?
           callsem_host_vcall_offset_count(node) : 0ULL;
-      for(size_t i = 0; i < virtual_base_layout.size(); ++i) {
-        const long long virtual_base_offset =
-            static_cast<long long>(virtual_base_layout[i].second) -
-            static_cast<long long>(view_offset);
-        global.data_items.push_back(string("i64 ") + to_string(virtual_base_offset));
-      }
-      if(emit_runtime_support_) {
-        for(unsigned long long i = 0;
-            i < callsem_host_vcall_offset_count(node);
-            ++i) {
-          global.data_items.push_back("i64 0");
+      const auto append_virtual_base_offsets = [&]()
+      {
+        for(size_t i = 0; i < virtual_base_layout.size(); ++i) {
+          const long long virtual_base_offset =
+              static_cast<long long>(virtual_base_layout[i].second) -
+              static_cast<long long>(view_offset);
+          global.data_items.push_back(
+              string("i64 ") + to_string(virtual_base_offset));
         }
+      };
+      const auto append_vcall_offsets = [&]()
+      {
+        if(emit_runtime_support_) {
+          for(unsigned long long i = 0;
+              i < callsem_host_vcall_offset_count(node);
+              ++i) {
+            global.data_items.push_back("i64 0");
+          }
+        }
+      };
+      if(node.is_primary_vtable) {
+        append_virtual_base_offsets();
+        append_vcall_offsets();
+      } else {
+        append_vcall_offsets();
+        append_virtual_base_offsets();
       }
       const long long offset_to_top = -static_cast<long long>(view_offset);
       global.data_items.push_back(string("i64 ") + to_string(offset_to_top));
@@ -23947,6 +23976,13 @@ private:
       }
     }
     vtable_bindings_[node.text] = binding;
+    if(node.is_primary_vtable && node.semantic_type) {
+      const string class_name = class_qualified_name(node.semantic_type);
+      if(!class_name.empty()) {
+        class_host_vcall_offset_counts_[class_name] =
+            binding.host_vcall_offset_count;
+      }
+    }
   }
 
   void collect_vtt(const CallSemNode & node)
