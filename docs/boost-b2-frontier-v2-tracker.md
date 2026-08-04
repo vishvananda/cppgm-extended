@@ -961,6 +961,12 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Closed the clean final replay of suite 37. The six-job Endian
+  request finds 840 targets, rebuilds all 184 requested targets, passes all 47
+  compile/link/runtime actions across intrinsic and non-intrinsic variants,
+  and has no failure or skip. It exits in 99.17s at 557,527,040 B maximum RSS
+  with zero process swaps and unchanged system swapouts. No compiler, test, or
+  reference change is required.
 - `2026-08-04`: Closed the clean final replay of suite 36 independently
   because DynamicBitset previously exposed deferred member-definition defects.
   The six-job graph finds 3150 targets, rebuilds all 90 requested targets,
