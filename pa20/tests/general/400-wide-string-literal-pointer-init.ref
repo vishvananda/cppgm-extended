@@ -3,7 +3,7 @@ global @__strlit__1 [binding=internal] = {
   i32 98
   i32 0
 }
-global @wide : ptr [binding=internal, object=_ZL4wide] = addr @__strlit__1
+global @wide : ptr [binding=strong, object=_Z4wide] = addr @__strlit__1
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

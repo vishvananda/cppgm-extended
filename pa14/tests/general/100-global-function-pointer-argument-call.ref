@@ -1,4 +1,4 @@
-global @fp : ptr [binding=strong, object=_Z2fp] = zero
+global @fp : ptr [binding=strong, object=_Z2fp] = addr @callee
 
 function @callee(%x : i32) -> i32 [binding=strong, object=_Z6calleei] {
   slot $x : i32
@@ -41,10 +41,4 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^cond_end_3:
     %t4 = load i32 $cond__1
     return i32 %t4
-}
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    %t1 = addr @callee
-    store ptr %t1, @fp
-    return void
 }

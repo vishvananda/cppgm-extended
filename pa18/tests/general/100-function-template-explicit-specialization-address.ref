@@ -1,7 +1,7 @@
 global @global_stream [binding=strong, object=_Z13global_stream] = {
   zero 1
 }
-global @global_passthrough : ptr [binding=strong, object=_Z18global_passthrough] = zero
+global @global_passthrough : ptr [binding=strong, object=_Z18global_passthrough] = addr @ns__passthrough
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
@@ -29,10 +29,4 @@ function @ns__passthrough(%value : ptr [pass=reference]) -> ptr [binding=weak, o
     store ptr %value, $value
     %t1 = load ptr $value
     return ptr %t1
-}
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    %t1 = addr @ns__passthrough
-    store ptr %t1, @global_passthrough
-    return void
 }

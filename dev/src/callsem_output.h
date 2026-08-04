@@ -363,6 +363,7 @@ struct CallSemNode
       is_semantically_nothrow(false),
       is_force_inline(false),
       is_explicit_instantiation_definition(false),
+      is_object_output_root(false),
       has_dynamic_exception_spec(false),
       needs_noexcept_terminate(false),
       trivial_lifecycle(false),
@@ -432,6 +433,7 @@ struct CallSemNode
   std::uint64_t is_semantically_nothrow : 1;
   std::uint64_t is_force_inline : 1;
   std::uint64_t is_explicit_instantiation_definition : 1;
+  std::uint64_t is_object_output_root : 1;
   std::uint64_t has_dynamic_exception_spec : 1;
   std::uint64_t needs_noexcept_terminate : 1;
   std::uint64_t trivial_lifecycle : 1;

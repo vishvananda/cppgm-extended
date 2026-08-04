@@ -3263,6 +3263,8 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
     var_node.is_extern_declaration = !binding.has_storage_definition;
     var_node.is_thread_local = binding.is_thread_local;
     var_node.is_static_storage = binding.is_thread_local;
+    var_node.is_object_output_root =
+        binding.definition_node && binding.definition_node->has_weak_attribute;
     if(binding.definition_node) {
       set_callsem_section_segment(
           var_node, cppast_gnu_section_segment(*binding.definition_node));
@@ -4564,6 +4566,8 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
         function_node.is_force_inline = binding.is_force_inline;
         function_node.is_explicit_instantiation_definition =
             binding.is_explicit_instantiation_definition;
+        function_node.is_object_output_root =
+            binding.definition_node && binding.definition_node->has_weak_attribute;
         function_node.trivial_lifecycle =
             function_binding_has_trivial_lifecycle_output(ctx, binding);
         function_node.object_trivial_lifecycle =
@@ -6208,6 +6212,9 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
         var_node.is_extern_declaration = !is_definition;
         var_node.is_thread_local = binding && binding->is_thread_local;
         var_node.is_static_storage = var_node.is_thread_local;
+        var_node.is_object_output_root =
+            binding && binding->definition_node &&
+            binding->definition_node->has_weak_attribute;
         set_callsem_section_segment(var_node,
                                     cppast_gnu_section_segment(init_decl));
         set_callsem_section_name(var_node,

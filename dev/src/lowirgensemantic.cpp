@@ -173,6 +173,7 @@ struct GlobalBinding
   string thread_local_guard_symbol;
   string thread_local_init_symbol;
   bool is_definition = true;
+  bool object_output_root = false;
   string section_segment;
   string section_name;
   symbol_linkage::SymbolIdentity symbol;
@@ -3299,7 +3300,8 @@ public:
     g_lowir_current_function_node = function_node_;
     function_.name = node_internal_symbol(*function_node_);
     function_.metadata.object_output_root =
-        function_node_->is_explicit_instantiation_definition;
+        function_node_->is_explicit_instantiation_definition ||
+        function_node_->is_object_output_root;
     function_.metadata.object_trivial_lifecycle =
         function_node_->object_trivial_lifecycle || function_node_->trivial_lifecycle;
     function_.metadata.force_inline = function_node_->is_force_inline;
@@ -23410,6 +23412,7 @@ private:
       }
     }
     binding.is_definition = !node.is_extern_declaration;
+    binding.object_output_root = node.is_object_output_root;
     binding.section_segment = callsem_section_segment(node);
     binding.section_name = callsem_section_name(node);
     global_bindings_[binding.storage] = binding;
@@ -23484,11 +23487,21 @@ private:
     for(size_t i = 0; i < globals_.size(); ++i) {
       map<string, GlobalBinding>::const_iterator binding =
           global_bindings_.find(globals_[i].name);
-      if(binding == global_bindings_.end() || binding->second.section_name.empty()) {
+      if(binding == global_bindings_.end()) {
+        continue;
+      }
+      if(binding->second.object_output_root) {
+        globals_[i].metadata.object_output_root = true;
+      }
+      if(binding->second.section_name.empty()) {
         continue;
       }
       globals_[i].metadata.section_segment = binding->second.section_segment;
       globals_[i].metadata.section_name = binding->second.section_name;
+      // An explicit section placement is itself an output requirement.  In
+      // particular, weak registration records must survive object pruning
+      // even when their only reference is made later through dlsym.
+      globals_[i].metadata.object_output_root = true;
     }
   }
 
@@ -24197,12 +24210,23 @@ private:
       string child;
       bool child_addr = false;
       long long child_addend = 0;
-      if(!evaluate_global_initializer(node.children[0], child, child_addr, child_addend) ||
-         child_addr ||
-         child_addend != 0) {
+      if(!evaluate_global_initializer(node.children[0], child, child_addr, child_addend)) {
         return false;
       }
       TypePtr target = strip_top_level_cv(remove_reference_type(node.semantic_type));
+      if(child_addr) {
+        if(!target ||
+           !(is_pointer_type(target) || is_integral_type(target))) {
+          return false;
+        }
+        out = child;
+        is_addr = true;
+        addr_addend = child_addend;
+        return true;
+      }
+      if(child_addend != 0) {
+        return false;
+      }
       long long value = 0;
       if(!target ||
          !(is_integral_type(target) || is_named_enum_scalar_type(target)) ||
@@ -24378,6 +24402,12 @@ private:
       return false;
     }
     if(node.kind == CallSemKind::unary_expression && node.children.size() == 1) {
+      if(callsem_has_token(node, OP_AMP) &&
+         node.children[0].kind == CallSemKind::id_expression) {
+        out = node_internal_symbol(node.children[0]);
+        is_addr = !out.empty();
+        return is_addr;
+      }
       string child;
       bool child_addr = false;
       long long child_addend = 0;
@@ -24391,6 +24421,12 @@ private:
       if(callsem_has_token(node, OP_PLUS)) {
         out = child;
         is_addr = child_addr;
+        addr_addend = child_addend;
+        return true;
+      }
+      if(callsem_has_token(node, OP_AMP) && child_addr) {
+        out = child;
+        is_addr = true;
         addr_addend = child_addend;
         return true;
       }

@@ -25050,9 +25050,27 @@ private:
     return symbol_linkage::SL_EXTERNAL;
   }
 
+  bool namespace_object_type_is_const_qualified(const TypePtr & type) const
+  {
+    TypePtr current = type;
+    while(current) {
+      if(is_const_object_type(current)) {
+        return true;
+      }
+      current = strip_top_level_cv(current);
+      if(!current || current->kind != Type::TK_ARRAY) {
+        return false;
+      }
+      current = current->inner;
+    }
+    return false;
+  }
+
   symbol_linkage::SymbolLinkage variable_symbol_linkage(Scope & scope,
                                                         const CppAstNode * declaration_node,
+                                                        const TypePtr & type,
                                                         bool is_c_linkage,
+                                                        bool c_linkage_implies_external,
                                                         const ClassInfo * owner_class = nullptr) const
   {
     if(declaration_marks_weak(declaration_node)) {
@@ -25076,7 +25094,8 @@ private:
     }
     if(!owner_class &&
        !declaration_marks_extern(declaration_node) &&
-       (declaration_specifiers_contain_token(declaration_node, KW_CONST) ||
+       !c_linkage_implies_external &&
+       (namespace_object_type_is_const_qualified(type) ||
         declaration_specifiers_contain_token(declaration_node, KW_CONSTEXPR))) {
       return symbol_linkage::SL_INTERNAL;
     }
@@ -26145,7 +26164,8 @@ private:
                                           bool is_thread_local,
                                           bool is_definition,
                                           const CppAstNode * declaration_node = nullptr,
-                                          const CppAstNode * linkage_node = nullptr)
+                                          const CppAstNode * linkage_node = nullptr,
+                                          bool c_linkage_implies_external = false)
   {
     const CppAstNode * symbol_linkage_node =
         linkage_node ? linkage_node : declaration_node;
@@ -26193,7 +26213,9 @@ private:
       symbol_linkage::SymbolLinkage linkage =
           variable_symbol_linkage(scope,
                                   symbol_linkage_node,
+                                  type,
                                   effective_is_c_linkage,
+                                  c_linkage_implies_external,
                                   existing->second.owner_class);
       if(linkage == symbol_linkage::SL_INTERNAL &&
          !existing->second.has_storage_definition &&
@@ -26226,7 +26248,9 @@ private:
     symbol_linkage::SymbolLinkage linkage =
         variable_symbol_linkage(scope,
                                 symbol_linkage_node,
+                                type,
                                 is_c_linkage,
+                                c_linkage_implies_external,
                                 binding.owner_class);
     if(linkage != symbol_linkage::SL_INTERNAL &&
        declaration_marks_weak(declaration_node)) {
@@ -29145,7 +29169,9 @@ private:
                                                          is_thread_local_variable,
                                                          is_definition,
                                                          &init_decl,
-                                                         specifiers);
+                                                         specifiers,
+                                                         is_c_linkage &&
+                                                             !linkage_has_braces);
         const bool is_constexpr_variable =
             decl_spec_contains_token(*specifiers, KW_CONSTEXPR);
         binding.requires_constant_initializer = is_constexpr_variable;

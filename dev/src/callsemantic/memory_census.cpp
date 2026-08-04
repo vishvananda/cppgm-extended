@@ -2277,6 +2277,7 @@ bool callsem_flags_equal(const CallSemNode & lhs, const CallSemNode & rhs)
          lhs.is_explicit_nothrow == rhs.is_explicit_nothrow &&
          lhs.is_semantically_nothrow == rhs.is_semantically_nothrow &&
          lhs.is_force_inline == rhs.is_force_inline &&
+         lhs.is_object_output_root == rhs.is_object_output_root &&
          lhs.has_dynamic_exception_spec == rhs.has_dynamic_exception_spec &&
          lhs.needs_noexcept_terminate == rhs.needs_noexcept_terminate &&
          lhs.trivial_lifecycle == rhs.trivial_lifecycle &&
@@ -2324,6 +2325,7 @@ uint64_t hash_callsem_flags(const CallSemNode & node)
   hash = hash_mix(hash, node.is_explicit_nothrow ? 1 : 0);
   hash = hash_mix(hash, node.is_semantically_nothrow ? 1 : 0);
   hash = hash_mix(hash, node.is_force_inline ? 1 : 0);
+  hash = hash_mix(hash, node.is_object_output_root ? 1 : 0);
   hash = hash_mix(hash, node.has_dynamic_exception_spec ? 1 : 0);
   hash = hash_mix(hash, node.needs_noexcept_terminate ? 1 : 0);
   hash = hash_mix(hash, node.trivial_lifecycle ? 1 : 0);

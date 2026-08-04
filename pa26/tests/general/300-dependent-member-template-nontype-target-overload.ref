@@ -1,4 +1,4 @@
-global @holder_callable___value : ptr [binding=weak, object=_ZN6holderI8callableE5valueE] = zero
+global @holder_callable___value : ptr [binding=weak, object=_ZN6holderI8callableE5valueE] = addr @member_callable___wrap__ov2
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
@@ -26,11 +26,5 @@ function @member_callable___wrap__ov2(%__param0 : ptr, %__param1 : i64) -> void 
   block ^entry:
     store ptr %__param0, $__param0
     store i64 %__param1, $__param1
-    return void
-}
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    %t1 = addr @member_callable___wrap__ov2
-    store ptr %t1, @holder_callable___value
     return void
 }

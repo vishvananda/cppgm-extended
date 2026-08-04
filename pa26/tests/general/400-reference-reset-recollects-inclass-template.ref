@@ -1,5 +1,5 @@
 global @interface_x__holder_target___table [binding=weak, object=_ZN11interface_x6holderI6targetE5tableE] = {
-  zero 8
+  ptr addr @example__member_interface_x__vtable__info_target____wrap__ov2
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -71,14 +71,6 @@ function @target__call(%this : ptr, %__param1 : i32) -> void [binding=weak, obje
   block ^entry:
     store ptr %this, $this
     store i32 %__param1, $__param1
-    return void
-}
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    %t1 = addr @example__member_interface_x__vtable__info_target____wrap__ov2
-    %t2 = addr @interface_x__holder_target___table
-    %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
     return void
 }
 alias object _ZN11interface_xC2I6targetEERT_ = @interface_x__interface_x__ov3
