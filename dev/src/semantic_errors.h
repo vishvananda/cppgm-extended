@@ -138,6 +138,11 @@ struct NotDataMemberExpressionError : SemanticSoftFailure
   using SemanticSoftFailure::SemanticSoftFailure;
 };
 
+struct AmbiguousMemberLookupError : SemanticSoftFailure
+{
+  using SemanticSoftFailure::SemanticSoftFailure;
+};
+
 struct DependentQualifiedTypeMissingTypenameError : std::logic_error
 {
   using std::logic_error::logic_error;

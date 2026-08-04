@@ -12900,6 +12900,8 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
     return true;
   } catch(const TemplateSubstitutionFailure &) {
     return false;
+  } catch(const AmbiguousMemberLookupError &) {
+    return false;
   }
 }
 

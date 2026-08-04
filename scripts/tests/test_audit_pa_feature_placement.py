@@ -183,6 +183,27 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             ),
         )
 
+    def test_multiple_inheritance_requires_materialized_object_behavior(self) -> None:
+        type_lookup_only = textwrap.dedent(
+            """\
+            struct left { typedef int marker; };
+            struct right { typedef long marker; };
+            struct derived : left, right {};
+            template<class T> struct probe;
+            typedef probe<derived> result;
+            """
+        )
+        materialized = type_lookup_only + "derived value;\n"
+
+        self.assertNotIn(
+            "class.inheritance.multiple",
+            audit.detect_features(type_lookup_only),
+        )
+        self.assertIn(
+            "class.inheritance.multiple",
+            audit.detect_features(materialized),
+        )
+
     def test_hygiene_reports_compile_flags_sidecar(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)

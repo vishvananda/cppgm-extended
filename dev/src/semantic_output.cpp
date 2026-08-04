@@ -322,6 +322,10 @@ bool node_decl_spec_contains_token(const CppAstNode * node, ETokenType token);
 
 bool output_function_prefers_local_object_binding(const FunctionBinding & binding)
 {
+  if(binding.is_explicit_specialization &&
+     output_function_symbol_linkage(binding) == symbol_linkage::SL_EXTERNAL) {
+    return false;
+  }
   return binding.symbol.prefer_local_object_binding ||
          binding.exclude_from_explicit_instantiation;
 }

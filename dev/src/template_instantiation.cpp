@@ -11061,7 +11061,12 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     if((include_body || explicit_specialization) &&
        (found->second->has_definition || explicit_specialization)) {
       apply_function_instantiation_intent(
-          ctx, found->second, InstantiatedFunctionOutputMode::TrackOnly);
+          ctx,
+          found->second,
+          explicit_specialization && found->second->has_definition &&
+                  !found->second->owner_class ?
+              InstantiatedFunctionOutputMode::RequireDefinition :
+              InstantiatedFunctionOutputMode::TrackOnly);
     }
     found->second->instantiated_signature_finalized =
         !template_arguments_are_dependent_for_instantiation(ctx, arguments) &&
@@ -12469,7 +12474,12 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   if((include_body || explicit_specialization) &&
      (binding->has_definition || explicit_specialization)) {
     apply_function_instantiation_intent(
-        ctx, binding, InstantiatedFunctionOutputMode::TrackOnly);
+        ctx,
+        binding,
+        explicit_specialization && binding->has_definition &&
+                !binding->owner_class ?
+            InstantiatedFunctionOutputMode::RequireDefinition :
+            InstantiatedFunctionOutputMode::TrackOnly);
   }
   return binding;
 }

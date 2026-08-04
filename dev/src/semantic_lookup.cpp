@@ -21,6 +21,7 @@
 #include "semantic_class_model.h"
 #include "semantic_context.h"
 #include "semantic_dependent_type.h"
+#include "semantic_errors.h"
 #include "semantic_metrics.h"
 #include "semantic_trace.h"
 #include "semantic_utils.h"
@@ -1282,7 +1283,7 @@ Result lookup_member_in_hierarchy(ClassInfo & info,
       out << "ambiguous member lookup";
       out << " [root " << info.qualified_name << "]";
       out << " [candidates " << describe_class_candidate_list(candidates) << "]";
-      throw logic_error(out.str());
+      throw AmbiguousMemberLookupError(out.str());
     }
     path_access = combine_member_access(path_access, candidate_access[i]);
   }
@@ -5327,7 +5328,7 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
         out << " [root " << info.qualified_name << "]";
         out << " [member " << name << "]";
         out << " [candidates " << describe_class_candidate_list(candidates) << "]";
-        throw logic_error(out.str());
+        throw AmbiguousMemberLookupError(out.str());
       }
     }
   }

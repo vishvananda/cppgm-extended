@@ -727,16 +727,17 @@ def match_builtin_trait_patterns(patterns: tuple[re.Pattern[str], ...],
     return matched
 
 
-def has_top_level_base_comma(code: str) -> bool:
+def multiple_base_class_names(code: str) -> list[str]:
     class_header = re.compile(
-        r"\b(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*(?:\s+final)?\s*:\s*([^{;]+)\{",
+        r"\b(?:class|struct)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s+final)?\s*:\s*([^{;]+)\{",
         re.MULTILINE | re.DOTALL,
     )
+    names: list[str] = []
     for match in class_header.finditer(code):
         depth_angle = 0
         depth_paren = 0
         depth_bracket = 0
-        base_clause = match.group(1)
+        base_clause = match.group(2)
         index = 0
         while index < len(base_clause):
             char = base_clause[index]
@@ -755,8 +756,22 @@ def has_top_level_base_comma(code: str) -> bool:
             elif char == "]" and depth_bracket:
                 depth_bracket -= 1
             elif char == "," and depth_angle == 0 and depth_paren == 0 and depth_bracket == 0:
-                return True
+                names.append(match.group(1))
+                break
             index += 1
+    return names
+
+
+def has_materialized_multiple_inheritance(code: str) -> bool:
+    for name in multiple_base_class_names(code):
+        escaped = re.escape(name)
+        materialized_patterns = (
+            rf"\b(?:new|sizeof|alignof)\s*(?:\(\s*)?{escaped}\b",
+            rf"\b(?:static_cast|dynamic_cast|reinterpret_cast|const_cast)\s*<[^>]*\b{escaped}\b",
+            rf"\b(?:const\s+|volatile\s+)*{escaped}\s*(?:[*&]\s*)?[A-Za-z_][A-Za-z0-9_]*\s*(?:[=;,{{(\[]|$)",
+        )
+        if any(re.search(pattern, code, re.MULTILINE) for pattern in materialized_patterns):
+            return True
     return False
 
 
@@ -1094,7 +1109,10 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             # inheritance RTTI object.  It is not by itself evidence that the
             # test exercises PA27 dynamic_cast/typeid behavior.
             matched = [evidence for evidence in matched if not evidence.startswith("ref:")]
-        if rule.feature_id == "class.inheritance.multiple" and has_top_level_base_comma(code):
+        if (
+            rule.feature_id == "class.inheritance.multiple"
+            and has_materialized_multiple_inheritance(code)
+        ):
             matched.append("source:<multiple base-specifiers>")
         if matched:
             hits[rule.feature_id] = FeatureHit(rule.feature_id, matched)
