@@ -171,6 +171,29 @@ bool template_parameter_redeclarations_compatible(
     return false;
   }
 
+  if(existing.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+    if(static_cast<bool>(existing.template_parameters) !=
+       static_cast<bool>(incoming.template_parameters)) {
+      return false;
+    }
+    if(existing.template_parameters) {
+      if(existing.template_parameters->size() !=
+         incoming.template_parameters->size()) {
+        return false;
+      }
+      for(size_t nested_index = 0;
+          nested_index < existing.template_parameters->size();
+          ++nested_index) {
+        if(!template_parameter_redeclarations_compatible(
+               *existing.template_parameters,
+               *incoming.template_parameters,
+               nested_index)) {
+          return false;
+        }
+      }
+    }
+  }
+
   if(existing.kind == TemplateParameterInfo::TP_NON_TYPE) {
     if(existing.value_type && incoming.value_type &&
        semantic_lookup::same_function_template_entity_type(existing.value_type,
@@ -226,6 +249,79 @@ bool template_parameter_redeclarations_compatible(
   }
 
   return true;
+}
+
+namespace {
+
+const TemplateParameterInfo * direct_template_argument_parameter(
+    const vector<TemplateParameterInfo> & parameters,
+    const TemplateArgumentSyntax & syntax,
+    bool & pack_expansion)
+{
+  pack_expansion = syntax.pack_expansion;
+  string name;
+  if(syntax.type_id &&
+     syntax.type_id->kind == CppAstKind::type_id &&
+     syntax.type_id->children.size() == 1 &&
+     syntax.type_id->children[0].kind == CppAstKind::type_specifier_seq &&
+     syntax.type_id->children[0].children.size() == 1 &&
+     syntax.type_id->children[0].children[0].kind == CppAstKind::type_name) {
+    name = syntax.type_id->children[0].children[0].value;
+  } else if(syntax.expression &&
+            syntax.expression->kind == CppAstKind::id_expression &&
+            syntax.expression->children.empty()) {
+    name = syntax.expression->value;
+  } else if(!syntax.template_id) {
+    name = trim_space(!syntax.source_text.empty() ? syntax.source_text : syntax.text);
+    if(name.size() >= 3 && name.compare(name.size() - 3, 3, "...") == 0) {
+      pack_expansion = true;
+      name = trim_space(name.substr(0, name.size() - 3));
+    }
+    name = strip_elaborated_type_prefix(name);
+  }
+  return template_model::find_template_parameter_by_name(parameters, name);
+}
+
+}  // namespace
+
+bool template_id_arguments_match_primary_parameter_sequence(
+    const ClassTemplateDecl & primary,
+    const TemplateIdSyntax & syntax,
+    const vector<TemplateParameterInfo> & active_parameters)
+{
+  if(primary.parameters.size() != syntax.argument_syntaxes.size() ||
+     primary.parameters.size() > active_parameters.size()) {
+    return false;
+  }
+  const size_t parameter_count = primary.parameters.size();
+  // Nested out-of-class definitions retain every enclosing template header.
+  // The owner being checked can therefore correspond to any contiguous header
+  // group, and that group may alpha-rename the primary's parameters.
+  for(size_t start = 0;
+      start + parameter_count <= active_parameters.size();
+      ++start) {
+    bool match = true;
+    for(size_t i = 0; i < parameter_count; ++i) {
+      bool pack_expansion = false;
+      const TemplateParameterInfo * direct =
+          direct_template_argument_parameter(active_parameters,
+                                             syntax.argument_syntaxes[i],
+                                             pack_expansion);
+      const TemplateParameterInfo & active = active_parameters[start + i];
+      const TemplateParameterInfo & declared = primary.parameters[i];
+      if(direct != &active ||
+         active.kind != declared.kind ||
+         active.parameter_pack != declared.parameter_pack ||
+         pack_expansion != active.parameter_pack) {
+        match = false;
+        break;
+      }
+    }
+    if(match) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool merge_template_parameter_redeclarations(

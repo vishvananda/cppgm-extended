@@ -24,6 +24,7 @@
 #include "template_api.h"
 #include "template_argument_semantics.h"
 #include "template_function_signature.h"
+#include "template_instantiation.h"
 #include "template_model.h"
 #include "template_scope.h"
 #include "types.h"
@@ -1257,7 +1258,8 @@ public:
                       owner,
                       pattern_scope,
                       qualified_member,
-                      declarator_identifier) :
+                      declarator_identifier,
+                      effective_template_parameters) :
                   nullptr;
           Scope * owner_partial_scope =
               owner_partial_decl ?
@@ -2641,7 +2643,8 @@ public:
                       owner,
                       pattern_scope,
                       qualified_member,
-                      function_identifier) :
+                      function_identifier,
+                      effective_template_parameters) :
                   nullptr;
           const bool partial_owner = owner_partial_decl != nullptr;
           Scope * owner_partial_scope =
@@ -2811,7 +2814,15 @@ public:
               merge_function_template_definition_parameters(*template_decl,
                                                             template_parameters);
               if(body) {
+                const bool explicit_owner_member_template_definition =
+                    owner_is_template_id &&
+                    inherited_template_parameters &&
+                    inherited_template_parameters->empty();
                 if(template_decl->body) {
+                  const bool same_body_node = template_decl->body == body;
+                  const bool same_declarator_node =
+                      template_decl->declarator == declarator ||
+                      template_decl->definition_declarator == declarator;
                   const bool same_body_location =
                       source_location_for_node(*template_decl->body) ==
                       source_location_for_node(*body);
@@ -2820,16 +2831,21 @@ public:
                       declarator &&
                       source_location_for_node(*template_decl->declarator) ==
                           source_location_for_node(*declarator);
-                  if(same_body_location || same_declarator_location) {
+                  if(same_body_node || same_declarator_node ||
+                     (!explicit_owner_member_template_definition &&
+                      (same_body_location || same_declarator_location))) {
                     return;
                   }
-                  throw logic_error(string("duplicate templated class member definition") +
-                                    semantic_trace::current_location_note(*this, declarator) +
-                                    semantic_trace::node_location_note(
-                                        *this,
-                                        "previous definition",
-                                        template_decl->body ? template_decl->body
-                                                            : template_decl->declarator));
+                  if(!explicit_owner_member_template_definition ||
+                     template_decl->definition_is_explicit_owner_specialization) {
+                    throw logic_error(string("duplicate templated class member definition") +
+                                      semantic_trace::current_location_note(*this, declarator) +
+                                      semantic_trace::node_location_note(
+                                          *this,
+                                          "previous definition",
+                                          template_decl->body ? template_decl->body
+                                                              : template_decl->declarator));
+                  }
                 }
                 template_decl->body = body;
                 template_decl->definition_node = &inner;
@@ -2839,6 +2855,11 @@ public:
                 template_decl->ctor_initializer = ctor_initializer;
                 template_decl->definition_owner_parameters =
                     *matched_owner_parameters;
+                template_decl->definition_is_explicit_owner_specialization =
+                    explicit_owner_member_template_definition;
+                if(explicit_owner_member_template_definition) {
+                  template_decl->instantiations.clear();
+                }
                 record_definition_parameter_aliases(*template_decl, params);
                 if(template_decl->parameter_declarations_pattern.empty() &&
                    !parameter_declarations_pattern.empty()) {
@@ -5675,7 +5696,8 @@ private:
       const ClassInfo * owner,
       Scope & pattern_scope,
       const QualifiedName & qualified_member,
-      const CppAstNode * identifier)
+      const CppAstNode * identifier,
+      const vector<TemplateParameterInfo> & active_parameters)
   {
     if(PartialClassTemplateSpecializationDecl * direct =
            find_partial_specialization_decl(decl, owner)) {
@@ -5714,6 +5736,17 @@ private:
                decl)) {
           return &candidate;
         }
+      }
+      if(owner &&
+         owner->source_template == &decl &&
+         template_instantiation::
+             class_template_instantiation_depends_on_template_parameter(
+                 ctx, *owner) &&
+         !template_id_arguments_match_primary_parameter_sequence(
+             decl, *owner_template_id, active_parameters)) {
+        throw logic_error(
+            string("class template member owner does not match the primary or an existing partial specialization") +
+            semantic_trace::current_location_note(*this, identifier));
       }
       return nullptr;
     }

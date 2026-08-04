@@ -167,6 +167,9 @@ implemented language surface, including:
   they interact with the PA21 specialization graph
 - collection/ownership behavior for constructor/member-template specializations
   and namespace-scope friend-template declarations
+- an explicit definition of a member template for a concrete class-template
+  specialization replaces the definition instantiated from the primary and may
+  not itself be defined more than once
 - an out-of-class member-template definition attaches to specializations selected
   by earlier calls in the translation unit and remains available for their demand
 - the dependent-name and instantiation behavior strictly required to make the

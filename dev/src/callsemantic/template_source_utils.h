@@ -36,6 +36,10 @@ bool template_parameter_redeclarations_compatible(
 bool merge_template_parameter_redeclarations(
     std::vector<template_model::TemplateParameterInfo> & target,
     const std::vector<template_model::TemplateParameterInfo> & incoming);
+bool template_id_arguments_match_primary_parameter_sequence(
+    const semantic_model::ClassTemplateDecl & primary,
+    const cpp_decl::TemplateIdSyntax & syntax,
+    const std::vector<template_model::TemplateParameterInfo> & active_parameters);
 void prefer_incoming_template_parameter_spellings(
     std::vector<template_model::TemplateParameterInfo> & target,
     const std::vector<template_model::TemplateParameterInfo> & incoming);
