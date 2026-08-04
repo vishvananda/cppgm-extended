@@ -961,6 +961,15 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Grouped the clean final-replay closures for suites 29 and 30
+  after running each historically sensitive graph independently. Coroutine
+  finds 3237 targets, rebuilds all 70 requested targets, passes both
+  asymmetric and symmetric compile/link/runtime actions, and exits in 115.78s
+  at 433,229,824 B maximum RSS with zero process swaps. CRC finds 759 targets,
+  rebuilds all 26 requested targets, passes all six actions, and exits in
+  16.85s at 202,817,536 B maximum RSS with zero process swaps. Neither graph
+  has an unexpected failure or skip, and system swapouts remain unchanged. No
+  compiler, test, or reference change is part of this clean group.
 - `2026-08-04`: Closed the clean final replay of suite 28 independently
   because Core's historical fix surface was broad. The six-job request finds
   6524 targets, rebuilds all 1137 requested targets, records all 288 test
