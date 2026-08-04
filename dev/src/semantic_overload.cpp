@@ -14836,6 +14836,16 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     const std::string member_lookup_name =
         function_member_template_id ?
             function_member_template_id->name.name : target.lookup_name;
+    if(destructor_member_call &&
+       target.target_class &&
+       !target.target_class->complete &&
+       !target.target_class->reference_members_collected &&
+       !target.target_class->reference_member_collection_in_progress &&
+       target.target_class->reference_named_members_collected.count(
+           member_lookup_name) == 0) {
+      ctx.ensure_class_reference_named_member(*target.target_class,
+                                              member_lookup_name);
+    }
     if(target.target_class && member_lookup_name == "operator=") {
       semantic_class_model::ensure_implicit_special_members(ctx,
                                                             *target.target_class);

@@ -11168,7 +11168,8 @@ bool populate_class_reference_named_member(SemanticContext & ctx,
       }
       continue;
     }
-    if(child.kind == CppAstKind::special_member_declaration) {
+    if(child.kind == CppAstKind::special_member_definition ||
+       child.kind == CppAstKind::special_member_declaration) {
       collect_class_reference_special_member(ctx, info, child, current_access);
       continue;
     }
@@ -11338,7 +11339,7 @@ void ensure_class_reference_type_members(SemanticContext & ctx,
 
 namespace {
 
-void instantiate_reference_base_alias_declarations(
+void instantiate_reference_address_alias_declarations(
     SemanticContext & ctx,
     ClassInfo & info)
 {
@@ -11362,10 +11363,11 @@ void instantiate_reference_base_alias_declarations(
     return;
   }
 
-  // Resolving a concrete member typedef/alias also demands the declarations
-  // of each direct base specialization.  Preserve the lazy member model by
-  // materializing only address-bearing aliases in this base: do not mark it
-  // as generally type-collected.
+  // Instantiating a concrete class specialization instantiates its member
+  // declarations.  Preserve the lazy member model by materializing only
+  // address-bearing typedef/alias declarations whose non-type arguments have
+  // semantic instantiation effects; do not mark the class as generally
+  // type-collected.
   populate_class_reference_instantiation_aliases(ctx, info, *reference_node);
 }
 
@@ -11425,9 +11427,10 @@ void ensure_class_reference_named_member(SemanticContext & ctx,
 
   if(!class_instantiation_is_dependent(ctx, info) &&
      reference_class_has_direct_type_alias(*reference_node, lookup_name)) {
+    instantiate_reference_address_alias_declarations(ctx, info);
     for(std::size_t i = 0; i < info.bases.size(); ++i) {
       if(info.bases[i].type) {
-        instantiate_reference_base_alias_declarations(
+        instantiate_reference_address_alias_declarations(
             ctx, *info.bases[i].type);
       }
     }
@@ -11478,12 +11481,17 @@ bool materialize_class_reference_named_function_definition(
       current_access = access_from_node(child);
       continue;
     }
-    if(child.kind != CppAstKind::function_definition ||
-       !reference_member_declaration_declares_name(child, lookup_name)) {
+    if(!reference_member_declaration_declares_name(child, lookup_name)) {
       continue;
     }
-    collect_class_method_definition(ctx, info, child, current_access);
-    return true;
+    if(child.kind == CppAstKind::function_definition) {
+      collect_class_method_definition(ctx, info, child, current_access);
+      return true;
+    }
+    if(child.kind == CppAstKind::special_member_definition) {
+      collect_special_member(ctx, info, child, current_access);
+      return true;
+    }
   }
   return false;
 }

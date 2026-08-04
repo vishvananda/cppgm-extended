@@ -1,40 +1,13 @@
 // VALIDATION: compile-fail
-// Boost.ConceptCheck takes the address of requirement<Model>::failed as a
-// function-valued non-type argument.  Instantiating failed() must recursively
-// validate the explicitly called Model destructor, where concept constraints
-// are encoded.
-
-template<void (*)()>
-struct instantiate
-{
+// A demanded member type instantiates the preceding address-bearing typedef;
+// validating that function address must materialize and check the destructor.
+template<void (*)()> struct instantiate {};
+template<class M> struct requirement {
+  static void failed() { ((M *)0)->~M(); }
 };
-
-template<class Model>
-struct requirement
-{
-  static void failed()
-  {
-    ((Model *)0)->~Model();
-  }
+template<class T> struct model {
+  typedef instantiate<&requirement<model>::failed> check;
+  ~model() { T value = "bad"; }
+  typedef int associated;
 };
-
-template<class T>
-struct concept_model
-{
-  ~concept_model()
-  {
-    T::missing_requirement();
-  }
-};
-
-struct incomplete_model
-{
-};
-
-typedef instantiate<
-    &requirement<concept_model<incomplete_model> >::failed> check;
-
-int main()
-{
-  return 0;
-}
+typedef model<int>::associated trigger;
