@@ -1,10 +1,10 @@
-declare function @ns__helper__tls_guard__tls_wrapper() -> ptr [binding=internal, tls_for=@ns__helper__tls_guard]
-declare function @ns__helper__tls_wrapper() -> ptr [binding=strong, object=_ZTWN2ns6helperE, tls_for=@ns__helper]
+declare function @__cppgm_tls_wrapper____cppgm_tls_guard__ns__helper() -> ptr [binding=internal, tls_for=@__cppgm_tls_guard__ns__helper]
+declare function @__cppgm_tls_wrapper__ns__helper() -> ptr [binding=strong, object=_ZTWN2ns6helperE, tls_for=@ns__helper]
 
 global @ns__helper [storage=thread_local, binding=strong, object=_ZN2ns6helperE] = {
   zero 1
 }
-global @ns__helper__tls_guard : i64 [storage=thread_local, binding=internal] = zero
+global @__cppgm_tls_guard__ns__helper : i64 [storage=thread_local, binding=internal] = zero
 
 function @ns__anchor() -> i32 [binding=strong, object=_ZN2ns6anchorEv] {
   block ^entry:
@@ -31,16 +31,16 @@ function @ns__Helper_int___Helper(%this : ptr) -> void [binding=weak, object=_ZN
     store ptr %this, $this
     return void
 }
-function @ns__helper__tls_init() -> void [binding=internal] {
+function @__cppgm_tls_init__ns__helper() -> void [binding=internal] {
   block ^entry:
-    %t1 = load i64 @ns__helper__tls_guard
+    %t1 = load i64 @__cppgm_tls_guard__ns__helper
     %t2 = cmp ne i64 %t1, 0
     branch %t2, ^local_static_ctor_done_2, ^local_static_ctor_run_1
 
   block ^local_static_ctor_run_1:
     %t3 = addr @ns__helper
     call void @ns__Helper_int___Helper(%t3)
-    store i64 1, @ns__helper__tls_guard
+    store i64 1, @__cppgm_tls_guard__ns__helper
     jump ^local_static_ctor_done_2
 
   block ^local_static_ctor_done_2:

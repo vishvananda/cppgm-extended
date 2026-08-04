@@ -214,7 +214,8 @@ PA18 supports the following in addition to the PA17 subset:
   including repeated using-declarations of the same template and preservation
   of an ordinarily visible function template when hidden non-template friends
   share its name, and replay of a dependent-base using-declaration that names an
-  enumerator used by another enumerator
+  enumerator used by another enumerator; ordinary lookup must retain ambiguity
+  when distinct declarations are introduced by using-directives
 - basic template argument deduction for direct supported function-template calls
   from ordinary argument types, without function-template partial ordering or
   SFINAE
@@ -231,7 +232,15 @@ PA18 supports the following in addition to the PA17 subset:
   out-of-class member-definition bodies, including definition-time rejection
   of a declaration that redeclares an active template parameter even when the
   member is never instantiated
-- definition-time semantic checking of unused qualified inline member bodies
+- definition-time semantic checking of unused supported function-template and
+  qualified inline member bodies, including ordinary block and condition
+  scopes and the distinction between type names and value names; class bit-field
+  members remain valid value expressions in those bodies
+- qualified class-template-ids in function declarators are parsed in their own
+  declaration context rather than being captured by an unrelated function
+  template with the same unqualified name
+- class-template instantiation preserves the class-scope rule that a name which
+  has become a typedef-name cannot be redefined by another typedef declaration
 - compatible function-template declarations and definitions in either order
 - dependent-base lookup provenance attached to the particular base-specifier,
   so a nested class with a fixed base keeps ordinary base lookup and a local

@@ -6912,6 +6912,9 @@ ExprInfo analyze_unary_expression(SemanticContext & ctx,
     if(operand.category != VC_LVALUE) {
       throw logic_error("address-of requires lvalue");
     }
+    if(operand.node.is_bit_field) {
+      throw logic_error("address-of bit-field unsupported");
+    }
     TypePtr pointee = remove_reference_type(operand.type);
     if(!pointee) {
       pointee = operand.type;

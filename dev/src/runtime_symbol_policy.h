@@ -70,6 +70,7 @@ enum class RuntimeSymbolRole
   builtin_isnormalf,
   builtin_isnormall,
   builtin_expect,
+  builtin_abort,
   builtin_unreachable
 };
 

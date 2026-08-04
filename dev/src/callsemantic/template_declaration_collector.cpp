@@ -4056,6 +4056,24 @@ public:
     }
     const vector<const CppAstNode *> normalized_default_args =
         normalize_default_arguments(params, default_args);
+    if(body && declarator) {
+      const CppAstNode * offending_node = nullptr;
+      std::string offending_name;
+      if(function_template_body_has_invalid_nondependent_lookup(
+             *this,
+             pattern_scope,
+             *declarator,
+             *body,
+             template_parameters,
+             offending_node,
+             offending_name)) {
+        throw logic_error(
+            string("unknown non-dependent name in function template body") +
+            (offending_name.empty() ? string() : " " + offending_name) +
+            semantic_trace::current_location_note(
+                *this, offending_node ? offending_node : body));
+      }
+    }
     vector<FunctionTemplateDecl *> existing_templates =
         direct_function_templates(*function_template_entity_scope, name);
     for(size_t i = 0; i < existing_templates.size(); ++i) {

@@ -265,15 +265,18 @@ PA15 supports the following in addition to the PA14 procedural subset:
 - local and namespace-scope class object lifetime:
   - constructor execution at declaration time / program startup
   - destructor execution at block exit, `return`, loop exit, and program shutdown
+  - per-thread initialization for namespace-scope `thread_local` class objects,
+    with collision-free internal wrapper, guard, and initializer symbols
 - recursive member/base construction and destruction for supported class-type subobjects
 - anonymous struct/union members, including injected member lookup and layout in
   the supported class subset
 - bit-field member access, assignment, initializer, and built-in increment/decrement
   lowering; reads of explicitly signed integral and signed-underlying enum bit-fields
-  preserve the represented negative value
+  preserve the represented negative value, and built-in address-of rejects bit-fields
 - pseudo-destructor and explicit destructor-name syntax over supported scalar
   and class expressions
-- standard `alignas` and `alignof`
+- standard `alignas` and `alignof`, including rejection of a requested class
+  alignment weaker than its natural alignment
 - inheriting constructors through `using Base::Base`
 - use of complete class types in:
   - `sizeof(type-id)`

@@ -1,6 +1,7 @@
 #include "semantic_scope_mutation.h"
 
 #include <algorithm>
+#include <stdexcept>
 
 #include "semantic_lookup.h"
 #include "template_api.h"
@@ -8,6 +9,26 @@
 namespace semantic_scope_mutation {
 
 namespace {
+
+bool has_ordinary_binding(const semantic_model::Scope & scope,
+                          const std::string & name)
+{
+  return scope.named_types.count(name) != 0 ||
+         scope.values.count(name) != 0 ||
+         scope.function_sets.count(name) != 0 ||
+         scope.class_templates.count(name) != 0 ||
+         scope.function_templates.count(name) != 0 ||
+         scope.alias_templates.count(name) != 0 ||
+         scope.variable_templates.count(name) != 0;
+}
+
+void require_no_namespace_binding(const semantic_model::Scope & scope,
+                                  const std::string & name)
+{
+  if(scope.namespace_bindings.count(name) != 0) {
+    throw std::logic_error("declaration conflicts with namespace name " + name);
+  }
+}
 
 bool add_using_directive_raw(semantic_model::Scope & scope,
                              semantic_model::Scope & target,
@@ -42,6 +63,7 @@ void bind_named_type(semantic_model::Scope & scope,
                      const std::string & name,
                      const cpp_decl::TypePtr & type)
 {
+  require_no_namespace_binding(scope, name);
   scope.named_types[name] = type;
   note_binding_mutation(scope);
 }
@@ -51,6 +73,7 @@ void bind_named_type_with_access(semantic_model::Scope & scope,
                                  const cpp_decl::TypePtr & type,
                                  semantic_model::MemberAccess access)
 {
+  require_no_namespace_binding(scope, name);
   scope.named_types[name] = type;
   scope.named_type_access[name] = access;
   note_binding_mutation(scope);
@@ -93,6 +116,12 @@ void bind_namespace(semantic_model::Scope & scope,
                     semantic_model::Scope * target,
                     std::size_t source_token_start)
 {
+  std::map<std::string, semantic_model::Scope *>::const_iterator existing =
+      scope.namespace_bindings.find(name);
+  if(has_ordinary_binding(scope, name) ||
+     (existing != scope.namespace_bindings.end() && existing->second != target)) {
+    throw std::logic_error("namespace name is already declared " + name);
+  }
   scope.namespace_bindings[name] = target;
   if(source_token_start != 0) {
     if(!scope.namespace_binding_first_token_starts) {
@@ -233,6 +262,7 @@ void bind_value(semantic_model::Scope & scope,
                 const std::string & name,
                 const semantic_model::ValueBinding & binding)
 {
+  require_no_namespace_binding(scope, name);
   scope.values[name] = binding;
   note_binding_mutation(scope);
 }
@@ -287,6 +317,7 @@ void bind_class_template(semantic_model::Scope & scope,
                          const std::string & name,
                          semantic_model::ClassTemplateDecl * decl)
 {
+  require_no_namespace_binding(scope, name);
   scope.class_templates[name] = decl;
   note_binding_mutation(scope);
 }
@@ -295,6 +326,7 @@ void bind_alias_template(semantic_model::Scope & scope,
                          const std::string & name,
                          semantic_model::AliasTemplateDecl * decl)
 {
+  require_no_namespace_binding(scope, name);
   scope.alias_templates[name] = decl;
   note_binding_mutation(scope);
 }
@@ -303,6 +335,7 @@ void bind_variable_template(semantic_model::Scope & scope,
                             const std::string & name,
                             semantic_model::VariableTemplateDecl * decl)
 {
+  require_no_namespace_binding(scope, name);
   scope.variable_templates[name] = decl;
   note_binding_mutation(scope);
 }
@@ -336,6 +369,7 @@ void append_function_bindings(semantic_model::Scope & scope,
   if(functions.empty()) {
     return;
   }
+  require_no_namespace_binding(scope, name);
   std::vector<semantic_model::FunctionBinding *> & slot =
       semantic_lookup::direct_function_set_slot(scope, name);
   slot.insert(slot.end(), functions.begin(), functions.end());

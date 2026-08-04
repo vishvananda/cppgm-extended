@@ -209,11 +209,17 @@ string internal_function_symbol_from_name(const string & name,
 
 string thread_local_wrapper_internal_symbol(const string & variable_internal_symbol)
 {
+  if(!variable_internal_symbol.empty() && variable_internal_symbol[0] == '@') {
+    return "@__cppgm_tls_wrapper__" + variable_internal_symbol.substr(1);
+  }
   return variable_internal_symbol + "__tls_wrapper";
 }
 
 string thread_local_guard_internal_symbol(const string & variable_internal_symbol)
 {
+  if(!variable_internal_symbol.empty() && variable_internal_symbol[0] == '@') {
+    return "@__cppgm_tls_guard__" + variable_internal_symbol.substr(1);
+  }
   return variable_internal_symbol + "__tls_guard";
 }
 

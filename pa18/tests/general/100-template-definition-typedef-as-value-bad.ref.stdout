@@ -1,0 +1,26 @@
+ERROR: unknown non-dependent name in function template body value at tests/general/100-template-definition-typedef-as-value-bad.t:5:10 [top-level declaration 0 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier T
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier invalid_typedef_value
+      parameter-clause
+    compound-statement
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_TYPEDEF:typedef
+          decl-specifier KW_INT:int
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier value
+      return-statement
+        id-expression value
+}]
+Diagnostic context:
+collect_template_declaration [template<class T>int invalid_typedef_value(){typedef int value;return value;}] at tests/general/100-template-definition-typedef-as-value-bad.t:1:1

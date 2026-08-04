@@ -1,5 +1,5 @@
 declare global @O__n [storage=thread_local, binding=strong, object=_ZN1O1nE]
-declare function @O__n__tls_wrapper() -> ptr [binding=strong, object=_ZTWN1O1nE, tls_for=@O__n]
+declare function @__cppgm_tls_wrapper__O__n() -> ptr [binding=strong, object=_ZTWN1O1nE, tls_for=@O__n]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $g : obj<1x1>

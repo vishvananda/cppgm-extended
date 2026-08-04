@@ -78,6 +78,9 @@ ir_model::ExportedSymbol lowir_exported_symbol_from_identity(
 
 string thread_local_init_internal_symbol(const string & global_symbol)
 {
+  if(!global_symbol.empty() && global_symbol[0] == '@') {
+    return "@__cppgm_tls_init__" + global_symbol.substr(1);
+  }
   return global_symbol + "__tls_init";
 }
 
@@ -2445,6 +2448,7 @@ lowir_internal::FunctionBoundaryMetadata known_function_boundary_metadata(
       out.effects = lowir_internal::CFXM_READNONE;
       out.unwind = lowir_internal::CUM_NO;
       break;
+    case runtime_symbol_policy::RuntimeSymbolRole::builtin_abort:
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_unreachable:
       out.effects = lowir_internal::CFXM_READNONE;
       out.unwind = lowir_internal::CUM_NO;
@@ -2482,7 +2486,8 @@ lowir_internal::FunctionBoundaryMetadata known_function_boundary_metadata(
             normalized == "__builtin_is_constant_evaluated") {
     out.effects = lowir_internal::CFXM_READNONE;
     out.unwind = lowir_internal::CUM_NO;
-  } else if(normalized == "__builtin_unreachable") {
+  } else if(normalized == "__builtin_abort" ||
+            normalized == "__builtin_unreachable") {
     out.effects = lowir_internal::CFXM_READNONE;
     out.unwind = lowir_internal::CUM_NO;
     out.returns = lowir_internal::CRM_NORETURN;
@@ -21418,6 +21423,9 @@ private:
     }
     if(symbol.size() >= 13 &&
        symbol.compare(symbol.size() - 13, 13, "__tls_wrapper") == 0) {
+      return true;
+    }
+    if(symbol.find("@__cppgm_tls_wrapper__") == 0) {
       return true;
     }
     if(symbol.compare(0, 11, "@__builtin_") == 0 ||

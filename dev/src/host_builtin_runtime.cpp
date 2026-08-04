@@ -520,3 +520,8 @@ extern "C" void cppgm_builtin_unreachable()
 {
   std::abort();
 }
+
+extern "C" void cppgm_builtin_abort()
+{
+  std::abort();
+}

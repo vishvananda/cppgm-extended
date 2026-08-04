@@ -148,6 +148,21 @@ static void collect_declared_names_for_template_body(
     const CppAstNode & node,
     AtomNameSet & declared_names)
 {
+  if(node.kind == CppAstKind::enumerator && !node.value.empty()) {
+    declared_names.insert(node.value);
+  }
+
+  if(node.kind == CppAstKind::simple_declaration ||
+     node.kind == CppAstKind::for_init_statement ||
+     node.kind == CppAstKind::condition) {
+    const CppAstNode * specifiers =
+        find_child_kind(node, CppAstKind::decl_specifier_seq);
+    if(specifiers && cpp_decl::decl_spec_contains_token(*specifiers, KW_TYPEDEF)) {
+      collect_declared_names_for_template_body(*specifiers, declared_names);
+      return;
+    }
+  }
+
   if(node.kind == CppAstKind::declarator && node.value.empty()) {
     const CppAstNode * identifier = find_child_kind(node, CppAstKind::identifier);
     if(identifier && !identifier->value.empty()) {
@@ -915,6 +930,24 @@ static void collect_class_member_names_for_template_body(
         std::string declared_name;
         if(declarator_declared_identifier(init_decl.children[0],
                                           declared_name) &&
+           !declared_name.empty()) {
+          names.insert(declared_name);
+        }
+      }
+      continue;
+    }
+
+    if(child.kind == CppAstKind::bit_field_declaration) {
+      for(std::size_t j = 0; j < child.children.size(); ++j) {
+        const CppAstNode & bit_field = child.children[j];
+        if(bit_field.kind != CppAstKind::bit_field_declarator) {
+          continue;
+        }
+        const CppAstNode * declarator =
+            find_child_kind(bit_field, CppAstKind::declarator);
+        std::string declared_name;
+        if(declarator &&
+           declarator_declared_identifier(*declarator, declared_name) &&
            !declared_name.empty()) {
           names.insert(declared_name);
         }
@@ -1869,6 +1902,13 @@ static bool template_body_has_invalid_nondependent_id_expression(
       return false;
     }
 
+    if(type_parameter_names.contains(node.value) ||
+       id_expression_names_known_type_for_template_body(ctx, scope, node)) {
+      offending_node = &node;
+      offending_name = node.value;
+      return true;
+    }
+
     if(visible_names.contains(node.value) ||
        ctx.lookup_value(scope, node.value) ||
        id_expression_names_ordinary_function(ctx, scope, node.value)) {
@@ -1980,6 +2020,51 @@ bool class_member_body_has_invalid_nondependent_lookup(
   }
 
   return false;
+}
+
+bool function_template_body_has_invalid_nondependent_lookup(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & declarator,
+    const CppAstNode & body,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const CppAstNode *& offending_node,
+    std::string & offending_name)
+{
+  AtomNameSet visible_names =
+      non_type_template_parameter_names(parameters);
+  AtomNameSet type_names =
+      type_template_parameter_names(parameters);
+  const AtomNameSet parameter_names =
+      template_parameter_atom_names(parameters);
+  AtomNameSet dependent_type_names = type_names;
+  AtomNameSet dependent_value_names;
+  TemplateBodyValueTypes visible_value_types;
+
+  collect_declared_names_for_template_body(declarator, visible_names);
+  collect_declared_value_types_for_template_body(ctx,
+                                                 scope,
+                                                 declarator,
+                                                 visible_names,
+                                                 visible_value_types);
+  collect_dependent_parameter_names_for_template_body(ctx,
+                                                      declarator,
+                                                      parameter_names,
+                                                      dependent_type_names,
+                                                      dependent_value_names);
+
+  return template_body_has_invalid_nondependent_id_expression(
+      ctx,
+      scope,
+      body,
+      visible_names,
+      type_names,
+      parameter_names,
+      dependent_type_names,
+      visible_value_types,
+      dependent_value_names,
+      offending_node,
+      offending_name);
 }
 
 bool subtree_alias_redeclares_template_parameter(
@@ -2106,8 +2191,22 @@ bool class_member_redeclares_template_parameter(
       continue;
     }
 
+    if(child.kind == CppAstKind::using_declaration) {
+      const CppAstNode * target =
+          find_child_kind(child, CppAstKind::target);
+      const QualifiedName * qualified =
+          target ? cppast_qualified_name_syntax(*target) : nullptr;
+      const std::string using_name =
+          qualified && !qualified->name.empty() ? qualified->name :
+          (target ? semantic_utils::unqualified_member_name(target->value) :
+                    std::string());
+      if(!using_name.empty() && note_match(child, using_name)) {
+        return true;
+      }
+      continue;
+    }
+
     if((child.kind == CppAstKind::alias_declaration ||
-        child.kind == CppAstKind::using_declaration ||
         child.kind == CppAstKind::class_specifier ||
         child.kind == CppAstKind::class_forward_declaration) &&
        !child.value.empty() &&

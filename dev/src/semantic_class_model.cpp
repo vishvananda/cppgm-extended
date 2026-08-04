@@ -1254,12 +1254,36 @@ bool is_trivially_move_constructible_type_for_host_abi_local(SemanticContext & c
   return is_trivially_move_constructible_type_for_host_abi_impl(ctx, type, visiting);
 }
 
-void bind_member_named_type(Scope & scope,
+void bind_member_named_type(ClassInfo & info,
                             const std::string & name,
                             const TypePtr & type,
-                            MemberAccess access)
+                            MemberAccess access,
+                            const CppAstNode & declaration)
 {
-  semantic_scope_mutation::bind_named_type_with_access(scope, name, type, access);
+  std::vector<ClassInfo::TypedefMemberDeclarationSite> & sites =
+      info.typedef_member_declaration_sites[name];
+  bool already_processed = false;
+  for(std::size_t i = 0; i < sites.size(); ++i) {
+    if(sites[i].source_location_id == declaration.source_location_id &&
+       sites[i].token_start == declaration.token_start &&
+       sites[i].token_end == declaration.token_end) {
+      already_processed = true;
+      break;
+    }
+  }
+  if(!sites.empty() && !already_processed) {
+    throw std::logic_error(
+        "class-scope typedef-name cannot be redefined: " + name);
+  }
+  if(!already_processed) {
+    ClassInfo::TypedefMemberDeclarationSite site;
+    site.source_location_id = declaration.source_location_id;
+    site.token_start = declaration.token_start;
+    site.token_end = declaration.token_end;
+    sites.push_back(site);
+  }
+  semantic_scope_mutation::bind_named_type_with_access(
+      *info.member_scope, name, type, access);
 }
 
 bool first_identifier_text_in_subtree(const CppAstNode & node, std::string & out)
@@ -8109,6 +8133,10 @@ void finalize_class_layout(SemanticContext & ctx,
       }
     }
 
+    if(declared_alignment != 0 && declared_alignment < class_alignment) {
+      throw std::logic_error(
+          "requested alignment is weaker than the natural class alignment");
+    }
     class_alignment = std::max(class_alignment, declared_alignment);
 
     if(class_size == 0) {
@@ -8368,6 +8396,10 @@ void finalize_class_layout(SemanticContext & ctx,
     }
   }
 
+  if(declared_alignment != 0 && declared_alignment < class_alignment) {
+    throw std::logic_error(
+        "requested alignment is weaker than the natural class alignment");
+  }
   class_alignment = std::max(class_alignment, declared_alignment);
 
   if(class_size == 0) {
@@ -8387,6 +8419,10 @@ void finalize_class_layout(SemanticContext & ctx,
     const size_t base_alignment =
         cap_class_member_alignment(info, base->nonvirtual_alignment);
     const size_t base_size = base->nonvirtual_size;
+    if(declared_alignment != 0 && declared_alignment < base_alignment) {
+      throw std::logic_error(
+          "requested alignment is weaker than the natural class alignment");
+    }
     class_size = align_up(class_size, base_alignment);
     virtual_offsets[base] = class_size;
     class_size += base_size;
@@ -9359,8 +9395,7 @@ void collect_class_simple_declaration(SemanticContext & ctx,
           ctx, *info.member_scope, alias, &info);
       alias = refine_instantiated_class_alias(
           ctx, *info.member_scope, alias);
-      bind_member_named_type(
-          *info.member_scope, member_name, alias, access);
+      bind_member_named_type(info, member_name, alias, access, init_decl);
       continue;
     }
 
@@ -9498,6 +9533,17 @@ void collect_class_simple_declaration(SemanticContext & ctx,
 
     const CppAstNode * default_initializer =
         init_decl.children.size() > 1 ? &init_decl.children[1] : nullptr;
+    if(default_initializer && is_union_class_info(info)) {
+      for(std::size_t field_index = 0;
+          field_index < info.fields.size();
+          ++field_index) {
+        if(info.fields[field_index].default_initializer) {
+          throw std::logic_error(
+              "union cannot have multiple default member initializers" +
+              diagnostic_location_for_member(ctx, init_decl, &node));
+        }
+      }
+    }
     maybe_complete_class_member_object_type(ctx, member_type);
     const bool unsupported_member_syntax =
         prepared_method.syntax.decl_virtual ||
@@ -9917,6 +9963,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
       std::string name;
       std::string type_id_text;
       CppAstNode type_id;
+      const CppAstNode * declaration = nullptr;
     };
     std::vector<DeferredTypedef> deferred;
     bool can_defer_all = !declarators->children.empty();
@@ -9933,6 +9980,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
         break;
       }
       current.type_id_text = best_effort_node_text(current.type_id);
+      current.declaration = &init_decl;
       if(!class_alias_type_id_is_explicitly_dependent(ctx,
                                                       info,
                                                       current.type_id,
@@ -9956,10 +10004,11 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                 deferred[j].name,
                                 deferred[j].type_id_text,
                                 alias);
-        bind_member_named_type(*info.member_scope,
+        bind_member_named_type(info,
                                deferred[j].name,
                                alias,
-                               access);
+                               access,
+                               *deferred[j].declaration);
       }
       return;
     }
@@ -10010,7 +10059,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
             make_dependent_class_alias_placeholder(info, member_name, type_id_text);
         trace_class_alias_store(
             ctx, info, "reference-typedef-fallback", member_name, type_id_text, alias);
-        bind_member_named_type(*info.member_scope, member_name, alias, access);
+        bind_member_named_type(info, member_name, alias, access, init_decl);
       }
       return;
     }
@@ -10057,7 +10106,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
               make_dependent_class_alias_placeholder(info, member_name, type_id_text);
           trace_class_alias_store(
               ctx, info, "reference-typedef-declarator-fallback", member_name, type_id_text, alias);
-          bind_member_named_type(*info.member_scope, member_name, alias, access);
+          bind_member_named_type(info, member_name, alias, access, init_decl);
         }
       }
       continue;
@@ -10093,7 +10142,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
       }
       TypePtr stored_alias = alias ? alias : member_type;
       stored_alias = refine_instantiated_class_alias(ctx, *info.member_scope, stored_alias);
-      bind_member_named_type(*info.member_scope, member_name, stored_alias, access);
+      bind_member_named_type(info, member_name, stored_alias, access, init_decl);
       continue;
     }
 
@@ -12052,7 +12101,7 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
             make_dependent_class_alias_placeholder(info, member_name, type_id_text);
         trace_class_alias_store(
             ctx, info, "dependent-typedef-fallback", member_name, type_id_text, alias);
-        bind_member_named_type(*info.member_scope, member_name, alias, access);
+        bind_member_named_type(info, member_name, alias, access, init_decl);
       }
       return;
     }
@@ -12117,7 +12166,7 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
               make_dependent_class_alias_placeholder(info, member_name, type_id_text);
           trace_class_alias_store(
               ctx, info, "dependent-typedef-declarator-fallback", member_name, type_id_text, alias);
-          bind_member_named_type(*info.member_scope, member_name, alias, access);
+          bind_member_named_type(info, member_name, alias, access, init_decl);
           continue;
         }
       }
@@ -12147,10 +12196,11 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
         alias = make_dependent_class_alias_placeholder(
             info, member_name, dependent_typedef_type_text(filtered_specifiers));
       }
-      bind_member_named_type(*info.member_scope,
+      bind_member_named_type(info,
                              member_name,
                              alias ? alias : member_type,
-                             access);
+                             access,
+                             init_decl);
       continue;
     }
 
@@ -12273,6 +12323,16 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
 
     const CppAstNode * default_initializer =
         init_decl.children.size() > 1 ? &init_decl.children[1] : nullptr;
+    if(default_initializer && is_union_class_info(info)) {
+      for(std::size_t field_index = 0;
+          field_index < info.fields.size();
+          ++field_index) {
+        if(info.fields[field_index].default_initializer) {
+          throw std::logic_error(
+              "union cannot have multiple default member initializers");
+        }
+      }
+    }
     maybe_complete_class_member_object_type(ctx, member_type);
     if(prepared_method.syntax.decl_virtual ||
        prepared_method.syntax.is_override ||
@@ -12430,9 +12490,7 @@ void collect_class_method_definition(SemanticContext & ctx,
     request.body = prepared.body;
     request.declaration_node = &node;
     request.function_qualifier = prepared.method.syntax.function_qualifier;
-    request.semantic_flags.access = access;
-    request.semantic_flags.is_constexpr = prepared.is_constexpr_member;
-    request.semantic_flags.is_inline = prepared.is_inline_member;
+    request.semantic_flags = method_flags;
     request.is_static_member = true;
     ctx.register_function_entity(request);
   } else {
@@ -12495,9 +12553,7 @@ void collect_class_reference_method_definition(SemanticContext & ctx,
     request.default_arguments = default_args;
     request.declaration_node = &node;
     request.function_qualifier = prepared.method.syntax.function_qualifier;
-    request.semantic_flags.access = access;
-    request.semantic_flags.is_constexpr = prepared.is_constexpr_member;
-    request.semantic_flags.is_inline = prepared.is_inline_member;
+    request.semantic_flags = method_flags;
     request.is_static_member = true;
     ctx.register_function_entity(request);
   } else {
@@ -12558,6 +12614,21 @@ void collect_special_member(SemanticContext & ctx,
   const bool is_deleted = special_member_is_deleted(node);
   const CppAstNode * ctor_initializer =
       find_child(node, CppAstKind::ctor_initializer);
+  if(is_constructor && ctor_initializer) {
+    bool delegates = false;
+    for(std::size_t i = 0; i < ctor_initializer->children.size(); ++i) {
+      const CppAstNode * initializer_id =
+          find_child(ctor_initializer->children[i], CppAstKind::mem_initializer_id);
+      if(initializer_id && initializer_id->value == info.name) {
+        delegates = true;
+        break;
+      }
+    }
+    if(delegates && ctor_initializer->children.size() != 1) {
+      throw std::logic_error(
+          "delegating constructor cannot have another mem-initializer");
+    }
+  }
   const ClassFunctionOptions special_member_flags =
       class_function_options(access,
                              &prepared_method.syntax,

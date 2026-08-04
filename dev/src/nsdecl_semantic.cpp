@@ -56,6 +56,9 @@ NamespaceSummary & ensure_namespace(NamespaceSummary & parent,
 {
   map<string, NamespaceSummary *>::const_iterator found = parent.namespace_index.find(name);
   if(found != parent.namespace_index.end()) {
+    if(is_inline && !found->second->is_inline) {
+      throw logic_error("non-inline namespace cannot be reopened as inline");
+    }
     found->second->is_inline = found->second->is_inline || is_inline;
     return *found->second;
   }

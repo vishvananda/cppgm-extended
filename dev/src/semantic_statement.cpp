@@ -979,6 +979,55 @@ void analyze_statement_impl(SemanticContext & ctx,
                             bool * saw_void_return = nullptr,
                             const TypePtr & active_switch_type = TypePtr());
 
+void validate_statement_context(const CppAstNode & node,
+                                size_t loop_depth,
+                                size_t switch_depth)
+{
+  if(node.kind == CppAstKind::break_statement &&
+     loop_depth == 0 && switch_depth == 0) {
+    throw logic_error("break statement is outside a loop or switch");
+  }
+  if(node.kind == CppAstKind::continue_statement && loop_depth == 0) {
+    throw logic_error("continue statement is outside a loop");
+  }
+  if((node.kind == CppAstKind::case_statement ||
+      node.kind == CppAstKind::default_statement) &&
+     switch_depth == 0) {
+    throw logic_error("case or default label is outside a switch");
+  }
+
+  if(node.kind == CppAstKind::lambda_expression ||
+     node.kind == CppAstKind::function_definition ||
+     node.kind == CppAstKind::special_member_definition) {
+    loop_depth = 0;
+    switch_depth = 0;
+  } else {
+    if(node.kind == CppAstKind::while_statement ||
+       node.kind == CppAstKind::do_statement ||
+       node.kind == CppAstKind::for_statement ||
+       node.kind == CppAstKind::range_for_statement) {
+      ++loop_depth;
+    }
+    if(node.kind == CppAstKind::switch_statement) {
+      ++switch_depth;
+    }
+  }
+
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    validate_statement_context(node.children[i], loop_depth, switch_depth);
+  }
+}
+
+void require_integral_constant_case(SemanticContext & ctx,
+                                    Scope & scope,
+                                    const CppAstNode & expression)
+{
+  long long value = 0;
+  if(!ctx.evaluate_constant_expression(scope, expression, value)) {
+    throw logic_error("case label is not an integral constant expression");
+  }
+}
+
 TypePtr catch_match_type(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
@@ -1766,6 +1815,7 @@ void analyze_switch_body(SemanticContext & ctx,
       throw logic_error("invalid case-statement");
     }
     DumpNode case_node = make_located_dump_node(CallSemKind::case_statement, node);
+    require_integral_constant_case(ctx, scope, node.children[0]);
     ExprInfo case_expr = ctx.analyze_expression_for_target(scope, node.children[0], switch_type);
     case_node.children.push_back(std::move(case_expr.node));
     analyze_switch_body(ctx,
@@ -2695,6 +2745,7 @@ void analyze_statement_impl(SemanticContext & ctx,
       throw logic_error("invalid case-statement");
     }
     DumpNode case_node = make_located_dump_node(CallSemKind::case_statement, node);
+    require_integral_constant_case(ctx, scope, node.children[0]);
     ExprInfo case_expr =
         ctx.analyze_expression_for_target(scope, node.children[0], active_switch_type);
     case_node.children.push_back(std::move(case_expr.node));
@@ -3264,6 +3315,7 @@ void analyze_statement(SemanticContext & ctx,
 {
   DIAG_CONTEXT("analyze_statement [" + std::string(cppast_kind_text(node.kind)) + "]" +
                ctx.source_location_for_node(node));
+  validate_statement_context(node, 0, 0);
   analyze_statement_impl(ctx, scope, return_type, node, out, nullptr, nullptr);
 }
 
@@ -3275,6 +3327,7 @@ void collect_return_expressions(SemanticContext & ctx,
 {
   CallSemNode ignored;
   saw_void_return = false;
+  validate_statement_context(node, 0, 0);
   analyze_statement_impl(ctx, scope, TypePtr(), node, ignored, &out, &saw_void_return);
 }
 
@@ -3289,6 +3342,7 @@ void analyze_compound_body_and_collect_returns(SemanticContext & ctx,
     throw logic_error("body must be compound-statement");
   }
   saw_void_return = false;
+  validate_statement_context(node, 0, 0);
   for(size_t i = 0; i < node.children.size(); ++i) {
     analyze_statement_impl(ctx,
                            scope,

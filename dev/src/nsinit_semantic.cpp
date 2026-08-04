@@ -1404,7 +1404,7 @@ void collect_functions(Program & program,
       created->name = records[i].name;
       created->order = records[i].encounter_order;
       created->type = records[i].node->semantic_type;
-      created->image.alignment = 1;
+      created->image.alignment = 4;
       created->image.bytes.assign({'f', 'u', 'n', '\0'});
       entity = created.get();
       program.owned_functions.push_back(std::move(created));

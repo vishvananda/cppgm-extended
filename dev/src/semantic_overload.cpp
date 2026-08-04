@@ -6272,35 +6272,43 @@ BestCandidateSelection select_best_candidate_match(SemanticContext & ctx,
                                                    const vector<CandidateMatch> & matches)
 {
   BestCandidateSelection selection;
-  for(size_t i = 1; i < matches.size(); ++i) {
-    int comparison = compare_candidate_match_preference(ctx,
-                                                        matches[i],
-                                                        matches[selection.index]);
-    const int rank_comparison = comparison;
-    if(comparison == 0) {
-      comparison = compare_function_template_partial_order_preference(ctx, matches[i],
-                                                                      matches[selection.index]);
+  selection.ambiguous = !matches.empty();
+  for(size_t i = 0; i < matches.size(); ++i) {
+    bool better_than_every_other = true;
+    for(size_t j = 0; j < matches.size(); ++j) {
+      if(i == j) {
+        continue;
+      }
+      int comparison = compare_candidate_match_preference(ctx, matches[i], matches[j]);
+      const int rank_comparison = comparison;
+      if(comparison == 0) {
+        comparison = compare_function_template_partial_order_preference(ctx,
+                                                                        matches[i],
+                                                                        matches[j]);
+      }
+      if(parser_trace::enabled("overload")) {
+        ostringstream trace;
+        trace << "compare current=";
+        append_function_candidate(trace, ctx, matches[i].function, &matches[i].ranks);
+        append_binding_trace_identity(trace, ctx, matches[i].function);
+        trace << " other=";
+        append_function_candidate(trace, ctx, matches[j].function, &matches[j].ranks);
+        append_binding_trace_identity(trace, ctx, matches[j].function);
+        trace << " rank_cmp=" << rank_comparison
+              << " final_cmp=" << comparison;
+        parser_trace::note("overload",
+                           candidate_primary_location(ctx, matches[i].function),
+                           trace.str());
+      }
+      if(comparison >= 0) {
+        better_than_every_other = false;
+        break;
+      }
     }
-    if(parser_trace::enabled("overload")) {
-      ostringstream trace;
-      trace << "compare current=";
-      append_function_candidate(trace, ctx, matches[i].function, &matches[i].ranks);
-      append_binding_trace_identity(trace, ctx, matches[i].function);
-      trace << " best=";
-      append_function_candidate(trace, ctx, matches[selection.index].function,
-                                &matches[selection.index].ranks);
-      append_binding_trace_identity(trace, ctx, matches[selection.index].function);
-      trace << " rank_cmp=" << rank_comparison
-            << " final_cmp=" << comparison;
-      parser_trace::note("overload",
-                         candidate_primary_location(ctx, matches[i].function),
-                         trace.str());
-    }
-    if(comparison < 0) {
+    if(better_than_every_other) {
       selection.index = i;
       selection.ambiguous = false;
-    } else if(comparison == 0) {
-      selection.ambiguous = true;
+      break;
     }
   }
   if(parser_trace::enabled("overload") && !matches.empty()) {

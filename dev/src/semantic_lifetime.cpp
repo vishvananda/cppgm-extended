@@ -2347,18 +2347,18 @@ bool initializer_is_empty_value_initializer(const CppAstNode * initializer)
   return initializer_argument_nodes(*payload).empty();
 }
 
-void append_constructor_call_action(SemanticContext & ctx,
-                                    Scope & scope,
-                                    ClassInfo & info,
-                                    const vector<const CppAstNode *> & arg_nodes,
-                                    const ExprInfo & object_ptr,
-                                    const CppAstNode * direct_braced_init,
-                                    const ConstructorSelectionOptions & selection_options,
-                                    ClassInfo * vtt_owner_info,
-                                    bool value_initializes_result,
-                                    DumpNode & out,
-                                    const std::string & source_witness_target_name =
-                                        std::string());
+FunctionBinding * append_constructor_call_action(
+    SemanticContext & ctx,
+    Scope & scope,
+    ClassInfo & info,
+    const vector<const CppAstNode *> & arg_nodes,
+    const ExprInfo & object_ptr,
+    const CppAstNode * direct_braced_init,
+    const ConstructorSelectionOptions & selection_options,
+    ClassInfo * vtt_owner_info,
+    bool value_initializes_result,
+    DumpNode & out,
+    const std::string & source_witness_target_name = std::string());
 
 void append_ctor_subobject_constructor_action(SemanticContext & ctx,
                                               Scope & scope,
@@ -2471,17 +2471,18 @@ void append_virtual_base_constructor_actions(SemanticContext & ctx,
   }
 }
 
-void append_constructor_call_action(SemanticContext & ctx,
-                                    Scope & scope,
-                                    ClassInfo & info,
-                                    const vector<const CppAstNode *> & arg_nodes,
-                                    const ExprInfo & object_ptr,
-                                    const CppAstNode * direct_braced_init,
-                                    const ConstructorSelectionOptions & selection_options,
-                                    ClassInfo * vtt_owner_info,
-                                    bool value_initializes_result,
-                                    DumpNode & out,
-                                    const std::string & source_witness_target_name)
+FunctionBinding * append_constructor_call_action(
+    SemanticContext & ctx,
+    Scope & scope,
+    ClassInfo & info,
+    const vector<const CppAstNode *> & arg_nodes,
+    const ExprInfo & object_ptr,
+    const CppAstNode * direct_braced_init,
+    const ConstructorSelectionOptions & selection_options,
+    ClassInfo * vtt_owner_info,
+    bool value_initializes_result,
+    DumpNode & out,
+    const std::string & source_witness_target_name)
 {
   std::deque<CppAstNode> synthesized_nodes;
   const vector<const CppAstNode *> expanded_arg_nodes =
@@ -2628,7 +2629,7 @@ void append_constructor_call_action(SemanticContext & ctx,
         object_ptr,
         std::move(selection.converted_args[0]),
         out);
-    return;
+    return ctor;
   }
   const bool trivial_ctor = ctor && is_trivial_constructor_binding(ctx, *ctor);
   constructor_lifecycle_service::ConstructorActionResult action_result =
@@ -2648,6 +2649,7 @@ void append_constructor_call_action(SemanticContext & ctx,
   }
   annotate_special_member_call_with_vtt(ctx, vtt_owner_info, info, action.children.back());
   out.children.push_back(std::move(action));
+  return ctor;
 }
 
 const CppAstNode * unwrap_initializer_payload(const CppAstNode * initializer)
@@ -4991,18 +4993,28 @@ void append_constructor_generated_statements(SemanticContext & ctx,
             direct_braced_init = payload;
           }
         }
-        append_constructor_call_action(ctx,
-                                       scope,
-                                       info,
-                                       args,
-                                       this_expr,
-                                       direct_braced_init,
-                                       ConstructorSelectionOptions(),
-                                       &info,
-                                       init.children.size() >= 2 &&
-                                           initializer_is_empty_value_initializer(
-                                               &init.children[1]),
-                                       function_node);
+        FunctionBinding * delegated_to =
+            append_constructor_call_action(
+                ctx,
+                scope,
+                info,
+                args,
+                this_expr,
+                direct_braced_init,
+                ConstructorSelectionOptions(),
+                &info,
+                init.children.size() >= 2 &&
+                    initializer_is_empty_value_initializer(&init.children[1]),
+                function_node);
+        binding.delegating_constructor_target = delegated_to;
+        std::set<const FunctionBinding *> delegation_chain;
+        const FunctionBinding * current = &binding;
+        while(current) {
+          if(!delegation_chain.insert(current).second) {
+            throw std::logic_error("recursive constructor delegation");
+          }
+          current = current->delegating_constructor_target;
+        }
         function_node.children.back().is_delegating_constructor = true;
         return;
       }

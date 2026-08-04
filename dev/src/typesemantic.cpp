@@ -694,6 +694,16 @@ private:
     return binding ? binding->type : TypePtr();
   }
 
+  bool has_direct_binding_name(const Scope & scope, const string & name) const
+  {
+    for(size_t i = 0; i < scope.bindings.size(); ++i) {
+      if(scope.bindings[i].name == name) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Scope * scope_for_type(const TypePtr & type)
   {
     TypePtr base = strip_top_level_cv(type);
@@ -846,13 +856,15 @@ private:
       }
     }
 
-    TypePtr value_type = has_qualified_operand ?
-        lookup_value_type(scope, *qualified_operand) : lookup_value_type(scope, inner);
-    if(!value_type) {
+    const Binding * value_binding = has_qualified_operand ?
+        lookup_qualified_value_binding(scope, *qualified_operand) :
+        lookup_value_binding_unqualified(scope, inner);
+    if(!value_binding || !value_binding->type) {
       return false;
     }
 
-    out = (parenthesized && !is_typeof) ? make_lvalue_reference_raw(value_type) : value_type;
+    out = parenthesized && !is_typeof && value_binding->kind != BK_ENUMERATOR ?
+        make_lvalue_reference_raw(value_binding->type) : value_binding->type;
     return true;
   }
 
@@ -927,6 +939,9 @@ private:
 
   void add_binding(Scope & scope, BindingKind kind, const string & name, const TypePtr & type)
   {
+    if(scope.namespace_bindings.find(name) != scope.namespace_bindings.end()) {
+      throw logic_error("declaration conflicts with namespace name " + name);
+    }
     scope.bindings.push_back(Binding(kind, name, type));
   }
 
@@ -1429,6 +1444,11 @@ private:
       throw logic_error("unknown namespace alias target");
     }
 
+    if(has_direct_binding_name(scope, node.value) ||
+       scope.namespace_bindings.find(node.value) != scope.namespace_bindings.end()) {
+      throw logic_error("namespace alias name is already declared");
+    }
+
     scope.namespace_bindings[node.value] = target_namespace;
   }
 
@@ -1526,6 +1546,10 @@ private:
     } else {
       target = find_named_namespace_child(scope, node.value);
       if(!target) {
+        if(has_direct_binding_name(scope, node.value) ||
+           scope.namespace_bindings.find(node.value) != scope.namespace_bindings.end()) {
+          throw logic_error("namespace name is already declared");
+        }
         target = &append_child_scope(scope, Scope::SK_NAMESPACE, node.value);
       }
       scope.namespace_bindings[node.value] = target;

@@ -1,0 +1,42 @@
+declare function @__cppgm_tls_wrapper____cppgm_tls_guard__tls() -> ptr [binding=internal, tls_for=@__cppgm_tls_guard__tls]
+declare function @__cppgm_tls_wrapper__tls() -> ptr [binding=strong, object=_ZTW3tls, tls_for=@tls]
+
+global @tls [storage=thread_local, binding=strong, object=_Z3tls] = {
+  zero 1
+}
+global @__cppgm_tls_guard__tls : i64 [storage=thread_local, binding=internal] = zero
+global @tls__tls_guard : i32 [binding=strong, object=_Z14tls__tls_guard] = 7
+
+function @tls__tls_init() -> void [binding=strong, object=_Z13tls__tls_initv] {
+  block ^entry:
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load i32 @tls__tls_guard
+    %t2 = binary sub i32 %t1, 7
+    return i32 %t2
+}
+function @Item__Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @__cppgm_tls_init__tls() -> void [binding=internal] {
+  block ^entry:
+    %t1 = load i64 @__cppgm_tls_guard__tls
+    %t2 = cmp ne i64 %t1, 0
+    branch %t2, ^local_static_ctor_done_2, ^local_static_ctor_run_1
+
+  block ^local_static_ctor_run_1:
+    %t3 = addr @tls
+    call void @Item__Item(%t3)
+    store i64 1, @__cppgm_tls_guard__tls
+    jump ^local_static_ctor_done_2
+
+  block ^local_static_ctor_done_2:
+    return void
+}
+alias object _ZN4ItemC2Ev = @Item__Item

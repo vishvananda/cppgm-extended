@@ -6681,7 +6681,8 @@ private:
 
     const auto lookup_unqualified_type = [&]() -> TypePtr
     {
-      return lookup_unqualified_generic<TypePtr>(
+      bool ambiguous = false;
+      TypePtr result = cpp_scope_lookup::lookup_unqualified<TypePtr>(
           scope,
           normalized_name,
           [this, &scope](Scope & target, const string & lookup_name) -> TypePtr
@@ -6776,7 +6777,13 @@ private:
               return direct;
             }
             return lookup_inline_children(target);
-          });
+          },
+          lookup_result_present<TypePtr>,
+          &ambiguous);
+      if(ambiguous) {
+        throw logic_error("ambiguous type name " + normalized_name);
+      }
+      return result;
     };
 
     if(is_identifier_text(normalized_name)) {
@@ -8120,7 +8127,8 @@ private:
     const auto lookup_unqualified_type =
         [&]() -> TypePtr
         {
-          return lookup_unqualified_generic<TypePtr>(
+          bool ambiguous = false;
+          TypePtr result = cpp_scope_lookup::lookup_unqualified<TypePtr>(
               scope, normalized_name,
               [this, &scope](Scope & target, const string & lookup_name) -> TypePtr
               {
@@ -8265,7 +8273,13 @@ private:
                 }
                 return lookup_inline_children(target);
               },
+              lookup_result_present<TypePtr>,
+              &ambiguous,
               source_token_start);
+          if(ambiguous) {
+            throw logic_error("ambiguous type name " + normalized_name);
+          }
+          return result;
         };
     const auto current_injected_class_type =
         [&]() -> TypePtr
@@ -9972,6 +9986,10 @@ private:
                                             const CppAstNode * parameter_syntax_node = nullptr,
                                             bool prefer_overload_suffix = false)
   {
+    if(flags.ref_qualifier != RQ_NONE &&
+       (flags.is_constructor || flags.is_destructor)) {
+      throw logic_error("constructors and destructors cannot have ref-qualifiers");
+    }
     TypePtr normalized_declared_type = declared_type;
     vector<pair<string, TypePtr> > normalized_explicit_params = explicit_params;
     const bool class_template_identity =
@@ -10197,6 +10215,12 @@ private:
           exact_type_match ||
           callsemantic::function_types_equivalent_for_member_signature(slot[i]->type,
                                                                        effective_type);
+      if(signature_match &&
+         ((slot[i]->ref_qualifier == RQ_NONE) !=
+          (flags.ref_qualifier == RQ_NONE))) {
+        throw logic_error(
+            "member overloads must either all have ref-qualifiers or none");
+      }
       if(!signature_match || slot[i]->ref_qualifier != flags.ref_qualifier) {
         continue;
       }
@@ -19892,6 +19916,9 @@ private:
     if(builtin_name == "__builtin_unreachable") {
       return "cppgm_builtin_unreachable";
     }
+    if(builtin_name == "__builtin_abort") {
+      return "cppgm_builtin_abort";
+    }
     if(builtin_name == "operator new") {
       if(params.size() == 1) return "cppgm_builtin_operator_new";
       if(params.size() == 2 && is_align_val_type(1)) {
@@ -20081,6 +20108,10 @@ private:
   {
     const FunctionTemplateRegistrationIdentity & template_identity =
         request.template_identity;
+    if(request.is_static_member &&
+       request.semantic_flags.ref_qualifier != RQ_NONE) {
+      throw logic_error("ref-qualifier requires a non-static member function");
+    }
     if(request.owner_class) {
       FunctionBinding * binding = nullptr;
       if(request.is_static_member) {
@@ -25827,6 +25858,15 @@ private:
                          FunctionBinding * lexical_access_function = nullptr,
                          bool hidden_friend_only = false)
   {
+    TypePtr function_type = strip_top_level_cv(type);
+    if(function_type &&
+       function_type->kind == Type::TK_FUNCTION &&
+       function_type->function_ref_qualifier != FTRQ_NONE) {
+      throw logic_error("ref-qualifier requires a non-static member function");
+    }
+    if(scope.namespace_bindings.count(name) != 0) {
+      throw logic_error("declaration conflicts with namespace name " + name);
+    }
     const vector<const CppAstNode *> normalized_defaults =
         normalize_default_arguments(params, default_arguments);
     const CppAstNode * effective_function_qualifier =
@@ -25875,6 +25915,42 @@ private:
         registering_static_member_function ?
             find_matching_static_member_function(scope, name, type, template_identity) :
             find_matching_function(scope, name, type, template_identity);
+    if(!existing &&
+       !template_identity.has_decl() &&
+       !template_identity.has_arguments() &&
+       template_identity.key.empty()) {
+      TypePtr incoming = strip_top_level_cv(type);
+      const string lookup_name = canonical_function_lookup_name(name);
+      map<string, vector<FunctionBinding *> >::const_iterator same_name =
+          scope.function_sets.find(lookup_name);
+      if(incoming && incoming->kind == Type::TK_FUNCTION &&
+         same_name != scope.function_sets.end()) {
+        for(size_t i = 0; i < same_name->second.size(); ++i) {
+          FunctionBinding * candidate = same_name->second[i];
+          TypePtr prior = candidate ? strip_top_level_cv(candidate->type) : TypePtr();
+          if(!candidate || candidate->source_template ||
+             !prior || prior->kind != Type::TK_FUNCTION ||
+             prior->params.size() != incoming->params.size() ||
+             prior->variadic != incoming->variadic ||
+             prior->prototype_relaxed != incoming->prototype_relaxed ||
+             prior->function_const != incoming->function_const ||
+             prior->function_volatile != incoming->function_volatile ||
+             prior->function_ref_qualifier != incoming->function_ref_qualifier) {
+            continue;
+          }
+          bool same_parameters = true;
+          for(size_t param = 0; param < incoming->params.size(); ++param) {
+            if(!type_equals(prior->params[param], incoming->params[param])) {
+              same_parameters = false;
+              break;
+            }
+          }
+          if(same_parameters && !type_equals(prior->inner, incoming->inner)) {
+            throw logic_error("conflicting function return type " + name);
+          }
+        }
+      }
+    }
     const string qualified_name = scope_qualified_name(scope, name);
     const bool inherits_existing_c_linkage =
         existing &&
@@ -26227,6 +26303,9 @@ private:
                                           const CppAstNode * linkage_node = nullptr,
                                           bool c_linkage_implies_external = false)
   {
+    if(scope.namespace_bindings.count(name) != 0) {
+      throw logic_error("declaration conflicts with namespace name " + name);
+    }
     const CppAstNode * symbol_linkage_node =
         linkage_node ? linkage_node : declaration_node;
     const string qualified_name = scope_symbol_qualified_name(scope, name);

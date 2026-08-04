@@ -1,4 +1,5 @@
 #include <cmath>
+#include <limits>
 using namespace std;
 
 #include "constant_value.h"
@@ -20,6 +21,53 @@ SignedIntegralValue signed_integral_bits(UnsignedIntegralValue value)
 bool signed_value_fits_long_long(SignedIntegralValue value)
 {
   (void)value;
+  return true;
+}
+
+bool checked_signed_add(SignedIntegralValue lhs,
+                        SignedIntegralValue rhs,
+                        SignedIntegralValue & out)
+{
+  const SignedIntegralValue minimum = numeric_limits<SignedIntegralValue>::min();
+  const SignedIntegralValue maximum = numeric_limits<SignedIntegralValue>::max();
+  if((rhs > 0 && lhs > maximum - rhs) ||
+     (rhs < 0 && lhs < minimum - rhs)) {
+    return false;
+  }
+  out = lhs + rhs;
+  return true;
+}
+
+bool checked_signed_subtract(SignedIntegralValue lhs,
+                             SignedIntegralValue rhs,
+                             SignedIntegralValue & out)
+{
+  const SignedIntegralValue minimum = numeric_limits<SignedIntegralValue>::min();
+  const SignedIntegralValue maximum = numeric_limits<SignedIntegralValue>::max();
+  if((rhs > 0 && lhs < minimum + rhs) ||
+     (rhs < 0 && lhs > maximum + rhs)) {
+    return false;
+  }
+  out = lhs - rhs;
+  return true;
+}
+
+bool checked_signed_multiply(SignedIntegralValue lhs,
+                             SignedIntegralValue rhs,
+                             SignedIntegralValue & out)
+{
+  const SignedIntegralValue minimum = numeric_limits<SignedIntegralValue>::min();
+  const SignedIntegralValue maximum = numeric_limits<SignedIntegralValue>::max();
+  bool overflow = false;
+  if(lhs > 0) {
+    overflow = rhs > 0 ? lhs > maximum / rhs : rhs < minimum / lhs;
+  } else if(lhs < 0) {
+    overflow = rhs > 0 ? lhs < minimum / rhs : rhs < maximum / lhs;
+  }
+  if(overflow) {
+    return false;
+  }
+  out = lhs * rhs;
   return true;
 }
 
@@ -701,23 +749,31 @@ bool cast_signed_binary_result(ETokenType op,
   case OP_PLUS:
   {
     SignedIntegralValue result;
-    result = lhs_value + rhs_value;
+    if(!checked_signed_add(lhs_value, rhs_value, result)) {
+      return false;
+    }
     return cast_signed_value_to_target(result, target, out);
   }
   case OP_MINUS:
   {
     SignedIntegralValue result;
-    result = lhs_value - rhs_value;
+    if(!checked_signed_subtract(lhs_value, rhs_value, result)) {
+      return false;
+    }
     return cast_signed_value_to_target(result, target, out);
   }
   case OP_STAR:
   {
     SignedIntegralValue result;
-    result = lhs_value * rhs_value;
+    if(!checked_signed_multiply(lhs_value, rhs_value, result)) {
+      return false;
+    }
     return cast_signed_value_to_target(result, target, out);
   }
   case OP_DIV:
-    if(rhs_value == 0) {
+    if(rhs_value == 0 ||
+       (lhs_value == numeric_limits<SignedIntegralValue>::min() &&
+        rhs_value == -1)) {
       return false;
     }
   {
@@ -726,7 +782,9 @@ bool cast_signed_binary_result(ETokenType op,
     return cast_signed_value_to_target(result, target, out);
   }
   case OP_MOD:
-    if(rhs_value == 0) {
+    if(rhs_value == 0 ||
+       (lhs_value == numeric_limits<SignedIntegralValue>::min() &&
+        rhs_value == -1)) {
       return false;
     }
   {
@@ -1338,6 +1396,9 @@ bool constexpr_value_apply_unary(ETokenType op,
       return false;
     }
   {
+    if(integral == numeric_limits<SignedIntegralValue>::min()) {
+      return false;
+    }
     SignedIntegralValue result;
     result = -integral;
     return cast_signed_value_to_target(result,

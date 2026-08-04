@@ -701,6 +701,7 @@ struct FunctionBinding
   bool exclude_from_explicit_instantiation = false;
   std::unique_ptr<CallSemNode> cached_body_output;
   const CppAstNode * ctor_initializer = nullptr;
+  FunctionBinding * delegating_constructor_target = nullptr;
   FunctionTemplateDecl * source_template = nullptr;
   std::vector<template_model::TemplateArgument> instantiation_arguments;
   bool has_instantiation_arguments = false;
@@ -852,6 +853,14 @@ struct ClassInfo
   bool reference_type_members_collected = false;
   std::set<std::string> reference_named_members_collected;
   std::set<std::string> reference_named_members_in_progress;
+  struct TypedefMemberDeclarationSite
+  {
+    uint32_t source_location_id = 0;
+    std::size_t token_start = 0;
+    std::size_t token_end = 0;
+  };
+  std::map<std::string, std::vector<TypedefMemberDeclarationSite> >
+      typedef_member_declaration_sites;
   std::set<const CppAstNode *> reference_named_member_declarations_collected;
   bool reference_members_collected = false;
   bool implicit_special_members_ensured = false;

@@ -2631,6 +2631,7 @@ void register_builtin_functions(Scope & scope,
               void_ptr,
               std::vector<TypePtr>{const_void_ptr, size_type, size_type});
   add_builtin("__builtin_unreachable", make_fundamental(FT_VOID), std::vector<TypePtr>());
+  add_nothrow_builtin("__builtin_abort", make_fundamental(FT_VOID), std::vector<TypePtr>());
   add_same_type_overflow_builtin("__builtin_add_overflow");
   add_same_type_overflow_builtin("__builtin_sub_overflow");
   add_same_type_overflow_builtin("__builtin_mul_overflow");

@@ -208,7 +208,8 @@ PA12 must support:
 - namespace-scope simple declarations, alias declarations, function
   declarations, and function definitions
 - named, inline, and unnamed namespace definitions, namespace aliases, using
-  directives, and using declarations
+  directives, and using declarations, with same-scope namespace/ordinary-name
+  conflicts rejected
 - type aliases used by the PA12 slice
 - fundamental, pointer, reference, array, and function types
 - function parameter scopes, nested block scopes, and the separate scopes of
@@ -229,7 +230,7 @@ PA12 must support:
   object pointer to cv-qualified `void*`, and the supported lvalue-reference
   bindings
 - function redeclaration matching after top-level parameter cv normalization,
-  with duplicate definitions rejected
+  with conflicting return types and duplicate definitions rejected
 - recursive pointer-qualification conversion checks, including rejection when
   the intermediate const qualification required by a deep conversion is absent
 - copy-initialization for local variables, condition declarations, and returns
@@ -253,13 +254,16 @@ PA12 must support:
 - compound statements, `if` / `else`, `switch`, `while`, `do`, `for`, `break`,
   and `continue`
 - expression conditions and declaration conditions of the form `T x = expr`
-- supported integral `constexpr` complete objects, enumerator constants, and
-  the course-supported `__builtin_constant_p` query over propagated integral
-  expressions
+- supported integral `constexpr` complete objects, enumerator constants, the
+  course-supported `__builtin_constant_p` query over propagated integral
+  expressions, and semantic recognition of a zero-argument `__builtin_abort`
+  call (without requiring its later control-flow lowering)
 - rejection of type, call-arity, and control-flow violations within this
-  supported slice, including mismatched indirect-call arity, `default` outside
-  a switch, a value returned from a `void` function, invalid scoped-enum
-  conditions, and invalid pointer/integer equality or pointer multiplication
+  supported slice, including mismatched indirect-call arity, nonconstant case
+  labels, `break` or `continue` outside a permitted statement, `default`
+  outside a switch, a value returned from a `void` function, invalid
+  scoped-enum conditions, and invalid pointer/integer equality or pointer
+  multiplication
 - deterministic resolved-expression output
 
 The PA12 output should preserve enough information for later assignments to add

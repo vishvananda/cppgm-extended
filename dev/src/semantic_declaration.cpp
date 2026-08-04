@@ -1116,8 +1116,15 @@ void collect_namespace_definition(SemanticContext & ctx,
                ctx.source_location_for_node(node));
   Scope * target = nullptr;
   bool is_inline_namespace = false;
+  bool requests_inline_namespace = false;
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    requests_inline_namespace =
+        requests_inline_namespace || node.children[i].kind == CppAstKind::inline_node;
+  }
+  bool target_was_existing = false;
   if(node.value == "<unnamed>") {
     target = ctx.find_named_namespace_child(scope, node.value);
+    target_was_existing = target != nullptr;
     if(!target) {
       target = &ctx.append_namespace_scope(scope, node.value);
     }
@@ -1125,11 +1132,17 @@ void collect_namespace_definition(SemanticContext & ctx,
         scope, "_GLOBAL__N_1", target, node.token_start);
   } else {
     target = ctx.find_named_namespace_child(scope, node.value);
+    target_was_existing = target != nullptr;
     if(!target) {
       target = &ctx.append_namespace_scope(scope, node.value);
     }
     semantic_scope_mutation::bind_namespace(
         scope, node.value, target, node.token_start);
+  }
+
+  if(target_was_existing && requests_inline_namespace &&
+     !target->inline_namespace) {
+    throw logic_error("non-inline namespace cannot be reopened as inline");
   }
 
   for(size_t i = 0; i < node.children.size(); ++i) {

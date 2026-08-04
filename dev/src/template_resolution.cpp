@@ -20,6 +20,7 @@
 #include "callsemantic_internal.h"
 #include "class_template_mangle_info.h"
 #include "cpp_decl_bridge.h"
+#include "cpp_scope_lookup.h"
 #include "pack_parameter_analysis.h"
 #include "parser_trace.h"
 #include "semantic_context.h"
@@ -6481,6 +6482,41 @@ bool lookup_exact_visible_direct_type_argument(Scope & scope,
     }
   }
   return false;
+}
+
+bool unqualified_visible_type_argument_lookup_is_ambiguous(
+    Scope & scope,
+    const std::string & text)
+{
+  std::string name = strip_elaborated_type_prefix(trim_space(text));
+  std::string stripped_typename;
+  if(strip_leading_typename_argument_text(name, stripped_typename)) {
+    name = stripped_typename;
+  }
+  if(name.empty() || name.find("::") != std::string::npos) {
+    return false;
+  }
+
+  bool ambiguous = false;
+  cpp_scope_lookup::lookup_unqualified<TypePtr>(
+      scope,
+      name,
+      [](Scope & target, const std::string & lookup_name) -> TypePtr
+      {
+        if(target.namespace_scope) {
+          return template_api::lookup_direct_named_type_in_inline_namespaces(
+              target, lookup_name);
+        }
+        Scope::NamedTypeMap::const_iterator found =
+            target.named_types.find(lookup_name);
+        return found == target.named_types.end() ? TypePtr() : found->second;
+      },
+      [](const TypePtr & type) -> bool
+      {
+        return static_cast<bool>(type);
+      },
+      &ambiguous);
+  return ambiguous;
 }
 
 bool scope_has_concrete_template_class_context(Scope & scope)
@@ -13227,6 +13263,14 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   }
 
   std::string type_rewritten = trimmed;
+  if(parameter.kind == TemplateParameterInfo::TP_TYPE &&
+     unqualified_visible_type_argument_lookup_is_ambiguous(
+         raw_argument_scope, trimmed)) {
+    throw_substitution_failure(
+        "ambiguous type template argument: " + trimmed,
+        std::string(),
+        "template-resolution");
+  }
   TypePtr type;
   std::string unbound_pack_name;
   if(parameter.kind == TemplateParameterInfo::TP_TYPE &&

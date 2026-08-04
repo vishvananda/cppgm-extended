@@ -231,7 +231,8 @@ To complete PA34, implement hosted compatibility for:
   throw-expressions emitted by hosted helper macros, and GNU builtin float type
   specifiers such as `__float128` / `_Float128`
 - builtin traits, transforms, intrinsics, and builtin families used during
-  hosted compile acceptance
+  hosted compile acceptance, including lowering `__builtin_abort` as a
+  non-returning call to the host C runtime
 - semantic and lowering compatibility for hosted source patterns used by those
   headers, including post-declarator parameter
   attributes, explicit specializations of primary-template member functions,

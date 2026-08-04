@@ -92,6 +92,7 @@ struct RuntimeSymbolTableEntry
   X("cppgm_builtin_isnormalf", builtin_isnormalf, private_runtime, nullptr) \
   X("cppgm_builtin_isnormall", builtin_isnormall, private_runtime, nullptr) \
   X("cppgm_builtin_expect", builtin_expect, private_runtime, nullptr) \
+  X("cppgm_builtin_abort", builtin_abort, host_libcall, "abort") \
   X("cppgm_builtin_unreachable", builtin_unreachable, host_libcall, "abort") \
   X("cppgm_host_num_put_char_put_bool", none, host_libcall, "cppgm_host_num_put_char_put_bool") \
   X("cppgm_host_num_put_char_put_long", none, host_libcall, "cppgm_host_num_put_char_put_long") \
