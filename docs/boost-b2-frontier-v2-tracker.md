@@ -961,6 +961,15 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Closed the clean final replay of suite 36 independently
+  because DynamicBitset previously exposed deferred member-definition defects.
+  The six-job graph finds 3150 targets, rebuilds all 90 requested targets,
+  records all ten test actions as passing, handles the deliberate
+  `test_std_hash_disabled` failure as failed-as-expected, and has no unexpected
+  failure or skip. It exits in 147.76s at 839,438,336 B maximum RSS with zero
+  process swaps and unchanged system swapouts; live aggregate memory releases
+  normally after the concurrent heavy units complete. No compiler, test, or
+  reference change is required.
 - `2026-08-04`: Closed the clean final replay of suite 35 independently on
   DLL's documented authoritative macOS lane. With `LINK=shared` avoiding
   contradictory static/dynamic test macros and `BOOST_TRAVISCI_BUILD`
