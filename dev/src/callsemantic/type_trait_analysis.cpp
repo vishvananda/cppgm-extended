@@ -516,7 +516,9 @@ bool is_empty_class_info(const ClassInfo * info,
   }
   for(std::size_t i = 0; i < info->bases.size(); ++i) {
     ClassInfo * base_info = info->bases[i].type;
-    if(!base_info || !is_empty_class_info(base_info, callbacks)) {
+    if(info->bases[i].is_virtual ||
+       !base_info ||
+       !is_empty_class_info(base_info, callbacks)) {
       return false;
     }
   }
