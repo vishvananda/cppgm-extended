@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call i32 @__0__operator__(%t1)
     return i32 %t2
 }
-function @__0__operator__(%this : ptr) -> i32 [binding=weak, object=_ZNK3$_0clEv] {
+function @__0__operator__(%this : ptr) -> i32 [binding=strong, object=_ZNK3$_0clEv, prefer_local=yes] {
   slot $this : ptr
 
   block ^entry:

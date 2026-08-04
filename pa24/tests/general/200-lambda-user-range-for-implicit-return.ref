@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load i32 $cond__1
     return i32 %t15
 }
-function @__lambda_main_t132_137__operator__(%this : ptr, %r : ptr [pass=reference]) -> i32 [binding=weak, object=_ZZ4mainENK3$_0clER5Range] {
+function @__lambda_main_t132_137__operator__(%this : ptr, %r : ptr [pass=reference]) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clER5Range, prefer_local=yes] {
   slot $this : ptr
   slot $r : ptr
   slot $__begin1 : obj<8x8>

@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @__lambda_main_t11_17__operator__(%this : ptr, %input : i32) -> i32 [binding=weak, object=_ZZ4mainENK3$_0clEi] {
+function @__lambda_main_t11_17__operator__(%this : ptr, %input : i32) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEi, prefer_local=yes] {
   slot $this : ptr
   slot $input : i32
   slot $local : i32
@@ -40,7 +40,7 @@ function @__lambda_main_t11_17__operator__(%this : ptr, %input : i32) -> i32 [bi
     %t6 = call i32 @__lambda_main_t11_17____lambda___lambda_main_t11_17__operator___t32_36__operator__(%t5)
     return i32 %t6
 }
-function @__lambda_main_t11_17____lambda___lambda_main_t11_17__operator___t32_36__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZZ4mainENK3$_0clEiENKUlvE_clEv] {
+function @__lambda_main_t11_17____lambda___lambda_main_t11_17__operator___t32_36__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZZ4mainENK3$_0clEiENKUlvE_clEv, prefer_local=yes] {
   slot $this : ptr
 
   block ^entry:

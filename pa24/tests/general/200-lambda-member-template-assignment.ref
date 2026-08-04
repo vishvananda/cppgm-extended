@@ -41,7 +41,7 @@ function @Sink__operator___ov2(%this : ptr, %f : obj<1x1>) -> ptr [binding=weak,
     %t5 = load ptr $this
     return ptr %t5
 }
-function @__lambda_main_t80_84__operator__(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZZ4mainENK3$_0clEi] {
+function @__lambda_main_t80_84__operator__(%this : ptr, %x : i32) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEi, prefer_local=yes] {
   slot $this : ptr
   slot $x : i32
 

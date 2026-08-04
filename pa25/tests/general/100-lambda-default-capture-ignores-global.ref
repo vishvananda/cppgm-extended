@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 1
     return i32 %t4
 }
-function @__lambda_main_t14_16__operator__(%this : ptr) -> void [binding=weak, object=_ZZ4mainENK3$_0clEv] {
+function @__lambda_main_t14_16__operator__(%this : ptr) -> void [binding=strong, object=_ZZ4mainENK3$_0clEv, prefer_local=yes] {
   slot $this : ptr
 
   block ^entry:

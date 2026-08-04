@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @semantic_expression__f()
     return i32 %t1
 }
-function @semantic_expression____lambda_semantic_expression__f_t122_124__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZN19semantic_expression1fEvENK3$_0clEv] {
+function @semantic_expression____lambda_semantic_expression__f_t122_124__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZN19semantic_expression1fEvENK3$_0clEv, prefer_local=yes] {
   slot $this : ptr
 
   block ^entry:

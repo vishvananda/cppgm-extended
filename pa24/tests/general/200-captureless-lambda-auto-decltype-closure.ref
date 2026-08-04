@@ -63,7 +63,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = load i32 $cond__1
     return i32 %t19
 }
-function @__lambda_main_t52_61__operator__(%this : ptr, %lhs : i32, %rhs : i8) -> i32 [binding=weak, object=_ZZ4mainENK3$_0clEic] {
+function @__lambda_main_t52_61__operator__(%this : ptr, %lhs : i32, %rhs : i8) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEic, prefer_local=yes] {
   slot $this : ptr
   slot $lhs : i32
   slot $rhs : i8

@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = call i32 @__lambda_main_t17_19____lambda___lambda_main_t17_19__operator___t25_27__operator__(%t3)
     return i32 %t6
 }
-function @__lambda_main_t17_19__operator__(%this : ptr) -> obj<8x8> [binding=weak, object=_ZZ4mainENK3$_0clEv] {
+function @__lambda_main_t17_19__operator__(%this : ptr) -> obj<8x8> [binding=strong, object=_ZZ4mainENK3$_0clEv, prefer_local=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<8x8>
 
@@ -28,7 +28,7 @@ function @__lambda_main_t17_19__operator__(%this : ptr) -> obj<8x8> [binding=wea
     store ptr %t4, %t1
     return obj<8x8> $retobj__1
 }
-function @__lambda_main_t17_19____lambda___lambda_main_t17_19__operator___t25_27__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZZ4mainENK3$_0clEvENKUlvE_clEv] {
+function @__lambda_main_t17_19____lambda___lambda_main_t17_19__operator___t25_27__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZZ4mainENK3$_0clEvENKUlvE_clEv, prefer_local=yes] {
   slot $this : ptr
 
   block ^entry:

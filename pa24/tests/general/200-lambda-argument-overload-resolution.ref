@@ -44,7 +44,7 @@ function @call_with_int(%fn : obj<1x1>, %value : i32) -> i32 [binding=weak, obje
     %t3 = call i32 @__lambda_main_t88_92__operator__(%t1, %t2)
     return i32 %t3
 }
-function @__lambda_main_t88_92__operator__(%this : ptr, %value : i32) -> i32 [binding=weak, object=_ZZ4mainENK3$_0clEi] {
+function @__lambda_main_t88_92__operator__(%this : ptr, %value : i32) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEi, prefer_local=yes] {
   slot $this : ptr
   slot $value : i32
 

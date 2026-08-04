@@ -320,11 +320,35 @@ symbol_linkage::FunctionRefQualifier symbol_linkage_ref_qualifier(RefQualifier q
 symbol_linkage::SymbolLinkage output_function_symbol_linkage(const FunctionBinding & binding);
 bool node_decl_spec_contains_token(const CppAstNode * node, ETokenType token);
 
+const FunctionBinding * lambda_enclosing_function(const FunctionBinding & binding)
+{
+  if(!binding.owner_class ||
+     !binding.owner_class->is_lambda_closure ||
+     !binding.owner_class->enclosing_scope) {
+    return nullptr;
+  }
+  const FunctionBinding * enclosing =
+      current_function_scope(*binding.owner_class->enclosing_scope);
+  return enclosing == &binding ? nullptr : enclosing;
+}
+
+bool lambda_function_requires_weak_object_binding(const FunctionBinding & binding)
+{
+  const FunctionBinding * enclosing = lambda_enclosing_function(binding);
+  return enclosing &&
+         output_function_symbol_linkage(*enclosing) == symbol_linkage::SL_WEAK;
+}
+
 bool output_function_prefers_local_object_binding(const FunctionBinding & binding)
 {
   if(binding.is_explicit_specialization &&
      output_function_symbol_linkage(binding) == symbol_linkage::SL_EXTERNAL) {
     return false;
+  }
+  if(binding.owner_class &&
+     binding.owner_class->is_lambda_closure &&
+     !lambda_function_requires_weak_object_binding(binding)) {
+    return true;
   }
   return binding.symbol.prefer_local_object_binding ||
          binding.exclude_from_explicit_instantiation;
@@ -3024,6 +3048,10 @@ bool scope_has_internal_namespace_linkage(const Scope * scope)
 
 symbol_linkage::SymbolLinkage output_function_symbol_linkage(const FunctionBinding & binding)
 {
+  if(binding.owner_class && binding.owner_class->is_lambda_closure) {
+    return lambda_function_requires_weak_object_binding(binding) ?
+        symbol_linkage::SL_WEAK : symbol_linkage::SL_EXTERNAL;
+  }
   const CppAstNode * declaration =
       binding.definition_node ? binding.definition_node : binding.declaration_node;
   const bool explicit_specialization_binding =

@@ -23,6 +23,9 @@ course:
   `.gcc_except_table`, `.eh_frame`, and the Mach-O compact-unwind equivalent
 - type-info references needed for typed catches
 - no private course-only `cppgm_eh_*` runtime symbols in host-EH objects
+- local object binding for compiler-generated functions whose enclosing source
+  context is not ODR-mergeable, including a lambda call operator inside an
+  ordinary non-inline function
 
 PA31 is intentionally a host-object facts assignment, not a hosted standard
 library assignment and not a private linker/runtime pipeline.
@@ -193,6 +196,9 @@ runtime-helper object surface for `cppgm++ -c` within the supported subset:
 7. Close full-expression EH regions before control-flow joins and require
    matching protected-call state at statement, conditional, short-circuit, and
    loop merges.
+8. Preserve translation-unit-local object binding for generated functions in a
+   non-ODR-mergeable local context; do not export a local lambda call operator
+   as a weak or global host symbol.
 
 If object inspection shows missing or malformed host EH metadata for a basic
 throw/catch/cleanup case, fix the host-EH lowering or object-emission path.

@@ -54,7 +54,7 @@ function @move_ref(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_
     %t1 = load ptr $value
     return ptr %t1
 }
-function @__lambda_helper_t113_123__operator__(%this : ptr, %__param1 : ptr, %n : i64) -> i32 [binding=weak, object=_ZZ6helperiENK3$_0clEPcm] {
+function @__lambda_helper_t113_123__operator__(%this : ptr, %__param1 : ptr, %n : i64) -> i32 [binding=strong, object=_ZZ6helperiENK3$_0clEPcm, prefer_local=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $n : i64

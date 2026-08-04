@@ -27,7 +27,7 @@ function @invoke(%pred : obj<1x1>) -> i32 [binding=weak, object=_Z6invokeIZ4main
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @__lambda_main_t33_38__operator__(%this : ptr, %ch : u8) -> u8 [binding=weak, object=_ZZ4mainENK3$_0clEh] {
+function @__lambda_main_t33_38__operator__(%this : ptr, %ch : u8) -> u8 [binding=strong, object=_ZZ4mainENK3$_0clEh, prefer_local=yes] {
   slot $this : ptr
   slot $ch : u8
 

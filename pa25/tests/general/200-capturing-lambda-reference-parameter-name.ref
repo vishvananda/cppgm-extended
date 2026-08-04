@@ -36,7 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @run(%t3, 1)
     return i32 %t4
 }
-function @__lambda_run_t34_38__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZ3runP4ItemiENK3$_0clEv] {
+function @__lambda_run_t34_38__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZ3runP4ItemiENK3$_0clEv, prefer_local=yes] {
   slot $this : ptr
   slot $match : obj<8x8>
 
@@ -53,7 +53,7 @@ function @__lambda_run_t34_38__operator__(%this : ptr) -> i32 [binding=weak, obj
     %t8 = call i32 @__lambda_run_t34_38____lambda___lambda_run_t34_38__operator___t45_53__operator__(%t4, %t7)
     return i32 %t8
 }
-function @__lambda_run_t34_38____lambda___lambda_run_t34_38__operator___t45_53__operator__(%this : ptr, %source : ptr) -> i32 [binding=weak, object=_ZZZ3runP4ItemiENK3$_0clEvENKUlPKS_E_clES3_] {
+function @__lambda_run_t34_38____lambda___lambda_run_t34_38__operator___t45_53__operator__(%this : ptr, %source : ptr) -> i32 [binding=strong, object=_ZZZ3runP4ItemiENK3$_0clEvENKUlPKS_E_clES3_, prefer_local=yes] {
   slot $this : ptr
   slot $source : ptr
   slot $parameter : ptr
