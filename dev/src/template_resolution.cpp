@@ -15538,29 +15538,62 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         }
         return false;
       };
-      const auto deduce_from_effective_type_template_arguments =
+      const auto deduce_from_effective_template_arguments =
           [&](const std::vector<TemplateArgument> & pattern_effective_args,
               const std::vector<TemplateArgument> & actual_effective_args) -> bool
       {
-        if(pattern_effective_args.size() != actual_effective_args.size() ||
-           !template_arguments_are_all_types(pattern_effective_args) ||
-           !template_arguments_are_all_types(actual_effective_args)) {
+        if(pattern_effective_args.size() != actual_effective_args.size()) {
           return false;
         }
         for(std::size_t i = 0; i < pattern_effective_args.size(); ++i) {
-          if(!deduce_template_argument_impl(ctx,
-                                            parameters,
-                                            pattern_effective_args[i].type,
-                                            actual_effective_args[i].type,
-                                            deduced_types,
-                                            deduced_values,
-                                            deduction_scope,
-                                            partial_top_level_cv_deduction,
-                                            actual_lookup_scope,
-                                            deduced_pack_arguments,
-                                            allow_actual_base_deduction)) {
+          const TemplateArgument & pattern_argument = pattern_effective_args[i];
+          const TemplateArgument & actual_argument = actual_effective_args[i];
+          if(pattern_argument.kind != actual_argument.kind) {
             return false;
           }
+          if(pattern_argument.kind == TemplateArgument::TA_TYPE) {
+            if(!pattern_argument.type ||
+               !actual_argument.type ||
+               !deduce_template_argument_impl(ctx,
+                                               parameters,
+                                               pattern_argument.type,
+                                               actual_argument.type,
+                                               deduced_types,
+                                               deduced_values,
+                                               deduction_scope,
+                                               partial_top_level_cv_deduction,
+                                               actual_lookup_scope,
+                                               deduced_pack_arguments,
+                                               allow_actual_base_deduction)) {
+              return false;
+            }
+            continue;
+          }
+          if(pattern_argument.kind == TemplateArgument::TA_VALUE &&
+             !pattern_argument.dependent &&
+             !actual_argument.dependent) {
+            // A concrete non-type argument can still have a dependent type,
+            // as in iterator<T, false, 0> where the last parameter has type
+            // typename T::storage_type.  T has been deduced by an earlier
+            // argument, but that binding is not installed in a scope until
+            // after deduction.  Treat the dependent type as a non-deduced
+            // context here; acquiring the function specialization substitutes
+            // T and the ordinary argument conversion verifies the completed
+            // class-template-id.
+            const bool pattern_type_is_dependent =
+                pattern_argument.type &&
+                deduction_ops.type_depends(pattern_argument.type);
+            const bool types_match =
+                (!pattern_argument.type && !actual_argument.type) ||
+                pattern_type_is_dependent ||
+                (pattern_argument.type &&
+                 actual_argument.type &&
+                 type_equals(pattern_argument.type, actual_argument.type));
+            if(types_match && pattern_argument.value == actual_argument.value) {
+              continue;
+            }
+          }
+          return false;
         }
         return true;
       };
@@ -16332,10 +16365,8 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
               *actual_match_args;
           if(pattern_instantiation.arguments.size() ==
                  actual_instantiation.arguments.size() &&
-             pattern_args.size() != visible_actual_args.size() &&
-             template_arguments_are_all_types(pattern_instantiation.arguments) &&
-             template_arguments_are_all_types(actual_instantiation.arguments)) {
-            return deduce_from_effective_type_template_arguments(
+             pattern_args.size() != visible_actual_args.size()) {
+            return deduce_from_effective_template_arguments(
                 pattern_instantiation.arguments,
                 actual_instantiation.arguments);
           }
