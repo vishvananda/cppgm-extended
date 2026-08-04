@@ -22,10 +22,11 @@ global @__rtti_struct_D [storage=readonly, binding=weak, object=_ZTI1D] = {
   i32 0
   i32 1
   ptr addr @__rtti_struct_V
-  i64 -6141
+  i64 -8189
 }
 global @D__vtable [storage=readonly, binding=strong, object=_ZTV1D] = {
   i64 8
+  i64 0
   i64 0
   ptr addr @__rtti_struct_D
   ptr addr @D__id
@@ -37,7 +38,7 @@ global @D____view__V__8__vtable [storage=readonly, binding=weak, object=@D____vi
   ptr addr @_D__tag__vtable_return_adjust__this_neg8__return_pos0
 }
 global @D____vtt [storage=readonly, binding=weak, object=_ZTT1D, object_root=yes] = {
-  ptr addr @D__vtable + 24
+  ptr addr @D__vtable + 32
   ptr addr @D____view__V__8__vtable + 24
 }
 
