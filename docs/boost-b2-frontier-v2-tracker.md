@@ -961,6 +961,16 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Closed the clean final replay of suite 35 independently on
+  DLL's documented authoritative macOS lane. With `LINK=shared` avoiding
+  contradictory static/dynamic test macros and `BOOST_TRAVISCI_BUILD`
+  serializing the host-Clang-reproducible concurrent-`dlopen` race, the six-job
+  graph finds 2965 targets and rebuilds all 192 requested targets. All 31 test
+  actions pass, both deliberate compile failures are handled as
+  failed-as-expected, and there is no unexpected failure or skip. The request
+  exits in 229.85s at 795,516,928 B maximum RSS with zero process swaps and
+  unchanged system swapouts. No compiler, test, or reference change is
+  required.
 - `2026-08-04`: Grouped the clean final-replay closures for suites 33 and 34.
   The six-job Describe/Detail request finds 1460 targets, rebuilds all 230
   requested targets, records all 61 test actions as passing, and handles all
