@@ -10682,7 +10682,7 @@ private:
                       flags.is_constexpr,
                       template_identity,
                       prefer_overload_suffix,
-                      &info,
+                      nullptr,
                       nullptr);
     FunctionBinding * binding =
         find_matching_static_member_function(*info.member_scope,
@@ -25912,12 +25912,14 @@ private:
        function_type->function_ref_qualifier != FTRQ_NONE) {
       throw logic_error("ref-qualifier requires a non-static member function");
     }
+    const ClassInfo * constexpr_lexical_class =
+        lexical_access_class ? lexical_access_class : scope.class_info;
     validate_constexpr_function_declaration(type,
                                             params,
                                             false,
                                             is_constexpr,
                                             declaration_node,
-                                            lexical_access_class);
+                                            constexpr_lexical_class);
     if(scope.namespace_bindings.count(name) != 0) {
       throw logic_error("declaration conflicts with namespace name " + name);
     }
