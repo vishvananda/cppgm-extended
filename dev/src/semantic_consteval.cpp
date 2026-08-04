@@ -3862,6 +3862,11 @@ constant_eval::Hooks build_hooks(SemanticContext & ctx,
   {
     return ctx.evaluate_sizeof_operand_for_consteval(scope, expr, size);
   };
+  hooks.evaluate_alignof_operand =
+      [&ctx, &scope](const CppAstNode & expr, std::size_t & alignment)
+      {
+        return ctx.evaluate_alignof_expression_operand(scope, expr, alignment);
+      };
   hooks.lookup_pack_size = [&ctx, &scope](const std::string & name, std::size_t & pack_size)
   {
     return ctx.lookup_pack_size(scope, name, pack_size);

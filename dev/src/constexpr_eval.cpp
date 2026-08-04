@@ -847,7 +847,25 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
      node.children[0].kind == CppAstKind::type_id) {
     TypePtr type;
     if(!hooks_.parse_type_id || !hooks_.parse_type_id(node.children[0], type)) {
-      return false;
+      CppAstNode recovered_operand;
+      size_t recovered_alignment = 0;
+      const bool gnu_expression_form =
+          (node.value == "__alignof" || node.value == "__alignof__");
+      const bool recovered =
+          gnu_expression_form &&
+          cppast_recover_sizeof_type_id_expression_operand(
+              node.children[0], recovered_operand);
+      const bool evaluated =
+          recovered && hooks_.evaluate_alignof_operand &&
+          hooks_.evaluate_alignof_operand(recovered_operand,
+                                          recovered_alignment);
+      if(!evaluated) {
+        return false;
+      }
+      out = make_integral_value(
+          static_cast<long long>(recovered_alignment),
+          make_fundamental(FT_UNSIGNED_LONG_INT));
+      return true;
     }
     TypePtr alignof_type = remove_reference_type(type);
     if(!alignof_type) {

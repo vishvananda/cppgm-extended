@@ -8758,7 +8758,26 @@ ExprInfo analyze_type_trait_expression(SemanticContext & ctx,
       throw logic_error("alignof requires type-id");
     }
     TypePtr type;
-    if(!ctx.parse_type_id(scope, node.children[0], type)) {
+    bool parsed_type_id = ctx.parse_type_id(scope, node.children[0], type) &&
+                          static_cast<bool>(type);
+    const bool gnu_expression_form =
+        (node.value == "__alignof" || node.value == "__alignof__");
+    if(!parsed_type_id && gnu_expression_form) {
+      CppAstNode recovered_operand;
+      size_t recovered_alignment = 0;
+      if(cppast_recover_sizeof_type_id_expression_operand(
+             node.children[0], recovered_operand) &&
+         ctx.evaluate_alignof_expression_operand(
+             scope, recovered_operand, recovered_alignment)) {
+        result.type = make_fundamental(FT_UNSIGNED_LONG_INT);
+        result.category = VC_PRVALUE;
+        result.node = make_dump_node(CallSemKind::sizeof_expression);
+        set_expr_metadata(result.node, result.type, result.category);
+        set_callsem_uint_value(result.node, recovered_alignment);
+        return result;
+      }
+    }
+    if(!parsed_type_id) {
       throw logic_error("unsupported alignof type-id");
     }
     maybe_complete_layout_type(ctx, type);

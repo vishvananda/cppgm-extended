@@ -836,6 +836,10 @@ public:
   virtual bool evaluate_sizeof_operand_for_consteval(semantic_model::Scope & scope,
                                                      const CppAstNode & expr,
                                                      std::size_t & size) = 0;
+  virtual bool evaluate_alignof_expression_operand(
+      semantic_model::Scope & scope,
+      const CppAstNode & expr,
+      std::size_t & alignment) = 0;
   virtual bool lookup_pack_size(semantic_model::Scope & scope,
                                 const std::string & name,
                                 std::size_t & pack_size) = 0;

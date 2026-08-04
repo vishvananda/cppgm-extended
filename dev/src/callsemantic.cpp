@@ -20224,11 +20224,10 @@ private:
     callsemantic::track_instantiated_class(state, info);
   }
 
-  bool evaluate_sizeof_operand_for_consteval(Scope & scope,
-                                             const CppAstNode & expr,
-                                             size_t & size) override
+  bool resolve_unevaluated_operand_type(Scope & scope,
+                                        const CppAstNode & expr,
+                                        TypePtr & type)
   {
-    TypePtr type;
     try
     {
       const CppAstNode * operand = &expr;
@@ -20261,6 +20260,17 @@ private:
     if(!type && expr.kind == CppAstKind::id_expression && !binding) {
       type = lookup_type(scope, expr.value);
     }
+    return static_cast<bool>(type);
+  }
+
+  bool evaluate_sizeof_operand_for_consteval(Scope & scope,
+                                             const CppAstNode & expr,
+                                             size_t & size) override
+  {
+    TypePtr type;
+    if(!resolve_unevaluated_operand_type(scope, expr, type)) {
+      return false;
+    }
     maybe_complete_sizeof_type(*this, type);
     if(!type_is_valid_sizeof_operand(type)) {
       return false;
@@ -20271,6 +20281,28 @@ private:
     }
     TypePtr sizeof_type = sizeof_operand_type(type);
     size = type_size(sizeof_type);
+    return true;
+  }
+
+  bool evaluate_alignof_expression_operand(Scope & scope,
+                                           const CppAstNode & expr,
+                                           size_t & alignment) override
+  {
+    TypePtr type;
+    if(!resolve_unevaluated_operand_type(scope, expr, type)) {
+      return false;
+    }
+    maybe_complete_sizeof_type(*this, type);
+    TypePtr alignof_type = remove_reference_type(type);
+    if(!alignof_type) {
+      alignof_type = type;
+    }
+    if(!type_is_valid_sizeof_operand(alignof_type) ||
+       (sizeof_depends_on_template_parameters(alignof_type) &&
+        scope_has_template_placeholders(scope))) {
+      return false;
+    }
+    alignment = type_alignment(alignof_type);
     return true;
   }
 

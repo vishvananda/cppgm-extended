@@ -57,6 +57,7 @@ struct Hooks
   std::function<void(const CppAstNode &, const cpp_decl::TypePtr &)>
       record_sizeof_type_id;
   std::function<bool(const CppAstNode &, std::size_t &)> evaluate_sizeof_operand;
+  std::function<bool(const CppAstNode &, std::size_t &)> evaluate_alignof_operand;
   std::function<bool(const std::string &, std::size_t &)> lookup_pack_size;
   std::function<bool(Evaluator &, const CppAstNode &, ConstexprValue &)> evaluate_special_expression;
   bool supports_overloaded_operator_operand_probe = false;
