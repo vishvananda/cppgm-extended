@@ -961,6 +961,13 @@ stable command, diagnostic, reducer, validation, and measured deltas here.
 
 ## Decision Log
 
+- `2026-08-04`: Closed the clean final replay of suite 28 independently
+  because Core's historical fix surface was broad. The six-job request finds
+  6524 targets, rebuilds all 1137 requested targets, records all 288 test
+  actions as passing, handles all 62 deliberate failures as
+  failed-as-expected, and has no unexpected failure or skip. It exits in
+  491.26s at 357,687,296 B maximum RSS with zero process swaps and unchanged
+  system swapouts. No compiler, test, or reference change is required.
 - `2026-08-04`: Grouped only clean final-replay closures for suites 25--27.
   The isolated six-job Contract graph rebuilds all 877 requested targets,
   records all 214 test actions as passing, handles all 33 deliberate failures
