@@ -40292,6 +40292,17 @@ NonTypeArgumentStatus evaluate_structured_bool_expression(
     return NT_ARG_EVALUATED;
   }
 
+  if(expr.kind == CppAstKind::call_expression) {
+    const CppAstNode * callee = unwrap_call_callee(expr);
+    const TemplateIdSyntax * template_id =
+        callee ? cppast_template_id_syntax(*callee) : nullptr;
+    if(template_id &&
+       template_id_syntax_mentions_template_dependency(
+           services, scope, *template_id, false)) {
+      return NT_ARG_DEPENDENT;
+    }
+  }
+
   const NonTypeArgumentStatus tuple_constraints_status =
       evaluate_libstdcxx_tuple_constraints_member_call(
           services, scope, expr, out);
