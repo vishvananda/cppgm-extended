@@ -189,16 +189,18 @@ sub append_keep_going_summary {
 my @selected = collect_tests();
 die "no object-roundtrip tests selected\n" unless @selected;
 
-print "pa37 object-roundtrip";
-print " debuginfo" if $debuginfo;
-print ": running ", scalar(@selected), " test";
-print "s" if @selected != 1;
-print "\n";
+my $keep_going = $ENV{KEEP_GOING};
+if(!$keep_going) {
+  print "pa37 object-roundtrip";
+  print " debuginfo" if $debuginfo;
+  print ": running ", scalar(@selected), " test";
+  print "s" if @selected != 1;
+  print "\n";
+}
 
 my $temp = tempdir("cppgm-object-lowir-roundtrip.XXXXXX", TMPDIR => 1, CLEANUP => 1);
 my $passed = 0;
 my $failed = 0;
-my $keep_going = $ENV{KEEP_GOING};
 for my $test (@selected) {
   my $error = check_one($test, $temp);
   if(defined $error) {
@@ -220,6 +222,8 @@ if($failed) {
   exit 1;
 }
 
-print "pa37 object-roundtrip";
-print " debuginfo" if $debuginfo;
-print ": PASS (", scalar(@selected), "/", scalar(@selected), ")\n";
+if(!$keep_going) {
+  print "pa37 object-roundtrip";
+  print " debuginfo" if $debuginfo;
+  print ": PASS (", scalar(@selected), "/", scalar(@selected), ")\n";
+}
