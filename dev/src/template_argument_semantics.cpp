@@ -20550,7 +20550,8 @@ void bind_enclosing_alias_owner_template_arguments(
     template_api::TemplateServices & services,
     Scope & inst_scope,
     const AliasTemplateDecl & decl,
-    const TemplateArgument * bound_template_argument)
+    const TemplateArgument * bound_template_argument,
+    const Scope * active_scope)
 {
   if(!decl.declaring_scope ||
      !decl.declaring_scope->class_info ||
@@ -20567,6 +20568,18 @@ void bind_enclosing_alias_owner_template_arguments(
        bound_owner->source_template ==
            decl.declaring_scope->class_info->source_template) {
       owner = bound_owner;
+    }
+  }
+  if(!owner && active_scope) {
+    for(const Scope * current = active_scope; current; current = current->parent) {
+      ClassInfo * active_owner = current->class_info;
+      if(active_owner &&
+         active_owner->source_template ==
+             decl.declaring_scope->class_info->source_template &&
+         !active_owner->instantiation_arguments.empty()) {
+        owner = active_owner;
+        break;
+      }
     }
   }
   if(!owner) {
@@ -21126,7 +21139,8 @@ bool try_resolve_alias_template_id_locally(
     bind_enclosing_alias_owner_template_arguments(services,
                                                   inst_scope,
                                                   *alias_template,
-                                                  bound_template_argument);
+                                                  bound_template_argument,
+                                                  &raw_scope);
     template_instantiation::bind_template_arguments_into_scope(
         services,
         inst_scope,
