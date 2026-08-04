@@ -220,6 +220,8 @@ public:
       class_templates(state_in.class_templates),
       class_template_deferred_definition_sources(
           state_in.class_template_deferred_definition_sources),
+      class_template_deferred_definition_equivalents(
+          state_in.class_template_deferred_definition_equivalents),
       alias_templates(state_in.alias_templates),
       function_templates(state_in.function_templates),
       variable_templates(state_in.variable_templates)
@@ -4387,26 +4389,28 @@ public:
   }
 
 private:
-  void inherit_equivalent_class_template_deferred_definitions(
-      ClassTemplateDecl & target) const
+  const CppAstNode * deferred_definition_identity(
+      const ClassTemplateDecl & decl) const
   {
-    if(!target.class_node ||
-       !target.declaring_scope ||
-       !target.declaring_scope->class_info) {
-      return;
+    if(decl.deferred_definition_source_identity) {
+      return decl.deferred_definition_source_identity;
     }
-    map<const CppAstNode *, ClassTemplateDecl *>::const_iterator found =
-        class_template_deferred_definition_sources.find(target.class_node);
-    const ClassTemplateDecl * source =
-        found != class_template_deferred_definition_sources.end() ?
-            found->second : nullptr;
-    if(!source || source->name != target.name) {
-      return;
+    if(const CppAstNode * member_declaration =
+           callsemantic::find_member_class_template_declaration_node(&decl)) {
+      decl.deferred_definition_source_identity = member_declaration;
+    } else {
+      decl.deferred_definition_source_identity = decl.class_node;
     }
+    return decl.deferred_definition_source_identity;
+  }
 
+  void merge_equivalent_class_template_deferred_definitions(
+      ClassTemplateDecl & target,
+      const ClassTemplateDecl & source) const
+  {
     for(map<string, OutOfClassMemberClassDecl>::const_iterator it =
-            source->member_class_definitions.begin();
-        it != source->member_class_definitions.end();
+            source.member_class_definitions.begin();
+        it != source.member_class_definitions.end();
         ++it) {
       map<string, OutOfClassMemberClassDecl>::iterator existing =
           target.member_class_definitions.find(it->first);
@@ -4421,8 +4425,8 @@ private:
     }
 
     for(map<string, vector<OutOfClassMemberFunctionDecl> >::const_iterator it =
-            source->member_function_definitions.begin();
-        it != source->member_function_definitions.end();
+            source.member_function_definitions.begin();
+        it != source.member_function_definitions.end();
         ++it) {
       vector<OutOfClassMemberFunctionDecl> & definitions =
           target.member_function_definitions[it->first];
@@ -4441,15 +4445,21 @@ private:
           }
         }
         if(!present) {
-          definitions.push_back(incoming);
+          OutOfClassMemberFunctionDecl adapted = incoming;
+          if(source.class_node &&
+             target.class_node &&
+             incoming.owner_output_node == source.class_node) {
+            adapted.owner_output_node = target.class_node;
+          }
+          definitions.push_back(adapted);
         }
       }
     }
 
     for(map<string, vector<OutOfClassMemberFunctionTemplateDefinition> >::
             const_iterator it =
-            source->member_function_template_definitions.begin();
-        it != source->member_function_template_definitions.end();
+            source.member_function_template_definitions.begin();
+        it != source.member_function_template_definitions.end();
         ++it) {
       vector<OutOfClassMemberFunctionTemplateDefinition> & definitions =
           target.member_function_template_definitions[it->first];
@@ -4476,14 +4486,45 @@ private:
     }
   }
 
+  void inherit_equivalent_class_template_deferred_definitions(
+      ClassTemplateDecl & target) const
+  {
+    if(!target.class_node ||
+       !target.declaring_scope ||
+       !target.declaring_scope->class_info) {
+      return;
+    }
+    const CppAstNode * identity = deferred_definition_identity(target);
+    map<const CppAstNode *, ClassTemplateDecl *>::const_iterator found =
+        class_template_deferred_definition_sources.find(identity);
+    const ClassTemplateDecl * source =
+        found != class_template_deferred_definition_sources.end() ?
+            found->second : nullptr;
+    if(!source || source->name != target.name) {
+      return;
+    }
+    merge_equivalent_class_template_deferred_definitions(target, *source);
+  }
+
   void register_class_template_deferred_definition_source(
       ClassTemplateDecl & source)
   {
-    if(source.class_node &&
-       source.declaring_scope &&
-       source.declaring_scope->class_info &&
-       class_template_deferred_definition_sources.count(source.class_node) == 0) {
-      class_template_deferred_definition_sources[source.class_node] = &source;
+    if(!source.declaring_scope ||
+       !source.declaring_scope->class_info) {
+      return;
+    }
+    const CppAstNode * identity = deferred_definition_identity(source);
+    if(!identity) {
+      return;
+    }
+    if(class_template_deferred_definition_sources.count(identity) == 0) {
+      class_template_deferred_definition_sources[identity] = &source;
+    }
+    vector<ClassTemplateDecl *> & equivalents =
+        class_template_deferred_definition_equivalents[identity];
+    if(find(equivalents.begin(), equivalents.end(), &source) ==
+       equivalents.end()) {
+      equivalents.push_back(&source);
     }
   }
 
@@ -5546,7 +5587,55 @@ private:
 
   void invalidate_out_of_class_definition_caches(ClassTemplateDecl & decl)
   {
-    callsemantic::invalidate_out_of_class_definition_caches(decl);
+    if(!decl.class_node ||
+       !decl.declaring_scope ||
+       !decl.declaring_scope->class_info) {
+      callsemantic::invalidate_out_of_class_definition_caches(decl);
+      return;
+    }
+
+    const CppAstNode * identity = deferred_definition_identity(decl);
+    map<const CppAstNode *, ClassTemplateDecl *>::const_iterator found =
+        class_template_deferred_definition_sources.find(identity);
+    ClassTemplateDecl * source =
+        found != class_template_deferred_definition_sources.end() ?
+            found->second : nullptr;
+    if(!source || source->name != decl.name) {
+      callsemantic::invalidate_out_of_class_definition_caches(decl);
+      return;
+    }
+
+    if(source != &decl) {
+      merge_equivalent_class_template_deferred_definitions(*source, decl);
+    }
+
+    map<const CppAstNode *, vector<ClassTemplateDecl *> >::const_iterator
+        equivalents_found =
+            class_template_deferred_definition_equivalents.find(identity);
+    if(equivalents_found ==
+       class_template_deferred_definition_equivalents.end()) {
+      callsemantic::invalidate_out_of_class_definition_caches(*source);
+      return;
+    }
+
+    bool source_seen = false;
+    const vector<ClassTemplateDecl *> & equivalents = equivalents_found->second;
+    for(size_t i = 0; i < equivalents.size(); ++i) {
+      ClassTemplateDecl * target = equivalents[i];
+      if(!target ||
+         target->name != decl.name) {
+        continue;
+      }
+      if(target != source) {
+        merge_equivalent_class_template_deferred_definitions(*target, *source);
+      } else {
+        source_seen = true;
+      }
+      callsemantic::invalidate_out_of_class_definition_caches(*target);
+    }
+    if(!source_seen) {
+      callsemantic::invalidate_out_of_class_definition_caches(*source);
+    }
   }
 
   PartialClassTemplateSpecializationDecl * find_partial_specialization_decl(
@@ -6294,6 +6383,8 @@ private:
   vector<unique_ptr<ClassTemplateDecl> > & class_templates;
   map<const CppAstNode *, ClassTemplateDecl *> &
       class_template_deferred_definition_sources;
+  map<const CppAstNode *, vector<ClassTemplateDecl *> > &
+      class_template_deferred_definition_equivalents;
   vector<unique_ptr<AliasTemplateDecl> > & alias_templates;
   vector<unique_ptr<FunctionTemplateDecl> > & function_templates;
   vector<unique_ptr<VariableTemplateDecl> > & variable_templates;

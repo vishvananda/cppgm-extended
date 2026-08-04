@@ -1704,6 +1704,10 @@ struct ClassTemplateDecl
   std::map<std::string, std::vector<OutOfClassMemberFunctionDecl> > member_function_definitions;
   std::map<std::string, std::vector<OutOfClassMemberFunctionTemplateDefinition> >
       member_function_template_definitions;
+  // Replayed nested class-template declarations may own cloned AST nodes.
+  // Cache the canonical source declaration used to share deferred definitions
+  // across those equivalent declarations.
+  mutable const CppAstNode * deferred_definition_source_identity = nullptr;
   bool comes_from_standard_include_path = false;
   mutable SourceDeclAnchorCache declaration_anchor;
 };

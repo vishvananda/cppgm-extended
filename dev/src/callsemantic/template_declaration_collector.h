@@ -28,6 +28,9 @@ struct TemplateDeclarationCollectorState
   std::vector<std::unique_ptr<semantic_model::ClassTemplateDecl> > & class_templates;
   std::map<const CppAstNode *, semantic_model::ClassTemplateDecl *> &
       class_template_deferred_definition_sources;
+  std::map<const CppAstNode *,
+           std::vector<semantic_model::ClassTemplateDecl *> > &
+      class_template_deferred_definition_equivalents;
   std::vector<std::unique_ptr<semantic_model::AliasTemplateDecl> > & alias_templates;
   std::vector<std::unique_ptr<semantic_model::FunctionTemplateDecl> > & function_templates;
   std::vector<std::unique_ptr<semantic_model::VariableTemplateDecl> > & variable_templates;
