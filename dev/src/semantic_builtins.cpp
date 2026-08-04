@@ -3228,6 +3228,10 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
       out = 0;
       return true;
     }
+    if(is_const_object_type(target)) {
+      out = 0;
+      return true;
+    }
 
     ExprInfo converted;
     out = try_argument_conversion(ctx, scope, target, rhs_expr, converted) ? 1 : 0;
