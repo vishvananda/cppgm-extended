@@ -160,11 +160,11 @@ struct SubstitutionKey
                                  SubstitutionKey inner)
   {
     std::string payload;
-    if(is_const) {
-      payload += 'K';
-    }
     if(is_volatile) {
       payload += 'V';
+    }
+    if(is_const) {
+      payload += 'K';
     }
     return make_unary(SK_TYPE_CV, std::move(payload), std::move(inner));
   }
@@ -784,6 +784,12 @@ struct Type
 
   static Type cv(bool is_const, bool is_volatile, Type inner)
   {
+    while(inner.kind == TK_CV && inner.inner) {
+      is_const = is_const || inner.cv_const;
+      is_volatile = is_volatile || inner.cv_volatile;
+      Type nested = *inner.inner;
+      inner = std::move(nested);
+    }
     Type type;
     type.kind = TK_CV;
     type.cv_const = is_const;

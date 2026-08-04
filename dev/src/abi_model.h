@@ -2223,6 +2223,11 @@ inline std::string integral_template_value_text(const Type * type,
   if(value < 0 && unsigned_width != 0) {
     return unsigned_integral_template_value_text(unsigned_width, value);
   }
+  if(value < 0) {
+    const unsigned long long magnitude =
+        0 - static_cast<unsigned long long>(value);
+    return std::string("n") + std::to_string(magnitude);
+  }
   return std::to_string(value);
 }
 
@@ -2244,7 +2249,7 @@ inline bool emit_integral_template_value(const Type * value_type,
   }
 
   out += "Li";
-  out += std::to_string(value);
+  out += integral_template_value_text(nullptr, value);
   out += 'E';
   return true;
 }
@@ -2267,7 +2272,7 @@ inline bool emit_integral_template_value_owned(Type * value_type,
   }
 
   out += "Li";
-  out += std::to_string(value);
+  out += integral_template_value_text(nullptr, value);
   out += 'E';
   return true;
 }
@@ -2325,11 +2330,11 @@ inline bool emit_type_body(const Type & type, std::string & out, SubstitutionSin
     if(!type.inner) {
       return false;
     }
-    if(type.cv_const) {
-      out += 'K';
-    }
     if(type.cv_volatile) {
       out += 'V';
+    }
+    if(type.cv_const) {
+      out += 'K';
     }
     return emit_type(*type.inner, out, sink);
 
@@ -2531,11 +2536,11 @@ inline bool emit_type_body_owned(Type & type, std::string & out, SubstitutionSin
     if(!type.inner) {
       return false;
     }
-    if(type.cv_const) {
-      out += 'K';
-    }
     if(type.cv_volatile) {
       out += 'V';
+    }
+    if(type.cv_const) {
+      out += 'K';
     }
     return emit_type_owned(*type.inner, out, sink);
 
@@ -4081,7 +4086,7 @@ inline bool emit_function_name(const FunctionEncoding & function,
     }
     if(function.has_conversion_type && function.conversion_type) {
       out += "cv";
-      if(!emit_type(*function.conversion_type, out, nullptr)) {
+      if(!emit_type(*function.conversion_type, out, sink)) {
         return false;
       }
     } else if(!function.terminal_source_name.empty()) {
@@ -4158,7 +4163,7 @@ inline bool emit_function_name(const FunctionEncoding & function,
       out += "cv";
       if(!emit_type(*function.conversion_type,
                     out,
-                    nullptr)) {
+                    sink)) {
         return false;
       }
     } else if(function.operator_terminal != FUNCTION_OPERATOR_NONE) {
@@ -4203,7 +4208,7 @@ inline bool emit_function_name(const FunctionEncoding & function,
     out += "cv";
     if(!emit_type(*function.conversion_type,
                   out,
-                  nullptr)) {
+                  sink)) {
       return false;
     }
   } else if(function.operator_terminal != FUNCTION_OPERATOR_NONE) {
@@ -4261,7 +4266,7 @@ inline bool emit_function_encoding_body(const FunctionEncoding & function,
   if(!emit_function_name(function, out, sink)) {
     return false;
   }
-  if(function.has_result_type &&
+  if(!function.has_conversion_type && function.has_result_type &&
      (!function.result_type || !emit_type(*function.result_type, out, sink))) {
     return false;
   }
@@ -4287,7 +4292,7 @@ inline bool emit_function_encoding_body_owned(FunctionEncoding & function,
   if(!emit_function_name(function, out, sink)) {
     return false;
   }
-  if(function.has_result_type &&
+  if(!function.has_conversion_type && function.has_result_type &&
      (!function.result_type ||
       !emit_type_owned(*function.result_type, out, sink))) {
     return false;

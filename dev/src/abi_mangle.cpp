@@ -46,6 +46,22 @@ bool starts_with(const string & text, const string & prefix)
   return text.compare(0, prefix.size(), prefix) == 0;
 }
 
+size_t member_pointer_separator(const string & text)
+{
+  for(size_t i = 0; i < text.size(); ++i) {
+    if(text[i] != ':') {
+      continue;
+    }
+    const bool part_of_scope =
+        (i != 0 && text[i - 1] == ':') ||
+        (i + 1 < text.size() && text[i + 1] == ':');
+    if(!part_of_scope) {
+      return i;
+    }
+  }
+  return string::npos;
+}
+
 string base36_number(size_t value)
 {
   static const char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -247,7 +263,15 @@ struct ParseContext
   map<string, DependentExpression> exprs;
   map<string, LocalContext> contexts;
   map<string, AbiEntity> entities;
+  set<string> definition_ids;
 };
+
+void remember_definition_id(ParseContext & ctx, const string & id)
+{
+  if(!ctx.definition_ids.insert(id).second) {
+    throw logic_error("duplicate ABI definition '" + id + "'");
+  }
+}
 
 const Type & require_type_ref(const ParseContext & ctx, const string & id)
 {
@@ -670,7 +694,7 @@ Type parse_single_type_token(const ParseContext & ctx, const string & text)
   }
   if(starts_with(text, "memberptr:")) {
     const string rest = text.substr(10);
-    const size_t pos = rest.rfind(':');
+    const size_t pos = member_pointer_separator(rest);
     if(pos == string::npos || pos == 0 || pos + 1 >= rest.size()) {
       throw logic_error("member pointer type requires memberptr:<owner>:<member-type>");
     }
@@ -751,7 +775,7 @@ Type parse_type_spec(const ParseContext & ctx, const vector<string> & words, siz
                                         parse_single_type_token(ctx, words[begin + 2]));
   }
   if(kind == "function-type" || kind == "function-type-variadic") {
-    if(begin + 2 >= words.size()) {
+    if(begin + 1 >= words.size()) {
       throw logic_error("function-type requires a result type");
     }
     vector<Type> params;
@@ -1453,6 +1477,7 @@ void apply_fact_words(model::AbiFactCase & fact_case,
     fact.kind = ABI_FACT_TYPE;
     fact.id = words[1];
     fact.type = parse_type_spec(ctx, words, 2);
+    remember_definition_id(ctx, fact.id);
     ctx.types[fact.id] = fact.type;
     fact_case.facts.push_back(fact);
     return;
@@ -1462,6 +1487,7 @@ void apply_fact_words(model::AbiFactCase & fact_case,
     fact.kind = ABI_FACT_TEMPLATE_ARGUMENT;
     fact.id = words[1];
     fact.template_argument = parse_template_argument_fact(ctx, words);
+    remember_definition_id(ctx, fact.id);
     ctx.args[fact.id] = fact.template_argument;
     fact_case.facts.push_back(fact);
     return;
@@ -1471,6 +1497,7 @@ void apply_fact_words(model::AbiFactCase & fact_case,
     fact.kind = ABI_FACT_EXPRESSION;
     fact.id = words[1];
     fact.expression = parse_expression_fact(ctx, words);
+    remember_definition_id(ctx, fact.id);
     ctx.exprs[fact.id] = fact.expression;
     fact_case.facts.push_back(fact);
     return;
@@ -1498,6 +1525,7 @@ void apply_fact_words(model::AbiFactCase & fact_case,
     } else {
       throw logic_error("let-context requires raw or function context data");
     }
+    remember_definition_id(ctx, fact.id);
     ctx.contexts[fact.id] = fact.context;
     fact_case.facts.push_back(fact);
     return;
@@ -1533,6 +1561,7 @@ void apply_fact_words(model::AbiFactCase & fact_case,
     } else {
       throw logic_error("unknown ABI fact entity kind '" + words[2] + "'");
     }
+    remember_definition_id(ctx, fact.id);
     ctx.entities[fact.id] = fact.entity;
     fact_case.facts.push_back(fact);
     return;
@@ -3105,6 +3134,7 @@ bool context_has_id(const vector<string> & ids, const string & id)
 
 struct PublicFactParseContext
 {
+  vector<string> definition_ids;
   vector<string> type_ids;
   vector<string> template_argument_ids;
   vector<string> expression_ids;
@@ -3117,6 +3147,15 @@ void remember_id(vector<string> & ids, const string & id)
   if(!id.empty() && !context_has_id(ids, id)) {
     ids.push_back(id);
   }
+}
+
+void remember_definition_id(PublicFactParseContext & context,
+                            const string & id)
+{
+  if(context_has_id(context.definition_ids, id)) {
+    throw logic_error("duplicate ABI definition '" + id + "'");
+  }
+  remember_id(context.definition_ids, id);
 }
 
 AbiArrayBound parse_public_array_bound(const string & word)
@@ -3217,7 +3256,7 @@ AbiType parse_public_single_type_token(const string & text)
   }
   if(starts_with(text, "memberptr:")) {
     const string rest = text.substr(10);
-    const size_t pos = rest.rfind(':');
+    const size_t pos = member_pointer_separator(rest);
     if(pos == string::npos || pos == 0 || pos + 1 >= rest.size()) {
       throw logic_error("member pointer type requires memberptr:<owner>:<member-type>");
     }
@@ -3303,7 +3342,7 @@ AbiType parse_public_type_spec(const vector<string> & words, size_t begin)
     return type;
   }
   if(kind == "function-type" || kind == "function-type-variadic") {
-    if(begin + 2 >= words.size()) {
+    if(begin + 1 >= words.size()) {
       throw logic_error("function-type requires a result type");
     }
     AbiType type;
@@ -3494,8 +3533,12 @@ void append_public_type_spec_words(const AbiType & type, vector<string> & words)
   case ABI_TYPE_VENDOR_QUALIFIED:
   case ABI_TYPE_ARRAY:
   case ABI_TYPE_BUILTIN_TRANSFORM:
-  case ABI_TYPE_MEMBER_POINTER:
     words.push_back(type_token_from_public_type(type));
+    return;
+  case ABI_TYPE_MEMBER_POINTER:
+    words.push_back("member-pointer");
+    words.push_back(type_token_from_public_type(type.types.at(0)));
+    words.push_back(type_token_from_public_type(type.types.at(1)));
     return;
   case ABI_TYPE_TEMPLATE_PARAMETER:
     words.push_back(type.substitutable ? "template-param-subst" : "template-param");
@@ -4186,6 +4229,7 @@ AbiFactRecord parse_fact_record_words_with_context(
     record.definition.kind = ABI_DEFINITION_TYPE;
     record.definition.id = words[1];
     record.definition.type = parse_public_type_spec(words, 2);
+    remember_definition_id(context, record.definition.id);
     remember_id(context.type_ids, record.definition.id);
     return record;
   }
@@ -4194,6 +4238,7 @@ AbiFactRecord parse_fact_record_words_with_context(
     record.definition.kind = ABI_DEFINITION_TEMPLATE_ARGUMENT;
     record.definition.id = words.size() > 1 ? words[1] : string();
     record.definition.template_argument = parse_public_template_argument(words);
+    remember_definition_id(context, record.definition.id);
     remember_id(context.template_argument_ids, record.definition.id);
     return record;
   }
@@ -4202,6 +4247,7 @@ AbiFactRecord parse_fact_record_words_with_context(
     record.definition.kind = ABI_DEFINITION_EXPRESSION;
     record.definition.id = words.size() > 1 ? words[1] : string();
     record.definition.expression = parse_public_expression(words);
+    remember_definition_id(context, record.definition.id);
     remember_id(context.expression_ids, record.definition.id);
     return record;
   }
@@ -4221,6 +4267,7 @@ AbiFactRecord parse_fact_record_words_with_context(
     } else {
       throw logic_error("let-context requires raw or function context data");
     }
+    remember_definition_id(context, record.definition.id);
     remember_id(context.context_ids, record.definition.id);
     return record;
   }
@@ -4246,6 +4293,7 @@ AbiFactRecord parse_fact_record_words_with_context(
     } else {
       throw logic_error("unknown ABI fact entity kind '" + words[2] + "'");
     }
+    remember_definition_id(context, record.definition.id);
     remember_id(context.entity_ids, record.definition.id);
     return record;
   }

@@ -100,10 +100,26 @@ The normalized builtin words `complex-float`, `complex-double`, and
 encodings `Cf`, `Cd`, and `Ce`. These are typed ABI facts; consumers must not
 construct them by appending raw mangled fragments.
 
-Integral `value` facts are interpreted according to their typed value. A
-negative stored value for an unsigned builtin type denotes that type's modulo
-bit pattern, so `value uint -1` and `value ulong -1` are emitted as the maximum
-values for their respective target widths rather than as negative ABI literals.
+Integral `value` facts are interpreted according to their typed value. Signed
+negative values use the Itanium `n`-plus-magnitude spelling, including the
+minimum value of a signed type. A negative stored value for an unsigned builtin
+type denotes that type's modulo bit pattern, so `value uint -1` and
+`value ulong -1` are emitted as the maximum values for their respective target
+widths rather than as negative ABI literals.
+
+Compact member-pointer types use
+`memberptr:<owner>:<member-type>`, where the compact owner is a bare qualified
+name or type-definition identifier. Scope separators do not delimit the two
+operands, so both `memberptr:ns::C:int` and `memberptr:C:ptr:int` are valid.
+Use the multiword `member-pointer <owner> <member-type>` form when the owner
+itself needs a constructor prefix such as `named:`; the canonical fact
+serializer uses this unambiguous form. A `function-type` fact contains a result
+type followed by zero or more parameter types; an empty parameter list is
+encoded with the Itanium `v` marker.
+
+Adjacent `const` and `volatile` type wrappers describe one canonical
+cv-qualified type. Their source order does not create distinct types or
+substitution keys, and the encoder emits the canonical Itanium qualifier order.
 
 Structured cases introduce reusable facts before the final target:
 
@@ -134,7 +150,9 @@ Definition forms:
 Definition identifiers are file-local binders. Their spelling does not
 participate in the ABI name; use a short descriptive identifier and refer to it
 consistently. Whether two uses refer to one definition or to separately
-defined structural facts can still matter to the case being described.
+defined structural facts can still matter to the case being described. One
+identifier may be defined only once in a case, across all `let-*` forms;
+redefining it is an invalid fact file rather than an overwrite.
 
 Template-parameter and other ABI indices are nonnegative decimal integers.
 Negative or otherwise malformed index spellings are invalid facts and must be
@@ -199,9 +217,11 @@ unambiguous.
 
 Literal operators are written as `operator-terminal literal <suffix>`, where
 `<suffix>` is the unencoded suffix source name such as `_digits`. Conversion
-operators remain separate `conversion-terminal <type>` facts. Local and lambda
-call-operator contexts continue to use `operator-call` as a semantic terminal
-marker, not as an Itanium code.
+operators remain separate `conversion-terminal <type>` facts. The conversion
+type participates in ordinary substitution ordering and is also the function's
+encoded result; a separate `result` record is not emitted for a conversion
+function. Local and lambda call-operator contexts continue to use
+`operator-call` as a semantic terminal marker, not as an Itanium code.
 
 Thunks, wrappers, typeinfo, and vtable names are described as ABI facts instead
 of already-mangled names.
