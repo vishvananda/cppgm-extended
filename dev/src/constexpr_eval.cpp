@@ -813,9 +813,6 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
                                   make_fundamental(FT_UNSIGNED_LONG_INT));
         return true;
       }
-      if(hooks_.record_sizeof_type_id) {
-        hooks_.record_sizeof_type_id(payload, type);
-      }
       TypePtr sizeof_type = sizeof_operand_type(type);
       if(!type_is_valid_sizeof_operand(sizeof_type)) {
         return false;

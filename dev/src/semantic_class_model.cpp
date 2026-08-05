@@ -7196,12 +7196,6 @@ void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode
           base_template_syntax,
           base_arg_syntaxes_for_lookup,
           info.template_value_dependencies);
-      if(have_base_arg_locations) {
-        ctx.record_class_use_for_resolved_type_node(*info.member_scope,
-                                                    *base_name,
-                                                    base_type,
-                                                    base_template_location);
-      }
       ClassInfo * base_class = ctx.complete_class_type(base_type);
       if(!base_class || !base_class->complete) {
         const bool defer_base_lookup =
@@ -12970,7 +12964,6 @@ void collect_special_member(SemanticContext & ctx,
       semantic_template_class::emit_constructor_initializer_template_id_source_use(
           ctx,
           *info.member_scope,
-          *initializer_id,
           *syntax,
           use_location,
           argument_locations);

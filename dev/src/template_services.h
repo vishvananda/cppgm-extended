@@ -722,7 +722,11 @@ public:
                 request.source_arg_syntaxes.empty() ?
                     nullptr :
                     &request.source_arg_syntaxes,
-                &key) :
+                &key,
+                request.argument_scope ?
+                    semantic_lookup::current_function_scope(
+                        *request.argument_scope) :
+                    nullptr) :
             ctx_.instantiate_selected_class_template(
                 *request.class_template,
                 *request.lookup.scope,

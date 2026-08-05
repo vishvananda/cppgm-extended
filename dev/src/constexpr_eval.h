@@ -54,8 +54,6 @@ struct Hooks
   std::function<cpp_decl::TypePtr(const std::string &)> lookup_type;
   std::function<cpp_decl::TypePtr(const CppAstNode &)> lookup_type_node;
   std::function<bool(const CppAstNode &, cpp_decl::TypePtr &)> parse_type_id;
-  std::function<void(const CppAstNode &, const cpp_decl::TypePtr &)>
-      record_sizeof_type_id;
   std::function<bool(const CppAstNode &, std::size_t &)> evaluate_sizeof_operand;
   std::function<bool(const CppAstNode &, std::size_t &)> evaluate_alignof_operand;
   std::function<bool(const std::string &, std::size_t &)> lookup_pack_size;

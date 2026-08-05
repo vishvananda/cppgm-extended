@@ -1832,7 +1832,22 @@ public:
       }
       throw logic_error(out.str());
     }
-    record_template_parameter_clause_source_uses(scope, node);
+    const bool source_uses_are_for_friend_template =
+        specifiers &&
+        any_of(specifiers->children.begin(),
+               specifiers->children.end(),
+               [](const CppAstNode & child)
+               {
+                 return node_has_simple_type(child, KW_FRIEND);
+               });
+    const bool defer_nonmember_function_template_source_uses =
+        !scope.class_info &&
+        !template_parameters.empty() &&
+        declarator_declares_function_entity(*declarator) &&
+        !source_uses_are_for_friend_template;
+    if(!defer_nonmember_function_template_source_uses) {
+      record_template_parameter_clause_source_uses(scope, node);
+    }
     PreparedMethodParseContext prepared_special_member_method;
     if(special_member_template) {
       semantic_class_model::prepare_method_parse_context(specifiers,
@@ -2546,6 +2561,9 @@ public:
         name = reparsed_name;
         type = reparsed_type;
       }
+    }
+    if(defer_nonmember_function_template_source_uses) {
+      record_template_parameter_clause_source_uses(scope, node, type);
     }
     if(function_template_entity_scope != &scope &&
        !function_template_entity_scope->class_info) {
@@ -5207,10 +5225,11 @@ private:
   }
 
   void record_template_parameter_clause_source_uses(Scope & scope,
-                                                    const CppAstNode & node)
+                                                    const CppAstNode & node,
+                                                    const TypePtr & function_type = TypePtr())
   {
     callbacks.declaration_services->record_template_parameter_clause_source_uses(
-        scope, node);
+        scope, node, function_type);
   }
 
   void record_class_template_base_source_uses(const CppAstNode * class_node,

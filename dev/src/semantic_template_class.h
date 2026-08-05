@@ -28,7 +28,6 @@ bool note_constant_value_member_instantiations_in_expression(
 void emit_constructor_initializer_template_id_source_use(
     SemanticContext & ctx,
     semantic_model::Scope & scope,
-    const CppAstNode & initializer_id,
     const cpp_decl::TemplateIdSyntax & syntax,
     const std::string & use_location,
     const std::vector<std::string> & argument_locations);

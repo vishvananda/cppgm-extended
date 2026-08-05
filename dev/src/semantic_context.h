@@ -140,12 +140,6 @@ public:
       const std::string & use_location,
       semantic_source_use::SourceUseRole role =
           semantic_source_use::SourceUseRole::TypeUse) = 0;
-  virtual void record_class_use_for_resolved_type_node(
-      semantic_model::Scope & scope,
-      const CppAstNode & node,
-      const cpp_decl::TypePtr & type,
-      const std::string & node_use_location,
-      bool allow_concrete_dependent_argument_spelling = false) = 0;
   virtual void record_primary_alias_base_source_uses(
       semantic_model::ClassTemplateDecl & decl) = 0;
   virtual bool node_comes_from_standard_include_path(
@@ -722,7 +716,8 @@ public:
       template_api::ClassTemplateSourceUseMode source_use_mode =
           template_api::ClassTemplateSourceUseMode::EmitClassUse,
       const std::vector<cpp_decl::TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
-      const std::string * precomputed_key = nullptr) = 0;
+      const std::string * precomputed_key = nullptr,
+      semantic_model::FunctionBinding * source_function = nullptr) = 0;
   virtual semantic_model::ClassInfo * instantiate_selected_class_template(
       semantic_model::ClassTemplateDecl & decl,
       semantic_model::Scope & use_scope,

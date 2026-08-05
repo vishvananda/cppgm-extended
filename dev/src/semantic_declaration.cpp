@@ -164,127 +164,6 @@ void sync_named_layout_from_class_info(TypePtr type, ClassInfo * info)
               .named_class_template_specialization_mangle_info;
 }
 
-const CppAstNode * type_id_type_name_witness_anchor(const CppAstNode & type_id)
-{
-  const CppAstNode * specifiers = find_child(type_id, CppAstKind::type_specifier_seq);
-  if(!specifiers) {
-    return nullptr;
-  }
-  for(size_t i = 0; i < specifiers->children.size(); ++i) {
-    if(specifiers->children[i].kind == CppAstKind::type_name) {
-      return &specifiers->children[i];
-    }
-  }
-  return nullptr;
-}
-
-string class_template_identifier_for_witness_type(SemanticContext & ctx,
-                                                  const TypePtr & type)
-{
-  ClassInfo * info = ctx.class_info_for_type(strip_top_level_cv(type));
-  if(!info || !info->source_template) {
-    return string();
-  }
-  return info->source_template->name;
-}
-
-size_t final_template_identifier_offset(const string & text,
-                                        const string & identifier)
-{
-  if(text.empty() || identifier.empty()) {
-    return string::npos;
-  }
-  const size_t search_end = text.find('<');
-  size_t pos = search_end == string::npos ?
-      text.rfind(identifier) :
-      text.rfind(identifier, search_end);
-  while(pos != string::npos) {
-    const bool left_ok =
-        pos == 0 ||
-        !(isalnum(static_cast<unsigned char>(text[pos - 1])) ||
-          text[pos - 1] == '_');
-    const size_t after = pos + identifier.size();
-    const bool right_ok =
-        after >= text.size() ||
-        !(isalnum(static_cast<unsigned char>(text[after])) ||
-          text[after] == '_');
-    if(left_ok && right_ok) {
-      return pos;
-    }
-    if(pos == 0) {
-      break;
-    }
-    pos = text.rfind(identifier, pos - 1);
-  }
-  return string::npos;
-}
-
-string source_location_with_column_offset(const string & location,
-                                          size_t offset)
-{
-  if(offset == 0 || location.empty()) {
-    return location;
-  }
-  const string normalized =
-      template_api::normalize_template_witness_source_location(location);
-  const template_api::template_witness_detail::ParsedSourceLocation parsed =
-      template_api::template_witness_detail::parse_source_location(normalized);
-  if(!parsed.valid || parsed.column <= 0) {
-    return location;
-  }
-  ostringstream out;
-  out << " at " << parsed.file << ":" << parsed.line << ":"
-      << (parsed.column + static_cast<int>(offset));
-  return out.str();
-}
-
-void record_sizeof_type_id_class_use_if_needed(SemanticContext & ctx,
-                                               Scope & scope,
-                                               const CppAstNode & type_id,
-                                               const TypePtr & type)
-{
-  if(!witness::source_capture_enabled(ctx.template_witness_context())) {
-    return;
-  }
-
-  const CppAstNode * anchor = type_id_type_name_witness_anchor(type_id);
-  if(!anchor) {
-    anchor = &type_id;
-  } else {
-    CppAstNode witness_anchor = *anchor;
-    witness_anchor.template_id_syntax.reset();
-    witness_anchor.qualifier_template_id_syntaxes.clear();
-    const CppAstNode * owned_anchor =
-        ctx.own_synthetic_ast(std::move(witness_anchor));
-    if(owned_anchor) {
-      anchor = owned_anchor;
-    }
-  }
-
-  string anchor_location = ctx.source_location_for_node(*anchor);
-  const string template_identifier =
-      class_template_identifier_for_witness_type(ctx, type);
-  if(!template_identifier.empty()) {
-    const string template_name_location =
-        ctx.source_location_for_name_in_node(*anchor, template_identifier);
-    if(!template_name_location.empty()) {
-      anchor_location = template_name_location;
-    } else {
-      const size_t offset =
-          final_template_identifier_offset(anchor->value, template_identifier);
-      if(offset != string::npos) {
-        anchor_location =
-            source_location_with_column_offset(anchor_location, offset);
-      }
-    }
-  }
-
-  ctx.record_class_use_for_resolved_type_node(scope,
-                                              *anchor,
-                                              type,
-                                              anchor_location);
-}
-
 bool evaluate_static_assert_integral_fallback(SemanticContext & ctx,
                                               Scope & scope,
                                               const CppAstNode & expr,
@@ -312,7 +191,6 @@ bool evaluate_static_assert_integral_fallback(SemanticContext & ctx,
       if(!ctx.parse_type_id(scope, payload, type, false)) {
         return false;
       }
-      record_sizeof_type_id_class_use_if_needed(ctx, scope, payload, type);
       TypePtr base = strip_top_level_cv(remove_reference_type(type));
       if(base && base->kind == Type::TK_NAMED && !base->named_has_layout) {
         sync_named_layout_from_class_info(type, ctx.complete_class_type(base));

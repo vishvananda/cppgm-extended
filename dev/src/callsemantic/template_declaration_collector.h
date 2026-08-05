@@ -233,7 +233,8 @@ struct TemplateDeclarationParsingServices
           template_parameters) = 0;
   virtual void record_template_parameter_clause_source_uses(
       semantic_model::Scope & scope,
-      const CppAstNode & node) = 0;
+      const CppAstNode & node,
+      const cpp_decl::TypePtr & function_type) = 0;
   virtual void record_class_template_base_source_uses(
       const CppAstNode * class_node,
       semantic_model::Scope * pattern_scope) = 0;

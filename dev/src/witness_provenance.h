@@ -26,7 +26,6 @@ enum class WitnessProducerSite
   ClassCallsemantic07,
   ClassCallsemantic08,
   ClassCallsemantic10,
-  ClassCallsemantic11,
   ClassCallsemantic13,
   ClassTemplateReference01,
   ClassTemplateReference02,
@@ -71,7 +70,6 @@ enum class WitnessUpstreamRoute
   NestedClassUseFromTemplateArguments,
   StaticMemberDefinitionClassUseFromAstNode,
   DeducedClassUseFromResolvedAliasType,
-  ClassUseFromResolvedTypeNode,
 };
 
 const char * producer_site_name(WitnessProducerSite site);

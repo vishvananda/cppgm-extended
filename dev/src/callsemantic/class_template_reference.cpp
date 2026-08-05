@@ -527,28 +527,51 @@ public:
 
   bool class_use_matches_current_function_result(
       Scope & scope,
-      const ClassInfo * resolved_info) const
+      const ClassInfo * resolved_info,
+      FunctionBinding * source_function = nullptr) const
   {
+    FunctionBinding * function = source_function ? source_function :
+        semantic_lookup::current_function_scope(scope);
     if(!resolved_info ||
        !resolved_info->type ||
-       !scope.function) {
+       !function) {
       return false;
     }
-    TypePtr function_type = strip_top_level_cv(scope.function->declared_type);
-    if(!function_type || function_type->kind != Type::TK_FUNCTION) {
-      return false;
-    }
-    return type_equals(strip_top_level_cv(function_type->inner),
-                       strip_top_level_cv(resolved_info->type));
+    const TypePtr target_type = strip_top_level_cv(resolved_info->type);
+    const auto function_result_matches = [&](const TypePtr & type) -> bool
+    {
+      const TypePtr function_type = strip_top_level_cv(type);
+      if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+        return false;
+      }
+      const TypePtr result_type = strip_top_level_cv(function_type->inner);
+      if(type_equals(result_type, target_type)) {
+        return true;
+      }
+      TypePtr resolved_result;
+      return template_api::type::resolve_instantiated_dependent_type(
+                 ctx,
+                 scope,
+                 result_type,
+                 resolved_result) &&
+             type_equals(strip_top_level_cv(resolved_result), target_type);
+    };
+    return function_result_matches(function->declared_type) ||
+           function_result_matches(function->type);
   }
 
   bool class_use_matches_current_conversion_result(
       Scope & scope,
-      const ClassInfo * resolved_info) const
+      const ClassInfo * resolved_info,
+      FunctionBinding * source_function = nullptr) const
   {
-    return scope.function &&
-           ctx.is_conversion_function_name(scope.function->name) &&
-           class_use_matches_current_function_result(scope, resolved_info);
+    FunctionBinding * function = source_function ? source_function :
+        semantic_lookup::current_function_scope(scope);
+    return function &&
+           ctx.is_conversion_function_name(function->name) &&
+           class_use_matches_current_function_result(scope,
+                                                     resolved_info,
+                                                     function);
   }
 
   std::string stable_template_parameter_witness_name(
@@ -2185,7 +2208,8 @@ public:
         template_api::ClassTemplateSourceUseMode source_use_mode =
             template_api::ClassTemplateSourceUseMode::EmitClassUse,
         const vector<TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
-        const string * precomputed_key = nullptr)
+        const string * precomputed_key = nullptr,
+        FunctionBinding * source_function = nullptr)
   {
     return reference_selected_class_template_instantiation_with_key(decl,
                                                                     use_scope,
@@ -2194,7 +2218,9 @@ public:
                                                                     source_arg_texts,
                                                                     precomputed_key,
                                                                     source_use_mode,
-                                                                    source_arg_syntaxes);
+                                                                    source_arg_syntaxes,
+                                                                    nullptr,
+                                                                    source_function);
   }
 
     ClassInfo * reference_selected_class_template_instantiation_with_key(
@@ -2207,7 +2233,8 @@ public:
         template_api::ClassTemplateSourceUseMode source_use_mode =
             template_api::ClassTemplateSourceUseMode::EmitClassUse,
         const vector<TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
-        const bool * precomputed_dependent_arguments = nullptr)
+        const bool * precomputed_dependent_arguments = nullptr,
+        FunctionBinding * source_function = nullptr)
   {
     const CppAstNode * class_node = specialization.class_node;
     Scope * binding_scope = specialization.binding_scope;
@@ -3068,13 +3095,15 @@ public:
               location_within_node(chosen_use_location, class_node);
           const bool conversion_result_type_use =
               class_use_matches_current_conversion_result(use_scope,
-                                                          resolved_info) ||
+                                                          resolved_info,
+                                                          source_function) ||
               (callbacks.template_id_at_location_is_conversion_operator_result &&
                callbacks.template_id_at_location_is_conversion_operator_result(
                    chosen_use_location));
           const bool function_result_type_use =
               class_use_matches_current_function_result(use_scope,
-                                                        resolved_info);
+                                                        resolved_info,
+                                                        source_function);
           const bool binding_arg_texts_from_source_syntax =
               source_arg_syntaxes != nullptr;
           const bool binding_arg_texts_are_semantic_fallback =
@@ -3896,12 +3925,13 @@ ClassInfo * reference_selected_class_template_instantiation(
     const std::vector<std::string> * source_arg_texts,
     template_api::ClassTemplateSourceUseMode source_use_mode,
     const std::vector<TemplateArgumentSyntax> * source_arg_syntaxes,
-    const std::string * precomputed_key)
+    const std::string * precomputed_key,
+    FunctionBinding * source_function)
 {
   ClassTemplateReference ref(ctx, callbacks);
   return ref.reference_selected_class_template_instantiation(
       decl, use_scope, arguments, specialization, source_arg_texts,
-      source_use_mode, source_arg_syntaxes, precomputed_key);
+      source_use_mode, source_arg_syntaxes, precomputed_key, source_function);
 }
 
 ClassInfo * reference_selected_class_template_instantiation_with_key(

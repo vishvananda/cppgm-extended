@@ -358,6 +358,16 @@ std::string source_attempt_record(const SourceAttempt & attempt,
       << ",\"binding_count\":" << use.bindings.size()
       << ",\"specialization_binding_count\":"
       << use.specialization_bindings.size()
+      << ",\"occurrence_present\":"
+      << (use.template_id_occurrence.present ? "true" : "false")
+      << ",\"occurrence_argument_count\":"
+      << use.template_id_occurrence.arguments.size()
+      << ",\"occurrence_function_result\":"
+      << (use.template_id_occurrence.function_result_type_use ? "true" : "false")
+      << ",\"occurrence_conversion_result\":"
+      << (use.template_id_occurrence.conversion_result_type_use ? "true" : "false")
+      << ",\"occurrence_synthesized\":"
+      << (use.template_id_occurrence.synthesized ? "true" : "false")
       << ",\"changed_fields\":" << quoted(changed_fields)
       << ",\"collided_producers\":" << producer_array(collided)
       << '}';
@@ -429,7 +439,6 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(ClassCallsemantic07, "class.callsemantic.07");
   CPPGM_PRODUCER_NAME(ClassCallsemantic08, "class.callsemantic.08");
   CPPGM_PRODUCER_NAME(ClassCallsemantic10, "class.callsemantic.10");
-  CPPGM_PRODUCER_NAME(ClassCallsemantic11, "class.callsemantic.11");
   CPPGM_PRODUCER_NAME(ClassCallsemantic13, "class.callsemantic.13");
   CPPGM_PRODUCER_NAME(ClassTemplateReference01, "class.class_template_reference.01");
   CPPGM_PRODUCER_NAME(ClassTemplateReference02, "class.class_template_reference.02");
@@ -490,8 +499,6 @@ const char * upstream_route_name(WitnessUpstreamRoute route)
     return "class_use.static_member_definition_ast_node";
   case WitnessUpstreamRoute::DeducedClassUseFromResolvedAliasType:
     return "class_use.resolved_alias_type";
-  case WitnessUpstreamRoute::ClassUseFromResolvedTypeNode:
-    return "class_use.resolved_type_node";
   }
   return "unknown";
 }

@@ -4756,128 +4756,6 @@ bool try_analyze_recovered_sizeof_type_id_operand(SemanticContext & ctx,
   }
 }
 
-const CppAstNode * sizeof_type_id_witness_anchor(const CppAstNode & type_id)
-{
-  const CppAstNode * specifiers = find_child(type_id, CppAstKind::type_specifier_seq);
-  if(!specifiers) {
-    return nullptr;
-  }
-  for(size_t i = 0; i < specifiers->children.size(); ++i) {
-    if(specifiers->children[i].kind == CppAstKind::type_name) {
-      return &specifiers->children[i];
-    }
-  }
-  return nullptr;
-}
-
-std::string class_template_identifier_for_witness_type(SemanticContext & ctx,
-                                                       const TypePtr & type)
-{
-  ClassInfo * info = ctx.class_info_for_type(strip_top_level_cv(type));
-  if(!info || !info->source_template) {
-    return std::string();
-  }
-  return info->source_template->name;
-}
-
-std::size_t final_template_identifier_offset(const std::string & text,
-                                             const std::string & identifier)
-{
-  if(text.empty() || identifier.empty()) {
-    return std::string::npos;
-  }
-  const std::size_t search_end = text.find('<');
-  std::size_t pos = search_end == std::string::npos ?
-      text.rfind(identifier) :
-      text.rfind(identifier, search_end);
-  while(pos != std::string::npos) {
-    const bool left_ok =
-        pos == 0 ||
-        !(std::isalnum(static_cast<unsigned char>(text[pos - 1])) ||
-          text[pos - 1] == '_');
-    const std::size_t after = pos + identifier.size();
-    const bool right_ok =
-        after >= text.size() ||
-        !(std::isalnum(static_cast<unsigned char>(text[after])) ||
-          text[after] == '_');
-    if(left_ok && right_ok) {
-      return pos;
-    }
-    if(pos == 0) {
-      break;
-    }
-    pos = text.rfind(identifier, pos - 1);
-  }
-  return std::string::npos;
-}
-
-std::string source_location_with_column_offset(const std::string & location,
-                                               std::size_t offset)
-{
-  if(offset == 0 || location.empty()) {
-    return location;
-  }
-  const std::string normalized =
-      template_api::normalize_template_witness_source_location(location);
-  const template_api::template_witness_detail::ParsedSourceLocation parsed =
-      template_api::template_witness_detail::parse_source_location(normalized);
-  if(!parsed.valid || parsed.column <= 0) {
-    return location;
-  }
-  std::ostringstream out;
-  out << " at " << parsed.file << ":" << parsed.line << ":"
-      << (parsed.column + static_cast<int>(offset));
-  return out.str();
-}
-
-void record_sizeof_type_id_class_use_if_needed(SemanticContext & ctx,
-                                               Scope & scope,
-                                               const CppAstNode & type_id,
-                                               const TypePtr & type)
-{
-  if(!witness::source_capture_enabled(ctx.template_witness_context())) {
-    return;
-  }
-
-  const CppAstNode * anchor = sizeof_type_id_witness_anchor(type_id);
-  if(!anchor) {
-    anchor = &type_id;
-  } else {
-    CppAstNode witness_anchor = *anchor;
-    witness_anchor.template_id_syntax.reset();
-    witness_anchor.qualifier_template_id_syntaxes.clear();
-    const CppAstNode * owned_anchor =
-        ctx.own_synthetic_ast(std::move(witness_anchor));
-    if(owned_anchor) {
-      anchor = owned_anchor;
-    }
-  }
-
-  std::string anchor_location = ctx.source_location_for_node(*anchor);
-  const std::string template_identifier =
-      class_template_identifier_for_witness_type(ctx, type);
-  if(!template_identifier.empty()) {
-    const std::string template_name_location =
-        ctx.source_location_for_name_in_node(*anchor, template_identifier);
-    if(!template_name_location.empty()) {
-      anchor_location = template_name_location;
-    } else {
-      const std::size_t offset =
-          final_template_identifier_offset(anchor->value,
-                                           template_identifier);
-      if(offset != std::string::npos) {
-        anchor_location =
-            source_location_with_column_offset(anchor_location, offset);
-      }
-    }
-  }
-
-  ctx.record_class_use_for_resolved_type_node(scope,
-                                              *anchor,
-                                              type,
-                                              anchor_location);
-}
-
 ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
                                           const ValueBinding & binding,
                                           bool allow_constant_fold = true);
@@ -5062,33 +4940,6 @@ string qualified_template_use_location(SemanticContext & ctx,
   return template_api::normalize_template_witness_source_location(location);
 }
 
-void emit_structured_qualified_value_class_use(SemanticContext & ctx,
-                                               Scope & scope,
-                                               const CppAstNode & node,
-                                               const QualifiedName & qualified,
-                                               const ValueBinding & binding)
-{
-  if(!(binding.owner_class ||
-       (binding.declaration_scope && binding.declaration_scope->class_info))) {
-    return;
-  }
-  const string qualifier_name = qualifier_name_text(qualified);
-  if(qualifier_name.empty()) {
-    return;
-  }
-  const CppAstNode qualifier_node =
-      make_value_qualifier_type_lookup_node(node, qualified, qualifier_name);
-  TypePtr qualifier_type =
-      ctx.lookup_type_node(scope, qualifier_node, qualifier_name, false);
-  if(qualifier_type) {
-    ctx.record_class_use_for_resolved_type_node(
-        scope,
-        qualifier_node,
-        qualifier_type,
-        ctx.source_location_for_node(qualifier_node));
-  }
-}
-
 const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
                                                         Scope & scope,
                                                         const CppAstNode & node,
@@ -5129,11 +4980,6 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
                                             node,
                                             &structured_qualifier_type);
     if(structured_binding) {
-      emit_structured_qualified_value_class_use(ctx,
-                                                scope,
-                                                node,
-                                                *qualified,
-                                                *structured_binding);
       const bool concrete_structured_qualifier =
           structured_qualifier_type &&
           !ctx.type_depends_on_template_parameter(structured_qualifier_type);
@@ -8703,12 +8549,6 @@ ExprInfo analyze_sizeof_expression(SemanticContext & ctx,
                           static_cast<bool>(operand_type);
     if(parsed_type_id) {
       prepare_sizeof_operand_type(ctx, operand_type);
-      if(type_is_valid_sizeof_operand(operand_type)) {
-        record_sizeof_type_id_class_use_if_needed(ctx,
-                                                  scope,
-                                                  child,
-                                                  operand_type);
-      }
     }
     if(!parsed_type_id || !type_is_valid_sizeof_operand(operand_type)) {
       TypePtr recovered_operand_type;
@@ -8718,10 +8558,6 @@ ExprInfo analyze_sizeof_expression(SemanticContext & ctx,
                                                       recovered_operand_type)) {
         operand_type = recovered_operand_type;
         prepare_sizeof_operand_type(ctx, operand_type);
-        record_sizeof_type_id_class_use_if_needed(ctx,
-                                                  scope,
-                                                  child,
-                                                  operand_type);
       }
     }
     if(!type_is_valid_sizeof_operand(operand_type)) {

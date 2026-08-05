@@ -49,7 +49,6 @@ bool note_constant_value_member_instantiations_in_expression(
 void emit_constructor_initializer_template_id_source_use(
     SemanticContext & ctx,
     semantic_model::Scope & scope,
-    const CppAstNode & initializer_id,
     const cpp_decl::TemplateIdSyntax & syntax,
     const std::string & use_location,
     const std::vector<std::string> & argument_locations)
@@ -69,23 +68,15 @@ void emit_constructor_initializer_template_id_source_use(
       argument_source_locations(syntax.arguments, argument_locations);
   const callsemantic::ScopedTemplateUseLocation use_location_guard(use_location);
   cpp_decl::TypePtr ignored;
-  if(template_api::type::resolve_template_id_syntax_type(
-         ctx,
-         scope,
-         syntax,
-         true,
-         use_location,
-         ignored,
-         &scope,
-         template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly) &&
-     names_class_template &&
-     ignored) {
-    ctx.record_class_use_for_resolved_type_node(scope,
-                                                initializer_id,
-                                                ignored,
-                                                use_location,
-                                                true);
-  }
+  template_api::type::resolve_template_id_syntax_type(
+      ctx,
+      scope,
+      syntax,
+      true,
+      use_location,
+      ignored,
+      &scope,
+      template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly);
 }
 
 }  // namespace semantic_template_class

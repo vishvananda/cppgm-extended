@@ -13723,18 +13723,6 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
   bool use_function_lookup = false;
   bool suppress_virtual_dispatch_for_qualified_id = false;
   TypePtr deferred_functional_cast_type;
-  const auto record_functional_cast_class_use =
-      [&](const TypePtr & target_type) -> void
-  {
-    if(target_type && lookup_callee_node.kind == CppAstKind::id_expression) {
-      ctx.record_class_use_for_resolved_type_node(
-          scope,
-          lookup_callee_node,
-          target_type,
-          ctx.source_location_for_node(lookup_callee_node),
-          true);
-    }
-  };
   const CallAnalysisHints * effective_hints = hints;
   CallAnalysisHints merged_lookup_hints;
   vector<ExprInfo> merged_lookup_arg_values;
@@ -13860,7 +13848,6 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
   if(const CppAstNode * conversion_type_id = cppast_conversion_type_id_syntax(node)) {
     TypePtr functional_cast_type;
     if(ctx.parse_type_id(scope, *conversion_type_id, functional_cast_type)) {
-      record_functional_cast_class_use(functional_cast_type);
       return analyze_functional_cast(ctx,
                                      scope,
                                      functional_cast_type,
@@ -15032,7 +15019,6 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
              scope,
              functional_cast_lookup_name->name,
              deferred_functional_cast_type)) {
-        record_functional_cast_class_use(deferred_functional_cast_type);
         return analyze_functional_cast(ctx,
                                        scope,
                                        deferred_functional_cast_type,
@@ -15127,7 +15113,6 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     if(constructor_candidates_match_deferred_functional_cast(ctx,
                                                              deferred_functional_cast_type,
                                                              candidates)) {
-      record_functional_cast_class_use(deferred_functional_cast_type);
       return analyze_functional_cast(ctx,
                                      scope,
                                      deferred_functional_cast_type,
@@ -15137,7 +15122,6 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     }
     if(candidates.empty()) {
         if(deferred_functional_cast_type) {
-          record_functional_cast_class_use(deferred_functional_cast_type);
           return analyze_functional_cast(ctx,
                                          scope,
                                          deferred_functional_cast_type,

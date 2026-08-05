@@ -82,7 +82,8 @@ semantic_model::ClassInfo * reference_selected_class_template_instantiation(
     template_api::ClassTemplateSourceUseMode source_use_mode =
         template_api::ClassTemplateSourceUseMode::EmitClassUse,
     const std::vector<cpp_decl::TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
-    const std::string * precomputed_key = nullptr);
+    const std::string * precomputed_key = nullptr,
+    semantic_model::FunctionBinding * source_function = nullptr);
 
 semantic_model::ClassInfo * reference_selected_class_template_instantiation_with_key(
     SemanticContext & ctx,
