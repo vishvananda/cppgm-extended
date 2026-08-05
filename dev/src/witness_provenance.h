@@ -31,7 +31,6 @@ enum class WitnessProducerSite
   ClassCallsemantic09,
   ClassCallsemantic10,
   ClassCallsemantic11,
-  ClassCallsemantic12,
   ClassCallsemantic13,
   ClassTemplateReference01,
   ClassTemplateReference02,
