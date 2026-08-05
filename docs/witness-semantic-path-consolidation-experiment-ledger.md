@@ -79,7 +79,9 @@ its sole run reported instructions up 0.08%, RSS up 1.81%, and footprint up
 0.03%. A parent-source comparison then found every affected normal object
 byte-identical except for the temporary build's embedded object-root path. The
 remaining renderer ABI and helper-shape differences were restored exactly
-before the next materially changed candidate recorded below.
+before the accepted candidate. That run improved instructions by 0.15%, RSS by
+1.09%, and footprint by 20 KiB. Its recorded candidate object was promoted to
+the rolling baseline without rerecording it.
 
 Sites not exercised by the existing strict witness references are tracked
 until they are reached by an earliest-owning-PA reducer or removed as proven
@@ -97,4 +99,4 @@ dead/redundant code:
 | Slice | Direct class sites before/after | Upstream routes before/after | Semantic route removed | Responsibility moved to | Strict | Full report | Instructions | Max RSS | Footprint | Renderer passes made idle |
 | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- |
 | Parent | 24/24 | 9/9 | none | none | clean | clean | 177731452181 | 768765952 | 593932288 | none |
-| Guarded provenance | 24/24 | 9/9 | none | none | clean | 4860/4860 | pending | pending | pending | none |
+| Diagnostic provenance | 24/24 | 9/9 | none | none | clean | 4860/4860 | 177466053572 | 760369152 | 593911808 | none |
