@@ -149,10 +149,11 @@ dead/redundant code:
 | Static-member initializer tail scan | 18/17 | 7/6 | public after-location callback, token scan after initializer start, and 13 calls that produced no class-use attempt | structured initializer expression semantics | clean | 4860/4860 | 177151210925 (+0.05%) | 765370368 (-0.13%) | 590516224 (-0.11%) | none |
 | Out-of-class owner replay | 17/16 | 6/6 | declaration-collector specifier-side owner lookup, specialization selection, binding reconstruction, and an unexercised class-use producer | canonical out-of-class owner emission after method binding resolution | clean | 4860/4860 | 176487122962 (-0.13%) | 759590912 (+1.17%) | 590536704 (+0.01%) | none |
 | Lookup-time concrete class-use replay | 16/15 | 6/6 | post-lookup class extraction, source-token and argument recovery, selection and anchor reconstruction, and an unexercised producer | canonical class-template references created during type lookup | clean | 4860/4860 | 176973791780 (+0.00%) | 762613760 (-0.80%) | 590491648 (-0.06%) | none |
+| Declaration resolved-type replay | 15/15 | 6/5 | declaration-type replay route and its semantic-context plumbing | retained function-result replay for functional-cast occurrence metadata | clean | 4860/4860 | 176930812572 (-0.02%) | 761339904 (-0.17%) | 589987840 (-0.09%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.22%` instructions, `+0.32%` maximum RSS,
-and `-0.68%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.25%` instructions, `+0.15%` maximum RSS,
+and `-0.76%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -163,19 +164,6 @@ and `-0.68%` footprint, so it also clears the final fixed-baseline gates.
 | Base-clause alias replay | alias use 6/5 | base-clause alias reconstruction, its unused emission-origin branch, and its provenance entry | canonical alias-reference producers reached during base-clause resolution | clean | 4860/4860 | 176968071900 (-0.08%) | 768757760 (+0.90%) | 590872576 (+0.05%) |
 
 ## Rejected slices
-
-- `20f8a84f9` removed the declaration-type replay route and limited the generic
-  resolved-type replay to the current function result (`6 -> 5` upstream
-  routes). The retained result-type case supplies the occurrence metadata for
-  functional casts that match the enclosing function return type. Strict
-  direct comparison and the full `4860/4860` report passed. Median instructions
-  (`176973479241`, `+0.14%`) and footprint (`590548992`, `+0.01%`) passed the
-  rolling gate, but maximum RSS (`764096512`, `+1.77%`) failed its 1% limit.
-  The same measurements passed the fixed diagnostic limits at `-0.22%`
-  instructions, `+0.52%` RSS, and `-0.67%` footprint. The rolling failure kept
-  the candidate out of the promoted checkpoint; `0ec846e4b` reverted it. The
-  report is
-  `/tmp/cppgm-witness-consolidation-candidate-resolved-type-replay-narrowing-3run.json`.
 
 - `eb04f2226` removed the post-deduction text-backed alias-pattern replay and
   its separate pack-binding reconstruction helper (`7 -> 6` alias sites).
