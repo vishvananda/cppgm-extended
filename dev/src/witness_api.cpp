@@ -333,7 +333,6 @@ SourceUseOwnership alias_use_ownership_for_origin(AliasUseEmissionOrigin origin)
   case AliasUseEmissionOrigin::ResolvedAliasTemplateId:
   case AliasUseEmissionOrigin::DirectSourceTemplateId:
   case AliasUseEmissionOrigin::PatternTemplateId:
-  case AliasUseEmissionOrigin::BaseClauseTemplateId:
   case AliasUseEmissionOrigin::QualifiedSourceTemplateId:
     return SourceUseOwnership::Direct;
   }
