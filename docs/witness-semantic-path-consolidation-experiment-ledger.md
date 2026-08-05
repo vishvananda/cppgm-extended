@@ -145,8 +145,8 @@ dead/redundant code:
 
 - class: `class_template_reference.01`, `constant_value_lookup.04`, and `.05`;
 - alias: `template_specialization.01`;
-- lifecycle: `template_api.06`, `.08`,
-  `template_argument_semantics.01`, and `constant_value_lookup.01`.
+- lifecycle: `template_api.06`, `template_argument_semantics.01`, and
+  `constant_value_lookup.01`.
 
 ## Semantic slice ledger
 
@@ -169,8 +169,8 @@ dead/redundant code:
 | Dead dependent-partial resolver | 14/13 | 5/5 | uncalled `record_dependent_partial_class_use_for_resolved_template_id` and its dormant producer | live selected class-reference resolution | clean | 4860/4860 | 176796004199 (+0.11%) | 753594368 (-1.73%) | 590069760 (-0.05%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.32%` instructions, `-0.87%` maximum RSS,
-and `-0.75%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.18%` instructions, `+0.61%` maximum RSS,
+and `-0.67%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -181,3 +181,9 @@ and `-0.75%` footprint, so it also clears the final fixed-baseline gates.
 | Base-clause alias replay | alias use 6/5 | base-clause alias reconstruction, its unused emission-origin branch, and its provenance entry | canonical alias-reference producers reached during base-clause resolution | clean | 4860/4860 | 176968071900 (-0.08%) | 768757760 (+0.90%) | 590872576 (+0.05%) |
 | Text-backed partial-match alias replay | alias use 5/4 | post-deduction syntax walk, alias lookup, source-argument recovery, and text-only pack-binding reconstruction | structured alias-template-id expansion and ordinary resolved alias uses | clean | 4860/4860 | 176707655948 (-0.13%) | 757301248 (-0.53%) | 590295040 (+0.05%) |
 | Eager child-`declval` replay | function call 3/3 | pre-analysis callee and argument walk plus repeated child expression construction solely for witness capture | ordinary recursive argument expression analysis | clean | 4860/4860 | 176703697462 (-0.00%) | 761233408 (+0.52%) | 590262272 (-0.01%) |
+
+## Lifecycle slice ledger
+
+| Slice | Lifecycle sites before/after | Transition path removed | Responsibility moved to | Strict | Full report | Instructions | Max RSS | Footprint |
+| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: |
+| Dead value-binding closure hook | 17/16 | uncalled public `note_value_binding_closure_event` API and its unexercised producer | existing variable-instantiation transition owners | clean | 4860/4860 | 177058170973 (+0.15%) | 764841984 (+1.49%) | 590528512 (+0.08%) |
