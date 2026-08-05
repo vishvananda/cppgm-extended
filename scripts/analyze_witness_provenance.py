@@ -12,7 +12,7 @@ from typing import Any, Iterable
 
 
 SOURCE_PRODUCERS = [
-    *(f"class.callsemantic.{index:02d}" for index in range(1, 15)),
+    *(f"class.callsemantic.{index:02d}" for index in range(1, 14)),
     "class.class_template_reference.01",
     "class.class_template_reference.02",
     *(f"class.constant_value_lookup.{index:02d}" for index in range(1, 6)),
