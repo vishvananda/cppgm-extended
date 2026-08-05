@@ -148,10 +148,11 @@ dead/redundant code:
 | Constant-value qualifier replay | 19/18 | 7/7 | constexpr-only qualifier syntax checks, owner extraction, specialization selection, anchor/binding reconstruction, and 19 staged attempts | ordinary qualified-id/class-template resolution results | clean | 4860/4860 | 177064422264 (-0.11%) | 766369792 (-0.05%) | 591138816 (+0.08%) | none |
 | Static-member initializer tail scan | 18/17 | 7/6 | public after-location callback, token scan after initializer start, and 13 calls that produced no class-use attempt | structured initializer expression semantics | clean | 4860/4860 | 177151210925 (+0.05%) | 765370368 (-0.13%) | 590516224 (-0.11%) | none |
 | Out-of-class owner replay | 17/16 | 6/6 | declaration-collector specifier-side owner lookup, specialization selection, binding reconstruction, and an unexercised class-use producer | canonical out-of-class owner emission after method binding resolution | clean | 4860/4860 | 176487122962 (-0.13%) | 759590912 (+1.17%) | 590536704 (+0.01%) | none |
+| Lookup-time concrete class-use replay | 16/15 | 6/6 | post-lookup class extraction, source-token and argument recovery, selection and anchor reconstruction, and an unexercised producer | canonical class-template references created during type lookup | clean | 4860/4860 | 176973791780 (+0.00%) | 762613760 (-0.80%) | 590491648 (-0.06%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.23%` instructions, `+1.13%` maximum RSS,
-and `-0.61%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.22%` instructions, `+0.32%` maximum RSS,
+and `-0.68%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -162,17 +163,6 @@ and `-0.61%` footprint, so it also clears the final fixed-baseline gates.
 | Base-clause alias replay | alias use 6/5 | base-clause alias reconstruction, its unused emission-origin branch, and its provenance entry | canonical alias-reference producers reached during base-clause resolution | clean | 4860/4860 | 176968071900 (-0.08%) | 768757760 (+0.90%) | 590872576 (+0.05%) |
 
 ## Rejected slices
-
-- `b15424b2b` removed the lookup-time concrete class-use replay while keeping
-  its parser-trace path (`17 -> 16` class sites). The canonical class-template
-  reference path already owned the strict witness output; this replay made no
-  strict-corpus emission attempt. Strict direct comparison and the full
-  `4860/4860` report passed. Median instructions (`176919787035`, `+0.11%`) and
-  footprint (`590544896`, `+0.01%`) passed the rolling gate, but maximum RSS
-  (`769101824`, `+2.44%`) failed its 1% limit. The fixed diagnostic comparison
-  also failed on RSS at about `+1.17%`; instructions were `-0.25%` and
-  footprint was `-0.67%`. `0ccd1b655` reverted the candidate. The report is
-  `/tmp/cppgm-witness-consolidation-candidate-lookup-time-class-use-replay-3run.json`.
 
 - `20f8a84f9` removed the declaration-type replay route and limited the generic
   resolved-type replay to the current function result (`6 -> 5` upstream
