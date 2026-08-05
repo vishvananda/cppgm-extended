@@ -7109,16 +7109,6 @@ private:
                const template_api::ClassSpecializationSelection & specialization) {
           record_selected_class_template_base_source_uses(decl, specialization);
         };
-    callbacks.emit_nested_class_use_source_events_from_location =
-        [this](Scope & scope,
-               const std::string & location,
-               witness::SourceUseOwnership ownership,
-               const std::string & skip_exact_template_name) {
-          emit_nested_class_use_source_events_from_location(scope,
-                                                            location,
-                                                            ownership,
-                                                            skip_exact_template_name);
-        };
     callbacks.emit_nested_class_use_source_events_from_syntaxes =
         [this](Scope & scope,
                const std::vector<TemplateArgumentSyntax> & syntaxes,
@@ -7418,13 +7408,6 @@ private:
                 witness::SourceUseOwnership::SourceOwned,
                 emitted_direct_base ? decision.template_name :
                                       base_template_syntax->name.name);
-            if(!emitted_direct_base) {
-              emit_nested_class_use_source_events_from_location(
-                  *pattern_scope,
-                  base_location,
-                  witness::SourceUseOwnership::SourceOwned,
-                  base_template_syntax->name.name);
-            }
           }
         } catch(const semantic_fallback_audit::SemanticFallbackError &) {
           throw;
@@ -8003,18 +7986,10 @@ private:
             "deduced");
       }
       request.ownership = witness::SourceUseOwnership::SourceOwned;
-      const bool parent_class_use_records =
-          witness::class_use_recording_enabled(request.origin);
       CPPGM_SET_WITNESS_PRODUCER(
           request,
           witness::WitnessProducerSite::ClassCallsemantic02);
       witness::emit_class_use(request);
-      if(parent_class_use_records) {
-        emit_nested_class_use_source_events_from_location(scope,
-                                                          request.location,
-                                                          witness::SourceUseOwnership::SourceOwned,
-                                                          request.template_name);
-      }
     };
     const auto note_exact_local_class_use = [&](const TypePtr & type) -> void
     {
@@ -9166,11 +9141,6 @@ private:
               if(arg_syntaxes) {
                 emit_nested_class_use_source_events_from_syntaxes(scope,
                                                                   *arg_syntaxes,
-                                                                  witness::SourceUseOwnership::NestedDerived,
-                                                                  request.template_name);
-              } else {
-                emit_nested_class_use_source_events_from_location(scope,
-                                                                  request.location,
                                                                   witness::SourceUseOwnership::NestedDerived,
                                                                   request.template_name);
               }
@@ -12972,85 +12942,6 @@ private:
     return location;
   }
 
-  void emit_nested_class_use_source_events_from_location_impl(
-      Scope & scope,
-      const std::string & location,
-      witness::SourceUseOwnership ownership,
-      const std::string & skip_exact_template_name,
-      witness::SourceUseRole role = witness::SourceUseRole::TypeUse,
-      bool clear_template_id_occurrence = false)
-  {
-    if(!witness::source_location_capture_enabled(template_witness_context(),
-                                                 location)) {
-      return;
-    }
-    const std::vector<NestedSourceTemplateIdOccurrence> occurrences =
-        nested_template_id_source_occurrences_at_location(location);
-    for(size_t i = 0; i < occurrences.size(); ++i) {
-      if(!skip_exact_template_name.empty()) {
-        const std::string occurrence_unqualified =
-            unqualified_member_name(occurrences[i].template_name);
-        const std::string skip_unqualified =
-            unqualified_member_name(skip_exact_template_name);
-        if(occurrences[i].template_name == skip_exact_template_name ||
-           (!occurrence_unqualified.empty() &&
-            occurrence_unqualified == skip_unqualified)) {
-          continue;
-        }
-      }
-      witness::ClassUseSourceDecision decision;
-      bool built_class_use = false;
-      const TemplateIdSyntax * source_syntax =
-          exact_template_id_syntax_at_location(
-              occurrences[i].location,
-              occurrences[i].template_name);
-      if(!source_syntax) {
-        continue;
-      }
-      try {
-        built_class_use =
-            build_class_use_source_decision_from_template_syntax(
-                scope,
-                occurrences[i].location,
-                decision,
-                *source_syntax);
-      } catch(...) {
-        built_class_use = false;
-      }
-      if(!built_class_use) {
-        continue;
-      }
-      if(clear_template_id_occurrence) {
-        decision.template_id_occurrence =
-            semantic_source_use::SourceTemplateIdOccurrence();
-      }
-      CPPGM_SET_WITNESS_PRODUCER(
-          decision,
-          witness::WitnessProducerSite::ClassCallsemantic04);
-      witness::emit_class_use_decision(
-          decision,
-          ownership,
-          role,
-          witness::nested_class_use_origin_for_ownership(ownership));
-    }
-  }
-
-  void emit_nested_class_use_source_events_from_location(
-      Scope & scope,
-      const std::string & location,
-      witness::SourceUseOwnership ownership,
-      const std::string & skip_exact_template_name) override
-  {
-    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
-        template_witness_context().session,
-        witness::WitnessUpstreamRoute::NestedClassUseFromCallbackLocation);
-    emit_nested_class_use_source_events_from_location_impl(
-        scope,
-        location,
-        ownership,
-        skip_exact_template_name);
-  }
-
   void emit_class_use_source_events_after_location(
       Scope & scope,
       const std::string & location,
@@ -13343,20 +13234,6 @@ private:
                                                           allow_source_template_header_replay);
       }
     }
-  }
-
-  void emit_nested_class_use_source_events_from_location(
-      Scope & scope,
-      const std::string & location,
-      witness::SourceUseOwnership ownership) override
-  {
-    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
-        template_witness_context().session,
-        witness::WitnessUpstreamRoute::NestedClassUseFromLocation);
-    emit_nested_class_use_source_events_from_location_impl(scope,
-                                                           location,
-                                                           ownership,
-                                                           std::string());
   }
 
   void emit_nested_alias_use_source_events_from_location(
@@ -14325,10 +14202,6 @@ private:
             request.use_location,
             request.template_name,
             source_arg_syntaxes);
-        emit_nested_class_use_source_events_from_location(use_scope,
-                                                          request.use_location,
-                                                          witness::SourceUseOwnership::SourceOwned,
-                                                          request.template_name);
       }
 
       if(source_capture_enabled &&
@@ -19138,16 +19011,6 @@ private:
         [this](const std::string & value) {
           return earliest_qualified_use_location_for_value(value);
         };
-    callbacks.emit_nested_class_use_source_events_from_location =
-        [this](Scope & scope,
-               const std::string & location,
-               witness::SourceUseOwnership ownership,
-               const std::string & skip_exact_template_name) {
-          emit_nested_class_use_source_events_from_location(scope,
-                                                            location,
-                                                            ownership,
-                                                            skip_exact_template_name);
-        };
     callbacks.class_template_argument_source_locations_for_current_use =
         [this](const std::string & template_name,
                const std::vector<TemplateParameterInfo> & parameters,
@@ -21525,19 +21388,6 @@ private:
                                                             witness::SourceUseRole::QualifierUse :
                                                             witness::SourceUseRole::TypeUse,
                                                         clear_template_id_occurrence);
-    } else if(parent_class_use_records && clear_template_id_occurrence) {
-      emit_nested_class_use_source_events_from_location_impl(
-          scope,
-          request.location,
-          witness::SourceUseOwnership::SourceOwned,
-          request.template_name,
-          witness::SourceUseRole::QualifierUse,
-          true);
-    } else if(parent_class_use_records) {
-      emit_nested_class_use_source_events_from_location(scope,
-                                                        request.location,
-                                                        witness::SourceUseOwnership::SourceOwned,
-                                                        request.template_name);
     }
   }
 
@@ -27953,10 +27803,6 @@ private:
             << " selection=" << witness::source_selection_text(request.selection);
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
-    emit_nested_class_use_source_events_from_location(scope,
-                                                      request.location,
-                                                      witness::SourceUseOwnership::NestedDerived,
-                                                      request.template_name);
   }
 
   void emit_out_of_class_owner_class_use_if_needed(
@@ -30613,31 +30459,6 @@ private:
       throw logic_error("missing special member binding");
     }
     note_out_of_class_definition_binding(node, binding);
-    const std::vector<TemplateArgument> * origin_arguments =
-        binding ? class_template_origin_arguments(binding->owner_class) : nullptr;
-    if(binding &&
-       class_has_explicit_template_origin(binding->owner_class) &&
-       origin_arguments &&
-       !template_arguments_are_dependent(*origin_arguments)) {
-      const std::string qualified_template_name =
-          strip_trailing_top_level_template_arguments(
-              semantic_model::class_output_qualified_name(
-                  *binding->owner_class));
-      const std::string source_template_name =
-          unqualified_member_name(qualified_template_name);
-      const std::string use_location =
-          template_api::normalize_template_witness_source_location(
-              source_location_for_name_in_subtree(
-                  node,
-                  !source_template_name.empty() ?
-                      source_template_name :
-                      qualified_template_name));
-      if(!use_location.empty()) {
-        emit_nested_class_use_source_events_from_location(scope,
-                                                          use_location,
-                                                          witness::SourceUseOwnership::SourceOwned);
-      }
-    }
     emit_out_of_class_owner_class_use_if_needed(
         scope,
         *qualified_name,

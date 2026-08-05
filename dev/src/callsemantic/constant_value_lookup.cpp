@@ -685,10 +685,6 @@ public:
         request,
         witness::WitnessProducerSite::ClassConstantValueLookup01);
     witness::emit_class_use(request);
-    emit_nested_class_use_source_events_from_location(scope,
-                                                      request.location,
-                                                      witness::SourceUseOwnership::NestedDerived,
-                                                      request.template_name);
   }
 
   std::string constexpr_call_source_use_location(
@@ -1875,10 +1871,6 @@ public:
                 request,
                 witness::WitnessProducerSite::ClassConstantValueLookup04);
             witness::emit_class_use(request);
-            emit_nested_class_use_source_events_from_location(scope,
-                                                              request.location,
-                                                              witness::SourceUseOwnership::NestedDerived,
-                                                              request.template_name);
           }
           return;
         }
@@ -2076,10 +2068,6 @@ public:
           request,
           witness::WitnessProducerSite::ClassConstantValueLookup05);
       witness::emit_class_use(request);
-      emit_nested_class_use_source_events_from_location(scope,
-                                                        request.location,
-                                                        witness::SourceUseOwnership::NestedDerived,
-                                                        request.template_name);
     };
 
     const QualifiedName * qualified = carried_qualified;
@@ -2132,16 +2120,6 @@ private:
   SemanticContext & ctx;
   const ConstantValueLookupCallbacks & callbacks;
 
-
-  void emit_nested_class_use_source_events_from_location(
-      Scope & scope,
-      const std::string & location,
-      witness::SourceUseOwnership ownership,
-      const std::string & skip_exact_template_name = std::string())
-  {
-    callbacks.emit_nested_class_use_source_events_from_location(
-        scope, location, ownership, skip_exact_template_name);
-  }
 
   std::string template_argument_text(const TemplateArgument & argument) const
   {

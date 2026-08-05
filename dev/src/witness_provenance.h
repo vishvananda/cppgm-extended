@@ -25,7 +25,6 @@ enum class WitnessProducerSite
   ClassCallsemantic01,
   ClassCallsemantic02,
   ClassCallsemantic03,
-  ClassCallsemantic04,
   ClassCallsemantic05,
   ClassCallsemantic06,
   ClassCallsemantic07,
@@ -81,8 +80,6 @@ enum class WitnessProducerSite
 
 enum class WitnessUpstreamRoute
 {
-  NestedClassUseFromCallbackLocation,
-  NestedClassUseFromLocation,
   ClassUseAfterLocation,
   NestedClassUseFromAstNode,
   NestedClassUseFromTemplateArguments,

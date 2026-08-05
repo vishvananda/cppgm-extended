@@ -121,10 +121,6 @@ public:
                                                        const std::string & name,
                                                        bool prefer_last = false) const = 0;
   virtual template_api::TemplateWitnessContext template_witness_context() const = 0;
-  virtual void emit_nested_class_use_source_events_from_location(
-      semantic_model::Scope & scope,
-      const std::string & location,
-      semantic_source_use::SourceUseOwnership ownership) = 0;
   virtual void emit_class_use_source_events_after_location(
       semantic_model::Scope & scope,
       const std::string & location,

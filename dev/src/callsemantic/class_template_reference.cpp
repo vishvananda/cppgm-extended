@@ -2314,15 +2314,6 @@ public:
               *source_arg_syntaxes,
               witness::SourceUseOwnership::SourceOwned,
               decl.name);
-          return;
-        }
-        if(syntax_backed_source_capture_enabled &&
-           callbacks.emit_nested_class_use_source_events_from_location) {
-          callbacks.emit_nested_class_use_source_events_from_location(
-              use_scope,
-              use_location,
-              witness::SourceUseOwnership::SourceOwned,
-              decl.name);
         }
       };
       const auto location_within_node = [&](const std::string & location,
@@ -3264,11 +3255,6 @@ public:
               *source_arg_syntaxes,
               witness::SourceUseOwnership::SourceOwned,
               request.template_name);
-        } else if(parent_class_use_records && !suppress_nested_arguments) {
-          emit_nested_class_use_source_events_from_location(use_scope,
-                                                            request.location,
-                                                            witness::SourceUseOwnership::SourceOwned,
-                                                            request.template_name);
         }
       }
       if(trace_enabled) {
@@ -3821,16 +3807,6 @@ private:
       const template_api::ClassSpecializationSelection & specialization)
   {
     callbacks.record_selected_class_template_base_source_uses(decl, specialization);
-  }
-
-  void emit_nested_class_use_source_events_from_location(
-      Scope & scope,
-      const std::string & location,
-      witness::SourceUseOwnership ownership,
-      const std::string & skip_exact_template_name = std::string())
-  {
-    callbacks.emit_nested_class_use_source_events_from_location(
-        scope, location, ownership, skip_exact_template_name);
   }
 
   ClassInfo * create_instantiated_class_info_with_internal_name(

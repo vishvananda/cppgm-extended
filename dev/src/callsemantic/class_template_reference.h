@@ -40,11 +40,6 @@ struct ClassTemplateReferenceCallbacks
                      const template_api::ClassSpecializationSelection &)>
       record_selected_class_template_base_source_uses;
   std::function<void(semantic_model::Scope &,
-                     const std::string &,
-                     witness::SourceUseOwnership,
-                     const std::string &)>
-      emit_nested_class_use_source_events_from_location;
-  std::function<void(semantic_model::Scope &,
                      const std::vector<cpp_decl::TemplateArgumentSyntax> &,
                      witness::SourceUseOwnership,
                      const std::string &)>

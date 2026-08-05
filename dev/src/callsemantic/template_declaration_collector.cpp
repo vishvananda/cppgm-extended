@@ -2146,10 +2146,6 @@ public:
                           witness::WitnessProducerSite::
                               ClassTemplateDeclarationCollector);
                       witness::emit_class_use(request);
-                        emit_nested_class_use_source_events_from_location(scope,
-                                                                          request.location,
-                                                                          witness::SourceUseOwnership::SourceOwned,
-                                                                          request.template_name);
                     }
                   }
                 }
@@ -5250,16 +5246,6 @@ private:
         ctx, class_template, selection);
   }
 
-  void emit_nested_class_use_source_events_from_location(
-      Scope & scope,
-      const string & location,
-      witness::SourceUseOwnership ownership,
-      const string & skip_exact_template_name)
-  {
-    callbacks.source_services->emit_nested_class_use_source_events_from_location(
-        scope, location, ownership, skip_exact_template_name);
-  }
-
   void overlay_direct_scope_bindings(Scope & target, const Scope & source) const
   {
     template_api::binding::overlay_direct_scope_bindings(target, source);
@@ -6549,14 +6535,6 @@ private:
                       bool reference_class_templates_only = false)
   {
     return ctx.lookup_type(scope, name, reference_class_templates_only);
-  }
-
-  void emit_nested_class_use_source_events_from_location(Scope & scope,
-                                                         const string & location,
-                                                         witness::SourceUseOwnership ownership)
-  {
-    ctx.emit_nested_class_use_source_events_from_location(
-        scope, location, ownership);
   }
 
   void upgrade_function_symbol_linkage(FunctionBinding * binding,

@@ -47,11 +47,6 @@ struct TemplateDeclarationSourceServices
       bool prefer_last) const = 0;
   virtual std::string earliest_qualified_use_location_for_prefix(
       const std::string & prefix) const = 0;
-  virtual void emit_nested_class_use_source_events_from_location(
-      semantic_model::Scope & scope,
-      const std::string & location,
-      witness::SourceUseOwnership ownership,
-      const std::string & skip_exact_template_name) = 0;
   virtual void emit_out_of_class_owner_class_use_if_needed(
       semantic_model::Scope & scope,
       const cpp_decl::QualifiedName & qualified,

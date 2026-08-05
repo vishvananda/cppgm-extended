@@ -24,11 +24,6 @@ struct ConstantValueLookupCallbacks
       earliest_qualified_use_location_for_prefix;
   std::function<std::string(const std::string &)>
       earliest_qualified_use_location_for_value;
-  std::function<void(semantic_model::Scope &,
-                     const std::string &,
-                     witness::SourceUseOwnership,
-                     const std::string &)>
-      emit_nested_class_use_source_events_from_location;
   std::function<std::vector<std::string>(
       const std::string &,
       const std::vector<template_model::TemplateParameterInfo> &,

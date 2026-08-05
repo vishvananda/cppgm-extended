@@ -12625,12 +12625,6 @@ const ValueBinding * instantiate_variable_template(
           request,
           witness::WitnessProducerSite::VariableTemplateInstantiation);
       witness::emit_variable_use(request);
-      if(source_use_scope != nullptr) {
-        ctx.emit_nested_class_use_source_events_from_location(
-            *source_use_scope,
-            request.use_location,
-            witness::SourceUseOwnership::NestedDerived);
-      }
     }
 
     if(trace_enabled) {
