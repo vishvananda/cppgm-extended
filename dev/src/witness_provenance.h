@@ -40,7 +40,6 @@ enum class WitnessProducerSite
   ClassTemplateDeclarationCollector,
   ClassTemplateInstantiation,
 
-  AliasTemplateArgumentSemantics01,
   AliasTemplateArgumentSemantics02,
   AliasTemplateSpecialization01,
   AliasTemplateSpecialization02,
