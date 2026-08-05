@@ -118,6 +118,7 @@ dead/redundant code:
 | Overload owner reconstruction | 24/23 | 9/9 | overload-side instantiated class owner lookup, anchor recovery, and binding reconstruction | selected class-reference result | clean | 4860/4860 | 177831649503 (+0.26%) | 766881792 (+0.88%) | 594264064 (-0.04%) | none |
 | Explicit-specialization return-type replay | 23/22 | 9/9 | out-of-class definition specifier-side owner lookup, specialization selection, binding reconstruction, and nested-location replay | ordinary resolved return type and canonical out-of-class owner results | clean | 4860/4860 | 177398555921 (-0.24%) | 770449408 (+0.47%) | 594251776 (-0.00%) | none |
 | Location-only nested class replay | 22/21 | 9/7 | two public location callbacks, token-location traversal, 810 route calls, and 74 duplicate/rejected class-use attempts | structured template-id, template-argument, and AST resolution results | clean | 4860/4860 | 177950357593 (+0.31%) | 766509056 (-0.51%) | 594440192 (+0.03%) | none |
+| Lookup-time alias-to-class recovery | 21/20 | 7/7 | post-lookup class extraction, source-token/argument recovery, selection/anchor reconstruction, and 88 rejected attempts | canonical class-template reference results created during type lookup | pending | pending | pending | pending | pending | pending |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
 fixed diagnostic checkpoint it is `+0.33%` instructions, `+0.83%` maximum RSS,

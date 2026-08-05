@@ -23,7 +23,6 @@ enum class WitnessProducerSite
   Unknown = 0,
 
   ClassCallsemantic01,
-  ClassCallsemantic02,
   ClassCallsemantic03,
   ClassCallsemantic05,
   ClassCallsemantic06,

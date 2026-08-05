@@ -7700,8 +7700,6 @@ private:
       }
       return TypePtr();
     };
-    const bool mentions_template_placeholders =
-        text_mentions_template_placeholders(scope, normalized_name);
     const bool mentions_current_specialization_names =
         text_mentions_current_specialization_names(scope, normalized_name);
     if(mentions_current_specialization_names) {
@@ -7711,319 +7709,8 @@ private:
         return current_specialization;
       }
     }
-    const auto note_resolved_alias_class_use =
-        [&](const TypePtr & type,
-            const vector<string> * explicit_arg_texts) -> void
-    {
-      if(mentions_template_placeholders ||
-         !witness::source_capture_enabled(template_witness_context())) {
-        return;
-      }
-      const std::string use_location =
-          !entry_use_location.empty() ? entry_use_location :
-                                        parser_trace::current_use_location();
-      if(use_location.empty()) {
-        return;
-      }
-      ClassInfo * info =
-          class_info_for_type(strip_top_level_cv(remove_reference_type(type)));
-      template_api::ClassTemplateUseInfo use;
-      if(!template_api::class_template_use_info_for_class(
-             *this, scope, info, use)) {
-        return;
-      }
-      if(use.dependent_arguments) {
-        return;
-      }
-
-      ClassTemplateDecl * class_template = use.origin;
-      const std::string qualified_template_name = use.template_name;
-      const std::string source_template_name = use.unqualified_name;
-      const std::string anchor_identifier =
-          !source_template_name.empty() ?
-              source_template_name :
-              qualified_template_name;
-      std::string exact_use_location;
-      if(const ExactTemplateTypeLookupAnchor * anchor =
-             current_exact_template_type_lookup_anchor()) {
-        if(exact_template_type_lookup_anchor_matches(*anchor, normalized_name) ||
-           exact_template_type_lookup_anchor_matches_identifier(*anchor,
-                                                                anchor_identifier)) {
-          exact_use_location = anchor->location;
-        }
-      }
-      if(exact_use_location.empty() && !use_location.empty() &&
-         !anchor_identifier.empty()) {
-        exact_use_location =
-            template_api::normalize_template_witness_source_location(
-                template_api::template_witness_detail::
-                    source_location_for_identifier_token_on_or_after(
-                    template_witness_context(),
-                    use_location,
-                    anchor_identifier,
-                    true,
-                    normalized_name.find('<') != std::string::npos));
-      }
-      const std::string chosen_use_location =
-          !exact_use_location.empty() ? exact_use_location :
-                                       use_location;
-      const bool source_spells_template =
-          !anchor_identifier.empty() &&
-          source_location_points_at_identifier(chosen_use_location,
-                                               anchor_identifier);
-      std::vector<std::string> recovered_source_arg_texts;
-      if(source_spells_template) {
-        std::size_t template_token = 0;
-        std::size_t open_token = 0;
-        std::vector<std::pair<std::size_t, std::size_t> > arg_ranges;
-        if(token_index_for_source_location(chosen_use_location,
-                                           anchor_identifier,
-                                           template_token) &&
-           find_next_token_source_on_same_line(template_token, "<", open_token) &&
-           template_argument_token_ranges_from_open(open_token, arg_ranges)) {
-          recovered_source_arg_texts.reserve(arg_ranges.size());
-          for(std::size_t i = 0; i < arg_ranges.size(); ++i) {
-            recovered_source_arg_texts.push_back(
-                compact_token_range_text(arg_ranges[i].first,
-                                         arg_ranges[i].second));
-          }
-        }
-      }
-      if(!scope_has_template_placeholders(scope) &&
-         scope_is_inside_source_template_context(scope) &&
-         (source_location_in_current_template_body_range(
-              chosen_use_location) ||
-          source_location_in_template_header_context(
-              chosen_use_location))) {
-        return;
-      }
-      const bool source_spells_lookup_alias =
-          is_identifier_text(normalized_name) &&
-          source_location_points_at_identifier(chosen_use_location,
-                                               normalized_name);
-      const std::string qualified_alias_identifier =
-          unqualified_member_name(
-              strip_trailing_top_level_template_arguments(normalized_name));
-      const std::string qualified_alias_start_location =
-          source_location_for_qualified_member_start_on_line(
-              use_location,
-              qualified_alias_identifier);
-      const bool source_spells_qualified_alias =
-          !qualified_alias_start_location.empty() &&
-          (!is_identifier_text(normalized_name) ||
-           qualified_alias_start_location != chosen_use_location);
-      if(source_spells_qualified_alias &&
-         !template_api::template_witness_source_type_lookup_active()) {
-        return;
-      }
-      if(!source_spells_template &&
-         !source_spells_lookup_alias &&
-         !source_spells_qualified_alias) {
-        return;
-      }
-      if(source_spells_lookup_alias &&
-         !source_spells_template &&
-         !source_spells_qualified_alias) {
-        return;
-      }
-      if(source_spells_lookup_alias &&
-         !source_spells_template &&
-         source_location_identifier_followed_by_indirection_type_suffix(
-             chosen_use_location,
-             normalized_name)) {
-        return;
-      }
-      std::vector<std::string> anchored_arg_texts;
-      const std::vector<std::string> * binding_arg_texts = explicit_arg_texts;
-      if(exact_template_type_lookup_anchor_arg_texts(normalized_name,
-                                                     anchor_identifier,
-                                                     anchored_arg_texts)) {
-        binding_arg_texts = &anchored_arg_texts;
-      }
-      if(source_spells_template) {
-        if(!recovered_source_arg_texts.empty()) {
-          if(template_argument_texts_mention_source_bindings(*this,
-                                                             scope,
-                                                             recovered_source_arg_texts) ||
-             template_argument_texts_mention_instantiated_class_local_type_aliases(
-                 scope,
-                 recovered_source_arg_texts) ||
-             template_argument_texts_mention_template_bound_scope_names(
-                 scope,
-                 recovered_source_arg_texts) ||
-             template_argument_texts_mention_enclosing_source_template_parameters(
-                 scope,
-                 recovered_source_arg_texts)) {
-            return;
-          }
-          if(recovered_source_arg_texts.size() == use.arguments->size()) {
-            binding_arg_texts = &recovered_source_arg_texts;
-          }
-        }
-      }
-      {
-        if(source_location_points_at_identifier(chosen_use_location,
-                                               anchor_identifier) &&
-           !binding_arg_texts &&
-           source_location_identifier_followed_by(chosen_use_location,
-                                                  anchor_identifier,
-                                                  '<')) {
-          return;
-        }
-      }
-
-      std::string selected_decl_location;
-      witness::TemplateWitnessSourceAnchorKind selected_decl_anchor_kind =
-          witness::TemplateWitnessSourceAnchorKind::None;
-      {
-        std::vector<const CppAstNode *> decl_candidates;
-        if(use.selection.kind == template_api::MS_PRIMARY) {
-          if(const CppAstNode * member_decl =
-                 find_member_class_template_declaration_node(use.origin)) {
-            decl_candidates.push_back(member_decl);
-          }
-          if(use.instance->template_output_node) {
-            decl_candidates.push_back(use.instance->template_output_node);
-          }
-          if(use.origin->class_node) {
-            decl_candidates.push_back(use.origin->class_node);
-          }
-          if(use.selection.class_node) {
-            decl_candidates.push_back(use.selection.class_node);
-          }
-        } else {
-          if(use.selection.class_node) {
-            decl_candidates.push_back(use.selection.class_node);
-          }
-          if(use.origin->class_node) {
-            decl_candidates.push_back(use.origin->class_node);
-          }
-          if(use.instance->template_output_node) {
-            decl_candidates.push_back(use.instance->template_output_node);
-          }
-        }
-        for(size_t i = 0; i < decl_candidates.size(); ++i) {
-          if(!decl_candidates[i]) {
-            continue;
-          }
-          selected_decl_location = source_location_for_name_in_node(
-              *decl_candidates[i],
-              class_template->name);
-          if(!selected_decl_location.empty()) {
-            selected_decl_anchor_kind =
-                witness::TemplateWitnessSourceAnchorKind::DeclarationName;
-          } else {
-            selected_decl_location = source_location_for_node(*decl_candidates[i]);
-            if(!selected_decl_location.empty()) {
-              selected_decl_anchor_kind =
-                  witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-            }
-          }
-          selected_decl_location =
-              template_api::normalize_template_witness_source_location(
-                  selected_decl_location);
-          if(!selected_decl_location.empty()) {
-            break;
-          }
-        }
-      }
-      if(!selected_decl_location.empty() &&
-         chosen_use_location == selected_decl_location) {
-        return;
-      }
-
-      witness::ClassUseEmitRequest request;
-      request.location =
-          source_spells_qualified_alias ?
-              qualified_alias_start_location :
-              chosen_use_location;
-      request.template_name = qualified_template_name;
-      request.selection = source_selection_kind_for_match_kind(use.selection.kind);
-      witness::set_selected_decl_anchor(request.selected_decl_location,
-                                        request.selected_decl_anchor,
-                                        selected_decl_location,
-                                        selected_decl_anchor_kind);
-      {
-        const std::string source_template_name =
-            unqualified_member_name(qualified_template_name);
-        const std::string anchor_identifier =
-            !source_template_name.empty() ?
-                source_template_name :
-                qualified_template_name;
-        if(source_spells_template) {
-          request.use_anchor_present = true;
-          request.use_anchor_location = chosen_use_location;
-        }
-      }
-      if(binding_arg_texts) {
-        template_api::append_template_witness_source_bindings(
-            *this,
-            request.bindings,
-            *use.parameters,
-            *use.arguments,
-            *binding_arg_texts,
-            "explicit",
-            "defaulted");
-      } else {
-        const std::string source_template_name =
-            unqualified_member_name(qualified_template_name);
-        if(source_spells_template) {
-          return;
-        }
-        template_api::append_template_witness_source_bindings(
-            *this,
-            request.bindings,
-            *use.parameters,
-            *use.arguments,
-            "deduced");
-      }
-      if(use.selection.parameters && use.selection.parameters != use.parameters) {
-        template_api::append_template_witness_source_bindings(
-            *this,
-            request.specialization_bindings,
-            *use.selection.parameters,
-            use.selection.arguments,
-            "deduced");
-      }
-      request.ownership = witness::SourceUseOwnership::SourceOwned;
-      CPPGM_SET_WITNESS_PRODUCER(
-          request,
-          witness::WitnessProducerSite::ClassCallsemantic02);
-      witness::emit_class_use(request);
-    };
-    const auto note_exact_local_class_use = [&](const TypePtr & type) -> void
-    {
-      if(!witness::source_capture_enabled(template_witness_context())) {
-        return;
-      }
-      vector<string> anchored_arg_texts;
-      const ExactTemplateTypeLookupAnchor * anchor =
-          current_exact_template_type_lookup_anchor();
-      if(anchor &&
-         anchor->has_argument_list &&
-         exact_template_type_lookup_anchor_matches(*anchor, normalized_name)) {
-        anchored_arg_texts = exact_template_type_lookup_anchor_texts(*anchor);
-        for(size_t i = 0; i < anchored_arg_texts.size(); ++i) {
-          if(text_mentions_template_placeholders(scope, anchored_arg_texts[i])) {
-            return;
-          }
-        }
-        note_resolved_alias_class_use(type, &anchored_arg_texts);
-        return;
-      }
-      const std::string use_location =
-          !entry_use_location.empty() ? entry_use_location :
-                                        parser_trace::current_use_location();
-      if(is_identifier_text(normalized_name) &&
-         (!source_location_points_at_identifier(use_location, normalized_name) ||
-          source_location_identifier_followed_by(use_location, normalized_name, '('))) {
-        return;
-      }
-      note_resolved_alias_class_use(type, nullptr);
-    };
     TypePtr exact_local = lookup_exact_local_type_name(scope, normalized_name);
     if(exact_local) {
-      note_exact_local_class_use(exact_local);
       return exact_local;
     }
     TypePtr exact_bound = lookup_exact_bound_type_name(scope, normalized_name);
@@ -8341,13 +8028,6 @@ private:
     if(is_identifier_text(normalized_name)) {
       TypePtr lexical_type = lookup_unqualified_type();
       if(lexical_type) {
-        if(witness::source_capture_enabled(template_witness_context())) {
-          const std::string use_location = parser_trace::current_use_location();
-          if(source_location_points_at_identifier(use_location, normalized_name) &&
-             !source_location_identifier_followed_by(use_location, normalized_name, '(')) {
-            note_resolved_alias_class_use(lexical_type, nullptr);
-          }
-        }
         return lexical_type;
       }
     }
@@ -9379,9 +9059,6 @@ private:
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
       if(direct_qualified) {
-        if(current->namespace_scope || current->class_info) {
-          note_resolved_alias_class_use(direct_qualified, nullptr);
-        }
         return cache_qualified_type_result(direct_qualified);
       }
       if(current->class_info) {
@@ -9408,7 +9085,6 @@ private:
           parser_trace::note("template.resolve", std::string(), trace.str());
         }
         if(member.type) {
-          note_resolved_alias_class_use(member.type, nullptr);
           return cache_qualified_type_result(member.type);
         }
         if((current->class_info->reference_member_collection_in_progress ||
@@ -9425,7 +9101,6 @@ private:
           ensure_class_reference_members(*current->class_info);
           member = lookup_member_type(*this, *current->class_info, qualified.name, true, &scope);
           if(member.type) {
-            note_resolved_alias_class_use(member.type, nullptr);
             return cache_qualified_type_result(member.type);
           }
         }
@@ -9444,12 +9119,10 @@ private:
                                                                qualified_member_arg_syntaxes,
                                                                qualified_member_template_id_syntax);
             if(direct_qualified) {
-              note_resolved_alias_class_use(direct_qualified, nullptr);
               return cache_qualified_type_result(direct_qualified);
             }
             member = lookup_member_type(*this, *completed, qualified.name, true, &scope);
             if(member.type) {
-              note_resolved_alias_class_use(member.type, nullptr);
               return cache_qualified_type_result(member.type);
             }
           }
