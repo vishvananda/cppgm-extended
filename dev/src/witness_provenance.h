@@ -30,7 +30,6 @@ enum class WitnessProducerSite
   ClassCallsemantic06,
   ClassCallsemantic07,
   ClassCallsemantic08,
-  ClassCallsemantic09,
   ClassCallsemantic10,
   ClassCallsemantic11,
   ClassCallsemantic12,

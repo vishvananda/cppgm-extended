@@ -87,7 +87,7 @@ Sites not exercised by the existing strict witness references are tracked
 until they are reached by an earliest-owning-PA reducer or removed as proven
 dead/redundant code:
 
-- class: `callsemantic.01`, `.03`, `.05`, `.09`,
+- class: `callsemantic.01`, `.03`, `.05`,
   `class_template_reference.01`, `constant_value_lookup.04`, `.05`, and
   `template_declaration_collector`;
 - alias: `template_specialization.01`, `.02`, and `callsemantic.01`;
@@ -100,3 +100,4 @@ dead/redundant code:
 | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- |
 | Parent | 24/24 | 9/9 | none | none | clean | clean | 177731452181 | 768765952 | 593932288 | none |
 | Diagnostic provenance | 24/24 | 9/9 | none | none | clean | 4860/4860 | 177466053572 | 760369152 | 593911808 | none |
+| Dead dependent-partial resolver | 24/23 | 9/9 | uncalled `record_dependent_partial_class_use_for_resolved_template_id` | live selected class-reference resolution | clean | 4860/4860 | pending | pending | pending | none |
