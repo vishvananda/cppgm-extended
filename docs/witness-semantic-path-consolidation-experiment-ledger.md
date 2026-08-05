@@ -144,6 +144,14 @@ limits.
 
 ## Rejected slices
 
+- `d08a92a05` removed the eager pre-analysis walk that re-ran `declval`
+  analysis on the callee and every call argument. Strict direct comparison and
+  the full `4860/4860` report passed. Median instructions (`+0.01%`) and
+  footprint (`-0.01%`) passed, but maximum RSS was `766099456`, or `+2.04%`
+  against the rolling checkpoint. The candidate was not promoted or rerun and
+  was explicitly reverted by `ae3c37ca0`. The report is
+  `/tmp/cppgm-witness-consolidation-candidate-eager-child-declval-replay-3run.json`.
+
 - `de9ad2152` removed the dormant class-use reconstruction from the
   base-clause replay (`17 -> 16` sites). Strict direct comparison and the full
   `4860/4860` report passed. Its three-run medians also passed the rolling
