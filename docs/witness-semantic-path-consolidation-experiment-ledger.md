@@ -100,6 +100,7 @@ dead/redundant code:
 | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- |
 | Parent | 24/24 | 9/9 | none | none | clean | clean | 177731452181 | 768765952 | 593932288 | none |
 | Diagnostic provenance | 24/24 | 9/9 | none | none | clean | 4860/4860 | 177466053572 | 760369152 | 593911808 | none |
+| Overload owner reconstruction | 24/23 | 9/9 | overload-side instantiated class owner lookup, anchor recovery, and binding reconstruction | selected class-reference result | clean | 4860/4860 | pending | pending | pending | none |
 
 ## Rejected slices
 

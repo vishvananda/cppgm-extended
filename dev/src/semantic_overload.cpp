@@ -34,7 +34,6 @@
 #include "semantic_metrics.h"
 #include "semantic_output.h"
 #include "semantic_scope_mutation.h"
-#include "semantic_template_class.h"
 #include "semantic_template_function.h"
 #include "semantic_trace.h"
 #include "semantic_utils.h"
@@ -1839,27 +1838,6 @@ void append_unmaterialized_copy_move_constructor_arity_drop(
                                                "too_many_arguments");
 }
 
-void note_owner_class_use_source_event(SemanticContext & ctx,
-                                       const std::string & use_location,
-                                       const FunctionBinding * chosen)
-{
-  if(!template_witness_source_capture_enabled_for_calls(ctx) ||
-     !chosen ||
-     chosen->is_constructor ||
-     !chosen->owner_class ||
-     !chosen->owner_class->source_template ||
-     chosen->owner_class->instantiation_arguments.empty()) {
-    return;
-  }
-
-  const ClassInfo & owner = *chosen->owner_class;
-  semantic_template_class::emit_instantiated_class_template_use_source(
-      ctx,
-      owner,
-      use_location,
-      witness::SourceUseRole::QualifierUse);
-}
-
 void append_template_function_candidate_drop(
     SemanticContext & ctx,
     const FunctionTemplateDecl * decl,
@@ -2770,10 +2748,6 @@ void note_function_call_source_event(
   }
 
   const bool template_related = chosen->source_template != nullptr;
-  const bool owner_template_related =
-      chosen->owner_class != nullptr &&
-      chosen->owner_class->source_template != nullptr &&
-      !chosen->owner_class->instantiation_arguments.empty();
   if(witness::template_witness_source_type_lookup_active()) {
     trace_return("type-lookup-active");
     return;
@@ -2973,9 +2947,6 @@ void note_function_call_source_event(
      (chosen->is_constexpr ||
       !source_location_in_template_body_range(ctx, public_location))) {
     chosen->template_definition_required_by_public_source_call = true;
-  }
-  if(owner_template_related) {
-    note_owner_class_use_source_event(ctx, public_location, chosen);
   }
   if(!template_related) {
     return;

@@ -12,12 +12,6 @@ class SemanticContext;
 
 namespace semantic_template_class {
 
-void emit_instantiated_class_template_use_source(
-    SemanticContext & ctx,
-    const semantic_model::ClassInfo & info,
-    const std::string & use_location,
-    witness::SourceUseRole role = witness::SourceUseRole::TypeUse);
-
 void append_base_clause_template_value_dependencies(
     SemanticContext & ctx,
     semantic_model::Scope & scope,
