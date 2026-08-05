@@ -141,7 +141,6 @@ limits.
 | Slice | Kind/sites before/after | Semantic route removed | Responsibility moved to | Strict | Full report | Instructions | Max RSS | Footprint |
 | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: |
 | Duplicate `declval` analyzer | function call 4/3 | callsemantic-side recognition, type resolution, expression construction, and function-call emission | canonical overload-expression analyzer and its selected-call result | clean | 4860/4860 | 176724057359 (-0.24%) | 750813184 (-1.90%) | 590462976 (-0.01%) |
-| Eager child-`declval` replay | function call 3/3 | pre-analysis callee/argument walk and repeated child expression construction solely for witness capture | ordinary recursive argument expression analysis | pending | pending | pending | pending | pending |
 
 ## Rejected slices
 
