@@ -92,6 +92,9 @@ reparse source text or perform a second lookup.
    batch. Fail the candidate when the confirmation batch also reaches or
    exceeds 3%. Wall time is informational and never a gate.
 8. Investigate a performance failure before reverting the semantic change.
+   A failed measurement rejects the current implementation, while the semantic
+   consolidation remains viable if an in-scope change removes the added work
+   or memory.
    Use the recorded counters, allocation diagnostics, profiles, and executable
    layout to locate added work or memory. Amend the candidate when an in-scope
    correction exists, then rerun correctness and measure the changed commit.
@@ -555,9 +558,10 @@ user, system, and cycle time remain informational.
 
 After a hard failure or confirmed RSS failure, inspect the semantic work,
 allocation behavior, counters, profiles, and executable layout before deciding
-the slice cannot ship. A targeted amendment creates a changed candidate and
-may receive a fresh correctness and performance run. Do not repeat the same
-commit. Revert when the measured cost has no maintainable in-scope fix.
+the slice cannot ship. Keep the consolidation when a targeted, maintainable
+amendment removes the regression and the changed candidate clears correctness
+and performance validation. Do not repeat the same commit. Revert when the
+measured cost has no maintainable in-scope fix.
 
 Do not promote the candidate yet.
 

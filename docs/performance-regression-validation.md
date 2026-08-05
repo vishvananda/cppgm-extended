@@ -70,6 +70,8 @@ automatic RSS confirmation then collects three more runs. Do not start an
 extra batch after that confirmation.
 
 A failed hard gate or confirmed RSS warning starts a regression investigation.
+The failure rejects the measured implementation; an in-scope correction may
+preserve the underlying change.
 Check the changed semantic work, allocation counts, executable layout, and the
 other recorded counters before reverting the change. Amend the candidate when
 an in-scope correction removes the cost, then validate and measure that changed
