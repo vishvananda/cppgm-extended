@@ -152,8 +152,8 @@ dead/redundant code:
 | Declaration resolved-type replay | 15/15 | 6/5 | declaration-type replay route and its semantic-context plumbing | retained function-result replay for functional-cast occurrence metadata | clean | 4860/4860 | 176930812572 (-0.02%) | 761339904 (-0.17%) | 589987840 (-0.09%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.25%` instructions, `+0.15%` maximum RSS,
-and `-0.76%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.37%` instructions, `-0.38%` maximum RSS,
+and `-0.71%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -162,17 +162,9 @@ and `-0.76%` footprint, so it also clears the final fixed-baseline gates.
 | Duplicate `declval` analyzer | function call 4/3 | callsemantic-side recognition, type resolution, expression construction, and function-call emission | canonical overload-expression analyzer and its selected-call result | clean | 4860/4860 | 176724057359 (-0.24%) | 750813184 (-1.90%) | 590462976 (-0.01%) |
 | Recursive nested-alias replay | alias use 7/6 | nested template-id traversal, alias lookup, argument resolution, source reconstruction, and 34 colliding attempts | canonical direct alias producer and callsemantic alias path | clean | 4860/4860 | 177114959852 (+0.36%) | 761901056 (+0.30%) | 590557184 (+0.00%) |
 | Base-clause alias replay | alias use 6/5 | base-clause alias reconstruction, its unused emission-origin branch, and its provenance entry | canonical alias-reference producers reached during base-clause resolution | clean | 4860/4860 | 176968071900 (-0.08%) | 768757760 (+0.90%) | 590872576 (+0.05%) |
+| Text-backed partial-match alias replay | alias use 5/4 | post-deduction syntax walk, alias lookup, source-argument recovery, and text-only pack-binding reconstruction | structured alias-template-id expansion and ordinary resolved alias uses | clean | 4860/4860 | 176707655948 (-0.13%) | 757301248 (-0.53%) | 590295040 (+0.05%) |
 
 ## Rejected slices
-
-- `eb04f2226` removed the post-deduction text-backed alias-pattern replay and
-  its separate pack-binding reconstruction helper (`7 -> 6` alias sites).
-  Strict direct comparison and the full `4860/4860` report passed. Median
-  instructions (`+0.12%`) and footprint (`-0.03%`) passed, but maximum RSS
-  was `768585728`: `+2.37%` against rolling and about `+1.11%` against the
-  fixed diagnostic baseline. The candidate was not promoted or rerun and was
-  explicitly reverted by `6b9d1906e`. The report is
-  `/tmp/cppgm-witness-consolidation-candidate-text-backed-alias-pattern-replay-3run.json`.
 
 - `d08a92a05` removed the eager pre-analysis walk that re-ran `declval`
   analysis on the callee and every call argument. Strict direct comparison and
