@@ -138,6 +138,15 @@ limits.
 
 ## Rejected slices
 
+- `de9ad2152` removed the dormant class-use reconstruction from the
+  base-clause replay (`17 -> 16` sites). Strict direct comparison and the full
+  `4860/4860` report passed. Its three-run medians also passed the rolling
+  checkpoint (`-0.18%` instructions, `+0.43%` RSS, and `-0.05%` footprint),
+  but maximum RSS was `768667648`, or `+1.12%` against the fixed diagnostic
+  baseline. That exceeds the final 1% RSS limit, so the candidate was not
+  promoted or rerun and was explicitly reverted by `50eb2232f`. The report is
+  `/tmp/cppgm-witness-consolidation-candidate-class-base-clause-reconstruction-3run.json`.
+
 - `0f6adcf8f` removed the uncalled dependent-partial class-use resolver
   (`24 -> 23` sites). Strict direct comparison and the full `4860/4860`
   report passed, but the single candidate run regressed instructions by 0.15%
