@@ -152,8 +152,8 @@ dead/redundant code:
 | Declaration resolved-type replay | 15/15 | 6/5 | declaration-type replay route and its semantic-context plumbing | retained function-result replay for functional-cast occurrence metadata | clean | 4860/4860 | 176930812572 (-0.02%) | 761339904 (-0.17%) | 589987840 (-0.09%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.37%` instructions, `-0.38%` maximum RSS,
-and `-0.71%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.38%` instructions, `+0.14%` maximum RSS,
+and `-0.72%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -163,16 +163,9 @@ and `-0.71%` footprint, so it also clears the final fixed-baseline gates.
 | Recursive nested-alias replay | alias use 7/6 | nested template-id traversal, alias lookup, argument resolution, source reconstruction, and 34 colliding attempts | canonical direct alias producer and callsemantic alias path | clean | 4860/4860 | 177114959852 (+0.36%) | 761901056 (+0.30%) | 590557184 (+0.00%) |
 | Base-clause alias replay | alias use 6/5 | base-clause alias reconstruction, its unused emission-origin branch, and its provenance entry | canonical alias-reference producers reached during base-clause resolution | clean | 4860/4860 | 176968071900 (-0.08%) | 768757760 (+0.90%) | 590872576 (+0.05%) |
 | Text-backed partial-match alias replay | alias use 5/4 | post-deduction syntax walk, alias lookup, source-argument recovery, and text-only pack-binding reconstruction | structured alias-template-id expansion and ordinary resolved alias uses | clean | 4860/4860 | 176707655948 (-0.13%) | 757301248 (-0.53%) | 590295040 (+0.05%) |
+| Eager child-`declval` replay | function call 3/3 | pre-analysis callee and argument walk plus repeated child expression construction solely for witness capture | ordinary recursive argument expression analysis | clean | 4860/4860 | 176703697462 (-0.00%) | 761233408 (+0.52%) | 590262272 (-0.01%) |
 
 ## Rejected slices
-
-- `d08a92a05` removed the eager pre-analysis walk that re-ran `declval`
-  analysis on the callee and every call argument. Strict direct comparison and
-  the full `4860/4860` report passed. Median instructions (`+0.01%`) and
-  footprint (`-0.01%`) passed, but maximum RSS was `766099456`, or `+2.04%`
-  against the rolling checkpoint. The candidate was not promoted or rerun and
-  was explicitly reverted by `ae3c37ca0`. The report is
-  `/tmp/cppgm-witness-consolidation-candidate-eager-child-declval-replay-3run.json`.
 
 - `de9ad2152` removed the dormant class-use reconstruction from the
   base-clause replay (`17 -> 16` sites). Strict direct comparison and the full
