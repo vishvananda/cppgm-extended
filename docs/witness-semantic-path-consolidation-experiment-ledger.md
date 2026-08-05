@@ -155,6 +155,18 @@ limits.
 
 ## Rejected slices
 
+- `8bf3403ba` removed the base-clause alias replay and its emission-origin
+  branch (`7 -> 6` alias sites). Nested alias and class argument events stayed
+  on their existing paths. The removed producer made no strict-corpus emission
+  attempt, and the canonical alias-reference producers owned the visible
+  uses. Strict direct comparison and the full `4860/4860` report passed.
+  Median instructions (`176722855806`, `-0.00%`) and footprint (`589901824`,
+  `-0.10%`) passed the rolling gate, but maximum RSS (`765083648`, `+1.90%`)
+  failed its 1% limit. The fixed diagnostic comparison passed at `-0.36%`
+  instructions, `+0.65%` RSS, and `-0.78%` footprint. `d16b8a1a3` reverted the
+  candidate. The report is
+  `/tmp/cppgm-witness-consolidation-candidate-base-clause-alias-replay-3run.json`.
+
 - `b15424b2b` removed the lookup-time concrete class-use replay while keeping
   its parser-trace path (`17 -> 16` class sites). The canonical class-template
   reference path already owned the strict witness output; this replay made no
