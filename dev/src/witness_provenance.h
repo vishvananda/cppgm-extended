@@ -37,7 +37,6 @@ enum class WitnessProducerSite
   ClassConstantValueLookup03,
   ClassConstantValueLookup04,
   ClassConstantValueLookup05,
-  ClassTemplateDeclarationCollector,
   ClassTemplateInstantiation,
 
   AliasTemplateArgumentSemantics01,

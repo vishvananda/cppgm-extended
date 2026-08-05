@@ -440,8 +440,6 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(ClassConstantValueLookup03, "class.constant_value_lookup.03");
   CPPGM_PRODUCER_NAME(ClassConstantValueLookup04, "class.constant_value_lookup.04");
   CPPGM_PRODUCER_NAME(ClassConstantValueLookup05, "class.constant_value_lookup.05");
-  CPPGM_PRODUCER_NAME(ClassTemplateDeclarationCollector,
-                      "class.template_declaration_collector");
   CPPGM_PRODUCER_NAME(ClassTemplateInstantiation, "class.template_instantiation");
   CPPGM_PRODUCER_NAME(AliasTemplateArgumentSemantics01,
                       "alias.template_argument_semantics.01");
