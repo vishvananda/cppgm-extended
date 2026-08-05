@@ -74,6 +74,13 @@ exact duplicates. The semantic-template-class qualifier producer inserted 262
 rows, but no row reached visible output; all 262 were removed during renderer
 canonicalization.
 
+After accepting the overload-owner removal, the refreshed strict trace is
+`/tmp/cppgm-witness-provenance-overload-owner.8374ZI` and its report is
+`/tmp/cppgm-witness-provenance-overload-owner-report.json`. All 1,305 strict
+comparisons remained clean. The deleted producer is absent, provenance records
+fell from 118,957 to 118,158, and renderer canonicalization removals fell from
+394 to 132; the exact 262-row reduction belongs to the removed producer.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -109,7 +116,12 @@ dead/redundant code:
 | Diagnostic provenance, historical one-run | 24/24 | 9/9 | none | none | clean | 4860/4860 | 177466053572 | 760369152 | 593911808 | none |
 | Diagnostic provenance, revised baseline | 24/24 | 9/9 | none | none | clean | 4860/4860 | 177369144531 | 760176640 | 594513920 | none |
 | Overload owner reconstruction | 24/23 | 9/9 | overload-side instantiated class owner lookup, anchor recovery, and binding reconstruction | selected class-reference result | clean | 4860/4860 | 177831649503 (+0.26%) | 766881792 (+0.88%) | 594264064 (-0.04%) | none |
-| Explicit-specialization return-type replay | 23/22 | 9/9 | out-of-class definition specifier-side owner lookup, specialization selection, binding reconstruction, and nested-location replay | ordinary resolved return type and canonical out-of-class owner results | pending | pending | pending | pending | pending | pending |
+| Explicit-specialization return-type replay | 23/22 | 9/9 | out-of-class definition specifier-side owner lookup, specialization selection, binding reconstruction, and nested-location replay | ordinary resolved return type and canonical out-of-class owner results | clean | 4860/4860 | 177398555921 (-0.24%) | 770449408 (+0.47%) | 594251776 (-0.00%) | none |
+
+The current promoted checkpoint is within every rolling gate. Relative to the
+fixed diagnostic checkpoint it is `+0.02%` instructions, `+1.35%` maximum RSS,
+and `-0.04%` footprint. Later slices must recover at least `0.35%` RSS for the
+final fixed-baseline gate.
 
 ## Rejected slices
 
