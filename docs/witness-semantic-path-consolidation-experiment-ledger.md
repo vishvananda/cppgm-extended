@@ -155,6 +155,19 @@ limits.
 
 ## Rejected slices
 
+- `20f8a84f9` removed the declaration-type replay route and limited the generic
+  resolved-type replay to the current function result (`6 -> 5` upstream
+  routes). The retained result-type case supplies the occurrence metadata for
+  functional casts that match the enclosing function return type. Strict
+  direct comparison and the full `4860/4860` report passed. Median instructions
+  (`176973479241`, `+0.14%`) and footprint (`590548992`, `+0.01%`) passed the
+  rolling gate, but maximum RSS (`764096512`, `+1.77%`) failed its 1% limit.
+  The same measurements passed the fixed diagnostic limits at `-0.22%`
+  instructions, `+0.52%` RSS, and `-0.67%` footprint. The rolling failure kept
+  the candidate out of the promoted checkpoint; `0ec846e4b` reverted it. The
+  report is
+  `/tmp/cppgm-witness-consolidation-candidate-resolved-type-replay-narrowing-3run.json`.
+
 - `eb04f2226` removed the post-deduction text-backed alias-pattern replay and
   its separate pack-binding reconstruction helper (`7 -> 6` alias sites).
   Strict direct comparison and the full `4860/4860` report passed. Median
