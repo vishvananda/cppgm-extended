@@ -424,7 +424,8 @@ RULES: tuple[FeatureRule, ...] = (
         "support.bodyless_placeholder_return",
         (
             rx(
-                r"\bauto\s+[A-Za-z_][A-Za-z0-9_:]*\s*\([^;{}]*\)\s*"
+                r"\bauto\s+[A-Za-z_][A-Za-z0-9_:]*\s*"
+                r"\((?:(?!->)[^;{}])*\)\s*"
                 r"(?:(?:const|volatile|noexcept|override|final)\s*)*"
                 r"(?:=\s*(?:delete|default)\s*)?;"
             ),

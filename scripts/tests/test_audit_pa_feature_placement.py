@@ -140,6 +140,9 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         declaration = "auto inspect(int);\n"
         definition = "auto inspect(int value) { return value; }\n"
         trailing = "auto inspect(int value) -> int;\n"
+        nested_trailing = (
+            "auto sequence_begin(T & value) -> decltype(value.begin());\n"
+        )
 
         self.assertIn(
             "support.bodyless_placeholder_return",
@@ -156,6 +159,10 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         self.assertNotIn(
             "support.bodyless_placeholder_return",
             audit.detect_features(trailing),
+        )
+        self.assertNotIn(
+            "support.bodyless_placeholder_return",
+            audit.detect_features(nested_trailing),
         )
 
     def test_operator_detector_requires_an_operator_function_id(self) -> None:
