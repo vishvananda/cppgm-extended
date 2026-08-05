@@ -155,6 +155,17 @@ limits.
 
 ## Rejected slices
 
+- `b15424b2b` removed the lookup-time concrete class-use replay while keeping
+  its parser-trace path (`17 -> 16` class sites). The canonical class-template
+  reference path already owned the strict witness output; this replay made no
+  strict-corpus emission attempt. Strict direct comparison and the full
+  `4860/4860` report passed. Median instructions (`176919787035`, `+0.11%`) and
+  footprint (`590544896`, `+0.01%`) passed the rolling gate, but maximum RSS
+  (`769101824`, `+2.44%`) failed its 1% limit. The fixed diagnostic comparison
+  also failed on RSS at about `+1.17%`; instructions were `-0.25%` and
+  footprint was `-0.67%`. `0ccd1b655` reverted the candidate. The report is
+  `/tmp/cppgm-witness-consolidation-candidate-lookup-time-class-use-replay-3run.json`.
+
 - `20f8a84f9` removed the declaration-type replay route and limited the generic
   resolved-type replay to the current function result (`6 -> 5` upstream
   routes). The retained result-type case supplies the occurrence metadata for
