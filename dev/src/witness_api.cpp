@@ -166,6 +166,7 @@ ClassUseSourceDecision class_use_source_decision_from_request(
     const ClassUseEmitRequest & request)
 {
   ClassUseSourceDecision decision;
+  CPPGM_SET_WITNESS_PRODUCER(decision, request.producer_site);
   decision.location = request.location;
   if(request.use_anchor_present && !request.use_anchor_location.empty()) {
     decision.use_anchor.location = request.use_anchor_location;
@@ -182,6 +183,7 @@ ClassUseSourceDecision class_use_source_decision_from_request(
 }
 
 void record_class_use_source_use_in_table(
+    CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
     semantic_source_use::SemanticSourceUseTable * table,
     const ClassUseSourceDecision & decision,
     SourceUseOwnership ownership,
@@ -190,9 +192,20 @@ void record_class_use_source_use_in_table(
   if(table == nullptr) {
     return;
   }
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  const semantic_source_use::SemanticSourceUse use =
+      make_class_use_source_use(decision, ownership, role);
+  const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
+      session,
+      table,
+      decision.producer_site,
+      use);
+  semantic_source_use::record_source_use(*table, use);
+#else
   semantic_source_use::record_source_use(
       *table,
       make_class_use_source_use(decision, ownership, role));
+#endif
 }
 
 semantic_source_use::SourceBinding source_binding_from_event(
@@ -289,15 +302,27 @@ semantic_source_use::SemanticSourceUse make_function_call_source_use(
 }
 
 void record_function_call_source_use_in_table(
+    CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
     semantic_source_use::SemanticSourceUseTable * table,
     const FunctionCallSourceDecision & decision)
 {
   if(table == nullptr) {
     return;
   }
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  const semantic_source_use::SemanticSourceUse use =
+      make_function_call_source_use(decision);
+  const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
+      session,
+      table,
+      decision.producer_site,
+      use);
+  semantic_source_use::record_source_use(*table, use);
+#else
   semantic_source_use::record_source_use(
       *table,
       make_function_call_source_use(decision));
+#endif
 }
 
 SourceUseOwnership alias_use_ownership_for_origin(AliasUseEmissionOrigin origin)
@@ -345,15 +370,27 @@ semantic_source_use::SemanticSourceUse make_alias_use_source_use(
 }
 
 void record_alias_use_source_use_in_table(
+    CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
     semantic_source_use::SemanticSourceUseTable * table,
     const AliasUseSourceDecision & decision)
 {
   if(table == nullptr) {
     return;
   }
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  const semantic_source_use::SemanticSourceUse use =
+      make_alias_use_source_use(decision);
+  const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
+      session,
+      table,
+      decision.producer_site,
+      use);
+  semantic_source_use::record_source_use(*table, use);
+#else
   semantic_source_use::record_source_use(
       *table,
       make_alias_use_source_use(decision));
+#endif
 }
 
 semantic_source_use::SemanticSourceUse make_variable_use_source_use(
@@ -389,6 +426,7 @@ semantic_source_use::SemanticSourceUse make_variable_use_source_use(
 }
 
 void record_variable_use_source_use_in_table(
+    CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
     semantic_source_use::SemanticSourceUseTable * table,
     const VariableUseSourceDecision & decision,
     VariableUseMergePolicy merge_policy)
@@ -398,6 +436,13 @@ void record_variable_use_source_use_in_table(
   }
   const semantic_source_use::SemanticSourceUse use =
       make_variable_use_source_use(decision);
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
+      session,
+      table,
+      decision.producer_site,
+      use);
+#endif
   if(merge_policy == VariableUseMergePolicy::ReplaceEquivalentSourceUse) {
     for(std::size_t i = 0; i < table->uses.size(); ++i) {
       semantic_source_use::SemanticSourceUse & existing = table->uses[i];
@@ -546,7 +591,9 @@ void emit_class_use(const TemplateWitnessContext & ctx,
   if(table == nullptr && ctx.session != nullptr) {
     table = &ctx.session->source_use_table;
   }
-  record_class_use_source_use_in_table(table,
+  record_class_use_source_use_in_table(
+                                       CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session)
+                                       table,
                                        decision,
                                        request.ownership,
                                        request.role);
@@ -587,7 +634,13 @@ void emit_class_use_decision(
   if(table == nullptr) {
     return;
   }
-  record_class_use_source_use_in_table(table, decision, ownership, role);
+  record_class_use_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(
+          template_api::current_template_witness_session())
+      table,
+      decision,
+      ownership,
+      role);
   if(ownership == SourceUseOwnership::SourceOwned) {
     note_source_owned_class_use_source_decision(decision);
   } else {
@@ -616,7 +669,13 @@ void record_class_use_source_use(
          decision.location)) {
     return;
   }
-  record_class_use_source_use_in_table(table, decision, ownership, role);
+  record_class_use_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(
+          template_api::current_template_witness_session())
+      table,
+      decision,
+      ownership,
+      role);
 }
 
 void record_source_owned_class_use_source_use(
@@ -640,6 +699,8 @@ void record_source_owned_class_use_source_use(
     return;
   }
   record_class_use_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(
+          template_api::current_template_witness_session())
       table,
       decision,
       semantic_source_use::SourceUseOwnership::SourceOwned,
@@ -665,6 +726,7 @@ void record_source_owned_class_use_source_use(
     return;
   }
   record_class_use_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session)
       table,
       decision,
       semantic_source_use::SourceUseOwnership::SourceOwned,
@@ -684,7 +746,11 @@ void record_function_call_source_use(
          decision.location)) {
     return;
   }
-  record_function_call_source_use_in_table(table, decision);
+  record_function_call_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(
+          template_api::current_template_witness_session())
+      table,
+      decision);
 }
 
 void emit_function_call(const TemplateWitnessContext & ctx,
@@ -703,7 +769,8 @@ void emit_function_call(const TemplateWitnessContext & ctx,
   if(table == nullptr && ctx.session != nullptr) {
     table = &ctx.session->source_use_table;
   }
-  record_function_call_source_use_in_table(table, decision);
+  record_function_call_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, decision);
   note_function_call_source_decision(decision);
 }
 
@@ -735,7 +802,11 @@ void record_alias_use_source_use(
          decision.location)) {
     return;
   }
-  record_alias_use_source_use_in_table(table, decision);
+  record_alias_use_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(
+          template_api::current_template_witness_session())
+      table,
+      decision);
 }
 
 void record_alias_use_source_use(
@@ -752,7 +823,8 @@ void record_alias_use_source_use(
   if(table == nullptr && ctx.session != nullptr) {
     table = &ctx.session->source_use_table;
   }
-  record_alias_use_source_use_in_table(table, decision);
+  record_alias_use_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, decision);
 }
 
 void emit_alias_use(const TemplateWitnessContext & ctx,
@@ -768,6 +840,7 @@ void emit_alias_use(const TemplateWitnessContext & ctx,
     return;
   }
   AliasUseSourceDecision decision;
+  CPPGM_SET_WITNESS_PRODUCER(decision, request.producer_site);
   set_use_anchor(decision.location,
                  decision.use_anchor,
                  request.use_location);
@@ -789,7 +862,8 @@ void emit_alias_use(const TemplateWitnessContext & ctx,
   if(table == nullptr && ctx.session != nullptr) {
     table = &ctx.session->source_use_table;
   }
-  record_alias_use_source_use_in_table(table, decision);
+  record_alias_use_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, decision);
   note_alias_use_source_decision(decision);
 }
 
@@ -807,6 +881,8 @@ void record_variable_use_source_use(
     return;
   }
   record_variable_use_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(
+          template_api::current_template_witness_session())
       table,
       decision,
       VariableUseMergePolicy::AppendIfNew);
@@ -825,6 +901,7 @@ void emit_variable_use(const VariableUseEmitRequest & request)
     return;
   }
   VariableUseSourceDecision decision;
+  CPPGM_SET_WITNESS_PRODUCER(decision, request.producer_site);
   decision.location = request.use_location;
   if(!request.use_anchor_identifier.empty()) {
     set_use_anchor_if_at_identifier(decision.location,
@@ -845,7 +922,12 @@ void emit_variable_use(const VariableUseEmitRequest & request)
   decision.specialization_bindings = request.specialization_bindings;
   semantic_source_use::SemanticSourceUseTable * table =
       template_api::current_semantic_source_use_table();
-  record_variable_use_source_use_in_table(table, decision, request.merge_policy);
+  record_variable_use_source_use_in_table(
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(
+          template_api::current_template_witness_session())
+      table,
+      decision,
+      request.merge_policy);
   note_variable_use_source_decision(decision);
 }
 

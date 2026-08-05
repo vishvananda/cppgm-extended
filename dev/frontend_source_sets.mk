@@ -70,7 +70,7 @@ FRONTEND_OBJ_BASENAMES_recog := \
 	text_intern \
 	types
 
-# nsdecl: 84 shared object(s)
+# nsdecl: 85 shared object(s)
 FRONTEND_OBJ_BASENAMES_nsdecl := \
 	abi_mangle \
 	calculator \
@@ -161,10 +161,11 @@ FRONTEND_OBJ_BASENAMES_nsdecl := \
 	template_signature_ops \
 	template_specialization \
 	witness_api \
+	witness_provenance \
 	template_type_ops \
 	types
 
-# nsinit: 85 shared object(s)
+# nsinit: 86 shared object(s)
 FRONTEND_OBJ_BASENAMES_nsinit := \
 	abi_mangle \
 	calculator \
@@ -256,6 +257,7 @@ FRONTEND_OBJ_BASENAMES_nsinit := \
 	template_signature_ops \
 	template_specialization \
 	witness_api \
+	witness_provenance \
 	template_type_ops \
 	types
 
@@ -278,7 +280,7 @@ FRONTEND_OBJ_BASENAMES_cy86 := \
 	types \
 	x86_assembler
 
-# cppgm++: 111 shared object(s)
+# cppgm++: 112 shared object(s)
 FRONTEND_OBJ_BASENAMES_cppgm++ := \
 	abi_mangle \
 	calculator \
@@ -400,6 +402,7 @@ FRONTEND_OBJ_BASENAMES_cppgm++ := \
 	typesemantic \
 	witness_text \
 	witness_api \
+	witness_provenance \
 	x86_assembler
 
 # lowiropt: 23 shared object(s)

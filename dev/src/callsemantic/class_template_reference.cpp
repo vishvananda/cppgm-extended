@@ -2503,6 +2503,9 @@ public:
                   arguments,
                   selected_partial->parameters);
               request.ownership = witness::SourceUseOwnership::SourceOwned;
+              CPPGM_SET_WITNESS_PRODUCER(
+                  request,
+                  witness::WitnessProducerSite::ClassTemplateReference01);
               witness::emit_class_use(witness_context, request);
             }
           }
@@ -3248,6 +3251,9 @@ public:
         const bool parent_class_use_records =
             witness::class_use_recording_enabled(witness_context,
                                                  request.origin);
+        CPPGM_SET_WITNESS_PRODUCER(
+            request,
+            witness::WitnessProducerSite::ClassTemplateReference02);
         witness::emit_class_use(witness_context, request);
         if(parent_class_use_records &&
            !suppress_nested_arguments &&

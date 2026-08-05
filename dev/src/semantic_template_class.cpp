@@ -104,6 +104,9 @@ void emit_instantiated_class_template_use_source(
                        std::string("semantic-template-class emit template=") +
                            request.template_name);
   }
+  CPPGM_SET_WITNESS_PRODUCER(
+      request,
+      witness::WitnessProducerSite::ClassSemanticTemplateClass);
   witness::emit_class_use(request);
 }
 

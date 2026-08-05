@@ -12128,7 +12128,9 @@ void finalize_class_constant_members(SemanticContext & ctx,
                 entity,
                 decl_location,
                 has_template_identity));
-        template_api::note_template_witness_log_event(
+        CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+            witness_provenance::WitnessProducerSite::
+                LifecycleSemanticClassModel,
             template_api::TemplateWitnessLogEventKind::VariableInstantiation,
             decl_location,
             entity,

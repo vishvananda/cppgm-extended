@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "template_witness.h"
+#include "witness_provenance.h"
 
 class SemanticContext;
 namespace semantic_model {
@@ -39,6 +40,8 @@ using template_api::ScopedTemplateWitnessSourceTypeLookup;
 using template_api::ScopedTemplateWitnessTypeLookupPause;
 
 using SourceSelectionKind = template_api::TemplateWitnessSelectionKind;
+using witness_provenance::WitnessProducerSite;
+using witness_provenance::WitnessUpstreamRoute;
 
 enum class ClassUseEmissionOrigin
 {
@@ -278,6 +281,9 @@ using semantic_source_use::SourceTemplateIdOccurrence;
 // The semantic layer records use-site decisions through the typed structs below.
 struct ClassUseSourceDecision
 {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
+#endif
   std::string location;
   TemplateWitnessSourceAnchor use_anchor;
   std::string template_name;
@@ -291,6 +297,9 @@ struct ClassUseSourceDecision
 
 struct ClassUseEmitRequest
 {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
+#endif
   std::string location;
   bool use_anchor_present = false;
   std::string use_anchor_location;
@@ -308,6 +317,9 @@ struct ClassUseEmitRequest
 
 struct AliasUseSourceDecision
 {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
+#endif
   std::string location;
   TemplateWitnessSourceAnchor use_anchor;
   std::string template_name;
@@ -321,6 +333,9 @@ struct AliasUseSourceDecision
 
 struct AliasUseEmitRequest
 {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
+#endif
   std::string use_location;
   SourceTemplateIdOccurrence template_id_occurrence;
   std::string template_name;
@@ -335,6 +350,9 @@ struct AliasUseEmitRequest
 
 struct VariableUseSourceDecision
 {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
+#endif
   std::string location;
   TemplateWitnessSourceAnchor use_anchor;
   std::string template_name;
@@ -348,6 +366,9 @@ struct VariableUseSourceDecision
 
 struct VariableUseEmitRequest
 {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
+#endif
   std::string use_location;
   std::string use_anchor_identifier;
   std::string template_name;
@@ -363,6 +384,9 @@ struct VariableUseEmitRequest
 
 struct FunctionCallSourceDecision
 {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
+#endif
   std::string location;
   TemplateWitnessSourceAnchor use_anchor;
   std::string template_name;

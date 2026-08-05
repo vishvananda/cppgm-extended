@@ -2891,7 +2891,8 @@ void note_function_binding_closure_event(
      binding->owner_class->dependent_instantiation) {
     return;
   }
-  note_template_witness_log_event(
+  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+      witness_provenance::WitnessProducerSite::LifecycleTemplateApi01,
       kind,
       location,
       binding_log_entity(ctx, binding),
@@ -4245,7 +4246,8 @@ void note_template_member_value_instantiation_if_needed(
             ctx,
             TemplateClosureReason::TrackInstantiation,
             &binding);
-    template_api::note_template_witness_log_event(
+    CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+        witness_provenance::WitnessProducerSite::LifecycleTemplateApi02,
         TemplateWitnessLogEventKind::VariableInstantiation,
         decl_location,
         entity,
@@ -4336,7 +4338,8 @@ void note_nested_member_class_track_instantiation(
           entity,
           decl_location,
           class_has_template_identity(&info)));
-  template_api::note_template_witness_log_event(
+  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+      witness_provenance::WitnessProducerSite::LifecycleTemplateApi03,
       template_api::TemplateWitnessLogEventKind::ClassInstantiation,
       decl_location,
       entity,
@@ -4358,7 +4361,8 @@ void note_source_unnamed_class_finalization_if_needed(
      !lexical_function_for_class(&info)) {
     return;
   }
-  note_template_witness_log_event(
+  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+      witness_provenance::WitnessProducerSite::LifecycleTemplateApi04,
       TemplateWitnessLogEventKind::ClassFinalization,
       decl_location,
       entity,
@@ -4383,7 +4387,8 @@ void note_source_unnamed_class_instantiation(
                                                    info,
                                                    entity,
                                                    decl_location);
-  note_template_witness_log_event(
+  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+      witness_provenance::WitnessProducerSite::LifecycleTemplateApi05,
       TemplateWitnessLogEventKind::ClassInstantiation,
       decl_location,
       entity,
@@ -4407,7 +4412,8 @@ void note_anonymous_member_class_instantiation(
   const std::string entity = anonymous_member_class_log_entity(ctx, owner, member);
   const std::string decl_location =
       strip_at_prefix(ctx.source_location_for_node(*member.class_node));
-  note_template_witness_log_event(
+  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+      witness_provenance::WitnessProducerSite::LifecycleTemplateApi06,
       TemplateWitnessLogEventKind::ClassInstantiation,
       decl_location,
       entity,
@@ -4479,7 +4485,8 @@ void note_class_closure_event(
       }
     }
   }
-  note_template_witness_log_event(
+  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+      witness_provenance::WitnessProducerSite::LifecycleTemplateApi07,
       kind,
       location,
       class_log_entity(ctx, info),
@@ -4509,7 +4516,8 @@ void note_value_binding_closure_event(
   if(ctx.template_witness_context().session == nullptr) {
     return;
   }
-  note_template_witness_log_event(
+  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+      witness_provenance::WitnessProducerSite::LifecycleTemplateApi08,
       kind,
       location,
       value_log_entity(ctx, binding),
@@ -6727,7 +6735,8 @@ TemplateInstantiationResult acquire_variable_instantiation(
       const bool entity_has_template_identity =
           value_or_owner_has_template_identity(result.value_binding) ||
           request.decl != nullptr;
-      template_api::note_template_witness_log_event(
+      CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+          witness_provenance::WitnessProducerSite::LifecycleTemplateApi09,
           TemplateWitnessLogEventKind::VariableInstantiation,
           current_template_log_location(ctx),
           entity,

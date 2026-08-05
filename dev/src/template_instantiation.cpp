@@ -2138,6 +2138,9 @@ void note_out_of_class_owner_class_use_for_applied_definition(
   if(static_member_definition_witness_replay) {
     request.origin = witness::ClassUseEmissionOrigin::DeclarationTypeSource;
   }
+  CPPGM_SET_WITNESS_PRODUCER(
+      request,
+      witness::WitnessProducerSite::ClassTemplateInstantiation);
   witness::emit_class_use(request);
   if(info.member_scope) {
     if(static_member_definition_witness_replay) {
@@ -12618,6 +12621,9 @@ const ValueBinding * instantiate_variable_template(
       request.merge_policy = merge_policy;
       request.record_during_source_capture_pause =
           record_direct_source_use_during_pause;
+      CPPGM_SET_WITNESS_PRODUCER(
+          request,
+          witness::WitnessProducerSite::VariableTemplateInstantiation);
       witness::emit_variable_use(request);
       if(source_use_scope != nullptr) {
         ctx.emit_nested_class_use_source_events_from_location(

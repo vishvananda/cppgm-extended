@@ -67,12 +67,14 @@ ifeq ($(origin CPPGM_HOST_CXX), undefined)
 CPPGM_HOST_CXX := $(CXX)
 endif
 CPPGM_TEST_RUNNER ?= 1
+CPPGM_WITNESS_PROVENANCE ?= 0
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
 TEST_RUNNER_ENTRY_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
+WITNESS_PROVENANCE_FLAGS = $(if $(filter 1,$(CPPGM_WITNESS_PROVENANCE)),-DCPPGM_ENABLE_WITNESS_PROVENANCE,)
 HOST_CXX_DEFAULT_DEF = -DCPPGM_DEFAULT_HOST_CXX='"$(CPPGM_HOST_CXX)"'
 OBJECT_ROOT_DEFAULT_DEF = -DCPPGM_DEFAULT_OBJECT_ROOT='"$(abspath $(OBJ))"'
-CC_FLAGS = -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
-DEBUG_CC_FLAGS = -std=gnu++11 -Wall -O0 -g -fno-omit-frame-pointer $(CPPGM_STDLIB_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
+CC_FLAGS = -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS) $(WITNESS_PROVENANCE_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
+DEBUG_CC_FLAGS = -std=gnu++11 -Wall -O0 -g -fno-omit-frame-pointer $(CPPGM_STDLIB_FLAGS) $(WITNESS_PROVENANCE_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
 ENTRY_CC_FLAGS = $(CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
 ENTRY_DEBUG_CC_FLAGS = $(DEBUG_CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
 SRC = ../dev/src
@@ -114,7 +116,7 @@ runner_state_stamp = $(OBJ)/$(1)/.test_runner_mode
 link_prereqs = $(call link_objs,$(1)) $(call runner_state_stamp,$(1))
 include frontend_source_sets.mk
 $(foreach target,$(ALL_FRONTEND_TARGETS),$(if $(strip $(FRONTEND_OBJ_BASENAMES_$(target))),,$(error missing FRONTEND_OBJ_BASENAMES_$(target) in frontend_source_sets.mk)))
-frontend_obj_basenames = $(FRONTEND_OBJ_BASENAMES_$(1))
+frontend_obj_basenames = $(filter-out witness_provenance,$(FRONTEND_OBJ_BASENAMES_$(1))) $(if $(filter 1,$(CPPGM_WITNESS_PROVENANCE)),witness_provenance,)
 frontend_link_objs = $(addprefix $(OBJ)/$(1)/,$(addsuffix .o,$(call frontend_obj_basenames,$(2)))) $(call runner_obj,$(1))
 auxiliary_link_objs = $(addprefix $(OBJ)/release/,$(addsuffix .o,$(call frontend_obj_basenames,$(1))))
 

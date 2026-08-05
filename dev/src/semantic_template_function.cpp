@@ -567,6 +567,9 @@ void emit_function_template_call_source_use(
                                                             decision.bindings);
   }
   suppress_defaulted_void_self_substitution_drop(decision, binding);
+  CPPGM_SET_WITNESS_PRODUCER(
+      decision,
+      witness::WitnessProducerSite::FunctionSemanticTemplateFunction);
   witness::emit_function_call(decision);
 }
 

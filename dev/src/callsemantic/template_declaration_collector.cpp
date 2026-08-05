@@ -2141,6 +2141,10 @@ public:
                             "deduced");
                       }
                       request.ownership = witness::SourceUseOwnership::SourceOwned;
+                      CPPGM_SET_WITNESS_PRODUCER(
+                          request,
+                          witness::WitnessProducerSite::
+                              ClassTemplateDeclarationCollector);
                       witness::emit_class_use(request);
                         emit_nested_class_use_source_events_from_location(scope,
                                                                           request.location,

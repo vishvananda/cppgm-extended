@@ -1838,6 +1838,9 @@ void record_alias_pattern_source_use(
                                        alias_template.parameters,
                                        arguments,
                                        source_arg_texts);
+  CPPGM_SET_WITNESS_PRODUCER(
+      request,
+      witness::WitnessProducerSite::AliasTemplateSpecialization01);
   witness::emit_alias_use(services.witness_context, request);
 }
 
@@ -1890,6 +1893,9 @@ void record_alias_pattern_source_use_from_texts(
   append_alias_pattern_source_bindings_from_texts(request.bindings,
                                                   alias_template->parameters,
                                                   source_arg_texts);
+  CPPGM_SET_WITNESS_PRODUCER(
+      request,
+      witness::WitnessProducerSite::AliasTemplateSpecialization02);
   witness::emit_alias_use(services.witness_context, request);
 }
 

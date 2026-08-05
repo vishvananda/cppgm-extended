@@ -11,6 +11,7 @@
 #include "cppast_ast.h"
 #include "recog_token_buffer.h"
 #include "semantic_source_use.h"
+#include "witness_provenance.h"
 
 namespace template_api {
 
@@ -1909,7 +1910,13 @@ inline void note_template_witness_lifecycle_event(
     bool entity_is_unnamed_class = false,
     bool public_source_required = false,
     bool entity_is_constexpr_function = false,
-    bool entity_is_defaulted_copy_or_move_constructor = false)
+    bool entity_is_defaulted_copy_or_move_constructor = false
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+    ,
+    witness_provenance::WitnessProducerSite producer_site =
+        witness_provenance::WitnessProducerSite::Unknown
+#endif
+    )
 {
   TemplateWitnessSession * session =
       template_witness_detail::current_witness_session_storage();
@@ -1935,6 +1942,12 @@ inline void note_template_witness_lifecycle_event(
       entity_is_defaulted_copy_or_move_constructor;
   event.public_source_required = public_source_required;
   template_witness_detail::refresh_lifecycle_event_metadata(event);
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  const witness_provenance::ScopedLifecycleAttempt provenance_attempt(
+      *session,
+      producer_site,
+      event);
+#endif
   const auto closure_bucket_key =
       [](const TemplateLifecycleEvent & candidate) -> std::string
   {
@@ -2118,7 +2131,13 @@ inline void note_template_witness_log_event(TemplateWitnessLogEventKind kind,
                                             bool entity_is_constexpr_function =
                                                 false,
                                             bool entity_is_defaulted_copy_or_move_constructor =
-                                                false)
+                                                false
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+                                            ,
+                                            witness_provenance::WitnessProducerSite producer_site =
+                                                witness_provenance::WitnessProducerSite::Unknown
+#endif
+                                            )
 {
   note_template_witness_lifecycle_event(
       template_lifecycle_event_kind_from_log_event_kind(kind),
@@ -2131,8 +2150,45 @@ inline void note_template_witness_log_event(TemplateWitnessLogEventKind kind,
       entity_is_unnamed_class,
       public_source_required,
       entity_is_constexpr_function,
-      entity_is_defaulted_copy_or_move_constructor);
+      entity_is_defaulted_copy_or_move_constructor
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+      ,
+      producer_site);
+#else
+      );
+#endif
 }
+
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+inline void note_template_witness_log_event(
+    witness_provenance::WitnessProducerSite producer_site,
+    TemplateWitnessLogEventKind kind,
+    const std::string & location,
+    const std::string & entity,
+    const std::string & decl_location = std::string(),
+    const std::string & detail = std::string(),
+    TemplateLifecycleCause cause = TemplateLifecycleCause::None,
+    bool entity_has_template_identity = false,
+    bool entity_is_unnamed_class = false,
+    bool public_source_required = false,
+    bool entity_is_constexpr_function = false,
+    bool entity_is_defaulted_copy_or_move_constructor = false)
+{
+  note_template_witness_log_event(
+      kind,
+      location,
+      entity,
+      decl_location,
+      detail,
+      cause,
+      entity_has_template_identity,
+      entity_is_unnamed_class,
+      public_source_required,
+      entity_is_constexpr_function,
+      entity_is_defaulted_copy_or_move_constructor,
+      producer_site);
+}
+#endif
 
 inline bool template_witness_source_capture_enabled()
 {

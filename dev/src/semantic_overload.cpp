@@ -2262,6 +2262,9 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
       binding.source = "explicit";
       binding.type_like = true;
       decision.bindings.push_back(binding);
+      CPPGM_SET_WITNESS_PRODUCER(
+          decision,
+          witness::WitnessProducerSite::FunctionSemanticOverloadDeclval);
       witness::emit_function_call(ctx.template_witness_context(), decision);
     }
   }

@@ -632,6 +632,128 @@ struct WitnessEvent
   bool drop_if_needed = false;
 };
 
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+
+struct RendererTraceContext
+{
+  const template_api::TemplateWitnessSession * session = nullptr;
+  const string * source_path = nullptr;
+  const char * pass = nullptr;
+  vector<witness_provenance::RendererEventLineage> * lineages = nullptr;
+};
+
+RendererTraceContext *& current_renderer_trace()
+{
+  static thread_local RendererTraceContext * value = nullptr;
+  return value;
+}
+
+void merge_renderer_lineage(
+    witness_provenance::RendererEventLineage & retained,
+    const witness_provenance::RendererEventLineage & removed)
+{
+  set<witness_provenance::WitnessProducerSite> producers(
+      retained.producers.begin(), retained.producers.end());
+  producers.insert(removed.producers.begin(), removed.producers.end());
+  retained.producers.assign(producers.begin(), producers.end());
+}
+
+bool witness_events_equal(const WitnessEvent & lhs, const WitnessEvent & rhs)
+{
+  return lhs.kind == rhs.kind &&
+      lhs.ownership == rhs.ownership &&
+      lhs.source_role == rhs.source_role &&
+      lhs.location == rhs.location &&
+      lhs.raw_location == rhs.raw_location &&
+      lhs.use_anchor_kind == rhs.use_anchor_kind &&
+      lhs.template_id_occurrence == rhs.template_id_occurrence &&
+      lhs.template_name == rhs.template_name &&
+      lhs.selected == rhs.selected &&
+      lhs.selection == rhs.selection &&
+      lhs.selected_decl_location == rhs.selected_decl_location &&
+      lhs.raw_selected_decl_location == rhs.raw_selected_decl_location &&
+      lhs.selected_decl_anchor_kind == rhs.selected_decl_anchor_kind &&
+      lhs.resolved == rhs.resolved &&
+      lhs.spelling == rhs.spelling &&
+      lhs.pattern == rhs.pattern &&
+      lhs.expanded_to == rhs.expanded_to &&
+      lhs.value == rhs.value &&
+      lhs.guide == rhs.guide &&
+      lhs.guide_decl_location == rhs.guide_decl_location &&
+      lhs.selected_type == rhs.selected_type &&
+      lhs.candidates_built == rhs.candidates_built &&
+      lhs.candidates_viable == rhs.candidates_viable &&
+      lhs.candidate_count == rhs.candidate_count &&
+      lhs.bindings == rhs.bindings &&
+      lhs.specialization_bindings == rhs.specialization_bindings &&
+      lhs.drops == rhs.drops &&
+      lhs.drop_if_needed == rhs.drop_if_needed;
+}
+
+string renderer_changed_fields(const WitnessEvent & before,
+                               const WitnessEvent & after)
+{
+  vector<string> fields;
+  if(before.kind != after.kind) fields.push_back("kind");
+  if(before.ownership != after.ownership) fields.push_back("ownership");
+  if(before.source_role != after.source_role) fields.push_back("role");
+  if(before.location != after.location ||
+     before.raw_location != after.raw_location)
+    fields.push_back("location");
+  if(before.use_anchor_kind != after.use_anchor_kind)
+    fields.push_back("anchor");
+  if(!(before.template_id_occurrence == after.template_id_occurrence))
+    fields.push_back("occurrence");
+  if(before.template_name != after.template_name ||
+     before.selected != after.selected)
+    fields.push_back("entity");
+  if(before.selection != after.selection) fields.push_back("selection");
+  if(before.selected_decl_location != after.selected_decl_location ||
+     before.raw_selected_decl_location != after.raw_selected_decl_location ||
+     before.selected_decl_anchor_kind != after.selected_decl_anchor_kind)
+    fields.push_back("selected_decl");
+  if(before.bindings != after.bindings) fields.push_back("bindings");
+  if(before.specialization_bindings != after.specialization_bindings)
+    fields.push_back("specialization_bindings");
+  if(before.drops != after.drops) fields.push_back("drops");
+  if(before.expanded_to != after.expanded_to ||
+     before.resolved != after.resolved ||
+     before.spelling != after.spelling ||
+     before.pattern != after.pattern ||
+     before.value != after.value ||
+     before.guide != after.guide ||
+     before.guide_decl_location != after.guide_decl_location ||
+     before.selected_type != after.selected_type)
+    fields.push_back("payload");
+  string out;
+  for(size_t i = 0; i < fields.size(); ++i) {
+    if(i != 0) out += ',';
+    out += fields[i];
+  }
+  return out;
+}
+
+void note_renderer_trace_action(const WitnessEvent & event,
+                                const string & action,
+                                const witness_provenance::RendererEventLineage & lineage,
+                                const string & changed_fields = string())
+{
+  RendererTraceContext * trace = current_renderer_trace();
+  if(!trace || !trace->session || !trace->source_path || !trace->pass) return;
+  witness_provenance::note_renderer_action(
+      *trace->session,
+      *trace->source_path,
+      trace->pass,
+      action,
+      lineage,
+      witness_event_kind_text(event.kind),
+      event.location,
+      !event.template_name.empty() ? event.template_name : event.selected,
+      changed_fields);
+}
+
+#endif
+
 void normalize_drop_order(vector<WitnessEvent> & events)
 {
   for(size_t i = 0; i < events.size(); ++i) {
@@ -690,14 +812,44 @@ string witness_selection_text(const WitnessEvent & event)
 
 void compact_events(vector<WitnessEvent> & events, const vector<char> & drop)
 {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  RendererTraceContext * trace = current_renderer_trace();
+  const bool trace_active = trace && trace->lineages &&
+      trace->lineages->size() == events.size();
+  if(trace_active) {
+    for(size_t i = 0; i < events.size(); ++i) {
+      if(!drop[i]) continue;
+      for(size_t j = 0; j < events.size(); ++j) {
+        if(!drop[j] && witness_events_equal(events[i], events[j])) {
+          merge_renderer_lineage((*trace->lineages)[j],
+                                 (*trace->lineages)[i]);
+          break;
+        }
+      }
+      note_renderer_trace_action(events[i],
+                                 "removed",
+                                 (*trace->lineages)[i]);
+    }
+  }
+#endif
   vector<WitnessEvent> kept;
   kept.reserve(events.size());
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  vector<witness_provenance::RendererEventLineage> kept_lineages;
+  if(trace_active) kept_lineages.reserve(events.size());
+#endif
   for(size_t i = 0; i < events.size(); ++i) {
     if(!drop[i]) {
       kept.push_back(events[i]);
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+      if(trace_active) kept_lineages.push_back((*trace->lineages)[i]);
+#endif
     }
   }
   events.swap(kept);
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  if(trace_active) trace->lineages->swap(kept_lineages);
+#endif
 }
 
 SourceUseOwnership rendered_ownership_sort_key(SourceUseOwnership ownership)
@@ -845,6 +997,7 @@ int witness_event_kind_sort_rank(WitnessEventKind kind)
 
 void sort_events(vector<WitnessEvent> & events)
 {
+#if !defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   std::stable_sort(events.begin(),
                    events.end(),
                    [](const WitnessEvent & lhs, const WitnessEvent & rhs)
@@ -886,6 +1039,69 @@ void sort_events(vector<WitnessEvent> & events)
                                              rhs.selected :
                                              rhs.template_name);
                    });
+#else
+  const auto less = [](const WitnessEvent & lhs, const WitnessEvent & rhs)
+  {
+                     const ParsedLocation left_loc = parse_line_col(lhs.location);
+                     const ParsedLocation right_loc = parse_line_col(rhs.location);
+                     const string::size_type left_split = lhs.location.rfind(':');
+                     const string::size_type right_split = rhs.location.rfind(':');
+                     const string::size_type left_path_split =
+                         left_split == string::npos ? string::npos :
+                         lhs.location.rfind(':', left_split - 1);
+                     const string::size_type right_path_split =
+                         right_split == string::npos ? string::npos :
+                         rhs.location.rfind(':', right_split - 1);
+                     const string left_path =
+                         left_path_split == string::npos ?
+                             lhs.location :
+                             lhs.location.substr(0, left_path_split);
+                     const string right_path =
+                         right_path_split == string::npos ?
+                             rhs.location :
+                             rhs.location.substr(0, right_path_split);
+                     return std::make_tuple(left_path,
+                                            left_loc.line,
+                                            left_loc.column,
+                                            witness_event_kind_sort_rank(lhs.kind),
+                                            binding_source_sort_rank(lhs),
+                                            rendered_ownership_sort_key(lhs.ownership),
+                                            !lhs.selected.empty() ?
+                                                lhs.selected :
+                                                lhs.template_name) <
+                         std::make_tuple(right_path,
+                                         right_loc.line,
+                                         right_loc.column,
+                                         witness_event_kind_sort_rank(rhs.kind),
+                                         binding_source_sort_rank(rhs),
+                                         rendered_ownership_sort_key(rhs.ownership),
+                                         !rhs.selected.empty() ?
+                                             rhs.selected :
+                                             rhs.template_name);
+  };
+  RendererTraceContext * trace = current_renderer_trace();
+  if(!trace || !trace->lineages || trace->lineages->size() != events.size()) {
+    std::stable_sort(events.begin(), events.end(), less);
+    return;
+  }
+  vector<size_t> order(events.size());
+  for(size_t i = 0; i < order.size(); ++i) order[i] = i;
+  std::stable_sort(order.begin(), order.end(),
+                   [&](size_t lhs, size_t rhs)
+                   {
+                     return less(events[lhs], events[rhs]);
+                   });
+  vector<WitnessEvent> sorted_events;
+  vector<witness_provenance::RendererEventLineage> sorted_lineages;
+  sorted_events.reserve(events.size());
+  sorted_lineages.reserve(events.size());
+  for(size_t i = 0; i < order.size(); ++i) {
+    sorted_events.push_back(events[order[i]]);
+    sorted_lineages.push_back((*trace->lineages)[order[i]]);
+  }
+  events.swap(sorted_events);
+  trace->lineages->swap(sorted_lineages);
+#endif
 }
 
 bool cv_type_atom_char(char ch)
@@ -2482,6 +2698,191 @@ void apply_occurrence_bindings(WitnessEvent & event,
   }
 }
 
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+
+struct WitnessBuilder
+{
+  typedef tuple<string, string, string, string, string> EventKey;
+
+  WitnessBuilder(const string & source_path_in,
+                 const template_api::TemplateWitnessSession * session_in,
+                 bool trace_in)
+    : source_path(source_path_in), session(session_in), trace(trace_in)
+  {}
+
+  vector<WitnessEvent> function_calls;
+  vector<witness_provenance::RendererEventLineage> function_call_lineages;
+  vector<WitnessEvent> class_events;
+  vector<witness_provenance::RendererEventLineage> class_lineages;
+  set<EventKey> class_event_keys;
+  map<EventKey, WitnessEvent> alias_events;
+  map<EventKey, witness_provenance::RendererEventLineage> alias_lineages;
+  map<EventKey, WitnessEvent> variable_events;
+  map<EventKey, witness_provenance::RendererEventLineage> variable_lineages;
+  string source_path;
+  const template_api::TemplateWitnessSession * session = nullptr;
+  bool trace = false;
+
+  void note_build_action(
+      const WitnessEvent & event,
+      const string & action,
+      const witness_provenance::RendererEventLineage & lineage)
+  {
+    if(!trace || !session) return;
+    witness_provenance::note_renderer_action(
+        *session,
+        source_path,
+        "build_events",
+        action,
+        lineage,
+        witness_event_kind_text(event.kind),
+        event.location,
+        !event.template_name.empty() ? event.template_name : event.selected);
+  }
+
+  void consume_direct_event(
+      const WitnessEvent & event,
+      const witness_provenance::RendererEventLineage * lineage = nullptr)
+  {
+    if(event.kind == WitnessEventKind::ClassUse) {
+      const EventKey key = event_key(event);
+      if(class_event_keys.insert(key).second) {
+        class_events.push_back(event);
+        if(trace && lineage) class_lineages.push_back(*lineage);
+      } else if(trace && lineage) {
+        for(size_t i = 0; i < class_events.size(); ++i) {
+          if(event_key(class_events[i]) == key) {
+            merge_renderer_lineage(class_lineages[i], *lineage);
+            note_build_action(event, "removed", *lineage);
+            break;
+          }
+        }
+      }
+      return;
+    }
+    if(event.kind == WitnessEventKind::AliasUse) {
+      const EventKey key = event_key(event);
+      map<EventKey, WitnessEvent>::iterator existing = alias_events.find(key);
+      if(trace && lineage) {
+        witness_provenance::RendererEventLineage retained = *lineage;
+        if(existing != alias_events.end()) {
+          retained = alias_lineages[key];
+          merge_renderer_lineage(retained, *lineage);
+          note_build_action(existing->second,
+                            "replaced",
+                            alias_lineages[key]);
+        }
+        alias_lineages[key] = retained;
+      }
+      alias_events[key] = event;
+      return;
+    }
+    if(event.kind == WitnessEventKind::VariableUse) {
+      const EventKey key = event_key(event);
+      map<EventKey, WitnessEvent>::iterator existing = variable_events.find(key);
+      if(trace && lineage) {
+        witness_provenance::RendererEventLineage retained = *lineage;
+        if(existing != variable_events.end()) {
+          retained = variable_lineages[key];
+          merge_renderer_lineage(retained, *lineage);
+          note_build_action(existing->second,
+                            "replaced",
+                            variable_lineages[key]);
+        }
+        variable_lineages[key] = retained;
+      }
+      variable_events[key] = event;
+      return;
+    }
+    if(event.kind == WitnessEventKind::FunctionCall) {
+      function_calls.push_back(event);
+      if(trace && lineage) function_call_lineages.push_back(*lineage);
+    }
+  }
+
+  vector<WitnessEvent> finish(
+      vector<witness_provenance::RendererEventLineage> * out_lineages = nullptr)
+  {
+    vector<WitnessEvent> events;
+    events.insert(events.end(), class_events.begin(), class_events.end());
+    vector<witness_provenance::RendererEventLineage> lineages;
+    if(trace) {
+      lineages.insert(lineages.end(), class_lineages.begin(), class_lineages.end());
+    }
+    for(map<EventKey, WitnessEvent>::const_iterator it = alias_events.begin();
+        it != alias_events.end();
+        ++it) {
+      events.push_back(it->second);
+      if(trace) lineages.push_back(alias_lineages[it->first]);
+    }
+    for(map<EventKey, WitnessEvent>::const_iterator it = variable_events.begin();
+        it != variable_events.end();
+        ++it) {
+      events.push_back(it->second);
+      if(trace) lineages.push_back(variable_lineages[it->first]);
+    }
+    events.insert(events.end(), function_calls.begin(), function_calls.end());
+    if(trace) {
+      lineages.insert(lineages.end(),
+                      function_call_lineages.begin(),
+                      function_call_lineages.end());
+      vector<size_t> order(events.size());
+      for(size_t i = 0; i < order.size(); ++i) order[i] = i;
+      std::stable_sort(order.begin(), order.end(),
+                       [&](size_t lhs, size_t rhs)
+                       {
+                         return sort_key_less(events[lhs], events[rhs]);
+                       });
+      vector<WitnessEvent> sorted_events;
+      vector<witness_provenance::RendererEventLineage> sorted_lineages;
+      sorted_events.reserve(events.size());
+      sorted_lineages.reserve(events.size());
+      for(size_t i = 0; i < order.size(); ++i) {
+        sorted_events.push_back(events[order[i]]);
+        sorted_lineages.push_back(lineages[order[i]]);
+      }
+      events.swap(sorted_events);
+      lineages.swap(sorted_lineages);
+      if(out_lineages) out_lineages->swap(lineages);
+    } else {
+      std::stable_sort(events.begin(), events.end(), sort_key_less);
+    }
+    return events;
+  }
+
+  static bool sort_key_less(const WitnessEvent & lhs, const WitnessEvent & rhs)
+  {
+    return std::make_tuple(lhs.location,
+                           lhs.kind,
+                           !lhs.selected.empty() ? lhs.selected : lhs.template_name) <
+        std::make_tuple(rhs.location,
+                        rhs.kind,
+                        !rhs.selected.empty() ? rhs.selected : rhs.template_name);
+  }
+
+  static EventKey event_key(const WitnessEvent & event)
+  {
+    const string payload =
+        event.pattern + "|" +
+        event.spelling + "|" +
+        event.value + "|" +
+        event.expanded_to + "|" +
+        event.resolved + "|" +
+        event.selected_decl_location + "|" +
+        binding_signature_key(event.bindings) + "|" +
+        binding_signature_key(event.specialization_bindings);
+    return std::make_tuple(string(witness_event_kind_text(event.kind)),
+                           event.location,
+                           !event.selected.empty() ? event.selected : event.template_name,
+                           event.selection != SourceSelectionKind::None ?
+                               witness_selection_text(event) :
+                               event.expanded_to,
+                           payload);
+  }
+};
+
+#else
+
 struct WitnessBuilder
 {
   explicit WitnessBuilder(const string &) {}
@@ -2545,7 +2946,8 @@ struct WitnessBuilder
                         !rhs.selected.empty() ? rhs.selected : rhs.template_name);
   }
 
-  static tuple<string, string, string, string, string> event_key(const WitnessEvent & event)
+  static tuple<string, string, string, string, string> event_key(
+      const WitnessEvent & event)
   {
     const string payload =
         event.pattern + "|" +
@@ -2565,6 +2967,8 @@ struct WitnessBuilder
                            payload);
   }
 };
+
+#endif
 
 string header_from_kind(WitnessEventKind kind)
 {
@@ -4525,6 +4929,9 @@ void normalize_source_defined_template_calls(vector<WitnessEvent> & events,
       }
     }
   }
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  compact_events(events, drop);
+#else
   vector<WitnessEvent> kept;
   kept.reserve(events.size());
   for(size_t i = 0; i < events.size(); ++i) {
@@ -4533,6 +4940,7 @@ void normalize_source_defined_template_calls(vector<WitnessEvent> & events,
     }
   }
   events.swap(kept);
+#endif
 }
 
 bool alias_events_same_source_decision(const WitnessEvent & lhs,
@@ -5261,10 +5669,142 @@ string sort_rendered_source_event_blocks(const string & text)
   return out.str();
 }
 
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+
+template <typename Function>
+void run_renderer_pass(
+    const char * pass,
+    const template_api::TemplateWitnessSession & session,
+    const string & source_path,
+    vector<WitnessEvent> & events,
+    vector<witness_provenance::RendererEventLineage> & lineages,
+    const Function & function)
+{
+  if(lineages.size() != events.size()) {
+    function();
+    return;
+  }
+  const vector<WitnessEvent> before_events = events;
+  const vector<witness_provenance::RendererEventLineage> before_lineages =
+      lineages;
+  RendererTraceContext trace;
+  trace.session = &session;
+  trace.source_path = &source_path;
+  trace.pass = pass;
+  trace.lineages = &lineages;
+  RendererTraceContext * previous = current_renderer_trace();
+  current_renderer_trace() = &trace;
+  function();
+  current_renderer_trace() = previous;
+
+  for(size_t i = 0; i < events.size() && i < lineages.size(); ++i) {
+    for(size_t j = 0; j < before_events.size() && j < before_lineages.size(); ++j) {
+      if(lineages[i].event_id != before_lineages[j].event_id) continue;
+      if(!witness_events_equal(before_events[j], events[i])) {
+        const string fields = renderer_changed_fields(before_events[j], events[i]);
+        const bool replaced =
+            fields.find("kind") != string::npos ||
+            fields.find("location") != string::npos ||
+            fields.find("entity") != string::npos ||
+            fields.find("selection") != string::npos;
+        witness_provenance::note_renderer_action(
+            session,
+            source_path,
+            pass,
+            replaced ? "replaced" : "rewritten",
+            lineages[i],
+            witness_event_kind_text(events[i].kind),
+            events[i].location,
+            !events[i].template_name.empty() ?
+                events[i].template_name : events[i].selected,
+            fields);
+      }
+      break;
+    }
+  }
+}
+
+#endif
+
 void collect_rendered_source_events(const template_api::TemplateWitnessSession & session,
                                     const string & source_path,
-                                    vector<WitnessEvent> & events)
+                                    vector<WitnessEvent> & events
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+                                    ,
+                                    bool trace_renderer = false)
+#else
+                                    )
+#endif
 {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  vector<witness_provenance::RendererEventLineage> lineages;
+  if(trace_renderer) {
+    lineages = witness_provenance::renderer_table_lineages(session);
+  }
+  const bool trace_active =
+      trace_renderer && witness_provenance::enabled() &&
+      lineages.size() == session.source_use_table.uses.size();
+  WitnessBuilder source_builder(source_path, &session, trace_active);
+  for(size_t i = 0; i < session.source_use_table.uses.size(); ++i) {
+    source_builder.consume_direct_event(
+        witness_event_from_source_use(session.source_use_table.uses[i]),
+        trace_active ? &lineages[i] : nullptr);
+  }
+  vector<witness_provenance::RendererEventLineage> built_lineages;
+  events = source_builder.finish(trace_active ? &built_lineages : nullptr);
+  lineages.swap(built_lineages);
+
+#define CPPGM_RENDER_PASS(name, expression) \
+  run_renderer_pass(name, session, source_path, events, lineages, [&]() { expression; })
+  CPPGM_RENDER_PASS("canonicalize_locations_and_dedupe",
+                    canonicalize_event_locations_and_dedupe(events, source_path));
+  CPPGM_RENDER_PASS("normalize_names",
+                    normalize_event_names(events, session.inline_namespace_names));
+  CPPGM_RENDER_PASS("normalize_bindings",
+                    normalize_event_bindings(events, source_path));
+  CPPGM_RENDER_PASS("prefer_anonymous_namespace_class_names",
+                    prefer_anonymous_namespace_class_use_names(events));
+  CPPGM_RENDER_PASS("drop_uninstantiated_static_member_owners",
+                    drop_uninstantiated_static_member_definition_owner_uses(
+                        events, session));
+  CPPGM_RENDER_PASS("normalize_drop_order", normalize_drop_order(events));
+  CPPGM_RENDER_PASS("qualify_member_alias_from_class_uses",
+                    qualify_member_alias_events_from_class_uses(events));
+  CPPGM_RENDER_PASS("repair_placeholder_alias_owners",
+                    canonicalize_placeholder_member_alias_owners(events));
+  CPPGM_RENDER_PASS("drop_template_header_patterns",
+                    drop_template_header_pattern_events(
+                        events, session.template_header_contexts, source_path));
+  CPPGM_RENDER_PASS("prefer_source_spelled_alias",
+                    prefer_source_spelled_alias_events(events));
+  CPPGM_RENDER_PASS("normalize_source_defined_calls",
+                    normalize_source_defined_template_calls(
+                        events, session.template_body_ranges, source_path));
+  CPPGM_RENDER_PASS("drop_redundant_nested_events",
+                    drop_redundant_nested_events(events));
+  CPPGM_RENDER_PASS("prefer_explicit_class_specializations",
+                    prefer_explicit_class_use_specializations(events));
+  CPPGM_RENDER_PASS("drop_less_specific_class_bindings",
+                    drop_less_specific_class_use_binding_duplicates(events));
+  CPPGM_RENDER_PASS("drop_same_line_deduced_class_uses",
+                    drop_deduced_class_uses_shadowed_by_explicit_same_line(events));
+  CPPGM_RENDER_PASS("dedupe_visible_events", dedupe_visible_events(events));
+  CPPGM_RENDER_PASS("sort_visible_events", sort_events(events));
+#undef CPPGM_RENDER_PASS
+
+  if(trace_active && lineages.size() == events.size()) {
+    for(size_t i = 0; i < events.size(); ++i) {
+      witness_provenance::note_renderer_final_visible(
+          session,
+          source_path,
+          lineages[i],
+          witness_event_kind_text(events[i].kind),
+          events[i].location,
+          !events[i].template_name.empty() ?
+              events[i].template_name : events[i].selected);
+    }
+  }
+#else
   WitnessBuilder source_builder(source_path);
   for(size_t i = 0; i < session.source_use_table.uses.size(); ++i) {
     source_builder.consume_direct_event(
@@ -5292,6 +5832,7 @@ void collect_rendered_source_events(const template_api::TemplateWitnessSession &
   drop_deduced_class_uses_shadowed_by_explicit_same_line(events);
   dedupe_visible_events(events);
   sort_events(events);
+#endif
 }
 
 void record_explicit_source_owner_entity(set<string> & out,
@@ -5319,8 +5860,16 @@ std::string render_template_source_witness_text(
     const std::string & source_path)
 {
   vector<WitnessEvent> events;
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  collect_rendered_source_events(session, source_path, events, true);
+  const string rendered =
+      sort_rendered_source_event_blocks(render_events_text(events, false));
+  witness_provenance::finish_session(session, source_path);
+  return rendered;
+#else
   collect_rendered_source_events(session, source_path, events);
   return sort_rendered_source_event_blocks(render_events_text(events, false));
+#endif
 }
 
 std::string render_template_source_witness_debug_text(
@@ -5328,8 +5877,16 @@ std::string render_template_source_witness_debug_text(
     const std::string & source_path)
 {
   vector<WitnessEvent> events;
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  collect_rendered_source_events(session, source_path, events, true);
+  const string rendered =
+      sort_rendered_source_event_blocks(render_events_text(events, true));
+  witness_provenance::finish_session(session, source_path);
+  return rendered;
+#else
   collect_rendered_source_events(session, source_path, events);
   return sort_rendered_source_event_blocks(render_events_text(events, true));
+#endif
 }
 
 std::map<std::string, std::string> template_source_defaulted_aliases(

@@ -7366,6 +7366,9 @@ private:
                   &base_template_syntax->argument_syntaxes,
                   request.bindings,
                   &request.template_id_occurrence);
+              CPPGM_SET_WITNESS_PRODUCER(
+                  request,
+                  witness::WitnessProducerSite::AliasCallsemantic01);
               witness::emit_alias_use(template_witness_context(), request);
             }
             emit_nested_alias_use_source_events_from_location(
@@ -7399,6 +7402,9 @@ private:
               built_direct_base = false;
             }
             if(built_direct_base) {
+              CPPGM_SET_WITNESS_PRODUCER(
+                  decision,
+                  witness::WitnessProducerSite::ClassCallsemantic01);
               witness::emit_class_use_decision(
                   decision,
                   witness::SourceUseOwnership::SourceOwned,
@@ -7999,6 +8005,9 @@ private:
       request.ownership = witness::SourceUseOwnership::SourceOwned;
       const bool parent_class_use_records =
           witness::class_use_recording_enabled(request.origin);
+      CPPGM_SET_WITNESS_PRODUCER(
+          request,
+          witness::WitnessProducerSite::ClassCallsemantic02);
       witness::emit_class_use(request);
       if(parent_class_use_records) {
         emit_nested_class_use_source_events_from_location(scope,
@@ -9150,6 +9159,9 @@ private:
                     selection_for_note.arguments,
                     "deduced");
               }
+              CPPGM_SET_WITNESS_PRODUCER(
+                  request,
+                  witness::WitnessProducerSite::ClassCallsemantic03);
               witness::emit_class_use(request);
               if(arg_syntaxes) {
                 emit_nested_class_use_source_events_from_syntaxes(scope,
@@ -13012,6 +13024,9 @@ private:
         decision.template_id_occurrence =
             semantic_source_use::SourceTemplateIdOccurrence();
       }
+      CPPGM_SET_WITNESS_PRODUCER(
+          decision,
+          witness::WitnessProducerSite::ClassCallsemantic04);
       witness::emit_class_use_decision(
           decision,
           ownership,
@@ -13026,6 +13041,9 @@ private:
       witness::SourceUseOwnership ownership,
       const std::string & skip_exact_template_name) override
   {
+    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
+        template_witness_context().session,
+        witness::WitnessUpstreamRoute::NestedClassUseFromCallbackLocation);
     emit_nested_class_use_source_events_from_location_impl(
         scope,
         location,
@@ -13080,6 +13098,9 @@ private:
       if(!built_class_use) {
         continue;
       }
+      CPPGM_SET_WITNESS_PRODUCER(
+          decision,
+          witness::WitnessProducerSite::ClassCallsemantic05);
       witness::emit_class_use_decision(
           decision,
           ownership,
@@ -13093,6 +13114,9 @@ private:
       const std::string & location,
       witness::SourceUseOwnership ownership) override
   {
+    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
+        template_witness_context().session,
+        witness::WitnessUpstreamRoute::ClassUseAfterLocation);
     emit_class_use_source_events_after_location(scope,
                                                 location,
                                                 ownership,
@@ -13152,9 +13176,12 @@ private:
     }
     if(built_class_use) {
       if(clear_template_id_occurrence) {
-        decision.template_id_occurrence =
+	        decision.template_id_occurrence =
 	            semantic_source_use::SourceTemplateIdOccurrence();
 	      }
+	      CPPGM_SET_WITNESS_PRODUCER(
+	          decision,
+	          witness::WitnessProducerSite::ClassCallsemantic06);
 	      witness::emit_class_use_decision(
 	          decision,
 	          ownership,
@@ -13230,6 +13257,9 @@ private:
       witness::SourceUseOwnership ownership,
       bool allow_source_template_header_replay = false) override
   {
+    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
+        template_witness_context().session,
+        witness::WitnessUpstreamRoute::NestedClassUseFromAstNode);
     emit_nested_class_use_source_events_from_ast_node(scope,
                                                       node,
                                                       ownership,
@@ -13244,6 +13274,9 @@ private:
       const std::vector<TemplateArgumentSyntax> & syntaxes,
       witness::SourceUseOwnership ownership) override
   {
+    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
+        template_witness_context().session,
+        witness::WitnessUpstreamRoute::NestedClassUseFromTemplateArguments);
     emit_nested_class_use_source_events_from_syntaxes(scope,
                                                       syntaxes,
                                                       ownership,
@@ -13255,6 +13288,10 @@ private:
       const CppAstNode & node,
       witness::SourceUseOwnership ownership) override
   {
+    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
+        template_witness_context().session,
+        witness::WitnessUpstreamRoute::
+            StaticMemberDefinitionClassUseFromAstNode);
     emit_nested_class_use_source_events_from_ast_node(
         scope,
         node,
@@ -13313,6 +13350,9 @@ private:
       const std::string & location,
       witness::SourceUseOwnership ownership) override
   {
+    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
+        template_witness_context().session,
+        witness::WitnessUpstreamRoute::NestedClassUseFromLocation);
     emit_nested_class_use_source_events_from_location_impl(scope,
                                                            location,
                                                            ownership,
@@ -14276,6 +14316,9 @@ private:
             }
           }
         }
+        CPPGM_SET_WITNESS_PRODUCER(
+            request,
+            witness::WitnessProducerSite::AliasCallsemantic02);
         witness::emit_alias_use(template_witness_context(), request);
         emit_nested_alias_use_source_events_from_location(
             use_scope,
@@ -18792,6 +18835,9 @@ private:
       mark_qualified_member_source_bindings(request.bindings,
                                             alias_arguments,
                                             &alias_syntax.argument_syntaxes);
+      CPPGM_SET_WITNESS_PRODUCER(
+          request,
+          witness::WitnessProducerSite::AliasCallsemantic03);
       witness::emit_alias_use(template_witness_context(), request);
     };
     const auto qualified_template_name_has_dependent_source_owner =
@@ -18915,6 +18961,9 @@ private:
               }
             }
             if(built_class_use) {
+              CPPGM_SET_WITNESS_PRODUCER(
+                  decision,
+                  witness::WitnessProducerSite::ClassCallsemantic07);
               witness::emit_class_use_decision(
                   decision,
                   witness::SourceUseOwnership::SourceOwned,
@@ -20798,6 +20847,9 @@ private:
     }
     request.ownership = witness::SourceUseOwnership::SourceOwned;
     request.origin = witness::ClassUseEmissionOrigin::ExplicitSpecializationSource;
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassCallsemantic08);
     witness::emit_class_use(template_witness_context(), request);
     return true;
   }
@@ -20902,6 +20954,9 @@ private:
                                                     arguments,
                                                     selected_partial->parameters);
     request.ownership = witness::SourceUseOwnership::SourceOwned;
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassCallsemantic09);
     witness::emit_class_use(request);
     return true;
   }
@@ -20912,6 +20967,9 @@ private:
       const std::string & use_location,
       witness::SourceUseRole role = witness::SourceUseRole::TypeUse) override
   {
+    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
+        template_witness_context().session,
+        witness::WitnessUpstreamRoute::DeducedClassUseFromResolvedAliasType);
     if(!witness::source_capture_enabled(template_witness_context())) {
       return;
     }
@@ -20958,6 +21016,9 @@ private:
     request.ownership = witness::SourceUseOwnership::SourceOwned;
     request.role = role;
     request.origin = witness::ClassUseEmissionOrigin::DeclarationTypeSource;
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassCallsemantic10);
     witness::emit_class_use(request);
   }
 
@@ -21047,6 +21108,9 @@ private:
       const std::string & node_use_location,
       bool allow_concrete_dependent_argument_spelling = false) override
   {
+    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
+        template_witness_context().session,
+        witness::WitnessUpstreamRoute::ClassUseFromResolvedTypeNode);
     record_class_use_for_resolved_type_node_impl(
         scope,
         node,
@@ -21064,6 +21128,9 @@ private:
       bool allow_concrete_dependent_argument_spelling = false,
       bool clear_template_id_occurrence = false) override
   {
+    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
+        template_witness_context().session,
+        witness::WitnessUpstreamRoute::DeclarationClassUseFromResolvedTypeNode);
     record_class_use_for_resolved_type_node_impl(
         scope,
         node,
@@ -21445,6 +21512,9 @@ private:
     request.origin = origin;
     const bool parent_class_use_records =
         witness::class_use_recording_enabled(request.origin);
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassCallsemantic11);
     witness::emit_class_use(request);
     if(parent_class_use_records && has_template_id_syntax) {
       emit_nested_class_use_source_events_from_syntaxes(scope,
@@ -21772,6 +21842,9 @@ private:
                                   decision.use_anchor,
                                   exact_location);
         }
+        CPPGM_SET_WITNESS_PRODUCER(
+            decision,
+            witness::WitnessProducerSite::ClassCallsemantic12);
         witness::emit_class_use_decision(
             decision,
             witness::SourceUseOwnership::SourceOwned,
@@ -27868,6 +27941,9 @@ private:
     }
     request.role = witness::SourceUseRole::QualifierUse;
     request.origin = witness::ClassUseEmissionOrigin::QualifiedValueSource;
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassCallsemantic13);
     witness::emit_class_use(request);
     if(trace_enabled) {
       std::ostringstream trace;
@@ -29574,7 +29650,8 @@ private:
               entity,
               event_decl_location,
               true));
-      witness::note_template_witness_log_event(
+      CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+          witness_provenance::WitnessProducerSite::LifecycleCallsemantic01,
           witness::TemplateWitnessLogEventKind::ClassFinalization,
           explicit_instantiation_location,
           entity,
@@ -29603,7 +29680,8 @@ private:
               entity,
               event_decl_location,
               template_api::function_or_owner_has_template_identity(binding)));
-      witness::note_template_witness_log_event(
+      CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+          witness_provenance::WitnessProducerSite::LifecycleCallsemantic02,
           witness::TemplateWitnessLogEventKind::FunctionInstantiation,
           explicit_instantiation_location,
           entity,
@@ -30464,6 +30542,9 @@ private:
                     "deduced");
               }
               request.ownership = witness::SourceUseOwnership::SourceOwned;
+              CPPGM_SET_WITNESS_PRODUCER(
+                  request,
+                  witness::WitnessProducerSite::ClassCallsemantic14);
               witness::emit_class_use(request);
               emit_nested_class_use_source_events_from_location(scope,
                                                                 request.location,
@@ -33262,6 +33343,9 @@ private:
         binding.type_like = true;
         decision.bindings.push_back(binding);
 
+        CPPGM_SET_WITNESS_PRODUCER(
+            decision,
+            witness::WitnessProducerSite::FunctionCallsemanticDeclval);
         witness::emit_function_call(template_witness_context(),
                                     decision);
       }

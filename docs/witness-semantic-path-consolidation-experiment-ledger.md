@@ -1,0 +1,100 @@
+# Witness Semantic-Path Consolidation Experiment Ledger
+
+This ledger records the evidence and acceptance gates for
+`witness-semantic-path-consolidation-experiment-plan.md`. Generated provenance
+reports remain under `/tmp`; only summarized evidence belongs here.
+
+## Frozen performance epoch
+
+- Immutable baseline: `/tmp/cppgm-witness-consolidation-parent.json`
+- Rolling baseline: `/tmp/cppgm-witness-consolidation-rolling.json`
+- Recorded head: `e83ab5b249fe569ac53d5a057a46da111907dcbb`
+- Workload epoch: `9764b3835e3c6996b6b80803054f80e1cf50f98e`
+- Instructions retired: `177731452181`
+- Maximum resident set size: `768765952`
+- Peak memory footprint: `593932288`
+
+Do not rerecord the immutable baseline. Promote only an already-recorded
+candidate that passes all three zero-tolerance gates.
+
+## Instrumentation checkpoint
+
+The provenance implementation is an explicit diagnostic build. Enable it with
+`CPPGM_WITNESS_PROVENANCE=1` at build time and set
+`CPPGM_WITNESS_PROVENANCE_DIR` at run time. The default build compiles the
+provenance tables, renderer lineage tracking, route calls, and RAII state out;
+producer fields and lifecycle parameters retain their original layout, and the
+provenance translation unit is omitted from frontend links. The default
+`cppgm++` has no provenance symbols, and setting only the run-time directory
+against it creates no trace files.
+
+The diagnostic build assigns all 53 static producer IDs:
+24 class-use, 7 alias-use, 4 function-call, 1 variable-use, and 17 lifecycle
+sites. It also counts nine public class replay/fanout routes. No attempt in the
+strict witness corpus used the `unknown` producer.
+
+Evidence:
+
+- strict trace directory:
+  `/tmp/cppgm-witness-provenance-strict.80t4v7`
+- strict aggregate report:
+  `/tmp/cppgm-witness-provenance-strict-report.json`
+- strict result with direct LowIR comparison: all configured PA19, PA20, PA22,
+  PA23, and PA24 comparisons passed;
+- full PA1-PA38 report with direct LowIR comparison: `4860/4860` passed;
+- the ordinary full report has no witness-rendering lane, so it validates
+  behavior but does not add provenance records beyond the strict witness
+  corpus.
+
+Strict-corpus public route counts:
+
+| Route | Calls |
+| --- | ---: |
+| callback location replay | 752 |
+| location replay | 58 |
+| after-location replay | 13 |
+| AST replay | 9065 |
+| template-argument replay | 63 |
+| static-member-definition AST replay | 25 |
+| resolved alias-type replay | 1185 |
+| resolved type-node replay | 11632 |
+| declaration resolved type-node replay | 1015 |
+
+The strongest initial class collision is between the recursive nested syntax
+producer and the canonical class-template reference producer: 2,860 collided
+attempts. The nested syntax producer made 32,715 attempts, including 32,538
+exact duplicates. The semantic-template-class qualifier producer inserted 262
+rows, but no row reached visible output; all 262 were removed during renderer
+canonicalization.
+
+The first run-time-guarded implementation was discarded after its one allowed
+candidate measurement. Instructions improved by 0.09%, but maximum RSS
+increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
+The compile-time diagnostic boundary was introduced in response; its candidate
+still failed its first measurement with instructions passing, RSS up 0.09%,
+and footprint up 0.02%. That candidate was also not promoted or rerun. The
+default path was then fully erased through preprocessing and the provenance
+object removed from ordinary links. That candidate also remained unpromoted:
+its sole run reported instructions up 0.08%, RSS up 1.81%, and footprint up
+0.03%. A parent-source comparison then found every affected normal object
+byte-identical except for the temporary build's embedded object-root path. The
+remaining renderer ABI and helper-shape differences were restored exactly
+before the next materially changed candidate recorded below.
+
+Sites not exercised by the existing strict witness references are tracked
+until they are reached by an earliest-owning-PA reducer or removed as proven
+dead/redundant code:
+
+- class: `callsemantic.01`, `.03`, `.05`, `.09`,
+  `class_template_reference.01`, `constant_value_lookup.04`, `.05`, and
+  `template_declaration_collector`;
+- alias: `template_specialization.01`, `.02`, and `callsemantic.01`;
+- lifecycle: `template_api.06`, `.08`,
+  `template_argument_semantics.01`, and `constant_value_lookup.01`.
+
+## Semantic slice ledger
+
+| Slice | Direct class sites before/after | Upstream routes before/after | Semantic route removed | Responsibility moved to | Strict | Full report | Instructions | Max RSS | Footprint | Renderer passes made idle |
+| --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- |
+| Parent | 24/24 | 9/9 | none | none | clean | clean | 177731452181 | 768765952 | 593932288 | none |
+| Guarded provenance | 24/24 | 9/9 | none | none | clean | 4860/4860 | pending | pending | pending | none |

@@ -6311,7 +6311,9 @@ void note_structured_bool_integral_constant_value_for_witness(
           entity,
           decl_location,
           true));
-  witness::note_template_witness_log_event(
+  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+      witness_provenance::WitnessProducerSite::
+          LifecycleTemplateArgumentSemantics01,
       witness::TemplateWitnessLogEventKind::VariableInstantiation,
       decl_location,
       entity,
@@ -7840,7 +7842,9 @@ void note_template_value_dependency_for_witness(
           trigger_entity,
           dependency.decl_location,
           dependency.entity_has_template_identity));
-  witness::note_template_witness_log_event(
+  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+      witness_provenance::WitnessProducerSite::
+          LifecycleTemplateArgumentSemantics02,
       witness::TemplateWitnessLogEventKind::VariableInstantiation,
       dependency.decl_location,
       dependency.entity,
@@ -20236,6 +20240,9 @@ void record_nested_alias_template_source_uses_for_arguments(
           request.bindings,
           &request.template_id_occurrence);
     }
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::AliasTemplateArgumentSemantics01);
     witness::emit_alias_use(services.witness_context, request);
   };
 
@@ -20526,6 +20533,9 @@ void record_direct_alias_template_source_use_if_needed(
         request.bindings,
         &request.template_id_occurrence);
   }
+  CPPGM_SET_WITNESS_PRODUCER(
+      request,
+      witness::WitnessProducerSite::AliasTemplateArgumentSemantics02);
   witness::emit_alias_use(services.witness_context, request);
   bool source_arguments_have_template_dependency = false;
   for(std::size_t i = 0; i < source_argument_texts.size(); ++i) {

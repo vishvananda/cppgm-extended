@@ -681,6 +681,9 @@ public:
         witness::SourceUseRole::ValueUse;
     request.ownership = witness::SourceUseOwnership::SourceOwned;
     request.origin = witness::ClassUseEmissionOrigin::QualifiedValueSource;
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassConstantValueLookup01);
     witness::emit_class_use(request);
     emit_nested_class_use_source_events_from_location(scope,
                                                       request.location,
@@ -780,6 +783,9 @@ public:
           "deduced");
     }
     request.role = witness::SourceUseRole::QualifierUse;
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassConstantValueLookup02);
     witness::emit_class_use(request);
   }
 
@@ -916,6 +922,9 @@ public:
             "defaulted");
       }
     }
+    CPPGM_SET_WITNESS_PRODUCER(
+        decision,
+        witness::WitnessProducerSite::FunctionConstantValueLookupConstexpr);
     witness::emit_function_call(decision);
   }
 
@@ -1213,6 +1222,9 @@ public:
           witness::SourceUseRole::ValueUse;
       request.ownership = witness::SourceUseOwnership::SourceOwned;
       request.origin = witness::ClassUseEmissionOrigin::QualifiedValueSource;
+      CPPGM_SET_WITNESS_PRODUCER(
+          request,
+          witness::WitnessProducerSite::ClassConstantValueLookup03);
       witness::emit_class_use(request);
     }
     if(member_name == "value") {
@@ -1859,6 +1871,9 @@ public:
             request.origin = witness::ClassUseEmissionOrigin::QualifiedValueSource;
             request.template_id_occurrence.in_template_body =
                 value_class_use_is_from_template_instantiation(scope);
+            CPPGM_SET_WITNESS_PRODUCER(
+                request,
+                witness::WitnessProducerSite::ClassConstantValueLookup04);
             witness::emit_class_use(request);
             emit_nested_class_use_source_events_from_location(scope,
                                                               request.location,
@@ -2057,6 +2072,9 @@ public:
            source_argument_texts_differ_from_bindings(
                source_explicit_arg_texts,
                canonical_instantiation_arg_texts(arguments)));
+      CPPGM_SET_WITNESS_PRODUCER(
+          request,
+          witness::WitnessProducerSite::ClassConstantValueLookup05);
       witness::emit_class_use(request);
       emit_nested_class_use_source_events_from_location(scope,
                                                         request.location,
@@ -2291,7 +2309,9 @@ private:
             entity,
             decl_location,
             true));
-    witness::note_template_witness_log_event(
+    CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+        witness_provenance::WitnessProducerSite::
+            LifecycleConstantValueLookup01,
         witness::TemplateWitnessLogEventKind::VariableInstantiation,
         decl_location,
         entity,
@@ -2373,7 +2393,9 @@ private:
                 entity,
                 decl_location,
                 true));
-        witness::note_template_witness_log_event(
+        CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+            witness_provenance::WitnessProducerSite::
+                LifecycleConstantValueLookup02,
             witness::TemplateWitnessLogEventKind::VariableInstantiation,
             decl_location,
             entity,
@@ -2429,7 +2451,9 @@ private:
                   entity,
                   decl_location,
                   true));
-          witness::note_template_witness_log_event(
+          CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+              witness_provenance::WitnessProducerSite::
+                  LifecycleConstantValueLookup03,
               witness::TemplateWitnessLogEventKind::VariableInstantiation,
               decl_location,
               entity,
