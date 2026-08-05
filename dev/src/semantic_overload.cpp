@@ -13712,26 +13712,6 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     }
   }
 
-  const auto note_direct_declval_source_call =
-      [&](const CppAstNode & child) -> void
-  {
-    if(child.kind != CppAstKind::call_expression) {
-      return;
-    }
-    if(!template_witness_source_capture_enabled_for_calls(ctx)) {
-      return;
-    }
-    ExprInfo ignored_declval_expr;
-    try_analyze_declval_call_expression(ctx,
-                                        scope,
-                                        child,
-                                        ignored_declval_expr);
-  };
-  note_direct_declval_source_call(callee_node);
-  for(size_t i = 0; i < arg_nodes.size(); ++i) {
-    note_direct_declval_source_call(*arg_nodes[i]);
-  }
-
   bool explicit_member_call = lookup_callee_node.kind == CppAstKind::member_expression;
   bool callable_object_call = false;
   std::function<bool(ExprInfo &)> callable_object_surrogate_fallback;
