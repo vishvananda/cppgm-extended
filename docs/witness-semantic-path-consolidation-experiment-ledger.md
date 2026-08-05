@@ -144,6 +144,15 @@ limits.
 
 ## Rejected slices
 
+- `eb04f2226` removed the post-deduction text-backed alias-pattern replay and
+  its separate pack-binding reconstruction helper (`7 -> 6` alias sites).
+  Strict direct comparison and the full `4860/4860` report passed. Median
+  instructions (`+0.12%`) and footprint (`-0.03%`) passed, but maximum RSS
+  was `768585728`: `+2.37%` against rolling and about `+1.11%` against the
+  fixed diagnostic baseline. The candidate was not promoted or rerun and was
+  explicitly reverted by `6b9d1906e`. The report is
+  `/tmp/cppgm-witness-consolidation-candidate-text-backed-alias-pattern-replay-3run.json`.
+
 - `d08a92a05` removed the eager pre-analysis walk that re-ran `declval`
   analysis on the callee and every call argument. Strict direct comparison and
   the full `4860/4860` report passed. Median instructions (`+0.01%`) and
