@@ -151,10 +151,11 @@ dead/redundant code:
 | Lookup-time concrete class-use replay | 16/15 | 6/6 | post-lookup class extraction, source-token and argument recovery, selection and anchor reconstruction, and an unexercised producer | canonical class-template references created during type lookup | clean | 4860/4860 | 176973791780 (+0.00%) | 762613760 (-0.80%) | 590491648 (-0.06%) | none |
 | Declaration resolved-type replay | 15/15 | 6/5 | declaration-type replay route and its semantic-context plumbing | retained function-result replay for functional-cast occurrence metadata | clean | 4860/4860 | 176930812572 (-0.02%) | 761339904 (-0.17%) | 589987840 (-0.09%) | none |
 | Class base-clause reconstruction | 15/14 | 5/5 | direct class-template lookup, argument resolution, source-decision reconstruction, and a dormant producer during a base-clause rewalk | canonical base-type resolution during class-template instantiation | clean | 4860/4860 | 176608992504 (-0.05%) | 766824448 (+0.73%) | 590385152 (+0.02%) | none |
+| Dead dependent-partial resolver | 14/13 | 5/5 | uncalled `record_dependent_partial_class_use_for_resolved_template_id` and its dormant producer | live selected class-reference resolution | clean | 4860/4860 | 176796004199 (+0.11%) | 753594368 (-1.73%) | 590069760 (-0.05%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.43%` instructions, `+0.87%` maximum RSS,
-and `-0.69%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.32%` instructions, `-0.87%` maximum RSS,
+and `-0.75%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -165,19 +166,3 @@ and `-0.69%` footprint, so it also clears the final fixed-baseline gates.
 | Base-clause alias replay | alias use 6/5 | base-clause alias reconstruction, its unused emission-origin branch, and its provenance entry | canonical alias-reference producers reached during base-clause resolution | clean | 4860/4860 | 176968071900 (-0.08%) | 768757760 (+0.90%) | 590872576 (+0.05%) |
 | Text-backed partial-match alias replay | alias use 5/4 | post-deduction syntax walk, alias lookup, source-argument recovery, and text-only pack-binding reconstruction | structured alias-template-id expansion and ordinary resolved alias uses | clean | 4860/4860 | 176707655948 (-0.13%) | 757301248 (-0.53%) | 590295040 (+0.05%) |
 | Eager child-`declval` replay | function call 3/3 | pre-analysis callee and argument walk plus repeated child expression construction solely for witness capture | ordinary recursive argument expression analysis | clean | 4860/4860 | 176703697462 (-0.00%) | 761233408 (+0.52%) | 590262272 (-0.01%) |
-
-## Rejected slices
-
-- `0f6adcf8f` removed the uncalled dependent-partial class-use resolver
-  (`24 -> 23` sites). Strict direct comparison and the full `4860/4860`
-  report passed, but the single candidate run regressed instructions by 0.15%
-  and RSS by 1.29% (footprint improved by 0.02%). The report is
-  `/tmp/cppgm-witness-consolidation-candidate-dead-dependent-partial.json`.
-  The candidate was not promoted or rerun and was explicitly reverted by
-  `1cc9a2e53`.
-  After the performance method changed, the same commit was re-evaluated once
-  with three runs against the fixed diagnostic baseline. Its medians were
-  `177428521256` instructions (`+0.03%`), `769929216` maximum RSS (`+1.28%`),
-  and `593932288` footprint (`-0.10%`). It still failed the 1% RSS gate, so the
-  revert remains in place. The revised report is
-  `/tmp/cppgm-witness-consolidation-candidate-dead-dependent-partial-3run.json`.
