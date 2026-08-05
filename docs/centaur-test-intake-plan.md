@@ -3,10 +3,12 @@
 ## Status and Scope
 
 Plan created 2026-08-02. Intake execution has reviewed all 272 families:
-sixty-one were intaked, one hundred ninety-four are covered by existing tests,
-seven are not regressions, three expose current compiler bugs, and seven are
-reviewed PA39 evidence artifacts that do not define runnable assignment tests.
-No row remains `needs-evidence`, `needs-reduction`, or `ready`. The frozen
+sixty-four were intaked, one hundred ninety-four are covered by existing tests,
+six are not regressions, seven are reviewed PA39 evidence artifacts that do
+not define runnable assignment tests, and one split row records completed PA34
+mode support with its full hosted `<memory>` portion intentionally deferred.
+No row remains `needs-evidence`, `needs-reduction`, `ready`, or
+`blocked-current-bug`. The frozen
 source checkout points to:
 
 - source: `vishvananda/cppgm-run-centaur`
@@ -40,14 +42,14 @@ retained early coverage consists of one PA4 macro paint regression, four PA8
 initialization/linkage additions plus one existing PA8 conversion-family
 extension, and one combined PA9 narrow/wide literal alignment regression.
 PA11 adds one combined anonymous-type identity test and three focused negative
-semantic tests. The zero-bound array case exposed a current compiler bug,
+semantic tests. The zero-bound array case exposed a compiler bug,
 fixed separately in `c990a0ac2`; its audit also required teaching the
 placement checker that PA10-PA12 type-semantic output does not exercise later
 LowIR/runtime owners. Clang and GCC show that Centaur's PA7 inline-reopen
 fixture should reject, while the PA8 README requires four-byte mock-function
-alignment after a char. The current compiler accepts or emits the old behavior
-for both, so their tracker rows remain `blocked-current-bug` and no incorrect
-reference was added.
+alignment after a char. Both compiler bugs were fixed and the reduced course
+fixtures were intaked in `e8b9c4c46`; their canonical references follow the
+fixed PA1-through-PA9 assignment contracts.
 
 The PA12 cohort adds three conversion/call negatives, strengthens the existing
 enumerator-constant query, and extends PA22's function-address selection case
@@ -55,11 +57,11 @@ with invalid `const void&` substitution. Eleven old cases are already covered,
 and four bulk-snapshot sources provide no distinct regression. Centaur's
 successful braced-list/ellipsis reference is wrong: Clang and GCC reject it,
 while the current LowIR driver skips validation when the invalid non-template
-class is unused. That row remains `blocked-current-bug`; the incorrect Centaur
-oracle was not imported. The PA12 audit now models its semantic-only function
-body surface, fixes broad default-argument and operator-name detectors, and
-passes with no findings after two old using-lookup fixtures were renumbered to
-their `200` cluster.
+class is unused. The compiler was fixed and the standard negative was intaked
+at PA24 in `2d1fe39c3`; the incorrect Centaur oracle was not imported. The PA12
+audit now models its semantic-only function body surface, fixes broad
+default-argument and operator-name detectors, and passes with no findings after
+two old using-lookup fixtures were renumbered to their `200` cluster.
 
 The PA14-source cohort retains thirteen fixtures for fourteen source rows: six
 PA14 procedural/declaration reducers, a corrected PA15 operator negative, one
@@ -181,6 +183,16 @@ references are byte-stable, the focused PA36 check passes, and the PA36
 placement audit is clean. PA36's existing hosted header-emission and
 link/runtime contract already covers this expectation, so no README edit was
 needed.
+
+We traced the post-rebase PA7 and PA36 failures through the entire intake
+history. In `c6d6cd4f8`, we added a valid namespace-conflict check and exposed
+an inline-namespace import bug that overwrote the parent's internal anonymous-
+namespace alias. In `b5600a656`, we stopped decoding mangled object symbols but
+failed to retain the typed ABI target for an instantiated destructor entry. In
+`30db85e5c`, we fixed both structured-data boundaries and refreshed three LowIR
+references after independent review. The final direct-LowIR root report passes
+4,855/4,855. PA36 passes 79/79 with a load-safe hosted compile allowance, and
+the configured strict pass compares 1,305 references with zero failures.
 
 ## Frozen History and Initial Inventory
 

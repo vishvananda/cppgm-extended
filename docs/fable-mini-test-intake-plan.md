@@ -4,12 +4,31 @@
 
 Both intake passes completed on 2026-08-02. The tracker contains 505 logical
 families and no remaining `catalog-pa1-pa9`, `needs-evidence`,
-`needs-reduction`, or `ready` rows. Of those families, 274 were intaked, 63
-remain documented as current compiler bugs, two are unreferenceable contracts,
-21 are covered by existing tests, and six are not regressions. The other rows
-record 128 assignment-export imports and 11 reference-only repairs. Every
+`needs-reduction`, `ready`, or `blocked-current-bug` rows. Of those families,
+339 were intaked, 21 are covered by existing tests, and six are not
+regressions. The other rows record 128 assignment-export imports and 11
+reference-only repairs. Every
 completed decision row records the actual commit that made the decision; the
 tracker does not retain contextual `(this commit)` placeholders.
+
+The final blocked-test pass corrected every compiler bug previously recorded
+by this tracker and intaked each effective reducer at its current owner. The
+last three closures added typed covariant-result thunk facts and hosted PA33
+runtime/symbol coverage, narrowed unused GNU-inline wrapper deferral to typed
+unsupported builtins, and retained GNU `vector_size` byte width for PA34
+compile-time layout validation.
+
+We traced two post-rebase regressions across the complete intake stack. In
+`c6d6cd4f8`, we added the stricter namespace-conflict check and exposed an
+older inline-namespace bookkeeping bug: import copied the child namespace's
+internal anonymous-namespace alias over the parent's alias. In `30db85e5c`, we
+excluded that alias from the user-visible import set. In `b5600a656`, we
+replaced object-symbol decoding with typed ABI construction but failed to
+retain the typed mangle target for instantiated destructor vtable entries. In
+`30db85e5c`, we retained that target for reconstructed destructor entries and
+used the existing typed ABI facts for non-virtual and virtual-base thunks.
+Global ABI-fact capture remains disabled, and mangling consumes typed data
+without text parsing.
 
 A final source-ledger audit reproduced the plan's inventory from the frozen
 repositories: 286 PA10-through-PA38 course families, 59 PA1-through-PA9
@@ -30,9 +49,11 @@ only after the fix.
 The PA4-through-PA9 second-pass batch passed 300 of 300 tests with the intended
 Homebrew Clang build, and the earlier PA1-through-PA3 batches passed their
 focused and assignment reports. After the PA3 and PA9 timeout optimizations,
-the final root report passed 4655 of 4655 tests under full assignment
-parallelism. All focused, placement, owning-assignment, hosted, LowIR optimizer,
-and machine optimizer gates recorded in the tracker passed.
+the post-rebase root report passed 4,855 of 4,855 tests with direct LowIR text
+comparison enabled. The configured PA18/PA19/PA21/PA22/PA23 strict pass compared
+1,305 references with zero failures. All focused, placement, owning-assignment,
+hosted, LowIR optimizer, and machine optimizer gates recorded in the tracker
+passed.
 
 The two load-sensitive stress cases were optimized from the run repositories'
 implementation evidence without changing their checked output:
