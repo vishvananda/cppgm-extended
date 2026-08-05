@@ -2167,7 +2167,10 @@ bool function_template_body_has_invalid_nondependent_lookup(
     if(!current->class_info) {
       continue;
     }
-    const CppAstNode * class_node = current->class_info->class_node;
+    const CppAstNode * class_node =
+        current->class_info->template_output_node ?
+            current->class_info->template_output_node :
+            current->class_info->class_node;
     if(!class_node && current->class_info->source_template) {
       class_node = current->class_info->source_template->class_node;
     }

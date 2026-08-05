@@ -8777,6 +8777,24 @@ bool constructor_has_member_initializer(const FunctionBinding & constructor,
   return false;
 }
 
+bool constructor_initializer_delegates_to_class(
+    const CppAstNode * ctor_initializer,
+    const ClassInfo & info)
+{
+  if(!ctor_initializer) {
+    return false;
+  }
+  for(std::size_t i = 0; i < ctor_initializer->children.size(); ++i) {
+    const CppAstNode * id =
+        find_child(ctor_initializer->children[i],
+                   CppAstKind::mem_initializer_id);
+    if(id && id->value == info.name) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool constexpr_default_initialization_produces_value(
     SemanticContext & ctx,
     const TypePtr & type)
@@ -8808,7 +8826,9 @@ void validate_constexpr_constructor_initialization(SemanticContext & ctx,
        constructor->is_deleted ||
        constructor->is_defaulted ||
        constructor->synthesized ||
-       constructor->delegating_constructor_target) {
+       constructor->delegating_constructor_target ||
+       constructor_initializer_delegates_to_class(
+           constructor->ctor_initializer, info)) {
       continue;
     }
     std::size_t initialized_union_members = 0;
@@ -9512,7 +9532,8 @@ void validate_constexpr_constructor_definition(
     SemanticContext & ctx,
     const FunctionBinding & binding)
 {
-  if(binding.owner_class) {
+  if(binding.owner_class &&
+     !binding.owner_class->full_member_collection_in_progress) {
     validate_constexpr_constructor_initialization(ctx, *binding.owner_class);
   }
 }
@@ -12861,15 +12882,8 @@ void collect_special_member(SemanticContext & ctx,
   const CppAstNode * ctor_initializer =
       find_child(node, CppAstKind::ctor_initializer);
   if(is_constructor && ctor_initializer) {
-    bool delegates = false;
-    for(std::size_t i = 0; i < ctor_initializer->children.size(); ++i) {
-      const CppAstNode * initializer_id =
-          find_child(ctor_initializer->children[i], CppAstKind::mem_initializer_id);
-      if(initializer_id && initializer_id->value == info.name) {
-        delegates = true;
-        break;
-      }
-    }
+    const bool delegates =
+        constructor_initializer_delegates_to_class(ctor_initializer, info);
     if(delegates && ctor_initializer->children.size() != 1) {
       throw std::logic_error(
           "delegating constructor cannot have another mem-initializer");
