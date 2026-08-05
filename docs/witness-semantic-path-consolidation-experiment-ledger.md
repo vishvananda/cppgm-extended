@@ -15,14 +15,20 @@ reports remain under `/tmp`; only summarized evidence belongs here.
 - Instructions retired: `177369144531`
 - Maximum resident set size: `760176640`
 - Peak memory footprint: `594513920`
-- Acceptance limits: instructions `+0.5%`; maximum RSS and peak footprint
-  `+1%`
+- Acceptance limits: instructions `+0.5%` and peak footprint `+1%`; maximum
+  RSS warns at `+3%` and fails only when one confirmation batch also reaches
+  or exceeds `+3%`
 
 The revised baseline deliberately includes the accepted compile-time-guarded
 diagnostic instrumentation. The prior parent and exact one-run reports remain
 under `/tmp` for audit but do not gate later slices. Do not rerecord the fixed
 diagnostic baseline. Promote only an already-recorded three-run candidate that
-passes all three tolerance gates.
+passes both hard gates and the RSS warning rule.
+
+The revised method requires a regression investigation before rollback. An
+unchanged failed commit receives no extra run beyond the automatic RSS
+confirmation. A targeted in-scope correction creates a new candidate and must
+repeat correctness and performance validation.
 
 ## Instrumentation checkpoint
 

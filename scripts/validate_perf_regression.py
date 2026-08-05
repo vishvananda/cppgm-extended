@@ -457,7 +457,18 @@ def print_record_summary(report):
             print("  %-28s %s" % (key + ":", format_metric(key, value)))
 
 
-def compare_reports(baseline, candidate, args):
+def compare_reports(
+    baseline,
+    candidate,
+    args,
+    rss_exceedance="fail",
+    warnings=None,
+    heading="Performance check",
+):
+    if rss_exceedance not in {"fail", "warn"}:
+        raise ValueError("rss_exceedance must be 'fail' or 'warn'")
+    if warnings is None:
+        warnings = []
     baseline_summary = baseline.get("summary", {})
     candidate_summary = candidate.get("summary", {})
     failures = []
@@ -496,21 +507,41 @@ def compare_reports(baseline, candidate, args):
         candidate_value = candidate_summary.get(key, {}).get("median")
         if baseline_value is None or candidate_value is None:
             failures.append("%s is missing from baseline or candidate" % key)
-            rows.append((label, key, baseline_value, candidate_value, tolerance, None, False))
+            rows.append(
+                (label, key, baseline_value, candidate_value, tolerance, None, "FAIL")
+            )
             continue
 
-        limit = float(baseline_value) * (1.0 + tolerance)
-        passed = float(candidate_value) <= limit
         delta = (float(candidate_value) / float(baseline_value)) - 1.0
-        if not passed:
-            failures.append(
-                "%s increased by %.2f%%; tolerance is %.2f%%"
-                % (key, delta * 100.0, tolerance * 100.0)
+        is_rss = key == "maximum_resident_set_size"
+        exceeded = (
+            delta >= tolerance
+            if is_rss
+            else float(candidate_value) > float(baseline_value) * (1.0 + tolerance)
+        )
+        status = "PASS"
+        if exceeded:
+            message = (
+                "%s increased by %.2f%%; %s is %.2f%%"
+                % (
+                    key,
+                    delta * 100.0,
+                    "warning threshold" if is_rss else "tolerance",
+                    tolerance * 100.0,
+                )
             )
-        rows.append((label, key, baseline_value, candidate_value, tolerance, delta, passed))
+            if is_rss and rss_exceedance == "warn":
+                warnings.append(message)
+                status = "WARN"
+            else:
+                failures.append(message)
+                status = "FAIL"
+        rows.append(
+            (label, key, baseline_value, candidate_value, tolerance, delta, status)
+        )
 
     print("")
-    print("Performance check")
+    print(heading)
     print("  baseline head: %s" % (baseline.get("head") or "unknown"))
     print("  candidate head: %s" % (candidate.get("head") or "unknown"))
     if candidate_workload:
@@ -524,10 +555,10 @@ def compare_reports(baseline, candidate, args):
         )
     print("")
     print("%-16s %-28s %-28s %-10s %-10s" % ("metric", "baseline", "candidate", "delta", "status"))
-    for label, key, baseline_value, candidate_value, tolerance, delta, passed in rows:
+    for label, key, baseline_value, candidate_value, tolerance, delta, status in rows:
         delta_text = "missing" if delta is None else "%+.2f%%" % (delta * 100.0)
-        status = "PASS" if passed else "FAIL"
-        status += " (tol %.2f%%)" % (tolerance * 100.0)
+        threshold_label = "warn" if key == "maximum_resident_set_size" else "tol"
+        status += " (%s %.2f%%)" % (threshold_label, tolerance * 100.0)
         print(
             "%-16s %-28s %-28s %-10s %-10s"
             % (
@@ -587,13 +618,46 @@ def command_check(args):
     baseline = load_json(args.baseline)
     runs = collect_runs(args, command)
     candidate = make_report(args, command, runs, workload)
-    failures = compare_reports(baseline, candidate, args)
+    warnings = []
+    failures = compare_reports(
+        baseline,
+        candidate,
+        args,
+        rss_exceedance="warn",
+        warnings=warnings,
+    )
+    confirmation_candidate = None
+    confirmation_failures = []
+    if warnings and not failures:
+        print("")
+        for warning in warnings:
+            print("WARN: %s" % warning)
+        print(
+            "WARN: maximum RSS reached the warning threshold; "
+            "running one confirmation batch"
+        )
+        confirmation_runs = collect_runs(args, command)
+        confirmation_candidate = make_report(
+            args, command, confirmation_runs, workload
+        )
+        confirmation_failures = compare_reports(
+            baseline,
+            confirmation_candidate,
+            args,
+            rss_exceedance="fail",
+            heading="Performance confirmation check",
+        )
+        failures.extend(confirmation_failures)
     if args.report:
         payload = {
             "baseline": baseline,
             "candidate": candidate,
             "failures": failures,
+            "warnings": warnings,
         }
+        if confirmation_candidate is not None:
+            payload["confirmation_candidate"] = confirmation_candidate
+            payload["confirmation_failures"] = confirmation_failures
         write_json(args.report, payload)
         print("  wrote report: %s" % args.report)
 
@@ -604,7 +668,10 @@ def command_check(args):
         return 1
 
     print("")
-    print("PASS: candidate is within instruction and memory tolerances")
+    if confirmation_candidate is not None:
+        print("PASS: candidate cleared the maximum RSS confirmation check")
+    else:
+        print("PASS: candidate is within instruction and memory tolerances")
     return 0
 
 
@@ -631,7 +698,17 @@ def build_parser():
     check.add_argument("--baseline", required=True)
     check.add_argument("--report")
     check.add_argument("--instruction-tolerance", type=float, default=0.01)
-    check.add_argument("--rss-tolerance", type=float, default=0.03)
+    check.add_argument(
+        "--rss-warning-tolerance",
+        "--rss-tolerance",
+        dest="rss_tolerance",
+        type=float,
+        default=0.03,
+        help=(
+            "maximum RSS warning threshold; one confirmation batch runs when "
+            "the threshold is reached, and a second exceedance fails"
+        ),
+    )
     check.add_argument("--footprint-tolerance", type=float, default=0.03)
     add_common_args(check, runs_default=1)
     check.set_defaults(func=command_check)

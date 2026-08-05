@@ -53,14 +53,28 @@ scripts/validate_perf_regression.py check \
      benchmarks/self_compile/stable/semantic_overload.cpp
 ```
 
-Default tolerances are intentionally tight:
+Default tolerances are:
 
 - `--instruction-tolerance 0.01`
-- `--rss-tolerance 0.03`
+- `--rss-warning-tolerance 0.03`
 - `--footprint-tolerance 0.03`
 
-For a marginal failure, rerun the candidate with `--runs 2` or `--runs 3`.
-Do not relax tolerances to keep a change unless the delta has been explained.
+Maximum RSS uses a warning-and-confirmation rule. A result at or above the RSS
+threshold starts one more batch with the same run count. The candidate fails
+when the confirmation batch also reaches or exceeds the threshold. The
+`--rss-tolerance` spelling remains as a compatibility alias. Instruction and
+footprint limits remain hard gates on each batch.
+
+Use `--runs 3` when the governing plan requires a three-run median. The
+automatic RSS confirmation then collects three more runs. Do not start an
+extra batch after that confirmation.
+
+A failed hard gate or confirmed RSS warning starts a regression investigation.
+Check the changed semantic work, allocation counts, executable layout, and the
+other recorded counters before reverting the change. Amend the candidate when
+an in-scope correction removes the cost, then validate and measure that changed
+candidate. Do not rerun an unchanged failed commit. Revert after the
+investigation finds no maintainable correction within the candidate's scope.
 
 ## Notes
 

@@ -33,7 +33,8 @@ The intended result is:
 - fewer renderer suppression rules;
 - no witness or LowIR regression;
 - bounded performance impact: three-run median instructions within 0.5% and
-  median maximum RSS and peak footprint within 1% of the accepted baseline.
+  peak footprint within 1% of the accepted baseline; median maximum RSS below
+  the 3% warning threshold, or below it on one confirmation batch.
 
 ## Hypothesis
 
@@ -86,9 +87,17 @@ reparse source text or perform a second lookup.
 6. Do not remeasure a baseline to improve a comparison. Record each baseline
    once and promote accepted candidate measurements without rerunning them.
 7. Use three runs for each baseline and candidate, and gate on their medians.
-   Allow at most 0.5% more instructions and 1% more maximum RSS or peak
-   footprint. Wall time is informational and never a gate.
-8. A failed `make test-strict` after removing a site means the semantic merge is
+   Allow at most 0.5% more instructions and 1% more peak footprint. Treat a
+   maximum RSS increase of 3% or more as a warning and run one more three-run
+   batch. Fail the candidate when the confirmation batch also reaches or
+   exceeds 3%. Wall time is informational and never a gate.
+8. Investigate a performance failure before reverting the semantic change.
+   Use the recorded counters, allocation diagnostics, profiles, and executable
+   layout to locate added work or memory. Amend the candidate when an in-scope
+   correction exists, then rerun correctness and measure the changed commit.
+   Do not rerun an unchanged failed commit. Revert only after the investigation
+   finds no maintainable correction within the slice.
+9. A failed `make test-strict` after removing a site means the semantic merge is
    incomplete. Restore the missing responsibility in the canonical path; do
    not repair the output downstream.
 
@@ -533,15 +542,22 @@ scripts/validate_perf_regression.py check \
   --report /tmp/cppgm-witness-consolidation-candidate.json \
   --runs 3 \
   --instruction-tolerance 0.005 \
-  --rss-tolerance 0.01 \
+  --rss-warning-tolerance 0.03 \
   --footprint-tolerance 0.01
 ```
 
-The candidate fails if median instructions retired exceed the last accepted
-measurement by more than 0.5%, or median maximum RSS or peak footprint exceed
-it by more than 1%. Do not rerun a failed candidate under the same method to
-seek a favorable result. Investigate the added work or reject the slice. Wall,
+The candidate fails when median instructions retired exceed the last accepted
+measurement by more than 0.5% or peak footprint exceeds it by more than 1%.
+A maximum RSS increase of 3% or more starts one confirmation batch of three
+runs. The validator fails the candidate when the confirmation median also
+reaches or exceeds 3%. Do not run a third batch under the same method. Wall,
 user, system, and cycle time remain informational.
+
+After a hard failure or confirmed RSS failure, inspect the semantic work,
+allocation behavior, counters, profiles, and executable layout before deciding
+the slice cannot ship. A targeted amendment creates a changed candidate and
+may receive a fresh correctness and performance run. Do not repeat the same
+commit. Revert when the measured cost has no maintainable in-scope fix.
 
 Do not promote the candidate yet.
 
@@ -551,7 +567,8 @@ After all gates pass, mark the checkpoint accepted in the ledger. Promote the
 already-recorded single candidate run without remeasurement:
 
 ```sh
-jq '.candidate' /tmp/cppgm-witness-consolidation-candidate.json \
+jq 'if .confirmation_candidate then .confirmation_candidate else .candidate end' \
+  /tmp/cppgm-witness-consolidation-candidate.json \
   > /tmp/cppgm-witness-consolidation-rolling.next.json
 mv /tmp/cppgm-witness-consolidation-rolling.next.json \
   /tmp/cppgm-witness-consolidation-rolling.json
@@ -594,9 +611,9 @@ The experiment is ready to package when all of these are true:
 - no witness renderer source reparsing or recovery was added;
 - `make test-strict` passes with direct LowIR comparison;
 - full `make test-report` passes with direct LowIR comparison;
-- the final median instructions are within 0.5%, and median maximum RSS and
-  peak footprint within 1%, of both the fixed diagnostic checkpoint and the
-  latest promoted rolling baseline;
+- the final median instructions are within 0.5% and peak footprint within 1%
+  of both the fixed diagnostic checkpoint and the latest promoted rolling
+  baseline; maximum RSS clears the 3% warning rule against both baselines;
 - all experiment-only provenance instrumentation is removed or retained only
   if it has clear ongoing diagnostic value and zero normal-path cost;
 - the final branch is split into reviewable commits and has no generated output

@@ -7,6 +7,7 @@ import re
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -18,6 +19,18 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ValidatePerfRegressionTest(unittest.TestCase):
+    @staticmethod
+    def perf_report(rss, instructions=100, footprint=100, head="candidate"):
+        return {
+            "head": head,
+            "command": MODULE.DEFAULT_COMMAND,
+            "summary": {
+                "instructions_retired": {"median": instructions},
+                "maximum_resident_set_size": {"median": rss},
+                "peak_memory_footprint": {"median": footprint},
+            },
+        }
+
     def test_default_workload_uses_frozen_project_headers(self):
         include_dir = "benchmarks/self_compile/stable/include"
         self.assertIn("-I", MODULE.DEFAULT_COMMAND)
@@ -182,6 +195,86 @@ class ValidatePerfRegressionTest(unittest.TestCase):
         self.assertTrue(
             any("lacks frozen workload identity" in failure for failure in failures)
         )
+
+    def test_rss_threshold_warns_without_failing_initial_comparison(self):
+        args = SimpleNamespace(
+            instruction_tolerance=0.005,
+            rss_tolerance=0.03,
+            footprint_tolerance=0.01,
+        )
+        warnings = []
+        with contextlib.redirect_stdout(io.StringIO()):
+            failures = MODULE.compare_reports(
+                self.perf_report(100, head="baseline"),
+                self.perf_report(103),
+                args,
+                rss_exceedance="warn",
+                warnings=warnings,
+            )
+        self.assertEqual(failures, [])
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("warning threshold", warnings[0])
+
+    def test_rss_warning_runs_one_confirmation_batch(self):
+        args = SimpleNamespace(
+            repo_root=REPO_ROOT,
+            runs=3,
+            timeout_sec=0,
+            time_binary="/usr/bin/time",
+            command=[],
+            baseline="baseline.json",
+            report=None,
+            instruction_tolerance=0.005,
+            rss_tolerance=0.03,
+            footprint_tolerance=0.01,
+        )
+        baseline = self.perf_report(100, head="baseline")
+        first = self.perf_report(104, head="candidate")
+        confirmation = self.perf_report(102, head="candidate")
+        with (
+            mock.patch.object(MODULE, "validate_frozen_workload", return_value={}),
+            mock.patch.object(MODULE, "load_json", return_value=baseline),
+            mock.patch.object(
+                MODULE, "collect_runs", side_effect=[["first"], ["confirmation"]]
+            ) as collect_runs,
+            mock.patch.object(
+                MODULE, "make_report", side_effect=[first, confirmation]
+            ),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            status = MODULE.command_check(args)
+        self.assertEqual(status, 0)
+        self.assertEqual(collect_runs.call_count, 2)
+
+    def test_second_rss_warning_fails_confirmation(self):
+        args = SimpleNamespace(
+            repo_root=REPO_ROOT,
+            runs=3,
+            timeout_sec=0,
+            time_binary="/usr/bin/time",
+            command=[],
+            baseline="baseline.json",
+            report=None,
+            instruction_tolerance=0.005,
+            rss_tolerance=0.03,
+            footprint_tolerance=0.01,
+        )
+        baseline = self.perf_report(100, head="baseline")
+        first = self.perf_report(104, head="candidate")
+        confirmation = self.perf_report(105, head="candidate")
+        with (
+            mock.patch.object(MODULE, "validate_frozen_workload", return_value={}),
+            mock.patch.object(MODULE, "load_json", return_value=baseline),
+            mock.patch.object(
+                MODULE, "collect_runs", side_effect=[["first"], ["confirmation"]]
+            ),
+            mock.patch.object(
+                MODULE, "make_report", side_effect=[first, confirmation]
+            ),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            status = MODULE.command_check(args)
+        self.assertEqual(status, 1)
 
 
 if __name__ == "__main__":
