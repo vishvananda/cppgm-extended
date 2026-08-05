@@ -129,11 +129,11 @@ dead/redundant code:
 | Lookup-time alias-to-class recovery | 21/20 | 7/7 | post-lookup class extraction, source-token/argument recovery, selection/anchor reconstruction, and 88 rejected attempts | canonical class-template reference results created during type lookup | clean | 4860/4860 | 177232319852 (-0.40%) | 768655360 (+0.28%) | 590512128 (-0.66%) | none |
 | Parameter-declaration class rewalk | 20/19 | 7/7 | post-parse parameter AST traversal, source-location recovery, and 84 duplicate/provisional class-use attempts | canonical resolved parameter types and class-template references | clean | 4860/4860 | 177256271702 (+0.01%) | 766726144 (-0.25%) | 590671872 (+0.03%) | none |
 | Constant-value qualifier replay | 19/18 | 7/7 | constexpr-only qualifier syntax checks, owner extraction, specialization selection, anchor/binding reconstruction, and 19 staged attempts | ordinary qualified-id/class-template resolution results | clean | 4860/4860 | 177064422264 (-0.11%) | 766369792 (-0.05%) | 591138816 (+0.08%) | none |
-| Static-member initializer tail scan | 18/17 | 7/6 | public after-location callback, token scan after initializer start, and 13 calls that produced no class-use attempt | structured initializer expression semantics | pending | pending | pending | pending | pending | pending |
+| Static-member initializer tail scan | 18/17 | 7/6 | public after-location callback, token scan after initializer start, and 13 calls that produced no class-use attempt | structured initializer expression semantics | clean | 4860/4860 | 177151210925 (+0.05%) | 765370368 (-0.13%) | 590516224 (-0.11%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.17%` instructions, `+0.81%` maximum RSS,
-and `-0.57%` footprint, so it is also within all three final fixed-baseline
+fixed diagnostic checkpoint it is `-0.12%` instructions, `+0.68%` maximum RSS,
+and `-0.67%` footprint, so it is also within all three final fixed-baseline
 limits.
 
 ## Rejected slices
