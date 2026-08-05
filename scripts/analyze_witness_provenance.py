@@ -12,7 +12,7 @@ from typing import Any, Iterable
 
 
 SOURCE_PRODUCERS = [
-    *(f"class.callsemantic.{index:02d}" for index in range(6, 12) if index != 9),
+    *(f"class.callsemantic.{index:02d}" for index in range(6, 11) if index != 9),
     "class.callsemantic.13",
     "class.class_template_reference.01",
     "class.class_template_reference.02",
@@ -45,7 +45,6 @@ UPSTREAM_ROUTES = [
     "nested_class_use.template_arguments",
     "class_use.static_member_definition_ast_node",
     "class_use.resolved_alias_type",
-    "class_use.resolved_type_node",
 ]
 
 

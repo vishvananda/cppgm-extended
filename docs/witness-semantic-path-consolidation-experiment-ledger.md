@@ -123,6 +123,19 @@ Lifecycle collisions remain concentrated between
 `semantic_class_model` and `template_argument_semantics.02`; those transitions
 need ownership analysis before consolidation.
 
+After moving function-result occurrence ownership into the canonical template
+source scan and deleting resolved-type-node replay, the refreshed strict trace
+is `/tmp/cppgm-witness-provenance-resolved-replay-removed.znfTuD` and its
+report is
+`/tmp/cppgm-witness-provenance-resolved-replay-removed-report.json`. All 1,305
+strict comparisons remained clean. The trace contains 101,745 records across
+1,296 files. The diagnostic inventory now has 36 static producer IDs: 12
+class, 4 alias, 3 function-call, 1 variable, and 16 lifecycle sites. Four
+class replay routes remain. `class.callsemantic.11` and the resolved-type-node
+route are absent; before deletion that route made 415 calls, while its producer
+owned no visible row uniquely. Every exercised remaining class producer owns
+visible output uniquely.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -167,10 +180,11 @@ dead/redundant code:
 | Declaration resolved-type replay | 15/15 | 6/5 | declaration-type replay route and its semantic-context plumbing | retained function-result replay for functional-cast occurrence metadata | clean | 4860/4860 | 176930812572 (-0.02%) | 761339904 (-0.17%) | 589987840 (-0.09%) | none |
 | Class base-clause reconstruction | 15/14 | 5/5 | direct class-template lookup, argument resolution, source-decision reconstruction, and a dormant producer during a base-clause rewalk | canonical base-type resolution during class-template instantiation | clean | 4860/4860 | 176608992504 (-0.05%) | 766824448 (+0.73%) | 590385152 (+0.02%) | none |
 | Dead dependent-partial resolver | 14/13 | 5/5 | uncalled `record_dependent_partial_class_use_for_resolved_template_id` and its dormant producer | live selected class-reference resolution | clean | 4860/4860 | 176796004199 (+0.11%) | 753594368 (-1.73%) | 590069760 (-0.05%) | none |
+| Resolved type-node class replay | 13/12 | 5/4 | public resolved-type callback, 415 strict-corpus calls, post-resolution source scans, and replay-only `sizeof`, qualifier, conversion, declaration, and constructor-initializer helpers | canonical template-id source scanning and selected class-reference occurrence metadata | clean | 4860/4860 | 176684351239 (-0.21%) | 756359168 (-1.11%) | 590614528 (+0.01%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.18%` instructions, `+0.61%` maximum RSS,
-and `-0.67%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.39%` instructions, `-0.50%` maximum RSS,
+and `-0.66%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
