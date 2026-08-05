@@ -12,7 +12,6 @@ from typing import Any, Iterable
 
 
 SOURCE_PRODUCERS = [
-    "class.callsemantic.01",
     *(f"class.callsemantic.{index:02d}" for index in range(6, 12)),
     "class.callsemantic.13",
     "class.class_template_reference.01",
