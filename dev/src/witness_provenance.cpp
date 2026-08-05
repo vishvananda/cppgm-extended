@@ -503,8 +503,6 @@ const char * upstream_route_name(WitnessUpstreamRoute route)
     return "class_use.resolved_alias_type";
   case WitnessUpstreamRoute::ClassUseFromResolvedTypeNode:
     return "class_use.resolved_type_node";
-  case WitnessUpstreamRoute::DeclarationClassUseFromResolvedTypeNode:
-    return "class_use.declaration_resolved_type_node";
   }
   return "unknown";
 }

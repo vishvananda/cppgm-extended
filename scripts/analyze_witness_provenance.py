@@ -52,7 +52,6 @@ UPSTREAM_ROUTES = [
     "class_use.static_member_definition_ast_node",
     "class_use.resolved_alias_type",
     "class_use.resolved_type_node",
-    "class_use.declaration_resolved_type_node",
 ]
 
 

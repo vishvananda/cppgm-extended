@@ -9856,19 +9856,6 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
           ctx,
           match,
           scope);
-  if(name_node &&
-     match &&
-     match->owner_class &&
-     match->owner_class->type &&
-     witness::source_capture_enabled(ctx.template_witness_context())) {
-    ctx.record_declaration_type_class_use_for_resolved_type_node(
-        scope,
-        *name_node,
-        match->owner_class->type,
-        ctx.source_location_for_node(*name_node),
-        true,
-        !require_output_definition);
-  }
   if(require_output_definition) {
     ctx.require_function_definition(match,
                                     OutputReason::FunctionIdUse,
