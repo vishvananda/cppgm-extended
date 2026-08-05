@@ -449,6 +449,8 @@ const char * producer_site_name(WitnessProducerSite site)
                       "alias.template_argument_semantics.02");
   CPPGM_PRODUCER_NAME(AliasTemplateSpecialization01,
                       "alias.template_specialization.01");
+  CPPGM_PRODUCER_NAME(AliasTemplateSpecialization02,
+                      "alias.template_specialization.02");
   CPPGM_PRODUCER_NAME(AliasCallsemantic01, "alias.callsemantic.01");
   CPPGM_PRODUCER_NAME(AliasCallsemantic02, "alias.callsemantic.02");
   CPPGM_PRODUCER_NAME(AliasCallsemantic03, "alias.callsemantic.03");

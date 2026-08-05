@@ -1710,6 +1710,73 @@ void append_alias_pattern_source_bindings(
   }
 }
 
+void append_alias_pattern_source_bindings_from_texts(
+    std::vector<template_api::TemplateWitnessSourceBinding> & out,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::vector<std::string> & explicit_argument_texts)
+{
+  std::size_t explicit_index = 0;
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    template_api::TemplateWitnessSourceBinding binding;
+    binding.param = parameters[i].name.empty() ?
+        std::string("$") + std::to_string(i + 1) :
+        parameters[i].name;
+    binding.source = "explicit";
+    binding.type_like = parameters[i].kind == TemplateParameterInfo::TP_TYPE;
+    if(parameters[i].parameter_pack) {
+      binding.pack_binding = true;
+      std::size_t trailing_non_pack = 0;
+      for(std::size_t j = i + 1; j < parameters.size(); ++j) {
+        if(!parameters[j].parameter_pack) {
+          ++trailing_non_pack;
+        }
+      }
+      const std::size_t remaining_explicit =
+          explicit_argument_texts.size() > explicit_index ?
+              explicit_argument_texts.size() - explicit_index :
+              0;
+      const std::size_t pack_count =
+          remaining_explicit > trailing_non_pack ?
+              remaining_explicit - trailing_non_pack :
+              0;
+      if(pack_count == 0) {
+        binding.arg = "<>";
+      } else if(pack_count == 1) {
+        const std::string element_text = compact_source_template_argument_text(
+            explicit_argument_texts[explicit_index]);
+        binding.arg = element_text;
+        binding.pack_arguments.push_back(element_text);
+      } else {
+        binding.pack_aggregate = true;
+        std::ostringstream text;
+        text << "<";
+        for(std::size_t j = 0; j < pack_count; ++j) {
+          if(j != 0) {
+            text << ", ";
+          }
+          const std::string element_text =
+              compact_source_template_argument_text(
+                  explicit_argument_texts[explicit_index + j]);
+          binding.pack_arguments.push_back(element_text);
+          text << element_text;
+        }
+        text << ">";
+        binding.arg = text.str();
+      }
+      out.push_back(binding);
+      explicit_index += pack_count;
+      continue;
+    }
+    if(explicit_index >= explicit_argument_texts.size()) {
+      break;
+    }
+    binding.arg = compact_source_template_argument_text(
+        explicit_argument_texts[explicit_index]);
+    out.push_back(binding);
+    ++explicit_index;
+  }
+}
+
 void record_alias_pattern_source_use(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle match_scope,
@@ -1774,6 +1841,61 @@ void record_alias_pattern_source_use(
   CPPGM_SET_WITNESS_PRODUCER(
       request,
       witness::WitnessProducerSite::AliasTemplateSpecialization01);
+  witness::emit_alias_use(services.witness_context, request);
+}
+
+void record_alias_pattern_source_use_from_texts(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle match_scope,
+    const QualifiedName & qualified,
+    const std::vector<std::string> & arg_texts,
+    const TemplateArgumentSyntax * pattern_syntax)
+{
+  if(!witness::source_capture_enabled(services.witness_context)) {
+    return;
+  }
+  Scope & scope = match_scope.require();
+  AliasTemplateDecl * alias_template =
+      template_argument_semantics::lookup_alias_template(
+          services, scope, qualified);
+  if(!alias_template ||
+     qualified.name != alias_template->name) {
+    return;
+  }
+  const std::string use_location =
+      alias_pattern_source_location(services.witness_context, pattern_syntax);
+  if(use_location.empty()) {
+    return;
+  }
+
+  witness::AliasUseEmitRequest request;
+  const std::vector<TemplateArgumentSyntax> * arg_syntaxes =
+      pattern_syntax && pattern_syntax->template_id ?
+          &pattern_syntax->template_id->argument_syntaxes :
+          nullptr;
+  request.use_location = use_location;
+  std::vector<std::string> source_arg_texts =
+      source_argument_texts_for_occurrence(arg_texts, arg_syntaxes);
+  template_argument_semantics::canonicalize_alias_template_source_argument_texts(
+      alias_template->parameters,
+      source_arg_texts);
+  request.template_id_occurrence =
+      witness::make_source_template_id_occurrence(
+          use_location,
+          source_arg_texts);
+  request.template_name =
+      template_api::alias_template_witness_entity(alias_template);
+  request.origin = witness::AliasUseEmissionOrigin::PatternTemplateId;
+  request.selected_decl_location =
+      alias_template_decl_location(services.witness_context, *alias_template);
+  request.selected_decl_has_name_location =
+      source_decl_anchor_has_name_location(alias_template->declaration_anchor);
+  append_alias_pattern_source_bindings_from_texts(request.bindings,
+                                                  alias_template->parameters,
+                                                  source_arg_texts);
+  CPPGM_SET_WITNESS_PRODUCER(
+      request,
+      witness::WitnessProducerSite::AliasTemplateSpecialization02);
   witness::emit_alias_use(services.witness_context, request);
 }
 
@@ -12758,6 +12880,27 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
             alias_found != deduced.alias_templates.end() ? alias_found->second : nullptr);
       }
       deduced_arguments.push_back(arg);
+    }
+
+    if(witness::source_capture_enabled(services.witness_context)) {
+      Scope matched_pattern_scope =
+          make_partial_match_scope(partial.parameters, *partial.pattern_scope, deduced);
+      for(std::size_t i = 0; i < fixed_argument_count; ++i) {
+        if(i >= partial.arg_syntaxes.size()) {
+          continue;
+        }
+        const TemplateIdSyntax * pattern_id =
+            template_argument_template_id_syntax(partial.arg_syntaxes[i]);
+        if(!pattern_id) {
+          continue;
+        }
+        record_alias_pattern_source_use_from_texts(
+            services,
+            template_api::make_template_environment(matched_pattern_scope),
+            pattern_id->name,
+            pattern_id->arguments,
+            &partial.arg_syntaxes[i]);
+      }
     }
 
     return true;

@@ -43,6 +43,7 @@ enum class WitnessProducerSite
   AliasTemplateArgumentSemantics01,
   AliasTemplateArgumentSemantics02,
   AliasTemplateSpecialization01,
+  AliasTemplateSpecialization02,
   AliasCallsemantic01,
   AliasCallsemantic02,
   AliasCallsemantic03,

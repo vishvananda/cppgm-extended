@@ -24,6 +24,7 @@ SOURCE_PRODUCERS = [
     "alias.template_argument_semantics.01",
     "alias.template_argument_semantics.02",
     "alias.template_specialization.01",
+    "alias.template_specialization.02",
     "alias.callsemantic.01",
     "alias.callsemantic.02",
     "alias.callsemantic.03",
