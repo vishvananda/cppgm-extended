@@ -39,7 +39,6 @@ enum class WitnessProducerSite
   ClassConstantValueLookup05,
   ClassTemplateInstantiation,
 
-  AliasTemplateArgumentSemantics01,
   AliasTemplateArgumentSemantics02,
   AliasTemplateSpecialization01,
   AliasTemplateSpecialization02,

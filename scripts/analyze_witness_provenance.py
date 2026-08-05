@@ -20,7 +20,6 @@ SOURCE_PRODUCERS = [
     "class.class_template_reference.02",
     *(f"class.constant_value_lookup.{index:02d}" for index in range(2, 6)),
     "class.template_instantiation",
-    "alias.template_argument_semantics.01",
     "alias.template_argument_semantics.02",
     "alias.template_specialization.01",
     "alias.template_specialization.02",
