@@ -8042,6 +8042,10 @@ const ValueBinding * lookup_qualified_value_binding_node(SemanticContext & ctx,
   if(qualifier_type_out) {
     *qualifier_type_out = qualifier_type;
   }
+  if(!qualifier_type) {
+    return lookup_qualified_value_binding_impl(
+        ctx, scope, qualified, &node);
+  }
   return lookup_value_binding_in_type_scope(ctx, scope, qualified, qualifier_type);
 }
 

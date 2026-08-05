@@ -1478,6 +1478,11 @@ public:
       return variable_template_binding;
     }
 
+    if(!target->class_info) {
+      return semantic_lookup::lookup_qualified_value_binding_node(
+          ctx, scope, qualified, node);
+    }
+
     map<string, ValueBinding>::const_iterator found =
         target->values.find(qualified.name);
     if(found != target->values.end()) {
