@@ -586,7 +586,7 @@ pa_ref_pairs=(
   pa11:cppgm++
   pa12:cppgm++
   pa13:lowir2cy86
-  pa14:cppgm++
+  pa14:abimangle
   pa15:cppgm++
   pa16:cppgm++
   pa17:cppgm++
@@ -600,9 +600,9 @@ pa_ref_pairs=(
   pa25:cppgm++
   pa26:cppgm++
   pa27:cppgm++
-  pa28:lowir2native
-  pa29:cppgm++
-  pa30:abimangle
+  pa28:cppgm++
+  pa29:lowir2native
+  pa30:cppgm++
   pa31:cppgm++
   pa32:cppgm++
   pa33:cppgm++

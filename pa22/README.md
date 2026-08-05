@@ -5,11 +5,17 @@
 Write a C++ application called `cppgm++` that takes as input a set of C++
 source files, executes translation phases 1 through 7, parses them as PA10/PA22
 translation units, reuses the PA11-PA21 semantic foundation, builds on the
-PA14-PA21 LowIR lowering path, and writes LowIR text.
+PA15-PA21 LowIR lowering path, and writes LowIR text.
 
-PA22 is the second half of template completion. Its job is to finish the
-remaining single-feature deduction/substitution behavior so ordinary generic
-C++11 code stops depending on a pragmatic template subset.
+PA22 is the first half of template completion. Its job is to finish the
+template declaration and specialization model so the compiler knows:
+
+- what template entities exist
+- how template-template parameters, member templates, and friend templates are
+  represented
+- what specializations exist
+- which specialization is selected
+- which declarations/definitions own the selected specialization
 
 PA22 still produces LowIR. It does not introduce a new output format.
 
@@ -22,10 +28,10 @@ You will want to reuse:
 - the preprocessing and tokenization pipeline from PA1-PA6
 - the PA10 AST as the syntax boundary
 - the PA11-PA12 semantic foundation
-- the PA14-PA21 LowIR lowering path
+- the PA15-PA21 LowIR lowering path
 - the PA13 LowIR contract
-- the PA18-PA21 template machinery
-- the PA20 full constant-evaluation layer
+- the PA19-PA20 template and metaprogramming machinery
+- the PA21 full constant-evaluation layer
 
 ### Starter Kit
 
@@ -34,7 +40,7 @@ The starter kit contains:
 - a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
   in `../dev/cppgm++.cpp`
 - the standard assignment `Makefile` and harness scripts
-- the PA22 deduction/substitution test suite under `tests/`
+- the PA22 specialization/entity test suite under `tests/`
 
 In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from
 the `cppgm++` scaffold and is the file you extend for this assignment.
@@ -98,12 +104,13 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 PA22 tests live under `tests/`. The suite is split by test role:
 
-- `tests/spec/` contains N3485/spec-anchored deduction, substitution, and
-  SFINAE tests. Each provided C++ language test in this directory starts with a
-  leading comment of the form `// N3485 focus: 14.x.y [clause.name] ...` so a
-  reviewer can find the governing text in `../doc/n3485.txt`.
-- `tests/general/` contains broader generic-program examples that are useful
-  for PA22 but are not one-rule spec probes.
+- `tests/spec/` contains N3485/spec-anchored specialization/entity tests. Each
+  provided C++ language test in this directory starts with a leading comment of the
+  form `// N3485 focus: 14.x.y [clause.name] ...` so a reviewer can find the
+  governing text in `../doc/n3485.txt`.
+- `tests/general/` contains broader cross-feature and realistic
+  template-entity examples that are useful for PA22 but are not one-rule spec
+  probes.
 
 The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated
@@ -111,15 +118,13 @@ LowIR for basic structural correctness, then compares the canonicalized LowIR
 against the checked-in reference. For rejected tests, the exit status is the
 checked result; exact diagnostic text is not checked.
 
-This split assignment intentionally focuses on the deduction/substitution half
-of template completion:
+This split assignment intentionally focuses on the specialization/entity half of
+template completion:
 
-- full function-template deduction
-- function-template partial ordering
-- non-deduced contexts and braced-init, array-bound, and conversion deduction
-  corners
-- SFINAE and substitution failure
-- no-eager-instantiation timing and dependent-call behavior
+- class partial specialization and specialization selection
+- alias and variable template entity modeling
+- explicit specialization and explicit-instantiation ownership
+- the declaration/instantiation behavior required to make that model coherent
 
 ### PA22 Syntax Boundary
 
@@ -130,76 +135,89 @@ Boundary and Out Of Scope sections below.
 
 ### Optional Student Test Ideas
 
-When adding your own tests, useful PA22 themes include explicit template
-arguments mixed with deduced ones, function-address deduction, conversion
-function template deduction, constructor-template participation, richer
-non-deduced contexts, and compact `enable_if` / `void_t` / detector patterns.
+When adding your own tests, useful PA22 themes include alias/variable template
+entities, template-template parameters, member templates, friend templates,
+class partial specialization selection, explicit-instantiation ownership,
+constructor/member-template specialization ownership, and partial ordering
+boundaries.
 
 ### Assignment Boundary
 
-PA22 owns the remaining advanced single-feature standard template behavior over
-the implemented surface, including:
+PA22 owns the template declaration graph and specialization model over the
+implemented language surface, including:
 
-- full function-template deduction over the intended C++11 subset
-- function-template partial ordering
-- substitution behavior and candidate dropping
-- `enable_if`, `void_t`, and detected-idiom style SFINAE behavior
-- conversion function template deduction
-- constructor template deduction and overload participation
-- non-deduced contexts and explicit template-id deduction edge cases
-- braced-init deduction in the supported template-call subset
-- pointer, reference, enum, and static-member non-type template argument values
-  over the supported constant-expression subset
-- template deduction from arguments whose types come from already-resolved
-  member-function calls, including the implicit-object overload selection from
-  PA15/PA16
-- dependent-call, dependent-alias, and no-eager-instantiation behavior when the
-  primary assertion is a single PA22-owned feature rather than a broad
-  multi-feature composition
+- alias templates
+- variable templates
+- template-template parameters and template-template argument matching
+- member templates, including templated member operators and templated call
+  operators
+- access checking for member class templates, alias templates, and nested type
+  paths, including inherited access and template-template arguments
+- friend templates in the supported class-template/function-template subset, including a
+  friend type template-id whose non-type argument is a dependent constant expression
+- class partial specialization
+- partial-specialization ordering and specialization selection
+- current-specialization identity in the supported class-template and
+  specialization cases
+- explicit-instantiation declarations and definitions over the supported surface
+- an explicit-instantiation declaration for a class specialization suppresses
+  non-inline instantiation but keeps a locally used in-class inline or defaulted
+  member definition available
+- integration with PA20 explicit specialization declarations/definitions when
+  they interact with the PA22 specialization graph
+- collection/ownership behavior for constructor/member-template specializations
+  and namespace-scope friend-template declarations
+- an explicit definition of a member template for a concrete class-template
+  specialization replaces the definition instantiated from the primary and may
+  not itself be defined more than once
+- an out-of-class member-template definition attaches to specializations selected
+  by earlier calls in the translation unit and remains available for their demand
+- the dependent-name and instantiation behavior strictly required to make the
+  specialization model work
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA22:
 
-- `std::initializer_list` library semantics and initializer-list overload
-  machinery
-- member-pointer template behavior that depends on later member-pointer support
+- full function-template deduction over the intended language surface
+- function-template partial ordering
+- SFINAE and substitution-failure completion
+- the remaining no-eager-instantiation / dependent-call timing work that is
+  better framed as substitution behavior
+- initializer-list template behavior
 - hosted/vendor-only extensions that happen to use templates
 - post-C++11 template-language features
-- backend/toolchain ownership that belongs to the later native and toolchain
-  milestones
+- broad multi-feature integration cases whose main assertion is that several
+  completed template features compose
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended template follow-up is PA24, which checks that the PA18-PA22
-template features compose in realistic programs. The later backend stage retargets
-the language-complete front-end from the CY86 scaffold path to the real native
-backend.
+The intended next stage is PA23, which finishes deduction, substitution, and
+SFINAE over the now-complete specialization model.
 
 So PA22 should leave behind:
 
-- a complete standard template semantic layer
-- instantiated declarations that lower through the ordinary LowIR path without
-  template subset special-casing
-- a clean handoff to PA23 for multi-feature template integration before
-  backend/toolchain work
+- a stable template declaration/specialization graph
+- deterministic specialization selection
+- specialization ownership that lowers through the ordinary LowIR path
+- no remaining "template entity model later" gap before full template
+  completion
 
 ### Design Notes (Non-Normative)
 
-The useful shape for PA22 is a typed substitution and deduction engine that
-works on semantic declarations, types, expressions, and template arguments. A
-substitution failure should be represented as candidate state during overload
-resolution rather than as a diagnostic unless no viable candidate remains.
+The useful shape for PA22 is a canonical template-entity graph. Alias templates,
+variable templates, primary class templates, partial specializations, explicit
+instantiations, and PA20 explicit specializations should refer to the same
+semantic entities instead of being tracked as unrelated source-text forms.
 
 Useful intermediate representations include:
 
-- deduction bindings that record which template parameter each typed argument
-  constrained
-- explicit non-deduced-context markers in the type/expression forms that need
-  them
-- a substitution result type that can carry success, SFINAE discard, or hard
-  error
-- deferred instantiation records for dependent calls and bodies that must not be
-  forced before their template arguments are known
+- canonical specialization keys built from typed template arguments
+- explicit template-template parameter bindings that point at template entities,
+  not source text
+- an ordered partial-specialization candidate set with deterministic selection
+- explicit ownership links from constructor/member-template specializations back
+  to the class or namespace entity that owns the generated declaration
+- reuse of PA21 constant values for value-dependent specialization keys

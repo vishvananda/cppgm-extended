@@ -140,7 +140,7 @@ libstdc++ helper definitions to appear as defined symbols in the output object.
 
 PA36 uses the ordinary host C++ ABI spelling for every hosted symbol that is
 defined or referenced by an emitted object. The implementation should continue
-to derive those spellings from semantic facts and the PA30 ABI naming layer
+to derive those spellings from semantic facts and the PA14 ABI naming layer
 rather than from hard-coded library-private names.
 
 The hosted emission policy decides which entities are defined or left
@@ -240,7 +240,7 @@ policy. The implementation should preserve enough semantic information to know
 which inline/template definitions are required, which declarations remain
 external, and which unused hosted helpers should stay un-emitted.
 
-A recommended integration style is to use the PA30 ABI naming layer for hosted
+A recommended integration style is to use the PA14 ABI naming layer for hosted
 symbols in the same way PA32 and PA33 use it for ordinary host objects. Semantic
 analysis can produce the facts for the entity being emitted or referenced, then
 the mangler can produce the final raw symbol name before object emission. When a

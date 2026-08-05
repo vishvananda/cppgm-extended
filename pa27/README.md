@@ -4,16 +4,18 @@
 
 Write a C++ application called `cppgm++` that takes as input a set of C++ Source
 Files, executes translation phases 1 through 7, parses them as PA10/PA27 translation units,
-reuses the PA11-PA12 semantic foundation, builds on the PA14-PA26 LowIR lowering path,
-adds the PA27 multi-vtable / virtual-base ABI slice, and writes LowIR text.
+reuses the PA11-PA12 semantic foundation, builds on the PA15-PA26 LowIR lowering path,
+adds the PA27 multi-base object-model slice, and writes LowIR text.
 
-PA27 extends PA26 with the first supported object layouts that require more than the
-earlier single-vptr, non-virtual-base ABI:
+PA27 completes the remaining non-virtual object-model work that still fits the current
+single-vptr ABI:
 
-- virtual inheritance for shared base-subobject layout and access
-- polymorphic multiple inheritance with more than one active vtable view
-- pointer-form `dynamic_cast` across sibling polymorphic bases
-- RTTI / `typeid` through non-primary polymorphic base views
+- non-virtual multiple inheritance
+- member lookup and access across multiple base subobjects
+- constructor, copy, and destructor generation across multiple non-virtual bases
+- member pointer type formation, null/conversion handling, and `.*` / `->*`
+  application over the completed non-virtual object model
+- `dynamic_cast<void*>` for the current polymorphic single-inheritance ABI
 
 PA27 still produces LowIR. It does not introduce a new output format.
 
@@ -26,9 +28,9 @@ You will want to reuse:
 - the preprocessing and tokenization pipeline from PA1-PA6
 - the PA10 AST as the syntax boundary
 - the PA11-PA12 semantic foundation
-- the PA14-PA26 LowIR lowering path
+- the PA15-PA26 LowIR lowering path
 - the PA13 LowIR contract
-- the PA28 native validation path
+- the PA29 native validation path
 - the PA13 LowIR -> CY86 path as an optional secondary scaffold
 
 ### Starter Kit
@@ -49,7 +51,7 @@ student-owned helpers they add under `dev/src/`. The assignment directory, gramm
 test fixtures, comparison scripts, and checked-in reference outputs are support
 files, not implementation files to edit for normal solutions. The shared support files
 provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA27 source-to-LowIR ABI slice for you.
+new PA27 source-to-LowIR object-model slice for you.
 
 Unlike PA1-PA9, there is no external reference binary for PA27. The checked-in `.ref`
 files are the default oracle.
@@ -97,7 +99,8 @@ The output file is not required to be meaningful on failure.
 
 ### Standard Output / Error
 
-Standard output and standard error are ignored for automated testing of `cppgm++`.
+Standard output and standard error are ignored for automated testing of
+`cppgm++`.
 
 You are free to use them for debugging, tracing, or diagnostic messages.
 
@@ -106,9 +109,11 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
 `cppgm++` with `--emit-lowir -O0`.
 
-The local checked-in tests live in `tests/general/`. They exercise PA27
-source-to-LowIR behavior over virtual inheritance, non-primary polymorphic
-views, sibling `dynamic_cast`, and RTTI through adjusted base views.
+The local checked-in tests live in `tests/general/`. That directory contains
+PA27 source-to-LowIR tests over non-virtual multiple inheritance, multi-base
+generated members, member pointers, `dynamic_cast<void*>`, and ambiguity
+rejection. PA27 has no `tests/spec/` directory because these tests focus on the
+combined language-to-LowIR contract.
 
 For each test case `x`:
 
@@ -118,10 +123,9 @@ For each test case `x`:
 - `x.my.exit_status` is compared against `x.ref.exit_status`
 
 PA27 is tested against generated LowIR text using the relaxed LowIR comparator described
-above. The generated LowIR is also intended to remain acceptable to the native
-backend path introduced in PA28:
+above. A useful manual validation path is:
 
-- feed that LowIR into PA28 `lowir2native`
+- feed that LowIR into PA29 `lowir2native`
 - optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
 - then feed the generated CY86 into PA9 `cy86 --target linux`
 
@@ -135,8 +139,8 @@ the PA27 semantic and lowering requirements are defined by the Assignment
 Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
-format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
-`.ref` files.
+format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the
+checked-in `.ref` files.
 
 PA27 does not add a new source-language grammar format. It instead enables more
 of the already-accepted C++11 syntax to participate in semantic analysis and
@@ -157,74 +161,78 @@ treat `lowir.md` as authoritative. If they disagree about the PA27 lowering slic
 
 PA27 supports the following in addition to the PA26 subset:
 
-- virtual inheritance for shared base-subobject layout in complete objects
-- field access through shared virtual bases
-- supported constructor and hidden-argument forwarding cases that carry virtual-base
-  subobject addresses through existing value-semantics machinery
-- polymorphic multiple inheritance with separate vtable views for non-primary polymorphic
-  bases
-- virtual dispatch through primary views whose virtual-base ABI carries
-  function/adjustment rows, and through non-primary polymorphic base pointers
-  and references
-- pointer-form `dynamic_cast<T*>` across sibling polymorphic bases in the supported object
-  model
-- `typeid(expr)` through supported non-primary polymorphic base lvalue views
+- non-virtual multiple inheritance
+- inherited field lookup and access across multiple non-virtual base subobjects
+- inherited non-virtual method lookup and `this` adjustment across multiple non-virtual bases
+- constructor, copy-constructor, copy-assignment, and destructor generation across multiple
+  non-virtual bases
+- member pointer type formation, null values, base-to-derived member-pointer
+  conversions, and `.*` / `->*` application for non-virtual class layouts
+- `dynamic_cast<void*>` for the existing polymorphic single-inheritance ABI
 
 Within this milestone, PA27 should produce valid LowIR for ordinary source programs over
-that subset. That LowIR should be accepted by PA28 `lowir2native` for the supported cases.
+that subset. That LowIR should be accepted by PA29 `lowir2native` for the supported cases.
 PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
 
 To complete PA27, implement these goals:
 
-1. Shared virtual-base layout.
-   Complete objects with a virtual diamond should expose one shared base-subobject at a
-   deterministic offset.
+1. Multiple-base layout and field access.
+   Distinct base subobjects should have deterministic offsets, and member access should lower
+   through those offsets correctly.
 
-2. Polymorphic dispatch over adjusted vtable views.
-   Calling a virtual through a class with virtual-base adjustment rows must select the
-   requested logical slot. Calling through a later polymorphic base must lower through the
-   correct vtable view and apply the required `this` adjustment.
+2. Base-method lookup and `this` adjustment.
+   Calling a method inherited from a later base must lower the implicit object argument to the
+   correct base-subobject address.
 
-3. Sibling cross-cast support.
-   Pointer-form `dynamic_cast` across sibling polymorphic bases should lower into the
-   supported RTTI / vtable-view scan.
+3. Generated special members across multiple bases.
+   Synthesized construction, copy, assignment, and destruction should sequence the supported
+   non-virtual bases correctly.
 
-4. RTTI through non-primary views.
-   `typeid(expr)` should observe the dynamic type through a supported non-primary
-   polymorphic base reference.
+4. Member pointer lowering over non-virtual layouts.
+   Member pointer values should preserve the selected member target and supported base
+   adjustment so `.*` and `->*` lower through the correct object address.
+   Their contextual conversion to `bool` must distinguish a non-null target from a null
+   member pointer without treating the adjustment word as an independent truth value.
+
+5. Remaining single-vptr RTTI case.
+   `dynamic_cast<void*>` should lower for the existing polymorphic single-inheritance ABI
+   without introducing new LowIR operations.
+
+6. Ambiguity handling.
+   Ambiguous inherited member names must not silently resolve.
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA27:
 
-- virtual-base constructor, copy, assignment, and destructor sequencing beyond the already
-  supported simple generated cases
-- polymorphic multiple inheritance with virtual destructors
-- reference-form `dynamic_cast`
-- `dynamic_cast` and RTTI cases that require `bad_cast` / `bad_typeid`
-- virtual inheritance combined with the unsupported special-member or exception cases
-- toolchain-driver and host-linker integration
+- virtual inheritance
+- polymorphic multiple inheritance
+- member-pointer behavior that depends on virtual-base or polymorphic
+  multiple-inheritance adjustment
+- `dynamic_cast` reference forms
+- `dynamic_cast` cases that depend on multiple or virtual polymorphic base layouts
+- the remaining RTTI cases that require a broader multi-vptr or virtual-base ABI
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended next stage is PA28, which lowers the completed LowIR family to
-native code before PA29 turns the source pipeline into a practical `cppgm++`
-toolchain driver and standard object-output flow.
+The intended next stage is PA28, which completes the broader virtual / RTTI ABI that PA27
+still deliberately avoids.
 
 So PA27 should leave behind:
 
-- a stable multi-vtable / virtual-base LowIR lowering path
-- deterministic lowering for the supported sibling-cast and RTTI-view cases
-- explicit remaining deferrals only where the practical toolchain and remaining ABI/runtime
-  work need to take over
-- enough stable source behavior that PA29 can start carrying simple PA9-style complete
-  programs as C++ end-to-end tests through the practical driver/link path
+- a stable non-virtual multi-base object model over the existing LowIR family
+- deterministic lowering for multiple-base field access, method calls, and generated special
+  members
+- explicit remaining deferrals only where PA28 needs to take over:
+  - virtual inheritance
+  - polymorphic multiple inheritance
+  - the remaining `dynamic_cast` / RTTI cases that depend on that ABI
 
 ### Design Notes (Non-Normative)
 
-PA27 should extend the existing object-model and RTTI lowering path, not replace it.
+PA27 should extend the existing semantic and lowering path, not replace it.
 
 The same monotonic-extension rule applies here:
 
@@ -232,5 +240,5 @@ The same monotonic-extension rule applies here:
   feature set
 - it should not perturb PA26 outputs for programs that remain entirely within the PA26
   subset
-- in practice, the richer vtable / RTTI layout should stay source-driven rather than
-  changing earlier single-vptr cases unnecessarily
+- in practice, multiple-base offsets and lowered base-adjustment paths should stay on-demand
+  rather than changing earlier single-base outputs unnecessarily

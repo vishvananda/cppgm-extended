@@ -1,5 +1,5 @@
-abimangle
-abimangle-debug
+cppgm++
+cppgm++-debug
 testout
 tests/**/*.my
 tests/**/*.my.*

@@ -217,10 +217,10 @@ The checkpoint used for each assignment stage is:
 - `nsdecl-self`: PA7
 - `nsinit-self`: PA8
 - `cy86-self`: PA9
-- `cppgm++-self`: PA10-PA12, PA14-PA27, and PA29-PA36
+- `cppgm++-self`: PA10-PA12, PA15-PA28, and PA30-PA36
 - `lowir2cy86-self`: PA13
-- `lowir2native-self`: PA28 and PA38
-- `abimangle-self`: PA30
+- `abimangle-self`: PA14
+- `lowir2native-self`: PA29 and PA38
 - `lowiropt-self`: PA37
 
 Checkpoint source sets are fixed by `../dev/frontend_source_sets.mk`. Do not

@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import time
@@ -10,6 +11,33 @@ import unittest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EXPORT_SCRIPT = REPO_ROOT / "scripts" / "export_student_repo.sh"
+TESTS_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "tests.yml"
+
+REFERENCE_TARGETS = [
+    "abimangle", "pptoken", "posttoken", "ctrlexpr", "macro", "preproc",
+    "recog", "nsdecl", "nsinit", "cy86", "cppgm++", "lowir2cy86",
+    "lowir2native", "lowiropt",
+]
+
+ASSIGNMENT_REFERENCE_TARGETS = {
+    **{f"pa{i}": "cppgm++" for i in range(10, 13)},
+    **{f"pa{i}": "cppgm++" for i in range(15, 29)},
+    **{f"pa{i}": "cppgm++" for i in range(30, 37)},
+    "pa1": "pptoken",
+    "pa2": "posttoken",
+    "pa3": "ctrlexpr",
+    "pa4": "macro",
+    "pa5": "preproc",
+    "pa6": "recog",
+    "pa7": "nsdecl",
+    "pa8": "nsinit",
+    "pa9": "cy86",
+    "pa13": "lowir2cy86",
+    "pa14": "abimangle",
+    "pa29": "lowir2native",
+    "pa37": "lowiropt",
+    "pa38": "lowir2native",
+}
 
 
 def exported_dev_makefile():
@@ -18,6 +46,13 @@ def exported_dev_makefile():
     start = script.index(marker) + len(marker)
     end = script.index("\nEOF\n", start)
     return script[start:end] + "\n"
+
+
+def shell_array(script: str, name: str) -> list[str]:
+    match = re.search(rf"^{re.escape(name)}=\(\n(?P<body>.*?)^\)$", script, re.M | re.S)
+    if not match:
+        raise AssertionError(f"missing shell array {name}")
+    return [line.strip() for line in match.group("body").splitlines() if line.strip()]
 
 
 class ExportedDevMakefileTests(unittest.TestCase):
@@ -76,7 +111,10 @@ class ExportedDevMakefileTests(unittest.TestCase):
             self.assertNotIn("LINK", result.stdout)
             self.assertEqual(original_mtime, binary.stat().st_mtime_ns)
 
-            time.sleep(0.02)
+            # GNU make can compare timestamps at one-second resolution on some
+            # platforms and filesystems. Cross a full tick before touching the
+            # prerequisite so this CI check is deterministic on macOS too.
+            time.sleep(1.1)
             os.utime(root / "obj" / "dev" / "shared.o", None)
             result = subprocess.run(
                 command, check=True, text=True, stdout=subprocess.PIPE
@@ -85,11 +123,34 @@ class ExportedDevMakefileTests(unittest.TestCase):
             self.assertEqual(original_content, binary.read_bytes())
             self.assertEqual(original_mtime, binary.stat().st_mtime_ns)
 
-            time.sleep(0.02)
+            time.sleep(1.1)
             (src / "shared.cpp").write_text("shared-v2\n")
             subprocess.run(command, check=True)
             self.assertNotEqual(original_content, binary.read_bytes())
             self.assertGreater(binary.stat().st_mtime_ns, original_mtime)
+
+    def test_reference_bundle_and_ci_build_export_the_same_binaries(self):
+        script = EXPORT_SCRIPT.read_text()
+        reference_targets = shell_array(script, "reference_targets")
+        self.assertEqual(reference_targets, REFERENCE_TARGETS)
+
+        scaffold_targets = [
+            pair.split(":", 1)[0]
+            for pair in shell_array(script, "scaffold_pairs")
+        ]
+        self.assertCountEqual(scaffold_targets, REFERENCE_TARGETS)
+
+        workflow = TESTS_WORKFLOW.read_text()
+        match = re.search(r"for exe in \\\n(?P<body>.*?)\s*; do", workflow, re.S)
+        self.assertIsNotNone(match, "missing host-binary upload loop")
+        uploaded = match.group("body").replace("\\", " ").split()
+        self.assertCountEqual(uploaded, REFERENCE_TARGETS)
+
+    def test_assignment_reference_binary_ownership(self):
+        pairs = shell_array(EXPORT_SCRIPT.read_text(), "pa_ref_pairs")
+        actual = dict(pair.split(":", 1) for pair in pairs)
+        self.assertEqual(actual, ASSIGNMENT_REFERENCE_TARGETS)
+        self.assertEqual(len(pairs), 38)
 
 
 if __name__ == "__main__":

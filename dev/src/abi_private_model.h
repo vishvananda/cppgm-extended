@@ -1,6 +1,6 @@
 #pragma once
 
-// Private ABI encoder model for production mangling and the withheld PA30 encoder.
+// Private ABI encoder model for production mangling and the withheld PA14 encoder.
 
 #include <cstddef>
 #include <cstdint>
@@ -735,6 +735,7 @@ struct Type
     std::string template_name_substitution;
     OptionalSubstitutionKey template_name_ir_substitution;
     std::vector<ClassTemplateArgument> template_arguments;
+    std::vector<std::string> abi_tags;
     std::string standard_substitution;
     bool standard_substitution_includes_arguments = false;
     bool register_member_expression_template_name = false;

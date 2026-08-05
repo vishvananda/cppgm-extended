@@ -14369,6 +14369,28 @@ struct TypeIrOperationCacheFrame
   bool root;
 };
 
+static void apply_semantic_named_type_abi_tags(
+    const TypePtr & type,
+    abi_mangle::Type & out)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base ||
+     base->kind != Type::TK_NAMED ||
+     base->named_rare().named_abi_tags.empty() ||
+     !out.name) {
+    return;
+  }
+  vector<string> & target_tags =
+      abi_mangle::Type::ensure_name_metadata(out).abi_tags;
+  const vector<string> & source_tags = base->named_rare().named_abi_tags;
+  for(size_t i = 0; i < source_tags.size(); ++i) {
+    if(find(target_tags.begin(), target_tags.end(), source_tags[i]) ==
+       target_tags.end()) {
+      target_tags.push_back(source_tags[i]);
+    }
+  }
+}
+
 static bool try_build_type_ir(const TypePtr & type,
                               const TypeMangleContext * mangle_ctx,
                               abi_mangle::Type & out)
@@ -14376,7 +14398,11 @@ static bool try_build_type_ir(const TypePtr & type,
   if(!type_ir_operation_cache_enabled() ||
      !type ||
      (mangle_ctx && !context_free_type_ir_only_context(mangle_ctx))) {
-    return try_build_type_ir_uncached(type, mangle_ctx, out);
+    if(!try_build_type_ir_uncached(type, mangle_ctx, out)) {
+      return false;
+    }
+    apply_semantic_named_type_abi_tags(type, out);
+    return true;
   }
 
   static thread_local TypeIrOperationCacheState state;
@@ -14399,6 +14425,7 @@ static bool try_build_type_ir(const TypePtr & type,
   if(!try_build_type_ir_uncached(type, mangle_ctx, candidate)) {
     return false;
   }
+  apply_semantic_named_type_abi_tags(type, candidate);
   pair<unordered_map<TypeIrOperationCacheKey,
                      abi_mangle::Type,
                      TypeIrOperationCacheKeyHash>::iterator,

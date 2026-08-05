@@ -2,18 +2,23 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source
-Files, executes translation phases 1 through 7, parses them as PA10/PA25 translation units,
-reuses the PA11-PA12 semantic foundation, builds on the PA14-PA24 LowIR lowering path,
-adds the PA25 advanced-language slice, and writes LowIR text.
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
+executes translation phases 1 through 7, parses them as PA10/PA25 translation units,
+reuses the PA11-PA12 semantic foundation, builds on the PA15-PA24 LowIR lowering path,
+adds the PA25 core-language slice, and writes LowIR text.
 
-PA25 finishes the deferred first-tier language features that sit on top of the existing
-single-inheritance object model:
+PA25 closes the first large batch of ordinary C++11 language features that were deferred
+while the compiler was still building its type, object, template, and backend layers.
 
-- capturing lambdas
-- `std::initializer_list` semantic interoperation
-- RTTI and `typeid`
-- pointer-form `dynamic_cast`
+This milestone focuses on:
+
+- `auto` variable type deduction
+- ordinary `auto` function return type deduction for non-template function definitions and
+  non-template member function definitions with visible bodies
+- direct braced initialization of supported scalar and array objects
+- captureless lambdas plus the supported by-reference local / `this`-capture subset
+- range-for over bounded arrays, braced-init lists, and supported user-defined `begin` / `end`
+  ranges
 
 PA25 still produces LowIR. It does not introduce a new output format.
 
@@ -26,10 +31,17 @@ You will want to reuse:
 - the preprocessing and tokenization pipeline from PA1-PA6
 - the PA10 AST as the syntax boundary
 - the PA11-PA12 semantic foundation
-- the PA14-PA24 LowIR lowering path
+- the PA15-PA24 LowIR lowering path
 - the PA13 LowIR contract
-- the PA28 native validation path
+- the PA29 native validation path
 - the PA13 LowIR -> CY86 path as an optional secondary scaffold
+
+The intended direction is:
+
+- PA10 provides syntax
+- PA11-PA12 provide typed semantic analysis
+- PA15-PA24 lower the supported language subsets to LowIR
+- PA25 extends that same lowering path with the remaining first-tier core-language features
 
 ### Starter Kit
 
@@ -107,10 +119,9 @@ Testing uses checked-in golden outputs, not a reference binary. The `Makefile` i
 `cppgm++` with `--emit-lowir -O0`.
 
 The local checked-in tests live in `tests/general/`. That directory contains
-PA25 source-to-LowIR tests for capturing lambdas, initializer-list
-interoperation, RTTI, `typeid`, `dynamic_cast`, and exception-source lowering
-interactions. PA25 has no `tests/spec/` directory because these tests focus on
-the combined language-to-LowIR contract.
+PA25 source-to-LowIR tests, cross-feature combinations, and boundary cases over
+the broad core-language closure slice. PA25 has no `tests/spec/` directory
+because these tests focus on the combined language-to-LowIR contract.
 
 For each test case `x`:
 
@@ -122,7 +133,7 @@ For each test case `x`:
 PA25 is tested against generated LowIR text using the relaxed LowIR comparator described
 above. A useful manual validation path is:
 
-- feed that LowIR into PA28 `lowir2native`
+- feed that LowIR into PA29 `lowir2native`
 - optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
 - then feed the generated CY86 into PA9 `cy86 --target linux`
 
@@ -136,8 +147,8 @@ the PA25 semantic and lowering requirements are defined by the Assignment
 Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
-format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the
-checked-in `.ref` files.
+format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
+`.ref` files.
 
 PA25 does not add a new source-language grammar format. It instead enables more
 of the already-accepted C++11 syntax to participate in semantic analysis and
@@ -158,96 +169,86 @@ treat `lowir.md` as authoritative. If they disagree about the PA25 lowering slic
 
 PA25 supports the following in addition to the PA24 subset:
 
-- capturing lambdas with supported explicit by-copy and by-reference captures of local
-  values, including class objects whose existing copy-construction path is supported
-- default `[=]` and `[&]` captures over the same supported local-value and `this` subset
-- explicit `this` capture for supported member-function cases
-- `std::initializer_list<T>` interoperation for supported scalar elements and
-  class elements whose construction, copy, and destruction stay within the
-  PA15/PA16/PA23 object and template subset
-- `typeid(type-id)`
-- `typeid(expr)` for supported polymorphic lvalue expressions
-- `dynamic_cast<T*>(expr)` for supported polymorphic single-inheritance pointer conversions
+- `auto` in variable declarations when exactly one declarator is present and an initializer
+  is provided
+- `const auto` and similar cv-qualified `auto` variable declarations over the same subset
+- direct braced initialization for supported scalar objects
+- direct braced-init expressions over the supported scalar / array / class subset when the
+  earlier PA16-PA24 object/value semantics already define the target
+- braced initialization of bounded arrays with compile-time known size
+- arrays of aggregate elements whose array members receive nested braced
+  sub-lists, including zero-initialization of omitted member elements
+- direct aggregate construction when the target aggregate type is already supported by the
+  earlier object-model assignments
+- ordinary function-call argument conversion through non-explicit converting constructors
+  and conversion operators over the supported class subset
+- explicit non-class functional casts between the supported integral and enum forms
+- `reinterpret_cast` between the supported pointer and integer forms
+- captureless lambda expressions plus the supported by-reference local and explicit/implicit `this`
+  capture subset
+- range-for statements over:
+  - bounded arrays
+  - braced-init lists that can be materialized as hidden arrays
+  - supported class/member and ADL `begin` / `end` ranges whose iterator operations stay
+    within the already-supported call/operator subset
 
 Within this milestone, PA25 should produce valid LowIR for ordinary source programs over
-that subset. That LowIR should be accepted by PA28 `lowir2native` for the supported cases.
+that subset. That LowIR should be accepted by PA29 `lowir2native` for the supported cases.
 PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
 
 To complete PA25, implement these goals:
 
-1. Capturing lambda lowering.
-   Explicit by-copy captures should materialize deterministic closure-object LowIR and the
-   resulting closure object should be callable through the existing class/method lowering
-   path. A catch parameter declared inside a lambda body is local to that body and is not an
-   implicit capture.
+1. `auto` variable deduction.
+   The compiler should deduce the declared type from the initializer and lower the resulting
+   variable just like an equivalent explicit declaration, including ordinary pointer and
+   reference declarators such as `auto*`, `auto&`, and `auto&&`.
 
-2. `std::initializer_list` interoperation.
-   Supported braced-list calls should materialize deterministic lowered storage and expose
-   the expected `__begin` / `__size` semantics to range-for lowering.
+2. Direct braced initialization.
+   Supported scalar and array declarations should lower cleanly from `{...}` source forms,
+   not only from `=` initializer syntax.
 
-3. RTTI and `typeid`.
-   The compiler should emit deterministic RTTI globals and lower both static and dynamic
-   `typeid` queries into ordinary LowIR address/load/branch operations.
+3. Captureless lambda lowering.
+   Captureless lambdas should become callable lowered entities with deterministic LowIR.
 
-4. Pointer-form `dynamic_cast`.
-   The compiler should lower supported polymorphic single-inheritance pointer casts into
-   ordinary LowIR control flow without introducing new IR operations.
+4. Range-for lowering.
+   Range-for over arrays, braced-init lists, and supported user-defined `begin` / `end`
+   ranges should lower into ordinary loop/control-flow structure in LowIR, including
+   ordinary reference loop declarations such as `const int&` and `const auto&`. A
+   materialized class prvalue used as the range remains alive through the loop and is
+   destroyed when the complete range-for statement ends.
 
-5. Full-expression cleanup through condition control flow.
-   Temporary-owning call arguments inside nested `&&` and `||` expressions
-   should be destroyed exactly on evaluated paths, and every nested logical
-   result used by an outer condition should retain a valid LowIR result slot.
-   Guarded local-static initialization should destroy initializer temporaries
-   on the initialization edge before that edge joins the already-initialized path.
-   EH-bearing aggregate construction should invoke nontrivial member constructors
-   instead of representation-copying those members, so cleanup state describes
-   the subobjects that were constructed.
-   Construction and destruction cleanup dependencies on class-template
-   destructors should be demanded only after a recursively containing type is
-   complete, and should retain that concrete owner in emitted cleanup calls.
-   A caller-created copy for a destructible class value parameter transfers to
-   the callee. The callee destroys that parameter, while the caller keeps only
-   the unwind cleanup needed for objects it still owns.
-   Once an exception object has been initialized, destroy the throw operand's
-   temporaries and remove them from later unwind snapshots. A temporary from an
-   untaken throw branch must not appear in a sibling call's cleanup path.
-   If a conditional initializer arm throws before the destination object is
-   constructed, do not schedule destruction of that destination on the unwind path.
-   When a potentially throwing call is reached through a branch in an active
-   handler, its unwind path must finish the handler and destroy objects that
-   remain live from scopes outside the corresponding `try` statement.
+The test suite also exercises a small remaining ordinary-language closure cluster here:
+direct braced-init expressions, direct aggregate construction, supported integral / enum
+functional casts, and pointer / integer `reinterpret_cast`.
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA25:
 
-- init-captures
-- class captures that require unsupported copy construction, destruction, or object-model
-  features
-- `std::initializer_list` class elements that require unsupported construction,
-  copy, destruction, or later object-model behavior
-- `typeid` cases that require `bad_typeid`
-- `dynamic_cast` reference forms
-- `dynamic_cast<void*>`
-- multiple inheritance and virtual inheritance
-- any PA25 feature path that depends on unsupported later object-model or ABI work
+- capturing lambdas other than the supported by-reference local / `this`-capture subset
+- `std::initializer_list` semantic interoperation
+- RTTI and `typeid`
+- `dynamic_cast`
+- placeholder return-type declarations without a visible definition body
+- template bodies that require deferred placeholder return deduction
+- range-declarations that require unsupported user-defined iterator or reference semantics
+- any PA25 feature path that depends on unsupported PA16-PA24 semantics
 
 Inputs that rely on those features have undefined behaviour for this milestone.
+The PA25 test suite therefore does not require those inputs to fail deterministically; it
+only checks the defined PA25 feature subset above.
 
 ### Stage Handoff
 
-The intended next stage is PA26, which completes the remaining non-virtual object-model work
-that PA25 still deliberately avoids, especially non-virtual multiple inheritance and the
-remaining single-vptr RTTI case `dynamic_cast<void*>`.
+The intended next stage is PA26, which finishes the remaining deferred advanced-language
+corners over the current single-inheritance object model before PA27 tackles the remaining
+ABI and inheritance closure work.
 
 So PA25 should leave behind:
 
-- a stable advanced-language semantic layer over the existing single-inheritance model
-- LowIR lowering for the supported RTTI, lambda-capture, and initializer-list subset
+- a stable first-tier language-closure semantic layer
+- LowIR lowering for the ordinary non-advanced C++11 forms added here
 - explicit remaining deferrals only where PA26 really needs to take over
-
-Virtual inheritance and polymorphic multiple inheritance remain intentionally deferred beyond
-PA26.
 
 ### Design Notes (Non-Normative)
 
@@ -259,6 +260,6 @@ The same monotonic-extension rule applies here:
   feature set
 - it should not perturb PA24 outputs for programs that remain entirely within the PA24
   subset
-- in practice, RTTI globals, closure helpers, and dynamic-cast support should stay
-  on-demand rather than eagerly changing the behavior of ordinary earlier programs that do
-  not use those features
+- in practice, lambda helper synthesis and `auto` deduction should stay on-demand rather
+  than eagerly changing the behavior of ordinary earlier programs that do not use those
+  features

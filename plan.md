@@ -1,5 +1,8 @@
 # LowIR Boundary And Object-Format Plan
 
+> Historical planning record. For current PA14-PA30 numbering, use
+> `docs/assignment-numbering-migration-2026-08.md` and the per-PA READMEs.
+
 ## Goals
 
 1. Preserve PA29 as the first compile/link driver assignment without forcing the

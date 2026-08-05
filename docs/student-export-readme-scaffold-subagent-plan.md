@@ -70,13 +70,13 @@ state is tracked in `docs/student-export-inventory.md`.
 Resolved items from the initial audit:
 
 - PA10+ READMEs describe the editable `dev/` entry points and scaffold sidecars.
-- PA14-PA22 READMEs name the required `--emit-lowir -O0` invocation.
+- PA15-PA23 READMEs name the required `--emit-lowir -O0` invocation.
 - PA13 is scoped to the `lowir2cy86` surface, with later debuginfo/native tests
   recorded as a separate packaging decision.
-- PA14-PA19 and PA23-PA29 grammar helper scripts point at the matching
+- PA15-PA20 and PA24-PA30 grammar helper scripts point at the matching
   `paN.gram`.
 - Stale nested PA17 `grammar/grammar/` and `scripts/scripts/` trees were removed.
-- PA18-PA22 handouts no longer present "Missing Tests To Add Later" as student
+- PA19-PA23 handouts no longer present "Missing Tests To Add Later" as student
   scope, and witness sidecars are described as outside the required oracle unless
   export policy changes.
 - PA32-PA35 handouts assume a Linux host/toolchain surface.

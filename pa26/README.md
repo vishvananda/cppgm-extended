@@ -4,18 +4,16 @@
 
 Write a C++ application called `cppgm++` that takes as input a set of C++ Source
 Files, executes translation phases 1 through 7, parses them as PA10/PA26 translation units,
-reuses the PA11-PA12 semantic foundation, builds on the PA14-PA25 LowIR lowering path,
-adds the PA26 multi-base object-model slice, and writes LowIR text.
+reuses the PA11-PA12 semantic foundation, builds on the PA15-PA25 LowIR lowering path,
+adds the PA26 advanced-language slice, and writes LowIR text.
 
-PA26 completes the remaining non-virtual object-model work that still fits the current
-single-vptr ABI:
+PA26 finishes the deferred first-tier language features that sit on top of the existing
+single-inheritance object model:
 
-- non-virtual multiple inheritance
-- member lookup and access across multiple base subobjects
-- constructor, copy, and destructor generation across multiple non-virtual bases
-- member pointer type formation, null/conversion handling, and `.*` / `->*`
-  application over the completed non-virtual object model
-- `dynamic_cast<void*>` for the current polymorphic single-inheritance ABI
+- capturing lambdas
+- `std::initializer_list` semantic interoperation
+- RTTI and `typeid`
+- pointer-form `dynamic_cast`
 
 PA26 still produces LowIR. It does not introduce a new output format.
 
@@ -28,9 +26,9 @@ You will want to reuse:
 - the preprocessing and tokenization pipeline from PA1-PA6
 - the PA10 AST as the syntax boundary
 - the PA11-PA12 semantic foundation
-- the PA14-PA25 LowIR lowering path
+- the PA15-PA25 LowIR lowering path
 - the PA13 LowIR contract
-- the PA28 native validation path
+- the PA29 native validation path
 - the PA13 LowIR -> CY86 path as an optional secondary scaffold
 
 ### Starter Kit
@@ -51,7 +49,7 @@ student-owned helpers they add under `dev/src/`. The assignment directory, gramm
 test fixtures, comparison scripts, and checked-in reference outputs are support
 files, not implementation files to edit for normal solutions. The shared support files
 provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA26 source-to-LowIR object-model slice for you.
+new PA26 source-to-LowIR language slice for you.
 
 Unlike PA1-PA9, there is no external reference binary for PA26. The checked-in `.ref`
 files are the default oracle.
@@ -99,8 +97,7 @@ The output file is not required to be meaningful on failure.
 
 ### Standard Output / Error
 
-Standard output and standard error are ignored for automated testing of
-`cppgm++`.
+Standard output and standard error are ignored for automated testing of `cppgm++`.
 
 You are free to use them for debugging, tracing, or diagnostic messages.
 
@@ -110,10 +107,10 @@ Testing uses checked-in golden outputs, not a reference binary. The `Makefile` i
 `cppgm++` with `--emit-lowir -O0`.
 
 The local checked-in tests live in `tests/general/`. That directory contains
-PA26 source-to-LowIR tests over non-virtual multiple inheritance, multi-base
-generated members, member pointers, `dynamic_cast<void*>`, and ambiguity
-rejection. PA26 has no `tests/spec/` directory because these tests focus on the
-combined language-to-LowIR contract.
+PA26 source-to-LowIR tests for capturing lambdas, initializer-list
+interoperation, RTTI, `typeid`, `dynamic_cast`, and exception-source lowering
+interactions. PA26 has no `tests/spec/` directory because these tests focus on
+the combined language-to-LowIR contract.
 
 For each test case `x`:
 
@@ -125,7 +122,7 @@ For each test case `x`:
 PA26 is tested against generated LowIR text using the relaxed LowIR comparator described
 above. A useful manual validation path is:
 
-- feed that LowIR into PA28 `lowir2native`
+- feed that LowIR into PA29 `lowir2native`
 - optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
 - then feed the generated CY86 into PA9 `cy86 --target linux`
 
@@ -161,74 +158,96 @@ treat `lowir.md` as authoritative. If they disagree about the PA26 lowering slic
 
 PA26 supports the following in addition to the PA25 subset:
 
-- non-virtual multiple inheritance
-- inherited field lookup and access across multiple non-virtual base subobjects
-- inherited non-virtual method lookup and `this` adjustment across multiple non-virtual bases
-- constructor, copy-constructor, copy-assignment, and destructor generation across multiple
-  non-virtual bases
-- member pointer type formation, null values, base-to-derived member-pointer
-  conversions, and `.*` / `->*` application for non-virtual class layouts
-- `dynamic_cast<void*>` for the existing polymorphic single-inheritance ABI
+- capturing lambdas with supported explicit by-copy and by-reference captures of local
+  values, including class objects whose existing copy-construction path is supported
+- default `[=]` and `[&]` captures over the same supported local-value and `this` subset
+- explicit `this` capture for supported member-function cases
+- `std::initializer_list<T>` interoperation for supported scalar elements and
+  class elements whose construction, copy, and destruction stay within the
+  PA16/PA17/PA24 object and template subset
+- `typeid(type-id)`
+- `typeid(expr)` for supported polymorphic lvalue expressions
+- `dynamic_cast<T*>(expr)` for supported polymorphic single-inheritance pointer conversions
 
 Within this milestone, PA26 should produce valid LowIR for ordinary source programs over
-that subset. That LowIR should be accepted by PA28 `lowir2native` for the supported cases.
+that subset. That LowIR should be accepted by PA29 `lowir2native` for the supported cases.
 PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
 
 To complete PA26, implement these goals:
 
-1. Multiple-base layout and field access.
-   Distinct base subobjects should have deterministic offsets, and member access should lower
-   through those offsets correctly.
+1. Capturing lambda lowering.
+   Explicit by-copy captures should materialize deterministic closure-object LowIR and the
+   resulting closure object should be callable through the existing class/method lowering
+   path. A catch parameter declared inside a lambda body is local to that body and is not an
+   implicit capture.
 
-2. Base-method lookup and `this` adjustment.
-   Calling a method inherited from a later base must lower the implicit object argument to the
-   correct base-subobject address.
+2. `std::initializer_list` interoperation.
+   Supported braced-list calls should materialize deterministic lowered storage and expose
+   the expected `__begin` / `__size` semantics to range-for lowering.
 
-3. Generated special members across multiple bases.
-   Synthesized construction, copy, assignment, and destruction should sequence the supported
-   non-virtual bases correctly.
+3. RTTI and `typeid`.
+   The compiler should emit deterministic RTTI globals and lower both static and dynamic
+   `typeid` queries into ordinary LowIR address/load/branch operations.
 
-4. Member pointer lowering over non-virtual layouts.
-   Member pointer values should preserve the selected member target and supported base
-   adjustment so `.*` and `->*` lower through the correct object address.
-   Their contextual conversion to `bool` must distinguish a non-null target from a null
-   member pointer without treating the adjustment word as an independent truth value.
+4. Pointer-form `dynamic_cast`.
+   The compiler should lower supported polymorphic single-inheritance pointer casts into
+   ordinary LowIR control flow without introducing new IR operations.
 
-5. Remaining single-vptr RTTI case.
-   `dynamic_cast<void*>` should lower for the existing polymorphic single-inheritance ABI
-   without introducing new LowIR operations.
-
-6. Ambiguity handling.
-   Ambiguous inherited member names must not silently resolve.
+5. Full-expression cleanup through condition control flow.
+   Temporary-owning call arguments inside nested `&&` and `||` expressions
+   should be destroyed exactly on evaluated paths, and every nested logical
+   result used by an outer condition should retain a valid LowIR result slot.
+   Guarded local-static initialization should destroy initializer temporaries
+   on the initialization edge before that edge joins the already-initialized path.
+   EH-bearing aggregate construction should invoke nontrivial member constructors
+   instead of representation-copying those members, so cleanup state describes
+   the subobjects that were constructed.
+   Construction and destruction cleanup dependencies on class-template
+   destructors should be demanded only after a recursively containing type is
+   complete, and should retain that concrete owner in emitted cleanup calls.
+   A caller-created copy for a destructible class value parameter transfers to
+   the callee. The callee destroys that parameter, while the caller keeps only
+   the unwind cleanup needed for objects it still owns.
+   Once an exception object has been initialized, destroy the throw operand's
+   temporaries and remove them from later unwind snapshots. A temporary from an
+   untaken throw branch must not appear in a sibling call's cleanup path.
+   If a conditional initializer arm throws before the destination object is
+   constructed, do not schedule destruction of that destination on the unwind path.
+   When a potentially throwing call is reached through a branch in an active
+   handler, its unwind path must finish the handler and destroy objects that
+   remain live from scopes outside the corresponding `try` statement.
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA26:
 
-- virtual inheritance
-- polymorphic multiple inheritance
-- member-pointer behavior that depends on virtual-base or polymorphic
-  multiple-inheritance adjustment
+- init-captures
+- class captures that require unsupported copy construction, destruction, or object-model
+  features
+- `std::initializer_list` class elements that require unsupported construction,
+  copy, destruction, or later object-model behavior
+- `typeid` cases that require `bad_typeid`
 - `dynamic_cast` reference forms
-- `dynamic_cast` cases that depend on multiple or virtual polymorphic base layouts
-- the remaining RTTI cases that require a broader multi-vptr or virtual-base ABI
+- `dynamic_cast<void*>`
+- multiple inheritance and virtual inheritance
+- any PA26 feature path that depends on unsupported later object-model or ABI work
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended next stage is PA27, which completes the broader virtual / RTTI ABI that PA26
-still deliberately avoids.
+The intended next stage is PA27, which completes the remaining non-virtual object-model work
+that PA26 still deliberately avoids, especially non-virtual multiple inheritance and the
+remaining single-vptr RTTI case `dynamic_cast<void*>`.
 
 So PA26 should leave behind:
 
-- a stable non-virtual multi-base object model over the existing LowIR family
-- deterministic lowering for multiple-base field access, method calls, and generated special
-  members
-- explicit remaining deferrals only where PA27 needs to take over:
-  - virtual inheritance
-  - polymorphic multiple inheritance
-  - the remaining `dynamic_cast` / RTTI cases that depend on that ABI
+- a stable advanced-language semantic layer over the existing single-inheritance model
+- LowIR lowering for the supported RTTI, lambda-capture, and initializer-list subset
+- explicit remaining deferrals only where PA27 really needs to take over
+
+Virtual inheritance and polymorphic multiple inheritance remain intentionally deferred beyond
+PA27.
 
 ### Design Notes (Non-Normative)
 
@@ -240,5 +259,6 @@ The same monotonic-extension rule applies here:
   feature set
 - it should not perturb PA25 outputs for programs that remain entirely within the PA25
   subset
-- in practice, multiple-base offsets and lowered base-adjustment paths should stay on-demand
-  rather than changing earlier single-base outputs unnecessarily
+- in practice, RTTI globals, closure helpers, and dynamic-cast support should stay
+  on-demand rather than eagerly changing the behavior of ordinary earlier programs that do
+  not use those features

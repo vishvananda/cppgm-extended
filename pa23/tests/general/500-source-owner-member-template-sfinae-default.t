@@ -1,29 +1,22 @@
 // VALIDATION: compile-pass
-// An out-of-class static member definition can cause a dependent source-owner
-// class template to collect member templates before a concrete instantiation
-// uses them. A defaulted SFINAE parameter on those member templates must still
-// be substituted against the concrete owner and dropped if it retains the
-// member function template parameter.
+// A dependent source-owner collection path must still drop member templates
+// whose defaulted SFINAE parameter remains invalid after concrete substitution.
 
 template<class T>
-struct dependent_true
-{
+struct dependent_true {
   enum { value = true };
 };
 
 template<bool B, class T = void>
-struct disable_if
-{
+struct disable_if {
   typedef T type;
 };
 
 template<class T>
-struct disable_if<true, T>
-{};
+struct disable_if<true, T> {};
 
 template<class C>
-struct string_like
-{
+struct string_like {
   typedef const C * const_iterator;
   static const int npos;
 
@@ -50,8 +43,7 @@ struct string_like
 template<class C>
 const int string_like<C>::npos = 0;
 
-struct view_like
-{
+struct view_like {
   const char *data() const
   {
     return 0;

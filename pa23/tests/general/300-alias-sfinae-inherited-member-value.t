@@ -1,9 +1,9 @@
 // VALIDATION: compile-pass
-// Alias-template SFINAE may test a static bool inherited by the condition type.
+// Alias SFINAE must preserve inherited member values used by noexcept and
+// decltype probes when selecting a converting constructor template.
 
 template<bool B, class T>
-struct enable_if {
-};
+struct enable_if {};
 
 template<class T>
 struct enable_if<true, T> {
@@ -17,9 +17,6 @@ template<class T, T V>
 struct integral_constant {
   static const T value = V;
 };
-
-template<bool B>
-using bool_constant = integral_constant<bool, B>;
 
 template<bool B>
 using __bool_constant = integral_constant<bool, B>;
@@ -45,12 +42,6 @@ struct type_identity {
 template<class Result, class Ret, bool IsVoid = false, class = void>
 struct invocable_impl : false_type {
   typedef false_type type;
-};
-
-template<class Result, class Ret>
-struct invocable_impl<Result, Ret, true, typename voider<typename Result::type>::type>
-  : true_type {
-  typedef true_type type;
 };
 
 template<class Result, class Ret>
@@ -85,13 +76,7 @@ struct result_of_impl {
 };
 
 template<class F>
-struct invoke_result : result_of_impl<F>::type {
-};
-
-template<class F>
-struct direct_result_of_impl {
-  typedef int type;
-};
+struct invoke_result : result_of_impl<F>::type {};
 
 int one() { return 1; }
 
@@ -100,17 +85,14 @@ struct function;
 
 template<class R>
 struct function<R()> {
-  template<class F, class DF = F, class Res2 = invoke_result<DF &> >
-  struct callable : invocable_impl<Res2, R>::type {
-  };
+  template<class F, class DF = F, class Res2 = invoke_result<DF&> >
+  struct callable : invocable_impl<Res2, R>::type {};
 
   template<class Cond, class T = void>
   using requires_t = enable_if_t<Cond::value, T>;
 
   template<class F, class = requires_t<callable<F> > >
-  function(F &&)
-  {
-  }
+  function(F&&) {}
 };
 
 int main()

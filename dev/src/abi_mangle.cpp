@@ -724,6 +724,22 @@ Type parse_type_spec(const ParseContext & ctx, const vector<string> & words, siz
   }
 
   const string & kind = words[begin];
+  if(kind == "tagged") {
+    if(begin + 3 > words.size()) {
+      throw logic_error("tagged type requires an operand and at least one ABI tag");
+    }
+    Type out = parse_single_type_token(ctx, words[begin + 1]);
+    if((out.kind != Type::TK_NAMED &&
+        out.kind != Type::TK_CLASS_TEMPLATE_SPECIALIZATION) ||
+       !out.name) {
+      throw logic_error("ABI tags require a named or class-template type");
+    }
+    Type::NameMetadata & metadata = Type::ensure_name_metadata(out);
+    metadata.abi_tags.insert(metadata.abi_tags.end(),
+                             words.begin() + begin + 2,
+                             words.end());
+    return out;
+  }
   if(kind == "template-param" || kind == "template-param-subst") {
     if(begin + 2 != words.size()) {
       throw logic_error("template-param type requires one index");
@@ -2200,6 +2216,7 @@ struct FactSerializer
       if(type.name && !type.name_owner &&
          type.name->template_arguments.empty() &&
          type.name->standard_substitution.empty() &&
+         type.name->abi_tags.empty() &&
          !type.name->template_name.empty()) {
         out = "named:" + qualified_type_name(type.name->prefix_components,
                                              type.name->template_name);
@@ -2273,6 +2290,17 @@ struct FactSerializer
     vector<string> words;
     words.push_back("let-type");
     words.push_back(id);
+    if(type.name && !type.name->abi_tags.empty()) {
+      Type untagged = type;
+      Type::ensure_name_metadata(untagged).abi_tags.clear();
+      words.push_back("tagged");
+      words.push_back(type_ref(untagged));
+      words.insert(words.end(),
+                   type.name->abi_tags.begin(),
+                   type.name->abi_tags.end());
+      add_line(words);
+      return;
+    }
     switch(type.kind) {
     case Type::TK_BUILTIN: {
       const string name = builtin_name_from_code(string(type.builtin_code));
@@ -3323,6 +3351,14 @@ AbiType parse_public_type_spec(const vector<string> & words, size_t begin)
   }
 
   const string & kind = words[begin];
+  if(kind == "tagged") {
+    if(begin + 3 > words.size()) {
+      throw logic_error("tagged type requires an operand and at least one ABI tag");
+    }
+    AbiType type = parse_public_single_type_token(words[begin + 1]);
+    type.abi_tags.assign(words.begin() + begin + 2, words.end());
+    return type;
+  }
   if(kind == "template-param" || kind == "template-param-subst") {
     if(begin + 2 != words.size()) {
       throw logic_error("template-param type requires one index");
@@ -3505,6 +3541,9 @@ AbiType parse_public_type_spec(const vector<string> & words, size_t begin)
 
 string type_token_from_public_type(const AbiType & type)
 {
+  if(!type.abi_tags.empty()) {
+    throw logic_error("tagged ABI type cannot be written as one type token");
+  }
   switch(type.kind) {
   case ABI_TYPE_NAME_OR_REFERENCE:
   case ABI_TYPE_BUILTIN:
@@ -3556,6 +3595,14 @@ string type_token_from_public_type(const AbiType & type)
 
 void append_public_type_spec_words(const AbiType & type, vector<string> & words)
 {
+  if(!type.abi_tags.empty()) {
+    AbiType untagged = type;
+    untagged.abi_tags.clear();
+    words.push_back("tagged");
+    words.push_back(type_token_from_public_type(untagged));
+    words.insert(words.end(), type.abi_tags.begin(), type.abi_tags.end());
+    return;
+  }
   switch(type.kind) {
   case ABI_TYPE_NAME_OR_REFERENCE:
   case ABI_TYPE_NAMED:

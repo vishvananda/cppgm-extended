@@ -232,8 +232,7 @@ should export alongside the starter sources when those assignments are packaged:
 
 - [IPPTokenStream.h](../dev/src/IPPTokenStream.h)
 - [DebugPPTokenStream.h](../dev/src/DebugPPTokenStream.h)
-- [abi_mangle.h](../dev/src/abi_mangle.h) for the PA30 optional ABI fact
-  scaffold
+- [abi_mangle.h](../dev/src/abi_mangle.h) for the PA14 typed ABI fact scaffold
 - [ir_symbol_model.h](../dev/src/ir_symbol_model.h) for the shared LowIR/MIR
   exported-symbol payload
 - [lowir_model.h](../dev/src/lowir_model.h) for the optional typed LowIR

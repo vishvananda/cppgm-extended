@@ -1,3 +1,7 @@
+// VALIDATION: compile-pass
+// A member-template assignment candidate dropped by SFINAE must leave the
+// ordinary copy-assignment fallback viable.
+
 template<bool B, class T = void>
 struct enable_if {};
 
@@ -24,10 +28,10 @@ struct function;
 
 template<class R, class... Args>
 struct function<R(Args...)> {
-  function & operator=(const function &) { return *this; }
+  function& operator=(const function&) { return *this; }
 
   template<class F>
-  enable_if_t<!is_same<F, function>::value, function &> operator=(const F &);
+  enable_if_t<!is_same<F, function>::value, function&> operator=(const F&);
 };
 
 int main()
@@ -35,4 +39,5 @@ int main()
   function<void()> lhs;
   function<void()> rhs;
   lhs = rhs;
+  return 0;
 }

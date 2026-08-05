@@ -1,5 +1,10 @@
 # Assignment Restructure Plan (pa18–22 / pa24–25 / pa34–35)
 
+> Historical decision record. Assignment numbers in the analysis below are
+> the numbers in use when the decisions were made. For current paths after the
+> 2026-08 ABI-encoder move, use
+> `docs/assignment-numbering-migration-2026-08.md`.
+
 ## Purpose
 
 Three structural problems in the post-PA9 arc, raised from teaching experience:
@@ -447,7 +452,7 @@ which cluster) and the integration lesson's size. **This is the next data step.*
 Tracker seeds:
 
 - `docs/template-strict-placement-tracker.md` is the all-strict context scan over
-  `pa18 pa19 pa21 pa22 pa23`, used to see whether earlier strict PAs already
+  `pa19 pa20 pa22 pa23 pa24`, used to see whether earlier strict PAs already
   contain PA22/PA23-shaped tests before moving PA22 coverage backward or
   forward.
 - `docs/pa22-template-placement-tracker.md` is the concrete PA22 move/review

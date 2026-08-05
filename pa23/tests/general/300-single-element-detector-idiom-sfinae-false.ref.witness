@@ -1,65 +1,57 @@
 translation-unit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:6:19
+  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:7:19
     template integral_constant
     selected primary
     bind #1 = bool source=explicit
     bind #2 = true source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:7:20
+  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:8:20
     template integral_constant
     selected primary
     bind #1 = bool source=explicit
     bind #2 = false source=explicit
-  alias-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:16:21
+  alias-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:25:21
     template first_t
     bind #1 = true_type source=explicit
     bind #2 = enable_if_t<bool(Bn::value)>... source=explicit
-  alias-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:16:40
+  alias-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:25:40
     template enable_if_t
     bind #1 = bool(Bn::value) source=explicit
-  alias-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:23:20
+  alias-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:34:20
     template first_t
     bind #1 = false_type source=explicit
     bind #2 = enable_if_t<!bool(Bn::value)>... source=explicit
-  alias-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:23:40
+  alias-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:34:40
     template enable_if_t
     bind #1 = !bool(Bn::value) source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:41:12
+  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:50:16
     template conjunction
     selected primary
     bind #1 = <is_yes<int>> source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:41:24
+  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:50:28
     template is_yes
     selected primary
     bind #1 = int source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:42:12
+  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:51:15
     template conjunction
     selected primary
     bind #1 = <is_yes<yes_tag>> source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:42:24
+  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:51:27
     template is_yes
     selected explicit
     bind #1 = yes_tag source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:43:12
-    template conjunction
-    selected primary
-    bind #1 = <integral_constant<bool, false>> source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:44:12
-    template conjunction
-    selected primary
-    bind #1 = <integral_constant<bool, true>> source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:45:12
+  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:52:16
     template disjunction
     selected primary
     bind #1 = <is_yes<int>> source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:45:24
+  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:52:28
     template is_yes
     selected primary
     bind #1 = int source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:46:12
+  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:53:15
     template disjunction
     selected primary
     bind #1 = <is_yes<yes_tag>> source=explicit
-  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:46:24
+  class-use at tests/general/300-single-element-detector-idiom-sfinae-false.t:53:27
     template is_yes
     selected explicit
     bind #1 = yes_tag source=explicit

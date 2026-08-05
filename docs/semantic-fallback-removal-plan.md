@@ -599,7 +599,7 @@ make -C dev cppgm++ CXX=/usr/local/opt/llvm/bin/clang++
 make test-strict-nobuild \
   CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
-  STRICT_PAS='pa18 pa19 pa21 pa22 pa23'
+  STRICT_PAS='pa19 pa20 pa22 pa23 pa24'
 ```
 
 For non-template semantic categories, add the earliest owner PA strict or local

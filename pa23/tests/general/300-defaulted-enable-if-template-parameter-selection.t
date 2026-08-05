@@ -1,34 +1,48 @@
+// VALIDATION: compile-pass
+// Defaulted non-type parameters whose type depends on enable_if should be
+// substituted after deduction so only the viable overload remains.
+
 template<bool B, class T = void>
-struct enable_if {};
-
-template<class T>
-struct enable_if<true, T> { typedef T type; };
-
-template<class T>
-struct allocator;
-
-template<class T>
-struct has_max_size { static const bool value = false; };
-
-template<class T>
-struct allocator { int max_size() const { return 7; } int allocate(); };
-
-template<class T>
-struct has_max_size<const allocator<T>> { static const bool value = true; };
-
-template<class Alloc>
-struct traits {
-  template <class Ap = Alloc, typename enable_if<has_max_size<const Ap>::value, int>::type = 0>
-  static int max_size(const Alloc& a) { return a.max_size(); }
-
-  template <class Ap = Alloc, typename enable_if<!has_max_size<const Ap>::value, int>::type = 0>
-  static int max_size(const Alloc&) { return 11; }
+struct enable_if
+{
 };
 
 template<class T>
-int allocator<T>::allocate() { return traits<allocator>::max_size(*this); }
+struct enable_if<true, T>
+{
+  typedef T type;
+};
 
-int main() {
-  allocator<int> a;
-  return a.allocate();
+template<class T>
+struct has_value
+{
+  static const bool value = false;
+};
+
+struct selected
+{
+};
+
+template<>
+struct has_value<selected>
+{
+  static const bool value = true;
+};
+
+template<class T, typename enable_if<has_value<T>::value, int>::type = 0>
+int choose(T)
+{
+  return 7;
+}
+
+template<class T, typename enable_if<!has_value<T>::value, int>::type = 0>
+int choose(T)
+{
+  return 11;
+}
+
+int main()
+{
+  selected value;
+  return choose(value) == 7 ? 0 : 1;
 }

@@ -31,13 +31,14 @@ The assignment arc is roughly:
 
 - PA1-PA9: preprocessing, recognition, namespace semantics, CY86 scaffold
 - PA10-PA12: AST, types/lookup, calls/conversions/overload resolution
-- PA13-PA14: LowIR contract and first source-to-LowIR lowering
-- PA15-PA17: classes, value semantics, and virtual dispatch
-- PA18-PA23: templates, constant evaluation, and template integration
-- PA24-PA27: remaining source-to-LowIR language and object-model closure
-- PA28: LowIR to native executable backend
-- PA29: separate compilation and compile/link driver mode
-- PA30-PA31: ABI name construction and host exception metadata facts
+- PA13: LowIR contract and execution scaffold
+- PA14: typed Itanium ABI name construction
+- PA15-PA18: procedural lowering, classes, value semantics, and virtual dispatch
+- PA19-PA24: templates, constant evaluation, and template integration
+- PA25-PA28: remaining source-to-LowIR language and object-model closure
+- PA29: LowIR to native executable backend
+- PA30: separate compilation and compile/link driver mode
+- PA31: host exception metadata facts
 - PA32-PA36: host-linkable objects, host ABI/runtime, hosted headers, and
   hosted link/runtime behavior
 - PA37-PA38: LowIR and machine-backend optimization
@@ -124,7 +125,7 @@ Current behavior:
   once.
 - `make test-report-through-paN` runs the report suite through a milestone.
 - `make test-strict` runs the stricter witness/reference suites configured by
-  `STRICT_PAS` (`pa18 pa19 pa21 pa22` by default).
+  `STRICT_PAS` (`pa19 pa20 pa22 pa23 pa24` by default).
 - `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1` enables direct LowIR text comparison in
   the shared comparison harness.
 - `make inception` builds the final PA39 self-host target and compares it with

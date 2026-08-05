@@ -986,11 +986,16 @@ void census_type(const TypePtr & type,
             syntax.named_dependent_template_template_parameter_name);
     const size_t member_name_bytes =
         string_storage_bytes(syntax.named_member_name);
+    size_t abi_tag_bytes = vector_storage_bytes(syntax.named_abi_tags);
+    for(size_t i = 0; i < syntax.named_abi_tags.size(); ++i) {
+      abi_tag_bytes += string_storage_bytes(syntax.named_abi_tags[i]);
+    }
     bytes += sizeof(Type::NamedRareMetadata) +
              qualified_name_bytes +
              source_name_bytes +
              dependent_template_name_bytes +
-             member_name_bytes;
+             member_name_bytes +
+             abi_tag_bytes;
     census.note_detail("type.rare.qualified_name", qualified_name_bytes);
     census.note_detail("type.rare.string_capacity.source_name",
                        source_name_bytes);
@@ -998,6 +1003,7 @@ void census_type(const TypePtr & type,
                        dependent_template_name_bytes);
     census.note_detail("type.rare.string_capacity.member_name",
                        member_name_bytes);
+    census.note_detail("type.rare.abi_tags", abi_tag_bytes);
     if(syntax.named_class_template_specialization_mangle_info &&
        census.first_class_template_mangle_info(
            syntax.named_class_template_specialization_mangle_info.get())) {
@@ -3198,6 +3204,9 @@ void dump_exact_string_retention_census(
     const Type::NamedRareMetadata & rare = *type.named_rare_metadata;
     note_exact_qualified_name_strings(
         census, ESC_TYPE_QUALIFIED_NAME, rare.qualified_name);
+    for(size_t i = 0; i < rare.named_abi_tags.size(); ++i) {
+      census.note(ESC_TYPE_MANGLE, rare.named_abi_tags[i]);
+    }
     if(!rare.named_class_template_specialization_mangle_info) {
       continue;
     }

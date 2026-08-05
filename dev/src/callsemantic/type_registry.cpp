@@ -28,6 +28,18 @@ using semantic_model::Scope;
 
 namespace {
 
+void append_class_node_abi_tags(const TypePtr & type,
+                                const CppAstNode * class_node)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!class_node || !base || base->kind != Type::TK_NAMED) {
+    return;
+  }
+  append_cppast_abi_tags(
+      base->mutable_named_rare_metadata().named_abi_tags,
+      *class_node);
+}
+
 bool source_location_in_template_header_context_for_tracking(
     const std::string & location)
 {
@@ -321,6 +333,7 @@ ClassInfo * create_class_info(TypeRegistryState & state,
        info->qualified_name != source_qualified_name) {
       set_class_output_qualified_name(*info, source_qualified_name);
     }
+    append_class_node_abi_tags(base, class_node);
     return info;
   }
 
@@ -342,6 +355,7 @@ ClassInfo * create_class_info(TypeRegistryState & state,
       callsemantic_internal::default_access_for_class_kind(class_kind);
   info->type = make_named(display_name, type_key, false);
   info->type->mutable_named_rare_metadata().named_class_info = info.get();
+  append_class_node_abi_tags(info->type, class_node);
   info->type->set_named_qualified_name_syntax(symbol_qualified_name_syntax);
   info->type->set_named_source_name(canonical_name);
   set_class_output_qualified_name(*info, source_qualified_name);

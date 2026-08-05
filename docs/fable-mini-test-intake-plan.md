@@ -50,7 +50,7 @@ The PA4-through-PA9 second-pass batch passed 300 of 300 tests with the intended
 Homebrew Clang build, and the earlier PA1-through-PA3 batches passed their
 focused and assignment reports. After the PA3 and PA9 timeout optimizations,
 the post-rebase root report passed 4,855 of 4,855 tests with direct LowIR text
-comparison enabled. The configured PA18/PA19/PA21/PA22/PA23 strict pass compared
+comparison enabled. The configured PA19/PA20/PA22/PA23/PA24 strict pass compared
 1,305 references with zero failures. All focused, placement, owning-assignment,
 hosted, LowIR optimizer, and machine optimizer gates recorded in the tracker
 passed.
@@ -204,20 +204,20 @@ Every candidate still needs the semantic near-duplicate review described below.
 | PA11 | 2 | 5 |
 | PA12 | 2 | 28 |
 | PA13 | 0 | 6 |
-| PA14 | 0 | 7 |
-| PA15 | 0 | 6 |
-| PA16 | 0 | 18 |
-| PA18 | 3 | 35 |
-| PA19 | 1 | 10 |
-| PA20 | 2 | 13 |
-| PA21 | 0 | 14 |
-| PA22 | 1 | 11 |
-| PA23 | 0 | 1 |
-| PA25 | 0 | 4 |
-| PA27 | 0 | 2 |
-| PA28 | 6 | 29 |
-| PA29 | 0 | 1 |
-| PA30 | 0 | 5 |
+| PA15 | 0 | 7 |
+| PA16 | 0 | 6 |
+| PA17 | 0 | 18 |
+| PA19 | 3 | 35 |
+| PA20 | 1 | 10 |
+| PA21 | 2 | 13 |
+| PA22 | 0 | 14 |
+| PA23 | 1 | 11 |
+| PA24 | 0 | 1 |
+| PA26 | 0 | 4 |
+| PA28 | 0 | 2 |
+| PA29 | 6 | 29 |
+| PA30 | 0 | 1 |
+| PA14 | 0 | 5 |
 | PA31 | 0 | 17 |
 | PA33 | 0 | 1 |
 | PA34 | 0 | 1 |
@@ -228,7 +228,7 @@ Every candidate still needs the semantic near-duplicate review described below.
 | **Total** | **45** | **241** |
 
 The Mini total includes 27 standalone reducer artifacts. Those files are not
-harness tests and must not be imported as such. PA17, PA24, PA26, PA32, and
+harness tests and must not be imported as such. PA18, PA25, PA27, PA32, and
 PA39 have no new path candidates in these snapshots.
 
 ## Assignment-Local History Audit
@@ -248,16 +248,16 @@ tracked files under `pa*/tests`, including 128 source families:
 
 | Assignment | Imported files | Source families |
 |---|---:|---:|
-| PA15 | 4 | 2 |
-| PA18 | 3 | 1 |
-| PA19 | 18 | 7 |
-| PA21 | 79 | 32 |
-| PA22 | 79 | 30 |
-| PA23 | 68 | 25 |
-| PA25 | 7 | 5 |
-| PA26 | 2 | 1 |
-| PA28 | 4 | 4 |
-| PA29 | 4 | 1 |
+| PA16 | 4 | 2 |
+| PA19 | 3 | 1 |
+| PA20 | 18 | 7 |
+| PA22 | 79 | 32 |
+| PA23 | 79 | 30 |
+| PA24 | 68 | 25 |
+| PA26 | 7 | 5 |
+| PA27 | 2 | 1 |
+| PA29 | 4 | 4 |
+| PA30 | 4 | 1 |
 | PA32 | 10 | 2 |
 | PA34 | 10 | 3 |
 | PA35 | 8 | 8 |
@@ -282,7 +282,7 @@ tests.
 
 Mini added no test source family under `pa*/tests` after its assignment
 baseline. Its only additions there are six `ref.stdout` files for existing
-PA25 tests in `beca5e2793628813d600b9d96e7bb0922d0ea430`. Treat them as
+PA26 tests in `beca5e2793628813d600b9d96e7bb0922d0ea430`. Treat them as
 reference repairs, not intake candidates.
 
 After provenance filtering, neither run contributes a PA10-through-PA38 test
@@ -529,10 +529,10 @@ Use these destination rules:
 | Range | Normal destination |
 |---|---|
 | PA1-PA9 | flat `cppgm.tests/course/paN`, using the nearest assignment-local numbering band and the assignment's early harness sidecars |
-| PA10-PA27 | `paN/tests/spec` for a narrow assignment or N3485 rule; `paN/tests/general` for cross-rule regressions |
-| PA28 | `behavior`, `structural`, or `strict`, based on the asserted native-backend contract |
-| PA29 | `general`, with all required translation units and link/run sidecars |
-| PA30 | `abi` |
+| PA10-PA28 | `paN/tests/spec` for a narrow assignment or N3485 rule; `paN/tests/general` for cross-rule regressions |
+| PA29 | `behavior`, `structural`, or `strict`, based on the asserted native-backend contract |
+| PA30 | `general`, with all required translation units and link/run sidecars |
+| PA14 | `abi` |
 | PA31 and PA33 | `general` |
 | PA34 | `preproc`, `compile`, or `run` |
 | PA35 | `compile` |
@@ -631,7 +631,7 @@ family wholesale.
   validation record. Do not maintain a separate reference object tree when the
   normal `dev/` binary is also the compiler under test.
 
-  For PA30 ABI-name tests, validate the spelling against the intended Homebrew
+  For PA14 ABI-name tests, validate the spelling against the intended Homebrew
   Clang before accepting a reference. Start from a small real C++ declaration,
   compile it with Clang and inspect the exact emitted symbol, then run the same
   source through `dev/cppgm++ --emit-abi-facts`. Trim that emitted fact file to
@@ -641,7 +641,7 @@ family wholesale.
 
   Treat the emitted text as semantic-model evidence, not as the preferred
   checked-in fixture spelling. After proving the emitted facts reproduce the
-  Clang symbol, minimize the reducer within the PA30 fact grammar and prove the
+  Clang symbol, minimize the reducer within the PA14 fact grammar and prove the
   minimized facts produce the same symbol. Omit a `case` label for a one-case
   file, replace serializer-generated `__abi_*` binders with short descriptive
   identifiers, and prefer compact `function`, `function path`, and inline type
@@ -723,7 +723,7 @@ Run the narrowest checks first:
    a test to another assignment, run and retain the audit for both the source
    and destination assignments.
 
-   For intake into PA18 through PA23, also emit the template-placement view and
+   For intake into PA19 through PA24, also emit the template-placement view and
    inspect every accepted test's `Concepts For Review` and `Composition
    Concepts` columns:
 
@@ -736,11 +736,11 @@ Run the narrowest checks first:
      --json-out /tmp/paNN-template-placement.json
    ```
 
-   PA22's ordinary owner view filters prerequisite template
+   PA23's ordinary owner view filters prerequisite template
    mechanisms so a focused deduction or SFINAE test can remain at its
    single-feature owner. The composition view retains those prerequisites.
    When two or more concepts are essential to the assertion together, move the
-   test to PA23 and choose its cluster from the reported combination. This is a
+   test to PA24 and choose its cluster from the reported combination. This is a
    manual review lead rather than a hard placement failure because template
    fixtures often use earlier mechanisms only as assertion scaffolding.
 
@@ -802,8 +802,8 @@ source directory.
 
 Recommended order:
 
-1. PA10 through PA27 portable language and semantic reducers
-2. PA28 through PA33 backend, separate-compilation, ABI, and object reducers
+1. PA10 through PA28 portable language and semantic reducers
+2. PA29 through PA33 backend, separate-compilation, ABI, and object reducers
 3. PA34 through PA36 hosted preprocessing, compile, runtime, and link reducers
 4. PA37 and PA38 optimizer and machine-backend reducers
 5. PA1 through PA9 by owning assignment, using their course-test destinations

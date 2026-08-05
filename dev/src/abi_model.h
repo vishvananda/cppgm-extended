@@ -1251,6 +1251,7 @@ inline bool emit_template_name_component(const Type & type,
   } else if(!emit_source_name(metadata->template_name, out)) {
     return false;
   }
+  emit_abi_tags(metadata->abi_tags, out);
   if(sink && !key.empty()) {
     sink->register_substitution_owned(std::move(key));
   }
@@ -1282,11 +1283,15 @@ inline bool emit_type_as_name_prefix_body(const Type & type,
     } else if(!emit_name_prefix_components(metadata->prefix_components, out, sink)) {
       return false;
     }
-    return emit_name_component(
-        Type::NameComponent::source(metadata->template_name,
-                                    metadata->template_name_substitution),
-        out,
-        sink);
+    if(!emit_name_component(
+           Type::NameComponent::source(metadata->template_name,
+                                       metadata->template_name_substitution),
+           out,
+           sink)) {
+      return false;
+    }
+    emit_abi_tags(metadata->abi_tags, out);
+    return true;
   }
 
   case Type::TK_CLASS_TEMPLATE_SPECIALIZATION: {
@@ -1515,11 +1520,15 @@ inline bool emit_named_type(const Type & type,
       metadata->prefix_components[0].std_abbrev;
   if(direct_std_prefix) {
     out += "St";
-    return emit_name_component(
-        Type::NameComponent::source(metadata->template_name,
-                                    metadata->template_name_substitution),
-        out,
-        sink);
+    if(!emit_name_component(
+           Type::NameComponent::source(metadata->template_name,
+                                       metadata->template_name_substitution),
+           out,
+           sink)) {
+      return false;
+    }
+    emit_abi_tags(metadata->abi_tags, out);
+    return true;
   }
 
   const bool nested = !metadata->prefix_components.empty();
@@ -1536,6 +1545,7 @@ inline bool emit_named_type(const Type & type,
          sink)) {
     return false;
   }
+  emit_abi_tags(metadata->abi_tags, out);
   if(nested) {
     out += 'E';
   }
@@ -1840,6 +1850,7 @@ inline bool emit_class_template_specialization_type(const Type & type,
   } else if(!emit_source_name(metadata->template_name, out)) {
     return false;
   }
+  emit_abi_tags(metadata->abi_tags, out);
   if(sink && !template_key.empty()) {
     sink->register_substitution_owned(std::move(template_key));
   }
@@ -1941,6 +1952,7 @@ inline bool emit_class_template_specialization_type_owned(Type & type,
   } else if(!emit_source_name(metadata->template_name, out)) {
     return false;
   }
+  emit_abi_tags(metadata->abi_tags, out);
   if(sink && !template_key.empty()) {
     sink->register_substitution_owned(std::move(template_key));
   }

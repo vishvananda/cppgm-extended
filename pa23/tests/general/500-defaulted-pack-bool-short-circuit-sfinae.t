@@ -58,7 +58,7 @@ struct box {
   {}
 };
 
-void test(const box<int, int> & source)
+void test(const box<int, int> &source)
 {
   box<const box<int, int> &> value(source);
   (void)value;

@@ -12,11 +12,18 @@ struct flag
 
 namespace detail
 {
-  template<class T, bool B>
-  struct matcher
-  {
-  };
+template<class T, bool B>
+struct matcher
+{
+};
 }
+
+state *get_state();
+
+template<class T, bool B>
+detail::matcher<T, B> *get_matcher();
+
+flag<true> *get_flag();
 
 template<class T>
 struct compiler
@@ -35,9 +42,9 @@ template<class T>
 template<bool B>
 bool compiler<T>::bracket(flag<B> &)
 {
-  state s;
-  matcher<B> m;
-  return term(s, m);
+  state *s = get_state();
+  matcher<B> *m = get_matcher<T, B>();
+  return term(*s, *m);
 }
 
 template<class T>
@@ -47,9 +54,9 @@ bool compiler<T>::term(state &, matcher<B> &)
   return B;
 }
 
+compiler<int> *get_compiler();
+
 int main()
 {
-  flag<true> f;
-  compiler<int> c;
-  return c.bracket(f) ? 0 : 1;
+  return get_compiler()->bracket(*get_flag()) ? 0 : 1;
 }

@@ -29,7 +29,7 @@ You will want to reuse:
 
 - the full C++ language pipeline through PA32
 - the PA32 host-compatible `cppgm++ -c` path
-- the PA28 native backend and PA29 object-emission path
+- the PA29 native backend and PA30 object-emission path
 - the PA31 exception/runtime lowering concepts
 
 The tests assume a POSIX-like shell environment with `make`, `bash`,
@@ -173,7 +173,7 @@ work.
 ### Host ABI Symbol Names
 
 PA33 extends the PA32 object requirements into host C++ ABI/runtime behavior. The
-same ABI naming behavior from PA30 and PA32 is still observable for every C++
+same ABI naming behavior from PA14 and PA32 is still observable for every C++
 symbol that the host linker, unwinder, RTTI system, or virtual-dispatch
 machinery can observe.
 
@@ -188,6 +188,7 @@ match the configured toolchain:
   code
 - local classes, lambdas, dependent/template names, ABI tags, and inline
   namespaces when they affect the host name
+- ABI tags carried by class typeinfo names, typeinfo objects, and vtables
 
 ### Required Implementation Surface
 
@@ -223,7 +224,7 @@ often decided before the program starts: symbol names, weak ownership, unwind
 sections, RTTI/vtable objects, and relocation classes must match the host
 toolchain's expectations closely enough for ordinary linking and unwinding.
 
-A recommended implementation style is to continue using the PA30 ABI naming
+A recommended implementation style is to continue using the PA14 ABI naming
 layer before object emission. Feed semantic facts for the entity into the
 mangler, then let the object writer preserve the final raw symbol name. That
 keeps ABI spelling decisions close to semantic information and avoids a second

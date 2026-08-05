@@ -144,6 +144,7 @@ struct Type
     std::vector<std::string> named_dependent_qualified_members;
     std::vector<TemplateIdSyntax>
         named_dependent_qualified_member_template_ids;
+    std::vector<std::string> named_abi_tags;
     bool dependent_type_expression_formed_with_placeholders = false;
     bool named_dependent_qualified_leading_typename = false;
     bool named_output_name_is_final = false;

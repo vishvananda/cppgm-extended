@@ -2,20 +2,23 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++
-source files, executes translation phases 1 through 7, parses them as PA10/PA21
-translation units, reuses the PA11-PA20 semantic foundation, builds on the
-PA14-PA20 LowIR lowering path, and writes LowIR text.
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source
+Files, executes translation phases 1 through 7, parses them as PA10/PA21 translation
+units, reuses the PA11-PA20 semantic foundation, builds on the PA15-PA20 LowIR lowering
+path, adds the full `constexpr` / constant-evaluation layer, and writes LowIR text.
 
-PA21 is the first half of template completion. Its job is to finish the
-template declaration and specialization model so the compiler knows:
+PA21 extends PA20's first practical metaprogramming slice into a full language-level
+constant-evaluation milestone. Its job is to make `constexpr` semantics a first-class part
+of the compiler rather than leaving constant evaluation as only the small pragmatic subset
+needed by PA20 template arguments and `static_assert`.
 
-- what template entities exist
-- how template-template parameters, member templates, and friend templates are
-  represented
-- what specializations exist
-- which specialization is selected
-- which declarations/definitions own the selected specialization
+To complete PA21, implement these goals:
+
+- `constexpr` function evaluation
+- `constexpr` constructors, member functions, and variables
+- constant initialization and object-valued constant evaluation
+- a reusable constant-expression engine for both ordinary source semantics and later
+  template machinery
 
 PA21 still produces LowIR. It does not introduce a new output format.
 
@@ -28,10 +31,9 @@ You will want to reuse:
 - the preprocessing and tokenization pipeline from PA1-PA6
 - the PA10 AST as the syntax boundary
 - the PA11-PA12 semantic foundation
-- the PA14-PA20 LowIR lowering path
+- the PA15-PA20 LowIR lowering path
 - the PA13 LowIR contract
-- the PA18-PA19 template and metaprogramming machinery
-- the PA20 full constant-evaluation layer
+- the PA20 metaprogramming and integral constant-expression machinery
 
 ### Starter Kit
 
@@ -40,7 +42,7 @@ The starter kit contains:
 - a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
   in `../dev/cppgm++.cpp`
 - the standard assignment `Makefile` and harness scripts
-- the PA21 specialization/entity test suite under `tests/`
+- a checked-in local test suite under `tests/`
 
 In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from
 the `cppgm++` scaffold and is the file you extend for this assignment.
@@ -64,9 +66,9 @@ not part of PA21.
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
 `EXIT_SUCCESS`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA21 extends the
-PA20 lowering surface only by making more of the C++ source language lower into
-the already-defined LowIR family.
+The authoritative LowIR definition is `../pa13/lowir.md`. PA21 extends the PA20 lowering
+surface only by making more of the C++ source language lower into the already-defined LowIR
+family.
 
 LowIR top-level declaration/definition order is a presentation convention, not
 a dependency order. Reference outputs and canonical dumps use the order defined
@@ -87,16 +89,15 @@ grading requirement.
 
 ### Error Handling
 
-If an error occurs during preprocessing, tokenization, parsing, semantic
-analysis, or LowIR generation, `cppgm++` shall `EXIT_FAILURE`.
+If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
+generation, `cppgm++` shall `EXIT_FAILURE`.
 
 The output file is not required to be meaningful on failure.
 Diagnostics are not part of the grading contract.
 
 ### Standard Output / Error
 
-Standard output and standard error are ignored for automated testing of
-`cppgm++`.
+Standard output and standard error are ignored for automated testing of `cppgm++`.
 
 You are free to use them for debugging, tracing, or diagnostic messages.
 
@@ -104,27 +105,19 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 PA21 tests live under `tests/`. The suite is split by test role:
 
-- `tests/spec/` contains N3485/spec-anchored specialization/entity tests. Each
+- `tests/spec/` contains N3485/spec-anchored constant-evaluation tests. Each
   provided C++ language test in this directory starts with a leading comment of the
-  form `// N3485 focus: 14.x.y [clause.name] ...` so a reviewer can find the
-  governing text in `../doc/n3485.txt`.
-- `tests/general/` contains broader cross-feature and realistic
-  template-entity examples that are useful for PA21 but are not one-rule spec
-  probes.
+  form `// N3485 focus: 7.1.5 [dcl.constexpr] ...` or another exact governing
+  clause so a reviewer can find the text in `../doc/n3485.txt`.
+- `tests/general/` contains broader constexpr cross-feature and realistic
+  constant-evaluation examples that are useful for PA21 but are not one-rule
+  spec probes.
 
 The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated
 LowIR for basic structural correctness, then compares the canonicalized LowIR
 against the checked-in reference. For rejected tests, the exit status is the
 checked result; exact diagnostic text is not checked.
-
-This split assignment intentionally focuses on the specialization/entity half of
-template completion:
-
-- class partial specialization and specialization selection
-- alias and variable template entity modeling
-- explicit specialization and explicit-instantiation ownership
-- the declaration/instantiation behavior required to make that model coherent
 
 ### PA21 Syntax Boundary
 
@@ -135,89 +128,120 @@ Boundary and Out Of Scope sections below.
 
 ### Optional Student Test Ideas
 
-When adding your own tests, useful PA21 themes include alias/variable template
-entities, template-template parameters, member templates, friend templates,
-class partial specialization selection, explicit-instantiation ownership,
-constructor/member-template specialization ownership, and partial ordering
-boundaries.
+When adding your own tests, useful PA21 themes include C++11 `constexpr`
+declaration validity, literal type requirements, constant initialization, core
+constant-expression rejection, pointer/reference constant evaluation, and
+aggregate/object-valued constant evaluation.
 
 ### Assignment Boundary
 
-PA21 owns the template declaration graph and specialization model over the
-implemented language surface, including:
+PA21 owns full `constexpr` / constant-evaluation semantics over the implemented language
+surface inherited from PA20, including:
 
-- alias templates
-- variable templates
-- template-template parameters and template-template argument matching
-- member templates, including templated member operators and templated call
-  operators
-- access checking for member class templates, alias templates, and nested type
-  paths, including inherited access and template-template arguments
-- friend templates in the supported class-template/function-template subset, including a
-  friend type template-id whose non-type argument is a dependent constant expression
-- class partial specialization
-- partial-specialization ordering and specialization selection
-- current-specialization identity in the supported class-template and
-  specialization cases
-- explicit-instantiation declarations and definitions over the supported surface
-- an explicit-instantiation declaration for a class specialization suppresses
-  non-inline instantiation but keeps a locally used in-class inline or defaulted
-  member definition available
-- integration with PA19 explicit specialization declarations/definitions when
-  they interact with the PA21 specialization graph
-- collection/ownership behavior for constructor/member-template specializations
-  and namespace-scope friend-template declarations
-- an explicit definition of a member template for a concrete class-template
-  specialization replaces the definition instantiated from the primary and may
-  not itself be defined more than once
-- an out-of-class member-template definition attaches to specializations selected
-  by earlier calls in the translation unit and remains available for their demand
-- the dependent-name and instantiation behavior strictly required to make the
-  specialization model work
+- full constant-expression evaluation for the implemented expression/type subset
+- `constexpr` functions
+- `constexpr` constructors and member functions
+- `constexpr` variables and constant initialization
+- floating-point `constexpr` evaluation over the implemented scalar language surface
+- `noexcept` constant expressions over the supported call/expression subset
+- object-valued, pointer-valued, and reference-valued constant evaluation where the earlier
+  language/object-model milestones already define the underlying semantics
+- reuse of the constant evaluator for ordinary language semantics, template arguments, and
+  `static_assert`
+
+The intent is no longer a pragmatic subset. By the end of PA21, `constexpr` should be a
+complete compiler-owned semantic layer for the supported C++11 language surface, not a
+collection of special cases.
+
+More concretely, over the already-implemented language subset, PA21 should cover the full
+C++11 `constexpr` forms that later template and library code expect include
+dependent function-template return and parameter types. Their literal-type
+requirements are checked on the dependent declaration, and are not reapplied
+after a valid declaration is instantiated with concrete template arguments:
+
+- scalar, floating, `nullptr`, and enum constant expressions
+- unary, arithmetic, comparison, bitwise, logical, conditional, cast, `sizeof`,
+  `alignof`, `sizeof...`, and `noexcept` constant expressions where those operators are
+  already part of the supported language surface
+- `constexpr` free-function calls, including recursive calls and default arguments
+- `constexpr` constructors, including member-initializer lists and base/member
+  initialization for literal class types
+- `constexpr` member-function calls on constant objects
+- constant object values, not just integral scalars:
+  - aggregate/class values
+  - array values
+  - nested aggregate/array values
+- member access on constant objects via `.`
+- array and string-literal element access via `[]`
+- `constexpr` variables whose initializers must be fully evaluated at compile time
+- reference-valued constant evaluation and `const T &` / reference parameter passing where
+  the implemented object model already defines the underlying semantics
+- lookup and reuse of previously computed constant values, including qualified lookup and
+  static data members
+- function-local static objects over the supported LowIR subset:
+  - constant initialization when the initializer is a constant expression
+  - dynamic class-object local statics with the required guard/check behavior, including
+    direct initialization from a class-prvalue factory call
+
+PA21 also owns the semantic validation side of C++11 `constexpr`, not just evaluation. In
+particular, the compiler should enforce the C++11-facing rules that matter for the
+supported language subset, such as:
+
+- `constexpr` variables require a compile-time initializer and a literal type
+- `constexpr` function return and parameter types must be literal types
+- `constexpr` constructors must produce literal objects through valid base/member
+  initialization
+- invalid `constexpr` declarations should fail during semantic analysis instead of being
+  accepted and only failing later during use
+- an executed declaration whose initializer is not constant invalidates the enclosing
+  constant evaluation even when the declared value is not read
+- a member call on a temporary is constant only when construction of that temporary is
+  itself a valid constant expression
+
+The implementation may support a strict superset of C++11 evaluation rules internally,
+such as local variables, assignment, and loops inside constexpr evaluation. That is fine
+and often useful for later milestones, but it does not reduce the requirement that the
+standard C++11 forms above be covered cleanly and intentionally.
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA21:
 
-- full function-template deduction over the intended language surface
-- function-template partial ordering
-- SFINAE and substitution-failure completion
-- the remaining no-eager-instantiation / dependent-call timing work that is
-  better framed as substitution behavior
-- initializer-list template behavior
-- hosted/vendor-only extensions that happen to use templates
-- post-C++11 template-language features
-- broad multi-feature integration cases whose main assertion is that several
-  completed template features compose
+- template language features that still remain deferred to PA22
+- post-C++11 constant-evaluation features
+- hosted/vendor-only compatibility forms that are not part of the standard C++ language
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended next stage is PA22, which finishes deduction, substitution, and
-SFINAE over the now-complete specialization model.
+The intended next stages are PA22 and PA23, which finish the remaining standard template
+language using the now-complete constant-evaluation engine:
+
+- PA22: complete the template entity and specialization model
+- PA23: complete deduction, substitution, and SFINAE over that model
 
 So PA21 should leave behind:
 
-- a stable template declaration/specialization graph
-- deterministic specialization selection
-- specialization ownership that lowers through the ordinary LowIR path
-- no remaining "template entity model later" gap before full template
-  completion
+- a stable constant-evaluation semantic layer
+- ordinary lowered declarations that no longer depend on PA20-specific constant-expression
+  shortcuts
+- a clear boundary where the remaining template-language work can build on real `constexpr`
+  support rather than special-casing it
 
 ### Design Notes (Non-Normative)
 
-The useful shape for PA21 is a canonical template-entity graph. Alias templates,
-variable templates, primary class templates, partial specializations, explicit
-instantiations, and PA19 explicit specializations should refer to the same
-semantic entities instead of being tracked as unrelated source-text forms.
+The useful shape for PA21 is one typed constant-evaluation layer shared by
+`constexpr`, template arguments, `static_assert`, constant initialization, and
+ordinary semantic checks.
 
 Useful intermediate representations include:
 
-- canonical specialization keys built from typed template arguments
-- explicit template-template parameter bindings that point at template entities,
-  not source text
-- an ordered partial-specialization candidate set with deterministic selection
-- explicit ownership links from constructor/member-template specializations back
-  to the class or namespace entity that owns the generated declaration
-- reuse of PA20 constant values for value-dependent specialization keys
+- typed constant values for scalars, enums, pointers, references, arrays, and
+  class objects
+- a distinction between checking whether a declaration is valid `constexpr` and
+  evaluating an expression in a constant-evaluation context
+- reusable evaluated-value storage for bindings whose constant value is needed
+  by lookup, template arguments, and later LowIR lowering
+- local-static initialization metadata that records whether LowIR lowering can
+  emit a constant initializer or must emit guarded dynamic initialization

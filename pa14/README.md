@@ -1,330 +1,417 @@
-## CPPGM Programming Assignment 14 (`cppgm++ --emit-lowir`)
+## CPPGM Programming Assignment 14 (`abimangle`)
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA10 translation units, applies the
-PA12 procedural semantic layer, and writes LowIR text.
+Write one C++ application called `abimangle`.
 
-PA14 is the point where `cppgm++` gains its first LowIR output mode. The earlier
-`--emit-ast`, `--emit-types`, and `--emit-semantics` modes remain required.
+`abimangle` takes normalized ABI fact files as input and writes Itanium C++
+ABI mangled names. Each input case describes the semantic facts for one ABI
+name: the entity being named, owner scopes, type structure, template
+parameters, template arguments, dependent expressions, local contexts, ABI
+tags, and special ABI-name forms.
 
-The goal of this assignment is to establish the compiler's real backend boundary before the
-later object-model and template milestones extend lowering further. PA14 completes the
-non-class procedural lowering stage over the current PA12 semantic boundary: it lowers
-namespace-scope functions, procedural expressions, control flow, and the supported
-scalar/pointer global state into the PA13 LowIR subset.
+The input is not C++ source. This assignment is about ABI name construction
+only. It does not require C++ parsing, semantic analysis, LowIR generation,
+object emission, linking, or runtime behavior.
 
 ### Prerequisites
 
-You should complete Programming Assignment 12 before starting this assignment.
+Complete PA13 before starting this assignment.
 
 You will want to reuse:
 
-- the preprocessing and tokenization pipeline from PA1-PA6
-- the PA10 AST as the syntax boundary
-- the PA11 declarator/type model
-- the PA12 procedural semantic analysis as the source of truth for resolved functions,
-  locals, and expressions
-- the PA13 LowIR contract
-- the PA13 LowIR -> CY86 path as an optional secondary scaffold
+- the shared tool and batch-driver structure from the earlier assignments
+- the PA11-PA12 typed scope, declaration, and semantic models
+- the PA13 compiler/backend boundary
+- the Itanium C++ ABI mangling rules in `../doc/itanium-mangling.txt`
 
-The intended direction is:
+The normalized facts intentionally describe language features that later
+assignments have not implemented yet. Those facts are the design vocabulary
+for the encoder; the corresponding source-language milestones are not
+prerequisites.
 
-- PA10 provides syntax
-- PA11 provides scopes and types
-- PA12 resolves procedural expressions and calls
-- PA13 defines the backend boundary and runnable validation scaffold
-- PA14 lowers the resolved procedural subset into LowIR
+The tests assume a POSIX-like shell environment with `make`, `bash`, `perl`,
+and a working host C++ compiler for building the test executable.
 
 ### Starter Kit
 
-The starter kit contains:
+The starter kit provides:
 
-- the student-editable `../dev/cppgm++.cpp` entry point, initially seeded from the course
-  `cppgm++` scaffold and reached from this directory through the `cppgm++.cpp` symlink
-- shared `../dev/` and `../dev/src/` support code from the earlier compiler pipeline
-- a local test suite
-- the grammar for this assignment called `pa14.gram`
-- an HTML grammar explorer of `pa14.gram` in the sub-directory `grammar/`
-- checked-in golden output files under `tests/`
-- a checked-in local test suite under `tests/`
+- `dev/abimangle.cpp`, populated with command-line handling for `abimangle`
+- `pa14/abimangle.cpp`, a wrapper that builds the editable tool source from
+  `../dev/abimangle.cpp`
+- `pa14/Makefile`
+- `pa14/scripts/`, the ABI fact test harness
+- `pa14/tests/abi/`, the checked-in ABI fact tests and reference files
+- shared support sources and headers under `dev/src/`
+- an optional ABI fact scaffold in `dev/src/abi_mangle.h`
 
-The provided scaffold and shared support files establish the driver shape and previous
-frontend modes. They do not implement the PA14 source-to-LowIR lowering work.
+Put code changes in `dev/`, especially `dev/abimangle.cpp` and reusable
+helpers under `dev/src/`. Do not edit generated `.my` files. Test inputs and
+references are part of the handout unless your instructor asks you to add or
+update tests.
 
-Unlike PA1-PA9, there is no external reference binary for PA14. The checked-in `.ref`
-files are the default oracle.
+The assignment-facing scaffold is the typed fact data model and the declared
+parse/serialize/mangle API in `dev/src/abi_mangle.h`. Keep the reusable typed
+ABI model and encoder under `dev/src/`; keep the line-oriented fact reader at
+the `abimangle` tool boundary. Later compiler stages must construct typed ABI
+targets and call the same encoder directly. They must not serialize semantic
+state to fact text and parse it back.
 
-### Driver Surface For This Assignment
+Encoding tables, Itanium terminal spelling, compiler semantic lowering, and
+other implementation logic are intentionally outside the PA14 wrapper and
+test harness.
 
-Previously required:
+There is no separate reference binary in the starter kit. The checked-in
+`.ref.*` files are the oracle.
 
-- `--emit-ast`
-- `--emit-types`
-- `--emit-semantics`
-- `-o <outfile>`
+### Command-Line Contract
 
-New in PA14:
+Required form:
 
-- `--emit-lowir`
-- `-O0` as the unoptimized LowIR test mode
+```sh
+abimangle -o <outfile> <abi-facts-file>...
+```
 
-No practical compile/link driver flags are introduced here yet. That later
-surface starts in PA30.
+`abimangle` shall read all input fact files in command-line order and write one
+mangled name for each input case to `<outfile>`.
 
-### Input / Command-Line Arguments
+Each output name is written on its own line:
 
-The same as PA12 `cppgm++ --emit-semantics`, with the new LowIR emit mode. The PA14 test mode is unoptimized LowIR generation. `make test` passes `--emit-lowir -O0`
-through the harness, so individual test files do not spell those flags themselves.
+```text
+_ZN2ns1fEiPc
+```
 
-Behaviour is undefined unless the command-line arguments match:
+If an input file contains multiple cases, the output preserves the case order
+from that file before moving to the next input file.
 
-    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+### ABI Fact Files
 
-with the same relaxations as PA12.
+ABI fact files are line-oriented. The checked-in tests use normalized facts of
+the forms described here.
 
-Accepting `--emit-lowir` without an explicit `-O0` as the same unoptimized mode is fine,
-but optimized LowIR output is not part of PA14.
+Simple cases can be one line:
+
+```text
+function f
+function path ns::f
+variable ns::g
+type ptr:const:int
+typeinfo ns::C
+vtable ns::C
+```
+
+A named or class-template type with one or more ABI tags uses a typed wrapper:
+
+```text
+let-type Tagged tagged named:C tag
+typeinfo Tagged
+```
+
+The tags belong to the type's unqualified ABI name component and therefore
+also appear in its typeinfo, typeinfo-name, vtable, and VTT special symbols.
+
+The normalized builtin word `float128` denotes GNU `__float128` and uses the
+Itanium builtin type code `g`. This is an ABI fact spelling, not a requirement
+to parse `__float128` as C++ source in PA14.
+
+The normalized builtin words `complex-float`, `complex-double`, and
+`complex-longdouble` denote GNU complex floating types and use the Itanium type
+encodings `Cf`, `Cd`, and `Ce`. These are typed ABI facts; consumers must not
+construct them by appending raw mangled fragments.
+
+Integral `value` facts are interpreted according to their typed value. Signed
+negative values use the Itanium `n`-plus-magnitude spelling, including the
+minimum value of a signed type. A negative stored value for an unsigned builtin
+type denotes that type's modulo bit pattern, so `value uint -1` and
+`value ulong -1` are emitted as the maximum values for their respective target
+widths rather than as negative ABI literals.
+
+Compact member-pointer types use
+`memberptr:<owner>:<member-type>`, where the compact owner is a bare qualified
+name or type-definition identifier. Scope separators do not delimit the two
+operands, so both `memberptr:ns::C:int` and `memberptr:C:ptr:int` are valid.
+Use the multiword `member-pointer <owner> <member-type>` form when the owner
+itself needs a constructor prefix such as `named:`; the canonical fact
+serializer uses this unambiguous form. A `function-type` fact contains a result
+type followed by zero or more parameter types; an empty parameter list is
+encoded with the Itanium `v` marker.
+
+Adjacent `const` and `volatile` type wrappers describe one canonical
+cv-qualified type. Their source order does not create distinct types or
+substitution keys, and the encoder emits the canonical Itanium qualifier order.
+
+Structured cases introduce reusable facts before the final target:
+
+```text
+let-type Char template-param 0
+let-arg Char_arg type Char
+let-type Traits template std::char_traits Char_arg
+let-arg Traits_arg type Traits
+let-type Alloc template std::allocator Char_arg
+let-arg Alloc_arg type Alloc
+let-type String template std::__cxx11::basic_string Char_arg Traits_arg Alloc_arg
+function path std::getline Char_arg
+param ref String
+```
+
+Definition forms:
+
+- `let-type <id> ...`: a type fact
+- `let-arg <id> ...`: a template-argument fact
+- `let-expr <id> ...`: a dependent-expression fact
+- `let-context <id> function ...`: a local or lambda context named by a
+  function target
+- `let-context <id> raw <context-fragment>`: a local or lambda context already
+  normalized as an Itanium local-name context fragment
+- `let-entity <id> ...`: an entity fact used by entity-valued template
+  arguments and dependent expressions
+
+Definition identifiers are file-local binders. Their spelling does not
+participate in the ABI name; use a short descriptive identifier and refer to it
+consistently. Whether two uses refer to one definition or to separately
+defined structural facts can still matter to the case being described. One
+identifier may be defined only once in a case, across all `let-*` forms;
+redefining it is an invalid fact file rather than an overwrite.
+
+Template-parameter and other ABI indices are nonnegative decimal integers.
+Negative or otherwise malformed index spellings are invalid facts and must be
+rejected.
+
+Target forms:
+
+- `type ...`
+- `function ...` with optional following terminal and `param ...` lines
+- `variable ...`
+- `typeinfo ...`
+- `vtable ...`
+- `vtt ...`
+- `construction-vtable ...`
+- `tls-wrapper variable ...`
+- `thunk ... function ...`
+- `virtual-base-thunk ... function ...`
+
+The thunk target uses `thunk <this-adjust> function ...` when only `this`
+needs adjustment and `thunk <this-adjust> <result-adjust> function ...` for a
+fixed covariant-result adjustment.  A covariant result reached through a
+virtual base uses the typed form
+`thunk <this-adjust> virtual-result <fixed-adjust> <vcall-offset> function ...`.
+The fixed component is applied after loading the dynamic adjustment from the
+returned object's vtable at the supplied vcall-offset slot.  Production ABI
+symbol construction and fact-file mangling must use the same typed thunk
+target; the text form is its public scaffold serialization.
+
+Function operator terminals use semantic names, not raw Itanium terminal
+fragments:
+
+```text
+function path C::operator
+operator-terminal plus
+param int
+
+function path operator
+operator-terminal literal _digits
+param ulonglong
+
+function path C::operator
+conversion-terminal int
+```
+
+Complex function encodings may also be written as a `function encoding` target
+followed by normalized component lines. Template-id components use
+`name-template ... <arg-ref>...`; function-template arguments use
+`function-template-arg <arg-ref>`, with `function-template-prefix <key>` when
+the function-template prefix is substitutable; local entities use
+`local-context ...` or `lambda-context ...` followed by the same terminal,
+qualifier, result, and parameter lines as ordinary functions.
+
+Namespace-scope lambda closure types use
+`type namespace-lambda <source-name> [namespace-qualifier...]`. Their call
+operators may be written either as
+`function namespace-lambda <source-name> <terminal> [namespace-qualifier...]`
+or, in a `function encoding` case, as
+`namespace-lambda-context <source-name> [namespace-qualifier...]` followed by
+ordinary terminal, qualifier, result, and parameter lines. The source name is
+the ABI source-name component, such as `$_0`.
+
+`operator-terminal <name>` names the C++ operator semantically. Supported names
+include `plus`, `minus`, `address-of`, `deref`, `new`, `new-array`,
+`delete`, `delete-array`, `multiply`, `divide`, `remainder`, `bit-or`,
+`bit-xor`, assignment operators, shifts, comparisons, logical operators,
+`increment`, `decrement`, `comma`, `member-pointer`, `arrow`, `call`, and
+`index`. For operators whose Itanium terminal depends on unary versus binary
+use, the encoder chooses from the parameter count and member/non-member shape;
+explicit names such as `unary-plus`, `binary-plus`, `unary-minus`,
+`binary-minus`, `bit-and`, and `multiply` may be used when the shape should be
+unambiguous.
+
+Literal operators are written as `operator-terminal literal <suffix>`, where
+`<suffix>` is the unencoded suffix source name such as `_digits`. Conversion
+operators remain separate `conversion-terminal <type>` facts. The conversion
+type participates in ordinary substitution ordering and is also the function's
+encoded result; a separate `result` record is not emitted for a conversion
+function. Local and lambda call-operator contexts continue to use
+`operator-call` as a semantic terminal marker, not as an Itanium code.
+
+Thunks, wrappers, typeinfo, and vtable names are described as ABI facts instead
+of already-mangled names.
+
+Raw external symbols may be carried with `let-entity <id> symbol <mangled-name>`
+when a template argument or dependent expression names an entity that is already
+known by ABI symbol rather than by a source-level qualified name.
+Namespace-scope variables with internal linkage use
+`let-entity <id> internal-variable <qualified-name>`; this keeps the qualified
+entity and linkage typed until the encoder inserts the Itanium local-name marker.
+
+Template-template arguments may name either a namespace-scope template with
+`let-arg <id> template-entity <qualified-name>` or a member template of an
+already-structured owner type with
+`let-arg <id> member-template-entity <owner-type> <member-name> <substitution>`.
+Type facts may also spell a class-template specialization whose template name
+is a template-template parameter using `type template-param-template <index> <arg-ref>...`.
+Member type facts use the same structured owner rule, so `type member <owner>
+<name>` may be rooted in a dependent template specialization or builtin
+transform type such as `__remove_const<T>`.
+
+The fact format is deliberately small, but it is still an ABI entity graph. It
+should not become a second C++ parser.
+
+### Required ABI Coverage
+
+The checked-in tests are numbered from simpler names toward more complete ABI
+situations:
+
+- `100-*`: basic functions, variables, named types, builtin types, pointers,
+  arrays, member pointers, typeinfo, vtables, VTTs, and variadic forms
+- `200-*`: ABI tags, local entities, local and namespace-scope lambdas,
+  ABI-tagged special type names, operators, conversion terminals, TLS wrappers,
+  and thunks
+- `300-*`: entity-valued template arguments, template-template arguments,
+  standard substitutions, construction vtables, and dependent integral values
+- `400-*`: dependent aliases and dependent member/owner types
+- `500-*`: dependent expressions, casts, calls, type traits, `sizeof(type)`,
+  packs, and substitution of equivalent dependent expressions
+- `600-*`: nested owner contexts and standard-library-adjacent inline namespace
+  cases
+
+An implementation should handle Itanium substitution ordering, nested names,
+local-name contexts, template parameter references, template arguments,
+dependent expressions, ABI tags, special names, and every target form covered
+by the tests. Ordering remains deterministic when substitutions arise inside
+dependent expressions, qualified member-template owners, and local-name
+contexts. Multiple ABI tags use canonical order, and local entities support the
+same special-member terminals as their nonlocal counterparts. A local lambda
+used as a function-template argument retains the enclosing function as its
+local-name context; it is not represented as a named class under its call
+operator.
+
+Reference:
+
+- Local copy of Itanium C++ ABI, Chapter 5.1 "External Names (a.k.a.
+  Mangling)": [`../doc/itanium-mangling.txt`](../doc/itanium-mangling.txt)
 
 ### Output Format
 
-`cppgm++` shall write LowIR text to `<outfile>`.
+The output file contains one mangled name per target, followed by a newline.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA14 only needs the procedural
-subset of that IR, but it must emit valid PA13 LowIR.
-
-Example:
-
-    function @main() -> i64 {
-      block ^entry:
-        return i64 0
-    }
-
-PA14 writes a single concatenated LowIR program consisting of:
-
-- zero or more `global` definitions
-- zero or more `function` definitions
-
-LowIR top-level declaration/definition order is a presentation convention, not
-a dependency order. Reference outputs and canonical dumps use the order defined
-in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
-`function`, but the relaxed LowIR comparison canonicalizes top-level entries
-before comparison. Your output must still be repeatable for the same
-inputs; `../pa13/lowir.md` defines the canonical reference presentation and
-notes where internal LowIR symbol names are only a presentation tie-breaker.
-Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
-blocks, item order inside structured globals, vtable slot order, and action
-order inside generated initialization, finalization, constructor, destructor,
-and cleanup bodies.
-
-PA14 is still a purely procedural lowering stage. Its LowIR output should not include
-class/object-model helper definitions such as synthesized constructors, destructors, copy
-helpers, or class-lifetime startup/shutdown hooks. Tests that require those belong in PA15
-or later.
-
-The checked-in `.ref` files define the required LowIR facts for the tests. The
-test harness checks exit status, LowIR well-formedness, and the
-course-defined normalized LowIR output rather than requiring students to match every
-non-semantic helper spelling or presentation choice.
-
-For supported scalar conversions, PA14 may canonicalize widened integral immediates directly
-to their final LowIR literal value instead of spelling those same conversions through
-intermediate `binary shl` / `binary shr` sign-extension shells.
-
-For built-in `&&` / `||` used directly as statement conditions (`if`, `while`, `do`, `for`),
-the expected LowIR shape is direct short-circuit control flow. In that condition context,
-the compiler should branch through the operand blocks rather than first materializing a
-separate `land__*` / `lor__*` boolean slot.
-
-The generated LowIR is intended to become input for the later PA28
-`lowir2native` backend. That future native path is not the PA14 grading
-contract, but PA14 should avoid emitting LowIR that only works for this one
-text comparison.
-
-The PA13 scaffold path is useful as an optional manual execution check:
-
-    cppgm++ --emit-lowir -> LowIR
-    lowir2cy86 -> CY86
-    cy86 -> executable
-
-That runnable path is a debugging aid, not the primary PA14 output contract.
+For successful test cases, standard output and standard error are ignored. You
+may use them for diagnostics.
 
 ### Error Handling
 
-If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
-generation, `cppgm++` shall `EXIT_FAILURE`.
+If command-line parsing, input reading, fact parsing, or name construction
+fails, `abimangle` shall exit with failure.
 
-The output file is not required to be meaningful on failure.
-
-### Standard Output / Error
-
-Standard output and standard error are ignored for automated testing of `cppgm++`.
-
-You are free to use them for debugging, tracing, or diagnostic messages.
+For negative tests, exact diagnostics are not the grading contract. The harness
+compares exit status first. If the reference path fails, stdout and stderr are
+diagnostic side effects rather than required output.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary.
+Run the ABI naming suite with:
 
-For each test case `x`:
+```sh
+make test
+```
 
-- `cppgm++` is executed to produce `x.my`
+To run one test through the shared check target:
+
+```sh
+make check TEST=tests/abi/100-global-function.t
+```
+
+For each test case `x.t`:
+
+- `abimangle` is executed to produce `x.my`
 - the exit status is recorded in `x.my.exit_status`
-- `x.my` is validated as LowIR and compared against `x.ref` using the normalized
-  LowIR comparison
+- `x.my` is compared against `x.ref`
 - `x.my.exit_status` is compared against `x.ref.exit_status`
 
-`make test` runs the checked-in local suite under `tests/` and supplies
-`--emit-lowir -O0` through the harness.
-
-The PA14 test suite uses:
-
-- `tests/general/`: the default PA14 LowIR oracle suite. These tests cover the procedural
-  lowering contract and integration cases that are validated by generated LowIR
-  text and exit status. The covered source features are namespace functions and
-  globals, procedural statements, condition declarations, scalar expressions,
-  references, arrays, pointer operations, enums, built-in casts, and resolved
-  calls over the PA12 semantic subset.
-
-PA14 is tested against the generated LowIR text.
-
-### PA14 Syntax Spec
-
-The authoritative source syntax is the shared `cppgm++` source grammar, exposed
-for this assignment as `pa14.gram`. The grammar defines accepted syntax only;
-the PA14 semantic and lowering requirements are defined by the Assignment
-Boundary and Out Of Scope sections below.
-
-As in the earlier assignments, that grammar defines accepted input syntax only. The output
-format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
-`.ref` files.
-
-Because PA14 is a code-generation assignment layered directly on PA10-PA12, the
-grammar keeps parser/AST behavior stable while the `Assignment Boundary` below
-defines which already-parsed constructs PA14 must analyze and lower.
-
-Passing PA12 is necessary but not sufficient for passing PA14: an input may be syntactically
-valid for PA10 and semantically valid for PA12 and still be outside the PA14 code-generation
-subset described below.
-
-A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
-`pa14.gram` as the source of truth.
-
-`pa14.gram` uses the same token vocabulary and the same extended BNF operators as
-`../pa6/pa6.gram`.
-
-If this README and `pa14.gram` appear to disagree about source syntax, treat `pa14.gram`
-as authoritative. If this README and PA13 `lowir.md` appear to disagree about LowIR syntax,
-treat `lowir.md` as authoritative. If they disagree about the required PA14 lowering slice,
-treat the `Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+The checked-in references are the oracle. Your tests should not invoke the host
+compiler, `nm`, `readelf`, `objdump`, or a demangler as a live ABI-name oracle,
+because host compiler and standard-library version differences can create
+noise around ABI tags, inline namespaces, and local entity numbering.
 
 ### Assignment Boundary
 
-This PA14 milestone supports the following:
+This assignment owns standalone ABI name construction from normalized ABI fact
+files.
 
-- namespace-scope function definitions and declarations in a single generated program,
-  including named namespaces, C language linkage, and deduplication of repeated
-  compatible declarations
-- a required `main` definition
-- functions returning integral, pointer, or `bool` results from the supported PA12 subset
-- up to four parameters in the supported PA12 procedural type subset
-- global integral/pointer/function-pointer objects with constant initializers or zero-init,
-  including object addresses and constant array-element addresses
-- local scalar objects, scalar/function references, function pointers/references, and bounded
-  arrays in the supported PA12 procedural type subset; an omitted array bound is inferred
-  from its initializer, missing elements are zero-initialized, and excess elements are
-  rejected; an `extern` array of unknown bound may be referenced without requiring its
-  layout in the current translation unit
-- expression statements
-- `return`
-- `if` / `else`
-- condition declarations in `if` and `switch`, including the lifetime of the
-  condition-scope binding
-- `switch`
-- `while`
-- `do`
-- `for`
-- `break` / `continue`
-- direct calls to resolved non-template namespace-scope functions, including supported
-  default arguments resolved in the declaration context where the default was introduced
-- calls through function pointers and function references in the PA12 subset
-- lvalue references, including reference parameters, reference locals, reference
-  returns, and aliasing through supported calls
-- array-to-pointer decay, subscript expressions, pointer arithmetic, one-past
-  pointer values, and pointer compound assignment with element-size scaling
-- scoped and unscoped enums, enum constants, enum promotion/comparison, and
-  enum lowering
-- built-in casts over the supported scalar, function, reference, and pointer
-  types, including C-style casts, `static_cast`, and `const_cast`
-- source-to-LowIR floating scalar literals and conversions among supported
-  scalar types, including float/integer conversions needed for calls, returns,
-  comparisons, and branch conditions
-- C-style variadic function calls over supported scalar arguments, including
-  source-to-LowIR default argument promotion before the call
-- expressions:
-  - integer literals, floating literals, and `true` / `false`
-  - id-expressions naming supported locals, globals, and resolved functions
-  - `sizeof(expr)` and `sizeof(type-id)` when PA12 has resolved them
-  - unary `+`, `-`, `!`, `~`, `&`, `*`, prefix `++`, and prefix `--`
-  - postfix `++` and postfix `--`
-  - simple assignment to supported lvalues
-  - built-in arithmetic, bitwise, shift, logical, comparison, conditional, comma, and
-    subscript forms from the PA12 procedural subset
+To complete this assignment, implement this behavior:
 
-Compiler-generated slots and helper names must remain distinct from source
-identifiers so a source declaration cannot redirect an internal temporary.
+1. Parse normalized ABI fact files.
+2. Represent the ABI facts with enough typed structure to apply the Itanium C++
+   ABI mangling grammar.
+3. Encode the supported fact records into deterministic mangled names.
+4. Implement substitution-table behavior in host-compatible order for the
+   tested cases.
 
-The generated LowIR for this supported subset is intended to be accepted by the
-later PA28 `lowir2native` backend. PA13 `lowir2cy86` remains a useful optional
-execution scaffold, not the primary validation path.
+If `abimangle` accepts a fact file and writes a different ABI name from the
+checked-in reference, the issue belongs in this assignment.
 
 ### Out Of Scope
 
-The following are explicitly out of scope for this PA14 milestone:
+The following are out of scope for this assignment:
 
-- string literals and string-literal-backed object initialization
-- global or local initialization forms that require a richer constant-evaluation or aggregate
-  initialization layer than PA12 currently provides
-- function-local static objects and guard variables
-- class/object semantics
-- synthesized class helper output of any kind
-- template code generation
-- exception-aware control flow
-- fully general shadowing-sensitive lowering of same-name local bindings
-- native backend/runtime parity for floating-point conversions and variadic promotions
-- hosted or vendor integer extensions such as 128-bit integer types
-
-Inputs that rely on those features have undefined behaviour for this milestone.
-
-### Stage Handoff
-
-The intended next stages are:
-
-- PA15: extend this procedural lowering path into the basic non-virtual object model:
-  object layout, methods, constructors/destructors, lifetime, and single inheritance
-- PA16: build on that PA15 object model with non-polymorphic value semantics:
-  copy construction/assignment, pass-by-value, return-by-value, and the common
-  user-defined operator paths needed by value types
-- PA17: add the polymorphic machinery on top of the PA15/PA16 class model:
-  virtual dispatch, vtables, and virtual destructors
-- later template-aware assignments: reuse the same procedural lowering path for instantiated
-  template code once template semantics exist
-
-So PA14 should leave behind a reusable procedural `C++ -> LowIR` lowering path rather than
-trying to absorb class or template semantics early.
+- C++ source input
+- C++ source parsing or semantic analysis
+- LowIR generation
+- relocatable object generation or host linking
+- ELF, Mach-O, COFF, archives, shared libraries, or relocation records
+- vtable layout, RTTI object layout, exception handling, unwind metadata, or
+  host runtime behavior beyond naming the corresponding ABI entities
+- demangling
+- using host object tools or host compiler output as compiler input
 
 ### Design Notes (Non-Normative)
 
-The cleanest reuse path is to keep PA12 as the semantic source of truth and lower from that
-resolved procedural representation rather than rebuilding expression semantics again inside
-PA14.
+A simple implementation strategy is to keep three concerns separate:
 
-Useful intermediate representations include:
+- fact-file parsing into typed records
+- ABI name encoding from those typed records
+- substitution-table state for one mangled name
 
-- a resolved procedural tree shared with PA12
-- explicit object identities for globals, locals, references, arrays, and
-  function objects
-- explicit local slot/layout information
-- a centralized type-to-LowIR lowering and conversion layer
-- a stable mapping from resolved expressions to LowIR values and stack locations
+The `abi_mangle.h` scaffold follows that shape. You may extend its typed model
+and APIs as the tested ABI vocabulary grows, but the standalone tool and later
+compiler stages should share one structured encoder implementation.
+
+Substitution is part of the ABI grammar, not just text de-duplication. The
+encoder should record substitutions in the order required by the Itanium ABI
+and should compare structured facts when deciding whether a component can reuse
+an existing slot. Structural comparison must retain encoding-significant facts
+such as array bounds, integral-expression values, and type-trait operands while
+still recognizing equivalent value arguments and canonical spellings of the
+same named type.
+
+Avoid building names by assembling large ad hoc strings that are later
+reparsed. Some ABI facts contain source spellings, but type structure,
+template arguments, dependent expressions, and local contexts should remain
+structured until the encoder emits the final mangled name.
+
+### Stage Handoff
+
+The next stage is PA15, where `cppgm++ --emit-lowir` first emits compiler-owned
+symbols. PA15 must lower resolved semantic entities into the typed ABI targets
+introduced here and call the shared encoder directly. Later class, template,
+native-object, exception, and hosted-runtime assignments extend those typed
+targets rather than introducing a second mangling path.

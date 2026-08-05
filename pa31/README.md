@@ -37,10 +37,10 @@ Complete PA30 before starting this assignment.
 You will want to reuse:
 
 - the PA13 LowIR parser and EH instruction model
-- the PA28 native backend and object-emission infrastructure
-- the PA23-PA27 source-to-LowIR surface
-- the PA29 compile-mode driver path used by `cppgm++ -c`
-- the PA30 ABI naming layer and runtime-role classification used by host object
+- the PA29 native backend and object-emission infrastructure
+- the PA24-PA28 source-to-LowIR surface
+- the PA30 compile-mode driver path used by `cppgm++ -c`
+- the PA14 ABI naming layer and runtime-role classification used by host object
   emission
 
 The tests assume a POSIX-like shell environment with `make`, `bash`, `perl`, and

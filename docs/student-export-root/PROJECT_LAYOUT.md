@@ -32,11 +32,13 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 - PA1-PA5: preprocessing
 - PA6-PA9: grammar recognition, namespace semantics, and CY86 output
 - PA10-PA12: AST, types, lookup, conversions, calls, and overload resolution
-- PA13-PA17: LowIR, procedural lowering, classes, value semantics, and virtual dispatch
-- PA18-PA23: templates, constant evaluation, and template integration
-- PA24-PA27: remaining source-to-LowIR language and object-model closure
-- PA28: native backend from LowIR
-- PA29-PA31: compile/link driver integration, ABI naming, and host exception metadata
+- PA13: LowIR parsing and execution scaffold
+- PA14: typed Itanium ABI naming
+- PA15-PA18: procedural lowering, classes, value semantics, and virtual dispatch
+- PA19-PA24: templates, constant evaluation, and template integration
+- PA25-PA28: remaining source-to-LowIR language and object-model closure
+- PA29: native backend from LowIR
+- PA30-PA31: compile/link driver integration and host exception metadata
 - PA32-PA36: host ABI and hosted compatibility
 - PA37-PA38: LowIR and machine-backend optimization
 - PA39: inception, rebuilding `cppgm++` with `cppgm++`
@@ -58,23 +60,23 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 | PA11 | `cppgm++ --emit-types` | types, scopes, and lookup |
 | PA12 | `cppgm++ --emit-semantics` | conversions, initialization, and overload resolution |
 | PA13 | `lowir2cy86` | LowIR parsing and execution scaffold |
-| PA14 | `cppgm++ --emit-lowir` | procedural C++ lowering to LowIR |
-| PA15 | `cppgm++ --emit-lowir` | basic classes and object layout |
-| PA16 | `cppgm++ --emit-lowir` | value semantics and assignment |
-| PA17 | `cppgm++ --emit-lowir` | virtual dispatch |
-| PA18 | `cppgm++ --emit-lowir` | basic templates |
-| PA19 | `cppgm++ --emit-lowir` | specialization and compile-time evaluation |
-| PA20 | `cppgm++ --emit-lowir` | constant evaluation |
-| PA21 | `cppgm++ --emit-lowir` | template entities and specialization model |
-| PA22 | `cppgm++ --emit-lowir` | deduction, substitution, and SFINAE completion |
-| PA23 | `cppgm++ --emit-lowir` | template integration across PA18-PA22 features |
-| PA24 | `cppgm++ --emit-lowir` | core language closure |
-| PA25 | `cppgm++ --emit-lowir` | advanced language closure |
-| PA26 | `cppgm++ --emit-lowir` | non-virtual multi-base object model |
-| PA27 | `cppgm++ --emit-lowir` | virtual/RTTI object-model completion |
-| PA28 | `lowir2native` | native backend from LowIR |
-| PA29 | `cppgm++` | separate compilation and compile/link driver integration |
-| PA30 | `abimangle` | standalone ABI name construction |
+| PA14 | `abimangle` | typed standalone ABI name construction |
+| PA15 | `cppgm++ --emit-lowir` | procedural C++ lowering to LowIR |
+| PA16 | `cppgm++ --emit-lowir` | basic classes and object layout |
+| PA17 | `cppgm++ --emit-lowir` | value semantics and assignment |
+| PA18 | `cppgm++ --emit-lowir` | virtual dispatch |
+| PA19 | `cppgm++ --emit-lowir` | basic templates |
+| PA20 | `cppgm++ --emit-lowir` | specialization and compile-time evaluation |
+| PA21 | `cppgm++ --emit-lowir` | constant evaluation |
+| PA22 | `cppgm++ --emit-lowir` | template entities and specialization model |
+| PA23 | `cppgm++ --emit-lowir` | deduction, substitution, and SFINAE completion |
+| PA24 | `cppgm++ --emit-lowir` | template integration across PA19-PA23 features |
+| PA25 | `cppgm++ --emit-lowir` | core language closure |
+| PA26 | `cppgm++ --emit-lowir` | advanced language closure |
+| PA27 | `cppgm++ --emit-lowir` | non-virtual multi-base object model |
+| PA28 | `cppgm++ --emit-lowir` | virtual/RTTI object-model completion |
+| PA29 | `lowir2native` | native backend from LowIR |
+| PA30 | `cppgm++` | separate compilation and compile/link driver integration |
 | PA31 | `cppgm++ -c` | host exception metadata and runtime-helper facts |
 | PA32 | `cppgm++ -c` | host-linkable object interoperability |
 | PA33 | `cppgm++ -c` | host C++ ABI and runtime behavior |

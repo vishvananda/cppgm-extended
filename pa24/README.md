@@ -2,23 +2,20 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA10/PA24 translation units,
-reuses the PA11-PA12 semantic foundation, builds on the PA14-PA23 LowIR lowering path,
-adds the PA24 core-language slice, and writes LowIR text.
+Write a C++ application called `cppgm++` that takes as input a set of C++
+source files, executes translation phases 1 through 7, parses them as PA10/PA24
+translation units, reuses the PA11-PA23 semantic foundation, builds on the
+PA15-PA23 LowIR lowering path, and writes LowIR text.
 
-PA24 closes the first large batch of ordinary C++11 language features that were deferred
-while the compiler was still building its type, object, template, and backend layers.
+PA24 is the template integration assignment. Now that you have implemented the
+individual template features in PA19, PA20, PA22, and PA23, this PA checks that
+they work together in realistic combinations. These tests are intentionally
+complicated: they are meant to uncover edge cases where a feature works alone
+but loses typed information, chooses the wrong specialization, instantiates too
+early, or fails during lowering when combined with another template mechanism.
 
-This milestone focuses on:
-
-- `auto` variable type deduction
-- ordinary `auto` function return type deduction for non-template function definitions and
-  non-template member function definitions with visible bodies
-- direct braced initialization of supported scalar and array objects
-- captureless lambdas plus the supported by-reference local / `this`-capture subset
-- range-for over bounded arrays, braced-init lists, and supported user-defined `begin` / `end`
-  ranges
+PA24 does not introduce a new isolated template feature. It is a composition
+surface over the earlier template assignments.
 
 PA24 still produces LowIR. It does not introduce a new output format.
 
@@ -31,235 +28,186 @@ You will want to reuse:
 - the preprocessing and tokenization pipeline from PA1-PA6
 - the PA10 AST as the syntax boundary
 - the PA11-PA12 semantic foundation
-- the PA14-PA23 LowIR lowering path
+- the PA15-PA23 LowIR lowering path
 - the PA13 LowIR contract
-- the PA28 native validation path
-- the PA13 LowIR -> CY86 path as an optional secondary scaffold
-
-The intended direction is:
-
-- PA10 provides syntax
-- PA11-PA12 provide typed semantic analysis
-- PA14-PA23 lower the supported language subsets to LowIR
-- PA24 extends that same lowering path with the remaining first-tier core-language features
+- the PA19-PA23 template machinery
+- the PA21 constant-evaluation layer
 
 ### Starter Kit
 
 The starter kit contains:
 
-- `pa24/README.md`, `pa24/Makefile`, and the test scripts in `pa24/scripts/`
-- a student-editable `dev/cppgm++.cpp` starter scaffold
-- the `pa24/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
-- shared support sources and headers under `dev/src/`
-- a local test suite under `pa24/tests/`
-- the grammar for this assignment called `pa24.gram`
-- an HTML grammar explorer of `pa24.gram` in the sub-directory `grammar/`
-- a checked-in local test suite under `tests/`
+- a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
+  in `../dev/cppgm++.cpp`
+- the standard assignment `Makefile` and harness scripts
+- the PA24 template-integration test suite under `tests/`
 
-Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
-student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
-test fixtures, comparison scripts, and checked-in reference outputs are support
-files, not implementation files to edit for normal solutions. The shared support files
-provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA24 source-to-LowIR language slice for you.
+In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from the
+`cppgm++` scaffold and is the file you extend for this assignment.
 
-Unlike PA1-PA9, there is no external reference binary for PA24. The checked-in `.ref`
-files are the default oracle.
+Unlike PA1-PA9, there is no external reference binary for PA24. The checked-in
+`.ref` files are the default oracle.
 
 ### Input / Command-Line Arguments
 
-Behaviour is undefined unless the command-line arguments match:
+The PA24 invocation is the unoptimized LowIR mode:
 
     $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-`-O0` is the PA24 test mode. Other optimization levels are later optimizer work and
-are not required for this milestone.
+Behaviour is undefined unless the command-line arguments match that shape, with
+the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
+milestones. Other `--emit-*` modes, driver mode, and optimized LowIR output are
+not part of PA24.
 
 ### Output Format
 
-`cppgm++` shall write LowIR text to `<outfile>`.
+On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
+`EXIT_SUCCESS`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA24 extends the PA23 lowering
-surface only by making more of the C++ source language lower into the already-defined LowIR
-family.
+The authoritative LowIR definition is `../pa13/lowir.md`. PA24 extends the
+PA23 lowering surface only by requiring previously introduced template features
+to compose through the already-defined LowIR family.
 
 LowIR top-level declaration/definition order is a presentation convention, not
 a dependency order. Reference outputs and canonical dumps use the order defined
 in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
 `function`, but the relaxed LowIR comparison canonicalizes top-level entries
-before comparison. Your output must still be repeatable for the same
-inputs; `../pa13/lowir.md` defines the canonical reference presentation and
-notes where internal LowIR symbol names are only a presentation tie-breaker.
-Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
-blocks, item order inside structured globals, vtable slot order, and action
-order inside generated initialization, finalization, constructor, destructor,
-and cleanup bodies.
+before comparison. Your output must still be repeatable for the same inputs;
+`../pa13/lowir.md` defines the canonical reference presentation and notes where
+internal LowIR symbol names are only a presentation tie-breaker.
 
-The generated LowIR must be well-formed and must match the checked-in `.ref` files under
-the relaxed LowIR comparison used by the harness. That comparison still checks the
-semantic LowIR shape and required IR facts, but it does not make helper metadata
-presentation or other non-semantic text details part of the student contract.
+Your output must also preserve order-sensitive LowIR regions when they are
+present: instruction order inside blocks, item order inside structured globals,
+vtable slot order, and action order inside generated initialization,
+finalization, constructor, destructor, and cleanup bodies.
+
+The test harness checks that the generated LowIR is well formed and matches the
+checked-in `.ref` files after canonicalizing presentation details that are not
+part of the assignment contract. Exact textual LowIR matching is not a PA24
+grading requirement.
 
 ### Error Handling
 
-If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
-generation, `cppgm++` shall `EXIT_FAILURE`.
+If an error occurs during preprocessing, tokenization, parsing, semantic
+analysis, or LowIR generation, `cppgm++` shall `EXIT_FAILURE`.
 
-The output file is not required to be meaningful on failure.
+The output file is not required to be meaningful on failure. Diagnostics are not
+part of the grading contract.
 
 ### Standard Output / Error
 
-Standard output and standard error are ignored for automated testing of `cppgm++`.
+Standard output and standard error are ignored for automated testing of
+`cppgm++`.
 
 You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
-`cppgm++` with `--emit-lowir -O0`.
+PA24 tests live under `tests/`. The suite is split by test role:
 
-The local checked-in tests live in `tests/general/`. That directory contains
-PA24 source-to-LowIR tests, cross-feature combinations, and boundary cases over
-the broad core-language closure slice. PA24 has no `tests/spec/` directory
-because these tests focus on the combined language-to-LowIR contract.
+- `tests/spec/` contains N3485/spec-anchored integration cases whose important
+  behavior is still tied to a specific standard template rule.
+- `tests/general/` contains broader generic-program examples that combine
+  multiple template mechanisms.
 
-For each test case `x`:
+The `make test` target runs both directories through the LowIR validator. For
+successful tests, the validator checks the reference LowIR and your generated
+LowIR for basic structural correctness, then compares the canonicalized LowIR
+against the checked-in reference. For rejected tests, the exit status is the
+checked result; exact diagnostic text is not checked.
 
-- `cppgm++` is executed to produce `x.my`
-- the exit status is recorded in `x.my.exit_status`
-- `x.my` is compared against `x.ref`
-- `x.my.exit_status` is compared against `x.ref.exit_status`
+The clusters are organized by feature combination:
 
-PA24 is tested against generated LowIR text using the relaxed LowIR comparator described
-above. A useful manual validation path is:
+- `100`: dependent-name and entity interactions that do not fit a narrower
+  later cluster
+- `200`: deduction, partial ordering, non-deduced context, and braced-init
+  deduction combinations
+- `300`: SFINAE, substitution, detector idiom, and no-eager instantiation
+  combinations
+- `400`: pack, member-template, template-template-parameter, alias-template, and
+  variable-template compositions
+- `500`: library-shaped end-to-end reducers without hosted or builtin-trait
+  dependencies
 
-- feed that LowIR into PA28 `lowir2native`
-- optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
-- then feed the generated CY86 into PA9 `cy86 --target linux`
+When working through PA24 failures, keep the earlier template assignments
+passing. A PA24 fix should not relax, special-case, or regress the basic
+functionality already covered by PA19, PA20, PA22, and PA23. Before treating an
+integration fix as complete, run the earlier template PAs and PA24 through the
+report harness:
 
-The shipped PA24 tests are the contract for this milestone.
+    $ make test-report ACTIVE_TEST_REPORT_PAS='pa19 pa20 pa22 pa23 pa24'
 
-### PA24 Syntax Spec
+### PA24 Syntax Boundary
 
 The authoritative source syntax is the shared `cppgm++` source grammar, exposed
 for this assignment as `pa24.gram`. The grammar defines accepted syntax only;
 the PA24 semantic and lowering requirements are defined by the Assignment
 Boundary and Out Of Scope sections below.
 
-As in the earlier assignments, that grammar defines accepted input syntax only. The output
-format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
-`.ref` files.
+### Optional Student Test Ideas
 
-PA24 does not add a new source-language grammar format. It instead enables more
-of the already-accepted C++11 syntax to participate in semantic analysis and
-lowering.
-
-A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
-`pa24.gram` as the source of truth.
-
-`pa24.gram` uses the same token vocabulary and the same extended BNF operators as
-`../pa6/pa6.gram`.
-
-If this README and `pa24.gram` appear to disagree about source syntax, treat `pa24.gram`
-as authoritative. If this README and PA13 `lowir.md` appear to disagree about LowIR syntax,
-treat `lowir.md` as authoritative. If they disagree about the PA24 lowering slice, treat the
-`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+When adding your own tests, useful PA24 themes include dependent alias expansion
+inside deduction, member-template calls through dependent owners, pack expansion
+through SFINAE helpers, detector idioms that rely on earlier alias or partial
+specialization machinery, and function-template partial ordering where more than
+one template feature is needed for the selected result.
 
 ### Assignment Boundary
 
-PA24 supports the following in addition to the PA23 subset:
+PA24 owns integration among already-introduced template features, including:
 
-- `auto` in variable declarations when exactly one declarator is present and an initializer
-  is provided
-- `const auto` and similar cv-qualified `auto` variable declarations over the same subset
-- direct braced initialization for supported scalar objects
-- direct braced-init expressions over the supported scalar / array / class subset when the
-  earlier PA15-PA23 object/value semantics already define the target
-- braced initialization of bounded arrays with compile-time known size
-- arrays of aggregate elements whose array members receive nested braced
-  sub-lists, including zero-initialization of omitted member elements
-- direct aggregate construction when the target aggregate type is already supported by the
-  earlier object-model assignments
-- ordinary function-call argument conversion through non-explicit converting constructors
-  and conversion operators over the supported class subset
-- explicit non-class functional casts between the supported integral and enum forms
-- `reinterpret_cast` between the supported pointer and integer forms
-- captureless lambda expressions plus the supported by-reference local and explicit/implicit `this`
-  capture subset
-- range-for statements over:
-  - bounded arrays
-  - braced-init lists that can be materialized as hidden arrays
-  - supported class/member and ADL `begin` / `end` ranges whose iterator operations stay
-    within the already-supported call/operator subset
-
-Within this milestone, PA24 should produce valid LowIR for ordinary source programs over
-that subset. That LowIR should be accepted by PA28 `lowir2native` for the supported cases.
-PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
-
-To complete PA24, implement these goals:
-
-1. `auto` variable deduction.
-   The compiler should deduce the declared type from the initializer and lower the resulting
-   variable just like an equivalent explicit declaration, including ordinary pointer and
-   reference declarators such as `auto*`, `auto&`, and `auto&&`.
-
-2. Direct braced initialization.
-   Supported scalar and array declarations should lower cleanly from `{...}` source forms,
-   not only from `=` initializer syntax.
-
-3. Captureless lambda lowering.
-   Captureless lambdas should become callable lowered entities with deterministic LowIR.
-
-4. Range-for lowering.
-   Range-for over arrays, braced-init lists, and supported user-defined `begin` / `end`
-   ranges should lower into ordinary loop/control-flow structure in LowIR, including
-   ordinary reference loop declarations such as `const int&` and `const auto&`. A
-   materialized class prvalue used as the range remains alive through the loop and is
-   destroyed when the complete range-for statement ends.
-
-The test suite also exercises a small remaining ordinary-language closure cluster here:
-direct braced-init expressions, direct aggregate construction, supported integral / enum
-functional casts, and pointer / integer `reinterpret_cast`.
+- dependent names combined with alias, variable, partial-specialization, or
+  deduction behavior
+- imported constants retained as defaults in nested member templates when the
+  enclosing template is instantiated
+- function-template deduction combined with packs, non-deduced contexts,
+  explicit arguments, conversion templates, or constructor templates
+- SFINAE and substitution behavior combined with alias templates, partial
+  specializations, member templates, packs, and detector idioms
+- no-eager-instantiation timing in realistic dependent template bodies
+- dependent function and constructor default arguments are materialized only after overload
+  selection, so an invalid default on an unselected candidate does not reject the call
+- library-shaped reductions that do not require hosted headers, vendor
+  builtins, or later language features
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA24:
 
-- capturing lambdas other than the supported by-reference local / `this`-capture subset
-- `std::initializer_list` semantic interoperation
-- RTTI and `typeid`
-- `dynamic_cast`
-- placeholder return-type declarations without a visible definition body
-- template bodies that require deferred placeholder return deduction
-- range-declarations that require unsupported user-defined iterator or reference semantics
-- any PA24 feature path that depends on unsupported PA15-PA23 semantics
+- new isolated template features not already introduced by PA19, PA20, PA22, or
+  PA23
+- `std::initializer_list` library semantics and initializer-list overload
+  machinery
+- member-pointer template behavior that depends on later member-pointer support
+- hosted/vendor-only extensions that happen to use templates
+- post-C++11 template-language features
+- backend/toolchain ownership that belongs to the later native and toolchain
+  milestones
 
 Inputs that rely on those features have undefined behaviour for this milestone.
-The PA24 test suite therefore does not require those inputs to fail deterministically; it
-only checks the defined PA24 feature subset above.
 
 ### Stage Handoff
 
-The intended next stage is PA25, which finishes the remaining deferred advanced-language
-corners over the current single-inheritance object model before PA26 tackles the remaining
-ABI and inheritance closure work.
+The intended next stage is PA25, which extends the source-to-LowIR path with
+the first broad ordinary-language closure slice.
 
 So PA24 should leave behind:
 
-- a stable first-tier language-closure semantic layer
-- LowIR lowering for the ordinary non-advanced C++11 forms added here
-- explicit remaining deferrals only where PA25 really needs to take over
+- a complete standard template semantic layer whose individual features compose
+  cleanly
+- instantiated declarations that lower through the ordinary LowIR path without
+  template subset special-casing
+- no remaining "template features work alone but not together" gap before later
+  backend, ABI, and hosted toolchain work
 
 ### Design Notes (Non-Normative)
 
-PA24 should extend the existing semantic and lowering path, not replace it.
+The useful shape for PA24 is not another special-case layer. The same typed
+template declarations, template arguments, substitution results, deduction
+bindings, and deferred-instantiation records from PA19-PA23 should be threaded
+through the combined cases.
 
-The same monotonic-extension rule applies here:
-
-- PA24 should add its new behavior only when the source actually uses the supported PA24
-  feature set
-- it should not perturb PA23 outputs for programs that remain entirely within the PA23
-  subset
-- in practice, lambda helper synthesis and `auto` deduction should stay on-demand rather
-  than eagerly changing the behavior of ordinary earlier programs that do not use those
-  features
+When a PA24 test fails, first look for data that was lost between those
+subsystems: an alias expansion that discarded a dependent owner, a pack binding
+that became text-only, a substitution failure promoted into a hard diagnostic,
+or an instantiation record forced before the template arguments were known.

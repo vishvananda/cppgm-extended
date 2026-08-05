@@ -3,21 +3,17 @@
 ### Overview
 
 Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA10 translation units, reuses the
-PA11-PA12 semantic foundation, extends the PA14 LowIR lowering path with the basic
-object-model slice, and writes LowIR text.
+executes translation phases 1 through 7, parses them as PA10 translation units, applies the
+PA12 procedural semantic layer, and writes LowIR text.
 
-PA15 is the first object-model milestone. It extends the PA14 procedural compiler with the
-basic non-polymorphic class machinery needed by ordinary C++ code:
+PA15 is the point where `cppgm++` gains its first LowIR output mode. The earlier
+`--emit-ast`, `--emit-types`, and `--emit-semantics` modes remain required.
 
-- class layout and object size/alignment
-- member lookup and access control
-- `this`, `.` and `->`
-- ordinary non-template operator overloading that stays within the PA15 object-model subset
-- non-virtual methods
-- constructors and destructors
-- object lifetime for locals and namespace-scope objects
-- single inheritance without virtual dispatch
+The goal of this assignment is to establish the compiler's real backend boundary before the
+later object-model and template milestones extend lowering further. PA15 completes the
+non-class procedural lowering stage over the current PA12 semantic boundary: it lowers
+namespace-scope functions, procedural expressions, control flow, and the supported
+scalar/pointer global state into the PA13 LowIR subset.
 
 ### Prerequisites
 
@@ -27,23 +23,21 @@ You will want to reuse:
 
 - the preprocessing and tokenization pipeline from PA1-PA6
 - the PA10 AST as the syntax boundary
-- the PA11 declarator/type model and class syntax preservation
-- the PA12/PA14 resolved procedural and LowIR lowering path
+- the PA11 declarator/type model
+- the PA12 procedural semantic analysis as the source of truth for resolved functions,
+  locals, and expressions
 - the PA13 LowIR contract
 - the PA13 LowIR -> CY86 path as an optional secondary scaffold
+- the PA14 typed ABI-name model and encoder
 
 The intended direction is:
 
 - PA10 provides syntax
-- PA11 provides scope/type lookup and complete type metadata
-- PA12 resolves the procedural expression subset
-- PA14 lowers that resolved procedural subset into LowIR
-- PA15 extends that lowering path into a usable basic object model
-
-Because this milestone still consumes the PA10 syntax subset, the same PA6/PA10 mock-name
-conventions still matter in ambiguous type positions. In particular, class names used as
-types in ordinary declarations should follow the same `Y...` style used by PA11 unless the
-syntax is otherwise unambiguous.
+- PA11 provides scopes and types
+- PA12 resolves procedural expressions and calls
+- PA13 defines the backend boundary and runnable validation scaffold
+- PA14 provides ABI names from typed semantic facts
+- PA15 lowers the resolved procedural subset into LowIR
 
 ### Starter Kit
 
@@ -55,25 +49,42 @@ The starter kit contains:
 - a local test suite
 - the grammar for this assignment called `pa15.gram`
 - an HTML grammar explorer of `pa15.gram` in the sub-directory `grammar/`
+- checked-in golden output files under `tests/`
 - a checked-in local test suite under `tests/`
 
 The provided scaffold and shared support files establish the driver shape and previous
-frontend modes. They do not implement the PA15 object-model LowIR lowering work.
+frontend modes. They do not implement the PA15 source-to-LowIR lowering work.
 
 Unlike PA1-PA9, there is no external reference binary for PA15. The checked-in `.ref`
 files are the default oracle.
 
+### Driver Surface For This Assignment
+
+Previously required:
+
+- `--emit-ast`
+- `--emit-types`
+- `--emit-semantics`
+- `-o <outfile>`
+
+New in PA15:
+
+- `--emit-lowir`
+- `-O0` as the unoptimized LowIR test mode
+
+No practical compile/link driver flags are introduced here yet. That later
+surface starts in PA14.
+
 ### Input / Command-Line Arguments
 
-The same as PA14 `cppgm++ --emit-lowir`. The PA15 test mode is unoptimized LowIR
-generation. `make test` passes `--emit-lowir -O0` through the harness, so individual test
-files do not spell those flags themselves.
+The same as PA12 `cppgm++ --emit-semantics`, with the new LowIR emit mode. The PA15 test mode is unoptimized LowIR generation. `make test` passes `--emit-lowir -O0`
+through the harness, so individual test files do not spell those flags themselves.
 
 Behaviour is undefined unless the command-line arguments match:
 
     $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-with the same relaxations as PA14.
+with the same relaxations as PA12.
 
 Accepting `--emit-lowir` without an explicit `-O0` as the same unoptimized mode is fine,
 but optimized LowIR output is not part of PA15.
@@ -82,15 +93,15 @@ but optimized LowIR output is not part of PA15.
 
 `cppgm++` shall write LowIR text to `<outfile>`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA15 extends the PA14 procedural
-subset of that IR with the object-model lowering needed by this milestone.
+The authoritative LowIR definition is `../pa13/lowir.md`. PA15 only needs the procedural
+subset of that IR, but it must emit valid PA13 LowIR.
 
-When PA15 emits function-boundary metadata such as `unwind=no`, treat that as a
-truthful emitted fact, not as a promise that every semantically equivalent C++
-exception specification is normalized. The direct `noexcept` form on free
-functions, member functions, constructors, and destructors is in scope for the
-tested metadata path. Other explicit `noexcept(expr)` forms may lower
-conservatively without `unwind=no`.
+Example:
+
+    function @main() -> i64 {
+      block ^entry:
+        return i64 0
+    }
 
 PA15 writes a single concatenated LowIR program consisting of:
 
@@ -104,39 +115,46 @@ in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
 before comparison. Your output must still be repeatable for the same
 inputs; `../pa13/lowir.md` defines the canonical reference presentation and
 notes where internal LowIR symbol names are only a presentation tie-breaker.
+Externally meaningful C++ symbols must be produced through PA14's shared typed
+ABI encoder. Build the encoder target from resolved declarations and types;
+the ABI fact-file parser is a standalone-tool adapter and is not part of the
+source-to-LowIR path.
 Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
 blocks, item order inside structured globals, vtable slot order, and action
 order inside generated initialization, finalization, constructor, destructor,
 and cleanup bodies.
 
-For non-static member functions, call analysis should treat the object expression as an
-implicit object argument. Member lookup gathers the candidate methods; overload resolution
-then checks and ranks those candidates using the cv-qualification of the object expression.
-After a non-static member function is selected, the generated LowIR uses an explicit hidden
-first parameter for the object pointer (`this`).
-
-Namespace-scope object lifetime is represented through synthetic startup/shutdown helpers when
-needed:
-
-- `@__cppgm_init`
-- `@__cppgm_fini`
-
-Synthesized constructors and destructors are part of the PA15 semantic model, but `cppgm++`
-only needs to emit the helper definitions that the lowered program actually requires. Unused
-implicit default constructors / destructors do not need to appear in the PA15 LowIR output.
-In practice, PA15 only needs ctor/dtor helpers for the supported declaration-time, member-
-initializer, recursive subobject, and namespace-scope lifetime paths. Copy/value helpers do
-not belong in PA15 output.
-
-The generated LowIR is intended to become input for the later PA28
-`lowir2native` backend, which will execute these helpers around `@main`. That
-future native path is not the PA15 grading contract. PA13 `lowir2cy86` remains
-useful as an optional execution scaffold.
+PA15 is still a purely procedural lowering stage. Its LowIR output should not include
+class/object-model helper definitions such as synthesized constructors, destructors, copy
+helpers, or class-lifetime startup/shutdown hooks. Tests that require those belong in PA16
+or later.
 
 The checked-in `.ref` files define the required LowIR facts for the tests. The
 test harness checks exit status, LowIR well-formedness, and the
 course-defined normalized LowIR output rather than requiring students to match every
 non-semantic helper spelling or presentation choice.
+
+For supported scalar conversions, PA15 may canonicalize widened integral immediates directly
+to their final LowIR literal value instead of spelling those same conversions through
+intermediate `binary shl` / `binary shr` sign-extension shells.
+
+For built-in `&&` / `||` used directly as statement conditions (`if`, `while`, `do`, `for`),
+the expected LowIR shape is direct short-circuit control flow. In that condition context,
+the compiler should branch through the operand blocks rather than first materializing a
+separate `land__*` / `lor__*` boolean slot.
+
+The generated LowIR is intended to become input for the later PA29
+`lowir2native` backend. That future native path is not the PA15 grading
+contract, but PA15 should avoid emitting LowIR that only works for this one
+text comparison.
+
+The PA13 scaffold path is useful as an optional manual execution check:
+
+    cppgm++ --emit-lowir -> LowIR
+    lowir2cy86 -> CY86
+    cy86 -> executable
+
+That runnable path is a debugging aid, not the primary PA15 output contract.
 
 ### Error Handling
 
@@ -166,22 +184,16 @@ For each test case `x`:
 `make test` runs the checked-in local suite under `tests/` and supplies
 `--emit-lowir -O0` through the harness.
 
-The PA15 suite is split by test role:
+The PA15 test suite uses:
 
-- `tests/general/`: the default PA15 LowIR oracle suite. These tests cover object-model
-  lowering, class layout, lifetime, helper emission, and cross-feature cases
-  whose primary contract is the generated LowIR plus exit status.
-- `tests/spec/`: focused C++ language-contract cases that cite a specific N3485 clause.
-  Each source test in this directory starts with a comment of the form:
+- `tests/general/`: the default PA15 LowIR oracle suite. These tests cover the procedural
+  lowering contract and integration cases that are validated by generated LowIR
+  text and exit status. The covered source features are namespace functions and
+  globals, procedural statements, condition declarations, scalar expressions,
+  references, arrays, pointer operations, enums, built-in casts, and resolved
+  calls over the PA12 semantic subset.
 
-    // N3485 focus: <clause> [<stable-name>] <short topic>
-
-`tests/spec/` covers the PA15 class/object contract: class layout, access
-control, nested names, static members, aggregate and reference initialization,
-friends/ADL, single inheritance, lifetime, bit-fields, pseudo-destructors,
-ordinary non-template operators, standard `alignas` / `alignof`, and inheriting
-constructors. `tests/general/` covers object-model and LowIR-shape cases that
-are not tied to one specific C++11 clause.
+PA15 is tested against the generated LowIR text.
 
 ### PA15 Syntax Spec
 
@@ -194,12 +206,13 @@ As in the earlier assignments, that grammar defines accepted input syntax only. 
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
 `.ref` files.
 
-Because PA15 extends PA14 rather than adding a new syntax layer, PA15 gives the
-class/object subset described below semantic and lowering meaning.
+Because PA15 is a code-generation assignment layered directly on PA10-PA12, the
+grammar keeps parser/AST behavior stable while the `Assignment Boundary` below
+defines which already-parsed constructs PA15 must analyze and lower.
 
-Passing PA14 is necessary but not sufficient for passing PA15: an input may be syntactically
-valid for PA10 and code-generation-valid for PA14 and still be outside the PA15 class/object
-slice described below.
+Passing PA12 is necessary but not sufficient for passing PA15: an input may be syntactically
+valid for PA10 and semantically valid for PA12 and still be outside the PA15 code-generation
+subset described below.
 
 A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
 `pa15.gram` as the source of truth.
@@ -209,108 +222,84 @@ A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
 
 If this README and `pa15.gram` appear to disagree about source syntax, treat `pa15.gram`
 as authoritative. If this README and PA13 `lowir.md` appear to disagree about LowIR syntax,
-treat `lowir.md` as authoritative. If they disagree about the PA15 lowering slice, treat the
-`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+treat `lowir.md` as authoritative. If they disagree about the required PA15 lowering slice,
+treat the `Assignment Boundary` and `Out Of Scope` sections below as authoritative.
 
 ### Assignment Boundary
 
-PA15 supports the following in addition to the PA14 procedural subset:
+This PA15 milestone supports the following:
 
-- namespace-scope and nested-namespace class/struct definitions and forward declarations
-- access control for classes, fields, methods, nested types, and static members
-  in the current non-virtual class model
-- nested class/type declarations and lookup
-- static data members and static member functions over the supported scalar and
-  class subset
-- complete object layout for non-static data members in declaration order, including:
-  - empty classes
-  - alignment and padding, including preservation of a stronger requested
-    class alignment while laying out a direct base and members
-  - ordinary integral and enum bit-fields, including zero-width unnamed separators
-  - self-referential pointer members
-  - previously completed class-type members
-- single inheritance with the direct base subobject at offset `0`
-- member lookup for:
-  - direct fields
-  - inherited fields
-  - direct methods
-  - inherited methods
-- `this`, implicit member lookup inside methods, and member access expressions `.` and `->`
-- non-static member-function calls selected through overload resolution with the implicit
-  object argument described above
-- ordinary non-template operator overloading over the supported object-model subset, including:
-  - member operators such as `operator[]`
-  - hidden-friend and namespace-scope non-member operators found through ordinary lookup / ADL
-  - chained reference-returning operators such as `operator<<`
-  - rejection of a non-member overloaded operator unless at least one operand has class or
-    enumeration type
-- ordinary non-template non-member function calls found through associated-namespace lookup /
-  hidden-friend ADL when the arguments stay within the supported class subset
-- in-class member-function definitions
-- out-of-class definitions for ordinary non-static member functions when the parser accepts
-  them as ordinary qualified function definitions, including a leading return type that
-  names a private nested type in the member's class context
-- constructors and destructors defined inside the class body
-- implicit default constructors and destructors when no user-declared one exists
-- demand-driven LowIR emission of the ctor/dtor helpers required by the supported lifetime
-  paths above
-- constructor initializer lists for:
-  - the single direct base
-  - non-static data members
-- non-static default member initializers for the supported scalar and supported
-  class/aggregate subobject construction forms, with explicit constructor member-initializers
-  taking precedence
-- aggregate initialization for the supported PA15 object subset, including namespace-scope
-  aggregate arrays whose elements contain string-literal pointer members
-- local and namespace-scope class object lifetime:
-  - constructor execution at declaration time / program startup
-  - destructor execution at block exit, `return`, loop exit, and program shutdown
-  - per-thread initialization for namespace-scope `thread_local` class objects,
-    with collision-free internal wrapper, guard, and initializer symbols
-- recursive member/base construction and destruction for supported class-type subobjects
-- anonymous struct/union members, including injected member lookup and layout in
-  the supported class subset
-- bit-field member access, assignment, initializer, and built-in increment/decrement
-  lowering; reads of explicitly signed integral and signed-underlying enum bit-fields
-  preserve the represented negative value, and built-in address-of rejects bit-fields
-- pseudo-destructor and explicit destructor-name syntax over supported scalar
-  and class expressions
-- standard `alignas` and `alignof`, including rejection of a requested class
-  alignment weaker than its natural alignment
-- inheriting constructors through `using Base::Base`
-- use of complete class types in:
-  - `sizeof(type-id)`
-  - `sizeof(expr)`
-  - local object declarations
-  - namespace-scope object declarations
+- namespace-scope function definitions and declarations in a single generated program,
+  including named namespaces, C language linkage, and deduplication of repeated
+  compatible declarations
+- a required `main` definition
+- functions returning integral, pointer, or `bool` results from the supported PA12 subset
+- up to four parameters in the supported PA12 procedural type subset
+- global integral/pointer/function-pointer objects with constant initializers or zero-init,
+  including object addresses and constant array-element addresses
+- local scalar objects, scalar/function references, function pointers/references, and bounded
+  arrays in the supported PA12 procedural type subset; an omitted array bound is inferred
+  from its initializer, missing elements are zero-initialized, and excess elements are
+  rejected; an `extern` array of unknown bound may be referenced without requiring its
+  layout in the current translation unit
+- expression statements
+- `return`
+- `if` / `else`
+- condition declarations in `if` and `switch`, including the lifetime of the
+  condition-scope binding
+- `switch`
+- `while`
+- `do`
+- `for`
+- `break` / `continue`
+- direct calls to resolved non-template namespace-scope functions, including supported
+  default arguments resolved in the declaration context where the default was introduced
+- calls through function pointers and function references in the PA12 subset
+- lvalue references, including reference parameters, reference locals, reference
+  returns, and aliasing through supported calls
+- array-to-pointer decay, subscript expressions, pointer arithmetic, one-past
+  pointer values, and pointer compound assignment with element-size scaling
+- scoped and unscoped enums, enum constants, enum promotion/comparison, and
+  enum lowering
+- built-in casts over the supported scalar, function, reference, and pointer
+  types, including C-style casts, `static_cast`, and `const_cast`
+- source-to-LowIR floating scalar literals and conversions among supported
+  scalar types, including float/integer conversions needed for calls, returns,
+  comparisons, and branch conditions
+- C-style variadic function calls over supported scalar arguments, including
+  source-to-LowIR default argument promotion before the call
+- expressions:
+  - integer literals, floating literals, and `true` / `false`
+  - id-expressions naming supported locals, globals, and resolved functions
+  - `sizeof(expr)` and `sizeof(type-id)` when PA12 has resolved them
+  - unary `+`, `-`, `!`, `~`, `&`, `*`, prefix `++`, and prefix `--`
+  - postfix `++` and postfix `--`
+  - simple assignment to supported lvalues
+  - built-in arithmetic, bitwise, shift, logical, comparison, conditional, comma, and
+    subscript forms from the PA12 procedural subset
 
-Within this milestone, PA15 should produce valid LowIR for ordinary
-non-polymorphic class code over the supported procedural subset. That LowIR is
-intended to be accepted by the later PA28 `lowir2native` backend for the
-supported cases. PA13 `lowir2cy86` remains an optional execution scaffold, not
-the primary backend target.
+Compiler-generated slots and helper names must remain distinct from source
+identifiers so a source declaration cannot redirect an internal temporary.
+
+The generated LowIR for this supported subset is intended to be accepted by the
+later PA29 `lowir2native` backend. PA13 `lowir2cy86` remains a useful optional
+execution scaffold, not the primary validation path.
 
 ### Out Of Scope
 
-The following are explicitly out of scope for PA15:
+The following are explicitly out of scope for this PA15 milestone:
 
-- virtual functions, virtual inheritance, vpointers, and vtables
-- RTTI and `dynamic_cast`
-- copy/move construction and assignment
-- pass-by-value and return-by-value of class objects
-- temporary class-object materialization beyond the supported declaration/constructor path
-- eager emission of unused constructor/destructor helpers
-- operator overloads that require later value semantics, especially by-value class transfer and
-  copy/move assignment operators
-- template-backed operator overloads
-- multiple inheritance
-- member pointers
-- out-of-class constructor and destructor definitions
-  - the PA15 syntax contract does not include those forms
-- conversion operators
-- static assertions and constexpr metaprogramming
-- hosted/vendor-only attributes such as `[[no_unique_address]]`
-- broader C++ object-model corners such as advanced special-member generation rules
+- string literals and string-literal-backed object initialization
+- global or local initialization forms that require a richer constant-evaluation or aggregate
+  initialization layer than PA12 currently provides
+- function-local static objects and guard variables
+- class/object semantics
+- synthesized class helper output of any kind
+- template code generation
+- exception-aware control flow
+- fully general shadowing-sensitive lowering of same-name local bindings
+- native backend/runtime parity for floating-point conversions and variadic promotions
+- hosted or vendor integer extensions such as 128-bit integer types
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
@@ -318,37 +307,30 @@ Inputs that rely on those features have undefined behaviour for this milestone.
 
 The intended next stages are:
 
-- PA16: add the non-polymorphic value-semantics layer that PA15 intentionally stops short
-  of:
-  - copy/move behavior in the common cases
-  - pass-by-value and return-by-value of class objects
-  - demand-driven copy/value helper emission when those source forms are actually used
-  - the assignment-operator and by-value operator cases that depend on that value-semantics work
-- PA17: add the polymorphic machinery that is still intentionally absent after PA15:
-  - virtual dispatch
-  - vtables and override/final behavior
-- PA18: add template-backed overload participation, including templated operator overloads,
-  on top of the PA15-PA17 non-template object model
+- PA16: extend this procedural lowering path into the basic non-virtual object model:
+  object layout, methods, constructors/destructors, lifetime, and single inheritance
+- PA17: build on that PA16 object model with non-polymorphic value semantics:
+  copy construction/assignment, pass-by-value, return-by-value, and the common
+  user-defined operator paths needed by value types
+- PA18: add the polymorphic machinery on top of the PA16/PA17 class model:
+  virtual dispatch, vtables, and virtual destructors
+- later template-aware assignments: reuse the same procedural lowering path for instantiated
+  template code once template semantics exist
 
-So PA15 should leave behind a usable non-virtual object model and a clean extension point for
-the later PA16 value-semantics work and the later PA17 polymorphic work, rather than mixing
-those harder features into the basic class milestone.
+So PA15 should leave behind a reusable procedural `C++ -> LowIR` lowering path rather than
+trying to absorb class or template semantics early.
 
 ### Design Notes (Non-Normative)
 
-The cleanest reuse path is to keep the PA14 procedural LowIR lowering model and extend it
-rather than building a second backend just for classes.
+The cleanest reuse path is to keep PA12 as the semantic source of truth and lower from that
+resolved procedural representation rather than rebuilding expression semantics again inside
+PA15.
 
 Useful intermediate representations include:
 
-- complete named types with stable size/alignment metadata
-- class metadata that preserves fields, direct base, access, nested names, static
-  members, friends, and member-function bindings
-- one shared layout service for ordinary fields, bit-fields, anonymous members,
-  and alignment directives
-- resolved member expressions and method calls over the same call-semantics IR shape used by
-  PA12/PA14
-- explicit constructor/destructor actions attached to declarations or generated function bodies
-  so lifetime can be lowered incrementally instead of requiring a separate runtime model
-- demand-driven helper emission keyed by semantic entities rather than source
-  spelling, so unused constructors/destructors do not perturb earlier outputs
+- a resolved procedural tree shared with PA12
+- explicit object identities for globals, locals, references, arrays, and
+  function objects
+- explicit local slot/layout information
+- a centralized type-to-LowIR lowering and conversion layer
+- a stable mapping from resolved expressions to LowIR values and stack locations

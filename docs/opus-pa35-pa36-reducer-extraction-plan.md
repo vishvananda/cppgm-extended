@@ -233,7 +233,7 @@ CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-report-through-paNN
 Strict checks when the reducer belongs to the strict LowIR/template band:
 
 ```sh
-CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 STRICT_PAS='pa18 pa19 pa21 pa22 pa23' \
+CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 STRICT_PAS='pa19 pa20 pa22 pa23 pa24' \
   make test-strict
 ```
 

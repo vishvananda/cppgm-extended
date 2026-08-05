@@ -1,4 +1,4 @@
-// Student-facing scaffold for the PA30 `abimangle` binary.
+// Student-facing scaffold for the PA14 `abimangle` binary.
 
 #include "abi_mangle.h"
 #include "exceptions.h"

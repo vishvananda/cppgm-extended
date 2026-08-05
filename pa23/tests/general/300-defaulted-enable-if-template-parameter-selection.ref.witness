@@ -1,22 +1,14 @@
 translation-unit
-  class-use at tests/general/300-defaulted-enable-if-template-parameter-selection.t:32:3
-    template allocator
-    selected primary
-    bind #1 = int source=explicit
+  function-call at tests/general/300-defaulted-enable-if-template-parameter-selection.t:47:10
+    callee choose
+    selected instantiation
+    bind #1 = selected source=deduced
+    bind #2 = 0 source=defaulted
+    drop choose reason=substitution_failure
 template-closure-events
   ensure-definition
-    entity allocator<int>::allocate
+    entity choose
   function-instantiation
-    entity allocator<int>::allocate
-  function-instantiation
-    entity allocator<int>::max_size
-  function-instantiation
-    entity traits<allocator<int>>::max_size
+    entity choose
   require-definition
-    entity allocator<int>::allocate
-  require-definition
-    entity allocator<int>::max_size
-  require-definition
-    entity traits<allocator<int>>::max_size
-  variable-instantiation
-    entity has_max_size<const allocator<int>>::value
+    entity choose

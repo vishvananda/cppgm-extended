@@ -7431,6 +7431,10 @@ void reset_instantiated_class_info(ClassInfo & info,
       info.type ? info.type->named_lambda_mangle() :
                   std::shared_ptr<cpp_decl::Type::LambdaMangleMetadata>();
   info.template_output_node = output_node;
+  if(info.type && info.type->kind == Type::TK_NAMED &&
+     info.type->named_rare_metadata) {
+    info.type->mutable_named_rare_metadata().named_abi_tags.clear();
+  }
   info.is_final = output_node && output_node->is_final_specifier;
   info.fields.clear();
   info.methods.clear();
@@ -13232,6 +13236,11 @@ void populate_class_info(SemanticContext & ctx,
                          ClassInfo & info,
                          const CppAstNode & node)
 {
+  if(info.type && info.type->kind == Type::TK_NAMED) {
+    append_cppast_abi_tags(
+        info.type->mutable_named_rare_metadata().named_abi_tags,
+        node);
+  }
   if(semantic_metrics::AnalyzerCounters * counters = ctx.performance_counters()) {
     ++counters->class_populate_by_demand[
         static_cast<std::size_t>(semantic_metrics::current_class_demand())];

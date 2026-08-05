@@ -1,337 +1,562 @@
-## CPPGM Programming Assignment 29 (`cppgm++ -c` and link mode)
+## CPPGM Programming Assignment 29 (lowir2native)
 
 ### Overview
 
-Write one C++ application called `cppgm++`.
+Write a C++ application called `lowir2native` that takes as input a set of LowIR source
+files and writes a native executable program.
 
-PA29 does not introduce a new executable. It extends the same `cppgm++` binary
-used since PA10 with practical compiler-driver behavior.
+PA29 replaces PA13 `lowir2cy86` as the primary backend path. The input language is still
+LowIR, but the required output is no longer CY86 text. Instead, PA29 lowers LowIR directly
+to native code and native program data.
 
-`cppgm++` has two required PA29 modes:
+The intent of this milestone is:
 
-- compile mode, `-c`, which takes one C++ source file and writes one
-  implementation-defined compiler object file
-- default link mode, which takes one or more inputs and writes one native
-  executable program
-
-In link mode, each input may be either:
-
-- a C++ source file, which `cppgm++` compiles as its own translation unit before
-  linking
-- a compiler object file previously produced by `cppgm++ -c`
-
-The contract is source-driven. The PA29 tests start from C++ source
-files, validate explicit separate compilation with `cppgm++ -c`, and then link
-the resulting objects with `cppgm++`. The harness also checks two practical
-driver consistency properties:
-
-- linking the same source files directly through `cppgm++` must match explicit
-  compile-then-link behavior
-- linking a mixture of precompiled objects and remaining source files must also
-  match explicit compile-then-link behavior
-
-PA29 does not introduce a new language subset. It turns the C++ feature set
-implemented through PA27 into a practical compile-and-link toolchain entrypoint.
+- keep LowIR as the long-term compiler backend boundary
+- reuse the PA9 native backend knowledge without making CY86 the compiler IR
+- leave room for later optimization and additional native backends
 
 ### Prerequisites
 
-Complete PA28 before starting this assignment.
+You should complete Programming Assignment 28 before starting this assignment.
 
 You will want to reuse:
 
-- the preprocessing and tokenization pipeline from PA1-PA6
-- the PA10 AST and PA11/PA12 semantic foundation
-- the PA14-PA27 LowIR lowering path
-- the PA28 native backend
-- the object emission, linking, and runtime support path used by `cppgm++`
+- the PA13 LowIR parser and LowIR specification
+- the PA9 native backend pieces: instruction encoding, executable container writing, and
+  startup/runtime glue
+- any shared lowering or assembler abstractions that help you separate:
+  - LowIR -> native instruction selection
+  - native code/data emission
+  - final executable image construction
 
-The tests assume a POSIX-like shell environment with `make`, `bash`,
-`perl`, and a working host C/C++ compiler for test helper objects. The harness
-selects helper compilers from:
-
-- `CPPGM_HOST_CC` or `CC` for C helper sources
-- `CPPGM_HOST_CXX` or `CXX` for C++ helper sources
-
-If those are not set, the harness searches for common compilers such as
-`clang`, `gcc`, `cc`, `clang++`, `g++`, and `c++`. Some tests substitute the
-Linux target name or the corresponding x86_64 Linux triple,
-`x86_64-unknown-linux-gnu`, into driver flags.
+PA29 tests execute generated native programs. Your development host therefore
+needs an x86-64 Linux execution environment. With no `--target`, the tool should
+emit a Linux executable. The target name used by the course is `linux`.
 
 ### Starter Kit
 
-The starter kit provides:
+The starter kit contains:
 
-- `dev/cppgm++.cpp`, populated from the `cppgm++` scaffold for the cumulative
-  PA10+ compiler driver
-- the shared `dev/` sources needed by the scaffold
-- `pa29/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
-- `pa29/Makefile`
-- `pa29/scripts/`, the compiler-driver test harness
-- `pa29/tests/general/`, the PA29 tests and checked-in reference files
-- the shared `cppgm++` source grammar, exposed for this assignment as
-  `pa29.gram`
+- `pa29/README.md`, `pa29/Makefile`, and the test scripts in `pa29/scripts/`
+- a student-editable `dev/lowir2native.cpp` starter scaffold
+- the `pa29/lowir2native.cpp` symlink back to `../dev/lowir2native.cpp`
+- shared support sources and headers under `dev/src/`
+- optional typed LowIR and machine-IR model scaffolding in
+  `dev/src/lowir_model.h` and `dev/src/mir_model.h`, with shared
+  exported-symbol and register support in `dev/src/ir_symbol_model.h` and
+  `dev/src/x86_register_model.h`
+- a local test suite under `pa29/tests/`
+- the grammar for this assignment called `pa29.gram`
+- the authoritative LowIR specification in `../pa13/lowir.md`
 - an HTML grammar explorer of `pa29.gram` in the sub-directory `grammar/`
+- checked-in golden result files under `tests/`
+- `tests/strict/` for raw-MIR oracle tests
+- `tests/structural/` for canonical-MIR oracle tests
+- `tests/behavior/` for generated-program behavior tests without a machine-IR oracle
 
-Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
-shared implementation files it calls. Do not edit generated `.my` files. Test
-inputs and references are part of the handout unless your instructor asks you
-to add or update tests.
+Students should implement the assignment in `dev/lowir2native.cpp` and any reusable
+student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
+test fixtures, comparison scripts, and checked-in reference outputs are support
+files, not implementation files to edit for normal solutions. The shared support files
+provide reusable infrastructure and earlier assignment machinery; they do not implement the
+new PA29 native lowering contract for you.
 
-There is no separate PA29 reference binary in the starter kit. The checked-in
-`.ref.*` files are the oracle.
+Unlike PA1-PA9, there is no external reference binary for PA29. The checked-in `.ref`
+result files are the default oracle.
 
-### Driver Surface
+### Driver Surface For This Assignment
 
-Previously required:
+Required in PA29:
 
-- `--emit-ast`
-- `--emit-types`
-- `--emit-semantics`
-- `--emit-lowir`
+- `--help` / `-h`
 - `-o <outfile>`
-
-New in PA29:
-
-- compile mode: `-c`
-- default link mode with source and object inputs
-- include search: `-I <dir>` and `-I<dir>`
-- library search: `-L <dir>`, `-L<dir>`, `-l <name>`, and `-l<name>`
-- target selection: `--target <target>` or `--target=<target>`
+- `--dump-machine-ir <mirfile>`
+- `--target <target>`
 
 Not yet required here:
 
-- hosted preprocess mode `-E`
-- hosted preprocessor-control flags such as `-D`, `-U`, `-include`, and
-  `-isystem`
-- driver query flags such as `--version`, `-v`, `-dumpmachine`,
-  `-dumpversion`, and `-print-search-dirs`
-- static archives and shared libraries as link inputs
+- separate compilation through `-c`
+- link-map dumping
+- the private exception/runtime ABI path
 
-### Command-Line Contract
+Those later pipeline surfaces are owned by the later `cppgm++` object,
+compile/link, and host-EH assignments.
 
-Required compile forms:
+### Input / Command-Line Arguments
 
-```sh
-cppgm++ -c -o <objfile> <srcfile>
-cppgm++ -c --target <target> -o <objfile> <srcfile>
-cppgm++ -c -I <dir> -o <objfile> <srcfile>
-cppgm++ -c -I<dir> -o <objfile> <srcfile>
-cppgm++ -c --target <target> -I <dir> -o <objfile> <srcfile>
-cppgm++ -c --target <target> -I<dir> -o <objfile> <srcfile>
-```
+Behaviour is undefined unless the command-line arguments match one of:
 
-Required link forms:
+    $ lowir2native --dump-machine-ir <mirfile> <srcfile1> <srcfile2> ... <srcfileN>
+    $ lowir2native -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+    $ lowir2native --dump-machine-ir <mirfile> -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+    $ lowir2native --target <target> --dump-machine-ir <mirfile> <srcfile1> <srcfile2> ... <srcfileN>
+    $ lowir2native --target <target> -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+    $ lowir2native --target <target> --dump-machine-ir <mirfile> -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-```sh
-cppgm++ -o <outfile> <input1> <input2> ... <inputN>
-cppgm++ --target <target> -o <outfile> <input1> <input2> ... <inputN>
-cppgm++ -I <dir> -o <outfile> <input1> <input2> ... <inputN>
-cppgm++ -I<dir> -o <outfile> <input1> <input2> ... <inputN>
-cppgm++ -L <dir> -l<name> -o <outfile> <input1> <input2> ... <inputN>
-cppgm++ -L<dir> -l <name> -o <outfile> <input1> <input2> ... <inputN>
-```
+where each `<srcfileK>` is a LowIR source file and `<target>` is `linux`.
 
-Options may be combined when their meanings are compatible, for example
-`--target <target>` with `-I` or `-L`/`-l`.
-
-In link mode, each `<inputK>` may be:
-
-- a C++ source file
-- an object-like file produced by `cppgm++ -c`
-
-For PA29, object files are identified by implementation-supported object-like
-filenames such as `.o` or `.obj`. The checked-in tests use `.obj`.
-
-`-I` adds user include search paths for any C++ source files compiled in that
-invocation. These paths apply to quoted and angle-bracket includes and are
-searched before compiler-provided shim include paths.
-
-`-L` and `-l` search implementation-supported object-like libraries. The tests use simple helper objects named like `lib<name>.o` in a harness-created
-library directory.
-
-All linked inputs in one invocation must target the same native backend target.
+With no `--target`, `lowir2native` should emit a native Linux executable.
 
 ### Output Format
 
-In compile mode, `cppgm++` shall write one compiler object file to `<objfile>`.
+If `-o <outfile>` is provided, `lowir2native` shall write a native executable
+program to `<outfile>`.
 
-In link mode, `cppgm++` shall write one native executable program to
-`<outfile>`.
+If `--dump-machine-ir <mirfile>` is provided, `lowir2native` shall also write a
+deterministic machine-IR dump to `<mirfile>`.
 
-The PA29 object-file encoding is intentionally an internal `cppgm++` contract:
-the file must be consumable by `cppgm++` link mode, but it does not need to be
-accepted by the host linker. The exact object-file encoding is not directly
-compared by the PA29 tests. The exact final binary encoding is also not
-directly compared. Instead, the tests compare:
+The machine-IR dump is the serialized form of the backend model used for native
+emission. You may keep a typed MIR internally, and the optional
+`dev/src/mir_model.h` scaffold gives one possible representation, but the dump
+must describe the same program that native emission consumes.
 
-- compile/link exit status
-- generated program exit status
-- generated program standard output
+Frame metadata is part of that final MIR contract. In particular, the
+callee-saved `preserve` list should name the callee-saved registers that the
+final instruction body actually uses after local setup/copy cleanup, and the
+stack size should match that final frame layout.
+
+That MIR dump path must work even for helper-only LowIR inputs that have no
+entry function. In that case the dumped MIR should simply omit the optional
+`startup` section.
+
+For the native path, that means an ELF executable.
+
+The exact binary encoding is not directly compared by the PA29 tests. Instead, the tests
+compare:
+
+- the compiler exit status
+- the canonical machine-IR oracle for successful compilations
+- the generated program exit status
+- the generated program standard output
 
 ### Error Handling
 
-If an error occurs during preprocessing, parsing, semantic analysis, lowering,
-object-file emission, linking, or native output writing, `cppgm++` shall exit
-with failure.
+If an error occurs while parsing LowIR, validating LowIR, lowering LowIR, or writing the
+native output, `lowir2native` shall `EXIT_FAILURE`.
 
-Important PA29 error cases include:
+The output file is not required to be meaningful on failure.
 
-- duplicate global symbol definitions, including definitions imported from
-  separate helper objects or libraries
-- unresolved external symbols
-- missing `main`
+### Standard Output / Error
 
-For negative tests, exact diagnostics are not the grading contract. The harness
-compares exit status first. If the reference compile/link path fails, stdout and
-stderr are diagnostic side effects rather than required output.
+Standard output and standard error are ignored for automated testing of `lowir2native`.
 
-### Standard Output And Error
-
-Standard output and standard error are ignored for successful automated testing
-of `cppgm++` in PA29. You may use them for diagnostics.
+You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Run the PA29 suite with:
+Testing is based on execution of the generated native program.
 
-```sh
-make test
-```
+For each test case `x`:
 
-To run one test through the shared check target:
+- `lowir2native` is executed to produce `x.my.program`
+- `lowir2native` is also executed with `--dump-machine-ir` to produce `x.my.mir`
+- the compiler exit status is recorded in `x.my.impl.exit_status`
+- if compilation succeeded, `x.my.program` is executed
+- its standard output is recorded in `x.my.program.stdout`
+- its numeric exit status is recorded in `x.my.program.exit_status`
 
-```sh
-make check TEST=tests/general/100-two-source-call.t
-```
+The checked-in `.ref` files are compared the same way for the outputs that are
+part of that test's oracle:
 
-The local tests live in `tests/general/`. They exercise practical
-compiler-driver, separate-compilation, link, runtime, and consistency behavior.
-They are not direct N3485 clause tests.
+- `x.ref.impl.exit_status`
+- `x.ref.mir` for tests with a raw MIR dump oracle
+- `x.ref.program.stdout`
+- `x.ref.program.exit_status`
 
-For each test anchor `x.t`, companion C++ sources are named:
+The `--dump-machine-ir` output remains the raw debugging dump.
+
+For a successful compilation, the tested raw MIR dump is a plain-text file with this overall
+shape:
 
 ```text
-x.t.1
-x.t.2
-...
+machine_ir x86_64 <target>
+
+startup
+    ...
+
+global @name
+  ...
+
+function @name
+  abi
+    ...
+  frame
+    ...
+
+  block ^label
+    ...
 ```
 
-Optional sidecars include:
+The exact instruction inventory is target- and lowering-dependent, but the output format used
+for testing is still this textual machine-IR form:
 
-- `x.flags`: extra flags passed to `cppgm++`
-- `x.lib.*`: host-built helper C or C++ sources that become object-like
-  libraries for `-L`/`-l` tests
-- `x.stdin`: standard input for the generated program
+- one `machine_ir x86_64 <target>` header
+- an optional `startup` section
+- zero or more `global @...` definitions
+- one or more `function @...` definitions
+- per-function `abi`, `frame`, and ordered `block ^...` sections
+- one instruction or metadata line per indented row beneath those sections
 
-For each test case, the harness checks:
+For strict and structural MIR tests, the raw `.ref.mir` file is still checked in because it
+is the debugging-oriented dump students see directly from `--dump-machine-ir`.
+Structural tests also keep `x.ref.cmir`, the canonical oracle used for grading.
 
-1. Explicit separate compilation:
-   `cppgm++ -c` is executed once for each companion source file, and then
-   `cppgm++` links the generated objects.
-2. Direct source linking:
-   `cppgm++` is executed directly on the same source files.
-3. Mixed source/object linking for multi-source tests:
-   one generated object and the remaining source files are linked together.
+For testing, PA29 uses three explicit comparison modes, split by directory:
 
-The checked-in `.ref.*` files are compared against the explicit compile/link
-path. The direct and mixed paths are consistency checks: they must match the
-explicit path.
+1. `tests/strict/` compares the raw checked-in `.ref.mir` against the generated `.my.mir`,
+   after only normalizing the host-target tag in the `machine_ir x86_64 <target>` header.
+2. `tests/structural/` compares the checked-in `.ref.cmir` against a canonicalized form of
+   the generated `.my.mir`.
+3. `tests/behavior/` checks compilation and generated-program behavior only. It intentionally
+   has no machine-IR oracle.
 
-This validates:
+The structural canonicalization pass is intentionally conservative. It hides:
 
-- compile mode
-- link mode
-- source-to-object lowering through the full language pipeline
-- consistency between direct source linking and explicit separate compilation
-- consistency between mixed source/object linking and explicit separate
-  compilation
-- cross-translation-unit data relocations that feed indirect calls
-- namespace-scope startup hooks across translation units
-- coalescible ODR emission when an out-of-class class-template member
-  definition from a shared header is instantiated in multiple translation
-  units
+- the host-target tag in the MIR header
+- exact stack/frame displacement numbers in memory operands
+- interchangeable free GPR choices where the structural MIR shape is otherwise the same
+- interchangeable free XMM choices where the structural MIR shape is otherwise the same
+
+It still preserves:
+
+- opcode family and width
+- direct vs indirect call shape
+- direct compare-to-branch vs materialized-bool shape
+- register vs stack vs immediate location class
+- floating operation family and explicit conversion family
+
+So the assignment keeps a structural backend oracle without freezing exact
+frame-layout details into every checked-in reference.
+
+That means a successful `PA29` test anchor now validates exactly these output files:
+
+- `x.ref.impl.exit_status`: exact compiler success/failure result
+- `x.ref.program.exit_status`: exact generated-program exit status
+- `x.ref.program.stdout`: exact generated-program standard output
+- plus either:
+  - `x.ref.mir` with strict raw-MIR comparison and header normalization only
+  - `x.ref.mir` plus `x.ref.cmir`, with structural canonical-MIR comparison using
+    checked-in `x.ref.cmir`
+  - no MIR reference files for `tests/behavior/`
+
+In other words, `PA29` is not just "program behavior matches." The tests also validate the
+shape of the lowered backend output through one of those two explicit MIR oracles.
+
+For structural failures, the harness leaves behind:
+
+- `x.my.cmir`
+
+Those are debugging artifacts only. Students are not expected to emit `.cmir` files. They
+only need to implement `--dump-machine-ir` and produce raw `.mir`.
+
+The `tests/behavior/` directory is for correctness cases where several reasonable
+register-allocation or spill strategies are acceptable. Those tests still require
+successful compilation and matching generated-program behavior, but they intentionally do
+not compare a machine-IR oracle.
+
+`make test` recursively runs the checked-in local suites:
+
+- `tests/strict/`
+- `tests/structural/`
+- `tests/behavior/`
+
+These directories contain PA29-specific backend oracle tests, not source-standard tests.
+PA29 has no `tests/spec/` directory because the tested contract is the
+compiler-owned LowIR-to-native backend surface rather than an N3485 C++ source-language
+clause.
+
+The PA29 suite is intentionally mixed:
+
+- hand-written PA13-style LowIR tests
+- selected LowIR programs copied from the outputs of PA16-PA28
+
+That ensures PA29 is tested both on the core LowIR forms and on the richer LowIR that later
+lowering assignments now produce.
+
+The PA29 test suite exercises:
+
+- startup/lowering correctness for simple programs, globals, direct calls, and indirect calls
+- register and stack calling-convention handling for:
+  - integer-only calls
+  - mixed GPR/XMM direct calls
+  - mixed GPR/XMM indirect calls
+- short-circuit-style branch diamonds expressed directly in LowIR control flow
+- unary logical-not lowering when the result feeds control flow
+- direct compare-fed branches over integer, pointer, and floating inputs
+- compare-as-value materialization for integer, pointer, and floating cases
+- trivial integer and floating leaf chains that should stay register-resident
+- mixed integer/float conversion chains
+- signed and unsigned narrow integer reload/widen paths from both frame and global storage
+- conservative `f80` arithmetic, comparison, and call/data lowering
+- atomic load/store, exchange, compare-exchange, fetch-add, and fence operations across
+  multiple scalar widths
+
+The shipped PA29 tests are the contract for this milestone.
+
+### PA29 Syntax Spec
+
+The authoritative input-language syntax for PA29 is `pa29.gram`.
+
+As in the earlier assignments, that grammar defines accepted input syntax only. The native
+program behaviour contract is specified by this README, PA13 `lowir.md`, and the checked-in
+`.ref` files.
+
+PA29 does not add new LowIR syntax beyond PA13. It reuses the same LowIR language and adds
+a new backend target for it.
+
+That means the expected PA29 input surface is the current PA13 LowIR surface, not the older
+pre-metadata subset. In particular, handwritten PA29 inputs may now use:
+
+- explicit function role metadata such as `[role=entry]`, `[role=init]`, and `[role=fini]`
+- top-level declaration forms such as `declare function` and `declare global`
+- structured global data plus explicit global storage metadata where relevant
+- optional call-boundary, parameter, and instruction-debug metadata accepted by PA13
+
+A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
+`pa29.gram` as the source of truth.
+
+If this README and `pa29.gram` appear to disagree about LowIR syntax, treat `pa29.gram` as
+authoritative. If this README and `../pa13/lowir.md` appear to disagree about the full LowIR
+definition, treat `lowir.md` as authoritative. If they disagree about the required PA29
+implementation subset, treat the `Assignment Boundary` and `Out Of Scope` sections below as
+authoritative.
 
 ### Assignment Boundary
 
-PA29 must support the C++ feature set already implemented through PA27, but
-through a practical driver interface rather than one stage-specific binary per
-milestone.
+PA29 must support native lowering for the LowIR family already defined for PA13 and used by
+PA15-PA28, including:
 
-Within that supported subset, PA29 should:
+- scalar globals and structured global data
+- functions, blocks, slots, temporaries, and runtime hooks
+- direct and indirect calls
+- control flow, integer operations, and pointer/index operations
+- floating scalar operations and comparisons over `f32`, `f64`, and `f80`
+- explicit scalar conversions:
+  - `sitofp`
+  - `uitofp`
+  - `fptosi`
+  - `fptoui`
+  - `fpext`
+  - `fptrunc`
+- atomic scalar operations and fences over `i1`, `i8`, `i16`, `i32`, `i64`, and `ptr`
+- bulk memory operations:
+  - `copyobj`
+  - `zeroinit`
+- object-lowered ABI forms emitted by source-to-LowIR assignments:
+  - hidden destination-pointer returns
+  - lowered object parameters carried as `ptr`
+- direct one- and two-eightbyte object parameters and results in the supported
+  x86-64 ABI, including padded homes for partial second eightbytes
+- supported variadic calls and `va_start` register-save state for GPR and XMM
+  arguments, including the caller-provided vector-register count
+- structured vtable/global table data emitted by source-to-LowIR lowering
+- structured global alignment derived from typed data items; raw `zero` byte
+  padding inside mixed data does not independently raise alignment
 
-- compile one C++ source file to one compiler object file with `-c`
-- link compiler object files into a native executable
-- accept C++ source files directly in link mode by compiling each source as its
-  own translation unit before linking
-- support user include search paths through `-I`
-- support source-level external declarations needed for ordinary separate
-  compilation, such as `extern int g;`
-- support ordinary external C function declarations and definitions through
-  `extern "C"` in the practical subset needed for object-style library
-  interoperability
-- support object-like library search through `-L` and `-l`
-- support simple complete-program runtime tests written in C++ and linked
-  against harness-provided object-style support libraries, without requiring
-  host libc or hosted headers
-- allow an implementation-defined compiler object format with your own linker
-  for PA29, as long as the `cppgm++` behavior matches the contract
+Within this milestone, PA29 should successfully compile the LowIR emitted by PA15-PA28 into
+host-native executables, without requiring CY86 as the primary output format.
+
+PA29 must also expose a deterministic machine IR for successful compilations. That dump is
+the structural proof that lowering is happening directly from LowIR into a target-specific
+backend representation rather than only through a CY86 scaffold.
+
+The LowIR input path should parse the same LowIR text accepted by PA13 rather
+than relying on a private object, semantic, or source-level backchannel. Any
+backend fact needed below PA29 belongs either in LowIR text or in the
+target-specific MIR produced from that LowIR.
+
+Within the supported subset, PA29 should lower:
+
+- direct function calls to direct machine-IR call sites
+- block control flow to direct machine-IR conditional and unconditional branches
+- startup and shutdown hooks to direct machine-IR call sites in the startup path
+- bulk object-memory operations to first-class machine-IR `copy_bytes` / `zero_bytes`
+  instructions
+- truly indirect LowIR calls to machine-IR indirect calls, rather than forcing all calls
+  through the same lowered shape
+- structured global data to machine-IR global data blocks rather than flattening everything
+  through a CY86-style scalarized path
+- atomic scalar LowIR to first-class machine behavior rather than silently dropping the
+  atomic contract in the direct backend
+- the LowIR arithmetic and conversion forms needed for native execution parity on the
+  backend-owned subset of the old PA9 execution envelope, especially:
+  - signed/unsigned integer division, modulus, ordered comparisons, and right shift
+  - integer/float conversion operations
+  - float-width extension and truncation operations
+  - `f32`/`f64`/`f80` arithmetic and comparison behavior
 
 To complete PA29, implement these goals:
 
-1. Separate compilation from C++ source.
-2. Direct source-link parity.
-3. Mixed source/object parity.
-4. Cross-translation-unit source semantics.
-5. Toolchain-style include handling.
-6. External object-library interoperability through the tested `extern "C"`
-   and `-L`/`-l` subset.
-7. Full-language-through-toolchain validation for previously implemented
-   language features.
-   The supported wide-integer extension is included in that runtime surface:
-   truth conversion of `__int128` values must inspect the complete value, and
-   mixed signed/unsigned 128-bit comparisons must follow the usual arithmetic
-   conversions independently of operand order. Bitwise complement and left,
-   logical-right, and arithmetic-right shifts must also work for runtime counts,
-   including counts on either side of the 64-bit half boundary.
-8. Source-driven runtime-program validation without host-library dependence.
+1. Direct control-flow lowering.
+   LowIR branches, first-class `switch` dispatch, and direct calls should become
+   first-class machine-IR branches and direct calls, not a normalized CY86-style
+   fallback.
+
+2. Direct startup/runtime wiring.
+   The startup path should call `@__cppgm_init`, `@main`, and `@__cppgm_fini` as direct
+   machine-IR call sites where those hooks exist.
+
+3. First-class bulk object-memory lowering.
+   `copyobj <bytes>x<align>` and `zeroinit <bytes>x<align>` should survive as meaningful
+   machine-IR operations such as `copy_bytes <bytes>x<align>` and
+   `zero_bytes <bytes>x<align>`, rather than being expanded only through the old CY86
+   lowering path.
+
+4. Preserve the distinction between direct and indirect calls.
+   The direct backend should still emit indirect machine-IR calls for truly indirect LowIR
+   calls, such as virtual dispatch, instead of collapsing all calls into one lowered form.
+   That includes pointer-valued global cells: if a call target comes from a scalar `ptr`
+   global, PA29 should call through the pointer stored in that global, not through the
+   address of the global storage itself.
+
+5. Preserve richer LowIR data layout.
+   Structured global data and later vtable-like globals should remain structured in the
+   direct backend rather than being forced through a scalarized compatibility path.
+
+6. Exercise backend-owned execution behavior directly.
+   PA29 is the right home for LowIR-native execution tests that validate the basic machine
+   semantics inherited from PA9 without waiting for the later source-driver/toolchain
+   milestones. The important cases are arithmetic, signedness-sensitive integer behavior,
+   scalar conversions, and floating execution. Those tests should be expressed in LowIR,
+   not by reintroducing CY86 or a host-lib-dependent source harness.
+
+   In particular, PA29 should already treat unsigned LowIR arithmetic/predicate forms such as
+   `udiv`, `umod`, `ushr`, `ult`, `ule`, `ugt`, and `uge` as first-class backend behavior,
+   not as optional later cleanups.
+
+7. Preserve direct compare-fed branch lowering for ordinary scalar cases.
+   When a compare result feeds exactly one branch, PA29 should lower that as a direct
+   machine compare plus conditional branch rather than materializing a boolean temporary
+   and branching on that temporary afterward.
+
+8. Keep simple scalar and floating work on the appropriate machine path.
+   Small leaf scalar expressions should normally stay in registers, and ordinary `f32` /
+   `f64` operations should stay on the floating-register path. A conservative stack spill
+   is acceptable when pressure or an ABI boundary requires it, as long as the generated
+   program is correct and the checked structural MIR cases still match their oracles.
+   Lowering operations with fixed scratch registers, including integer comparisons,
+   division, and shifts, must preserve still-live frame addresses and incoming parameters
+   before reusing those registers.
+
+   A numeric immediate written without a decimal point still follows the declared LowIR
+   type in a floating store or return. It must be materialized as the requested floating
+   value rather than routed through an integer-only move path.
+
+9. Implement call-boundary correctness without requiring a clever allocator.
+   PA29 must respect the native calling convention for direct calls, indirect calls,
+   mixed GPR/XMM arguments, variadic register-save state, stack arguments, scalar and
+   direct-object returned values, and values that remain live across calls. The tests
+   intentionally check some high-pressure call cases by program behaviour only; those
+   cases should compile and run correctly but do not require the exact spill/register
+   strategy used by the reference implementation.
+
+   An integer-only call still clobbers caller-saved XMM registers, so a live `f32` or
+   `f64` value must survive that call even when no floating argument or result is present.
+
+   Hidden indirect-result arguments can shift ordinary pointer and reference parameters
+   into different ABI registers. Forwarding those parameters after earlier scratch-using
+   operations must preserve their original values too.
+
+   Atomic operations are subject to the same pressure correctness requirement. Producing
+   an atomic operation's returned old value in a loop must remain executable when its
+   address and source values occupy the available general-purpose registers.
+
+   The same correctness requirement applies through control-flow joins and loop
+   backedges. Incoming parameters, values computed before a loop, and values recomputed
+   on each iteration must retain their current value across calls without a later
+   iteration overwriting an earlier spill home.
+
+10. Keep mixed-width conversion and floating-bool materialization explicit.
+   Mixed integer/float conversion chains should keep their conversion family and width
+   visible in MIR, and floating compare results used as values may materialize booleans
+   in registers without an unnecessary stack round-trip.
+
+11. Preserve narrow integer width behavior in MIR.
+   Ordinary `i8`/`u16` compare-fed branches should stay visibly narrow, and small signed
+   or unsigned integer arithmetic should show the expected post-operation normalization
+   instead of silently widening into an untyped 64-bit path.
+
+   Narrow values returned across a call boundary or loaded from frame storage must also
+   be normalized before a wider comparison or `switch`; stale upper bits must not affect
+   branch or case selection.
+
+12. Keep the conservative `f80` path explicit rather than implicit.
+   PA29 does not need to treat `f80` like ordinary XMM-resident `f32`/`f64`, but its
+   conversions and truncation/extension path should still stay visible and testable in
+   MIR.
+
+13. Cover direct compare-fed branch lowering at ordinary 64-bit integer width too.
+   The direct compare/branch quality rule is not limited to `i32` and `u32`. PA29 should
+   also show the same direct branch shape for straightforward `i64` comparisons. The core
+   oracle for this is the `500-i64-direct-compare-branch` family.
+
+14. Keep pointer/null comparisons on the direct machine compare/branch path.
+   Ordinary pointer/null tests should remain visibly pointer-typed in MIR and branch
+   directly rather than degrading into a less explicit scalarized path, including
+   null values first introduced through `const ptr 0`.
+
+15. Keep pointer/index address calculation visible as pointer arithmetic.
+   Pointer indexing and pointer-difference behavior should stay structurally visible in MIR
+   rather than being hidden behind an unrelated compatibility path.
+
+16. Preserve mixed integer/floating call ABI classification.
+   Calls that mix GPR and XMM arguments should keep that classification visible in MIR so
+   students can tell whether the backend is respecting the native calling convention.
+
+17. Keep ordinary `f80` arithmetic and comparison behavior executable and visible.
+   Even though `f80` remains the conservative floating special case, simple `f80`
+   arithmetic and `cmp` behavior should still run correctly and remain explicit in MIR.
+
+18. Exercise non-64-bit atomic widths explicitly.
+   The PA29 atomic contract is not only about `i64`; smaller-width atomic load/store
+   behavior should survive through the direct native backend.
+
+The PA29 tests intentionally include all of those cases so students can tell whether they
+have actually implemented a direct `LowIR -> machine IR -> native` path, rather than only
+matching program behaviour through a hidden CY86-based route.
 
 ### Out Of Scope
 
-The following are out of scope for PA29:
+The following are explicitly out of scope for PA29:
 
-- full system-compiler flag compatibility beyond the documented PA29 options
-- static archives such as `.a`
-- shared libraries such as `.so` or `.dylib`
-- arbitrary foreign non-object library formats
-- full `extern "C"` linkage-specification coverage beyond the practical
-  function-oriented subset needed for PA29 interop
-- dependence on host libc or hosted headers for the basic PA29 runtime-program
-  coverage
-- dependency generation flags
-- precompiled headers
-- build-system conveniences such as depfiles or compilation databases
-- hosted preprocessor and hosted-header compatibility, which belong in PA34
-  and PA36
-- standalone ABI name construction, which belongs in PA30
-- host-linker-compatible object output, which belongs in PA31/PA32
+- separate compilation and linking
+- relocatable object-file output
+- exception-aware native runtime metadata
+- optimization passes
+- non-x86 native instruction selection
+- source-level end-to-end runtime programs that depend on the later `cppgm++ -c`
+  driver and object/library flow
 
-### Design Notes (Non-Normative)
-
-PA29 should wrap the existing implemented pipeline, not replace it.
-
-In particular:
-
-- C++ source inputs should still flow through the existing semantic and LowIR
-  lowering path.
-- The object and link stages should still reuse the object/runtime machinery
-  from earlier assignments.
-- The direct source-link path should behave like repeated separate compilation
-  followed by linking, not like a special one-off shortcut.
-- Do not carry a private PA29 object encoding forward as the host-object
-  solution. PA31/PA32 replace the internal compiler-object contract with a
-  host-linker-compatible object contract.
+Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The next stage is PA30, which isolates Itanium C++ ABI name construction before
-the later host-object assignments require host-compatible C++ symbol names.
+The intended next stages are:
+
+- PA31 host EH facts, which validates the host-EH metadata emitted in
+  `cppgm++ -c` objects
+- PA30 `cppgm++` compile/link mode, which adds source-driven separate
+  compilation and linking on top of the native backend path
+
+So PA29 should leave behind:
+
+- a stable `LowIR -> native` lowering boundary
+- a stable `LowIR -> machine IR` boundary that later optimization passes can target
+- reusable target-specific code/data emission layers
+- no renewed dependence on CY86 for the main compiler path
+- a backend test corpus that already catches the basic execution-level
+  arithmetic and conversion bugs before the source-driven toolchain stages
+
+### Design Notes (Non-Normative)
+
+The cleanest PA29 structure is:
+
+- parse LowIR into a structured internal representation
+- lower that representation into a structured machine-IR program
+- dump that machine-IR program deterministically for testing
+- lower that machine-IR program into target-specific code/data
+- write the final executable image from that lowered form
+
+The important architectural constraint is that PA29 should reuse PA9 knowledge without
+re-coupling the compiler to CY86. CY86 may remain useful as a secondary validation path, but
+the primary backend boundary should now be LowIR to machine IR and native code/data.

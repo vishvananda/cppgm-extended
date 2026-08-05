@@ -23,15 +23,15 @@ from pathlib import Path
 from typing import Iterable
 
 
-DEFAULT_TRACKER = Path("docs/pa14-pa22-contract-test-audit-tracker.md")
-DEFAULT_PAS = tuple(f"pa{i}" for i in range(14, 28))
+DEFAULT_TRACKER = Path("docs/pa15-pa23-contract-test-audit-tracker.md")
+DEFAULT_PAS = tuple(f"pa{i}" for i in range(15, 29))
 LOCAL_TEST_HYGIENE_PAS = tuple(f"pa{i}" for i in range(10, 40))
-STRICT_TEMPLATE_PAS = ("pa18", "pa19", "pa21", "pa22", "pa23")
+STRICT_TEMPLATE_PAS = ("pa19", "pa20", "pa22", "pa23", "pa24")
 SEMANTIC_ONLY_PA_MAX = 12
 PRE_LOWIR_SEMANTIC_PA_MIN = 10
-LOWIR_SOURCE_PAS = set(range(14, 28))
-SOURCE_EH_LOWIR_OWNER_PA = 25
-BACKEND_ONLY_PAS = {28}
+LOWIR_SOURCE_PAS = set(range(15, 29))
+SOURCE_EH_LOWIR_OWNER_PA = 26
+BACKEND_ONLY_PAS = {29}
 EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
 VALID_TEST_CLUSTERS = frozenset(range(100, 1000, 100))
 HOSTED_STL_OWNER_PA = "pa35"
@@ -46,8 +46,8 @@ HOSTED_EH_RTTI_HEADER_OWNER_PA = "pa35"
 HOSTED_EH_RTTI_HEADER_EARLY_PA_MAX = 34
 HOSTED_EXCEPTION_RUNTIME_OWNER_PA = "pa36"
 HOSTED_EXCEPTION_RUNTIME_EARLY_PA_MAX = 35
-ABI_NAMING_OWNER_PA = "pa30"
-ABI_NAMING_EARLY_PA_MAX = 29
+ABI_NAMING_OWNER_PA = "pa14"
+ABI_NAMING_EARLY_PA_MAX = 13
 ABI_NAMING_WORD_RE = re.compile(r"mangl", re.IGNORECASE)
 HOSTED_STL_HEADERS = {
     "algorithm",
@@ -152,7 +152,7 @@ PA32_HOST_OBJECT_ATTRIBUTE_NAMES = HOST_OBJECT_ATTRIBUTE_NAMES | {"visibility"}
 # PA10-PA12 consume C++ source but stop at AST, type/scope, or call-semantic
 # output.  A declaration can therefore contain a class, array, template, or
 # value-semantics spelling long before the later source-to-LowIR owner is
-# reached.  Those spellings are placement evidence in PA14+, but are only
+# reached.  Those spellings are placement evidence in PA15+, but are only
 # semantic-surface inputs in these pre-LowIR assignments.  PA12 additionally
 # models ordinary function bodies, floating types, and declaration conditions,
 # so their later LowIR feature ids are semantic-surface evidence there.  Keep
@@ -1091,6 +1091,12 @@ def has_function_local_dynamic_class_static(code: str) -> bool:
 
 
 def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dict[str, FeatureHit]:
+    if "/pa14/tests/abi/" in test_path or test_path.startswith("pa14/tests/abi/"):
+        # PA14 consumes normalized ABI facts, not C++ source or LowIR. Words
+        # such as `operator`, `virtual`, and `typeinfo` describe the encoder's
+        # future-facing vocabulary and do not exercise the later language
+        # features that use those encodings.
+        return {}
     no_comments = strip_comments(source)
     code = strip_string_literals(no_comments)
     declared_intrinsics = declared_intrinsic_like_names(code)
@@ -1120,7 +1126,7 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
         ):
             # __vmi_class_type_info describes any polymorphic multiple-
             # inheritance RTTI object.  It is not by itself evidence that the
-            # test exercises PA27 dynamic_cast/typeid behavior.
+            # test exercises PA28 dynamic_cast/typeid behavior.
             matched = [evidence for evidence in matched if not evidence.startswith("ref:")]
         if (
             rule.feature_id == "class.inheritance.multiple"
@@ -1167,7 +1173,7 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
                 hits.pop("support.host_predefined_macro", None)
     if (
         test_path.startswith("pa33/tests/")
-        and re.search(r"\b__abi_tag__?\s*\(", code)
+        and re.search(r"\b(?:abi_tag|__abi_tag__?)\s*\(", code)
     ):
         hits["host.abi_name_attribute"] = FeatureHit(
             "host.abi_name_attribute",
@@ -1189,8 +1195,6 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             "hosted.runtime_compat",
             ["harness:PA34 hosted link/run"],
         )
-    if "/pa30/tests/abi/" in test_path or test_path.startswith("pa30/tests/abi/"):
-        hits.pop("template.builtin_traits", None)
     if (
         re.search(r"__local_static__|local_static_(?:init|ready)", ref_text)
         and LOWIR_EH_CONTROL_RE.search(ref_text)
@@ -1569,16 +1573,16 @@ def generated_lowir_feature_hits(
     return result
 
 
-def pa24_lowir_side_effect_findings(path: Path, source: str, ref_text: str) -> list[HygieneFinding]:
+def pa25_lowir_side_effect_findings(path: Path, source: str, ref_text: str) -> list[HygieneFinding]:
     relative = path.as_posix()
     findings: list[HygieneFinding] = []
     evidence = polymorphic_cleanup_lowir_evidence(source, ref_text)
     if evidence:
         findings.append(HygieneFinding(
             path=relative,
-            kind="pa24-rtti-eh-side-effect",
+            kind="pa25-rtti-eh-side-effect",
             message=(
-                "PA24 tests should split or move polymorphic RTTI/typeinfo "
+                "PA25 tests should split or move polymorphic RTTI/typeinfo "
                 "output that also needs EH/unwind lowering"
             ),
             evidence=evidence,
@@ -1588,9 +1592,9 @@ def pa24_lowir_side_effect_findings(path: Path, source: str, ref_text: str) -> l
     if evidence:
         findings.append(HygieneFinding(
             path=relative,
-            kind="pa24-hidden-eh-side-effect",
+            kind="pa25-hidden-eh-side-effect",
             message=(
-                "PA24 tests should split or move source constructs that emit "
+                "PA25 tests should split or move source constructs that emit "
                 "EH/unwind lowering without explicit exception syntax"
             ),
             evidence=evidence,
@@ -1635,22 +1639,22 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
                 ),
             ))
         current_pa = current_pa_for(path.relative_to(root))
-        if current_pa == "pa22":
+        if current_pa == "pa23":
             source = read_text(path) + "\n" + companion_source_text_for(path)
             evidence = polymorphic_cleanup_lowir_evidence(source, ref_text_for(path))
             if evidence:
                 findings.append(HygieneFinding(
                     path=relative,
-                    kind="pa22-heavy-support",
+                    kind="pa23-heavy-support",
                     message=(
-                        "PA22 template tests should split or move polymorphic "
+                        "PA23 template tests should split or move polymorphic "
                         "RTTI/vtable output that also needs cleanup-unwind lowering"
                     ),
                     evidence=evidence,
                 ))
-        if current_pa == "pa24":
+        if current_pa == "pa25":
             source = read_text(path) + "\n" + companion_source_text_for(path)
-            findings.extend(pa24_lowir_side_effect_findings(
+            findings.extend(pa25_lowir_side_effect_findings(
                 path.relative_to(root),
                 source,
                 ref_text_for(path),
@@ -1875,7 +1879,7 @@ def placement_for(feature: FeatureMeta, current_pa: str, current_cluster: int | 
             "pre-LowIR AST/type/call output does not exercise the later "
             "source-to-LowIR or runtime owner",
         )
-    if current_num >= 14 and owner_num <= SEMANTIC_ONLY_PA_MAX:
+    if current_num >= 15 and owner_num <= SEMANTIC_ONLY_PA_MAX:
         return (
             "semantic-owner",
             "semantic owner cannot own LowIR output; place by enclosing LowIR feature",
@@ -1910,7 +1914,7 @@ def review_template_concepts(concepts: Iterable[str], current_pa: str) -> list[s
     if len(review) > 1:
         support = (
             TEMPLATE_INTEGRATION_BASIC_SUPPORT
-            if current_pa == "pa23"
+            if current_pa == "pa24"
             else TEMPLATE_PRE_INTEGRATION_SUPPORT
         )
         non_support = review.difference(support)
@@ -2067,14 +2071,14 @@ def template_review_for(
         if feature_id in TEMPLATE_CONCEPT_BY_FEATURE
     })
     effective_review_features = review_features
-    if current_pa == "pa22":
-        pa22_owned_features = [
+    if current_pa == "pa23":
+        pa23_owned_features = [
             feature_id for feature_id in review_features
             if (meta := features.get(feature_id))
-            and (pa_number(meta.owner_pa) or 0) >= 22
+            and (pa_number(meta.owner_pa) or 0) >= 23
         ]
-        if pa22_owned_features:
-            effective_review_features = sorted(pa22_owned_features)
+        if pa23_owned_features:
+            effective_review_features = sorted(pa23_owned_features)
     all_concepts = template_concepts_for(review_features)
     integration_concepts = review_template_concepts(all_concepts, current_pa)
     concepts = template_concepts_for(effective_review_features)
@@ -2091,17 +2095,17 @@ def template_review_for(
         action = "Classify by source/ref review; no template concept was detected."
     elif later_features:
         bucket = "later-owner-or-split"
-        action = "Move later-owned behavior, or split/reduce to keep only the PA22 template assertion."
+        action = "Move later-owned behavior, or split/reduce to keep only the PA23 template assertion."
     elif len(review_concepts) >= 2:
-        bucket = "pa23-integration-candidate"
+        bucket = "pa24-integration-candidate"
         suggested_cluster = suggest_integration_cluster(review_concepts, current_cluster)
-        action = "Review as multi-feature template integration; move to PA23 if concepts are essential together."
-    elif owner.startswith(("pa18", "pa19", "pa21")):
+        action = "Review as multi-feature template integration; move to PA24 if concepts are essential together."
+    elif owner.startswith(("pa19", "pa20", "pa22")):
         bucket = "basic-owner-candidate"
         action = "Place in the owning basic template PA; keep if already there, otherwise move or renumber after review."
-    elif owner.startswith("pa22"):
-        bucket = "pa22-advanced-single-candidate"
-        action = "Place in PA22 and renumber if the current cluster is earlier than the owner cluster."
+    elif owner.startswith("pa23"):
+        bucket = "pa23-advanced-single-candidate"
+        action = "Place in PA23 and renumber if the current cluster is earlier than the owner cluster."
     else:
         bucket = "manual-review"
         action = "Review manually; ownership is not resolved by the template classifier."
@@ -2110,11 +2114,11 @@ def template_review_for(
         "template_concepts": concepts,
         "review_template_concepts": review_concepts,
         "template_concept_arity": len(review_concepts),
-        # PA22 narrows the ordinary ownership view to PA22-owned
+        # PA23 narrows the ordinary ownership view to PA23-owned
         # features so a single deduction/SFINAE assertion is not displaced by
         # its prerequisite syntax.  Preserve a second, unfiltered view for the
         # separate question of whether several completed template mechanisms
-        # may be essential together and therefore belong in PA23 integration.
+        # may be essential together and therefore belong in PA24 integration.
         "integration_template_concepts": integration_concepts,
         "integration_template_concept_arity": len(integration_concepts),
         "later_or_compat_features": later_features,
@@ -2402,26 +2406,26 @@ def selected_pas_for_rows(rows: Iterable[dict[str, object]]) -> list[str]:
 
 
 def template_tracker_title(pas: list[str]) -> str:
-    if pas == ["pa22"]:
-        return "PA22 Template Placement Tracker"
+    if pas == ["pa23"]:
+        return "PA23 Template Placement Tracker"
     if tuple(pas) == STRICT_TEMPLATE_PAS:
         return "Strict Template Placement Tracker"
     return "Template Placement Tracker"
 
 
 def template_tracker_output_path(pas: list[str]) -> str:
-    if pas == ["pa22"]:
-        return "docs/pa22-template-placement-tracker.md"
+    if pas == ["pa23"]:
+        return "docs/pa23-template-placement-tracker.md"
     if tuple(pas) == STRICT_TEMPLATE_PAS:
         return "docs/template-strict-placement-tracker.md"
     return "docs/template-placement-tracker.md"
 
 
 def template_tracker_scope_label(pas: list[str]) -> str:
-    if pas == ["pa22"]:
-        return "PA22"
+    if pas == ["pa23"]:
+        return "PA23"
     if tuple(pas) == STRICT_TEMPLATE_PAS:
-        return "the strict template PAs (`pa18 pa19 pa21 pa22 pa23`)"
+        return "the strict template PAs (`pa19 pa20 pa22 pa23 pa24`)"
     return "the selected template PAs (`{}`)".format(" ".join(pas))
 
 
@@ -2439,14 +2443,14 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         f"This tracker is the review queue for template test placement across {template_tracker_scope_label(pas)}.",
         "It supports the split into:",
         "",
-        "- PA18/PA19/PA21 basic template owners",
-        "- PA22 advanced single-feature template completion",
-        "- PA23 template integration",
+        "- PA19/PA20/PA22 basic template owners",
+        "- PA23 advanced single-feature template completion",
+        "- PA24 template integration",
         "- later owners, split/reduce, or drop decisions",
         "",
         "The table below was seeded by the template-placement audit mode.",
         "Treat the bucket and cluster as review leads, not final move decisions.",
-        "The composition-concepts column retains earlier prerequisite concepts that PA22's owner-focused view filters out.",
+        "The composition-concepts column retains earlier prerequisite concepts that PA23's owner-focused view filters out.",
         "Filename-only matches are retained as path hints and do not drive placement failures.",
         "After review starts, do not overwrite this tracker without preserving status and notes.",
         "",
@@ -2465,11 +2469,11 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         "",
         "- A test goes to the earliest PA/cluster that owns the behavior it asserts.",
         "- Support syntax does not control placement when it is already implemented and not essential to the expected output.",
-        "- If two or more template concepts are essential together, place the test in PA23 integration and cluster it by the feature combination.",
+        "- If two or more template concepts are essential together, place the test in PA24 integration and cluster it by the feature combination.",
         "- If a later non-template feature is essential, move later or split/reduce the test before keeping template coverage.",
         "- Witness refs are golden; do not regenerate witness refs while moving tests.",
         "",
-        "## PA23 Candidate Clusters",
+        "## PA24 Candidate Clusters",
         "",
         "| Cluster | Intended integration shape |",
         "| --- | --- |",
@@ -2490,7 +2494,7 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         "",
         "## Review Queue",
         "",
-        "| Status | Test | Current | Bucket | Concepts For Review | Composition Concepts | Later/Compat Features | Latest Template Owner | PA23 Cluster | Late Candidate | Late Confidence | Path Hints | Action | Notes |",
+        "| Status | Test | Current | Bucket | Concepts For Review | Composition Concepts | Later/Compat Features | Latest Template Owner | PA24 Cluster | Late Candidate | Late Confidence | Path Hints | Action | Notes |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ])
     for row in sorted(rows, key=lambda item: (str(item["template_bucket"]), str(item["path"]))):

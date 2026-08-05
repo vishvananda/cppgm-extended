@@ -21,7 +21,7 @@ The questions for this assignment are:
 
 You should complete:
 
-- PA28 for the baseline `lowir2native` backend
+- PA29 for the baseline `lowir2native` backend
 - PA37 for the explicit LowIR optimization stage
 
 You will reuse the PA13 LowIR input language. Handwritten PA38 tests should use
@@ -70,7 +70,7 @@ The `--target <target>` option is inherited from the native backend. Tests may
 set the target through the harness environment, but the optimization
 contract is independent of host-specific elapsed time.
 
-`-O0` remains the PA28 baseline. PA38 must preserve that earlier behavior while
+`-O0` remains the PA29 baseline. PA38 must preserve that earlier behavior while
 adding the explicit `-O1` and `-O2` backend optimization levels.
 
 When `cppgm++` later emits native objects or executables at an optimization

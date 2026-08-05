@@ -5,17 +5,11 @@
 Write a C++ application called `cppgm++` that takes as input a set of C++
 source files, executes translation phases 1 through 7, parses them as PA10/PA23
 translation units, reuses the PA11-PA22 semantic foundation, builds on the
-PA14-PA22 LowIR lowering path, and writes LowIR text.
+PA15-PA22 LowIR lowering path, and writes LowIR text.
 
-PA23 is the template integration assignment. Now that you have implemented the
-individual template features in PA18, PA19, PA21, and PA22, this PA checks that
-they work together in realistic combinations. These tests are intentionally
-complicated: they are meant to uncover edge cases where a feature works alone
-but loses typed information, chooses the wrong specialization, instantiates too
-early, or fails during lowering when combined with another template mechanism.
-
-PA23 does not introduce a new isolated template feature. It is a composition
-surface over the earlier template assignments.
+PA23 is the second half of template completion. Its job is to finish the
+remaining single-feature deduction/substitution behavior so ordinary generic
+C++11 code stops depending on a pragmatic template subset.
 
 PA23 still produces LowIR. It does not introduce a new output format.
 
@@ -28,10 +22,10 @@ You will want to reuse:
 - the preprocessing and tokenization pipeline from PA1-PA6
 - the PA10 AST as the syntax boundary
 - the PA11-PA12 semantic foundation
-- the PA14-PA22 LowIR lowering path
+- the PA15-PA22 LowIR lowering path
 - the PA13 LowIR contract
-- the PA18-PA22 template machinery
-- the PA20 constant-evaluation layer
+- the PA19-PA22 template machinery
+- the PA21 full constant-evaluation layer
 
 ### Starter Kit
 
@@ -40,10 +34,10 @@ The starter kit contains:
 - a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
   in `../dev/cppgm++.cpp`
 - the standard assignment `Makefile` and harness scripts
-- the PA23 template-integration test suite under `tests/`
+- the PA23 deduction/substitution test suite under `tests/`
 
-In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from the
-`cppgm++` scaffold and is the file you extend for this assignment.
+In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from
+the `cppgm++` scaffold and is the file you extend for this assignment.
 
 Unlike PA1-PA9, there is no external reference binary for PA23. The checked-in
 `.ref` files are the default oracle.
@@ -65,21 +59,20 @@ On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
 `EXIT_SUCCESS`.
 
 The authoritative LowIR definition is `../pa13/lowir.md`. PA23 extends the
-PA22 lowering surface only by requiring previously introduced template features
-to compose through the already-defined LowIR family.
+PA22 lowering surface only by making more of the C++ source language lower into
+the already-defined LowIR family.
 
 LowIR top-level declaration/definition order is a presentation convention, not
 a dependency order. Reference outputs and canonical dumps use the order defined
 in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
 `function`, but the relaxed LowIR comparison canonicalizes top-level entries
-before comparison. Your output must still be repeatable for the same inputs;
-`../pa13/lowir.md` defines the canonical reference presentation and notes where
-internal LowIR symbol names are only a presentation tie-breaker.
-
-Your output must also preserve order-sensitive LowIR regions when they are
-present: instruction order inside blocks, item order inside structured globals,
-vtable slot order, and action order inside generated initialization,
-finalization, constructor, destructor, and cleanup bodies.
+before comparison. Your output must still be repeatable for the same
+inputs; `../pa13/lowir.md` defines the canonical reference presentation and
+notes where internal LowIR symbol names are only a presentation tie-breaker.
+Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
+blocks, item order inside structured globals, vtable slot order, and action
+order inside generated initialization, finalization, constructor, destructor,
+and cleanup bodies.
 
 The test harness checks that the generated LowIR is well formed and matches the
 checked-in `.ref` files after canonicalizing presentation details that are not
@@ -91,8 +84,8 @@ grading requirement.
 If an error occurs during preprocessing, tokenization, parsing, semantic
 analysis, or LowIR generation, `cppgm++` shall `EXIT_FAILURE`.
 
-The output file is not required to be meaningful on failure. Diagnostics are not
-part of the grading contract.
+The output file is not required to be meaningful on failure.
+Diagnostics are not part of the grading contract.
 
 ### Standard Output / Error
 
@@ -105,10 +98,12 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 PA23 tests live under `tests/`. The suite is split by test role:
 
-- `tests/spec/` contains N3485/spec-anchored integration cases whose important
-  behavior is still tied to a specific standard template rule.
-- `tests/general/` contains broader generic-program examples that combine
-  multiple template mechanisms.
+- `tests/spec/` contains N3485/spec-anchored deduction, substitution, and
+  SFINAE tests. Each provided C++ language test in this directory starts with a
+  leading comment of the form `// N3485 focus: 14.x.y [clause.name] ...` so a
+  reviewer can find the governing text in `../doc/n3485.txt`.
+- `tests/general/` contains broader generic-program examples that are useful
+  for PA23 but are not one-rule spec probes.
 
 The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated
@@ -116,26 +111,15 @@ LowIR for basic structural correctness, then compares the canonicalized LowIR
 against the checked-in reference. For rejected tests, the exit status is the
 checked result; exact diagnostic text is not checked.
 
-The clusters are organized by feature combination:
+This split assignment intentionally focuses on the deduction/substitution half
+of template completion:
 
-- `100`: dependent-name and entity interactions that do not fit a narrower
-  later cluster
-- `200`: deduction, partial ordering, non-deduced context, and braced-init
-  deduction combinations
-- `300`: SFINAE, substitution, detector idiom, and no-eager instantiation
-  combinations
-- `400`: pack, member-template, template-template-parameter, alias-template, and
-  variable-template compositions
-- `500`: library-shaped end-to-end reducers without hosted or builtin-trait
-  dependencies
-
-When working through PA23 failures, keep the earlier template assignments
-passing. A PA23 fix should not relax, special-case, or regress the basic
-functionality already covered by PA18, PA19, PA21, and PA22. Before treating an
-integration fix as complete, run the earlier template PAs and PA23 through the
-report harness:
-
-    $ make test-report ACTIVE_TEST_REPORT_PAS='pa18 pa19 pa21 pa22 pa23'
+- full function-template deduction
+- function-template partial ordering
+- non-deduced contexts and braced-init, array-bound, and conversion deduction
+  corners
+- SFINAE and substitution failure
+- no-eager-instantiation timing and dependent-call behavior
 
 ### PA23 Syntax Boundary
 
@@ -146,36 +130,37 @@ Boundary and Out Of Scope sections below.
 
 ### Optional Student Test Ideas
 
-When adding your own tests, useful PA23 themes include dependent alias expansion
-inside deduction, member-template calls through dependent owners, pack expansion
-through SFINAE helpers, detector idioms that rely on earlier alias or partial
-specialization machinery, and function-template partial ordering where more than
-one template feature is needed for the selected result.
+When adding your own tests, useful PA23 themes include explicit template
+arguments mixed with deduced ones, function-address deduction, conversion
+function template deduction, constructor-template participation, richer
+non-deduced contexts, and compact `enable_if` / `void_t` / detector patterns.
 
 ### Assignment Boundary
 
-PA23 owns integration among already-introduced template features, including:
+PA23 owns the remaining advanced single-feature standard template behavior over
+the implemented surface, including:
 
-- dependent names combined with alias, variable, partial-specialization, or
-  deduction behavior
-- imported constants retained as defaults in nested member templates when the
-  enclosing template is instantiated
-- function-template deduction combined with packs, non-deduced contexts,
-  explicit arguments, conversion templates, or constructor templates
-- SFINAE and substitution behavior combined with alias templates, partial
-  specializations, member templates, packs, and detector idioms
-- no-eager-instantiation timing in realistic dependent template bodies
-- dependent function and constructor default arguments are materialized only after overload
-  selection, so an invalid default on an unselected candidate does not reject the call
-- library-shaped reductions that do not require hosted headers, vendor
-  builtins, or later language features
+- full function-template deduction over the intended C++11 subset
+- function-template partial ordering
+- substitution behavior and candidate dropping
+- `enable_if`, `void_t`, and detected-idiom style SFINAE behavior
+- conversion function template deduction
+- constructor template deduction and overload participation
+- non-deduced contexts and explicit template-id deduction edge cases
+- braced-init deduction in the supported template-call subset
+- pointer, reference, enum, and static-member non-type template argument values
+  over the supported constant-expression subset
+- template deduction from arguments whose types come from already-resolved
+  member-function calls, including the implicit-object overload selection from
+  PA16/PA17
+- dependent-call, dependent-alias, and no-eager-instantiation behavior when the
+  primary assertion is a single PA23-owned feature rather than a broad
+  multi-feature composition
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA23:
 
-- new isolated template features not already introduced by PA18, PA19, PA21, or
-  PA22
 - `std::initializer_list` library semantics and initializer-list overload
   machinery
 - member-pointer template behavior that depends on later member-pointer support
@@ -188,26 +173,33 @@ Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended next stage is PA24, which extends the source-to-LowIR path with
-the first broad ordinary-language closure slice.
+The intended template follow-up is PA25, which checks that the PA19-PA23
+template features compose in realistic programs. The later backend stage retargets
+the language-complete front-end from the CY86 scaffold path to the real native
+backend.
 
 So PA23 should leave behind:
 
-- a complete standard template semantic layer whose individual features compose
-  cleanly
+- a complete standard template semantic layer
 - instantiated declarations that lower through the ordinary LowIR path without
   template subset special-casing
-- no remaining "template features work alone but not together" gap before later
-  backend, ABI, and hosted toolchain work
+- a clean handoff to PA24 for multi-feature template integration before
+  backend/toolchain work
 
 ### Design Notes (Non-Normative)
 
-The useful shape for PA23 is not another special-case layer. The same typed
-template declarations, template arguments, substitution results, deduction
-bindings, and deferred-instantiation records from PA18-PA22 should be threaded
-through the combined cases.
+The useful shape for PA23 is a typed substitution and deduction engine that
+works on semantic declarations, types, expressions, and template arguments. A
+substitution failure should be represented as candidate state during overload
+resolution rather than as a diagnostic unless no viable candidate remains.
 
-When a PA23 test fails, first look for data that was lost between those
-subsystems: an alias expansion that discarded a dependent owner, a pack binding
-that became text-only, a substitution failure promoted into a hard diagnostic,
-or an instantiation record forced before the template arguments were known.
+Useful intermediate representations include:
+
+- deduction bindings that record which template parameter each typed argument
+  constrained
+- explicit non-deduced-context markers in the type/expression forms that need
+  them
+- a substitution result type that can carry success, SFINAE discard, or hard
+  error
+- deferred instantiation records for dependent calls and bodies that must not be
+  forced before their template arguments are known

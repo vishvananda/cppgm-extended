@@ -42,11 +42,11 @@ into per-PA inventory entries and mark unresolved decisions explicitly.
 | PA9 | `cy86` | `dev/cy86.cpp` | `dev/cy86-scaffold.cpp` | Scaffold exists. |
 | PA10-PA12 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Scaffold exists; README must explain staged `--emit-ast`, `--emit-types`, and `--emit-semantics` work. |
 | PA13 | `lowir2cy86` | `dev/lowir2cy86.cpp` | `dev/lowir2cy86-scaffold.cpp` | Scaffold exists; optional typed LowIR model header is exported under `dev/src`. |
-| PA14-PA27, PA29, PA31-PA36 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; workers must decide how exported cumulative PA docs describe extending it. |
-| PA28 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Scaffold exists; optional typed MIR model header is exported under `dev/src`. |
-| PA30 | `abimangle` | `dev/abimangle.cpp` | `dev/abimangle-scaffold.cpp` | Scaffold exists; optional typed ABI fact header is exported under `dev/src`. |
+| PA14 | `abimangle` | `dev/abimangle.cpp` | `dev/abimangle-scaffold.cpp` | Scaffold exists; typed ABI fact header is exported under `dev/src`. |
+| PA15-PA28, PA30-PA36 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; workers must decide how exported cumulative PA docs describe extending it. |
+| PA29 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Scaffold exists; optional typed MIR model header is exported under `dev/src`. |
 | PA37 | `lowiropt` | `dev/lowiropt.cpp` | `dev/lowiropt-scaffold.cpp` | Scaffold exists. |
-| PA38 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Reuses the PA28 backend entrypoint; export docs must explain the machine/backend optimization extension. |
+| PA38 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Reuses the PA29 backend entrypoint; export docs must explain the machine/backend optimization extension. |
 | PA39 | self-host ladder | multiple `dev/` tools and source sets | not a binary scaffold | Special export case. Needs an initial inventory audit, then a focused README rewrite around staged self-host validation rather than a single editable binary. |
 
 ## Per-PA Inventory Schema
@@ -78,7 +78,7 @@ Each PA section should eventually include:
 - Decide the exact `dev/src` support-file set exported with the cumulative
   `cppgm++`, `lowir2cy86`, and native-tool scaffolds.
 - Decide whether witness output is a public student oracle for
-  PA18/PA19/PA21/PA22/PA23 or a maintainer-only strict validation surface.
+  PA19/PA20/PA22/PA23/PA24 or a maintainer-only strict validation surface.
 - Decide how to expose loose LowIR validation in the student repo while keeping
   maintainer strict text comparison internal.
 - Decide how to expose structural MIR validation for PA28 and PA38 while
@@ -126,9 +126,13 @@ or approved shared infrastructure update.
 - Remaining decisions: PA10-PA13 reference binary policy, exact `dev/src`
   support set, and PA13 debuginfo/instructor-extra packaging.
 
-### PA14-PA17
+### PA14-PA18
 
-- PA14-PA17 export cumulative `cppgm++ --emit-lowir -O0`; students edit
+- PA14 exports standalone ABI name construction for `abimangle`; students edit
+  `dev/abimangle.cpp` from `dev/abimangle-scaffold.cpp`; support files include
+  the typed `dev/src/abi_mangle.h` fact scaffold, `pa14/Makefile`,
+  `pa14/scripts`, and `pa14/tests/abi`.
+- PA15-PA18 export cumulative `cppgm++ --emit-lowir -O0`; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`.
 - Support files are each PA's `paN.gram`, `grammar/`, checked-in refs,
   `tests/general`, `tests/spec` where present, local support headers, and
@@ -139,39 +143,35 @@ or approved shared infrastructure update.
 - Remaining decisions: loose LowIR validator packaging and cumulative
   scaffold/checkpoint policy for the shared `cppgm++` binary.
 
-### PA18-PA23
+### PA19-PA24
 
-- PA18-PA23 export cumulative `cppgm++ --emit-lowir -O0`; students edit
+- PA19-PA24 export cumulative `cppgm++ --emit-lowir -O0`; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`.
-- PA18 and PA19 ship `pa18.gram`/`pa19.gram`, `grammar/`, tests, refs, and local
-  support headers. PA20-PA22 inherit the PA19 syntax boundary and ship tests,
-  refs, and support headers without new grammar files. PA23 uses the shared
+- PA19 and PA20 ship `pa19.gram`/`pa20.gram`, `grammar/`, tests, refs, and local
+  support headers. PA21-PA23 inherit the PA20 syntax boundary and ship tests,
+  refs, and support headers without new grammar files. PA24 uses the shared
   source grammar and ships template-integration tests and refs.
 - README wording describes loose LowIR validation for students and leaves witness
   sidecars out of the required oracle unless export policy changes.
 - Remaining decisions: witness/test-strict packaging, course symlink behavior,
   and loose LowIR validator configuration.
 
-### PA24-PA31
+### PA25-PA31
 
-- PA24-PA27 export cumulative `cppgm++ --emit-lowir -O0`; students edit
+- PA25-PA28 export cumulative `cppgm++ --emit-lowir -O0`; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`; support files include each
   PA's grammar/explorer where present, tests, refs, and harness scripts.
-- PA28 exports `lowir2native`; students edit `dev/lowir2native.cpp` from
-  `dev/lowir2native-scaffold.cpp`; support files include `pa28.gram`,
+- PA29 exports `lowir2native`; students edit `dev/lowir2native.cpp` from
+  `dev/lowir2native-scaffold.cpp`; support files include `pa29.gram`,
   `grammar/`, `../pa13/lowir.md`, the optional `dev/src/ir_symbol_model.h`,
   `dev/src/lowir_model.h`, `dev/src/mir_model.h`, and
   `dev/src/x86_register_model.h` typed IR scaffolds, `tests/strict`,
   `tests/structural`,
   refs, and harness scripts.
-- PA29 exports cumulative `cppgm++` compile/link driver mode; students edit
+- PA30 exports cumulative `cppgm++` compile/link driver mode; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`; support files include
-  `pa29.gram`, `grammar/`, `tests/general`, refs, wrapper/runtime helpers, and
+  `pa30.gram`, `grammar/`, `tests/general`, refs, wrapper/runtime helpers, and
   harness scripts.
-- PA30 exports standalone ABI name construction for `abimangle`; students edit
-  `dev/abimangle.cpp` from `dev/abimangle-scaffold.cpp`; support files include
-  the optional `dev/src/abi_mangle.h` typed fact scaffold, `pa30/Makefile`,
-  `pa30/scripts`, and `pa30/tests/abi`.
 - PA31 exports `cppgm++ -c` host-EH facts; students edit `dev/cppgm++.cpp` from
   `dev/cppgm++-scaffold.cpp`; support files include `tests/general`, refs,
   host object/symbol inspection helpers, and normalized host-EH fact dumping.

@@ -32,10 +32,10 @@ def write(path: Path, text: str) -> None:
 class AuditPAFeaturePlacementTests(unittest.TestCase):
     def test_pre_lowir_semantic_surface_does_not_claim_later_runtime_owner(self) -> None:
         class_feature = audit.FeatureMeta(
-            "class.basic", "pa15", 100, "", ""
+            "class.basic", "pa16", 100, "", ""
         )
         exception_feature = audit.FeatureMeta(
-            "exception.try_catch", "pa25", 100, "", ""
+            "exception.try_catch", "pa26", 100, "", ""
         )
 
         self.assertEqual(
@@ -43,7 +43,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             "semantic-surface",
         )
         self.assertEqual(
-            audit.placement_for(class_feature, "pa14", 200)[0],
+            audit.placement_for(class_feature, "pa15", 200)[0],
             "violation",
         )
         self.assertEqual(
@@ -53,10 +53,10 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
 
     def test_pa12_semantic_output_does_not_claim_lowir_body_ownership(self) -> None:
         procedural = audit.FeatureMeta(
-            "lowir.procedural", "pa14", 100, "", ""
+            "lowir.procedural", "pa15", 100, "", ""
         )
         condition = audit.FeatureMeta(
-            "stmt.condition_declaration", "pa14", 100, "", ""
+            "stmt.condition_declaration", "pa15", 100, "", ""
         )
 
         self.assertEqual(
@@ -75,19 +75,19 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
     def test_pa22_template_review_retains_prerequisites_for_integration_audit(self) -> None:
         features = {
             "template.deduction_full": audit.FeatureMeta(
-                "template.deduction_full", "pa22", 100, "", ""
+                "template.deduction_full", "pa23", 100, "", ""
             ),
-            "sfinae": audit.FeatureMeta("sfinae", "pa22", 300, "", ""),
+            "sfinae": audit.FeatureMeta("sfinae", "pa23", 300, "", ""),
             "template.member_template": audit.FeatureMeta(
-                "template.member_template", "pa21", 300, "", ""
+                "template.member_template", "pa22", 300, "", ""
             ),
             "template.pack": audit.FeatureMeta(
-                "template.pack", "pa19", 200, "", ""
+                "template.pack", "pa20", 200, "", ""
             ),
         }
 
         review = audit.template_review_for(
-            list(features), [], [], 300, "pa22", features
+            list(features), [], [], 300, "pa23", features
         )
 
         self.assertEqual(
@@ -107,14 +107,14 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
 
     def test_single_pa22_feature_does_not_gain_integration_concepts(self) -> None:
         features = {
-            "sfinae": audit.FeatureMeta("sfinae", "pa22", 300, "", ""),
+            "sfinae": audit.FeatureMeta("sfinae", "pa23", 300, "", ""),
             "template.substitution": audit.FeatureMeta(
-                "template.substitution", "pa22", 300, "", ""
+                "template.substitution", "pa23", 300, "", ""
             ),
         }
 
         review = audit.template_review_for(
-            list(features), [], [], 300, "pa22", features
+            list(features), [], [], 300, "pa23", features
         )
 
         self.assertEqual(review["integration_template_concepts"], ["sfinae"])
@@ -284,11 +284,11 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
     def test_hygiene_allows_family_owned_angle_header_override(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
-            driver = root / "pa29" / "tests" / "general" / "300-include-order.t"
+            driver = root / "pa30" / "tests" / "general" / "300-include-order.t"
             source = driver.with_name("300-include-order.t.1")
             flags = driver.with_suffix(".flags")
             override = (
-                root / "pa29" / "tests" / "general" /
+                root / "pa30" / "tests" / "general" /
                 "300-include-order.inc" / "exception"
             )
             write(driver, "user include precedence\n")
@@ -296,7 +296,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             write(flags, "-I tests/general/300-include-order.inc\n")
             write(override, "int selected() { return 0; }\n")
 
-            findings = audit.scan_test_hygiene(root, ["pa29"])
+            findings = audit.scan_test_hygiene(root, ["pa30"])
             self.assertNotIn(
                 "early-hosted-eh-rtti-header",
                 [finding.kind for finding in findings],
@@ -351,34 +351,34 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
             early_path = (
-                root / "pa23" / "tests" / "general" /
+                root / "pa13" / "tests" / "general" /
                 "100-dependent-mangling-case.t"
             )
             write(early_path, "int main() { return 0; }\n")
 
             early_content = (
-                root / "pa23" / "tests" / "general" /
+                root / "pa13" / "tests" / "general" /
                 "100-dependent-value-case.t"
             )
             write(early_content, "// ABI mangling should not be named here.\n")
 
             owner_stage = (
-                root / "pa30" / "tests" / "abi" /
+                root / "pa14" / "tests" / "abi" /
                 "100-dependent-mangling-case.t"
             )
             write(owner_stage, "target function\n")
 
-            findings = audit.scan_test_hygiene(root, ["pa23", "pa30"])
+            findings = audit.scan_test_hygiene(root, ["pa13", "pa14"])
             self.assertEqual(
                 [(finding.path, finding.kind, finding.evidence) for finding in findings],
                 [
                     (
-                        "pa23/tests/general/100-dependent-mangling-case.t",
+                        "pa13/tests/general/100-dependent-mangling-case.t",
                         "early-abi-naming-wording",
                         "path:mangl",
                     ),
                     (
-                        "pa23/tests/general/100-dependent-value-case.t",
+                        "pa13/tests/general/100-dependent-value-case.t",
                         "early-abi-naming-wording",
                         "source:mangl",
                     ),
@@ -555,7 +555,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
     def test_lowir_eh_review_reports_hidden_source_to_lowir_output(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
-            hidden = root / "pa15" / "tests" / "general" / "100-hidden-cleanup.t"
+            hidden = root / "pa16" / "tests" / "general" / "100-hidden-cleanup.t"
             write(hidden, "struct X { ~X(); }; int main() { X x; return 0; }\n")
             write(hidden.with_suffix(".ref"), textwrap.dedent(
                 """\
@@ -571,7 +571,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
                 """
             ))
 
-            runtime_only = root / "pa16" / "tests" / "general" / "100-runtime-only.t"
+            runtime_only = root / "pa17" / "tests" / "general" / "100-runtime-only.t"
             write(runtime_only, "struct X { ~X(); }; int main() { X x; return 0; }\n")
             write(runtime_only.with_suffix(".ref"), textwrap.dedent(
                 """\
@@ -584,7 +584,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
                 """
             ))
 
-            explicit = root / "pa15" / "tests" / "general" / "100-explicit-throw.t"
+            explicit = root / "pa16" / "tests" / "general" / "100-explicit-throw.t"
             write(explicit, "int main() { throw 1; }\n")
             write(explicit.with_suffix(".ref"), "function @main() -> i32 {\n  block ^entry:\n    eh_try ^cleanup\n}\n")
 
@@ -592,16 +592,16 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             write(pa13, "function @main() -> i32 { block ^entry: eh_try ^cleanup }\n")
             write(pa13.with_suffix(".ref"), "ok\n")
 
-            pa25 = root / "pa25" / "tests" / "general" / "100-owned-hidden-eh.t"
-            write(pa25, "struct X { ~X(); }; int main() { X x; return 0; }\n")
-            write(pa25.with_suffix(".ref"), "function @main() -> i32 {\n  block ^entry:\n    eh_try ^cleanup\n}\n")
+            pa26 = root / "pa26" / "tests" / "general" / "100-owned-hidden-eh.t"
+            write(pa26, "struct X { ~X(); }; int main() { X x; return 0; }\n")
+            write(pa26.with_suffix(".ref"), "function @main() -> i32 {\n  block ^entry:\n    eh_try ^cleanup\n}\n")
 
-            findings = audit.scan_lowir_eh_review(root, ["pa13", "pa15", "pa16", "pa25"])
+            findings = audit.scan_lowir_eh_review(root, ["pa13", "pa16", "pa17", "pa26"])
             self.assertEqual(
                 [(finding.path, finding.kind) for finding in findings],
                 [
-                    ("pa15/tests/general/100-hidden-cleanup.t", "eh-control"),
-                    ("pa16/tests/general/100-runtime-only.t", "eh-runtime-declaration-only"),
+                    ("pa16/tests/general/100-hidden-cleanup.t", "eh-control"),
+                    ("pa17/tests/general/100-runtime-only.t", "eh-runtime-declaration-only"),
                 ],
             )
 
@@ -689,7 +689,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
                 audit.host_eh_object_evidence(anchor, "pa31", source),
                 "harness:cppgm++ -c, source:throw",
             )
-            self.assertEqual(audit.host_eh_object_evidence(anchor, "pa25", source), "")
+            self.assertEqual(audit.host_eh_object_evidence(anchor, "pa26", source), "")
 
     def test_pa32_host_object_attributes_do_not_require_pa34_attribute_support(self) -> None:
         hits = audit.detect_features(
@@ -705,7 +705,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
     def test_visibility_attribute_outside_pa32_retains_pa34_owner(self) -> None:
         hits = audit.detect_features(
             "__attribute__((visibility(\"default\"))) int exported;\n",
-            test_path="pa21/tests/general/300-attribute.t",
+            test_path="pa22/tests/general/300-attribute.t",
         )
         self.assertNotIn("host.object_attribute", hits)
         self.assertIn("support.attribute", hits)
@@ -725,11 +725,19 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
 
     def test_pa33_abi_tag_inspection_uses_host_abi_attribute_owner(self) -> None:
         hits = audit.detect_features(
-            'struct Tagged { ~Tagged() __attribute__((__abi_tag__("tag"))); };',
+            'struct __attribute__((abi_tag("tag"))) Tagged { ~Tagged(); };',
             test_path="pa33/tests/general/200-host-abi-tag-dtor.t",
         )
         self.assertIn("host.abi_name_attribute", hits)
         self.assertNotIn("support.attribute", hits)
+
+    def test_pa14_abi_facts_are_not_classified_as_later_source_features(self) -> None:
+        hits = audit.detect_features(
+            "typeinfo named:C\nvtable named:C\noperator-terminal plus\n",
+            ref_text="_ZTI1C\n_ZTV1C\n",
+            test_path="pa14/tests/abi/200-future-vocabulary.t",
+        )
+        self.assertEqual(hits, {})
 
     def test_pa33_builtin_transform_mangling_uses_host_abi_owner(self) -> None:
         hits = audit.detect_features(
@@ -760,7 +768,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             source,
             "global @__local_static__read__item = zero\n"
             "function @read() {\n  eh_try ^cleanup\n  eh_end\n}\n",
-            "pa25/tests/general/200-guarded-static.t",
+            "pa26/tests/general/200-guarded-static.t",
         )
         self.assertIn("exception.guarded_static_cleanup", hits)
 
@@ -775,7 +783,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
         hits = audit.detect_features(
             source,
             "function @make() {\n  eh_try ^cleanup\n  eh_end\n}\n",
-            "pa25/tests/general/200-aggregate-cleanup.t",
+            "pa26/tests/general/200-aggregate-cleanup.t",
         )
         self.assertIn("exception.aggregate_cleanup", hits)
 
@@ -796,7 +804,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             "function @consume(%argument : ptr [pass=by_address]) -> i32 {\n"
             "  call void @value___value(%argument)\n}\n"
             "function @main() {\n  eh_try ^cleanup\n  eh_end\n}\n",
-            "pa25/tests/general/200-class-value-argument-cleanup.t",
+            "pa26/tests/general/200-class-value-argument-cleanup.t",
         )
         self.assertIn("exception.class_value_argument_cleanup", hits)
 
@@ -815,7 +823,7 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
             source,
             "declare function @__cxa_throw() -> void [role=eh_throw]\n"
             "function @raise() {\n  eh_try ^cleanup\n  eh_end\n}\n",
-            "pa25/tests/general/200-throw-operand-cleanup.t",
+            "pa26/tests/general/200-throw-operand-cleanup.t",
         )
         self.assertIn("exception.throw_operand_cleanup", hits)
 

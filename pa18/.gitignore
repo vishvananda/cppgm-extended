@@ -1,9 +1,6 @@
 cppgm++
 cppgm++-debug
+tests/**/*.my*
 testout
 .test_failed
-tests/**/*.my
-tests/**/*.my.*
-tests/*.my
-tests/*.my.*
 *.dSYM

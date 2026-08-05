@@ -4,17 +4,21 @@
 
 Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
 executes translation phases 1 through 7, parses them as PA10/PA17 translation units,
-reuses the PA11-PA12 semantic foundation, builds on the PA14-PA16 LowIR lowering path, and
+reuses the PA11-PA12 semantic foundation, builds on the PA15-PA16 LowIR lowering path, and
 writes LowIR text.
 
-PA17 adds the first polymorphic object-model layer on top of the completed PA16
-non-polymorphic value-semantics compiler. It extends PA16 with:
+PA17 finishes the non-polymorphic class model so ordinary user-defined value types work
+cleanly before virtual dispatch is added. It extends PA16 with the common value-semantics
+paths:
 
-- virtual functions
-- vpointers and vtables
-- dynamic dispatch through ordinary member calls
-- virtual destructors
-- `override` / `final` checking for the supported virtual subset
+- copy construction/assignment and the common move-construction/move-assignment cases
+  needed by those same value paths
+- pass-by-value and return-by-value of class objects
+- temporary materialization in the common call/return/initialization paths
+- delegating constructors
+- out-of-class constructor and destructor definitions
+- the ordinary user-defined copy/move constructors and assignment operators directly
+  needed by that value-semantics work
 
 ### Prerequisites
 
@@ -26,20 +30,19 @@ You will want to reuse:
 - the PA10 AST as the syntax boundary
 - the PA11 declarator/type model
 - the PA12 call-resolution layer
-- the PA14-PA16 LowIR lowering path
+- the PA15/PA16 LowIR lowering path
 - the PA13 LowIR contract
 - the PA13 LowIR -> CY86 path as an optional secondary scaffold
-- the PA15-PA16 class metadata, constructor/destructor machinery, and lifetime lowering
+- the PA16 class metadata, constructor/destructor machinery, and lifetime lowering
 
 The intended direction is:
 
 - PA10 provides syntax
 - PA11 provides scope/type lookup
 - PA12 provides the procedural expression/call core
-- PA14 lowers the procedural subset
-- PA15 adds the basic non-virtual object model
-- PA16 adds the non-polymorphic value-semantics layer
-- PA17 extends that same object model with scoped polymorphism
+- PA15 lowers the procedural subset
+- PA16 adds the basic non-virtual object model
+- PA17 extends that same object model into usable value semantics
 
 ### Starter Kit
 
@@ -54,7 +57,7 @@ The starter kit contains:
 - a checked-in local test suite under `tests/`
 
 The provided scaffold and shared support files establish the driver shape and previous
-frontend modes. They do not implement the PA17 polymorphic LowIR lowering work.
+frontend modes. They do not implement the PA17 value-semantics LowIR lowering work.
 
 Unlike PA1-PA9, there is no external reference binary for PA17. The checked-in `.ref`
 files are the default oracle.
@@ -78,9 +81,8 @@ but optimized LowIR output is not part of PA17.
 
 `cppgm++` shall write LowIR text to `<outfile>`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA17 extends the PA16
-object/value-semantics subset of that IR with the polymorphic lowering needed by this
-milestone.
+The authoritative LowIR definition is `../pa13/lowir.md`. PA17 extends the PA16 object-model
+subset of that IR with the value-semantics lowering needed by this milestone.
 
 PA17 writes a single concatenated LowIR program consisting of:
 
@@ -99,16 +101,43 @@ blocks, item order inside structured globals, vtable slot order, and action
 order inside generated initialization, finalization, constructor, destructor,
 and cleanup bodies.
 
-For supported polymorphic classes, PA17 extends the PA16 lowering convention by introducing:
+For supported class value types, PA17 extends the PA16 lowering convention by introducing:
 
-- emitted LowIR global entries that represent vtable slots
-- explicit vpointer stores in constructors and destructors
-- indirect LowIR calls for supported virtual dispatch sites
+- indirect LowIR parameters for pass-by-value class objects
+- indirect LowIR return destinations for return-by-value class objects
+- explicit LowIR-level materialization of supported copy/move/value transfers
 
-The contents of each vtable global are order-sensitive. Vtable slots, including
-the complete-then-deleting virtual destructor slot pair, are part of the LowIR
-contract in `../pa13/lowir.md` even though the top-level position of the vtable
-global itself is presentation.
+Synthesized copy/move constructors, assignment helpers, and related
+temporary-materialization support are part of the PA17 semantic model, but `cppgm++` only
+needs to emit the helper definitions that the lowered program actually requires. Unused
+copy/move/value helpers do not need to appear just because they are synthesizable.
+
+For supported indirect return-by-value cases, PA17 may also lower an eligible top-level
+named local directly in `%ret` instead of building a separate local object and then
+copying or moving it into the return destination. That direct return-slot form is part of
+the accepted PA17 output contract.
+
+Ref-qualified member functions extend the PA16 member-call model: overload resolution still
+uses the implicit object argument, and the object expression's value category participates in
+viability and ranking for supported `&` and `&&` qualified members.
+
+For supported synthesized copy/move special members, PA17 may lower a leading trivially
+copyable storage prefix directly as `copyobj <span> <src>, <dst>` instead of spelling that
+prefix as separate field operations or a `__builtin_memcpy` helper call in the emitted
+LowIR. That direct storage-copy form is also part of the accepted PA17 output contract.
+
+For supported trivially copy-constructible class value transfers, PA17 may also lower the
+copy/move construction step itself directly as `copyobj <span> <src>, <dst>` instead of
+spelling a call to a synthesized trivial copy/move constructor helper. That direct
+value-transfer form is part of the accepted PA17 output contract.
+
+Supported synthesized constructors, destructors, and copy/move assignment operators may
+also carry LowIR boundary metadata such as `[unwind=no]` when the compiler can determine
+that the synthesized body is semantically non-throwing. That metadata is part of the
+accepted PA17 output contract when it appears in the checked-in `.ref` files.
+
+For supported synthesized destructors, trivial union subobject destructor steps may be
+omitted from enclosing synthesized destructors.
 
 The checked-in `.ref` files define the required LowIR facts for the tests. The
 test harness checks exit status, LowIR well-formedness, and the
@@ -145,18 +174,20 @@ For each test case `x`:
 
 The PA17 suite is split by test role:
 
-- `tests/general/`: the default PA17 LowIR oracle suite. These tests cover polymorphic
-  lowering, vtable/vpointer emission, multi-feature cases, and support-fixture
-  cases whose primary contract is generated LowIR plus exit status.
+- `tests/general/`: the default PA17 LowIR oracle suite. These tests cover value-semantics
+  lowering, copy/value helper emission, temporary materialization, ABI-shape
+  cases, and cross-feature cases whose primary contract is generated LowIR plus
+  exit status.
 - `tests/spec/`: focused C++ language-contract cases that cite a specific N3485 clause.
   Each source test in this directory starts with a comment of the form:
 
     // N3485 focus: <clause> [<stable-name>] <short topic>
 
-`tests/spec/` covers virtual dispatch, virtual destructor overriding,
-`override` / `final`, pure virtual declarations, covariant returns, and
-explicit qualification suppressing virtual dispatch. `tests/general/` covers
-polymorphic and LowIR-shape cases that are not tied to one specific C++11
+`tests/spec/` covers the PA17 value-semantics contract: defaulted/deleted
+special members, copy/move construction and assignment, ref-qualified member
+functions, delegating constructors, allocation expressions, unions, conversion
+operators, and class value ABI behavior. `tests/general/` covers
+value-semantics and LowIR-shape cases that are not tied to one specific C++11
 clause.
 
 PA17 is tested against the generated LowIR text.
@@ -172,12 +203,13 @@ As in the earlier assignments, that grammar defines accepted input syntax only. 
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
 `.ref` files.
 
-The virtual syntax used here was already preserved by PA10; PA17 is the first
-milestone that gives it code-generation meaning.
+Syntax for class value-semantics forms, including out-of-class constructor and
+destructor definitions, is already part of that grammar; PA17 gives the
+supported value-semantics subset semantic and lowering meaning.
 
 Passing PA16 is necessary but not sufficient for passing PA17: an input may be syntactically
 valid for PA10-PA16 and code-generation-valid for PA16 and still be outside the PA17
-polymorphism slice described below.
+value-semantics slice described below.
 
 A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
 `pa17.gram` as the source of truth.
@@ -194,89 +226,138 @@ treat `lowir.md` as authoritative. If they disagree about the PA17 lowering slic
 
 PA17 supports the following in addition to the PA16 subset:
 
-- polymorphic root classes with one vpointer at offset `0`
-- derived classes whose direct base is already polymorphic and therefore already carries the
-  shared vpointer at offset `0`
-- derived classes with non-polymorphic direct bases that introduce the first supported
-  vpointer at offset `0`; ordinary pointer/reference conversion to such a base uses the
-  resulting nonzero base-subobject offset and preserves its data members
-- virtual member functions in the ordinary non-template class cases
-- overriding of inherited virtual members by exact signature match in the current class model
-- covariant pointer/reference return overrides when the class hierarchy is in
-  the supported single-inheritance subset
-- `override` checking for the supported virtual subset
-- method-level `final` checking for the supported virtual subset
-- pure virtual declarations and pure-virtual vtable entries
-- dynamic dispatch for ordinary member calls through:
-  - object expressions of polymorphic class type
-  - pointers to polymorphic class type
-  - references to polymorphic class type
-- explicit base qualification suppressing virtual dispatch for supported calls
-- virtual destructors as part of the supported virtual set
-- virtual `delete` over that supported set, including the deleting-destructor
-  entry and selection of a PA16-supported class-specific deallocation function
-- emitted vtable data for supported polymorphic classes
-- constructor/destructor vpointer writes for supported polymorphic classes
-- deterministic vtable slot order, including declaration order for ordinary virtual
-  functions and the destructor slot order used by the checked references
+- implicit copy constructors in the common field-wise/base-wise cases
+- implicit copy assignment in the common field-wise/base-wise cases
+- implicit move constructors in the common field-wise/base-wise cases needed by the
+  supported value-semantics paths
+- implicit move assignment in the common field-wise/base-wise cases needed by the
+  supported value-semantics paths
+- user-declared copy/move constructors and copy/move assignment operators in the ordinary
+  non-template class cases needed by the supported value-semantics paths
+- ordinary defaulted/deleted move-constructor and move-assignment cases in the supported
+  non-template class patterns used by this assignment
+- value passing of complete class objects to supported functions
+- return-by-value of complete class objects from supported functions
+- demand-driven LowIR emission of the copy/move/value helpers required by those supported
+  paths
+- raw `copyobj` lowering of a supported leading trivial storage prefix inside synthesized
+  copy/move special members when the remaining suffix still needs ordinary field-wise
+  lowering
+- direct `copyobj` lowering of supported trivial class copy/move construction at the call
+  site instead of forcing a separate synthesized trivial constructor call
+- empty class objects and subobjects use the same address-based class copy paths as
+  other class objects; lowering must not invent a scalar payload for an empty class
+- temporary class-object materialization in the common cases required by:
+  - copy initialization from function results
+  - pass-by-value call arguments
+  - return forwarding through the supported value paths
+- direct reuse of the indirect return destination for supported `return local;` cases when
+  the named local is the returned complete object
+- ref-qualified member functions and out-of-class definitions of ref-qualified
+  members, including xvalue propagation through non-static data-member access;
+  ref-qualifiers are rejected on free functions, static members, constructors,
+  and destructors, and an otherwise-identical member overload set cannot mix an
+  unqualified declaration with a ref-qualified declaration
+- rvalue-reference overload ranking after supported scalar pointer conversions,
+  including null-pointer and pointer-qualification conversions
+- delegating constructors; the delegating mem-initializer must be the only
+  mem-initializer, and a delegation chain must not contain a cycle
+- out-of-class constructor definitions
+- out-of-class destructor definitions
+- scalar `new` / `delete` expressions over the supported object subset,
+  including class-specific allocation/deallocation selection, explicit global
+  qualification, and suppression of scalar initialization after a supported
+  non-throwing allocation returns null
+- array `new` / `delete[]` expressions over the supported object subset
+- union definitions and union object lifetime in the supported non-template
+  class subset, including block-scope anonymous-member injection and an
+  explicit variant initializer taking precedence over another variant's
+  default member initializer; at most one variant may have a default member
+  initializer
+- conditional class-value cases in the supported copy/move subset, including
+  cv-combined glvalue operands, lvalue/prvalue conversion, and destruction of a
+  containing branch temporary only after its selected member result has been
+  materialized
+- class temporaries created earlier in an enclosing full expression remain
+  alive across nested conditional and short-circuit branch edges, and are
+  destroyed at the end of that full expression
+- a class prvalue bound directly to a local reference remains alive until the
+  reference's scope ends and is destroyed there rather than at the end of the
+  declaration's full expression
+- class-valued `if` condition declarations are constructed only on paths that
+  reach the declaration and remain alive through the complete selection
+  statement, including braceless nested statements
+- non-template conversion operators that participate in the existing overload
+  and conversion machinery
 
-Within this milestone, PA17 should produce valid LowIR for ordinary single-inheritance
-polymorphic code over the supported PA16 subset. That LowIR is intended to be
-accepted by the later PA28 `lowir2native` backend for the supported cases.
-PA13 `lowir2cy86` remains an optional execution scaffold.
+Within this milestone, PA17 should produce valid LowIR for ordinary non-polymorphic value
+types over the supported PA16 procedural/class subset. That LowIR is intended
+to be accepted by the later PA29 `lowir2native` backend for the supported
+cases. PA13 `lowir2cy86` remains an optional execution scaffold, not the
+primary validation path.
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA17:
 
-- multiple inheritance
-- virtual inheritance
+- virtual functions, vpointers, and vtables
 - RTTI and `dynamic_cast`
-- pointer-adjusting thunks or any ABI that requires base-subobject pointer adjustment
-- class-level `final`
-- full abstract-class enforcement beyond the pure-declaration/vtable cases above
-- generalized exception-aware virtual cleanup beyond the deleting-destructor
-  and deallocation path pinned by the checked references
-- generalized operator overloading beyond the supported PA16 value-semantics paths
-- template-aware virtual dispatch
+- multiple inheritance
+- member pointers
+- generalized operator overloading beyond the supported value-semantics paths
+- copy-elision perfection and the full set of standard temporary-materialization rules
+- advanced move-generation rules beyond the common supported field-wise/base-wise cases
+  above, and the full standard move-semantics corner cases
+- exception-aware cleanup during value transfers
+- template-aware value semantics
+- lambda expressions, range-for, and later general convenience syntax that is not
+  needed by the PA17 value-semantics tests
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended next stage is PA18, which adds the first usable template layer on top of the
-completed procedural/object/polymorphic compiler:
+The intended next stage is PA18, which adds the polymorphic machinery that PA17
+intentionally leaves out:
 
-- function templates
-- class templates
-- template argument deduction
-- basic instantiation
+- virtual dispatch
+- virtual destructors
+- vtables
+- override/final behavior
 
-So PA17 should leave behind a clean single-inheritance polymorphic LowIR lowering path
-rather than mixing templates into the same milestone.
+So PA17 should leave behind a clean non-polymorphic value-semantics object model and LowIR
+lowering path rather than mixing virtual dispatch into the same milestone.
 
 ### Design Notes (Non-Normative)
 
-The important point is to extend the existing PA15/PA16 object-model behavior rather than
-inventing a second, incompatible model just for polymorphism. Whether that reuse happens
-through shared code, shared data structures, or a careful reimplementation is up to you.
+The important point is to extend the existing PA16 behavior rather than inventing a second,
+incompatible model just for copy/value behavior. Whether that reuse happens through shared
+code, shared data structures, or a careful reimplementation is up to you.
 
-The same monotonic-extension rule applies here:
+An important implementation rule for this milestone is monotonic extension:
 
-- PA17 should add polymorphic behavior only for programs that actually use the supported
-  virtual feature set
-- it should not change PA16 outputs for programs that remain entirely within the PA16 subset
-- in practice, vtables, vpointer writes, and virtual-call lowering should be driven by the
-  presence of supported virtual members and polymorphic classes, not enabled eagerly for all
-  class code
+- PA17 should add value-semantics behavior only when the source actually requires it
+- it should not perturb PA16 outputs for programs that remain entirely inside the PA16
+  subset
+- in practice, that means copy constructor / copy-assignment support should only become
+  semantically visible when the program actually needs it, rather than eagerly changing the
+  behavior or emitted output for every class
+- "PA16 would have treated this as out of scope" is not a sufficient reason to let PA17
+  change the observable output of a still-valid PA16 program
 
 Useful intermediate representations include:
 
 - class metadata that distinguishes ordinary methods, constructors, destructors, and
-  virtual slots
-- explicit vtable/vpointer metadata separate from the source syntax tree
-- vtable layout derived deterministically from semantic class metadata rather
-  than source-text scans
-- explicit constructor/destructor/vpointer actions attached to the lowered function bodies
-- a direct-call vs. virtual-call distinction in the semantic IR so codegen does not have to
-  rediscover polymorphism from source syntax
+  synthesized special members
+- explicit constructor/destructor/copy actions attached to declarations and returns
+- for supported indirect-value local objects, those attached destructor actions should remain
+  the source of truth for scope cleanup during LowIR lowering rather than being recomputed
+  later from the lowered storage type alone
+- a calling-convention layer that can lower class values indirectly without changing the
+  source-level semantic types
+- a stable way to identify the supported temporary-materialization points without requiring
+  a fully general temporary lifetime model yet
+- allocation expressions lowered as ordinary construction/destruction actions
+  over explicit storage, rather than as a separate object model
+- conversion operators represented through the same typed overload-resolution
+  and conversion machinery used for ordinary calls

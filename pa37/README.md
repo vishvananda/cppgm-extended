@@ -17,8 +17,8 @@ You should complete PA36 before starting this assignment.
 You will reuse:
 
 - the PA13 LowIR syntax and semantics
-- the PA14 through PA36 source-to-LowIR lowering pipeline
-- the PA28 native backend, PA29 driver, PA30 ABI naming, and PA31 host-runtime path
+- the PA15 through PA36 source-to-LowIR lowering pipeline
+- the PA29 native backend, PA30 driver, PA14 ABI naming, and PA31 host-runtime path
 - the PA36 hosted compiler driver surface
 
 ### Starter Kit

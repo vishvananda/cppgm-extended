@@ -1,6 +1,6 @@
 #pragma once
 
-// ABI fact model for the PA30 standalone abimangle tool.
+// ABI fact model for the PA14 standalone abimangle tool.
 
 #include <cstddef>
 #include <string>
@@ -196,6 +196,7 @@ struct AbiType
   std::vector<AbiType> types;
   std::vector<std::string> argument_refs;
   std::vector<std::string> namespace_qualifiers;
+  std::vector<std::string> abi_tags;
 };
 
 struct AbiTemplateArgument

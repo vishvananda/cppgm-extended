@@ -4,19 +4,21 @@
 
 Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
 executes translation phases 1 through 7, parses them as PA10/PA19 translation units,
-reuses the PA11-PA12 semantic foundation, builds on the PA14-PA18 LowIR lowering path,
-adds the PA19 metaprogramming slice, and writes LowIR text.
+reuses the PA11-PA12 semantic foundation, builds on the PA15-PA18 LowIR lowering path,
+adds the first template-instantiation layer, and writes LowIR text.
 
-PA19 extends PA18’s first-tier templates with the first practical compile-time
-metaprogramming layer:
+PA19 adds the first usable template tier on top of the completed PA18 procedural/object/
+polymorphic compiler. It extends PA18 with:
 
-- integral non-type template parameters
-- integral non-type template arguments
-- type and non-type template parameter packs
-- pack expansions in supported declaration, call, and instantiated body shapes
-- explicit specialization of supported class templates and function templates
-- integral constant-expression evaluation for template arguments
-- `static_assert` over the supported integral constant-expression subset
+- function templates
+- class templates
+- type template parameters
+- default type template arguments
+- dependent names and current-instantiation lookup in supported template bodies
+- basic function-template argument deduction for direct calls
+- on-demand template instantiation for the supported class/function cases
+- template-backed operator overloads where the non-template PA12-PA18 machinery
+  already exists
 
 ### Prerequisites
 
@@ -28,18 +30,21 @@ You will want to reuse:
 - the PA10 AST as the syntax boundary
 - the PA11 declarator/type model
 - the PA12 call-resolution layer
-- the PA14-PA18 LowIR lowering path
+- the PA15-PA18 LowIR lowering path
 - the PA13 LowIR contract
 - the PA13 LowIR -> CY86 path as an optional secondary scaffold
-- the PA18 template declaration, lookup, deduction, and instantiation machinery
+- the PA16-PA18 class metadata, constructor/destructor machinery, and polymorphic lowering
 
 The intended direction is:
 
 - PA10 provides syntax
 - PA11 provides scope/type lookup
 - PA12 provides the procedural expression/call core
-- PA14-PA18 lower the supported language subsets to LowIR
-- PA19 extends the template layer with compile-time value arguments and explicit specialization
+- PA15 lowers the procedural subset
+- PA16 adds the basic non-virtual object model
+- PA17 adds the non-polymorphic value-semantics layer
+- PA18 extends that object model with scoped polymorphism
+- PA19 adds first-tier templates on top of that existing semantic/codegen stack
 
 ### Starter Kit
 
@@ -73,9 +78,14 @@ modes, driver mode, and optimized LowIR output are not part of PA19.
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
 `EXIT_SUCCESS`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA19 extends the PA18 LowIR
-subset only by making more of the source language lower into the already-defined LowIR
-family. PA19 does not introduce a new output format.
+The authoritative LowIR definition is `../pa13/lowir.md`. PA19 extends the PA18
+template-free object/polymorphism subset of that IR with the instantiated lowering needed by
+this milestone.
+
+PA19 writes a single concatenated LowIR program consisting of:
+
+- zero or more `global` definitions
+- zero or more `function` definitions
 
 LowIR top-level declaration/definition order is a presentation convention, not
 a dependency order. Reference outputs and canonical dumps use the order defined
@@ -88,6 +98,9 @@ Your output must also preserve order-sensitive LowIR regions when they are prese
 blocks, item order inside structured globals, vtable slot order, and action
 order inside generated initialization, finalization, constructor, destructor,
 and cleanup bodies.
+
+Template instantiation in PA19 should produce ordinary instantiated declarations which then
+lower through the existing PA15-PA18 LowIR conventions.
 
 The test harness checks that the generated LowIR is well formed and matches the
 checked-in `.ref` files after canonicalizing presentation details that are not
@@ -122,12 +135,12 @@ For each test case `x`:
 `make test` runs the checked-in local suite under `tests/`. The suite is split
 by test role:
 
-- `tests/spec/` contains N3485/spec-anchored PA19 metaprogramming tests. Each
+- `tests/spec/` contains N3485/spec-anchored first-tier template tests. Each
   provided C++ language test in this directory starts with a leading comment of the
   form `// N3485 focus: 14.x.y [clause.name] ...` so a reviewer can find the
   governing text in `../doc/n3485.txt`.
-- `tests/general/` contains broader metaprogramming tests that are useful for
-  PA19 but are not one-rule spec probes.
+- `tests/general/` contains broader first-tier generic-program tests that are
+  useful for PA19 but are not one-rule spec probes.
 
 The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated
@@ -135,16 +148,19 @@ LowIR for basic structural correctness, then compares the canonicalized LowIR
 against the checked-in reference. For rejected tests, the exit status is the
 checked result; exact diagnostic text is not checked.
 
-PA19 is tested against generated LowIR text. That LowIR is intended to become
-input for the later PA28 `lowir2native` backend, but that future native path is
-not the PA19 grading contract.
+PA19 is tested against the generated LowIR text. That LowIR is intended to
+become input for the later PA29 `lowir2native` backend, but that future native
+path is not the PA19 grading contract.
 
 ### Optional Student Test Ideas
 
-When adding your own tests, useful PA19 themes include explicit specialization
-ordering and visibility, integral non-type argument equivalence, type and
-non-type parameter packs, `sizeof...`, pack expansions, dependent non-type
-parameter types, and static data member specialization.
+When adding your own tests, useful PA19 themes include class/function template
+instantiation, default type template arguments, dependent versus non-dependent
+lookup, current-instantiation names, and direct function-template calls. Keep
+any such tests within the PA19 boundary below; parameter packs,
+template-template parameters, member/friend templates, non-type template
+arguments, partial specialization, full deduction, and SFINAE behavior belong
+to later assignments.
 
 ### PA19 Syntax Spec
 
@@ -157,18 +173,14 @@ As in the earlier assignments, that grammar defines accepted input syntax only. 
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
 `.ref` files.
 
-PA19 gives the following previously parsed forms semantic/code-generation
-meaning:
-
-- integral non-type template parameters such as `template<int N>`
-- template parameter packs and pack expansions such as `template<class... Ts>`
-  and `f(args...)`
-- explicit specialization syntax such as `template<> int f<int>(int)` and
-  `template<> struct Box<int> { ... }`
+Template declarations, template-parameter clauses, common template-id syntax,
+and later-template syntax such as non-type template parameters were already
+preserved by PA10; PA19 is the first milestone that gives a supported
+type-parameter subset of template syntax semantic/code-generation meaning.
 
 Passing PA18 is necessary but not sufficient for passing PA19: an input may be syntactically
-valid for PA10-PA19 and still be outside the supported PA19 metaprogramming slice described
-below.
+valid for PA10-PA18 and code-generation-valid for PA18 and still be outside the PA19
+template slice described below.
 
 A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
 `pa19.gram` as the source of truth.
@@ -185,100 +197,135 @@ treat `lowir.md` as authoritative. If they disagree about the PA19 lowering slic
 
 PA19 supports the following in addition to the PA18 subset:
 
-- class templates whose parameters may now include type parameter packs,
-  integral non-type parameters, and integral non-type parameter packs
-- function templates whose parameters may now include type parameter packs,
-  integral non-type parameters, and integral non-type parameter packs when the
-  arguments are supplied explicitly
-- pack expansions in supported declarations, direct calls, and instantiated
-  body shapes
-- integral constant-expression template arguments over the supported subset:
-  - literals, including ordinary character literals
-  - keyword literals `true` / `false`
-  - id-expressions naming supported constant bindings
-  - parenthesized expressions
-  - unary `+`, unary `-`, `!`, `~`
-  - binary arithmetic, shifts, comparisons, equality, bitwise, and logical operators
-  - conditional `?:`
-  - `sizeof...(parameter-pack)`
-  - `sizeof(type-id)` and `alignof(type-id)`
-  - supported cast expressions that fold to integral constant values
-- explicit specialization of supported class templates
-- explicit specialization of supported function templates
-- late explicit-specialization visibility and stale-primary refresh in the
-  supported class/function template cases
-- constant-valued template bindings over the supported subset, including class-scope
-  `static const` / `static constexpr` members and other ordinary metaprogramming helper
-  bindings that feed lookup, template arguments, or `static_assert`
-- dependent qualified type/value lookups at the practical level needed by the supported
-  metaprogramming subset
-- `static_assert` declarations whose condition is in the supported integral constant subset,
-  including conditions that remain template-dependent until instantiation
-- inline virtual members required by a concrete class-template vtable are
-  instantiated even without a direct source call; unrelated non-virtual member
-  bodies remain demand-driven
+- class templates whose parameters are:
+  - type parameters
+- function templates whose parameters are:
+  - type parameters
+- default template arguments for the supported type-parameter forms, including
+  defaults that refer to earlier parameters in the same template head
+- dependent type/value names in the supported declaration and expression forms
+- current-instantiation lookup in the supported class-template cases
+- `typename` and `template` disambiguators where they are needed by the PA19
+  dependent-name subset
+- explicit template-id use for supported class templates and function templates
+- explicit type arguments using the ordinary PA11 declarator/type forms,
+  including function types
+- ordinary lookup and using-declaration behavior for supported templates,
+  including repeated using-declarations of the same template and preservation
+  of an ordinarily visible function template when hidden non-template friends
+  share its name, and replay of a dependent-base using-declaration that names an
+  enumerator used by another enumerator; ordinary lookup must retain ambiguity
+  when distinct declarations are introduced by using-directives
+- basic template argument deduction for direct supported function-template calls
+  from ordinary argument types, without function-template partial ordering or
+  SFINAE
+- on-demand instantiation of the supported class-template and function-template cases,
+  including deferring unused conversion-function bodies and dependent defaulted
+  special-member dependencies, and waiting until an out-of-line owning destructor
+  is defined before demanding a completeness-dependent member destructor
+- instantiated specializations reuse supported PA17 rvalue-reference return
+  paths and PA18 virtual-destructor lifetime without changing their value
+  category or object-lifetime behavior
+- distinct local-class identities for separate function-template
+  specializations
+- declaration-owned template-parameter scopes across nested instantiations and
+  out-of-class member-definition bodies, including definition-time rejection
+  of a declaration that redeclares an active template parameter even when the
+  member is never instantiated
+- definition-time semantic checking of unused supported function-template and
+  qualified inline member bodies, including ordinary block and condition
+  scopes and the distinction between type names and value names; class bit-field
+  members remain valid value expressions in those bodies
+- qualified class-template-ids in function declarators are parsed in their own
+  declaration context rather than being captured by an unrelated function
+  template with the same unqualified name
+- class-template instantiation preserves the class-scope rule that a name which
+  has become a typedef-name cannot be redefined by another typedef declaration
+- compatible function-template declarations and definitions in either order
+- dependent-base lookup provenance attached to the particular base-specifier,
+  so a nested class with a fixed base keeps ordinary base lookup and a local
+  class in a function template independently classifies its own dependent base
+- out-of-class definitions of nested classes declared inside the supported class templates,
+  when those nested classes stay within the already supported PA16-PA18 class/value/
+  polymorphic machinery
+- distinct nested types from different class-template specializations remain distinct in
+  overload resolution, and a dependent local type alias used by `new` resolves to the
+  concrete specialization before constructor selection
+- ordinary PA10 function declarator forms, including trailing return types, on the supported
+  function-template cases
+- instantiated specialization names that then participate in the ordinary PA16-PA18
+  class/method/codegen machinery
+- template-backed overload participation where the non-template PA12-PA18 machinery already
+  exists, including function-template operator overloads
+- ordinary member typedef hiding and injected-name lookup during re-entrant
+  class-template instantiation
 
-Within this milestone, PA19 should produce valid LowIR for ordinary metaprogramming code
-over the supported PA18 language subset. That LowIR is intended to be accepted
-by the later PA28 `lowir2native` backend for the supported cases. PA13
-`lowir2cy86` remains an optional execution scaffold.
+Within this milestone, PA19 should produce valid LowIR for ordinary generic code over the
+supported PA18 subset. That LowIR is intended to be accepted by the later PA29
+`lowir2native` backend for the supported cases. PA13 `lowir2cy86` remains an
+optional execution scaffold.
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA19:
 
+- template-template parameters
+- template parameter packs and pack expansions
+- member templates and friend templates
+- semantic support for non-type template parameters and non-type template
+  arguments
 - partial specialization
-- pointer, reference, member-pointer, class-type, and other non-integral
-  non-type template parameters
-- SFINAE and substitution-failure candidate dropping
-- full standard-conforming two-phase lookup
-- constexpr function evaluation
-- function-template deduction of non-type arguments
-- full function-template deduction and partial ordering
+- explicit specialization
+- full standard two-phase lookup
+- function-template partial ordering
+- substitution-failure candidate dropping and SFINAE
+- full `constexpr` evaluation
 - alias templates and variable templates
 - hosted/vendor-only template traits and intrinsics
-- template metaprogramming that depends on unsupported PA14-PA18 language features
+- template-aware virtual dispatch beyond ordinary instantiated class reuse
+- templates whose definitions rely on unsupported PA16-PA18 class/value/polymorphic features
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended next stages are:
+The intended next stage is PA20, which adds the first practical metaprogramming layer on top
+of the basic PA19 template machinery:
 
-- PA20: complete the language-level constant-evaluation model over the existing LowIR path
-- PA21 and PA22: finish the remaining template specialization, deduction, substitution, and
-  SFINAE work on top of that constant-evaluation engine
-- PA23: check that the individual template features from PA18, PA19, PA21, and
-  PA22 compose without breaking their basic behavior
-- PA28: retarget the settled LowIR language surface to the real native backend
+- integral non-type template parameters and arguments
+- explicit specialization of supported class/function templates
+- integral constant-expression template arguments
+- `static_assert`-style metaprogramming support
 
-So PA19 should leave behind:
-
-- a stable template/metaprogramming semantic layer
-- ordinary instantiated declarations ready for LowIR lowering
-- no PA19-specific output representation beyond LowIR itself
+So PA19 should leave behind a clean first-tier instantiation layer rather than trying to
+solve the full template language at once. Partial specialization, SFINAE
+metaprogramming, and full `constexpr` evaluation remain later work.
 
 ### Design Notes (Non-Normative)
 
-PA19 should extend the existing template machinery, not replace it.
+The important point is to add templates as an extension of the existing PA16-PA18 language
+behavior rather than building a separate generic-only compiler with different rules. Whether
+that reuse happens through shared code, shared data structures, or a careful
+reimplementation is up to you.
 
 The same monotonic-extension rule applies here:
 
-- PA19 should add metaprogramming behavior only when the source actually uses the supported
-  PA19 feature set
+- PA19 should add template behavior only when the source actually uses the supported
+  template feature set
 - it should not perturb PA18 outputs for programs that remain entirely within the PA18
   subset
-- in practice, packs, non-type template arguments, explicit specialization, and
-  `static_assert` should stay on-demand rather than eagerly changing the
-  behavior of ordinary earlier programs that do not use those features
+- in practice, template lookup and instantiation should stay on-demand rather than eagerly
+  changing the behavior of ordinary earlier-milestone programs that do not use the PA19
+  template subset
 
 Useful intermediate representations include:
 
-- template parameters that distinguish type, pack, and integral value slots
-- template arguments that carry canonical constant values rather than only source text
-- explicit-specialization tables that plug into the existing instantiation machinery
-- a specialization lookup step that runs before instantiation so late visible
-  specializations replace stale primary-template instantiations in the supported
-  cases
-- compile-time constant bindings that can be reused by both `static_assert` and template
-  argument resolution
+- explicit template declarations stored separately from ordinary instantiated declarations
+- template-parameter scopes that can be rebound during instantiation
+- instantiated class/function records that reuse the ordinary PA16-PA18 metadata/lowering
+- typed template arguments and bindings rather than source-text template replay
+- a clear separation between:
+  - parsing template syntax
+  - collecting template declarations
+  - deducing or resolving template arguments
+  - instantiating ordinary specialized declarations

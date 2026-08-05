@@ -73,7 +73,7 @@ There is no separate PA34 reference binary in the starter kit. The checked-in
 
 Previously required:
 
-- the PA29 compile/link surface: `-c`, default link mode, `-I`, `-L`, `-l`, and
+- the PA30 compile/link surface: `-c`, default link mode, `-I`, `-L`, `-l`, and
   `--target`
 - the PA32/PA33 host-compatible behavior for the relevant compile-mode subset
 
