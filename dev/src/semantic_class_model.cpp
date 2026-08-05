@@ -8826,6 +8826,9 @@ void validate_constexpr_constructor_initialization(SemanticContext & ctx,
        constructor->is_deleted ||
        constructor->is_defaulted ||
        constructor->synthesized ||
+       (info.source_template &&
+        !info.is_explicit_specialization &&
+        !constructor->is_explicit_specialization) ||
        constructor->delegating_constructor_target ||
        constructor_initializer_delegates_to_class(
            constructor->ctor_initializer, info)) {
