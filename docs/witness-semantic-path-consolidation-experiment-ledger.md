@@ -81,6 +81,14 @@ comparisons remained clean. The deleted producer is absent, provenance records
 fell from 118,957 to 118,158, and renderer canonicalization removals fell from
 394 to 132; the exact 262-row reduction belongs to the removed producer.
 
+After accepting the return-type and location-replay removals, the next strict
+trace is `/tmp/cppgm-witness-provenance-location-replay.d2XOwd` and its report
+is `/tmp/cppgm-witness-provenance-location-replay-report.json`. All 1,305
+strict comparisons remained clean. The three accepted producers are absent,
+the two location routes are absent, trace records fell to 117,271, and the
+remaining seven upstream routes retain their prior counts except template-
+argument replay, which fell from 63 to 62 calls.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -118,12 +126,12 @@ dead/redundant code:
 | Overload owner reconstruction | 24/23 | 9/9 | overload-side instantiated class owner lookup, anchor recovery, and binding reconstruction | selected class-reference result | clean | 4860/4860 | 177831649503 (+0.26%) | 766881792 (+0.88%) | 594264064 (-0.04%) | none |
 | Explicit-specialization return-type replay | 23/22 | 9/9 | out-of-class definition specifier-side owner lookup, specialization selection, binding reconstruction, and nested-location replay | ordinary resolved return type and canonical out-of-class owner results | clean | 4860/4860 | 177398555921 (-0.24%) | 770449408 (+0.47%) | 594251776 (-0.00%) | none |
 | Location-only nested class replay | 22/21 | 9/7 | two public location callbacks, token-location traversal, 810 route calls, and 74 duplicate/rejected class-use attempts | structured template-id, template-argument, and AST resolution results | clean | 4860/4860 | 177950357593 (+0.31%) | 766509056 (-0.51%) | 594440192 (+0.03%) | none |
-| Lookup-time alias-to-class recovery | 21/20 | 7/7 | post-lookup class extraction, source-token/argument recovery, selection/anchor reconstruction, and 88 rejected attempts | canonical class-template reference results created during type lookup | pending | pending | pending | pending | pending | pending |
+| Lookup-time alias-to-class recovery | 21/20 | 7/7 | post-lookup class extraction, source-token/argument recovery, selection/anchor reconstruction, and 88 rejected attempts | canonical class-template reference results created during type lookup | clean | 4860/4860 | 177232319852 (-0.40%) | 768655360 (+0.28%) | 590512128 (-0.66%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `+0.33%` instructions, `+0.83%` maximum RSS,
-and `-0.01%` footprint, so it is also within all three final fixed-baseline
-limits.
+fixed diagnostic checkpoint it is `-0.08%` instructions, `+1.12%` maximum RSS,
+and `-0.67%` footprint. Later slices must recover about `0.12%` RSS for the
+final fixed-baseline gate.
 
 ## Rejected slices
 
