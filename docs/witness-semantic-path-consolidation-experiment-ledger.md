@@ -100,3 +100,13 @@ dead/redundant code:
 | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- |
 | Parent | 24/24 | 9/9 | none | none | clean | clean | 177731452181 | 768765952 | 593932288 | none |
 | Diagnostic provenance | 24/24 | 9/9 | none | none | clean | 4860/4860 | 177466053572 | 760369152 | 593911808 | none |
+
+## Rejected slices
+
+- `0f6adcf8f` removed the uncalled dependent-partial class-use resolver
+  (`24 -> 23` sites). Strict direct comparison and the full `4860/4860`
+  report passed, but the single candidate run regressed instructions by 0.15%
+  and RSS by 1.29% (footprint improved by 0.02%). The report is
+  `/tmp/cppgm-witness-consolidation-candidate-dead-dependent-partial.json`.
+  The candidate was not promoted or rerun and was explicitly reverted by
+  `1cc9a2e53`.
