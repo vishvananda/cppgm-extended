@@ -20428,6 +20428,10 @@ private:
       const std::string & node_use_location,
       bool allow_concrete_dependent_argument_spelling = false) override
   {
+    if(!witness::source_capture_enabled(template_witness_context()) ||
+       !type_matches_current_function_result(scope, type)) {
+      return;
+    }
     CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
         template_witness_context().session,
         witness::WitnessUpstreamRoute::ClassUseFromResolvedTypeNode);
@@ -20436,29 +20440,7 @@ private:
         node,
         type,
         node_use_location,
-        allow_concrete_dependent_argument_spelling,
-        witness::ClassUseEmissionOrigin::ResolvedTemplateId);
-  }
-
-  void record_declaration_type_class_use_for_resolved_type_node(
-      Scope & scope,
-      const CppAstNode & node,
-      const TypePtr & type,
-      const std::string & node_use_location,
-      bool allow_concrete_dependent_argument_spelling = false,
-      bool clear_template_id_occurrence = false) override
-  {
-    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
-        template_witness_context().session,
-        witness::WitnessUpstreamRoute::DeclarationClassUseFromResolvedTypeNode);
-    record_class_use_for_resolved_type_node_impl(
-        scope,
-        node,
-        type,
-        node_use_location,
-        allow_concrete_dependent_argument_spelling,
-        witness::ClassUseEmissionOrigin::DeclarationTypeSource,
-        clear_template_id_occurrence);
+        allow_concrete_dependent_argument_spelling);
   }
 
   void record_class_use_for_resolved_type_node_impl(
@@ -20466,13 +20448,8 @@ private:
       const CppAstNode & node,
       const TypePtr & type,
       const std::string & node_use_location,
-      bool allow_concrete_dependent_argument_spelling,
-      witness::ClassUseEmissionOrigin origin,
-      bool clear_template_id_occurrence = false)
+      bool allow_concrete_dependent_argument_spelling)
   {
-    if(!witness::source_capture_enabled(template_witness_context())) {
-      return;
-    }
     template_api::ClassTemplateUseInfo use;
     std::string type_text = trim_space(node_text(node));
     std::vector<std::string> explicit_arg_texts;
@@ -20688,8 +20665,7 @@ private:
         use.origin &&
         use.origin->declaring_scope &&
         use.origin->declaring_scope->class_info;
-    if(origin == witness::ClassUseEmissionOrigin::ResolvedTemplateId &&
-       resolved_template_is_member_template &&
+    if(resolved_template_is_member_template &&
        source_location_in_current_template_body_range(use_location)) {
       return;
     }
@@ -20714,12 +20690,8 @@ private:
     request.template_id_occurrence.empty_argument_list =
         explicit_arg_texts.empty();
     request.template_id_occurrence.conversion_result_type_use =
-        (origin == witness::ClassUseEmissionOrigin::DeclarationTypeSource &&
-         allow_concrete_dependent_argument_spelling) ||
-        (origin == witness::ClassUseEmissionOrigin::ResolvedTemplateId &&
-         type_matches_current_conversion_result(scope, type));
+        type_matches_current_conversion_result(scope, type);
     request.template_id_occurrence.function_result_type_use =
-        origin == witness::ClassUseEmissionOrigin::ResolvedTemplateId &&
         type_matches_current_function_result(scope, type);
     request.template_id_occurrence.in_template_body =
         scope_has_template_placeholders(scope) ||
@@ -20807,10 +20779,6 @@ private:
       }
       request.template_id_occurrence.arguments.push_back(argument);
     }
-    if(clear_template_id_occurrence) {
-      request.template_id_occurrence =
-          semantic_source_use::SourceTemplateIdOccurrence();
-    }
     template_api::append_template_witness_source_bindings(
         *this,
         request.bindings,
@@ -20829,7 +20797,7 @@ private:
           "deduced");
     }
     request.ownership = witness::SourceUseOwnership::SourceOwned;
-    request.origin = origin;
+    request.origin = witness::ClassUseEmissionOrigin::ResolvedTemplateId;
     const bool parent_class_use_records =
         witness::class_use_recording_enabled(request.origin);
     CPPGM_SET_WITNESS_PRODUCER(
@@ -20841,10 +20809,8 @@ private:
                                                         type_template_syntax->argument_syntaxes,
                                                         witness::SourceUseOwnership::SourceOwned,
                                                         std::string(),
-                                                        clear_template_id_occurrence ?
-                                                            witness::SourceUseRole::QualifierUse :
-                                                            witness::SourceUseRole::TypeUse,
-                                                        clear_template_id_occurrence);
+                                                        witness::SourceUseRole::TypeUse,
+                                                        false);
     }
   }
 
@@ -21098,46 +21064,6 @@ private:
                                    parameter_object_types_out);
     if(!parsed) {
       return false;
-    }
-    const bool record_reference_parameter_template_uses =
-        !reference_class_templates_only ||
-        template_api::class_is_explicit_specialization(scope.class_info);
-    if(record_reference_parameter_template_uses &&
-       witness::source_capture_enabled(template_witness_context())) {
-      std::size_t parameter_index = 0;
-      for(size_t i = 0; i < node.children.size(); ++i) {
-        const CppAstNode & child = node.children[i];
-        if(child.kind != CppAstKind::parameter_declaration) {
-          continue;
-        }
-        if(parameter_index >= params.size()) {
-          break;
-        }
-        const TypePtr & parameter_type = params[parameter_index].second;
-        ++parameter_index;
-        template_api::ClassTemplateUseInfo use;
-        if(!parameter_type ||
-           !template_api::class_template_use_info_for_type(*this,
-                                                           scope,
-                                                           parameter_type,
-                                                           use) ||
-           !use.origin ||
-           !use.origin->declaring_scope ||
-           !use.origin->declaring_scope->class_info ||
-           !node_has_template_id_syntax_for_unqualified_name(child,
-                                                             use.origin->name)) {
-          continue;
-        }
-        const std::string parameter_location =
-            template_api::normalize_template_witness_source_location(
-                prefer_later_source_location(
-                    source_location_for_node(child),
-                    earliest_child_source_location_for_node(child)));
-        record_declaration_type_class_use_for_resolved_type_node(scope,
-                                                                 child,
-                                                                 parameter_type,
-                                                                 parameter_location);
-      }
     }
     for(size_t i = 0; i < params.size(); ++i) {
       if(params[i].second) {

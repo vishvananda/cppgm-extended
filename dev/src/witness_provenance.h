@@ -76,7 +76,6 @@ enum class WitnessUpstreamRoute
   StaticMemberDefinitionClassUseFromAstNode,
   DeducedClassUseFromResolvedAliasType,
   ClassUseFromResolvedTypeNode,
-  DeclarationClassUseFromResolvedTypeNode,
 };
 
 const char * producer_site_name(WitnessProducerSite site);
