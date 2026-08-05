@@ -7287,6 +7287,80 @@ private:
           }
           const bool base_is_alias = alias_template != nullptr;
           if(base_is_alias) {
+            vector<string> source_arg_texts =
+                template_id_argument_witness_source_texts(
+                    *base_template_syntax);
+            vector<TemplateArgument> alias_arguments;
+            if(alias_template &&
+               witness::source_capture_enabled(template_witness_context()) &&
+               resolve_template_arguments(*pattern_scope,
+                                          alias_template->parameters,
+                                          source_arg_texts,
+                                          &base_template_syntax->argument_syntaxes,
+                                          alias_arguments,
+                                          alias_template->declaring_scope)) {
+              vector<string> witness_source_arg_texts = source_arg_texts;
+              template_argument_semantics::
+                  canonicalize_alias_template_source_argument_texts(
+                      alias_template->parameters,
+                      witness_source_arg_texts);
+              witness::AliasUseEmitRequest request;
+              request.use_location = base_location;
+              request.template_id_occurrence =
+                  witness::make_source_template_id_occurrence(base_location,
+                                                              witness_source_arg_texts);
+              fill_template_id_source_occurrence_argument_facts(
+                  *pattern_scope,
+                  witness_source_arg_texts,
+                  &base_template_syntax->argument_syntaxes,
+                  alias_arguments,
+                  request.template_id_occurrence);
+              template_api::with_template_services(
+                  *this,
+                  [&](template_api::TemplateServices & services)
+                  {
+                    template_argument_semantics::
+                        mark_alias_template_value_owner_argument_facts(
+                            services,
+                            pattern_scope,
+                            *alias_template,
+                            alias_arguments,
+                            &base_template_syntax->argument_syntaxes,
+                            request.template_id_occurrence);
+                  });
+              request.template_name =
+                  template_api::alias_template_witness_entity(alias_template);
+              const semantic_model::SourceDeclAnchorCache & decl_anchor =
+                  semantic_trace::alias_template_decl_anchor(*this,
+                                                             alias_template);
+              witness::set_selected_decl_anchor(request.selected_decl_location,
+                                                request.selected_decl_anchor,
+                                                decl_anchor);
+              request.selected_decl_anchor_explicit = true;
+              request.origin = witness::AliasUseEmissionOrigin::BaseClauseTemplateId;
+              template_api::append_template_witness_source_bindings(
+                  *this,
+                  request.bindings,
+                  alias_template->parameters,
+                  alias_arguments,
+                  witness_source_arg_texts,
+                  "explicit",
+                  "defaulted",
+                  false);
+              rewrite_current_specialization_alias_binding_texts(
+                  *this,
+                  *pattern_scope,
+                  alias_template->parameters,
+                  alias_arguments,
+                  witness_source_arg_texts,
+                  &base_template_syntax->argument_syntaxes,
+                  request.bindings,
+                  &request.template_id_occurrence);
+              CPPGM_SET_WITNESS_PRODUCER(
+                  request,
+                  witness::WitnessProducerSite::AliasCallsemantic01);
+              witness::emit_alias_use(template_witness_context(), request);
+            }
             emit_nested_alias_use_source_events_from_location(
                 *pattern_scope,
                 base_location,

@@ -57,6 +57,7 @@ enum class AliasUseEmissionOrigin
   ResolvedAliasTemplateId,
   DirectSourceTemplateId,
   PatternTemplateId,
+  BaseClauseTemplateId,
   QualifiedSourceTemplateId,
   NestedSourceTemplateId
 };
@@ -220,6 +221,7 @@ inline bool alias_use_origin_records_during_source_capture_pause(
   case AliasUseEmissionOrigin::PatternTemplateId:
     return false;
   case AliasUseEmissionOrigin::DirectSourceTemplateId:
+  case AliasUseEmissionOrigin::BaseClauseTemplateId:
   case AliasUseEmissionOrigin::QualifiedSourceTemplateId:
   case AliasUseEmissionOrigin::NestedSourceTemplateId:
     return true;
