@@ -20854,6 +20854,113 @@ private:
     return true;
   }
 
+  bool record_dependent_partial_class_use_for_resolved_template_id(
+      Scope & scope,
+      const QualifiedName & name,
+      const std::vector<std::string> & source_arg_texts,
+      const std::string & source_use_location,
+      ClassTemplateDecl & class_template,
+      const ClassInfo & info,
+      const std::vector<TemplateArgument> & arguments)
+  {
+    if(!witness::source_capture_enabled(template_witness_context()) ||
+       name.name.empty() ||
+       !info.template_output_node) {
+      return false;
+    }
+    const PartialClassTemplateSpecializationDecl * selected_partial = nullptr;
+    for(size_t i = 0; i < class_template.partial_specializations.size(); ++i) {
+      const PartialClassTemplateSpecializationDecl & partial =
+          class_template.partial_specializations[i];
+      if(partial.class_node == info.template_output_node &&
+         partial.class_node) {
+        selected_partial = &partial;
+        break;
+      }
+    }
+    if(!selected_partial) {
+      return false;
+    }
+    const std::string anchor_identifier =
+        !unqualified_member_name(name.name).empty() ?
+            unqualified_member_name(name.name) :
+            name.name;
+    std::string use_location =
+        template_api::normalize_template_witness_source_location(source_use_location);
+    if(use_location.empty()) {
+      return false;
+    }
+    if(!source_location_points_at_identifier(use_location, anchor_identifier)) {
+      return false;
+    }
+
+    template_api::specialization::ClassSpecializationSelection selection;
+    selection.class_node = selected_partial->class_node;
+    selection.binding_scope = selected_partial->declaring_scope;
+    selection.parameters = &selected_partial->parameters;
+    selection.arguments = arguments;
+    selection.kind = template_api::MS_PARTIAL_SPECIALIZATION;
+    const witness::TemplateWitnessSourceAnchor selected_decl_anchor =
+        class_use_selected_decl_anchor(&class_template, selection);
+    if(!selected_decl_anchor.location.empty() &&
+       use_location == selected_decl_anchor.location) {
+      return false;
+    }
+
+    witness::ClassUseEmitRequest request;
+    request.location = use_location;
+    request.template_name =
+        template_api::class_template_witness_qualified_name(
+            *this,
+            class_template);
+    request.selection = witness::SourceSelectionKind::ExplicitSpecialization;
+    request.use_anchor_present = true;
+    request.use_anchor_location = use_location;
+    request.selected_decl_location = selected_decl_anchor.location;
+    request.selected_decl_anchor = selected_decl_anchor;
+    request.template_id_occurrence =
+        witness::make_source_template_id_occurrence(use_location,
+                                                    source_arg_texts);
+    request.template_id_occurrence.in_template_body =
+        scope_has_template_placeholders(scope) ||
+        scope_is_inside_source_template_context(scope) ||
+        witness::current_template_witness_entry_context().origin ==
+            witness::TemplateWitnessOrigin::Closure;
+    request.template_id_occurrence.current_specialization_use = true;
+    request.template_id_occurrence.has_dependent_argument = true;
+    for(std::size_t i = 0;
+        i < request.template_id_occurrence.arguments.size() &&
+        i < arguments.size();
+        ++i) {
+      const TemplateArgument & argument = arguments[i];
+      request.template_id_occurrence.arguments[i].dependent =
+          (argument.kind == TemplateArgument::TA_TYPE &&
+           type_depends_on_template_parameter(argument.type)) ||
+          (argument.kind == TemplateArgument::TA_VALUE &&
+           argument.dependent) ||
+          ((argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+            argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) &&
+           (argument.dependent || argument.template_decl == nullptr));
+    }
+    template_api::append_template_witness_source_bindings(
+        *this,
+        request.bindings,
+        class_template.parameters,
+        arguments,
+        source_arg_texts,
+        "explicit",
+        "defaulted");
+    canonicalize_template_parameter_source_bindings(request.bindings,
+                                                    arguments,
+                                                    selected_partial->parameters);
+    request.ownership = witness::SourceUseOwnership::SourceOwned;
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassCallsemantic09);
+    witness::emit_class_use(request);
+    return true;
+  }
+
   void record_deduced_class_use_for_resolved_alias_type(
       Scope & scope,
       const TypePtr & type,

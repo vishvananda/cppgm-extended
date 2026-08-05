@@ -433,6 +433,7 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(ClassCallsemantic06, "class.callsemantic.06");
   CPPGM_PRODUCER_NAME(ClassCallsemantic07, "class.callsemantic.07");
   CPPGM_PRODUCER_NAME(ClassCallsemantic08, "class.callsemantic.08");
+  CPPGM_PRODUCER_NAME(ClassCallsemantic09, "class.callsemantic.09");
   CPPGM_PRODUCER_NAME(ClassCallsemantic10, "class.callsemantic.10");
   CPPGM_PRODUCER_NAME(ClassCallsemantic11, "class.callsemantic.11");
   CPPGM_PRODUCER_NAME(ClassCallsemantic12, "class.callsemantic.12");
