@@ -126,7 +126,7 @@ Sites not exercised by the existing strict witness references are tracked
 until they are reached by an earliest-owning-PA reducer or removed as proven
 dead/redundant code:
 
-- class: `callsemantic.01`, `.03`, `.05`, `.09`,
+- class: `callsemantic.01`, `.03`, `.05`,
   `class_template_reference.01`, `constant_value_lookup.04`, `.05`, and
   `template_declaration_collector`;
 - alias: `template_specialization.01`, `.02`, and `callsemantic.01`;
