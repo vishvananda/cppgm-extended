@@ -6946,6 +6946,16 @@ bool try_parse_conversion_operator_result_type(SemanticContext & ctx,
             << (record_conversion_result_class_use ? "yes" : "no");
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
+    if(record_conversion_result_class_use) {
+      const CppAstNode & source_use_node =
+          conversion_type_id ? *conversion_type_id : *identifier;
+      ctx.record_declaration_type_class_use_for_resolved_type_node(
+          scope,
+          source_use_node,
+          out,
+          ctx.source_location_for_node(source_use_node),
+          allow_concrete_dependent_argument_spelling);
+    }
     return true;
   }
 

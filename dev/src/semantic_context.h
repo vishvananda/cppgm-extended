@@ -146,6 +146,13 @@ public:
       const cpp_decl::TypePtr & type,
       const std::string & node_use_location,
       bool allow_concrete_dependent_argument_spelling = false) = 0;
+  virtual void record_declaration_type_class_use_for_resolved_type_node(
+      semantic_model::Scope & scope,
+      const CppAstNode & node,
+      const cpp_decl::TypePtr & type,
+      const std::string & node_use_location,
+      bool allow_concrete_dependent_argument_spelling = false,
+      bool clear_template_id_occurrence = false) = 0;
   virtual void record_primary_alias_base_source_uses(
       semantic_model::ClassTemplateDecl & decl) = 0;
   virtual bool node_comes_from_standard_include_path(

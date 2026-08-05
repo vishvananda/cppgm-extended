@@ -2341,6 +2341,11 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
               callsem_local_static_guard_symbol(var_node));
         }
       }
+      ctx.record_declaration_type_class_use_for_resolved_type_node(
+          scope,
+          *specifiers,
+          type,
+          ctx.source_location_for_node(*specifiers));
       decl_node.children.push_back(std::move(var_node));
     }
   }
