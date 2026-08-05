@@ -8496,12 +8496,10 @@ private:
                   const std::string & use_location) -> void
           {
             const bool trace_enabled = parser_trace::enabled("template.resolve");
-            const bool source_capture_enabled =
-                witness::source_capture_enabled(template_witness_context());
             if(use_location.empty() || !resolved_info) {
               return;
             }
-            if(!trace_enabled && !source_capture_enabled) {
+            if(!trace_enabled) {
               return;
             }
             if(resolved_info->template_instantiation_in_progress ||
@@ -8704,8 +8702,6 @@ private:
                         *class_template) :
                     class_template->name;
             std::string selected_decl_location;
-            witness::TemplateWitnessSourceAnchorKind selected_decl_anchor_kind =
-                witness::TemplateWitnessSourceAnchorKind::None;
             {
               std::vector<const CppAstNode *> decl_candidates;
               if(selection_for_note.kind == template_api::MS_PRIMARY) {
@@ -8743,16 +8739,9 @@ private:
                 selected_decl_location = source_location_for_name_in_node(
                     *decl_candidates[i],
                     class_template->name);
-                if(!selected_decl_location.empty()) {
-                  selected_decl_anchor_kind =
-                      witness::TemplateWitnessSourceAnchorKind::DeclarationName;
-                } else {
+                if(selected_decl_location.empty()) {
                   selected_decl_location =
                       source_location_for_node(*decl_candidates[i]);
-                  if(!selected_decl_location.empty()) {
-                    selected_decl_anchor_kind =
-                        witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-                  }
                 }
                 selected_decl_location =
                     template_api::normalize_template_witness_source_location(
@@ -8765,65 +8754,6 @@ private:
             if(!selected_decl_location.empty() &&
                source_event_location == selected_decl_location) {
               return;
-            }
-
-            if(source_capture_enabled) {
-              witness::ClassUseEmitRequest request;
-              request.location = source_event_location;
-              request.template_name = qualified_template_name;
-              request.selection =
-                  source_selection_kind_for_match_kind(selection_for_note.kind);
-              witness::set_selected_decl_anchor(request.selected_decl_location,
-                                                request.selected_decl_anchor,
-                                                selected_decl_location,
-                                                selected_decl_anchor_kind);
-              const std::string source_template_name =
-                  unqualified_member_name(qualified_template_name);
-              const std::string anchor_identifier =
-                  !source_template_name.empty() ?
-                      source_template_name :
-                      qualified_template_name;
-              const bool use_source_spelling =
-                  source_location_points_at_identifier(
-                      source_event_location,
-                      anchor_identifier);
-              if(!use_source_spelling) {
-                return;
-              }
-              request.use_anchor_present = true;
-              request.use_anchor_location = source_event_location;
-              if(template_argument_texts_mention_instantiated_class_local_type_aliases(
-                     scope,
-                     *binding_arg_texts)) {
-                return;
-              }
-                template_api::append_template_witness_source_bindings(
-                    *this,
-                    request.bindings,
-                    class_template->parameters,
-                    resolved_arguments_for_note,
-                    *binding_arg_texts,
-                    "explicit",
-                    "defaulted");
-              if(selection_for_note.parameters &&
-                 selection_for_note.parameters != &class_template->parameters) {
-                template_api::append_template_witness_source_bindings(
-                    *this,
-                    request.specialization_bindings,
-                    *selection_for_note.parameters,
-                    selection_for_note.arguments,
-                    "deduced");
-              }
-              CPPGM_SET_WITNESS_PRODUCER(
-                  request,
-                  witness::WitnessProducerSite::ClassCallsemantic03);
-              witness::emit_class_use(request);
-              if(arg_syntaxes) {
-                emit_nested_class_use_source_events_from_syntaxes(scope,
-                                                                  *arg_syntaxes,
-                                                                  witness::SourceUseOwnership::NestedDerived,
-                                                                  request.template_name);
-              }
             }
 
             if(trace_enabled) {
