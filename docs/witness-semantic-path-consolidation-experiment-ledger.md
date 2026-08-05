@@ -147,11 +147,11 @@ dead/redundant code:
 | Parameter-declaration class rewalk | 20/19 | 7/7 | post-parse parameter AST traversal, source-location recovery, and 84 duplicate/provisional class-use attempts | canonical resolved parameter types and class-template references | clean | 4860/4860 | 177256271702 (+0.01%) | 766726144 (-0.25%) | 590671872 (+0.03%) | none |
 | Constant-value qualifier replay | 19/18 | 7/7 | constexpr-only qualifier syntax checks, owner extraction, specialization selection, anchor/binding reconstruction, and 19 staged attempts | ordinary qualified-id/class-template resolution results | clean | 4860/4860 | 177064422264 (-0.11%) | 766369792 (-0.05%) | 591138816 (+0.08%) | none |
 | Static-member initializer tail scan | 18/17 | 7/6 | public after-location callback, token scan after initializer start, and 13 calls that produced no class-use attempt | structured initializer expression semantics | clean | 4860/4860 | 177151210925 (+0.05%) | 765370368 (-0.13%) | 590516224 (-0.11%) | none |
+| Out-of-class owner replay | 17/16 | 6/6 | declaration-collector specifier-side owner lookup, specialization selection, binding reconstruction, and an unexercised class-use producer | canonical out-of-class owner emission after method binding resolution | clean | 4860/4860 | 176487122962 (-0.13%) | 759590912 (+1.17%) | 590536704 (+0.01%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.36%` instructions, `-1.23%` maximum RSS,
-and `-0.68%` footprint, so it is also within all three final fixed-baseline
-limits.
+fixed diagnostic checkpoint it is `-0.50%` instructions, `-0.08%` maximum RSS,
+and `-0.67%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
