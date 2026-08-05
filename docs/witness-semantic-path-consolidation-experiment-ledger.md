@@ -150,10 +150,11 @@ dead/redundant code:
 | Out-of-class owner replay | 17/16 | 6/6 | declaration-collector specifier-side owner lookup, specialization selection, binding reconstruction, and an unexercised class-use producer | canonical out-of-class owner emission after method binding resolution | clean | 4860/4860 | 176487122962 (-0.13%) | 759590912 (+1.17%) | 590536704 (+0.01%) | none |
 | Lookup-time concrete class-use replay | 16/15 | 6/6 | post-lookup class extraction, source-token and argument recovery, selection and anchor reconstruction, and an unexercised producer | canonical class-template references created during type lookup | clean | 4860/4860 | 176973791780 (+0.00%) | 762613760 (-0.80%) | 590491648 (-0.06%) | none |
 | Declaration resolved-type replay | 15/15 | 6/5 | declaration-type replay route and its semantic-context plumbing | retained function-result replay for functional-cast occurrence metadata | clean | 4860/4860 | 176930812572 (-0.02%) | 761339904 (-0.17%) | 589987840 (-0.09%) | none |
+| Class base-clause reconstruction | 15/14 | 5/5 | direct class-template lookup, argument resolution, source-decision reconstruction, and a dormant producer during a base-clause rewalk | canonical base-type resolution during class-template instantiation | clean | 4860/4860 | 176608992504 (-0.05%) | 766824448 (+0.73%) | 590385152 (+0.02%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.38%` instructions, `+0.14%` maximum RSS,
-and `-0.72%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.43%` instructions, `+0.87%` maximum RSS,
+and `-0.69%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -166,15 +167,6 @@ and `-0.72%` footprint, so it also clears the final fixed-baseline gates.
 | Eager child-`declval` replay | function call 3/3 | pre-analysis callee and argument walk plus repeated child expression construction solely for witness capture | ordinary recursive argument expression analysis | clean | 4860/4860 | 176703697462 (-0.00%) | 761233408 (+0.52%) | 590262272 (-0.01%) |
 
 ## Rejected slices
-
-- `de9ad2152` removed the dormant class-use reconstruction from the
-  base-clause replay (`17 -> 16` sites). Strict direct comparison and the full
-  `4860/4860` report passed. Its three-run medians also passed the rolling
-  checkpoint (`-0.18%` instructions, `+0.43%` RSS, and `-0.05%` footprint),
-  but maximum RSS was `768667648`, or `+1.12%` against the fixed diagnostic
-  baseline. That exceeds the final 1% RSS limit, so the candidate was not
-  promoted or rerun and was explicitly reverted by `50eb2232f`. The report is
-  `/tmp/cppgm-witness-consolidation-candidate-class-base-clause-reconstruction-3run.json`.
 
 - `0f6adcf8f` removed the uncalled dependent-partial class-use resolver
   (`24 -> 23` sites). Strict direct comparison and the full `4860/4860`
