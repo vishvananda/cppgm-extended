@@ -443,6 +443,8 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(ClassTemplateDeclarationCollector,
                       "class.template_declaration_collector");
   CPPGM_PRODUCER_NAME(ClassTemplateInstantiation, "class.template_instantiation");
+  CPPGM_PRODUCER_NAME(AliasTemplateArgumentSemantics01,
+                      "alias.template_argument_semantics.01");
   CPPGM_PRODUCER_NAME(AliasTemplateArgumentSemantics02,
                       "alias.template_argument_semantics.02");
   CPPGM_PRODUCER_NAME(AliasTemplateSpecialization01,
