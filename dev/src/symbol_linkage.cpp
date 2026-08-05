@@ -322,6 +322,61 @@ string thread_local_wrapper_object_symbol_for_qualified_name(
   return wrapper;
 }
 
+static bool function_mangle_target_for_symbol(
+    const SymbolIdentity & symbol,
+    abi_mangle::AbiMangleTarget & out)
+{
+  if(!symbol.abi_mangle_facts) {
+    return false;
+  }
+  for(size_t i = 0; i < symbol.abi_mangle_facts->entries.size(); ++i) {
+    const SymbolIdentity::AbiMangleFactEntry & entry =
+        symbol.abi_mangle_facts->entries[i];
+    if(entry.object_symbol == symbol.object_symbol &&
+       entry.target.kind == abi_mangle::ABI_MANGLE_FUNCTION) {
+      out = entry.target;
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string virtual_override_thunk_object_symbol_for_symbol(
+    const SymbolIdentity & target_symbol,
+    long long this_adjust,
+    bool has_result_adjust,
+    long long result_adjust,
+    bool result_adjust_virtual,
+    long long result_vcall_offset)
+{
+  abi_mangle::AbiMangleTarget target;
+  string out;
+  if(!function_mangle_target_for_symbol(target_symbol, target)) {
+    return string();
+  }
+  target.kind = abi_mangle::ABI_MANGLE_THUNK;
+  target.this_adjust = this_adjust;
+  target.has_result_adjust = has_result_adjust;
+  target.result_adjust = result_adjust;
+  target.result_adjust_virtual = result_adjust_virtual;
+  target.result_vcall_offset = result_vcall_offset;
+  return abi_mangle::emit_mangle_target_symbol(target, out) ? out : string();
+}
+
+std::string virtual_base_override_thunk_object_symbol_for_symbol(
+    const SymbolIdentity & target_symbol,
+    long long vcall_offset)
+{
+  abi_mangle::AbiMangleTarget target;
+  string out;
+  if(!function_mangle_target_for_symbol(target_symbol, target)) {
+    return string();
+  }
+  target.kind = abi_mangle::ABI_MANGLE_VIRTUAL_BASE_THUNK;
+  target.vcall_offset = vcall_offset;
+  return abi_mangle::emit_mangle_target_symbol(target, out) ? out : string();
+}
+
 std::string virtual_override_thunk_object_symbol_for_function(
     const QualifiedName & qualified_name,
     const string & display_name,

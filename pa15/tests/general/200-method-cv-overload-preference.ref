@@ -1,4 +1,4 @@
-function @f(%a : ptr) -> u8 [binding=strong, object=_Z1fPKV1A] {
+function @f(%a : ptr) -> u8 [binding=strong, object=_Z1fPVK1A] {
   slot $a : ptr
 
   block ^entry:

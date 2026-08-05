@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub i32 %t4, 3
     return i32 %t5
 }
-function @__lambda_main_t16_18__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZ4mainENK3$_0clEv] {
+function @__lambda_main_t16_18__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEv, prefer_local=yes] {
   slot $this : ptr
   slot $inner : obj<1x1>
 
@@ -28,7 +28,7 @@ function @__lambda_main_t16_18__operator__(%this : ptr) -> i32 [binding=weak, ob
     %t8 = binary add i32 %t5, %t7
     return i32 %t8
 }
-function @__lambda_main_t16_18____lambda___lambda_main_t16_18__operator___t25_27__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZZ4mainENK3$_0clEvENKUlvE_clEv] {
+function @__lambda_main_t16_18____lambda___lambda_main_t16_18__operator___t25_27__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZZ4mainENK3$_0clEvENKUlvE_clEv, prefer_local=yes] {
   slot $this : ptr
   slot $value : i32
 

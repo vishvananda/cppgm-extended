@@ -118,8 +118,11 @@ void bind_namespace(semantic_model::Scope & scope,
 {
   std::map<std::string, semantic_model::Scope *>::const_iterator existing =
       scope.namespace_bindings.find(name);
+  if(existing != scope.namespace_bindings.end() && existing->second == target) {
+    return;
+  }
   if(has_ordinary_binding(scope, name) ||
-     (existing != scope.namespace_bindings.end() && existing->second != target)) {
+     existing != scope.namespace_bindings.end()) {
     throw std::logic_error("namespace name is already declared " + name);
   }
   scope.namespace_bindings[name] = target;
@@ -154,6 +157,9 @@ void import_inline_namespace_members(semantic_model::Scope & scope,
   for(auto it =
           target.namespace_bindings.begin();
       it != target.namespace_bindings.end(); ++it) {
+    if(it->first == "_GLOBAL__N_1") {
+      continue;
+    }
     scope.namespace_bindings[it->first] = it->second;
     if(target.namespace_binding_first_token_starts) {
       const auto first =

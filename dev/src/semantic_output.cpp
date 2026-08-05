@@ -473,6 +473,7 @@ symbol_linkage::SymbolIdentity emitted_vtable_entry_symbol(const FunctionBinding
     return binding.symbol;
   }
   if(binding.is_destructor && binding.owner_class && binding.owner_class->is_polymorphic) {
+    symbol_linkage::AbiMangleFactCaptureScope abi_fact_capture(true);
     return function_entry_point_symbol(
         binding,
         is_secondary_virtual_destructor_slot(binding, slot_model, slot_index) ?

@@ -544,6 +544,7 @@ symbol_linkage::FunctionSymbolOptions vtable_entry_function_symbol_options(
 string simple_lookup_name(const string & text);
 
 string virtual_override_thunk_object_symbol_for_vtable_entry(
+    const symbol_linkage::SymbolIdentity & target_symbol,
     const CallSemNode & entry,
     long long this_adjust,
     bool has_result_adjust,
@@ -551,11 +552,22 @@ string virtual_override_thunk_object_symbol_for_vtable_entry(
     bool result_adjust_virtual,
     long long result_vcall_offset)
 {
+  string out =
+      symbol_linkage::virtual_override_thunk_object_symbol_for_symbol(
+          target_symbol,
+          this_adjust,
+          has_result_adjust,
+          result_adjust,
+          result_adjust_virtual,
+          result_vcall_offset);
+  if(!out.empty()) {
+    return out;
+  }
   if(callsem_qualified_name_syntax(entry)) {
     const string target_name = callsem_resolved_name(entry).empty() ?
         entry.text.str() :
         callsem_resolved_name(entry);
-    string out = symbol_linkage::virtual_override_thunk_object_symbol_for_function(
+    out = symbol_linkage::virtual_override_thunk_object_symbol_for_function(
         *callsem_qualified_name_syntax(entry),
         simple_lookup_name(target_name),
         entry.is_c_linkage,
@@ -572,9 +584,16 @@ string virtual_override_thunk_object_symbol_for_vtable_entry(
 }
 
 string virtual_base_override_thunk_object_symbol_for_vtable_entry(
+    const symbol_linkage::SymbolIdentity & target_symbol,
     const CallSemNode & entry,
     long long vcall_offset)
 {
+  string out =
+      symbol_linkage::virtual_base_override_thunk_object_symbol_for_symbol(
+          target_symbol, vcall_offset);
+  if(!out.empty()) {
+    return out;
+  }
   if(!callsem_qualified_name_syntax(entry)) {
     return string();
   }
@@ -23773,6 +23792,7 @@ private:
         if(needs_host_export_thunk) {
           const string thunk_object_symbol =
               virtual_override_thunk_object_symbol_for_vtable_entry(
+                  exported_symbol,
                   node.children[i],
                   this_adjust,
                   node.children[i].has_result_adjust &&
@@ -23844,6 +23864,7 @@ private:
                                       false);
         const string thunk_object_symbol =
             virtual_override_thunk_object_symbol_for_vtable_entry(
+                exported_symbol,
                 node.children[i],
                 this_adjust,
                 false,
@@ -23897,6 +23918,7 @@ private:
                                       true);
         const string thunk_object_symbol =
             virtual_base_override_thunk_object_symbol_for_vtable_entry(
+                virtual_export_symbol,
                 node.children[i],
                 -24);
         if(!thunk_object_symbol.empty()) {
