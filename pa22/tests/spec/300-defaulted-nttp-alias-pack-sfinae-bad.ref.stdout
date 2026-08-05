@@ -2,5 +2,3 @@ ERROR: no viable constructor [class tuple_like<S>] [arg_count 1] [ctor-set tuple
 Diagnostic context:
 analyze_function_binding_output [main]
   analyze_statement [simple-declaration] at tests/spec/300-defaulted-nttp-alias-pack-sfinae-bad.t:101:3
-    try_argument_conversion [target rvalue-reference to struct tuple_like<S>]
-      select_constructor_from_exprs [tuple_like<S>, args=1]

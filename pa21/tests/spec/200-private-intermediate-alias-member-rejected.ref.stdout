@@ -1,4 +1,4 @@
-ERROR: inaccessible member type hidden [top-level declaration 2 kind=simple-declaration ast={simple-declaration
+ERROR: unsupported namespace-scope declarator [top-level declaration 2 kind=simple-declaration ast={simple-declaration
   decl-specifier-seq
     decl-specifier KW_TYPEDEF:typedef
     decl-specifier wrapper<int>::hidden::type

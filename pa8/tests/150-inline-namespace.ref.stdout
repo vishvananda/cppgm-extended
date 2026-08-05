@@ -1,1 +1,3 @@
-ERROR: extension namespace cannot be inline
+ERROR: non-inline namespace cannot be reopened as inline [top-level declaration 1 kind=namespace-definition value=A text=A]
+Diagnostic context:
+semantic_declaration::collect_namespace_definition [A] at tests/150-inline-namespace.t.1:2:1

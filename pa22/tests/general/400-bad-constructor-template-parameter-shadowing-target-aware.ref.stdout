@@ -4,5 +4,3 @@ analyze_function_binding_output [make_duration inst=long long int]
   analyze_statement [return-statement] at tests/general/400-bad-constructor-template-parameter-shadowing-target-aware.t:43:3
     analyze_expression_for_target [ -> struct duration_like<int>] at tests/general/400-bad-constructor-template-parameter-shadowing-target-aware.t:43:10
       semantic_expression::analyze_expression_for_target [ -> struct duration_like<int>] at tests/general/400-bad-constructor-template-parameter-shadowing-target-aware.t:43:10
-        try_argument_conversion [target rvalue-reference to struct duration_like<int>]
-          select_constructor_from_exprs [duration_like<int>, args=1]
