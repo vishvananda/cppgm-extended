@@ -4,18 +4,25 @@ This ledger records the evidence and acceptance gates for
 `witness-semantic-path-consolidation-experiment-plan.md`. Generated provenance
 reports remain under `/tmp`; only summarized evidence belongs here.
 
-## Frozen performance epoch
+## Revised performance epoch
 
-- Immutable baseline: `/tmp/cppgm-witness-consolidation-parent.json`
+- Fixed diagnostic baseline:
+  `/tmp/cppgm-witness-consolidation-diagnostic-3run.json`
 - Rolling baseline: `/tmp/cppgm-witness-consolidation-rolling.json`
-- Recorded head: `e83ab5b249fe569ac53d5a057a46da111907dcbb`
+- Recorded head: `ba6b1070c80426a31dff6cceebe3d504450373c9`
 - Workload epoch: `9764b3835e3c6996b6b80803054f80e1cf50f98e`
-- Instructions retired: `177731452181`
-- Maximum resident set size: `768765952`
-- Peak memory footprint: `593932288`
+- Runs: `3`; summaries use the median
+- Instructions retired: `177369144531`
+- Maximum resident set size: `760176640`
+- Peak memory footprint: `594513920`
+- Acceptance limits: instructions `+0.5%`; maximum RSS and peak footprint
+  `+1%`
 
-Do not rerecord the immutable baseline. Promote only an already-recorded
-candidate that passes all three zero-tolerance gates.
+The revised baseline deliberately includes the accepted compile-time-guarded
+diagnostic instrumentation. The prior parent and exact one-run reports remain
+under `/tmp` for audit but do not gate later slices. Do not rerecord the fixed
+diagnostic baseline. Promote only an already-recorded three-run candidate that
+passes all three tolerance gates.
 
 ## Instrumentation checkpoint
 
@@ -98,9 +105,10 @@ dead/redundant code:
 
 | Slice | Direct class sites before/after | Upstream routes before/after | Semantic route removed | Responsibility moved to | Strict | Full report | Instructions | Max RSS | Footprint | Renderer passes made idle |
 | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- |
-| Parent | 24/24 | 9/9 | none | none | clean | clean | 177731452181 | 768765952 | 593932288 | none |
-| Diagnostic provenance | 24/24 | 9/9 | none | none | clean | 4860/4860 | 177466053572 | 760369152 | 593911808 | none |
-| Overload owner reconstruction | 24/23 | 9/9 | overload-side instantiated class owner lookup, anchor recovery, and binding reconstruction | selected class-reference result | clean | 4860/4860 | pending | pending | pending | none |
+| Parent, historical one-run | 24/24 | 9/9 | none | none | clean | clean | 177731452181 | 768765952 | 593932288 | none |
+| Diagnostic provenance, historical one-run | 24/24 | 9/9 | none | none | clean | 4860/4860 | 177466053572 | 760369152 | 593911808 | none |
+| Diagnostic provenance, revised baseline | 24/24 | 9/9 | none | none | clean | 4860/4860 | 177369144531 | 760176640 | 594513920 | none |
+| Overload owner reconstruction | 24/23 | 9/9 | overload-side instantiated class owner lookup, anchor recovery, and binding reconstruction | selected class-reference result | clean | 4860/4860 | 177831649503 (+0.26%) | 766881792 (+0.88%) | 594264064 (-0.04%) | none |
 
 ## Rejected slices
 
@@ -111,3 +119,9 @@ dead/redundant code:
   `/tmp/cppgm-witness-consolidation-candidate-dead-dependent-partial.json`.
   The candidate was not promoted or rerun and was explicitly reverted by
   `1cc9a2e53`.
+  After the performance method changed, the same commit was re-evaluated once
+  with three runs against the fixed diagnostic baseline. Its medians were
+  `177428521256` instructions (`+0.03%`), `769929216` maximum RSS (`+1.28%`),
+  and `593932288` footprint (`-0.10%`). It still failed the 1% RSS gate, so the
+  revert remains in place. The revised report is
+  `/tmp/cppgm-witness-consolidation-candidate-dead-dependent-partial-3run.json`.

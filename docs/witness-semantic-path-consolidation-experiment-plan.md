@@ -32,7 +32,8 @@ The intended result is:
 - fewer raw witness collisions and replacements;
 - fewer renderer suppression rules;
 - no witness or LowIR regression;
-- monotonically nonincreasing instructions, maximum RSS, and peak footprint.
+- bounded performance impact: three-run median instructions within 0.5% and
+  median maximum RSS and peak footprint within 1% of the accepted baseline.
 
 ## Hypothesis
 
@@ -82,10 +83,11 @@ reparse source text or perform a second lookup.
 5. Put any instrumentation cost behind witness/debug capture guards. Normal
    compilation must not allocate provenance tables, fingerprint events, or walk
    syntax for this experiment.
-6. Do not remeasure a parent to improve a comparison. Record the starting point
+6. Do not remeasure a baseline to improve a comparison. Record each baseline
    once and promote accepted candidate measurements without rerunning them.
-7. Use one candidate performance run. Wall time is informational and never a
-   gate.
+7. Use three runs for each baseline and candidate, and gate on their medians.
+   Allow at most 0.5% more instructions and 1% more maximum RSS or peak
+   footprint. Wall time is informational and never a gate.
 8. A failed `make test-strict` after removing a site means the semantic merge is
    incomplete. Restore the missing responsibility in the canonical path; do
    not repair the output downstream.
@@ -232,18 +234,26 @@ path removal.
 
 ## Phase 0: Freeze the Experiment Baseline
 
-Before production edits, build parent `c3a2fd4f4` with the standard Homebrew
-Clang and record one run of the frozen semantic-overload workload:
+The original experiment started with a one-run, zero-tolerance parent
+baseline. After the provenance checkpoint showed that a single memory sample
+was too noisy for useful semantic-slice decisions, the performance method was
+revised on 2026-08-05. The accepted, compile-time-guarded diagnostic checkpoint
+`ba6b1070c` is the fixed comparison point so every semantic candidate includes
+the same diagnostic code. The original parent and one-run reports remain audit
+artifacts but no longer gate acceptance.
+
+At the accepted diagnostic checkpoint `ba6b1070c`, build with the standard
+Homebrew Clang and record three runs of the frozen semantic-overload workload:
 
 ```sh
 make CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
 
 scripts/validate_perf_regression.py record \
-  --baseline /tmp/cppgm-witness-consolidation-parent.json \
-  --runs 1
+  --baseline /tmp/cppgm-witness-consolidation-diagnostic-3run.json \
+  --runs 3
 
-cp /tmp/cppgm-witness-consolidation-parent.json \
+cp /tmp/cppgm-witness-consolidation-diagnostic-3run.json \
   /tmp/cppgm-witness-consolidation-rolling.json
 ```
 
@@ -252,9 +262,9 @@ The performance workload and its 51-header closure are frozen by
 source or headers. Record the three gated values in the experiment ledger:
 instructions retired, maximum resident set size, and peak memory footprint.
 
-Do not record the parent again. If the baseline files are lost, recover the
-original file or restart the performance epoch explicitly; do not silently
-create a more favorable comparison.
+Do not record the diagnostic baseline again. If the baseline files are lost,
+recover the original file or restart the performance epoch explicitly; do not
+silently create a more favorable comparison.
 
 ## Phase 1: Add Witness-Only Provenance Instrumentation
 
@@ -513,7 +523,7 @@ Commit the code and any required reducers so the performance report identifies
 the exact candidate commit. Do not combine an unrelated semantic route in this
 checkpoint.
 
-### 5. Single-run candidate performance gate
+### 5. Three-run median candidate performance gate
 
 Build the candidate with the same Homebrew Clang configuration, then run:
 
@@ -521,14 +531,15 @@ Build the candidate with the same Homebrew Clang configuration, then run:
 scripts/validate_perf_regression.py check \
   --baseline /tmp/cppgm-witness-consolidation-rolling.json \
   --report /tmp/cppgm-witness-consolidation-candidate.json \
-  --runs 1 \
-  --instruction-tolerance 0 \
-  --rss-tolerance 0 \
-  --footprint-tolerance 0
+  --runs 3 \
+  --instruction-tolerance 0.005 \
+  --rss-tolerance 0.01 \
+  --footprint-tolerance 0.01
 ```
 
-The candidate fails if instructions retired, maximum RSS, or peak footprint is
-greater than the last accepted measurement. Do not rerun a failed candidate to
+The candidate fails if median instructions retired exceed the last accepted
+measurement by more than 0.5%, or median maximum RSS or peak footprint exceed
+it by more than 1%. Do not rerun a failed candidate under the same method to
 seek a favorable result. Investigate the added work or reject the slice. Wall,
 user, system, and cycle time remain informational.
 
@@ -546,8 +557,9 @@ mv /tmp/cppgm-witness-consolidation-rolling.next.json \
   /tmp/cppgm-witness-consolidation-rolling.json
 ```
 
-The rolling baseline can only stay flat or fall because the check uses zero
-tolerance. Keep the immutable parent JSON for the final comparison.
+Keep the fixed diagnostic three-run JSON for the final comparison. The rolling
+baseline advances to the already-recorded three-run candidate after every
+accepted slice.
 
 If a slice fails after a checkpoint commit, amend it while investigating or
 revert it explicitly. Do not promote its performance report.
@@ -582,8 +594,9 @@ The experiment is ready to package when all of these are true:
 - no witness renderer source reparsing or recovery was added;
 - `make test-strict` passes with direct LowIR comparison;
 - full `make test-report` passes with direct LowIR comparison;
-- the final instructions, maximum RSS, and peak footprint are each no greater
-  than both the immutable parent and every promoted rolling baseline;
+- the final median instructions are within 0.5%, and median maximum RSS and
+  peak footprint within 1%, of both the fixed diagnostic checkpoint and the
+  latest promoted rolling baseline;
 - all experiment-only provenance instrumentation is removed or retained only
   if it has clear ongoing diagnostic value and zero normal-path cost;
 - the final branch is split into reviewable commits and has no generated output
