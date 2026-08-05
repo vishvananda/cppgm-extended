@@ -136,6 +136,18 @@ route are absent; before deletion that route made 415 calls, while its producer
 owned no visible row uniquely. Every exercised remaining class producer owns
 visible output uniquely.
 
+A broader diagnostic reachability probe compiled 2,473 PA15-PA35 test sources
+successfully with witness capture and produced 421,584 provenance records in
+`/tmp/cppgm-witness-provenance-all-tests-probe.2HFlMJ`. It is not a correctness
+gate, because it also invoked tests that have no witness reference, but it
+distinguishes dormant sites from rare live sites. In particular,
+`lifecycle.template_api.06` produced 83 anonymous-member-class events and must
+remain. The two string-based constant-value class-use sites still produced no
+attempts in either this probe or the strict corpus, so their post-lookup owner,
+source, selection, and binding reconstruction was removed. The current static
+inventory is 34 producer IDs: 10 class, 4 alias, 3 function-call, 1 variable,
+and 16 lifecycle sites.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -156,7 +168,7 @@ Sites not exercised by the refreshed strict witness references are tracked
 until they are reached by an earliest-owning-PA reducer or removed as proven
 dead/redundant code:
 
-- class: `class_template_reference.01`, `constant_value_lookup.04`, and `.05`;
+- class: `class_template_reference.01`;
 - alias: `template_specialization.01`;
 - lifecycle: `template_api.06`, `template_argument_semantics.01`, and
   `constant_value_lookup.01`.
@@ -181,10 +193,11 @@ dead/redundant code:
 | Class base-clause reconstruction | 15/14 | 5/5 | direct class-template lookup, argument resolution, source-decision reconstruction, and a dormant producer during a base-clause rewalk | canonical base-type resolution during class-template instantiation | clean | 4860/4860 | 176608992504 (-0.05%) | 766824448 (+0.73%) | 590385152 (+0.02%) | none |
 | Dead dependent-partial resolver | 14/13 | 5/5 | uncalled `record_dependent_partial_class_use_for_resolved_template_id` and its dormant producer | live selected class-reference resolution | clean | 4860/4860 | 176796004199 (+0.11%) | 753594368 (-1.73%) | 590069760 (-0.05%) | none |
 | Resolved type-node class replay | 13/12 | 5/4 | public resolved-type callback, 415 strict-corpus calls, post-resolution source scans, and replay-only `sizeof`, qualifier, conversion, declaration, and constructor-initializer helpers | canonical template-id source scanning and selected class-reference occurrence metadata | clean | 4860/4860 | 176684351239 (-0.21%) | 756359168 (-1.11%) | 590614528 (+0.01%) | none |
+| Dormant string-based constexpr owner replay | 12/10 | 4/4 | two unexercised post-lookup class-owner reconstruction sites in the string-based constant-value fallback | structured constant-expression and qualified-id resolution paths | clean | 4860/4860 | 176822455088 (+0.08%) | 769830912 (+1.78%) | 590475264 (-0.02%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.39%` instructions, `-0.50%` maximum RSS,
-and `-0.66%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.31%` instructions, `+1.27%` maximum RSS,
+and `-0.68%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
