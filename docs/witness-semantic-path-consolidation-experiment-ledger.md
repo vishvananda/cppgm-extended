@@ -89,6 +89,17 @@ the two location routes are absent, trace records fell to 117,271, and the
 remaining seven upstream routes retain their prior counts except template-
 argument replay, which fell from 63 to 62 calls.
 
+After the later accepted class-route removals and the `declval` analyzer merge,
+the clean refreshed trace is
+`/tmp/cppgm-witness-provenance-current-clean.9xqzNA` and its report is
+`/tmp/cppgm-witness-provenance-current-clean-report.json`. All 1,305 strict
+comparisons remained clean. It contains 117,024 records across 1,296 files,
+the consolidated overload-side `declval` producer owns all 62 attempts, and
+the removed producer is absent. Six class replay routes remain. The resolved-
+type producer made 1,391 attempts and owns no final row uniquely, but it still
+supplied a retained occurrence once and received five occurrence replacements;
+that route therefore needs a real payload merge before deletion.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
