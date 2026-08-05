@@ -155,6 +155,18 @@ limits.
 
 ## Rejected slices
 
+- `048be0048` removed the recursive nested-alias argument replay (`7 -> 6`
+  alias sites) and 319 lines of traversal and source reconstruction. Its 34
+  strict-corpus attempts had no unique output ownership: all collided with the
+  canonical direct alias producer, and 13 also collided with the callsemantic
+  alias path. Strict direct comparison and the full `4860/4860` report passed.
+  Median instructions (`176740584807`, `+0.01%`) and footprint (`590381056`,
+  `-0.01%`) passed the rolling gate, but maximum RSS (`761036800`, `+1.36%`)
+  failed its 1% limit. The fixed diagnostic comparison passed at `-0.35%`
+  instructions, `+0.11%` RSS, and `-0.70%` footprint. `f48181629` reverted the
+  candidate. The report is
+  `/tmp/cppgm-witness-consolidation-candidate-duplicate-nested-alias-replay-3run.json`.
+
 - `8bf3403ba` removed the base-clause alias replay and its emission-origin
   branch (`7 -> 6` alias sites). Nested alias and class argument events stayed
   on their existing paths. The removed producer made no strict-corpus emission
