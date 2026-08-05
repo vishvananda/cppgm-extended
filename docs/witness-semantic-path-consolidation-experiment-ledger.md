@@ -150,8 +150,8 @@ dead/redundant code:
 | Out-of-class owner replay | 17/16 | 6/6 | declaration-collector specifier-side owner lookup, specialization selection, binding reconstruction, and an unexercised class-use producer | canonical out-of-class owner emission after method binding resolution | clean | 4860/4860 | 176487122962 (-0.13%) | 759590912 (+1.17%) | 590536704 (+0.01%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.14%` instructions, `+0.23%` maximum RSS,
-and `-0.67%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.23%` instructions, `+1.13%` maximum RSS,
+and `-0.61%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -159,20 +159,9 @@ and `-0.67%` footprint, so it also clears the final fixed-baseline gates.
 | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: |
 | Duplicate `declval` analyzer | function call 4/3 | callsemantic-side recognition, type resolution, expression construction, and function-call emission | canonical overload-expression analyzer and its selected-call result | clean | 4860/4860 | 176724057359 (-0.24%) | 750813184 (-1.90%) | 590462976 (-0.01%) |
 | Recursive nested-alias replay | alias use 7/6 | nested template-id traversal, alias lookup, argument resolution, source reconstruction, and 34 colliding attempts | canonical direct alias producer and callsemantic alias path | clean | 4860/4860 | 177114959852 (+0.36%) | 761901056 (+0.30%) | 590557184 (+0.00%) |
+| Base-clause alias replay | alias use 6/5 | base-clause alias reconstruction, its unused emission-origin branch, and its provenance entry | canonical alias-reference producers reached during base-clause resolution | clean | 4860/4860 | 176968071900 (-0.08%) | 768757760 (+0.90%) | 590872576 (+0.05%) |
 
 ## Rejected slices
-
-- `8bf3403ba` removed the base-clause alias replay and its emission-origin
-  branch (`7 -> 6` alias sites). Nested alias and class argument events stayed
-  on their existing paths. The removed producer made no strict-corpus emission
-  attempt, and the canonical alias-reference producers owned the visible
-  uses. Strict direct comparison and the full `4860/4860` report passed.
-  Median instructions (`176722855806`, `-0.00%`) and footprint (`589901824`,
-  `-0.10%`) passed the rolling gate, but maximum RSS (`765083648`, `+1.90%`)
-  failed its 1% limit. The fixed diagnostic comparison passed at `-0.36%`
-  instructions, `+0.65%` RSS, and `-0.78%` footprint. `d16b8a1a3` reverted the
-  candidate. The report is
-  `/tmp/cppgm-witness-consolidation-candidate-base-clause-alias-replay-3run.json`.
 
 - `b15424b2b` removed the lookup-time concrete class-use replay while keeping
   its parser-trace path (`17 -> 16` class sites). The canonical class-template
