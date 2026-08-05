@@ -425,6 +425,7 @@ const char * producer_site_name(WitnessProducerSite site)
   case WitnessProducerSite::value: return text
   switch(site) {
   CPPGM_PRODUCER_NAME(Unknown, "unknown");
+  CPPGM_PRODUCER_NAME(ClassCallsemantic01, "class.callsemantic.01");
   CPPGM_PRODUCER_NAME(ClassCallsemantic03, "class.callsemantic.03");
   CPPGM_PRODUCER_NAME(ClassCallsemantic06, "class.callsemantic.06");
   CPPGM_PRODUCER_NAME(ClassCallsemantic07, "class.callsemantic.07");

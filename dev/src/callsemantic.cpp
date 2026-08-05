@@ -7376,11 +7376,38 @@ private:
                     template_api::alias_template_witness_entity(alias_template) :
                     base_template_syntax->name.name);
           } else {
+            witness::ClassUseSourceDecision decision;
+            bool emitted_direct_base = false;
+            bool built_direct_base = false;
+            try {
+              built_direct_base =
+                  build_class_use_source_decision_from_template_syntax(
+                      *pattern_scope,
+                      base_location,
+                      decision,
+                      *base_template_syntax);
+            } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+              throw;
+            } catch(const std::exception &) {
+              built_direct_base = false;
+            }
+            if(built_direct_base) {
+              CPPGM_SET_WITNESS_PRODUCER(
+                  decision,
+                  witness::WitnessProducerSite::ClassCallsemantic01);
+              witness::emit_class_use_decision(
+                  decision,
+                  witness::SourceUseOwnership::SourceOwned,
+                  witness::SourceUseRole::TypeUse,
+                  witness::ClassUseEmissionOrigin::NestedSourceTemplateId);
+              emitted_direct_base = true;
+            }
             emit_nested_class_use_source_events_from_syntaxes(
                 *pattern_scope,
                 base_template_syntax->argument_syntaxes,
                 witness::SourceUseOwnership::SourceOwned,
-                base_template_syntax->name.name);
+                emitted_direct_base ? decision.template_name :
+                                      base_template_syntax->name.name);
           }
         } catch(const semantic_fallback_audit::SemanticFallbackError &) {
           throw;
