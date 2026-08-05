@@ -141,6 +141,7 @@ limits.
 | Slice | Kind/sites before/after | Semantic route removed | Responsibility moved to | Strict | Full report | Instructions | Max RSS | Footprint |
 | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: |
 | Duplicate `declval` analyzer | function call 4/3 | callsemantic-side recognition, type resolution, expression construction, and function-call emission | canonical overload-expression analyzer and its selected-call result | clean | 4860/4860 | 176724057359 (-0.24%) | 750813184 (-1.90%) | 590462976 (-0.01%) |
+| Text-backed partial-match alias replay | alias use 7/6 | post-deduction syntax walk, alias lookup, source-argument recovery, and text-only binding reconstruction | structured alias-template-id expansion and ordinary resolved alias uses | pending | pending | pending | pending | pending |
 
 ## Rejected slices
 
