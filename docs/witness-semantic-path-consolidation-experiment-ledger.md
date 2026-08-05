@@ -106,6 +106,23 @@ type producer made 1,391 attempts and owns no final row uniquely, but it still
 supplied a retained occurrence once and received five occurrence replacements;
 that route therefore needs a real payload merge before deletion.
 
+After revalidating and promoting every slice that qualifies under the 3% RSS
+rule, the refreshed strict trace is
+`/tmp/cppgm-witness-provenance-post-revalidation.r9W2RP` and its report is
+`/tmp/cppgm-witness-provenance-post-revalidation-report.json`. All 1,305 strict
+comparisons remained clean. The trace contains 102,430 records across 1,296
+files. The current diagnostic inventory has 38 static producer IDs: 13 class,
+4 alias, 3 function-call, 1 variable, and 17 lifecycle sites. Five class replay
+routes remain. Every exercised class producer owns visible output except
+`class.callsemantic.11`, which supplies five retained occurrence replacements;
+it still needs a payload merge before deletion. Every exercised alias and
+function-call producer owns visible output. The variable producer owns 31
+visible rows and performs one same-producer location/anchor replacement.
+Lifecycle collisions remain concentrated between
+`constant_value_lookup.03` and `template_argument_semantics.02`, and between
+`semantic_class_model` and `template_argument_semantics.02`; those transitions
+need ownership analysis before consolidation.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -122,14 +139,12 @@ before the accepted candidate. That run improved instructions by 0.15%, RSS by
 1.09%, and footprint by 20 KiB. Its recorded candidate object was promoted to
 the rolling baseline without rerecording it.
 
-Sites not exercised by the existing strict witness references are tracked
+Sites not exercised by the refreshed strict witness references are tracked
 until they are reached by an earliest-owning-PA reducer or removed as proven
 dead/redundant code:
 
-- class: `callsemantic.01`, `.03`, `.05`,
-  `class_template_reference.01`, `constant_value_lookup.04`, `.05`, and
-  `template_declaration_collector`;
-- alias: `template_specialization.01`, `.02`, and `callsemantic.01`;
+- class: `class_template_reference.01`, `constant_value_lookup.04`, and `.05`;
+- alias: `template_specialization.01`;
 - lifecycle: `template_api.06`, `.08`,
   `template_argument_semantics.01`, and `constant_value_lookup.01`.
 
