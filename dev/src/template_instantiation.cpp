@@ -7561,10 +7561,6 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
                                                                         member->type,
                                                                         it->second.initializer);
     member->constant_initializer_scope = &init_scope;
-    ctx.emit_class_use_source_events_after_location(
-        init_scope,
-        ctx.source_location_for_node(*it->second.initializer),
-        witness::SourceUseOwnership::SourceOwned);
   }
   info.out_of_class_static_member_definitions_applied =
       !missing_member ||

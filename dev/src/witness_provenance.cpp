@@ -427,7 +427,6 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(Unknown, "unknown");
   CPPGM_PRODUCER_NAME(ClassCallsemantic01, "class.callsemantic.01");
   CPPGM_PRODUCER_NAME(ClassCallsemantic03, "class.callsemantic.03");
-  CPPGM_PRODUCER_NAME(ClassCallsemantic05, "class.callsemantic.05");
   CPPGM_PRODUCER_NAME(ClassCallsemantic06, "class.callsemantic.06");
   CPPGM_PRODUCER_NAME(ClassCallsemantic07, "class.callsemantic.07");
   CPPGM_PRODUCER_NAME(ClassCallsemantic08, "class.callsemantic.08");
@@ -496,8 +495,6 @@ const char * producer_site_name(WitnessProducerSite site)
 const char * upstream_route_name(WitnessUpstreamRoute route)
 {
   switch(route) {
-  case WitnessUpstreamRoute::ClassUseAfterLocation:
-    return "class_use.after_location";
   case WitnessUpstreamRoute::NestedClassUseFromAstNode:
     return "nested_class_use.ast_node";
   case WitnessUpstreamRoute::NestedClassUseFromTemplateArguments:

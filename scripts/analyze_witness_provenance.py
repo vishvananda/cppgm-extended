@@ -14,7 +14,7 @@ from typing import Any, Iterable
 SOURCE_PRODUCERS = [
     "class.callsemantic.01",
     "class.callsemantic.03",
-    *(f"class.callsemantic.{index:02d}" for index in range(5, 12)),
+    *(f"class.callsemantic.{index:02d}" for index in range(6, 12)),
     "class.callsemantic.13",
     "class.class_template_reference.01",
     "class.class_template_reference.02",
@@ -48,7 +48,6 @@ LIFECYCLE_PRODUCERS = [
 ]
 
 UPSTREAM_ROUTES = [
-    "class_use.after_location",
     "nested_class_use.ast_node",
     "nested_class_use.template_arguments",
     "class_use.static_member_definition_ast_node",
