@@ -32539,102 +32539,6 @@ private:
     return semantic_expression::analyze_sizeof_pack_expression(*this, scope, node);
   }
 
-  bool try_analyze_declval_call_expression(Scope & scope,
-                                           const CppAstNode & node,
-                                           ExprInfo & out)
-  {
-    if(node.children.empty() || node.children[0].kind != CppAstKind::id_expression) {
-      return false;
-    }
-
-    const CppAstNode * argument_list = cpp_decl::find_child(node, CppAstKind::argument_list);
-    if(!argument_list) {
-      argument_list = cpp_decl::find_child(node, CppAstKind::paren_argument_list);
-    }
-    if(!argument_list || !argument_list->children.empty()) {
-      return false;
-    }
-
-    const TemplateIdSyntax * template_id = cppast_template_id_syntax(node.children[0]);
-    if(!template_id ||
-       template_id->name.name != "declval" ||
-       template_id->arguments.size() != 1) {
-      return false;
-    }
-
-    TypePtr declval_type;
-    const TemplateArgumentSyntax * arg_syntax =
-        template_id->argument_syntaxes.size() == 1 ?
-            &template_id->argument_syntaxes[0] :
-            nullptr;
-    if(!template_api::type::resolve_type_argument_input(*this,
-                                                       scope,
-                                                       arg_syntax,
-                                                       true,
-                                                       declval_type) ||
-       !declval_type) {
-      return false;
-    }
-
-    if(witness::enabled(template_witness_context()) &&
-       template_api::template_witness_declval_call_source_capture_enabled() &&
-       !template_argument_semantics::argument_syntax_uses_bound_template_type(
-           scope, *arg_syntax) &&
-       !type_depends_on_template_parameter(declval_type)) {
-      const std::string public_location =
-          template_api::normalize_template_witness_source_location(
-              template_api::template_witness_detail::source_location_for_location_id(
-                  template_witness_context(),
-                  template_id->source_location_id));
-      if(!public_location.empty()) {
-        witness::FunctionCallSourceDecision decision;
-        decision.origin = witness::FunctionCallEmissionOrigin::DeclvalCall;
-        witness::set_use_anchor(decision.location,
-                                decision.use_anchor,
-                                public_location);
-        decision.template_name = "declval";
-        decision.selected = "declval";
-        decision.selection = witness::SourceSelectionKind::Instantiation;
-
-        witness::TemplateWitnessSourceBinding binding;
-        binding.param = "$1";
-        binding.arg = template_api::type::lookup_text_for_type_argument(*this,
-                                                                        declval_type);
-        if(binding.arg.empty()) {
-          binding.arg = template_id->arguments[0];
-        }
-        binding.source = "explicit";
-        binding.type_like = true;
-        decision.bindings.push_back(binding);
-
-        CPPGM_SET_WITNESS_PRODUCER(
-            decision,
-            witness::WitnessProducerSite::FunctionCallsemanticDeclval);
-        witness::emit_function_call(template_witness_context(),
-                                    decision);
-      }
-    }
-
-    TypePtr result_type = is_void_type(strip_top_level_cv(declval_type)) ?
-                              declval_type :
-                              collapse_rvalue_reference_type(declval_type);
-    ValueCategory category = VC_PRVALUE;
-    if(!result_value_category_for_function_result(result_type, category)) {
-      category = VC_PRVALUE;
-    }
-
-    out = ExprInfo();
-    out.node = make_dump_node(CallSemKind::call_expression);
-    set_expr_info_metadata(out, result_type, category);
-
-    CallSemNode callee = make_dump_node(CallSemKind::callee, node.children[0].value);
-    callee.semantic_type = make_function(result_type, vector<TypePtr>(), false);
-    callee.is_declval_callee = true;
-    set_expr_metadata(callee, callee.semantic_type, VC_PRVALUE);
-    out.node.children.push_back(callee);
-    return true;
-  }
-
   ExprInfo analyze_assignment_expression(Scope & scope, const CppAstNode & node) override
   {
     return semantic_expression::analyze_assignment_expression(*this, scope, node);
@@ -32647,12 +32551,6 @@ private:
   {
     const semantic_overload::CallAnalysisOptions effective_options =
         semantic_policy::apply_analysis_policy(analysis_policy_, options);
-    ExprInfo declval_expr;
-    if(try_analyze_declval_call_expression(scope,
-                                           node,
-                                           declval_expr)) {
-      return declval_expr;
-    }
     return semantic_overload::analyze_call_expression(*this,
                                                       scope,
                                                       node,

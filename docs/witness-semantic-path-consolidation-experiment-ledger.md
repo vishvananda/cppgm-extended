@@ -136,6 +136,12 @@ fixed diagnostic checkpoint it is `-0.12%` instructions, `+0.68%` maximum RSS,
 and `-0.67%` footprint, so it is also within all three final fixed-baseline
 limits.
 
+## Other source-use slice ledger
+
+| Slice | Kind/sites before/after | Semantic route removed | Responsibility moved to | Strict | Full report | Instructions | Max RSS | Footprint |
+| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: |
+| Duplicate `declval` analyzer | function call 4/3 | callsemantic-side recognition, type resolution, expression construction, and function-call emission | canonical overload-expression analyzer and its selected-call result | pending | pending | pending | pending | pending |
+
 ## Rejected slices
 
 - `de9ad2152` removed the dormant class-use reconstruction from the
