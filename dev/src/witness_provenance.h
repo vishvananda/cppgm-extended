@@ -34,7 +34,6 @@ enum class WitnessProducerSite
   ClassCallsemantic13,
   ClassTemplateReference01,
   ClassTemplateReference02,
-  ClassConstantValueLookup01,
   ClassConstantValueLookup02,
   ClassConstantValueLookup03,
   ClassConstantValueLookup04,
