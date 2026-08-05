@@ -4505,28 +4505,6 @@ void note_class_closure_event(
   }
 }
 
-void note_value_binding_closure_event(
-    SemanticContext & ctx,
-    TemplateWitnessLogEventKind kind,
-    const std::string & location,
-    const semantic_model::ValueBinding * binding,
-    const std::string & detail,
-    TemplateLifecycleCause cause)
-{
-  if(ctx.template_witness_context().session == nullptr) {
-    return;
-  }
-  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-      witness_provenance::WitnessProducerSite::LifecycleTemplateApi08,
-      kind,
-      location,
-      value_log_entity(ctx, binding),
-      value_decl_location(ctx, binding),
-      detail,
-      cause,
-      value_or_owner_has_template_identity(binding));
-}
-
 namespace {
 
 // template-boundary-audit: begin text_recovery_bridge

@@ -29,7 +29,7 @@ SOURCE_PRODUCERS = [
 ]
 
 LIFECYCLE_PRODUCERS = [
-    *(f"lifecycle.template_api.{index:02d}" for index in range(1, 10)),
+    *(f"lifecycle.template_api.{index:02d}" for index in range(1, 10) if index != 8),
     "lifecycle.semantic_class_model",
     "lifecycle.template_argument_semantics.01",
     "lifecycle.template_argument_semantics.02",

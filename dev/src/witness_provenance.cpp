@@ -459,7 +459,6 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi05, "lifecycle.template_api.05");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi06, "lifecycle.template_api.06");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi07, "lifecycle.template_api.07");
-  CPPGM_PRODUCER_NAME(LifecycleTemplateApi08, "lifecycle.template_api.08");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi09, "lifecycle.template_api.09");
   CPPGM_PRODUCER_NAME(LifecycleSemanticClassModel,
                       "lifecycle.semantic_class_model");

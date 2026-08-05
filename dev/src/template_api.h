@@ -593,13 +593,6 @@ void note_class_closure_event(
     const semantic_model::ClassInfo * info,
     const std::string & detail = std::string(),
     TemplateLifecycleCause cause = TemplateLifecycleCause::None);
-void note_value_binding_closure_event(
-    SemanticContext & ctx,
-    TemplateWitnessLogEventKind kind,
-    const std::string & location,
-    const semantic_model::ValueBinding * binding,
-    const std::string & detail = std::string(),
-    TemplateLifecycleCause cause = TemplateLifecycleCause::None);
 bool class_instantiation_log_emitted(const semantic_model::ClassInfo * info);
 void note_output_tracked_class_instantiation_if_needed(
     SemanticContext & ctx,
