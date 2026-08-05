@@ -132,15 +132,15 @@ dead/redundant code:
 | Static-member initializer tail scan | 18/17 | 7/6 | public after-location callback, token scan after initializer start, and 13 calls that produced no class-use attempt | structured initializer expression semantics | clean | 4860/4860 | 177151210925 (+0.05%) | 765370368 (-0.13%) | 590516224 (-0.11%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.12%` instructions, `+0.68%` maximum RSS,
-and `-0.67%` footprint, so it is also within all three final fixed-baseline
+fixed diagnostic checkpoint it is `-0.36%` instructions, `-1.23%` maximum RSS,
+and `-0.68%` footprint, so it is also within all three final fixed-baseline
 limits.
 
 ## Other source-use slice ledger
 
 | Slice | Kind/sites before/after | Semantic route removed | Responsibility moved to | Strict | Full report | Instructions | Max RSS | Footprint |
 | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: |
-| Duplicate `declval` analyzer | function call 4/3 | callsemantic-side recognition, type resolution, expression construction, and function-call emission | canonical overload-expression analyzer and its selected-call result | pending | pending | pending | pending | pending |
+| Duplicate `declval` analyzer | function call 4/3 | callsemantic-side recognition, type resolution, expression construction, and function-call emission | canonical overload-expression analyzer and its selected-call result | clean | 4860/4860 | 176724057359 (-0.24%) | 750813184 (-1.90%) | 590462976 (-0.01%) |
 
 ## Rejected slices
 
