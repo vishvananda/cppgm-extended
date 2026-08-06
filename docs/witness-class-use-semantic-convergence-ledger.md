@@ -45,7 +45,7 @@ or rerecord it.
 | Fixed | `a42c915e3` | 9 | 4 | 0 / 0 | baseline | baseline | baseline | baseline | clean | 4860/4860 | not rerun | `/tmp/cppgm-class-use-convergence-fixed.json` |
 | 0. Evidence and comparison tool | `546181f8e` | 9 | 4 | 0 / 0 | n/a | n/a | n/a | n/a | validator unit tests clean | n/a | n/a | fixed and rolling copies verified |
 | 1. Typed result | `a628fa997` | 9 | 4 | +91 / -16 | +0.16% | +0.16% | +1.03% | +0.05% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-1.json` |
-| 2. Dependent pattern | pending | 8 | 4 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
+| 2. Dependent pattern | `e05e22320` | 8 | 4 | +230 / -79 | +0.48% | +0.33% | +0.94% | +0.02% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-2.json` |
 | 3A. Nested results | pending | pending | pending | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
 | 3B. Template patterns | pending | 6 | 2 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
 | 4. Qualified constants | pending | 4 | 2 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
@@ -59,6 +59,7 @@ or rerecord it.
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Fixed | 280 | 136 | 1,136 | 136 | 0 |
 | Phase 1 | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 80 bytes, stack-scoped |
+| Phase 2 | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 96 bytes, stack-scoped; no retained allocation |
 
 `OutOfClassMemberFunctionDecl` starts at 240 bytes. The reporter source is
 `scripts/report_semantic_structure_sizes.cpp`; compile it against `dev/src`
@@ -75,11 +76,46 @@ with the configured host compiler.
 - Cleanup obligation: none; all metrics remain inside the intermediate
   investigation thresholds
 
+## Phase 2 evidence
+
+- Correctness commit: `e05e223200bf7647fecafd78126820fcc68e9d9e`
+- Candidate SHA-256:
+  `b8b067ad1852d160e3d5beae2f0baf09db4feab5ddbe3b5dcb883cfe8a47bafe`
+- Instructions: `177368727469`, `+0.48%` versus fixed and `+0.33%`
+  versus rolling
+- Maximum RSS: `769888256`, `+0.94%` versus fixed and `-0.09%`
+  versus rolling
+- Peak footprint: `590258176`, `+0.02%` versus fixed and `-0.03%`
+  versus rolling
+- Strict provenance trace:
+  `/tmp/cppgm-class-use-phase2-strict-provenance.6N3szo`
+- Strict provenance report:
+  `/tmp/cppgm-class-use-phase2-strict-provenance-report.json`
+- Provenance report SHA-256:
+  `fc100cb7f84f100c97c05bde5b6fe272ea53a82514cffc8778cd30143eb601c0`
+- The four rows previously unique to `class.callsemantic.08` are uniquely
+  owned by `class.class_template_reference.02`; `.08` and its producer ID are
+  absent, and the four replay-route counts remain exactly at the fixed values.
+- The direct path forwards its already-resolved arguments and selection. A
+  cached current-specialization path derives the selection from the retained
+  `ClassInfo::template_output_node`; when that concrete instance no longer
+  carries dependent source arguments, it resolves only the source arguments
+  against the already-selected partial pattern. Phase 3B removes that last
+  transient resolution by retaining the pattern result at definition time.
+- Ordinary-build dependent shortcuts do not perform selection for source
+  observation; the additional selection is guarded by an active witness
+  session. No hot semantic structure grew and there is no retained allocation.
+- Ordinary binary: 17,264,624 bytes; Mach-O `__TEXT` 13,148,160 bytes and
+  `__DATA` 446,464 bytes. The section sizes are unchanged from fixed; the file
+  increase is link-edit metadata.
+- Cleanup obligation: none; all fixed and rolling metrics remain inside the
+  intermediate investigation thresholds.
+
 ## Producer migration
 
 | Deleted producer | Canonical result owner | Unique rows transferred | Targeted fixtures | Status |
 | --- | --- | ---: | --- | --- |
-| `class.callsemantic.08` | resolved dependent class-template-id | 4 | reference-shell current specialization | pending |
+| `class.callsemantic.08` | resolved dependent class-template-id | 4 | reference-shell current specialization plus PA23 owner and PA24 integral-constant unique rows | migrated in `e05e22320` |
 | `class.callsemantic.06` | nested typed source results | 35 | local variable nested class instantiation and strict unique-owner set | pending |
 | `class.callsemantic.07` | template pattern semantic results | 75 | nested template parameter scope and strict unique-owner set | pending |
 | `class.constant_value_lookup.02` | resolved selected-call owner chain | 2 | constexpr duration member calls | pending |
