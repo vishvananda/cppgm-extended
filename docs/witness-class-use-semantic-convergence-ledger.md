@@ -43,8 +43,8 @@ or rerecord it.
 | Phase | Commit | Class sites | Replay routes | Production lines + / - | Instructions vs fixed | Instructions vs rolling | RSS vs fixed | Footprint vs fixed | Strict | Full | Inception | Artifact |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- |
 | Fixed | `a42c915e3` | 9 | 4 | 0 / 0 | baseline | baseline | baseline | baseline | clean | 4860/4860 | not rerun | `/tmp/cppgm-class-use-convergence-fixed.json` |
-| 0. Evidence and comparison tool | pending commit | 9 | 4 | 0 / 0 | n/a | n/a | n/a | n/a | validator unit tests clean | n/a | n/a | fixed and rolling copies verified |
-| 1. Typed result | pending | 9 | 4 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
+| 0. Evidence and comparison tool | `546181f8e` | 9 | 4 | 0 / 0 | n/a | n/a | n/a | n/a | validator unit tests clean | n/a | n/a | fixed and rolling copies verified |
+| 1. Typed result | `a628fa997` | 9 | 4 | +91 / -16 | +0.16% | +0.16% | +1.03% | +0.05% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-1.json` |
 | 2. Dependent pattern | pending | 8 | 4 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
 | 3A. Nested results | pending | pending | pending | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
 | 3B. Template patterns | pending | 6 | 2 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
@@ -58,10 +58,22 @@ or rerecord it.
 | Checkpoint | `Type` | `TemplateArgument` | `ClassInfo` | `OutOfClassStaticMemberDecl` | Retained source-result bytes or count |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Fixed | 280 | 136 | 1,136 | 136 | 0 |
+| Phase 1 | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 80 bytes, stack-scoped |
 
 `OutOfClassMemberFunctionDecl` starts at 240 bytes. The reporter source is
 `scripts/report_semantic_structure_sizes.cpp`; compile it against `dev/src`
 with the configured host compiler.
+
+## Phase 1 performance evidence
+
+- Candidate SHA-256:
+  `ee6e14f3ff53b1d3a97d8e404bbc4d3339365dfbe6394c92a034034d63340668`
+- Instructions: `176791783940`, `+0.16%` versus fixed
+- Maximum RSS: `770568192`, `+1.03%` versus fixed
+- Peak footprint: `590442496`, `+0.05%` versus fixed
+- Result storage: one non-owning stack view; no hot semantic structure grew
+- Cleanup obligation: none; all metrics remain inside the intermediate
+  investigation thresholds
 
 ## Producer migration
 
