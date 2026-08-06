@@ -37,7 +37,6 @@ enum class WitnessProducerSite
   AliasCallsemantic03,
 
   FunctionSemanticTemplateFunction,
-  FunctionSemanticOverloadDeclval,
 
   VariableTemplateInstantiation,
 

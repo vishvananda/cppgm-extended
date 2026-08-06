@@ -2223,14 +2223,12 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
                 ctx.template_witness_context(),
                 template_id->source_location_id));
     if(!public_location.empty()) {
-      witness::FunctionCallSourceDecision decision;
-      decision.origin = witness::FunctionCallEmissionOrigin::DeclvalCall;
-      witness::set_use_anchor(decision.location,
-                              decision.use_anchor,
-                              public_location);
-      decision.template_name = "declval";
-      decision.selected = "declval";
-      decision.selection = witness::SourceSelectionKind::Instantiation;
+      semantic_template_function::FunctionTemplateCallSourceUseRequest request;
+      request.use_location = public_location;
+      request.template_name = "declval";
+      request.selected = "declval";
+      request.selection = witness::SourceSelectionKind::Instantiation;
+      request.origin = witness::FunctionCallEmissionOrigin::DeclvalCall;
       witness::TemplateWitnessSourceBinding binding;
       binding.param = "$1";
       binding.arg = semantic_dependent_type::lookup_type_argument_text(ctx, declval_type);
@@ -2239,11 +2237,10 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
       }
       binding.source = "explicit";
       binding.type_like = true;
-      decision.bindings.push_back(binding);
-      CPPGM_SET_WITNESS_PRODUCER(
-          decision,
-          witness::WitnessProducerSite::FunctionSemanticOverloadDeclval);
-      witness::emit_function_call(ctx.template_witness_context(), decision);
+      request.bindings.push_back(binding);
+      semantic_template_function::emit_function_template_call_source_use(
+          ctx,
+          request);
     }
   }
 

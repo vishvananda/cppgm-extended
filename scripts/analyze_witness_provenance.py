@@ -22,7 +22,6 @@ SOURCE_PRODUCERS = [
     "alias.callsemantic.02",
     "alias.callsemantic.03",
     "function.semantic_template_function",
-    "function.semantic_overload.declval",
     "variable.template_instantiation",
 ]
 

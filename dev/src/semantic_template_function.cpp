@@ -527,18 +527,25 @@ void emit_function_template_call_source_use(
   semantic_model::FunctionBinding * binding = request.binding;
   const bool has_explicit_source_target =
       !request.template_name.empty() || !request.selected.empty();
-  if(!witness::function_call_source_capture_enabled() ||
+  const bool declval_call =
+      request.origin == witness::FunctionCallEmissionOrigin::DeclvalCall;
+  const bool source_capture_enabled =
+      declval_call ?
+          template_api::template_witness_declval_call_source_capture_enabled() :
+          witness::function_call_source_capture_enabled();
+  if(!source_capture_enabled ||
      (!binding && !has_explicit_source_target) ||
      (binding && !binding->source_template) ||
-     witness::template_witness_source_type_lookup_active()) {
+     (!declval_call && witness::template_witness_source_type_lookup_active())) {
     return;
   }
 
   const std::string public_location =
       template_api::normalize_template_witness_source_location(request.use_location);
   if(public_location.empty() ||
-     !witness::source_location_capture_enabled(ctx.template_witness_context(),
-                                               public_location)) {
+     (!declval_call &&
+      !witness::source_location_capture_enabled(ctx.template_witness_context(),
+                                                public_location))) {
     return;
   }
 
@@ -571,7 +578,7 @@ void emit_function_template_call_source_use(
   CPPGM_SET_WITNESS_PRODUCER(
       decision,
       witness::WitnessProducerSite::FunctionSemanticTemplateFunction);
-  witness::emit_function_call(decision);
+  witness::emit_function_call(ctx.template_witness_context(), decision);
 }
 
 }  // namespace semantic_template_function

@@ -450,8 +450,6 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(AliasCallsemantic03, "alias.callsemantic.03");
   CPPGM_PRODUCER_NAME(FunctionSemanticTemplateFunction,
                       "function.semantic_template_function");
-  CPPGM_PRODUCER_NAME(FunctionSemanticOverloadDeclval,
-                      "function.semantic_overload.declval");
   CPPGM_PRODUCER_NAME(VariableTemplateInstantiation,
                       "variable.template_instantiation");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi01, "lifecycle.template_api.01");
