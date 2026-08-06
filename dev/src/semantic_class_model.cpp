@@ -12089,39 +12089,10 @@ void finalize_class_constant_members(SemanticContext & ctx,
            binding.is_explicit_specialization) {
           return;
         }
-        std::string decl_location =
-            semantic_model::source_decl_anchor_location(
-                semantic_trace::value_decl_anchor(ctx, &binding));
-        if(decl_location.compare(0, 4, " at ") == 0) {
-          decl_location = decl_location.substr(4);
-        }
-        const std::string owner_name =
-            semantic_model::class_output_qualified_name(info);
-        if(owner_name.empty() || decl_location.empty()) {
-          return;
-        }
-        const std::string entity = owner_name + "::" + binding.name;
-        const bool has_template_identity =
-            template_api::value_or_owner_has_template_identity(&binding) ||
-            template_api::class_has_template_identity(&info);
-        binding.witness_member_value_instantiation_noted = true;
         const ScopedTemplateWitnessLifecycleResume lifecycle_resume;
-        const template_api::ScopedTemplateWitnessEntryContext entry_context(
-            template_api::make_template_closure_entry_context(
-                template_api::TemplateClosureReason::TrackInstantiation,
-                entity,
-                decl_location,
-                has_template_identity));
-        CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-            witness_provenance::WitnessProducerSite::
-                LifecycleSemanticClassModel,
-            template_api::TemplateWitnessLogEventKind::VariableInstantiation,
-            decl_location,
-            entity,
-            decl_location,
-            std::string(),
-            template_api::TemplateLifecycleCause::TrackInstantiation,
-            has_template_identity);
+        template_api::note_template_member_value_instantiation_if_needed(
+            ctx,
+            binding);
       };
   const auto find_current_binding =
       [&](const std::string & name) -> ValueBinding *

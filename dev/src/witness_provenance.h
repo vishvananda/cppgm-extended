@@ -48,7 +48,6 @@ enum class WitnessProducerSite
   LifecycleTemplateApi06,
   LifecycleTemplateApi07,
   LifecycleTemplateApi09,
-  LifecycleSemanticClassModel,
   LifecycleTemplateArgumentSemantics02,
   LifecycleCallsemantic01,
   LifecycleCallsemantic02,
