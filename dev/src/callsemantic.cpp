@@ -12858,6 +12858,9 @@ private:
       witness::SourceUseRole role = witness::SourceUseRole::TypeUse,
       bool clear_template_id_occurrence = false)
   {
+    if(!witness::source_capture_enabled(template_witness_context())) {
+      return;
+    }
     TypePtr semantic_type = resolved_type ?
         resolved_type : retained_resolved_class_template_id_type(template_id);
     if(!semantic_type && scope.class_info) {
@@ -13008,6 +13011,9 @@ private:
       witness::SourceUseRole role = witness::SourceUseRole::TypeUse,
       bool clear_template_id_occurrence = false)
   {
+    if(!witness::source_capture_enabled(template_witness_context())) {
+      return;
+    }
     if(node.kind == CppAstKind::pack_expansion_expression) {
       return;
     }
