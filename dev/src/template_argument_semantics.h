@@ -260,8 +260,6 @@ void append_non_bool_static_value_dependencies_in_template_argument_syntax(
     std::vector<template_model::TemplateValueDependency> & out);
 
 void note_template_value_dependencies_for_witness(
-    const std::vector<template_model::TemplateValueDependency> & dependencies);
-void note_template_value_dependencies_for_witness(
     SemanticContext & ctx,
     const std::vector<template_model::TemplateValueDependency> & dependencies);
 bool collect_template_member_value_dependency_if_active(

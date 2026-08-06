@@ -460,8 +460,6 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi06, "lifecycle.template_api.06");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi07, "lifecycle.template_api.07");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi09, "lifecycle.template_api.09");
-  CPPGM_PRODUCER_NAME(LifecycleTemplateArgumentSemantics02,
-                      "lifecycle.template_argument_semantics.02");
   CPPGM_PRODUCER_NAME(LifecycleCallsemantic01, "lifecycle.callsemantic.01");
   CPPGM_PRODUCER_NAME(LifecycleCallsemantic02, "lifecycle.callsemantic.02");
   CPPGM_PRODUCER_NAME(LifecycleConstantValueLookup02,

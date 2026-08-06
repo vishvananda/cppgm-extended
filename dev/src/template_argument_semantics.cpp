@@ -6299,6 +6299,11 @@ bool append_template_value_dependency(
   for(size_t i = 0; i < dependencies.size(); ++i) {
     if(dependencies[i].entity == dependency.entity &&
        dependencies[i].decl_location == dependency.decl_location) {
+      if(!dependencies[i].value_binding && dependency.value_binding) {
+        dependencies[i].value_binding = dependency.value_binding;
+        dependencies[i].value_scope = dependency.value_scope;
+        dependencies[i].value_name = dependency.value_name;
+      }
       return false;
     }
   }
@@ -6599,6 +6604,7 @@ void append_member_value_binding_dependency(
       binding.declaration_scope ?
           binding.declaration_scope :
           owner->member_scope.get();
+  dependency.value_binding = &binding;
   dependency.value_name = member_name;
   dependency.entity_has_template_identity =
       template_api::value_or_owner_has_template_identity(&binding) ||
@@ -6663,6 +6669,7 @@ void append_structured_bool_integral_constant_dependency(
   dependency.decl_location = decl_location;
   dependency.value_scope =
       member.binding ? member.binding->declaration_scope : nullptr;
+  dependency.value_binding = member.binding;
   dependency.value_name = kStructuredBoolResultMemberName;
   dependency.entity_has_template_identity =
       template_api::class_has_template_identity(integral_constant);
@@ -6906,6 +6913,7 @@ void append_static_member_value_dependency_for_type(
       member.binding->declaration_scope ?
           member.binding->declaration_scope :
           dependency_owner->member_scope.get();
+  dependency.value_binding = member.binding;
   dependency.value_name = member.binding->name;
   dependency.entity_has_template_identity =
       template_api::value_or_owner_has_template_identity(member.binding) ||
@@ -7774,8 +7782,8 @@ void append_structured_bool_value_dependencies_in_expression_ast_impl(
 }
 
 void note_template_value_dependency_for_witness(
-    const TemplateValueDependency & dependency,
-    SemanticContext * ctx = nullptr)
+    SemanticContext & ctx,
+    const TemplateValueDependency & dependency)
 {
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
@@ -7793,33 +7801,36 @@ void note_template_value_dependency_for_witness(
     return;
   }
   std::string trigger_entity = dependency.entity;
+  const ValueBinding * resolved_binding = dependency.value_binding;
   if(dependency.value_scope && !dependency.value_name.empty()) {
     std::map<std::string, ValueBinding>::iterator current =
         dependency.value_scope->values.find(dependency.value_name);
     if(current != dependency.value_scope->values.end()) {
-      current->second.witness_member_value_instantiation_noted = true;
+      resolved_binding = &current->second;
     }
     trigger_entity = dependency.value_name;
   }
-  const ScopedTemplateValueDependencyLifecycleResume lifecycle_resume;
-  const witness::ScopedTemplateWitnessEntryContext entry_context(
-      witness::make_template_closure_entry_context(
-          witness::TemplateClosureReason::TrackInstantiation,
-          trigger_entity,
-          dependency.decl_location,
-          dependency.entity_has_template_identity));
-  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-      witness_provenance::WitnessProducerSite::
-          LifecycleTemplateArgumentSemantics02,
-      witness::TemplateWitnessLogEventKind::VariableInstantiation,
-      dependency.decl_location,
-      dependency.entity,
-      dependency.decl_location,
-      string(),
-      witness::TemplateLifecycleCause::TrackInstantiation,
-      dependency.entity_has_template_identity,
-      false,
-      true);
+  if(resolved_binding) {
+    const ScopedTemplateValueDependencyLifecycleResume lifecycle_resume;
+    const witness::ScopedTemplateWitnessEntryContext entry_context(
+        witness::make_template_closure_entry_context(
+            witness::TemplateClosureReason::TrackInstantiation,
+            trigger_entity,
+            dependency.decl_location,
+            dependency.entity_has_template_identity));
+    template_api::TemplateMemberValueInstantiationRequest request;
+    request.origin = template_api::TemplateMemberValueInstantiationOrigin::
+        RetainedDependency;
+    request.entity = dependency.entity;
+    request.decl_location = dependency.decl_location;
+    request.entity_has_template_identity =
+        dependency.entity_has_template_identity;
+    template_api::note_template_member_value_instantiation_if_needed(
+        ctx,
+        *resolved_binding,
+        request);
+    return;
+  }
 }
 
 void note_structured_bool_value_dependencies_for_class_info(
@@ -7832,16 +7843,16 @@ void note_structured_bool_value_dependencies_for_class_info(
   }
   for(size_t i = 0; i < info.template_value_dependencies.size(); ++i) {
     note_template_value_dependency_for_witness(
-        info.template_value_dependencies[i],
-        services.semantic_context);
+        *services.semantic_context,
+        info.template_value_dependencies[i]);
   }
   for(size_t i = 0; i < info.instantiation_arguments.size(); ++i) {
     const vector<TemplateValueDependency> & dependencies =
         info.instantiation_arguments[i].rare().value_dependencies;
     for(size_t j = 0; j < dependencies.size(); ++j) {
       note_template_value_dependency_for_witness(
-          dependencies[j],
-          services.semantic_context);
+          *services.semantic_context,
+          dependencies[j]);
     }
   }
   for(size_t i = 0; i < info.instantiation_arguments.size(); ++i) {
@@ -7899,8 +7910,8 @@ void note_structured_bool_value_member_if_needed(
                                                       ignored_value,
                                                       dependencies);
   for(size_t i = 0; i < dependencies.size(); ++i) {
-    note_template_value_dependency_for_witness(dependencies[i],
-                                              services.semantic_context);
+    note_template_value_dependency_for_witness(*services.semantic_context,
+                                               dependencies[i]);
   }
   semantic_lookup::MemberValueLookupResult member =
       semantic_lookup::lookup_member_value(
@@ -14219,19 +14230,11 @@ void note_alias_target_structured_bool_value_member_for_witness_capture(
 }
 
 void note_template_value_dependencies_for_witness(
-    const vector<TemplateValueDependency> & dependencies)
-{
-  for(size_t i = 0; i < dependencies.size(); ++i) {
-    note_template_value_dependency_for_witness(dependencies[i]);
-  }
-}
-
-void note_template_value_dependencies_for_witness(
     SemanticContext & ctx,
     const vector<TemplateValueDependency> & dependencies)
 {
   for(size_t i = 0; i < dependencies.size(); ++i) {
-    note_template_value_dependency_for_witness(dependencies[i], &ctx);
+    note_template_value_dependency_for_witness(ctx, dependencies[i]);
   }
 }
 
@@ -41664,7 +41667,8 @@ void note_structured_bool_value_members_in_template_arguments(
     const vector<TemplateValueDependency> & dependencies =
         argument.rare().value_dependencies;
     for(size_t j = 0; j < dependencies.size(); ++j) {
-      note_template_value_dependency_for_witness(dependencies[j]);
+      note_template_value_dependency_for_witness(*services.semantic_context,
+                                                 dependencies[j]);
     }
     if(argument.source_defaulted) {
       continue;

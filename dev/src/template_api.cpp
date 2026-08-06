@@ -4100,8 +4100,12 @@ bool default_argument_member_value_note_is_speculative(
 
 void note_template_member_value_instantiation_if_needed(
     SemanticContext & ctx,
-    const semantic_model::ValueBinding & binding)
+    const semantic_model::ValueBinding & binding,
+    const TemplateMemberValueInstantiationRequest & request)
 {
+  const bool retained_dependency =
+      request.origin ==
+          TemplateMemberValueInstantiationOrigin::RetainedDependency;
   const bool trace_enabled = parser_trace::enabled("template.resolve");
   const auto trace_skip =
       [&](const char * reason) -> void
@@ -4187,6 +4191,7 @@ void note_template_member_value_instantiation_if_needed(
     dependency.decl_location =
         value_binding_member_instantiation_decl_location(ctx, binding);
     dependency.value_scope = binding.declaration_scope;
+    dependency.value_binding = &binding;
     dependency.value_name = binding.name;
     dependency.entity_has_template_identity =
         value_or_owner_has_template_identity(&binding);
@@ -4201,15 +4206,21 @@ void note_template_member_value_instantiation_if_needed(
       return;
     }
   }
-  if(binding.witness_member_value_instantiation_noted) {
+  if(binding.witness_member_value_instantiation_noted &&
+     !retained_dependency) {
     replay_static_member_definition_once();
     trace_skip("already-noted");
     return;
   }
 
-  const std::string entity = value_binding_member_instantiation_entity(ctx, binding);
+  const std::string entity =
+      retained_dependency && !request.entity.empty() ?
+          request.entity :
+          value_binding_member_instantiation_entity(ctx, binding);
   const std::string decl_location =
-      value_binding_member_instantiation_decl_location(ctx, binding);
+      retained_dependency && !request.decl_location.empty() ?
+          request.decl_location :
+          value_binding_member_instantiation_decl_location(ctx, binding);
   if(entity.empty() || decl_location.empty()) {
     trace_skip("empty-entity-or-decl");
     return;
@@ -4223,6 +4234,7 @@ void note_template_member_value_instantiation_if_needed(
     dependency.entity = entity;
     dependency.decl_location = decl_location;
     dependency.value_scope = binding.declaration_scope;
+    dependency.value_binding = &binding;
     dependency.value_name = binding.name;
     dependency.entity_has_template_identity =
         value_or_owner_has_template_identity(&binding);
@@ -4238,8 +4250,10 @@ void note_template_member_value_instantiation_if_needed(
     return;
   }
 
-  binding.witness_member_value_instantiation_noted = true;
-  replay_static_member_definition_once();
+  if(!retained_dependency) {
+    binding.witness_member_value_instantiation_noted = true;
+    replay_static_member_definition_once();
+  }
   {
     const template_api::ScopedTemplateWitnessEntryContext entry_context =
         template_api::maybe_enter_value_binding_closure_context(
@@ -4252,9 +4266,13 @@ void note_template_member_value_instantiation_if_needed(
         decl_location,
         entity,
         decl_location,
-        created_new_detail(false),
-        TemplateLifecycleCause::None,
-        value_or_owner_has_template_identity(&binding));
+        retained_dependency ? std::string() : created_new_detail(false),
+        retained_dependency ? TemplateLifecycleCause::TrackInstantiation :
+                              TemplateLifecycleCause::None,
+        retained_dependency ? request.entity_has_template_identity :
+                              value_or_owner_has_template_identity(&binding),
+        false,
+        retained_dependency);
   }
 }
 

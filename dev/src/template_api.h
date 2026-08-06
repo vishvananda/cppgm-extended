@@ -601,9 +601,27 @@ void note_output_tracked_class_instantiation_if_needed(
 void note_anonymous_member_class_events_if_owner_logged(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info);
+
+enum class TemplateMemberValueInstantiationOrigin
+{
+  SemanticUse,
+  RetainedDependency,
+};
+
+struct TemplateMemberValueInstantiationRequest
+{
+  TemplateMemberValueInstantiationOrigin origin =
+      TemplateMemberValueInstantiationOrigin::SemanticUse;
+  std::string entity;
+  std::string decl_location;
+  bool entity_has_template_identity = false;
+};
+
 void note_template_member_value_instantiation_if_needed(
     SemanticContext & ctx,
-    const semantic_model::ValueBinding & binding);
+    const semantic_model::ValueBinding & binding,
+    const TemplateMemberValueInstantiationRequest & request =
+        TemplateMemberValueInstantiationRequest());
 void note_nested_member_class_instantiation_completed_if_needed(
     SemanticContext & ctx,
     semantic_model::ClassInfo * info,

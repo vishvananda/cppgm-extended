@@ -271,6 +271,7 @@ struct TemplateValueDependency
   std::string decl_location;
   std::string public_use_location;
   semantic_model::Scope * value_scope = nullptr;
+  const semantic_model::ValueBinding * value_binding = nullptr;
   std::string value_name;
   bool entity_has_template_identity = true;
 };
