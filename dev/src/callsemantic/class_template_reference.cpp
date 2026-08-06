@@ -1857,7 +1857,10 @@ public:
     const std::string raw_cache_key =
         use_raw_reference_cache ? raw_reference_cache_key(decl, use_scope, arg_texts) :
                                   std::string();
-    if(use_raw_reference_cache) {
+    const bool resolved_source_result_required =
+        witness::source_capture_enabled(template_witness_context()) ||
+        !parser_trace::current_order_use_location().empty();
+    if(use_raw_reference_cache && !resolved_source_result_required) {
       auto cached =
           decl.fast_reference_cache.find(raw_cache_key);
       if(cached != decl.fast_reference_cache.end() &&
@@ -1916,7 +1919,7 @@ public:
        !fast_existing_requires_mangle_refresh &&
        !fast_existing_requires_dependency_refresh &&
        !parser_trace::enabled("template.resolve") &&
-       !witness::source_capture_enabled(template_witness_context())) {
+       !resolved_source_result_required) {
       remember_raw_reference_cache(decl, raw_cache_key, info);
       return info;
     }
@@ -1942,7 +1945,8 @@ public:
           template_api::normalize_template_witness_source_location(
               parser_trace::current_order_use_location());
       const std::string specialization_location =
-          source_location_for_node(*specialization.class_node);
+          template_api::normalize_template_witness_source_location(
+              source_location_for_node(*specialization.class_node));
       if(!use_location.empty() &&
          !specialization_location.empty() &&
          source_location_is_later(use_location, specialization_location)) {
@@ -2008,6 +2012,24 @@ public:
     const vector<TemplateParameterInfo> * bound_parameters = specialization.parameters;
     const vector<TemplateArgument> * bound_arguments = &specialization.arguments;
     const std::map<std::string, std::size_t> * bound_pack_sizes = &specialization.pack_sizes;
+    if(specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION &&
+       specialization.class_node) {
+      const std::string order_use_location =
+          template_api::normalize_template_witness_source_location(
+              parser_trace::current_order_use_location());
+      const std::string specialization_location =
+          template_api::normalize_template_witness_source_location(
+              source_location_for_node(*specialization.class_node));
+      if(!order_use_location.empty() &&
+         !specialization_location.empty() &&
+         source_location_is_later(order_use_location,
+                                  specialization_location)) {
+        throw ExplicitSpecializationAfterInstantiationError(
+            string("explicit specialization after instantiation") +
+            " [use " + order_use_location + "]" +
+            " [specialization " + specialization_location + "]");
+      }
+    }
     string computed_key;
     if(!precomputed_key) {
       note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_key_builds);
@@ -2097,6 +2119,21 @@ public:
       resolved.source_use_mode = source_use_mode;
       resolved.dependent_arguments = dependent_arguments;
       return resolved;
+    };
+    const auto note_first_qualifier_use = [&](ClassInfo * resolved_info) -> void
+    {
+      if(!resolved_info) {
+        return;
+      }
+      const std::string order_use_location =
+          template_api::normalize_template_witness_source_location(
+              parser_trace::current_order_use_location());
+      if(!order_use_location.empty()) {
+        resolved_info->first_qualifier_use_location =
+            prefer_earlier_source_location(
+                resolved_info->first_qualifier_use_location,
+                order_use_location);
+      }
     };
     const auto note_class_use = [&]
         (const resolved_source_semantics::ResolvedClassTemplateIdView & resolved) -> void
@@ -2410,6 +2447,9 @@ public:
           !template_api::template_witness_qualified_member_type_lookup_active() &&
           (scope_has_template_placeholders(use_scope) ||
            scope_is_inside_source_template_context(use_scope));
+      const bool qualified_value_source_use =
+          source_use_mode ==
+              template_api::ClassTemplateSourceUseMode::QualifiedValueUse;
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "class-use-source-gate template=" << decl.name
@@ -2427,6 +2467,7 @@ public:
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
       if(witness::enabled(witness_context) &&
+         !qualified_value_source_use &&
          (replayed_current_specialization_member_body_source_use ||
           (!explicit_specialization_source_use &&
            (replayed_template_header_source_use ||
@@ -2466,6 +2507,9 @@ public:
            specialization.kind != template_api::MS_PRIMARY ||
            template_arguments_are_dependent(arguments)) {
           return false;
+        }
+        if(qualified_value_source_use) {
+          return true;
         }
         return source_use_in_template_header ||
                !source_use_in_template_body ||
@@ -3048,6 +3092,7 @@ public:
     if(is_builtin_initializer_list_template(decl)) {
       ClassInfo * builtin_info =
           instantiate_selected_class_template(decl, use_scope, arguments, specialization);
+      note_first_qualifier_use(builtin_info);
       note_class_use(resolved_template_id_view(builtin_info));
       return builtin_info;
     }
@@ -3193,6 +3238,7 @@ public:
                                           specialization.kind ==
                                               template_api::MS_PRIMARY);
       record_selected_class_template_base_source_uses(decl, specialization);
+      note_first_qualifier_use(info);
       note_class_use(resolved_template_id_view(info));
       return info;
     }
@@ -3296,6 +3342,7 @@ public:
         borrow_class_instantiation_key(*info, stored->first);
       }
     }
+    note_first_qualifier_use(info);
     note_class_use(resolved_template_id_view(info));
     return info;
   }

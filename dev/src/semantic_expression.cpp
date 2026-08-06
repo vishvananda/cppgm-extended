@@ -22,6 +22,7 @@
 #include "parser_trace.h"
 #include "pptokenizer.h"
 #include "rtti_names.h"
+#include "resolved_source_semantics.h"
 #include "semantic_builtins.h"
 #include "semantic_class_model.h"
 #include "semantic_conversion.h"
@@ -1678,13 +1679,9 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
     return false;
   }
 
-  TypePtr qualifier_type;
-  const ValueBinding * value_binding =
-      lookup_qualified_value_binding_node(ctx,
-                                          scope,
-                                          *qualified,
-                                          operand_node,
-                                          &qualifier_type);
+  resolved_source_semantics::ResolvedQualifiedId resolved =
+      resolve_qualified_id_value_node(ctx, scope, *qualified, operand_node);
+  const ValueBinding * value_binding = resolved.selected_value;
   // A lazy class lookup can expose a field before its final offset is known.
   // Member-pointer constants encode that offset immediately, so refresh the
   // binding after completing the owning layout.
@@ -1694,11 +1691,11 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
      value_binding->owner_class->type &&
      !value_binding->owner_class->type->named_has_layout) {
     ctx.complete_class_type(value_binding->owner_class->type);
-    value_binding = lookup_qualified_value_binding_node(ctx,
-                                                        scope,
-                                                        *qualified,
-                                                        operand_node,
-                                                        &qualifier_type);
+    resolved = resolve_qualified_id_value_node(ctx,
+                                               scope,
+                                               *qualified,
+                                               operand_node);
+    value_binding = resolved.selected_value;
   }
   ValueBinding retained_value_binding;
   if(value_binding) {
@@ -1706,8 +1703,10 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
     value_binding = &retained_value_binding;
   }
   ClassInfo * naming_class =
-      qualifier_type ?
-          ctx.class_info_for_type(strip_top_level_cv(remove_reference_type(qualifier_type))) :
+      resolved.resolved_owner_type ?
+          ctx.class_info_for_type(
+              strip_top_level_cv(
+                  remove_reference_type(resolved.resolved_owner_type))) :
           nullptr;
 
   const TemplateIdSyntax * template_id = cppast_template_id_syntax(operand_node);
@@ -4972,17 +4971,14 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
   }
 
   if(structured_qualified_lookup) {
-    TypePtr structured_qualifier_type;
-    const ValueBinding * structured_binding =
-        lookup_qualified_value_binding_node(ctx,
-                                            scope,
-                                            *qualified,
-                                            node,
-                                            &structured_qualifier_type);
+    const resolved_source_semantics::ResolvedQualifiedId resolved =
+        resolve_qualified_id_value_node(ctx, scope, *qualified, node);
+    const ValueBinding * structured_binding = resolved.selected_value;
     if(structured_binding) {
       const bool concrete_structured_qualifier =
-          structured_qualifier_type &&
-          !ctx.type_depends_on_template_parameter(structured_qualifier_type);
+          resolved.resolved_owner_type &&
+          !ctx.type_depends_on_template_parameter(
+              resolved.resolved_owner_type);
       allow_constant_fold =
           (node.qualifier_type_syntaxes.empty() ||
            concrete_structured_qualifier) &&

@@ -12654,14 +12654,19 @@ private:
       Scope & scope,
       const TemplateIdSyntax & syntax,
       const TypePtr & resolved_type,
-      witness::SourceUseOwnership ownership) override
+      witness::SourceUseOwnership ownership,
+      witness::SourceUseRole role = witness::SourceUseRole::TypeUse,
+      bool clear_template_id_occurrence = false) override
   {
     retain_resolved_class_template_id_source(syntax, resolved_type);
     observe_nested_class_use_from_resolved_template_id(scope,
                                                        syntax,
                                                        resolved_type,
                                                        ownership,
-                                                       std::string());
+                                                       std::string(),
+                                                       false,
+                                                       role,
+                                                       clear_template_id_occurrence);
   }
 
   void observe_nested_class_uses_from_resolved_ast_node(
@@ -18543,13 +18548,6 @@ private:
         [this](const std::string & value) {
           return earliest_qualified_use_location_for_value(value);
         };
-    callbacks.class_template_argument_source_locations_for_current_use =
-        [this](const std::string & template_name,
-               const std::vector<TemplateParameterInfo> & parameters,
-               const std::vector<std::string> & arg_texts) {
-          return class_template_argument_source_locations_for_current_use(
-              template_name, parameters, arg_texts);
-        };
     return callbacks;
   }
 
@@ -18583,7 +18581,7 @@ private:
   void record_constexpr_direct_function_call_source_use(
       Scope & scope,
       const CppAstNode & callee,
-      FunctionBinding & binding,
+      const resolved_source_semantics::ResolvedQualifiedId & selected_call,
       const TemplateIdSyntax * template_id_syntax,
       std::size_t explicit_arg_count)
   {
@@ -18594,7 +18592,7 @@ private:
         callbacks,
         scope,
         callee,
-        binding,
+        selected_call,
         template_id_syntax,
         explicit_arg_count);
   }
@@ -18683,12 +18681,12 @@ private:
     callbacks.record_constexpr_direct_function_call_source_use =
         [this](Scope & target_scope,
                const CppAstNode & callee,
-               FunctionBinding & binding,
+               const resolved_source_semantics::ResolvedQualifiedId & selected_call,
                const TemplateIdSyntax * template_id_syntax,
                std::size_t explicit_arg_count) {
           record_constexpr_direct_function_call_source_use(target_scope,
                                                            callee,
-                                                           binding,
+                                                           selected_call,
                                                            template_id_syntax,
                                                            explicit_arg_count);
         };

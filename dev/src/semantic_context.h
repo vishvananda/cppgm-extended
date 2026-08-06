@@ -144,7 +144,10 @@ public:
       semantic_model::Scope & scope,
       const cpp_decl::TemplateIdSyntax & syntax,
       const cpp_decl::TypePtr & resolved_type,
-      semantic_source_use::SourceUseOwnership ownership) = 0;
+      semantic_source_use::SourceUseOwnership ownership,
+      semantic_source_use::SourceUseRole role =
+          semantic_source_use::SourceUseRole::TypeUse,
+      bool clear_template_id_occurrence = false) = 0;
   virtual void emit_static_member_definition_class_use_source_events_from_ast_node(
       semantic_model::Scope & scope,
       const CppAstNode & node,

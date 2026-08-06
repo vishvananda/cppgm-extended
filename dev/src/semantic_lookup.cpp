@@ -18,6 +18,7 @@
 #include "cpp_scope_lookup.h"
 #include "parser_trace.h"
 #include "qualified_name_parser.h"
+#include "resolved_source_semantics.h"
 #include "semantic_class_model.h"
 #include "semantic_context.h"
 #include "semantic_dependent_type.h"
@@ -8047,6 +8048,39 @@ const ValueBinding * lookup_qualified_value_binding_node(SemanticContext & ctx,
         ctx, scope, qualified, &node);
   }
   return lookup_value_binding_in_type_scope(ctx, scope, qualified, qualifier_type);
+}
+
+resolved_source_semantics::ResolvedQualifiedId resolve_qualified_id_value_node(
+    SemanticContext & ctx,
+    Scope & scope,
+    const QualifiedName & qualified,
+    const CppAstNode & node)
+{
+  resolved_source_semantics::ResolvedQualifiedId resolved;
+  resolved.use_scope = &scope;
+  resolved.selected_value =
+      lookup_qualified_value_binding_node(ctx,
+                                          scope,
+                                          qualified,
+                                          node,
+                                          &resolved.resolved_owner_type);
+  if(resolved.resolved_owner_type) {
+    ClassInfo * owner = ctx.class_info_for_type(resolved.resolved_owner_type);
+    resolved.resolved_owner_scope = owner && owner->member_scope ?
+        owner->member_scope.get() : nullptr;
+  }
+  if(!resolved.resolved_owner_scope && resolved.selected_value &&
+     resolved.selected_value->owner_class &&
+     resolved.selected_value->owner_class->member_scope) {
+    resolved.resolved_owner_scope =
+        resolved.selected_value->owner_class->member_scope.get();
+    resolved.resolved_owner_type = resolved.selected_value->owner_class->type;
+  }
+  if(!node.qualifier_template_id_syntaxes.empty()) {
+    resolved.source_owner_syntax =
+        &node.qualifier_template_id_syntaxes.back();
+  }
+  return resolved;
 }
 
 }  // namespace semantic_lookup

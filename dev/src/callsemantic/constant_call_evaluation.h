@@ -11,6 +11,10 @@
 
 class SemanticContext;
 
+namespace resolved_source_semantics {
+struct ResolvedQualifiedId;
+}
+
 namespace constant_eval {
 class Evaluator;
 }
@@ -26,7 +30,7 @@ struct ConstantCallEvaluationCallbacks
 {
   std::function<void(semantic_model::Scope &,
                      const CppAstNode &,
-                     semantic_model::FunctionBinding &,
+                     const resolved_source_semantics::ResolvedQualifiedId &,
                      const cpp_decl::TemplateIdSyntax *,
                      std::size_t)>
       record_constexpr_direct_function_call_source_use;

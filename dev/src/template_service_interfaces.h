@@ -27,6 +27,7 @@ namespace template_api {
 enum class ClassTemplateSourceUseMode
 {
   EmitClassUse,
+  QualifiedValueUse,
   EmitClassUseOnly,
   NestedArgumentsOnly,
   SemanticLookupOnly
@@ -36,6 +37,7 @@ inline bool class_template_source_use_emits_class_use(
     ClassTemplateSourceUseMode mode)
 {
   return mode == ClassTemplateSourceUseMode::EmitClassUse ||
+         mode == ClassTemplateSourceUseMode::QualifiedValueUse ||
          mode == ClassTemplateSourceUseMode::EmitClassUseOnly;
 }
 

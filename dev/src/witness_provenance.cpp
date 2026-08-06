@@ -438,8 +438,6 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(ClassCallsemantic10, "class.callsemantic.10");
   CPPGM_PRODUCER_NAME(ClassCallsemantic13, "class.callsemantic.13");
   CPPGM_PRODUCER_NAME(ClassTemplateReference02, "class.class_template_reference.02");
-  CPPGM_PRODUCER_NAME(ClassConstantValueLookup02, "class.constant_value_lookup.02");
-  CPPGM_PRODUCER_NAME(ClassConstantValueLookup03, "class.constant_value_lookup.03");
   CPPGM_PRODUCER_NAME(ClassTemplateInstantiation, "class.template_instantiation");
   CPPGM_PRODUCER_NAME(AliasTemplateArgumentSemantics02,
                       "alias.template_argument_semantics.02");

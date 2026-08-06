@@ -14,6 +14,10 @@
 
 class SemanticContext;
 
+namespace resolved_source_semantics {
+struct ResolvedQualifiedId;
+}
+
 namespace callsemantic {
 
 struct ConstantValueLookupCallbacks
@@ -24,11 +28,6 @@ struct ConstantValueLookupCallbacks
       earliest_qualified_use_location_for_prefix;
   std::function<std::string(const std::string &)>
       earliest_qualified_use_location_for_value;
-  std::function<std::vector<std::string>(
-      const std::string &,
-      const std::vector<template_model::TemplateParameterInfo> &,
-      const std::vector<std::string> &)>
-      class_template_argument_source_locations_for_current_use;
 };
 
 bool materialize_constant_binding_value(
@@ -50,7 +49,7 @@ void record_constexpr_direct_function_call_source_use(
     const ConstantValueLookupCallbacks & callbacks,
     semantic_model::Scope & scope,
     const CppAstNode & callee,
-    semantic_model::FunctionBinding & binding,
+    const resolved_source_semantics::ResolvedQualifiedId & selected_call,
     const cpp_decl::TemplateIdSyntax * template_id_syntax,
     std::size_t explicit_arg_count);
 

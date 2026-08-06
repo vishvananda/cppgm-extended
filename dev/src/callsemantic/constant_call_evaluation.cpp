@@ -9,6 +9,7 @@
 #include "semantic_conversion.h"
 #include "semantic_errors.h"
 #include "semantic_lookup.h"
+#include "resolved_source_semantics.h"
 #include "semantic_template_function.h"
 #include "semantic_utils.h"
 #include "template_scope.h"
@@ -857,10 +858,28 @@ bool evaluate_constant_call_expression_value(
         return false;
       }
       if(callbacks.record_constexpr_direct_function_call_source_use) {
+        resolved_source_semantics::ResolvedQualifiedId selected_call;
+        selected_call.use_scope = &scope;
+        selected_call.selected_function = binding;
+        if(binding->owner_class) {
+          selected_call.resolved_owner_type = binding->owner_class->type;
+          selected_call.resolved_owner_scope =
+              binding->owner_class->member_scope.get();
+        }
+        if(!callee.qualifier_template_id_syntaxes.empty()) {
+          selected_call.source_owner_syntax =
+              &callee.qualifier_template_id_syntaxes.back();
+        } else if(template_id && binding->owner_class &&
+                  semantic_utils::unqualified_member_name(
+                      template_id->name.name) ==
+                      semantic_utils::unqualified_member_name(
+                          binding->owner_class->name)) {
+          selected_call.source_owner_syntax = template_id;
+        }
         callbacks.record_constexpr_direct_function_call_source_use(
             scope,
             callee,
-            *binding,
+            selected_call,
             template_id,
             template_id ? template_id->arguments.size() : 0);
       }

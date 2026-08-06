@@ -25,9 +25,7 @@ enum class WitnessProducerSite
   ClassCallsemantic10 = 4,
   ClassCallsemantic13,
   ClassTemplateReference02,
-  ClassConstantValueLookup02,
-  ClassConstantValueLookup03,
-  ClassTemplateInstantiation,
+  ClassTemplateInstantiation = 9,
 
   AliasTemplateArgumentSemantics02,
   AliasCallsemantic02,

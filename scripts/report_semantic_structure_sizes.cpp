@@ -22,5 +22,8 @@ int main()
   std::cout << "ResolvedAliasTemplateIdView "
             << sizeof(resolved_source_semantics::ResolvedAliasTemplateIdView)
             << '\n';
+  std::cout << "ResolvedQualifiedId "
+            << sizeof(resolved_source_semantics::ResolvedQualifiedId)
+            << '\n';
   return 0;
 }
