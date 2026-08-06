@@ -1604,6 +1604,7 @@ struct OutOfClassStaticMemberDecl
   const CppAstNode * declarator = nullptr;
   const CppAstNode * initializer = nullptr;
   std::vector<template_model::TemplateParameterInfo> parameters;
+  uint32_t owner_reference_handle = 0;
   bool has_storage_definition = false;
 };
 
@@ -1635,6 +1636,7 @@ struct OutOfClassMemberFunctionDecl
   bool is_defaulted = false;
   bool is_deleted = false;
   bool exclude_from_explicit_instantiation = false;
+  uint32_t owner_reference_handle = 0;
   std::vector<template_model::TemplateParameterInfo> parameters;
 };
 
@@ -1648,6 +1650,7 @@ struct OutOfClassMemberFunctionTemplateDefinition
   const CppAstNode * ctor_initializer = nullptr;
   std::vector<std::string> parameter_aliases_pattern;
   std::vector<template_model::TemplateParameterInfo> owner_parameters;
+  uint32_t owner_reference_handle = 0;
 };
 
 struct PartialClassTemplateSpecializationDecl

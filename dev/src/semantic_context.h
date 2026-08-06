@@ -44,6 +44,7 @@ struct ClassSpecializationSelection;
 namespace resolved_source_semantics {
 struct ResolvedClassTemplateIdView;
 struct ResolvedAliasTemplateIdView;
+struct ResolvedOwnerReference;
 }  // namespace resolved_source_semantics
 
 namespace semantic_overload {
@@ -148,10 +149,17 @@ public:
       semantic_source_use::SourceUseRole role =
           semantic_source_use::SourceUseRole::TypeUse,
       bool clear_template_id_occurrence = false) = 0;
-  virtual void emit_static_member_definition_class_use_source_events_from_ast_node(
-      semantic_model::Scope & scope,
-      const CppAstNode & node,
-      semantic_source_use::SourceUseOwnership ownership) = 0;
+  virtual uint32_t retain_resolved_out_of_class_owner_reference(
+      const resolved_source_semantics::ResolvedOwnerReference & resolved) = 0;
+  virtual void observe_resolved_out_of_class_owner_reference(
+      const resolved_source_semantics::ResolvedOwnerReference & resolved,
+      const std::vector<template_model::TemplateParameterInfo> *
+          canonical_parameters,
+      semantic_source_use::SourceUseRole role) = 0;
+  virtual void observe_retained_out_of_class_owner_reference(
+      uint32_t handle,
+      semantic_model::ClassInfo & concrete_owner,
+      semantic_source_use::SourceUseRole role) = 0;
   virtual void record_deduced_class_use_for_resolved_alias_type(
       semantic_model::Scope & scope,
       const cpp_decl::TypePtr & type,

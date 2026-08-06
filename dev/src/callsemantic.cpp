@@ -1444,6 +1444,8 @@ private:
   std::unordered_map<std::string,
                      resolved_source_semantics::RetainedDependentClassTemplateId>
       dependent_class_template_ids_by_location_;
+  std::vector<resolved_source_semantics::ResolvedOwnerReference>
+      retained_out_of_class_owner_references_;
   bool emit_all_source_function_definitions_ = false;
   bool allow_zero_length_arrays_ = false;
   mutable bool qualified_use_occurrences_built_ = false;
@@ -12669,6 +12671,111 @@ private:
                                                        clear_template_id_occurrence);
   }
 
+  uint32_t retain_resolved_out_of_class_owner_reference(
+      const resolved_source_semantics::ResolvedOwnerReference & resolved) override
+  {
+    if(template_witness_session_ == nullptr || !resolved.valid()) {
+      return 0;
+    }
+    retained_out_of_class_owner_references_.push_back(resolved);
+    return static_cast<uint32_t>(retained_out_of_class_owner_references_.size());
+  }
+
+  void observe_resolved_out_of_class_owner_reference(
+      const resolved_source_semantics::ResolvedOwnerReference & resolved,
+      const vector<TemplateParameterInfo> * canonical_parameters,
+      witness::SourceUseRole role) override
+  {
+    if(!resolved.valid() ||
+       !witness::source_capture_enabled(template_witness_context())) {
+      return;
+    }
+    ClassInfo & owner = *resolved.owner;
+    ClassTemplateDecl * const origin = owner.source_template;
+    if(!origin || owner.instantiation_arguments.empty() ||
+       unqualified_member_name(resolved.source_syntax->name.name) !=
+           origin->name) {
+      return;
+    }
+    const bool specialized =
+        owner.is_explicit_specialization ||
+        (owner.template_output_node && origin->class_node &&
+         owner.template_output_node != origin->class_node);
+    const bool dependent_arguments =
+        template_arguments_are_dependent(owner.instantiation_arguments);
+    if(role == witness::SourceUseRole::QualifierUse &&
+       dependent_arguments && !specialized) {
+      return;
+    }
+
+    const std::string location =
+        source_location_for_template_id_syntax_name(*resolved.source_syntax);
+    if(!source_location_points_at_identifier(location, origin->name)) {
+      return;
+    }
+
+    witness::ClassUseEmitRequest request;
+    request.location = location;
+    request.use_anchor_present = true;
+    request.use_anchor_location = location;
+    request.template_name =
+        template_api::class_template_witness_qualified_name(*this, *origin);
+    request.selection = specialized ?
+        witness::SourceSelectionKind::ExplicitSpecialization :
+        witness::SourceSelectionKind::Primary;
+    const semantic_model::SourceDeclAnchorCache & selected_anchor =
+        semantic_trace::class_decl_anchor(*this, &owner);
+    witness::set_selected_decl_anchor(request.selected_decl_location,
+                                      request.selected_decl_anchor,
+                                      selected_anchor);
+    template_api::append_class_template_witness_bindings(
+        *this, &owner, request.bindings);
+    if(canonical_parameters && !canonical_parameters->empty()) {
+      for(size_t i = 0; i < request.bindings.size(); ++i) {
+        const TemplateArgumentSyntax * syntax =
+            i < resolved.source_syntax->argument_syntaxes.size() ?
+                &resolved.source_syntax->argument_syntaxes[i] : nullptr;
+        request.bindings[i].arg =
+            template_api::canonicalize_template_parameter_source_text(
+                *canonical_parameters,
+                request.bindings[i].arg,
+                syntax);
+        for(size_t j = 0;
+            j < request.bindings[i].pack_arguments.size();
+            ++j) {
+          request.bindings[i].pack_arguments[j] =
+              template_api::canonicalize_template_parameter_source_text(
+                  *canonical_parameters,
+                  request.bindings[i].pack_arguments[j],
+                  syntax);
+        }
+      }
+    }
+    request.role = role;
+    request.origin = role == witness::SourceUseRole::QualifierUse ?
+        witness::ClassUseEmissionOrigin::QualifiedValueSource :
+        witness::ClassUseEmissionOrigin::DeclarationTypeSource;
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassTemplateReference02);
+    witness::emit_class_use(template_witness_context(), request);
+  }
+
+  void observe_retained_out_of_class_owner_reference(
+      uint32_t handle,
+      ClassInfo & concrete_owner,
+      witness::SourceUseRole role) override
+  {
+    if(handle == 0 ||
+       handle > retained_out_of_class_owner_references_.size()) {
+      return;
+    }
+    resolved_source_semantics::ResolvedOwnerReference resolved =
+        retained_out_of_class_owner_references_[handle - 1];
+    resolved.owner = &concrete_owner;
+    observe_resolved_out_of_class_owner_reference(resolved, nullptr, role);
+  }
+
   void observe_nested_class_uses_from_resolved_ast_node(
       Scope & scope,
       const CppAstNode & node,
@@ -12818,25 +12925,6 @@ private:
         syntaxes,
         ownership,
         std::string());
-  }
-
-  void emit_static_member_definition_class_use_source_events_from_ast_node(
-      Scope & scope,
-      const CppAstNode & node,
-      witness::SourceUseOwnership ownership) override
-  {
-    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
-        template_witness_context().session,
-        witness::WitnessUpstreamRoute::
-            StaticMemberDefinitionClassUseFromAstNode);
-    observe_nested_class_uses_from_resolved_ast_node(
-        scope,
-        node,
-        ownership,
-        std::string(),
-        false,
-        witness::SourceUseRole::QualifierUse,
-        true);
   }
 
   void emit_nested_alias_use_source_events_from_location(
@@ -25768,6 +25856,46 @@ private:
     return class_name;
   }
 
+  resolved_source_semantics::ResolvedOwnerReference
+  resolved_out_of_class_owner_reference(
+      Scope & scope,
+      const QualifiedName & qualified,
+      const CppAstNode * source_anchor,
+      ClassInfo * owner) const
+  {
+    resolved_source_semantics::ResolvedOwnerReference resolved;
+    resolved.owner = owner;
+    resolved.source_scope = &scope;
+    resolved.source_anchor = source_anchor;
+    if(!source_anchor || qualified.qualifiers.empty()) {
+      return resolved;
+    }
+
+    const CppAstNode * identifier = source_anchor;
+    if(!cppast_qualified_name_syntax(*identifier)) {
+      const CppAstNode * nested =
+          find_descendant_kind(*source_anchor, CppAstKind::identifier);
+      if(nested && cppast_qualified_name_syntax(*nested)) {
+        identifier = nested;
+      }
+    }
+    for(size_t i = qualified.qualifiers.size();
+        !resolved.source_syntax && i > 0;
+        --i) {
+      resolved.source_syntax =
+          cppast_qualifier_template_id_syntax(*identifier, i - 1);
+    }
+    for(size_t i = qualified.qualifiers.size();
+        !resolved.source_syntax && i > 0;
+        --i) {
+      resolved.source_syntax = template_id_syntax_for_anchor(
+          *source_anchor,
+          strip_trailing_top_level_template_arguments(
+              qualified.qualifiers[i - 1]));
+    }
+    return resolved;
+  }
+
   ClassInfo * resolve_out_of_class_owner_class(Scope & scope,
                                                const QualifiedName & qualified,
                                                QualifiedOwnerClassResolution resolution =
@@ -26536,414 +26664,6 @@ private:
   {
     return resolve_out_of_class_special_member_binding_with_syntax(
         scope, qualified, params, out, function_identifier);
-  }
-
-  void emit_out_of_class_owner_class_use_if_needed_impl(
-      Scope & scope,
-      const string & qualified_name,
-      const QualifiedName * qualified_syntax,
-      const CppAstNode * anchor_node,
-      ClassInfo * owner_override,
-      const vector<TemplateParameterInfo> * canonical_parameters)
-  {
-    const bool trace_enabled = parser_trace::enabled("template.resolve");
-    if(trace_enabled) {
-      std::ostringstream trace;
-      trace << "owner-class-use-enter"
-            << " qualified=" << qualified_name
-            << " anchor=" << (anchor_node ? "yes" : "no")
-            << " owner-override="
-            << (owner_override ? owner_override->qualified_name : std::string("<none>"))
-            << " params="
-            << (canonical_parameters ? canonical_parameters->size() : 0);
-      parser_trace::note("template.resolve", std::string(), trace.str());
-    }
-    if(template_witness_context().session == nullptr) {
-      if(trace_enabled) {
-        parser_trace::note("template.resolve",
-                           std::string(),
-                           "owner-class-use-skip session");
-      }
-      return;
-    }
-    if(parser_trace::use_location_suppressed() && anchor_node == nullptr) {
-      if(trace_enabled) {
-        parser_trace::note("template.resolve",
-                           std::string(),
-                           "owner-class-use-skip use-location-paused");
-      }
-      return;
-    }
-
-    const bool parsed_qualified =
-        qualified_syntax != nullptr &&
-        !qualified_syntax->qualifiers.empty();
-
-    string owner_name;
-    if(parsed_qualified) {
-      owner_name = qualified_owner_name_text(*qualified_syntax);
-    } else {
-      const std::size_t split = semantic_utils::top_level_scope_split(qualified_name);
-      if(split == std::string::npos) {
-        if(trace_enabled) {
-          parser_trace::note("template.resolve",
-                             std::string(),
-                             "owner-class-use-skip split");
-        }
-        return;
-      }
-      owner_name = trim_space(qualified_name.substr(0, split));
-    }
-    if(owner_name.empty()) {
-      if(trace_enabled) {
-        parser_trace::note("template.resolve",
-                           std::string(),
-                           "owner-class-use-skip owner-name");
-      }
-      return;
-    }
-
-    std::string event_location;
-    std::string anchor_identifier;
-    const bool explicit_pattern_anchor_context =
-        owner_override &&
-        canonical_parameters &&
-        !canonical_parameters->empty();
-    if(anchor_node) {
-      std::string anchor_name =
-          parsed_qualified && !qualified_syntax->qualifiers.empty() ?
-              qualified_syntax->qualifiers.back() :
-              owner_name;
-      anchor_name = strip_trailing_top_level_template_arguments(anchor_name);
-      anchor_name = unqualified_member_name(anchor_name).empty() ?
-          anchor_name :
-          unqualified_member_name(anchor_name);
-      anchor_identifier = anchor_name;
-
-      if(!anchor_name.empty()) {
-        event_location =
-            template_api::normalize_template_witness_source_location(
-                source_location_for_name_in_subtree(*anchor_node, anchor_name));
-      }
-      if(event_location.empty()) {
-        event_location =
-            template_api::normalize_template_witness_source_location(
-                source_location_for_node(*anchor_node));
-      }
-      const std::string anchor_node_location =
-          template_api::normalize_template_witness_source_location(
-              source_location_for_node(*anchor_node));
-      if(!anchor_node_location.empty() &&
-         (anchor_identifier.empty() ||
-          source_location_points_at_identifier(anchor_node_location,
-                                               anchor_identifier) ||
-          explicit_pattern_anchor_context)) {
-        event_location =
-            prefer_later_source_location(event_location, anchor_node_location);
-      }
-      if(!anchor_identifier.empty() &&
-         !source_location_points_at_identifier(event_location, anchor_identifier) &&
-         !explicit_pattern_anchor_context) {
-        event_location.clear();
-      }
-    }
-    if(event_location.empty()) {
-      event_location =
-          template_api::normalize_template_witness_source_location(
-              earliest_qualified_use_location_for_value(qualified_name));
-    }
-    const std::string prefix_event_location =
-        template_api::normalize_template_witness_source_location(
-            earliest_qualified_use_location_for_prefix(owner_name));
-    if(event_location.empty()) {
-      event_location = prefix_event_location;
-    } else if(!anchor_node) {
-      event_location =
-          prefer_later_source_location(event_location, prefix_event_location);
-    }
-    if(event_location.empty()) {
-      if(trace_enabled) {
-        parser_trace::note("template.resolve",
-                           std::string(),
-                           "owner-class-use-skip event-location");
-      }
-      return;
-    }
-
-    ClassInfo * owner = owner_override;
-    if(!owner && qualified_syntax && anchor_node) {
-      owner = resolve_out_of_class_owner_class_from_template_id_syntax(
-          scope, *qualified_syntax, anchor_node);
-    }
-    if(!owner) {
-      owner = resolve_qualified_owner_class(scope, owner_name);
-    }
-    template_api::ClassTemplateUseInfo owner_use;
-    if(!template_api::class_template_use_info_for_class(*this,
-                                                                  scope,
-                                                                  owner,
-                                                                  owner_use)) {
-      if(trace_enabled) {
-        std::ostringstream trace;
-        trace << "owner-class-use-skip owner"
-              << " resolved=" << (owner ? owner->qualified_name : std::string("<none>"));
-        parser_trace::note("template.resolve", std::string(), trace.str());
-      }
-      return;
-    }
-
-    const bool owner_explicit_pattern_context =
-        explicit_pattern_anchor_context &&
-        owner_use.dependent_arguments &&
-        owner_use.selection.kind != template_api::MS_PRIMARY;
-    const bool owner_primary_pattern_only =
-        !owner_use.selects_specialized_definition &&
-        !owner_use.explicit_case &&
-        !owner_explicit_pattern_context &&
-        owner_use.dependent_arguments;
-    if(owner_primary_pattern_only) {
-      if(trace_enabled) {
-        parser_trace::note("template.resolve",
-                           std::string(),
-                           "owner-class-use-skip primary-pattern-only");
-      }
-      return;
-    }
-    witness::ClassUseEmitRequest request;
-    request.location = event_location;
-    request.template_name = strip_trailing_top_level_template_arguments(
-        semantic_model::class_output_qualified_name(*owner));
-    const std::string resolved_owner_identifier =
-        unqualified_member_name(request.template_name).empty() ?
-            request.template_name :
-            unqualified_member_name(request.template_name);
-    if(!source_location_points_at_identifier(event_location,
-                                             resolved_owner_identifier)) {
-      return;
-    }
-    if(source_location_points_at_identifier(event_location,
-                                            resolved_owner_identifier)) {
-      request.use_anchor_present = true;
-      request.use_anchor_location = event_location;
-    }
-
-    if(owner_use.selects_specialized_definition ||
-       owner_use.explicit_case ||
-       owner_explicit_pattern_context) {
-      const auto append_owner_binding_texts =
-          [this, canonical_parameters](
-              const template_api::ClassTemplateUseInfo & info,
-              std::vector<witness::TemplateWitnessSourceBinding> & out_bindings) -> bool
-      {
-        if(!(info.origin && info.parameters && info.arguments)) {
-          return false;
-        }
-        const std::vector<TemplateParameterInfo> & parameters =
-            *info.parameters;
-        std::vector<std::string> rendered_arg_texts;
-        if(canonical_parameters && !canonical_parameters->empty()) {
-          rendered_arg_texts.reserve(info.arguments->size());
-          for(std::size_t i = 0; i < info.arguments->size(); ++i) {
-            rendered_arg_texts.push_back(template_model::template_argument_text(
-                (*info.arguments)[i],
-                [&](const TypePtr & type) -> std::string
-                {
-                  std::string text = lookup_text_for_type_argument(type);
-                  if(text.empty()) {
-                    text = describe_type(type);
-                  }
-                  return text;
-                }));
-          }
-        } else {
-          rendered_arg_texts = info.canonical_texts && !info.canonical_texts->empty() ?
-              *info.canonical_texts :
-              canonical_instantiation_arg_texts(*info.arguments);
-        }
-        const auto canonicalize_parameter_text =
-            [&](const std::string & text) -> std::string
-        {
-          if(text.empty()) {
-            return text;
-          }
-
-          std::string out = text;
-          if(canonical_parameters && !canonical_parameters->empty()) {
-            auto stable_parameter_placeholder =
-                [](const TemplateParameterInfo & parameter,
-                   std::size_t index) -> std::string
-            {
-              switch(parameter.kind) {
-              case TemplateParameterInfo::TP_NON_TYPE:
-                return std::string("value-parameter-0-") + std::to_string(index);
-              case TemplateParameterInfo::TP_TEMPLATE_TEMPLATE:
-                return std::string("template-parameter-0-") + std::to_string(index);
-              case TemplateParameterInfo::TP_TYPE:
-              default:
-                return std::string("type-parameter-0-") + std::to_string(index);
-              }
-            };
-            auto replace_all_plain =
-                [](std::string & target,
-                   const std::string & from,
-                   const std::string & to,
-                   bool & changed)
-            {
-              if(from.empty() || from == to) {
-                return;
-              }
-              std::size_t pos = 0;
-              while((pos = target.find(from, pos)) != std::string::npos) {
-                target.replace(pos, from.size(), to);
-                pos += to.size();
-                changed = true;
-              }
-            };
-            std::vector<std::pair<std::string, std::string> > placeholders;
-            for(std::size_t i = 0; i < canonical_parameters->size(); ++i) {
-              const TemplateParameterInfo & parameter = (*canonical_parameters)[i];
-              const std::string replacement =
-                  stable_parameter_placeholder(parameter, i);
-              const std::string placeholder =
-                  "__cppgm_witness_placeholder_" + std::to_string(i) + "__";
-              bool parameter_changed = false;
-              replace_all_plain(out,
-                                parameter.placeholder_key,
-                                placeholder,
-                                parameter_changed);
-              replace_all_plain(out,
-                                std::string("template-parameter ") +
-                                    parameter.placeholder_key,
-                                placeholder,
-                                parameter_changed);
-              auto replace_name = [&](const std::string & name)
-              {
-                if(name.empty()) {
-                  return;
-                }
-                out = replace_elaborated_identifier_token_text(
-                    out, name, placeholder, parameter_changed);
-                out = replace_identifier_token_text(
-                    out, name, placeholder, parameter_changed);
-              };
-              replace_name(parameter.name);
-              for(std::size_t j = 0; j < parameter.alternate_names.size(); ++j) {
-                replace_name(parameter.alternate_names[j]);
-              }
-              if(parameter_changed) {
-                placeholders.push_back(std::make_pair(placeholder, replacement));
-              }
-            }
-            for(std::size_t i = 0; i < placeholders.size(); ++i) {
-              bool ignored = false;
-              replace_all_plain(
-                  out, placeholders[i].first, placeholders[i].second, ignored);
-            }
-          }
-          out = trim_space(collapse_reparseable_scope_operators(out));
-          const std::string prefixes[] = {"typename ", "class ", "struct "};
-          bool stripped = true;
-          while(stripped) {
-            stripped = false;
-            for(std::size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); ++i) {
-              if(out.compare(0, prefixes[i].size(), prefixes[i]) != 0) {
-                continue;
-              }
-              const std::string candidate =
-                  trim_space(out.substr(prefixes[i].size()));
-              if(candidate.find("::") != std::string::npos) {
-                continue;
-              }
-              out = candidate;
-              stripped = true;
-              break;
-            }
-          }
-          return out;
-        };
-        const std::size_t count =
-            std::min(parameters.size(), rendered_arg_texts.size());
-        if(count == 0) {
-          return false;
-        }
-        for(std::size_t i = 0; i < count; ++i) {
-          witness::TemplateWitnessSourceBinding binding;
-          binding.param = parameters[i].name.empty() ?
-              std::string("$") + std::to_string(i + 1) :
-              parameters[i].name;
-          binding.arg = canonicalize_parameter_text(rendered_arg_texts[i]);
-          binding.source = "explicit";
-          binding.type_like =
-              parameters[i].kind == TemplateParameterInfo::TP_TYPE;
-          out_bindings.push_back(binding);
-        }
-        return true;
-      };
-
-      request.selection = witness::SourceSelectionKind::ExplicitSpecialization;
-      const semantic_model::SourceDeclAnchorCache & owner_anchor =
-          semantic_trace::class_decl_anchor(*this, owner);
-      witness::set_selected_decl_anchor(request.selected_decl_location,
-                                        request.selected_decl_anchor,
-                                        owner_anchor);
-      if(!append_owner_binding_texts(owner_use, request.bindings)) {
-        template_api::append_class_template_witness_bindings(*this,
-                                                             owner,
-                                                             request.bindings);
-      }
-    } else {
-      request.selection = source_selection_kind_for_match_kind(owner_use.selection.kind);
-      witness::set_selected_decl_anchor(
-          request.selected_decl_location,
-          request.selected_decl_anchor,
-          class_use_selected_decl_anchor(owner_use.origin, owner_use.selection));
-      template_api::append_template_witness_source_bindings(
-          *this,
-          request.bindings,
-          *owner_use.parameters,
-          *owner_use.arguments,
-          "explicit");
-      if(owner_use.selection.parameters &&
-         owner_use.selection.parameters != owner_use.parameters) {
-        template_api::append_template_witness_source_bindings(
-            *this,
-            request.specialization_bindings,
-            *owner_use.selection.parameters,
-            owner_use.selection.arguments,
-            "deduced");
-      }
-    }
-    request.role = witness::SourceUseRole::QualifierUse;
-    request.origin = witness::ClassUseEmissionOrigin::QualifiedValueSource;
-    CPPGM_SET_WITNESS_PRODUCER(
-        request,
-        witness::WitnessProducerSite::ClassCallsemantic13);
-    witness::emit_class_use(request);
-    if(trace_enabled) {
-      std::ostringstream trace;
-      trace << "owner-class-use-recorded"
-            << " location=" << request.location
-            << " template=" << request.template_name
-            << " selection=" << witness::source_selection_text(request.selection);
-      parser_trace::note("template.resolve", std::string(), trace.str());
-    }
-  }
-
-  void emit_out_of_class_owner_class_use_if_needed(
-      Scope & scope,
-      const QualifiedName & qualified,
-      const string & qualified_name,
-      const CppAstNode * anchor_node = nullptr,
-      ClassInfo * owner_override = nullptr,
-      const vector<TemplateParameterInfo> * canonical_parameters = nullptr)
-      override
-  {
-    emit_out_of_class_owner_class_use_if_needed_impl(scope,
-                                                     qualified_name,
-                                                     &qualified,
-                                                     anchor_node,
-                                                     owner_override,
-                                                     canonical_parameters);
   }
 
   string describe_out_of_class_special_member_binding_lookup(
@@ -28419,10 +28139,15 @@ private:
                                                       *declared_qualified_name,
                                                       declared_identifier,
                                                       out_of_class_static_member)) {
-          emit_out_of_class_owner_class_use_if_needed(scope,
-                                                      *declared_qualified_name,
-                                                      name,
-                                                      &init_decl.children[0]);
+          observe_resolved_out_of_class_owner_reference(
+              resolved_out_of_class_owner_reference(
+                  scope,
+                  *declared_qualified_name,
+                  &init_decl.children[0],
+                  out_of_class_static_member ?
+                      out_of_class_static_member->owner_class : nullptr),
+              nullptr,
+              witness::SourceUseRole::QualifierUse);
           TypePtr merged = merge_types(out_of_class_static_member->type, type);
           if(!merged) {
             throw logic_error(string("mismatched variable declaration") +
@@ -29223,14 +28948,6 @@ private:
         find_descendant_kind(declarator, CppAstKind::identifier);
     const QualifiedName * function_name_syntax =
         function_identifier ? cppast_qualified_name_syntax(*function_identifier) : nullptr;
-    string out_of_class_lookup_name = parsed_name;
-    if(function_identifier &&
-       function_identifier->value.find("::") != string::npos &&
-       function_identifier->value.find("operator") != string::npos &&
-       out_of_class_lookup_name.find("operator") == string::npos) {
-      out_of_class_lookup_name = function_identifier->value;
-    }
-
     FunctionBinding * method_binding = nullptr;
     if(!function_name_syntax ||
        !resolve_out_of_class_method_binding_from_declarator_syntax_with_resolution(
@@ -29245,11 +28962,11 @@ private:
       return false;
     }
 
-    emit_out_of_class_owner_class_use_if_needed(scope,
-                                                *function_name_syntax,
-                                                out_of_class_lookup_name,
-                                                &node,
-                                                method_binding->owner_class);
+    observe_resolved_out_of_class_owner_reference(
+        resolved_out_of_class_owner_reference(
+            scope, *function_name_syntax, &node, method_binding->owner_class),
+        nullptr,
+        witness::SourceUseRole::QualifierUse);
     apply_out_of_class_defaulted_or_deleted_member_definition(
         parse_scope,
         *method_binding,
@@ -29391,14 +29108,6 @@ private:
                         semantic_trace::current_location_note(*this, function_identifier));
     }
 
-    string out_of_class_lookup_name = name;
-    if(function_identifier &&
-       function_identifier->value.find("::") != string::npos &&
-       function_identifier->value.find("operator") != string::npos &&
-       out_of_class_lookup_name.find("operator") == string::npos) {
-      out_of_class_lookup_name = function_identifier->value;
-    }
-
     FunctionBinding * method_binding = nullptr;
     if(function_name_syntax &&
        resolve_out_of_class_method_binding_from_declarator_syntax_with_resolution(
@@ -29448,13 +29157,14 @@ private:
                                   method_binding->lexical_access_class));
       semantic_class_model::validate_constexpr_constructor_definition(
           *this, *method_binding);
-      emit_out_of_class_owner_class_use_if_needed(
-          scope,
-          *function_name_syntax,
-          semantic_model::function_binding_qualified_name_for_symbol(
-              *method_binding),
-          declarator,
-          method_binding->owner_class);
+      observe_resolved_out_of_class_owner_reference(
+          resolved_out_of_class_owner_reference(
+              scope,
+              *function_name_syntax,
+              declarator,
+              method_binding->owner_class),
+          nullptr,
+          witness::SourceUseRole::QualifierUse);
       return;
     }
 
@@ -29583,12 +29293,14 @@ private:
       throw logic_error("missing special member binding");
     }
     note_out_of_class_definition_binding(node, binding);
-    emit_out_of_class_owner_class_use_if_needed(
-        scope,
-        *qualified_name,
-        node.value,
-        &node,
-        binding ? binding->owner_class : nullptr);
+    observe_resolved_out_of_class_owner_reference(
+        resolved_out_of_class_owner_reference(
+            scope,
+            *qualified_name,
+            &node,
+            binding ? binding->owner_class : nullptr),
+        nullptr,
+        witness::SourceUseRole::QualifierUse);
     if(!explicit_function_nothrow_specifications_match(
            *binding,
            declarator_function_qualifier(*declarator))) {

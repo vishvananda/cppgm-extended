@@ -1506,6 +1506,16 @@ TemplateClosureReason closure_reason_for_function_binding_acquisition_cause(
 
 }  // namespace
 
+std::string canonicalize_template_parameter_source_text(
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::string & text,
+    const cpp_decl::TemplateArgumentSyntax * syntax)
+{
+  return canonicalize_template_parameter_log_text(
+      parameters,
+      normalize_pattern_function_type_arg_text(text, syntax));
+}
+
 FunctionTemplateRegistrationIdentity function_binding_registration_identity(
     const semantic_model::FunctionBinding & binding)
 {

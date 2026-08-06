@@ -91,4 +91,21 @@ struct ResolvedQualifiedId
   const cpp_decl::TemplateIdSyntax * source_owner_syntax = nullptr;
 };
 
+// Semantic owner selected while binding an out-of-class member declaration.
+// The source syntax is owned by the declaration AST. Delayed declarations
+// retain this result through a witness-session side-store handle rather than
+// copying template arguments or growing the class semantic graph.
+struct ResolvedOwnerReference
+{
+  semantic_model::ClassInfo * owner = nullptr;
+  semantic_model::Scope * source_scope = nullptr;
+  const cpp_decl::TemplateIdSyntax * source_syntax = nullptr;
+  const CppAstNode * source_anchor = nullptr;
+
+  bool valid() const
+  {
+    return owner && source_scope && source_syntax;
+  }
+};
+
 }  // namespace resolved_source_semantics

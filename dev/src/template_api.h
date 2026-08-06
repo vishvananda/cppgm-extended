@@ -651,6 +651,11 @@ void append_class_template_witness_bindings(
     const semantic_model::ClassInfo * info,
     std::vector<TemplateWitnessSourceBinding> & out);
 
+std::string canonicalize_template_parameter_source_text(
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::string & text,
+    const cpp_decl::TemplateArgumentSyntax * syntax = nullptr);
+
 std::string class_witness_output_qualified_name(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info);

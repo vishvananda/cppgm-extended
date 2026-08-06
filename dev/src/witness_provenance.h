@@ -23,11 +23,9 @@ enum class WitnessProducerSite
   Unknown = 0,
 
   ClassCallsemantic10 = 4,
-  ClassCallsemantic13,
-  ClassTemplateReference02,
-  ClassTemplateInstantiation = 9,
+  ClassTemplateReference02 = 6,
 
-  AliasTemplateArgumentSemantics02,
+  AliasTemplateArgumentSemantics02 = 10,
   AliasCallsemantic02,
 
   FunctionSemanticTemplateFunction,
@@ -51,7 +49,6 @@ enum class WitnessUpstreamRoute
 {
   NestedClassUseFromAstNode,
   NestedClassUseFromTemplateArguments,
-  StaticMemberDefinitionClassUseFromAstNode,
   DeducedClassUseFromResolvedAliasType,
 };
 

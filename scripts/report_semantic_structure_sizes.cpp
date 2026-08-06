@@ -25,5 +25,8 @@ int main()
   std::cout << "ResolvedQualifiedId "
             << sizeof(resolved_source_semantics::ResolvedQualifiedId)
             << '\n';
+  std::cout << "ResolvedOwnerReference "
+            << sizeof(resolved_source_semantics::ResolvedOwnerReference)
+            << '\n';
   return 0;
 }

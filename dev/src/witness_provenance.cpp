@@ -436,9 +436,7 @@ const char * producer_site_name(WitnessProducerSite site)
   switch(site) {
   CPPGM_PRODUCER_NAME(Unknown, "unknown");
   CPPGM_PRODUCER_NAME(ClassCallsemantic10, "class.callsemantic.10");
-  CPPGM_PRODUCER_NAME(ClassCallsemantic13, "class.callsemantic.13");
   CPPGM_PRODUCER_NAME(ClassTemplateReference02, "class.class_template_reference.02");
-  CPPGM_PRODUCER_NAME(ClassTemplateInstantiation, "class.template_instantiation");
   CPPGM_PRODUCER_NAME(AliasTemplateArgumentSemantics02,
                       "alias.template_argument_semantics.02");
   CPPGM_PRODUCER_NAME(AliasCallsemantic02, "alias.callsemantic.02");
@@ -470,8 +468,6 @@ const char * upstream_route_name(WitnessUpstreamRoute route)
     return "nested_class_use.ast_node";
   case WitnessUpstreamRoute::NestedClassUseFromTemplateArguments:
     return "nested_class_use.template_arguments";
-  case WitnessUpstreamRoute::StaticMemberDefinitionClassUseFromAstNode:
-    return "class_use.static_member_definition_ast_node";
   case WitnessUpstreamRoute::DeducedClassUseFromResolvedAliasType:
     return "class_use.resolved_alias_type";
   }

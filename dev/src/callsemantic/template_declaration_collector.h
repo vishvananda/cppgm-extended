@@ -10,6 +10,7 @@
 #include "semantic_context.h"
 #include "semantic_lookup.h"
 #include "semantic_model.h"
+#include "resolved_source_semantics.h"
 #include "symbol_linkage.h"
 #include "template_api.h"
 #include "template_model.h"
@@ -47,14 +48,6 @@ struct TemplateDeclarationSourceServices
       bool prefer_last) const = 0;
   virtual std::string earliest_qualified_use_location_for_prefix(
       const std::string & prefix) const = 0;
-  virtual void emit_out_of_class_owner_class_use_if_needed(
-      semantic_model::Scope & scope,
-      const cpp_decl::QualifiedName & qualified,
-      const std::string & qualified_name,
-      const CppAstNode * anchor_node,
-      semantic_model::ClassInfo * owner_override,
-      const std::vector<template_model::TemplateParameterInfo> *
-          canonical_parameters) = 0;
 };
 
 struct OutOfClassMemberResolutionServices
