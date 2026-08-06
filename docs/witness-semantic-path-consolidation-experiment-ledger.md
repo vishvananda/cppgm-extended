@@ -4,6 +4,11 @@ This ledger records the evidence and acceptance gates for
 `witness-semantic-path-consolidation-experiment-plan.md`. Generated provenance
 reports remain under `/tmp`; only summarized evidence belongs here.
 
+The final irreducibility boundary records the endpoint of producer deletion
+without semantic model changes. The successor
+`witness-class-use-semantic-convergence-plan.md` uses the unique rows as a
+migration suite for a typed source-resolution rewrite.
+
 ## Revised performance epoch
 
 - Fixed diagnostic baseline:

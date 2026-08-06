@@ -675,6 +675,69 @@ def command_check(args):
     return 0
 
 
+def threshold_failure(message):
+    return any(message.startswith(key + " increased by ") for key, _, _ in CHECKS)
+
+
+def command_compare(args):
+    baseline = load_json(args.baseline)
+    candidate = load_json(args.candidate)
+    warnings = []
+    failures = compare_reports(
+        baseline,
+        candidate,
+        args,
+        rss_exceedance="warn",
+        warnings=warnings,
+        heading="Recorded performance comparison",
+    )
+    identity_failures = [failure for failure in failures if not threshold_failure(failure)]
+    threshold_failures = [failure for failure in failures if threshold_failure(failure)]
+
+    if args.report:
+        write_json(
+            args.report,
+            {
+                "advisory": args.advisory,
+                "baseline": baseline,
+                "candidate": candidate,
+                "failures": failures,
+                "warnings": warnings,
+            },
+        )
+        print("  wrote report: %s" % args.report)
+
+    if identity_failures:
+        print("")
+        for failure in identity_failures:
+            print("FAIL: %s" % failure)
+        return 1
+
+    if args.advisory:
+        print("")
+        for failure in threshold_failures:
+            print("WARN: %s" % failure)
+        for warning in warnings:
+            print("WARN: %s" % warning)
+        if threshold_failures or warnings:
+            print("PASS: recorded candidate has advisory performance deviations")
+        else:
+            print("PASS: recorded candidate is within advisory tolerances")
+        return 0
+
+    if threshold_failures or warnings:
+        print("")
+        for failure in threshold_failures:
+            print("FAIL: %s" % failure)
+        for warning in warnings:
+            print("FAIL: %s; a recorded confirmation batch is required" % warning)
+        return 1
+
+    print("")
+    print("PASS: recorded candidate is within instruction and memory tolerances")
+    return 0
+
+
 def add_common_args(parser, runs_default):
     parser.add_argument("--repo-root", default=Path(__file__).resolve().parents[1])
     parser.add_argument("--runs", type=int, default=runs_default)
@@ -685,7 +748,7 @@ def add_common_args(parser, runs_default):
 
 def build_parser():
     parser = argparse.ArgumentParser(
-        description="Record or check cppgm performance baselines."
+        description="Record, check, or compare cppgm performance baselines."
     )
     subparsers = parser.add_subparsers(dest="mode", required=True)
 
@@ -712,6 +775,24 @@ def build_parser():
     check.add_argument("--footprint-tolerance", type=float, default=0.03)
     add_common_args(check, runs_default=1)
     check.set_defaults(func=command_check)
+
+    compare = subparsers.add_parser(
+        "compare", help="compare two recorded performance JSON files"
+    )
+    compare.add_argument("--baseline", required=True)
+    compare.add_argument("--candidate", required=True)
+    compare.add_argument("--report")
+    compare.add_argument("--advisory", action="store_true")
+    compare.add_argument("--instruction-tolerance", type=float, default=0.01)
+    compare.add_argument(
+        "--rss-warning-tolerance",
+        "--rss-tolerance",
+        dest="rss_tolerance",
+        type=float,
+        default=0.03,
+    )
+    compare.add_argument("--footprint-tolerance", type=float, default=0.03)
+    compare.set_defaults(func=command_compare)
 
     return parser
 

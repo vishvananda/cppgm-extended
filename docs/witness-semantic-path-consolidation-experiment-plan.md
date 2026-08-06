@@ -4,6 +4,11 @@ The branch implements this plan. The experiment ledger records the final
 correctness, provenance, irreducibility, and performance evidence:
 `docs/witness-semantic-path-consolidation-experiment-ledger.md`.
 
+The unique-output boundary in that ledger closes the deletion-only experiment.
+The follow-up `docs/witness-class-use-semantic-convergence-plan.md` replaces the
+remaining recovery analyzers with typed source-resolution results and requires
+a final instruction reduction.
+
 ## Handoff
 
 - Repository: `/Users/vishvananda/cppgm-extended`

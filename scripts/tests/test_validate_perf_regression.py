@@ -276,6 +276,67 @@ class ValidatePerfRegressionTest(unittest.TestCase):
             status = MODULE.command_check(args)
         self.assertEqual(status, 1)
 
+    def test_compare_advisory_reports_metric_deviation_without_failing(self):
+        args = SimpleNamespace(
+            baseline="baseline.json",
+            candidate="candidate.json",
+            report=None,
+            advisory=True,
+            instruction_tolerance=0.005,
+            rss_tolerance=0.03,
+            footprint_tolerance=0.01,
+        )
+        baseline = self.perf_report(
+            100, instructions=100, footprint=100, head="baseline"
+        )
+        candidate = self.perf_report(104, instructions=102, footprint=102)
+        with (
+            mock.patch.object(
+                MODULE, "load_json", side_effect=[baseline, candidate]
+            ),
+            contextlib.redirect_stdout(io.StringIO()) as output,
+        ):
+            status = MODULE.command_compare(args)
+        self.assertEqual(status, 0)
+        self.assertIn("advisory performance deviations", output.getvalue())
+
+    def test_compare_advisory_still_rejects_workload_identity_mismatch(self):
+        args = SimpleNamespace(
+            baseline="baseline.json",
+            candidate="candidate.json",
+            report=None,
+            advisory=True,
+            instruction_tolerance=0.005,
+            rss_tolerance=0.03,
+            footprint_tolerance=0.01,
+        )
+        baseline = self.perf_report(100, head="baseline")
+        candidate = self.perf_report(100)
+        candidate["command"] = ["different"]
+        with (
+            mock.patch.object(
+                MODULE, "load_json", side_effect=[baseline, candidate]
+            ),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            status = MODULE.command_compare(args)
+        self.assertEqual(status, 1)
+
+    def test_compare_parser_has_no_execution_arguments(self):
+        args = MODULE.build_parser().parse_args(
+            [
+                "compare",
+                "--baseline",
+                "baseline.json",
+                "--candidate",
+                "candidate.json",
+                "--advisory",
+            ]
+        )
+        self.assertIs(args.func, MODULE.command_compare)
+        self.assertTrue(args.advisory)
+        self.assertFalse(hasattr(args, "runs"))
+
 
 if __name__ == "__main__":
     unittest.main()
