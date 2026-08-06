@@ -19,7 +19,6 @@ SOURCE_PRODUCERS = [
     "class.constant_value_lookup.03",
     "class.template_instantiation",
     "alias.template_argument_semantics.02",
-    "alias.template_specialization.01",
     "alias.callsemantic.02",
     "alias.callsemantic.03",
     "function.semantic_template_function",
