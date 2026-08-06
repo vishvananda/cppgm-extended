@@ -49,7 +49,7 @@ or rerecord it.
 | 3A. Nested results | `e96c44379` | 7 | 2 | +1120 / -310 | +0.37% | -0.11% | +0.06% | +0.10% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-3a-final.json` |
 | 3B. Template patterns | `9ea979c45` | 6 | 2 | +1499 / -936 | +0.31% | -0.06% | +0.54% | +0.11% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-3b.json` |
 | 4. Qualified constants | `e4f3fada5` | 4 | 2 | +1700 / -1355 | +0.78% | +0.47% | +0.74% | +0.40% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-4-compact.json` |
-| 5. Definition owners | pending | 2 | 1 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
+| 5. Definition owners | `acc13c758` | 2 | 1 | +2151 / -2120 | +0.84% | +0.06% | +0.93% | +0.46% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-5.json` |
 | 6. Alias provenance | pending | 1 | 0 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
 | 7. Final observer and cleanup | pending | 1 | 0 | pending | pending | pending | pending | pending | pending | pending | clean | pending |
 
@@ -63,6 +63,7 @@ or rerecord it.
 | Phase 3A | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 96 bytes; `RetainedDependentClassTemplateId`: 168 bytes, witness-session side store only |
 | Phase 3B | 280 | 136 | 1,136 | 136 | `ResolvedAliasTemplateIdView`: 72 bytes, stack-scoped; class retained storage unchanged |
 | Phase 4 | 280 | 136 | 1,136 | 136 | `ResolvedQualifiedId`: 40 bytes, stack-scoped; retained storage unchanged |
+| Phase 5 | 280 | 136 | 1,136 | 136 | `ResolvedOwnerReference`: 32 bytes, witness-session side store only; `OutOfClassMemberFunctionDecl` remains 240 bytes |
 
 `OutOfClassMemberFunctionDecl` starts at 240 bytes. The reporter source is
 `scripts/report_semantic_structure_sizes.cpp`; compile it against `dev/src`
@@ -247,6 +248,48 @@ with the configured host compiler.
   baseline instruction median must be below the fixed checkpoint, independent
   of the rolling comparison.
 
+## Phase 5 evidence
+
+- Correctness commit: `acc13c758b577a63e4702f4d7e2334ad3072991f`
+- Candidate SHA-256:
+  `dd12ee64f3b12855a8423f7d1b7226f5842ef8819c25969398367edb39195031`
+- Instructions: `177998788270`, `+0.84%` versus fixed and `+0.06%`
+  versus rolling
+- Maximum RSS: `769835008`, `+0.93%` versus fixed and `+0.20%`
+  versus rolling
+- Peak footprint: `592838656`, `+0.46%` versus fixed and `+0.06%`
+  versus rolling
+- Strict provenance trace:
+  `/tmp/cppgm-class-use-phase5-final-provenance.fJkM8P`
+- Strict provenance report:
+  `/tmp/cppgm-class-use-phase5-final-provenance-report.json`
+- Provenance report SHA-256:
+  `03a8d0a635e29f6d22dc78d93d6fe5cbe2dc79cd4bf9ce4fde40e81fa74d9ecd`
+- `class.callsemantic.13` and `class.template_instantiation` make zero
+  attempts and their producer IDs are absent. Their 29 and 24 final-visible
+  rows are now owned by `class.class_template_reference.02`, whose final-
+  visible count rises from 1,869 to 1,922, exactly the 53 transferred rows.
+  The static-member-definition AST replay route is zero. The sole remaining
+  replay route is `class_use.resolved_alias_type` (`1185`).
+- Method, special-member, and static-member binding package the already-
+  selected owner and structured qualifier syntax directly into a 32-byte
+  `ResolvedOwnerReference`; they do not repeat lookup or specialization
+  selection. Delayed definitions store a compact side-store handle and
+  substitute the concrete owner when applied. The old qualifier text
+  canonicalizer, direct owner analyzer, applied-definition analyzer, and AST
+  replay interface are deleted.
+- The witness-session side store is absent from ordinary compilation. `Type`,
+  `TemplateArgument`, `ClassInfo`, `OutOfClassStaticMemberDecl`, and
+  `OutOfClassMemberFunctionDecl` retain their fixed sizes.
+- The phase deletes 311 net lines. Cumulatively, production code is
+  `+2151 / -2120` versus fixed.
+- Ordinary binary: 17,247,648 bytes; Mach-O `__TEXT` 13,135,872 bytes and
+  `__DATA` 446,464 bytes. Ordinary builds contain no provenance symbols.
+- Cleanup obligation remains open: the fixed-baseline instruction result is
+  above the `+0.5%` investigation threshold, although this phase adds only
+  `+0.06%` versus rolling. Phase 7 must remove the accumulated scaffolding and
+  finish below the fixed median.
+
 ## Producer migration
 
 | Deleted producer | Canonical result owner | Unique rows transferred | Targeted fixtures | Status |
@@ -256,8 +299,8 @@ with the configured host compiler.
 | `class.callsemantic.07` | template pattern semantic results | 75 | nested template parameter scope and strict unique-owner set | migrated in `9ea979c45` |
 | `class.constant_value_lookup.02` | resolved selected-call owner chain | 2 | constexpr duration member calls | migrated in `e4f3fada5` |
 | `class.constant_value_lookup.03` | resolved qualified-id | 199 | dependent qualified static member value and strict unique-owner set | migrated in `e4f3fada5` |
-| `class.callsemantic.13` | resolved out-of-class owner | 29 | partial-specialization member outdef | pending |
-| `class.template_instantiation` | substituted retained owner pattern | 24 | static member assignment and strict unique-owner set | pending |
+| `class.callsemantic.13` | resolved out-of-class owner | 29 | partial-specialization member outdef | migrated in `acc13c758` |
+| `class.template_instantiation` | substituted retained owner pattern | 24 | static member assignment and strict unique-owner set | migrated in `acc13c758` |
 | `class.callsemantic.10` | retained alias expansion result | 30 | materialized alias declaration and strict unique-owner set | pending |
 | `class.class_template_reference.02` | final resolved-source observer | 1,118 | full strict set | pending migration |
 
@@ -265,7 +308,7 @@ with the configured host compiler.
 
 | Opened in phase | Metric and delta | Evidence for cause | Required cleanup | Due phase | Status |
 | --- | --- | --- | --- | --- | --- |
-| 4 | instructions `+0.78%` versus fixed | Four distinct three-run medians remain between `+0.59%` and `+0.80%`; result compaction and removal of avoidable ordinary-path work did not clear the threshold | Remove remaining transient result/observer scaffolding and finish with a repeatable reduction below the fixed median | 7 | open |
+| 4 | instructions `+0.84%` versus fixed at Phase 5 | Four Phase 4 medians were between `+0.59%` and `+0.80%`; Phase 5 adds only `+0.06%` versus rolling, so the remaining increase is cumulative result/observer scaffolding rather than its owner substitution | Remove remaining transient result/observer scaffolding and finish with a repeatable reduction below the fixed median | 7 | open |
 
 ## Final audit
 
