@@ -859,12 +859,9 @@ bool evaluate_constant_call_expression_value(
       }
       if(callbacks.record_constexpr_direct_function_call_source_use) {
         resolved_source_semantics::ResolvedQualifiedId selected_call;
-        selected_call.use_scope = &scope;
         selected_call.selected_function = binding;
         if(binding->owner_class) {
           selected_call.resolved_owner_type = binding->owner_class->type;
-          selected_call.resolved_owner_scope =
-              binding->owner_class->member_scope.get();
         }
         if(!callee.qualifier_template_id_syntaxes.empty()) {
           selected_call.source_owner_syntax =

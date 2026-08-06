@@ -766,7 +766,6 @@ public:
     }
 
     resolved_source_semantics::ResolvedQualifiedId resolved;
-    resolved.use_scope = &scope;
     resolved.resolved_owner_type = owner_type;
     resolved.source_owner_syntax = &qualifier_template_id;
     ClassInfo * info = class_info_for_type(owner_type);
@@ -776,7 +775,6 @@ public:
     if(!info || info->reentrant_primary_selection || !info->member_scope) {
       return false;
     }
-    resolved.resolved_owner_scope = info->member_scope.get();
     const MemberValueLookupResult member =
         lookup_member_value(*info, member_name);
     resolved.selected_value = member.binding;

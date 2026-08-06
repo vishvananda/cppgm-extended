@@ -8057,21 +8057,16 @@ resolved_source_semantics::ResolvedQualifiedId resolve_qualified_id_value_node(
     const CppAstNode & node)
 {
   resolved_source_semantics::ResolvedQualifiedId resolved;
-  resolved.use_scope = &scope;
   resolved.selected_value =
       lookup_qualified_value_binding_node(ctx,
                                           scope,
                                           qualified,
                                           node,
                                           &resolved.resolved_owner_type);
-  if(resolved.selected_value &&
-     resolved.selected_value->owner_class &&
-     resolved.selected_value->owner_class->member_scope) {
-    resolved.resolved_owner_scope =
-        resolved.selected_value->owner_class->member_scope.get();
-    if(!resolved.resolved_owner_type) {
-      resolved.resolved_owner_type = resolved.selected_value->owner_class->type;
-    }
+  if(!resolved.resolved_owner_type &&
+     resolved.selected_value &&
+     resolved.selected_value->owner_class) {
+    resolved.resolved_owner_type = resolved.selected_value->owner_class->type;
   }
   if(!node.qualifier_template_id_syntaxes.empty()) {
     resolved.source_owner_syntax =

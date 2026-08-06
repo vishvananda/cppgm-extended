@@ -80,22 +80,15 @@ struct ResolvedAliasTemplateIdView
   }
 };
 
-// Non-owning result of one qualified-id lookup. The resolved owner scope is
-// the root of the already-selected owner chain; callers that only need the
-// selected entity do not allocate or reconstruct that chain.
+// Non-owning result of one qualified-id lookup. The resolved owner type keeps
+// the already-selected owner chain; callers that only need the selected
+// entity do not allocate or reconstruct that chain.
 struct ResolvedQualifiedId
 {
-  semantic_model::Scope * use_scope = nullptr;
-  semantic_model::Scope * resolved_owner_scope = nullptr;
   cpp_decl::TypePtr resolved_owner_type;
   const semantic_model::ValueBinding * selected_value = nullptr;
   semantic_model::FunctionBinding * selected_function = nullptr;
   const cpp_decl::TemplateIdSyntax * source_owner_syntax = nullptr;
-
-  bool has_selected_entity() const
-  {
-    return selected_value || selected_function;
-  }
 };
 
 }  // namespace resolved_source_semantics
