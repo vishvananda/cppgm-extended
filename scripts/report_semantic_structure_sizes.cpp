@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "cpp_decl_model.h"
+#include "resolved_source_semantics.h"
 #include "semantic_model.h"
 #include "template_model.h"
 
@@ -15,5 +16,8 @@ int main()
             << sizeof(semantic_model::OutOfClassStaticMemberDecl) << '\n';
   std::cout << "OutOfClassMemberFunctionDecl "
             << sizeof(semantic_model::OutOfClassMemberFunctionDecl) << '\n';
+  std::cout << "ResolvedClassTemplateIdView "
+            << sizeof(resolved_source_semantics::ResolvedClassTemplateIdView)
+            << '\n';
   return 0;
 }

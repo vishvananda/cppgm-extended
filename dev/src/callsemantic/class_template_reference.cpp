@@ -6,6 +6,7 @@
 #include "callsemantic_internal.h"
 #include "cpp_decl_ast.h"
 #include "parser_trace.h"
+#include "resolved_source_semantics.h"
 #include "semantic_builtins.h"
 #include "semantic_context.h"
 #include "semantic_errors.h"
@@ -2079,8 +2080,34 @@ public:
       }
       return internal_specialization_name;
     };
-    const auto note_class_use = [&](ClassInfo * resolved_info) -> void
+    const auto resolved_template_id_view =
+        [&](ClassInfo * resolved_info) ->
+            resolved_source_semantics::ResolvedClassTemplateIdView
     {
+      resolved_source_semantics::ResolvedClassTemplateIdView resolved;
+      resolved.origin = &decl;
+      resolved.instance = resolved_info;
+      resolved.use_scope = &use_scope;
+      resolved.arguments = &arguments;
+      resolved.selection = &specialization;
+      resolved.source_argument_texts = source_arg_texts;
+      resolved.source_argument_syntaxes = source_arg_syntaxes;
+      resolved.instantiation_key = &key;
+      resolved.source_function = source_function;
+      resolved.source_use_mode = source_use_mode;
+      resolved.dependent_arguments = dependent_arguments;
+      return resolved;
+    };
+    const auto note_class_use = [&]
+        (const resolved_source_semantics::ResolvedClassTemplateIdView & resolved) -> void
+    {
+      if(!resolved.valid()) {
+        return;
+      }
+      ClassInfo * resolved_info = resolved.instance;
+      const vector<TemplateArgument> & resolved_arguments = *resolved.arguments;
+      const template_api::ClassSpecializationSelection & resolved_selection =
+          *resolved.selection;
       const std::string use_location = parser_trace::current_use_location();
       const bool trace_enabled = parser_trace::enabled("template.resolve");
       const template_api::TemplateWitnessContext witness_context =
@@ -2143,10 +2170,10 @@ public:
       };
       const bool nested_argument_recovery =
           template_api::class_template_source_use_recovers_nested_arguments(
-              source_use_mode);
+              resolved.source_use_mode);
       const bool suppress_nested_arguments =
           template_api::class_template_source_use_suppresses_nested_arguments(
-              source_use_mode);
+              resolved.source_use_mode);
       const auto repair_bindings_from_resolved_instantiation =
           [&](std::vector<template_api::TemplateWitnessSourceBinding> & bindings,
               semantic_source_use::SourceTemplateIdOccurrence * occurrence)
@@ -2189,7 +2216,7 @@ public:
         emit_nested_source_argument_uses();
       }
       if(template_api::class_template_source_use_is_semantic_lookup_only(
-             source_use_mode)) {
+             resolved.source_use_mode)) {
         return;
       }
       if(dependent_arguments) {
@@ -2199,7 +2226,7 @@ public:
         return;
       }
       const bool explicit_specialization_source_use =
-          specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION ||
+          resolved_selection.kind == template_api::MS_EXPLICIT_SPECIALIZATION ||
           resolved_info->is_explicit_specialization;
       const bool nested_recovery_is_qualified_member_owner =
           owner_reference_source_text_enabled &&
@@ -2853,11 +2880,11 @@ public:
                       template_argument_mentions_current_specialization_member(
                           use_scope,
                           (*source_arg_syntaxes)[i]);
-                } else if(i < arguments.size()) {
+                } else if(i < resolved_arguments.size()) {
                   occurrence.arguments[i].current_specialization =
                       template_argument_mentions_current_specialization_member(
                           use_scope,
-                          arguments[i]);
+                          resolved_arguments[i]);
                 }
               }
               if(occurrence.arguments[i].current_specialization) {
@@ -2872,14 +2899,16 @@ public:
                         use_scope,
                         (*source_arg_syntaxes)[i]);
               }
-              if(i < arguments.size()) {
+              if(i < resolved_arguments.size()) {
                 if(occurrence.arguments[i].referenced_value_entities.empty()) {
                   occurrence.arguments[i].referenced_value_entities =
-                      template_argument_value_entities(use_scope, arguments[i]);
+                      template_argument_value_entities(use_scope,
+                                                       resolved_arguments[i]);
                 }
                 if(occurrence.arguments[i].referenced_value_decl_locations.empty()) {
                   occurrence.arguments[i].referenced_value_decl_locations =
-                      template_argument_value_decl_locations(use_scope, arguments[i]);
+                      template_argument_value_decl_locations(
+                          use_scope, resolved_arguments[i]);
                 }
               }
             }
@@ -2901,7 +2930,7 @@ public:
               *this,
               request.bindings,
               decl.parameters,
-              arguments,
+              resolved_arguments,
               *binding_arg_texts,
               "explicit",
               "defaulted");
@@ -2910,7 +2939,7 @@ public:
               *this,
               request.bindings,
               decl.parameters,
-              arguments,
+              resolved_arguments,
               "explicit");
         }
         repair_bindings_from_resolved_instantiation(
@@ -2969,7 +2998,9 @@ public:
         };
 
         std::ostringstream primary_bindings;
-        append_binding_map(primary_bindings, decl.parameters, arguments);
+        append_binding_map(primary_bindings,
+                           decl.parameters,
+                           resolved_arguments);
 
         std::ostringstream specialize_bindings;
         if(bound_parameters && bound_parameters != &decl.parameters) {
@@ -2994,7 +3025,7 @@ public:
     if(is_builtin_initializer_list_template(decl)) {
       ClassInfo * builtin_info =
           instantiate_selected_class_template(decl, use_scope, arguments, specialization);
-      note_class_use(builtin_info);
+      note_class_use(resolved_template_id_view(builtin_info));
       return builtin_info;
     }
 
@@ -3139,7 +3170,7 @@ public:
                                           specialization.kind ==
                                               template_api::MS_PRIMARY);
       record_selected_class_template_base_source_uses(decl, specialization);
-      note_class_use(info);
+      note_class_use(resolved_template_id_view(info));
       return info;
     }
 
@@ -3242,7 +3273,7 @@ public:
         borrow_class_instantiation_key(*info, stored->first);
       }
     }
-    note_class_use(info);
+    note_class_use(resolved_template_id_view(info));
     return info;
   }
 
