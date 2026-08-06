@@ -187,12 +187,24 @@ source-type lookup does not lose `declval` uses. The two private decision
 builders and producer IDs are gone. The current inventory is 28 producer IDs:
 9 class, 3 alias, 1 function-call, 1 variable, and 14 lifecycle sites.
 
-The final strict trace is
+The post-function-consolidation strict trace is
 `/tmp/cppgm-witness-provenance-complete.SR3QL5` and its report is
 `/tmp/cppgm-witness-provenance-complete-report.json`. All 1,305 comparisons
 passed with direct LowIR comparison. It contains 101,745 records across 1,296
 files, no unknown producer, and all 599 visible function-call rows are uniquely
 owned by `function.semantic_template_function`.
+
+The variable-template final-owner slice is captured in
+`/tmp/cppgm-witness-provenance-variable-final-owner.eveIHE`; its report is
+`/tmp/cppgm-witness-provenance-variable-final-owner-report.json`. All 1,305
+strict comparisons remained clean. The trace contains 101,724 records across
+1,296 files and no unknown producer. The canonical variable instantiation now
+retains equivalent observations until semantic analysis finishes, prefers a
+direct source occurrence over its nested initializer replay, and publishes the
+final source row once. The resulting 31 variable rows are all insertions: 28
+direct and three uniquely needed nested dependencies. There are no variable
+replacements, rejections, or exact-duplicate attempts, and
+`drop_redundant_nested_events` removes no variable event.
 
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
@@ -241,8 +253,8 @@ dead/redundant code:
 | Dormant dependent-partial class-reference branch | 10/9 | 4/4 | dependent partial-specialization source-use reconstruction plus private parameter-name and binding canonicalization | live canonical class-reference producer | clean | 4860/4860 | 176855672482 (+0.02%) | 761241600 (-1.12%) | 590778368 (+0.05%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.21%` instructions, `-0.05%` maximum RSS,
-and `-0.74%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.43%` instructions, `+0.64%` maximum RSS,
+and `-0.69%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -256,6 +268,7 @@ and `-0.74%` footprint, so it also clears the final fixed-baseline gates.
 | Dormant post-expansion alias-pattern replay | alias use 4/3 | second argument resolution, source reconstruction, and private pack-binding rendering after structural alias expansion | canonical direct alias-reference producers | clean | 4860/4860 | 177110543912 (+0.14%) | 769249280 (+1.05%) | 590151680 (-0.11%) |
 | Constexpr selected-call ownership | function call 3/2 | constexpr-only final decision construction and emission after the fast evaluator had already selected the binding | canonical selected-call request and observation owner | clean | 4860/4860 | 177058490884 (+0.12%) | 761397248 (+0.20%) | 590348288 (+0.01%) |
 | `declval` selected-call ownership | function call 2/1 | `declval`-specific final decision construction and thread-local emission | canonical selected-call request with origin-specific capture and context-aware emission | clean | 4860/4860 | 176992518383 (-0.04%) | 759799808 (-0.21%) | 590131200 (-0.04%) |
+| Variable final source owner | variable use 1/1 | shared-table scan and same-producer location replacement plus redundant nested-variable renderer suppression | final observation retained against the canonical variable instantiation and published once after semantic analysis | clean | 4860/4860 | 176611768147 (-0.22%) | 765042688 (+0.69%) | 590409728 (+0.05%) |
 
 ## Lifecycle slice ledger
 
@@ -265,7 +278,7 @@ and `-0.74%` footprint, so it also clears the final fixed-baseline gates.
 | Duplicate constant-value variable pre-log | 16/15 | manual variable-template instantiation event immediately before canonical acquisition | `acquire_variable_instantiation` / `lifecycle.template_api.09` | clean | 4860/4860 | 176785536717 (-0.18%) | 772313088 (+0.40%) | 590569472 (+0.07%) |
 | Dormant structured-bool lifecycle fallback | 15/14 | post-dependency source-anchor reconstruction and manual variable-instantiation event that made no attempt in either provenance corpus | canonical member-value dependency reporting and its acquisition transitions | clean | 4860/4860 | 176850953465 (+0.04%) | 759885824 (-1.61%) | 590299136 (-0.05%) |
 
-## Final irreducibility boundary
+## Current ownership boundary
 
 The refreshed trace leaves no producer that can be deleted without losing a
 uniquely owned visible row or lifecycle transition:
@@ -290,18 +303,16 @@ uniquely owned visible row or lifecycle transition:
   despite their collision pairs. `template_api.06` is absent only from strict
   and remains justified by 83 events in the broader reachability probe.
 
-The variable producer's one location/anchor replacement is not a late payload
-repair. In `300-variable-template-default-enable-if-viability.t`, the same
-cached specialization is observed at two real overload-candidate occurrences
-(lines 25 and 30), and the selected viable candidate determines which source
-occurrence remains visible. Eliminating that arbitration requires candidate-
-scoped source-use transactions and committing only the selected candidate,
-which is a broader overload data-flow redesign rather than another redundant
-witness route. The one renderer removal similarly suppresses a nested
-variable-initializer occurrence already represented by a direct occurrence.
+The variable producer no longer corrects an already-published row. In
+`300-variable-template-default-enable-if-viability.t`, the canonical cached
+specialization retains the two real overload-candidate observations and
+publishes the later reference-owned anchor once semantic analysis is complete.
+The same semantic-owner retention prefers the direct top-level observation in
+`300-variable-template-forwarding-partial-top-cv.t`, so the redundant nested
+initializer event never reaches the renderer. Three other nested variable
+dependencies remain because their canonical instantiations have no direct
+source observation.
 
-Accordingly, the remaining collisions measure shared semantic results across
-irreducible entry surfaces, not replay-only owners. Further deletion under the
-current witness contract would change strict output; the next architectural
-step, if desired, is candidate-scoped source-use transactions rather than more
-producer removal.
+The remaining class, alias, and lifecycle collisions still need to be judged
+against their unique semantic payloads before the experiment can claim its
+final irreducibility boundary.
