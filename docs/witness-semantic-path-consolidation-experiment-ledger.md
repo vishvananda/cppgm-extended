@@ -241,6 +241,12 @@ comparisons passed; the deleted path made zero attempts while
 events. The inventory is now 25 producer IDs: 9 class, 3 alias, 1
 function-call, 1 variable, and 11 lifecycle sites.
 
+The renderer's less-specific class-binding pass had zero actions in the
+instrumented baseline, every refreshed strict trace, and the broader all-test
+probe. It nevertheless scanned the rendered event set quadratically looking
+for class or alias rows with empty bindings. The pass and its empty-binding
+helper are deleted; strict and full output remain unchanged.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -286,11 +292,12 @@ dead/redundant code:
 | Resolved type-node class replay | 13/12 | 5/4 | public resolved-type callback, 415 strict-corpus calls, post-resolution source scans, and replay-only `sizeof`, qualifier, conversion, declaration, and constructor-initializer helpers | canonical template-id source scanning and selected class-reference occurrence metadata | clean | 4860/4860 | 176684351239 (-0.21%) | 756359168 (-1.11%) | 590614528 (+0.01%) | none |
 | Dormant string-based constexpr owner replay | 12/10 | 4/4 | two unexercised post-lookup class-owner reconstruction sites in the string-based constant-value fallback | structured constant-expression and qualified-id resolution paths | clean | 4860/4860 | 176822455088 (+0.08%) | 769830912 (+1.78%) | 590475264 (-0.02%) | none |
 | Dormant dependent-partial class-reference branch | 10/9 | 4/4 | dependent partial-specialization source-use reconstruction plus private parameter-name and binding canonicalization | live canonical class-reference producer | clean | 4860/4860 | 176855672482 (+0.02%) | 761241600 (-1.12%) | 590778368 (+0.05%) | none |
+| Idle less-specific class-binding renderer policy | 9/9 | 4/4 | zero-hit quadratic scan for empty-binding class/alias duplicates | already-complete semantic source-use rows | clean | 4860/4860 | 176517676986 (-0.17%) | 762712064 (-0.67%) | 590123008 (-0.02%) | `drop_less_specific_class_bindings` deleted |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.31%` instructions, `+1.01%` maximum RSS,
-and `-0.72%` footprint, so it also clears the final fixed-baseline gates. Its
-three RSS samples span `1.42%` of their median and did not trigger the `+3%`
+fixed diagnostic checkpoint it is `-0.48%` instructions, `+0.33%` maximum RSS,
+and `-0.74%` footprint, so it also clears the final fixed-baseline gates. Its
+three RSS samples span `0.58%` of their median and did not trigger the `+3%`
 confirmation rule.
 
 ## Other source-use slice ledger
