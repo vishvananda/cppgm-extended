@@ -6266,61 +6266,27 @@ void note_structured_bool_integral_constant_value_for_witness(
           info,
           value,
           visiting);
-  if(!integral_constant || integral_constant->qualified_name.empty()) {
+  if(!integral_constant) {
     return;
   }
 
-  string decl_location;
   semantic_lookup::MemberValueLookupResult member =
       semantic_lookup::lookup_member_value(
           const_cast<ClassInfo &>(*integral_constant),
           kStructuredBoolResultMemberName);
-  if(member.binding) {
-    decl_location = strip_template_location_at_prefix(
-        semantic_model::source_decl_anchor_location(
-            semantic_trace::value_decl_anchor(*services.semantic_context,
-                                              member.binding)));
-    vector<TemplateValueDependency> dependencies;
-    append_member_value_binding_dependency(services,
-                                           *integral_constant,
-                                           *member.binding,
-                                           dependencies);
-    if(!dependencies.empty()) {
-      note_template_value_dependencies_for_witness(*services.semantic_context,
-                                                   dependencies);
-      return;
-    }
-  }
-  if(decl_location.empty() && integral_constant->source_template) {
-    decl_location = strip_template_location_at_prefix(
-        semantic_model::source_decl_anchor_location(
-            semantic_trace::class_template_decl_anchor(
-                *services.semantic_context,
-                integral_constant->source_template)));
-  }
-  if(decl_location.empty()) {
+  if(!member.binding) {
     return;
   }
 
-  const string entity =
-      class_symbol_or_output_name_for_witness(*integral_constant) +
-      "::" + kStructuredBoolResultMemberName;
-  const witness::ScopedTemplateWitnessEntryContext entry_context(
-      witness::make_template_closure_entry_context(
-          witness::TemplateClosureReason::TrackInstantiation,
-          entity,
-          decl_location,
-          true));
-  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-      witness_provenance::WitnessProducerSite::
-          LifecycleTemplateArgumentSemantics01,
-      witness::TemplateWitnessLogEventKind::VariableInstantiation,
-      decl_location,
-      entity,
-      decl_location,
-      string(),
-      witness::TemplateLifecycleCause::TrackInstantiation,
-      true);
+  vector<TemplateValueDependency> dependencies;
+  append_member_value_binding_dependency(services,
+                                         *integral_constant,
+                                         *member.binding,
+                                         dependencies);
+  if(!dependencies.empty()) {
+    note_template_value_dependencies_for_witness(*services.semantic_context,
+                                                 dependencies);
+  }
 }
 
 bool append_template_value_dependency(
