@@ -148,6 +148,13 @@ source, selection, and binding reconstruction was removed. The current static
 inventory is 34 producer IDs: 10 class, 4 alias, 3 function-call, 1 variable,
 and 16 lifecycle sites.
 
+The dependent partial-specialization branch in the canonical class-reference
+path likewise made no attempt in either provenance corpus. Removing it also
+deleted its private parameter-name and binding canonicalization machinery.
+The current inventory is 33 producer IDs: 9 class, 4 alias, 3 function-call,
+1 variable, and 16 lifecycle sites. Every remaining class producer is
+exercised by the strict corpus and owns visible output uniquely.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -168,7 +175,6 @@ Sites not exercised by the refreshed strict witness references are tracked
 until they are reached by an earliest-owning-PA reducer or removed as proven
 dead/redundant code:
 
-- class: `class_template_reference.01`;
 - alias: `template_specialization.01`;
 - lifecycle: `template_api.06`, `template_argument_semantics.01`, and
   `constant_value_lookup.01`.
@@ -194,10 +200,11 @@ dead/redundant code:
 | Dead dependent-partial resolver | 14/13 | 5/5 | uncalled `record_dependent_partial_class_use_for_resolved_template_id` and its dormant producer | live selected class-reference resolution | clean | 4860/4860 | 176796004199 (+0.11%) | 753594368 (-1.73%) | 590069760 (-0.05%) | none |
 | Resolved type-node class replay | 13/12 | 5/4 | public resolved-type callback, 415 strict-corpus calls, post-resolution source scans, and replay-only `sizeof`, qualifier, conversion, declaration, and constructor-initializer helpers | canonical template-id source scanning and selected class-reference occurrence metadata | clean | 4860/4860 | 176684351239 (-0.21%) | 756359168 (-1.11%) | 590614528 (+0.01%) | none |
 | Dormant string-based constexpr owner replay | 12/10 | 4/4 | two unexercised post-lookup class-owner reconstruction sites in the string-based constant-value fallback | structured constant-expression and qualified-id resolution paths | clean | 4860/4860 | 176822455088 (+0.08%) | 769830912 (+1.78%) | 590475264 (-0.02%) | none |
+| Dormant dependent-partial class-reference branch | 10/9 | 4/4 | dependent partial-specialization source-use reconstruction plus private parameter-name and binding canonicalization | live canonical class-reference producer | clean | 4860/4860 | 176855672482 (+0.02%) | 761241600 (-1.12%) | 590778368 (+0.05%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.31%` instructions, `+1.27%` maximum RSS,
-and `-0.68%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.29%` instructions, `+0.14%` maximum RSS,
+and `-0.63%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
