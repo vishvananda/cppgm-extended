@@ -472,8 +472,6 @@ const char * producer_site_name(WitnessProducerSite site)
                       "lifecycle.template_argument_semantics.02");
   CPPGM_PRODUCER_NAME(LifecycleCallsemantic01, "lifecycle.callsemantic.01");
   CPPGM_PRODUCER_NAME(LifecycleCallsemantic02, "lifecycle.callsemantic.02");
-  CPPGM_PRODUCER_NAME(LifecycleConstantValueLookup01,
-                      "lifecycle.constant_value_lookup.01");
   CPPGM_PRODUCER_NAME(LifecycleConstantValueLookup02,
                       "lifecycle.constant_value_lookup.02");
   CPPGM_PRODUCER_NAME(LifecycleConstantValueLookup03,

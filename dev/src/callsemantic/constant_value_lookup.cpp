@@ -1810,38 +1810,6 @@ private:
     return nullptr;
   }
 
-  void note_variable_template_instantiation_for_witness(
-      VariableTemplateDecl & variable_template)
-  {
-    const std::string entity =
-        variable_template.declaring_scope ?
-            semantic_lookup::scope_qualified_name(*variable_template.declaring_scope,
-                                                  variable_template.name) :
-            variable_template.name;
-    const std::string decl_location =
-        strip_at_prefix(semantic_model::source_decl_anchor_location(
-            semantic_trace::variable_template_decl_anchor(ctx, &variable_template)));
-    if(entity.empty() || decl_location.empty()) {
-      return;
-    }
-    const witness::ScopedTemplateWitnessEntryContext entry_context(
-        witness::make_template_closure_entry_context(
-            witness::TemplateClosureReason::TrackInstantiation,
-            entity,
-            decl_location,
-            true));
-    CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-        witness_provenance::WitnessProducerSite::
-            LifecycleConstantValueLookup01,
-        witness::TemplateWitnessLogEventKind::VariableInstantiation,
-        decl_location,
-        entity,
-        decl_location,
-        std::string(),
-        witness::TemplateLifecycleCause::TrackInstantiation,
-        true);
-  }
-
   void track_variable_template_instantiation_for_witness(
       Scope & use_scope,
       Scope & lookup_scope,
@@ -1856,7 +1824,6 @@ private:
     if(!variable_template) {
       return;
     }
-    note_variable_template_instantiation_for_witness(*variable_template);
     template_api::TemplateVariableInstantiationRequest request;
     request.decl = variable_template;
     request.arguments = arguments;

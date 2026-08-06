@@ -34,7 +34,6 @@ LIFECYCLE_PRODUCERS = [
     "lifecycle.template_argument_semantics.02",
     "lifecycle.callsemantic.01",
     "lifecycle.callsemantic.02",
-    "lifecycle.constant_value_lookup.01",
     "lifecycle.constant_value_lookup.02",
     "lifecycle.constant_value_lookup.03",
 ]
