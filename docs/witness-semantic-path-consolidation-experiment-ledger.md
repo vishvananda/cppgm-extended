@@ -247,6 +247,24 @@ probe. It nevertheless scanned the rendered event set quadratically looking
 for class or alias rows with empty bindings. The pass and its empty-binding
 helper are deleted; strict and full output remain unchanged.
 
+The final post-cleanup strict trace lives at
+`/tmp/cppgm-witness-provenance-final-post-cleanup.rt3Y14`; its report lives at
+`/tmp/cppgm-witness-provenance-final-post-cleanup-report.json`. All 1,305
+comparisons passed with direct LowIR comparison. The analyzer read 101,536
+records across 1,296 files, inventoried 25 producer IDs, and found no unknown
+producer attempt. Each remaining source producer owns a visible row that no
+other producer supplies. The lifecycle collision matrix is empty. The strict
+corpus does not reach `lifecycle.template_api.06`; the broader reachability
+probe recorded 83 anonymous-member-class events from that live transition.
+
+The renderer audit separates one dead policy from one live policy. We deleted
+`drop_less_specific_class_bindings` after all probes recorded zero actions. The
+broader async-alias probe is
+`/tmp/cppgm-witness-provenance-current-async-alias.IrB5Mx`, with report
+`/tmp/cppgm-witness-provenance-current-async-alias-report.json`; it records
+seven alias rows removed by `drop_redundant_nested_events`. Source-template
+pattern observations still require that pass.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -325,23 +343,30 @@ confirmation rule.
 | Class-finalization member-value owner | 13/12 | manual noted-flag mutation, source-anchor reconstruction, and parallel variable-instantiation log | `note_template_member_value_instantiation_if_needed` / `lifecycle.template_api.02` | clean | 4860/4860 | 176895591466 (-0.12%) | 763097088 (-0.57%) | 590102528 (-0.10%) |
 | Retained member-value dependency owner | 12/11 | dependency-side binding-state mutation and parallel variable-instantiation log | exact retained binding and dependency facts submitted to `note_template_member_value_instantiation_if_needed` / `lifecycle.template_api.02` | clean | 4860/4860 | 176813919381 (-0.05%) | 767885312 (+0.63%) | 590233600 (+0.02%) |
 
-## Current ownership boundary
+## Final irreducibility boundary
 
 The refreshed trace leaves no producer that can be deleted without losing a
-uniquely owned visible row or lifecycle transition:
+visible row or lifecycle transition that no other producer supplies:
 
-- the nine class owners uniquely supply visible rows:
+- the nine class owners each supply distinct visible rows:
   `callsemantic.06` 35, `callsemantic.07` 75, `callsemantic.08` 4,
   `callsemantic.10` 30, `callsemantic.13` 29,
   `class_template_reference.02` 1,118, `constant_value_lookup.02` 2,
   `constant_value_lookup.03` 199, and `template_instantiation` 24. The four
-  remaining upstream routes are the semantic surfaces for nested syntax,
+  final source-collision pairs are limited to the nested observer, explicit
+  reference observer, and canonical class-reference observer. Their eight
+  retained replacements change occurrence data only, not ownership,
+  selection, or bindings. The four remaining upstream routes are the semantic
+  surfaces for nested syntax,
   nested template arguments, resolved alias results, and out-of-class static-
   member definitions; removing any one loses one of those unique groups;
-- the three alias owners uniquely supply 76 direct resolved uses, 260
-  pattern/nested uses, and 23 template-argument uses. Their collisions are
-  shared source occurrences, while each owner also covers syntax that the
-  other two never resolve;
+- the three alias owners supply 76 distinct direct resolved uses, 260
+  source-template pattern/nested uses, and 23 template-argument uses. Their
+  three collision pairs are shared source occurrences. The 24 retained table
+  replacements supply concrete occurrence, ownership, selected-entity, or
+  pack-binding facts, and the broader probe still exercises nested-alias
+  renderer suppression, so neither the conflict branches nor that pass are
+  idle;
 - the single function owner supplies all 599 visible calls, including the ten
   `declval` and one constexpr-fast-path row formerly owned elsewhere;
 - every strict-exercised lifecycle owner has unique transitions. The 155
@@ -362,6 +387,48 @@ initializer event never reaches the renderer. Three other nested variable
 dependencies remain because their canonical instantiations have no direct
 source observation.
 
-The remaining class, alias, and lifecycle collisions still need to be judged
-against their unique semantic payloads before the experiment can claim its
-final irreducibility boundary.
+The strict corpus, targeted fixtures, and broader reachability probes audited
+all 53 original producer IDs before each removal or retention decision. Dormant
+sites made zero attempts in both provenance corpora. A fixture exercised each
+live site before its responsibility moved. The remaining lifecycle sites have
+no cross-producer collision, so each maps to its own scheduler, instantiation,
+finalization, acquisition, or closure transition.
+
+The build retains the compile-time provenance instrumentation as a diagnostic.
+It supplied the coverage and conflict evidence used for the final decisions,
+including the dead class-binding pass and the live nested-alias pass. The
+Makefile excludes provenance from ordinary frontend object lists, and the
+preprocessor removes the guarded state and renderer lineage code. The ordinary
+`dev/cppgm++` contains no `witness_provenance` symbol.
+
+The final code checkpoint is `a42c915e3acd91ee56f9f8913d0c5695ad52ccf5`.
+The ordinary strict gate passed 1,305/1,305 with direct LowIR comparison, and
+the full PA1-PA38 report passed 4,860/4,860. Its promoted three-run medians are
+176,517,676,986 instructions, 762,712,064 bytes maximum RSS, and 590,123,008
+bytes peak footprint. Versus the prior rolling checkpoint, the deltas are
+`-0.17%` instructions, `-0.67%` RSS, and `-0.02%` footprint. Versus the fixed
+diagnostic checkpoint, they are `-0.48%`, `+0.33%`, and `-0.74%`. RSS stayed
+below the warning threshold, so the script did not run a confirmation batch.
+
+## Completion audit
+
+- Producer coverage: the strict and broader reports account for all 53
+  original IDs. The final report inventories 25 IDs and reports no unknown
+  attempt.
+- Source ownership: nine class producers each own a distinct source surface;
+  three alias producers each own a distinct direct, pattern, or argument
+  surface. Function and variable uses each have one final owner, and variable
+  publication no longer performs staged location correction.
+- Lifecycle ownership: the final lifecycle collision matrix has no entry.
+  Each surviving event records one transition owner; the broader probe covers
+  the anonymous-member site missing from strict.
+- Conflict cleanup: provenance proves that retained table branches still merge
+  occurrence or binding facts. The broader alias probe still exercises nested
+  suppression. We deleted the less-specific class-binding pass after all
+  probes gave it zero actions.
+- Semantic boundary: the accepted changes retain resolved bindings, typed
+  occurrences, and scheduler state. They add no renderer source scan, text
+  reparse, or recovery path.
+- Release gates: direct strict LowIR comparison, the PA1-PA38 report, both
+  performance baselines, ordinary-build symbol inspection, commit separation,
+  and worktree hygiene all pass.

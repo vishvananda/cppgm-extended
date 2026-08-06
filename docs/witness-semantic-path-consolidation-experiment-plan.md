@@ -1,5 +1,9 @@
 # Witness Semantic-Path Consolidation Experiment
 
+The branch implements this plan. The experiment ledger records the final
+correctness, provenance, irreducibility, and performance evidence:
+`docs/witness-semantic-path-consolidation-experiment-ledger.md`.
+
 ## Handoff
 
 - Repository: `/Users/vishvananda/cppgm-extended`
