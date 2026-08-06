@@ -3013,10 +3013,7 @@ public:
         const bool parent_class_use_records =
             witness::class_use_recording_enabled(witness_context,
                                                  request.origin);
-        CPPGM_SET_WITNESS_PRODUCER(
-            request,
-            witness::WitnessProducerSite::ClassTemplateReference02);
-        witness::emit_class_use(witness_context, request);
+        ctx.submit_resolved_class_use(std::move(request));
         if(parent_class_use_records &&
            !suppress_nested_arguments &&
            source_arg_syntaxes &&

@@ -928,6 +928,7 @@ public:
       ScopedCallSemConstructionPath construction_path("semantic.witness_unemitted_bodies");
       analyze_unemitted_member_bodies_for_witness_semantics();
     }
+    observe_collected_class_uses();
     witness::finalize_variable_use_source_uses(template_witness_session_);
     if(memory_census_enabled()) {
       callsemantic::dump_source_ast_memory_census(std::cerr, ast);
@@ -1437,24 +1438,27 @@ private:
   mutable template_api::template_witness_detail::SourceTokenIndex
       source_token_index_;
   witness::TemplateWitnessSession * template_witness_session_ = nullptr;
-  std::unordered_map<uint32_t, TypePtr> resolved_class_template_id_types_;
-  std::unordered_map<uint32_t,
-                     resolved_source_semantics::RetainedDependentClassTemplateId>
-      dependent_class_template_ids_by_location_id_;
-  std::unordered_map<std::string,
-                     resolved_source_semantics::RetainedDependentClassTemplateId>
-      dependent_class_template_ids_by_location_;
-  std::vector<resolved_source_semantics::ResolvedOwnerReference>
-      retained_out_of_class_owner_references_;
   struct AliasClassUseCapture
   {
     uint32_t handle = 0;
     bool through_alias = false;
   };
-  struct AliasClassUseState
+  struct ResolvedSourceState
   {
-    AliasClassUseCapture * active = nullptr;
-    std::vector<resolved_source_semantics::RetainedAliasClassUse> retained;
+    std::unordered_map<uint32_t, TypePtr> class_types_by_location_id;
+    std::unordered_map<
+        uint32_t,
+        resolved_source_semantics::RetainedDependentClassTemplateId>
+        dependent_classes_by_location_id;
+    std::unordered_map<
+        std::string,
+        resolved_source_semantics::RetainedDependentClassTemplateId>
+        dependent_classes_by_location;
+    std::vector<resolved_source_semantics::ResolvedOwnerReference>
+        out_of_class_owners;
+    std::vector<witness::ClassUseEmitRequest> pending_class_uses;
+    AliasClassUseCapture * active_alias = nullptr;
+    std::vector<resolved_source_semantics::RetainedAliasClassUse> aliases;
     std::map<std::pair<const Scope *, std::string>, uint32_t> by_scope_name;
     std::map<std::pair<const ClassTemplateDecl *, std::string>, uint32_t>
         by_source_template_name;
@@ -1465,11 +1469,11 @@ private:
   };
   struct ScopedAliasClassUseCapture
   {
-    explicit ScopedAliasClassUseCapture(AliasClassUseState * state)
-      : state(state), previous(state ? state->active : nullptr)
+    explicit ScopedAliasClassUseCapture(ResolvedSourceState * state)
+      : state(state), previous(state ? state->active_alias : nullptr)
     {
       if(state) {
-        state->active = &capture;
+        state->active_alias = &capture;
       }
     }
 
@@ -1478,10 +1482,10 @@ private:
       if(!state) {
         return;
       }
-      state->active = previous;
+      state->active_alias = previous;
     }
 
-    AliasClassUseState * state = nullptr;
+    ResolvedSourceState * state = nullptr;
     AliasClassUseCapture * previous = nullptr;
     AliasClassUseCapture capture;
   };
@@ -10417,7 +10421,7 @@ private:
         decl_spec_contains_token(resolved_specifiers, KW_MUTABLE);
     const CppAstNode filtered_specifiers =
         filtered_class_member_decl_specifiers(resolved_specifiers);
-    ScopedAliasClassUseCapture alias_capture(alias_class_use_state());
+    ScopedAliasClassUseCapture alias_capture(resolved_source_state());
     if(!parse_decl_spec(filtered_specifiers, *info.member_scope, is_typedef, base)) {
       return;
     }
@@ -12490,10 +12494,11 @@ private:
        !resolved_type) {
       return;
     }
+    ResolvedSourceState * state = resolved_source_state();
     const auto found =
-        resolved_class_template_id_types_.find(syntax.source_location_id);
-    if(found == resolved_class_template_id_types_.end()) {
-      resolved_class_template_id_types_.emplace(syntax.source_location_id,
+        state->class_types_by_location_id.find(syntax.source_location_id);
+    if(found == state->class_types_by_location_id.end()) {
+      state->class_types_by_location_id.emplace(syntax.source_location_id,
                                                 resolved_type);
     } else if(type_depends_on_template_parameter(found->second) &&
               !type_depends_on_template_parameter(resolved_type)) {
@@ -12507,9 +12512,12 @@ private:
     if(syntax.source_location_id == 0) {
       return TypePtr();
     }
-    const auto found =
-        resolved_class_template_id_types_.find(syntax.source_location_id);
-    return found != resolved_class_template_id_types_.end() ?
+    if(!resolved_source_state_) {
+      return TypePtr();
+    }
+    const auto found = resolved_source_state_->class_types_by_location_id.find(
+        syntax.source_location_id);
+    return found != resolved_source_state_->class_types_by_location_id.end() ?
         found->second : TypePtr();
   }
 
@@ -12530,34 +12538,88 @@ private:
     retained.valid = true;
     if(resolved.source_syntax &&
        resolved.source_syntax->source_location_id != 0) {
-      dependent_class_template_ids_by_location_id_.emplace(
+      resolved_source_state()->dependent_classes_by_location_id.emplace(
           resolved.source_syntax->source_location_id,
           retained);
     }
     if(resolved.source_location && !resolved.source_location->empty()) {
-      dependent_class_template_ids_by_location_.emplace(
+      resolved_source_state()->dependent_classes_by_location.emplace(
           template_api::normalize_template_witness_source_location(
               *resolved.source_location),
           retained);
     }
   }
 
-  AliasClassUseState * alias_class_use_state()
+  ResolvedSourceState * resolved_source_state()
   {
     if(template_witness_session_ == nullptr) {
       return nullptr;
     }
-    if(!alias_class_use_state_) {
-      alias_class_use_state_.reset(new AliasClassUseState());
+    if(!resolved_source_state_) {
+      resolved_source_state_.reset(new ResolvedSourceState());
     }
-    return alias_class_use_state_.get();
+    return resolved_source_state_.get();
+  }
+
+  void submit_resolved_class_use(
+      witness::ClassUseEmitRequest request) override
+  {
+    if(template_witness_session_ == nullptr ||
+       !witness::class_use_recording_enabled(template_witness_context(),
+                                             request.origin)) {
+      return;
+    }
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassTemplateReference02);
+    resolved_source_state()->pending_class_uses.push_back(std::move(request));
+  }
+
+  void submit_resolved_class_use_decision(
+      witness::ClassUseSourceDecision decision,
+      witness::SourceUseOwnership ownership,
+      witness::SourceUseRole role,
+      witness::ClassUseEmissionOrigin origin)
+  {
+    witness::ClassUseEmitRequest request;
+    request.location = std::move(decision.location);
+    request.use_anchor_present = !decision.use_anchor.location.empty();
+    request.use_anchor_location = std::move(decision.use_anchor.location);
+    request.template_name = std::move(decision.template_name);
+    request.selection = decision.selection;
+    request.selected_decl_location = std::move(decision.selected_decl_location);
+    request.selected_decl_anchor = std::move(decision.selected_decl_anchor);
+    request.template_id_occurrence =
+        std::move(decision.template_id_occurrence);
+    request.bindings = std::move(decision.bindings);
+    request.specialization_bindings =
+        std::move(decision.specialization_bindings);
+    request.ownership = ownership;
+    request.role = role;
+    request.origin = origin;
+    submit_resolved_class_use(std::move(request));
+  }
+
+  void observe_collected_class_uses()
+  {
+    if(!resolved_source_state_) {
+      return;
+    }
+    for(std::size_t i = 0;
+        i < resolved_source_state_->pending_class_uses.size();
+        ++i) {
+      witness::emit_class_use(
+          template_witness_context(),
+          resolved_source_state_->pending_class_uses[i]);
+    }
+    resolved_source_state_->pending_class_uses.clear();
   }
 
   uint32_t retain_alias_class_use_source(
       const resolved_source_semantics::ResolvedClassTemplateIdView & resolved)
   {
-    AliasClassUseState * state = alias_class_use_state_.get();
-    if(!state || !state->active || !resolved.origin || !resolved.instance ||
+    ResolvedSourceState * state = resolved_source_state_.get();
+    if(!state || !state->active_alias || !resolved.origin || !resolved.instance ||
        resolved.instance->source_template != resolved.origin) {
       return 0;
     }
@@ -12569,8 +12631,8 @@ private:
     resolved_source_semantics::RetainedAliasClassUse retained;
     retained.origin = resolved.origin;
     retained.instance = resolved.instance;
-    state->retained.push_back(retained);
-    const uint32_t handle = static_cast<uint32_t>(state->retained.size());
+    state->aliases.push_back(retained);
+    const uint32_t handle = static_cast<uint32_t>(state->aliases.size());
     state->by_class_result.emplace(key, handle);
     return handle;
   }
@@ -12578,14 +12640,14 @@ private:
   void capture_alias_class_use_source(
       const resolved_source_semantics::ResolvedClassTemplateIdView & resolved)
   {
-    AliasClassUseState * state = alias_class_use_state_.get();
-    if(!state || !state->active) {
+    ResolvedSourceState * state = resolved_source_state_.get();
+    if(!state || !state->active_alias) {
       return;
     }
     const uint32_t handle = retain_alias_class_use_source(resolved);
     if(handle != 0) {
-      state->active->handle = handle;
-      state->active->through_alias = false;
+      state->active_alias->handle = handle;
+      state->active_alias->through_alias = false;
       if(resolved.instance->type) {
         state->by_type.emplace(resolved.instance->type.get(), handle);
       }
@@ -12600,8 +12662,8 @@ private:
   void capture_named_type_alias_source(const Scope & scope,
                                        const std::string & name)
   {
-    AliasClassUseState * state = alias_class_use_state_.get();
-    if(!state || !state->active || name.empty()) {
+    ResolvedSourceState * state = resolved_source_state_.get();
+    if(!state || !state->active_alias || name.empty()) {
       return;
     }
     uint32_t handle = 0;
@@ -12621,7 +12683,7 @@ private:
         const auto by_type = state->by_type.find(named->second.get());
         if(by_type != state->by_type.end()) {
           const resolved_source_semantics::RetainedAliasClassUse & retained =
-              state->retained[by_type->second - 1];
+              state->aliases[by_type->second - 1];
           if(!retained.origin || name != retained.origin->name) {
             handle = by_type->second;
           }
@@ -12629,25 +12691,25 @@ private:
       }
     }
     if(handle != 0) {
-      state->active->handle = handle;
-      state->active->through_alias = true;
+      state->active_alias->handle = handle;
+      state->active_alias->through_alias = true;
     }
   }
 
   void capture_alias_type_source(const TypePtr & type,
                                  const std::string & source_name)
   {
-    AliasClassUseState * state = alias_class_use_state_.get();
-    if(!state || !state->active || !type || source_name.empty()) {
+    ResolvedSourceState * state = resolved_source_state_.get();
+    if(!state || !state->active_alias || !type || source_name.empty()) {
       return;
     }
     const auto found = state->by_type.find(type.get());
     if(found == state->by_type.end() || found->second == 0 ||
-       found->second > state->retained.size()) {
+       found->second > state->aliases.size()) {
       return;
     }
     const resolved_source_semantics::RetainedAliasClassUse & retained =
-        state->retained[found->second - 1];
+        state->aliases[found->second - 1];
     if(!retained.instance ||
        !type_equals(strip_top_level_cv(type),
                     strip_top_level_cv(retained.instance->type))) {
@@ -12660,22 +12722,22 @@ private:
        unqualified_member_name(source_head) == retained.origin->name) {
       return;
     }
-    state->active->handle = found->second;
-    state->active->through_alias = true;
+    state->active_alias->handle = found->second;
+    state->active_alias->through_alias = true;
   }
 
   uint32_t retained_alias_class_use_handle_for_type(const TypePtr & type) const
   {
-    if(!alias_class_use_state_ || !type) {
+    if(!resolved_source_state_ || !type) {
       return 0;
     }
-    const auto found = alias_class_use_state_->by_type.find(type.get());
-    if(found == alias_class_use_state_->by_type.end() || found->second == 0 ||
-       found->second > alias_class_use_state_->retained.size()) {
+    const auto found = resolved_source_state_->by_type.find(type.get());
+    if(found == resolved_source_state_->by_type.end() || found->second == 0 ||
+       found->second > resolved_source_state_->aliases.size()) {
       return 0;
     }
     const resolved_source_semantics::RetainedAliasClassUse & retained =
-        alias_class_use_state_->retained[found->second - 1];
+        resolved_source_state_->aliases[found->second - 1];
     return retained.instance &&
                    type_equals(strip_top_level_cv(type),
                                strip_top_level_cv(retained.instance->type)) ?
@@ -12688,7 +12750,7 @@ private:
       const TypePtr & type,
       AliasClassUseCapture & capture) const
   {
-    if(!alias_class_use_state_ || !type || capture.handle == 0) {
+    if(!resolved_source_state_ || !type || capture.handle == 0) {
       return;
     }
 
@@ -12697,7 +12759,7 @@ private:
       base = strip_top_level_cv(base->inner);
     }
     const uint32_t handle = retained_alias_class_use_handle_for_type(base);
-    if(handle == 0 || handle > alias_class_use_state_->retained.size()) {
+    if(handle == 0 || handle > resolved_source_state_->aliases.size()) {
       capture = AliasClassUseCapture();
       return;
     }
@@ -12729,7 +12791,7 @@ private:
       uint32_t expanded_class_use_handle) override
   {
     (void)type;
-    AliasClassUseState * state = alias_class_use_state_.get();
+    ResolvedSourceState * state = resolved_source_state_.get();
     if(!state || name.empty() || expanded_class_use_handle == 0) {
       return;
     }
@@ -12747,13 +12809,13 @@ private:
       const std::string & use_location,
       witness::SourceUseRole role)
   {
-    AliasClassUseState * state = alias_class_use_state_.get();
-    if(!state || handle == 0 || handle > state->retained.size() ||
+    ResolvedSourceState * state = resolved_source_state_.get();
+    if(!state || handle == 0 || handle > state->aliases.size() ||
        use_location.empty()) {
       return;
     }
     const resolved_source_semantics::RetainedAliasClassUse & retained =
-        state->retained[handle - 1];
+        state->aliases[handle - 1];
     if(!retained.valid()) {
       return;
     }
@@ -12794,10 +12856,7 @@ private:
     request.ownership = witness::SourceUseOwnership::SourceOwned;
     request.role = role;
     request.origin = witness::ClassUseEmissionOrigin::DeclarationTypeSource;
-    CPPGM_SET_WITNESS_PRODUCER(
-        request,
-        witness::WitnessProducerSite::ClassTemplateReference02);
-    witness::emit_class_use(request);
+    submit_resolved_class_use(std::move(request));
   }
 
   const resolved_source_semantics::RetainedDependentClassTemplateId *
@@ -12805,17 +12864,23 @@ private:
       const TemplateIdSyntax & syntax)
   {
     if(syntax.source_location_id != 0) {
-      const auto by_id = dependent_class_template_ids_by_location_id_.find(
+      if(!resolved_source_state_) {
+        return nullptr;
+      }
+      const auto by_id = resolved_source_state_->dependent_classes_by_location_id.find(
           syntax.source_location_id);
-      if(by_id != dependent_class_template_ids_by_location_id_.end()) {
+      if(by_id != resolved_source_state_->dependent_classes_by_location_id.end()) {
         return &by_id->second;
       }
+    }
+    if(!resolved_source_state_) {
+      return nullptr;
     }
     const std::string location =
         source_location_for_template_id_syntax_name(syntax);
     const auto by_location =
-        dependent_class_template_ids_by_location_.find(location);
-    return by_location != dependent_class_template_ids_by_location_.end() ?
+        resolved_source_state_->dependent_classes_by_location.find(location);
+    return by_location != resolved_source_state_->dependent_classes_by_location.end() ?
         &by_location->second : nullptr;
   }
 
@@ -12918,11 +12983,8 @@ private:
         decision.template_id_occurrence =
             semantic_source_use::SourceTemplateIdOccurrence();
       }
-      CPPGM_SET_WITNESS_PRODUCER(
-          decision,
-          witness::WitnessProducerSite::ClassTemplateReference02);
-      witness::emit_class_use_decision(
-          decision,
+      submit_resolved_class_use_decision(
+          std::move(decision),
           ownership,
           role,
           witness::nested_class_use_origin_for_ownership(ownership));
@@ -12998,8 +13060,9 @@ private:
     if(template_witness_session_ == nullptr || !resolved.valid()) {
       return 0;
     }
-    retained_out_of_class_owner_references_.push_back(resolved);
-    return static_cast<uint32_t>(retained_out_of_class_owner_references_.size());
+    ResolvedSourceState * state = resolved_source_state();
+    state->out_of_class_owners.push_back(resolved);
+    return static_cast<uint32_t>(state->out_of_class_owners.size());
   }
 
   void observe_resolved_out_of_class_owner_reference(
@@ -13076,10 +13139,7 @@ private:
     request.origin = role == witness::SourceUseRole::QualifierUse ?
         witness::ClassUseEmissionOrigin::QualifiedValueSource :
         witness::ClassUseEmissionOrigin::DeclarationTypeSource;
-    CPPGM_SET_WITNESS_PRODUCER(
-        request,
-        witness::WitnessProducerSite::ClassTemplateReference02);
-    witness::emit_class_use(template_witness_context(), request);
+    submit_resolved_class_use(std::move(request));
   }
 
   void observe_retained_out_of_class_owner_reference(
@@ -13087,12 +13147,12 @@ private:
       ClassInfo & concrete_owner,
       witness::SourceUseRole role) override
   {
-    if(handle == 0 ||
-       handle > retained_out_of_class_owner_references_.size()) {
+    if(!resolved_source_state_ || handle == 0 ||
+       handle > resolved_source_state_->out_of_class_owners.size()) {
       return;
     }
     resolved_source_semantics::ResolvedOwnerReference resolved =
-        retained_out_of_class_owner_references_[handle - 1];
+        resolved_source_state_->out_of_class_owners[handle - 1];
     resolved.owner = &concrete_owner;
     observe_resolved_out_of_class_owner_reference(resolved, nullptr, role);
   }
@@ -13696,7 +13756,7 @@ private:
       bool reference_class_templates_only = false,
       bool suppress_source_capture = false) override
   {
-    ScopedAliasClassUseCapture expansion_capture(alias_class_use_state());
+    ScopedAliasClassUseCapture expansion_capture(resolved_source_state());
     const auto finish = [&](const TypePtr & type) -> TypePtr
     {
       if(expansion_capture.capture.handle == 0) {
@@ -13976,7 +14036,7 @@ private:
       const vector<TemplateArgument> & resolved_arguments,
       bool reference_class_templates_only = false) override
   {
-    ScopedAliasClassUseCapture expansion_capture(alias_class_use_state());
+    ScopedAliasClassUseCapture expansion_capture(resolved_source_state());
     TypePtr result = instantiate_resolved_alias_template_impl(
         decl, use_scope, resolved_arguments, nullptr, nullptr,
         reference_class_templates_only);
@@ -20779,10 +20839,7 @@ private:
     }
     request.ownership = witness::SourceUseOwnership::SourceOwned;
     request.origin = witness::ClassUseEmissionOrigin::ExplicitSpecializationSource;
-    CPPGM_SET_WITNESS_PRODUCER(
-        request,
-        witness::WitnessProducerSite::ClassTemplateReference02);
-    witness::emit_class_use(template_witness_context(), request);
+    submit_resolved_class_use(std::move(request));
   }
 
   void observe_resolved_alias_template_id(
@@ -21017,7 +21074,7 @@ private:
                             bool record_class_template_use,
                             AliasClassUseCapture * source_result = nullptr)
   {
-    ScopedAliasClassUseCapture alias_capture(alias_class_use_state());
+    ScopedAliasClassUseCapture alias_capture(resolved_source_state());
     const bool capture_template_source_uses =
         witness::source_capture_enabled(template_witness_context());
     std::string node_use_location;
@@ -21286,7 +21343,7 @@ private:
                      bool record_class_template_use = true,
                      uint32_t * expanded_class_use_handle = nullptr) override
   {
-    ScopedAliasClassUseCapture alias_capture(alias_class_use_state());
+    ScopedAliasClassUseCapture alias_capture(resolved_source_state());
     const bool capture_template_source_uses =
         witness::source_capture_enabled(template_witness_context());
     std::string preferred_node_use_location;
@@ -22150,7 +22207,7 @@ private:
                                                std::string()));
     }
     ScopedTemplateUseLocation use_location_guard(use_location);
-    ScopedAliasClassUseCapture alias_capture(alias_class_use_state());
+    ScopedAliasClassUseCapture alias_capture(resolved_source_state());
     is_typedef = false;
     const bool declaration_is_typedef =
         decl_spec_contains_token(specifiers, KW_TYPEDEF);
@@ -32666,7 +32723,7 @@ private:
 
   // Kept last so ordinary semantic state retains its existing layout. The
   // side store is allocated only while source-witness capture is active.
-  std::unique_ptr<AliasClassUseState> alias_class_use_state_;
+  std::unique_ptr<ResolvedSourceState> resolved_source_state_;
 };
 
 }  // namespace
