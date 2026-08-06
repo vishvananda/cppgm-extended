@@ -32,7 +32,6 @@ LIFECYCLE_PRODUCERS = [
     "lifecycle.callsemantic.01",
     "lifecycle.callsemantic.02",
     "lifecycle.constant_value_lookup.02",
-    "lifecycle.constant_value_lookup.03",
 ]
 
 UPSTREAM_ROUTES = [

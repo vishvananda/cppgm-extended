@@ -1927,27 +1927,6 @@ private:
         template_api::note_template_member_value_instantiation_if_needed(
             ctx,
             *member.binding);
-        const std::string decl_location =
-            strip_at_prefix(semantic_model::source_decl_anchor_location(
-                semantic_trace::value_decl_anchor(ctx, member.binding)));
-        if(!decl_location.empty()) {
-          const witness::ScopedTemplateWitnessEntryContext entry_context(
-              witness::make_template_closure_entry_context(
-                  witness::TemplateClosureReason::TrackInstantiation,
-                  entity,
-                  decl_location,
-                  true));
-          CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-              witness_provenance::WitnessProducerSite::
-                  LifecycleConstantValueLookup03,
-              witness::TemplateWitnessLogEventKind::VariableInstantiation,
-              decl_location,
-              entity,
-              decl_location,
-              std::string(),
-              witness::TemplateLifecycleCause::TrackInstantiation,
-              true);
-        }
       }
     } catch(const std::exception &) {
       // Witness preservation should not change constexpr viability.

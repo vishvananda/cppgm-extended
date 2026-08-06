@@ -53,7 +53,6 @@ enum class WitnessProducerSite
   LifecycleCallsemantic01,
   LifecycleCallsemantic02,
   LifecycleConstantValueLookup02,
-  LifecycleConstantValueLookup03,
 };
 
 enum class WitnessUpstreamRoute
