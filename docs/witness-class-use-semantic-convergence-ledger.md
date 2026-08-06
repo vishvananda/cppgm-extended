@@ -47,7 +47,7 @@ or rerecord it.
 | 1. Typed result | `a628fa997` | 9 | 4 | +91 / -16 | +0.16% | +0.16% | +1.03% | +0.05% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-1.json` |
 | 2. Dependent pattern | `e05e22320` | 8 | 4 | +230 / -79 | +0.48% | +0.33% | +0.94% | +0.02% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-2.json` |
 | 3A. Nested results | `e96c44379` | 7 | 2 | +1120 / -310 | +0.37% | -0.11% | +0.06% | +0.10% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-3a-final.json` |
-| 3B. Template patterns | pending | 6 | 2 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
+| 3B. Template patterns | `9ea979c45` | 6 | 2 | +1499 / -936 | +0.31% | -0.06% | +0.54% | +0.11% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-3b.json` |
 | 4. Qualified constants | pending | 4 | 2 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
 | 5. Definition owners | pending | 2 | 1 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
 | 6. Alias provenance | pending | 1 | 0 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
@@ -61,6 +61,7 @@ or rerecord it.
 | Phase 1 | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 80 bytes, stack-scoped |
 | Phase 2 | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 96 bytes, stack-scoped; no retained allocation |
 | Phase 3A | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 96 bytes; `RetainedDependentClassTemplateId`: 168 bytes, witness-session side store only |
+| Phase 3B | 280 | 136 | 1,136 | 136 | `ResolvedAliasTemplateIdView`: 72 bytes, stack-scoped; class retained storage unchanged |
 
 `OutOfClassMemberFunctionDecl` starts at 240 bytes. The reporter source is
 `scripts/report_semantic_structure_sizes.cpp`; compile it against `dev/src`
@@ -154,13 +155,55 @@ with the configured host compiler.
 - Cleanup obligation: none; all fixed and rolling metrics remain inside the
   intermediate investigation thresholds.
 
+## Phase 3B evidence
+
+- Correctness commit: `9ea979c4509341e9ac47ee994a887abc848edd34`
+- Candidate SHA-256:
+  `9caa6c3c57126ea9f630912b1e950e74909009d1e763ad4fa725c4429793f046`
+- Instructions: `177066056074`, `+0.31%` versus fixed and `-0.06%`
+  versus rolling
+- Maximum RSS: `766816256`, `+0.54%` versus fixed and `+0.48%`
+  versus rolling
+- Peak footprint: `590761984`, `+0.11%` versus fixed and `+0.01%`
+  versus rolling
+- Strict provenance trace:
+  `/tmp/cppgm-phase3b-nested-patterns.Kak97J`
+- Strict provenance report:
+  `/tmp/cppgm-phase3b-nested-patterns-report.json`
+- Provenance report SHA-256:
+  `a6d3feabda320302468d850c07a200e0b3720110f63623e502d0286173f5c404`
+- `class.callsemantic.07` and `alias.callsemantic.03` make zero attempts and
+  their producer IDs are absent. Their source rows are now owned by the
+  canonical class-template reference and alias resolution paths.
+- Declaration collection passes its already-parsed pattern scope into the
+  definition-time source analysis. Nested member-template declarations create
+  one parameterized scope for their definition analysis; the old second
+  top-level parameter parse, custom class selection arm, syntax-only alias
+  emitter, source-decision cache, and public recovery callback are gone.
+- A dependent alias that cannot yet reduce its arguments submits a
+  72-byte non-owning `ResolvedAliasTemplateIdView`. The observer formats the
+  source binding without changing the semantic return type or allocating in
+  ordinary compilation.
+- The ordinary and provenance renderer branches now apply source-defined-call
+  normalization before member-alias qualification. This fixes a pre-existing
+  build-mode ordering divergence that the new canonical alias events exposed.
+- The two starting nested replay routes remain zero. The two remaining active
+  routes are `class_use.resolved_alias_type` (`1185`) and
+  `class_use.static_member_definition_ast_node` (`25`).
+- The phase itself removes 247 net production lines. Cumulatively, production
+  code is `+1499 / -936` versus fixed.
+- Ordinary binary: 17,284,608 bytes; Mach-O `__TEXT` 13,160,448 bytes and
+  `__DATA` 446,464 bytes. Hot semantic structure sizes are unchanged.
+- Cleanup obligation: none; all fixed and rolling metrics remain inside the
+  intermediate investigation thresholds.
+
 ## Producer migration
 
 | Deleted producer | Canonical result owner | Unique rows transferred | Targeted fixtures | Status |
 | --- | --- | ---: | --- | --- |
 | `class.callsemantic.08` | resolved dependent class-template-id | 4 | reference-shell current specialization plus PA23 owner and PA24 integral-constant unique rows | migrated in `e05e22320` |
 | `class.callsemantic.06` | nested typed source results | 35 | local variable nested class instantiation and strict unique-owner set | migrated in `e96c44379` |
-| `class.callsemantic.07` | template pattern semantic results | 75 | nested template parameter scope and strict unique-owner set | pending |
+| `class.callsemantic.07` | template pattern semantic results | 75 | nested template parameter scope and strict unique-owner set | migrated in `9ea979c45` |
 | `class.constant_value_lookup.02` | resolved selected-call owner chain | 2 | constexpr duration member calls | pending |
 | `class.constant_value_lookup.03` | resolved qualified-id | 199 | dependent qualified static member value and strict unique-owner set | pending |
 | `class.callsemantic.13` | resolved out-of-class owner | 29 | partial-specialization member outdef | pending |

@@ -19,5 +19,8 @@ int main()
   std::cout << "ResolvedClassTemplateIdView "
             << sizeof(resolved_source_semantics::ResolvedClassTemplateIdView)
             << '\n';
+  std::cout << "ResolvedAliasTemplateIdView "
+            << sizeof(resolved_source_semantics::ResolvedAliasTemplateIdView)
+            << '\n';
   return 0;
 }
