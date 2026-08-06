@@ -214,6 +214,15 @@ a collision fixture retained identical witness output after the post-transition
 log and its provenance ID were deleted. The inventory is now 27 producer IDs:
 9 class, 3 alias, 1 function-call, 1 variable, and 13 lifecycle sites.
 
+Class finalization likewise used to set
+`witness_member_value_instantiation_noted` and emit through
+`lifecycle.semantic_class_model` instead of calling the canonical transition.
+That block now resumes lifecycle observation and delegates to
+`note_template_member_value_instantiation_if_needed`, which owns both the
+state change and the event. Formerly unique and colliding fixtures remained
+identical. The inventory is now 26 producer IDs: 9 class, 3 alias, 1
+function-call, 1 variable, and 12 lifecycle sites.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -261,8 +270,8 @@ dead/redundant code:
 | Dormant dependent-partial class-reference branch | 10/9 | 4/4 | dependent partial-specialization source-use reconstruction plus private parameter-name and binding canonicalization | live canonical class-reference producer | clean | 4860/4860 | 176855672482 (+0.02%) | 761241600 (-1.12%) | 590778368 (+0.05%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.14%` instructions, `+0.96%` maximum RSS,
-and `-0.64%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.27%` instructions, `+0.38%` maximum RSS,
+and `-0.74%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -286,6 +295,7 @@ and `-0.64%` footprint, so it also clears the final fixed-baseline gates.
 | Duplicate constant-value variable pre-log | 16/15 | manual variable-template instantiation event immediately before canonical acquisition | `acquire_variable_instantiation` / `lifecycle.template_api.09` | clean | 4860/4860 | 176785536717 (-0.18%) | 772313088 (+0.40%) | 590569472 (+0.07%) |
 | Dormant structured-bool lifecycle fallback | 15/14 | post-dependency source-anchor reconstruction and manual variable-instantiation event that made no attempt in either provenance corpus | canonical member-value dependency reporting and its acquisition transitions | clean | 4860/4860 | 176850953465 (+0.04%) | 759885824 (-1.61%) | 590299136 (-0.05%) |
 | Duplicate integral-constant member-value post-log | 14/13 | manual variable-instantiation event emitted immediately after the canonical member-value transition | `note_template_member_value_instantiation_if_needed` / `lifecycle.template_api.02` | clean | 4860/4860 | 177116386729 (+0.29%) | 767455232 (+0.32%) | 590688256 (+0.05%) |
+| Class-finalization member-value owner | 13/12 | manual noted-flag mutation, source-anchor reconstruction, and parallel variable-instantiation log | `note_template_member_value_instantiation_if_needed` / `lifecycle.template_api.02` | clean | 4860/4860 | 176895591466 (-0.12%) | 763097088 (-0.57%) | 590102528 (-0.10%) |
 
 ## Current ownership boundary
 
@@ -306,10 +316,10 @@ uniquely owned visible row or lifecycle transition:
   other two never resolve;
 - the single function owner supplies all 599 visible calls, including the ten
   `declval` and one constexpr-fast-path row formerly owned elsewhere;
-- every strict-exercised lifecycle owner has unique transitions. In particular,
-  `semantic_class_model` and `template_argument_semantics.02` retained 23 and
-  155 unique transitions in the last full provenance trace despite their
-  collision pair. `template_api.06` is absent only from strict
+- every strict-exercised lifecycle owner has unique transitions.
+  `template_argument_semantics.02` retained 155 unique transitions in the last
+  full provenance trace and is the remaining member-value dependency owner to
+  audit. `template_api.06` is absent only from strict
   and remains justified by 83 events in the broader reachability probe.
 
 The variable producer no longer corrects an already-published row. In
