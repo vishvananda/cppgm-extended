@@ -178,6 +178,22 @@ removed while member-value dependency reporting remains. The current inventory
 is 30 producer IDs: 9 class, 3 alias, 3 function-call, 1 variable, and 14
 lifecycle sites.
 
+The constexpr fast evaluator and the `declval` analyzer now submit their
+already-selected call facts to
+`semantic_template_function::emit_function_template_call_source_use`. The
+canonical owner preserves each path's role, origin, explicit target, anchor,
+and bindings and emits through the explicitly passed witness context so
+source-type lookup does not lose `declval` uses. The two private decision
+builders and producer IDs are gone. The current inventory is 28 producer IDs:
+9 class, 3 alias, 1 function-call, 1 variable, and 14 lifecycle sites.
+
+The final strict trace is
+`/tmp/cppgm-witness-provenance-complete.SR3QL5` and its report is
+`/tmp/cppgm-witness-provenance-complete-report.json`. All 1,305 comparisons
+passed with direct LowIR comparison. It contains 101,745 records across 1,296
+files, no unknown producer, and all 599 visible function-call rows are uniquely
+owned by `function.semantic_template_function`.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -225,8 +241,8 @@ dead/redundant code:
 | Dormant dependent-partial class-reference branch | 10/9 | 4/4 | dependent partial-specialization source-use reconstruction plus private parameter-name and binding canonicalization | live canonical class-reference producer | clean | 4860/4860 | 176855672482 (+0.02%) | 761241600 (-1.12%) | 590778368 (+0.05%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.29%` instructions, `-0.04%` maximum RSS,
-and `-0.71%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.21%` instructions, `-0.05%` maximum RSS,
+and `-0.74%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -238,6 +254,8 @@ and `-0.71%` footprint, so it also clears the final fixed-baseline gates.
 | Text-backed partial-match alias replay | alias use 5/4 | post-deduction syntax walk, alias lookup, source-argument recovery, and text-only pack-binding reconstruction | structured alias-template-id expansion and ordinary resolved alias uses | clean | 4860/4860 | 176707655948 (-0.13%) | 757301248 (-0.53%) | 590295040 (+0.05%) |
 | Eager child-`declval` replay | function call 3/3 | pre-analysis callee and argument walk plus repeated child expression construction solely for witness capture | ordinary recursive argument expression analysis | clean | 4860/4860 | 176703697462 (-0.00%) | 761233408 (+0.52%) | 590262272 (-0.01%) |
 | Dormant post-expansion alias-pattern replay | alias use 4/3 | second argument resolution, source reconstruction, and private pack-binding rendering after structural alias expansion | canonical direct alias-reference producers | clean | 4860/4860 | 177110543912 (+0.14%) | 769249280 (+1.05%) | 590151680 (-0.11%) |
+| Constexpr selected-call ownership | function call 3/2 | constexpr-only final decision construction and emission after the fast evaluator had already selected the binding | canonical selected-call request and observation owner | clean | 4860/4860 | 177058490884 (+0.12%) | 761397248 (+0.20%) | 590348288 (+0.01%) |
+| `declval` selected-call ownership | function call 2/1 | `declval`-specific final decision construction and thread-local emission | canonical selected-call request with origin-specific capture and context-aware emission | clean | 4860/4860 | 176992518383 (-0.04%) | 759799808 (-0.21%) | 590131200 (-0.04%) |
 
 ## Lifecycle slice ledger
 
@@ -246,3 +264,44 @@ and `-0.71%` footprint, so it also clears the final fixed-baseline gates.
 | Dead value-binding closure hook | 17/16 | uncalled public `note_value_binding_closure_event` API and its unexercised producer | existing variable-instantiation transition owners | clean | 4860/4860 | 177058170973 (+0.15%) | 764841984 (+1.49%) | 590528512 (+0.08%) |
 | Duplicate constant-value variable pre-log | 16/15 | manual variable-template instantiation event immediately before canonical acquisition | `acquire_variable_instantiation` / `lifecycle.template_api.09` | clean | 4860/4860 | 176785536717 (-0.18%) | 772313088 (+0.40%) | 590569472 (+0.07%) |
 | Dormant structured-bool lifecycle fallback | 15/14 | post-dependency source-anchor reconstruction and manual variable-instantiation event that made no attempt in either provenance corpus | canonical member-value dependency reporting and its acquisition transitions | clean | 4860/4860 | 176850953465 (+0.04%) | 759885824 (-1.61%) | 590299136 (-0.05%) |
+
+## Final irreducibility boundary
+
+The refreshed trace leaves no producer that can be deleted without losing a
+uniquely owned visible row or lifecycle transition:
+
+- the nine class owners uniquely supply visible rows:
+  `callsemantic.06` 35, `callsemantic.07` 75, `callsemantic.08` 4,
+  `callsemantic.10` 30, `callsemantic.13` 29,
+  `class_template_reference.02` 1,118, `constant_value_lookup.02` 2,
+  `constant_value_lookup.03` 199, and `template_instantiation` 24. The four
+  remaining upstream routes are the semantic surfaces for nested syntax,
+  nested template arguments, resolved alias results, and out-of-class static-
+  member definitions; removing any one loses one of those unique groups;
+- the three alias owners uniquely supply 76 direct resolved uses, 260
+  pattern/nested uses, and 23 template-argument uses. Their collisions are
+  shared source occurrences, while each owner also covers syntax that the
+  other two never resolve;
+- the single function owner supplies all 599 visible calls, including the ten
+  `declval` and one constexpr-fast-path row formerly owned elsewhere;
+- every strict-exercised lifecycle owner has unique transitions. In particular,
+  `constant_value_lookup.03`, `semantic_class_model`, and
+  `template_argument_semantics.02` retain 12, 23, and 155 unique transitions
+  despite their collision pairs. `template_api.06` is absent only from strict
+  and remains justified by 83 events in the broader reachability probe.
+
+The variable producer's one location/anchor replacement is not a late payload
+repair. In `300-variable-template-default-enable-if-viability.t`, the same
+cached specialization is observed at two real overload-candidate occurrences
+(lines 25 and 30), and the selected viable candidate determines which source
+occurrence remains visible. Eliminating that arbitration requires candidate-
+scoped source-use transactions and committing only the selected candidate,
+which is a broader overload data-flow redesign rather than another redundant
+witness route. The one renderer removal similarly suppresses a nested
+variable-initializer occurrence already represented by a direct occurrence.
+
+Accordingly, the remaining collisions measure shared semantic results across
+irreducible entry surfaces, not replay-only owners. Further deletion under the
+current witness contract would change strict output; the next architectural
+step, if desired, is candidate-scoped source-use transactions rather than more
+producer removal.
