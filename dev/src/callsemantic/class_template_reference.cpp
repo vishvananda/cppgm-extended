@@ -1857,9 +1857,7 @@ public:
     const std::string raw_cache_key =
         use_raw_reference_cache ? raw_reference_cache_key(decl, use_scope, arg_texts) :
                                   std::string();
-    const bool resolved_source_result_required =
-        witness::source_capture_enabled(template_witness_context());
-    if(use_raw_reference_cache && !resolved_source_result_required) {
+    if(use_raw_reference_cache) {
       auto cached =
           decl.fast_reference_cache.find(raw_cache_key);
       if(cached != decl.fast_reference_cache.end() &&
@@ -1918,7 +1916,7 @@ public:
        !fast_existing_requires_mangle_refresh &&
        !fast_existing_requires_dependency_refresh &&
        !parser_trace::enabled("template.resolve") &&
-       !resolved_source_result_required) {
+       !witness::source_capture_enabled(template_witness_context())) {
       remember_raw_reference_cache(decl, raw_cache_key, info);
       return info;
     }
@@ -2118,21 +2116,6 @@ public:
       resolved.source_use_mode = source_use_mode;
       resolved.dependent_arguments = dependent_arguments;
       return resolved;
-    };
-    const auto note_first_qualifier_use = [&](ClassInfo * resolved_info) -> void
-    {
-      if(!resolved_info) {
-        return;
-      }
-      const std::string order_use_location =
-          template_api::normalize_template_witness_source_location(
-              parser_trace::current_order_use_location());
-      if(!order_use_location.empty()) {
-        resolved_info->first_qualifier_use_location =
-            prefer_earlier_source_location(
-                resolved_info->first_qualifier_use_location,
-                order_use_location);
-      }
     };
     const auto note_class_use = [&]
         (const resolved_source_semantics::ResolvedClassTemplateIdView & resolved) -> void
@@ -3091,7 +3074,6 @@ public:
     if(is_builtin_initializer_list_template(decl)) {
       ClassInfo * builtin_info =
           instantiate_selected_class_template(decl, use_scope, arguments, specialization);
-      note_first_qualifier_use(builtin_info);
       note_class_use(resolved_template_id_view(builtin_info));
       return builtin_info;
     }
@@ -3237,7 +3219,6 @@ public:
                                           specialization.kind ==
                                               template_api::MS_PRIMARY);
       record_selected_class_template_base_source_uses(decl, specialization);
-      note_first_qualifier_use(info);
       note_class_use(resolved_template_id_view(info));
       return info;
     }
@@ -3341,7 +3322,6 @@ public:
         borrow_class_instantiation_key(*info, stored->first);
       }
     }
-    note_first_qualifier_use(info);
     note_class_use(resolved_template_id_view(info));
     return info;
   }
