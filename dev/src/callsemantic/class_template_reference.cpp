@@ -2122,7 +2122,8 @@ public:
         return;
       }
       const TemplateIdSyntax * retained_source_syntax = nullptr;
-      if(callbacks.template_id_syntax_at_location) {
+      if(syntax_backed_source_capture_enabled &&
+         callbacks.template_id_syntax_at_location) {
         retained_source_syntax =
             callbacks.template_id_syntax_at_location(
                 use_location,
@@ -2134,11 +2135,13 @@ public:
               resolved_info->type);
         }
       }
-      resolved_source_semantics::ResolvedClassTemplateIdView retained_resolved =
-          resolved;
-      retained_resolved.source_syntax = retained_source_syntax;
-      retained_resolved.source_location = &use_location;
-      ctx.observe_resolved_class_template_id(retained_resolved);
+      if(syntax_backed_source_capture_enabled) {
+        resolved_source_semantics::ResolvedClassTemplateIdView retained_resolved =
+            resolved;
+        retained_resolved.source_syntax = retained_source_syntax;
+        retained_resolved.source_location = &use_location;
+        ctx.observe_resolved_class_template_id(retained_resolved);
+      }
       const auto emit_nested_source_argument_uses = [&]() -> void
       {
         if(!witness::class_use_recording_enabled()) {
