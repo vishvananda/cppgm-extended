@@ -46,7 +46,7 @@ or rerecord it.
 | 0. Evidence and comparison tool | `546181f8e` | 9 | 4 | 0 / 0 | n/a | n/a | n/a | n/a | validator unit tests clean | n/a | n/a | fixed and rolling copies verified |
 | 1. Typed result | `a628fa997` | 9 | 4 | +91 / -16 | +0.16% | +0.16% | +1.03% | +0.05% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-1.json` |
 | 2. Dependent pattern | `e05e22320` | 8 | 4 | +230 / -79 | +0.48% | +0.33% | +0.94% | +0.02% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-2.json` |
-| 3A. Nested results | pending | pending | pending | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
+| 3A. Nested results | `e96c44379` | 7 | 2 | +1120 / -310 | +0.37% | -0.11% | +0.06% | +0.10% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-3a-final.json` |
 | 3B. Template patterns | pending | 6 | 2 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
 | 4. Qualified constants | pending | 4 | 2 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
 | 5. Definition owners | pending | 2 | 1 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
@@ -60,6 +60,7 @@ or rerecord it.
 | Fixed | 280 | 136 | 1,136 | 136 | 0 |
 | Phase 1 | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 80 bytes, stack-scoped |
 | Phase 2 | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 96 bytes, stack-scoped; no retained allocation |
+| Phase 3A | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 96 bytes; `RetainedDependentClassTemplateId`: 168 bytes, witness-session side store only |
 
 `OutOfClassMemberFunctionDecl` starts at 240 bytes. The reporter source is
 `scripts/report_semantic_structure_sizes.cpp`; compile it against `dev/src`
@@ -111,12 +112,54 @@ with the configured host compiler.
 - Cleanup obligation: none; all fixed and rolling metrics remain inside the
   intermediate investigation thresholds.
 
+## Phase 3A evidence
+
+- Correctness commits: `c34eeb27c6b2cb295cfea3175cae94dc66b9bd83`,
+  `7fff941d36b1b6a99846256d84ce1f09deb91276`, and
+  `e96c4437971eb380337fd6e5a44f9673fa814834`
+- Candidate SHA-256:
+  `a51805d15ae96f04316dc84092683a47f959903a6ad2e5d4a671418783c2c049`
+- Instructions: `177166918329`, `+0.37%` versus fixed and `-0.11%`
+  versus rolling
+- Maximum RSS: `763179008`, `+0.06%` versus fixed and `-0.87%`
+  versus rolling
+- Peak footprint: `590716928`, `+0.10%` versus fixed and `+0.08%`
+  versus rolling
+- Strict provenance trace:
+  `/tmp/cppgm-class-use-phase3a-final.X906oe`
+- Strict provenance report:
+  `/tmp/cppgm-class-use-phase3a-provenance-report.json`
+- Provenance report SHA-256:
+  `fed9a54672bf613cd32194e5ed5b7ff9a7cd3140338aca0fb41df260940ce9bb`
+- `class.callsemantic.06` and its producer ID are absent. The nested AST and
+  template-argument route counts are both zero. The two remaining active
+  routes are `class_use.resolved_alias_type` (`1185`) and
+  `class_use.static_member_definition_ast_node` (`25`).
+- The typed observer consumes materialized `TypePtr` metadata, resolved
+  template arguments, retained qualifier types, and a compact dependent
+  selection result. The default-filled partial pattern in
+  `300-partial-specialization-default-function-type-no-eager.t` is formatted
+  from the carried arguments and already-selected partial declaration without
+  repeating lookup or specialization selection.
+- Two rejected diagnostic batches exposed an ordinary-build source scan:
+  `/tmp/cppgm-class-use-phase-3a.json` measured `541065170075` instructions,
+  and `/tmp/cppgm-class-use-phase-3a-corrected.json` measured `541363324698`.
+  The canonical callback was running exact source-syntax lookup before its
+  witness predicate. Commit `e96c44379` moved that lookup and observer
+  submission under syntax-backed capture. A one-run probe then measured
+  `178142728159` instructions before the final three-run batch.
+- Ordinary binary: 17,295,408 bytes; Mach-O `__TEXT` 13,168,640 bytes and
+  `__DATA` 446,464 bytes. The retained side stores remain empty without a
+  witness session, and no hot semantic structure grew.
+- Cleanup obligation: none; all fixed and rolling metrics remain inside the
+  intermediate investigation thresholds.
+
 ## Producer migration
 
 | Deleted producer | Canonical result owner | Unique rows transferred | Targeted fixtures | Status |
 | --- | --- | ---: | --- | --- |
 | `class.callsemantic.08` | resolved dependent class-template-id | 4 | reference-shell current specialization plus PA23 owner and PA24 integral-constant unique rows | migrated in `e05e22320` |
-| `class.callsemantic.06` | nested typed source results | 35 | local variable nested class instantiation and strict unique-owner set | pending |
+| `class.callsemantic.06` | nested typed source results | 35 | local variable nested class instantiation and strict unique-owner set | migrated in `e96c44379` |
 | `class.callsemantic.07` | template pattern semantic results | 75 | nested template parameter scope and strict unique-owner set | pending |
 | `class.constant_value_lookup.02` | resolved selected-call owner chain | 2 | constexpr duration member calls | pending |
 | `class.constant_value_lookup.03` | resolved qualified-id | 199 | dependent qualified static member value and strict unique-owner set | pending |
