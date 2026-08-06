@@ -155,6 +155,14 @@ The current inventory is 33 producer IDs: 9 class, 4 alias, 3 function-call,
 1 variable, and 16 lifecycle sites. Every remaining class producer is
 exercised by the strict corpus and owns visible output uniquely.
 
+The post-expansion alias-pattern observer also made no attempt in either
+provenance corpus. Its second template-argument resolution, source-occurrence
+reconstruction, and private pack-binding renderer were removed while the
+structural alias expansion result remained unchanged. The current inventory is
+32 producer IDs: 9 class, 3 alias, 3 function-call, 1 variable, and 16
+lifecycle sites. Every remaining alias producer is exercised by the strict
+corpus and owns visible output uniquely.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -175,7 +183,6 @@ Sites not exercised by the refreshed strict witness references are tracked
 until they are reached by an earliest-owning-PA reducer or removed as proven
 dead/redundant code:
 
-- alias: `template_specialization.01`;
 - lifecycle: `template_api.06`, `template_argument_semantics.01`, and
   `constant_value_lookup.01`.
 
@@ -203,8 +210,8 @@ dead/redundant code:
 | Dormant dependent-partial class-reference branch | 10/9 | 4/4 | dependent partial-specialization source-use reconstruction plus private parameter-name and binding canonicalization | live canonical class-reference producer | clean | 4860/4860 | 176855672482 (+0.02%) | 761241600 (-1.12%) | 590778368 (+0.05%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.29%` instructions, `+0.14%` maximum RSS,
-and `-0.63%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.15%` instructions, `+1.19%` maximum RSS,
+and `-0.73%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -215,6 +222,7 @@ and `-0.63%` footprint, so it also clears the final fixed-baseline gates.
 | Base-clause alias replay | alias use 6/5 | base-clause alias reconstruction, its unused emission-origin branch, and its provenance entry | canonical alias-reference producers reached during base-clause resolution | clean | 4860/4860 | 176968071900 (-0.08%) | 768757760 (+0.90%) | 590872576 (+0.05%) |
 | Text-backed partial-match alias replay | alias use 5/4 | post-deduction syntax walk, alias lookup, source-argument recovery, and text-only pack-binding reconstruction | structured alias-template-id expansion and ordinary resolved alias uses | clean | 4860/4860 | 176707655948 (-0.13%) | 757301248 (-0.53%) | 590295040 (+0.05%) |
 | Eager child-`declval` replay | function call 3/3 | pre-analysis callee and argument walk plus repeated child expression construction solely for witness capture | ordinary recursive argument expression analysis | clean | 4860/4860 | 176703697462 (-0.00%) | 761233408 (+0.52%) | 590262272 (-0.01%) |
+| Dormant post-expansion alias-pattern replay | alias use 4/3 | second argument resolution, source reconstruction, and private pack-binding rendering after structural alias expansion | canonical direct alias-reference producers | clean | 4860/4860 | 177110543912 (+0.14%) | 769249280 (+1.05%) | 590151680 (-0.11%) |
 
 ## Lifecycle slice ledger
 
