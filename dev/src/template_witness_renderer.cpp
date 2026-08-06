@@ -5307,19 +5307,6 @@ void dedupe_visible_events(vector<WitnessEvent> & events)
   compact_events(events, drop);
 }
 
-bool class_use_has_empty_binding_arg(const WitnessEvent & event)
-{
-  if(event.kind != WitnessEventKind::ClassUse) {
-    return false;
-  }
-  for(size_t i = 0; i < event.bindings.size(); ++i) {
-    if(trim_space(event.bindings[i].arg).empty()) {
-      return true;
-    }
-  }
-  return false;
-}
-
 string source_location_compare_key(const string & location)
 {
   const ParsedLocation parsed = parse_line_col(location);
@@ -5328,35 +5315,6 @@ string source_location_compare_key(const string & location)
   }
   return location_source_path(location) + ":" +
       std::to_string(parsed.line) + ":" + std::to_string(parsed.column);
-}
-
-void drop_less_specific_class_use_binding_duplicates(vector<WitnessEvent> & events)
-{
-  vector<char> drop(events.size(), 0);
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::ClassUse &&
-       events[i].kind != WitnessEventKind::AliasUse) {
-      continue;
-    }
-    for(size_t j = 0; j < events.size(); ++j) {
-      if(i == j || events[j].kind != WitnessEventKind::ClassUse) {
-        continue;
-      }
-      if(!class_use_has_empty_binding_arg(events[i]) ||
-         class_use_has_empty_binding_arg(events[j]) ||
-         source_location_compare_key(events[i].location) !=
-             source_location_compare_key(events[j].location) ||
-         events[i].template_name != events[j].template_name ||
-         events[i].selection != events[j].selection ||
-         source_location_compare_key(events[i].selected_decl_location) !=
-             source_location_compare_key(events[j].selected_decl_location)) {
-        continue;
-      }
-      drop[i] = 1;
-      break;
-    }
-  }
-  compact_events(events, drop);
 }
 
 set<string> variable_instantiation_owner_entities(
@@ -5784,8 +5742,6 @@ void collect_rendered_source_events(const template_api::TemplateWitnessSession &
                     drop_redundant_nested_events(events));
   CPPGM_RENDER_PASS("prefer_explicit_class_specializations",
                     prefer_explicit_class_use_specializations(events));
-  CPPGM_RENDER_PASS("drop_less_specific_class_bindings",
-                    drop_less_specific_class_use_binding_duplicates(events));
   CPPGM_RENDER_PASS("drop_same_line_deduced_class_uses",
                     drop_deduced_class_uses_shadowed_by_explicit_same_line(events));
   CPPGM_RENDER_PASS("dedupe_visible_events", dedupe_visible_events(events));
@@ -5828,7 +5784,6 @@ void collect_rendered_source_events(const template_api::TemplateWitnessSession &
                                           source_path);
   drop_redundant_nested_events(events);
   prefer_explicit_class_use_specializations(events);
-  drop_less_specific_class_use_binding_duplicates(events);
   drop_deduced_class_uses_shadowed_by_explicit_same_line(events);
   dedupe_visible_events(events);
   sort_events(events);
