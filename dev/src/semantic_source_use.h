@@ -699,25 +699,4 @@ inline void record_source_use(SemanticSourceUseTable & table,
   table.uses.push_back(use);
 }
 
-inline void replace_equivalent_variable_source_use(
-    SemanticSourceUseTable & table,
-    const SemanticSourceUse & use)
-{
-  // Variable-template replay can discover the same selected variable use at a
-  // better public source location. The replacement key intentionally excludes
-  // location while preserving the semantic identity of the selected template,
-  // selection kind, ownership, and bindings.
-  if(use.kind != SourceUseKind::VariableUse) {
-    record_source_use(table, use);
-    return;
-  }
-  for(std::size_t i = 0; i < table.uses.size(); ++i) {
-    if(variable_use_equivalent_ignoring_location(table.uses[i], use)) {
-      table.uses[i] = use;
-      return;
-    }
-  }
-  record_source_use(table, use);
-}
-
 }  // namespace semantic_source_use

@@ -927,6 +927,7 @@ public:
       ScopedCallSemConstructionPath construction_path("semantic.witness_unemitted_bodies");
       analyze_unemitted_member_bodies_for_witness_semantics();
     }
+    witness::finalize_variable_use_source_uses(template_witness_session_);
     if(memory_census_enabled()) {
       callsemantic::dump_source_ast_memory_census(std::cerr, ast);
       dump_memory_census(std::cerr, out);

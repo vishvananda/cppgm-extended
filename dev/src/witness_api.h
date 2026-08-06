@@ -68,12 +68,6 @@ enum class FunctionCallEmissionOrigin
   DeclvalCall
 };
 
-enum class VariableUseMergePolicy
-{
-  AppendIfNew,
-  ReplaceEquivalentSourceUse
-};
-
 inline const char * source_selection_text(SourceSelectionKind kind)
 {
   return template_api::template_witness_selection_text(kind);
@@ -376,7 +370,8 @@ struct VariableUseEmitRequest
   TemplateWitnessSourceAnchor selected_decl_anchor;
   std::vector<TemplateWitnessSourceBinding> bindings;
   std::vector<TemplateWitnessSourceBinding> specialization_bindings;
-  VariableUseMergePolicy merge_policy = VariableUseMergePolicy::AppendIfNew;
+  const semantic_model::ValueBinding * semantic_owner = nullptr;
+  bool retain_until_semantic_finalization = false;
   bool record_during_source_capture_pause = false;
 };
 
@@ -498,8 +493,8 @@ void record_alias_use_source_use(const TemplateWitnessContext & ctx,
                                  const AliasUseSourceDecision & decision);
 void emit_alias_use(const TemplateWitnessContext & ctx,
                     const AliasUseEmitRequest & request);
-void record_variable_use_source_use(const VariableUseSourceDecision & decision);
 void emit_variable_use(const VariableUseEmitRequest & request);
+void finalize_variable_use_source_uses(TemplateWitnessSession * session);
 void record_function_call_source_use(
     const FunctionCallSourceDecision & decision);
 void emit_function_call(const TemplateWitnessContext & ctx,

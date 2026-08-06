@@ -12500,11 +12500,21 @@ const ValueBinding * instantiate_variable_template(
   const bool nested_replay_request = variable_initializer_replay_depth > 0;
   const bool dependent_arguments =
       template_arguments_are_dependent_for_instantiation(ctx, arguments);
+  const auto source_use_scope_is_member_template = [&]() -> bool
+  {
+    for(Scope * scope = source_use_scope; scope; scope = scope->parent) {
+      if(scope->class_info ||
+         (scope->function && scope->function->owner_class)) {
+        return true;
+      }
+    }
+    return false;
+  };
   const auto note_variable_use =
       [&](const template_selection::VariableSpecializationSelection & selection,
           const ValueBinding & binding,
           bool emit_source_use,
-          witness::VariableUseMergePolicy merge_policy) -> void
+          bool retain_until_semantic_finalization) -> void
   {
     const std::string use_location = parser_trace::current_use_location();
     const std::string effective_use_location =
@@ -12614,7 +12624,9 @@ const ValueBinding * instantiate_variable_template(
             template_api::TemplateWitnessSourceBindingPolicy::
                 DeducedWithDefaultedTrailingDefaults);
       }
-      request.merge_policy = merge_policy;
+      request.semantic_owner = &binding;
+      request.retain_until_semantic_finalization =
+          retain_until_semantic_finalization;
       request.record_during_source_capture_pause =
           record_direct_source_use_during_pause;
       CPPGM_SET_WITNESS_PRODUCER(
@@ -12693,23 +12705,12 @@ const ValueBinding * instantiate_variable_template(
                 return template_selection::select_variable_specialization(
                     services, decl, key, arguments);
               });
-      bool member_template_source_use = false;
-      for(Scope * scope = source_use_scope; scope; scope = scope->parent) {
-        if(scope->class_info ||
-           (scope->function && scope->function->owner_class)) {
-          member_template_source_use = true;
-          break;
-        }
-      }
-      const bool relocate_prior_source_use = !member_template_source_use;
-      const witness::VariableUseMergePolicy merge_policy =
-          relocate_prior_source_use ?
-              witness::VariableUseMergePolicy::ReplaceEquivalentSourceUse :
-              witness::VariableUseMergePolicy::AppendIfNew;
+      const bool retain_final_source_use =
+          !source_use_scope_is_member_template();
       note_variable_use(selection,
                         found->second,
-                        relocate_prior_source_use && !dependent_arguments,
-                        merge_policy);
+                        retain_final_source_use && !dependent_arguments,
+                        retain_final_source_use && !dependent_arguments);
     }
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
@@ -12901,7 +12902,7 @@ const ValueBinding * instantiate_variable_template(
   note_variable_use(specialization,
                     inserted->second,
                     true,
-                    witness::VariableUseMergePolicy::AppendIfNew);
+                    !source_use_scope_is_member_template());
 
   return &inserted->second;
 }

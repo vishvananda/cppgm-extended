@@ -191,11 +191,22 @@ struct TemplateWitnessTemplateHeaderContext
   std::vector<std::string> parameter_names;
 };
 
+struct PendingVariableSourceUse
+{
+  const void * semantic_owner = nullptr;
+  semantic_source_use::SemanticSourceUse source_use;
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  witness_provenance::WitnessProducerSite producer_site =
+      witness_provenance::WitnessProducerSite::Unknown;
+#endif
+};
+
 struct TemplateWitnessSession
 {
   std::string primary_source_file;
   std::vector<TemplateLifecycleEvent> lifecycle_events;
   semantic_source_use::SemanticSourceUseTable source_use_table;
+  std::vector<PendingVariableSourceUse> pending_variable_source_uses;
   std::vector<std::string> inline_namespace_names;
   std::vector<TemplateWitnessSourceRange> template_body_ranges;
   std::vector<TemplateWitnessTemplateHeaderContext> template_header_contexts;
