@@ -43,6 +43,7 @@ struct ClassSpecializationSelection;
 
 namespace resolved_source_semantics {
 struct ResolvedClassTemplateIdView;
+struct ResolvedAliasTemplateIdView;
 }  // namespace resolved_source_semantics
 
 namespace semantic_overload {
@@ -734,6 +735,8 @@ public:
       semantic_model::FunctionBinding * source_function = nullptr) = 0;
   virtual void observe_resolved_class_template_id(
       const resolved_source_semantics::ResolvedClassTemplateIdView & resolved) = 0;
+  virtual void observe_resolved_alias_template_id(
+      const resolved_source_semantics::ResolvedAliasTemplateIdView & resolved) = 0;
   virtual semantic_model::ClassInfo * instantiate_selected_class_template(
       semantic_model::ClassTemplateDecl & decl,
       semantic_model::Scope & use_scope,

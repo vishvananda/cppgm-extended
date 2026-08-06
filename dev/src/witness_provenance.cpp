@@ -435,7 +435,6 @@ const char * producer_site_name(WitnessProducerSite site)
   case WitnessProducerSite::value: return text
   switch(site) {
   CPPGM_PRODUCER_NAME(Unknown, "unknown");
-  CPPGM_PRODUCER_NAME(ClassCallsemantic07, "class.callsemantic.07");
   CPPGM_PRODUCER_NAME(ClassCallsemantic10, "class.callsemantic.10");
   CPPGM_PRODUCER_NAME(ClassCallsemantic13, "class.callsemantic.13");
   CPPGM_PRODUCER_NAME(ClassTemplateReference02, "class.class_template_reference.02");
@@ -445,7 +444,6 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(AliasTemplateArgumentSemantics02,
                       "alias.template_argument_semantics.02");
   CPPGM_PRODUCER_NAME(AliasCallsemantic02, "alias.callsemantic.02");
-  CPPGM_PRODUCER_NAME(AliasCallsemantic03, "alias.callsemantic.03");
   CPPGM_PRODUCER_NAME(FunctionSemanticTemplateFunction,
                       "function.semantic_template_function");
   CPPGM_PRODUCER_NAME(VariableTemplateInstantiation,

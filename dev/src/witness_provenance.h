@@ -22,7 +22,6 @@ enum class WitnessProducerSite
 {
   Unknown = 0,
 
-  ClassCallsemantic07,
   ClassCallsemantic10 = 4,
   ClassCallsemantic13,
   ClassTemplateReference02,
@@ -32,7 +31,6 @@ enum class WitnessProducerSite
 
   AliasTemplateArgumentSemantics02,
   AliasCallsemantic02,
-  AliasCallsemantic03,
 
   FunctionSemanticTemplateFunction,
 

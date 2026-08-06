@@ -10,6 +10,7 @@
 namespace semantic_model {
 struct ClassInfo;
 struct ClassTemplateDecl;
+struct AliasTemplateDecl;
 struct FunctionBinding;
 struct Scope;
 }
@@ -56,6 +57,27 @@ struct RetainedDependentClassTemplateId
   std::vector<template_model::TemplateArgument> arguments;
   template_api::ClassSpecializationSelection selection;
   bool valid = false;
+};
+
+// Non-owning result for one source alias-template-id. A dependent pattern may
+// be valid before its arguments can be reduced to TemplateArgument values; in
+// that case the canonical source syntax is the parameterized semantic result.
+struct ResolvedAliasTemplateIdView
+{
+  semantic_model::AliasTemplateDecl * origin = nullptr;
+  semantic_model::Scope * use_scope = nullptr;
+  cpp_decl::TypePtr resolved_type;
+  const std::vector<template_model::TemplateArgument> * arguments = nullptr;
+  const std::vector<std::string> * source_argument_texts = nullptr;
+  const std::vector<cpp_decl::TemplateArgumentSyntax> *
+      source_argument_syntaxes = nullptr;
+  const std::string * source_location = nullptr;
+  bool dependent_pattern = false;
+
+  bool valid() const
+  {
+    return origin && use_scope && source_argument_texts;
+  }
 };
 
 }  // namespace resolved_source_semantics

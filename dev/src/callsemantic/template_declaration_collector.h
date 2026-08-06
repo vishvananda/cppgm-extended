@@ -231,8 +231,9 @@ struct TemplateDeclarationParsingServices
       semantic_model::Scope * pattern_scope,
       const std::vector<template_model::TemplateParameterInfo> *
           template_parameters) = 0;
-  virtual void record_template_parameter_clause_source_uses(
-      semantic_model::Scope & scope,
+  virtual void analyze_template_declaration_source_patterns(
+      semantic_model::Scope & lexical_scope,
+      semantic_model::Scope & pattern_scope,
       const CppAstNode & node,
       const cpp_decl::TypePtr & function_type) = 0;
   virtual void record_class_template_base_source_uses(

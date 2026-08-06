@@ -5773,15 +5773,15 @@ void collect_rendered_source_events(const template_api::TemplateWitnessSession &
   prefer_anonymous_namespace_class_use_names(events);
   drop_uninstantiated_static_member_definition_owner_uses(events, session);
   normalize_drop_order(events);
+  normalize_source_defined_template_calls(events,
+                                          session.template_body_ranges,
+                                          source_path);
   qualify_member_alias_events_from_class_uses(events);
   canonicalize_placeholder_member_alias_owners(events);
   drop_template_header_pattern_events(events,
                                       session.template_header_contexts,
                                       source_path);
   prefer_source_spelled_alias_events(events);
-  normalize_source_defined_template_calls(events,
-                                          session.template_body_ranges,
-                                          source_path);
   drop_redundant_nested_events(events);
   prefer_explicit_class_use_specializations(events);
   drop_deduced_class_uses_shadowed_by_explicit_same_line(events);

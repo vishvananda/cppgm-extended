@@ -324,7 +324,6 @@ public:
     std::pair<std::set<const CppAstNode *>::iterator, bool> inserted =
         scope.collected_template_declarations.insert(&node);
     if(!inserted.second) {
-      record_template_parameter_clause_source_uses(scope, node);
       return;
     }
     const CollectedTemplateDeclarationExceptionRollback collection_rollback(
@@ -337,16 +336,11 @@ public:
     vector<TemplateParameterInfo> template_parameters;
     Scope & pattern_scope = append_template_scope(scope);
     string parameter_failure;
-    bool parsed_template_parameters = false;
-    {
-      const witness::ScopedTemplateWitnessSourceCapturePause
-          source_capture_pause;
-      parsed_template_parameters =
-          parse_template_parameters(*parameters,
-                                    template_parameters,
-                                    &pattern_scope,
-                                    &parameter_failure);
-    }
+    const bool parsed_template_parameters =
+        parse_template_parameters(*parameters,
+                                  template_parameters,
+                                  &pattern_scope,
+                                  &parameter_failure);
     if(!parsed_template_parameters) {
       ostringstream out;
       out << "unsupported template-parameter-clause";
@@ -524,7 +518,7 @@ public:
                inner.kind != CppAstKind::class_forward_declaration) {
               stored.class_node = &inner;
             }
-            record_template_parameter_clause_source_uses(scope, node);
+            analyze_template_declaration_source_patterns(scope, pattern_scope, node);
             return;
           }
         }
@@ -618,7 +612,7 @@ public:
         if(specialization_changed) {
           ++primary->specialization_epoch;
         }
-        record_template_parameter_clause_source_uses(scope, node);
+        analyze_template_declaration_source_patterns(scope, pattern_scope, node);
         if(incoming_is_definition) {
           const template_api::ClassSpecializationSelection specialization =
               template_api::specialization::select_class_specialization(
@@ -750,7 +744,7 @@ public:
              existing.class_node->kind == CppAstKind::class_forward_declaration) {
             existing.class_node = &inner;
           }
-          record_template_parameter_clause_source_uses(scope, node);
+          analyze_template_declaration_source_patterns(scope, pattern_scope, node);
           record_class_template_base_source_uses(existing.class_node,
                                                  existing.pattern_scope);
           ++primary->specialization_epoch;
@@ -778,7 +772,7 @@ public:
               primary->partial_specializations.back());
         }
         ++primary->specialization_epoch;
-        record_template_parameter_clause_source_uses(scope, node);
+        analyze_template_declaration_source_patterns(scope, pattern_scope, node);
         record_class_template_base_source_uses(&inner,
                                                &pattern_scope);
         return;
@@ -938,7 +932,7 @@ public:
               class_template_scope->class_info,
               *existing);
         }
-        record_template_parameter_clause_source_uses(scope, node);
+        analyze_template_declaration_source_patterns(scope, pattern_scope, node);
         return;
       }
 
@@ -964,7 +958,7 @@ public:
             *decl);
       }
       class_templates.push_back(std::move(decl));
-      record_template_parameter_clause_source_uses(scope, node);
+      analyze_template_declaration_source_patterns(scope, pattern_scope, node);
       record_class_template_base_source_uses(effective_class_node,
                                              &pattern_scope);
       return;
@@ -1051,14 +1045,14 @@ public:
       }
       alias_templates.push_back(std::move(decl));
       alias_template_committed = true;
-      record_template_parameter_clause_source_uses(scope, node);
+      analyze_template_declaration_source_patterns(scope, pattern_scope, node);
       return;
     }
 
     if((inner.kind == CppAstKind::special_member_definition ||
         inner.kind == CppAstKind::special_member_declaration) &&
        !scope.class_info) {
-      record_template_parameter_clause_source_uses(scope, node);
+      analyze_template_declaration_source_patterns(scope, pattern_scope, node);
       const CppAstNode * declarator = find_child_kind(inner, CppAstKind::declarator);
       if(!declarator) {
         throw logic_error("templated special-member missing declarator");
@@ -1846,7 +1840,7 @@ public:
         declarator_declares_function_entity(*declarator) &&
         !source_uses_are_for_friend_template;
     if(!defer_nonmember_function_template_source_uses) {
-      record_template_parameter_clause_source_uses(scope, node);
+      analyze_template_declaration_source_patterns(scope, pattern_scope, node);
     }
     PreparedMethodParseContext prepared_special_member_method;
     if(special_member_template) {
@@ -2563,7 +2557,7 @@ public:
       }
     }
     if(defer_nonmember_function_template_source_uses) {
-      record_template_parameter_clause_source_uses(scope, node, type);
+      analyze_template_declaration_source_patterns(scope, pattern_scope, node, type);
     }
     if(function_template_entity_scope != &scope &&
        !function_template_entity_scope->class_info) {
@@ -5224,12 +5218,13 @@ private:
         scope, node, pattern_scope, parameters);
   }
 
-  void record_template_parameter_clause_source_uses(Scope & scope,
+  void analyze_template_declaration_source_patterns(Scope & lexical_scope,
+                                                    Scope & pattern_scope,
                                                     const CppAstNode & node,
                                                     const TypePtr & function_type = TypePtr())
   {
-    callbacks.declaration_services->record_template_parameter_clause_source_uses(
-        scope, node, function_type);
+    callbacks.declaration_services->analyze_template_declaration_source_patterns(
+        lexical_scope, pattern_scope, node, function_type);
   }
 
   void record_class_template_base_source_uses(const CppAstNode * class_node,
