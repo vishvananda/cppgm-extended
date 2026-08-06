@@ -543,12 +543,13 @@ void emit_function_template_call_source_use(
   }
 
   witness::FunctionCallSourceDecision decision;
-  decision.origin = witness::FunctionCallEmissionOrigin::OverloadSelectedCall;
+  decision.origin = request.origin;
   witness::set_use_anchor(decision.location,
                           decision.use_anchor,
                           public_location);
   decision.template_name = function_call_template_name(request);
   decision.selected = function_call_selected_name(ctx, request);
+  decision.role = request.role;
   decision.selection = request.selection != witness::SourceSelectionKind::None ?
       request.selection :
       (binding && binding->is_explicit_specialization ?

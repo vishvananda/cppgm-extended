@@ -452,8 +452,6 @@ const char * producer_site_name(WitnessProducerSite site)
                       "function.semantic_template_function");
   CPPGM_PRODUCER_NAME(FunctionSemanticOverloadDeclval,
                       "function.semantic_overload.declval");
-  CPPGM_PRODUCER_NAME(FunctionConstantValueLookupConstexpr,
-                      "function.constant_value_lookup.constexpr");
   CPPGM_PRODUCER_NAME(VariableTemplateInstantiation,
                       "variable.template_instantiation");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi01, "lifecycle.template_api.01");

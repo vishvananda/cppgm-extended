@@ -28,7 +28,10 @@ struct FunctionTemplateCallSourceUseRequest
   std::string use_location;
   std::string template_name;
   std::string selected;
+  witness::SourceUseRole role = witness::SourceUseRole::CallUse;
   witness::SourceSelectionKind selection = witness::SourceSelectionKind::None;
+  witness::FunctionCallEmissionOrigin origin =
+      witness::FunctionCallEmissionOrigin::OverloadSelectedCall;
   std::string selected_decl_location;
   witness::TemplateWitnessSourceAnchor selected_decl_anchor;
   std::vector<witness::TemplateWitnessSourceBinding> bindings;

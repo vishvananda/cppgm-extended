@@ -12,6 +12,7 @@
 #include "semantic_context_facets.h"
 #include "semantic_errors.h"
 #include "semantic_lookup.h"
+#include "semantic_template_function.h"
 #include "semantic_template_variable.h"
 #include "semantic_trace.h"
 #include "semantic_utils.h"
@@ -719,33 +720,31 @@ public:
       return;
     }
 
-    witness::FunctionCallSourceDecision decision;
-    decision.origin = witness::FunctionCallEmissionOrigin::ConstexprDirectCall;
-    witness::set_use_anchor(decision.location,
-                            decision.use_anchor,
-                            use_location);
-    decision.template_name =
+    semantic_template_function::FunctionTemplateCallSourceUseRequest request;
+    request.use_location = use_location;
+    request.template_name =
         source_template ? source_template->name : binding.name;
-    decision.selected =
+    request.selected =
         template_api::function_binding_witness_entity(*this, &binding);
-    decision.role = witness::SourceUseRole::QualifierUse;
-    decision.selection =
+    request.role = witness::SourceUseRole::QualifierUse;
+    request.selection =
         binding.is_explicit_specialization ?
             witness::SourceSelectionKind::ExplicitSpecialization :
             witness::SourceSelectionKind::Instantiation;
+    request.origin = witness::FunctionCallEmissionOrigin::ConstexprDirectCall;
     const semantic_model::SourceDeclAnchorCache & decl_anchor =
         source_template ?
             semantic_trace::function_template_decl_anchor(*this, source_template) :
             semantic_trace::function_binding_decl_anchor(*this, &binding);
-    witness::set_selected_decl_anchor(decision.selected_decl_location,
-                                      decision.selected_decl_anchor,
+    witness::set_selected_decl_anchor(request.selected_decl_location,
+                                      request.selected_decl_anchor,
                                       decl_anchor);
     if(binding.source_template) {
       template_api::append_function_template_witness_bindings(
           *this,
           &binding,
           explicit_arg_count,
-          decision.bindings);
+          request.bindings);
     } else if(source_template && template_id_syntax) {
       std::vector<TemplateArgument> function_arguments;
       try
@@ -765,7 +764,7 @@ public:
          source_template->parameters.empty()) {
         template_api::append_template_witness_source_bindings(
             *this,
-            decision.bindings,
+            request.bindings,
             source_template->parameters,
             function_arguments,
             template_id_argument_texts_preserving_spacing(*template_id_syntax),
@@ -773,10 +772,9 @@ public:
             "defaulted");
       }
     }
-    CPPGM_SET_WITNESS_PRODUCER(
-        decision,
-        witness::WitnessProducerSite::FunctionConstantValueLookupConstexpr);
-    witness::emit_function_call(decision);
+    semantic_template_function::emit_function_template_call_source_use(
+        *this,
+        request);
   }
 
   bool lookup_constant_template_member_value(

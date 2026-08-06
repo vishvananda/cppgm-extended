@@ -38,7 +38,6 @@ enum class WitnessProducerSite
 
   FunctionSemanticTemplateFunction,
   FunctionSemanticOverloadDeclval,
-  FunctionConstantValueLookupConstexpr,
 
   VariableTemplateInstantiation,
 
