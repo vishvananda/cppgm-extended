@@ -223,6 +223,24 @@ state change and the event. Formerly unique and colliding fixtures remained
 identical. The inventory is now 26 producer IDs: 9 class, 3 alias, 1
 function-call, 1 variable, and 12 lifecycle sites.
 
+Retained template-value dependencies now preserve the exact `ValueBinding`
+resolved when the dependency is discovered and submit their retained entity,
+declaration location, and template-identity facts through
+`note_template_member_value_instantiation_if_needed`. The canonical request
+distinguishes dependency observation from a direct binding instantiation: it
+does not replay a static-member definition or mutate the direct-instantiation
+flag, and it retains the specialized dependency entity and public-source
+requirement. This preserves both the `table<void>::sizes` dependency and its
+source-owned class uses while removing the parallel
+`lifecycle.template_argument_semantics.02` log. The refreshed instrumented
+strict trace is
+`/tmp/cppgm-witness-provenance-dependency-final-owner.PKhKQb`, with report
+`/tmp/cppgm-witness-provenance-dependency-final-owner-report.json`. All 1,305
+comparisons passed; the deleted path made zero attempts while
+`lifecycle.template_api.02` handled 8,049 attempts and retained 688 lifecycle
+events. The inventory is now 25 producer IDs: 9 class, 3 alias, 1
+function-call, 1 variable, and 11 lifecycle sites.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -270,8 +288,10 @@ dead/redundant code:
 | Dormant dependent-partial class-reference branch | 10/9 | 4/4 | dependent partial-specialization source-use reconstruction plus private parameter-name and binding canonicalization | live canonical class-reference producer | clean | 4860/4860 | 176855672482 (+0.02%) | 761241600 (-1.12%) | 590778368 (+0.05%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.27%` instructions, `+0.38%` maximum RSS,
-and `-0.74%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.31%` instructions, `+1.01%` maximum RSS,
+and `-0.72%` footprint, so it also clears the final fixed-baseline gates. Its
+three RSS samples span `1.42%` of their median and did not trigger the `+3%`
+confirmation rule.
 
 ## Other source-use slice ledger
 
@@ -296,6 +316,7 @@ and `-0.74%` footprint, so it also clears the final fixed-baseline gates.
 | Dormant structured-bool lifecycle fallback | 15/14 | post-dependency source-anchor reconstruction and manual variable-instantiation event that made no attempt in either provenance corpus | canonical member-value dependency reporting and its acquisition transitions | clean | 4860/4860 | 176850953465 (+0.04%) | 759885824 (-1.61%) | 590299136 (-0.05%) |
 | Duplicate integral-constant member-value post-log | 14/13 | manual variable-instantiation event emitted immediately after the canonical member-value transition | `note_template_member_value_instantiation_if_needed` / `lifecycle.template_api.02` | clean | 4860/4860 | 177116386729 (+0.29%) | 767455232 (+0.32%) | 590688256 (+0.05%) |
 | Class-finalization member-value owner | 13/12 | manual noted-flag mutation, source-anchor reconstruction, and parallel variable-instantiation log | `note_template_member_value_instantiation_if_needed` / `lifecycle.template_api.02` | clean | 4860/4860 | 176895591466 (-0.12%) | 763097088 (-0.57%) | 590102528 (-0.10%) |
+| Retained member-value dependency owner | 12/11 | dependency-side binding-state mutation and parallel variable-instantiation log | exact retained binding and dependency facts submitted to `note_template_member_value_instantiation_if_needed` / `lifecycle.template_api.02` | clean | 4860/4860 | 176813919381 (-0.05%) | 767885312 (+0.63%) | 590233600 (+0.02%) |
 
 ## Current ownership boundary
 
@@ -316,11 +337,13 @@ uniquely owned visible row or lifecycle transition:
   other two never resolve;
 - the single function owner supplies all 599 visible calls, including the ten
   `declval` and one constexpr-fast-path row formerly owned elsewhere;
-- every strict-exercised lifecycle owner has unique transitions.
-  `template_argument_semantics.02` retained 155 unique transitions in the last
-  full provenance trace and is the remaining member-value dependency owner to
-  audit. `template_api.06` is absent only from strict
-  and remains justified by 83 events in the broader reachability probe.
+- every strict-exercised lifecycle owner has unique transitions. The 155
+  member-value dependency transitions formerly unique to
+  `template_argument_semantics.02` now retain their resolved binding and
+  specialized entity and flow through `template_api.02`; the old producer made
+  zero attempts in the refreshed trace and was deleted. `template_api.06` is
+  absent only from strict and remains justified by 83 events in the broader
+  reachability probe.
 
 The variable producer no longer corrects an already-published row. In
 `300-variable-template-default-enable-if-viability.t`, the canonical cached
