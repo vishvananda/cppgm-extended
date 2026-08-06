@@ -140,24 +140,6 @@ string join_hotspot_arg_texts(const vector<string> & arg_texts)
   return out.str();
 }
 
-bool binding_arg_drops_resolved_array_cv(const string & binding_arg,
-                                         const string & resolved_arg)
-{
-  if(binding_arg.find('[') == string::npos ||
-     resolved_arg.find('[') == string::npos) {
-    return false;
-  }
-  const string binding_key = remove_space_chars(binding_arg);
-  const string resolved_key = remove_space_chars(resolved_arg);
-  if(binding_key == resolved_key) {
-    return false;
-  }
-  return (resolved_key.find("const") != string::npos &&
-          binding_key.find("const") == string::npos) ||
-         (resolved_key.find("volatile") != string::npos &&
-          binding_key.find("volatile") == string::npos);
-}
-
 class ClassTemplateReference
 {
 public:
@@ -1833,7 +1815,8 @@ public:
       const vector<string> & arg_texts,
       const vector<TemplateArgumentSyntax> * arg_syntaxes,
       template_api::ClassTemplateSourceUseMode source_use_mode =
-          template_api::ClassTemplateSourceUseMode::EmitClassUse)
+          template_api::ClassTemplateSourceUseMode::EmitClassUse,
+      const TemplateIdSyntax * source_syntax = nullptr)
   {
     vector<TemplateArgumentSyntax> stable_arg_syntaxes;
     if(arg_syntaxes) {
@@ -1962,7 +1945,9 @@ public:
                                                                  &key,
                                                                  source_use_mode,
                                                                  arg_syntaxes,
-                                                                 &dependent_arguments);
+                                                                 &dependent_arguments,
+                                                                 nullptr,
+                                                                 source_syntax);
     remember_raw_reference_cache(decl, raw_cache_key, referenced_info);
     return referenced_info;
   }
@@ -1977,7 +1962,8 @@ public:
             template_api::ClassTemplateSourceUseMode::EmitClassUse,
         const vector<TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
         const string * precomputed_key = nullptr,
-        FunctionBinding * source_function = nullptr)
+        FunctionBinding * source_function = nullptr,
+        const TemplateIdSyntax * source_syntax = nullptr)
   {
     return reference_selected_class_template_instantiation_with_key(decl,
                                                                     use_scope,
@@ -1988,7 +1974,8 @@ public:
                                                                     source_use_mode,
                                                                     source_arg_syntaxes,
                                                                     nullptr,
-                                                                    source_function);
+                                                                    source_function,
+                                                                    source_syntax);
   }
 
     ClassInfo * reference_selected_class_template_instantiation_with_key(
@@ -2002,7 +1989,8 @@ public:
             template_api::ClassTemplateSourceUseMode::EmitClassUse,
         const vector<TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
         const bool * precomputed_dependent_arguments = nullptr,
-        FunctionBinding * source_function = nullptr)
+        FunctionBinding * source_function = nullptr,
+        const TemplateIdSyntax * source_syntax = nullptr)
   {
     const CppAstNode * class_node = specialization.class_node;
     Scope * binding_scope = specialization.binding_scope;
@@ -2115,957 +2103,137 @@ public:
       resolved.source_function = source_function;
       resolved.source_use_mode = source_use_mode;
       resolved.dependent_arguments = dependent_arguments;
+      resolved.source_syntax = source_syntax;
+
+      const ExactTemplateTypeLookupAnchor * anchor = source_syntax ? nullptr :
+          matching_exact_template_type_lookup_anchor(
+              display_template_specialization_name(decl.name, arguments),
+              unqualified_member_name(decl.name));
+      const std::string template_name =
+          display_template_specialization_name(decl.name, arguments);
+      const std::string identifier = unqualified_member_name(decl.name);
+      if(anchor && anchor->template_id_syntax_ref) {
+        const TemplateIdSyntax * matched_syntax =
+            template_id_syntax_matching_lookup_text(
+                *anchor->template_id_syntax_ref,
+                template_name);
+        if(!matched_syntax &&
+           source_template_id_args_are_arity_compatible(
+               exact_template_type_lookup_anchor_texts(*anchor),
+               arguments) &&
+           exact_template_type_lookup_anchor_matches_identifier(*anchor,
+                                                                identifier)) {
+          matched_syntax = anchor->template_id_syntax_ref;
+        }
+        if(matched_syntax) {
+          resolved.source_syntax = matched_syntax;
+          if(!anchor->location.empty()) {
+            resolved.source_location = &anchor->location;
+          }
+          if(!resolved.source_argument_texts) {
+            resolved.source_argument_texts = &matched_syntax->arguments;
+          }
+          if(!resolved.source_argument_syntaxes) {
+            resolved.source_argument_syntaxes =
+                &matched_syntax->argument_syntaxes;
+          }
+        }
+      }
       return resolved;
     };
     const auto note_class_use = [&]
-        (const resolved_source_semantics::ResolvedClassTemplateIdView & resolved) -> void
+        (resolved_source_semantics::ResolvedClassTemplateIdView resolved) -> void
     {
       if(!resolved.valid()) {
         return;
       }
-      ClassInfo * resolved_info = resolved.instance;
-      const vector<TemplateArgument> & resolved_arguments = *resolved.arguments;
-      const template_api::ClassSpecializationSelection & resolved_selection =
-          *resolved.selection;
-      const std::string use_location = parser_trace::current_use_location();
-      const bool trace_enabled = parser_trace::enabled("template.resolve");
-      const template_api::TemplateWitnessContext witness_context =
-          template_witness_context();
-      const bool source_capture_enabled =
-          witness::source_capture_enabled(witness_context);
-      const bool syntax_backed_source_capture_enabled =
-          source_capture_enabled || witness::enabled(witness_context);
-      const bool owner_reference_source_text_enabled =
-          syntax_backed_source_capture_enabled;
-      if(use_location.empty() || !resolved_info) {
-        return;
-      }
-      const TemplateIdSyntax * retained_source_syntax = nullptr;
-      if(syntax_backed_source_capture_enabled &&
-         callbacks.template_id_syntax_at_location) {
-        retained_source_syntax =
-            callbacks.template_id_syntax_at_location(
-                use_location,
-                unqualified_member_name(decl.name));
-        if(retained_source_syntax &&
-           callbacks.retain_resolved_class_template_id) {
-          callbacks.retain_resolved_class_template_id(
-              *retained_source_syntax,
-              resolved_info->type);
-        }
-      }
-      if(syntax_backed_source_capture_enabled) {
-        resolved_source_semantics::ResolvedClassTemplateIdView retained_resolved =
-            resolved;
-        retained_resolved.source_syntax = retained_source_syntax;
-        retained_resolved.source_location = &use_location;
-        ctx.observe_resolved_class_template_id(retained_resolved);
-      }
-      const auto emit_nested_source_argument_uses = [&]() -> void
-      {
-        if(!witness::class_use_recording_enabled()) {
-          return;
-        }
-        if(syntax_backed_source_capture_enabled &&
-           source_arg_syntaxes &&
-           callbacks.observe_nested_class_uses_from_resolved_arguments) {
-          callbacks.observe_nested_class_uses_from_resolved_arguments(
-              use_scope,
-              resolved_arguments,
-              *source_arg_syntaxes,
-              witness::SourceUseOwnership::SourceOwned,
-              decl.name);
-        }
-      };
-      const auto location_within_node = [&](const std::string & location,
-                                            const CppAstNode * node) -> bool
-      {
-        if(!(node && !location.empty() && node->token_end > node->token_start)) {
-          return false;
-        }
-        const ParsedSourceLocation parsed_location =
-            parse_physical_source_location(location);
-        const ParsedSourceLocation parsed_begin =
-            parse_physical_source_location(source_location_for_node(*node));
-        const ParsedSourceLocation parsed_end =
-            parse_physical_source_location(
-                source_location_for_token_index(node->token_end - 1));
-        if(!parsed_location.valid || !parsed_begin.valid || !parsed_end.valid ||
-           parsed_location.file != parsed_begin.file ||
-           parsed_location.file != parsed_end.file) {
-          return false;
-        }
-        if(parsed_location.line < parsed_begin.line ||
-           parsed_location.line > parsed_end.line) {
-          return false;
-        }
-        if(parsed_location.line == parsed_begin.line &&
-           parsed_location.column < parsed_begin.column) {
-          return false;
-        }
-        if(parsed_location.line == parsed_end.line &&
-           parsed_location.column > parsed_end.column) {
-          return false;
-        }
-        return true;
-      };
-      const bool nested_argument_recovery =
-          template_api::class_template_source_use_recovers_nested_arguments(
-              resolved.source_use_mode);
-      const bool suppress_nested_arguments =
-          template_api::class_template_source_use_suppresses_nested_arguments(
-              resolved.source_use_mode);
-      const auto repair_bindings_from_resolved_instantiation =
-          [&](std::vector<template_api::TemplateWitnessSourceBinding> & bindings,
-              semantic_source_use::SourceTemplateIdOccurrence * occurrence)
-          {
-            if(!resolved_info) {
-              return;
-            }
-            const std::size_t limit =
-                std::min(bindings.size(),
-                         std::max(resolved_info->instantiation_arguments.size(),
-                                  resolved_info->instantiation_arg_texts.size()));
-            for(std::size_t i = 0; i < limit; ++i) {
-              if(bindings[i].pack_binding) {
-                continue;
-              }
-              std::string resolved_arg =
-                  i < resolved_info->instantiation_arg_texts.size() ?
-                      resolved_info->instantiation_arg_texts[i] :
-                      std::string();
-              if(resolved_arg.empty() &&
-                 i < resolved_info->instantiation_arguments.size()) {
-                resolved_arg =
-                    template_api::template_witness_source_argument_text(
-                        ctx,
-                        resolved_info->instantiation_arguments[i]);
-              }
-              if(binding_arg_drops_resolved_array_cv(bindings[i].arg,
-                                                     resolved_arg)) {
-                bindings[i].arg = resolved_arg;
-                if(occurrence &&
-                   i < occurrence->arguments.size()) {
-                  occurrence->arguments[i].text = resolved_arg;
-                  occurrence->arguments[i].semantic_text = resolved_arg;
-                }
-              }
-            }
-          };
-      if((dependent_arguments && !suppress_nested_arguments) ||
-         nested_argument_recovery) {
-        emit_nested_source_argument_uses();
-      }
-      if(template_api::class_template_source_use_is_semantic_lookup_only(
-             resolved.source_use_mode)) {
-        return;
-      }
-      if(dependent_arguments) {
-        return;
-      }
-      if(!trace_enabled && !syntax_backed_source_capture_enabled) {
-        return;
-      }
-      const bool explicit_specialization_source_use =
-          resolved_selection.kind == template_api::MS_EXPLICIT_SPECIALIZATION ||
-          resolved_info->is_explicit_specialization;
-      const bool nested_recovery_is_qualified_member_owner =
-          owner_reference_source_text_enabled &&
-          nested_argument_recovery &&
-          callbacks.template_id_at_location_is_qualified_member_owner &&
-          callbacks.template_id_at_location_is_qualified_member_owner(
-              use_location);
-      if(nested_argument_recovery &&
-         !explicit_specialization_source_use &&
-         !nested_recovery_is_qualified_member_owner &&
-         !trace_enabled) {
-        return;
-      }
-      const std::string source_template_name =
-          unqualified_member_name(decl.name);
-      const std::string anchor_identifier =
-          !source_template_name.empty() ?
-              source_template_name :
-              decl.name;
-      const string & use_specialization_name = ensure_specialization_name();
-      std::string exact_use_location;
-      const bool current_use_location_spells_template =
-          source_location_points_at_identifier(use_location,
-                                               anchor_identifier);
-      if(const ExactTemplateTypeLookupAnchor * anchor =
-             current_exact_template_type_lookup_anchor()) {
-        if(exact_template_type_lookup_anchor_matches(*anchor, use_specialization_name)) {
-          exact_use_location = anchor->location;
-        } else if(!current_use_location_spells_template &&
-                  exact_template_type_lookup_anchor_matches_identifier(
-                      *anchor,
-                      anchor_identifier) &&
-                  exact_template_type_lookup_anchor_arguments_match(*anchor,
-                                                                    arguments)) {
-          exact_use_location = anchor->location;
-        }
-      }
-      if(!exact_use_location.empty() && !use_location.empty() &&
-         !anchor_identifier.empty()) {
-        const std::string syntax_use_location =
-            source_template_name_location_from_argument_syntaxes(
-                source_arg_syntaxes,
-                anchor_identifier);
-        if(!syntax_use_location.empty()) {
-          exact_use_location = syntax_use_location;
-        }
-      }
-      if(!exact_use_location.empty() &&
-         !use_location.empty() &&
-         !anchor_identifier.empty()) {
-        const std::string line_use_location =
-            source_template_name_location_on_use_line(use_location,
-                                                      anchor_identifier,
-                                                      arguments);
-        if(!line_use_location.empty()) {
-          const ParsedSourceLocation parsed_exact =
-              parse_source_location(exact_use_location);
-          const ParsedSourceLocation parsed_use =
-              parse_source_location(use_location);
-          if(exact_use_location.empty() ||
-             !parsed_exact.valid ||
-             !parsed_use.valid ||
-             parsed_exact.file != parsed_use.file ||
-             parsed_exact.line != parsed_use.line) {
-            exact_use_location = line_use_location;
-          }
-        }
-      }
-      if(exact_use_location.empty() && !use_location.empty() &&
-         !anchor_identifier.empty()) {
-        exact_use_location =
-            source_template_name_location_from_argument_syntaxes(
-                source_arg_syntaxes,
-                anchor_identifier);
-      }
-      if(exact_use_location.empty() && !use_location.empty() &&
-         !anchor_identifier.empty()) {
-        exact_use_location =
+      const std::string source_name =
+          unqualified_member_name(resolved.origin->name);
+      std::string syntax_use_location;
+      if(resolved.source_syntax &&
+         resolved.source_syntax->source_location_id != 0) {
+        syntax_use_location =
             template_api::normalize_template_witness_source_location(
                 template_api::template_witness_detail::
-                    source_location_for_identifier_token_on_or_after(
-                    template_witness_context(),
-                    use_location,
-                    anchor_identifier,
-                    true,
-                    use_specialization_name.find('<') != std::string::npos));
-      }
-      const std::string chosen_use_location =
-          !exact_use_location.empty() ? exact_use_location :
-                                       use_location;
-      const bool source_use_spells_template =
-          source_location_points_at_identifier(chosen_use_location,
-                                               anchor_identifier);
-      const bool source_template_id_is_qualified_member_owner =
-          owner_reference_source_text_enabled &&
-          callbacks.template_id_at_location_is_qualified_member_owner &&
-          callbacks.template_id_at_location_is_qualified_member_owner(
-              chosen_use_location);
-      if(source_capture_enabled && !source_use_spells_template) {
-        return;
-      }
-      const bool source_use_in_template_header =
-          source_location_is_template_header_context_for_witness(
-              chosen_use_location);
-      const bool source_use_in_template_body =
-          source_location_is_template_body_context_for_witness(
-              chosen_use_location);
-      const bool source_use_mentions_template_context =
-          template_argument_syntaxes_mention_source_template_context(
-              use_scope,
-              source_arg_syntaxes);
-      const bool source_use_mentions_current_specialization_member =
-          template_argument_syntaxes_mention_current_specialization_member(
-              use_scope,
-              source_arg_syntaxes);
-      const bool source_use_mentions_current_specialization_name =
-          source_arg_texts &&
-          template_argument_texts_mention_current_specialization_names(
-              use_scope,
-              *source_arg_texts);
-      const bool replayed_template_body_source_use =
-          source_use_in_template_body &&
-          !scope_has_template_placeholders(use_scope) &&
-          !scope_is_inside_source_template_context(use_scope);
-      const bool replayed_source_template_body_source_use =
-          source_use_in_template_body &&
-          !scope_has_template_placeholders(use_scope) &&
-          scope_is_inside_source_template_context(use_scope) &&
-          (source_use_mentions_template_context ||
-           !source_use_mentions_current_specialization_member ||
-           source_use_mentions_current_specialization_name);
-      const bool replayed_current_specialization_member_body_source_use =
-          source_use_in_template_body &&
-          explicit_specialization_source_use &&
-          source_use_mentions_current_specialization_member &&
-          !scope_has_template_placeholders(use_scope) &&
-          scope_is_inside_source_template_context(use_scope);
-      const bool replayed_template_header_source_use =
-          source_use_in_template_header &&
-          !scope_has_template_placeholders(use_scope) &&
-          !scope_is_inside_source_template_context(use_scope) &&
-          source_location_is_in_function_parameter_clause(chosen_use_location,
-                                                          anchor_identifier);
-      const bool replayed_source_template_header_source_use =
-          source_use_in_template_header &&
-          !scope_has_template_placeholders(use_scope) &&
-          scope_is_inside_source_template_context(use_scope) &&
-          (source_use_mentions_template_context ||
-           !source_use_mentions_current_specialization_member);
-      const bool replayed_source_template_header_member_expression_source_use =
-          source_use_in_template_header &&
-          !scope_has_template_placeholders(use_scope) &&
-          scope_is_inside_source_template_context(use_scope) &&
-          source_use_mentions_current_specialization_member &&
-          !source_use_mentions_template_context;
-      const bool dependent_member_template_pattern_source_use =
-          source_use_in_template_body &&
-          class_template_decl_is_member_template(decl) &&
-          !template_api::template_witness_qualified_member_type_lookup_active() &&
-          (scope_has_template_placeholders(use_scope) ||
-           scope_is_inside_source_template_context(use_scope));
-      const bool qualified_value_source_use =
-          source_use_mode ==
-              template_api::ClassTemplateSourceUseMode::QualifiedValueUse;
-      if(parser_trace::enabled("template.resolve")) {
-        std::ostringstream trace;
-        trace << "class-use-source-gate template=" << decl.name
-              << " location=" << chosen_use_location
-              << " body=" << (source_use_in_template_body ? "yes" : "no")
-              << " header=" << (source_use_in_template_header ? "yes" : "no")
-              << " mentions-template-context="
-              << (source_use_mentions_template_context ? "yes" : "no")
-              << " mentions-current-member="
-              << (source_use_mentions_current_specialization_member ? "yes" : "no")
-              << " placeholders=" << (scope_has_template_placeholders(use_scope) ? "yes" : "no")
-              << " inside-source-template="
-              << (scope_is_inside_source_template_context(use_scope) ? "yes" : "no")
-              << " source-syntaxes=" << (source_arg_syntaxes ? "yes" : "no");
-        parser_trace::note("template.resolve", std::string(), trace.str());
-      }
-      if(witness::enabled(witness_context) &&
-         !qualified_value_source_use &&
-         (replayed_current_specialization_member_body_source_use ||
-          (!explicit_specialization_source_use &&
-           (replayed_template_header_source_use ||
-            replayed_source_template_header_source_use ||
-            replayed_template_body_source_use ||
-            replayed_source_template_body_source_use ||
-            replayed_source_template_header_member_expression_source_use ||
-            dependent_member_template_pattern_source_use ||
-            (template_api::function_binding_has_source_template_identity(
-                 use_scope.function) &&
-             source_use_mentions_template_context))))) {
-        return;
-      }
-      const std::pair<std::string, std::string> source_dependent_drop_key(
-          chosen_use_location,
-          decl.name + "|" + key);
-      if(source_dependent_class_template_use_drops_.count(
-             source_dependent_drop_key) != 0) {
-        if(parser_trace::enabled("template.resolve")) {
-          parser_trace::note("template.resolve",
-                             chosen_use_location,
-                             "class-use-source-drop reason=previous-dependent-drop");
-        }
-        return;
-      }
-      std::vector<std::string> anchored_arg_texts;
-      const std::vector<std::string> * binding_arg_texts = source_arg_texts;
-      bool binding_arg_texts_from_source_template_id = false;
-      bool binding_arg_texts_from_exact_anchor = false;
-      bool binding_arg_texts_from_concrete_replay = false;
-      std::vector<std::string> recovered_source_arg_texts;
-      std::vector<std::string> concrete_replay_arg_texts;
-      const auto concrete_source_replay_allowed = [&]() -> bool
-      {
-        if(scope_has_template_placeholders(use_scope) ||
-           !scope_is_inside_source_template_context(use_scope) ||
-           specialization.kind != template_api::MS_PRIMARY ||
-           template_arguments_are_dependent(arguments)) {
-          return false;
-        }
-        if(qualified_value_source_use) {
-          return true;
-        }
-        return source_use_in_template_header ||
-               !source_use_in_template_body ||
-               !source_use_mentions_template_context;
-      };
-      const auto use_concrete_replay_arg_texts = [&]() -> bool
-      {
-        if(!concrete_source_replay_allowed()) {
-          return false;
-        }
-        concrete_replay_arg_texts.clear();
-        concrete_replay_arg_texts.reserve(arguments.size());
-        for(std::size_t i = 0; i < arguments.size(); ++i) {
-          concrete_replay_arg_texts.push_back(
-              template_argument_text(arguments[i]));
-        }
-        binding_arg_texts = &concrete_replay_arg_texts;
-        binding_arg_texts_from_source_template_id = true;
-        binding_arg_texts_from_concrete_replay = true;
-        return true;
-      };
-      if(exact_template_type_lookup_anchor_arg_texts(use_specialization_name,
-                                                     anchor_identifier,
-                                                     anchored_arg_texts)) {
-        binding_arg_texts = &anchored_arg_texts;
-        binding_arg_texts_from_exact_anchor =
-            exact_template_type_lookup_anchor_arg_texts_are_full_match(
-                use_specialization_name);
-      }
-      const std::vector<std::string> * source_template_arg_texts =
-          template_api::current_template_id_source_arguments_ptr(
-              chosen_use_location,
-              anchor_identifier);
-      if(source_template_arg_texts) {
-        if(template_argument_texts_mention_template_bound_scope_names(
-               use_scope,
-               *source_template_arg_texts) ||
-           template_argument_texts_mention_enclosing_source_template_parameters(
-               use_scope,
-               *source_template_arg_texts)) {
-          if(use_concrete_replay_arg_texts()) {
-            source_template_arg_texts = nullptr;
-          } else {
-          if(parser_trace::enabled("template.resolve")) {
-            parser_trace::note("template.resolve",
-                               chosen_use_location,
-                               "class-use-source-drop reason=source-template-args-dependent");
-          }
-          source_dependent_class_template_use_drops_.insert(
-              source_dependent_drop_key);
-          return;
-          }
-        }
-        if(source_template_arg_texts) {
-          binding_arg_texts = source_template_arg_texts;
-          binding_arg_texts_from_source_template_id =
-              source_template_id_args_are_arity_compatible(*source_template_arg_texts,
-                                                          arguments);
+                    source_location_for_location_id(
+                        template_witness_context(),
+                        resolved.source_syntax->source_location_id));
+        const std::string source_identifier =
+            unqualified_member_name(resolved.origin->name);
+        if(!syntax_use_location.empty() &&
+           (source_identifier.empty() ||
+            source_location_points_at_identifier(syntax_use_location,
+                                                 source_identifier))) {
+          resolved.source_location = &syntax_use_location;
         }
       }
-      if(!source_template_arg_texts &&
-         source_use_spells_template &&
-         source_template_id_argument_texts_at_location(chosen_use_location,
-                                                       anchor_identifier,
-                                                       recovered_source_arg_texts)) {
-        binding_arg_texts = &recovered_source_arg_texts;
-        binding_arg_texts_from_source_template_id =
-            source_template_id_args_are_arity_compatible(recovered_source_arg_texts,
-                                                        arguments);
-      }
-      if(source_capture_enabled &&
-         source_use_spells_template &&
-         !source_arg_syntaxes &&
-         !source_template_arg_texts &&
-         !binding_arg_texts_from_source_template_id &&
-         !binding_arg_texts_from_exact_anchor) {
-        if(parser_trace::enabled("template.resolve")) {
-          parser_trace::note("template.resolve",
-                             chosen_use_location,
-                             "class-use-source-drop reason=no-source-argument-syntax");
-        }
-        return;
-      }
-      const bool binding_arg_texts_are_dependent =
-          binding_arg_texts &&
-          ((!binding_arg_texts_from_source_template_id &&
-            template_argument_texts_mention_source_bindings(*this,
-                                                            use_scope,
-                                                            *binding_arg_texts)) ||
-           template_argument_texts_mention_instantiated_class_local_type_aliases(
-               use_scope,
-               *binding_arg_texts) ||
-           template_argument_texts_mention_template_bound_scope_names(
-               use_scope,
-               *binding_arg_texts) ||
-           template_argument_texts_mention_enclosing_source_template_parameters(
-               use_scope,
-               *binding_arg_texts));
-      if(binding_arg_texts_are_dependent &&
-         !binding_arg_texts_from_concrete_replay &&
-         !use_concrete_replay_arg_texts()) {
-        if(parser_trace::enabled("template.resolve")) {
-          parser_trace::note("template.resolve",
-                             chosen_use_location,
-                             "class-use-source-drop reason=binding-args-dependent");
-        }
-        source_dependent_class_template_use_drops_.insert(
-            source_dependent_drop_key);
-        return;
-      }
-      if(binding_arg_texts_from_source_template_id && binding_arg_texts &&
-         !binding_arg_texts_from_concrete_replay) {
-        bool drop_noncanonical_source_arguments =
-            source_arg_syntaxes &&
-            template_argument_syntaxes_mention_source_template_context(
-                use_scope,
-                source_arg_syntaxes);
-        if(!drop_noncanonical_source_arguments && source_arg_syntaxes) {
-          for(std::size_t i = 0; i < source_arg_syntaxes->size(); ++i) {
-            if((*source_arg_syntaxes)[i].dependent) {
-              drop_noncanonical_source_arguments = true;
-              break;
-            }
-          }
-        }
-        if(!drop_noncanonical_source_arguments &&
-           !source_template_id_is_qualified_member_owner &&
-           !source_arg_syntaxes &&
-           binding_arg_texts == &recovered_source_arg_texts) {
-          const std::size_t compare_count =
-              std::min(binding_arg_texts->size(), arguments.size());
-          for(std::size_t i = 0; i < compare_count; ++i) {
-            const std::string resolved_arg_text =
-                arguments[i].kind == TemplateArgument::TA_TYPE &&
-                arguments[i].type ?
-                    describe_type(arguments[i].type) :
-                    template_argument_text(arguments[i]);
-            if(compact_lookup_text((*binding_arg_texts)[i]) !=
-               compact_lookup_text(resolved_arg_text)) {
-              drop_noncanonical_source_arguments = true;
-              break;
-            }
-          }
-        }
-        if(drop_noncanonical_source_arguments) {
-          if(parser_trace::enabled("template.resolve")) {
-            parser_trace::note("template.resolve",
-                               chosen_use_location,
-                               "class-use-source-drop reason=noncanonical-source-arguments");
-          }
-          source_dependent_class_template_use_drops_.insert(
-              source_dependent_drop_key);
-          return;
-        }
-      }
-      if(!source_use_spells_template &&
-         (location_within_node(chosen_use_location, class_node) ||
-          location_within_node(chosen_use_location,
-                               resolved_info->source_template ?
-                                   resolved_info->source_template->class_node :
-                                   nullptr))) {
-        if(parser_trace::enabled("template.resolve")) {
-          parser_trace::note("template.resolve",
-                             chosen_use_location,
-                             "class-use-source-drop reason=inside-template-declaration");
-        }
-        return;
-      }
-      const std::string note_location =
-          prefer_later_source_location(resolved_info->first_qualifier_use_location,
-                                       chosen_use_location);
-      const std::string public_location =
-          template_api::normalize_template_witness_source_location(
-              !note_location.empty() ? note_location : chosen_use_location);
-
-      std::string qualified_template_name =
-          !resolved_info->qualified_name.empty() ?
-              strip_trailing_top_level_template_arguments(
-                  template_api::class_witness_output_qualified_name(
-                      ctx,
-                      *resolved_info)) :
-              decl.name;
-      if(class_template_decl_is_member_template(decl) &&
-         decl.declaring_scope) {
-        const std::string declaring_scope_name =
-            template_api::class_template_witness_qualified_name(ctx, decl);
-        if(!declaring_scope_name.empty()) {
-          qualified_template_name = declaring_scope_name;
-        }
-      }
-      const std::string qualified_template_identifier =
-          unqualified_member_name(qualified_template_name);
-      if(source_capture_enabled &&
-         !qualified_template_identifier.empty() &&
-         qualified_template_identifier != anchor_identifier &&
-         !source_location_points_at_identifier(chosen_use_location,
-                                               qualified_template_identifier)) {
-        return;
-      }
-      if(witness::enabled(witness_context) &&
-         !explicit_specialization_source_use &&
-         source_use_in_template_body &&
-         class_template_decl_is_member_template(decl) &&
-         !template_api::template_witness_qualified_member_type_lookup_active()) {
-        if(parser_trace::enabled("template.resolve")) {
-          parser_trace::note("template.resolve",
-                             chosen_use_location,
-                             "class-use-source-drop reason=member-template-body");
-        }
-        return;
-      }
-      if(witness::enabled(witness_context) &&
-         !explicit_specialization_source_use &&
-         class_template_decl_is_member_template(decl) &&
-         !scope_has_template_placeholders(use_scope) &&
-         scope_is_inside_source_template_context(use_scope) &&
-         resolved_info->enclosing_scope &&
-         resolved_info->enclosing_scope->class_info) {
-        ClassInfo * source_owner =
-            source_member_template_owner_class_from_syntax(use_scope,
-                                                           chosen_use_location,
-                                                           anchor_identifier);
-        if(source_owner &&
-           !semantic_lookup::is_same_or_derived(
-               source_owner,
-               resolved_info->enclosing_scope->class_info)) {
-          if(parser_trace::enabled("template.resolve")) {
-            parser_trace::note("template.resolve",
-                               chosen_use_location,
-                               "class-use-source-drop reason=member-template-owner source=" +
-                                   source_owner->qualified_name +
-                                   " selected=" +
-                                   resolved_info->enclosing_scope->class_info
-                                       ->qualified_name);
-          }
-          return;
-        }
-      }
-      std::string selected_decl_location;
-      {
-        std::vector<const CppAstNode *> decl_candidates;
-        if(specialization.kind == template_api::MS_PRIMARY) {
-          if(const CppAstNode * member_decl =
-                 find_member_class_template_declaration_node(resolved_info->source_template)) {
-            decl_candidates.push_back(member_decl);
-          }
-          if(resolved_info->template_output_node) {
-            decl_candidates.push_back(resolved_info->template_output_node);
-          }
-          if(resolved_info->source_template &&
-             resolved_info->source_template->class_node) {
-            decl_candidates.push_back(resolved_info->source_template->class_node);
-          }
-          if(class_node) {
-            decl_candidates.push_back(class_node);
-          }
-        } else {
-          if(class_node) {
-            decl_candidates.push_back(class_node);
-          }
-          if(resolved_info->source_template &&
-             resolved_info->source_template->class_node) {
-            decl_candidates.push_back(resolved_info->source_template->class_node);
-          }
-          if(resolved_info->template_output_node) {
-            decl_candidates.push_back(resolved_info->template_output_node);
-          }
-        }
-        for(size_t i = 0; i < decl_candidates.size(); ++i) {
-          if(!decl_candidates[i]) {
+      if(!resolved.source_location && resolved.source_syntax) {
+        for(size_t i = resolved.source_syntax->argument_syntaxes.size();
+            i > 0 && !resolved.source_location;
+            --i) {
+          const TemplateArgumentSyntax & argument =
+              resolved.source_syntax->argument_syntaxes[i - 1];
+          if(!argument.has_source_token_start) {
             continue;
           }
-          selected_decl_location =
-              source_location_for_name_in_node(*decl_candidates[i], decl.name);
-          if(selected_decl_location.empty()) {
-            selected_decl_location = source_location_for_node(*decl_candidates[i]);
+          const ParsedSourceLocation argument_location =
+              parse_source_location(
+                  callbacks.source_location_for_token_index(
+                      argument.source_token_start));
+          if(!argument_location.valid) {
+            continue;
           }
-          selected_decl_location =
+          std::ostringstream line_start;
+          line_start << argument_location.file << ":"
+                     << argument_location.line << ":1";
+          syntax_use_location =
               template_api::normalize_template_witness_source_location(
-                  selected_decl_location);
-          if(!selected_decl_location.empty()) {
-            break;
+                  template_api::template_witness_detail::
+                      source_location_for_identifier_token_on_or_after(
+                          template_witness_context(),
+                          line_start.str(),
+                          source_name,
+                          true,
+                          true));
+          if(source_location_points_at_identifier(syntax_use_location,
+                                                  source_name)) {
+            resolved.source_location = &syntax_use_location;
           }
         }
       }
-      if(!selected_decl_location.empty() &&
-         chosen_use_location == selected_decl_location) {
-        return;
+      const std::string parser_use_location =
+          parser_trace::current_use_location();
+      if(!parser_use_location.empty() &&
+         (!resolved.source_location ||
+          (!source_name.empty() &&
+           !source_location_points_at_identifier(*resolved.source_location,
+                                                source_name))) &&
+         (source_name.empty() ||
+          source_location_points_at_identifier(parser_use_location,
+                                               source_name))) {
+        resolved.source_location = &parser_use_location;
       }
-
-      const std::string selection_text =
-          specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION ?
-              "explicit" :
-              (specialization.kind == template_api::MS_PARTIAL_SPECIALIZATION ?
-                   "partial" :
-                   "primary");
-      if(syntax_backed_source_capture_enabled &&
-         (!nested_argument_recovery ||
-          explicit_specialization_source_use ||
-          source_template_id_is_qualified_member_owner)) {
-        template_api::ClassSpecializationSelection visible_selection =
-            specialization;
-        const bool nested_partial_source_argument =
-            source_use_spells_template &&
-            specialization.kind == template_api::MS_PARTIAL_SPECIALIZATION &&
-            callbacks.template_id_at_location_is_nested &&
-            callbacks.template_id_at_location_is_nested(chosen_use_location) &&
-            !(callbacks.template_id_at_location_is_qualified_member_owner &&
-              callbacks.template_id_at_location_is_qualified_member_owner(
-                  chosen_use_location));
-        if(nested_partial_source_argument) {
-          visible_selection.kind = template_api::MS_PRIMARY;
-          visible_selection.parameters = &decl.parameters;
-          visible_selection.arguments = arguments;
-        }
-        witness::ClassUseEmitRequest request;
-        request.location = chosen_use_location;
-        request.template_name = qualified_template_name;
-        request.selection =
-            source_selection_kind_for_match_kind(visible_selection.kind);
-        if(explicit_specialization_source_use) {
-          request.origin =
-              witness::ClassUseEmissionOrigin::ExplicitSpecializationSource;
-        }
-        if(nested_partial_source_argument) {
-          const witness::TemplateWitnessSourceAnchor primary_decl_anchor =
-              class_use_selected_decl_anchor(ctx, &decl, visible_selection);
-          request.selected_decl_location = primary_decl_anchor.location;
-          request.selected_decl_anchor = primary_decl_anchor;
-        } else {
-          witness::set_selected_decl_anchor(request.selected_decl_location,
-                                            request.selected_decl_anchor,
-                                            selected_decl_location,
-                                            true);
-        }
-        if(source_use_spells_template) {
-          request.use_anchor_present = true;
-          request.use_anchor_location = chosen_use_location;
-          const bool source_use_is_current_specialization =
-              class_template_use_is_current_specialization(use_scope, decl) ||
-              location_within_node(chosen_use_location, class_node);
-          const bool conversion_result_type_use =
-              class_use_matches_current_conversion_result(use_scope,
-                                                          resolved_info,
-                                                          source_function) ||
-              (callbacks.template_id_at_location_is_conversion_operator_result &&
-               callbacks.template_id_at_location_is_conversion_operator_result(
-                   chosen_use_location));
-          const bool function_result_type_use =
-              class_use_matches_current_function_result(use_scope,
-                                                        resolved_info,
-                                                        source_function);
-          const bool binding_arg_texts_from_source_syntax =
-              source_arg_syntaxes != nullptr;
-          const bool binding_arg_texts_are_semantic_fallback =
-              binding_arg_texts &&
-              !binding_arg_texts_from_source_syntax &&
-              !binding_arg_texts_from_source_template_id &&
-              !binding_arg_texts_from_exact_anchor &&
-              source_template_id_args_are_arity_compatible(*binding_arg_texts,
-                                                          arguments);
-          if(binding_arg_texts &&
-             (binding_arg_texts_from_source_template_id ||
-              binding_arg_texts_from_source_syntax ||
-              binding_arg_texts_from_exact_anchor ||
-              binding_arg_texts_are_semantic_fallback)) {
-            semantic_source_use::SourceTemplateIdOccurrence occurrence =
-                witness::make_source_template_id_occurrence(chosen_use_location,
-                                                            *binding_arg_texts);
-            occurrence.synthesized = binding_arg_texts_are_semantic_fallback;
-            occurrence.in_template_body =
-                scope_has_template_placeholders(use_scope) ||
-                scope_is_inside_source_template_context(use_scope) ||
-                witness::current_template_witness_entry_context().origin ==
-                    witness::TemplateWitnessOrigin::Closure;
-            occurrence.current_specialization_use =
-                source_use_is_current_specialization;
-            occurrence.conversion_result_type_use =
-                conversion_result_type_use;
-            occurrence.function_result_type_use =
-                function_result_type_use;
-            occurrence.has_dependent_argument =
-                template_argument_texts_mention_source_bindings(*this,
-                                                               use_scope,
-                                                               *binding_arg_texts) ||
-                template_argument_texts_mention_instantiated_class_local_type_aliases(
-                    use_scope,
-                    *binding_arg_texts) ||
-                template_argument_texts_mention_template_bound_scope_names(
-                    use_scope,
-                    *binding_arg_texts) ||
-                template_argument_texts_mention_enclosing_source_template_parameters(
-                    use_scope,
-                    *binding_arg_texts);
-            if(!occurrence.current_specialization_use &&
-               occurrence.in_template_body &&
-               occurrence.has_dependent_argument &&
-               explicit_specialization_source_use &&
-               !selected_decl_location.empty() &&
-               source_location_is_later(selected_decl_location,
-                                        chosen_use_location)) {
-              occurrence.current_specialization_use = true;
-            }
-            occurrence.has_current_specialization_argument =
-                template_argument_texts_mention_current_specialization_names(
-                    use_scope,
-                    *binding_arg_texts);
-            for(std::size_t i = 0; i < occurrence.arguments.size(); ++i) {
-              std::vector<std::string> arg_texts;
-              arg_texts.push_back(occurrence.arguments[i].text);
-              occurrence.arguments[i].dependent =
-                  template_argument_texts_mention_source_bindings(*this,
-                                                                 use_scope,
-                                                                 arg_texts) ||
-                  template_argument_texts_mention_instantiated_class_local_type_aliases(
-                      use_scope,
-                      arg_texts) ||
-                  template_argument_texts_mention_template_bound_scope_names(
-                      use_scope,
-                      arg_texts) ||
-                  template_argument_texts_mention_enclosing_source_template_parameters(
-                      use_scope,
-                      arg_texts);
-              if(occurrence.arguments[i].dependent) {
-                occurrence.has_dependent_argument = true;
-              }
-              occurrence.arguments[i].current_specialization =
-                  template_argument_texts_mention_current_specialization_names(
-                      use_scope,
-                      arg_texts);
-              if(!occurrence.arguments[i].current_specialization) {
-                if(source_arg_syntaxes && i < source_arg_syntaxes->size()) {
-                  occurrence.arguments[i].current_specialization =
-                      template_argument_mentions_current_specialization_member(
-                          use_scope,
-                          (*source_arg_syntaxes)[i]);
-                } else if(i < resolved_arguments.size()) {
-                  occurrence.arguments[i].current_specialization =
-                      template_argument_mentions_current_specialization_member(
-                          use_scope,
-                          resolved_arguments[i]);
-                }
-              }
-              if(occurrence.arguments[i].current_specialization) {
-                occurrence.has_current_specialization_argument = true;
-              }
-              if(source_arg_syntaxes && i < source_arg_syntaxes->size()) {
-                occurrence.arguments[i].referenced_value_entities =
-                    template_argument_value_entities(use_scope,
-                                                     (*source_arg_syntaxes)[i]);
-                occurrence.arguments[i].referenced_value_decl_locations =
-                    template_argument_value_decl_locations(
-                        use_scope,
-                        (*source_arg_syntaxes)[i]);
-              }
-              if(i < resolved_arguments.size()) {
-                if(occurrence.arguments[i].referenced_value_entities.empty()) {
-                  occurrence.arguments[i].referenced_value_entities =
-                      template_argument_value_entities(use_scope,
-                                                       resolved_arguments[i]);
-                }
-                if(occurrence.arguments[i].referenced_value_decl_locations.empty()) {
-                  occurrence.arguments[i].referenced_value_decl_locations =
-                      template_argument_value_decl_locations(
-                          use_scope, resolved_arguments[i]);
-                }
-              }
-            }
-            if(occurrence.in_template_body &&
-               binding_arg_texts_from_source_syntax &&
-               !source_use_is_current_specialization &&
-               !occurrence.has_dependent_argument &&
-               !occurrence.has_current_specialization_argument &&
-               template_argument_syntaxes_mention_source_template_context(
-                   use_scope,
-                   source_arg_syntaxes)) {
-              occurrence.synthesized = true;
-            }
-            request.template_id_occurrence = occurrence;
-          }
-        }
-        if(binding_arg_texts) {
-          template_api::append_template_witness_source_bindings(
-              *this,
-              request.bindings,
-              decl.parameters,
-              resolved_arguments,
-              *binding_arg_texts,
-              "explicit",
-              "defaulted");
-        } else {
-          template_api::append_template_witness_source_bindings(
-              *this,
-              request.bindings,
-              decl.parameters,
-              resolved_arguments,
-              "explicit");
-        }
-        repair_bindings_from_resolved_instantiation(
-            request.bindings,
-            &request.template_id_occurrence);
-        if(!nested_partial_source_argument &&
-           bound_parameters &&
-           bound_parameters != &decl.parameters) {
-          template_api::append_template_witness_source_bindings(
-              *this,
-              request.specialization_bindings,
-              *bound_parameters,
-              *bound_arguments,
-              "deduced");
-        }
-        request.ownership = witness::SourceUseOwnership::SourceOwned;
-        if(request.origin ==
-               witness::ClassUseEmissionOrigin::ResolvedTemplateId &&
-           source_use_spells_template &&
-           class_template_decl_is_member_template(decl)) {
-          request.origin = witness::ClassUseEmissionOrigin::NestedSourceTemplateId;
-        }
-        const bool parent_class_use_records =
-            witness::class_use_recording_enabled(witness_context,
-                                                 request.origin);
-        ctx.submit_resolved_class_use(std::move(request));
-        if(parent_class_use_records &&
-           !suppress_nested_arguments &&
-           source_arg_syntaxes &&
-           callbacks.observe_nested_class_uses_from_resolved_arguments) {
-          callbacks.observe_nested_class_uses_from_resolved_arguments(
-              use_scope,
-              resolved_arguments,
-              *source_arg_syntaxes,
-              witness::SourceUseOwnership::SourceOwned,
-              request.template_name);
+      if(!resolved.source_syntax &&
+         resolved.source_location &&
+         callbacks.template_id_syntax_at_location) {
+        resolved.source_syntax =
+            callbacks.template_id_syntax_at_location(*resolved.source_location,
+                                                     source_name);
+      }
+      if(resolved.source_location) {
+        if(callbacks.template_id_at_location_is_conversion_operator_result) {
+          resolved.source_is_conversion_result =
+              callbacks.template_id_at_location_is_conversion_operator_result(
+                  *resolved.source_location);
         }
       }
-      if(trace_enabled) {
-        const auto append_binding_map =
-            [&](std::ostringstream & out,
-                const std::vector<TemplateParameterInfo> & parameters_to_use,
-                const std::vector<TemplateArgument> & arguments_to_use) -> void
-        {
-          for(size_t i = 0; i < parameters_to_use.size() && i < arguments_to_use.size(); ++i) {
-            if(i != 0) {
-              out << ",";
-            }
-            out << (parameters_to_use[i].name.empty() ?
-                        std::string("$") + std::to_string(i + 1) :
-                        parameters_to_use[i].name)
-                << ":" << template_argument_text(arguments_to_use[i]);
-          }
-        };
-
-        std::ostringstream primary_bindings;
-        append_binding_map(primary_bindings,
-                           decl.parameters,
-                           resolved_arguments);
-
-        std::ostringstream specialize_bindings;
-        if(bound_parameters && bound_parameters != &decl.parameters) {
-          append_binding_map(specialize_bindings, *bound_parameters, *bound_arguments);
-        }
-
-        std::ostringstream trace;
-        trace << "class-use"
-              << " name=" << qualified_template_name
-              << " resolved={" << resolved_info->qualified_name << "}"
-              << " kind=" << selection_text
-              << " decl=" << (!selected_decl_location.empty() ? selected_decl_location :
-                               std::string("<none>"))
-              << " bindings={" << primary_bindings.str() << "}";
-        if(!specialize_bindings.str().empty()) {
-          trace << " specialize_bindings={" << specialize_bindings.str() << "}";
-        }
-        parser_trace::note("template.resolve", public_location, trace.str());
+      if(resolved.source_syntax) {
+        resolved.source_is_nested_template_argument =
+            resolved.source_syntax->source_is_nested_template_argument;
+        resolved.source_is_qualified_member_owner =
+            resolved.source_syntax->source_is_qualified_member_owner;
       }
+      ctx.observe_resolved_class_template_id(resolved);
     };
 
     if(is_builtin_initializer_list_template(decl)) {
@@ -3650,11 +2818,13 @@ ClassInfo * reference_class_template_instantiation_with_syntax(
     Scope & use_scope,
     const std::vector<std::string> & arg_texts,
     const std::vector<TemplateArgumentSyntax> * arg_syntaxes,
-    template_api::ClassTemplateSourceUseMode source_use_mode)
+    template_api::ClassTemplateSourceUseMode source_use_mode,
+    const TemplateIdSyntax * source_syntax)
 {
   ClassTemplateReference ref(ctx, callbacks);
   return ref.reference_class_template_instantiation_with_syntax(
-      decl, use_scope, arg_texts, arg_syntaxes, source_use_mode);
+      decl, use_scope, arg_texts, arg_syntaxes, source_use_mode,
+      source_syntax);
 }
 
 ClassInfo * reference_selected_class_template_instantiation(
@@ -3668,12 +2838,14 @@ ClassInfo * reference_selected_class_template_instantiation(
     template_api::ClassTemplateSourceUseMode source_use_mode,
     const std::vector<TemplateArgumentSyntax> * source_arg_syntaxes,
     const std::string * precomputed_key,
-    FunctionBinding * source_function)
+    FunctionBinding * source_function,
+    const TemplateIdSyntax * source_syntax)
 {
   ClassTemplateReference ref(ctx, callbacks);
   return ref.reference_selected_class_template_instantiation(
       decl, use_scope, arguments, specialization, source_arg_texts,
-      source_use_mode, source_arg_syntaxes, precomputed_key, source_function);
+      source_use_mode, source_arg_syntaxes, precomputed_key, source_function,
+      source_syntax);
 }
 
 ClassInfo * reference_selected_class_template_instantiation_with_key(

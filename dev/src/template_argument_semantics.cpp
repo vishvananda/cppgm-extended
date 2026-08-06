@@ -2494,19 +2494,6 @@ bool template_argument_preserves_qualified_member(
          !members.empty();
 }
 
-void mark_alias_source_binding_preserve_from_occurrence(
-    vector<template_api::TemplateWitnessSourceBinding> & bindings,
-    const semantic_source_use::SourceTemplateIdOccurrence & occurrence)
-{
-  const size_t limit =
-      std::min(bindings.size(), occurrence.arguments.size());
-  for(size_t i = 0; i < limit; ++i) {
-    if(occurrence.arguments[i].preserve_qualified_member) {
-      bindings[i].preserve_qualified_member = true;
-    }
-  }
-}
-
 void mark_alias_template_id_occurrence_argument_facts(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -3356,7 +3343,7 @@ bool try_resolve_qualified_member_template_id_type(
         source_location,
         owner_type,
         effective_argument_scope,
-        template_api::ClassTemplateSourceUseMode::SemanticLookupOnly,
+        template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly,
         false);
   }
   if(!owner_type && !owner_template_id) {
@@ -3434,6 +3421,7 @@ bool try_resolve_qualified_member_template_id_type(
   request.scope = member_scope;
   request.allow_class_templates = reference_class_templates_only;
   request.name = leaf.name;
+  request.source_syntax = &syntax;
   request.source_use_mode = source_use_mode;
   request.source_location =
       template_api::normalize_template_witness_source_location(source_location);
@@ -3545,6 +3533,7 @@ bool try_make_dependent_qualified_template_id_type(
           request.scope = member_scope;
           request.allow_class_templates = reference_class_templates_only;
           request.name = leaf.name;
+          request.source_syntax = &leaf;
           ok = try_resolve_class_template_id_locally(
                    services,
                    template_api::make_template_environment(*member_scope),
@@ -3641,9 +3630,25 @@ bool resolve_template_id_syntax_type(template_api::TemplateServices & services,
   request.scope = &scope;
   request.allow_class_templates = reference_class_templates_only;
   request.name = syntax.name;
+  request.source_syntax = &syntax;
   request.source_use_mode = source_use_mode;
   request.source_location =
       template_api::normalize_template_witness_source_location(source_location);
+
+  callsemantic::ExactTemplateTypeLookupAnchor source_anchor =
+      build_owner_lookup_anchor(syntax);
+  if(syntax.source_location_id != 0) {
+    source_anchor.location =
+        template_api::normalize_template_witness_source_location(
+            template_api::template_witness_detail::
+                source_location_for_location_id(services.witness_context,
+                                                syntax.source_location_id));
+  }
+  if(source_anchor.location.empty()) {
+    source_anchor.location = request.source_location;
+  }
+  const callsemantic::ScopedExactTemplateTypeLookupAnchor source_anchor_guard(
+      source_anchor);
 
   const string lookup_text = template_id_syntax_lookup_text(syntax);
   if(TypePtr current_specialization =
@@ -3812,6 +3817,25 @@ bool resolve_type_argument_syntax_type(template_api::TemplateServices & services
   if(!scope.valid()) {
     return false;
   }
+  callsemantic::ExactTemplateTypeLookupAnchor source_anchor;
+  const TemplateIdSyntax * source_template_id = syntax.template_id.get();
+  if(!source_template_id && syntax.type_id) {
+    source_template_id =
+        callsemantic::first_template_id_syntax_in_subtree(*syntax.type_id);
+  }
+  if(source_template_id) {
+    source_anchor = build_owner_lookup_anchor(*source_template_id);
+    if(source_template_id->source_location_id != 0) {
+      source_anchor.location =
+          template_api::normalize_template_witness_source_location(
+              template_api::template_witness_detail::
+                  source_location_for_location_id(
+                      services.witness_context,
+                      source_template_id->source_location_id));
+    }
+  }
+  const callsemantic::ScopedExactTemplateTypeLookupAnchor source_anchor_guard(
+      source_anchor);
   const auto type_is_dependent =
       [&services](const TypePtr & type) -> bool
       {
@@ -4444,6 +4468,7 @@ bool resolve_template_id_syntax_type_in_current_scope(
     request.defer_dependent_class_template_id =
         defer_dependent_class_template_id;
     request.name = syntax.name;
+    request.source_syntax = &syntax;
     request.source_use_mode = source_use_mode;
     request.source_location =
         template_api::normalize_template_witness_source_location(source_location);
@@ -5528,6 +5553,7 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
             request.allow_class_templates = true;
             request.defer_dependent_class_template_id = true;
             request.name = unqualified.name;
+            request.source_syntax = source_qualifier_template_id;
             request.source_location =
                 template_api::normalize_template_witness_source_location(
                     template_id_source_location(*source_qualifier_template_id));
@@ -5698,6 +5724,7 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
         request.scope = current;
         request.allow_class_templates = reference_class_templates_only;
         request.name = unqualified.name;
+        request.source_syntax = final_template_id;
         request.source_location =
             template_api::normalize_template_witness_source_location(
                 template_id_source_location(*final_template_id));
@@ -6478,7 +6505,7 @@ bool try_resolve_concrete_template_member_type(
            std::string(),
            owner_type,
            effective_argument_env,
-           template_api::ClassTemplateSourceUseMode::SemanticLookupOnly,
+           template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly,
            false) ||
        !owner_type) {
       return false;
@@ -19551,7 +19578,7 @@ bool try_resolve_concrete_unary_type_transform_template_id(
                                                              out);
 }
 
-void append_alias_template_source_bindings(
+void append_alias_template_source_bindings_impl(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     std::vector<template_api::TemplateWitnessSourceBinding> & out,
@@ -19692,20 +19719,6 @@ void append_alias_template_source_bindings(
     out.push_back(binding);
     ++arg_index;
   }
-}
-
-std::string alias_template_decl_location(
-    const template_api::TemplateWitnessContext & ctx,
-    const AliasTemplateDecl & alias_template)
-{
-  std::string location =
-      semantic_model::source_decl_anchor_location(alias_template.declaration_anchor);
-  if(location.empty() && alias_template.type_id) {
-    location = template_api::template_witness_detail::source_location_for_token_index(
-        ctx,
-        alias_template.type_id->token_start);
-  }
-  return template_api::normalize_template_witness_source_location(location);
 }
 
 bool argument_syntax_has_pack_expanded_source_text(
@@ -20042,8 +20055,6 @@ void record_direct_alias_template_source_use_if_needed(
     return;
   }
 
-  witness::AliasUseEmitRequest request;
-  request.use_location = use_location;
   std::vector<std::string> source_argument_texts =
       source_argument_texts_for_occurrence(services.witness_context,
                                            use_location,
@@ -20074,7 +20085,7 @@ void record_direct_alias_template_source_use_if_needed(
                                                   source_argument_texts)) {
     return;
   }
-  request.template_id_occurrence =
+  semantic_source_use::SourceTemplateIdOccurrence occurrence =
       witness::make_source_template_id_occurrence(
           use_location,
           source_argument_texts);
@@ -20105,10 +20116,8 @@ void record_direct_alias_template_source_use_if_needed(
     exact_source_arguments =
         source_arguments_compact_match(canonical_exact_source_args,
                                        source_argument_texts);
-    request.template_id_occurrence.exact_source_arguments =
-        exact_source_arguments;
-    request.template_id_occurrence.synthesized =
-        !exact_source_arguments;
+    occurrence.exact_source_arguments = exact_source_arguments;
+    occurrence.synthesized = !exact_source_arguments;
   }
   if(pack_expanded_source &&
      (!has_exact_source_arguments || !exact_source_arguments)) {
@@ -20126,17 +20135,17 @@ void record_direct_alias_template_source_use_if_needed(
       source_argument_texts,
       explicit_argument_syntaxes,
       resolved_arguments,
-      request.template_id_occurrence);
+      occurrence);
   mark_alias_template_value_owner_argument_facts(
       services,
       scope.valid() ? &scope.require() : nullptr,
       alias_template,
       resolved_arguments,
       explicit_argument_syntaxes,
-      request.template_id_occurrence);
+      occurrence);
   {
     const size_t limit =
-        std::min(request.template_id_occurrence.arguments.size(),
+        std::min(occurrence.arguments.size(),
                  resolved_arguments.size());
     for(size_t i = 0; i < limit; ++i) {
       const TemplateArgument & argument = resolved_arguments[i];
@@ -20147,8 +20156,8 @@ void record_direct_alias_template_source_use_if_needed(
            service_type_depends_on_template_parameter(services,
                                                       argument.type));
       if(dependent_argument) {
-        request.template_id_occurrence.arguments[i].dependent = true;
-        request.template_id_occurrence.has_dependent_argument = true;
+        occurrence.arguments[i].dependent = true;
+        occurrence.has_dependent_argument = true;
       }
       if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
         TypePtr owner;
@@ -20160,46 +20169,11 @@ void record_direct_alias_template_source_use_if_needed(
                                                  leading_typename,
                                                  nullptr) &&
            !members.empty()) {
-          request.template_id_occurrence.arguments[i].preserve_qualified_member =
-              true;
+          occurrence.arguments[i].preserve_qualified_member = true;
         }
       }
     }
   }
-  request.template_name =
-      template_api::alias_template_witness_entity(&alias_template);
-  request.selected_decl_location =
-      alias_template_decl_location(services.witness_context, alias_template);
-  request.selected_decl_has_name_location =
-      semantic_model::source_decl_anchor_has_name_location(
-          alias_template.declaration_anchor);
-  request.expanded_to = describe_type(resolved);
-  request.origin = witness::AliasUseEmissionOrigin::DirectSourceTemplateId;
-  append_alias_template_source_bindings(services,
-                                        scope,
-                                        request.bindings,
-                                        alias_template.parameters,
-                                        resolved_arguments,
-                                        source_argument_texts,
-                                        "explicit");
-  mark_alias_source_binding_preserve_from_occurrence(
-      request.bindings,
-      request.template_id_occurrence);
-  if(services.semantic_context && scope.valid()) {
-    callsemantic::rewrite_current_specialization_alias_binding_texts(
-        *services.semantic_context,
-        scope.require(),
-        alias_template.parameters,
-        resolved_arguments,
-        source_argument_texts,
-        explicit_argument_syntaxes,
-        request.bindings,
-        &request.template_id_occurrence);
-  }
-  CPPGM_SET_WITNESS_PRODUCER(
-      request,
-      witness::WitnessProducerSite::AliasTemplateArgumentSemantics02);
-  witness::emit_alias_use(services.witness_context, request);
   bool source_arguments_have_template_dependency = false;
   for(std::size_t i = 0; i < source_argument_texts.size(); ++i) {
     if(alias_argument_text_mentions_template_dependency(services,
@@ -20209,17 +20183,22 @@ void record_direct_alias_template_source_use_if_needed(
       break;
     }
   }
-  if(!source_arguments_have_template_dependency &&
-     services.semantic_context &&
-     scope.valid()) {
-    services.semantic_context
-        ->observe_nested_class_uses_from_resolved_template_arguments(
-            scope.require(),
-            resolved_arguments,
-            explicit_argument_syntaxes ?
-                *explicit_argument_syntaxes :
-                std::vector<TemplateArgumentSyntax>(),
-            semantic_source_use::SourceUseOwnership::SourceOwned);
+  if(services.semantic_context && scope.valid()) {
+    resolved_source_semantics::ResolvedAliasTemplateIdView observation;
+    observation.origin = const_cast<AliasTemplateDecl *>(&alias_template);
+    observation.use_scope = &scope.require();
+    observation.resolved_type = resolved;
+    observation.arguments = &resolved_arguments;
+    observation.source_argument_texts = &source_argument_texts;
+    observation.source_argument_syntaxes = explicit_argument_syntaxes;
+    observation.source_location = &use_location;
+    observation.source_occurrence = &occurrence;
+    observation.emission_origin =
+        witness::AliasUseEmissionOrigin::DirectSourceTemplateId;
+    observation.use_template_argument_binding_policy = true;
+    observation.observe_nested_class_arguments =
+        !source_arguments_have_template_dependency;
+    services.semantic_context->observe_resolved_alias_template_id(observation);
   }
 }
 
@@ -22446,6 +22425,10 @@ TemplateIdSyntax clone_template_id_for_template_substitution(
   TemplateIdSyntax out;
   out.name = source.name;
   out.source_location_id = source.source_location_id;
+  out.source_is_nested_template_argument =
+      source.source_is_nested_template_argument;
+  out.source_is_qualified_member_owner =
+      source.source_is_qualified_member_owner;
   out.qualifier_template_id_syntaxes.reserve(
       source.qualifier_template_id_syntaxes.size());
   for(size_t i = 0; i < source.qualifier_template_id_syntaxes.size(); ++i) {
@@ -29081,6 +29064,25 @@ string replace_identifier_token_text_preserving_sizeof_pack_operands(
 
 }  // namespace
 
+void append_alias_template_source_bindings(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    std::vector<template_api::TemplateWitnessSourceBinding> & out,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::vector<TemplateArgument> & arguments,
+    const std::vector<std::string> & explicit_argument_texts,
+    const std::string & source)
+{
+  append_alias_template_source_bindings_impl(
+      services,
+      scope,
+      out,
+      parameters,
+      arguments,
+      explicit_argument_texts,
+      source);
+}
+
 bool substitute_value_pack_bindings_in_node(
     const CppAstNode & node,
     const map<string, ValueBinding> & replacements,
@@ -33909,7 +33911,7 @@ bool resolve_member_template_template_argument_syntax(
           string(),
           qualifier_type,
           scope,
-          template_api::ClassTemplateSourceUseMode::SemanticLookupOnly,
+          template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly,
           false);
     }
 

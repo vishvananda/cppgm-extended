@@ -549,6 +549,11 @@ const TemplateIdSyntax * first_template_id_syntax_in_subtree(
   if(const TemplateIdSyntax * syntax = cppast_template_id_syntax(node)) {
     return syntax;
   }
+  for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(!node.qualifier_template_id_syntaxes[i].name.name.empty()) {
+      return &node.qualifier_template_id_syntaxes[i];
+    }
+  }
   for(size_t i = 0; i < node.children.size(); ++i) {
     if(const TemplateIdSyntax * found =
            first_template_id_syntax_in_subtree(node.children[i])) {
@@ -1161,6 +1166,41 @@ const ExactTemplateTypeLookupAnchor * current_exact_template_type_lookup_anchor(
     }
   }
   return nullptr;
+}
+
+const ExactTemplateTypeLookupAnchor * matching_exact_template_type_lookup_anchor(
+    const std::string & normalized_name,
+    const std::string & identifier)
+{
+  const ExactTemplateTypeLookupAnchor * identifier_match = nullptr;
+  const std::string compact_name = compact_lookup_text(normalized_name);
+  const std::string unqualified_identifier =
+      unqualified_member_name(identifier);
+  for(std::size_t i = exact_template_type_lookup_anchors_.size(); i > 0; --i) {
+    const ExactTemplateTypeLookupAnchor & anchor =
+        exact_template_type_lookup_anchors_[i - 1];
+    if(!compact_name.empty()) {
+      if(anchor.compact_key == compact_name) {
+        return &anchor;
+      }
+      const std::string qualified_suffix = "::" + compact_name;
+      if(anchor.compact_key.size() > qualified_suffix.size() &&
+         anchor.compact_key.compare(anchor.compact_key.size() -
+                                        qualified_suffix.size(),
+                                    qualified_suffix.size(),
+                                    qualified_suffix) == 0) {
+        return &anchor;
+      }
+    }
+    const std::string anchor_identifier =
+        unqualified_member_name(anchor.identifier);
+    if(!identifier_match &&
+       !unqualified_identifier.empty() &&
+       anchor_identifier == unqualified_identifier) {
+      identifier_match = &anchor;
+    }
+  }
+  return identifier_match;
 }
 
 bool exact_template_type_lookup_anchor_matches(

@@ -736,7 +736,8 @@ public:
       const std::vector<std::string> & arg_texts,
       const std::vector<cpp_decl::TemplateArgumentSyntax> * arg_syntaxes,
       template_api::ClassTemplateSourceUseMode source_use_mode =
-          template_api::ClassTemplateSourceUseMode::EmitClassUse) = 0;
+          template_api::ClassTemplateSourceUseMode::EmitClassUse,
+      const cpp_decl::TemplateIdSyntax * source_syntax = nullptr) = 0;
   virtual semantic_model::ClassInfo * reference_selected_class_template_instantiation(
       semantic_model::ClassTemplateDecl & decl,
       semantic_model::Scope & use_scope,
@@ -747,7 +748,8 @@ public:
           template_api::ClassTemplateSourceUseMode::EmitClassUse,
       const std::vector<cpp_decl::TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
       const std::string * precomputed_key = nullptr,
-      semantic_model::FunctionBinding * source_function = nullptr) = 0;
+      semantic_model::FunctionBinding * source_function = nullptr,
+      const cpp_decl::TemplateIdSyntax * source_syntax = nullptr) = 0;
   virtual void observe_resolved_class_template_id(
       const resolved_source_semantics::ResolvedClassTemplateIdView & resolved) = 0;
   virtual void submit_resolved_class_use(

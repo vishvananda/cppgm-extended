@@ -1116,6 +1116,7 @@ void build_template_argument_syntax_from_range(
                                          template_id_range,
                                          nested_template_id,
                                          parser_context)) {
+    nested_template_id.source_is_nested_template_argument = true;
     argument.template_id.reset(
         new cpp_decl::TemplateIdSyntax(std::move(nested_template_id)));
     argument.pack_expansion = template_id_pack_expansion;
@@ -1501,8 +1502,9 @@ void build_qualifier_template_id_syntaxes(
 
     cpp_decl::TemplateIdSyntax syntax;
     syntax.name.rooted = parsed.rooted;
+    syntax.source_is_qualified_member_owner = true;
     syntax.source_location_id =
-        tokens[component.name_component.first].location_id;
+        tokens[parsed.qualifiers[i].first].location_id;
     for(size_t qualifier_index = 0; qualifier_index < i; ++qualifier_index) {
       syntax.name.qualifiers.push_back(
           template_angle::token_span_text_spaced(
@@ -11041,6 +11043,30 @@ bool CppAstParser::parse_keyword_cast_expression(CppAstNode & out)
     return false;
   }
 
+  const auto mark_cast_template_ids_as_nested =
+      [&](CppAstNode & root)
+  {
+    std::vector<CppAstNode *> pending;
+    pending.push_back(&root);
+    while(!pending.empty()) {
+      CppAstNode * current = pending.back();
+      pending.pop_back();
+      if(current->template_id_syntax) {
+        current->template_id_syntax->source_is_nested_template_argument = true;
+      }
+      for(size_t i = 0;
+          i < current->qualifier_template_id_syntaxes.size();
+          ++i) {
+        current->qualifier_template_id_syntaxes[i]
+            .source_is_nested_template_argument = true;
+      }
+      for(size_t i = 0; i < current->children.size(); ++i) {
+        pending.push_back(&current->children[i]);
+      }
+    }
+  };
+  mark_cast_template_ids_as_nested(type_id);
+
   CppAstNode operand;
   if(!parse_expression(operand) || !consume_simple(OP_RPAREN)) {
     pos = start;
@@ -12178,7 +12204,9 @@ void CppAstParser::attach_qualified_name_syntax_from_span(CppAstNode & node,
 
       cpp_decl::TemplateIdSyntax template_id;
       template_id.name = head_syntax;
-      template_id.source_location_id = tokens[start].location_id;
+      template_id.source_location_id =
+          tokens[start + head_parsed.name_template_head_component.first]
+              .location_id;
       vector<cpp_decl::TemplateIdSyntax> fallback_qualifier_template_ids;
       qualified_name_parser::QualifiedNameParseResult original_head_parsed;
       if(qualified_name_parser::parse_qualified_name(

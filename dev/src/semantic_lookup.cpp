@@ -1702,7 +1702,9 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
               *class_template->second,
               lookup_scope,
               template_id_args,
-              arg_syntaxes);
+              arg_syntaxes,
+              template_api::ClassTemplateSourceUseMode::EmitClassUse,
+              template_id_syntax);
       if(info) {
         return info->type;
       }
@@ -7739,7 +7741,9 @@ TypePtr resolve_qualified_owner_type_node(SemanticContext & ctx,
             *class_template,
             scope,
             arguments,
-            &local.argument_syntaxes);
+            &local.argument_syntaxes,
+            template_api::ClassTemplateSourceUseMode::EmitClassUse,
+            &local);
         if(info) {
           return info->type;
         }

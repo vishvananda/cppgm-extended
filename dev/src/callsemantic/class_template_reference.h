@@ -27,9 +27,6 @@ struct ClassTemplateReferenceCallbacks
       find_next_token_source_on_same_line;
   std::function<bool(std::size_t, std::vector<std::pair<std::size_t, std::size_t> > &)>
       template_argument_token_ranges_from_open;
-  std::function<bool(const std::string &)> template_id_at_location_is_nested;
-  std::function<bool(const std::string &)>
-      template_id_at_location_is_qualified_member_owner;
   std::function<bool(const std::string &)>
       template_id_at_location_is_conversion_operator_result;
   std::function<const cpp_decl::TemplateIdSyntax *(
@@ -73,7 +70,8 @@ semantic_model::ClassInfo * reference_class_template_instantiation_with_syntax(
     const std::vector<std::string> & arg_texts,
     const std::vector<cpp_decl::TemplateArgumentSyntax> * arg_syntaxes,
     template_api::ClassTemplateSourceUseMode source_use_mode =
-        template_api::ClassTemplateSourceUseMode::EmitClassUse);
+        template_api::ClassTemplateSourceUseMode::EmitClassUse,
+    const cpp_decl::TemplateIdSyntax * source_syntax = nullptr);
 
 semantic_model::ClassInfo * reference_selected_class_template_instantiation(
     SemanticContext & ctx,
@@ -87,7 +85,8 @@ semantic_model::ClassInfo * reference_selected_class_template_instantiation(
         template_api::ClassTemplateSourceUseMode::EmitClassUse,
     const std::vector<cpp_decl::TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
     const std::string * precomputed_key = nullptr,
-    semantic_model::FunctionBinding * source_function = nullptr);
+    semantic_model::FunctionBinding * source_function = nullptr,
+    const cpp_decl::TemplateIdSyntax * source_syntax = nullptr);
 
 semantic_model::ClassInfo * reference_selected_class_template_instantiation_with_key(
     SemanticContext & ctx,

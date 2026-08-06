@@ -326,6 +326,7 @@ struct TemplateTypeLookupRequest
 {
   semantic_model::Scope * scope = nullptr;
   cpp_decl::QualifiedName name;
+  const cpp_decl::TemplateIdSyntax * source_syntax = nullptr;
   TemplateElaboratedTypeKind elaborated_kind = TETK_NONE;
   bool allow_class_templates = false;
   bool defer_dependent_class_template_id = false;

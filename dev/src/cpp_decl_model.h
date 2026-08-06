@@ -59,6 +59,8 @@ struct TemplateIdSyntax
   QualifiedName name;
   // Exact location of the final template-name token, excluding qualifiers.
   uint32_t source_location_id = 0;
+  bool source_is_nested_template_argument = false;
+  bool source_is_qualified_member_owner = false;
   std::vector<TemplateIdSyntax> qualifier_template_id_syntaxes;
   std::vector<std::string> arguments;
   std::vector<TemplateArgumentSyntax> argument_syntaxes;

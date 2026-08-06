@@ -143,6 +143,9 @@ private:
 std::string compact_lookup_text(const std::string & text);
 bool node_has_template_id_qualifier_syntax(const CppAstNode & node);
 const ExactTemplateTypeLookupAnchor * current_exact_template_type_lookup_anchor();
+const ExactTemplateTypeLookupAnchor * matching_exact_template_type_lookup_anchor(
+    const std::string & normalized_name,
+    const std::string & identifier);
 extern thread_local std::set<std::pair<std::string, std::string> >
     source_dependent_class_template_use_drops_;
 bool exact_template_type_lookup_anchor_matches(

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "cpp_decl_model.h"
+#include "semantic_source_use.h"
 #include "template_api.h"
 #include "template_model.h"
 
@@ -36,7 +37,17 @@ struct ResolvedClassTemplateIdView
   semantic_model::FunctionBinding * source_function = nullptr;
   template_api::ClassTemplateSourceUseMode source_use_mode =
       template_api::ClassTemplateSourceUseMode::EmitClassUse;
+  semantic_source_use::SourceUseOwnership source_ownership =
+      semantic_source_use::SourceUseOwnership::SourceOwned;
+  semantic_source_use::SourceUseRole source_role =
+      semantic_source_use::SourceUseRole::TypeUse;
   bool dependent_arguments = false;
+  bool nested_source_use = false;
+  bool allow_source_template_header_replay = false;
+  bool clear_template_id_occurrence = false;
+  bool source_is_nested_template_argument = false;
+  bool source_is_qualified_member_owner = false;
+  bool source_is_conversion_result = false;
 
   bool valid() const
   {
@@ -86,11 +97,20 @@ struct ResolvedAliasTemplateIdView
   const std::vector<cpp_decl::TemplateArgumentSyntax> *
       source_argument_syntaxes = nullptr;
   const std::string * source_location = nullptr;
+  const semantic_source_use::SourceTemplateIdOccurrence * source_occurrence =
+      nullptr;
+  witness::AliasUseEmissionOrigin emission_origin =
+      witness::AliasUseEmissionOrigin::NestedSourceTemplateId;
   bool dependent_pattern = false;
+  bool normalize_selected_decl_to_line_start = false;
+  bool unwrap_single_pack_binding = false;
+  bool use_template_argument_binding_policy = false;
+  bool observe_nested_aliases = false;
+  bool observe_nested_class_arguments = false;
 
   bool valid() const
   {
-    return origin && use_scope && source_argument_texts;
+    return origin && use_scope && (source_argument_texts || arguments);
   }
 };
 

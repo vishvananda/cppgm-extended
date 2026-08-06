@@ -23,6 +23,15 @@ class SemanticContext;
 
 namespace template_argument_semantics {
 
+void append_alias_template_source_bindings(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    std::vector<template_api::TemplateWitnessSourceBinding> & out,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::vector<template_model::TemplateArgument> & arguments,
+    const std::vector<std::string> & explicit_argument_texts,
+    const std::string & source);
+
 enum NonTypeArgumentStatus
 {
   NT_ARG_PARSE_FAILED,

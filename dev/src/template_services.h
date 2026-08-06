@@ -723,11 +723,18 @@ public:
         resolved.selection = &selection;
         resolved.source_argument_texts = &request.source_arg_texts;
         resolved.source_argument_syntaxes = &request.source_arg_syntaxes;
+        resolved.source_syntax = request.lookup.source_syntax;
         resolved.source_location = request.lookup.source_location.empty() ?
             nullptr : &request.lookup.source_location;
         resolved.instantiation_key = &key;
         resolved.source_use_mode = request.lookup.source_use_mode;
         resolved.dependent_arguments = true;
+        if(resolved.source_syntax) {
+          resolved.source_is_nested_template_argument =
+              resolved.source_syntax->source_is_nested_template_argument;
+          resolved.source_is_qualified_member_owner =
+              resolved.source_syntax->source_is_qualified_member_owner;
+        }
         ctx_.observe_resolved_class_template_id(resolved);
       }
       out = make_dependent_class_template_type(request);
@@ -772,7 +779,8 @@ public:
                 request.argument_scope ?
                     semantic_lookup::current_function_scope(
                         *request.argument_scope) :
-                    nullptr) :
+                    nullptr,
+                request.lookup.source_syntax) :
             ctx_.instantiate_selected_class_template(
                 *request.class_template,
                 *request.lookup.scope,

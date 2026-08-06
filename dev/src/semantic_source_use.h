@@ -70,6 +70,7 @@ struct SourceTemplateArgumentOccurrence
   bool dependent = false;
   bool current_specialization = false;
   bool preserve_qualified_member = false;
+  bool referenced_value_initializer_uses_template = false;
   std::vector<std::string> referenced_value_entities;
   std::vector<std::string> referenced_value_decl_locations;
 };
@@ -168,6 +169,8 @@ inline bool operator==(const SourceTemplateArgumentOccurrence & lhs,
          lhs.dependent == rhs.dependent &&
          lhs.current_specialization == rhs.current_specialization &&
          lhs.preserve_qualified_member == rhs.preserve_qualified_member &&
+         lhs.referenced_value_initializer_uses_template ==
+             rhs.referenced_value_initializer_uses_template &&
          lhs.referenced_value_entities == rhs.referenced_value_entities &&
          lhs.referenced_value_decl_locations ==
              rhs.referenced_value_decl_locations;
