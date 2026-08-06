@@ -163,6 +163,13 @@ structural alias expansion result remained unchanged. The current inventory is
 lifecycle sites. Every remaining alias producer is exercised by the strict
 corpus and owns visible output uniquely.
 
+The constant-value variable-template tracker previously emitted a manual
+instantiation transition immediately before calling the canonical
+`acquire_variable_instantiation` owner. The manual site made no attempt in
+either provenance corpus and was removed; `lifecycle.template_api.09` retains
+the real acquisition transition. The current inventory is 31 producer IDs:
+9 class, 3 alias, 3 function-call, 1 variable, and 15 lifecycle sites.
+
 The first run-time-guarded implementation was discarded after its one allowed
 candidate measurement. Instructions improved by 0.09%, but maximum RSS
 increased by 0.23% and footprint by 0.11%, so the candidate was not promoted.
@@ -183,8 +190,7 @@ Sites not exercised by the refreshed strict witness references are tracked
 until they are reached by an earliest-owning-PA reducer or removed as proven
 dead/redundant code:
 
-- lifecycle: `template_api.06`, `template_argument_semantics.01`, and
-  `constant_value_lookup.01`.
+- lifecycle: `template_api.06` and `template_argument_semantics.01`.
 
 ## Semantic slice ledger
 
@@ -210,8 +216,8 @@ dead/redundant code:
 | Dormant dependent-partial class-reference branch | 10/9 | 4/4 | dependent partial-specialization source-use reconstruction plus private parameter-name and binding canonicalization | live canonical class-reference producer | clean | 4860/4860 | 176855672482 (+0.02%) | 761241600 (-1.12%) | 590778368 (+0.05%) | none |
 
 The current promoted checkpoint is within every rolling gate. Relative to the
-fixed diagnostic checkpoint it is `-0.15%` instructions, `+1.19%` maximum RSS,
-and `-0.73%` footprint, so it also clears the final fixed-baseline gates.
+fixed diagnostic checkpoint it is `-0.33%` instructions, `+1.60%` maximum RSS,
+and `-0.66%` footprint, so it also clears the final fixed-baseline gates.
 
 ## Other source-use slice ledger
 
@@ -229,3 +235,4 @@ and `-0.73%` footprint, so it also clears the final fixed-baseline gates.
 | Slice | Lifecycle sites before/after | Transition path removed | Responsibility moved to | Strict | Full report | Instructions | Max RSS | Footprint |
 | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: |
 | Dead value-binding closure hook | 17/16 | uncalled public `note_value_binding_closure_event` API and its unexercised producer | existing variable-instantiation transition owners | clean | 4860/4860 | 177058170973 (+0.15%) | 764841984 (+1.49%) | 590528512 (+0.08%) |
+| Duplicate constant-value variable pre-log | 16/15 | manual variable-template instantiation event immediately before canonical acquisition | `acquire_variable_instantiation` / `lifecycle.template_api.09` | clean | 4860/4860 | 176785536717 (-0.18%) | 772313088 (+0.40%) | 590569472 (+0.07%) |
