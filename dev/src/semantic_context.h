@@ -160,12 +160,11 @@ public:
       uint32_t handle,
       semantic_model::ClassInfo & concrete_owner,
       semantic_source_use::SourceUseRole role) = 0;
-  virtual void record_deduced_class_use_for_resolved_alias_type(
+  virtual void retain_named_type_alias_source_result(
       semantic_model::Scope & scope,
+      const std::string & name,
       const cpp_decl::TypePtr & type,
-      const std::string & use_location,
-      semantic_source_use::SourceUseRole role =
-          semantic_source_use::SourceUseRole::TypeUse) = 0;
+      uint32_t expanded_class_use_handle) = 0;
   virtual void record_primary_alias_base_source_uses(
       semantic_model::ClassTemplateDecl & decl) = 0;
   virtual bool node_comes_from_standard_include_path(
@@ -199,7 +198,8 @@ public:
                              const CppAstNode & node,
                              cpp_decl::TypePtr & type,
                              bool reference_class_templates_only = false,
-                             bool record_class_template_use = true) = 0;
+                             bool record_class_template_use = true,
+                             uint32_t * expanded_class_use_handle = nullptr) = 0;
   virtual const std::vector<cpp_decl::TypePtr> * lookup_type_pack(
       semantic_model::Scope & scope,
       const std::string & name) = 0;

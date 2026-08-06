@@ -1146,28 +1146,6 @@ void validate_throw_object_initialization(SemanticContext & ctx,
   }
 }
 
-semantic_source_use::SourceUseRole declaration_alias_class_use_role(
-    const TypePtr & type)
-{
-  TypePtr base = strip_top_level_cv(type);
-  if(!base ||
-     base->kind == Type::TK_LVALUE_REFERENCE ||
-     base->kind == Type::TK_RVALUE_REFERENCE ||
-     base->kind == Type::TK_POINTER ||
-     base->kind == Type::TK_MEMBER_POINTER ||
-     base->kind == Type::TK_BLOCK_POINTER ||
-     base->kind == Type::TK_FUNCTION) {
-    return semantic_source_use::SourceUseRole::TypeUse;
-  }
-  while(base && base->kind == Type::TK_ARRAY) {
-    base = strip_top_level_cv(base->inner);
-  }
-  if(base && base->kind == Type::TK_NAMED && !base->definitely_not_class) {
-    return semantic_source_use::SourceUseRole::MaterializedTypeUse;
-  }
-  return semantic_source_use::SourceUseRole::TypeUse;
-}
-
 void analyze_structured_binding_declaration_statement(SemanticContext & ctx,
                                                       Scope & scope,
                                                       const CppAstNode & node,
@@ -2173,21 +2151,6 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
       throw logic_error("local function declarations unsupported");
     }
 
-    if(!is_typedef && type) {
-      const std::string specifier_text =
-          simple_type_identifier_from_specifiers(*specifiers);
-      if(!specifier_text.empty()) {
-        const std::string specifier_location =
-            ctx.source_location_for_name_in_node(*specifiers, specifier_text);
-        if(!specifier_location.empty()) {
-          ctx.record_deduced_class_use_for_resolved_alias_type(scope,
-                                                               type,
-                                                               specifier_location,
-                                                               declaration_alias_class_use_role(type));
-        }
-      }
-    }
-
     if(is_typedef) {
       type = resolve_local_alias_type(ctx, scope, type);
       semantic_scope_mutation::bind_named_type(scope, name, type);
@@ -2397,14 +2360,24 @@ void analyze_for_init_statement(SemanticContext & ctx,
       throw logic_error(string("unsupported alias-declaration: ") + node_text(*type_id));
     }
     TypePtr alias;
+    uint32_t expanded_class_use_handle = 0;
     const ScopedStatementTemplateUseLocation use_location_guard(
         template_api::normalize_template_witness_source_location(
             ctx.source_location_for_node(*type_id)));
-    if(!ctx.parse_type_id(scope, prepared_type_id, alias, true)) {
+    if(!ctx.parse_type_id(scope,
+                          prepared_type_id,
+                          alias,
+                          true,
+                          true,
+                          &expanded_class_use_handle)) {
       throw logic_error(string("unsupported alias-declaration: ") + node_text(*type_id));
     }
     alias = resolve_local_alias_type(ctx, scope, alias);
     semantic_scope_mutation::bind_named_type(scope, node.children[0].value, alias);
+    ctx.retain_named_type_alias_source_result(scope,
+                                              node.children[0].value,
+                                              alias,
+                                              expanded_class_use_handle);
     DumpNode alias_node = make_dump_node(CallSemKind::type_alias, node.children[0].value);
     alias_node.semantic_type = alias;
     out.children.push_back(std::move(alias_node));
@@ -2841,14 +2814,24 @@ void analyze_statement_impl(SemanticContext & ctx,
       throw logic_error(string("unsupported alias-declaration: ") + node_text(*type_id));
     }
     TypePtr alias;
+    uint32_t expanded_class_use_handle = 0;
     const ScopedStatementTemplateUseLocation use_location_guard(
         template_api::normalize_template_witness_source_location(
             ctx.source_location_for_node(*type_id)));
-    if(!ctx.parse_type_id(scope, prepared_type_id, alias, true)) {
+    if(!ctx.parse_type_id(scope,
+                          prepared_type_id,
+                          alias,
+                          true,
+                          true,
+                          &expanded_class_use_handle)) {
       throw logic_error(string("unsupported alias-declaration: ") + node_text(*type_id));
     }
     alias = resolve_local_alias_type(ctx, scope, alias);
     semantic_scope_mutation::bind_named_type(scope, node.value, alias);
+    ctx.retain_named_type_alias_source_result(scope,
+                                              node.value,
+                                              alias,
+                                              expanded_class_use_handle);
     DumpNode alias_node = make_dump_node(CallSemKind::type_alias, node.value);
     alias_node.semantic_type = alias;
     out.children.push_back(std::move(alias_node));

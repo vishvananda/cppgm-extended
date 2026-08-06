@@ -59,6 +59,20 @@ struct RetainedDependentClassTemplateId
   bool valid = false;
 };
 
+// Compact semantic child carried through a type alias. The selected instance
+// owns its canonical arguments; retaining only these two stable declarations
+// avoids copying another TypePtr graph for witness observation.
+struct RetainedAliasClassUse
+{
+  semantic_model::ClassTemplateDecl * origin = nullptr;
+  semantic_model::ClassInfo * instance = nullptr;
+
+  bool valid() const
+  {
+    return origin && instance;
+  }
+};
+
 // Non-owning result for one source alias-template-id. A dependent pattern may
 // be valid before its arguments can be reduced to TemplateArgument values; in
 // that case the canonical source syntax is the parameterized semantic result.

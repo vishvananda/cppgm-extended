@@ -1446,6 +1446,45 @@ private:
       dependent_class_template_ids_by_location_;
   std::vector<resolved_source_semantics::ResolvedOwnerReference>
       retained_out_of_class_owner_references_;
+  struct AliasClassUseCapture
+  {
+    uint32_t handle = 0;
+    bool through_alias = false;
+  };
+  struct AliasClassUseState
+  {
+    AliasClassUseCapture * active = nullptr;
+    std::vector<resolved_source_semantics::RetainedAliasClassUse> retained;
+    std::map<std::pair<const Scope *, std::string>, uint32_t> by_scope_name;
+    std::map<std::pair<const ClassTemplateDecl *, std::string>, uint32_t>
+        by_source_template_name;
+    std::map<std::pair<const ClassTemplateDecl *, const ClassInfo *>, uint32_t>
+        by_class_result;
+    std::unordered_map<uint32_t, uint32_t> by_source_location_id;
+    std::unordered_map<const Type *, uint32_t> by_type;
+  };
+  struct ScopedAliasClassUseCapture
+  {
+    explicit ScopedAliasClassUseCapture(AliasClassUseState * state)
+      : state(state), previous(state ? state->active : nullptr)
+    {
+      if(state) {
+        state->active = &capture;
+      }
+    }
+
+    ~ScopedAliasClassUseCapture()
+    {
+      if(!state) {
+        return;
+      }
+      state->active = previous;
+    }
+
+    AliasClassUseState * state = nullptr;
+    AliasClassUseCapture * previous = nullptr;
+    AliasClassUseCapture capture;
+  };
   bool emit_all_source_function_definitions_ = false;
   bool allow_zero_length_arrays_ = false;
   mutable bool qualified_use_occurrences_built_ = false;
@@ -2791,28 +2830,6 @@ private:
   {
     return source_location_tokens().source_location_for_qualified_member_start_on_line(
         location, member_name);
-  }
-
-  std::string source_location_for_last_qualified_member_start_before(
-      const std::string & location,
-      const std::string & before_location,
-      std::string & member_name) const
-  {
-    return source_location_tokens()
-        .source_location_for_last_qualified_member_start_before(
-            location, before_location, member_name);
-  }
-
-  std::string source_location_for_last_qualified_member_start_before_in_range(
-      const std::string & location,
-      const std::string & before_location,
-      std::size_t begin,
-      std::size_t end,
-      std::string & member_name) const
-  {
-    return source_location_tokens()
-        .source_location_for_last_qualified_member_start_before_in_range(
-            location, before_location, begin, end, member_name);
   }
 
   bool source_location_mentions_qualified_member(
@@ -6366,6 +6383,7 @@ private:
     if(found == scope.named_types.end()) {
       return TypePtr();
     }
+    capture_named_type_alias_source(scope, name);
     if(scope.class_info &&
        found->second &&
        type_depends_on_template_parameter(found->second)) {
@@ -7527,6 +7545,7 @@ private:
           cache_state_.qualified_type_lookup_cache.find(qualified_lookup_key);
       if(found != cache_state_.qualified_type_lookup_cache.end()) {
         metrics_.note_cache_hit(semantic_metrics::CK_QUALIFIED_TYPE_LOOKUP);
+        capture_alias_type_source(found->second, normalized_name);
         return found->second;
       }
     }
@@ -7538,6 +7557,7 @@ private:
       if(cacheable_qualified_lookup && result) {
         cache_state_.qualified_type_lookup_cache[qualified_lookup_key] = result;
       }
+      capture_alias_type_source(result, normalized_name);
       return result;
     };
     const auto qualified_component_text =
@@ -7836,6 +7856,12 @@ private:
                           parser_trace::note("template.resolve", std::string(), trace.str());
                         }
                         if(member.type) {
+                          if(member.declared_in &&
+                             member.declared_in->member_scope) {
+                            capture_named_type_alias_source(
+                                *member.declared_in->member_scope,
+                                lookup_name);
+                          }
                           TypePtr resolved =
                               semantic_class_model::resolve_instantiated_member_alias_type(
                                   *this, scope, member.type, direct_scope.class_info);
@@ -7854,6 +7880,12 @@ private:
                                                true,
                                                &scope);
                         if(member.type) {
+                          if(member.declared_in &&
+                             member.declared_in->member_scope) {
+                            capture_named_type_alias_source(
+                                *member.declared_in->member_scope,
+                                lookup_name);
+                          }
                           TypePtr resolved =
                               semantic_class_model::resolve_instantiated_member_alias_type(
                                   *this,
@@ -8902,6 +8934,9 @@ private:
                                                          qualified_member_arg_syntaxes,
                                                          qualified_member_template_id_syntax,
                                                          true);
+      if(direct_qualified) {
+        capture_named_type_alias_source(*current, qualified.name);
+      }
       if(trace_node_traits_pointer_lookup) {
         std::ostringstream trace;
         trace << "qualified-lookup-direct name=" << normalized_name
@@ -8937,6 +8972,10 @@ private:
           parser_trace::note("template.resolve", std::string(), trace.str());
         }
         if(member.type) {
+          if(member.declared_in && member.declared_in->member_scope) {
+            capture_named_type_alias_source(*member.declared_in->member_scope,
+                                            qualified.name);
+          }
           return cache_qualified_type_result(member.type);
         }
         if((current->class_info->reference_member_collection_in_progress ||
@@ -8953,6 +8992,10 @@ private:
           ensure_class_reference_members(*current->class_info);
           member = lookup_member_type(*this, *current->class_info, qualified.name, true, &scope);
           if(member.type) {
+            if(member.declared_in && member.declared_in->member_scope) {
+              capture_named_type_alias_source(*member.declared_in->member_scope,
+                                              qualified.name);
+            }
             return cache_qualified_type_result(member.type);
           }
         }
@@ -10374,6 +10417,7 @@ private:
         decl_spec_contains_token(resolved_specifiers, KW_MUTABLE);
     const CppAstNode filtered_specifiers =
         filtered_class_member_decl_specifiers(resolved_specifiers);
+    ScopedAliasClassUseCapture alias_capture(alias_class_use_state());
     if(!parse_decl_spec(filtered_specifiers, *info.member_scope, is_typedef, base)) {
       return;
     }
@@ -10415,8 +10459,17 @@ private:
                                                   initializer);
 
       if(is_typedef) {
-        info.member_scope->named_types[member_name] =
+        TypePtr alias_type =
             canonicalize_member_typedef_type(*info.member_scope, member_type);
+        info.member_scope->named_types[member_name] = alias_type;
+        const uint32_t expanded_class_use_handle =
+            alias_capture.capture.handle != 0 ?
+                alias_capture.capture.handle :
+                retained_alias_class_use_handle_for_type(alias_type);
+        retain_named_type_alias_source_result(*info.member_scope,
+                                              member_name,
+                                              alias_type,
+                                              expanded_class_use_handle);
         continue;
       }
 
@@ -10611,7 +10664,13 @@ private:
              text_mentions_dependent_non_namespace_binding_names(*info.member_scope,
                                                                  type_id_text));
         TypePtr alias;
-        parse_type_id(*info.member_scope, *type_id, alias, true);
+        uint32_t expanded_class_use_handle = 0;
+        parse_type_id(*info.member_scope,
+                      *type_id,
+                      alias,
+                      true,
+                      true,
+                      &expanded_class_use_handle);
         if(keep_dependent_alias) {
           alias = make_dependent_class_member_type_placeholder(
               info,
@@ -10619,6 +10678,10 @@ private:
         }
         if(alias) {
           template_api::binding::bind_named_type(*info.member_scope, child.value, alias);
+          retain_named_type_alias_source_result(*info.member_scope,
+                                                child.value,
+                                                alias,
+                                                expanded_class_use_handle);
         }
       }
     }
@@ -12479,6 +12542,264 @@ private:
     }
   }
 
+  AliasClassUseState * alias_class_use_state()
+  {
+    if(template_witness_session_ == nullptr) {
+      return nullptr;
+    }
+    if(!alias_class_use_state_) {
+      alias_class_use_state_.reset(new AliasClassUseState());
+    }
+    return alias_class_use_state_.get();
+  }
+
+  uint32_t retain_alias_class_use_source(
+      const resolved_source_semantics::ResolvedClassTemplateIdView & resolved)
+  {
+    AliasClassUseState * state = alias_class_use_state_.get();
+    if(!state || !state->active || !resolved.origin || !resolved.instance ||
+       resolved.instance->source_template != resolved.origin) {
+      return 0;
+    }
+    const auto key = std::make_pair(resolved.origin, resolved.instance);
+    const auto found = state->by_class_result.find(key);
+    if(found != state->by_class_result.end()) {
+      return found->second;
+    }
+    resolved_source_semantics::RetainedAliasClassUse retained;
+    retained.origin = resolved.origin;
+    retained.instance = resolved.instance;
+    state->retained.push_back(retained);
+    const uint32_t handle = static_cast<uint32_t>(state->retained.size());
+    state->by_class_result.emplace(key, handle);
+    return handle;
+  }
+
+  void capture_alias_class_use_source(
+      const resolved_source_semantics::ResolvedClassTemplateIdView & resolved)
+  {
+    AliasClassUseState * state = alias_class_use_state_.get();
+    if(!state || !state->active) {
+      return;
+    }
+    const uint32_t handle = retain_alias_class_use_source(resolved);
+    if(handle != 0) {
+      state->active->handle = handle;
+      state->active->through_alias = false;
+      if(resolved.instance->type) {
+        state->by_type.emplace(resolved.instance->type.get(), handle);
+      }
+      if(resolved.source_syntax &&
+         resolved.source_syntax->source_location_id != 0) {
+        state->by_source_location_id[
+            resolved.source_syntax->source_location_id] = handle;
+      }
+    }
+  }
+
+  void capture_named_type_alias_source(const Scope & scope,
+                                       const std::string & name)
+  {
+    AliasClassUseState * state = alias_class_use_state_.get();
+    if(!state || !state->active || name.empty()) {
+      return;
+    }
+    uint32_t handle = 0;
+    const auto by_scope = state->by_scope_name.find(std::make_pair(&scope, name));
+    if(by_scope != state->by_scope_name.end()) {
+      handle = by_scope->second;
+    } else if(scope.class_info && scope.class_info->source_template) {
+      const auto by_template = state->by_source_template_name.find(
+          std::make_pair(scope.class_info->source_template, name));
+      if(by_template != state->by_source_template_name.end()) {
+        handle = by_template->second;
+      }
+    }
+    if(handle == 0) {
+      const auto named = scope.named_types.find(name);
+      if(named != scope.named_types.end() && named->second) {
+        const auto by_type = state->by_type.find(named->second.get());
+        if(by_type != state->by_type.end()) {
+          const resolved_source_semantics::RetainedAliasClassUse & retained =
+              state->retained[by_type->second - 1];
+          if(!retained.origin || name != retained.origin->name) {
+            handle = by_type->second;
+          }
+        }
+      }
+    }
+    if(handle != 0) {
+      state->active->handle = handle;
+      state->active->through_alias = true;
+    }
+  }
+
+  void capture_alias_type_source(const TypePtr & type,
+                                 const std::string & source_name)
+  {
+    AliasClassUseState * state = alias_class_use_state_.get();
+    if(!state || !state->active || !type || source_name.empty()) {
+      return;
+    }
+    const auto found = state->by_type.find(type.get());
+    if(found == state->by_type.end() || found->second == 0 ||
+       found->second > state->retained.size()) {
+      return;
+    }
+    const resolved_source_semantics::RetainedAliasClassUse & retained =
+        state->retained[found->second - 1];
+    if(!retained.instance ||
+       !type_equals(strip_top_level_cv(type),
+                    strip_top_level_cv(retained.instance->type))) {
+      return;
+    }
+    const std::string source_head =
+        semantic_utils::strip_trailing_top_level_template_arguments(
+            source_name);
+    if(retained.origin &&
+       unqualified_member_name(source_head) == retained.origin->name) {
+      return;
+    }
+    state->active->handle = found->second;
+    state->active->through_alias = true;
+  }
+
+  uint32_t retained_alias_class_use_handle_for_type(const TypePtr & type) const
+  {
+    if(!alias_class_use_state_ || !type) {
+      return 0;
+    }
+    const auto found = alias_class_use_state_->by_type.find(type.get());
+    if(found == alias_class_use_state_->by_type.end() || found->second == 0 ||
+       found->second > alias_class_use_state_->retained.size()) {
+      return 0;
+    }
+    const resolved_source_semantics::RetainedAliasClassUse & retained =
+        alias_class_use_state_->retained[found->second - 1];
+    return retained.instance &&
+                   type_equals(strip_top_level_cv(type),
+                               strip_top_level_cv(retained.instance->type)) ?
+               found->second :
+               0;
+  }
+
+  void classify_alias_class_use_for_source(
+      const CppAstNode & source_node,
+      const TypePtr & type,
+      AliasClassUseCapture & capture) const
+  {
+    if(!alias_class_use_state_ || !type || capture.handle == 0) {
+      return;
+    }
+
+    TypePtr base = strip_top_level_cv(remove_reference_type(type));
+    while(base && base->kind == Type::TK_ARRAY) {
+      base = strip_top_level_cv(base->inner);
+    }
+    const uint32_t handle = retained_alias_class_use_handle_for_type(base);
+    if(handle == 0 || handle > alias_class_use_state_->retained.size()) {
+      capture = AliasClassUseCapture();
+      return;
+    }
+
+    capture.handle = handle;
+    const CppAstNode * type_specifiers = &source_node;
+    if(source_node.kind == CppAstKind::type_id &&
+       !source_node.children.empty() &&
+       (source_node.children[0].kind == CppAstKind::decl_specifier_seq ||
+        source_node.children[0].kind == CppAstKind::type_specifier_seq)) {
+      type_specifiers = &source_node.children[0];
+    }
+    if(cppast_template_id_syntax(*type_specifiers)) {
+      capture.through_alias = false;
+      return;
+    }
+    for(std::size_t i = 0; i < type_specifiers->children.size(); ++i) {
+      if(cppast_template_id_syntax(type_specifiers->children[i])) {
+        capture.through_alias = false;
+        return;
+      }
+    }
+  }
+
+  void retain_named_type_alias_source_result(
+      Scope & scope,
+      const std::string & name,
+      const TypePtr & type,
+      uint32_t expanded_class_use_handle) override
+  {
+    (void)type;
+    AliasClassUseState * state = alias_class_use_state_.get();
+    if(!state || name.empty() || expanded_class_use_handle == 0) {
+      return;
+    }
+    state->by_scope_name[std::make_pair(&scope, name)] =
+        expanded_class_use_handle;
+    if(scope.class_info && scope.class_info->source_template) {
+      state->by_source_template_name[
+          std::make_pair(scope.class_info->source_template, name)] =
+          expanded_class_use_handle;
+    }
+  }
+
+  void observe_materialized_alias_class_use(
+      uint32_t handle,
+      const std::string & use_location,
+      witness::SourceUseRole role)
+  {
+    AliasClassUseState * state = alias_class_use_state_.get();
+    if(!state || handle == 0 || handle > state->retained.size() ||
+       use_location.empty()) {
+      return;
+    }
+    const resolved_source_semantics::RetainedAliasClassUse & retained =
+        state->retained[handle - 1];
+    if(!retained.valid()) {
+      return;
+    }
+    template_api::ClassSpecializationSelection selection;
+    selection.parameters = &retained.origin->parameters;
+    selection.binding_scope = retained.origin->pattern_scope;
+    selection.class_node = retained.origin->class_node;
+    selection.kind = template_api::MS_PRIMARY;
+    if(retained.instance->is_explicit_specialization) {
+      selection.class_node = retained.instance->template_output_node;
+      selection.kind = template_api::MS_EXPLICIT_SPECIALIZATION;
+    } else if(retained.instance->template_output_node &&
+              retained.origin->class_node &&
+              retained.instance->template_output_node !=
+                  retained.origin->class_node) {
+      return;
+    }
+    witness::ClassUseEmitRequest request;
+    request.location = use_location;
+    request.use_anchor_present = true;
+    request.use_anchor_location = use_location;
+    request.template_name =
+        template_api::class_template_witness_qualified_name(
+            *this, *retained.origin);
+    request.selection = source_selection_kind_for_match_kind(selection.kind);
+    witness::set_selected_decl_anchor(
+        request.selected_decl_location,
+        request.selected_decl_anchor,
+        class_use_selected_decl_anchor(retained.origin, selection));
+    template_api::append_template_witness_source_bindings(
+        *this,
+        request.bindings,
+        retained.origin->parameters,
+        retained.instance->instantiation_arguments,
+        "deduced",
+        template_api::TemplateWitnessSourceBindingPolicy::
+            DeducedWithDefaultedTrailingDefaults);
+    request.ownership = witness::SourceUseOwnership::SourceOwned;
+    request.role = role;
+    request.origin = witness::ClassUseEmissionOrigin::DeclarationTypeSource;
+    CPPGM_SET_WITNESS_PRODUCER(
+        request,
+        witness::WitnessProducerSite::ClassTemplateReference02);
+    witness::emit_class_use(request);
+  }
+
   const resolved_source_semantics::RetainedDependentClassTemplateId *
   retained_dependent_class_template_id(
       const TemplateIdSyntax & syntax)
@@ -13375,6 +13696,21 @@ private:
       bool reference_class_templates_only = false,
       bool suppress_source_capture = false) override
   {
+    ScopedAliasClassUseCapture expansion_capture(alias_class_use_state());
+    const auto finish = [&](const TypePtr & type) -> TypePtr
+    {
+      if(expansion_capture.capture.handle == 0) {
+        expansion_capture.capture.handle =
+            retained_alias_class_use_handle_for_type(type);
+      }
+      if(expansion_capture.capture.handle != 0) {
+        expansion_capture.capture.through_alias = true;
+        if(expansion_capture.previous) {
+          *expansion_capture.previous = expansion_capture.capture;
+        }
+      }
+      return type;
+    };
     TypePtr selected_conditional_branch;
     if(!witness::source_capture_enabled(template_witness_context()) &&
        try_instantiate_known_conditional_alias_branch(decl,
@@ -13382,7 +13718,7 @@ private:
                                                       arg_texts,
                                                       arg_syntaxes,
                                                       selected_conditional_branch)) {
-      return selected_conditional_branch;
+      return finish(selected_conditional_branch);
     }
 
     const auto observe_dependent_pattern = [&]() -> void
@@ -13454,7 +13790,7 @@ private:
         throw_substitution_failure(out.str(), std::string(), "callsemantic");
       }
       observe_dependent_pattern();
-      return TypePtr();
+      return finish(TypePtr());
     }
 
     vector<string> source_arg_texts = arg_texts;
@@ -13469,14 +13805,14 @@ private:
         }
       }
     }
-    return instantiate_resolved_alias_template_impl(
+    return finish(instantiate_resolved_alias_template_impl(
         decl,
         use_scope,
         arguments,
         &source_arg_texts,
         arg_syntaxes,
         reference_class_templates_only,
-        suppress_source_capture);
+        suppress_source_capture));
   }
 
   bool alias_selector_argument_matches_parameter(
@@ -13640,8 +13976,21 @@ private:
       const vector<TemplateArgument> & resolved_arguments,
       bool reference_class_templates_only = false) override
   {
-    return instantiate_resolved_alias_template_impl(
-        decl, use_scope, resolved_arguments, nullptr, nullptr, reference_class_templates_only);
+    ScopedAliasClassUseCapture expansion_capture(alias_class_use_state());
+    TypePtr result = instantiate_resolved_alias_template_impl(
+        decl, use_scope, resolved_arguments, nullptr, nullptr,
+        reference_class_templates_only);
+    if(expansion_capture.capture.handle == 0) {
+      expansion_capture.capture.handle =
+          retained_alias_class_use_handle_for_type(result);
+    }
+    if(expansion_capture.capture.handle != 0) {
+      expansion_capture.capture.through_alias = true;
+      if(expansion_capture.previous) {
+        *expansion_capture.previous = expansion_capture.capture;
+      }
+    }
+    return result;
   }
 
   TypePtr instantiate_resolved_alias_template_impl(
@@ -19195,6 +19544,7 @@ private:
                     effective_use_location);
               });
       if(structured_type) {
+        capture_alias_type_source(structured_type, effective_lookup_name);
         return structured_type;
       }
     }
@@ -20305,6 +20655,7 @@ private:
   void observe_resolved_class_template_id(
       const resolved_source_semantics::ResolvedClassTemplateIdView & resolved) override
   {
+    capture_alias_class_use_source(resolved);
     retain_dependent_class_template_id_source(resolved);
     if(template_witness_context().session == nullptr ||
        !resolved.valid() ||
@@ -20581,95 +20932,6 @@ private:
     witness::emit_alias_use(template_witness_context(), request);
   }
 
-  void record_deduced_class_use_for_resolved_alias_type(
-      Scope & scope,
-      const TypePtr & type,
-      const std::string & use_location,
-      witness::SourceUseRole role = witness::SourceUseRole::TypeUse) override
-  {
-    CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(
-        template_witness_context().session,
-        witness::WitnessUpstreamRoute::DeducedClassUseFromResolvedAliasType);
-    if(!witness::source_capture_enabled(template_witness_context())) {
-      return;
-    }
-    if(use_location.empty()) {
-      return;
-    }
-    template_api::ClassTemplateUseInfo use;
-    if(!template_api::class_template_use_info_for_type(*this,
-                                                            scope,
-                                                            type,
-                                                                 use)) {
-      return;
-    }
-    if(use.selection.kind == template_api::MS_PARTIAL_SPECIALIZATION) {
-      return;
-    }
-    witness::ClassUseEmitRequest request;
-    request.location = use_location;
-    request.use_anchor_present = true;
-    request.use_anchor_location = use_location;
-    request.template_name = use.template_name;
-    request.selection = source_selection_kind_for_match_kind(use.selection.kind);
-    witness::set_selected_decl_anchor(
-        request.selected_decl_location,
-        request.selected_decl_anchor,
-        class_use_selected_decl_anchor(use.origin, use.selection));
-    template_api::append_template_witness_source_bindings(
-        *this,
-        request.bindings,
-        *use.parameters,
-        *use.arguments,
-        "deduced",
-        template_api::TemplateWitnessSourceBindingPolicy::
-            DeducedWithDefaultedTrailingDefaults);
-    if(use.selection.parameters &&
-       use.selection.parameters != use.parameters) {
-      template_api::append_template_witness_source_bindings(
-          *this,
-          request.specialization_bindings,
-          *use.selection.parameters,
-          use.selection.arguments,
-          "deduced");
-    }
-    request.ownership = witness::SourceUseOwnership::SourceOwned;
-    request.role = role;
-    request.origin = witness::ClassUseEmissionOrigin::DeclarationTypeSource;
-    CPPGM_SET_WITNESS_PRODUCER(
-        request,
-        witness::WitnessProducerSite::ClassCallsemantic10);
-    witness::emit_class_use(request);
-  }
-
-  bool node_has_template_id_syntax_for_unqualified_name(
-      const CppAstNode & node,
-      const std::string & name) const
-  {
-    if(name.empty()) {
-      return false;
-    }
-    if(const TemplateIdSyntax * syntax = cppast_template_id_syntax(node)) {
-      if(unqualified_member_name(syntax->name.name) == name ||
-         syntax->name.name == name) {
-        return true;
-      }
-    }
-    for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
-      const TemplateIdSyntax & syntax = node.qualifier_template_id_syntaxes[i];
-      if(unqualified_member_name(syntax.name.name) == name ||
-         syntax.name.name == name) {
-        return true;
-      }
-    }
-    for(std::size_t i = 0; i < node.children.size(); ++i) {
-      if(node_has_template_id_syntax_for_unqualified_name(node.children[i], name)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   bool function_result_matches_class_template_use(
       Scope & scope,
       const TypePtr & function_type,
@@ -20752,8 +21014,10 @@ private:
                             bool & is_typedef,
                             TypePtr & out,
                             bool reference_class_templates_only,
-                            bool record_class_template_use)
+                            bool record_class_template_use,
+                            AliasClassUseCapture * source_result = nullptr)
   {
+    ScopedAliasClassUseCapture alias_capture(alias_class_use_state());
     const bool capture_template_source_uses =
         witness::source_capture_enabled(template_witness_context());
     std::string node_use_location;
@@ -20792,6 +21056,12 @@ private:
             node,
             witness::SourceUseOwnership::SourceOwned);
       }
+    }
+    if(parsed) {
+      classify_alias_class_use_for_source(node, out, alias_capture.capture);
+    }
+    if(source_result && alias_capture.capture.handle != 0) {
+      *source_result = alias_capture.capture;
     }
     return parsed;
   }
@@ -21013,8 +21283,10 @@ private:
                      const CppAstNode & node,
                      TypePtr & out,
                      bool reference_class_templates_only = false,
-                     bool record_class_template_use = true) override
+                     bool record_class_template_use = true,
+                     uint32_t * expanded_class_use_handle = nullptr) override
   {
+    ScopedAliasClassUseCapture alias_capture(alias_class_use_state());
     const bool capture_template_source_uses =
         witness::source_capture_enabled(template_witness_context());
     std::string preferred_node_use_location;
@@ -21041,6 +21313,16 @@ private:
             node,
             witness::SourceUseOwnership::SourceOwned);
       }
+    }
+    if(parsed) {
+      classify_alias_class_use_for_source(node, out, alias_capture.capture);
+    }
+    if(parsed && alias_capture.capture.handle == 0) {
+      alias_capture.capture.handle =
+          retained_alias_class_use_handle_for_type(out);
+    }
+    if(expanded_class_use_handle) {
+      *expanded_class_use_handle = alias_capture.capture.handle;
     }
     return parsed;
   }
@@ -21868,6 +22150,7 @@ private:
                                                std::string()));
     }
     ScopedTemplateUseLocation use_location_guard(use_location);
+    ScopedAliasClassUseCapture alias_capture(alias_class_use_state());
     is_typedef = false;
     const bool declaration_is_typedef =
         decl_spec_contains_token(specifiers, KW_TYPEDEF);
@@ -21926,72 +22209,28 @@ private:
                              is_typedef,
                              base,
                              parse_type_by_reference,
-                             false)) {
+                             false,
+                             &alias_capture.capture)) {
       return false;
     }
     if(!parse_declarator(scope, declarator, base, name, out,
                          parse_type_by_reference)) {
       return false;
     }
-    if(!is_typedef && out && capture_template_source_uses) {
-      const std::string type_start_location =
-          prefer_earlier_source_location(source_location_for_node(specifiers),
-                                         earliest_child_source_location_for_node(specifiers));
-      std::string declarator_name_location =
-          source_location_for_name_in_node(declarator, name);
-      if(declarator_name_location.empty()) {
-        declarator_name_location = preferred_source_location_for_node(declarator);
-      }
-      std::string alias_member_name;
-      std::string qualified_alias_start_location =
-          source_location_for_last_qualified_member_start_before_in_range(
-              type_start_location,
-              declarator_name_location,
-              specifiers.token_start,
-              specifiers.token_end,
-              alias_member_name);
-      if(qualified_alias_start_location.empty() &&
-         specifiers.children.size() == 1 &&
-         specifiers.children[0].kind == CppAstKind::decl_specifier &&
-         specifiers.children[0].value.find("::") != std::string::npos) {
-        qualified_alias_start_location = type_start_location;
-        alias_member_name =
-            unqualified_member_name(specifiers.children[0].value);
-      }
-      if(!qualified_alias_start_location.empty()) {
-        template_api::ClassTemplateUseInfo use;
-        const bool direct_class_template_spelling =
-            !alias_member_name.empty() &&
-            template_api::class_template_use_info_for_type(*this,
-                                                           scope,
-                                                           out,
-                                                           use) &&
-            alias_member_name == use.unqualified_name;
-        const bool source_spells_member_alias_template_id =
-            node_has_template_id_syntax_for_unqualified_name(specifiers,
-                                                             alias_member_name);
-        if(!direct_class_template_spelling &&
-           !source_spells_member_alias_template_id) {
-          record_deduced_class_use_for_resolved_alias_type(
-              scope,
-              out,
-              qualified_alias_start_location,
-              declaration_alias_class_use_role(out));
-        }
-      } else if(specifiers.children.size() == 1 &&
-                specifiers.children[0].kind == CppAstKind::decl_specifier &&
-                is_identifier_text(specifiers.children[0].value)) {
-        const std::string specifier_location =
-            source_location_for_name_in_node(specifiers,
-                                             specifiers.children[0].value);
-        if(!specifier_location.empty()) {
-          record_deduced_class_use_for_resolved_alias_type(
-              scope,
-              out,
-              specifier_location,
-              declaration_alias_class_use_role(out));
-        }
-      }
+    classify_alias_class_use_for_source(specifiers,
+                                        out,
+                                        alias_capture.capture);
+    if(is_typedef) {
+      retain_named_type_alias_source_result(scope,
+                                            name,
+                                            out,
+                                            alias_capture.capture.handle);
+    } else if(out && capture_template_source_uses &&
+              alias_capture.capture.through_alias) {
+      observe_materialized_alias_class_use(
+          alias_capture.capture.handle,
+          source_location_for_node(specifiers),
+          declaration_alias_class_use_role(out));
     }
     out = apply_constexpr_object_qualifier(specifiers, out, is_typedef);
     out = apply_initializer_array_bound(*this, scope, out, initializer);
@@ -22051,6 +22290,7 @@ private:
       if(is_typedef) {
         if(!name.empty()) {
           scope.named_types[name] = type;
+          retain_named_type_alias_source_result(scope, name, type, 0);
           template_api::bump_scope_template_binding_fingerprint_epoch(scope);
         }
         continue;
@@ -28053,6 +28293,7 @@ private:
 
       if(is_typedef) {
         scope.named_types[name] = type;
+        retain_named_type_alias_source_result(scope, name, type, 0);
       } else if(type && strip_top_level_cv(type)->kind == Type::TK_FUNCTION) {
         vector<pair<string, TypePtr> > params;
         vector<const CppAstNode *> default_args;
@@ -29516,7 +29757,8 @@ private:
     request.use_scope = template_api::make_template_environment(use_scope);
     request.arguments = arguments;
     request.specialization = specialization;
-    return template_api::acquire_selected_class_instantiation(*this, request).class_info;
+    return template_api::acquire_selected_class_instantiation(*this,
+                                                              request).class_info;
   }
 
   void promote_referenced_class_template_instantiation(ClassInfo & info)
@@ -32422,6 +32664,9 @@ private:
     semantic_statement::analyze_statement(*this, scope, return_type, node, out);
   }
 
+  // Kept last so ordinary semantic state retains its existing layout. The
+  // side store is allocated only while source-witness capture is active.
+  std::unique_ptr<AliasClassUseState> alias_class_use_state_;
 };
 
 }  // namespace

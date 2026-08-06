@@ -3803,11 +3803,22 @@ constant_eval::Hooks build_hooks(SemanticContext & ctx,
               return false;
             }
             TypePtr alias;
-            if(!ctx.parse_type_id(scope, prepared_type_id, alias, true)) {
+            uint32_t expanded_class_use_handle = 0;
+            if(!ctx.parse_type_id(scope,
+                                  prepared_type_id,
+                                  alias,
+                                  true,
+                                  true,
+                                  &expanded_class_use_handle)) {
               error = "unsupported alias-declaration";
               return false;
             }
             semantic_scope_mutation::bind_named_type(scope, decl.value, alias);
+            ctx.retain_named_type_alias_source_result(
+                scope,
+                decl.value,
+                alias,
+                expanded_class_use_handle);
             return true;
           }
         } catch(const std::logic_error & ex) {

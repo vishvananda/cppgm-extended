@@ -28,5 +28,8 @@ int main()
   std::cout << "ResolvedOwnerReference "
             << sizeof(resolved_source_semantics::ResolvedOwnerReference)
             << '\n';
+  std::cout << "RetainedAliasClassUse "
+            << sizeof(resolved_source_semantics::RetainedAliasClassUse)
+            << '\n';
   return 0;
 }

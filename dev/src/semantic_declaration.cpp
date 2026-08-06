@@ -1179,10 +1179,20 @@ void collect_declaration(SemanticContext & ctx,
       throw logic_error(string("unsupported alias-declaration: ") + node_text(*type_id));
     }
     TypePtr alias;
-    if(!ctx.parse_type_id(scope, prepared_type_id, alias, true)) {
+    uint32_t expanded_class_use_handle = 0;
+    if(!ctx.parse_type_id(scope,
+                          prepared_type_id,
+                          alias,
+                          true,
+                          true,
+                          &expanded_class_use_handle)) {
       throw logic_error(string("unsupported alias-declaration: ") + node_text(*type_id));
     }
     semantic_scope_mutation::bind_named_type(scope, effective_child.value, alias);
+    ctx.retain_named_type_alias_source_result(scope,
+                                              effective_child.value,
+                                              alias,
+                                              expanded_class_use_handle);
     return;
   }
   if(effective_child.kind == CppAstKind::function_definition) {

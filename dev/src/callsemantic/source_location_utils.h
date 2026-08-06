@@ -63,16 +63,6 @@ public:
   std::string source_location_for_qualified_member_start_on_line(
       const std::string & location,
       const std::string & member_name) const;
-  std::string source_location_for_last_qualified_member_start_before(
-      const std::string & location,
-      const std::string & before_location,
-      std::string & member_name) const;
-  std::string source_location_for_last_qualified_member_start_before_in_range(
-      const std::string & location,
-      const std::string & before_location,
-      std::size_t begin,
-      std::size_t end,
-      std::string & member_name) const;
   std::string source_location_for_token_index(std::size_t index) const;
   bool parsed_source_location_for_token_index(std::size_t index,
                                               ParsedSourceLocation & out) const;

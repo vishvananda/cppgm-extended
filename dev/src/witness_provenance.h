@@ -22,7 +22,6 @@ enum class WitnessProducerSite
 {
   Unknown = 0,
 
-  ClassCallsemantic10 = 4,
   ClassTemplateReference02 = 6,
 
   AliasTemplateArgumentSemantics02 = 10,
@@ -49,7 +48,6 @@ enum class WitnessUpstreamRoute
 {
   NestedClassUseFromAstNode,
   NestedClassUseFromTemplateArguments,
-  DeducedClassUseFromResolvedAliasType,
 };
 
 const char * producer_site_name(WitnessProducerSite site);
