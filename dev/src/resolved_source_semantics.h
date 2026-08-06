@@ -29,6 +29,8 @@ struct ResolvedClassTemplateIdView
   const std::vector<std::string> * source_argument_texts = nullptr;
   const std::vector<cpp_decl::TemplateArgumentSyntax> *
       source_argument_syntaxes = nullptr;
+  const cpp_decl::TemplateIdSyntax * source_syntax = nullptr;
+  const std::string * source_location = nullptr;
   const std::string * instantiation_key = nullptr;
   semantic_model::FunctionBinding * source_function = nullptr;
   template_api::ClassTemplateSourceUseMode source_use_mode =
@@ -37,7 +39,7 @@ struct ResolvedClassTemplateIdView
 
   bool valid() const
   {
-    return origin && instance && use_scope && arguments && selection;
+    return origin && use_scope && arguments && selection;
   }
 };
 

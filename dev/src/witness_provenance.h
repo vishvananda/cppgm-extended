@@ -24,8 +24,7 @@ enum class WitnessProducerSite
 
   ClassCallsemantic06,
   ClassCallsemantic07,
-  ClassCallsemantic08,
-  ClassCallsemantic10,
+  ClassCallsemantic10 = 4,
   ClassCallsemantic13,
   ClassTemplateReference02,
   ClassConstantValueLookup02,

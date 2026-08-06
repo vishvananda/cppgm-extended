@@ -41,6 +41,10 @@ namespace template_api {
 struct ClassSpecializationSelection;
 }  // namespace template_api
 
+namespace resolved_source_semantics {
+struct ResolvedClassTemplateIdView;
+}  // namespace resolved_source_semantics
+
 namespace semantic_overload {
 struct CallAnalysisOptions;
 }  // namespace semantic_overload
@@ -718,6 +722,8 @@ public:
       const std::vector<cpp_decl::TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
       const std::string * precomputed_key = nullptr,
       semantic_model::FunctionBinding * source_function = nullptr) = 0;
+  virtual void observe_resolved_class_template_id(
+      const resolved_source_semantics::ResolvedClassTemplateIdView & resolved) = 0;
   virtual semantic_model::ClassInfo * instantiate_selected_class_template(
       semantic_model::ClassTemplateDecl & decl,
       semantic_model::Scope & use_scope,

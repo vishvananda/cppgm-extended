@@ -11,6 +11,7 @@
 
 #include "parser_trace.h"
 #include "class_template_mangle_info.h"
+#include "resolved_source_semantics.h"
 #include "semantic_context.h"
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
@@ -663,6 +664,8 @@ public:
         request.resolved_arguments_dependent ||
         template_api::template_arguments_are_dependent(
             ctx_, request.resolved_arguments);
+    semantic_model::Scope * source_scope =
+        request.argument_scope ? request.argument_scope : request.lookup.scope;
     if(parser_trace::enabled("template.resolve") &&
        request.class_template->name == "as_child") {
       std::ostringstream trace;
@@ -682,6 +685,51 @@ public:
           "template.resolve", request.lookup.source_location, trace.str());
     }
     if(request.lookup.allow_class_templates && arguments_dependent) {
+      if(bundle.witness_context.session != nullptr) {
+        semantic_model::Scope * selection_scope = source_scope;
+        if(source_scope &&
+           source_scope->class_info &&
+           source_scope->class_info->source_template == request.class_template) {
+          for(std::size_t i = 0;
+              i < request.class_template->partial_specializations.size();
+              ++i) {
+            semantic_model::PartialClassTemplateSpecializationDecl & partial =
+                request.class_template->partial_specializations[i];
+            if(source_scope->class_info->template_output_node &&
+               partial.class_node == source_scope->class_info->template_output_node &&
+               partial.pattern_scope) {
+              selection_scope = partial.pattern_scope;
+              break;
+            }
+          }
+        }
+        const std::string key =
+            template_instantiation::class_template_argument_key_for_instantiation(
+                ctx_, *request.class_template, request.resolved_arguments);
+        const template_selection::ClassSpecializationSelection internal_selection =
+            template_selection::select_class_specialization(
+                bundle,
+                *request.class_template,
+                template_api::make_template_environment(*selection_scope),
+                key,
+                request.resolved_arguments);
+        const template_api::ClassSpecializationSelection selection =
+            template_api::to_api_class_specialization_selection(internal_selection);
+        resolved_source_semantics::ResolvedClassTemplateIdView resolved;
+        resolved.origin = request.class_template;
+        resolved.instance = source_scope ? source_scope->class_info : nullptr;
+        resolved.use_scope = source_scope;
+        resolved.arguments = &request.resolved_arguments;
+        resolved.selection = &selection;
+        resolved.source_argument_texts = &request.source_arg_texts;
+        resolved.source_argument_syntaxes = &request.source_arg_syntaxes;
+        resolved.source_location = request.lookup.source_location.empty() ?
+            nullptr : &request.lookup.source_location;
+        resolved.instantiation_key = &key;
+        resolved.source_use_mode = request.lookup.source_use_mode;
+        resolved.dependent_arguments = true;
+        ctx_.observe_resolved_class_template_id(resolved);
+      }
       out = make_dependent_class_template_type(request);
       if(out && (request.lookup.top_const || request.lookup.top_volatile)) {
         out = cpp_decl::apply_cv(out, request.lookup.top_const, request.lookup.top_volatile);
@@ -701,9 +749,7 @@ public:
         template_selection::select_class_specialization(
             bundle,
             *request.class_template,
-            template_api::make_template_environment(
-                request.argument_scope ? *request.argument_scope :
-                                         *request.lookup.scope),
+            template_api::make_template_environment(*source_scope),
             key,
             request.resolved_arguments);
     const template_api::ClassSpecializationSelection selection =
