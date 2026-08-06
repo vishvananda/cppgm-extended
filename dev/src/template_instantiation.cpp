@@ -10037,7 +10037,6 @@ ClassInfo * instantiate_selected_class_template(
       *bound_parameters,
       *bound_arguments,
       bound_pack_sizes);
-  ctx.record_primary_alias_base_source_uses(decl);
   if(forward_only_selection) {
     trace_class_instantiation("forward-only", info);
     return info;
@@ -12701,14 +12700,6 @@ const ValueBinding * instantiate_variable_template(
         inserted->second.dependent_template_value = true;
       } else {
         inserted->second.dependent_template_value = false;
-      }
-      if(initializer) {
-        const ScopedTemplateWitnessSourceCaptureResume source_capture_resume;
-        ctx.emit_nested_class_use_source_events_from_ast_node(
-            inst_scope,
-            *initializer,
-            witness::SourceUseOwnership::SourceOwned,
-            true);
       }
     }
   } else {

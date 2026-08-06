@@ -12895,10 +12895,6 @@ void collect_special_member(SemanticContext & ctx,
   if(is_constructor && ctor_initializer && info.member_scope) {
     for(std::size_t i = 0; i < ctor_initializer->children.size(); ++i) {
       const CppAstNode & initializer = ctor_initializer->children[i];
-      ctx.emit_nested_class_use_source_events_from_ast_node(
-          *info.member_scope,
-          initializer,
-          witness::SourceUseOwnership::SourceOwned);
       const CppAstNode * initializer_id =
           find_child(initializer, CppAstKind::mem_initializer_id);
       const TemplateIdSyntax * syntax =
@@ -12910,34 +12906,20 @@ void collect_special_member(SemanticContext & ctx,
       }
       std::string use_location =
           template_api::normalize_template_witness_source_location(
-              ctx.source_location_for_name_in_node(*initializer_id,
-                                                   syntax->name.name));
-      if(!semantic_trace::source_location_points_at_identifier(
-             use_location,
-             syntax->name.name)) {
-        use_location.clear();
-      }
-      if(use_location.empty()) {
-        use_location =
-            template_api::normalize_template_witness_source_location(
-                ctx.source_location_for_node(*initializer_id));
-      }
+              template_api::template_witness_detail::
+                  source_location_for_location_id(
+                      ctx.template_witness_context(),
+                      syntax->source_location_id));
       if(!semantic_trace::source_location_points_at_identifier(
              use_location,
              syntax->name.name)) {
         continue;
       }
-      const std::vector<std::string> argument_locations =
-          template_argument_source_locations_for_node(ctx,
-                                                      *initializer_id,
-                                                      syntax->arguments,
-                                                      use_location);
       semantic_template_class::emit_constructor_initializer_template_id_source_use(
           ctx,
           *info.member_scope,
           *syntax,
-          use_location,
-          argument_locations);
+          use_location);
     }
   }
   trace_class_collection_event(ctx, "special-member-done", info, node);

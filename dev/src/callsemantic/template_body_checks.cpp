@@ -1293,8 +1293,14 @@ static bool id_expression_names_known_type_template(SemanticContext & ctx,
   const TemplateIdSyntax * template_id = cppast_template_id_syntax(node);
   return template_id &&
          !template_id->name.name.empty() &&
-         (ctx.lookup_class_template(scope, template_id->name) ||
-          ctx.lookup_alias_template(scope, template_id->name));
+         (semantic_lookup::lookup_class_template_node(ctx,
+                                                      scope,
+                                                      template_id->name,
+                                                      node) ||
+          semantic_lookup::lookup_alias_template_node(ctx,
+                                                      scope,
+                                                      template_id->name,
+                                                      node));
 }
 
 static bool id_expression_names_ordinary_function(

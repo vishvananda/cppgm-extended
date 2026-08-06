@@ -2100,7 +2100,6 @@ public:
       resolved.source_argument_texts = source_arg_texts;
       resolved.source_argument_syntaxes = source_arg_syntaxes;
       resolved.instantiation_key = &key;
-      resolved.source_function = source_function;
       resolved.source_use_mode = source_use_mode;
       resolved.dependent_arguments = dependent_arguments;
       resolved.source_syntax = source_syntax;
@@ -2147,6 +2146,12 @@ public:
       if(!resolved.valid()) {
         return;
       }
+      if(template_witness_context().session == nullptr) {
+        // The observer has no ordinary-build work to do, and source-anchor
+        // recovery below can require a full token-stream search.  Keep that
+        // witness-only cost off the normal semantic lookup path.
+        return;
+      }
       const std::string source_name =
           unqualified_member_name(resolved.origin->name);
       std::string syntax_use_location;
@@ -2160,6 +2165,22 @@ public:
                         resolved.source_syntax->source_location_id));
         const std::string source_identifier =
             unqualified_member_name(resolved.origin->name);
+        if(!syntax_use_location.empty() &&
+           !source_identifier.empty() &&
+           !source_location_points_at_identifier(syntax_use_location,
+                                                source_identifier)) {
+          std::size_t template_keyword_index = 0;
+          if(token_index_for_source_location(syntax_use_location,
+                                             "template",
+                                             template_keyword_index) &&
+             callbacks.peek_token(template_keyword_index + 1).source ==
+                 source_identifier) {
+            syntax_use_location =
+                template_api::normalize_template_witness_source_location(
+                    callbacks.source_location_for_token_index(
+                        template_keyword_index + 1));
+          }
+        }
         if(!syntax_use_location.empty() &&
            (source_identifier.empty() ||
             source_location_points_at_identifier(syntax_use_location,
@@ -2232,7 +2253,15 @@ public:
             resolved.source_syntax->source_is_nested_template_argument;
         resolved.source_is_qualified_member_owner =
             resolved.source_syntax->source_is_qualified_member_owner;
+        resolved.nested_source_use =
+            resolved.source_is_nested_template_argument ||
+            (resolved.source_is_qualified_member_owner &&
+             resolved.selection->kind ==
+                 template_api::MS_EXPLICIT_SPECIALIZATION);
       }
+      resolved.clear_template_id_occurrence =
+          resolved.source_use_mode ==
+          template_api::ClassTemplateSourceUseMode::QualifiedValueUse;
       ctx.observe_resolved_class_template_id(resolved);
     };
 
@@ -2383,7 +2412,6 @@ public:
                                           bound_pack_sizes,
                                           specialization.kind ==
                                               template_api::MS_PRIMARY);
-      record_selected_class_template_base_source_uses(decl, specialization);
       note_class_use(resolved_template_id_view(info));
       return info;
     }
@@ -2475,7 +2503,6 @@ public:
                                                              *bound_parameters,
                                                              *bound_arguments,
                                                              bound_pack_sizes);
-    record_selected_class_template_base_source_uses(decl, specialization);
     if(lazy_references) {
       auto stored = decl.reference_instantiations.find(key);
       if(stored != decl.reference_instantiations.end()) {
@@ -2739,13 +2766,6 @@ private:
   bool scope_is_inside_source_template_context(Scope & scope) const
   {
     return callsemantic::scope_is_inside_source_template_context(scope);
-  }
-
-  void record_selected_class_template_base_source_uses(
-      ClassTemplateDecl & decl,
-      const template_api::ClassSpecializationSelection & specialization)
-  {
-    callbacks.record_selected_class_template_base_source_uses(decl, specialization);
   }
 
   ClassInfo * create_instantiated_class_info_with_internal_name(

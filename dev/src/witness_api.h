@@ -41,7 +41,6 @@ using template_api::ScopedTemplateWitnessTypeLookupPause;
 
 using SourceSelectionKind = template_api::TemplateWitnessSelectionKind;
 using witness_provenance::WitnessProducerSite;
-using witness_provenance::WitnessUpstreamRoute;
 
 enum class ClassUseEmissionOrigin
 {

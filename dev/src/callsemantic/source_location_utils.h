@@ -22,13 +22,6 @@ struct ParsedSourceLocation
   int column = 0;
 };
 
-struct NestedSourceTemplateIdOccurrence
-{
-  std::string text;
-  std::string template_name;
-  std::string location;
-};
-
 struct QualifiedUseOccurrence
 {
   std::string value;
@@ -93,14 +86,6 @@ public:
                                      std::size_t & close_index,
                                      int & close_chars,
                                      bool same_line_only = true) const;
-  std::vector<NestedSourceTemplateIdOccurrence>
-  nested_template_id_source_occurrences_at_location(
-      const std::string & location,
-      bool same_line_only = true) const;
-  std::vector<NestedSourceTemplateIdOccurrence>
-  template_id_source_occurrences_after_location(
-      const std::string & location,
-      bool same_line_only = true) const;
   bool template_argument_token_ranges_from_open(
       std::size_t open_index,
       std::vector<std::pair<std::size_t, std::size_t> > & ranges) const;
@@ -114,12 +99,6 @@ private:
       const std::string & member_name,
       std::size_t begin,
       std::size_t end) const;
-  void collect_nested_template_id_source_occurrences(
-      std::size_t open_index,
-      bool skip_this,
-      bool same_line_only,
-      std::vector<NestedSourceTemplateIdOccurrence> & out) const;
-
   const SourceLocationTable * source_locations_;
   IRecogTokenSequence * token_sequence_;
 };

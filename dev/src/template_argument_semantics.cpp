@@ -5639,12 +5639,6 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     if(!qualifier_type) {
       return StructuredTypeLookupResult::NoMatch;
     }
-    if(source_qualifier_template_id && services.semantic_context) {
-      services.semantic_context->retain_resolved_class_template_id(
-          scope,
-          *source_qualifier_template_id,
-          qualifier_type);
-    }
     if(type_is_dependent(qualifier_type)) {
       const bool source_requires_typename =
           (source_qualified_syntax &&
@@ -20174,15 +20168,6 @@ void record_direct_alias_template_source_use_if_needed(
       }
     }
   }
-  bool source_arguments_have_template_dependency = false;
-  for(std::size_t i = 0; i < source_argument_texts.size(); ++i) {
-    if(alias_argument_text_mentions_template_dependency(services,
-                                                        scope,
-                                                        source_argument_texts[i])) {
-      source_arguments_have_template_dependency = true;
-      break;
-    }
-  }
   if(services.semantic_context && scope.valid()) {
     resolved_source_semantics::ResolvedAliasTemplateIdView observation;
     observation.origin = const_cast<AliasTemplateDecl *>(&alias_template);
@@ -20196,8 +20181,6 @@ void record_direct_alias_template_source_use_if_needed(
     observation.emission_origin =
         witness::AliasUseEmissionOrigin::DirectSourceTemplateId;
     observation.use_template_argument_binding_policy = true;
-    observation.observe_nested_class_arguments =
-        !source_arguments_have_template_dependency;
     services.semantic_context->observe_resolved_alias_template_id(observation);
   }
 }
@@ -22429,6 +22412,8 @@ TemplateIdSyntax clone_template_id_for_template_substitution(
       source.source_is_nested_template_argument;
   out.source_is_qualified_member_owner =
       source.source_is_qualified_member_owner;
+  out.source_is_static_member_definition_value =
+      source.source_is_static_member_definition_value;
   out.qualifier_template_id_syntaxes.reserve(
       source.qualifier_template_id_syntaxes.size());
   for(size_t i = 0; i < source.qualifier_template_id_syntaxes.size(); ++i) {

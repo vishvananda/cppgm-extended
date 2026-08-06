@@ -34,7 +34,6 @@ struct ResolvedClassTemplateIdView
   const cpp_decl::TemplateIdSyntax * source_syntax = nullptr;
   const std::string * source_location = nullptr;
   const std::string * instantiation_key = nullptr;
-  semantic_model::FunctionBinding * source_function = nullptr;
   template_api::ClassTemplateSourceUseMode source_use_mode =
       template_api::ClassTemplateSourceUseMode::EmitClassUse;
   semantic_source_use::SourceUseOwnership source_ownership =
@@ -43,7 +42,6 @@ struct ResolvedClassTemplateIdView
       semantic_source_use::SourceUseRole::TypeUse;
   bool dependent_arguments = false;
   bool nested_source_use = false;
-  bool allow_source_template_header_replay = false;
   bool clear_template_id_occurrence = false;
   bool source_is_nested_template_argument = false;
   bool source_is_qualified_member_owner = false;
@@ -53,21 +51,6 @@ struct ResolvedClassTemplateIdView
   {
     return origin && use_scope && arguments && selection;
   }
-};
-
-// Compact retained form for a dependent source occurrence. The canonical
-// resolver owns the syntax and declarations; delayed observation only needs a
-// value copy of the resolved arguments and selection while those owners live.
-// Ordinary analysis does not allocate these records unless a witness session
-// is active.
-struct RetainedDependentClassTemplateId
-{
-  semantic_model::ClassTemplateDecl * origin = nullptr;
-  semantic_model::ClassInfo * instance = nullptr;
-  semantic_model::Scope * use_scope = nullptr;
-  std::vector<template_model::TemplateArgument> arguments;
-  template_api::ClassSpecializationSelection selection;
-  bool valid = false;
 };
 
 // Compact semantic child carried through a type alias. The selected instance
@@ -105,8 +88,6 @@ struct ResolvedAliasTemplateIdView
   bool normalize_selected_decl_to_line_start = false;
   bool unwrap_single_pack_binding = false;
   bool use_template_argument_binding_policy = false;
-  bool observe_nested_aliases = false;
-  bool observe_nested_class_arguments = false;
 
   bool valid() const
   {

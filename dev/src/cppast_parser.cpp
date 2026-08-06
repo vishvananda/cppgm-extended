@@ -1088,6 +1088,135 @@ bool build_empty_function_type_id_from_call_expression(const CppAstNode & expr,
   return true;
 }
 
+void mark_template_id_syntax_as_nested_argument(
+    cpp_decl::TemplateIdSyntax & syntax)
+{
+  syntax.source_is_nested_template_argument = true;
+  for(std::size_t i = 0;
+      i < syntax.qualifier_template_id_syntaxes.size();
+      ++i) {
+    mark_template_id_syntax_as_nested_argument(
+        syntax.qualifier_template_id_syntaxes[i]);
+  }
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(syntax.argument_syntaxes[i].template_id) {
+      mark_template_id_syntax_as_nested_argument(
+          *syntax.argument_syntaxes[i].template_id);
+    }
+  }
+}
+
+void mark_ast_template_ids_as_nested_argument(CppAstNode & node)
+{
+  if(node.template_id_syntax) {
+    mark_template_id_syntax_as_nested_argument(*node.template_id_syntax);
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    mark_template_id_syntax_as_nested_argument(
+        node.qualifier_template_id_syntaxes[i]);
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    mark_ast_template_ids_as_nested_argument(node.children[i]);
+  }
+}
+
+void mark_template_id_syntax_as_static_member_definition_value(
+    cpp_decl::TemplateIdSyntax & syntax)
+{
+  syntax.source_is_static_member_definition_value = true;
+  for(std::size_t i = 0;
+      i < syntax.qualifier_template_id_syntaxes.size();
+      ++i) {
+    mark_template_id_syntax_as_static_member_definition_value(
+        syntax.qualifier_template_id_syntaxes[i]);
+  }
+}
+
+void mark_ast_template_ids_as_static_member_definition_value(
+    CppAstNode & node)
+{
+  if(node.template_id_syntax) {
+    mark_template_id_syntax_as_static_member_definition_value(
+        *node.template_id_syntax);
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    mark_template_id_syntax_as_static_member_definition_value(
+        node.qualifier_template_id_syntaxes[i]);
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    mark_ast_template_ids_as_static_member_definition_value(node.children[i]);
+  }
+}
+
+CppAstNode * direct_child_of_kind(CppAstNode & node, CppAstKind kind)
+{
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(node.children[i].kind == kind) {
+      return &node.children[i];
+    }
+  }
+  return nullptr;
+}
+
+CppAstNode * first_descendant_of_kind(CppAstNode & node, CppAstKind kind)
+{
+  if(node.kind == kind) {
+    return &node;
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(CppAstNode * found =
+           first_descendant_of_kind(node.children[i], kind)) {
+      return found;
+    }
+  }
+  return nullptr;
+}
+
+void mark_out_of_class_static_member_definition_values(CppAstNode & declaration)
+{
+  CppAstNode * declarators =
+      direct_child_of_kind(declaration, CppAstKind::init_declarator_list);
+  if(!declarators) {
+    return;
+  }
+  for(std::size_t i = 0; i < declarators->children.size(); ++i) {
+    CppAstNode & init_declarator = declarators->children[i];
+    CppAstNode * declarator =
+        direct_child_of_kind(init_declarator, CppAstKind::declarator);
+    CppAstNode * initializer =
+        direct_child_of_kind(init_declarator, CppAstKind::initializer);
+    CppAstNode * identifier =
+        declarator ?
+            first_descendant_of_kind(*declarator, CppAstKind::identifier) :
+            nullptr;
+    const cpp_decl::QualifiedName * qualified =
+        identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
+    if(!declarator ||
+       !initializer ||
+       !qualified ||
+       (!qualified->rooted && qualified->qualifiers.empty()) ||
+       first_descendant_of_kind(*declarator,
+                                CppAstKind::parameter_clause)) {
+      continue;
+    }
+    mark_ast_template_ids_as_static_member_definition_value(*initializer);
+  }
+}
+
+void mark_template_argument_syntax_as_nested_argument(
+    cpp_decl::TemplateArgumentSyntax & argument)
+{
+  if(argument.template_id) {
+    mark_template_id_syntax_as_nested_argument(*argument.template_id);
+  }
+  if(argument.type_id) {
+    mark_ast_template_ids_as_nested_argument(*argument.type_id);
+  }
+  if(argument.expression) {
+    mark_ast_template_ids_as_nested_argument(*argument.expression);
+  }
+}
+
 void build_template_argument_syntax_from_range(
     IRecogTokenSequence & tokens,
     const qualified_name_parser::NameLookup & lookup,
@@ -1116,7 +1245,7 @@ void build_template_argument_syntax_from_range(
                                          template_id_range,
                                          nested_template_id,
                                          parser_context)) {
-    nested_template_id.source_is_nested_template_argument = true;
+    mark_template_id_syntax_as_nested_argument(nested_template_id);
     argument.template_id.reset(
         new cpp_decl::TemplateIdSyntax(std::move(nested_template_id)));
     argument.pack_expansion = template_id_pack_expansion;
@@ -1137,9 +1266,13 @@ void build_template_argument_syntax_from_range(
                                            parsed,
                                            qualifier_template_ids,
                                            parser_context);
+      for(std::size_t i = 0; i < qualifier_template_ids.size(); ++i) {
+        mark_template_id_syntax_as_nested_argument(qualifier_template_ids[i]);
+      }
       if(argument.template_id && !qualifier_template_ids.empty()) {
         argument.template_id->qualifier_template_id_syntaxes =
             qualifier_template_ids;
+        mark_template_id_syntax_as_nested_argument(*argument.template_id);
       }
     }
     argument.expression.reset(
@@ -1186,6 +1319,7 @@ void build_template_argument_syntax_from_range(
           argument = std::move(parsed_type_argument);
         }
       }
+      mark_template_argument_syntax_as_nested_argument(argument);
       return;
     }
   }
@@ -1223,6 +1357,7 @@ void build_template_argument_syntax_from_range(
       parsed_argument.has_source_token_start = true;
       parsed_argument.source_token_start = argument.source_token_start;
       parsed_argument.source_location_id = argument.source_location_id;
+      mark_template_argument_syntax_as_nested_argument(parsed_argument);
       argument = std::move(parsed_argument);
       return true;
     }
@@ -1263,6 +1398,7 @@ void build_template_argument_syntax_from_range(
                                                      qualified_id_range,
                                                      qualified_id_expression,
                                                      parser_context)) {
+    mark_ast_template_ids_as_nested_argument(qualified_id_expression);
     argument.expression.reset(
         new CppAstNode(std::move(qualified_id_expression)));
     argument.pack_expansion = qualified_id_pack_expansion;
@@ -5147,6 +5283,8 @@ bool CppAstParser::parse_template_declaration(CppAstNode & out)
     pos = start;
     return false;
   }
+
+  mark_out_of_class_static_member_definition_values(declaration);
 
   out = make_node(CppAstKind::template_declaration);
   out.children.push_back(std::move(parameters));

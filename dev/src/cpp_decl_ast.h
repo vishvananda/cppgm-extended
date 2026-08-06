@@ -30,6 +30,7 @@ struct AstDeclHooks
   bool normalize_function_parameters = false;
   bool allow_virtual_specifier = false;
   bool allow_zero_length_arrays = false;
+  bool resolve_structured_semantic_type = false;
 };
 
 bool decl_spec_contains_token(const CppAstNode & node, ETokenType token);

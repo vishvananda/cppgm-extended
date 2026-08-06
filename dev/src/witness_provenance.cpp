@@ -460,17 +460,6 @@ const char * producer_site_name(WitnessProducerSite site)
   return "unknown";
 }
 
-const char * upstream_route_name(WitnessUpstreamRoute route)
-{
-  switch(route) {
-  case WitnessUpstreamRoute::NestedClassUseFromAstNode:
-    return "nested_class_use.ast_node";
-  case WitnessUpstreamRoute::NestedClassUseFromTemplateArguments:
-    return "nested_class_use.template_arguments";
-  }
-  return "unknown";
-}
-
 bool enabled()
 {
   static const bool value = []()
@@ -680,20 +669,6 @@ ScopedLifecycleAttempt::~ScopedLifecycleAttempt()
          << producer_array(attempt.collided_producers)
          << '}';
   attempt.state->records.push_back(record.str());
-}
-
-void note_upstream_route(template_api::TemplateWitnessSession * session,
-                         WitnessUpstreamRoute route)
-{
-  if(!enabled() || session == nullptr) {
-    return;
-  }
-  std::lock_guard<std::mutex> lock(trace_mutex());
-  SessionState & state = state_for_session_locked(*session);
-  std::ostringstream record;
-  record << "{\"record\":\"upstream_route\",\"route\":"
-         << quoted(upstream_route_name(route)) << '}';
-  state.records.push_back(record.str());
 }
 
 std::vector<RendererEventLineage> renderer_table_lineages(

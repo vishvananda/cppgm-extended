@@ -50,56 +50,22 @@ void emit_constructor_initializer_template_id_source_use(
     SemanticContext & ctx,
     semantic_model::Scope & scope,
     const cpp_decl::TemplateIdSyntax & syntax,
-    const std::string & use_location,
-    const std::vector<std::string> & argument_locations)
+    const std::string & use_location)
 {
   if(ctx.template_witness_context().session == nullptr) {
     return;
   }
-  const bool names_alias_template =
-      template_api::type::template_id_names_alias_template(ctx, scope, syntax);
-  const bool names_class_template =
-      template_api::type::template_id_names_class_template(ctx, scope, syntax);
-  if(!names_alias_template && !names_class_template) {
-    return;
-  }
-
-  const template_api::ScopedTemplateArgumentSourceLocations
-      argument_source_locations(syntax.arguments, argument_locations);
   const callsemantic::ScopedTemplateUseLocation use_location_guard(use_location);
   cpp_decl::TypePtr ignored;
-  if(scope.class_info) {
-    for(std::size_t i = 0; i < scope.class_info->bases.size(); ++i) {
-      semantic_model::ClassInfo * base = scope.class_info->bases[i].type;
-      if(base &&
-         base->source_template &&
-         base->source_template->name == syntax.name.name) {
-        ignored = base->type;
-        break;
-      }
-    }
-  }
-  if(!ignored) {
-    template_api::type::resolve_template_id_syntax_type(
-        ctx,
-        scope,
-        syntax,
-        true,
-        use_location,
-        ignored,
-        &scope,
-        template_api::ClassTemplateSourceUseMode::EmitClassUse);
-  }
-  if(ignored) {
-    ctx.retain_resolved_class_template_id(scope, syntax, ignored);
-    if(witness::source_capture_enabled(ctx.template_witness_context())) {
-      ctx.observe_resolved_class_template_id_source_use(
-          scope,
-          syntax,
-          ignored,
-          witness::SourceUseOwnership::SourceOwned);
-    }
-  }
+  template_api::type::resolve_template_id_syntax_type(
+      ctx,
+      scope,
+      syntax,
+      true,
+      use_location,
+      ignored,
+      &scope,
+      template_api::ClassTemplateSourceUseMode::DeclarationTypeUse);
 }
 
 }  // namespace semantic_template_class

@@ -745,8 +745,6 @@ public:
             existing.class_node = &inner;
           }
           analyze_template_declaration_source_patterns(scope, pattern_scope, node);
-          record_class_template_base_source_uses(existing.class_node,
-                                                 existing.pattern_scope);
           ++primary->specialization_epoch;
           if(owner_template_for_member_partial) {
             record_owner_member_class_template_partial_specialization(
@@ -773,8 +771,6 @@ public:
         }
         ++primary->specialization_epoch;
         analyze_template_declaration_source_patterns(scope, pattern_scope, node);
-        record_class_template_base_source_uses(&inner,
-                                               &pattern_scope);
         return;
       }
 
@@ -959,8 +955,6 @@ public:
       }
       class_templates.push_back(std::move(decl));
       analyze_template_declaration_source_patterns(scope, pattern_scope, node);
-      record_class_template_base_source_uses(effective_class_node,
-                                             &pattern_scope);
       return;
     }
 
@@ -5304,13 +5298,6 @@ private:
   {
     callbacks.declaration_services->analyze_template_declaration_source_patterns(
         lexical_scope, pattern_scope, node, function_type);
-  }
-
-  void record_class_template_base_source_uses(const CppAstNode * class_node,
-                                              Scope * pattern_scope)
-  {
-    callbacks.declaration_services->record_class_template_base_source_uses(
-        class_node, pattern_scope);
   }
 
   ClassTemplateDecl * direct_class_template(Scope & scope, const string & name)

@@ -131,28 +131,6 @@ public:
                                                        const std::string & name,
                                                        bool prefer_last = false) const = 0;
   virtual template_api::TemplateWitnessContext template_witness_context() const = 0;
-  virtual void emit_nested_class_use_source_events_from_ast_node(
-      semantic_model::Scope & scope,
-      const CppAstNode & node,
-      semantic_source_use::SourceUseOwnership ownership,
-      bool allow_source_template_header_replay = false) = 0;
-  virtual void observe_nested_class_uses_from_resolved_template_arguments(
-      semantic_model::Scope & scope,
-      const std::vector<template_model::TemplateArgument> & arguments,
-      const std::vector<cpp_decl::TemplateArgumentSyntax> & syntaxes,
-      semantic_source_use::SourceUseOwnership ownership) = 0;
-  virtual void retain_resolved_class_template_id(
-      semantic_model::Scope & scope,
-      const cpp_decl::TemplateIdSyntax & syntax,
-      const cpp_decl::TypePtr & resolved_type) = 0;
-  virtual void observe_resolved_class_template_id_source_use(
-      semantic_model::Scope & scope,
-      const cpp_decl::TemplateIdSyntax & syntax,
-      const cpp_decl::TypePtr & resolved_type,
-      semantic_source_use::SourceUseOwnership ownership,
-      semantic_source_use::SourceUseRole role =
-          semantic_source_use::SourceUseRole::TypeUse,
-      bool clear_template_id_occurrence = false) = 0;
   virtual uint32_t retain_resolved_out_of_class_owner_reference(
       const resolved_source_semantics::ResolvedOwnerReference & resolved) = 0;
   virtual void observe_resolved_out_of_class_owner_reference(
@@ -169,8 +147,6 @@ public:
       const std::string & name,
       const cpp_decl::TypePtr & type,
       uint32_t expanded_class_use_handle) = 0;
-  virtual void record_primary_alias_base_source_uses(
-      semantic_model::ClassTemplateDecl & decl) = 0;
   virtual bool node_comes_from_standard_include_path(
       const CppAstNode * node) const = 0;
   virtual bool definition_comes_from_standard_include_path(

@@ -44,14 +44,7 @@ enum class WitnessProducerSite
   LifecycleConstantValueLookup02,
 };
 
-enum class WitnessUpstreamRoute
-{
-  NestedClassUseFromAstNode,
-  NestedClassUseFromTemplateArguments,
-};
-
 const char * producer_site_name(WitnessProducerSite site);
-const char * upstream_route_name(WitnessUpstreamRoute route);
 
 bool enabled();
 
@@ -112,9 +105,6 @@ private:
 #endif
 };
 
-void note_upstream_route(template_api::TemplateWitnessSession * session,
-                         WitnessUpstreamRoute route);
-
 struct RendererEventLineage
 {
   std::uint64_t event_id = 0;
@@ -149,8 +139,6 @@ void finish_session(const template_api::TemplateWitnessSession & session,
 }  // namespace witness_provenance
 
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-#define CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(session, route) \
-  witness_provenance::note_upstream_route(session, route)
 #define CPPGM_SET_WITNESS_PRODUCER(object, site) \
   ((object).producer_site = (site))
 #define CPPGM_WITNESS_PROVENANCE_PARAMETER(parameter) parameter,
@@ -158,7 +146,6 @@ void finish_session(const template_api::TemplateWitnessSession & session,
 #define CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(site, ...) \
   template_api::note_template_witness_log_event(site, __VA_ARGS__)
 #else
-#define CPPGM_NOTE_WITNESS_UPSTREAM_ROUTE(session, route) ((void)0)
 #define CPPGM_SET_WITNESS_PRODUCER(object, site) ((void)0)
 #define CPPGM_WITNESS_PROVENANCE_PARAMETER(parameter)
 #define CPPGM_WITNESS_PROVENANCE_ARGUMENT(argument)

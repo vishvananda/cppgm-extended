@@ -581,17 +581,6 @@ public:
       return;
     }
 
-    if(owner_template_related &&
-       selected_call.source_owner_syntax &&
-       selected_call.resolved_owner_type) {
-      ctx.observe_resolved_class_template_id_source_use(
-          scope,
-          *selected_call.source_owner_syntax,
-          selected_call.resolved_owner_type,
-          witness::SourceUseOwnership::SourceOwned,
-          witness::SourceUseRole::QualifierUse,
-          true);
-    }
     if(!function_template_related) {
       return;
     }
@@ -759,7 +748,10 @@ public:
            source_use_location,
            owner_type,
            &scope,
-           template_api::ClassTemplateSourceUseMode::QualifiedValueUse) ||
+           qualifier_template_id.source_is_static_member_definition_value ?
+               template_api::ClassTemplateSourceUseMode::
+                   StaticMemberDefinitionValueUse :
+               template_api::ClassTemplateSourceUseMode::QualifiedValueUse) ||
        !owner_type ||
        type_depends_on_template_parameter(owner_type)) {
       return evaluate_builtin_is_same();

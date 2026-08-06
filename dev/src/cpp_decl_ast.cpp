@@ -71,15 +71,23 @@ string ast_named_type_lookup_text(const CppAstNode & node)
 TypePtr lookup_type_from_ast_node(const AstDeclHooks & hooks,
                                   const CppAstNode & node)
 {
-  if(node.semantic_type &&
-     !(hooks.ignore_semantic_type && hooks.ignore_semantic_type(node.semantic_type))) {
-    return node.semantic_type;
-  }
   const bool has_structured_lookup_syntax =
       node.qualified_name_syntax ||
       node.template_id_syntax ||
       !node.qualifier_template_id_syntaxes.empty() ||
       !node.qualifier_type_syntaxes.empty();
+  if(node.semantic_type &&
+     !(hooks.ignore_semantic_type && hooks.ignore_semantic_type(node.semantic_type))) {
+    if(hooks.resolve_structured_semantic_type &&
+       has_structured_lookup_syntax &&
+       hooks.lookup_type_node) {
+      TypePtr resolved = hooks.lookup_type_node(node);
+      if(resolved) {
+        return resolved;
+      }
+    }
+    return node.semantic_type;
+  }
   if(hooks.lookup_type_node) {
     TypePtr type = hooks.lookup_type_node(node);
     if(type || has_structured_lookup_syntax || !hooks.lookup_type) {
