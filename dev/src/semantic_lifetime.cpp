@@ -54,7 +54,7 @@ std::string callsem_node_source_location_text(const CallSemNode & node)
 bool constructor_witness_source_capture_enabled(SemanticContext & ctx)
 {
   return witness::function_call_source_capture_enabled() &&
-         witness::source_capture_enabled(ctx.template_witness_context());
+         witness::source_capture_enabled(ctx);
 }
 
 std::string source_location_for_identifier_before_on_same_line(

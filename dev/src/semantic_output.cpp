@@ -3282,10 +3282,10 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
     ValueBinding & binding = it->second;
     const bool source_capture_header_static_member_output =
         info.source_capture_header_instantiation_tracked &&
-        witness::source_capture_enabled(ctx.template_witness_context()) &&
+        witness::source_capture_enabled(ctx) &&
         !has_output_requirement(binding.output_requirements, ORK_DEFINITION);
     const bool witness_only_unrequired_integral_constant =
-        witness::source_capture_enabled(ctx.template_witness_context()) &&
+        witness::source_capture_enabled(ctx) &&
         !class_has_required_member_output(info) &&
         ((binding.name == "value" &&
           !binding.witness_static_member_definition_source_captured) ||
@@ -5331,7 +5331,7 @@ void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
                                                       Scope & scope,
                                                       FunctionBinding & binding)
 {
-  if(!witness::source_capture_enabled(ctx.template_witness_context()) ||
+  if(!witness::source_capture_enabled(ctx) ||
      !function_body_semantics_available(ctx, binding, false)) {
     return;
   }
@@ -5851,7 +5851,7 @@ void analyze_class_output_from_info_impl(SemanticContext & ctx,
     return;
   }
   const bool source_capture_output =
-      witness::source_capture_enabled(ctx.template_witness_context());
+      witness::source_capture_enabled(ctx);
   const bool has_required_or_friend_output =
       class_has_required_output(info) ||
       class_has_immediate_friend_definition_output(ctx, info, node);
@@ -6882,7 +6882,7 @@ void analyze_instantiated_template_output(SemanticContext & ctx,
           return OAT_PENDING;
         }
         if(!info->complete &&
-           !witness::source_capture_enabled(ctx.template_witness_context()) &&
+           !witness::source_capture_enabled(ctx) &&
            !class_has_required_output(*info) &&
            !class_has_immediate_friend_definition_output(ctx, *info, *tracked_node)) {
           return OAT_DONE;
@@ -7956,7 +7956,7 @@ void validate_required_function_definition_closure(SemanticContext & ctx,
     if(binding->is_method && !binding->owner_class) {
       throw logic_error("required method missing owner class for output validation");
     }
-    if(!witness::source_capture_enabled(ctx.template_witness_context()) &&
+    if(!witness::source_capture_enabled(ctx) &&
        binding->definition_output_emitted &&
        !binding->definition_output_in_progress) {
       continue;

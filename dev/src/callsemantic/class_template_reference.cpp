@@ -1108,8 +1108,8 @@ public:
   {
     (void)decl;
     return raw_class_template_reference_cache_enabled() &&
-           !parser_trace::enabled("template.resolve") &&
-           !witness::source_capture_enabled(template_witness_context());
+           !callbacks.template_resolve_trace_enabled &&
+           !template_source_capture_enabled();
   }
 
   std::string raw_reference_cache_key(const ClassTemplateDecl & decl,
@@ -1191,7 +1191,7 @@ public:
       return true;
     }
     return callbacks.class_template_declarations_complete &&
-           callbacks.class_template_declarations_complete() &&
+           *callbacks.class_template_declarations_complete &&
            info.template_output_node == decl.class_node &&
            info.instantiation_specialization_epoch == decl.specialization_epoch;
   }
@@ -1710,8 +1710,8 @@ public:
   {
     std::vector<std::string> locations(arg_texts.size());
     if(arg_texts.empty() ||
-       (!witness::source_capture_enabled(template_witness_context()) &&
-        !parser_trace::enabled("template.resolve"))) {
+       (!template_source_capture_enabled() &&
+        !callbacks.template_resolve_trace_enabled)) {
       return locations;
     }
 
@@ -1898,12 +1898,12 @@ public:
        fast_existing_class_template_selection_current(decl, key, *info) &&
        !fast_existing_requires_mangle_refresh &&
        !fast_existing_requires_dependency_refresh &&
-       !parser_trace::enabled("template.resolve") &&
-       !witness::source_capture_enabled(template_witness_context())) {
+       !callbacks.template_resolve_trace_enabled &&
+       !template_source_capture_enabled()) {
       remember_raw_reference_cache(decl, raw_cache_key, info);
       return info;
     }
-    if(parser_trace::enabled("template.resolve")) {
+    if(callbacks.template_resolve_trace_enabled) {
       std::ostringstream trace;
       trace << "reference-class-template name=" << decl.name
             << " key=" << key
@@ -2146,7 +2146,7 @@ public:
       if(!resolved.valid()) {
         return;
       }
-      if(template_witness_context().session == nullptr) {
+      if(!callbacks.witness_session_enabled) {
         // The observer has no ordinary-build work to do, and source-anchor
         // recovery below can require a full token-stream search.  Keep that
         // witness-only cost off the normal semantic lookup path.
@@ -2268,7 +2268,9 @@ public:
     if(is_builtin_initializer_list_template(decl)) {
       ClassInfo * builtin_info =
           instantiate_selected_class_template(decl, use_scope, arguments, specialization);
-      note_class_use(resolved_template_id_view(builtin_info));
+      if(callbacks.witness_session_enabled) {
+        note_class_use(resolved_template_id_view(builtin_info));
+      }
       return builtin_info;
     }
 
@@ -2289,7 +2291,7 @@ public:
         semantic_hotspot::note_semantic_query("reference_class_template_instantiation_hit",
                                               ensure_specialization_name());
       }
-      if(parser_trace::enabled("template.resolve")) {
+      if(callbacks.template_resolve_trace_enabled) {
         std::ostringstream trace;
         trace << "reference-class-template-hit name=" << decl.name
               << " key=" << key;
@@ -2412,7 +2414,9 @@ public:
                                           bound_pack_sizes,
                                           specialization.kind ==
                                               template_api::MS_PRIMARY);
-      note_class_use(resolved_template_id_view(info));
+      if(callbacks.witness_session_enabled) {
+        note_class_use(resolved_template_id_view(info));
+      }
       return info;
     }
 
@@ -2454,7 +2458,7 @@ public:
           "reference_class_template_instantiation_create_decl",
           create_decl.str());
     }
-    if(parser_trace::enabled("template.resolve")) {
+    if(callbacks.template_resolve_trace_enabled) {
       std::ostringstream trace;
       trace << "reference-class-template-create name=" << decl.name
             << " key=" << key;
@@ -2514,7 +2518,9 @@ public:
         borrow_class_instantiation_key(*info, stored->first);
       }
     }
-    note_class_use(resolved_template_id_view(info));
+    if(callbacks.witness_session_enabled) {
+      note_class_use(resolved_template_id_view(info));
+    }
     return info;
   }
 
@@ -2535,6 +2541,12 @@ private:
   template_api::TemplateWitnessContext template_witness_context() const
   {
     return ctx.template_witness_context();
+  }
+
+  bool template_source_capture_enabled() const
+  {
+    return callbacks.witness_session_enabled &&
+           witness::source_capture_enabled();
   }
 
   semantic_metrics::AnalyzerCounters * performance_counters()

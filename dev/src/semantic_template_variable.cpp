@@ -18,7 +18,7 @@ std::string variable_template_source_use_location(SemanticContext & ctx,
                                                   const CppAstNode & source_node,
                                                   const std::string & template_name)
 {
-  if(!witness::source_capture_enabled(ctx.template_witness_context())) {
+  if(!witness::source_capture_enabled(ctx)) {
     return std::string();
   }
 

@@ -7354,7 +7354,7 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
         it->second.owner_reference_handle,
         info,
         witness::SourceUseRole::StaticMemberDefinitionOwner);
-    if(witness::source_capture_enabled(ctx.template_witness_context())) {
+    if(witness::source_capture_enabled(ctx)) {
       member->witness_static_member_definition_source_captured = true;
     }
     member->has_storage_definition = it->second.has_storage_definition;

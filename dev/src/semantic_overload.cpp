@@ -239,7 +239,7 @@ std::string refine_fragment_use_location(SemanticContext & ctx,
   if(base_location.empty()) {
     return std::string();
   }
-  if(!witness::source_capture_enabled(ctx.template_witness_context())) {
+  if(!witness::source_capture_enabled(ctx)) {
     return base_location;
   }
 
@@ -455,7 +455,7 @@ std::string candidate_primary_location(SemanticContext & ctx,
 bool template_witness_source_capture_enabled_for_calls(SemanticContext & ctx)
 {
   return witness::function_call_source_capture_enabled() &&
-         witness::source_capture_enabled(ctx.template_witness_context());
+         witness::source_capture_enabled(ctx);
 }
 
 std::string normalize_template_witness_location(const std::string & location)

@@ -20,6 +20,8 @@ namespace callsemantic {
 
 struct ClassTemplateReferenceCallbacks
 {
+  bool witness_session_enabled = false;
+  bool template_resolve_trace_enabled = false;
   std::function<std::string(std::size_t)> source_location_for_token_index;
   std::function<bool(const std::string &, const std::string &, std::size_t &)>
       token_index_for_source_location;
@@ -33,7 +35,7 @@ struct ClassTemplateReferenceCallbacks
       const std::string &,
       const std::string &)> template_id_syntax_at_location;
   std::function<const RecogToken &(std::size_t)> peek_token;
-  std::function<bool()> class_template_declarations_complete;
+  const bool * class_template_declarations_complete = nullptr;
 };
 
 std::vector<std::string> class_template_argument_source_locations_for_current_use(

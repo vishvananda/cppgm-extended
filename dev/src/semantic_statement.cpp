@@ -1725,7 +1725,7 @@ void analyze_condition_node(SemanticContext & ctx,
   // contexts (including if constexpr) evaluate through their owning paths.
   // Witness capture additionally records non-ODR constant member uses, so
   // preserve the former evaluation only while that capture is active.
-  if(witness::source_capture_enabled(ctx.template_witness_context())) {
+  if(witness::source_capture_enabled(ctx)) {
     long long constant_value = 0;
     if(ctx.evaluate_constant_expression(scope, child, constant_value)) {
       set_callsem_int_value(expr.node, constant_value);

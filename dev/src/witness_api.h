@@ -87,6 +87,8 @@ inline bool source_capture_enabled(const TemplateWitnessContext & ctx)
   return enabled(ctx) && source_capture_enabled();
 }
 
+bool source_capture_enabled(const SemanticContext & ctx);
+
 inline bool source_file_matches_primary_file(const std::string & source_file,
                                              const std::string & primary_file)
 {

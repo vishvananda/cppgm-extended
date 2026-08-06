@@ -3114,7 +3114,7 @@ bool function_template_deduction_cache_allowed(SemanticContext & ctx,
     ++counters->function_template_deduction_cache_allowed_checks;
   }
   if(parser_trace::enabled("template.resolve") ||
-     witness::source_capture_enabled(ctx.template_witness_context()) ||
+     witness::source_capture_enabled(ctx) ||
      decl.parameters.empty()) {
     return false;
   }
@@ -11080,7 +11080,7 @@ bool finalize_deduced_function_template_arguments(
           }
           arg = validated_default;
           resolved_default = true;
-          if(witness::source_capture_enabled(ctx.template_witness_context())) {
+          if(witness::source_capture_enabled(ctx)) {
             template_argument_semantics::note_template_value_dependencies_for_witness(
                 ctx, arg.mutable_rare().value_dependencies);
           }

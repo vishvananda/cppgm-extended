@@ -5,10 +5,18 @@
 #include <vector>
 
 #include "semantic_model.h"
+#include "semantic_context.h"
 #include "semantic_trace.h"
 #include "parser_trace.h"
 
 namespace witness {
+
+bool source_capture_enabled(const SemanticContext & ctx)
+{
+  return source_capture_enabled() &&
+         enabled(ctx.template_witness_context());
+}
+
 namespace {
 
 std::string normalize_source_event_angle_spacing(const std::string & text)

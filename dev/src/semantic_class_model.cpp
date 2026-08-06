@@ -3742,7 +3742,7 @@ bool should_defer_reference_class_alias_type_id(SemanticContext & ctx,
                                                 const std::string & type_id_text,
                                                 bool dependent_class)
 {
-  if(witness::source_capture_enabled(ctx.template_witness_context())) {
+  if(witness::source_capture_enabled(ctx)) {
     return false;
   }
   if(class_alias_type_id_mentions_current_class_member_type(info, type_id)) {
@@ -4073,7 +4073,7 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
           return true;
         });
   }
-  if(!witness::source_capture_enabled(ctx.template_witness_context()) &&
+  if(!witness::source_capture_enabled(ctx) &&
      class_alias_type_id_mentions_current_class_member_type(info,
                                                            *type_id_for_parse)) {
     return defer_class_alias_type_id(info,
@@ -10215,7 +10215,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
   if(info.dependent_instantiation &&
      is_typedef_member &&
      !has_auto &&
-     !witness::source_capture_enabled(ctx.template_witness_context())) {
+     !witness::source_capture_enabled(ctx)) {
     struct DeferredTypedef
     {
       std::string name;

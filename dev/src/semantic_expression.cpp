@@ -5502,7 +5502,7 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
       }
     }
     if(can_fold) {
-      if(witness::source_capture_enabled(ctx.template_witness_context())) {
+      if(witness::source_capture_enabled(ctx)) {
         template_api::note_template_member_value_instantiation_if_needed(
             ctx,
             binding);

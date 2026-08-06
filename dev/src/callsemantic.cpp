@@ -688,6 +688,9 @@ public:
       template_witness_session_->primary_source_file =
           token_sequence->primary_source_file();
     }
+    if(template_witness_session_ != nullptr) {
+      resolved_source_state_.reset(new ResolvedSourceState());
+    }
 
     struct MetricsDumpGuard
     {
@@ -1170,7 +1173,7 @@ private:
 
   void analyze_unemitted_member_bodies_for_witness_semantics()
   {
-    if(!witness::source_capture_enabled(template_witness_context())) {
+    if(!template_source_capture_enabled()) {
       return;
     }
     for(size_t i = 0; i < functions.size(); ++i) {
@@ -1438,6 +1441,8 @@ private:
   mutable template_api::template_witness_detail::SourceTokenIndex
       source_token_index_;
   witness::TemplateWitnessSession * template_witness_session_ = nullptr;
+  const bool template_resolve_trace_enabled_ =
+      parser_trace::enabled("template.resolve");
   struct AliasClassUseCapture
   {
     uint32_t handle = 0;
@@ -2479,14 +2484,22 @@ private:
     out.source_use_table =
         template_witness_session_ ? &template_witness_session_->source_use_table :
                                     nullptr;
-    out.public_use_location = parser_trace::current_use_location();
-    if(token_sequence != nullptr) {
-      out.primary_source_file = token_sequence->primary_source_file();
+    if(template_witness_session_ != nullptr) {
+      out.public_use_location = parser_trace::current_use_location();
+      if(token_sequence != nullptr) {
+        out.primary_source_file = token_sequence->primary_source_file();
+      }
     }
     out.token_sequence = token_sequence;
     out.source_locations = source_locations;
     out.source_token_index = &source_token_index_;
     return out;
+  }
+
+  bool template_source_capture_enabled() const
+  {
+    return template_witness_session_ != nullptr &&
+           witness::source_capture_enabled();
   }
 
   const RecogToken * witness_token_at(size_t index) const
@@ -3402,7 +3415,7 @@ private:
          !binding->is_deleted &&
          analysis_policy_.expand_output_closure &&
          !analysis_policy_.materialize_direct_call_output &&
-         template_witness_context().session != nullptr &&
+         template_witness_session_ != nullptr &&
          (reason == OutputReason::ConstructorUse ||
           reason == OutputReason::DirectCall ||
           reason == OutputReason::FunctionIdUse ||
@@ -3421,7 +3434,7 @@ private:
     if(original_binding && binding && binding != original_binding) {
       ++metrics_.required_definition_upgrades;
     }
-    if(parser_trace::enabled("template.resolve")) {
+    if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << "require-function-definition function=" << binding->name
             << " reason=" << static_cast<int>(reason)
@@ -3529,7 +3542,7 @@ private:
       return;
     }
 
-    if(parser_trace::enabled("template.resolve")) {
+    if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << "note-instantiated-function-output function=" << binding->name
             << " mode=track-only"
@@ -4744,7 +4757,7 @@ private:
       }
       return true;
     } catch(const logic_error & ex) {
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "parse-" << (is_typeof ? "typeof" : "decltype")
               << "-fallback text=" << text
@@ -7066,9 +7079,19 @@ private:
                nullptr;
   }
 
-  callsemantic::ClassTemplateReferenceCallbacks class_template_reference_callbacks()
+  const callsemantic::ClassTemplateReferenceCallbacks &
+  class_template_reference_callbacks()
   {
-    callsemantic::ClassTemplateReferenceCallbacks callbacks;
+    if(class_template_reference_callbacks_) {
+      return *class_template_reference_callbacks_;
+    }
+    class_template_reference_callbacks_.reset(
+        new callsemantic::ClassTemplateReferenceCallbacks());
+    callsemantic::ClassTemplateReferenceCallbacks & callbacks =
+        *class_template_reference_callbacks_;
+    callbacks.witness_session_enabled = template_witness_session_ != nullptr;
+    callbacks.template_resolve_trace_enabled =
+        template_resolve_trace_enabled_;
     callbacks.source_location_for_token_index =
         [this](std::size_t index) {
           return source_location_for_token_index(index);
@@ -7105,9 +7128,7 @@ private:
           return token_sequence->peek(index);
         };
     callbacks.class_template_declarations_complete =
-        [this]() {
-          return class_template_declarations_complete_;
-        };
+        &class_template_declarations_complete_;
     return callbacks;
   }
 
@@ -7116,7 +7137,7 @@ private:
       const std::vector<TemplateParameterInfo> & parameters,
       const std::vector<std::string> & arg_texts)
   {
-    const callsemantic::ClassTemplateReferenceCallbacks callbacks =
+    const callsemantic::ClassTemplateReferenceCallbacks & callbacks =
         class_template_reference_callbacks();
     return callsemantic::class_template_argument_source_locations_for_current_use(
         *this, callbacks, template_name, parameters, arg_texts);
@@ -7126,7 +7147,7 @@ private:
                                                      Scope & use_scope,
                                                      const vector<string> & arg_texts) override
   {
-    const callsemantic::ClassTemplateReferenceCallbacks callbacks =
+    const callsemantic::ClassTemplateReferenceCallbacks & callbacks =
         class_template_reference_callbacks();
     return callsemantic::reference_class_template_instantiation(
         *this, callbacks, decl, use_scope, arg_texts);
@@ -7141,7 +7162,7 @@ private:
           template_api::ClassTemplateSourceUseMode::EmitClassUse,
       const TemplateIdSyntax * source_syntax = nullptr) override
   {
-    const callsemantic::ClassTemplateReferenceCallbacks callbacks =
+    const callsemantic::ClassTemplateReferenceCallbacks & callbacks =
         class_template_reference_callbacks();
     return callsemantic::reference_class_template_instantiation_with_syntax(
         *this,
@@ -7160,7 +7181,7 @@ private:
         const vector<TemplateArgument> & arguments,
         const template_api::ClassSpecializationSelection & specialization)
   {
-    const callsemantic::ClassTemplateReferenceCallbacks callbacks =
+    const callsemantic::ClassTemplateReferenceCallbacks & callbacks =
         class_template_reference_callbacks();
     return callsemantic::reference_selected_class_template_instantiation(
         *this,
@@ -7187,7 +7208,7 @@ private:
         FunctionBinding * source_function = nullptr,
         const TemplateIdSyntax * source_syntax = nullptr) override
   {
-    const callsemantic::ClassTemplateReferenceCallbacks callbacks =
+    const callsemantic::ClassTemplateReferenceCallbacks & callbacks =
         class_template_reference_callbacks();
     return callsemantic::reference_selected_class_template_instantiation(
         *this,
@@ -7214,7 +7235,7 @@ private:
         template_api::ClassTemplateSourceUseMode source_use_mode =
             template_api::ClassTemplateSourceUseMode::EmitClassUse)
   {
-    const callsemantic::ClassTemplateReferenceCallbacks callbacks =
+    const callsemantic::ClassTemplateReferenceCallbacks & callbacks =
         class_template_reference_callbacks();
     return callsemantic::reference_selected_class_template_instantiation_with_key(
         *this,
@@ -7263,7 +7284,7 @@ private:
     const string trimmed_name = trim_space(name);
     const string normalized_name = normalize_type_lookup_name(name);
     const std::string entry_use_location = parser_trace::current_use_location();
-    if(parser_trace::enabled("template.resolve") &&
+    if(template_resolve_trace_enabled_ &&
        (normalized_name.find("iterator_traits<_InputIter>") != string::npos ||
         normalized_name == "_InputIter" ||
         normalized_name == "__node_pointer" ||
@@ -7575,7 +7596,7 @@ private:
                 const auto direct_lookup =
                     [this, &lookup_name, &scope](Scope & direct_scope) -> TypePtr
                     {
-                      if(parser_trace::enabled("template.resolve") &&
+                      if(template_resolve_trace_enabled_ &&
                          (lookup_name == "allocator_type" ||
                           lookup_name == "value_type")) {
                         std::ostringstream trace;
@@ -7593,7 +7614,7 @@ private:
                         parser_trace::note("template.resolve", std::string(), trace.str());
                       }
                       TypePtr direct_named = direct_named_type(direct_scope, lookup_name);
-                      if(parser_trace::enabled("template.resolve") &&
+                      if(template_resolve_trace_enabled_ &&
                          (lookup_name == "allocator_type" ||
                           lookup_name == "value_type")) {
                         std::ostringstream trace;
@@ -7641,7 +7662,7 @@ private:
                                                lookup_name,
                                                ensure_current_member_references,
                                                &scope);
-                        if(parser_trace::enabled("template.resolve") &&
+                        if(template_resolve_trace_enabled_ &&
                            (lookup_name == "allocator_type" ||
                             lookup_name == "value_type")) {
                           std::ostringstream trace;
@@ -8218,7 +8239,7 @@ private:
               arg_texts,
               arg_syntaxes,
               reference_class_templates_only);
-          if(parser_trace::enabled("template.resolve") &&
+          if(template_resolve_trace_enabled_ &&
              normalized_name.find("__rebind_pointer_t") != string::npos) {
             std::ostringstream trace;
             trace << "lookup-type-alias-result name=" << normalized_name
@@ -8253,7 +8274,7 @@ private:
               [&](ClassInfo * resolved_info,
                   const std::string & use_location) -> void
           {
-            const bool trace_enabled = parser_trace::enabled("template.resolve");
+            const bool trace_enabled = template_resolve_trace_enabled_;
             if(use_location.empty() || !resolved_info) {
               return;
             }
@@ -8569,7 +8590,7 @@ private:
                                                        arg_texts,
                                                        arg_syntaxes,
                                                        &resolved_arguments)) {
-            if(parser_trace::enabled("template.resolve")) {
+            if(template_resolve_trace_enabled_) {
               std::ostringstream trace;
               trace << "defer-dependent-class-template-id type=" << normalized_name
                     << " template=" << class_template->name;
@@ -8597,7 +8618,7 @@ private:
                                                                class_template)) {
             const bool unresolved =
                 should_defer_unresolved_type_lookup(scope, normalized_name);
-            if(parser_trace::enabled("template.resolve")) {
+            if(template_resolve_trace_enabled_) {
               std::ostringstream trace;
               trace << "defer-member-template-recursion type=" << normalized_name
                     << " scope=" << scope_qualified_name(scope, "<here>")
@@ -8627,7 +8648,7 @@ private:
           }
           ClassInfo * info = nullptr;
           if(reference_class_templates_only ||
-             witness::source_capture_enabled(template_witness_context())) {
+             template_source_capture_enabled()) {
             info = reference_class_template_instantiation_with_syntax(
                 *class_template,
                 scope,
@@ -8685,7 +8706,7 @@ private:
     if(retained_qualified_name) {
       const QualifiedName & qualified = *retained_qualified_name;
       const bool trace_node_traits_pointer_lookup =
-          parser_trace::enabled("template.resolve") &&
+          template_resolve_trace_enabled_ &&
           (normalized_name.find("__node_traits::pointer") != string::npos ||
            normalized_name.find("__node_base_traits::pointer") != string::npos);
       // `typename T::type` still names a dependent type; the `typename`
@@ -9084,7 +9105,7 @@ private:
           break;
         }
       }
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "qualified-parse-scope-owner"
               << " component="
@@ -9158,7 +9179,7 @@ private:
         owner_template =
             lookup_class_template(*owner_lookup_scope, owner_template_name);
       }
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "qualified-parse-scope-template"
               << " name=" << owner_template_name
@@ -9187,7 +9208,7 @@ private:
               &owner_template_id->argument_syntaxes,
               template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly,
               owner_template_id);
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "qualified-parse-scope-result"
               << " template=" << owner_template_name
@@ -9678,7 +9699,7 @@ private:
       const bool same_instantiation_identity =
           template_api::function_binding_matches_instantiation_identity(
               *slot[i], template_identity);
-      if(parser_trace::enabled("template.resolve") &&
+      if(template_resolve_trace_enabled_ &&
          function_template_trace_has_identity(template_identity.decl, slot[i])) {
         ostringstream trace;
         trace << "class-function-register-check owner=" << info.qualified_name
@@ -9912,7 +9933,7 @@ private:
           slot[i]->default_arguments[j] = binding->default_arguments[j];
         }
       }
-      if(parser_trace::enabled("template.resolve") &&
+      if(template_resolve_trace_enabled_ &&
          function_template_trace_has_identity(template_identity.decl, slot[i])) {
         ostringstream trace;
         trace << "class-function-register-merge owner=" << info.qualified_name
@@ -9982,7 +10003,7 @@ private:
     slot.push_back(raw);
     info.method_declaration_order.push_back(raw);
     semantic_lookup::direct_function_set_slot(*info.member_scope, simple_name).push_back(raw);
-    if(parser_trace::enabled("template.resolve") &&
+    if(template_resolve_trace_enabled_ &&
        function_template_trace_has_identity(template_identity.decl, raw)) {
       ostringstream trace;
       trace << "class-function-register-insert owner=" << info.qualified_name
@@ -10229,7 +10250,7 @@ private:
         decl_spec_contains_token(resolved_specifiers, KW_MUTABLE);
     const CppAstNode filtered_specifiers =
         filtered_class_member_decl_specifiers(resolved_specifiers);
-    ScopedAliasClassUseCapture alias_capture(resolved_source_state());
+    ScopedAliasClassUseCapture alias_capture(resolved_source_state_.get());
     if(!parse_decl_spec(filtered_specifiers, *info.member_scope, is_typedef, base)) {
       return;
     }
@@ -12024,17 +12045,6 @@ private:
     return location;
   }
 
-  ResolvedSourceState * resolved_source_state()
-  {
-    if(template_witness_session_ == nullptr) {
-      return nullptr;
-    }
-    if(!resolved_source_state_) {
-      resolved_source_state_.reset(new ResolvedSourceState());
-    }
-    return resolved_source_state_.get();
-  }
-
   void submit_resolved_class_use(
       witness::ClassUseEmitRequest request) override
   {
@@ -12051,7 +12061,7 @@ private:
     CPPGM_SET_WITNESS_PRODUCER(
         request,
         witness::WitnessProducerSite::ClassTemplateReference02);
-    resolved_source_state()->pending_class_uses.push_back(std::move(request));
+    resolved_source_state_->pending_class_uses.push_back(std::move(request));
   }
 
   void observe_collected_class_uses()
@@ -12370,7 +12380,7 @@ private:
     if(template_witness_session_ == nullptr || !resolved.valid()) {
       return 0;
     }
-    ResolvedSourceState * state = resolved_source_state();
+    ResolvedSourceState * state = resolved_source_state_.get();
     state->out_of_class_owners.push_back(resolved);
     return static_cast<uint32_t>(state->out_of_class_owners.size());
   }
@@ -12381,7 +12391,7 @@ private:
       witness::SourceUseRole role) override
   {
     if(!resolved.valid() ||
-       !witness::source_capture_enabled(template_witness_context())) {
+       !template_source_capture_enabled()) {
       return;
     }
     ClassInfo & owner = *resolved.owner;
@@ -12857,7 +12867,7 @@ private:
       bool reference_class_templates_only = false,
       bool suppress_source_capture = false) override
   {
-    ScopedAliasClassUseCapture expansion_capture(resolved_source_state());
+    ScopedAliasClassUseCapture expansion_capture(resolved_source_state_.get());
     const auto finish = [&](const TypePtr & type) -> TypePtr
     {
       if(expansion_capture.capture.handle == 0) {
@@ -12873,7 +12883,7 @@ private:
       return type;
     };
     TypePtr selected_conditional_branch;
-    if(!witness::source_capture_enabled(template_witness_context()) &&
+    if(!template_source_capture_enabled() &&
        try_instantiate_known_conditional_alias_branch(decl,
                                                       use_scope,
                                                       arg_texts,
@@ -12885,7 +12895,7 @@ private:
     const auto observe_dependent_pattern = [&]() -> void
     {
       if(suppress_source_capture ||
-         !witness::source_capture_enabled(template_witness_context())) {
+         !template_source_capture_enabled()) {
         return;
       }
       std::string source_location = parser_trace::current_use_location();
@@ -12923,7 +12933,7 @@ private:
     }
     if(!arguments_resolved) {
       if(!scope_has_template_placeholders(use_scope)) {
-        const bool verbose_bindings = parser_trace::enabled("template.resolve");
+        const bool verbose_bindings = template_resolve_trace_enabled_;
         ostringstream out;
         out << "failed alias template argument resolution";
         if(!decl.name.empty()) {
@@ -13119,7 +13129,7 @@ private:
     }
 
     out = selected.type;
-    if(parser_trace::enabled("template.resolve")) {
+    if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << "instantiate-alias-template-conditional-branch name="
             << decl.name
@@ -13137,7 +13147,7 @@ private:
       const vector<TemplateArgument> & resolved_arguments,
       bool reference_class_templates_only = false) override
   {
-    ScopedAliasClassUseCapture expansion_capture(resolved_source_state());
+    ScopedAliasClassUseCapture expansion_capture(resolved_source_state_.get());
     TypePtr result = instantiate_resolved_alias_template_impl(
         decl, use_scope, resolved_arguments, nullptr, nullptr,
         reference_class_templates_only);
@@ -13173,9 +13183,9 @@ private:
     const auto note_alias_use = [&](const TypePtr & resolved_alias) -> void
     {
       const std::string raw_use_location = parser_trace::current_use_location();
-      const bool trace_enabled = parser_trace::enabled("template.resolve");
+      const bool trace_enabled = template_resolve_trace_enabled_;
       const bool source_capture_enabled =
-          witness::source_capture_enabled(template_witness_context());
+          template_source_capture_enabled();
       const witness::AliasUseEmissionOrigin alias_use_origin =
           witness::AliasUseEmissionOrigin::QualifiedSourceTemplateId;
       const bool alias_use_recording_enabled =
@@ -13183,7 +13193,7 @@ private:
                                                alias_use_origin);
       const bool namespace_scope_alias =
           !decl.declaring_scope || !decl.declaring_scope->class_info;
-      if(template_witness_context().session != nullptr &&
+      if(template_witness_session_ != nullptr &&
          namespace_scope_alias &&
          !dependent_arguments &&
          resolved_alias &&
@@ -13364,7 +13374,7 @@ private:
         parser_trace::note("template.resolve", raw_use_location, trace.str());
       }
     };
-    if(parser_trace::enabled("template.resolve")) {
+    if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << "instantiate-alias-template name=" << decl.name
             << " key=" << key
@@ -13822,7 +13832,7 @@ private:
     };
     if(TypePtr builtin_alias = try_resolve_builtin_type_transform_alias()) {
       cache_alias_instantiation(builtin_alias);
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "instantiate-alias-template-builtin-transform name="
               << decl.name
@@ -13953,7 +13963,7 @@ private:
           alias_pattern_template_id_source_location(*syntax);
       const ScopedTemplateUseLocation nested_use_location_guard(
           nested_use_location);
-      if(witness::source_capture_enabled(template_witness_context()) &&
+      if(template_source_capture_enabled() &&
          !nested_use_location.empty()) {
         out = instantiate_alias_template_with_syntax(
             *nested_alias,
@@ -14008,7 +14018,7 @@ private:
           alias_pattern_template_id_source_location(*syntax);
       const ScopedTemplateUseLocation nested_use_location_guard(
           nested_use_location);
-      if(witness::source_capture_enabled(template_witness_context()) &&
+      if(template_source_capture_enabled() &&
          !nested_use_location.empty()) {
         out = instantiate_alias_template_with_syntax(
             *nested_alias,
@@ -14386,7 +14396,7 @@ private:
 	          structural_substitution_failure.kind ==
 	              template_specialization::AliasSubstitutionFailure::
 	                  SF_INVALID_TYPE_FORMATION;
-	      if(parser_trace::enabled("template.resolve")) {
+	      if(template_resolve_trace_enabled_) {
 	        std::ostringstream trace;
 	        trace << "parse-instantiated-alias-structural"
 	              << " name=" << decl.name
@@ -14466,7 +14476,7 @@ private:
 	      TypePtr direct_syntax_alias;
 	      if(resolve_direct_alias_type_id_syntax(direct_syntax_alias)) {
 	        instantiations[key] = direct_syntax_alias;
-	        if(parser_trace::enabled("template.resolve")) {
+	        if(template_resolve_trace_enabled_) {
 	          std::ostringstream trace;
 	          trace << "instantiate-alias-template-direct-syntax name=" << decl.name
 	                << " key=" << key
@@ -14482,7 +14492,7 @@ private:
 	         !type_depends_on_template_parameter(ast_alias) &&
 	         !alias_mentions_instantiation_bindings(ast_alias)) {
 	        instantiations[key] = ast_alias;
-	        if(parser_trace::enabled("template.resolve")) {
+	        if(template_resolve_trace_enabled_) {
 	          std::ostringstream trace;
 	          trace << "instantiate-alias-template-ast name=" << decl.name
 	                << " key=" << key
@@ -14512,7 +14522,7 @@ private:
 	         !type_depends_on_template_parameter(structural_alias) &&
 	         !alias_mentions_instantiation_bindings(structural_alias)) {
 	        instantiations[key] = structural_alias;
-	        if(parser_trace::enabled("template.resolve")) {
+	        if(template_resolve_trace_enabled_) {
 	          std::ostringstream trace;
 	          trace << "instantiate-alias-template-structural name=" << decl.name
 	                << " key=" << key
@@ -14523,7 +14533,7 @@ private:
 	        return structural_alias;
 	      }
 	    }
-    if(parser_trace::enabled("template.resolve")) {
+    if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << "instantiate-alias-template-text name=" << decl.name
             << " spaced=" << spaced_type_id_text;
@@ -14532,7 +14542,7 @@ private:
     if(found != instantiations.end() &&
        found->first == key &&
        dependent_alias_cache_is_scope_sensitive(found->second)) {
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "instantiate-alias-template-scope-sensitive-cache-redirect name="
               << decl.name
@@ -14543,7 +14553,7 @@ private:
       found = instantiations.find(scoped_alias_cache_key());
     }
     if(found != instantiations.end()) {
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "instantiate-alias-template-hit name=" << decl.name
               << " key=" << key;
@@ -14572,7 +14582,7 @@ private:
          (member_alias_template && resolved_alias_pattern_is_dependent))) {
       alias = make_dependent_alias_specialization();
       cache_alias_instantiation(alias);
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "instantiate-alias-template-defer-dependent name=" << decl.name
               << " key=" << key
@@ -14592,7 +14602,7 @@ private:
 	    }
     if(!decl.type_id || !parsed_direct) {
       if(decl.type_id && !scope_has_template_placeholders(*inst_scope)) {
-        const bool verbose_bindings = parser_trace::enabled("template.resolve");
+        const bool verbose_bindings = template_resolve_trace_enabled_;
         ostringstream out;
         out << "failed alias template type-id parse";
         if(!decl.name.empty()) {
@@ -14638,7 +14648,7 @@ private:
     if(alias &&
        type_depends_on_template_parameter(alias) &&
        dependent_arguments) {
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << (reference_class_templates_only ?
                       "instantiate-alias-template-keep-dependent-target name=" :
@@ -14659,7 +14669,7 @@ private:
        !dependent_arguments &&
        !text_mentions_template_placeholders(*inst_scope, alias_text) &&
        !text_mentions_dependent_non_namespace_binding_names(*inst_scope, alias_text)) {
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "instantiate-alias-template-reject-dependent name=" << decl.name
               << " key=" << key
@@ -14693,7 +14703,7 @@ private:
       throw_substitution_failure(out.str(), std::string(), "callsemantic");
     }
     const bool base_cached_alias = cache_alias_instantiation(alias);
-    if(parser_trace::enabled("template.resolve")) {
+    if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << (base_cached_alias ?
                     "instantiate-alias-template-store name=" :
@@ -16012,7 +16022,7 @@ private:
         [&](const std::string & reason,
             const std::string & detail = std::string()) -> void
     {
-      if(!parser_trace::enabled("template.resolve")) {
+      if(!template_resolve_trace_enabled_) {
         return;
       }
       std::ostringstream trace;
@@ -16620,7 +16630,7 @@ private:
           direct_templates && !direct_templates->empty();
       filter_function_candidates_visible_from_node(out, use_node, &scope);
       if(out.empty() && found_direct_templates) {
-        if(parser_trace::enabled("template.resolve")) {
+        if(template_resolve_trace_enabled_) {
           std::ostringstream trace;
           trace << "lookup-functions-hit-template-only name=" << name
                 << " normalized=" << normalized_name
@@ -16690,7 +16700,7 @@ private:
       }
       filter_ordinary_candidates(out);
       if(!out.empty()) {
-        if(parser_trace::enabled("template.resolve")) {
+        if(template_resolve_trace_enabled_) {
           std::ostringstream trace;
           trace << "lookup-functions-hit name=" << name
                 << " normalized=" << normalized_name
@@ -16709,7 +16719,7 @@ private:
       }
     }
 
-    if(parser_trace::enabled("template.resolve")) {
+    if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << "lookup-functions-empty name=" << name
             << " normalized=" << normalized_name;
@@ -17554,7 +17564,7 @@ private:
                                                     const CppAstNode & node,
                                                     const TypePtr & function_type = TypePtr()) override
   {
-    if(!witness::source_capture_enabled(template_witness_context())) {
+    if(!template_source_capture_enabled()) {
       return;
     }
     if(!node_comes_from_primary_source_file(&node)) {
@@ -18300,7 +18310,7 @@ private:
         witness::source_capture_enabled(witness_context);
     const bool source_use_locations_active =
         witness_capture_enabled ||
-        parser_trace::enabled("template.resolve") ||
+        template_resolve_trace_enabled_ ||
         template_api::current_template_argument_source_locations_active();
     string inherited_use_location;
     if(source_use_locations_active) {
@@ -18472,7 +18482,7 @@ private:
     const template_api::ScopedTemplateWitnessSourceTypeLookup
         source_type_lookup_guard;
     bool retained_current_class_use_observed = false;
-    if(template_witness_context().session != nullptr) {
+    if(template_witness_session_ != nullptr) {
       if(direct_template_id_syntax) {
         retained_current_class_use_observed =
             observe_retained_current_class_template_id(
@@ -18612,8 +18622,11 @@ private:
                 &direct_template_id_syntax->argument_syntaxes,
                 &resolved_arguments);
         if(dependent_arguments) {
-          canonicalize_simple_dependent_argument_texts(resolved_arguments);
-          if(!retained_current_class_use_observed) {
+          if(template_witness_session_ != nullptr) {
+            canonicalize_simple_dependent_argument_texts(resolved_arguments);
+          }
+          if(template_witness_session_ != nullptr &&
+             !retained_current_class_use_observed) {
             Scope * selection_scope = &scope;
             if(scope.class_info &&
                scope.class_info->source_template == class_template) {
@@ -19685,7 +19698,7 @@ private:
       const resolved_source_semantics::ResolvedClassTemplateIdView & resolved) override
   {
     capture_alias_class_use_source(resolved);
-    if(template_witness_context().session == nullptr ||
+    if(template_witness_session_ == nullptr ||
        !resolved.valid() ||
        parser_trace::use_location_suppressed() ||
        template_api::class_template_source_use_is_semantic_lookup_only(
@@ -20129,7 +20142,7 @@ private:
       const resolved_source_semantics::ResolvedAliasTemplateIdView & resolved) override
   {
     if(!resolved.valid() ||
-       !witness::source_capture_enabled(template_witness_context())) {
+       !template_source_capture_enabled()) {
       return;
     }
     AliasTemplateDecl & alias_template = *resolved.origin;
@@ -20455,9 +20468,17 @@ private:
                             bool record_class_template_use,
                             AliasClassUseCapture * source_result = nullptr)
   {
-    ScopedAliasClassUseCapture alias_capture(resolved_source_state());
+    if(template_witness_session_ == nullptr &&
+       !template_resolve_trace_enabled_) {
+      return parse_decl_spec_ast(
+          node,
+          make_decl_hooks(scope, reference_class_templates_only),
+          is_typedef,
+          out);
+    }
+    ScopedAliasClassUseCapture alias_capture(resolved_source_state_.get());
     const bool capture_template_source_uses =
-        witness::source_capture_enabled(template_witness_context());
+        template_source_capture_enabled();
     std::string node_use_location;
     if(capture_template_source_uses) {
       node_use_location = prefer_later_source_location(
@@ -20470,7 +20491,7 @@ private:
                  node_use_location :
                  template_public_use_location_or(node_use_location)) :
             std::string());
-    if(parser_trace::enabled("template.resolve")) {
+    if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << "parse-decl-spec loc=" << source_location_for_node(node)
             << " scope=" << scope_qualified_name(scope, "<here>")
@@ -20481,7 +20502,7 @@ private:
     AstDeclHooks hooks = make_decl_hooks(scope, reference_class_templates_only);
     hooks.resolve_structured_semantic_type =
         structured_semantic_type_resolution_root_ == &node &&
-        witness::source_capture_enabled(template_witness_context());
+        template_source_capture_enabled();
     const bool parsed = parse_decl_spec_ast(node, hooks, is_typedef, out);
     (void)record_class_template_use;
     if(parsed) {
@@ -20644,7 +20665,7 @@ private:
                               vector<TypePtr> * parameter_object_types_out = nullptr) override
   {
     const bool capture_template_source_uses =
-        witness::source_capture_enabled(template_witness_context());
+        template_source_capture_enabled();
     std::string parameter_use_location;
     if(capture_template_source_uses) {
       const std::string earliest_child_use_location =
@@ -20658,7 +20679,7 @@ private:
     }
     const ScopedTemplateUseLocation use_location_guard(parameter_use_location);
 
-    if(parser_trace::enabled("template.resolve")) {
+    if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << "parse-parameter-clause loc=" << source_location_for_node(node)
             << " scope=" << scope_qualified_name(scope, "<here>")
@@ -20713,9 +20734,16 @@ private:
                      bool record_class_template_use = true,
                      uint32_t * expanded_class_use_handle = nullptr) override
   {
-    ScopedAliasClassUseCapture alias_capture(resolved_source_state());
+    if(template_witness_session_ == nullptr &&
+       !template_resolve_trace_enabled_) {
+      return parse_type_id_ast(
+          node,
+          make_decl_hooks(scope, reference_class_templates_only),
+          out);
+    }
+    ScopedAliasClassUseCapture alias_capture(resolved_source_state_.get());
     const bool capture_template_source_uses =
-        witness::source_capture_enabled(template_witness_context());
+        template_source_capture_enabled();
     std::string preferred_node_use_location;
     std::string node_use_location;
     if(capture_template_source_uses) {
@@ -21554,7 +21582,7 @@ private:
                                        bool reference_class_templates_only = false) override
   {
     const bool capture_template_source_uses =
-        witness::source_capture_enabled(template_witness_context());
+        template_source_capture_enabled();
     std::string use_location;
     if(capture_template_source_uses) {
       use_location =
@@ -21566,7 +21594,7 @@ private:
                                                std::string()));
     }
     ScopedTemplateUseLocation use_location_guard(use_location);
-    ScopedAliasClassUseCapture alias_capture(resolved_source_state());
+    ScopedAliasClassUseCapture alias_capture(resolved_source_state_.get());
     is_typedef = false;
     const bool declaration_is_typedef =
         decl_spec_contains_token(specifiers, KW_TYPEDEF);
@@ -25401,7 +25429,7 @@ private:
     }
 
     if(!dependent_type_resolution_cache_enabled()) {
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "resolve-instantiated-dependent-type bypass-disabled-cache"
               << " type=" << describe_type(type);
@@ -25415,7 +25443,7 @@ private:
     std::string cache_text;
     const bool cacheable = try_dependent_type_resolution_cache_key(type, cache_text);
     if(!cacheable) {
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "resolve-instantiated-dependent-type bypass-cache"
               << " scope-key=" << cache_scope_key
@@ -25434,7 +25462,7 @@ private:
       metrics_.note_cache_hit(semantic_metrics::CK_DEPENDENT_TYPE_RESOLUTION);
       if(found->second.status == DependentTypeResolutionCacheEntry::DTS_RESOLVED) {
         if(!found->second.resolved) {
-          if(parser_trace::enabled("template.resolve")) {
+          if(template_resolve_trace_enabled_) {
             std::ostringstream trace;
             trace << "resolve-instantiated-dependent-type invalid-cached-null key="
                   << (cache_key.type_key ? *cache_key.type_key : string("<null>"))
@@ -25465,7 +25493,7 @@ private:
       return true;
     }
 
-    if(ok && !resolved && parser_trace::enabled("template.resolve")) {
+    if(ok && !resolved && template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << "resolve-instantiated-dependent-type invalid-null key="
             << (cache_key.type_key ? *cache_key.type_key : string("<null>"))
@@ -25913,7 +25941,7 @@ private:
         }
       }
     }
-    if(!out && parser_trace::enabled("template.resolve")) {
+    if(!out && template_resolve_trace_enabled_) {
       ostringstream trace;
       trace << "out-of-class-method-miss owner=" << info->qualified_name
             << " requested=" << member_name
@@ -27000,7 +27028,7 @@ private:
         if(!template_parameter_redeclarations_compatible(lhs, rhs, i)) {
           return false;
         }
-        if(parser_trace::enabled("template.resolve")) {
+        if(template_resolve_trace_enabled_) {
           ostringstream trace;
           trace << "special-member-template-param-fallback-text index=" << i;
           parser_trace::note("template.resolve", std::string(), trace.str());
@@ -27087,7 +27115,7 @@ private:
                                                                      candidate_parameters);
             if(!parameters_match ||
                decl->params_pattern.size() != params.size()) {
-              if(parser_trace::enabled("template.resolve")) {
+              if(template_resolve_trace_enabled_) {
                 ostringstream trace;
                 trace << "special-member-template-candidate"
                       << " name=" << qualified_name
@@ -27133,7 +27161,7 @@ private:
                       rhs_type_parameters,
                       scope);
               if(!type_match) {
-                if(parser_trace::enabled("template.resolve")) {
+                if(template_resolve_trace_enabled_) {
                   ostringstream trace;
                   trace << "special-member-template-candidate"
                         << " name=" << qualified_name
@@ -27153,7 +27181,7 @@ private:
                 return false;
               }
             }
-            if(parser_trace::enabled("template.resolve")) {
+            if(template_resolve_trace_enabled_) {
               ostringstream trace;
               trace << "special-member-template-candidate"
                     << " name=" << qualified_name
@@ -28008,7 +28036,7 @@ private:
             const std::string & decl_location,
             template_api::TemplateLifecycleCause cause) -> void
     {
-      if(entity.empty() || template_witness_context().session == nullptr) {
+      if(entity.empty() || template_witness_session_ == nullptr) {
         return;
       }
       const std::string event_decl_location =
@@ -28033,7 +28061,7 @@ private:
         [&](FunctionBinding * binding,
             template_api::TemplateLifecycleCause cause) -> void
     {
-      if(!binding || template_witness_context().session == nullptr) {
+      if(!binding || template_witness_session_ == nullptr) {
         return;
       }
       const std::string entity = semantic_model::function_output_name(*binding);
@@ -28061,7 +28089,7 @@ private:
     };
     if(target.kind == CppAstKind::class_specifier ||
        target.kind == CppAstKind::class_forward_declaration) {
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         parser_trace::note("template.resolve",
                            std::string(),
                            std::string("explicit-class-instantiation target=") +
@@ -28070,7 +28098,7 @@ private:
       }
       const TemplateIdSyntax * target_template_id = cppast_template_id_syntax(target);
       if(!target_template_id) {
-        if(parser_trace::enabled("template.resolve")) {
+        if(template_resolve_trace_enabled_) {
           parser_trace::note("template.resolve",
                              std::string(),
                              std::string("explicit-class-instantiation parse-failed target=") +
@@ -28088,7 +28116,7 @@ private:
           semantic_lookup::lookup_class_template_node(
               *this, scope, specialization_name, target);
       if(!primary) {
-        if(parser_trace::enabled("template.resolve")) {
+        if(template_resolve_trace_enabled_) {
           parser_trace::note("template.resolve",
                              std::string(),
                              std::string("explicit-class-instantiation missing-template name=") +
@@ -28107,7 +28135,7 @@ private:
                                      &target_template_id->argument_syntaxes,
                                      arguments,
                                      primary->declaring_scope)) {
-        if(parser_trace::enabled("template.resolve")) {
+        if(template_resolve_trace_enabled_) {
           parser_trace::note("template.resolve",
                              std::string(),
                              std::string("explicit-class-instantiation arg-resolution-failed name=") +
@@ -28122,7 +28150,7 @@ private:
       const string specialization_key = template_args_identity_key(arguments);
       if(is_declaration) {
         primary->suppress_implicit_instantiation_definitions.insert(specialization_key);
-        if(parser_trace::enabled("template.resolve")) {
+        if(template_resolve_trace_enabled_) {
           parser_trace::note("template.resolve",
                              std::string(),
                              std::string("explicit-class-instantiation suppress key=") +
@@ -28453,7 +28481,7 @@ private:
         continue;
       }
       if(!explicit_instantiation_binding_type_matches_target(*binding, type)) {
-        if(parser_trace::enabled("template.resolve")) {
+        if(template_resolve_trace_enabled_) {
           parser_trace::note(
               "template.resolve",
               std::string(),
@@ -28493,7 +28521,7 @@ private:
               ->suppress_implicit_member_function_instantiation_definitions
               .insert(member_suppression_key);
         }
-        if(parser_trace::enabled("template.resolve")) {
+        if(template_resolve_trace_enabled_) {
           parser_trace::note(
               "template.resolve",
               std::string(),
@@ -28510,7 +28538,7 @@ private:
         }
         selected_binding->suppress_implicit_instantiation_definition = false;
         selected_binding->is_explicit_instantiation_definition = true;
-        if(parser_trace::enabled("template.resolve")) {
+        if(template_resolve_trace_enabled_) {
           parser_trace::note(
               "template.resolve",
               std::string(),
@@ -28687,7 +28715,7 @@ private:
                         CppAstKind::trailing_return_type) == nullptr;
     const bool reference_signature_types_only =
         !emit_all_source_function_definitions_ &&
-        !witness::source_capture_enabled(template_witness_context()) &&
+        !template_source_capture_enabled() &&
         !node_comes_from_primary_source_file(&node) &&
         !has_auto_return_without_trailing_return;
     if(!parse_function_definition_base(*parse_scope,
@@ -29157,7 +29185,7 @@ private:
                                          const vector<string> & arg_texts,
                                          const vector<TemplateArgumentSyntax> * arg_syntaxes = nullptr)
   {
-    const callsemantic::ClassTemplateReferenceCallbacks callbacks =
+    const callsemantic::ClassTemplateReferenceCallbacks & callbacks =
         class_template_reference_callbacks();
     return callsemantic::instantiate_class_template_with_syntax(
         *this, callbacks, decl, use_scope, arg_texts, arg_syntaxes);
@@ -29349,7 +29377,7 @@ private:
       }
       const FunctionTemplateRegistrationIdentity template_identity =
           template_api::function_binding_registration_identity(*binding);
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "ensure-template-definition binding=" << static_cast<void *>(binding)
               << " function=" << binding->name
@@ -29527,7 +29555,7 @@ private:
                                                                       binding,
                                                                       upgraded,
                                                                       OutputReason::TemplateUpgrade);
-      if(parser_trace::enabled("template.resolve")) {
+      if(template_resolve_trace_enabled_) {
         std::ostringstream trace;
         trace << "upgrade-function-definition binding=" << static_cast<void *>(binding)
               << " upgraded=" << static_cast<void *>(upgraded)
@@ -29785,7 +29813,7 @@ private:
     DIAG_CONTEXT("analyze_expression [" + node_text(node) + "]" +
                  source_location_for_node(node));
     std::string use_location;
-    if(witness::source_capture_enabled(template_witness_context())) {
+    if(template_source_capture_enabled()) {
       const std::string inherited_use_location = template_public_use_location_or(string());
       use_location = !inherited_use_location.empty() ?
           inherited_use_location :
@@ -29817,7 +29845,7 @@ private:
                  " -> " + (target ? describe_type(target) : string("<null-type>")) + "]" +
                  source_location_for_node(node));
     std::string use_location;
-    if(witness::source_capture_enabled(template_witness_context())) {
+    if(template_source_capture_enabled()) {
       const std::string inherited_use_location = template_public_use_location_or(string());
       use_location = !inherited_use_location.empty() ?
           inherited_use_location :
@@ -32096,6 +32124,9 @@ private:
   {
     semantic_statement::analyze_statement(*this, scope, return_type, node, out);
   }
+
+  std::unique_ptr<callsemantic::ClassTemplateReferenceCallbacks>
+      class_template_reference_callbacks_;
 
   // Kept last so ordinary semantic state retains its existing layout. The
   // side store is allocated only while source-witness capture is active.
