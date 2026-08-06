@@ -35,15 +35,19 @@ struct ClassTemplateReferenceCallbacks
   std::function<const cpp_decl::TemplateIdSyntax *(
       const std::string &,
       const std::string &)> template_id_syntax_at_location;
+  std::function<void(const cpp_decl::TemplateIdSyntax &,
+                     const cpp_decl::TypePtr &)>
+      retain_resolved_class_template_id;
   std::function<const RecogToken &(std::size_t)> peek_token;
   std::function<void(semantic_model::ClassTemplateDecl &,
                      const template_api::ClassSpecializationSelection &)>
       record_selected_class_template_base_source_uses;
   std::function<void(semantic_model::Scope &,
+                     const std::vector<template_model::TemplateArgument> &,
                      const std::vector<cpp_decl::TemplateArgumentSyntax> &,
                      witness::SourceUseOwnership,
                      const std::string &)>
-      emit_nested_class_use_source_events_from_syntaxes;
+      observe_nested_class_uses_from_resolved_arguments;
   std::function<bool()> class_template_declarations_complete;
 };
 

@@ -12863,14 +12863,6 @@ const ValueBinding * instantiate_variable_template(
       const ScopedTemplateUseLocation use_location_guard(
           !initializer_use_location.empty() ? initializer_use_location :
                                               parser_trace::current_use_location());
-      if(initializer) {
-        const ScopedTemplateWitnessSourceCaptureResume source_capture_resume;
-        ctx.emit_nested_class_use_source_events_from_ast_node(
-            inst_scope,
-            *initializer,
-            witness::SourceUseOwnership::SourceOwned,
-            true);
-      }
       const ScopedVariableInitializerReplay replay_guard;
       if(ctx.evaluate_initializer_constant(inst_scope, *initializer, value)) {
         inserted->second.has_constant_value = true;
@@ -12880,6 +12872,14 @@ const ValueBinding * instantiate_variable_template(
         inserted->second.dependent_template_value = true;
       } else {
         inserted->second.dependent_template_value = false;
+      }
+      if(initializer) {
+        const ScopedTemplateWitnessSourceCaptureResume source_capture_resume;
+        ctx.emit_nested_class_use_source_events_from_ast_node(
+            inst_scope,
+            *initializer,
+            witness::SourceUseOwnership::SourceOwned,
+            true);
       }
     }
   } else {

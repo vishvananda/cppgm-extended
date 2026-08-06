@@ -43,4 +43,19 @@ struct ResolvedClassTemplateIdView
   }
 };
 
+// Compact retained form for a dependent source occurrence. The canonical
+// resolver owns the syntax and declarations; delayed observation only needs a
+// value copy of the resolved arguments and selection while those owners live.
+// Ordinary analysis does not allocate these records unless a witness session
+// is active.
+struct RetainedDependentClassTemplateId
+{
+  semantic_model::ClassTemplateDecl * origin = nullptr;
+  semantic_model::ClassInfo * instance = nullptr;
+  semantic_model::Scope * use_scope = nullptr;
+  std::vector<template_model::TemplateArgument> arguments;
+  template_api::ClassSpecializationSelection selection;
+  bool valid = false;
+};
+
 }  // namespace resolved_source_semantics

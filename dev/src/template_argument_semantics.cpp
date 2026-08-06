@@ -5613,6 +5613,12 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     if(!qualifier_type) {
       return StructuredTypeLookupResult::NoMatch;
     }
+    if(source_qualifier_template_id && services.semantic_context) {
+      services.semantic_context->retain_resolved_class_template_id(
+          scope,
+          *source_qualifier_template_id,
+          qualifier_type);
+    }
     if(type_is_dependent(qualifier_type)) {
       const bool source_requires_typename =
           (source_qualified_syntax &&
@@ -20207,8 +20213,9 @@ void record_direct_alias_template_source_use_if_needed(
      services.semantic_context &&
      scope.valid()) {
     services.semantic_context
-        ->emit_nested_class_use_source_events_from_template_arguments(
+        ->observe_nested_class_uses_from_resolved_template_arguments(
             scope.require(),
+            resolved_arguments,
             explicit_argument_syntaxes ?
                 *explicit_argument_syntaxes :
                 std::vector<TemplateArgumentSyntax>(),

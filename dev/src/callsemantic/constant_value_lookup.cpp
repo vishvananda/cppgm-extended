@@ -990,6 +990,9 @@ public:
     if(!info) {
       return false;
     }
+    ctx.retain_resolved_class_template_id(scope,
+                                          qualifier_template_id,
+                                          info->type);
     if(info->reentrant_primary_selection) {
       return false;
     }

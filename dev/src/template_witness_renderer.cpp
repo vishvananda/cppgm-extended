@@ -5726,6 +5726,9 @@ void collect_rendered_source_events(const template_api::TemplateWitnessSession &
                     drop_uninstantiated_static_member_definition_owner_uses(
                         events, session));
   CPPGM_RENDER_PASS("normalize_drop_order", normalize_drop_order(events));
+  CPPGM_RENDER_PASS("normalize_source_defined_calls",
+                    normalize_source_defined_template_calls(
+                        events, session.template_body_ranges, source_path));
   CPPGM_RENDER_PASS("qualify_member_alias_from_class_uses",
                     qualify_member_alias_events_from_class_uses(events));
   CPPGM_RENDER_PASS("repair_placeholder_alias_owners",
@@ -5735,9 +5738,6 @@ void collect_rendered_source_events(const template_api::TemplateWitnessSession &
                         events, session.template_header_contexts, source_path));
   CPPGM_RENDER_PASS("prefer_source_spelled_alias",
                     prefer_source_spelled_alias_events(events));
-  CPPGM_RENDER_PASS("normalize_source_defined_calls",
-                    normalize_source_defined_template_calls(
-                        events, session.template_body_ranges, source_path));
   CPPGM_RENDER_PASS("drop_redundant_nested_events",
                     drop_redundant_nested_events(events));
   CPPGM_RENDER_PASS("prefer_explicit_class_specializations",

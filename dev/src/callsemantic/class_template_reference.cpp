@@ -2121,6 +2121,24 @@ public:
       if(use_location.empty() || !resolved_info) {
         return;
       }
+      const TemplateIdSyntax * retained_source_syntax = nullptr;
+      if(callbacks.template_id_syntax_at_location) {
+        retained_source_syntax =
+            callbacks.template_id_syntax_at_location(
+                use_location,
+                unqualified_member_name(decl.name));
+        if(retained_source_syntax &&
+           callbacks.retain_resolved_class_template_id) {
+          callbacks.retain_resolved_class_template_id(
+              *retained_source_syntax,
+              resolved_info->type);
+        }
+      }
+      resolved_source_semantics::ResolvedClassTemplateIdView retained_resolved =
+          resolved;
+      retained_resolved.source_syntax = retained_source_syntax;
+      retained_resolved.source_location = &use_location;
+      ctx.observe_resolved_class_template_id(retained_resolved);
       const auto emit_nested_source_argument_uses = [&]() -> void
       {
         if(!witness::class_use_recording_enabled()) {
@@ -2128,9 +2146,10 @@ public:
         }
         if(syntax_backed_source_capture_enabled &&
            source_arg_syntaxes &&
-           callbacks.emit_nested_class_use_source_events_from_syntaxes) {
-          callbacks.emit_nested_class_use_source_events_from_syntaxes(
+           callbacks.observe_nested_class_uses_from_resolved_arguments) {
+          callbacks.observe_nested_class_uses_from_resolved_arguments(
               use_scope,
+              resolved_arguments,
               *source_arg_syntaxes,
               witness::SourceUseOwnership::SourceOwned,
               decl.name);
@@ -2972,9 +2991,10 @@ public:
         if(parent_class_use_records &&
            !suppress_nested_arguments &&
            source_arg_syntaxes &&
-           callbacks.emit_nested_class_use_source_events_from_syntaxes) {
-          callbacks.emit_nested_class_use_source_events_from_syntaxes(
+           callbacks.observe_nested_class_uses_from_resolved_arguments) {
+          callbacks.observe_nested_class_uses_from_resolved_arguments(
               use_scope,
+              resolved_arguments,
               *source_arg_syntaxes,
               witness::SourceUseOwnership::SourceOwned,
               request.template_name);

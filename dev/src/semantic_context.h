@@ -130,9 +130,19 @@ public:
       const CppAstNode & node,
       semantic_source_use::SourceUseOwnership ownership,
       bool allow_source_template_header_replay = false) = 0;
-  virtual void emit_nested_class_use_source_events_from_template_arguments(
+  virtual void observe_nested_class_uses_from_resolved_template_arguments(
       semantic_model::Scope & scope,
+      const std::vector<template_model::TemplateArgument> & arguments,
       const std::vector<cpp_decl::TemplateArgumentSyntax> & syntaxes,
+      semantic_source_use::SourceUseOwnership ownership) = 0;
+  virtual void retain_resolved_class_template_id(
+      semantic_model::Scope & scope,
+      const cpp_decl::TemplateIdSyntax & syntax,
+      const cpp_decl::TypePtr & resolved_type) = 0;
+  virtual void observe_resolved_class_template_id_source_use(
+      semantic_model::Scope & scope,
+      const cpp_decl::TemplateIdSyntax & syntax,
+      const cpp_decl::TypePtr & resolved_type,
       semantic_source_use::SourceUseOwnership ownership) = 0;
   virtual void emit_static_member_definition_class_use_source_events_from_ast_node(
       semantic_model::Scope & scope,
