@@ -1858,8 +1858,7 @@ public:
         use_raw_reference_cache ? raw_reference_cache_key(decl, use_scope, arg_texts) :
                                   std::string();
     const bool resolved_source_result_required =
-        witness::source_capture_enabled(template_witness_context()) ||
-        !parser_trace::current_order_use_location().empty();
+        witness::source_capture_enabled(template_witness_context());
     if(use_raw_reference_cache && !resolved_source_result_required) {
       auto cached =
           decl.fast_reference_cache.find(raw_cache_key);
