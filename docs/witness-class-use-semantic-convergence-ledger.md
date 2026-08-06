@@ -50,7 +50,7 @@ or rerecord it.
 | 3B. Template patterns | `9ea979c45` | 6 | 2 | +1499 / -936 | +0.31% | -0.06% | +0.54% | +0.11% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-3b.json` |
 | 4. Qualified constants | `e4f3fada5` | 4 | 2 | +1700 / -1355 | +0.78% | +0.47% | +0.74% | +0.40% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-4-compact.json` |
 | 5. Definition owners | `acc13c758` | 2 | 1 | +2151 / -2120 | +0.84% | +0.06% | +0.93% | +0.46% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-5.json` |
-| 6. Alias provenance | pending | 1 | 0 | pending | pending | pending | pending | pending | pending | pending | as needed | pending |
+| 6. Alias provenance | `1e4f5f760` | 1 | 0 | +2623 / -2450 | +0.83% | -0.01% | +0.10% | +0.42% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-6.json` |
 | 7. Final observer and cleanup | pending | 1 | 0 | pending | pending | pending | pending | pending | pending | pending | clean | pending |
 
 ## Hot structure sizes
@@ -64,6 +64,7 @@ or rerecord it.
 | Phase 3B | 280 | 136 | 1,136 | 136 | `ResolvedAliasTemplateIdView`: 72 bytes, stack-scoped; class retained storage unchanged |
 | Phase 4 | 280 | 136 | 1,136 | 136 | `ResolvedQualifiedId`: 40 bytes, stack-scoped; retained storage unchanged |
 | Phase 5 | 280 | 136 | 1,136 | 136 | `ResolvedOwnerReference`: 32 bytes, witness-session side store only; `OutOfClassMemberFunctionDecl` remains 240 bytes |
+| Phase 6 | 280 | 136 | 1,136 | 136 | `RetainedAliasClassUse`: 16 bytes, witness-session side store only; other retained result sizes unchanged |
 
 `OutOfClassMemberFunctionDecl` starts at 240 bytes. The reporter source is
 `scripts/report_semantic_structure_sizes.cpp`; compile it against `dev/src`
@@ -290,6 +291,52 @@ with the configured host compiler.
   `+0.06%` versus rolling. Phase 7 must remove the accumulated scaffolding and
   finish below the fixed median.
 
+## Phase 6 evidence
+
+- Correctness commit: `1e4f5f7609ab6abfdff4c3789a4e38f4bc38977e`
+- Candidate SHA-256:
+  `e3d0d3b259a99d65a997cf5864ff08d9e9e4568b2a318f373e28fa569cdf14f1`
+- Instructions: `177974535739`, `+0.83%` versus fixed and `-0.01%`
+  versus rolling
+- Maximum RSS: `763510784`, `+0.10%` versus fixed and `-0.82%`
+  versus rolling
+- Peak footprint: `592592896`, `+0.42%` versus fixed and `-0.04%`
+  versus rolling
+- Strict provenance trace:
+  `/tmp/cppgm-class-use-phase6-provenance.YUx9rW`
+- Strict provenance report:
+  `/tmp/cppgm-class-use-phase6-provenance-report.json`
+- Provenance report SHA-256:
+  `f7e6a11a0e9baaf2369d74cdd51b49ff002d7d8de079f8a32ed21d20fe2ca94c`
+- `class.callsemantic.10` makes zero attempts and its implementation producer
+  ID is absent. The canonical `class.class_template_reference.02` producer
+  owns 1,952 final-visible rows, exactly the Phase 5 total plus the 30 migrated
+  alias rows. All four replay routes report zero calls.
+- Alias expansion retains a 16-byte origin/instance pair and propagates its
+  handle through the same type-analysis result used by ordinary declaration
+  parsing. Namespace, statement, and constant-evaluation alias declarations
+  all register that result through one public operation; none performs class
+  recovery, source scanning, or independent specialization selection.
+- The alias audit found one invalid intermediate pairing where a template
+  origin could accompany an unrelated ordinary class instance. Retention now
+  enforces `instance->source_template == origin` at the creation boundary.
+  The result channel also validates that the final declaration type is the
+  retained class, which prevents nested alias machinery from becoming a
+  second class-use analyzer.
+- The old token-range probe, recursive template-id spelling search,
+  post-`TypePtr` class recovery, replay interface, route ID, and producer ID
+  are deleted. The 42-fixture migration set, including reference-shell,
+  member-alias, alias-template, and MP11 cases, passes in full.
+- The phase adds 142 net production lines while introducing the retained
+  alias side store. Cumulatively, production code is `+2623 / -2450`, or 173
+  net added lines versus fixed. Phase 7 must delete this scaffolding and finish
+  net negative.
+- Ordinary binary: 17,259,432 bytes; Mach-O `__TEXT` 13,144,064 bytes and
+  `__DATA` 446,464 bytes. Hot semantic structure sizes are unchanged.
+- Cleanup obligation remains open: instructions are `+0.83%` versus fixed.
+  Phase 7 must remove the accumulated collection and emission scaffolding and
+  satisfy the repeatable final reduction rule.
+
 ## Producer migration
 
 | Deleted producer | Canonical result owner | Unique rows transferred | Targeted fixtures | Status |
@@ -301,7 +348,7 @@ with the configured host compiler.
 | `class.constant_value_lookup.03` | resolved qualified-id | 199 | dependent qualified static member value and strict unique-owner set | migrated in `e4f3fada5` |
 | `class.callsemantic.13` | resolved out-of-class owner | 29 | partial-specialization member outdef | migrated in `acc13c758` |
 | `class.template_instantiation` | substituted retained owner pattern | 24 | static member assignment and strict unique-owner set | migrated in `acc13c758` |
-| `class.callsemantic.10` | retained alias expansion result | 30 | materialized alias declaration and strict unique-owner set | pending |
+| `class.callsemantic.10` | retained alias expansion result | 30 | materialized alias declaration and strict unique-owner set | migrated in `1e4f5f760` |
 | `class.class_template_reference.02` | final resolved-source observer | 1,118 | full strict set | pending migration |
 
 ## Performance cleanup obligations
