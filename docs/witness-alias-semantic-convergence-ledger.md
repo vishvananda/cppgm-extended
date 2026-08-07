@@ -36,6 +36,7 @@ is lifecycle Phase 6 at `05b0c7a21ff497cd2186fabc2096bf04cc6e931b`.
 | 1. Completed result | `497376554` | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.17% fixed / +0.06% rolling; RSS -0.20% / -0.35%; footprint -0.09% / -0.02% | complete |
 | 2. Direct source owner | `f5529cc60` | 1,416 | 653 / 573 / 176 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.43% fixed / -0.26% rolling; RSS -2.55% / -2.35%; footprint -2.94% / -2.86% | complete |
 | 3. Dependent pattern result | `bd3b81402` | 1,416 | 671 / 579 / 164 / 2 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.12% fixed / +0.31% rolling; RSS -1.43% / +1.15%; footprint -2.93% / +0.02% | complete |
+| 4. Pattern analysis | `2252c751b` | 1,211 | 854 / 328 / 27 / 2 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.39% fixed / -0.27% rolling; RSS -2.14% / -0.72%; footprint -2.94% / -0.01% | complete |
 
 ## Phase 0: upstream route evidence
 
@@ -172,4 +173,30 @@ The three-run candidate is `/tmp/cppgm-alias-phase-3.json`, SHA-256
 `03b6993d55acf1016c49b16c24dca9ef6ad2d7422adfcb1953f44e34cf6673b0`.
 Its medians are 175,678,585,277 instructions, 752,881,664 bytes maximum RSS,
 and 575,414,272 bytes peak footprint. Both comparisons pass without a warning,
+and this candidate becomes the rolling baseline.
+
+## Phase 4: declaration patterns stop expanding alias targets
+
+Template declaration analysis now selects the alias and resolves only its
+source arguments. It publishes that typed parameterized result directly. The
+old branch no longer instantiates the alias target, materializes classes,
+reconstructs an exact lookup guard, or submits a second pattern row. Stable
+source occurrences are cached by declaration syntax and location; later
+template instantiations skip both lookup and argument resolution. Patterns
+with nested template arguments remain eligible for a more precise binding
+frame.
+
+The diagnostic report is
+`/tmp/cppgm-alias-phase4-cache-provenance-report.json`, SHA-256
+`f242e8c103e624ae1409833725ba8dd28a27c52ecf08d9abc4368fc3fe7b9de2`.
+Total alias attempts fall from 1,416 to 1,211. The declaration-pattern route
+has 536 attempts: 456 insertions, 70 exact repeats, and 10 rejections. The
+resolved-instantiation route falls from 1,230 to 664 attempts. The remaining
+pattern retries are tracked for occurrence ownership rather than treated as a
+completed zero-duplication result.
+
+The three-run candidate is `/tmp/cppgm-alias-phase-4.json`, SHA-256
+`47d8532e47feda7b86a010f67e0e0072e0a5647e0b91cc7255d497d8dc848e3b`.
+Its medians are 175,199,806,939 instructions, 747,466,752 bytes maximum RSS,
+and 575,352,832 bytes peak footprint. Both comparisons pass without a warning,
 and this candidate becomes the rolling baseline.
