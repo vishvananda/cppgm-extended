@@ -44,13 +44,13 @@ postdates the diagnostic counter additions.
 | Producer | Attempts | Exact duplicate | Enriched | Inserted | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
 | `lifecycle.template_api.01` | 24,679 | 15,705 | 265 | 8,709 | pending |
-| `lifecycle.template_api.02` | 8,023 | 7,317 | 2 | 704 | pending |
+| `lifecycle.template_api.02` | 8,023 | 7,317 | 2 | 704 | removed in Phase 1 |
 | `lifecycle.template_api.03` | 52 | 5 | 0 | 47 | pending |
 | `lifecycle.template_api.04` | 2 | 0 | 0 | 2 | pending |
 | `lifecycle.template_api.05` | 1 | 0 | 0 | 1 | pending |
 | `lifecycle.template_api.06` | 0 | 0 | 0 | 0 | Clang oracle reducer added; current CPPGM event missing |
 | `lifecycle.template_api.07` | 1,449 | 963 | 0 | 486 | pending |
-| `lifecycle.template_api.09` | 51 | 4 | 0 | 47 | pending |
+| `lifecycle.template_api.09` | 51 | 4 | 0 | 47 | removed in Phase 1 |
 | `lifecycle.callsemantic.01` | 7 | 0 | 0 | 7 | pending |
 | `lifecycle.callsemantic.02` | 8 | 0 | 0 | 8 | pending |
 | `lifecycle.constant_value_lookup.02` | 111 | 78 | 0 | 33 | removed in Phase 1A |
@@ -59,8 +59,8 @@ postdates the diagnostic counter additions.
 
 | Phase | Commit | Strict | Report | Inception | Instructions vs fixed | RSS vs fixed | Footprint vs fixed | Production net lines | Status |
 | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |
-| 0, evidence and route map | pending | inherited 1305/1305 | inherited 4860/4860 | parent run pending | n/a | n/a | n/a | 0 | in progress |
-| 1, value transitions | in progress, 1A in this commit | 1305/1305 | 4860/4860 | n/a | measure at complete phase | measure at complete phase | measure at complete phase | -37 after 1A | in progress |
+| 0, evidence and route map | `c2b81588d`, `bbf774d43` | inherited 1305/1305 | inherited 4860/4860 | parent passed | n/a | n/a | n/a | 0 | complete |
+| 1, value transitions | `93961d96a`, `61ce47d28` | 1305/1305 | 4860/4860 | n/a | +0.00% | +0.45% | -0.04% | +312 | complete |
 | 2, function acquisition | pending | pending | pending | n/a | pending | pending | pending | pending | pending |
 | 3, definition closure | pending | pending | pending | pending if layout changes | pending | pending | pending | pending | pending |
 | 4, class acquisition | pending | pending | pending | pending if layout changes | pending | pending | pending | pending | pending |
@@ -71,12 +71,12 @@ postdates the diagnostic counter additions.
 
 | Structure | Fixed size | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Phase 5 | Final |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `Type` | 280 | pending | pending | pending | pending | pending | pending |
-| `TemplateArgument` | 136 | pending | pending | pending | pending | pending | pending |
-| `ClassInfo` | 1136 | pending | pending | pending | pending | pending | pending |
-| `FunctionBinding` | 824 | pending | pending | pending | pending | pending | pending |
-| `ValueBinding` | 504 | pending | pending | pending | pending | pending | pending |
-| `TemplateLifecycleTransition` | n/a | pending | pending | pending | pending | pending | pending |
+| `Type` | 280 | 280 | pending | pending | pending | pending | pending |
+| `TemplateArgument` | 136 | 136 | pending | pending | pending | pending | pending |
+| `ClassInfo` | 1136 | 1136 | pending | pending | pending | pending | pending |
+| `FunctionBinding` | 824 | 824 | pending | pending | pending | pending | pending |
+| `ValueBinding` | 504 | 504 | pending | pending | pending | pending | pending |
+| `TemplateLifecycleTransition` | n/a | 72 | pending | pending | pending | pending | pending |
 
 ## Route map
 
@@ -122,6 +122,49 @@ postdates the diagnostic counter additions.
   1 remains open because `.02` and `.09` still use separate lifecycle paths
   and `.02` still generates repeated attempts.
 
+## Phase 1 evidence: canonical value transitions
+
+- Correctness commit: `61ce47d287574d19e21ee0b0b7e2b90c9f9d3114`.
+- `materialize_template_member_value_transition` returns one typed value
+  transition. `observe_template_lifecycle_transition` owns the only value
+  lifecycle recorder call. Variable-template acquisition submits the same
+  transition type.
+- Retained value dependencies carry the selected binding, semantic owner, and
+  visible owner-argument count. The transition carries no rendered entity or
+  location strings. The owner-argument view preserves distinct requests such
+  as `table<>::sizes` and `table<void>::sizes` without duplicate recorder
+  attempts.
+- Targeted provenance trace:
+  `/tmp/cppgm-lifecycle-phase1-targeted-provenance.KgxeJb`.
+- Targeted report:
+  `/tmp/cppgm-lifecycle-phase1-targeted-provenance-report.json`, SHA-256
+  `637a04d947027eb0cb0ffb6c9750bbb006f0cfdd2ea9836cb3a7721427c004ba`.
+  The 24 files produce 1,706 records. The transition observer makes 55
+  attempts and inserts all 55; it records no duplicate, enrichment, rejection,
+  or replacement action.
+- Full strict provenance trace:
+  `/tmp/cppgm-lifecycle-phase1-strict-provenance.xVq8G3`.
+- Full strict report:
+  `/tmp/cppgm-lifecycle-phase1-strict-provenance-report.json`, SHA-256
+  `effb9e4cc75d6546d7456b411303e5e4bc9cd994fd8f7be3ceb83ed441caf914`.
+  The 1,180 traces contain 51,583 records and no unknown producer attempts.
+  The observer inserts all 570 attempts. The report contains no `.02`, `.09`,
+  or `constant_value_lookup.02` site.
+- The diagnostic and ordinary direct-LowIR strict runs pass 1,305/1,305. The
+  ordinary PA1-PA38 report passes 4,860/4,860.
+- Candidate performance file: `/tmp/cppgm-lifecycle-phase-1.json`, SHA-256
+  `8a1c1deb5a5a0b99428bb60239adc072658621f86259abf4a477a955737d6187`.
+  Median instructions are `176160343936`, `+0.00%` versus fixed. Median
+  maximum RSS is `766439424`, `+0.45%`. Median peak footprint is `592625664`,
+  `-0.04%`. Both fixed and rolling advisory comparisons pass without an RSS
+  warning. The rolling file contains this candidate.
+- `Type`, `TemplateArgument`, `ClassInfo`, `FunctionBinding`, and
+  `ValueBinding` retain their fixed sizes. `TemplateLifecycleTransition` is 72
+  bytes. Phase 1 adds 481 and removes 169 `dev/src` lines, a net addition of
+  312 lines. Phases 2-6 must offset this intermediate growth by deleting the
+  remaining producer arms and legacy wrappers before the final line and
+  instruction gate.
+
 ### Function lifecycle
 
 - `.01` receives require, ensure, and materialize calls from function-template
@@ -154,10 +197,11 @@ postdates the diagnostic counter additions.
 - [ ] Promote the anonymous-member reducer to PA19 after the canonical class
   transition matches the Clang reference.
 - [x] Record fixed `sizeof(FunctionBinding)` and `sizeof(ValueBinding)`.
-- [ ] Confirm the original class-use inception run and copy its result into the
+- [x] Confirm the original class-use inception run and copy its result into the
   parent ledger.
 - [x] Use `/tmp/cppgm-witness-lifecycle-obj` for worktree builds.
-- [ ] Record one candidate batch for each committed semantic phase.
+- [x] Record the Phase 1 candidate batch and promote it to the rolling file.
+- [ ] Record one candidate batch for each remaining semantic phase.
 - [ ] Investigate each instruction, RSS, or footprint warning before advancing.
 - [ ] Finish with a net production line and instruction reduction.
 
