@@ -43,7 +43,7 @@ postdates the diagnostic counter additions.
 
 | Producer | Attempts | Exact duplicate | Enriched | Inserted | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `lifecycle.template_api.01` | 24,679 | 15,705 | 265 | 8,709 | pending |
+| `lifecycle.template_api.01` | 24,679 | 15,705 | 265 | 8,709 | removed in Phase 3 |
 | `lifecycle.template_api.02` | 8,023 | 7,317 | 2 | 704 | removed in Phase 1 |
 | `lifecycle.template_api.03` | 52 | 5 | 0 | 47 | pending |
 | `lifecycle.template_api.04` | 2 | 0 | 0 | 2 | pending |
@@ -62,7 +62,7 @@ postdates the diagnostic counter additions.
 | 0, evidence and route map | `c2b81588d`, `bbf774d43` | inherited 1305/1305 | inherited 4860/4860 | parent passed | n/a | n/a | n/a | 0 | complete |
 | 1, value transitions | `93961d96a`, `61ce47d28` | 1305/1305 | 4860/4860 | n/a | +0.00% | +0.45% | -0.04% | +312 | complete |
 | 2, function acquisition | `644b561a2` | 1305/1305 | 4860/4860 | n/a | -0.17% | -0.09% | -0.01% | +390 | complete |
-| 3, definition closure | pending | pending | pending | pending if layout changes | pending | pending | pending | pending | pending |
+| 3, definition closure | `274cf0a32` | 1305/1305 | 4860/4860 | n/a, hot layouts unchanged | -0.11% | +1.02% | -0.02% | +518 | complete |
 | 4, class acquisition | pending | pending | pending | pending if layout changes | pending | pending | pending | pending | pending |
 | 5, nested and unnamed classes | pending | pending | pending | n/a | pending | pending | pending | pending | pending |
 | 6, final observer and cleanup | pending | pending | pending | pending | pending | pending | pending | pending | pending |
@@ -71,12 +71,12 @@ postdates the diagnostic counter additions.
 
 | Structure | Fixed size | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Phase 5 | Final |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `Type` | 280 | 280 | 280 | pending | pending | pending | pending |
-| `TemplateArgument` | 136 | 136 | 136 | pending | pending | pending | pending |
-| `ClassInfo` | 1136 | 1136 | 1136 | pending | pending | pending | pending |
-| `FunctionBinding` | 824 | 824 | 824 | pending | pending | pending | pending |
-| `ValueBinding` | 504 | 504 | 504 | pending | pending | pending | pending |
-| `TemplateLifecycleTransition` | n/a | 72 | 88 | pending | pending | pending | pending |
+| `Type` | 280 | 280 | 280 | 280 | pending | pending | pending |
+| `TemplateArgument` | 136 | 136 | 136 | 136 | pending | pending | pending |
+| `ClassInfo` | 1136 | 1136 | 1136 | 1136 | pending | pending | pending |
+| `FunctionBinding` | 824 | 824 | 824 | 824 | pending | pending | pending |
+| `ValueBinding` | 504 | 504 | 504 | 504 | pending | pending | pending |
+| `TemplateLifecycleTransition` | n/a | 72 | 88 | 88 | pending | pending | pending |
 
 ## Route map
 
@@ -207,6 +207,55 @@ postdates the diagnostic counter additions.
   fixed checkpoint, a net addition of 390 lines. Phase 2 adds transition facts
   while the Phase 3 definition wrappers remain. Phase 3 owns their deletion.
 
+## Phase 3 evidence: canonical definition closure
+
+- Correctness commit: `274cf0a3280ab427b6663924b702f725b66a915f`.
+- `acquire_function_binding_in_current_context` now owns the required,
+  ensured, and materialized state edges around its one call to
+  `ensure_function_template_definition`. Definition closure, call semantics,
+  constant evaluation, conversion, lifetime, and explicit instantiation all
+  submit typed acquisition requests to that operation.
+- The phase deletes `lifecycle.template_api.01`, the generic closure-event
+  wrapper, the direct definition-ensure and definition-materialized helpers,
+  and the remaining callsemantic require-definition arms. Lifecycle producer
+  IDs fall from eight to seven. The surviving observer is the only function
+  lifecycle recorder caller.
+- Function transition identity is session-side and contains semantic and
+  presentation boundary facts: canonical overload-set, declaring source,
+  owner instantiation, event anchor, cause, and flags. It is 40 bytes and
+  retains no owning string or hot semantic-object field. Equivalent cloned
+  bindings therefore share state without collapsing distinct source events.
+- Full strict provenance trace:
+  `/tmp/cppgm-lifecycle-phase3-strict-provenance.B6n4wj`.
+- Full strict report:
+  `/tmp/cppgm-lifecycle-phase3-strict-provenance-report.json`, SHA-256
+  `1056c92091bba2f72574ed9e338d293d06505eaaa9d0cb234f21bcf257b59a7e`.
+  The 1,180 traces contain 25,009 records and no unknown producer attempt.
+  `lifecycle.transition_observer.01` makes 3,999 attempts and inserts all
+  3,999. It records no exact duplicate, enrichment, rejection, or
+  replacement. The lifecycle collision matrix is empty, and the deleted
+  `.01` producer is absent.
+- The diagnostic strict run used one batch worker and passed 1,305/1,305 with
+  direct LowIR comparison. The ordinary eight-worker strict run also passed
+  1,305/1,305, and the ordinary PA1-PA38 report passed 4,860/4,860.
+- Candidate performance file: `/tmp/cppgm-lifecycle-phase-3.json`, SHA-256
+  `ec446f1870ccb5f86bf719334ea624a897a63d48979fe2812055d97274b6f153`.
+  Median instructions are `175962780696`, `-0.11%` versus fixed and `+0.07%`
+  versus Phase 2. Median maximum RSS is `770822144`, `+1.02%` versus fixed and
+  `+1.11%` versus Phase 2. Median peak footprint is `592760832`, `-0.02%`
+  versus fixed and `-0.01%` versus Phase 2. Both comparisons pass. RSS does
+  not trigger a confirmation batch. The rolling file contains this exact
+  candidate.
+- `Type`, `TemplateArgument`, `ClassInfo`, `FunctionBinding`, and
+  `ValueBinding` retain their fixed sizes. `TemplateLifecycleTransition`
+  remains 88 bytes. The ordinary `cppgm++` is 17,140,728 bytes; Mach-O
+  `__TEXT` is 13,069,554 bytes and `__DATA` is 442,600 bytes.
+- Phase 3 adds 401 and removes 273 production lines, a net addition of 128.
+  Cumulative production change from the fixed checkpoint is 1,044 additions
+  and 526 deletions, or +518 lines. The final phase still owes a net deletion;
+  class convergence and recorder cleanup must remove the superseded wrappers,
+  flags, scans, and identity branches.
+
 ### Function lifecycle
 
 - `.01` receives require, ensure, and materialize calls from function-template
@@ -244,7 +293,7 @@ postdates the diagnostic counter additions.
 - [x] Use `/tmp/cppgm-witness-lifecycle-obj` for worktree builds.
 - [x] Record the Phase 1 candidate batch and promote it to the rolling file.
 - [ ] Record one candidate batch for each remaining semantic phase. Phases 1
-  and 2 are complete.
+  through 3 are complete.
 - [ ] Investigate each instruction, RSS, or footprint warning before advancing.
 - [ ] Finish with a net production line and instruction reduction.
 
