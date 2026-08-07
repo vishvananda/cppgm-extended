@@ -21179,7 +21179,8 @@ bool try_resolve_alias_template_id_locally(
   const bool preserve_witness_source_capture =
       witness::source_capture_enabled(services.witness_context);
 
-  if(!dependent_arguments) {
+  const auto resolve_nondependent_alias = [&]() -> bool
+  {
     if(preserve_witness_source_capture) {
       TypePtr ast_alias;
       const bool ast_ok = resolve_alias_type_id_ast(ast_alias, false);
@@ -21274,6 +21275,29 @@ bool try_resolve_alias_template_id_locally(
           return false;
         }
       }
+    }
+    return out != nullptr;
+  };
+
+  if(!dependent_arguments) {
+    if(services.semantic_context &&
+       services.witness_context.session != nullptr) {
+      vector<TemplateValueDependency> deferred_value_dependencies;
+      bool resolved = false;
+      {
+        const ScopedTemplateMemberValueDependencyCollection dependency_collection(
+            deferred_value_dependencies);
+        const ScopedTemplateValueDependencyEmissionPause dependency_emission_pause(
+            true);
+        resolved = resolve_nondependent_alias();
+      }
+      if(!resolved) {
+        return false;
+      }
+      note_template_value_dependencies_for_witness(*services.semantic_context,
+                                                   deferred_value_dependencies);
+    } else if(!resolve_nondependent_alias()) {
+      return false;
     }
   } else {
     vector<TemplateValueDependency> deferred_value_dependencies;
@@ -41400,71 +41424,6 @@ static void note_leaf_constant_values_in_expression_ast(
   }
 }
 
-static bool should_track_nested_member_class_type_for_witness(
-    const ClassInfo * info)
-{
-  if(!info ||
-     info->source_template ||
-     !info->enclosing_scope ||
-     !info->enclosing_scope->class_info) {
-    return false;
-  }
-  return template_api::class_has_template_identity(info) &&
-         template_api::class_has_template_identity(info->enclosing_scope->class_info);
-}
-
-static void note_nested_member_class_type_for_witness(
-    template_api::TemplateServices & services,
-    ClassInfo & info,
-    set<const ClassInfo *> & noted)
-{
-  if(services.semantic_context &&
-     should_track_nested_member_class_type_for_witness(&info)) {
-    if(noted.insert(&info).second) {
-      template_api::observe_template_lifecycle_transition(
-          *services.semantic_context,
-          template_api::note_nested_member_class_instantiation_completed_if_needed(
-              *services.semantic_context,
-              &info,
-              info.class_node,
-              info.class_node));
-    }
-  }
-}
-
-static void note_nested_member_class_types_in_expression_ast(
-    template_api::TemplateServices & services,
-    Scope & raw_scope,
-    const CppAstNode & node,
-    set<const ClassInfo *> & noted)
-{
-  if(node.kind == CppAstKind::type_id && services.semantic_context) {
-    TypePtr type;
-    try {
-      if(services.semantic_context->parse_type_id(raw_scope, node, type, true) &&
-         type) {
-        if(ClassInfo * info =
-               template_api::find_named_type_class_info(
-                   service_type_system(services).model,
-                   type)) {
-          note_nested_member_class_type_for_witness(services, *info, noted);
-        }
-      }
-    } catch(const TemplateSubstitutionFailure &) {
-    } catch(const SemanticSoftFailure &) {
-    } catch(const SemanticDiagnosticError &) {
-    } catch(const semantic_fallback_audit::SemanticFallbackError &) {
-    } catch(const logic_error &) {
-    }
-  }
-  for(size_t i = 0; i < node.children.size(); ++i) {
-    note_nested_member_class_types_in_expression_ast(services,
-                                                     raw_scope,
-                                                     node.children[i],
-                                                     noted);
-  }
-}
-
 bool note_constant_value_member_instantiations_in_expression(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -41476,12 +41435,7 @@ bool note_constant_value_member_instantiations_in_expression(
   }
   const witness::ScopedTemplateWitnessSourceCapturePause source_capture_pause;
   note_leaf_constant_values_in_expression_ast(services, scope, expr);
-  set<const ClassInfo *> noted_nested_member_classes;
-  note_nested_member_class_types_in_expression_ast(services,
-                                                  scope,
-                                                  expr,
-                                                  noted_nested_member_classes);
-  return !noted_nested_member_classes.empty();
+  return false;
 }
 
 static void note_structured_bool_value_members_in_expression_ast(

@@ -6561,10 +6561,12 @@ bool try_expand_alias_template_pattern_structurally(
   {
     static const char * const true_names[] = {
       "true_",
+      "true_type",
       "mp_true"
     };
     static const char * const false_names[] = {
       "false_",
+      "false_type",
       "mp_false"
     };
     return value ?
@@ -6743,8 +6745,21 @@ bool try_expand_alias_template_pattern_structurally(
        (arguments[0].kind == TemplateArgument::TA_CLASS_TEMPLATE ||
         arguments[0].kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
       TypePtr applied;
-      if(apply_lazy_template_template_argument(arguments[0], 1, applied) &&
-         applied) {
+      bool application_valid =
+          apply_lazy_template_template_argument(arguments[0], 1, applied) &&
+          applied;
+      if(TypePtr validity_type = find_lazy_bool_type(application_valid)) {
+        bool evaluated_validity = false;
+        if(template_argument_semantics::evaluate_structured_bool_constant_type(
+               services,
+               effective_body_scope,
+               validity_type,
+               evaluated_validity) ==
+           template_argument_semantics::NT_ARG_EVALUATED) {
+          application_valid = evaluated_validity;
+        }
+      }
+      if(application_valid) {
         ClassTemplateDecl * defer_impl = find_lazy_defer_impl_template();
         if(!defer_impl) {
           return false;
