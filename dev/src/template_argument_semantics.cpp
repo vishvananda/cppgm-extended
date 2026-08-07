@@ -20193,7 +20193,7 @@ void record_direct_alias_template_source_use_if_needed(
     }
   }
   if(services.semantic_context && scope.valid()) {
-    resolved_source_semantics::ResolvedAliasTemplateIdView observation;
+    resolved_source_semantics::ResolvedAliasTemplateId observation;
     observation.origin = const_cast<AliasTemplateDecl *>(&alias_template);
     observation.use_scope = &scope.require();
     observation.resolved_type = resolved;

@@ -33,6 +33,7 @@ is lifecycle Phase 6 at `05b0c7a21ff497cd2186fabc2096bf04cc6e931b`.
 | Phase | Commit | Alias attempts | Insert / duplicate / reject / replace | Strict | Broad | Performance | State |
 | --- | --- | ---: | --- | --- | --- | --- | --- |
 | 0. Route evidence | `e99c510d3` | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.23%, RSS +0.15%, footprint -0.07% | complete |
+| 1. Completed result | pending | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | pending | implementation complete |
 
 ## Phase 0: upstream route evidence
 
@@ -73,3 +74,26 @@ Its medians are 175,484,611,677 instructions, 764,981,248 bytes maximum RSS,
 and 592,363,520 bytes peak footprint. Both fixed and initial rolling
 comparisons pass without a warning. This exact candidate is the new rolling
 baseline.
+
+## Phase 1: one completed alias result
+
+`instantiate_resolved_alias_template_impl` now returns one stack-scoped
+`ResolvedAliasTemplateId`. Builtin transform, structural, direct-syntax, AST,
+cache-hit, dependent, and fallback arms only complete that result. The nine
+arm-local `note_alias_use` calls and their lambda are gone. One completion
+function owns observation, trace output, and the existing structured-value
+closure before either public alias-instantiation entry point returns its
+`TypePtr`.
+
+The result remains 80 bytes and non-owning. `Type`, `TemplateArgument`,
+`AliasTemplateDecl`, and the other hot structures retain their Phase 0 sizes.
+The production diff for the phase is 247 additions and 230 deletions, a net
+addition of 17 lines while the operation boundary is introduced.
+
+Diagnostic provenance is
+`/tmp/cppgm-alias-phase1-strict-provenance-report.json`. It is byte-identical
+to the Phase 0 report, with SHA-256
+`f26b4ebe924ec7707de90846e961bfe419be1f558ff6b92b6c51bb2578bcbe5e`.
+All route, table, renderer, and visible-ownership counts match field for field;
+there are no unknown routes or producers. Both the ordinary and diagnostic
+direct-LowIR strict gates pass 1,305/1,305.

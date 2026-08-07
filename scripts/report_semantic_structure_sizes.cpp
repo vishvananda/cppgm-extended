@@ -27,8 +27,8 @@ int main()
   std::cout << "ResolvedClassTemplateIdView "
             << sizeof(resolved_source_semantics::ResolvedClassTemplateIdView)
             << '\n';
-  std::cout << "ResolvedAliasTemplateIdView "
-            << sizeof(resolved_source_semantics::ResolvedAliasTemplateIdView)
+  std::cout << "ResolvedAliasTemplateId "
+            << sizeof(resolved_source_semantics::ResolvedAliasTemplateId)
             << '\n';
   std::cout << "ResolvedQualifiedId "
             << sizeof(resolved_source_semantics::ResolvedQualifiedId)

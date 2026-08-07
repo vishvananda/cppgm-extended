@@ -67,10 +67,12 @@ struct RetainedAliasClassUse
   }
 };
 
-// Non-owning result for one source alias-template-id. A dependent pattern may
-// be valid before its arguments can be reduced to TemplateArgument values; in
-// that case the canonical source syntax is the parameterized semantic result.
-struct ResolvedAliasTemplateIdView
+// Stack-scoped semantic result for one source alias-template-id. A dependent
+// pattern may be valid before its arguments can be reduced to TemplateArgument
+// values; in that case the canonical source syntax is the parameterized
+// result. All pointers refer to storage owned by the active resolution
+// operation.
+struct ResolvedAliasTemplateId
 {
   semantic_model::AliasTemplateDecl * origin = nullptr;
   semantic_model::Scope * use_scope = nullptr;

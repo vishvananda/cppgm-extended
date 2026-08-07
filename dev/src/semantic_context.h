@@ -43,7 +43,7 @@ struct ClassSpecializationSelection;
 
 namespace resolved_source_semantics {
 struct ResolvedClassTemplateIdView;
-struct ResolvedAliasTemplateIdView;
+struct ResolvedAliasTemplateId;
 struct ResolvedOwnerReference;
 }  // namespace resolved_source_semantics
 
@@ -731,7 +731,7 @@ public:
   virtual void submit_resolved_class_use(
       witness::ClassUseEmitRequest request) = 0;
   virtual void observe_resolved_alias_template_id(
-      const resolved_source_semantics::ResolvedAliasTemplateIdView & resolved) = 0;
+      const resolved_source_semantics::ResolvedAliasTemplateId & resolved) = 0;
   virtual semantic_model::ClassInfo * instantiate_selected_class_template(
       semantic_model::ClassTemplateDecl & decl,
       semantic_model::Scope & use_scope,

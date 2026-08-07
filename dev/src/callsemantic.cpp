@@ -12906,7 +12906,7 @@ private:
           source_location = anchor->location;
         }
       }
-      resolved_source_semantics::ResolvedAliasTemplateIdView resolved;
+      resolved_source_semantics::ResolvedAliasTemplateId resolved;
       resolved.origin = &decl;
       resolved.use_scope = &use_scope;
       resolved.source_argument_texts = &arg_texts;
@@ -12965,6 +12965,7 @@ private:
       observe_dependent_pattern();
       return finish(TypePtr());
     }
+    canonicalize_simple_dependent_argument_texts(arguments);
 
     vector<string> source_arg_texts = arg_texts;
     if(arg_syntaxes) {
@@ -12978,14 +12979,17 @@ private:
         }
       }
     }
-    return finish(instantiate_resolved_alias_template_impl(
+    resolved_source_semantics::ResolvedAliasTemplateId resolved =
+        instantiate_resolved_alias_template_impl(
         decl,
         use_scope,
         arguments,
         &source_arg_texts,
         arg_syntaxes,
         reference_class_templates_only,
-        suppress_source_capture));
+        suppress_source_capture);
+    complete_resolved_alias_template_id(resolved, suppress_source_capture);
+    return finish(resolved.resolved_type);
   }
 
   bool alias_selector_argument_matches_parameter(
@@ -13143,6 +13147,201 @@ private:
     return true;
   }
 
+  void complete_resolved_alias_template_id(
+      resolved_source_semantics::ResolvedAliasTemplateId & resolved,
+      bool suppress_source_capture)
+  {
+    if(!resolved.origin || !resolved.use_scope || !resolved.arguments) {
+      return;
+    }
+    AliasTemplateDecl & decl = *resolved.origin;
+    Scope & use_scope = *resolved.use_scope;
+    const vector<TemplateArgument> & arguments = *resolved.arguments;
+    const TypePtr & resolved_alias = resolved.resolved_type;
+    const vector<string> * source_arg_texts =
+        resolved.source_argument_texts;
+    const bool dependent_arguments =
+        template_arguments_are_dependent(arguments);
+    const std::string raw_use_location = parser_trace::current_use_location();
+    const bool trace_enabled = template_resolve_trace_enabled_;
+    const bool source_capture_enabled = template_source_capture_enabled();
+    const bool alias_use_recording_enabled =
+        witness::alias_use_recording_enabled(template_witness_context(),
+                                             resolved.emission_origin);
+    const bool namespace_scope_alias =
+        !decl.declaring_scope || !decl.declaring_scope->class_info;
+    if(template_witness_session_ != nullptr &&
+       namespace_scope_alias &&
+       !dependent_arguments &&
+       resolved_alias &&
+       !type_depends_on_template_parameter(resolved_alias)) {
+      template_api::with_template_services(
+          *this,
+          [&](template_api::TemplateServices & services)
+          {
+            for(size_t i = 0; i < arguments.size(); ++i) {
+              if(arguments[i].kind == TemplateArgument::TA_TYPE) {
+                template_argument_semantics::
+                    note_structured_bool_value_member_for_type_if_needed(
+                        services,
+                        template_api::make_template_environment(use_scope),
+                        arguments[i].type);
+              }
+            }
+          });
+    }
+    if(raw_use_location.empty() || !resolved_alias) {
+      return;
+    }
+    if(!trace_enabled && !alias_use_recording_enabled) {
+      return;
+    }
+    const bool exact_identifier_location =
+        semantic_trace::source_location_points_at_identifier(raw_use_location,
+                                                             decl.name);
+    std::string source_event_location = raw_use_location;
+    if(const ExactTemplateTypeLookupAnchor * anchor =
+           current_exact_template_type_lookup_anchor()) {
+      if(exact_template_type_lookup_anchor_matches_identifier(*anchor,
+                                                              decl.name) &&
+         semantic_trace::source_location_points_at_identifier(anchor->location,
+                                                              decl.name)) {
+        source_event_location = anchor->location;
+      }
+    }
+    if(source_event_location == raw_use_location && !exact_identifier_location) {
+      const std::string same_line_location =
+          template_api::template_witness_detail::
+              source_location_for_identifier_token_on_or_after(
+                  template_witness_context(),
+                  raw_use_location,
+                  decl.name,
+                  true,
+                  true);
+      if(semantic_trace::source_location_points_at_identifier(same_line_location,
+                                                              decl.name)) {
+        source_event_location = same_line_location;
+      }
+      if(source_event_location == raw_use_location &&
+         alias_use_recording_enabled &&
+         dependent_arguments) {
+        const std::string forward_location =
+            template_api::template_witness_detail::
+                source_location_for_identifier_token_on_or_after(
+                    template_witness_context(),
+                    raw_use_location,
+                    decl.name,
+                    false,
+                    true);
+        if(semantic_trace::source_location_points_at_identifier(forward_location,
+                                                                decl.name)) {
+          source_event_location = forward_location;
+        }
+      }
+    }
+    const bool exact_source_event_location =
+        semantic_trace::source_location_points_at_identifier(source_event_location,
+                                                             decl.name);
+    const auto alias_owner_is_current_scope = [&]() -> bool
+    {
+      if(!decl.declaring_scope || !decl.declaring_scope->class_info) {
+        return false;
+      }
+      const ClassInfo * owner = decl.declaring_scope->class_info;
+      for(Scope * current = &use_scope; current; current = current->parent) {
+        if(!current->class_info) {
+          continue;
+        }
+        if(current->class_info == owner) {
+          return true;
+        }
+        if(owner->source_template &&
+           current->class_info->source_template == owner->source_template) {
+          return true;
+        }
+      }
+      return false;
+    };
+    const bool member_alias_source_capture =
+        decl.declaring_scope && decl.declaring_scope->class_info;
+    const bool member_alias_has_source_bound_arguments =
+        member_alias_source_capture &&
+        source_arg_texts &&
+        (template_argument_texts_mention_source_bindings(*this,
+                                                         use_scope,
+                                                         *source_arg_texts) ||
+         template_argument_texts_mention_template_bound_scope_names(
+             use_scope,
+             *source_arg_texts) ||
+         template_argument_texts_mention_enclosing_source_template_parameters(
+             use_scope,
+             *source_arg_texts));
+    const bool suppress_member_alias_source_capture =
+        member_alias_source_capture &&
+        (!exact_source_event_location ||
+         (!alias_owner_is_current_scope() &&
+          (scope_is_inside_source_template_context(use_scope) ||
+           member_alias_has_source_bound_arguments)));
+    if(alias_use_recording_enabled &&
+       exact_source_event_location &&
+       !suppress_member_alias_source_capture &&
+       !suppress_source_capture) {
+      const std::string * previous_location = resolved.source_location;
+      resolved.source_location = &source_event_location;
+      const witness_provenance::ScopedUpstreamRoute upstream_route(
+          witness_provenance::WitnessUpstreamRoute::AliasResolvedInstantiation);
+      observe_resolved_alias_template_id(resolved);
+      resolved.source_location = previous_location;
+    }
+
+    if(source_capture_enabled &&
+       exact_source_event_location &&
+       !suppress_member_alias_source_capture &&
+       !suppress_source_capture &&
+       !dependent_arguments &&
+       resolved_alias &&
+       !type_depends_on_template_parameter(resolved_alias)) {
+      template_api::with_template_services(
+          *this,
+          [&](template_api::TemplateServices & services)
+          {
+            template_argument_semantics::
+                note_structured_bool_value_members_in_template_arguments(
+                    services,
+                    template_api::make_template_environment(use_scope),
+                    arguments);
+            template_argument_semantics::
+                note_alias_target_structured_bool_value_member_for_witness_capture(
+                    services,
+                    template_api::make_template_environment(use_scope),
+                    resolved_alias);
+          });
+    }
+
+    if(trace_enabled) {
+      std::ostringstream bindings;
+      for(size_t i = 0; i < decl.parameters.size() && i < arguments.size(); ++i) {
+        if(i != 0) {
+          bindings << ",";
+        }
+        bindings << (decl.parameters[i].name.empty() ?
+                         std::string("$") + std::to_string(i + 1) :
+                         decl.parameters[i].name)
+                 << ":" << template_argument_text(arguments[i]);
+      }
+
+      std::ostringstream trace;
+      trace << "alias-use"
+            << " name=" << decl.name
+            << " resolved={" << describe_type(resolved_alias) << "}"
+            << " decl="
+            << (decl.type_id ? source_location_for_node(*decl.type_id) :
+                               std::string("<none>"))
+            << " bindings={" << bindings.str() << "}";
+      parser_trace::note("template.resolve", raw_use_location, trace.str());
+    }
+  }
+
   TypePtr instantiate_resolved_alias_template(
       AliasTemplateDecl & decl,
       Scope & use_scope,
@@ -13150,9 +13349,14 @@ private:
       bool reference_class_templates_only = false) override
   {
     ScopedAliasClassUseCapture expansion_capture(resolved_source_state_.get());
-    TypePtr result = instantiate_resolved_alias_template_impl(
-        decl, use_scope, resolved_arguments, nullptr, nullptr,
+    vector<TemplateArgument> arguments = resolved_arguments;
+    canonicalize_simple_dependent_argument_texts(arguments);
+    resolved_source_semantics::ResolvedAliasTemplateId resolved =
+        instantiate_resolved_alias_template_impl(
+        decl, use_scope, arguments, nullptr, nullptr,
         reference_class_templates_only);
+    complete_resolved_alias_template_id(resolved, false);
+    TypePtr result = resolved.resolved_type;
     if(expansion_capture.capture.handle == 0) {
       expansion_capture.capture.handle =
           retained_alias_class_use_handle_for_type(result);
@@ -13166,10 +13370,11 @@ private:
     return result;
   }
 
-  TypePtr instantiate_resolved_alias_template_impl(
+  resolved_source_semantics::ResolvedAliasTemplateId
+  instantiate_resolved_alias_template_impl(
       AliasTemplateDecl & decl,
       Scope & use_scope,
-      const vector<TemplateArgument> & resolved_arguments,
+      vector<TemplateArgument> & arguments,
       const vector<string> * source_arg_texts,
       const vector<TemplateArgumentSyntax> * source_arg_syntaxes,
       bool reference_class_templates_only = false,
@@ -13178,205 +13383,24 @@ private:
     map<string, TypePtr> & instantiations =
         reference_class_templates_only ? decl.reference_instantiations : decl.instantiations;
 
-    vector<TemplateArgument> arguments = resolved_arguments;
-    canonicalize_simple_dependent_argument_texts(arguments);
     const string key = template_args_identity_key(arguments);
     const bool dependent_arguments = template_arguments_are_dependent(arguments);
-    const auto note_alias_use = [&](const TypePtr & resolved_alias) -> void
+    const auto completed_result =
+        [&](const TypePtr & resolved_alias)
+            -> resolved_source_semantics::ResolvedAliasTemplateId
     {
-      const std::string raw_use_location = parser_trace::current_use_location();
-      const bool trace_enabled = template_resolve_trace_enabled_;
-      const bool source_capture_enabled =
-          template_source_capture_enabled();
-      const witness::AliasUseEmissionOrigin alias_use_origin =
+      resolved_source_semantics::ResolvedAliasTemplateId result;
+      result.origin = &decl;
+      result.use_scope = &use_scope;
+      result.resolved_type = resolved_alias;
+      result.arguments = &arguments;
+      result.source_argument_texts = source_arg_texts;
+      result.source_argument_syntaxes = source_arg_syntaxes;
+      result.emission_origin =
           witness::AliasUseEmissionOrigin::QualifiedSourceTemplateId;
-      const bool alias_use_recording_enabled =
-          witness::alias_use_recording_enabled(template_witness_context(),
-                                               alias_use_origin);
-      const bool namespace_scope_alias =
-          !decl.declaring_scope || !decl.declaring_scope->class_info;
-      if(template_witness_session_ != nullptr &&
-         namespace_scope_alias &&
-         !dependent_arguments &&
-         resolved_alias &&
-         !type_depends_on_template_parameter(resolved_alias)) {
-        template_api::with_template_services(
-            *this,
-            [&](template_api::TemplateServices & services)
-            {
-              for(size_t i = 0; i < arguments.size(); ++i) {
-                if(arguments[i].kind == TemplateArgument::TA_TYPE) {
-                  template_argument_semantics::
-                      note_structured_bool_value_member_for_type_if_needed(
-                          services,
-                          template_api::make_template_environment(use_scope),
-                          arguments[i].type);
-                }
-              }
-            });
-      }
-      if(raw_use_location.empty() || !resolved_alias) {
-        return;
-      }
-      if(!trace_enabled && !alias_use_recording_enabled) {
-        return;
-      }
-      const bool exact_identifier_location =
-          semantic_trace::source_location_points_at_identifier(raw_use_location,
-                                                               decl.name);
-      std::string source_event_location = raw_use_location;
-      if(const ExactTemplateTypeLookupAnchor * anchor =
-             current_exact_template_type_lookup_anchor()) {
-        if(exact_template_type_lookup_anchor_matches_identifier(*anchor,
-                                                                decl.name) &&
-           semantic_trace::source_location_points_at_identifier(anchor->location,
-                                                                decl.name)) {
-          source_event_location = anchor->location;
-        }
-      }
-      if(source_event_location == raw_use_location && !exact_identifier_location) {
-        const std::string same_line_location =
-            template_api::template_witness_detail::
-                source_location_for_identifier_token_on_or_after(
-                template_witness_context(),
-                raw_use_location,
-                decl.name,
-                true,
-                true);
-        if(semantic_trace::source_location_points_at_identifier(same_line_location,
-                                                                decl.name)) {
-          source_event_location = same_line_location;
-        }
-        if(source_event_location == raw_use_location &&
-           alias_use_recording_enabled &&
-           dependent_arguments) {
-          const std::string forward_location =
-              template_api::template_witness_detail::
-                  source_location_for_identifier_token_on_or_after(
-                  template_witness_context(),
-                  raw_use_location,
-                  decl.name,
-                  false,
-                  true);
-          if(semantic_trace::source_location_points_at_identifier(
-                 forward_location,
-                 decl.name)) {
-            source_event_location = forward_location;
-          }
-        }
-      }
-      const bool exact_source_event_location =
-          semantic_trace::source_location_points_at_identifier(source_event_location,
-                                                               decl.name);
-      const auto alias_owner_is_current_scope = [&]() -> bool
-      {
-        if(!decl.declaring_scope || !decl.declaring_scope->class_info) {
-          return false;
-        }
-        const ClassInfo * owner = decl.declaring_scope->class_info;
-        for(Scope * current = &use_scope; current; current = current->parent) {
-          if(!current->class_info) {
-            continue;
-          }
-          if(current->class_info == owner) {
-            return true;
-          }
-          if(owner->source_template &&
-             current->class_info->source_template == owner->source_template) {
-            return true;
-          }
-        }
-        return false;
-      };
-      const bool member_alias_source_capture =
-          decl.declaring_scope && decl.declaring_scope->class_info;
-      const bool member_alias_has_source_bound_arguments =
-          member_alias_source_capture &&
-          source_arg_texts &&
-          (template_argument_texts_mention_source_bindings(*this,
-                                                           use_scope,
-                                                           *source_arg_texts) ||
-           template_argument_texts_mention_template_bound_scope_names(
-               use_scope,
-               *source_arg_texts) ||
-           template_argument_texts_mention_enclosing_source_template_parameters(
-               use_scope,
-               *source_arg_texts));
-      const bool suppress_member_alias_source_capture =
-          member_alias_source_capture &&
-          (!exact_source_event_location ||
-           (!alias_owner_is_current_scope() &&
-            (scope_is_inside_source_template_context(use_scope) ||
-             member_alias_has_source_bound_arguments)));
-      if(alias_use_recording_enabled &&
-         exact_source_event_location &&
-         !suppress_member_alias_source_capture &&
-         !suppress_source_capture) {
-        resolved_source_semantics::ResolvedAliasTemplateIdView resolved;
-        resolved.origin = &decl;
-        resolved.use_scope = &use_scope;
-        resolved.resolved_type = resolved_alias;
-        resolved.arguments = &arguments;
-        resolved.source_argument_texts = source_arg_texts;
-        resolved.source_argument_syntaxes = source_arg_syntaxes;
-        resolved.source_location = &source_event_location;
-        resolved.emission_origin = alias_use_origin;
-        resolved.normalize_selected_decl_to_line_start = true;
-        resolved.unwrap_single_pack_binding = true;
-        const witness_provenance::ScopedUpstreamRoute upstream_route(
-            witness_provenance::WitnessUpstreamRoute::AliasResolvedInstantiation);
-        observe_resolved_alias_template_id(resolved);
-      }
-
-      if(source_capture_enabled &&
-         exact_source_event_location &&
-         !suppress_member_alias_source_capture &&
-         !suppress_source_capture &&
-         !dependent_arguments &&
-         resolved_alias &&
-         !type_depends_on_template_parameter(resolved_alias)) {
-        template_api::with_template_services(
-            *this,
-            [&](template_api::TemplateServices & services)
-            {
-              template_argument_semantics::
-                  note_structured_bool_value_members_in_template_arguments(
-                      services,
-                      template_api::make_template_environment(use_scope),
-                      arguments);
-              // The normal alias path remains reference-only.  Source witness
-              // capture additionally retains the conservative value closure
-              // of a variadic alias target.
-              template_argument_semantics::
-                  note_alias_target_structured_bool_value_member_for_witness_capture(
-                      services,
-                      template_api::make_template_environment(use_scope),
-                      resolved_alias);
-            });
-      }
-
-      if(trace_enabled) {
-        std::ostringstream bindings;
-        for(size_t i = 0; i < decl.parameters.size() && i < arguments.size(); ++i) {
-          if(i != 0) {
-            bindings << ",";
-          }
-          bindings << (decl.parameters[i].name.empty() ?
-                           std::string("$") + std::to_string(i + 1) :
-                           decl.parameters[i].name)
-                   << ":" << template_argument_text(arguments[i]);
-        }
-
-        std::ostringstream trace;
-        trace << "alias-use"
-              << " name=" << decl.name
-              << " resolved={" << describe_type(resolved_alias) << "}"
-              << " decl="
-              << (decl.type_id ? source_location_for_node(*decl.type_id) :
-                                 std::string("<none>"))
-              << " bindings={" << bindings.str() << "}";
-        parser_trace::note("template.resolve", raw_use_location, trace.str());
-      }
+      result.normalize_selected_decl_to_line_start = true;
+      result.unwrap_single_pack_binding = true;
+      return result;
     };
     if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
@@ -13844,8 +13868,7 @@ private:
               << " alias=" << describe_type(builtin_alias);
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
-      note_alias_use(builtin_alias);
-      return builtin_alias;
+      return completed_result(builtin_alias);
     }
     TypePtr alias;
     const string type_id_text = decl.type_id ? node_text(*decl.type_id) : string();
@@ -14473,8 +14496,7 @@ private:
 	           !type_depends_on_template_parameter(structural_alias) &&
 	           !alias_mentions_instantiation_bindings(structural_alias)) {
 	          instantiations[key] = structural_alias;
-	          note_alias_use(structural_alias);
-	          return structural_alias;
+	          return completed_result(structural_alias);
 	        }
 	      }
 	      TypePtr direct_syntax_alias;
@@ -14487,8 +14509,7 @@ private:
 	                << " alias=" << describe_type(direct_syntax_alias);
 	          parser_trace::note("template.resolve", std::string(), trace.str());
 	        }
-	        note_alias_use(direct_syntax_alias);
-	        return direct_syntax_alias;
+	        return completed_result(direct_syntax_alias);
 	      }
 	      TypePtr ast_alias;
 	      if(parse_instantiated_alias_type_id_ast(ast_alias) &&
@@ -14503,11 +14524,10 @@ private:
 	                << " alias=" << describe_type(ast_alias);
 	          parser_trace::note("template.resolve", std::string(), trace.str());
 	        }
-	        note_alias_use(ast_alias);
-	        return ast_alias;
+	        return completed_result(ast_alias);
 	      }
 	      if(invalid_structural_alias_type_formation) {
-	        return TypePtr();
+	        return completed_result(TypePtr());
 	      }
 	      TypePtr structural_alias = decl.resolved_type_pattern;
 	      {
@@ -14533,8 +14553,7 @@ private:
 	                << " alias=" << describe_type(structural_alias);
 	          parser_trace::note("template.resolve", std::string(), trace.str());
 	        }
-	        note_alias_use(structural_alias);
-	        return structural_alias;
+	        return completed_result(structural_alias);
 	      }
 	    }
     if(template_resolve_trace_enabled_) {
@@ -14571,8 +14590,7 @@ private:
           found->second = repaired;
         }
       }
-      note_alias_use(found->second);
-      return found->second;
+      return completed_result(found->second);
     }
     if(decl.type_id &&
        dependent_arguments &&
@@ -14593,8 +14611,7 @@ private:
               << " type-id=" << spaced_type_id_text;
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
-      note_alias_use(alias);
-      return alias;
+      return completed_result(alias);
     }
 	    TypePtr parsed_alias;
 	    bool parsed_direct = false;
@@ -14686,8 +14703,7 @@ private:
       if(dependent_arguments) {
         alias = make_dependent_alias_specialization();
         cache_alias_instantiation(alias);
-        note_alias_use(alias);
-        return alias;
+        return completed_result(alias);
       }
       ostringstream out;
       out << "unsupported alias template instantiation";
@@ -14717,8 +14733,7 @@ private:
             << " alias=" << describe_type(alias);
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
-    note_alias_use(alias);
-    return alias;
+    return completed_result(alias);
   }
 
   string template_argument_text(const TemplateArgument & arg) const
@@ -17742,7 +17757,7 @@ private:
                         return text.find("...") != std::string::npos;
                       }) != source_arg_texts.end();
               if(resolved_alias && has_source_pack_expansion) {
-                resolved_source_semantics::ResolvedAliasTemplateIdView resolved;
+                resolved_source_semantics::ResolvedAliasTemplateId resolved;
                 resolved.origin = alias_template;
                 resolved.use_scope = &pattern_scope;
                 resolved.resolved_type = resolved_alias;
@@ -20146,7 +20161,7 @@ private:
   }
 
   void observe_resolved_alias_template_id(
-      const resolved_source_semantics::ResolvedAliasTemplateIdView & resolved) override
+      const resolved_source_semantics::ResolvedAliasTemplateId & resolved) override
   {
     if(!resolved.valid() ||
        !template_source_capture_enabled()) {
