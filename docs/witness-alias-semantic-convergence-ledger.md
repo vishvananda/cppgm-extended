@@ -35,6 +35,7 @@ is lifecycle Phase 6 at `05b0c7a21ff497cd2186fabc2096bf04cc6e931b`.
 | 0. Route evidence | `e99c510d3` | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.23%, RSS +0.15%, footprint -0.07% | complete |
 | 1. Completed result | `497376554` | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.17% fixed / +0.06% rolling; RSS -0.20% / -0.35%; footprint -0.09% / -0.02% | complete |
 | 2. Direct source owner | `f5529cc60` | 1,416 | 653 / 573 / 176 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.43% fixed / -0.26% rolling; RSS -2.55% / -2.35%; footprint -2.94% / -2.86% | complete |
+| 3. Dependent pattern result | `bd3b81402` | 1,416 | 671 / 579 / 164 / 2 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.12% fixed / +0.31% rolling; RSS -1.43% / +1.15%; footprint -2.93% / +0.02% | complete |
 
 ## Phase 0: upstream route evidence
 
@@ -149,3 +150,26 @@ and 575,315,968 bytes peak footprint. That is -0.43%, -2.55%, and -2.94%
 against the fixed baseline, and -0.26%, -2.35%, and -2.86% against rolling.
 Both comparisons pass without a warning. The same candidate becomes the new
 rolling baseline.
+
+## Phase 3: dependent patterns complete as typed results
+
+Dependent alias resolution no longer calls the observer from a catch or an
+incomplete-resolution arm. It constructs parameterized `TemplateArgument`
+values from the exact source syntax and finishes through the same completion
+boundary as successful resolution. An anchored source definition may retain
+its pattern when argument substitution raises; an unanchored speculative
+replay cannot publish.
+
+The diagnostic report is
+`/tmp/cppgm-alias-phase3-provenance-report.json`, SHA-256
+`37074a59bb25a4869f936e68577e9f26a7cfcd9d63d66dbf216e692ccef36f1c`.
+The dependent route still has 41 source-pattern completions, but its rejected
+actions fall from 12 to zero. It records 27 insertions and 14 exact repeated
+completions. Cross-route replacements fall from 14 to 2. The repeated
+completed occurrences remain a Phase 6 ownership obligation.
+
+The three-run candidate is `/tmp/cppgm-alias-phase-3.json`, SHA-256
+`03b6993d55acf1016c49b16c24dca9ef6ad2d7422adfcb1953f44e34cf6673b0`.
+Its medians are 175,678,585,277 instructions, 752,881,664 bytes maximum RSS,
+and 575,414,272 bytes peak footprint. Both comparisons pass without a warning,
+and this candidate becomes the rolling baseline.
