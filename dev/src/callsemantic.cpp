@@ -2338,8 +2338,6 @@ private:
     hooks.track_instantiated_class =
         [this](ClassInfo * info)
         {
-          const bool already_logged =
-              template_api::class_instantiation_log_emitted(info);
           const bool already_tracked =
               info && info->template_instantiation_tracked;
           const template_api::ScopedTemplateWitnessEntryContext entry_context =
@@ -2348,7 +2346,7 @@ private:
           template_api::note_output_tracked_class_instantiation_if_needed(
               *this,
               info,
-              already_logged || already_tracked);
+              already_tracked);
         };
     return hooks;
   }
@@ -27984,57 +27982,6 @@ private:
     }
 
     const CppAstNode & target = node.children[0];
-    const auto normalize_witness_location =
-        [](const std::string & location) -> std::string
-    {
-      const std::string without_at =
-          location.size() > 1 && location[0] == '@' ? location.substr(1) :
-                                                      location;
-      return template_api::normalize_template_witness_source_location(without_at);
-    };
-    const std::string explicit_instantiation_location =
-        normalize_witness_location(source_location_for_node(node));
-    const auto class_template_decl_location =
-        [&](ClassTemplateDecl * primary) -> std::string
-    {
-      if(!(primary && primary->class_node)) {
-        return std::string();
-      }
-      std::string location =
-          normalize_witness_location(
-              source_location_for_name_in_node(*primary->class_node,
-                                               primary->name));
-      if(!location.empty()) {
-        return location;
-      }
-      return normalize_witness_location(source_location_for_node(*primary->class_node));
-    };
-    const auto note_direct_explicit_class_finalization =
-        [&](const std::string & entity,
-            const std::string & decl_location,
-            template_api::TemplateLifecycleCause cause) -> void
-    {
-      if(entity.empty() || template_witness_session_ == nullptr) {
-        return;
-      }
-      const std::string event_decl_location =
-          !decl_location.empty() ? decl_location : explicit_instantiation_location;
-      const witness::ScopedTemplateWitnessEntryContext entry_context(
-          witness::make_template_closure_entry_context(
-              witness::TemplateClosureReason::FinalizeClass,
-              entity,
-              event_decl_location,
-              true));
-      CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-          witness_provenance::WitnessProducerSite::LifecycleCallsemantic01,
-          witness::TemplateWitnessLogEventKind::ClassFinalization,
-          explicit_instantiation_location,
-          entity,
-          event_decl_location,
-          std::string(),
-          cause,
-          true);
-    };
     const auto note_direct_explicit_function_instantiation =
         [&](FunctionBinding * binding) -> void
     {
@@ -28129,10 +28076,12 @@ private:
         if(found != primary->reference_instantiations.end()) {
           found->second->suppress_implicit_instantiation_definition = true;
         }
-        note_direct_explicit_class_finalization(
-            primary->name,
-            class_template_decl_location(primary),
-            template_api::TemplateLifecycleCause::ExplicitInstantiationDeclaration);
+        template_api::TemplateClassFinalizationRequest request;
+        request.decl = primary;
+        request.explicit_instantiation_node = &node;
+        request.explicit_instantiation_cause = template_api::
+            TemplateLifecycleCause::ExplicitInstantiationDeclaration;
+        (void)template_api::finalize_class_instantiation(*this, request);
         return;
       }
 
@@ -28155,13 +28104,15 @@ private:
       if(!explicit_info) {
         throw logic_error("failed explicit class template instantiation");
       }
-      finalize_instantiated_class_materialization(*primary,
-                                                  *explicit_info,
-                                                  arguments);
-      note_direct_explicit_class_finalization(
-          primary->name,
-          class_template_decl_location(primary),
-          template_api::TemplateLifecycleCause::ExplicitInstantiationDefinition);
+      template_api::TemplateClassFinalizationRequest finalization_request;
+      finalization_request.decl = primary;
+      finalization_request.info = explicit_info;
+      finalization_request.arguments = arguments;
+      finalization_request.explicit_instantiation_node = &node;
+      finalization_request.explicit_instantiation_cause = template_api::
+          TemplateLifecycleCause::ExplicitInstantiationDefinition;
+      (void)template_api::finalize_class_instantiation(
+          *this, finalization_request);
       for(size_t i = 0; i < explicit_info->method_declaration_order.size(); ++i) {
         FunctionBinding * binding = explicit_info->method_declaration_order[i];
         if(!binding || binding->is_deleted || binding->synthesized ||

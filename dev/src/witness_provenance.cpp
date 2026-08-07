@@ -447,10 +447,8 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi04, "lifecycle.template_api.04");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi05, "lifecycle.template_api.05");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi06, "lifecycle.template_api.06");
-  CPPGM_PRODUCER_NAME(LifecycleTemplateApi07, "lifecycle.template_api.07");
   CPPGM_PRODUCER_NAME(LifecycleTransitionObserver01,
                       "lifecycle.transition_observer.01");
-  CPPGM_PRODUCER_NAME(LifecycleCallsemantic01, "lifecycle.callsemantic.01");
   }
 #undef CPPGM_PRODUCER_NAME
   return "unknown";

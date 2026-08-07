@@ -60,6 +60,9 @@ struct TemplateClassFinalizationRequest
   semantic_model::ClassTemplateDecl * decl = nullptr;
   semantic_model::ClassInfo * info = nullptr;
   std::vector<template_model::TemplateArgument> arguments;
+  const CppAstNode * explicit_instantiation_node = nullptr;
+  TemplateLifecycleCause explicit_instantiation_cause =
+      TemplateLifecycleCause::None;
 };
 
 struct TemplateVariableInstantiationRequest
@@ -89,6 +92,7 @@ struct TemplateLifecycleTransition
       TemplateLifecycleTransitionKind::None;
   semantic_model::FunctionBinding * function_binding = nullptr;
   semantic_model::ClassInfo * class_info = nullptr;
+  semantic_model::ClassTemplateDecl * class_template = nullptr;
   const semantic_model::ValueBinding * value_binding = nullptr;
   const semantic_model::ValueBinding * source_value_binding = nullptr;
   const semantic_model::ClassInfo * value_owner = nullptr;
@@ -100,6 +104,7 @@ struct TemplateLifecycleTransition
   bool occurred = false;
   bool created_new = false;
   bool definition_materialized = false;
+  bool class_finalized = false;
   bool include_definition_materialized_detail = false;
   bool retained_dependency = false;
   bool use_declaration_as_event_location = false;
@@ -108,7 +113,7 @@ struct TemplateLifecycleTransition
   bool valid() const
   {
     return occurred &&
-        (function_binding || class_info || value_binding);
+        (function_binding || class_info || class_template || value_binding);
   }
 };
 

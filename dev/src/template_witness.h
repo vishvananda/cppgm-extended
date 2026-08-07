@@ -229,11 +229,22 @@ struct TemplateLifecycleValueIdentityHash
 struct TemplateLifecycleEntityIdentity
 {
   const void * entity = nullptr;
+  std::size_t semantic_entity_fingerprint = 0;
+  std::size_t event_anchor_fingerprint = 0;
   TemplateLifecycleCause cause = TemplateLifecycleCause::None;
+  unsigned int flags = 0;
+  bool has_semantic_entity_key = false;
 
   bool operator==(const TemplateLifecycleEntityIdentity & other) const
   {
-    return entity == other.entity && cause == other.cause;
+    const bool same_entity = has_semantic_entity_key &&
+            other.has_semantic_entity_key ?
+        semantic_entity_fingerprint == other.semantic_entity_fingerprint :
+        entity == other.entity;
+    return same_entity &&
+        event_anchor_fingerprint == other.event_anchor_fingerprint &&
+        cause == other.cause && flags == other.flags &&
+        has_semantic_entity_key == other.has_semantic_entity_key;
   }
 };
 
@@ -242,9 +253,18 @@ struct TemplateLifecycleEntityIdentityHash
   std::size_t operator()(
       const TemplateLifecycleEntityIdentity & identity) const
   {
-    std::size_t result = std::hash<const void *>()(identity.entity);
+    std::size_t result = identity.has_semantic_entity_key ?
+        identity.semantic_entity_fingerprint :
+        std::hash<const void *>()(identity.entity);
+    result ^= identity.event_anchor_fingerprint +
+        0x9e3779b9u + (result << 6) + (result >> 2);
     result ^= std::hash<unsigned int>()(
                   static_cast<unsigned int>(identity.cause)) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    result ^= std::hash<unsigned int>()(identity.flags) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    result ^= std::hash<unsigned int>()(
+                  identity.has_semantic_entity_key ? 1u : 0u) +
         0x9e3779b9u + (result << 6) + (result >> 2);
     return result;
   }
