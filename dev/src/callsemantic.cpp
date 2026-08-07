@@ -1653,6 +1653,8 @@ private:
       template_declaration_pattern_active_;
   std::set<std::pair<const Scope *, const CppAstNode *> >
       template_declaration_pattern_recorded_;
+  std::map<const CppAstNode *, std::set<std::string> >
+      template_declaration_alias_pattern_locations_;
 
   void dump_memory_census(ostream & out,
                           const DumpNode & translation_unit) const
@@ -17882,7 +17884,9 @@ private:
       source_function.type = function_type;
       pattern_scope.function = &source_function;
     }
-    std::set<std::string> recorded_alias_uses;
+    std::set<std::string> & recorded_alias_uses =
+        template_declaration_alias_pattern_locations_[&node];
+    std::set<std::string> encountered_alias_uses;
     std::set<std::string> recorded_class_uses;
     std::function<bool(const CppAstNode &, const CppAstNode &)>
         should_recurse_into_source_use_child =
@@ -17954,65 +17958,79 @@ private:
                 pattern_scope, syntax_source_arg_texts);
         const bool dependent_source_owner =
             template_id_syntax_has_dependent_source_owner(nested_syntax);
+        if(recorded_alias_uses.count(location) != 0 ||
+           encountered_alias_uses.count(location) != 0) {
+          record_nested_template_id_source_uses_from_syntaxes(
+              nested_syntax.argument_syntaxes);
+          return;
+        }
         AliasTemplateDecl * alias_template =
             dependent_source_owner ?
                 nullptr :
-                lookup_alias_template_for_source_use(pattern_scope,
+	              lookup_alias_template_for_source_use(pattern_scope,
                                                      nested_syntax.name);
         if(alias_template) {
-          const bool record_now = recorded_alias_uses.insert(location).second;
-          if(record_now) {
+          if(encountered_alias_uses.insert(location).second) {
+            vector<string> source_arg_texts =
+                template_id_argument_texts_preserving_spacing(nested_syntax);
+            const size_t source_argument_limit =
+                std::min(source_arg_texts.size(),
+                         nested_syntax.argument_syntaxes.size());
+            for(size_t i = 0; i < source_argument_limit; ++i) {
+              const TemplateArgumentSyntax & argument_syntax =
+                  nested_syntax.argument_syntaxes[i];
+              const string source_text = argument_syntax.source_type_id ?
+                  trim_space(spaced_node_text(*argument_syntax.source_type_id)) :
+                  template_argument_syntax_witness_source_text(argument_syntax);
+              if(!source_text.empty()) {
+                source_arg_texts[i] = source_text;
+              }
+            }
+            const ScopedTemplateUseLocation use_location_guard(location);
+            const parser_trace::ScopedOrderUseLocation
+                order_use_location_guard(location);
+            vector<TemplateArgument> resolved_arguments;
+            bool arguments_resolved = false;
             try {
-              const vector<string> source_arg_texts =
-                  template_id_argument_texts_preserving_spacing(
-                      nested_syntax);
-              const ScopedTemplateUseLocation use_location_guard(location);
-              const parser_trace::ScopedOrderUseLocation
-                  order_use_location_guard(location);
-              ExactTemplateTypeLookupAnchor anchor;
-              anchor.location = location;
-              anchor.template_text =
-                  template_id_syntax_text_preserving_spacing(nested_syntax);
-              anchor.identifier =
-                  unqualified_member_name(nested_syntax.name.name);
-              anchor.compact_key = compact_lookup_text(anchor.template_text);
-              anchor.template_id_syntax_ref = &nested_syntax;
-              anchor.arg_texts_ref = &nested_syntax.arguments;
-              anchor.arg_syntaxes_ref = &nested_syntax.argument_syntaxes;
-              anchor.has_argument_list = true;
-              const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
-              TypePtr resolved_alias = instantiate_alias_template_with_syntax(
-                  *alias_template,
+              arguments_resolved = resolve_template_arguments(
                   pattern_scope,
+                  alias_template->parameters,
                   source_arg_texts,
                   &nested_syntax.argument_syntaxes,
-                  true,
-                  false);
-              const bool has_source_pack_expansion =
-                  std::find_if(
-                      source_arg_texts.begin(),
-                      source_arg_texts.end(),
-                      [](const std::string & text)
-                      {
-                        return text.find("...") != std::string::npos;
-                      }) != source_arg_texts.end();
-              if(resolved_alias && has_source_pack_expansion) {
-                resolved_source_semantics::ResolvedAliasTemplateId resolved;
-                resolved.origin = alias_template;
-                resolved.use_scope = &pattern_scope;
-                resolved.resolved_type = resolved_alias;
-                resolved.source_argument_texts = &source_arg_texts;
-                resolved.source_argument_syntaxes =
-                    &nested_syntax.argument_syntaxes;
-                resolved.source_location = &location;
-                resolved.dependent_pattern = true;
-                const witness_provenance::ScopedUpstreamRoute upstream_route(
-                    witness_provenance::WitnessUpstreamRoute::
-                        AliasTemplateDeclarationPattern);
-                observe_resolved_alias_template_id(resolved);
-              }
+                  resolved_arguments,
+                  alias_template->declaring_scope);
             } catch(...) {
               semantic_fallback_audit::rethrow_fallback_error();
+            }
+            if(arguments_resolved) {
+              canonicalize_simple_dependent_argument_texts(resolved_arguments);
+            }
+            resolved_source_semantics::ResolvedAliasTemplateId resolved;
+            resolved.origin = alias_template;
+            resolved.use_scope = &pattern_scope;
+            resolved.arguments = arguments_resolved ?
+                &resolved_arguments : nullptr;
+            resolved.source_argument_texts = &source_arg_texts;
+            resolved.source_argument_syntaxes =
+                &nested_syntax.argument_syntaxes;
+            resolved.source_location = &location;
+            resolved.emission_origin =
+                witness::AliasUseEmissionOrigin::QualifiedSourceTemplateId;
+            const witness_provenance::ScopedUpstreamRoute upstream_route(
+                witness_provenance::WitnessUpstreamRoute::
+                    AliasTemplateDeclarationPattern);
+            observe_resolved_alias_template_id(resolved);
+            bool resolution_may_improve_in_instantiated_scope = false;
+            for(size_t i = 0;
+                !resolution_may_improve_in_instantiated_scope &&
+                    i < nested_syntax.argument_syntaxes.size();
+                ++i) {
+              resolution_may_improve_in_instantiated_scope =
+                  callsemantic::template_argument_syntax_contains_template_id(
+                      nested_syntax.argument_syntaxes[i]);
+            }
+            if(!resolution_may_improve_in_instantiated_scope) {
+              recorded_alias_uses.insert(location);
             }
           }
 	        } else {
