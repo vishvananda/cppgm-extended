@@ -10,6 +10,7 @@
 class SemanticContext;
 namespace semantic_model {
 struct ClassInfo;
+struct ClassTemplateDecl;
 struct FunctionBinding;
 struct SourceDeclAnchorCache;
 struct ValueBinding;
@@ -290,6 +291,9 @@ struct ClassUseEmitRequest
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
 #endif
+  uint32_t source_occurrence_id = 0;
+  semantic_model::ClassTemplateDecl * semantic_template = nullptr;
+  std::string semantic_specialization_key;
   std::string location;
   bool use_anchor_present = false;
   std::string use_anchor_location;
@@ -468,7 +472,7 @@ void note_class_use_source_decision(const ClassUseSourceDecision & decision);
 void note_source_owned_class_use_source_decision(
     const ClassUseSourceDecision & decision);
 void emit_class_use(const ClassUseEmitRequest & request);
-void emit_class_use(const TemplateWitnessContext & ctx,
+bool emit_class_use(const TemplateWitnessContext & ctx,
                     const ClassUseEmitRequest & request);
 void emit_class_use_decision(
     const ClassUseSourceDecision & decision,

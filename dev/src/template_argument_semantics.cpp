@@ -3035,17 +3035,7 @@ string exact_template_id_source_location(
                                                           syntax.name.name)) {
     return location;
   }
-  const string exact =
-      template_api::template_witness_detail::
-          source_location_for_identifier_token_on_or_after(
-              services.witness_context,
-              location,
-              syntax.name.name,
-              true,
-              true);
-  return semantic_trace::source_location_points_at_identifier(exact,
-                                                              syntax.name.name) ?
-      exact : location;
+  return string();
 }
 
 callsemantic::ExactTemplateTypeLookupAnchor build_owner_lookup_anchor(
@@ -3171,7 +3161,8 @@ bool try_resolve_qualified_member_template_id_type(
         reference_class_templates_only,
         false,
         &effective_argument_scope.require(),
-        alias_source_location.empty() ? nullptr : &alias_source_location);
+        alias_source_location.empty() ? nullptr : &alias_source_location,
+        &syntax);
     resolve_instantiated_dependent_type_if_needed(
         services,
         effective_argument_scope,
@@ -3294,7 +3285,8 @@ bool try_make_dependent_qualified_template_id_type(
             reference_class_templates_only,
             false,
             &scope,
-            alias_source_location.empty() ? nullptr : &alias_source_location);
+            alias_source_location.empty() ? nullptr : &alias_source_location,
+            &syntax);
         resolve_instantiated_dependent_type_if_needed(
             services,
             template_api::make_template_environment(scope),
@@ -4225,12 +4217,18 @@ bool resolve_template_id_syntax_type_in_current_scope(
     if(!services.semantic_context) {
       return false;
     }
+    const string alias_source_location =
+        exact_template_id_source_location(services, syntax, source_location);
     out = services.semantic_context->instantiate_alias_template_with_syntax(
         *alias_template,
         argument_scope,
         arg_texts,
         &syntax.argument_syntaxes,
-        reference_class_templates_only);
+        reference_class_templates_only,
+        false,
+        &argument_scope,
+        alias_source_location.empty() ? nullptr : &alias_source_location,
+        &syntax);
     resolve_instantiated_dependent_type_if_needed(
         services,
         template_api::make_template_environment(argument_scope),
@@ -5323,7 +5321,8 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
                   false,
                   &scope,
                   alias_source_location.empty() ? nullptr :
-                                                  &alias_source_location);
+                                                  &alias_source_location,
+                  source_qualifier_template_id);
           resolve_instantiated_dependent_type_if_needed(
               services,
               template_api::make_template_environment(scope),
@@ -5495,7 +5494,8 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
             reference_class_templates_only,
             false,
             &scope,
-            alias_source_location.empty() ? nullptr : &alias_source_location);
+            alias_source_location.empty() ? nullptr : &alias_source_location,
+            final_template_id);
         resolve_instantiated_dependent_type_if_needed(
             services,
             template_api::make_template_environment(scope),
@@ -19726,7 +19726,8 @@ bool try_resolve_alias_template_id_locally(
       request.allow_class_templates,
       false,
       &raw_argument_scope,
-      request.source_location.empty() ? nullptr : &request.source_location);
+      request.source_location.empty() ? nullptr : &request.source_location,
+      request.source_syntax);
   if(out && (request.top_const || request.top_volatile)) {
     out = apply_cv(out, request.top_const, request.top_volatile);
   }

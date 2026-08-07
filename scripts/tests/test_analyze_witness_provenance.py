@@ -92,6 +92,40 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
             1,
         )
 
+    def test_semantic_consolidation_counts_are_aggregated(self):
+        report = MODULE.build_report(
+            [
+                self.record(
+                    "semantic_consolidation",
+                    family="class_use",
+                    completed_candidates=5,
+                    early_repeats=2,
+                    prepublication_merges=3,
+                    collected_occurrences=2,
+                    published_occurrences=2,
+                ),
+                self.record(
+                    "semantic_consolidation",
+                    family="class_use",
+                    completed_candidates=7,
+                    early_repeats=1,
+                    prepublication_merges=4,
+                    collected_occurrences=4,
+                    published_occurrences=3,
+                ),
+            ]
+        )
+        self.assertEqual(
+            report["semantic_consolidation"]["class_use"],
+            {
+                "completed_candidates": 12,
+                "early_repeats": 3,
+                "prepublication_merges": 7,
+                "collected_occurrences": 6,
+                "published_occurrences": 5,
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

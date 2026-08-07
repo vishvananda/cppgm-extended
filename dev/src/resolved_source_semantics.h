@@ -79,17 +79,47 @@ struct ResolvedAliasTemplateId
   cpp_decl::TypePtr resolved_type;
   const std::vector<template_model::TemplateArgument> * arguments = nullptr;
   const std::vector<std::string> * source_argument_texts = nullptr;
-  const std::vector<cpp_decl::TemplateArgumentSyntax> *
-      source_argument_syntaxes = nullptr;
+  union
+  {
+    const std::vector<cpp_decl::TemplateArgumentSyntax> * argument_syntaxes;
+    const cpp_decl::TemplateIdSyntax * template_id_syntax;
+  } source = {nullptr};
   const std::string * source_location = nullptr;
   const semantic_source_use::SourceTemplateIdOccurrence * source_occurrence =
       nullptr;
   witness::AliasUseEmissionOrigin emission_origin =
       witness::AliasUseEmissionOrigin::NestedSourceTemplateId;
   bool dependent_pattern = false;
-  bool normalize_selected_decl_to_line_start = false;
-  bool unwrap_single_pack_binding = false;
-  bool use_template_argument_binding_policy = false;
+  bool source_is_template_id = false;
+  bool completed_result_formatting = false;
+
+  const std::vector<cpp_decl::TemplateArgumentSyntax> *
+  source_argument_syntaxes() const
+  {
+    return source_is_template_id && source.template_id_syntax ?
+        &source.template_id_syntax->argument_syntaxes :
+        source.argument_syntaxes;
+  }
+
+  const cpp_decl::TemplateIdSyntax * source_syntax() const
+  {
+    return source_is_template_id ? source.template_id_syntax : nullptr;
+  }
+
+  void set_source_argument_syntaxes(
+      const std::vector<cpp_decl::TemplateArgumentSyntax> * syntaxes)
+  {
+    source.argument_syntaxes = syntaxes;
+    source_is_template_id = false;
+  }
+
+  void set_source_syntax(const cpp_decl::TemplateIdSyntax * syntax)
+  {
+    if(syntax) {
+      source.template_id_syntax = syntax;
+      source_is_template_id = true;
+    }
+  }
 
   bool valid() const
   {

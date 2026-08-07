@@ -615,7 +615,7 @@ void emit_class_use(const ClassUseEmitRequest & request)
                           request.origin);
 }
 
-void emit_class_use(const TemplateWitnessContext & ctx,
+bool emit_class_use(const TemplateWitnessContext & ctx,
                     const ClassUseEmitRequest & request)
 {
   if(parser_trace::enabled("witness.emit")) {
@@ -627,19 +627,22 @@ void emit_class_use(const TemplateWitnessContext & ctx,
                            std::to_string(static_cast<int>(request.origin)));
   }
   if(request.location.empty()) {
-    return;
+    return false;
   }
   if(!source_location_is_from_primary_file(ctx, request.location)) {
-    return;
+    return false;
   }
   if(!class_use_recording_enabled(ctx, request.origin)) {
-    return;
+    return false;
   }
   const ClassUseSourceDecision decision =
       class_use_source_decision_from_request(request);
   semantic_source_use::SemanticSourceUseTable * table = ctx.source_use_table;
   if(table == nullptr && ctx.session != nullptr) {
     table = &ctx.session->source_use_table;
+  }
+  if(table == nullptr) {
+    return false;
   }
   record_class_use_source_use_in_table(
                                        CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session)
@@ -652,6 +655,7 @@ void emit_class_use(const TemplateWitnessContext & ctx,
   } else {
     note_class_use_source_decision(decision);
   }
+  return true;
 }
 
 void emit_class_use_decision(

@@ -373,36 +373,6 @@ inline bool source_template_id_occurrence_is_more_concrete(
   return candidate_concrete && !existing_concrete;
 }
 
-inline bool source_binding_has_richer_pack_data(const SourceBinding & candidate,
-                                                const SourceBinding & existing)
-{
-  if(existing.pack_binding && !candidate.pack_binding) {
-    return false;
-  }
-  if(!existing.pack_arguments.empty() && candidate.pack_arguments.empty()) {
-    return false;
-  }
-  return (!existing.pack_binding && candidate.pack_binding) ||
-         (existing.pack_arguments.empty() &&
-          !candidate.pack_arguments.empty());
-}
-
-inline bool source_bindings_have_richer_pack_data(
-    const std::vector<SourceBinding> & candidate,
-    const std::vector<SourceBinding> & existing)
-{
-  if(candidate.size() != existing.size()) {
-    return false;
-  }
-  bool richer = false;
-  for(std::size_t i = 0; i < candidate.size(); ++i) {
-    if(source_binding_has_richer_pack_data(candidate[i], existing[i])) {
-      richer = true;
-    }
-  }
-  return richer;
-}
-
 inline bool source_bindings_equivalent_ignoring_space(
     const std::vector<SourceBinding> & lhs,
     const std::vector<SourceBinding> & rhs)
@@ -452,13 +422,14 @@ inline bool function_call_equivalent_ignoring_binding_spacing(
          lhs.candidates_viable == rhs.candidates_viable;
 }
 
-inline bool class_use_equivalent_ignoring_binding_spacing(
+inline bool alias_use_equivalent_ignoring_binding_spacing(
     const SemanticSourceUse & lhs,
     const SemanticSourceUse & rhs)
 {
-  return lhs.kind == SourceUseKind::ClassUse &&
-         rhs.kind == SourceUseKind::ClassUse &&
+  return lhs.kind == SourceUseKind::AliasUse &&
+         rhs.kind == SourceUseKind::AliasUse &&
          lhs.role == rhs.role &&
+         lhs.ownership == rhs.ownership &&
          lhs.location == rhs.location &&
          lhs.spelling_anchor == rhs.spelling_anchor &&
          lhs.provenance_anchor == rhs.provenance_anchor &&
@@ -473,14 +444,13 @@ inline bool class_use_equivalent_ignoring_binding_spacing(
                                                    rhs.specialization_bindings);
 }
 
-inline bool alias_use_equivalent_ignoring_binding_spacing(
+inline bool class_use_equivalent_ignoring_binding_spacing(
     const SemanticSourceUse & lhs,
     const SemanticSourceUse & rhs)
 {
-  return lhs.kind == SourceUseKind::AliasUse &&
-         rhs.kind == SourceUseKind::AliasUse &&
+  return lhs.kind == SourceUseKind::ClassUse &&
+         rhs.kind == SourceUseKind::ClassUse &&
          lhs.role == rhs.role &&
-         lhs.ownership == rhs.ownership &&
          lhs.location == rhs.location &&
          lhs.spelling_anchor == rhs.spelling_anchor &&
          lhs.provenance_anchor == rhs.provenance_anchor &&
@@ -521,177 +491,6 @@ inline void record_source_use(SemanticSourceUseTable & table,
       if(function_call_equivalent_ignoring_binding_spacing(table.uses[i], use)) {
         return;
       }
-    }
-  }
-  if(use.kind == SourceUseKind::AliasUse) {
-    if(use.ownership == SourceUseOwnership::Direct ||
-       use.ownership == SourceUseOwnership::SourceOwned) {
-      for(std::size_t i = 0; i < table.uses.size();) {
-        const SemanticSourceUse & existing = table.uses[i];
-        if(existing.kind == SourceUseKind::AliasUse &&
-           existing.ownership == SourceUseOwnership::NestedDerived &&
-           existing.location == use.location &&
-           existing.role == use.role &&
-           existing.template_name == use.template_name) {
-          table.uses.erase(table.uses.begin() + i);
-          continue;
-        }
-        ++i;
-      }
-    }
-    if(use.ownership == SourceUseOwnership::NestedDerived) {
-      for(std::size_t i = 0; i < table.uses.size(); ++i) {
-        const SemanticSourceUse & existing = table.uses[i];
-        if(existing.kind == SourceUseKind::AliasUse &&
-           (existing.ownership == SourceUseOwnership::Direct ||
-            existing.ownership == SourceUseOwnership::SourceOwned) &&
-           existing.location == use.location &&
-           existing.role == use.role &&
-           existing.template_name == use.template_name) {
-          return;
-        }
-      }
-    }
-    for(std::size_t i = 0; i < table.uses.size(); ++i) {
-      SemanticSourceUse & existing = table.uses[i];
-      if(!alias_use_equivalent_ignoring_binding_spacing(existing, use)) {
-        continue;
-      }
-      if(!source_template_id_occurrence_has_data(
-             existing.template_id_occurrence) &&
-         source_template_id_occurrence_has_data(use.template_id_occurrence)) {
-        existing.template_id_occurrence = use.template_id_occurrence;
-      } else if(source_template_id_occurrence_is_more_concrete(
-                  use.template_id_occurrence,
-                  existing.template_id_occurrence)) {
-        existing.template_id_occurrence = use.template_id_occurrence;
-      }
-      if(source_bindings_have_richer_pack_data(use.bindings,
-                                               existing.bindings)) {
-        existing.bindings = use.bindings;
-      }
-      if(source_bindings_have_richer_pack_data(
-             use.specialization_bindings,
-             existing.specialization_bindings)) {
-        existing.specialization_bindings = use.specialization_bindings;
-      }
-      return;
-    }
-  }
-    if(use.kind == SourceUseKind::ClassUse) {
-      const bool use_has_spelling_anchor =
-          use.spelling_anchor.kind == SourceAnchorKind::Spelling;
-      for(std::size_t i = 0; i < table.uses.size();) {
-        const SemanticSourceUse & existing = table.uses[i];
-        if(existing.kind != SourceUseKind::ClassUse ||
-           existing.location != use.location ||
-           existing.role != use.role ||
-           existing.template_name != use.template_name) {
-          ++i;
-          continue;
-        }
-        const bool existing_has_spelling_anchor =
-            existing.spelling_anchor.kind == SourceAnchorKind::Spelling;
-        if(existing_has_spelling_anchor && !use_has_spelling_anchor) {
-          return;
-        }
-        if(use_has_spelling_anchor && !existing_has_spelling_anchor) {
-          table.uses.erase(table.uses.begin() + i);
-          continue;
-        }
-        ++i;
-      }
-      for(std::size_t i = 0; i < table.uses.size(); ++i) {
-        SemanticSourceUse & existing = table.uses[i];
-      if(!class_use_equivalent_ignoring_binding_spacing(existing, use)) {
-        continue;
-      }
-      if(use.ownership == SourceUseOwnership::SourceOwned &&
-         existing.ownership != SourceUseOwnership::SourceOwned) {
-        existing = use;
-      } else if(use.ownership == SourceUseOwnership::Direct &&
-                existing.ownership == SourceUseOwnership::NestedDerived) {
-        existing = use;
-      } else if(!source_template_id_occurrence_has_data(
-                    existing.template_id_occurrence) &&
-                source_template_id_occurrence_has_data(
-                    use.template_id_occurrence)) {
-        existing.template_id_occurrence = use.template_id_occurrence;
-      } else if(source_template_id_occurrence_is_more_concrete(
-                    use.template_id_occurrence,
-                    existing.template_id_occurrence)) {
-        existing.template_id_occurrence = use.template_id_occurrence;
-      }
-      if(source_bindings_have_richer_pack_data(use.bindings,
-                                               existing.bindings)) {
-        existing.bindings = use.bindings;
-      }
-      if(source_bindings_have_richer_pack_data(
-             use.specialization_bindings,
-             existing.specialization_bindings)) {
-        existing.specialization_bindings = use.specialization_bindings;
-      }
-      return;
-    }
-  }
-  if(use.kind == SourceUseKind::ClassUse &&
-     (use.ownership == SourceUseOwnership::Direct ||
-      use.ownership == SourceUseOwnership::SourceOwned)) {
-    for(std::size_t i = 0; i < table.uses.size();) {
-      const SemanticSourceUse & existing = table.uses[i];
-      if(existing.kind == SourceUseKind::ClassUse &&
-         existing.ownership == SourceUseOwnership::NestedDerived &&
-         existing.location == use.location &&
-         existing.role == use.role &&
-         existing.template_name == use.template_name) {
-        table.uses.erase(table.uses.begin() + i);
-        continue;
-      }
-      ++i;
-    }
-  }
-  if(use.kind == SourceUseKind::ClassUse &&
-     use.ownership == SourceUseOwnership::NestedDerived) {
-    for(std::size_t i = 0; i < table.uses.size(); ++i) {
-      const SemanticSourceUse & existing = table.uses[i];
-      if(existing.kind != SourceUseKind::ClassUse ||
-         existing.location != use.location ||
-         existing.role != use.role ||
-         existing.template_name != use.template_name) {
-        continue;
-      }
-      if(existing.ownership == SourceUseOwnership::Direct ||
-         existing.ownership == SourceUseOwnership::SourceOwned) {
-        return;
-      }
-    }
-  }
-  if(use.kind == SourceUseKind::ClassUse &&
-     use.ownership == SourceUseOwnership::Direct) {
-    for(std::size_t i = 0; i < table.uses.size(); ++i) {
-      const SemanticSourceUse & existing = table.uses[i];
-      if(existing.kind == SourceUseKind::ClassUse &&
-         existing.ownership == SourceUseOwnership::SourceOwned &&
-         existing.location == use.location &&
-         existing.role == use.role &&
-         existing.template_name == use.template_name) {
-        return;
-      }
-    }
-  }
-  if(use.kind == SourceUseKind::ClassUse &&
-     use.ownership == SourceUseOwnership::SourceOwned) {
-    for(std::size_t i = 0; i < table.uses.size();) {
-      const SemanticSourceUse & existing = table.uses[i];
-      if(existing.kind == SourceUseKind::ClassUse &&
-         existing.ownership == SourceUseOwnership::Direct &&
-         existing.location == use.location &&
-         existing.role == use.role &&
-         existing.template_name == use.template_name) {
-        table.uses.erase(table.uses.begin() + i);
-        continue;
-      }
-      ++i;
     }
   }
   for(std::size_t i = 0; i < table.uses.size(); ++i) {

@@ -500,6 +500,8 @@ const char * upstream_route_name(WitnessUpstreamRoute route)
     return "alias.direct_template_argument";
   case WitnessUpstreamRoute::AliasTemplateDeclarationPattern:
     return "alias.template_declaration_pattern";
+  case WitnessUpstreamRoute::AliasCanonicalOccurrence:
+    return "alias.canonical_occurrence";
   }
   return "unknown";
 }
@@ -809,6 +811,30 @@ void note_renderer_final_visible(
          << ",\"kind\":" << quoted(kind)
          << ",\"location\":" << quoted(location)
          << ",\"template_name\":" << quoted(template_name)
+         << '}';
+  state.records.push_back(record.str());
+}
+
+void note_semantic_consolidation(
+    const template_api::TemplateWitnessSession & session,
+    const std::string & family,
+    std::size_t completed_candidates,
+    std::size_t early_repeats,
+    std::size_t prepublication_merges,
+    std::size_t collected_occurrences,
+    std::size_t published_occurrences)
+{
+  if(!enabled()) return;
+  std::lock_guard<std::mutex> lock(trace_mutex());
+  SessionState & state = state_for_session_locked(session);
+  std::ostringstream record;
+  record << "{\"record\":\"semantic_consolidation\""
+         << ",\"family\":" << quoted(family)
+         << ",\"completed_candidates\":" << completed_candidates
+         << ",\"early_repeats\":" << early_repeats
+         << ",\"prepublication_merges\":" << prepublication_merges
+         << ",\"collected_occurrences\":" << collected_occurrences
+         << ",\"published_occurrences\":" << published_occurrences
          << '}';
   state.records.push_back(record.str());
 }

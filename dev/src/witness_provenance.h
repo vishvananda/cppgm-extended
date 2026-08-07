@@ -43,6 +43,7 @@ enum class WitnessUpstreamRoute
   AliasResolvedInstantiation,
   AliasDirectTemplateArgument,
   AliasTemplateDeclarationPattern,
+  AliasCanonicalOccurrence,
 };
 
 const char * upstream_route_name(WitnessUpstreamRoute route);
@@ -154,6 +155,15 @@ void note_renderer_final_visible(
     const std::string & kind,
     const std::string & location,
     const std::string & template_name);
+
+void note_semantic_consolidation(
+    const template_api::TemplateWitnessSession & session,
+    const std::string & family,
+    std::size_t completed_candidates,
+    std::size_t early_repeats,
+    std::size_t prepublication_merges,
+    std::size_t collected_occurrences,
+    std::size_t published_occurrences);
 
 void finish_session(const template_api::TemplateWitnessSession & session,
                     const std::string & source_path);

@@ -698,7 +698,8 @@ public:
       bool reference_class_templates_only,
       bool suppress_source_capture = false,
       semantic_model::Scope * argument_scope = nullptr,
-      const std::string * source_location = nullptr) = 0;
+      const std::string * source_location = nullptr,
+      const cpp_decl::TemplateIdSyntax * source_syntax = nullptr) = 0;
   virtual cpp_decl::TypePtr instantiate_resolved_alias_template(
       semantic_model::AliasTemplateDecl & decl,
       semantic_model::Scope & use_scope,

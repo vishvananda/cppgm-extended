@@ -41,6 +41,7 @@ ALIAS_UPSTREAM_ROUTES = [
     "alias.resolved_instantiation",
     "alias.direct_template_argument",
     "alias.template_declaration_pattern",
+    "alias.canonical_occurrence",
 ]
 
 
@@ -89,9 +90,24 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
     unique_output: list[dict[str, Any]] = []
     lifecycle_output: list[dict[str, Any]] = []
     unknown_producers: collections.Counter[str] = collections.Counter()
+    semantic_consolidation: dict[str, collections.Counter[str]] = {}
 
     for record in records:
         record_kind = record.get("record")
+        if record_kind == "semantic_consolidation":
+            family = str(record.get("family", "unknown"))
+            counts = semantic_consolidation.setdefault(
+                family, collections.Counter()
+            )
+            for field in (
+                "completed_candidates",
+                "early_repeats",
+                "prepublication_merges",
+                "collected_occurrences",
+                "published_occurrences",
+            ):
+                counts[field] += int(record.get(field, 0))
+            continue
         if record_kind in {"source_attempt", "lifecycle_attempt"}:
             producer = str(record.get("producer", "unknown"))
             coverage = site_coverage.setdefault(producer, collections.Counter())
@@ -272,6 +288,10 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
         "alias_renderer_ownership_by_route": {
             route: sorted_counter(counts)
             for route, counts in sorted(alias_renderer_routes.items())
+        },
+        "semantic_consolidation": {
+            family: sorted_counter(counts)
+            for family, counts in sorted(semantic_consolidation.items())
         },
         "unknown_producer_attempts": sorted_counter(unknown_producers),
     }

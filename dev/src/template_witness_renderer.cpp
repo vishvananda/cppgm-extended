@@ -1309,19 +1309,6 @@ string normalize_binding_arg_for_event(const string & arg,
                                        bool preserve_const_char_array = false);
 bool is_simple_identifier_text(const string & text);
 
-bool is_simple_identifier_or_pack_expansion_text(const string & text)
-{
-  string value = trim_space(text);
-  const string ellipsis = "...";
-  if(value.size() > ellipsis.size() &&
-     value.compare(value.size() - ellipsis.size(),
-                   ellipsis.size(),
-                   ellipsis) == 0) {
-    value = trim_space(value.substr(0, value.size() - ellipsis.size()));
-  }
-  return is_simple_identifier_text(value);
-}
-
 bool template_id_occurrence_is_result_type_use(
     const semantic_source_use::SourceTemplateIdOccurrence & occurrence)
 {
@@ -1349,124 +1336,6 @@ vector<string> binding_pack_argument_match_texts(const WitnessBinding & binding)
     parts.push_back(string());
   }
   return parts;
-}
-
-bool typed_class_occurrence_matches_event_bindings(const WitnessEvent & event)
-{
-  if(event.kind != WitnessEventKind::ClassUse ||
-     !event.template_id_occurrence.present ||
-     !event.template_id_occurrence.source_spelled ||
-     !event.template_id_occurrence.argument_list_spelled) {
-    return true;
-  }
-  vector<string> source_args;
-  vector<char> preserve_semantic_args;
-  for(size_t i = 0; i < event.template_id_occurrence.arguments.size(); ++i) {
-    const semantic_source_use::SourceTemplateArgumentOccurrence & argument =
-        event.template_id_occurrence.arguments[i];
-    if(!argument.source_spelled) {
-      continue;
-    }
-    source_args.push_back(argument.text);
-    preserve_semantic_args.push_back(argument.dependent ||
-                                     argument.current_specialization ||
-                                     argument.preserve_qualified_member);
-  }
-  if(source_args.empty()) {
-    return event.template_id_occurrence.empty_argument_list;
-  }
-  const bool strict_argument_match =
-      event.template_id_occurrence.in_template_body;
-  if(strict_argument_match && event.template_id_occurrence.synthesized) {
-    return false;
-  }
-  vector<string> expected_args;
-  vector<string> expected_sources;
-  vector<char> expected_type_like;
-  for(size_t i = 0; i < event.bindings.size(); ++i) {
-    if(binding_is_pack_binding(event.bindings[i])) {
-      const vector<string> pack_args =
-          binding_pack_argument_match_texts(event.bindings[i]);
-      for(size_t j = 0; j < pack_args.size(); ++j) {
-        expected_args.push_back(pack_args[j]);
-        expected_sources.push_back(event.bindings[i].source);
-        expected_type_like.push_back(event.bindings[i].type_like);
-      }
-      continue;
-    }
-    expected_args.push_back(event.bindings[i].arg);
-    expected_sources.push_back(event.bindings[i].source);
-    expected_type_like.push_back(event.bindings[i].type_like);
-  }
-  if(source_args.size() > expected_args.size()) {
-    return false;
-  }
-  for(size_t i = 0; i < source_args.size(); ++i) {
-    if(!strict_argument_match &&
-       i < preserve_semantic_args.size() &&
-       preserve_semantic_args[i]) {
-      continue;
-    }
-    const string actual = canonical_template_text(
-        normalize_binding_arg_for_event(source_args[i]));
-    const string wanted = canonical_template_text(
-        normalize_binding_arg_for_event(expected_args[i]));
-    if(actual != wanted) {
-      static const std::regex integer_regex("^\\d+$");
-      static const std::regex expression_like_regex("[A-Za-z_+\\-*/]");
-      if(std::regex_match(wanted, integer_regex) &&
-         std::regex_search(source_args[i], expression_like_regex)) {
-        continue;
-      }
-      if(std::regex_match(wanted, integer_regex) &&
-         actual.compare(0, 4, "int:") == 0 &&
-         actual.substr(4) == wanted) {
-        continue;
-      }
-      if(strict_argument_match) {
-        if(i < expected_type_like.size() && expected_type_like[i]) {
-          continue;
-        }
-        if(is_simple_identifier_or_pack_expansion_text(source_args[i]) &&
-           i < preserve_semantic_args.size() &&
-           preserve_semantic_args[i]) {
-          if(!event.template_id_occurrence.current_specialization_use &&
-             !template_id_occurrence_is_result_type_use(
-                 event.template_id_occurrence)) {
-            return false;
-          }
-          continue;
-        }
-        if(!is_simple_identifier_or_pack_expansion_text(source_args[i])) {
-          continue;
-        }
-        continue;
-      }
-    }
-  }
-  for(size_t i = source_args.size(); i < expected_sources.size(); ++i) {
-    if(expected_sources[i] != "defaulted" &&
-       expected_sources[i] != "deduced") {
-      return false;
-    }
-  }
-  return true;
-}
-
-size_t expanded_explicit_binding_arg_count(const WitnessEvent & event)
-{
-  size_t count = 0;
-  for(size_t i = 0; i < event.bindings.size(); ++i) {
-    if(event.bindings[i].source != "explicit") {
-      continue;
-    }
-    if(binding_is_pack_binding(event.bindings[i])) {
-      count += binding_pack_argument_texts(event.bindings[i]).size();
-    } else {
-      ++count;
-    }
-  }
-  return count;
 }
 
 bool typed_class_occurrence_arguments_match_bindings_exactly(
@@ -1518,50 +1387,6 @@ bool typed_class_occurrence_arguments_match_bindings_exactly(
     }
   }
   return true;
-}
-
-bool concrete_scalar_binding_arg(const string & arg)
-{
-  const string value = trim_space(arg);
-  if(value == "true" || value == "false") {
-    return true;
-  }
-  static const std::regex integer_regex("^[+-]?([0-9]+|0[xX][0-9A-Fa-f]+)$");
-  return std::regex_match(value, integer_regex);
-}
-
-bool class_use_has_concrete_scalar_binding_peer(
-    const WitnessEvent & candidate,
-    const WitnessEvent & peer)
-{
-  if(candidate.kind != WitnessEventKind::ClassUse ||
-     peer.kind != WitnessEventKind::ClassUse ||
-     candidate.bindings.size() != peer.bindings.size()) {
-    return false;
-  }
-  bool peer_is_more_concrete = false;
-  for(size_t i = 0; i < candidate.bindings.size(); ++i) {
-    if(candidate.bindings[i].source != peer.bindings[i].source ||
-       candidate.bindings[i].pack_binding ||
-       peer.bindings[i].pack_binding) {
-      return false;
-    }
-    const string candidate_arg =
-        canonical_template_text(
-            normalize_binding_arg_for_event(candidate.bindings[i].arg));
-    const string peer_arg =
-        canonical_template_text(
-            normalize_binding_arg_for_event(peer.bindings[i].arg));
-    if(candidate_arg == peer_arg) {
-      continue;
-    }
-    if(concrete_scalar_binding_arg(candidate.bindings[i].arg) ||
-       !concrete_scalar_binding_arg(peer.bindings[i].arg)) {
-      return false;
-    }
-    peer_is_more_concrete = true;
-  }
-  return peer_is_more_concrete;
 }
 
 string unqualified_template_name_text(const string & text)
@@ -2246,121 +2071,6 @@ string compact_source_match_text(const string & text)
   return out;
 }
 
-vector<string> alias_source_match_binding_parts(const WitnessBinding & binding)
-{
-  if(binding.pack_binding) {
-    return binding.pack_arguments;
-  }
-  return vector<string>(1, trim_space(binding.arg));
-}
-
-bool alias_source_argument_matches_binding_text(
-    const semantic_source_use::SourceTemplateArgumentOccurrence & argument,
-    const string & binding_text)
-{
-  if(!argument.source_spelled) {
-    return false;
-  }
-  if(argument.current_specialization ||
-     argument.preserve_qualified_member) {
-    return true;
-  }
-  const string source_arg = compact_source_match_text(argument.text);
-  const string binding_arg = compact_source_match_text(binding_text);
-  if(source_arg.empty() || binding_arg.empty()) {
-    return false;
-  }
-  return canonical_template_text(source_arg) ==
-         canonical_template_text(binding_arg);
-}
-
-bool alias_event_bindings_match_source_occurrence(const WitnessEvent & event)
-{
-  const semantic_source_use::SourceTemplateIdOccurrence & occurrence =
-      event.template_id_occurrence;
-  if(event.kind != WitnessEventKind::AliasUse ||
-     !occurrence.present ||
-     !occurrence.source_spelled ||
-     !occurrence.argument_list_spelled ||
-     occurrence.synthesized) {
-    return false;
-  }
-  bool checked = false;
-  size_t source_index = 0;
-  for(size_t i = 0; i < event.bindings.size(); ++i) {
-    if(event.bindings[i].source != "explicit") {
-      continue;
-    }
-    const vector<string> binding_parts =
-        alias_source_match_binding_parts(event.bindings[i]);
-    checked = true;
-    if(binding_parts.empty()) {
-      if(source_index >= occurrence.arguments.size() ||
-         !occurrence.arguments[source_index].source_spelled ||
-         !occurrence.arguments[source_index].text.empty()) {
-        return false;
-      }
-      ++source_index;
-      continue;
-    }
-    for(size_t j = 0; j < binding_parts.size(); ++j) {
-      if(source_index >= occurrence.arguments.size() ||
-         !alias_source_argument_matches_binding_text(
-             occurrence.arguments[source_index],
-             binding_parts[j])) {
-        return false;
-      }
-      ++source_index;
-    }
-  }
-  return checked;
-}
-
-int alias_event_ownership_preference(SourceUseOwnership ownership)
-{
-  switch(ownership) {
-  case SourceUseOwnership::Direct:
-  case SourceUseOwnership::SourceOwned:
-    return 2;
-  case SourceUseOwnership::NestedDerived:
-    return 1;
-  }
-  return 0;
-}
-
-tuple<int, int, int, int, int, int, int> alias_event_source_preference_key(
-    const WitnessEvent & event)
-{
-  if(!alias_event_bindings_match_source_occurrence(event)) {
-    return tuple<int, int, int, int, int, int, int>(0, 0, 0, 0, 0, 0, 0);
-  }
-  const semantic_source_use::SourceTemplateIdOccurrence & occurrence =
-      event.template_id_occurrence;
-  int dependent_arguments = 0;
-  int preserved_semantic_arguments = 0;
-  int source_spelled_arguments = 0;
-  for(size_t i = 0; i < occurrence.arguments.size(); ++i) {
-    if(occurrence.arguments[i].source_spelled) {
-      ++source_spelled_arguments;
-    }
-    if(occurrence.arguments[i].dependent) {
-      ++dependent_arguments;
-    }
-    if(occurrence.arguments[i].current_specialization ||
-       occurrence.arguments[i].preserve_qualified_member) {
-      ++preserved_semantic_arguments;
-    }
-  }
-  return tuple<int, int, int, int, int, int, int>(
-      1,
-      alias_event_ownership_preference(event.ownership),
-      dependent_arguments,
-      preserved_semantic_arguments,
-      occurrence.exact_source_arguments ? 1 : 0,
-      occurrence.in_template_body ? 0 : 1,
-      source_spelled_arguments);
-}
-
 bool alias_event_has_source_spelled_explicit_arguments(
     const WitnessEvent & event)
 {
@@ -2389,43 +2099,6 @@ bool alias_event_has_source_spelled_explicit_arguments(
     }
   }
   return source_spelled_args >= explicit_bindings;
-}
-
-void prefer_source_spelled_alias_events(vector<WitnessEvent> & events)
-{
-  map<string, vector<size_t> > groups;
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::AliasUse) {
-      continue;
-    }
-    const string key = events[i].location + "\x1f" + events[i].template_name;
-    groups[key].push_back(i);
-  }
-
-  vector<char> drop(events.size(), 0);
-  for(map<string, vector<size_t> >::const_iterator it = groups.begin();
-      it != groups.end();
-      ++it) {
-    if(it->second.size() < 2) {
-      continue;
-    }
-    tuple<int, int, int, int, int, int, int> best_key(0, 0, 0, 0, 0, 0, 0);
-    for(size_t i = 0; i < it->second.size(); ++i) {
-      best_key = std::max(
-          best_key,
-          alias_event_source_preference_key(events[it->second[i]]));
-    }
-    if(std::get<0>(best_key) == 0) {
-      continue;
-    }
-    for(size_t i = 0; i < it->second.size(); ++i) {
-      const size_t index = it->second[i];
-      if(alias_event_source_preference_key(events[index]) < best_key) {
-        drop[index] = 1;
-      }
-    }
-  }
-  compact_events(events, drop);
 }
 
 bool location_in_any_template_body_range(
@@ -2617,93 +2290,6 @@ int binding_source_preference_score(const WitnessEvent & event)
       static_cast<int>(deduced);
 }
 
-void apply_occurrence_bindings(WitnessEvent & event,
-                               const SourceOccurrence & occurrence)
-{
-  const auto occurrence_arg_overrides_binding =
-      [&](size_t occurrence_index, size_t binding_index) -> bool
-  {
-    if(event.kind == WitnessEventKind::ClassUse) {
-      return false;
-    }
-    if(occurrence_index < occurrence.args.size() &&
-       binding_index < event.bindings.size()) {
-      const string occurrence_arg = trim_space(occurrence.args[occurrence_index]);
-      const string binding_arg = trim_space(event.bindings[binding_index].arg);
-      const string typename_prefix = "typename ";
-      const string occurrence_core =
-          occurrence_arg.compare(0, typename_prefix.size(), typename_prefix) == 0 ?
-              trim_space(occurrence_arg.substr(typename_prefix.size())) :
-              occurrence_arg;
-      const string binding_core =
-          binding_arg.compare(0, typename_prefix.size(), typename_prefix) == 0 ?
-              trim_space(binding_arg.substr(typename_prefix.size())) :
-              binding_arg;
-      if(occurrence_core.find("::") == string::npos &&
-         binding_core.find("::") != string::npos &&
-         unqualified_template_name_text(binding_core) == occurrence_core) {
-        return false;
-      }
-    }
-    return occurrence_index >= occurrence.preserve_semantic_args.size() ||
-           !occurrence.preserve_semantic_args[occurrence_index];
-  };
-  if(event.kind == WitnessEventKind::ClassUse &&
-     occurrence.args.empty() &&
-     event.template_id_occurrence.present &&
-     event.template_id_occurrence.source_spelled &&
-     event.template_id_occurrence.argument_list_spelled &&
-     event.template_id_occurrence.empty_argument_list) {
-    for(size_t i = 0; i < event.bindings.size(); ++i) {
-      if(event.bindings[i].source == "explicit") {
-        event.bindings[i].source = "defaulted";
-      }
-    }
-    return;
-  }
-  if(event.kind == WitnessEventKind::ClassUse) {
-    return;
-  }
-  if(occurrence.args.empty() || event.bindings.empty()) {
-    return;
-  }
-  if(event.bindings.size() == 1 && occurrence.args.size() > 1) {
-    for(size_t i = 0; i < occurrence.args.size(); ++i) {
-      if(!occurrence_arg_overrides_binding(i, 0)) {
-        return;
-      }
-    }
-    string arg = "<";
-    for(size_t i = 0; i < occurrence.args.size(); ++i) {
-      if(i) {
-        arg += ", ";
-      }
-      arg += occurrence.args[i];
-    }
-    arg += ">";
-    event.bindings[0].arg = arg;
-    return;
-  }
-  if(event.bindings.size() == 1 && occurrence.args.size() == 1) {
-    if(occurrence_arg_overrides_binding(0, 0)) {
-      event.bindings[0].arg = occurrence.args[0];
-    }
-    return;
-  }
-  if(occurrence.args.size() >= event.bindings.size()) {
-    return;
-  }
-  for(size_t i = 0; i < event.bindings.size(); ++i) {
-    if(i < occurrence.args.size()) {
-      if(occurrence_arg_overrides_binding(i, i)) {
-        event.bindings[i].arg = occurrence.args[i];
-      }
-    } else if(event.bindings[i].source == "explicit") {
-      event.bindings[i].source = "defaulted";
-    }
-  }
-}
-
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
 
 struct WitnessBuilder
@@ -2720,9 +2306,8 @@ struct WitnessBuilder
   vector<witness_provenance::RendererEventLineage> function_call_lineages;
   vector<WitnessEvent> class_events;
   vector<witness_provenance::RendererEventLineage> class_lineages;
-  set<EventKey> class_event_keys;
-  map<EventKey, WitnessEvent> alias_events;
-  map<EventKey, witness_provenance::RendererEventLineage> alias_lineages;
+  vector<WitnessEvent> alias_events;
+  vector<witness_provenance::RendererEventLineage> alias_lineages;
   map<EventKey, WitnessEvent> variable_events;
   map<EventKey, witness_provenance::RendererEventLineage> variable_lineages;
   string source_path;
@@ -2751,36 +2336,13 @@ struct WitnessBuilder
       const witness_provenance::RendererEventLineage * lineage = nullptr)
   {
     if(event.kind == WitnessEventKind::ClassUse) {
-      const EventKey key = event_key(event);
-      if(class_event_keys.insert(key).second) {
-        class_events.push_back(event);
-        if(trace && lineage) class_lineages.push_back(*lineage);
-      } else if(trace && lineage) {
-        for(size_t i = 0; i < class_events.size(); ++i) {
-          if(event_key(class_events[i]) == key) {
-            merge_renderer_lineage(class_lineages[i], *lineage);
-            note_build_action(event, "removed", *lineage);
-            break;
-          }
-        }
-      }
+      class_events.push_back(event);
+      if(trace && lineage) class_lineages.push_back(*lineage);
       return;
     }
     if(event.kind == WitnessEventKind::AliasUse) {
-      const EventKey key = event_key(event);
-      map<EventKey, WitnessEvent>::iterator existing = alias_events.find(key);
-      if(trace && lineage) {
-        witness_provenance::RendererEventLineage retained = *lineage;
-        if(existing != alias_events.end()) {
-          retained = alias_lineages[key];
-          merge_renderer_lineage(retained, *lineage);
-          note_build_action(existing->second,
-                            "replaced",
-                            alias_lineages[key]);
-        }
-        alias_lineages[key] = retained;
-      }
-      alias_events[key] = event;
+      alias_events.push_back(event);
+      if(trace && lineage) alias_lineages.push_back(*lineage);
       return;
     }
     if(event.kind == WitnessEventKind::VariableUse) {
@@ -2815,11 +2377,11 @@ struct WitnessBuilder
     if(trace) {
       lineages.insert(lineages.end(), class_lineages.begin(), class_lineages.end());
     }
-    for(map<EventKey, WitnessEvent>::const_iterator it = alias_events.begin();
-        it != alias_events.end();
-        ++it) {
-      events.push_back(it->second);
-      if(trace) lineages.push_back(alias_lineages[it->first]);
+    events.insert(events.end(), alias_events.begin(), alias_events.end());
+    if(trace) {
+      lineages.insert(lineages.end(),
+                      alias_lineages.begin(),
+                      alias_lineages.end());
     }
     for(map<EventKey, WitnessEvent>::const_iterator it = variable_events.begin();
         it != variable_events.end();
@@ -2895,21 +2457,17 @@ struct WitnessBuilder
 
   vector<WitnessEvent> function_calls;
   vector<WitnessEvent> class_events;
-  set<tuple<string, string, string, string, string> > class_event_keys;
-  map<tuple<string, string, string, string, string>, WitnessEvent> alias_events;
+  vector<WitnessEvent> alias_events;
   map<tuple<string, string, string, string, string>, WitnessEvent> variable_events;
 
   void consume_direct_event(const WitnessEvent & event)
   {
     if(event.kind == WitnessEventKind::ClassUse) {
-      const tuple<string, string, string, string, string> key = event_key(event);
-      if(class_event_keys.insert(key).second) {
-        class_events.push_back(event);
-      }
+      class_events.push_back(event);
       return;
     }
     if(event.kind == WitnessEventKind::AliasUse) {
-      alias_events[event_key(event)] = event;
+      alias_events.push_back(event);
       return;
     }
     if(event.kind == WitnessEventKind::VariableUse) {
@@ -2925,12 +2483,7 @@ struct WitnessBuilder
   {
     vector<WitnessEvent> events;
     events.insert(events.end(), class_events.begin(), class_events.end());
-    for(map<tuple<string, string, string, string, string>, WitnessEvent>::const_iterator
-            it = alias_events.begin();
-        it != alias_events.end();
-        ++it) {
-      events.push_back(it->second);
-    }
+    events.insert(events.end(), alias_events.begin(), alias_events.end());
     for(map<tuple<string, string, string, string, string>, WitnessEvent>::const_iterator
             it = variable_events.begin();
         it != variable_events.end();
@@ -3457,54 +3010,6 @@ string source_line_location_key(const string & location)
   return location_source_path(location) + ":" + std::to_string(parsed.line);
 }
 
-void drop_deduced_class_uses_shadowed_by_explicit_same_line(
-    vector<WitnessEvent> & events)
-{
-  set<string> explicit_keys;
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::ClassUse ||
-       all_primary_bindings_deduced(events[i])) {
-      continue;
-    }
-    const string line_key = source_line_location_key(events[i].location);
-    if(line_key.empty()) {
-      continue;
-    }
-    explicit_keys.insert(
-        line_key + "\x1f" +
-        events[i].template_name + "\x1f" +
-        witness_selection_text(events[i]) + "\x1f" +
-        events[i].selected_decl_location + "\x1f" +
-        binding_arg_signature_key(events[i].bindings) + "\x1f" +
-        binding_arg_signature_key(events[i].specialization_bindings));
-  }
-  if(explicit_keys.empty()) {
-    return;
-  }
-  vector<char> drop(events.size(), 0);
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::ClassUse ||
-       !all_primary_bindings_deduced(events[i])) {
-      continue;
-    }
-    const string line_key = source_line_location_key(events[i].location);
-    if(line_key.empty()) {
-      continue;
-    }
-    const string key =
-        line_key + "\x1f" +
-        events[i].template_name + "\x1f" +
-        witness_selection_text(events[i]) + "\x1f" +
-        events[i].selected_decl_location + "\x1f" +
-        binding_arg_signature_key(events[i].bindings) + "\x1f" +
-        binding_arg_signature_key(events[i].specialization_bindings);
-    if(explicit_keys.count(key) != 0) {
-      drop[i] = 1;
-    }
-  }
-  compact_events(events, drop);
-}
-
 bool event_has_same_line_template_id_occurrence(const WitnessEvent & event)
 {
   const ParsedLocation raw = parse_line_col(
@@ -3619,14 +3124,18 @@ void drop_redundant_nested_events(vector<WitnessEvent> & events)
 {
   set<string> direct_signatures;
   for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].ownership != SourceUseOwnership::NestedDerived) {
+    if(events[i].kind != WitnessEventKind::ClassUse &&
+       events[i].kind != WitnessEventKind::AliasUse &&
+       events[i].ownership != SourceUseOwnership::NestedDerived) {
       direct_signatures.insert(event_signature_without_location(events[i]));
     }
   }
 
   vector<char> drop(events.size(), 0);
   for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].ownership != SourceUseOwnership::NestedDerived) {
+    if(events[i].kind == WitnessEventKind::ClassUse ||
+       events[i].kind == WitnessEventKind::AliasUse ||
+       events[i].ownership != SourceUseOwnership::NestedDerived) {
       continue;
     }
     if(direct_signatures.count(event_signature_without_location(events[i])) != 0) {
@@ -4188,246 +3697,10 @@ void normalize_event_bindings(vector<WitnessEvent> & events,
   }
 }
 
-void qualify_member_alias_events_from_class_uses(vector<WitnessEvent> & events)
-{
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::AliasUse) {
-      continue;
-    }
-    const string::size_type split = events[i].template_name.rfind("::");
-    if(split == string::npos) {
-      continue;
-    }
-    const string owner_name =
-        strip_top_level_template_suffix(
-            trim_space(events[i].template_name.substr(0, split)));
-    const string alias_name = trim_space(events[i].template_name.substr(split + 2));
-    if(owner_name.empty() || alias_name.empty()) {
-      continue;
-    }
-    const ParsedLocation alias_location = parse_line_col(events[i].location);
-    if(alias_location.line <= 0) {
-      continue;
-    }
-    int best_column = -1;
-    string best_owner;
-    for(size_t j = 0; j < events.size(); ++j) {
-      if(events[j].kind != WitnessEventKind::ClassUse ||
-         events[j].bindings.empty()) {
-        continue;
-      }
-      const ParsedLocation class_location = parse_line_col(events[j].location);
-      if(class_location.line != alias_location.line ||
-         class_location.column <= 0 ||
-         class_location.column >= alias_location.column ||
-         class_location.column <= best_column) {
-        continue;
-      }
-      const string class_name =
-          strip_top_level_template_suffix(trim_space(events[j].template_name));
-      if(class_name != owner_name &&
-         unqualified_template_name_text(class_name) !=
-             unqualified_template_name_text(owner_name)) {
-        continue;
-      }
-      best_column = class_location.column;
-      best_owner = make_bound_template_text(events[j].template_name,
-                                            events[j].bindings,
-                                            events[j].bindings.size());
-    }
-    if(!best_owner.empty()) {
-      events[i].template_name = best_owner + "::" + alias_name;
-    }
-  }
-}
-
-void canonicalize_placeholder_member_alias_owners(vector<WitnessEvent> & events)
-{
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::AliasUse ||
-       events[i].template_name.find("type-parameter-0-0") == string::npos) {
-      continue;
-    }
-    const ParsedLocation alias_location = parse_line_col(events[i].location);
-    if(alias_location.line <= 0) {
-      continue;
-    }
-    const string::size_type owner_angle = events[i].template_name.find('<');
-    const string owner_base =
-        owner_angle == string::npos ?
-            strip_top_level_template_suffix(events[i].template_name) :
-            events[i].template_name.substr(0, owner_angle);
-    int best_column = -1;
-    string replacement;
-    for(size_t j = 0; j < events.size(); ++j) {
-      if(events[j].kind != WitnessEventKind::ClassUse ||
-         events[j].bindings.empty()) {
-        continue;
-      }
-      const ParsedLocation class_location = parse_line_col(events[j].location);
-      if(class_location.line != alias_location.line ||
-         class_location.column <= 0 ||
-         class_location.column >= alias_location.column ||
-         class_location.column <= best_column) {
-        continue;
-      }
-      const string class_name =
-          strip_top_level_template_suffix(trim_space(events[j].template_name));
-      const string class_unqualified = unqualified_template_name_text(class_name);
-      const string owner_unqualified = unqualified_template_name_text(owner_base);
-      if(!owner_unqualified.empty() &&
-         class_unqualified != owner_unqualified &&
-         class_unqualified + "_impl" != owner_unqualified) {
-        continue;
-      }
-      best_column = class_location.column;
-      replacement = events[j].bindings[0].arg;
-    }
-    if(replacement.empty()) {
-      continue;
-    }
-    replace_all(events[i].template_name, "type-parameter-0-0", replacement);
-    const string void_t_suffix = ", void_t<" + replacement + ">";
-    const string::size_type suffix_pos =
-        events[i].template_name.find(void_t_suffix);
-    if(suffix_pos != string::npos) {
-      events[i].template_name.erase(suffix_pos, void_t_suffix.size());
-    }
-  }
-}
-
 void canonicalize_event_locations_and_dedupe(vector<WitnessEvent> & events,
                                              const string & input_path)
 {
   const string normalized_input = normalize_witness_path(input_path);
-  {
-    vector<char> drop(events.size(), 0);
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse) {
-        continue;
-      }
-      const string raw_location =
-          !events[i].raw_location.empty() ? events[i].raw_location :
-                                            events[i].location;
-      const ParsedLocation raw = parse_line_col(raw_location);
-      const ParsedLocation decl = parse_line_col(events[i].selected_decl_location);
-      const string raw_path = location_source_path(raw_location);
-      const string decl_path =
-          location_source_path(events[i].selected_decl_location);
-      if(all_primary_bindings_deduced(events[i]) &&
-         raw.line > 0 && decl.line > 0 &&
-         !raw_path.empty() && raw_path == decl_path &&
-         raw.line < decl.line) {
-        drop[i] = 1;
-        continue;
-      }
-      SourceOccurrence typed_occurrence;
-      const bool has_typed_source_occurrence =
-          source_occurrence_from_typed_template_id(events[i], typed_occurrence);
-      const bool has_exact_use_anchor =
-          events[i].use_anchor_kind ==
-              semantic_source_use::SourceAnchorKind::Spelling &&
-          location_is_for_input_path(raw_location, normalized_input);
-      if(!has_typed_source_occurrence &&
-         !has_exact_use_anchor &&
-         !all_primary_bindings_deduced(events[i]) &&
-         location_is_for_input_path(raw_location, normalized_input)) {
-        drop[i] = 1;
-        continue;
-      }
-      if(has_typed_source_occurrence) {
-        if(!typed_class_occurrence_matches_event_bindings(events[i])) {
-          if(same_line_event_binding_mentions_bound_class_use(events, i)) {
-            apply_occurrence_bindings(events[i], typed_occurrence);
-            continue;
-          }
-          drop[i] = 1;
-          continue;
-        }
-        apply_occurrence_bindings(events[i], typed_occurrence);
-      }
-    }
-    compact_events(events, drop);
-  }
-
-  {
-    vector<char> drop(events.size(), 0);
-    map<string, vector<size_t> > grouped_class_uses;
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse) {
-        continue;
-      }
-      const string location =
-          !events[i].location.empty() ? events[i].location :
-                                        events[i].raw_location;
-      const string key = location + "\x1f" + events[i].template_name;
-      grouped_class_uses[key].push_back(i);
-    }
-    for(map<string, vector<size_t> >::const_iterator it =
-            grouped_class_uses.begin();
-        it != grouped_class_uses.end();
-        ++it) {
-      bool has_typed_occurrence = false;
-      for(size_t j = 0; j < it->second.size(); ++j) {
-        SourceOccurrence occurrence;
-        if(source_occurrence_from_typed_template_id(events[it->second[j]],
-                                                    occurrence)) {
-          has_typed_occurrence = true;
-          break;
-        }
-      }
-      if(!has_typed_occurrence) {
-        continue;
-      }
-      for(size_t j = 0; j < it->second.size(); ++j) {
-        SourceOccurrence occurrence;
-        if(!source_occurrence_from_typed_template_id(events[it->second[j]],
-                                                     occurrence)) {
-          drop[it->second[j]] = 1;
-        }
-      }
-    }
-    compact_events(events, drop);
-  }
-
-  {
-    vector<char> drop(events.size(), 0);
-    map<string, vector<size_t> > grouped_class_uses;
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse ||
-         events[i].use_anchor_kind !=
-             semantic_source_use::SourceAnchorKind::Spelling) {
-        continue;
-      }
-      const string location =
-          !events[i].location.empty() ? events[i].location :
-                                        events[i].raw_location;
-      grouped_class_uses[location + "\x1f" + events[i].template_name + "\x1f" +
-                         witness_selection_text(events[i])].push_back(i);
-    }
-    for(map<string, vector<size_t> >::const_iterator it =
-            grouped_class_uses.begin();
-        it != grouped_class_uses.end();
-        ++it) {
-      if(it->second.size() < 2) {
-        continue;
-      }
-      size_t best_count = 0;
-      for(size_t j = 0; j < it->second.size(); ++j) {
-        best_count = std::max(best_count,
-                              expanded_explicit_binding_arg_count(
-                                  events[it->second[j]]));
-      }
-      for(size_t j = 0; j < it->second.size(); ++j) {
-        if(expanded_explicit_binding_arg_count(events[it->second[j]]) <
-           best_count) {
-          drop[it->second[j]] = 1;
-        }
-      }
-    }
-    compact_events(events, drop);
-  }
-
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].kind != WitnessEventKind::VariableUse) {
       continue;
@@ -4446,49 +3719,6 @@ void canonicalize_event_locations_and_dedupe(vector<WitnessEvent> & events,
       events[i].raw_selected_decl_location = events[i].selected_decl_location;
       continue;
     }
-  }
-
-  {
-    vector<char> drop(events.size(), 0);
-    map<string, vector<size_t> > grouped_class_uses;
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse) {
-        continue;
-      }
-      const ParsedLocation parsed = parse_line_col(
-          !events[i].raw_location.empty() ? events[i].raw_location : events[i].location);
-      const string key = std::to_string(parsed.line) + "\x1f" + events[i].template_name;
-      grouped_class_uses[key].push_back(i);
-    }
-    for(map<string, vector<size_t> >::const_iterator it = grouped_class_uses.begin();
-        it != grouped_class_uses.end();
-        ++it) {
-      bool has_exact_same_line_use_anchor = false;
-      vector<char> exact_same_line_use_anchor(it->second.size(), 0);
-      for(size_t j = 0; j < it->second.size(); ++j) {
-        const string location =
-            !events[it->second[j]].location.empty() ?
-                events[it->second[j]].location :
-                events[it->second[j]].raw_location;
-        if(events[it->second[j]].use_anchor_kind ==
-               semantic_source_use::SourceAnchorKind::Spelling &&
-           location_is_for_input_path(location, normalized_input)) {
-          exact_same_line_use_anchor[j] = 1;
-          has_exact_same_line_use_anchor = true;
-        }
-      }
-      if(has_exact_same_line_use_anchor) {
-        for(size_t j = 0; j < it->second.size(); ++j) {
-          if(!exact_same_line_use_anchor[j] &&
-           events[it->second[j]].source_role ==
-                 semantic_source_use::SourceUseRole::QualifierUse) {
-            drop[it->second[j]] = 1;
-          }
-        }
-        continue;
-      }
-    }
-    compact_events(events, drop);
   }
 
   {
@@ -4519,205 +3749,6 @@ void canonicalize_event_locations_and_dedupe(vector<WitnessEvent> & events,
                 });
       for(size_t j = 0; j + 1 < it->second.size(); ++j) {
         drop[it->second[j]] = 1;
-      }
-    }
-    compact_events(events, drop);
-  }
-
-  {
-    vector<char> drop(events.size(), 0);
-    map<string, vector<size_t> > grouped_by_location;
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse) {
-        continue;
-      }
-      const string key = events[i].location + "\x1f" + events[i].template_name;
-      grouped_by_location[key].push_back(i);
-    }
-    for(map<string, vector<size_t> >::const_iterator it = grouped_by_location.begin();
-        it != grouped_by_location.end();
-        ++it) {
-      if(it->second.size() < 2) {
-        continue;
-      }
-      bool has_non_primary = false;
-      for(size_t j = 0; j < it->second.size(); ++j) {
-        if(events[it->second[j]].selection !=
-           SourceSelectionKind::Primary) {
-          has_non_primary = true;
-          break;
-        }
-      }
-      if(!has_non_primary) {
-        continue;
-      }
-      for(size_t j = 0; j < it->second.size(); ++j) {
-        if(events[it->second[j]].selection ==
-           SourceSelectionKind::Primary) {
-          drop[it->second[j]] = 1;
-        }
-      }
-    }
-    compact_events(events, drop);
-  }
-
-  {
-    vector<char> drop(events.size(), 0);
-    set<string> seen_class_signatures;
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse) {
-        continue;
-      }
-      const string key = events[i].location + "\x1f" + events[i].template_name +
-          "\x1f" + witness_selection_text(events[i]) + "\x1f" +
-          events[i].selected_decl_location + "\x1f" +
-          normalized_binding_signature_key(events[i].bindings) + "\x1f" +
-          normalized_binding_signature_key(events[i].specialization_bindings);
-      if(!seen_class_signatures.insert(key).second) {
-        drop[i] = 1;
-      }
-    }
-    compact_events(events, drop);
-  }
-
-  {
-    vector<char> drop(events.size(), 0);
-    map<string, vector<size_t> > grouped_class_uses;
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse) {
-        continue;
-      }
-      const string key = events[i].location + "\x1f" +
-          events[i].template_name + "\x1f" +
-          witness_selection_text(events[i]) + "\x1f" +
-          events[i].selected_decl_location;
-      grouped_class_uses[key].push_back(i);
-    }
-    for(map<string, vector<size_t> >::const_iterator it = grouped_class_uses.begin();
-        it != grouped_class_uses.end();
-        ++it) {
-      if(it->second.size() < 2) {
-        continue;
-      }
-      for(size_t j = 0; j < it->second.size(); ++j) {
-        const size_t candidate = it->second[j];
-        if(drop[candidate]) {
-          continue;
-        }
-        for(size_t k = 0; k < it->second.size(); ++k) {
-          const size_t peer = it->second[k];
-          if(candidate == peer || drop[peer]) {
-            continue;
-          }
-          if(class_use_has_concrete_scalar_binding_peer(events[candidate],
-                                                        events[peer])) {
-            drop[candidate] = 1;
-            break;
-          }
-        }
-      }
-    }
-    compact_events(events, drop);
-  }
-
-  {
-    vector<char> drop(events.size(), 0);
-    map<string, vector<size_t> > grouped_class_uses;
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse) {
-        continue;
-      }
-      const string key = events[i].location + "\x1f" +
-          events[i].template_name + "\x1f" +
-          witness_selection_text(events[i]) + "\x1f" +
-          events[i].selected_decl_location + "\x1f" +
-          normalized_binding_signature_key(events[i].bindings) + "\x1f" +
-          normalized_binding_signature_key(events[i].specialization_bindings);
-      grouped_class_uses[key].push_back(i);
-    }
-    for(map<string, vector<size_t> >::const_iterator it = grouped_class_uses.begin();
-        it != grouped_class_uses.end();
-        ++it) {
-      bool has_exact_anchor = false;
-      for(size_t j = 0; j < it->second.size(); ++j) {
-        if(events[it->second[j]].use_anchor_kind ==
-           semantic_source_use::SourceAnchorKind::Spelling) {
-          has_exact_anchor = true;
-          break;
-        }
-      }
-      if(!has_exact_anchor) {
-        continue;
-      }
-      for(size_t j = 0; j < it->second.size(); ++j) {
-        if(events[it->second[j]].use_anchor_kind !=
-           semantic_source_use::SourceAnchorKind::Spelling) {
-          drop[it->second[j]] = 1;
-        }
-      }
-    }
-    compact_events(events, drop);
-  }
-
-  {
-    vector<char> drop(events.size(), 0);
-    map<string, size_t> preferred;
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse ||
-         !all_primary_bindings_deduced(events[i])) {
-        continue;
-      }
-      const ParsedLocation parsed = parse_line_col(events[i].location);
-      const string key = events[i].template_name + "\x1f" +
-          witness_selection_text(events[i]) + "\x1f" +
-          events[i].selected_decl_location + "\x1f" +
-          binding_signature_key(events[i].bindings) + "\x1f" +
-          std::to_string(parsed.line);
-      map<string, size_t>::iterator found = preferred.find(key);
-      if(found == preferred.end()) {
-        preferred[key] = i;
-        continue;
-      }
-      const ParsedLocation existing = parse_line_col(events[found->second].location);
-      if(parsed.column > 0 &&
-         (existing.column <= 0 || parsed.column < existing.column)) {
-        drop[found->second] = 1;
-        found->second = i;
-      } else {
-        drop[i] = 1;
-      }
-    }
-    compact_events(events, drop);
-  }
-
-  {
-    vector<char> drop(events.size(), 0);
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse ||
-         events[i].selection != SourceSelectionKind::Primary ||
-         events[i].bindings.empty() ||
-         !events[i].specialization_bindings.empty()) {
-        continue;
-      }
-      bool all_identity = true;
-      for(size_t j = 0; j < events[i].bindings.size(); ++j) {
-        if(events[i].bindings[j].source != "explicit" ||
-           events[i].bindings[j].param.empty() ||
-           events[i].bindings[j].arg != events[i].bindings[j].param) {
-          all_identity = false;
-          break;
-        }
-      }
-      if(all_identity) {
-        const semantic_source_use::SourceTemplateIdOccurrence & occurrence =
-            events[i].template_id_occurrence;
-        if(!occurrence.present ||
-           occurrence.in_template_body ||
-           occurrence.current_specialization_use ||
-           occurrence.has_dependent_argument ||
-           occurrence.has_current_specialization_argument) {
-          drop[i] = 1;
-        }
       }
     }
     compact_events(events, drop);
@@ -4782,6 +3813,10 @@ void canonicalize_event_locations_and_dedupe(vector<WitnessEvent> & events,
     vector<char> drop(events.size(), 0);
     set<string> seen_signatures;
     for(size_t i = 0; i < events.size(); ++i) {
+      if(events[i].kind == WitnessEventKind::ClassUse ||
+         events[i].kind == WitnessEventKind::AliasUse) {
+        continue;
+      }
       const string key = visible_event_signature(events[i]);
       if(!seen_signatures.insert(key).second) {
         drop[i] = 1;
@@ -4949,117 +3984,6 @@ void normalize_source_defined_template_calls(vector<WitnessEvent> & events,
 #endif
 }
 
-bool alias_events_same_source_decision(const WitnessEvent & lhs,
-                                       const WitnessEvent & rhs)
-{
-  return lhs.kind == WitnessEventKind::AliasUse &&
-         rhs.kind == WitnessEventKind::AliasUse &&
-         lhs.location == rhs.location &&
-         lhs.template_name == rhs.template_name &&
-         lhs.selected == rhs.selected &&
-         lhs.selection == rhs.selection &&
-         lhs.selected_decl_location == rhs.selected_decl_location &&
-         lhs.specialization_bindings == rhs.specialization_bindings &&
-         lhs.drops == rhs.drops;
-}
-
-bool binding_headers_match(const WitnessBinding & lhs,
-                           const WitnessBinding & rhs)
-{
-  return lhs.param == rhs.param &&
-         lhs.source == rhs.source &&
-         lhs.type_like == rhs.type_like;
-}
-
-bool only_binding_is_pack_aggregate(const WitnessEvent & event)
-{
-  return event.bindings.size() == 1 &&
-         event.bindings[0].pack_aggregate;
-}
-
-bool only_binding_is_non_aggregate(const WitnessEvent & event)
-{
-  return event.bindings.size() == 1 &&
-         !event.bindings[0].pack_aggregate;
-}
-
-void collapse_duplicate_current_specialization_alias_pack_events(
-    vector<WitnessEvent> & events)
-{
-  vector<char> drop(events.size(), 0);
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::AliasUse ||
-       !only_binding_is_pack_aggregate(events[i]) ||
-       !events[i].template_id_occurrence.has_current_specialization_argument) {
-      continue;
-    }
-    for(size_t j = 0; j < events.size(); ++j) {
-      if(i == j ||
-         drop[j] ||
-         !alias_events_same_source_decision(events[i], events[j]) ||
-         !only_binding_is_non_aggregate(events[j]) ||
-         !binding_headers_match(events[i].bindings[0], events[j].bindings[0])) {
-        continue;
-      }
-      if(!events[i].bindings[0].pack_binding) {
-        continue;
-      }
-      const vector<string> parts = events[i].bindings[0].pack_arguments;
-      if(parts.empty() || parts[0].empty()) {
-        continue;
-      }
-      events[i].bindings[0].arg = parts[0];
-      clear_binding_pack_shape(events[i].bindings[0]);
-      drop[j] = 1;
-    }
-  }
-  compact_events(events, drop);
-}
-
-void prefer_current_specialization_alias_duplicates(vector<WitnessEvent> & events)
-{
-  vector<char> drop(events.size(), 0);
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::AliasUse ||
-       !events[i].template_id_occurrence.has_current_specialization_argument) {
-      continue;
-    }
-    for(size_t j = 0; j < events.size(); ++j) {
-      if(i == j ||
-         drop[j] ||
-         events[j].template_id_occurrence.has_current_specialization_argument ||
-         !alias_events_same_source_decision(events[i], events[j]) ||
-         events[i].bindings.size() != events[j].bindings.size()) {
-        continue;
-      }
-      bool headers_match = true;
-      for(size_t k = 0; k < events[i].bindings.size(); ++k) {
-        if(!binding_headers_match(events[i].bindings[k],
-                                  events[j].bindings[k])) {
-          headers_match = false;
-          break;
-        }
-      }
-    if(headers_match) {
-      drop[j] = 1;
-    }
-  }
-    if(events[i].kind == WitnessEventKind::ClassUse &&
-       events[i].ownership == SourceUseOwnership::NestedDerived &&
-       events[i].template_id_occurrence.has_dependent_argument) {
-      drop[i] = 1;
-      continue;
-    }
-    if(events[i].kind == WitnessEventKind::ClassUse &&
-       events[i].source_role == semantic_source_use::SourceUseRole::ValueUse &&
-       events[i].template_id_occurrence.in_template_body) {
-      drop[i] = 1;
-      continue;
-    }
-  }
-  compact_events(events, drop);
-}
-
 std::string function_call_target_name(const WitnessEvent & event)
 {
   return !event.selected.empty() ? event.selected : event.template_name;
@@ -5118,85 +4042,16 @@ void drop_function_call_events_with_deduced_trailing_bindings(
 
 void dedupe_visible_events(vector<WitnessEvent> & events)
 {
-  collapse_duplicate_current_specialization_alias_pack_events(events);
-  prefer_current_specialization_alias_duplicates(events);
   drop_function_call_events_with_deduced_trailing_bindings(events);
-
-  {
-    vector<char> drop(events.size(), 0);
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::AliasUse) {
-        continue;
-      }
-      for(size_t j = i + 1; j < events.size(); ++j) {
-        if(events[j].kind != WitnessEventKind::AliasUse ||
-           events[i].location != events[j].location ||
-           events[i].template_name != events[j].template_name ||
-           events[i].selected != events[j].selected ||
-           events[i].selection != events[j].selection ||
-           events[i].selected_decl_location != events[j].selected_decl_location ||
-           events[i].bindings.size() != events[j].bindings.size() ||
-           events[i].specialization_bindings.size() !=
-               events[j].specialization_bindings.size()) {
-          continue;
-        }
-        bool equivalent = true;
-        int i_preserve_score = 0;
-        int j_preserve_score = 0;
-        for(size_t k = 0; k < events[i].bindings.size(); ++k) {
-          const WitnessBinding & left = events[i].bindings[k];
-          const WitnessBinding & right = events[j].bindings[k];
-          if(left.param != right.param ||
-             left.source != right.source ||
-             left.type_like != right.type_like) {
-            equivalent = false;
-            break;
-          }
-          i_preserve_score += left.preserve_qualified_member ? 1 : 0;
-          j_preserve_score += right.preserve_qualified_member ? 1 : 0;
-          if(left.arg == right.arg) {
-            continue;
-          }
-          if(left.preserve_qualified_member ||
-             right.preserve_qualified_member) {
-            continue;
-          }
-          equivalent = false;
-          break;
-        }
-        if(!equivalent) {
-          continue;
-        }
-        for(size_t k = 0; k < events[i].specialization_bindings.size(); ++k) {
-          const WitnessBinding & left = events[i].specialization_bindings[k];
-          const WitnessBinding & right = events[j].specialization_bindings[k];
-          if(left.param != right.param ||
-             left.arg != right.arg ||
-             left.source != right.source ||
-             left.type_like != right.type_like) {
-            equivalent = false;
-            break;
-          }
-          i_preserve_score += left.preserve_qualified_member ? 1 : 0;
-          j_preserve_score += right.preserve_qualified_member ? 1 : 0;
-        }
-        if(!equivalent || i_preserve_score == j_preserve_score) {
-          continue;
-        }
-        if(i_preserve_score > j_preserve_score) {
-          drop[j] = 1;
-        } else {
-          drop[i] = 1;
-        }
-      }
-    }
-    compact_events(events, drop);
-  }
 
   {
     vector<char> drop(events.size(), 0);
     map<string, size_t> preferred;
     for(size_t i = 0; i < events.size(); ++i) {
+      if(events[i].kind == WitnessEventKind::AliasUse ||
+         events[i].kind == WitnessEventKind::ClassUse) {
+        continue;
+      }
       const string key =
           string(witness_event_kind_text(events[i].kind)) + "\x1f" +
           events[i].location + "\x1f" +
@@ -5230,6 +4085,10 @@ void dedupe_visible_events(vector<WitnessEvent> & events)
     vector<char> drop(events.size(), 0);
     map<string, size_t> preferred;
     for(size_t i = 0; i < events.size(); ++i) {
+      if(events[i].kind == WitnessEventKind::AliasUse ||
+         events[i].kind == WitnessEventKind::ClassUse) {
+        continue;
+      }
       const string key = rendered_event_signature_without_binding_sources(events[i]);
       map<string, size_t>::iterator found = preferred.find(key);
       if(found == preferred.end()) {
@@ -5252,6 +4111,10 @@ void dedupe_visible_events(vector<WitnessEvent> & events)
     vector<char> drop(events.size(), 0);
     map<string, size_t> preferred;
     for(size_t i = 0; i < events.size(); ++i) {
+      if(events[i].kind == WitnessEventKind::AliasUse ||
+         events[i].kind == WitnessEventKind::ClassUse) {
+        continue;
+      }
       const string key = visible_event_signature_without_binding_sources(events[i]);
       map<string, size_t>::iterator found = preferred.find(key);
       if(found == preferred.end()) {
@@ -5270,41 +4133,13 @@ void dedupe_visible_events(vector<WitnessEvent> & events)
     compact_events(events, drop);
   }
 
-  {
-    vector<char> drop(events.size(), 0);
-    map<string, size_t> preferred;
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse) {
-        continue;
-      }
-      const string key = events[i].location + "\x1f" +
-          unqualified_template_name_text(events[i].template_name) + "\x1f" +
-          witness_selection_text(events[i]) + "\x1f" +
-          events[i].selected_decl_location + "\x1f" +
-          normalized_binding_signature_key(events[i].bindings) + "\x1f" +
-          normalized_binding_signature_key(events[i].specialization_bindings);
-      map<string, size_t>::iterator found = preferred.find(key);
-      if(found == preferred.end()) {
-        preferred[key] = i;
-        continue;
-      }
-      const bool current_qualified =
-          events[i].template_name.find("::") != string::npos;
-      const bool existing_qualified =
-          events[found->second].template_name.find("::") != string::npos;
-      if(current_qualified && !existing_qualified) {
-        drop[found->second] = 1;
-        found->second = i;
-      } else if(!current_qualified && existing_qualified) {
-        drop[i] = 1;
-      }
-    }
-    compact_events(events, drop);
-  }
-
   vector<char> drop(events.size(), 0);
   set<string> seen_signatures;
   for(size_t i = 0; i < events.size(); ++i) {
+    if(events[i].kind == WitnessEventKind::AliasUse ||
+       events[i].kind == WitnessEventKind::ClassUse) {
+      continue;
+    }
     const string key = visible_event_signature(events[i]);
     if(!seen_signatures.insert(key).second) {
       drop[i] = 1;
@@ -5425,68 +4260,6 @@ void prefer_anonymous_namespace_class_use_names(vector<WitnessEvent> & events)
       events[i].selected = found->second;
     }
   }
-}
-
-std::string class_use_specialization_key(const WitnessEvent & event)
-{
-  if(event.kind != WitnessEventKind::ClassUse) {
-    return std::string();
-  }
-  return event.template_name + "|" + binding_signature_key(event.bindings);
-}
-
-void prefer_explicit_class_use_specializations(vector<WitnessEvent> & events)
-{
-  std::map<std::string, size_t> explicit_by_key;
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::ClassUse ||
-       events[i].selection != SourceSelectionKind::ExplicitSpecialization) {
-      continue;
-    }
-    const std::string key = class_use_specialization_key(events[i]);
-    if(!key.empty()) {
-      explicit_by_key[key] = i;
-    }
-  }
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::ClassUse ||
-       events[i].selection != SourceSelectionKind::Primary) {
-      continue;
-    }
-    const std::string key = class_use_specialization_key(events[i]);
-    std::map<std::string, size_t>::const_iterator found =
-        explicit_by_key.find(key);
-    if(found == explicit_by_key.end()) {
-      continue;
-    }
-    events[i].selection = SourceSelectionKind::ExplicitSpecialization;
-    events[i].selected_decl_location =
-        events[found->second].selected_decl_location;
-    events[i].raw_selected_decl_location =
-        events[found->second].raw_selected_decl_location;
-    events[i].selected_decl_anchor_kind =
-        events[found->second].selected_decl_anchor_kind;
-  }
-
-  vector<char> drop(events.size(), 0);
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::ClassUse ||
-       events[i].selection != SourceSelectionKind::Primary) {
-      continue;
-    }
-    for(size_t j = 0; j < events.size(); ++j) {
-      if(events[j].kind != WitnessEventKind::ClassUse ||
-         events[j].selection != SourceSelectionKind::ExplicitSpecialization ||
-         events[i].location != events[j].location ||
-         class_use_specialization_key(events[i]) !=
-             class_use_specialization_key(events[j])) {
-        continue;
-      }
-      drop[i] = 1;
-      break;
-    }
-  }
-  compact_events(events, drop);
 }
 
 string render_events_text(const vector<WitnessEvent> & events,
@@ -5735,21 +4508,11 @@ void collect_rendered_source_events(const template_api::TemplateWitnessSession &
   CPPGM_RENDER_PASS("normalize_source_defined_calls",
                     normalize_source_defined_template_calls(
                         events, session.template_body_ranges, source_path));
-  CPPGM_RENDER_PASS("qualify_member_alias_from_class_uses",
-                    qualify_member_alias_events_from_class_uses(events));
-  CPPGM_RENDER_PASS("repair_placeholder_alias_owners",
-                    canonicalize_placeholder_member_alias_owners(events));
   CPPGM_RENDER_PASS("drop_template_header_patterns",
                     drop_template_header_pattern_events(
                         events, session.template_header_contexts, source_path));
-  CPPGM_RENDER_PASS("prefer_source_spelled_alias",
-                    prefer_source_spelled_alias_events(events));
   CPPGM_RENDER_PASS("drop_redundant_nested_events",
                     drop_redundant_nested_events(events));
-  CPPGM_RENDER_PASS("prefer_explicit_class_specializations",
-                    prefer_explicit_class_use_specializations(events));
-  CPPGM_RENDER_PASS("drop_same_line_deduced_class_uses",
-                    drop_deduced_class_uses_shadowed_by_explicit_same_line(events));
   CPPGM_RENDER_PASS("dedupe_visible_events", dedupe_visible_events(events));
   CPPGM_RENDER_PASS("sort_visible_events", sort_events(events));
 #undef CPPGM_RENDER_PASS
@@ -5782,15 +4545,10 @@ void collect_rendered_source_events(const template_api::TemplateWitnessSession &
   normalize_source_defined_template_calls(events,
                                           session.template_body_ranges,
                                           source_path);
-  qualify_member_alias_events_from_class_uses(events);
-  canonicalize_placeholder_member_alias_owners(events);
   drop_template_header_pattern_events(events,
                                       session.template_header_contexts,
                                       source_path);
-  prefer_source_spelled_alias_events(events);
   drop_redundant_nested_events(events);
-  prefer_explicit_class_use_specializations(events);
-  drop_deduced_class_uses_shadowed_by_explicit_same_line(events);
   dedupe_visible_events(events);
   sort_events(events);
 #endif
