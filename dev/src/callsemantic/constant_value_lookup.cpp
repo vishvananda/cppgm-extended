@@ -1556,41 +1556,7 @@ private:
     if(!one_value_parameter && !typed_value_parameters) {
       return;
     }
-    const std::string template_name =
-        integral_constant->declaring_scope &&
-        scope_is_std_namespace_or_inline_child(integral_constant->declaring_scope) ?
-            std::string("std::integral_constant") :
-            std::string("integral_constant");
     const std::string value_text = value ? "true" : "false";
-    const std::string entity =
-        template_name +
-        (one_value_parameter ?
-             std::string("<") + value_text + ">" :
-             std::string("<bool, ") + value_text + ">") +
-        "::value";
-    {
-      const std::string decl_location =
-          strip_at_prefix(semantic_model::source_decl_anchor_location(
-              semantic_trace::class_template_decl_anchor(ctx, integral_constant)));
-      if(!decl_location.empty()) {
-        const witness::ScopedTemplateWitnessEntryContext entry_context(
-            witness::make_template_closure_entry_context(
-                witness::TemplateClosureReason::TrackInstantiation,
-                entity,
-                decl_location,
-                true));
-        CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-            witness_provenance::WitnessProducerSite::
-                LifecycleConstantValueLookup02,
-            witness::TemplateWitnessLogEventKind::VariableInstantiation,
-            decl_location,
-            entity,
-            decl_location,
-            std::string(),
-            witness::TemplateLifecycleCause::TrackInstantiation,
-            true);
-      }
-    }
     vector<TemplateArgument> arguments;
     if(typed_value_parameters) {
       TemplateArgument type_arg;

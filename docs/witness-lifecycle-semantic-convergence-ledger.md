@@ -53,14 +53,14 @@ postdates the diagnostic counter additions.
 | `lifecycle.template_api.09` | 51 | 4 | 0 | 47 | pending |
 | `lifecycle.callsemantic.01` | 7 | 0 | 0 | 7 | pending |
 | `lifecycle.callsemantic.02` | 8 | 0 | 0 | 8 | pending |
-| `lifecycle.constant_value_lookup.02` | 111 | 78 | 0 | 33 | pending |
+| `lifecycle.constant_value_lookup.02` | 111 | 78 | 0 | 33 | removed in Phase 1A |
 
 ## Phase results
 
 | Phase | Commit | Strict | Report | Inception | Instructions vs fixed | RSS vs fixed | Footprint vs fixed | Production net lines | Status |
 | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |
 | 0, evidence and route map | pending | inherited 1305/1305 | inherited 4860/4860 | parent run pending | n/a | n/a | n/a | 0 | in progress |
-| 1, value transitions | pending | pending | pending | n/a | pending | pending | pending | pending | pending |
+| 1, value transitions | in progress, 1A in this commit | 1305/1305 | 4860/4860 | n/a | measure at complete phase | measure at complete phase | measure at complete phase | -37 after 1A | in progress |
 | 2, function acquisition | pending | pending | pending | n/a | pending | pending | pending | pending | pending |
 | 3, definition closure | pending | pending | pending | pending if layout changes | pending | pending | pending | pending | pending |
 | 4, class acquisition | pending | pending | pending | pending if layout changes | pending | pending | pending | pending | pending |
@@ -89,6 +89,38 @@ postdates the diagnostic counter additions.
   selection.
 - Starting waste: 8,185 attempts produce 784 inserted events, with 7,399
   exact duplicates and two enrichments.
+
+## Phase 1A evidence: remove the pre-selection constant-value event
+
+- `note_integral_constant_bool_value_for_witness` used to construct and insert
+  an `integral_constant<...>::value` event before it selected the class
+  specialization. The same function then instantiated the selected class,
+  looked up its `value` binding, and called the normal member-value lifecycle
+  operation.
+- Phase 1A deletes the first event construction and its rendered entity and
+  declaration-anchor work. The selected `ValueBinding` path remains the only
+  semantic source for this event.
+- The retired producer made 111 strict attempts: 33 insertions and 78 exact
+  duplicates. Its producer enum, name mapping, and analyzer inventory entry
+  are deleted.
+- All 24 strict files that exercised the producer retain byte-identical witness
+  output. Targeted artifacts live at
+  `/tmp/cppgm-lifecycle-value-targeted.koUfZ4`.
+- Targeted provenance trace:
+  `/tmp/cppgm-lifecycle-value-provenance.1Hmxv8`.
+- Targeted provenance report:
+  `/tmp/cppgm-lifecycle-value-provenance-report.json` with SHA-256
+  `ff0ac159df1d0621d10a1e95afb5c655d31f29280e54f6cc3a8568d6556b9acf`.
+- The report contains 3,681 records and no unknown producer. The retired site
+  is absent. `lifecycle.template_api.02` owns the value events from this
+  targeted set: 1,997 attempts, 1,909 exact duplicates, and 88 inserted
+  events.
+- Direct-LowIR strict passes 1,305/1,305. The PA1-PA38 report passes
+  4,860/4,860 after all frontends were built in
+  `/tmp/cppgm-witness-lifecycle-obj`.
+- Production code is cumulatively `+0 / -37` from the fixed checkpoint. Phase
+  1 remains open because `.02` and `.09` still use separate lifecycle paths
+  and `.02` still generates repeated attempts.
 
 ### Function lifecycle
 
