@@ -2108,6 +2108,16 @@ Scope & bind_template_arguments(
     const std::vector<TemplateArgument> & arguments,
     const std::map<std::string, std::size_t> * pack_sizes = nullptr);
 
+void initialize_template_argument_instantiation_scope(
+    SemanticContext & ctx,
+    Scope & scope,
+    Scope & declaring_scope,
+    Scope & use_scope,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::vector<TemplateArgument> & arguments,
+    const std::map<std::string, std::size_t> * pack_sizes,
+    ClassInfo * active_owner);
+
 Scope & bind_template_arguments_for_instantiation(
     SemanticContext & ctx,
     Scope & declaring_scope,
@@ -9521,8 +9531,9 @@ Scope & bind_template_arguments(SemanticContext & ctx,
   return scope;
 }
 
-Scope & bind_template_arguments_for_instantiation(
+void initialize_template_argument_instantiation_scope(
     SemanticContext & ctx,
+    Scope & scope,
     Scope & declaring_scope,
     Scope & use_scope,
     const std::vector<TemplateParameterInfo> & parameters,
@@ -9530,7 +9541,8 @@ Scope & bind_template_arguments_for_instantiation(
     const std::map<std::string, std::size_t> * pack_sizes,
     ClassInfo * active_owner)
 {
-  Scope & scope = ctx.append_template_scope(declaring_scope);
+  scope.class_info = declaring_scope.class_info;
+  scope.function = declaring_scope.function;
   const std::set<std::string> excluded_names =
       collect_instantiation_overlay_excluded_names(
           declaring_scope, use_scope, parameters);
@@ -9555,6 +9567,26 @@ Scope & bind_template_arguments_for_instantiation(
     }
   }
   bind_template_arguments_into_scope(ctx, scope, parameters, arguments, pack_sizes);
+}
+
+Scope & bind_template_arguments_for_instantiation(
+    SemanticContext & ctx,
+    Scope & declaring_scope,
+    Scope & use_scope,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::vector<TemplateArgument> & arguments,
+    const std::map<std::string, std::size_t> * pack_sizes,
+    ClassInfo * active_owner)
+{
+  Scope & scope = ctx.append_template_scope(declaring_scope);
+  initialize_template_argument_instantiation_scope(ctx,
+                                                   scope,
+                                                   declaring_scope,
+                                                   use_scope,
+                                                   parameters,
+                                                   arguments,
+                                                   pack_sizes,
+                                                   active_owner);
   return scope;
 }
 

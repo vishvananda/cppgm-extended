@@ -696,7 +696,9 @@ public:
       const std::vector<std::string> & arg_texts,
       const std::vector<cpp_decl::TemplateArgumentSyntax> * arg_syntaxes,
       bool reference_class_templates_only,
-      bool suppress_source_capture = false) = 0;
+      bool suppress_source_capture = false,
+      semantic_model::Scope * argument_scope = nullptr,
+      const std::string * source_location = nullptr) = 0;
   virtual cpp_decl::TypePtr instantiate_resolved_alias_template(
       semantic_model::AliasTemplateDecl & decl,
       semantic_model::Scope & use_scope,

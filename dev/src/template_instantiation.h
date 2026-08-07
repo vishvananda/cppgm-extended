@@ -213,6 +213,16 @@ void bind_template_arguments_into_scope(
     const std::vector<template_model::TemplateArgument> & arguments,
     const std::map<std::string, std::size_t> * pack_sizes = nullptr);
 
+void initialize_template_argument_instantiation_scope(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    semantic_model::Scope & declaring_scope,
+    semantic_model::Scope & use_scope,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::vector<template_model::TemplateArgument> & arguments,
+    const std::map<std::string, std::size_t> * pack_sizes = nullptr,
+    semantic_model::ClassInfo * active_owner = nullptr);
+
 semantic_model::Scope & bind_template_arguments_for_instantiation(
     SemanticContext & ctx,
     semantic_model::Scope & declaring_scope,
