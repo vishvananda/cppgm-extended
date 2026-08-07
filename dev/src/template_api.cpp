@@ -1500,6 +1500,10 @@ TemplateClosureReason closure_reason_for_function_binding_acquisition_cause(
     return TemplateClosureReason::None;
   case TemplateFunctionBindingAcquisitionCause::RequireDefinition:
     return TemplateClosureReason::RequireDefinition;
+  case TemplateFunctionBindingAcquisitionCause::EnsureDefinition:
+    return TemplateClosureReason::EnsureDefinition;
+  case TemplateFunctionBindingAcquisitionCause::DefinitionAlreadyEnsured:
+    return TemplateClosureReason::RequireDefinition;
   case TemplateFunctionBindingAcquisitionCause::DeclarationInstantiation:
     return TemplateClosureReason::None;
   case TemplateFunctionBindingAcquisitionCause::ExplicitInstantiationDefinition:
@@ -2693,7 +2697,6 @@ TemplateFunctionDefinitionClosureState function_definition_closure_state(
   state.template_owned_binding =
       function_binding_is_template_owned_for_definition_closure(binding);
   if(ctx.template_witness_context().session != nullptr) {
-    state.decl_location = binding_decl_location(ctx, binding);
     const TemplateWitnessEntryContext current =
         current_template_witness_entry_context();
     if(current.origin == TemplateWitnessOrigin::Closure &&
@@ -2738,31 +2741,6 @@ void note_closure_owner_class_instantiation_if_needed(
       class_instantiation_log_location(ctx, owner),
       owner,
       created_new_detail(false));
-}
-
-void note_function_definition_ensure_requested(
-    SemanticContext & ctx,
-    const semantic_model::FunctionBinding * binding,
-    const TemplateFunctionDefinitionClosureState & state)
-{
-  template_api::note_function_binding_closure_event(
-      ctx,
-      TemplateWitnessLogEventKind::EnsureDefinition,
-      state.decl_location,
-      binding);
-}
-
-void note_function_definition_materialized_by_closure(
-    SemanticContext & ctx,
-    const semantic_model::FunctionBinding * binding,
-    const TemplateFunctionDefinitionClosureState & state)
-{
-  template_api::note_function_binding_closure_event(
-      ctx,
-      TemplateWitnessLogEventKind::FunctionInstantiation,
-      state.decl_location,
-      binding,
-      function_instantiation_detail(false, true));
 }
 
 TemplateWitnessEntryContext make_function_binding_closure_entry_context(
@@ -2871,44 +2849,6 @@ ScopedTemplateWitnessEntryContext maybe_enter_value_binding_closure_context(
   }
   return ScopedTemplateWitnessEntryContext(
       make_value_binding_closure_entry_context(ctx, reason, binding));
-}
-
-void note_function_binding_closure_event(
-    SemanticContext & ctx,
-    TemplateWitnessLogEventKind kind,
-    const std::string & location,
-    const semantic_model::FunctionBinding * binding,
-    const std::string & detail,
-    TemplateLifecycleCause cause)
-{
-  if(ctx.template_witness_context().session == nullptr) {
-    return;
-  }
-  if(binding && binding->is_inherited_constructor) {
-    return;
-  }
-  if(binding &&
-     binding->owner_class &&
-     binding->owner_class->dependent_instantiation) {
-    return;
-  }
-  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-      witness_provenance::WitnessProducerSite::LifecycleTemplateApi01,
-      kind,
-      location,
-      binding_log_entity(ctx, binding),
-      binding_decl_location(ctx, binding),
-      detail,
-      binding && binding->is_explicit_specialization ?
-          TemplateLifecycleCause::ExplicitSpecialization :
-          cause,
-      function_or_owner_has_template_identity(binding),
-      false,
-      binding && binding->template_definition_required_by_public_source_call,
-      binding && binding->is_constexpr,
-      binding && binding->is_constructor &&
-          (binding->is_copy_constructor || binding->is_move_constructor) &&
-          (binding->is_defaulted || binding->synthesized));
 }
 
 bool class_instantiation_log_emitted(const semantic_model::ClassInfo * info)
@@ -4360,6 +4300,92 @@ bool template_lifecycle_value_identity_valid(
       !identity.member_name.empty();
 }
 
+std::string function_lifecycle_transition_event_location(
+    SemanticContext & ctx,
+    const TemplateLifecycleTransition & transition)
+{
+  const semantic_model::FunctionBinding * binding =
+      transition.function_binding;
+  if(!binding) {
+    return std::string();
+  }
+  const std::string decl_location = binding_decl_location(ctx, binding);
+  std::string event_location;
+  if(transition.source_use_node) {
+    event_location = strip_at_prefix(
+        ctx.source_location_for_node(*transition.source_use_node));
+  } else if(transition.use_declaration_as_event_location) {
+    event_location = decl_location;
+  } else {
+    event_location = current_template_log_location(ctx);
+  }
+  return event_location.empty() ? decl_location : event_location;
+}
+
+TemplateLifecycleFunctionIdentity template_lifecycle_function_identity(
+    SemanticContext & ctx,
+    const TemplateLifecycleTransition & transition,
+    const std::string & event_location)
+{
+  TemplateLifecycleFunctionIdentity identity;
+  const semantic_model::FunctionBinding * binding =
+      transition.function_binding;
+  if(!binding) {
+    return identity;
+  }
+  identity.event_anchor_fingerprint =
+      std::hash<std::string>()(event_location);
+  identity.cause = transition.cause;
+  const std::string lookup_name =
+      semantic_model::function_binding_display_name_for_symbol(*binding);
+  identity.overload_set_fingerprint =
+      std::hash<std::string>()(
+          semantic_lookup::canonical_function_lookup_name(lookup_name));
+  if(!binding->owner_class) {
+    const semantic_model::Scope * declaration_scope =
+        binding->source_template && binding->source_template->declaring_scope ?
+            binding->source_template->declaring_scope :
+            binding->declaration_scope;
+    if(declaration_scope) {
+      identity.owner_declaration_identity =
+          reinterpret_cast<std::size_t>(declaration_scope);
+    }
+  }
+  if(binding->owner_class) {
+    const semantic_model::ClassInfo * identity_owner =
+        enclosing_template_instantiation_owner(binding->owner_class);
+    if(!identity_owner) {
+      identity_owner = binding->owner_class;
+    }
+    const CppAstNode * owner_declaration = identity_owner->source_template ?
+        identity_owner->source_template->class_node :
+        identity_owner->class_node;
+    if(owner_declaration && owner_declaration->source_location_id != 0) {
+      identity.owner_declaration_identity =
+          owner_declaration->source_location_id;
+      identity.owner_identity_is_source_location = true;
+    } else {
+      const void * owner_pointer = identity_owner->source_template ?
+          static_cast<const void *>(identity_owner->source_template) :
+          (owner_declaration ?
+               static_cast<const void *>(owner_declaration) :
+               static_cast<const void *>(identity_owner));
+      identity.owner_declaration_identity =
+          reinterpret_cast<std::size_t>(owner_pointer);
+    }
+    const std::string owner_key = identity_owner->source_template ?
+        class_witness_output_qualified_name_for_lifecycle(
+            ctx, *identity_owner) :
+        class_witness_output_qualified_name(ctx, *identity_owner);
+    if(!owner_key.empty()) {
+      identity.owner_instantiation_fingerprint =
+          std::hash<std::string>()(owner_key);
+      identity.has_owner_instantiation_key = true;
+    }
+  }
+  return identity;
+}
+
 const void * template_lifecycle_transition_entity(
     const TemplateLifecycleTransition & transition)
 {
@@ -4394,7 +4420,8 @@ unsigned int template_lifecycle_transition_state_bit(
 
 bool claim_template_lifecycle_transition(
     SemanticContext & ctx,
-    const TemplateLifecycleTransition & transition)
+    const TemplateLifecycleTransition & transition,
+    std::string * function_event_location)
 {
   TemplateWitnessSession * session = ctx.template_witness_context().session;
   const void * entity = template_lifecycle_transition_entity(transition);
@@ -4425,6 +4452,41 @@ bool claim_template_lifecycle_transition(
       return true;
     }
   }
+  if(transition.entity_kind == TemplateLifecycleEntityKind::Function) {
+    const std::string event_location =
+        function_lifecycle_transition_event_location(ctx, transition);
+    const TemplateLifecycleFunctionIdentity identity =
+        template_lifecycle_function_identity(ctx, transition, event_location);
+    if(!event_location.empty()) {
+      unsigned int & state =
+          session->function_lifecycle_transition_states[identity];
+      if(transition.transition_kind ==
+             TemplateLifecycleTransitionKind::Instantiated &&
+         transition.include_definition_materialized_detail &&
+         !transition.created_new &&
+         transition.definition_materialized &&
+         (state & template_lifecycle_transition_state_bit(
+                      TemplateLifecycleEntityKind::Function,
+                      TemplateLifecycleTransitionKind::DefinitionMaterialized)) != 0) {
+        return false;
+      }
+      if((state & bit) != 0) {
+        return false;
+      }
+      state |= bit;
+      if(transition.transition_kind ==
+             TemplateLifecycleTransitionKind::Instantiated &&
+         transition.definition_materialized) {
+        state |= template_lifecycle_transition_state_bit(
+            TemplateLifecycleEntityKind::Function,
+            TemplateLifecycleTransitionKind::DefinitionMaterialized);
+      }
+      if(function_event_location) {
+        *function_event_location = event_location;
+      }
+      return true;
+    }
+  }
   TemplateLifecycleEntityIdentity entity_identity;
   entity_identity.entity = entity;
   entity_identity.cause = transition.cause;
@@ -4434,32 +4496,24 @@ bool claim_template_lifecycle_transition(
     return false;
   }
   state |= bit;
+  if(transition.entity_kind == TemplateLifecycleEntityKind::Function &&
+     transition.transition_kind == TemplateLifecycleTransitionKind::Instantiated &&
+     transition.definition_materialized) {
+    state |= template_lifecycle_transition_state_bit(
+        TemplateLifecycleEntityKind::Function,
+        TemplateLifecycleTransitionKind::DefinitionMaterialized);
+  }
   return true;
 }
 
 void observe_function_lifecycle_transition(
     SemanticContext & ctx,
-    const TemplateLifecycleTransition & transition)
+    const TemplateLifecycleTransition & transition,
+    const std::string & event_location)
 {
   const semantic_model::FunctionBinding * binding = transition.function_binding;
-  if(!binding || binding->is_inherited_constructor ||
-     (binding->owner_class && binding->owner_class->dependent_instantiation)) {
-    return;
-  }
   const std::string entity = binding_log_entity(ctx, binding);
   const std::string decl_location = binding_decl_location(ctx, binding);
-  std::string event_location;
-  if(transition.source_use_node) {
-    event_location = strip_at_prefix(
-        ctx.source_location_for_node(*transition.source_use_node));
-  } else if(transition.use_declaration_as_event_location) {
-    event_location = decl_location;
-  } else {
-    event_location = current_template_log_location(ctx);
-  }
-  if(event_location.empty()) {
-    event_location = decl_location;
-  }
   if(entity.empty() || decl_location.empty() || event_location.empty()) {
     return;
   }
@@ -4467,16 +4521,36 @@ void observe_function_lifecycle_transition(
       transition.cause != TemplateLifecycleCause::None ?
           transition.cause :
           lifecycle_cause_for_current_context_or_intent(transition.intent);
+  TemplateWitnessLogEventKind event_kind;
+  std::string detail;
+  switch(transition.transition_kind) {
+  case TemplateLifecycleTransitionKind::DefinitionRequired:
+    event_kind = TemplateWitnessLogEventKind::RequireDefinition;
+    break;
+  case TemplateLifecycleTransitionKind::DefinitionEnsured:
+    event_kind = TemplateWitnessLogEventKind::EnsureDefinition;
+    break;
+  case TemplateLifecycleTransitionKind::DefinitionMaterialized:
+    event_kind = TemplateWitnessLogEventKind::FunctionInstantiation;
+    detail = function_instantiation_detail(false, true);
+    break;
+  case TemplateLifecycleTransitionKind::Instantiated:
+    event_kind = TemplateWitnessLogEventKind::FunctionInstantiation;
+    detail = transition.include_definition_materialized_detail ?
+        function_instantiation_detail(transition.created_new,
+                                      transition.definition_materialized) :
+        created_new_detail(transition.created_new);
+    break;
+  default:
+    return;
+  }
   CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
       witness_provenance::WitnessProducerSite::LifecycleTransitionObserver01,
-      TemplateWitnessLogEventKind::FunctionInstantiation,
+      event_kind,
       event_location,
       entity,
       decl_location,
-      transition.include_definition_materialized_detail ?
-          function_instantiation_detail(transition.created_new,
-                                        transition.definition_materialized) :
-          created_new_detail(transition.created_new),
+      detail,
       binding->is_explicit_specialization ?
           TemplateLifecycleCause::ExplicitSpecialization :
           cause,
@@ -4495,12 +4569,20 @@ void observe_template_lifecycle_transition(
     SemanticContext & ctx,
     const TemplateLifecycleTransition & transition)
 {
+  std::string function_event_location;
   if(!transition.valid() ||
-     !claim_template_lifecycle_transition(ctx, transition)) {
+     template_witness_detail::current_lifecycle_pause_depth_storage() != 0 ||
+     (transition.entity_kind == TemplateLifecycleEntityKind::Function &&
+      (transition.function_binding->is_inherited_constructor ||
+       (transition.function_binding->owner_class &&
+        transition.function_binding->owner_class->dependent_instantiation))) ||
+     !claim_template_lifecycle_transition(
+         ctx, transition, &function_event_location)) {
     return;
   }
   if(transition.entity_kind == TemplateLifecycleEntityKind::Function) {
-    observe_function_lifecycle_transition(ctx, transition);
+    observe_function_lifecycle_transition(
+        ctx, transition, function_event_location);
     return;
   }
   if(transition.entity_kind != TemplateLifecycleEntityKind::Value ||
@@ -6940,6 +7022,34 @@ TemplateInstantiationResult finalize_nested_member_class_instantiation_from_owne
   return template_api::finalize_nested_member_class_instantiation(ctx, request);
 }
 
+namespace {
+
+void observe_function_definition_transition(
+    SemanticContext & ctx,
+    TemplateInstantiationResult & result,
+    TemplateLifecycleTransitionKind transition_kind,
+    TemplateLifecycleCause cause)
+{
+  if(ctx.template_witness_context().session == nullptr ||
+     !result.function_binding) {
+    return;
+  }
+  TemplateLifecycleTransition transition;
+  transition.entity_kind = TemplateLifecycleEntityKind::Function;
+  transition.transition_kind = transition_kind;
+  transition.function_binding = result.function_binding;
+  transition.intent = result.intent;
+  transition.cause = cause;
+  transition.occurred = true;
+  transition.definition_materialized =
+      transition_kind == TemplateLifecycleTransitionKind::DefinitionMaterialized;
+  transition.use_declaration_as_event_location = true;
+  result.lifecycle_transition = transition;
+  observe_template_lifecycle_transition(ctx, transition);
+}
+
+}  // namespace
+
 TemplateInstantiationResult acquire_function_binding_in_current_context(
     SemanticContext & ctx,
     const TemplateFunctionBindingAcquisitionRequest & request)
@@ -6951,41 +7061,87 @@ TemplateInstantiationResult acquire_function_binding_in_current_context(
     return result;
   }
 
-  if(request.include_body) {
-    if(closure_template_log_enabled(ctx) &&
-       template_api::current_template_witness_entry_context().closure_reason ==
-           TemplateClosureReason::RequireDefinition) {
-      template_api::note_function_binding_closure_event(
-          ctx,
-          TemplateWitnessLogEventKind::RequireDefinition,
-          current_template_log_location(ctx),
-          result.function_binding,
-          std::string(),
-          TemplateLifecycleCause::RequireDefinition);
-    }
-    semantic_model::Scope * use_scope =
-        request.use_scope.valid() ? &request.use_scope.require() :
-                                    result.function_binding->declaration_scope;
-    if(use_scope) {
-      if(closure_template_log_enabled(ctx) &&
-         template_api::current_template_witness_entry_context().closure_reason ==
-             TemplateClosureReason::RequireDefinition) {
-        const template_api::ScopedTemplateWitnessEntryContext entry_context(
-            template_api::make_function_binding_closure_entry_context(
-                ctx,
-                TemplateClosureReason::EnsureDefinition,
-                result.function_binding));
-        result.function_binding =
-            ctx.ensure_function_template_definition(result.function_binding, *use_scope);
-      } else {
-        result.function_binding =
-            ctx.ensure_function_template_definition(result.function_binding, *use_scope);
-      }
+  const TemplateFunctionBindingAcquisitionCause acquisition_cause =
+      request.cause;
+  const bool require_definition_transition =
+      closure_template_log_enabled(ctx) &&
+      (acquisition_cause ==
+           TemplateFunctionBindingAcquisitionCause::RequireDefinition ||
+       acquisition_cause ==
+           TemplateFunctionBindingAcquisitionCause::DefinitionAlreadyEnsured ||
+       current_template_witness_entry_context().closure_reason ==
+           TemplateClosureReason::RequireDefinition);
+  const bool ensure_definition_transition =
+      closure_template_log_enabled(ctx) &&
+      (acquisition_cause ==
+           TemplateFunctionBindingAcquisitionCause::DefinitionAlreadyEnsured ||
+       function_binding_is_template_owned_for_definition_closure(
+           result.function_binding));
+  const bool definition_lifecycle_requested =
+      require_definition_transition ||
+      (closure_template_log_enabled(ctx) &&
+       acquisition_cause ==
+           TemplateFunctionBindingAcquisitionCause::EnsureDefinition);
+  semantic_model::Scope * use_scope =
+      request.use_scope.valid() ? &request.use_scope.require() :
+                                  result.function_binding->declaration_scope;
+  if(request.include_body && use_scope) {
+    if(definition_lifecycle_requested) {
+      const template_api::ScopedTemplateWitnessEntryContext entry_context(
+          template_api::make_function_binding_closure_entry_context(
+              ctx,
+              TemplateClosureReason::EnsureDefinition,
+              result.function_binding));
+      result.function_binding =
+          ctx.ensure_function_template_definition(result.function_binding, *use_scope);
+    } else {
+      result.function_binding =
+          ctx.ensure_function_template_definition(result.function_binding, *use_scope);
     }
   }
 
   result.definition_materialized =
       result.function_binding && result.function_binding->has_definition;
+  if(definition_lifecycle_requested) {
+    if(require_definition_transition) {
+      observe_function_definition_transition(
+          ctx,
+          result,
+          TemplateLifecycleTransitionKind::DefinitionRequired,
+          TemplateLifecycleCause::RequireDefinition);
+    }
+    const bool definition_ensure_completed =
+        (request.include_body && use_scope) ||
+        acquisition_cause ==
+            TemplateFunctionBindingAcquisitionCause::DefinitionAlreadyEnsured;
+    if(definition_ensure_completed && ensure_definition_transition) {
+      TemplateWitnessEntryContext ensure_context =
+          current_template_witness_entry_context();
+      ensure_context.closure_reason = TemplateClosureReason::EnsureDefinition;
+      const template_api::ScopedTemplateWitnessEntryContext entry_context(
+          ensure_context);
+      observe_function_definition_transition(
+          ctx,
+          result,
+          TemplateLifecycleTransitionKind::DefinitionEnsured,
+          TemplateLifecycleCause::EnsureDefinition);
+      if(result.definition_materialized) {
+        observe_function_definition_transition(
+            ctx,
+            result,
+            TemplateLifecycleTransitionKind::DefinitionMaterialized,
+            TemplateLifecycleCause::EnsureDefinition);
+      }
+    } else if(!definition_ensure_completed &&
+              require_definition_transition &&
+              result.definition_materialized) {
+      observe_function_definition_transition(
+          ctx,
+          result,
+          TemplateLifecycleTransitionKind::DefinitionMaterialized,
+          TemplateLifecycleCause::RequireDefinition);
+    }
+  }
   const bool declaration_instantiation =
       request.cause ==
           TemplateFunctionBindingAcquisitionCause::DeclarationInstantiation;
@@ -7023,11 +7179,15 @@ TemplateInstantiationResult acquire_function_binding(
 {
   const TemplateClosureReason request_closure_reason =
       closure_reason_for_function_binding_acquisition_cause(request.cause);
+  const bool reports_existing_definition =
+      request.cause ==
+          TemplateFunctionBindingAcquisitionCause::DefinitionAlreadyEnsured;
   if(request_closure_reason != TemplateClosureReason::None &&
      ctx.template_witness_context().session != nullptr &&
      current_template_witness_entry_context().origin !=
          TemplateWitnessOrigin::Closure &&
-     function_binding_has_template_identity(request.binding)) {
+     (reports_existing_definition ||
+      function_binding_has_template_identity(request.binding))) {
     const ScopedTemplateWitnessEntryContext entry_context(
         make_function_binding_closure_entry_context(ctx,
                                                     request_closure_reason,

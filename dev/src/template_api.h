@@ -516,7 +516,6 @@ std::string alias_template_witness_entity(
 struct TemplateFunctionDefinitionClosureState
 {
   semantic_model::ClassInfo * template_owner = nullptr;
-  std::string decl_location;
   bool template_owned_binding = false;
   bool closure_trigger_differs = false;
 };
@@ -531,14 +530,6 @@ void mark_function_definition_materialized_by_enclosing_closure(
 void note_closure_owner_class_instantiation_if_needed(
     SemanticContext & ctx,
     semantic_model::ClassInfo * owner,
-    const TemplateFunctionDefinitionClosureState & state);
-void note_function_definition_ensure_requested(
-    SemanticContext & ctx,
-    const semantic_model::FunctionBinding * binding,
-    const TemplateFunctionDefinitionClosureState & state);
-void note_function_definition_materialized_by_closure(
-    SemanticContext & ctx,
-    const semantic_model::FunctionBinding * binding,
     const TemplateFunctionDefinitionClosureState & state);
 TemplateWitnessEntryContext make_function_binding_closure_entry_context(
     SemanticContext & ctx,
@@ -574,13 +565,6 @@ ScopedTemplateWitnessEntryContext maybe_enter_value_binding_closure_context(
     TemplateClosureReason reason,
     const semantic_model::ValueBinding * binding);
 
-void note_function_binding_closure_event(
-    SemanticContext & ctx,
-    TemplateWitnessLogEventKind kind,
-    const std::string & location,
-    const semantic_model::FunctionBinding * binding,
-    const std::string & detail = std::string(),
-    TemplateLifecycleCause cause = TemplateLifecycleCause::None);
 void note_class_closure_event(
     SemanticContext & ctx,
     TemplateWitnessLogEventKind kind,

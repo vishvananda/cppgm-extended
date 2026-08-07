@@ -443,7 +443,6 @@ const char * producer_site_name(WitnessProducerSite site)
                       "function.semantic_template_function");
   CPPGM_PRODUCER_NAME(VariableTemplateInstantiation,
                       "variable.template_instantiation");
-  CPPGM_PRODUCER_NAME(LifecycleTemplateApi01, "lifecycle.template_api.01");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi03, "lifecycle.template_api.03");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi04, "lifecycle.template_api.04");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi05, "lifecycle.template_api.05");

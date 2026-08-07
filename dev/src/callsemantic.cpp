@@ -2322,10 +2322,13 @@ private:
         [this](FunctionBinding * binding,
                Scope & use_scope) -> FunctionBinding *
         {
-          const template_api::ScopedTemplateWitnessEntryContext entry_context =
-              template_api::maybe_enter_function_body_materialization_context(*this,
-                                                                              binding);
-          return ensure_function_template_definition(binding, use_scope);
+          template_api::TemplateFunctionBindingAcquisitionRequest request;
+          request.binding = binding;
+          request.use_scope = template_api::make_template_environment(use_scope);
+          request.cause = template_api::
+              TemplateFunctionBindingAcquisitionCause::EnsureDefinition;
+          return template_api::acquire_function_binding(*this, request)
+              .function_binding;
         };
     hooks.require_function_parameter_abi_output =
         [this](FunctionBinding * binding)
@@ -3420,9 +3423,8 @@ private:
           reason == OutputReason::DirectCall ||
           reason == OutputReason::FunctionIdUse ||
           reason == OutputReason::NewExpression)) {
-        semantic_template_function::
-            note_required_function_definition_materialized_by_lifecycle(*this,
-                                                                        binding);
+        (void)semantic_template_function::
+            acquire_existing_required_function_definition(*this, binding);
       }
       return;
     }
@@ -29281,17 +29283,9 @@ private:
     if(template_owned_binding) {
       if(binding->has_definition) {
         if(closure_trigger_differs) {
-          template_api::note_function_definition_ensure_requested(
-              *this,
-              binding,
-              closure_state);
           template_api::note_closure_owner_class_instantiation_if_needed(
               *this,
               binding->owner_class,
-              closure_state);
-          template_api::note_function_definition_materialized_by_closure(
-              *this,
-              binding,
               closure_state);
           template_api::mark_function_definition_materialized_by_enclosing_closure(
               binding);
@@ -29302,15 +29296,7 @@ private:
           return binding;
         }
       }
-      template_api::note_function_definition_ensure_requested(
-          *this,
-          binding,
-          closure_state);
       if(binding->has_definition) {
-        template_api::note_function_definition_materialized_by_closure(
-            *this,
-            binding,
-            closure_state);
         return binding;
       }
       if(!template_api::function_binding_has_source_template_identity(binding)) {
@@ -29405,12 +29391,6 @@ private:
           binding = materialized;
         }
         if(binding && binding->has_definition) {
-          if(template_owned_binding) {
-            template_api::note_function_definition_materialized_by_closure(
-                *this,
-                binding,
-                closure_state);
-          }
           return binding;
         }
       }
@@ -29458,10 +29438,6 @@ private:
             template_api::mark_function_definition_materialized_by_enclosing_closure(
                 binding);
           }
-          template_api::note_function_definition_materialized_by_closure(
-              *this,
-              binding,
-              closure_state);
         }
         return binding;
       }

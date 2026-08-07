@@ -2953,7 +2953,7 @@ void note_witness_body_constructor_closures(SemanticContext & ctx,
   if(node.kind == CallSemKind::call_expression && !node.children.empty()) {
     FunctionBinding * binding = find_direct_call_target_binding(ctx, node.children[0]);
     if(binding && binding->is_constructor) {
-      semantic_lifetime::note_constructor_witness_closure(ctx, binding);
+      semantic_lifetime::acquire_constructor_witness_definition(ctx, binding);
     }
   }
 

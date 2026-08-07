@@ -12628,9 +12628,8 @@ bool evaluate_leaf_constexpr_binding(template_api::TemplateServices & services,
   if(services.semantic_context &&
      services.witness_context.session != nullptr &&
      template_api::function_binding_has_template_identity(&binding)) {
-    semantic_template_function::note_ensured_function_definition_materialized_by_lifecycle(
-        *services.semantic_context,
-        &binding);
+    (void)semantic_template_function::acquire_existing_ensured_function_definition(
+        *services.semantic_context, &binding);
   }
   const size_t explicit_param_offset = binding.is_method ? 1u : 0u;
 

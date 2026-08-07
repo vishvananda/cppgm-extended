@@ -327,40 +327,18 @@ namespace {
 semantic_model::FunctionBinding * acquire_function_binding(
     SemanticContext & ctx,
     semantic_model::FunctionBinding * binding,
-    semantic_model::Scope & use_scope,
-    template_api::TemplateFunctionBindingAcquisitionCause cause)
+    semantic_model::Scope * use_scope,
+    template_api::TemplateFunctionBindingAcquisitionCause cause,
+    bool include_body)
 {
   template_api::TemplateFunctionBindingAcquisitionRequest request;
   request.binding = binding;
-  request.use_scope = template_api::make_template_environment(use_scope);
+  request.include_body = include_body;
+  if(use_scope) {
+    request.use_scope = template_api::make_template_environment(*use_scope);
+  }
   request.cause = cause;
   return template_api::acquire_function_binding(ctx, request).function_binding;
-}
-
-bool function_definition_closure_state(
-    SemanticContext & ctx,
-    semantic_model::FunctionBinding * binding,
-    template_api::TemplateFunctionDefinitionClosureState & state)
-{
-  if(!binding) {
-    return false;
-  }
-  state = template_api::function_definition_closure_state(ctx, binding);
-  return !state.decl_location.empty();
-}
-
-void note_require_definition_closure_event(
-    SemanticContext & ctx,
-    semantic_model::FunctionBinding * binding,
-    const template_api::TemplateFunctionDefinitionClosureState & state)
-{
-  template_api::note_function_binding_closure_event(
-      ctx,
-      template_api::TemplateWitnessLogEventKind::RequireDefinition,
-      state.decl_location,
-      binding,
-      std::string(),
-      template_api::TemplateLifecycleCause::RequireDefinition);
 }
 
 std::string function_call_template_name(
@@ -462,7 +440,11 @@ semantic_model::FunctionBinding * acquire_function_definition_binding(
     semantic_model::Scope & use_scope)
 {
   return acquire_function_binding(
-      ctx, binding, use_scope, template_api::TemplateFunctionBindingAcquisitionCause::None);
+      ctx,
+      binding,
+      &use_scope,
+      template_api::TemplateFunctionBindingAcquisitionCause::None,
+      true);
 }
 
 semantic_model::FunctionBinding * acquire_required_function_definition_binding(
@@ -472,52 +454,35 @@ semantic_model::FunctionBinding * acquire_required_function_definition_binding(
 {
   return acquire_function_binding(ctx,
                                   binding,
-                                  use_scope,
+                                  &use_scope,
                                   template_api::TemplateFunctionBindingAcquisitionCause::
-                                      RequireDefinition);
+                                      RequireDefinition,
+                                  true);
 }
 
-void note_required_function_definition_materialized_by_lifecycle(
+semantic_model::FunctionBinding * acquire_existing_required_function_definition(
     SemanticContext & ctx,
     semantic_model::FunctionBinding * binding)
 {
-  template_api::TemplateFunctionDefinitionClosureState state;
-  if(!function_definition_closure_state(ctx, binding, state)) {
-    return;
-  }
-
-  const template_api::ScopedTemplateWitnessEntryContext require_context(
-      template_api::make_function_binding_closure_entry_context(
-          ctx,
-          template_api::TemplateClosureReason::RequireDefinition,
-          binding));
-  note_require_definition_closure_event(ctx, binding, state);
-  template_api::note_function_definition_materialized_by_closure(ctx, binding, state);
+  return acquire_function_binding(
+      ctx,
+      binding,
+      nullptr,
+      template_api::TemplateFunctionBindingAcquisitionCause::RequireDefinition,
+      false);
 }
 
-void note_ensured_function_definition_materialized_by_lifecycle(
+semantic_model::FunctionBinding * acquire_existing_ensured_function_definition(
     SemanticContext & ctx,
     semantic_model::FunctionBinding * binding)
 {
-  template_api::TemplateFunctionDefinitionClosureState state;
-  if(!function_definition_closure_state(ctx, binding, state)) {
-    return;
-  }
-
-  const template_api::ScopedTemplateWitnessEntryContext require_context(
-      template_api::make_function_binding_closure_entry_context(
-          ctx,
-          template_api::TemplateClosureReason::RequireDefinition,
-          binding));
-  note_require_definition_closure_event(ctx, binding, state);
-
-  const template_api::ScopedTemplateWitnessEntryContext ensure_context(
-      template_api::make_function_binding_closure_entry_context(
-          ctx,
-          template_api::TemplateClosureReason::EnsureDefinition,
-          binding));
-  template_api::note_function_definition_ensure_requested(ctx, binding, state);
-  template_api::note_function_definition_materialized_by_closure(ctx, binding, state);
+  return acquire_function_binding(
+      ctx,
+      binding,
+      nullptr,
+      template_api::
+          TemplateFunctionBindingAcquisitionCause::DefinitionAlreadyEnsured,
+      false);
 }
 
 void emit_function_template_call_source_use(

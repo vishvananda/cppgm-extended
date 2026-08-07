@@ -120,11 +120,10 @@ semantic_model::FunctionBinding * acquire_required_function_definition_binding(
     semantic_model::FunctionBinding * binding,
     semantic_model::Scope & use_scope);
 
-void note_required_function_definition_materialized_by_lifecycle(
+semantic_model::FunctionBinding * acquire_existing_required_function_definition(
     SemanticContext & ctx,
     semantic_model::FunctionBinding * binding);
-
-void note_ensured_function_definition_materialized_by_lifecycle(
+semantic_model::FunctionBinding * acquire_existing_ensured_function_definition(
     SemanticContext & ctx,
     semantic_model::FunctionBinding * binding);
 

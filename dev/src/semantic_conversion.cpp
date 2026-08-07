@@ -3287,9 +3287,7 @@ bool try_argument_conversion(SemanticContext & ctx,
     if(options.instantiate_user_defined_bodies) {
       selected_conversion_function =
           semantic_template_function::acquire_function_definition_binding(
-              ctx,
-              selected_conversion_function,
-              scope);
+              ctx, selected_conversion_function, scope);
       if(!selected_conversion_function) {
         return false;
       }
@@ -3298,10 +3296,9 @@ bool try_argument_conversion(SemanticContext & ctx,
        ctx.expand_output_closure_enabled() &&
        ctx.template_witness_context().session != nullptr &&
        is_bool_type(strip_top_level_cv(target))) {
-      semantic_template_function::
-          note_ensured_function_definition_materialized_by_lifecycle(
-              ctx,
-              selected_conversion_function);
+      selected_conversion_function = semantic_template_function::
+          acquire_existing_ensured_function_definition(
+              ctx, selected_conversion_function);
     }
     ExprInfo implicit_object_arg = ctx.make_address_of_expr(selected.source_expr);
     ExprInfo adjusted_this = implicit_object_arg;

@@ -24,6 +24,8 @@ enum class TemplateFunctionBindingAcquisitionCause
 {
   None,
   RequireDefinition,
+  EnsureDefinition,
+  DefinitionAlreadyEnsured,
   DeclarationInstantiation,
   ExplicitInstantiationDefinition
 };

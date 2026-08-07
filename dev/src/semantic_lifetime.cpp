@@ -308,20 +308,18 @@ void append_direct_materialization_initialization_action_to_pointer(
 void note_skipped_template_lifecycle_definition(SemanticContext & ctx,
                                                 FunctionBinding * binding)
 {
-  semantic_template_function::note_required_function_definition_materialized_by_lifecycle(
-      ctx,
-      binding);
+  (void)semantic_template_function::acquire_existing_required_function_definition(
+      ctx, binding);
 }
 
-void note_constructor_witness_closure_impl(SemanticContext & ctx,
-                                           FunctionBinding * ctor)
+void acquire_constructor_witness_definition_impl(SemanticContext & ctx,
+                                                 FunctionBinding * ctor)
 {
   if(!ctor || is_trivial_constructor_binding(ctx, *ctor)) {
     return;
   }
-  semantic_template_function::note_ensured_function_definition_materialized_by_lifecycle(
-      ctx,
-      ctor);
+  (void)semantic_template_function::acquire_existing_ensured_function_definition(
+      ctx, ctor);
 }
 
 struct LeadingTrivialStoragePrefix
@@ -1524,7 +1522,7 @@ void note_elided_direct_materialization_constructor_witness(
     if(!ctor) {
       ctor = copy_constructor_for(info);
     }
-    note_constructor_witness_closure_impl(ctx, ctor);
+    acquire_constructor_witness_definition_impl(ctx, ctor);
     return;
   }
 
@@ -1557,7 +1555,7 @@ void note_elided_direct_materialization_constructor_witness(
   }
 
   FunctionBinding * ctor = selection.ctor;
-  note_constructor_witness_closure_impl(ctx, ctor);
+  acquire_constructor_witness_definition_impl(ctx, ctor);
 }
 
 const CppAstNode * find_ctor_mem_initializer(const FunctionBinding & binding,
@@ -4295,10 +4293,10 @@ bool resolve_constructor_base_initializer(
   return true;
 }
 
-void note_constructor_witness_closure(SemanticContext & ctx,
-                                      FunctionBinding * ctor)
+void acquire_constructor_witness_definition(SemanticContext & ctx,
+                                             FunctionBinding * ctor)
 {
-  note_constructor_witness_closure_impl(ctx, ctor);
+  acquire_constructor_witness_definition_impl(ctx, ctor);
 }
 
 bool scalar_list_initialization_has_narrowing_conversion(

@@ -432,10 +432,8 @@ FunctionBinding * ensure_constexpr_function_definition(SemanticContext & ctx,
   if(!binding) {
     return nullptr;
   }
-  semantic_template_function::note_ensured_function_definition_materialized_by_lifecycle(
-      ctx,
-      binding);
-  return binding;
+  return semantic_template_function::acquire_existing_ensured_function_definition(
+      ctx, binding);
 }
 
 bool evaluate_constexpr_target_conversion(SemanticContext & ctx,

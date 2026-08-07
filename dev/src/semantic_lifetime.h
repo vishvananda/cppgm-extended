@@ -74,8 +74,9 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
                                      CallSemNode & out,
                                      const std::string & object_use_location = std::string());
 
-void note_constructor_witness_closure(SemanticContext & ctx,
-                                      semantic_model::FunctionBinding * ctor);
+void acquire_constructor_witness_definition(
+    SemanticContext & ctx,
+    semantic_model::FunctionBinding * ctor);
 
 void require_destructor_action_if_needed(SemanticContext & ctx,
                                          const cpp_decl::TypePtr & type,

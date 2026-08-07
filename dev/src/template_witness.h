@@ -250,6 +250,55 @@ struct TemplateLifecycleEntityIdentityHash
   }
 };
 
+struct TemplateLifecycleFunctionIdentity
+{
+  std::size_t overload_set_fingerprint = 0;
+  std::size_t owner_declaration_identity = 0;
+  std::size_t owner_instantiation_fingerprint = 0;
+  std::size_t event_anchor_fingerprint = 0;
+  TemplateLifecycleCause cause = TemplateLifecycleCause::None;
+  bool owner_identity_is_source_location = false;
+  bool has_owner_instantiation_key = false;
+
+  bool operator==(const TemplateLifecycleFunctionIdentity & other) const
+  {
+    return overload_set_fingerprint == other.overload_set_fingerprint &&
+        owner_declaration_identity == other.owner_declaration_identity &&
+        owner_instantiation_fingerprint ==
+            other.owner_instantiation_fingerprint &&
+        event_anchor_fingerprint == other.event_anchor_fingerprint &&
+        cause == other.cause &&
+        owner_identity_is_source_location ==
+            other.owner_identity_is_source_location &&
+        has_owner_instantiation_key == other.has_owner_instantiation_key;
+  }
+};
+
+struct TemplateLifecycleFunctionIdentityHash
+{
+  std::size_t operator()(
+      const TemplateLifecycleFunctionIdentity & identity) const
+  {
+    std::size_t result = identity.overload_set_fingerprint;
+    result ^= std::hash<std::size_t>()(identity.owner_declaration_identity) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    result ^= identity.event_anchor_fingerprint +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    if(identity.has_owner_instantiation_key) {
+      result ^= identity.owner_instantiation_fingerprint +
+          0x9e3779b9u + (result << 6) + (result >> 2);
+    }
+    result ^= std::hash<unsigned int>()(
+                  static_cast<unsigned int>(identity.cause)) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    result ^= std::hash<unsigned int>()(
+                  (identity.owner_identity_is_source_location ? 1u : 0u) |
+                  (identity.has_owner_instantiation_key ? 2u : 0u)) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    return result;
+  }
+};
+
 struct TemplateWitnessSession
 {
   std::string primary_source_file;
@@ -258,6 +307,10 @@ struct TemplateWitnessSession
                      unsigned int,
                      TemplateLifecycleEntityIdentityHash>
       lifecycle_transition_states;
+  std::unordered_map<TemplateLifecycleFunctionIdentity,
+                     unsigned int,
+                     TemplateLifecycleFunctionIdentityHash>
+      function_lifecycle_transition_states;
   std::unordered_map<TemplateLifecycleValueIdentity,
                      unsigned int,
                      TemplateLifecycleValueIdentityHash>
