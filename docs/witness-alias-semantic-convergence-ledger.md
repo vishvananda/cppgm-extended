@@ -33,7 +33,7 @@ is lifecycle Phase 6 at `05b0c7a21ff497cd2186fabc2096bf04cc6e931b`.
 | Phase | Commit | Alias attempts | Insert / duplicate / reject / replace | Strict | Broad | Performance | State |
 | --- | --- | ---: | --- | --- | --- | --- | --- |
 | 0. Route evidence | `e99c510d3` | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.23%, RSS +0.15%, footprint -0.07% | complete |
-| 1. Completed result | pending | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | pending | implementation complete |
+| 1. Completed result | `497376554` | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.17% fixed / +0.06% rolling; RSS -0.20% / -0.35%; footprint -0.09% / -0.02% | complete |
 
 ## Phase 0: upstream route evidence
 
@@ -97,3 +97,11 @@ to the Phase 0 report, with SHA-256
 All route, table, renderer, and visible-ownership counts match field for field;
 there are no unknown routes or producers. Both the ordinary and diagnostic
 direct-LowIR strict gates pass 1,305/1,305.
+
+The three-run candidate is `/tmp/cppgm-alias-phase-1.json`, SHA-256
+`fd5819ebc64b4042218b7fea925a09dbaa62cd1126f6da869a276cfe983ef4ac`.
+Its medians are 175,593,460,455 instructions, 762,298,368 bytes maximum RSS,
+and 592,236,544 bytes peak footprint. Both advisory comparisons pass without
+a warning, and this exact candidate is the new rolling baseline. The ordinary
+binary is 17,107,280 bytes; Mach-O `__TEXT` remains 13,049,856 bytes and
+`__DATA` remains 446,464 bytes.
