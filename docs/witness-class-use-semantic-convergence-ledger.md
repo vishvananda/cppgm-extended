@@ -51,7 +51,7 @@ or rerecord it.
 | 4. Qualified constants | `e4f3fada5` | 4 | 2 | +1700 / -1355 | +0.78% | +0.47% | +0.74% | +0.40% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-4-compact.json` |
 | 5. Definition owners | `acc13c758` | 2 | 1 | +2151 / -2120 | +0.84% | +0.06% | +0.93% | +0.46% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-5.json` |
 | 6. Alias provenance | `1e4f5f760` | 1 | 0 | +2623 / -2450 | +0.83% | -0.01% | +0.10% | +0.42% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-6.json` |
-| 7. Final observer and cleanup | `0662098ba` | 1 | 0 | +3219 / -4462 | -0.20% confirmed | -1.02% | +0.04% | +0.47% | 1305/1305 | 4860/4860 | pending | `/tmp/cppgm-class-use-final-confirmation.json` |
+| 7. Final observer and cleanup | `0662098ba` | 1 | 0 | +3219 / -4462 | -0.20% confirmed | -1.02% | +0.04% | +0.47% | 1305/1305 | 4860/4860 | clean | `/tmp/cppgm-class-use-final-confirmation.json` |
 
 ## Hot structure sizes
 
@@ -379,6 +379,9 @@ with the configured host compiler.
 - Direct LowIR strict passes 1,305/1,305, the PA1-PA38 report passes
   4,860/4,860, and the diagnostic provenance build passes the same strict
   1,305/1,305 corpus. The ordinary binary contains no provenance symbols.
+- `make inception CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++` passes. The
+  self-hosted objects and final `cppgm++-inception` binary match the host-built
+  results.
 - The cumulative performance cleanup obligation is closed: ordinary parsing
   bypasses witness source assembly, callback bundles are reused, and witness
   source-capture predicates return before constructing source context.
@@ -413,7 +416,7 @@ with the configured host compiler.
 - [x] Maximum RSS clears the 3% warning rule
 - [x] Strict witness and direct LowIR comparison pass
 - [x] PA1-PA38 report passes
-- [ ] Inception passes
+- [x] Inception passes
 - [x] No open cleanup obligation
 
 ## Follow-up witness-family convergence audit
