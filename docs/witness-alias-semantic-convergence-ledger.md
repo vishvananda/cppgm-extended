@@ -34,6 +34,7 @@ is lifecycle Phase 6 at `05b0c7a21ff497cd2186fabc2096bf04cc6e931b`.
 | --- | --- | ---: | --- | --- | --- | --- | --- |
 | 0. Route evidence | `e99c510d3` | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.23%, RSS +0.15%, footprint -0.07% | complete |
 | 1. Completed result | `497376554` | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.17% fixed / +0.06% rolling; RSS -0.20% / -0.35%; footprint -0.09% / -0.02% | complete |
+| 2. Direct source owner | `f5529cc60` | 1,416 | 653 / 573 / 176 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.43% fixed / -0.26% rolling; RSS -2.55% / -2.35%; footprint -2.94% / -2.86% | complete |
 
 ## Phase 0: upstream route evidence
 
@@ -105,3 +106,46 @@ and 592,236,544 bytes peak footprint. Both advisory comparisons pass without
 a warning, and this exact candidate is the new rolling baseline. The ordinary
 binary is 17,107,280 bytes; Mach-O `__TEXT` remains 13,049,856 bytes and
 `__DATA` remains 446,464 bytes.
+
+## Phase 2: direct source resolution owns the result
+
+The direct `template_argument_semantics` resolver and its second observation
+path are gone. Structured template-id syntax now enters the canonical alias
+operation with its argument scope and exact source location. All nine semantic
+result arms still finish through the Phase 1 completion boundary. The phase
+deletes 1,802 production lines and adds 360, a net deletion of 1,442 lines.
+The cumulative production diff from the fixed checkpoint is now 746 additions
+and 2,311 deletions, a net deletion of 1,565 lines.
+
+The final diagnostic report is
+`/tmp/cppgm-alias-phase2-final-provenance-report.json`, SHA-256
+`ad2418e5e65aa24a8dcde3247bcffcaccaa2228949916a26edf3851cd36cb618`.
+It covers 1,181 traces and 23,780 records. The direct-template-argument route
+has zero attempts. The canonical resolved-instantiation route has 1,230
+attempts: 632 insertions, 565 exact duplicates, 19 rejections, and 14
+replacements. The dependent-pattern route has 41 attempts and the recursive
+declaration route has 145; all 145 recursive submissions are rejected. These
+remaining actions are obligations for Phases 3 through 6, not acceptable
+final deduplication.
+
+The first performance batch exposed a lifetime error in the consolidated
+implementation. It retained 51,807 alias-instantiation scopes, raised the
+retained-memory census from 309,553,473 to 321,996,161 bytes, and produced a
+2.47% fixed-baseline footprint increase. That artifact is preserved at
+`/tmp/cppgm-alias-phase-2-retained-scope-warning.json`, SHA-256
+`2e6c3a2c0f6f2f5724c607766d8aa69ca066ce77fa620c0f474e51d7f870af13`.
+
+Alias syntax resolution now uses an operation-local binding scope. The final
+census has 36,868 scopes and 300,155,749 retained semantic bytes, below the
+Phase 1 counts of 43,329 scopes and 309,553,473 bytes. No hot structure grows:
+`Type` remains 280 bytes, `TemplateArgument` 136, `ClassInfo` 1,136,
+`AliasTemplateDecl` 264, and `ResolvedAliasTemplateId` 80.
+
+The replacement three-run candidate is `/tmp/cppgm-alias-phase-2.json`,
+SHA-256
+`71652cb617c4f5919515f80da69c971a6feee7358a4c9d0ef37a9e69b883ffde`.
+Its medians are 175,141,188,595 instructions, 744,357,888 bytes maximum RSS,
+and 575,315,968 bytes peak footprint. That is -0.43%, -2.55%, and -2.94%
+against the fixed baseline, and -0.26%, -2.35%, and -2.86% against rolling.
+Both comparisons pass without a warning. The same candidate becomes the new
+rolling baseline.
