@@ -20,7 +20,7 @@ is lifecycle Phase 6 at `05b0c7a21ff497cd2186fabc2096bf04cc6e931b`.
 - The current hot sizes are: `Type` 280, `TemplateArgument` 136,
   `ClassInfo` 1,136, `FunctionBinding` 824, `ValueBinding` 504,
   `AliasTemplateDecl` 264,
-  `ResolvedAliasTemplateIdView` 80, `RetainedAliasClassUse` 16,
+  starting `ResolvedAliasTemplateIdView` 80, `RetainedAliasClassUse` 16,
   `ResolvedClassTemplateIdView` 104, `ResolvedQualifiedId` 40, and
   `ResolvedOwnerReference` 32 bytes. These match the corrected starting point.
 - `--witness` and `--witness-debug` are not equivalent. On
@@ -32,7 +32,7 @@ is lifecycle Phase 6 at `05b0c7a21ff497cd2186fabc2096bf04cc6e931b`.
 
 | Phase | Commit | Alias attempts | Insert / duplicate / reject / replace | Strict | Broad | Performance | State |
 | --- | --- | ---: | --- | --- | --- | --- | --- |
-| 0. Route evidence | pending | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | pending | implementation complete |
+| 0. Route evidence | `e99c510d3` | 1,326 | 766 / 387 / 159 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.23%, RSS +0.15%, footprint -0.07% | complete |
 
 ## Phase 0: upstream route evidence
 
@@ -66,3 +66,10 @@ actions, final visible rows, and the explicit `unknown` bucket. Ordinary builds
 compile each route scope to an empty object and do not create provenance state.
 The ordinary `cppgm++` is 17,107,840 bytes; Mach-O `__TEXT` is 13,049,856
 bytes and `__DATA` is 446,464 bytes.
+
+The three-run candidate is `/tmp/cppgm-alias-phase-0.json`, SHA-256
+`b5d9a3581a7645429172a648b8db788633dfd3327b559b5fe12d0294b74afdfe`.
+Its medians are 175,484,611,677 instructions, 764,981,248 bytes maximum RSS,
+and 592,363,520 bytes peak footprint. Both fixed and initial rolling
+comparisons pass without a warning. This exact candidate is the new rolling
+baseline.
