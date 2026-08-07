@@ -444,13 +444,13 @@ const char * producer_site_name(WitnessProducerSite site)
   CPPGM_PRODUCER_NAME(VariableTemplateInstantiation,
                       "variable.template_instantiation");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi01, "lifecycle.template_api.01");
-  CPPGM_PRODUCER_NAME(LifecycleTemplateApi02, "lifecycle.template_api.02");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi03, "lifecycle.template_api.03");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi04, "lifecycle.template_api.04");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi05, "lifecycle.template_api.05");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi06, "lifecycle.template_api.06");
   CPPGM_PRODUCER_NAME(LifecycleTemplateApi07, "lifecycle.template_api.07");
-  CPPGM_PRODUCER_NAME(LifecycleTemplateApi09, "lifecycle.template_api.09");
+  CPPGM_PRODUCER_NAME(LifecycleTransitionObserver01,
+                      "lifecycle.transition_observer.01");
   CPPGM_PRODUCER_NAME(LifecycleCallsemantic01, "lifecycle.callsemantic.01");
   CPPGM_PRODUCER_NAME(LifecycleCallsemantic02, "lifecycle.callsemantic.02");
   }

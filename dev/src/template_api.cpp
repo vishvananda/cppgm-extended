@@ -3468,7 +3468,8 @@ std::string class_template_witness_scope_qualified_name(
 std::string class_witness_output_qualified_name_impl(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info,
-    bool allow_explicit_default_equivalent)
+    bool allow_explicit_default_equivalent,
+    const std::size_t * visible_count_override = nullptr)
 {
   if(class_is_named_function_local_for_witness(&info)) {
     return info.name;
@@ -3508,7 +3509,7 @@ std::string class_witness_output_qualified_name_impl(
     return normalize_witness_angle_spacing(
         semantic_model::class_output_qualified_name(info));
   }
-  if(info.source_template && info.type) {
+  if(!visible_count_override && info.source_template && info.type) {
     if(std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
            mangle_info =
                cpp_decl::named_type_class_template_specialization_mangle_info_const(
@@ -3526,7 +3527,8 @@ std::string class_witness_output_qualified_name_impl(
       }
     }
   }
-  const std::size_t visible_count =
+  const std::size_t visible_count = visible_count_override ?
+      std::min(*visible_count_override, info.instantiation_arguments.size()) :
       witness_visible_class_template_argument_count(
           ctx,
           info,
@@ -3618,6 +3620,18 @@ std::string class_witness_output_qualified_name(
     const semantic_model::ClassInfo & info)
 {
   return class_witness_output_qualified_name_impl(ctx, info, false);
+}
+
+std::string class_witness_output_qualified_name_with_visible_arguments(
+    SemanticContext & ctx,
+    const semantic_model::ClassInfo & info,
+    std::size_t visible_count)
+{
+  return class_witness_output_qualified_name_impl(
+      ctx,
+      info,
+      false,
+      &visible_count);
 }
 
 std::string class_template_witness_qualified_name(
@@ -3932,12 +3946,21 @@ bool template_argument_contains_default_elided_type(
 
 std::string value_binding_member_instantiation_entity(
     SemanticContext & ctx,
-    const semantic_model::ValueBinding & binding)
+    const semantic_model::ValueBinding & binding,
+    const semantic_model::ClassInfo * owner_override = nullptr,
+    const std::size_t * visible_owner_argument_count = nullptr)
 {
-  if(binding.owner_class &&
-     !semantic_model::class_output_qualified_name(*binding.owner_class).empty()) {
-    return class_witness_output_qualified_name(ctx, *binding.owner_class) +
-        "::" + binding.name;
+  const semantic_model::ClassInfo * owner =
+      owner_override ? owner_override : binding.owner_class;
+  if(owner &&
+     !semantic_model::class_output_qualified_name(*owner).empty()) {
+    const std::string owner_entity = visible_owner_argument_count ?
+        class_witness_output_qualified_name_with_visible_arguments(
+            ctx,
+            *owner,
+            *visible_owner_argument_count) :
+        class_witness_output_qualified_name(ctx, *owner);
+    return owner_entity + "::" + binding.name;
   }
   return binding.name;
 }
@@ -4108,14 +4131,29 @@ bool default_argument_member_value_note_is_speculative(
   return true;
 }
 
-void note_template_member_value_instantiation_if_needed(
+TemplateLifecycleTransition materialize_template_member_value_transition(
     SemanticContext & ctx,
     const semantic_model::ValueBinding & binding,
     const TemplateMemberValueInstantiationRequest & request)
 {
+  TemplateLifecycleTransition transition;
+  transition.entity_kind = TemplateLifecycleEntityKind::Value;
+  transition.transition_kind = TemplateLifecycleTransitionKind::Instantiated;
+  transition.value_binding = &binding;
+  transition.source_value_binding =
+      request.source_binding ? request.source_binding : &binding;
+  transition.value_owner = request.source_owner ?
+      request.source_owner :
+      transition.source_value_binding->owner_class;
+  transition.visible_owner_argument_count =
+      request.visible_owner_argument_count;
+  transition.has_visible_owner_argument_count =
+      request.has_visible_owner_argument_count;
+  transition.intent = TemplateInstantiationIntent::TrackInstantiation;
   const bool retained_dependency =
       request.origin ==
           TemplateMemberValueInstantiationOrigin::RetainedDependency;
+  transition.retained_dependency = retained_dependency;
   const bool trace_enabled = parser_trace::enabled("template.resolve");
   const auto trace_skip =
       [&](const char * reason) -> void
@@ -4158,20 +4196,20 @@ void note_template_member_value_instantiation_if_needed(
   if(ctx.template_witness_context().session == nullptr ||
      !binding.owner_class) {
     trace_skip("no-session-or-owner");
-    return;
+    return transition;
   }
   if(binding.owner_class->is_explicit_specialization ||
      binding.is_explicit_specialization) {
     trace_skip("explicit-specialization");
-    return;
+    return transition;
   }
   if(!class_info_has_template_instantiation_key(*binding.owner_class)) {
     trace_skip("no-template-key");
-    return;
+    return transition;
   }
   if(binding.owner_class->dependent_instantiation) {
     trace_skip("dependent-owner");
-    return;
+    return transition;
   }
   const TemplateWitnessEntryContext current_entry_context =
       current_template_witness_entry_context();
@@ -4179,7 +4217,7 @@ void note_template_member_value_instantiation_if_needed(
                                                        binding,
                                                        current_entry_context)) {
     trace_skip("default-arg-speculative");
-    return;
+    return transition;
   }
   const auto replay_static_member_definition_once =
       [&]() -> void
@@ -4202,7 +4240,16 @@ void note_template_member_value_instantiation_if_needed(
         value_binding_member_instantiation_decl_location(ctx, binding);
     dependency.value_scope = binding.declaration_scope;
     dependency.value_binding = &binding;
+    dependency.value_owner = binding.owner_class;
     dependency.value_name = binding.name;
+    if(binding.owner_class) {
+      dependency.visible_owner_argument_count =
+          witness_visible_class_template_argument_count(
+              ctx,
+              *binding.owner_class,
+              false);
+      dependency.has_visible_owner_argument_count = true;
+    }
     dependency.entity_has_template_identity =
         value_or_owner_has_template_identity(&binding);
     dependency.public_use_location =
@@ -4213,31 +4260,21 @@ void note_template_member_value_instantiation_if_needed(
        template_argument_semantics::
            collect_template_member_value_dependency_if_active(dependency)) {
       trace_skip("qualified-member-dependency-collected");
-      return;
+      return transition;
     }
-  }
-  if(binding.witness_member_value_instantiation_noted &&
-     !retained_dependency) {
-    replay_static_member_definition_once();
-    trace_skip("already-noted");
-    return;
   }
 
   const std::string entity =
-      retained_dependency && !request.entity.empty() ?
-          request.entity :
-          value_binding_member_instantiation_entity(ctx, binding);
+      value_binding_member_instantiation_entity(ctx, binding);
   const std::string decl_location =
-      retained_dependency && !request.decl_location.empty() ?
-          request.decl_location :
-          value_binding_member_instantiation_decl_location(ctx, binding);
+      value_binding_member_instantiation_decl_location(ctx, binding);
   if(entity.empty() || decl_location.empty()) {
     trace_skip("empty-entity-or-decl");
-    return;
+    return transition;
   }
   if(source_type_lookup_is_collecting_owner_template_members(ctx, binding)) {
     trace_skip("source-type-owner-collection");
-    return;
+    return transition;
   }
   if(template_witness_detail::current_lifecycle_pause_depth_storage() != 0) {
     template_model::TemplateValueDependency dependency;
@@ -4245,7 +4282,16 @@ void note_template_member_value_instantiation_if_needed(
     dependency.decl_location = decl_location;
     dependency.value_scope = binding.declaration_scope;
     dependency.value_binding = &binding;
+    dependency.value_owner = binding.owner_class;
     dependency.value_name = binding.name;
+    if(binding.owner_class) {
+      dependency.visible_owner_argument_count =
+          witness_visible_class_template_argument_count(
+              ctx,
+              *binding.owner_class,
+              false);
+      dependency.has_visible_owner_argument_count = true;
+    }
     dependency.entity_has_template_identity =
         value_or_owner_has_template_identity(&binding);
     dependency.public_use_location =
@@ -4254,36 +4300,253 @@ void note_template_member_value_instantiation_if_needed(
     if(template_argument_semantics::
            collect_template_member_value_dependency_if_active(dependency)) {
       trace_skip("lifecycle-collected");
-      return;
+      return transition;
     }
     trace_skip("lifecycle-paused");
-    return;
+    return transition;
   }
 
   if(!retained_dependency) {
-    binding.witness_member_value_instantiation_noted = true;
+    binding.witness_member_value_source_capture_noted = true;
     replay_static_member_definition_once();
   }
+  transition.occurred = true;
+  return transition;
+}
+
+namespace {
+
+const semantic_model::ValueBinding * canonical_template_lifecycle_value_binding(
+    const semantic_model::ValueBinding * binding)
+{
+  if(!binding ||
+     !binding->owner_class ||
+     !binding->owner_class->member_scope) {
+    return binding;
+  }
+  const std::map<std::string, semantic_model::ValueBinding>::const_iterator found =
+      binding->owner_class->member_scope->values.find(binding->name);
+  if(found == binding->owner_class->member_scope->values.end() ||
+     found->second.kind != binding->kind) {
+    return binding;
+  }
+  return &found->second;
+}
+
+TemplateLifecycleValueIdentity template_lifecycle_value_identity(
+    const semantic_model::ValueBinding * binding,
+    const semantic_model::ClassInfo * owner_override = nullptr)
+{
+  TemplateLifecycleValueIdentity identity;
+  const semantic_model::ClassInfo * owner = owner_override ?
+      owner_override :
+      (binding ? binding->owner_class : nullptr);
+  if(!binding || !owner) {
+    return identity;
+  }
+  identity.template_declaration = owner->source_template;
+  identity.semantic_owner = identity.template_declaration ?
+      nullptr :
+      owner;
+  identity.semantic_type = owner->type.get();
+  identity.instantiation_key =
+      semantic_model::class_instantiation_key(*owner);
+  identity.member_name = binding->name;
+  for(std::size_t i = 0;
+      i < owner->instantiation_arguments.size();
+      ++i) {
+    if(!owner->instantiation_arguments[i].source_defaulted) {
+      ++identity.source_argument_count;
+    }
+  }
+  return identity;
+}
+
+bool template_lifecycle_value_identity_valid(
+    const TemplateLifecycleValueIdentity & identity)
+{
+  return (identity.template_declaration || identity.semantic_owner) &&
+      !identity.member_name.empty();
+}
+
+const void * template_lifecycle_transition_entity(
+    const TemplateLifecycleTransition & transition)
+{
+  switch(transition.entity_kind) {
+  case TemplateLifecycleEntityKind::None:
+    return nullptr;
+  case TemplateLifecycleEntityKind::Function:
+    return transition.function_binding;
+  case TemplateLifecycleEntityKind::Class:
+    return transition.class_info;
+  case TemplateLifecycleEntityKind::Value:
+    return canonical_template_lifecycle_value_binding(
+        transition.value_binding);
+  }
+  return nullptr;
+}
+
+unsigned int template_lifecycle_transition_state_bit(
+    TemplateLifecycleEntityKind entity_kind,
+    TemplateLifecycleTransitionKind transition_kind)
+{
+  if(entity_kind == TemplateLifecycleEntityKind::None ||
+     transition_kind == TemplateLifecycleTransitionKind::None) {
+    return 0;
+  }
+  const unsigned int entity_index =
+      static_cast<unsigned int>(entity_kind) - 1;
+  const unsigned int transition_index =
+      static_cast<unsigned int>(transition_kind) - 1;
+  return 1u << (entity_index * 6u + transition_index);
+}
+
+bool claim_template_lifecycle_transition(
+    SemanticContext & ctx,
+    const TemplateLifecycleTransition & transition)
+{
+  TemplateWitnessSession * session = ctx.template_witness_context().session;
+  const void * entity = template_lifecycle_transition_entity(transition);
+  const unsigned int bit = template_lifecycle_transition_state_bit(
+      transition.entity_kind,
+      transition.transition_kind);
+  if(!session || !entity || bit == 0) {
+    return false;
+  }
+  if(transition.entity_kind == TemplateLifecycleEntityKind::Value) {
+    const semantic_model::ValueBinding * identity_binding =
+        transition.source_value_binding ? transition.source_value_binding :
+                                          transition.value_binding;
+    TemplateLifecycleValueIdentity request_identity =
+        template_lifecycle_value_identity(identity_binding,
+                                           transition.value_owner);
+    if(transition.has_visible_owner_argument_count) {
+      request_identity.source_argument_count =
+          transition.visible_owner_argument_count;
+    }
+    if(template_lifecycle_value_identity_valid(request_identity)) {
+      unsigned int & state =
+          session->value_lifecycle_transition_states[request_identity];
+      if((state & bit) != 0) {
+        return false;
+      }
+      state |= bit;
+      return true;
+    }
+  }
+  unsigned int & state = session->lifecycle_transition_states[entity];
+  if((state & bit) != 0) {
+    return false;
+  }
+  state |= bit;
+  return true;
+}
+
+}  // namespace
+
+void observe_template_lifecycle_transition(
+    SemanticContext & ctx,
+    const TemplateLifecycleTransition & transition)
+{
+  if(!transition.valid() ||
+     !claim_template_lifecycle_transition(ctx, transition) ||
+     transition.entity_kind != TemplateLifecycleEntityKind::Value ||
+     !transition.value_binding) {
+    return;
+  }
+
+  const semantic_model::ValueBinding & binding = *transition.value_binding;
+  const semantic_model::ValueBinding & source_binding =
+      transition.source_value_binding ? *transition.source_value_binding :
+                                        binding;
+  const bool variable_template_acquisition =
+      transition.variable_template != nullptr;
+  const std::string binding_entity = variable_template_acquisition ?
+      value_log_entity(ctx, &binding) :
+      value_binding_member_instantiation_entity(
+          ctx,
+          source_binding,
+          transition.value_owner,
+          transition.has_visible_owner_argument_count ?
+              &transition.visible_owner_argument_count :
+              nullptr);
+  const std::string template_entity = variable_template_acquisition ?
+      variable_template_decl_log_entity(transition.variable_template) :
+      std::string();
+  const std::string entity =
+      !template_entity.empty() ? template_entity : binding_entity;
+  const std::string binding_decl_location = variable_template_acquisition ?
+      value_decl_location(ctx, &binding) :
+      value_binding_member_instantiation_decl_location(ctx, source_binding);
+  const std::string template_decl_location = variable_template_acquisition ?
+      variable_template_decl_location(ctx, transition.variable_template) :
+      std::string();
+  const std::string decl_location =
+      !binding_decl_location.empty() ? binding_decl_location :
+                                      template_decl_location;
+  if(entity.empty() || decl_location.empty()) {
+    return;
+  }
+
+  const bool entity_has_template_identity =
+      value_or_owner_has_template_identity(&binding) ||
+      transition.variable_template != nullptr;
+  const std::string detail = transition.retained_dependency ?
+      std::string() :
+      created_new_detail(transition.created_new);
+  const TemplateLifecycleCause cause = transition.retained_dependency ?
+      TemplateLifecycleCause::TrackInstantiation :
+      (variable_template_acquisition ?
+           lifecycle_cause_for_current_context_or_intent(transition.intent) :
+           TemplateLifecycleCause::None);
+  const std::string event_location = variable_template_acquisition ?
+      current_template_log_location(ctx) :
+      decl_location;
+  const auto emit_transition = [&]() -> void
   {
-    const template_api::ScopedTemplateWitnessEntryContext entry_context =
-        template_api::maybe_enter_value_binding_closure_context(
-            ctx,
-            TemplateClosureReason::TrackInstantiation,
-            &binding);
     CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-        witness_provenance::WitnessProducerSite::LifecycleTemplateApi02,
+        witness_provenance::WitnessProducerSite::LifecycleTransitionObserver01,
         TemplateWitnessLogEventKind::VariableInstantiation,
-        decl_location,
+        event_location,
         entity,
         decl_location,
-        retained_dependency ? std::string() : created_new_detail(false),
-        retained_dependency ? TemplateLifecycleCause::TrackInstantiation :
-                              TemplateLifecycleCause::None,
-        retained_dependency ? request.entity_has_template_identity :
-                              value_or_owner_has_template_identity(&binding),
+        detail,
+        cause,
+        entity_has_template_identity,
         false,
-        retained_dependency);
+        transition.retained_dependency);
+  };
+
+  if(variable_template_acquisition &&
+     transition.intent == TemplateInstantiationIntent::TrackInstantiation &&
+     current_template_witness_entry_context().origin !=
+         TemplateWitnessOrigin::Closure) {
+    const ScopedTemplateWitnessEntryContext entry_context(
+        make_template_closure_entry_context(
+            TemplateClosureReason::TrackInstantiation,
+            entity,
+            decl_location,
+            entity_has_template_identity));
+    emit_transition();
+    return;
   }
+
+  const ScopedTemplateWitnessEntryContext entry_context =
+      maybe_enter_value_binding_closure_context(
+          ctx,
+          TemplateClosureReason::TrackInstantiation,
+          &binding);
+  emit_transition();
+}
+
+void observe_template_member_value_transition(
+    SemanticContext & ctx,
+    const semantic_model::ValueBinding & binding,
+    const TemplateMemberValueInstantiationRequest & request)
+{
+  observe_template_lifecycle_transition(
+      ctx,
+      materialize_template_member_value_transition(ctx, binding, request));
 }
 
 std::string nested_member_class_instantiation_event_location(
@@ -6724,59 +6987,19 @@ TemplateInstantiationResult acquire_variable_instantiation(
       (current_entry_context.origin == TemplateWitnessOrigin::Closure ||
        request.intent == TemplateInstantiationIntent::TrackInstantiation);
   if(variable_log_enabled) {
-    const auto emit_variable_instantiation_log =
-        [&]() -> void
-    {
-      const std::string binding_entity = value_log_entity(ctx, result.value_binding);
-      const std::string decl_entity =
-          variable_template_decl_log_entity(request.decl);
-      const std::string entity =
-          !decl_entity.empty() ? decl_entity : binding_entity;
-      const std::string binding_decl_location =
-          value_decl_location(ctx, result.value_binding);
-      const std::string decl_location =
-          !binding_decl_location.empty() ? binding_decl_location :
-                                          variable_template_decl_location(ctx,
-                                                                         request.decl);
-      const bool entity_has_template_identity =
-          value_or_owner_has_template_identity(result.value_binding) ||
-          request.decl != nullptr;
-      CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-          witness_provenance::WitnessProducerSite::LifecycleTemplateApi09,
-          TemplateWitnessLogEventKind::VariableInstantiation,
-          current_template_log_location(ctx),
-          entity,
-          decl_location,
-          created_new_detail(result.created_new_value),
-          lifecycle_cause_for_current_context_or_intent(request.intent),
-          entity_has_template_identity);
-    };
-    if(request.intent == TemplateInstantiationIntent::TrackInstantiation &&
-       current_entry_context.origin != TemplateWitnessOrigin::Closure) {
-      const std::string binding_entity = value_log_entity(ctx, result.value_binding);
-      const std::string decl_entity =
-          variable_template_decl_log_entity(request.decl);
-      const std::string entity =
-          !decl_entity.empty() ? decl_entity : binding_entity;
-      const std::string binding_decl_location =
-          value_decl_location(ctx, result.value_binding);
-      const std::string decl_location =
-          !binding_decl_location.empty() ? binding_decl_location :
-                                          variable_template_decl_location(ctx,
-                                                                         request.decl);
-      const bool entity_has_template_identity =
-          value_or_owner_has_template_identity(result.value_binding) ||
-          request.decl != nullptr;
-      const template_api::ScopedTemplateWitnessEntryContext entry_context(
-          template_api::make_template_closure_entry_context(
-              TemplateClosureReason::TrackInstantiation,
-              entity,
-              decl_location,
-              entity_has_template_identity));
-      emit_variable_instantiation_log();
-    } else {
-      emit_variable_instantiation_log();
-    }
+    result.lifecycle_transition.entity_kind =
+        TemplateLifecycleEntityKind::Value;
+    result.lifecycle_transition.transition_kind =
+        TemplateLifecycleTransitionKind::Instantiated;
+    result.lifecycle_transition.value_binding = result.value_binding;
+    result.lifecycle_transition.source_value_binding = result.value_binding;
+    result.lifecycle_transition.value_owner =
+        result.value_binding ? result.value_binding->owner_class : nullptr;
+    result.lifecycle_transition.variable_template = request.decl;
+    result.lifecycle_transition.intent = request.intent;
+    result.lifecycle_transition.occurred = true;
+    result.lifecycle_transition.created_new = result.created_new_value;
+    observe_template_lifecycle_transition(ctx, result.lifecycle_transition);
   }
   return result;
 }

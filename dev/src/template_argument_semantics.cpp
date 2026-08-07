@@ -6112,6 +6112,19 @@ void append_structured_bool_value_dependencies_for_class_info(
     const ClassInfo & info,
     vector<TemplateValueDependency> & out,
     set<const ClassInfo *> & visiting);
+void attach_template_value_dependency_owner_identity(
+    const ClassInfo * owner,
+    TemplateValueDependency & dependency)
+{
+  if(!owner) {
+    return;
+  }
+  dependency.value_owner = owner;
+  dependency.visible_owner_argument_count =
+      owner->instantiation_arguments.size();
+  dependency.has_visible_owner_argument_count = true;
+}
+
 void append_member_value_binding_dependency(
     template_api::TemplateServices & services,
     const ClassInfo & fallback_owner,
@@ -6330,6 +6343,11 @@ bool append_template_value_dependency(
         dependencies[i].value_binding = dependency.value_binding;
         dependencies[i].value_scope = dependency.value_scope;
         dependencies[i].value_name = dependency.value_name;
+        dependencies[i].value_owner = dependency.value_owner;
+        dependencies[i].visible_owner_argument_count =
+            dependency.visible_owner_argument_count;
+        dependencies[i].has_visible_owner_argument_count =
+            dependency.has_visible_owner_argument_count;
       }
       return false;
     }
@@ -6632,6 +6650,7 @@ void append_member_value_binding_dependency(
           binding.declaration_scope :
           owner->member_scope.get();
   dependency.value_binding = &binding;
+  attach_template_value_dependency_owner_identity(owner, dependency);
   dependency.value_name = member_name;
   dependency.entity_has_template_identity =
       template_api::value_or_owner_has_template_identity(&binding) ||
@@ -6697,6 +6716,8 @@ void append_structured_bool_integral_constant_dependency(
   dependency.value_scope =
       member.binding ? member.binding->declaration_scope : nullptr;
   dependency.value_binding = member.binding;
+  attach_template_value_dependency_owner_identity(integral_constant,
+                                                  dependency);
   dependency.value_name = kStructuredBoolResultMemberName;
   dependency.entity_has_template_identity =
       template_api::class_has_template_identity(integral_constant);
@@ -6941,6 +6962,8 @@ void append_static_member_value_dependency_for_type(
           member.binding->declaration_scope :
           dependency_owner->member_scope.get();
   dependency.value_binding = member.binding;
+  attach_template_value_dependency_owner_identity(dependency_owner,
+                                                  dependency);
   dependency.value_name = member.binding->name;
   dependency.entity_has_template_identity =
       template_api::value_or_owner_has_template_identity(member.binding) ||
@@ -7848,11 +7871,13 @@ void note_template_value_dependency_for_witness(
     template_api::TemplateMemberValueInstantiationRequest request;
     request.origin = template_api::TemplateMemberValueInstantiationOrigin::
         RetainedDependency;
-    request.entity = dependency.entity;
-    request.decl_location = dependency.decl_location;
-    request.entity_has_template_identity =
-        dependency.entity_has_template_identity;
-    template_api::note_template_member_value_instantiation_if_needed(
+    request.source_binding = dependency.value_binding;
+    request.source_owner = dependency.value_owner;
+    request.visible_owner_argument_count =
+        dependency.visible_owner_argument_count;
+    request.has_visible_owner_argument_count =
+        dependency.has_visible_owner_argument_count;
+    template_api::observe_template_member_value_transition(
         ctx,
         *resolved_binding,
         request);
@@ -7947,7 +7972,7 @@ void note_structured_bool_value_member_if_needed(
   if(!member.binding || member.binding->kind == ValueBinding::VK_FIELD) {
     return;
   }
-  template_api::note_template_member_value_instantiation_if_needed(
+  template_api::observe_template_member_value_transition(
       *services.semantic_context,
       *member.binding);
 }
@@ -9761,7 +9786,7 @@ bool lookup_leaf_constant_value(Scope & scope,
   }
   if(binding->has_constant_value) {
     if(services.semantic_context) {
-      template_api::note_template_member_value_instantiation_if_needed(
+      template_api::observe_template_member_value_transition(
           *services.semantic_context,
           *binding);
     }
@@ -9772,7 +9797,7 @@ bool lookup_leaf_constant_value(Scope & scope,
   }
   if(value_binding_has_constexpr_value(*binding)) {
     if(services.semantic_context) {
-      template_api::note_template_member_value_instantiation_if_needed(
+      template_api::observe_template_member_value_transition(
           *services.semantic_context,
           *binding);
     }
@@ -9799,7 +9824,7 @@ bool lookup_leaf_constant_value(Scope & scope,
   }
   if(binding->has_constant_value) {
     if(services.semantic_context) {
-      template_api::note_template_member_value_instantiation_if_needed(
+      template_api::observe_template_member_value_transition(
           *services.semantic_context,
           *binding);
     }
@@ -9810,7 +9835,7 @@ bool lookup_leaf_constant_value(Scope & scope,
   }
   if(value_binding_has_constexpr_value(*binding)) {
     if(services.semantic_context) {
-      template_api::note_template_member_value_instantiation_if_needed(
+      template_api::observe_template_member_value_transition(
           *services.semantic_context,
           *binding);
     }
@@ -10237,7 +10262,7 @@ bool materialize_leaf_member_constant_binding(
     if(note_value_instantiation &&
        services.semantic_context &&
        !owner_value_evaluation_incomplete) {
-      template_api::note_template_member_value_instantiation_if_needed(
+      template_api::observe_template_member_value_transition(
           *services.semantic_context,
           binding);
     }
@@ -10255,7 +10280,7 @@ bool materialize_leaf_member_constant_binding(
     if(note_value_instantiation &&
        services.semantic_context &&
        !owner_value_evaluation_incomplete) {
-      template_api::note_template_member_value_instantiation_if_needed(
+      template_api::observe_template_member_value_transition(
           *services.semantic_context,
           binding);
     }
@@ -10358,7 +10383,7 @@ bool materialize_leaf_member_constant_binding(
   if(note_value_instantiation &&
      services.semantic_context &&
      !current_owner_value_evaluation_incomplete) {
-    template_api::note_template_member_value_instantiation_if_needed(
+    template_api::observe_template_member_value_transition(
         *services.semantic_context,
         *active);
   }

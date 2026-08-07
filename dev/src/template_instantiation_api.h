@@ -76,6 +76,50 @@ struct TemplateFunctionBindingAcquisitionRequest
       TemplateFunctionBindingAcquisitionCause::None;
 };
 
+enum class TemplateLifecycleEntityKind
+{
+  None,
+  Function,
+  Class,
+  Value,
+};
+
+enum class TemplateLifecycleTransitionKind
+{
+  None,
+  Acquired,
+  DefinitionRequired,
+  DefinitionEnsured,
+  DefinitionMaterialized,
+  Instantiated,
+  Finalized,
+};
+
+struct TemplateLifecycleTransition
+{
+  TemplateLifecycleEntityKind entity_kind = TemplateLifecycleEntityKind::None;
+  TemplateLifecycleTransitionKind transition_kind =
+      TemplateLifecycleTransitionKind::None;
+  semantic_model::FunctionBinding * function_binding = nullptr;
+  semantic_model::ClassInfo * class_info = nullptr;
+  const semantic_model::ValueBinding * value_binding = nullptr;
+  const semantic_model::ValueBinding * source_value_binding = nullptr;
+  const semantic_model::ClassInfo * value_owner = nullptr;
+  semantic_model::VariableTemplateDecl * variable_template = nullptr;
+  std::size_t visible_owner_argument_count = 0;
+  TemplateInstantiationIntent intent = TemplateInstantiationIntent::LookupOnly;
+  bool occurred = false;
+  bool created_new = false;
+  bool retained_dependency = false;
+  bool has_visible_owner_argument_count = false;
+
+  bool valid() const
+  {
+    return occurred &&
+        (function_binding || class_info || value_binding);
+  }
+};
+
 struct TemplateInstantiationResult
 {
   TemplateInstantiationIntent intent = TemplateInstantiationIntent::LookupOnly;
@@ -89,6 +133,7 @@ struct TemplateInstantiationResult
   bool class_finalized = false;
   bool output_tracked = false;
   bool definition_required = false;
+  TemplateLifecycleTransition lifecycle_transition;
 };
 
 }  // namespace template_api

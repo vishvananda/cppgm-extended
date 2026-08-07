@@ -12852,7 +12852,7 @@ void note_qualified_member_type_non_type_binding_if_needed(
      !binding_owner_template_has_parameter(binding, parameter)) {
     return;
   }
-  template_api::note_template_member_value_instantiation_if_needed(
+  template_api::observe_template_member_value_transition(
       *services.semantic_context,
       *binding);
 }
@@ -12941,7 +12941,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
           parameter,
           named_binding);
       if(services.semantic_context && named_binding) {
-        template_api::note_template_member_value_instantiation_if_needed(
+        template_api::observe_template_member_value_transition(
             *services.semantic_context,
             *named_binding);
       }
@@ -12965,7 +12965,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
           parameter,
           named_binding);
       if(services.semantic_context && named_binding) {
-        template_api::note_template_member_value_instantiation_if_needed(
+        template_api::observe_template_member_value_transition(
             *services.semantic_context,
             *named_binding);
       }

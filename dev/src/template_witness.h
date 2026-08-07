@@ -201,10 +201,55 @@ struct PendingVariableSourceUse
 #endif
 };
 
+struct TemplateLifecycleValueIdentity
+{
+  const void * template_declaration = nullptr;
+  const void * semantic_owner = nullptr;
+  const void * semantic_type = nullptr;
+  std::string instantiation_key;
+  std::string member_name;
+  std::size_t source_argument_count = 0;
+
+  bool operator==(const TemplateLifecycleValueIdentity & other) const
+  {
+    return template_declaration == other.template_declaration &&
+        semantic_owner == other.semantic_owner &&
+        semantic_type == other.semantic_type &&
+        instantiation_key == other.instantiation_key &&
+        member_name == other.member_name &&
+        source_argument_count == other.source_argument_count;
+  }
+};
+
+struct TemplateLifecycleValueIdentityHash
+{
+  std::size_t operator()(const TemplateLifecycleValueIdentity & identity) const
+  {
+    std::size_t result = std::hash<const void *>()(
+        identity.template_declaration);
+    result ^= std::hash<const void *>()(identity.semantic_owner) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    result ^= std::hash<const void *>()(identity.semantic_type) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    result ^= std::hash<std::string>()(identity.instantiation_key) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    result ^= std::hash<std::string>()(identity.member_name) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    result ^= std::hash<std::size_t>()(identity.source_argument_count) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    return result;
+  }
+};
+
 struct TemplateWitnessSession
 {
   std::string primary_source_file;
   std::vector<TemplateLifecycleEvent> lifecycle_events;
+  std::unordered_map<const void *, unsigned int> lifecycle_transition_states;
+  std::unordered_map<TemplateLifecycleValueIdentity,
+                     unsigned int,
+                     TemplateLifecycleValueIdentityHash>
+      value_lifecycle_transition_states;
   semantic_source_use::SemanticSourceUseTable source_use_table;
   std::vector<PendingVariableSourceUse> pending_variable_source_uses;
   std::vector<std::string> inline_namespace_names;

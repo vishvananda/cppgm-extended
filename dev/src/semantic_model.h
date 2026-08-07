@@ -227,7 +227,7 @@ struct ValueBinding
   symbol_linkage::SymbolIdentity symbol;
   unsigned int output_requirements = ORK_NONE;
   bool definition_output_emitted = false;
-  mutable bool witness_member_value_instantiation_noted = false;
+  mutable bool witness_member_value_source_capture_noted = false;
   mutable bool witness_static_member_definition_replayed = false;
   mutable bool witness_static_member_definition_source_captured = false;
   mutable SourceDeclAnchorCache declaration_anchor;

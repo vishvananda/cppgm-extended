@@ -3290,7 +3290,7 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
         ((binding.name == "value" &&
           !binding.witness_static_member_definition_source_captured) ||
          (binding.name != "value" &&
-          !binding.witness_member_value_instantiation_noted)) &&
+          !binding.witness_member_value_source_capture_noted)) &&
         !binding.is_explicit_specialization &&
         !template_api::class_is_explicit_specialization(&info) &&
         !has_output_requirement(binding.output_requirements, ORK_DEFINITION) &&

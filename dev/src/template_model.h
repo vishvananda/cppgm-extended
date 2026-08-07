@@ -272,8 +272,11 @@ struct TemplateValueDependency
   std::string public_use_location;
   semantic_model::Scope * value_scope = nullptr;
   const semantic_model::ValueBinding * value_binding = nullptr;
+  const semantic_model::ClassInfo * value_owner = nullptr;
   std::string value_name;
+  std::size_t visible_owner_argument_count = 0;
   bool entity_has_template_identity = true;
+  bool has_visible_owner_argument_count = false;
 };
 
 struct TemplateParameterOwnedSyntax

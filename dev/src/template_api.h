@@ -612,12 +612,21 @@ struct TemplateMemberValueInstantiationRequest
 {
   TemplateMemberValueInstantiationOrigin origin =
       TemplateMemberValueInstantiationOrigin::SemanticUse;
-  std::string entity;
-  std::string decl_location;
-  bool entity_has_template_identity = false;
+  const semantic_model::ValueBinding * source_binding = nullptr;
+  const semantic_model::ClassInfo * source_owner = nullptr;
+  std::size_t visible_owner_argument_count = 0;
+  bool has_visible_owner_argument_count = false;
 };
 
-void note_template_member_value_instantiation_if_needed(
+TemplateLifecycleTransition materialize_template_member_value_transition(
+    SemanticContext & ctx,
+    const semantic_model::ValueBinding & binding,
+    const TemplateMemberValueInstantiationRequest & request =
+        TemplateMemberValueInstantiationRequest());
+void observe_template_lifecycle_transition(
+    SemanticContext & ctx,
+    const TemplateLifecycleTransition & transition);
+void observe_template_member_value_transition(
     SemanticContext & ctx,
     const semantic_model::ValueBinding & binding,
     const TemplateMemberValueInstantiationRequest & request =

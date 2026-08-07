@@ -5503,7 +5503,7 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
     }
     if(can_fold) {
       if(witness::source_capture_enabled(ctx)) {
-        template_api::note_template_member_value_instantiation_if_needed(
+        template_api::observe_template_member_value_transition(
             ctx,
             binding);
       }
@@ -5546,7 +5546,7 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
           binding.owner_class->has_late_required_static_member_output = true;
         }
         ctx.track_instantiated_class(binding.owner_class);
-        template_api::note_template_member_value_instantiation_if_needed(
+        template_api::observe_template_member_value_transition(
             ctx,
             required->second);
       }

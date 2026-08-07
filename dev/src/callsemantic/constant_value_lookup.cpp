@@ -120,7 +120,7 @@ public:
       return false;
     }
     if(value_binding_has_constexpr_value(binding)) {
-      template_api::note_template_member_value_instantiation_if_needed(
+      template_api::observe_template_member_value_transition(
           *this,
           binding);
       value = value_binding_constexpr_value(binding);
@@ -128,7 +128,7 @@ public:
       return true;
     }
     if(binding.has_constant_value) {
-      template_api::note_template_member_value_instantiation_if_needed(
+      template_api::observe_template_member_value_transition(
           *this,
           binding);
       value = constant_eval::make_integral_value(binding.constant_value, binding.type);
@@ -198,7 +198,7 @@ public:
       binding.has_constant_value = true;
       binding.constant_value = integral;
     }
-    template_api::note_template_member_value_instantiation_if_needed(
+    template_api::observe_template_member_value_transition(
         *this,
         binding);
     attach_constant_object_storage_identity(binding, value);
@@ -786,7 +786,7 @@ public:
              })) {
         MemberValueLookupResult member = lookup_member_value(*info, "value");
         if(member.binding && member.binding->kind != ValueBinding::VK_FIELD) {
-          template_api::note_template_member_value_instantiation_if_needed(
+          template_api::observe_template_member_value_transition(
               ctx,
               *member.binding);
         }
@@ -1590,7 +1590,7 @@ private:
       }
       MemberValueLookupResult member = lookup_member_value(*info, "value");
       if(member.binding && member.binding->kind != ValueBinding::VK_FIELD) {
-        template_api::note_template_member_value_instantiation_if_needed(
+        template_api::observe_template_member_value_transition(
             ctx,
             *member.binding);
       }

@@ -4,6 +4,7 @@
 #include "cpp_decl_model.h"
 #include "resolved_source_semantics.h"
 #include "semantic_model.h"
+#include "template_instantiation_api.h"
 #include "template_model.h"
 
 int main()
@@ -15,6 +16,8 @@ int main()
   std::cout << "FunctionBinding "
             << sizeof(semantic_model::FunctionBinding) << '\n';
   std::cout << "ValueBinding " << sizeof(semantic_model::ValueBinding) << '\n';
+  std::cout << "TemplateLifecycleTransition "
+            << sizeof(template_api::TemplateLifecycleTransition) << '\n';
   std::cout << "OutOfClassStaticMemberDecl "
             << sizeof(semantic_model::OutOfClassStaticMemberDecl) << '\n';
   std::cout << "OutOfClassMemberFunctionDecl "

@@ -12090,7 +12090,7 @@ void finalize_class_constant_members(SemanticContext & ctx,
           return;
         }
         const ScopedTemplateWitnessLifecycleResume lifecycle_resume;
-        template_api::note_template_member_value_instantiation_if_needed(
+        template_api::observe_template_member_value_transition(
             ctx,
             binding);
       };
