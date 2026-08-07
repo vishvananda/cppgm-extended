@@ -45,10 +45,10 @@ postdates the diagnostic counter additions.
 | --- | ---: | ---: | ---: | ---: | --- |
 | `lifecycle.template_api.01` | 24,679 | 15,705 | 265 | 8,709 | removed in Phase 3 |
 | `lifecycle.template_api.02` | 8,023 | 7,317 | 2 | 704 | removed in Phase 1 |
-| `lifecycle.template_api.03` | 52 | 5 | 0 | 47 | pending |
-| `lifecycle.template_api.04` | 2 | 0 | 0 | 2 | pending |
-| `lifecycle.template_api.05` | 1 | 0 | 0 | 1 | pending |
-| `lifecycle.template_api.06` | 0 | 0 | 0 | 0 | Clang oracle reducer added; current CPPGM event missing |
+| `lifecycle.template_api.03` | 52 | 5 | 0 | 47 | removed in Phase 5 |
+| `lifecycle.template_api.04` | 2 | 0 | 0 | 2 | removed in Phase 5 |
+| `lifecycle.template_api.05` | 1 | 0 | 0 | 1 | removed in Phase 5 |
+| `lifecycle.template_api.06` | 0 | 0 | 0 | 0 | removed in Phase 5; Clang reducer moved to canonical observer |
 | `lifecycle.template_api.07` | 1,449 | 963 | 0 | 486 | removed in Phase 4 |
 | `lifecycle.template_api.09` | 51 | 4 | 0 | 47 | removed in Phase 1 |
 | `lifecycle.callsemantic.01` | 7 | 0 | 0 | 7 | removed in Phase 4 |
@@ -64,19 +64,19 @@ postdates the diagnostic counter additions.
 | 2, function acquisition | `644b561a2` | 1305/1305 | 4860/4860 | n/a | -0.17% | -0.09% | -0.01% | +390 | complete |
 | 3, definition closure | `274cf0a32` | 1305/1305 | 4860/4860 | n/a, hot layouts unchanged | -0.11% | +1.02% | -0.02% | +518 | complete |
 | 4, class acquisition | `164b9addb` | 1305/1305 | 4860/4860 | n/a, hot layouts unchanged | -0.19% | +0.71% | -0.06% | +599 | complete |
-| 5, nested and unnamed classes | pending | pending | pending | n/a | pending | pending | pending | pending | pending |
+| 5, nested and unnamed classes | `313662d30` | 1305/1305 | 4860/4860 | n/a, hot layouts unchanged | -0.14% | +0.76% | -0.06% | +540 | complete |
 | 6, final observer and cleanup | pending | pending | pending | pending | pending | pending | pending | pending | pending |
 
 ## Hot structure sizes
 
 | Structure | Fixed size | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Phase 5 | Final |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `Type` | 280 | 280 | 280 | 280 | 280 | pending | pending |
-| `TemplateArgument` | 136 | 136 | 136 | 136 | 136 | pending | pending |
-| `ClassInfo` | 1136 | 1136 | 1136 | 1136 | 1136 | pending | pending |
-| `FunctionBinding` | 824 | 824 | 824 | 824 | 824 | pending | pending |
-| `ValueBinding` | 504 | 504 | 504 | 504 | 504 | pending | pending |
-| `TemplateLifecycleTransition` | n/a | 72 | 88 | 88 | 96 | pending | pending |
+| `Type` | 280 | 280 | 280 | 280 | 280 | 280 | pending |
+| `TemplateArgument` | 136 | 136 | 136 | 136 | 136 | 136 | pending |
+| `ClassInfo` | 1136 | 1136 | 1136 | 1136 | 1136 | 1136 | pending |
+| `FunctionBinding` | 824 | 824 | 824 | 824 | 824 | 824 | pending |
+| `ValueBinding` | 504 | 504 | 504 | 504 | 504 | 504 | pending |
+| `TemplateLifecycleTransition` | n/a | 72 | 88 | 88 | 96 | 96 | pending |
 
 ## Route map
 
@@ -318,6 +318,52 @@ postdates the diagnostic counter additions.
   and 766 deletions, or +599 lines. Phase 5 and final cleanup must delete more
   than 599 net lines before the final gate.
 
+## Phase 5 evidence: nested and unnamed class completion
+
+- Correctness commit: `313662d3045293796a2802c4e5e74441f3b7007b`.
+- Nested member completion returns a typed class transition with the selected
+  declaration node. The observer formats its entity and source anchor and is
+  the only layer allowed to pass a completed semantic transition through a
+  lifecycle pause.
+- Unnamed local classes are marked before their members are populated, so
+  nested child transitions retain the correct unnamed parent. Anonymous
+  members create their transition when semantic class population records the
+  member. The recursive field walk, its four direct producers, and
+  `ClassInfo::template_instantiation_log_emitted` are deleted.
+- The existing PA19 dependent-anonymous-member reducer now forces
+  `Box<int>` completion with a namespace-scope `static_assert`. Patched Clang
+  generated its updated witness reference. Its LowIR remains byte-identical to
+  the existing reference, and CPPGM matches the new lifecycle row.
+- Final strict provenance trace:
+  `/tmp/cppgm-lifecycle-phase5-final-provenance.wI0FZ5`.
+- Final strict report:
+  `/tmp/cppgm-lifecycle-phase5-final-provenance-report.json`, SHA-256
+  `1702282cba1fab28ff742ce4f2aa6767dedd2e3ec6a2078506587206dd94130e`.
+  The 1,181 traces contain 23,974 records and no unknown producer attempt.
+  `lifecycle.transition_observer.01` makes 4,493 attempts and inserts all
+  4,493. It records no exact duplicate, enrichment, rejection, replacement,
+  or lifecycle collision.
+- The diagnostic and ordinary direct-LowIR strict runs pass 1,305/1,305. The
+  ordinary PA1-PA38 report passes 4,860/4,860. The promoted PA19 reducer also
+  passes its focused ordinary and strict checks.
+- Candidate performance file: `/tmp/cppgm-lifecycle-phase-5.json`, SHA-256
+  `ce9e0194552a764042a15d509cde13d46e34cbb28e90c51181e21c2dc63b1707`.
+  Median instructions are `175907081553`, `-0.14%` versus fixed and `+0.05%`
+  versus Phase 4. Median maximum RSS is `768823296`, `+0.76%` versus fixed and
+  `+0.05%` versus Phase 4. Median peak footprint is `592523264`, `-0.06%`
+  versus fixed and effectively unchanged from Phase 4. Both comparisons pass
+  the 0.5% instruction, 3% RSS warning, and 1% footprint thresholds. No RSS
+  confirmation run is required. The rolling file contains this exact
+  candidate.
+- Hot semantic structures retain their fixed sizes, and
+  `TemplateLifecycleTransition` remains 96 bytes. The ordinary `cppgm++` is
+  17,133,616 bytes; Mach-O `__TEXT` is 13,066,142 bytes and `__DATA` is
+  442,600 bytes.
+- Phase 5 adds 239 and removes 298 production lines, a net deletion of 59.
+  Cumulative production change from the fixed checkpoint is 1,579 additions
+  and 1,039 deletions, or +540 lines. Final observer and recorder cleanup must
+  remove at least 541 more net lines and retain the instruction reduction.
+
 ### Function lifecycle
 
 - `.01` receives require, ensure, and materialize calls from function-template
@@ -336,18 +382,15 @@ postdates the diagnostic counter additions.
 - `.04`, `.05`, and `.06` walk unnamed and anonymous class relationships.
 - Starting waste: 1,511 attempts produce 543 inserted events, with 968 exact
   duplicates.
-- Patched Clang emits one class-instantiation event for
-  `validation/templates/witness-lifecycle-anonymous-member.cpp`. Current CPPGM
-  emits no anonymous-member lifecycle event and records only `.01` function
-  attempts. The validation trace is
-  `/tmp/cppgm-lifecycle-anonymous.wLf7xB`. Phase 5 must move the missing event
-  into the class-completion transition before the reducer enters PA19.
+- The Phase 0 probe showed that patched Clang emitted one anonymous-member
+  class-instantiation event while CPPGM emitted none. Phase 5 moved that event
+  into class population and promoted the reducer to PA19.
 
 ## Open obligations
 
 - [x] Add a targeted `.06` anonymous-member oracle reducer before deleting its
   route.
-- [ ] Promote the anonymous-member reducer to PA19 after the canonical class
+- [x] Promote the anonymous-member reducer to PA19 after the canonical class
   transition matches the Clang reference.
 - [x] Record fixed `sizeof(FunctionBinding)` and `sizeof(ValueBinding)`.
 - [x] Confirm the original class-use inception run and copy its result into the
@@ -355,7 +398,7 @@ postdates the diagnostic counter additions.
 - [x] Use `/tmp/cppgm-witness-lifecycle-obj` for worktree builds.
 - [x] Record the Phase 1 candidate batch and promote it to the rolling file.
 - [ ] Record one candidate batch for each remaining semantic phase. Phases 1
-  through 4 are complete.
+  through 5 are complete.
 - [ ] Investigate each instruction, RSS, or footprint warning before advancing.
 - [ ] Finish with a net production line and instruction reduction.
 
