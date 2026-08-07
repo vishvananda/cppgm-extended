@@ -51,7 +51,7 @@ or rerecord it.
 | 4. Qualified constants | `e4f3fada5` | 4 | 2 | +1700 / -1355 | +0.78% | +0.47% | +0.74% | +0.40% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-4-compact.json` |
 | 5. Definition owners | `acc13c758` | 2 | 1 | +2151 / -2120 | +0.84% | +0.06% | +0.93% | +0.46% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-5.json` |
 | 6. Alias provenance | `1e4f5f760` | 1 | 0 | +2623 / -2450 | +0.83% | -0.01% | +0.10% | +0.42% | 1305/1305 | 4860/4860 | not required | `/tmp/cppgm-class-use-phase-6.json` |
-| 7. Final observer and cleanup | pending | 1 | 0 | pending | pending | pending | pending | pending | pending | pending | clean | pending |
+| 7. Final observer and cleanup | `0662098ba` | 1 | 0 | +3219 / -4462 | -0.20% confirmed | -1.02% | +0.04% | +0.47% | 1305/1305 | 4860/4860 | pending | `/tmp/cppgm-class-use-final-confirmation.json` |
 
 ## Hot structure sizes
 
@@ -65,6 +65,7 @@ or rerecord it.
 | Phase 4 | 280 | 136 | 1,136 | 136 | `ResolvedQualifiedId`: 40 bytes, stack-scoped; retained storage unchanged |
 | Phase 5 | 280 | 136 | 1,136 | 136 | `ResolvedOwnerReference`: 32 bytes, witness-session side store only; `OutOfClassMemberFunctionDecl` remains 240 bytes |
 | Phase 6 | 280 | 136 | 1,136 | 136 | `RetainedAliasClassUse`: 16 bytes, witness-session side store only; other retained result sizes unchanged |
+| Phase 7 | 280 | 136 | 1,136 | 136 | `ResolvedClassTemplateIdView`: 104 bytes; `ResolvedAliasTemplateIdView`: 80 bytes; `ResolvedQualifiedId`: 40 bytes; `ResolvedOwnerReference`: 32 bytes; `RetainedAliasClassUse`: 16 bytes; all retained storage remains witness-session-only |
 
 `OutOfClassMemberFunctionDecl` starts at 240 bytes. The reporter source is
 `scripts/report_semantic_structure_sizes.cpp`; compile it against `dev/src`
@@ -337,6 +338,51 @@ with the configured host compiler.
   Phase 7 must remove the accumulated collection and emission scaffolding and
   satisfy the repeatable final reduction rule.
 
+## Phase 7 evidence
+
+- Correctness and cleanup commits: `4368a3cba`, `76477f727`, `4a7ef4cdf`, and
+  `0662098ba13097ae0ac059593443a311f769a59b`.
+- The final production inventory has one direct `witness::emit_class_use`
+  call, one direct `witness::emit_alias_use` call, and no replay interface.
+  The completed resolved-source collection owns class publication; the old
+  location, AST, template-argument, alias-type, and delayed-definition
+  recovery arms are absent.
+- Final strict provenance trace:
+  `/tmp/cppgm-class-use-final-provenance.5eQcbQ`
+- Final strict provenance report:
+  `/tmp/cppgm-class-use-final-provenance-report.json`
+- Provenance report SHA-256:
+  `e94d543d32cd24cbf43c36b8386de1a3570fd2842308246d781be68c7013485f`
+- The trace contains 59,412 records across 1,180 files, no unknown producer,
+  no source or lifecycle collision pair, and zero calls to all four retired
+  replay routes. `class.class_template_reference.02` is the sole class owner:
+  4,530 attempts and 1,952 final-visible rows. Its 56 replacements are
+  same-producer occurrence enrichment, not competing semantic ownership.
+- The first final performance batch is
+  `/tmp/cppgm-class-use-final.json` (SHA-256
+  `8f7425d341669d8c0389653711b3414ec792bc63b238755f5f1bca9dbdab289f`):
+  176,074,869,502 instructions (`-0.25%`), 762,454,016 maximum RSS
+  (`-0.03%`), and 593,039,360 peak footprint (`+0.49%`) versus fixed.
+- Because the instruction reduction was below 0.5%, the required independent
+  confirmation batch is `/tmp/cppgm-class-use-final-confirmation.json`
+  (SHA-256
+  `bc6c01464e356e2c4da69f0a63e3baec74e7322f15931030540afaabea566203`):
+  176,156,071,669 instructions (`-0.20%`), 763,035,648 maximum RSS
+  (`+0.04%`), and 592,871,424 peak footprint (`+0.47%`). Both instruction
+  medians are below fixed, so the repeatable-reduction rule passes. The
+  confirmation batch improves instructions by 1.02% versus Phase 6.
+- Production code is cumulatively `+3219 / -4462`, a net deletion of 1,243
+  lines and a final `dev/src` count of 416,807 lines. Ordinary `cppgm++` is
+  17,136,464 bytes; Mach-O `__TEXT` is 13,070,336 bytes and `__DATA` is
+  446,464 bytes. Compared with fixed, the file shrank by 126,928 bytes and
+  `__TEXT` by 77,824 bytes; hot semantic structures did not grow.
+- Direct LowIR strict passes 1,305/1,305, the PA1-PA38 report passes
+  4,860/4,860, and the diagnostic provenance build passes the same strict
+  1,305/1,305 corpus. The ordinary binary contains no provenance symbols.
+- The cumulative performance cleanup obligation is closed: ordinary parsing
+  bypasses witness source assembly, callback bundles are reused, and witness
+  source-capture predicates return before constructing source context.
+
 ## Producer migration
 
 | Deleted producer | Canonical result owner | Unique rows transferred | Targeted fixtures | Status |
@@ -349,23 +395,46 @@ with the configured host compiler.
 | `class.callsemantic.13` | resolved out-of-class owner | 29 | partial-specialization member outdef | migrated in `acc13c758` |
 | `class.template_instantiation` | substituted retained owner pattern | 24 | static member assignment and strict unique-owner set | migrated in `acc13c758` |
 | `class.callsemantic.10` | retained alias expansion result | 30 | materialized alias declaration and strict unique-owner set | migrated in `1e4f5f760` |
-| `class.class_template_reference.02` | final resolved-source observer | 1,118 | full strict set | pending migration |
+| `class.class_template_reference.02` | final resolved-source observer | 1,118 | full strict set | sole final owner in `0662098ba` |
 
 ## Performance cleanup obligations
 
 | Opened in phase | Metric and delta | Evidence for cause | Required cleanup | Due phase | Status |
 | --- | --- | --- | --- | --- | --- |
-| 4 | instructions `+0.84%` versus fixed at Phase 5 | Four Phase 4 medians were between `+0.59%` and `+0.80%`; Phase 5 adds only `+0.06%` versus rolling, so the remaining increase is cumulative result/observer scaffolding rather than its owner substitution | Remove remaining transient result/observer scaffolding and finish with a repeatable reduction below the fixed median | 7 | open |
+| 4 | instructions `+0.84%` versus fixed at Phase 5 | Four Phase 4 medians were between `+0.59%` and `+0.80%`; Phase 5 adds only `+0.06%` versus rolling, so the remaining increase is cumulative result/observer scaffolding rather than its owner substitution | Remove remaining transient result/observer scaffolding and finish with a repeatable reduction below the fixed median | 7 | closed in `0662098ba`; two final medians are `-0.25%` and `-0.20%` |
 
 ## Final audit
 
-- [ ] One direct class producer and one observation pass
-- [ ] Zero replay routes
-- [ ] Net production source-line deletion
-- [ ] Repeatable instruction reduction against the fixed checkpoint
-- [ ] Peak footprint within 1%
-- [ ] Maximum RSS clears the 3% warning rule
-- [ ] Strict witness and direct LowIR comparison pass
-- [ ] PA1-PA38 report passes
+- [x] One direct class producer and one observation pass
+- [x] Zero replay routes
+- [x] Net production source-line deletion
+- [x] Repeatable instruction reduction against the fixed checkpoint
+- [x] Peak footprint within 1%
+- [x] Maximum RSS clears the 3% warning rule
+- [x] Strict witness and direct LowIR comparison pass
+- [x] PA1-PA38 report passes
 - [ ] Inception passes
-- [ ] No open cleanup obligation
+- [x] No open cleanup obligation
+
+## Follow-up witness-family convergence audit
+
+The final provenance trace also exposes where the same convergence method can
+pay off outside class use. A single direct emitter is not sufficient evidence
+of semantic convergence: alias and function output each have one emitter but
+still receive independently reconstructed decisions.
+
+| Family | Static shape | Final strict evidence | Assessment |
+| --- | --- | --- | --- |
+| Lifecycle | 11 producer sites; 10 exercised across `template_api.cpp`, `callsemantic.cpp`, and `constant_value_lookup.cpp` | 34,383 attempts, 24,072 exact duplicates, 267 enrichments, 10,044 surviving events | Strongest next target. Function, class, and variable state transitions should publish non-owning typed transition views through one observer instead of formatting events at acquisition, explicit-instantiation, nested/anonymous-class, and constant-lookup sites. |
+| Alias use | One emitter and one producer, but four static feeds into `observe_resolved_alias_template_id` plus a recursive template-pattern AST visitor with five origin modes | 1,326 attempts, 387 exact duplicates, 14 same-producer replacements, 564 final-visible rows; renderer construction replaces 61 alias events and later drops 55 source-spelled duplicates | Same hidden shape as pre-convergence class use. Retain resolved alias children during normal template-parameter/type analysis and delete `record_alias_uses` plus its direct/nested/qualified/pattern syntax arms. Do not grow `Type`, `TemplateArgument`, or `AliasTemplateDecl`; use a witness-session side collector and stack views. |
+| Function call | One emitter and producer, but four request-building feeds: overload selection, conversion-function selection, `declval`, and constexpr direct-call lookup | 920 attempts, 133 exact duplicates, 599 final-visible rows; no competing producer or replacement | Worth a smaller typed-result pass. The constexpr path currently rediscovers the source template and may resolve explicit arguments again. Carry the selected binding, candidate counts/drops, anchors, and resolved arguments from overload/conversion results into constant evaluation. The builtin `declval` arm may remain a distinct result constructor. |
+| Variable use | One emitter, one producer, one request-construction path | 31 attempts, no duplicates, replacements, or collisions; all 31 rows final-visible | Already converged. The pending-finalization side store changes publication time, not semantic ownership; leave it alone unless later evidence finds a second analyzer. |
+
+Recommended order is lifecycle, alias, then function call. Before changing any
+family, add diagnostic-only route IDs for the semantic feeds hidden behind its
+current shared producer. Preserve the fixed performance epoch, use non-owning
+views or witness-session storage for intermediate metadata, and require net
+source and instruction reduction at the end of each family project. Renderer
+passes are not the first target: every remaining class policy acts in the final
+trace, while the alias renderer replacements are downstream evidence of the
+upstream alias duplication described above.
