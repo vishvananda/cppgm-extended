@@ -1500,6 +1500,10 @@ TemplateClosureReason closure_reason_for_function_binding_acquisition_cause(
     return TemplateClosureReason::None;
   case TemplateFunctionBindingAcquisitionCause::RequireDefinition:
     return TemplateClosureReason::RequireDefinition;
+  case TemplateFunctionBindingAcquisitionCause::DeclarationInstantiation:
+    return TemplateClosureReason::None;
+  case TemplateFunctionBindingAcquisitionCause::ExplicitInstantiationDefinition:
+    return TemplateClosureReason::TrackInstantiation;
   }
   return TemplateClosureReason::None;
 }
@@ -2759,19 +2763,6 @@ void note_function_definition_materialized_by_closure(
       state.decl_location,
       binding,
       function_instantiation_detail(false, true));
-}
-
-void note_function_declaration_instantiated_by_closure(
-    SemanticContext & ctx,
-    const semantic_model::FunctionBinding * binding,
-    const TemplateFunctionDefinitionClosureState & state)
-{
-  template_api::note_function_binding_closure_event(
-      ctx,
-      TemplateWitnessLogEventKind::FunctionInstantiation,
-      state.decl_location,
-      binding,
-      created_new_detail(false));
 }
 
 TemplateWitnessEntryContext make_function_binding_closure_entry_context(
@@ -4434,12 +4425,68 @@ bool claim_template_lifecycle_transition(
       return true;
     }
   }
-  unsigned int & state = session->lifecycle_transition_states[entity];
+  TemplateLifecycleEntityIdentity entity_identity;
+  entity_identity.entity = entity;
+  entity_identity.cause = transition.cause;
+  unsigned int & state =
+      session->lifecycle_transition_states[entity_identity];
   if((state & bit) != 0) {
     return false;
   }
   state |= bit;
   return true;
+}
+
+void observe_function_lifecycle_transition(
+    SemanticContext & ctx,
+    const TemplateLifecycleTransition & transition)
+{
+  const semantic_model::FunctionBinding * binding = transition.function_binding;
+  if(!binding || binding->is_inherited_constructor ||
+     (binding->owner_class && binding->owner_class->dependent_instantiation)) {
+    return;
+  }
+  const std::string entity = binding_log_entity(ctx, binding);
+  const std::string decl_location = binding_decl_location(ctx, binding);
+  std::string event_location;
+  if(transition.source_use_node) {
+    event_location = strip_at_prefix(
+        ctx.source_location_for_node(*transition.source_use_node));
+  } else if(transition.use_declaration_as_event_location) {
+    event_location = decl_location;
+  } else {
+    event_location = current_template_log_location(ctx);
+  }
+  if(event_location.empty()) {
+    event_location = decl_location;
+  }
+  if(entity.empty() || decl_location.empty() || event_location.empty()) {
+    return;
+  }
+  const TemplateLifecycleCause cause =
+      transition.cause != TemplateLifecycleCause::None ?
+          transition.cause :
+          lifecycle_cause_for_current_context_or_intent(transition.intent);
+  CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
+      witness_provenance::WitnessProducerSite::LifecycleTransitionObserver01,
+      TemplateWitnessLogEventKind::FunctionInstantiation,
+      event_location,
+      entity,
+      decl_location,
+      transition.include_definition_materialized_detail ?
+          function_instantiation_detail(transition.created_new,
+                                        transition.definition_materialized) :
+          created_new_detail(transition.created_new),
+      binding->is_explicit_specialization ?
+          TemplateLifecycleCause::ExplicitSpecialization :
+          cause,
+      function_or_owner_has_template_identity(binding),
+      false,
+      binding->template_definition_required_by_public_source_call,
+      binding->is_constexpr,
+      binding->is_constructor &&
+          (binding->is_copy_constructor || binding->is_move_constructor) &&
+          (binding->is_defaulted || binding->synthesized));
 }
 
 }  // namespace
@@ -4449,8 +4496,14 @@ void observe_template_lifecycle_transition(
     const TemplateLifecycleTransition & transition)
 {
   if(!transition.valid() ||
-     !claim_template_lifecycle_transition(ctx, transition) ||
-     transition.entity_kind != TemplateLifecycleEntityKind::Value ||
+     !claim_template_lifecycle_transition(ctx, transition)) {
+    return;
+  }
+  if(transition.entity_kind == TemplateLifecycleEntityKind::Function) {
+    observe_function_lifecycle_transition(ctx, transition);
+    return;
+  }
+  if(transition.entity_kind != TemplateLifecycleEntityKind::Value ||
      !transition.value_binding) {
     return;
   }
@@ -6602,16 +6655,21 @@ TemplateInstantiationResult acquire_function_instantiation(
   result.definition_materialized =
       result.function_binding && result.function_binding->has_definition;
   if(closure_template_log_enabled(ctx) && result.function_binding) {
-    template_api::note_function_binding_closure_event(
-        ctx,
-        TemplateWitnessLogEventKind::FunctionInstantiation,
-        current_template_log_location(ctx),
-        result.function_binding,
-        function_instantiation_detail(result.created_new_binding,
-                                      result.definition_materialized),
-        request.explicit_specialization ?
-            TemplateLifecycleCause::ExplicitSpecialization :
-            lifecycle_cause_for_current_context_or_intent(request.intent));
+    result.lifecycle_transition.entity_kind =
+        TemplateLifecycleEntityKind::Function;
+    result.lifecycle_transition.transition_kind =
+        TemplateLifecycleTransitionKind::Instantiated;
+    result.lifecycle_transition.function_binding = result.function_binding;
+    result.lifecycle_transition.intent = request.intent;
+    result.lifecycle_transition.cause = request.explicit_specialization ?
+        TemplateLifecycleCause::ExplicitSpecialization :
+        lifecycle_cause_for_current_context_or_intent(request.intent);
+    result.lifecycle_transition.occurred = true;
+    result.lifecycle_transition.created_new = result.created_new_binding;
+    result.lifecycle_transition.definition_materialized =
+        result.definition_materialized;
+    result.lifecycle_transition.include_definition_materialized_detail = true;
+    observe_template_lifecycle_transition(ctx, result.lifecycle_transition);
   }
   apply_function_instantiation_intent(
       ctx, result.function_binding, request.intent, &result);
@@ -6928,6 +6986,32 @@ TemplateInstantiationResult acquire_function_binding_in_current_context(
 
   result.definition_materialized =
       result.function_binding && result.function_binding->has_definition;
+  const bool declaration_instantiation =
+      request.cause ==
+          TemplateFunctionBindingAcquisitionCause::DeclarationInstantiation;
+  const bool explicit_instantiation =
+      request.cause ==
+          TemplateFunctionBindingAcquisitionCause::ExplicitInstantiationDefinition;
+  if(ctx.template_witness_context().session != nullptr &&
+     result.function_binding &&
+     (declaration_instantiation || explicit_instantiation)) {
+    result.lifecycle_transition.entity_kind =
+        TemplateLifecycleEntityKind::Function;
+    result.lifecycle_transition.transition_kind =
+        TemplateLifecycleTransitionKind::Instantiated;
+    result.lifecycle_transition.function_binding = result.function_binding;
+    result.lifecycle_transition.source_use_node = request.source_use_node;
+    result.lifecycle_transition.intent = request.intent;
+    result.lifecycle_transition.cause = explicit_instantiation ?
+        TemplateLifecycleCause::ExplicitInstantiationDefinition :
+        lifecycle_cause_for_current_context_or_intent(request.intent);
+    result.lifecycle_transition.occurred = true;
+    result.lifecycle_transition.definition_materialized =
+        result.definition_materialized;
+    result.lifecycle_transition.use_declaration_as_event_location =
+        declaration_instantiation;
+    observe_template_lifecycle_transition(ctx, result.lifecycle_transition);
+  }
   apply_function_instantiation_intent(
       ctx, result.function_binding, request.intent, &result);
   return result;

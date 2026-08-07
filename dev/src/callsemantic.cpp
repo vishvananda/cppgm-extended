@@ -28007,30 +28007,6 @@ private:
       }
       return normalize_witness_location(source_location_for_node(*primary->class_node));
     };
-    const auto function_binding_decl_location =
-        [&](FunctionBinding * binding) -> std::string
-    {
-      if(!binding) {
-        return std::string();
-      }
-      if(binding->definition_node) {
-        std::string location =
-            normalize_witness_location(
-                source_location_for_node(*binding->definition_node));
-        if(!location.empty()) {
-          return location;
-        }
-      }
-      if(binding->declaration_node) {
-        std::string location =
-            normalize_witness_location(
-                source_location_for_node(*binding->declaration_node));
-        if(!location.empty()) {
-          return location;
-        }
-      }
-      return std::string();
-    };
     const auto note_direct_explicit_class_finalization =
         [&](const std::string & entity,
             const std::string & decl_location,
@@ -28058,34 +28034,19 @@ private:
           true);
     };
     const auto note_direct_explicit_function_instantiation =
-        [&](FunctionBinding * binding,
-            template_api::TemplateLifecycleCause cause) -> void
+        [&](FunctionBinding * binding) -> void
     {
-      if(!binding || template_witness_session_ == nullptr) {
+      if(!binding) {
         return;
       }
-      const std::string entity = semantic_model::function_output_name(*binding);
-      if(entity.empty()) {
-        return;
-      }
-      const std::string decl_location = function_binding_decl_location(binding);
-      const std::string event_decl_location =
-          !decl_location.empty() ? decl_location : explicit_instantiation_location;
-      const witness::ScopedTemplateWitnessEntryContext entry_context(
-          witness::make_template_closure_entry_context(
-              witness::TemplateClosureReason::TrackInstantiation,
-              entity,
-              event_decl_location,
-              template_api::function_or_owner_has_template_identity(binding)));
-      CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(
-          witness_provenance::WitnessProducerSite::LifecycleCallsemantic02,
-          witness::TemplateWitnessLogEventKind::FunctionInstantiation,
-          explicit_instantiation_location,
-          entity,
-          event_decl_location,
-          "created-new=no",
-          cause,
-          template_api::function_or_owner_has_template_identity(binding));
+      template_api::TemplateFunctionBindingAcquisitionRequest request;
+      request.binding = binding;
+      request.include_body = false;
+      request.cause = template_api::
+          TemplateFunctionBindingAcquisitionCause::
+              ExplicitInstantiationDefinition;
+      request.source_use_node = &node;
+      (void)template_api::acquire_function_binding(*this, request);
     };
     if(target.kind == CppAstKind::class_specifier ||
        target.kind == CppAstKind::class_forward_declaration) {
@@ -28207,9 +28168,7 @@ private:
                *binding)) {
           continue;
         }
-        note_direct_explicit_function_instantiation(
-            binding,
-            template_api::TemplateLifecycleCause::ExplicitInstantiationDefinition);
+        note_direct_explicit_function_instantiation(binding);
         binding->is_explicit_instantiation_definition = true;
         note_instantiated_function_output(binding,
                                           InstantiatedFunctionOutputMode::RequireDefinition);
@@ -28235,9 +28194,7 @@ private:
                    *binding)) {
               continue;
             }
-            note_direct_explicit_function_instantiation(
-                binding,
-                template_api::TemplateLifecycleCause::ExplicitInstantiationDefinition);
+            note_direct_explicit_function_instantiation(binding);
             binding->is_explicit_instantiation_definition = true;
             note_instantiated_function_output(binding,
                                               InstantiatedFunctionOutputMode::RequireDefinition);
@@ -28546,9 +28503,7 @@ private:
                   selected_identity.key +
                   " name=" + selected_binding->display_name);
         }
-        note_direct_explicit_function_instantiation(
-            selected_binding,
-            template_api::TemplateLifecycleCause::ExplicitInstantiationDefinition);
+        note_direct_explicit_function_instantiation(selected_binding);
         note_instantiated_function_output(selected_binding,
                                           InstantiatedFunctionOutputMode::RequireDefinition);
       }
@@ -29359,10 +29314,14 @@ private:
         return binding;
       }
       if(!template_api::function_binding_has_source_template_identity(binding)) {
-        template_api::note_function_declaration_instantiated_by_closure(
-            *this,
-            binding,
-            closure_state);
+        template_api::TemplateFunctionBindingAcquisitionRequest
+            acquisition_request;
+        acquisition_request.binding = binding;
+        acquisition_request.include_body = false;
+        acquisition_request.cause = template_api::
+            TemplateFunctionBindingAcquisitionCause::DeclarationInstantiation;
+        (void)template_api::acquire_function_binding(*this,
+                                                     acquisition_request);
       }
     }
     if(template_api::function_binding_has_source_template_identity(binding)) {

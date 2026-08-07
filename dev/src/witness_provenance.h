@@ -39,7 +39,6 @@ enum class WitnessProducerSite
   LifecycleTemplateApi07,
   LifecycleTransitionObserver01,
   LifecycleCallsemantic01,
-  LifecycleCallsemantic02,
 };
 
 const char * producer_site_name(WitnessProducerSite site);

@@ -7,6 +7,7 @@
 #include "cppast_ast.h"
 #include "semantic_model.h"
 #include "template_environment.h"
+#include "template_lifecycle.h"
 #include "template_model.h"
 
 namespace template_api {
@@ -22,7 +23,9 @@ enum class TemplateInstantiationIntent
 enum class TemplateFunctionBindingAcquisitionCause
 {
   None,
-  RequireDefinition
+  RequireDefinition,
+  DeclarationInstantiation,
+  ExplicitInstantiationDefinition
 };
 
 struct TemplateFunctionInstantiationRequest
@@ -74,25 +77,7 @@ struct TemplateFunctionBindingAcquisitionRequest
   TemplateInstantiationIntent intent = TemplateInstantiationIntent::LookupOnly;
   TemplateFunctionBindingAcquisitionCause cause =
       TemplateFunctionBindingAcquisitionCause::None;
-};
-
-enum class TemplateLifecycleEntityKind
-{
-  None,
-  Function,
-  Class,
-  Value,
-};
-
-enum class TemplateLifecycleTransitionKind
-{
-  None,
-  Acquired,
-  DefinitionRequired,
-  DefinitionEnsured,
-  DefinitionMaterialized,
-  Instantiated,
-  Finalized,
+  const CppAstNode * source_use_node = nullptr;
 };
 
 struct TemplateLifecycleTransition
@@ -106,11 +91,16 @@ struct TemplateLifecycleTransition
   const semantic_model::ValueBinding * source_value_binding = nullptr;
   const semantic_model::ClassInfo * value_owner = nullptr;
   semantic_model::VariableTemplateDecl * variable_template = nullptr;
+  const CppAstNode * source_use_node = nullptr;
   std::size_t visible_owner_argument_count = 0;
   TemplateInstantiationIntent intent = TemplateInstantiationIntent::LookupOnly;
+  TemplateLifecycleCause cause = TemplateLifecycleCause::None;
   bool occurred = false;
   bool created_new = false;
+  bool definition_materialized = false;
+  bool include_definition_materialized_detail = false;
   bool retained_dependency = false;
+  bool use_declaration_as_event_location = false;
   bool has_visible_owner_argument_count = false;
 
   bool valid() const

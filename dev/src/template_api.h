@@ -540,11 +540,6 @@ void note_function_definition_materialized_by_closure(
     SemanticContext & ctx,
     const semantic_model::FunctionBinding * binding,
     const TemplateFunctionDefinitionClosureState & state);
-void note_function_declaration_instantiated_by_closure(
-    SemanticContext & ctx,
-    const semantic_model::FunctionBinding * binding,
-    const TemplateFunctionDefinitionClosureState & state);
-
 TemplateWitnessEntryContext make_function_binding_closure_entry_context(
     SemanticContext & ctx,
     TemplateClosureReason reason,

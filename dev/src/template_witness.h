@@ -11,6 +11,7 @@
 #include "cppast_ast.h"
 #include "recog_token_buffer.h"
 #include "semantic_source_use.h"
+#include "template_lifecycle.h"
 #include "witness_provenance.h"
 
 namespace template_api {
@@ -54,22 +55,6 @@ enum class TemplateLifecycleEventKind
   AliasInstantiation,
   VariableInstantiation,
   ClassFinalization,
-};
-
-enum class TemplateLifecycleCause
-{
-  None,
-  TrackInstantiation,
-  RequireDefinition,
-  EnsureDefinition,
-  FinalizeClass,
-  ExplicitInstantiationDeclaration,
-  ExplicitInstantiationDefinition,
-  ExplicitSpecialization,
-  ImplicitUse,
-  ExternTemplateSuppressed,
-  NoEagerInstantiationSuppressed,
-  ClassFinalizationMemberMaterialization,
 };
 
 enum class TemplateWitnessSelectionKind
@@ -241,11 +226,38 @@ struct TemplateLifecycleValueIdentityHash
   }
 };
 
+struct TemplateLifecycleEntityIdentity
+{
+  const void * entity = nullptr;
+  TemplateLifecycleCause cause = TemplateLifecycleCause::None;
+
+  bool operator==(const TemplateLifecycleEntityIdentity & other) const
+  {
+    return entity == other.entity && cause == other.cause;
+  }
+};
+
+struct TemplateLifecycleEntityIdentityHash
+{
+  std::size_t operator()(
+      const TemplateLifecycleEntityIdentity & identity) const
+  {
+    std::size_t result = std::hash<const void *>()(identity.entity);
+    result ^= std::hash<unsigned int>()(
+                  static_cast<unsigned int>(identity.cause)) +
+        0x9e3779b9u + (result << 6) + (result >> 2);
+    return result;
+  }
+};
+
 struct TemplateWitnessSession
 {
   std::string primary_source_file;
   std::vector<TemplateLifecycleEvent> lifecycle_events;
-  std::unordered_map<const void *, unsigned int> lifecycle_transition_states;
+  std::unordered_map<TemplateLifecycleEntityIdentity,
+                     unsigned int,
+                     TemplateLifecycleEntityIdentityHash>
+      lifecycle_transition_states;
   std::unordered_map<TemplateLifecycleValueIdentity,
                      unsigned int,
                      TemplateLifecycleValueIdentityHash>
