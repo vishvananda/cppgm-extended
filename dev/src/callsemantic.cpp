@@ -12914,6 +12914,8 @@ private:
       resolved.source_location = source_location.empty() ?
           nullptr : &source_location;
       resolved.dependent_pattern = true;
+      const witness_provenance::ScopedUpstreamRoute upstream_route(
+          witness_provenance::WitnessUpstreamRoute::AliasDependentPattern);
       observe_resolved_alias_template_id(resolved);
     };
 
@@ -13321,6 +13323,8 @@ private:
         resolved.emission_origin = alias_use_origin;
         resolved.normalize_selected_decl_to_line_start = true;
         resolved.unwrap_single_pack_binding = true;
+        const witness_provenance::ScopedUpstreamRoute upstream_route(
+            witness_provenance::WitnessUpstreamRoute::AliasResolvedInstantiation);
         observe_resolved_alias_template_id(resolved);
       }
 
@@ -17747,6 +17751,9 @@ private:
                     &nested_syntax.argument_syntaxes;
                 resolved.source_location = &location;
                 resolved.dependent_pattern = true;
+                const witness_provenance::ScopedUpstreamRoute upstream_route(
+                    witness_provenance::WitnessUpstreamRoute::
+                        AliasTemplateDeclarationPattern);
                 observe_resolved_alias_template_id(resolved);
               }
             } catch(...) {

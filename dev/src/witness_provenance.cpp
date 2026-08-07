@@ -28,6 +28,7 @@ struct RowLineage
 {
   std::uint64_t row_id = 0;
   std::set<WitnessProducerSite> producers;
+  std::set<WitnessUpstreamRoute> upstream_routes;
 };
 
 struct SessionState
@@ -47,6 +48,7 @@ struct SourceAttempt
   std::vector<RowLineage> before_rows;
   SemanticSourceUse use;
   WitnessProducerSite producer = WitnessProducerSite::Unknown;
+  WitnessUpstreamRoute upstream_route = WitnessUpstreamRoute::Unknown;
   std::vector<std::size_t> collided_indices;
 };
 
@@ -84,6 +86,13 @@ std::map<std::uint64_t, SourceAttempt> & source_attempts()
 std::map<std::uint64_t, LifecycleAttempt> & lifecycle_attempts()
 {
   static std::map<std::uint64_t, LifecycleAttempt> value;
+  return value;
+}
+
+WitnessUpstreamRoute & current_upstream_route()
+{
+  static thread_local WitnessUpstreamRoute value =
+      WitnessUpstreamRoute::Unknown;
   return value;
 }
 
@@ -231,6 +240,34 @@ std::string producer_array(const std::vector<WitnessProducerSite> & sites)
   return producer_array(std::set<WitnessProducerSite>(sites.begin(), sites.end()));
 }
 
+std::string upstream_route_array(const std::set<WitnessUpstreamRoute> & routes)
+{
+  std::ostringstream out;
+  out << '[';
+  bool first = true;
+  for(std::set<WitnessUpstreamRoute>::const_iterator it = routes.begin();
+      it != routes.end();
+      ++it) {
+    if(*it == WitnessUpstreamRoute::Unknown) {
+      continue;
+    }
+    if(!first) {
+      out << ',';
+    }
+    first = false;
+    out << quoted(upstream_route_name(*it));
+  }
+  out << ']';
+  return out.str();
+}
+
+std::string upstream_route_array(
+    const std::vector<WitnessUpstreamRoute> & routes)
+{
+  return upstream_route_array(
+      std::set<WitnessUpstreamRoute>(routes.begin(), routes.end()));
+}
+
 SessionState & state_for_session_locked(
     const template_api::TemplateWitnessSession & session)
 {
@@ -343,6 +380,8 @@ std::string source_attempt_record(const SourceAttempt & attempt,
   std::ostringstream out;
   out << "{\"record\":\"source_attempt\""
       << ",\"producer\":" << quoted(producer_site_name(attempt.producer))
+      << ",\"upstream_route\":"
+      << quoted(upstream_route_name(attempt.upstream_route))
       << ",\"action\":" << quoted(action)
       << ",\"kind\":" << quoted(source_use_kind_name(use.kind))
       << ",\"role\":" << quoted(source_use_role_name(use.role))
@@ -448,6 +487,23 @@ const char * producer_site_name(WitnessProducerSite site)
   return "unknown";
 }
 
+const char * upstream_route_name(WitnessUpstreamRoute route)
+{
+  switch(route) {
+  case WitnessUpstreamRoute::Unknown:
+    return "unknown";
+  case WitnessUpstreamRoute::AliasDependentPattern:
+    return "alias.dependent_pattern";
+  case WitnessUpstreamRoute::AliasResolvedInstantiation:
+    return "alias.resolved_instantiation";
+  case WitnessUpstreamRoute::AliasDirectTemplateArgument:
+    return "alias.direct_template_argument";
+  case WitnessUpstreamRoute::AliasTemplateDeclarationPattern:
+    return "alias.template_declaration_pattern";
+  }
+  return "unknown";
+}
+
 bool enabled()
 {
   static const bool value = []()
@@ -456,6 +512,17 @@ bool enabled()
     return directory != nullptr && directory[0] != '\0';
   }();
   return value;
+}
+
+ScopedUpstreamRoute::ScopedUpstreamRoute(WitnessUpstreamRoute route)
+  : previous_(current_upstream_route())
+{
+  current_upstream_route() = route;
+}
+
+ScopedUpstreamRoute::~ScopedUpstreamRoute()
+{
+  current_upstream_route() = previous_;
 }
 
 ScopedSourceUseAttempt::ScopedSourceUseAttempt(
@@ -477,6 +544,7 @@ ScopedSourceUseAttempt::ScopedSourceUseAttempt(
   attempt.before_rows = state.rows;
   attempt.use = use;
   attempt.producer = producer;
+  attempt.upstream_route = current_upstream_route();
   for(std::size_t i = 0; i < table_->uses.size(); ++i) {
     if(source_rows_collide(table_->uses[i], use)) {
       attempt.collided_indices.push_back(i);
@@ -556,12 +624,18 @@ ScopedSourceUseAttempt::~ScopedSourceUseAttempt()
     }
     if(source_rows_collide(table_->uses[i], attempt.use)) {
       after_rows[i].producers.insert(attempt.producer);
+      if(attempt.upstream_route != WitnessUpstreamRoute::Unknown) {
+        after_rows[i].upstream_routes.insert(attempt.upstream_route);
+      }
       for(std::size_t j = 0; j < attempt.collided_indices.size(); ++j) {
         const std::size_t index = attempt.collided_indices[j];
         if(index < attempt.before_rows.size()) {
           after_rows[i].producers.insert(
               attempt.before_rows[index].producers.begin(),
               attempt.before_rows[index].producers.end());
+          after_rows[i].upstream_routes.insert(
+              attempt.before_rows[index].upstream_routes.begin(),
+              attempt.before_rows[index].upstream_routes.end());
         }
       }
     }
@@ -675,6 +749,9 @@ std::vector<RendererEventLineage> renderer_table_lineages(
     out[i].table_row_id = state.rows[i].row_id;
     out[i].producers.assign(state.rows[i].producers.begin(),
                             state.rows[i].producers.end());
+    out[i].upstream_routes.assign(
+        state.rows[i].upstream_routes.begin(),
+        state.rows[i].upstream_routes.end());
   }
   return out;
 }
@@ -700,6 +777,8 @@ void note_renderer_action(const template_api::TemplateWitnessSession & session,
          << ",\"event_id\":" << lineage.event_id
          << ",\"table_row_id\":" << lineage.table_row_id
          << ",\"producers\":" << producer_array(lineage.producers)
+         << ",\"upstream_routes\":"
+         << upstream_route_array(lineage.upstream_routes)
          << ",\"kind\":" << quoted(kind)
          << ",\"location\":" << quoted(location)
          << ",\"template_name\":" << quoted(template_name)
@@ -725,6 +804,8 @@ void note_renderer_final_visible(
          << ",\"event_id\":" << lineage.event_id
          << ",\"table_row_id\":" << lineage.table_row_id
          << ",\"producers\":" << producer_array(lineage.producers)
+         << ",\"upstream_routes\":"
+         << upstream_route_array(lineage.upstream_routes)
          << ",\"kind\":" << quoted(kind)
          << ",\"location\":" << quoted(location)
          << ",\"template_name\":" << quoted(template_name)
@@ -746,6 +827,8 @@ void finish_session(const template_api::TemplateWitnessSession & session,
     record << "{\"record\":\"final_table_row\""
            << ",\"row_id\":" << state.rows[i].row_id
            << ",\"producers\":" << producer_array(state.rows[i].producers)
+           << ",\"upstream_routes\":"
+           << upstream_route_array(state.rows[i].upstream_routes)
            << ",\"kind\":" << quoted(source_use_kind_name(use.kind))
            << ",\"location\":" << quoted(use.location)
            << ",\"template_name\":" << quoted(use.template_name)

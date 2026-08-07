@@ -20205,6 +20205,8 @@ void record_direct_alias_template_source_use_if_needed(
     observation.emission_origin =
         witness::AliasUseEmissionOrigin::DirectSourceTemplateId;
     observation.use_template_argument_binding_policy = true;
+    const witness_provenance::ScopedUpstreamRoute upstream_route(
+        witness_provenance::WitnessUpstreamRoute::AliasDirectTemplateArgument);
     services.semantic_context->observe_resolved_alias_template_id(observation);
   }
 }

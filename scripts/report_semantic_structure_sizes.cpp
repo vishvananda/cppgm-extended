@@ -16,6 +16,8 @@ int main()
   std::cout << "FunctionBinding "
             << sizeof(semantic_model::FunctionBinding) << '\n';
   std::cout << "ValueBinding " << sizeof(semantic_model::ValueBinding) << '\n';
+  std::cout << "AliasTemplateDecl "
+            << sizeof(semantic_model::AliasTemplateDecl) << '\n';
   std::cout << "TemplateLifecycleTransition "
             << sizeof(template_api::TemplateLifecycleTransition) << '\n';
   std::cout << "OutOfClassStaticMemberDecl "

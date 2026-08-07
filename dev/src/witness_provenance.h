@@ -36,7 +36,38 @@ enum class WitnessProducerSite
 
 const char * producer_site_name(WitnessProducerSite site);
 
+enum class WitnessUpstreamRoute
+{
+  Unknown = 0,
+  AliasDependentPattern,
+  AliasResolvedInstantiation,
+  AliasDirectTemplateArgument,
+  AliasTemplateDeclarationPattern,
+};
+
+const char * upstream_route_name(WitnessUpstreamRoute route);
+
 bool enabled();
+
+class ScopedUpstreamRoute
+{
+public:
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  explicit ScopedUpstreamRoute(WitnessUpstreamRoute route);
+  ~ScopedUpstreamRoute();
+#else
+  explicit ScopedUpstreamRoute(WitnessUpstreamRoute) {}
+  ~ScopedUpstreamRoute() = default;
+#endif
+
+  ScopedUpstreamRoute(const ScopedUpstreamRoute &) = delete;
+  ScopedUpstreamRoute & operator=(const ScopedUpstreamRoute &) = delete;
+
+private:
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  WitnessUpstreamRoute previous_ = WitnessUpstreamRoute::Unknown;
+#endif
+};
 
 class ScopedSourceUseAttempt
 {
@@ -100,6 +131,7 @@ struct RendererEventLineage
   std::uint64_t event_id = 0;
   std::uint64_t table_row_id = 0;
   std::vector<WitnessProducerSite> producers;
+  std::vector<WitnessUpstreamRoute> upstream_routes;
 };
 
 std::vector<RendererEventLineage> renderer_table_lineages(

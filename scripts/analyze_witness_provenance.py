@@ -36,6 +36,13 @@ UPSTREAM_ROUTES = [
     "class_use.resolved_alias_type",
 ]
 
+ALIAS_UPSTREAM_ROUTES = [
+    "alias.dependent_pattern",
+    "alias.resolved_instantiation",
+    "alias.direct_template_argument",
+    "alias.template_declaration_pattern",
+]
+
 
 def load_records(paths: Iterable[pathlib.Path]) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
@@ -75,6 +82,10 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
     )
     renderer = nested_counter()
     upstream = collections.Counter({route: 0 for route in UPSTREAM_ROUTES})
+    alias_routes: dict[str, collections.Counter[str]] = {
+        route: collections.Counter() for route in ALIAS_UPSTREAM_ROUTES
+    }
+    alias_renderer_routes = nested_counter()
     unique_output: list[dict[str, Any]] = []
     lifecycle_output: list[dict[str, Any]] = []
     unknown_producers: collections.Counter[str] = collections.Counter()
@@ -102,6 +113,13 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
 
             if record_kind == "source_attempt":
                 action = str(record.get("action", ""))
+                if record.get("kind") == "alias_use":
+                    route = str(record.get("upstream_route", "unknown"))
+                    route_counts = alias_routes.setdefault(
+                        route, collections.Counter()
+                    )
+                    route_counts["attempts"] += 1
+                    route_counts[action] += 1
                 if action in {"replaced", "enriched"}:
                     fields = str(record.get("changed_fields", "")) or "row"
                     if not collided:
@@ -113,6 +131,11 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
         if record_kind == "final_table_row":
             for producer in set(record.get("producers", [])):
                 site_coverage.setdefault(producer, collections.Counter())["surviving_rows"] += 1
+            if record.get("kind") == "alias_use":
+                for route in set(record.get("upstream_routes", [])):
+                    alias_routes.setdefault(route, collections.Counter())[
+                        "surviving_rows"
+                    ] += 1
             continue
 
         if record_kind == "final_lifecycle_event":
@@ -134,12 +157,21 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
             renderer[str(record.get("pass", "unknown"))][key] += 1
             for producer in set(record.get("producers", [])):
                 renderer[str(record.get("pass", "unknown"))][f"producer:{producer}"] += 1
+            if record.get("kind") == "alias_use":
+                for route in set(record.get("upstream_routes", [])):
+                    route_key = f"{record.get('pass', 'unknown')}:{key}"
+                    alias_renderer_routes[route][route_key] += 1
             continue
 
         if record_kind == "final_visible":
             producers = sorted(set(record.get("producers", [])))
             for producer in producers:
                 site_coverage.setdefault(producer, collections.Counter())["final_visible_rows"] += 1
+            if record.get("kind") == "alias_use":
+                for route in set(record.get("upstream_routes", [])):
+                    alias_routes.setdefault(route, collections.Counter())[
+                        "final_visible_rows"
+                    ] += 1
             if len(producers) == 1:
                 unique_output.append(
                     {
@@ -192,6 +224,19 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
     unexercised = [
         site for site, counts in coverage_output.items() if counts["attempts"] == 0
     ]
+    alias_route_output: dict[str, dict[str, int]] = {}
+    for route in ALIAS_UPSTREAM_ROUTES + ["unknown"]:
+        counts = alias_routes.get(route, collections.Counter())
+        alias_route_output[route] = {
+            "attempts": counts["attempts"],
+            "inserted": counts["inserted"],
+            "exact_duplicate": counts["exact_duplicate"],
+            "rejected": counts["rejected"],
+            "replaced": counts["replaced"],
+            "enriched": counts["enriched"],
+            "surviving_rows": counts["surviving_rows"],
+            "final_visible_rows": counts["final_visible_rows"],
+        }
 
     return {
         "schema_version": 1,
@@ -223,6 +268,11 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
             ),
         ),
         "upstream_route_count": dict(sorted(upstream.items())),
+        "alias_upstream_route_coverage": alias_route_output,
+        "alias_renderer_ownership_by_route": {
+            route: sorted_counter(counts)
+            for route, counts in sorted(alias_renderer_routes.items())
+        },
         "unknown_producer_attempts": sorted_counter(unknown_producers),
     }
 

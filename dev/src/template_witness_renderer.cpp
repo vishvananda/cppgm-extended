@@ -656,6 +656,12 @@ void merge_renderer_lineage(
       retained.producers.begin(), retained.producers.end());
   producers.insert(removed.producers.begin(), removed.producers.end());
   retained.producers.assign(producers.begin(), producers.end());
+  set<witness_provenance::WitnessUpstreamRoute> upstream_routes(
+      retained.upstream_routes.begin(), retained.upstream_routes.end());
+  upstream_routes.insert(removed.upstream_routes.begin(),
+                         removed.upstream_routes.end());
+  retained.upstream_routes.assign(upstream_routes.begin(),
+                                  upstream_routes.end());
 }
 
 bool witness_events_equal(const WitnessEvent & lhs, const WitnessEvent & rhs)
