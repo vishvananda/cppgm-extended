@@ -2061,8 +2061,8 @@ inline void note_template_witness_lifecycle_event(
 {
   TemplateWitnessSession * session =
       template_witness_detail::current_witness_session_storage();
-  if(session == nullptr ||
-     template_witness_detail::current_lifecycle_pause_depth_storage() != 0) {
+  // The typed lifecycle observer applies pause policy before reaching here.
+  if(session == nullptr) {
     return;
   }
   TemplateLifecycleEvent event;

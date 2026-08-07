@@ -31,10 +31,6 @@ enum class WitnessProducerSite
 
   VariableTemplateInstantiation,
 
-  LifecycleTemplateApi03,
-  LifecycleTemplateApi04,
-  LifecycleTemplateApi05,
-  LifecycleTemplateApi06,
   LifecycleTransitionObserver01,
 };
 

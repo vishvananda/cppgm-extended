@@ -41418,28 +41418,18 @@ static void note_nested_member_class_type_for_witness(
     ClassInfo & info,
     set<const ClassInfo *> & noted)
 {
-  if(!services.semantic_context ||
-     !should_track_nested_member_class_type_for_witness(&info) ||
-     !noted.insert(&info).second) {
-    return;
+  if(services.semantic_context &&
+     should_track_nested_member_class_type_for_witness(&info)) {
+    if(noted.insert(&info).second) {
+      template_api::observe_template_lifecycle_transition(
+          *services.semantic_context,
+          template_api::note_nested_member_class_instantiation_completed_if_needed(
+              *services.semantic_context,
+              &info,
+              info.class_node,
+              info.class_node));
+    }
   }
-
-  string decl_location = strip_template_location_at_prefix(
-      semantic_model::source_decl_anchor_location(
-          semantic_trace::class_decl_anchor(*services.semantic_context, &info)));
-  if(decl_location.empty() && info.class_node) {
-    decl_location = strip_template_location_at_prefix(
-        services.semantic_context->source_location_for_node(*info.class_node));
-  }
-  if(decl_location.empty()) {
-    return;
-  }
-
-  const ScopedTemplateValueDependencyLifecycleResume lifecycle_resume;
-  template_api::note_nested_member_class_track_instantiation(
-      *services.semantic_context,
-      info,
-      decl_location);
 }
 
 static void note_nested_member_class_types_in_expression_ast(

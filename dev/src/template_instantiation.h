@@ -181,7 +181,7 @@ semantic_model::ClassInfo * instantiate_selected_class_template(
     const std::vector<template_model::TemplateArgument> & arguments,
     const template_api::ClassSpecializationSelection & specialization);
 
-void finalize_nested_member_class_instantiation(
+template_api::TemplateLifecycleTransition finalize_nested_member_class_instantiation(
     SemanticContext & ctx,
     semantic_model::ClassTemplateDecl & owner_decl,
     semantic_model::ClassInfo & nested_info,

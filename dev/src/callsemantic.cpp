@@ -20589,12 +20589,16 @@ private:
         if(child.kind == CppAstKind::enum_specifier) {
           collect_enum_declaration(scope, *durable_named_child);
         } else {
-          collect_class_declaration(scope, *durable_named_child);
+          semantic_class_model::collect_class_declaration(
+              *this, scope, *durable_named_child, &child);
           if(synthesized_embedded_name) {
             if(ClassInfo * info = lookup_declared_class_info(scope, effective_name)) {
               info->source_is_unnamed_class = true;
-              info->source_unnamed_class_node =
-                  info->class_node ? info->class_node : durable_named_child;
+              if(!info->source_unnamed_class_node) {
+                info->source_unnamed_class_node =
+                    info->class_node ? info->class_node : durable_named_child;
+              }
+              template_api::observe_source_unnamed_class_completion(*this, *info);
             }
           }
         }
@@ -20866,12 +20870,16 @@ private:
       if(child.kind == CppAstKind::enum_specifier) {
         collect_enum_declaration(scope, *durable_named_child);
       } else {
-        collect_class_declaration(scope, *durable_named_child);
+        semantic_class_model::collect_class_declaration(
+            *this, scope, *durable_named_child, &child);
         if(synthesized_embedded_name) {
           if(ClassInfo * info = lookup_declared_class_info(scope, effective_name)) {
             info->source_is_unnamed_class = true;
-            info->source_unnamed_class_node =
-                info->class_node ? info->class_node : durable_named_child;
+            if(!info->source_unnamed_class_node) {
+              info->source_unnamed_class_node =
+                  info->class_node ? info->class_node : durable_named_child;
+            }
+            template_api::observe_source_unnamed_class_completion(*this, *info);
           }
         }
       }
@@ -31816,8 +31824,10 @@ private:
       if(info->complete &&
          has_template_owner &&
          witness::enabled(template_witness_context())) {
-        template_api::note_nested_member_class_instantiation_completed_if_needed(
-            *this, info, info->class_node, info->class_node);
+        template_api::observe_template_lifecycle_transition(
+            *this,
+            template_api::note_nested_member_class_instantiation_completed_if_needed(
+                *this, info, info->class_node, info->class_node));
       }
       if(info->complete &&
          template_api::class_template_completion_has_owner_definition(*info)) {

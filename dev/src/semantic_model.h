@@ -852,7 +852,6 @@ struct ClassInfo
   bool dependent_instantiation = false;
   bool template_instantiation_tracked = false;
   bool source_capture_header_instantiation_tracked = false;
-  bool template_instantiation_log_emitted = false;
   bool template_instantiation_in_progress = false;
   bool full_member_collection_in_progress = false;
   bool reference_member_collection_in_progress = false;

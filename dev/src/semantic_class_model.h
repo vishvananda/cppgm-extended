@@ -238,7 +238,8 @@ bool resolve_deferred_class_alias(SemanticContext & ctx,
                                   cpp_decl::TypePtr & out);
 void collect_class_declaration(SemanticContext & ctx,
                                semantic_model::Scope & scope,
-                               const CppAstNode & node);
+                               const CppAstNode & node,
+                               const CppAstNode * source_unnamed_node = nullptr);
 bool is_anonymous_union_specifier(const CppAstNode & node);
 std::string scope_anonymous_union_type_name(const CppAstNode & node);
 std::string scope_anonymous_union_storage_name(const CppAstNode & node);

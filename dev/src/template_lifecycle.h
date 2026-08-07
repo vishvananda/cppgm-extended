@@ -19,6 +19,7 @@ enum class TemplateLifecycleTransitionKind
   DefinitionMaterialized,
   Instantiated,
   Finalized,
+  AnonymousMemberInstantiated,
 };
 
 enum class TemplateLifecycleCause

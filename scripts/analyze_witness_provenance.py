@@ -26,7 +26,6 @@ SOURCE_PRODUCERS = [
 ]
 
 LIFECYCLE_PRODUCERS = [
-    *(f"lifecycle.template_api.{index:02d}" for index in range(3, 7)),
     "lifecycle.transition_observer.01",
 ]
 

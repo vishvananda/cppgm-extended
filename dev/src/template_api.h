@@ -162,6 +162,7 @@ struct TemplateNestedMemberClassCompletionRequest
 struct TemplateNestedMemberClassCompletionResult
 {
   semantic_model::ClassInfo * nested_info = nullptr;
+  TemplateLifecycleTransition lifecycle_transition;
   bool attempted = false;
   bool completed = false;
 };
@@ -569,9 +570,13 @@ void note_output_tracked_class_instantiation_if_needed(
     SemanticContext & ctx,
     semantic_model::ClassInfo * info,
     bool already_tracked);
-void note_anonymous_member_class_events_if_owner_logged(
+void observe_source_unnamed_class_completion(
     SemanticContext & ctx,
-    const semantic_model::ClassInfo & info);
+    semantic_model::ClassInfo & info);
+void observe_anonymous_member_class_completion(
+    SemanticContext & ctx,
+    semantic_model::ClassInfo & owner,
+    const CppAstNode & class_node);
 
 enum class TemplateMemberValueInstantiationOrigin
 {
@@ -602,15 +607,12 @@ void observe_template_member_value_transition(
     const semantic_model::ValueBinding & binding,
     const TemplateMemberValueInstantiationRequest & request =
         TemplateMemberValueInstantiationRequest());
-void note_nested_member_class_instantiation_completed_if_needed(
+TemplateLifecycleTransition
+note_nested_member_class_instantiation_completed_if_needed(
     SemanticContext & ctx,
     semantic_model::ClassInfo * info,
     const CppAstNode * preferred_decl_node,
     const CppAstNode * fallback_decl_node);
-void note_nested_member_class_track_instantiation(
-    SemanticContext & ctx,
-    const semantic_model::ClassInfo & info,
-    const std::string & decl_location);
 
 using witness::append_source_drop;
 using witness::append_unique_source_drop;

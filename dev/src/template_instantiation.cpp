@@ -3202,29 +3202,6 @@ bool member_function_template_decl_semantic_signature_matches(
     FunctionTemplateDecl * lhs,
     FunctionTemplateDecl * rhs);
 
-std::string strip_at_location_prefix(const std::string & location)
-{
-  if(location.compare(0, 4, " at ") == 0) {
-    return location.substr(4);
-  }
-  return location;
-}
-
-std::string nested_member_class_decl_location(SemanticContext & ctx,
-                                              const CppAstNode * class_node,
-                                              const std::string & name)
-{
-  if(!class_node) {
-    return std::string();
-  }
-  const std::string named =
-      strip_at_location_prefix(ctx.source_location_for_name_in_node(*class_node, name));
-  if(!named.empty()) {
-    return named;
-  }
-  return strip_at_location_prefix(ctx.source_location_for_node(*class_node));
-}
-
 bool expand_instantiated_function_parameter_clause(
     SemanticContext & ctx,
     Scope & inst_scope,
@@ -7843,16 +7820,18 @@ void apply_out_of_class_member_function_template_definitions(
   info.out_of_class_member_function_template_definitions_applied = true;
 }
 
-void finalize_nested_member_class_instantiation_impl(
+template_api::TemplateLifecycleTransition
+finalize_nested_member_class_instantiation_impl(
     SemanticContext & ctx,
     ClassTemplateDecl & owner_decl,
     ClassInfo & nested,
     const std::vector<TemplateArgument> & owner_arguments,
     bool emit_track_instantiation)
 {
+  template_api::TemplateLifecycleTransition transition;
   if(!nested.class_node ||
      nested.class_node->kind == CppAstKind::class_forward_declaration) {
-    return;
+    return transition;
   }
 
   if(!nested.complete) {
@@ -7860,7 +7839,7 @@ void finalize_nested_member_class_instantiation_impl(
   }
   if(!nested.member_scope ||
      (!nested.complete && !nested.reference_members_collected)) {
-    return;
+    return transition;
   }
 
   apply_out_of_class_member_function_template_definitions(ctx, owner_decl, nested);
@@ -7869,24 +7848,16 @@ void finalize_nested_member_class_instantiation_impl(
   apply_out_of_class_static_member_definitions(ctx, owner_decl, nested, owner_arguments);
 
   if(!emit_track_instantiation) {
-    return;
+    return transition;
   }
-  if(!nested.complete || nested.template_instantiation_log_emitted) {
-    return;
+  if(!nested.complete) {
+    return transition;
   }
   if(!nested.template_instantiation_tracked) {
     ctx.track_instantiated_class(&nested);
   }
-  if(nested.template_instantiation_log_emitted) {
-    return;
-  }
-
-  const std::string decl_location =
-      nested_member_class_decl_location(ctx, nested.class_node, nested.name);
-  nested.template_instantiation_log_emitted = true;
-  template_api::note_nested_member_class_track_instantiation(ctx,
-                                                             nested,
-                                                             decl_location);
+  return template_api::note_nested_member_class_instantiation_completed_if_needed(
+      ctx, &nested, nested.class_node, nested.class_node);
 }
 
 }  // namespace
@@ -8894,14 +8865,15 @@ void record_function_template_arguments_preserving_pack_sizes(
 }
 // template-boundary-audit: end canonical_key_metadata
 
-void finalize_nested_member_class_instantiation(
+template_api::TemplateLifecycleTransition
+finalize_nested_member_class_instantiation(
     SemanticContext & ctx,
     ClassTemplateDecl & owner_decl,
     ClassInfo & nested_info,
     const std::vector<TemplateArgument> & owner_arguments,
     bool emit_track_instantiation)
 {
-  finalize_nested_member_class_instantiation_impl(
+  return finalize_nested_member_class_instantiation_impl(
       ctx,
       owner_decl,
       nested_info,

@@ -3294,6 +3294,9 @@ void collect_anonymous_union_storage(SemanticContext & ctx,
             !storage_info->reference_members_collected) {
     ensure_class_reference_members(ctx, *storage_info);
   }
+  if(storage_info->complete) {
+    template_api::observe_source_unnamed_class_completion(ctx, *storage_info);
+  }
 
   if(!find_field_by_name(info, storage_name)) {
     FieldInfo storage_field;
@@ -3307,13 +3310,15 @@ void collect_anonymous_union_storage(SemanticContext & ctx,
   inject_anonymous_union_member_bindings(ctx, info, *storage_info, storage_name, access);
 }
 
-void record_anonymous_member_class(ClassInfo & info,
+void record_anonymous_member_class(SemanticContext & ctx,
+                                   ClassInfo & info,
                                    const CppAstNode & node,
                                    const std::string & class_kind)
 {
   for(std::size_t i = 0; i < info.anonymous_member_classes.size(); ++i) {
     const AnonymousMemberClassInfo & existing = info.anonymous_member_classes[i];
     if(existing.class_node == &node && existing.class_kind == class_kind) {
+      template_api::observe_anonymous_member_class_completion(ctx, info, node);
       return;
     }
   }
@@ -3321,6 +3326,7 @@ void record_anonymous_member_class(ClassInfo & info,
   member.class_kind = class_kind;
   member.class_node = &node;
   info.anonymous_member_classes.push_back(member);
+  template_api::observe_anonymous_member_class_completion(ctx, info, node);
 }
 
 std::string metrics_class_name(const ClassInfo & info)
@@ -11205,7 +11211,7 @@ void populate_class_reference_members(SemanticContext & ctx,
           continue;
         }
         if(const CppAstNode * class_key = find_child(child, CppAstKind::class_key)) {
-          record_anonymous_member_class(info, child, node_text(*class_key));
+          record_anonymous_member_class(ctx, info, child, node_text(*class_key));
         }
         MemberAccess inner_access = current_access;
         for(size_t j = 0; j < child.children.size(); ++j) {
@@ -13314,7 +13320,7 @@ void populate_class_info(SemanticContext & ctx,
       return;
     }
     if(const CppAstNode * class_key = find_child(anon, CppAstKind::class_key)) {
-      record_anonymous_member_class(info, anon, node_text(*class_key));
+      record_anonymous_member_class(ctx, info, anon, node_text(*class_key));
     }
     for(size_t j = 0; j < anon.children.size(); ++j) {
       if(info.complete && info.reference_members_collected) {
@@ -13596,14 +13602,14 @@ void populate_class_info(SemanticContext & ctx,
   validate_constexpr_member_literal_types(ctx, info);
   validate_class_member_function_static_asserts(ctx, info);
   info.reference_members_collected = true;
-  template_api::note_anonymous_member_class_events_if_owner_logged(ctx, info);
   trace_class_collection_event(ctx, "populate-class-done", info, node);
   full_collection_finished = true;
 }
 
 void collect_class_declaration(SemanticContext & ctx,
                                Scope & scope,
-                               const CppAstNode & node)
+                               const CppAstNode & node,
+                               const CppAstNode * source_unnamed_node)
 {
   if(node.value.empty()) {
     throw std::logic_error("anonymous classes unsupported");
@@ -13632,6 +13638,10 @@ void collect_class_declaration(SemanticContext & ctx,
                                            node_text(*class_key),
                                            class_name,
                                            &node);
+  if(source_unnamed_node) {
+    info->source_is_unnamed_class = true;
+    info->source_unnamed_class_node = source_unnamed_node;
+  }
   if(node.kind == CppAstKind::class_forward_declaration) {
     return;
   }
