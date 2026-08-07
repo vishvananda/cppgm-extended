@@ -12914,6 +12914,66 @@ private:
       }
     }
     vector<TemplateArgument> arguments;
+    const auto parameterized_source_arguments = [&]()
+    {
+      vector<TemplateArgument> out;
+      out.reserve(source_arg_texts.size());
+      size_t parameter_index = 0;
+      for(size_t i = 0; i < source_arg_texts.size(); ++i) {
+        const TemplateParameterInfo * parameter =
+            parameter_index < decl.parameters.size() ?
+                &decl.parameters[parameter_index] : nullptr;
+        TemplateArgument argument;
+        argument.kind =
+            parameter && parameter->kind == TemplateParameterInfo::TP_NON_TYPE ?
+                TemplateArgument::TA_VALUE :
+            parameter &&
+                    parameter->kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE ?
+                TemplateArgument::TA_CLASS_TEMPLATE :
+                TemplateArgument::TA_TYPE;
+        argument.text = trim_space(source_arg_texts[i]);
+        argument.dependent = true;
+        if(arg_syntaxes && i < arg_syntaxes->size()) {
+          argument.source_syntax.reset(
+              new TemplateArgumentSyntax((*arg_syntaxes)[i]));
+        }
+        out.push_back(argument);
+        if(parameter &&
+           !parameter->parameter_pack &&
+           parameter_index + 1 < decl.parameters.size()) {
+          ++parameter_index;
+        }
+      }
+      return out;
+    };
+    const auto complete_parameterized_pattern = [&]()
+    {
+      std::string dependent_source_location = source_location ?
+          *source_location : parser_trace::current_use_location();
+      if(!source_location) {
+        if(const ExactTemplateTypeLookupAnchor * anchor =
+               current_exact_template_type_lookup_anchor()) {
+          if(exact_template_type_lookup_anchor_matches_identifier(*anchor,
+                                                                  decl.name)) {
+            dependent_source_location = anchor->location;
+          }
+        }
+      }
+      vector<TemplateArgument> parameterized_arguments =
+          parameterized_source_arguments();
+      resolved_source_semantics::ResolvedAliasTemplateId resolved;
+      resolved.origin = &decl;
+      resolved.use_scope = &resolution_scope;
+      resolved.arguments = &parameterized_arguments;
+      resolved.source_argument_texts = &source_arg_texts;
+      resolved.source_argument_syntaxes = arg_syntaxes;
+      resolved.source_location = dependent_source_location.empty() ?
+          nullptr : &dependent_source_location;
+      resolved.dependent_pattern = true;
+      resolved.emission_origin =
+          witness::AliasUseEmissionOrigin::QualifiedSourceTemplateId;
+      complete_resolved_alias_template_id(resolved, suppress_source_capture);
+    };
     TypePtr selected_conditional_branch;
     if(try_instantiate_known_conditional_alias_branch(decl,
                                                       resolution_scope,
@@ -12937,34 +12997,8 @@ private:
       return finish(selected_conditional_branch);
     }
 
-    const auto observe_dependent_pattern = [&]() -> void
-    {
-      if(suppress_source_capture ||
-         !template_source_capture_enabled()) {
-        return;
-      }
-      std::string source_location = parser_trace::current_use_location();
-      if(const ExactTemplateTypeLookupAnchor * anchor =
-             current_exact_template_type_lookup_anchor()) {
-        if(exact_template_type_lookup_anchor_matches_identifier(*anchor,
-                                                                decl.name)) {
-          source_location = anchor->location;
-        }
-      }
-      resolved_source_semantics::ResolvedAliasTemplateId resolved;
-      resolved.origin = &decl;
-      resolved.use_scope = &use_scope;
-      resolved.source_argument_texts = &arg_texts;
-      resolved.source_argument_syntaxes = arg_syntaxes;
-      resolved.source_location = source_location.empty() ?
-          nullptr : &source_location;
-      resolved.dependent_pattern = true;
-      const witness_provenance::ScopedUpstreamRoute upstream_route(
-          witness_provenance::WitnessUpstreamRoute::AliasDependentPattern);
-      observe_resolved_alias_template_id(resolved);
-    };
-
     bool arguments_resolved = false;
+    std::exception_ptr argument_resolution_failure;
     try {
       arguments_resolved = resolve_template_arguments(
           resolution_scope,
@@ -12974,8 +13008,18 @@ private:
           arguments,
           decl.declaring_scope);
     } catch(...) {
-      observe_dependent_pattern();
-      throw;
+      argument_resolution_failure = std::current_exception();
+    }
+    if(argument_resolution_failure) {
+      const ExactTemplateTypeLookupAnchor * failure_anchor =
+          current_exact_template_type_lookup_anchor();
+      if(source_location ||
+         (failure_anchor &&
+          exact_template_type_lookup_anchor_matches_identifier(*failure_anchor,
+                                                               decl.name))) {
+        complete_parameterized_pattern();
+      }
+      std::rethrow_exception(argument_resolution_failure);
     }
     if(!arguments_resolved) {
       if(!scope_has_template_placeholders(use_scope)) {
@@ -13006,7 +13050,7 @@ private:
         }
         throw_substitution_failure(out.str(), std::string(), "callsemantic");
       }
-      observe_dependent_pattern();
+      complete_parameterized_pattern();
       return finish(TypePtr());
     }
     canonicalize_simple_dependent_argument_texts(arguments);
@@ -13246,7 +13290,8 @@ private:
             }
           });
     }
-    if(raw_use_location.empty() || !resolved_alias) {
+    if(raw_use_location.empty() ||
+       (!resolved_alias && !resolved.dependent_pattern)) {
       return;
     }
     if(!trace_enabled && !alias_use_recording_enabled) {
@@ -13395,7 +13440,9 @@ private:
       const std::string * previous_location = resolved.source_location;
       resolved.source_location = &source_event_location;
       const witness_provenance::ScopedUpstreamRoute upstream_route(
-          witness_provenance::WitnessUpstreamRoute::AliasResolvedInstantiation);
+          resolved.dependent_pattern ?
+              witness_provenance::WitnessUpstreamRoute::AliasDependentPattern :
+              witness_provenance::WitnessUpstreamRoute::AliasResolvedInstantiation);
       observe_resolved_alias_template_id(resolved);
       resolved.source_location = previous_location;
     }
