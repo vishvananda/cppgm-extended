@@ -35,24 +35,12 @@ enum class TemplateClosureReason
   FinalizeClass,
 };
 
-enum class TemplateWitnessLogEventKind
-{
-  RequireDefinition,
-  EnsureDefinition,
-  FunctionInstantiation,
-  ClassInstantiation,
-  AliasInstantiation,
-  VariableInstantiation,
-  ClassFinalization,
-};
-
 enum class TemplateLifecycleEventKind
 {
   RequireDefinition,
   EnsureDefinition,
   FunctionInstantiation,
   ClassInstantiation,
-  AliasInstantiation,
   VariableInstantiation,
   ClassFinalization,
 };
@@ -186,135 +174,38 @@ struct PendingVariableSourceUse
 #endif
 };
 
-struct TemplateLifecycleValueIdentity
+struct TemplateLifecycleIdentity
 {
-  const void * template_declaration = nullptr;
-  const void * semantic_owner = nullptr;
-  const void * semantic_type = nullptr;
-  std::string instantiation_key;
-  std::string member_name;
-  std::size_t source_argument_count = 0;
-
-  bool operator==(const TemplateLifecycleValueIdentity & other) const
-  {
-    return template_declaration == other.template_declaration &&
-        semantic_owner == other.semantic_owner &&
-        semantic_type == other.semantic_type &&
-        instantiation_key == other.instantiation_key &&
-        member_name == other.member_name &&
-        source_argument_count == other.source_argument_count;
-  }
-};
-
-struct TemplateLifecycleValueIdentityHash
-{
-  std::size_t operator()(const TemplateLifecycleValueIdentity & identity) const
-  {
-    std::size_t result = std::hash<const void *>()(
-        identity.template_declaration);
-    result ^= std::hash<const void *>()(identity.semantic_owner) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    result ^= std::hash<const void *>()(identity.semantic_type) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    result ^= std::hash<std::string>()(identity.instantiation_key) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    result ^= std::hash<std::string>()(identity.member_name) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    result ^= std::hash<std::size_t>()(identity.source_argument_count) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    return result;
-  }
-};
-
-struct TemplateLifecycleEntityIdentity
-{
-  const void * entity = nullptr;
-  std::size_t semantic_entity_fingerprint = 0;
-  std::size_t event_anchor_fingerprint = 0;
+  std::size_t entity = 0;
+  std::size_t owner = 0;
+  std::size_t instantiation = 0;
+  std::size_t event_anchor = 0;
+  std::size_t detail = 0;
   TemplateLifecycleCause cause = TemplateLifecycleCause::None;
   unsigned int flags = 0;
-  bool has_semantic_entity_key = false;
 
-  bool operator==(const TemplateLifecycleEntityIdentity & other) const
+  bool operator==(const TemplateLifecycleIdentity & other) const
   {
-    const bool same_entity = has_semantic_entity_key &&
-            other.has_semantic_entity_key ?
-        semantic_entity_fingerprint == other.semantic_entity_fingerprint :
-        entity == other.entity;
-    return same_entity &&
-        event_anchor_fingerprint == other.event_anchor_fingerprint &&
-        cause == other.cause && flags == other.flags &&
-        has_semantic_entity_key == other.has_semantic_entity_key;
+    return entity == other.entity && owner == other.owner &&
+        instantiation == other.instantiation &&
+        event_anchor == other.event_anchor && detail == other.detail &&
+        cause == other.cause && flags == other.flags;
   }
 };
 
-struct TemplateLifecycleEntityIdentityHash
+struct TemplateLifecycleIdentityHash
 {
-  std::size_t operator()(
-      const TemplateLifecycleEntityIdentity & identity) const
+  std::size_t operator()(const TemplateLifecycleIdentity & identity) const
   {
-    std::size_t result = identity.has_semantic_entity_key ?
-        identity.semantic_entity_fingerprint :
-        std::hash<const void *>()(identity.entity);
-    result ^= identity.event_anchor_fingerprint +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    result ^= std::hash<unsigned int>()(
-                  static_cast<unsigned int>(identity.cause)) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    result ^= std::hash<unsigned int>()(identity.flags) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    result ^= std::hash<unsigned int>()(
-                  identity.has_semantic_entity_key ? 1u : 0u) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    return result;
-  }
-};
-
-struct TemplateLifecycleFunctionIdentity
-{
-  std::size_t overload_set_fingerprint = 0;
-  std::size_t owner_declaration_identity = 0;
-  std::size_t owner_instantiation_fingerprint = 0;
-  std::size_t event_anchor_fingerprint = 0;
-  TemplateLifecycleCause cause = TemplateLifecycleCause::None;
-  bool owner_identity_is_source_location = false;
-  bool has_owner_instantiation_key = false;
-
-  bool operator==(const TemplateLifecycleFunctionIdentity & other) const
-  {
-    return overload_set_fingerprint == other.overload_set_fingerprint &&
-        owner_declaration_identity == other.owner_declaration_identity &&
-        owner_instantiation_fingerprint ==
-            other.owner_instantiation_fingerprint &&
-        event_anchor_fingerprint == other.event_anchor_fingerprint &&
-        cause == other.cause &&
-        owner_identity_is_source_location ==
-            other.owner_identity_is_source_location &&
-        has_owner_instantiation_key == other.has_owner_instantiation_key;
-  }
-};
-
-struct TemplateLifecycleFunctionIdentityHash
-{
-  std::size_t operator()(
-      const TemplateLifecycleFunctionIdentity & identity) const
-  {
-    std::size_t result = identity.overload_set_fingerprint;
-    result ^= std::hash<std::size_t>()(identity.owner_declaration_identity) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    result ^= identity.event_anchor_fingerprint +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    if(identity.has_owner_instantiation_key) {
-      result ^= identity.owner_instantiation_fingerprint +
-          0x9e3779b9u + (result << 6) + (result >> 2);
+    std::size_t result = identity.entity;
+    const std::size_t components[] = {
+        identity.owner, identity.instantiation, identity.event_anchor,
+        identity.detail, static_cast<std::size_t>(identity.cause),
+        identity.flags};
+    for(std::size_t i = 0; i < sizeof(components) / sizeof(components[0]); ++i) {
+      result ^= components[i] + 0x9e3779b9u +
+          (result << 6) + (result >> 2);
     }
-    result ^= std::hash<unsigned int>()(
-                  static_cast<unsigned int>(identity.cause)) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
-    result ^= std::hash<unsigned int>()(
-                  (identity.owner_identity_is_source_location ? 1u : 0u) |
-                  (identity.has_owner_instantiation_key ? 2u : 0u)) +
-        0x9e3779b9u + (result << 6) + (result >> 2);
     return result;
   }
 };
@@ -323,18 +214,9 @@ struct TemplateWitnessSession
 {
   std::string primary_source_file;
   std::vector<TemplateLifecycleEvent> lifecycle_events;
-  std::unordered_map<TemplateLifecycleEntityIdentity,
+  std::unordered_map<TemplateLifecycleIdentity,
                      unsigned int,
-                     TemplateLifecycleEntityIdentityHash>
-      lifecycle_transition_states;
-  std::unordered_map<TemplateLifecycleFunctionIdentity,
-                     unsigned int,
-                     TemplateLifecycleFunctionIdentityHash>
-      function_lifecycle_transition_states;
-  std::unordered_map<TemplateLifecycleValueIdentity,
-                     unsigned int,
-                     TemplateLifecycleValueIdentityHash>
-      value_lifecycle_transition_states;
+                     TemplateLifecycleIdentityHash> lifecycle_transition_states;
   semantic_source_use::SemanticSourceUseTable source_use_table;
   std::vector<PendingVariableSourceUse> pending_variable_source_uses;
   std::vector<std::string> inline_namespace_names;
@@ -1972,56 +1854,6 @@ template_witness_lifecycle_events_by_origin(
   return out;
 }
 
-inline bool template_witness_has_lifecycle_events_by_origin(
-    const TemplateWitnessSession & session,
-    TemplateWitnessOrigin origin)
-{
-  for(std::size_t i = 0; i < session.lifecycle_events.size(); ++i) {
-    if(session.lifecycle_events[i].entry_context.origin == origin) {
-      return true;
-    }
-  }
-  return false;
-}
-
-inline void record_template_witness_lifecycle_event(
-    TemplateWitnessSession & session,
-    const TemplateLifecycleEvent & event)
-{
-  session.lifecycle_events.push_back(event);
-}
-
-inline void record_template_witness_lifecycle_event(
-    TemplateWitnessSession & session,
-    std::size_t insert_at,
-    const TemplateLifecycleEvent & event)
-{
-  session.lifecycle_events.insert(session.lifecycle_events.begin() + insert_at,
-                                  event);
-}
-
-inline TemplateLifecycleEventKind template_lifecycle_event_kind_from_log_event_kind(
-    TemplateWitnessLogEventKind kind)
-{
-  switch(kind) {
-  case TemplateWitnessLogEventKind::RequireDefinition:
-    return TemplateLifecycleEventKind::RequireDefinition;
-  case TemplateWitnessLogEventKind::EnsureDefinition:
-    return TemplateLifecycleEventKind::EnsureDefinition;
-  case TemplateWitnessLogEventKind::FunctionInstantiation:
-    return TemplateLifecycleEventKind::FunctionInstantiation;
-  case TemplateWitnessLogEventKind::ClassInstantiation:
-    return TemplateLifecycleEventKind::ClassInstantiation;
-  case TemplateWitnessLogEventKind::AliasInstantiation:
-    return TemplateLifecycleEventKind::AliasInstantiation;
-  case TemplateWitnessLogEventKind::VariableInstantiation:
-    return TemplateLifecycleEventKind::VariableInstantiation;
-  case TemplateWitnessLogEventKind::ClassFinalization:
-    return TemplateLifecycleEventKind::ClassFinalization;
-  }
-  return TemplateLifecycleEventKind::RequireDefinition;
-}
-
 inline TemplateLifecycleCause template_lifecycle_cause_from_closure_reason(
     TemplateClosureReason reason)
 {
@@ -2041,17 +1873,7 @@ inline TemplateLifecycleCause template_lifecycle_cause_from_closure_reason(
 }
 
 inline void note_template_witness_lifecycle_event(
-    TemplateLifecycleEventKind kind,
-    const std::string & location,
-    const std::string & entity,
-    const std::string & decl_location = std::string(),
-    const std::string & detail = std::string(),
-    TemplateLifecycleCause cause = TemplateLifecycleCause::None,
-    bool entity_has_template_identity = false,
-    bool entity_is_unnamed_class = false,
-    bool public_source_required = false,
-    bool entity_is_constexpr_function = false,
-    bool entity_is_defaulted_copy_or_move_constructor = false
+    TemplateLifecycleEvent event
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
     ,
     witness_provenance::WitnessProducerSite producer_site =
@@ -2065,23 +1887,11 @@ inline void note_template_witness_lifecycle_event(
   if(session == nullptr) {
     return;
   }
-  TemplateLifecycleEvent event;
   event.entry_context = current_template_witness_entry_context();
-  event.kind = kind;
-  event.cause = cause == TemplateLifecycleCause::None ?
+  event.cause = event.cause == TemplateLifecycleCause::None ?
       template_lifecycle_cause_from_closure_reason(
           event.entry_context.closure_reason) :
-      cause;
-  event.location = location;
-  event.entity = entity;
-  event.decl_location = decl_location;
-  event.detail = detail;
-  event.entity_has_template_identity = entity_has_template_identity;
-  event.entity_is_unnamed_class = entity_is_unnamed_class;
-  event.entity_is_constexpr_function = entity_is_constexpr_function;
-  event.entity_is_defaulted_copy_or_move_constructor =
-      entity_is_defaulted_copy_or_move_constructor;
-  event.public_source_required = public_source_required;
+      event.cause;
   template_witness_detail::refresh_lifecycle_event_metadata(event);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   const witness_provenance::ScopedLifecycleAttempt provenance_attempt(
@@ -2089,247 +1899,8 @@ inline void note_template_witness_lifecycle_event(
       producer_site,
       event);
 #endif
-  const auto closure_bucket_key =
-      [](const TemplateLifecycleEvent & candidate) -> std::string
-  {
-    if(candidate.kind == TemplateLifecycleEventKind::ClassInstantiation ||
-       candidate.kind == TemplateLifecycleEventKind::ClassFinalization) {
-      return candidate.entity;
-    }
-    if(candidate.entity.find('<') == std::string::npos) {
-      return candidate.entity;
-    }
-    const std::size_t last_scope = candidate.entity.rfind("::");
-    if(last_scope == std::string::npos) {
-      return candidate.entity;
-    }
-    return candidate.entity.substr(0, last_scope);
-  };
-  const auto closure_step_priority =
-      [](TemplateLifecycleEventKind candidate_kind) -> int
-  {
-    switch(candidate_kind) {
-    case TemplateLifecycleEventKind::ClassInstantiation:
-      return 0;
-    case TemplateLifecycleEventKind::ClassFinalization:
-      return 1;
-    case TemplateLifecycleEventKind::RequireDefinition:
-      return 2;
-    case TemplateLifecycleEventKind::EnsureDefinition:
-      return 3;
-    case TemplateLifecycleEventKind::FunctionInstantiation:
-      return 4;
-    case TemplateLifecycleEventKind::VariableInstantiation:
-      return 5;
-    case TemplateLifecycleEventKind::AliasInstantiation:
-      return 6;
-    }
-    return 99;
-  };
-  for(std::size_t i = 0; i < session->lifecycle_events.size(); ++i) {
-    TemplateLifecycleEvent & existing = session->lifecycle_events[i];
-    if(existing.entry_context.origin == event.entry_context.origin &&
-       existing.entry_context.closure_reason == event.entry_context.closure_reason &&
-       existing.kind == event.kind &&
-       existing.cause == event.cause &&
-       existing.location == event.location &&
-       existing.entity == event.entity &&
-       existing.decl_location == event.decl_location &&
-       existing.detail == event.detail) {
-      const bool existing_external_trigger =
-          !existing.entry_context.trigger_entity.empty() &&
-          existing.entry_context.trigger_entity != existing.entity;
-      const bool event_external_trigger =
-          !event.entry_context.trigger_entity.empty() &&
-          event.entry_context.trigger_entity != event.entity;
-      const bool existing_self_trigger_decl =
-          !existing.entry_context.trigger_decl_location.empty() &&
-          existing.entry_context.trigger_decl_location == existing.decl_location;
-      const bool event_self_trigger_decl =
-          !event.entry_context.trigger_decl_location.empty() &&
-          event.entry_context.trigger_decl_location == event.decl_location;
-      if(!event.entry_context.trigger_entity.empty() &&
-         (existing.entry_context.trigger_entity.empty() ||
-          (!existing_external_trigger && event_external_trigger))) {
-        existing.entry_context.trigger_entity = event.entry_context.trigger_entity;
-      }
-      if(existing.entry_context.trigger_entity.empty() &&
-         !event.entry_context.trigger_entity.empty()) {
-        existing.entry_context.trigger_entity = event.entry_context.trigger_entity;
-      }
-      existing.entry_context.trigger_has_template_identity =
-          existing.entry_context.trigger_has_template_identity ||
-          event.entry_context.trigger_has_template_identity;
-      if(!event.entry_context.trigger_decl_location.empty() &&
-         (existing.entry_context.trigger_decl_location.empty() ||
-          (existing_self_trigger_decl && event_external_trigger && !event_self_trigger_decl) ||
-          (existing.decl_location == event.decl_location &&
-           existing.entry_context.trigger_decl_location != existing.decl_location &&
-           event.entry_context.trigger_decl_location == event.decl_location))) {
-        existing.entry_context.trigger_decl_location =
-            event.entry_context.trigger_decl_location;
-      }
-      existing.entity_has_template_identity =
-          existing.entity_has_template_identity || event.entity_has_template_identity;
-      existing.entity_is_unnamed_class =
-          existing.entity_is_unnamed_class || event.entity_is_unnamed_class;
-      existing.entity_is_constexpr_function =
-          existing.entity_is_constexpr_function || event.entity_is_constexpr_function;
-      existing.entity_is_defaulted_copy_or_move_constructor =
-          existing.entity_is_defaulted_copy_or_move_constructor ||
-          event.entity_is_defaulted_copy_or_move_constructor;
-      existing.public_source_required =
-          existing.public_source_required || event.public_source_required;
-      template_witness_detail::refresh_lifecycle_event_metadata(existing);
-      return;
-    }
-  }
-  if(event.entry_context.origin == TemplateWitnessOrigin::Closure &&
-     event.kind == TemplateLifecycleEventKind::RequireDefinition) {
-    const std::string event_bucket = closure_bucket_key(event);
-    std::size_t insert_at = session->lifecycle_events.size();
-    for(std::size_t i = 0; i < session->lifecycle_events.size(); ++i) {
-      const TemplateLifecycleEvent & existing = session->lifecycle_events[i];
-      if(existing.entry_context.origin != TemplateWitnessOrigin::Closure ||
-         closure_bucket_key(existing) != event_bucket) {
-        continue;
-      }
-      if(existing.kind == TemplateLifecycleEventKind::ClassInstantiation ||
-         existing.kind == TemplateLifecycleEventKind::ClassFinalization ||
-         existing.kind == TemplateLifecycleEventKind::RequireDefinition) {
-        if(existing.kind == TemplateLifecycleEventKind::RequireDefinition &&
-           !event.decl_location.empty() &&
-           !existing.decl_location.empty() &&
-           template_witness_detail::prefer_earlier_source_location(
-               event.decl_location,
-               existing.decl_location) == event.decl_location &&
-           event.decl_location != existing.decl_location &&
-           insert_at == session->lifecycle_events.size()) {
-          insert_at = i;
-        }
-        continue;
-      }
-      if(insert_at == session->lifecycle_events.size()) {
-        insert_at = i;
-      }
-      record_template_witness_lifecycle_event(*session, insert_at, event);
-      return;
-    }
-    if(insert_at != session->lifecycle_events.size()) {
-      record_template_witness_lifecycle_event(*session, insert_at, event);
-      return;
-    }
-  }
-  if(event.entry_context.origin == TemplateWitnessOrigin::Closure &&
-     event.kind != TemplateLifecycleEventKind::ClassInstantiation &&
-     event.kind != TemplateLifecycleEventKind::ClassFinalization &&
-     event.kind != TemplateLifecycleEventKind::RequireDefinition) {
-    const std::string event_bucket = closure_bucket_key(event);
-    for(std::size_t i = 0; i < session->lifecycle_events.size(); ++i) {
-      const TemplateLifecycleEvent & existing = session->lifecycle_events[i];
-      if(existing.entry_context.origin != TemplateWitnessOrigin::Closure ||
-         closure_bucket_key(existing) != event_bucket) {
-        continue;
-      }
-      if(existing.kind == TemplateLifecycleEventKind::ClassInstantiation ||
-         existing.kind == TemplateLifecycleEventKind::ClassFinalization ||
-         existing.kind == TemplateLifecycleEventKind::RequireDefinition) {
-        continue;
-      }
-      const bool earlier_decl =
-          !event.decl_location.empty() &&
-          !existing.decl_location.empty() &&
-          template_witness_detail::prefer_earlier_source_location(
-              event.decl_location,
-              existing.decl_location) == event.decl_location &&
-          event.decl_location != existing.decl_location;
-      if(earlier_decl ||
-         (event.decl_location == existing.decl_location &&
-          closure_step_priority(event.kind) < closure_step_priority(existing.kind))) {
-        record_template_witness_lifecycle_event(*session, i, event);
-        return;
-      }
-    }
-  }
-  record_template_witness_lifecycle_event(*session, event);
+  session->lifecycle_events.push_back(event);
 }
-
-inline void note_template_witness_log_event(TemplateWitnessLogEventKind kind,
-                                            const std::string & location,
-                                            const std::string & entity,
-                                            const std::string & decl_location =
-                                                std::string(),
-                                            const std::string & detail =
-                                                std::string(),
-                                            TemplateLifecycleCause cause =
-                                                TemplateLifecycleCause::None,
-                                            bool entity_has_template_identity =
-                                                false,
-                                            bool entity_is_unnamed_class =
-                                                false,
-                                            bool public_source_required =
-                                                false,
-                                            bool entity_is_constexpr_function =
-                                                false,
-                                            bool entity_is_defaulted_copy_or_move_constructor =
-                                                false
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-                                            ,
-                                            witness_provenance::WitnessProducerSite producer_site =
-                                                witness_provenance::WitnessProducerSite::Unknown
-#endif
-                                            )
-{
-  note_template_witness_lifecycle_event(
-      template_lifecycle_event_kind_from_log_event_kind(kind),
-      location,
-      entity,
-      decl_location,
-      detail,
-      cause,
-      entity_has_template_identity,
-      entity_is_unnamed_class,
-      public_source_required,
-      entity_is_constexpr_function,
-      entity_is_defaulted_copy_or_move_constructor
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-      ,
-      producer_site);
-#else
-      );
-#endif
-}
-
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-inline void note_template_witness_log_event(
-    witness_provenance::WitnessProducerSite producer_site,
-    TemplateWitnessLogEventKind kind,
-    const std::string & location,
-    const std::string & entity,
-    const std::string & decl_location = std::string(),
-    const std::string & detail = std::string(),
-    TemplateLifecycleCause cause = TemplateLifecycleCause::None,
-    bool entity_has_template_identity = false,
-    bool entity_is_unnamed_class = false,
-    bool public_source_required = false,
-    bool entity_is_constexpr_function = false,
-    bool entity_is_defaulted_copy_or_move_constructor = false)
-{
-  note_template_witness_log_event(
-      kind,
-      location,
-      entity,
-      decl_location,
-      detail,
-      cause,
-      entity_has_template_identity,
-      entity_is_unnamed_class,
-      public_source_required,
-      entity_is_constexpr_function,
-      entity_is_defaulted_copy_or_move_constructor,
-      producer_site);
-}
-#endif
 
 inline bool template_witness_source_capture_enabled()
 {

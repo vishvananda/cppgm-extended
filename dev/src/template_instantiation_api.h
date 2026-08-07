@@ -87,21 +87,22 @@ struct TemplateFunctionBindingAcquisitionRequest
 
 struct TemplateLifecycleTransition
 {
-  TemplateLifecycleEntityKind entity_kind = TemplateLifecycleEntityKind::None;
   TemplateLifecycleTransitionKind transition_kind =
       TemplateLifecycleTransitionKind::None;
   semantic_model::FunctionBinding * function_binding = nullptr;
   semantic_model::ClassInfo * class_info = nullptr;
-  semantic_model::ClassTemplateDecl * class_template = nullptr;
   const semantic_model::ValueBinding * value_binding = nullptr;
-  const semantic_model::ValueBinding * source_value_binding = nullptr;
+  union {
+    semantic_model::ClassTemplateDecl * class_template;
+    const semantic_model::ValueBinding * source_value_binding;
+  };
   const semantic_model::ClassInfo * value_owner = nullptr;
-  semantic_model::VariableTemplateDecl * variable_template = nullptr;
-  const CppAstNode * source_use_node = nullptr;
+  union {
+    semantic_model::VariableTemplateDecl * variable_template;
+    const CppAstNode * source_use_node;
+  };
   std::size_t visible_owner_argument_count = 0;
-  TemplateInstantiationIntent intent = TemplateInstantiationIntent::LookupOnly;
   TemplateLifecycleCause cause = TemplateLifecycleCause::None;
-  bool occurred = false;
   bool created_new = false;
   bool definition_materialized = false;
   bool class_finalized = false;
@@ -110,10 +111,14 @@ struct TemplateLifecycleTransition
   bool use_declaration_as_event_location = false;
   bool has_visible_owner_argument_count = false;
 
+  TemplateLifecycleTransition()
+    : class_template(nullptr), source_use_node(nullptr)
+  {}
+
   bool valid() const
   {
-    return occurred &&
-        (function_binding || class_info || class_template || value_binding);
+    return transition_kind != TemplateLifecycleTransitionKind::None &&
+        (function_binding || class_info || value_binding || class_template);
   }
 };
 

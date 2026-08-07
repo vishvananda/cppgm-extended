@@ -133,12 +133,12 @@ void finish_session(const template_api::TemplateWitnessSession & session,
   ((object).producer_site = (site))
 #define CPPGM_WITNESS_PROVENANCE_PARAMETER(parameter) parameter,
 #define CPPGM_WITNESS_PROVENANCE_ARGUMENT(argument) argument,
-#define CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(site, ...) \
-  template_api::note_template_witness_log_event(site, __VA_ARGS__)
+#define CPPGM_NOTE_TEMPLATE_WITNESS_LIFECYCLE_EVENT(site, event) \
+  template_api::note_template_witness_lifecycle_event((event), (site))
 #else
 #define CPPGM_SET_WITNESS_PRODUCER(object, site) ((void)0)
 #define CPPGM_WITNESS_PROVENANCE_PARAMETER(parameter)
 #define CPPGM_WITNESS_PROVENANCE_ARGUMENT(argument)
-#define CPPGM_NOTE_TEMPLATE_WITNESS_LOG_EVENT(site, ...) \
-  template_api::note_template_witness_log_event(__VA_ARGS__)
+#define CPPGM_NOTE_TEMPLATE_WITNESS_LIFECYCLE_EVENT(site, event) \
+  template_api::note_template_witness_lifecycle_event((event))
 #endif

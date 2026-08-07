@@ -200,8 +200,6 @@ const char * lifecycle_kind_name(template_api::TemplateLifecycleEventKind kind)
     return "function_instantiation";
   case template_api::TemplateLifecycleEventKind::ClassInstantiation:
     return "class_instantiation";
-  case template_api::TemplateLifecycleEventKind::AliasInstantiation:
-    return "alias_instantiation";
   case template_api::TemplateLifecycleEventKind::VariableInstantiation:
     return "variable_instantiation";
   case template_api::TemplateLifecycleEventKind::ClassFinalization:

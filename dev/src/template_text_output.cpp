@@ -1153,8 +1153,6 @@ const char * template_lifecycle_event_kind_text(
     return "function-instantiation";
   case TemplateLifecycleEventKind::ClassInstantiation:
     return "class-instantiation";
-  case TemplateLifecycleEventKind::AliasInstantiation:
-    return "alias-instantiation";
   case TemplateLifecycleEventKind::VariableInstantiation:
     return "variable-instantiation";
   case TemplateLifecycleEventKind::ClassFinalization:
@@ -1186,12 +1184,6 @@ const char * template_lifecycle_cause_text(
     return "explicit-specialization";
   case TemplateLifecycleCause::ImplicitUse:
     return "implicit-use";
-  case TemplateLifecycleCause::ExternTemplateSuppressed:
-    return "extern-template-suppressed";
-  case TemplateLifecycleCause::NoEagerInstantiationSuppressed:
-    return "no-eager-instantiation-suppressed";
-  case TemplateLifecycleCause::ClassFinalizationMemberMaterialization:
-    return "class-finalization-member-materialization";
   }
   return "unknown";
 }
@@ -1217,9 +1209,13 @@ const char * template_closure_reason_text(template_api::TemplateClosureReason re
 bool session_has_closure_lifecycle_events(
     const template_api::TemplateWitnessSession & session)
 {
-  return template_api::template_witness_has_lifecycle_events_by_origin(
-      session,
-      template_api::TemplateWitnessOrigin::Closure);
+  for(std::size_t i = 0; i < session.lifecycle_events.size(); ++i) {
+    if(session.lifecycle_events[i].entry_context.origin ==
+       template_api::TemplateWitnessOrigin::Closure) {
+      return true;
+    }
+  }
+  return false;
 }
 
 std::string render_template_closure_events(
