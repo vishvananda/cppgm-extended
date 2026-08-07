@@ -12,6 +12,9 @@ int main()
   std::cout << "TemplateArgument "
             << sizeof(template_model::TemplateArgument) << '\n';
   std::cout << "ClassInfo " << sizeof(semantic_model::ClassInfo) << '\n';
+  std::cout << "FunctionBinding "
+            << sizeof(semantic_model::FunctionBinding) << '\n';
+  std::cout << "ValueBinding " << sizeof(semantic_model::ValueBinding) << '\n';
   std::cout << "OutOfClassStaticMemberDecl "
             << sizeof(semantic_model::OutOfClassStaticMemberDecl) << '\n';
   std::cout << "OutOfClassMemberFunctionDecl "

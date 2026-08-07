@@ -1,0 +1,8 @@
+translation-unit
+  class-use at validation/templates/witness-lifecycle-anonymous-member.cpp:9:3
+    template Holder
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  class-instantiation
+    entity Holder<int>::(anonymous struct at 3:3)

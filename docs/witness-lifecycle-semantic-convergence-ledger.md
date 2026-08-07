@@ -48,7 +48,7 @@ postdates the diagnostic counter additions.
 | `lifecycle.template_api.03` | 52 | 5 | 0 | 47 | pending |
 | `lifecycle.template_api.04` | 2 | 0 | 0 | 2 | pending |
 | `lifecycle.template_api.05` | 1 | 0 | 0 | 1 | pending |
-| `lifecycle.template_api.06` | 0 | 0 | 0 | 0 | needs targeted fixture |
+| `lifecycle.template_api.06` | 0 | 0 | 0 | 0 | Clang oracle reducer added; current CPPGM event missing |
 | `lifecycle.template_api.07` | 1,449 | 963 | 0 | 486 | pending |
 | `lifecycle.template_api.09` | 51 | 4 | 0 | 47 | pending |
 | `lifecycle.callsemantic.01` | 7 | 0 | 0 | 7 | pending |
@@ -74,8 +74,8 @@ postdates the diagnostic counter additions.
 | `Type` | 280 | pending | pending | pending | pending | pending | pending |
 | `TemplateArgument` | 136 | pending | pending | pending | pending | pending | pending |
 | `ClassInfo` | 1136 | pending | pending | pending | pending | pending | pending |
-| `FunctionBinding` | pending | pending | pending | pending | pending | pending | pending |
-| `ValueBinding` | pending | pending | pending | pending | pending | pending | pending |
+| `FunctionBinding` | 824 | pending | pending | pending | pending | pending | pending |
+| `ValueBinding` | 504 | pending | pending | pending | pending | pending | pending |
 | `TemplateLifecycleTransition` | n/a | pending | pending | pending | pending | pending | pending |
 
 ## Route map
@@ -108,14 +108,23 @@ postdates the diagnostic counter additions.
 - `.04`, `.05`, and `.06` walk unnamed and anonymous class relationships.
 - Starting waste: 1,511 attempts produce 543 inserted events, with 968 exact
   duplicates.
+- Patched Clang emits one class-instantiation event for
+  `validation/templates/witness-lifecycle-anonymous-member.cpp`. Current CPPGM
+  emits no anonymous-member lifecycle event and records only `.01` function
+  attempts. The validation trace is
+  `/tmp/cppgm-lifecycle-anonymous.wLf7xB`. Phase 5 must move the missing event
+  into the class-completion transition before the reducer enters PA19.
 
 ## Open obligations
 
-- [ ] Add a targeted `.06` anonymous-member fixture before deleting its route.
-- [ ] Record fixed `sizeof(FunctionBinding)` and `sizeof(ValueBinding)`.
+- [x] Add a targeted `.06` anonymous-member oracle reducer before deleting its
+  route.
+- [ ] Promote the anonymous-member reducer to PA19 after the canonical class
+  transition matches the Clang reference.
+- [x] Record fixed `sizeof(FunctionBinding)` and `sizeof(ValueBinding)`.
 - [ ] Confirm the original class-use inception run and copy its result into the
   parent ledger.
-- [ ] Use `/tmp/cppgm-witness-lifecycle-obj` for worktree builds.
+- [x] Use `/tmp/cppgm-witness-lifecycle-obj` for worktree builds.
 - [ ] Record one candidate batch for each committed semantic phase.
 - [ ] Investigate each instruction, RSS, or footprint warning before advancing.
 - [ ] Finish with a net production line and instruction reduction.
