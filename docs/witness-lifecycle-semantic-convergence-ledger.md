@@ -52,7 +52,7 @@ postdates the diagnostic counter additions.
 | `lifecycle.template_api.07` | 1,449 | 963 | 0 | 486 | pending |
 | `lifecycle.template_api.09` | 51 | 4 | 0 | 47 | removed in Phase 1 |
 | `lifecycle.callsemantic.01` | 7 | 0 | 0 | 7 | pending |
-| `lifecycle.callsemantic.02` | 8 | 0 | 0 | 8 | pending |
+| `lifecycle.callsemantic.02` | 8 | 0 | 0 | 8 | removed in Phase 2 |
 | `lifecycle.constant_value_lookup.02` | 111 | 78 | 0 | 33 | removed in Phase 1A |
 
 ## Phase results
@@ -61,7 +61,7 @@ postdates the diagnostic counter additions.
 | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |
 | 0, evidence and route map | `c2b81588d`, `bbf774d43` | inherited 1305/1305 | inherited 4860/4860 | parent passed | n/a | n/a | n/a | 0 | complete |
 | 1, value transitions | `93961d96a`, `61ce47d28` | 1305/1305 | 4860/4860 | n/a | +0.00% | +0.45% | -0.04% | +312 | complete |
-| 2, function acquisition | pending | pending | pending | n/a | pending | pending | pending | pending | pending |
+| 2, function acquisition | `644b561a2` | 1305/1305 | 4860/4860 | n/a | -0.17% | -0.09% | -0.01% | +390 | complete |
 | 3, definition closure | pending | pending | pending | pending if layout changes | pending | pending | pending | pending | pending |
 | 4, class acquisition | pending | pending | pending | pending if layout changes | pending | pending | pending | pending | pending |
 | 5, nested and unnamed classes | pending | pending | pending | n/a | pending | pending | pending | pending | pending |
@@ -71,12 +71,12 @@ postdates the diagnostic counter additions.
 
 | Structure | Fixed size | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Phase 5 | Final |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `Type` | 280 | 280 | pending | pending | pending | pending | pending |
-| `TemplateArgument` | 136 | 136 | pending | pending | pending | pending | pending |
-| `ClassInfo` | 1136 | 1136 | pending | pending | pending | pending | pending |
-| `FunctionBinding` | 824 | 824 | pending | pending | pending | pending | pending |
-| `ValueBinding` | 504 | 504 | pending | pending | pending | pending | pending |
-| `TemplateLifecycleTransition` | n/a | 72 | pending | pending | pending | pending | pending |
+| `Type` | 280 | 280 | 280 | pending | pending | pending | pending |
+| `TemplateArgument` | 136 | 136 | 136 | pending | pending | pending | pending |
+| `ClassInfo` | 1136 | 1136 | 1136 | pending | pending | pending | pending |
+| `FunctionBinding` | 824 | 824 | 824 | pending | pending | pending | pending |
+| `ValueBinding` | 504 | 504 | 504 | pending | pending | pending | pending |
+| `TemplateLifecycleTransition` | n/a | 72 | 88 | pending | pending | pending | pending |
 
 ## Route map
 
@@ -165,6 +165,48 @@ postdates the diagnostic counter additions.
   remaining producer arms and legacy wrappers before the final line and
   instruction gate.
 
+## Phase 2 evidence: function acquisition transitions
+
+- Correctness commit: `644b561a216376bd8e061a58d3b1865eab73537a`.
+- `acquire_function_instantiation` and `acquire_function_binding` create
+  typed function-instantiation transitions. The transition observer derives
+  the witness entity, declaration anchor, source location, cause, and detail
+  from the selected `FunctionBinding` and acquisition request.
+- Explicit function-instantiation analysis sends the selected binding and
+  source node through `acquire_function_binding`. The phase deletes the direct
+  `lifecycle.callsemantic.02` emitter and its rendered entity and location
+  recovery. Definition-closure declaration acquisition uses the same result.
+- Full strict provenance trace:
+  `/tmp/cppgm-lifecycle-phase2-strict-provenance.NG9K10`.
+- Full strict report:
+  `/tmp/cppgm-lifecycle-phase2-strict-provenance-report.json`, SHA-256
+  `ecc0243d19ae8930bf93689818dcb847239f3b4f09c05e49acadb4af9227e5f6`.
+  The 1,180 traces contain 50,923 records and no unknown producer attempts.
+  The transition observer makes 799 attempts: 786 insertions and 13 exact
+  duplicates, with no enrichment, rejection, or replacement. The retired
+  `lifecycle.callsemantic.02` site is absent.
+- The 13 observer duplicates involve acquisition and definition-materialization
+  paths that refer to cloned or mutable function bindings. Phase 3 will replace
+  those paths with one definition state machine and one semantic transition
+  identity. A function-identity-only trial increased observer duplicates from
+  13 to 69, so this phase does not keep that temporary scheme.
+- The diagnostic and ordinary direct-LowIR strict runs pass 1,305/1,305. The
+  ordinary PA1-PA38 report passes 4,860/4,860.
+- Candidate performance file: `/tmp/cppgm-lifecycle-phase-2.json`, SHA-256
+  `017ff03052306b14883960ace3537cc45bad95fa2ee664e20dc10104c13c3933`.
+  Median instructions are `175848424332`, `-0.17%` versus fixed and `-0.18%`
+  versus Phase 1. Median maximum RSS is `762363904`, `-0.09%` versus fixed.
+  Median peak footprint is `592830464`, `-0.01%` versus fixed. Both advisory
+  comparisons pass without an RSS warning. The rolling file contains this
+  candidate.
+- `Type`, `TemplateArgument`, `ClassInfo`, `FunctionBinding`, and
+  `ValueBinding` retain their fixed sizes. `TemplateLifecycleTransition` is 88
+  bytes. The ordinary `cppgm++` is 17,141,080 bytes; Mach-O `__TEXT` is
+  13,074,432 bytes and `__DATA` is 446,464 bytes.
+- Production code has 668 additions and 278 deletions from the
+  fixed checkpoint, a net addition of 390 lines. Phase 2 adds transition facts
+  while the Phase 3 definition wrappers remain. Phase 3 owns their deletion.
+
 ### Function lifecycle
 
 - `.01` receives require, ensure, and materialize calls from function-template
@@ -201,7 +243,8 @@ postdates the diagnostic counter additions.
   parent ledger.
 - [x] Use `/tmp/cppgm-witness-lifecycle-obj` for worktree builds.
 - [x] Record the Phase 1 candidate batch and promote it to the rolling file.
-- [ ] Record one candidate batch for each remaining semantic phase.
+- [ ] Record one candidate batch for each remaining semantic phase. Phases 1
+  and 2 are complete.
 - [ ] Investigate each instruction, RSS, or footprint warning before advancing.
 - [ ] Finish with a net production line and instruction reduction.
 
