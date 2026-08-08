@@ -92,6 +92,18 @@ struct SourceTemplateIdOccurrence
   bool current_specialization_use = false;
   bool has_dependent_argument = false;
   bool has_current_specialization_argument = false;
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  int diagnostic_class_source_use_mode = -1;
+  bool diagnostic_source_arguments_dependent = false;
+  bool diagnostic_source_in_template_body = false;
+  bool diagnostic_source_in_template_header = false;
+  bool diagnostic_inside_source_template = false;
+  bool diagnostic_scope_has_template_placeholders = false;
+  bool diagnostic_dependent_source_pattern = false;
+  bool diagnostic_materialized_variable_initializer = false;
+  bool diagnostic_fixed_class_constant_source = false;
+  bool diagnostic_fixed_conversion_alias_source = false;
+#endif
   SourceAnchor name_anchor;
   std::vector<SourceTemplateArgumentOccurrence> arguments;
 };

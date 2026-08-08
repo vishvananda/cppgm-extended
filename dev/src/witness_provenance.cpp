@@ -405,6 +405,59 @@ std::string source_attempt_record(const SourceAttempt & attempt,
       << (use.template_id_occurrence.conversion_result_type_use ? "true" : "false")
       << ",\"occurrence_synthesized\":"
       << (use.template_id_occurrence.synthesized ? "true" : "false")
+      << ",\"occurrence_source_spelled\":"
+      << (use.template_id_occurrence.source_spelled ? "true" : "false")
+      << ",\"occurrence_in_template_body\":"
+      << (use.template_id_occurrence.in_template_body ? "true" : "false")
+      << ",\"occurrence_has_dependent_argument\":"
+      << (use.template_id_occurrence.has_dependent_argument ? "true" : "false")
+      << ",\"occurrence_has_current_specialization_argument\":"
+      << (use.template_id_occurrence.has_current_specialization_argument ?
+              "true" : "false")
+      << ",\"occurrence_current_specialization_use\":"
+      << (use.template_id_occurrence.current_specialization_use ?
+              "true" : "false")
+      << ",\"class_source_use_mode\":"
+      << use.template_id_occurrence.diagnostic_class_source_use_mode
+      << ",\"source_arguments_dependent\":"
+      << (use.template_id_occurrence.diagnostic_source_arguments_dependent ?
+              "true" : "false")
+      << ",\"source_in_template_body\":"
+      << (use.template_id_occurrence.diagnostic_source_in_template_body ?
+              "true" : "false")
+      << ",\"source_in_template_header\":"
+      << (use.template_id_occurrence.diagnostic_source_in_template_header ?
+              "true" : "false")
+      << ",\"inside_source_template\":"
+      << (use.template_id_occurrence.diagnostic_inside_source_template ?
+              "true" : "false")
+      << ",\"scope_has_template_placeholders\":"
+      << (use.template_id_occurrence.
+              diagnostic_scope_has_template_placeholders ? "true" : "false")
+      << ",\"dependent_source_pattern\":"
+      << (use.template_id_occurrence.diagnostic_dependent_source_pattern ?
+              "true" : "false")
+      << ",\"materialized_variable_initializer\":"
+      << (use.template_id_occurrence.
+              diagnostic_materialized_variable_initializer ? "true" : "false")
+      << ",\"fixed_class_constant_source\":"
+      << (use.template_id_occurrence.diagnostic_fixed_class_constant_source ?
+              "true" : "false")
+      << ",\"fixed_conversion_alias_source\":"
+      << (use.template_id_occurrence.diagnostic_fixed_conversion_alias_source ?
+              "true" : "false")
+      << ",\"binding_sources\":[";
+  for(std::size_t i = 0; i < use.bindings.size(); ++i) {
+    if(i != 0) out << ',';
+    out << quoted(use.bindings[i].source);
+  }
+  out << "]"
+      << ",\"specialization_binding_sources\":[";
+  for(std::size_t i = 0; i < use.specialization_bindings.size(); ++i) {
+    if(i != 0) out << ',';
+    out << quoted(use.specialization_bindings[i].source);
+  }
+  out << "]"
       << ",\"changed_fields\":" << quoted(changed_fields)
       << ",\"collided_producers\":" << producer_array(collided)
       << '}';

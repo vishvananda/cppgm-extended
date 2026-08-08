@@ -1640,7 +1640,7 @@ void build_qualifier_template_id_syntaxes(
     syntax.name.rooted = parsed.rooted;
     syntax.source_is_qualified_member_owner = true;
     syntax.source_location_id =
-        tokens[parsed.qualifiers[i].first].location_id;
+        tokens[component.name_component.first].location_id;
     for(size_t qualifier_index = 0; qualifier_index < i; ++qualifier_index) {
       syntax.name.qualifiers.push_back(
           template_angle::token_span_text_spaced(

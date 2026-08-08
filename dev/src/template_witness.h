@@ -35,6 +35,14 @@ enum class TemplateClosureReason
   FinalizeClass,
 };
 
+enum class TemplateWitnessTriggerKind
+{
+  None,
+  Function,
+  Class,
+  Variable,
+};
+
 enum class TemplateLifecycleEventKind
 {
   RequireDefinition,
@@ -99,6 +107,7 @@ struct TemplateWitnessEntryContext
   std::string trigger_entity;
   std::string trigger_decl_location;
   bool trigger_has_template_identity = false;
+  TemplateWitnessTriggerKind trigger_kind = TemplateWitnessTriggerKind::None;
 };
 
 struct TemplateLifecycleEvent
@@ -1422,7 +1431,9 @@ inline TemplateWitnessEntryContext make_template_closure_entry_context(
     TemplateClosureReason reason,
     const std::string & trigger_entity,
     const std::string & trigger_decl_location,
-    bool trigger_has_template_identity = false)
+    bool trigger_has_template_identity = false,
+    TemplateWitnessTriggerKind trigger_kind =
+        TemplateWitnessTriggerKind::None)
 {
   TemplateWitnessEntryContext context;
   context.origin = TemplateWitnessOrigin::Closure;
@@ -1430,6 +1441,7 @@ inline TemplateWitnessEntryContext make_template_closure_entry_context(
   context.trigger_entity = trigger_entity;
   context.trigger_decl_location = trigger_decl_location;
   context.trigger_has_template_identity = trigger_has_template_identity;
+  context.trigger_kind = trigger_kind;
   return context;
 }
 

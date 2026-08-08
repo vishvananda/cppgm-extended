@@ -7663,7 +7663,8 @@ void note_template_value_dependency_for_witness(
             witness::TemplateClosureReason::TrackInstantiation,
             trigger_entity,
             dependency.decl_location,
-            dependency.entity_has_template_identity));
+            dependency.entity_has_template_identity,
+            template_api::TemplateWitnessTriggerKind::Variable));
     template_api::TemplateMemberValueInstantiationRequest request;
     request.origin = template_api::TemplateMemberValueInstantiationOrigin::
         RetainedDependency;

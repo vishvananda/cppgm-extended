@@ -2691,7 +2691,8 @@ TemplateWitnessEntryContext make_function_binding_closure_entry_context(
       reason,
       binding_log_entity(ctx, binding),
       binding_decl_location(ctx, binding),
-      function_binding_has_template_identity(binding));
+      function_binding_has_template_identity(binding),
+      TemplateWitnessTriggerKind::Function);
 }
 
 TemplateWitnessEntryContext make_class_closure_entry_context(
@@ -2703,7 +2704,8 @@ TemplateWitnessEntryContext make_class_closure_entry_context(
       reason,
       class_log_entity(ctx, info),
       class_decl_location(ctx, info),
-      class_has_template_identity(info));
+      class_has_template_identity(info),
+      TemplateWitnessTriggerKind::Class);
 }
 
 TemplateWitnessEntryContext make_value_binding_closure_entry_context(
@@ -2715,7 +2717,8 @@ TemplateWitnessEntryContext make_value_binding_closure_entry_context(
       reason,
       value_log_entity(ctx, binding),
       value_decl_location(ctx, binding),
-      value_or_owner_has_template_identity(binding));
+      value_or_owner_has_template_identity(binding),
+      TemplateWitnessTriggerKind::Variable);
 }
 
 ScopedTemplateWitnessEntryContext maybe_enter_function_binding_closure_context(
@@ -4678,7 +4681,8 @@ void observe_class_lifecycle_transition(
             TemplateClosureReason::TrackInstantiation,
             entity,
             decl_location,
-            class_has_template_identity(transition.class_info)));
+            class_has_template_identity(transition.class_info),
+            TemplateWitnessTriggerKind::Class));
     observe_class_lifecycle_transition_in_current_context(ctx, transition);
     return;
   }
@@ -4694,7 +4698,8 @@ void observe_class_lifecycle_transition(
           TemplateClosureReason::FinalizeClass,
           entity,
           decl_location,
-          true));
+          true,
+          TemplateWitnessTriggerKind::Class));
   observe_class_lifecycle_transition_in_current_context(ctx, transition);
 }
 
@@ -4805,7 +4810,8 @@ void observe_template_lifecycle_transition(
             TemplateClosureReason::TrackInstantiation,
             entity,
             decl_location,
-            event.entity_has_template_identity));
+            event.entity_has_template_identity,
+            TemplateWitnessTriggerKind::Variable));
     emit_template_lifecycle_event(event);
     return;
   }
@@ -7184,12 +7190,32 @@ TemplateInstantiationResult acquire_variable_instantiation(
     return result;
   }
 
-  result.value_binding = template_instantiation::instantiate_variable_template(
-      ctx,
-      *request.decl,
-      request.arguments,
-      request.source_use_location,
-      request.source_use_scope);
+  const auto instantiate = [&]()
+  {
+    return template_instantiation::instantiate_variable_template(
+        ctx,
+        *request.decl,
+        request.arguments,
+        request.source_use_location,
+        request.source_use_scope);
+  };
+  const bool enter_variable_instantiation_context =
+      ctx.template_witness_context().session != nullptr &&
+      request.intent == TemplateInstantiationIntent::TrackInstantiation &&
+      current_template_witness_entry_context().origin !=
+          TemplateWitnessOrigin::Closure;
+  if(enter_variable_instantiation_context) {
+    const ScopedTemplateWitnessEntryContext entry_context(
+        make_template_closure_entry_context(
+            TemplateClosureReason::TrackInstantiation,
+            variable_template_decl_log_entity(request.decl),
+            variable_template_decl_location(ctx, request.decl),
+            true,
+            TemplateWitnessTriggerKind::Variable));
+    result.value_binding = instantiate();
+  } else {
+    result.value_binding = instantiate();
+  }
   result.created_new_value =
       result.value_binding &&
       request.decl->instantiations.size() > size_before;
