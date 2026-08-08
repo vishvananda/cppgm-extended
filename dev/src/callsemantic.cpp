@@ -20619,27 +20619,6 @@ private:
             source_owner_arguments + "::" + alias_template.name;
       }
     }
-    if(resolved.dependent_pattern) {
-      const bool has_source_pack_expansion =
-          std::find_if(
-              source_arg_texts.begin(),
-              source_arg_texts.end(),
-              [](const std::string & text)
-              {
-                return text.find("...") != std::string::npos;
-              }) != source_arg_texts.end();
-      if(!has_source_pack_expansion &&
-         source_arg_texts.size() == 1 &&
-         is_identifier_text(trim_space(source_arg_texts.front()))) {
-        return;
-      }
-      if(!has_source_pack_expansion &&
-         ((alias_template.declaring_scope &&
-           alias_template.declaring_scope->class_info) ||
-          alias_template_name.find('<') != std::string::npos)) {
-        return;
-      }
-    }
     vector<TemplateArgument> source_arguments;
     if(resolved.arguments) {
       source_arguments = *resolved.arguments;
