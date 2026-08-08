@@ -17,8 +17,8 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
         return {"record": record_kind, "_trace_file": "trace.jsonl", **fields}
 
     def test_alias_routes_own_table_and_renderer_actions(self):
-        route = "alias.resolved_instantiation"
-        producer = "alias.callsemantic.02"
+        route = "alias.canonical_occurrence"
+        producer = "alias.canonical_occurrence"
         records = [
             self.record(
                 "source_attempt",
@@ -80,7 +80,7 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
             [
                 self.record(
                     "source_attempt",
-                    producer="alias.callsemantic.02",
+                    producer="alias.canonical_occurrence",
                     action="inserted",
                     kind="alias_use",
                     collided_producers=[],

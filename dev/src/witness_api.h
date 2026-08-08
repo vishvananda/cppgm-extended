@@ -51,15 +51,6 @@ enum class ClassUseEmissionOrigin
   NestedSourceTemplateId
 };
 
-enum class AliasUseEmissionOrigin
-{
-  ResolvedAliasTemplateId,
-  DirectSourceTemplateId,
-  PatternTemplateId,
-  QualifiedSourceTemplateId,
-  NestedSourceTemplateId
-};
-
 enum class FunctionCallEmissionOrigin
 {
   OverloadSelectedCall,
@@ -207,32 +198,6 @@ inline bool class_use_recording_enabled(
       class_use_origin_records_during_call_speculation(origin);
 }
 
-inline bool alias_use_origin_records_during_source_capture_pause(
-    AliasUseEmissionOrigin origin)
-{
-  switch(origin) {
-  case AliasUseEmissionOrigin::ResolvedAliasTemplateId:
-  case AliasUseEmissionOrigin::PatternTemplateId:
-    return false;
-  case AliasUseEmissionOrigin::DirectSourceTemplateId:
-  case AliasUseEmissionOrigin::QualifiedSourceTemplateId:
-  case AliasUseEmissionOrigin::NestedSourceTemplateId:
-    return true;
-  }
-  return false;
-}
-
-inline bool alias_use_recording_enabled(
-    const TemplateWitnessContext & ctx,
-    AliasUseEmissionOrigin origin = AliasUseEmissionOrigin::ResolvedAliasTemplateId)
-{
-  if(source_capture_enabled(ctx)) {
-    return true;
-  }
-  return enabled(ctx) &&
-      alias_use_origin_records_during_source_capture_pause(origin);
-}
-
 inline bool function_call_origin_records_during_source_capture_pause(
     FunctionCallEmissionOrigin origin)
 {
@@ -322,7 +287,6 @@ struct AliasUseSourceDecision
   std::string expanded_to;
   SourceTemplateIdOccurrence template_id_occurrence;
   std::vector<TemplateWitnessSourceBinding> bindings;
-  SourceUseOwnership ownership = SourceUseOwnership::Direct;
 };
 
 struct AliasUseEmitRequest
@@ -339,7 +303,6 @@ struct AliasUseEmitRequest
   bool selected_decl_anchor_explicit = false;
   std::string expanded_to;
   std::vector<TemplateWitnessSourceBinding> bindings;
-  AliasUseEmissionOrigin origin = AliasUseEmissionOrigin::ResolvedAliasTemplateId;
 };
 
 struct VariableUseSourceDecision

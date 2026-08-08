@@ -27422,6 +27422,37 @@ string replace_identifier_token_text_preserving_sizeof_pack_operands(
 
 }  // namespace
 
+bool template_argument_syntax_mentions_bound_name(
+    const Scope & scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  return argument_syntax_mentions_unqualified_template_bound_name(scope,
+                                                                  syntax);
+}
+
+bool template_id_syntax_has_dependent_owner(
+    const Scope & scope,
+    const TemplateIdSyntax & syntax)
+{
+  if(!syntax.name.rooted) {
+    for(size_t i = 0; i < syntax.name.qualifiers.size(); ++i) {
+      if(scope_chain_has_unqualified_template_bound_name(
+             scope, syntax.name.qualifiers[i])) {
+        return true;
+      }
+    }
+  }
+  for(size_t i = 0;
+      i < syntax.qualifier_template_id_syntaxes.size();
+      ++i) {
+    if(template_id_syntax_mentions_unqualified_template_bound_name(
+           scope, syntax.qualifier_template_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void append_alias_template_source_bindings(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

@@ -18,9 +18,7 @@ SOURCE_PRODUCERS = [
     "class.constant_value_lookup.02",
     "class.constant_value_lookup.03",
     "class.template_instantiation",
-    "alias.template_argument_semantics.02",
-    "alias.callsemantic.02",
-    "alias.callsemantic.03",
+    "alias.canonical_occurrence",
     "function.semantic_template_function",
     "variable.template_instantiation",
 ]
@@ -37,10 +35,6 @@ UPSTREAM_ROUTES = [
 ]
 
 ALIAS_UPSTREAM_ROUTES = [
-    "alias.dependent_pattern",
-    "alias.resolved_instantiation",
-    "alias.direct_template_argument",
-    "alias.template_declaration_pattern",
     "alias.canonical_occurrence",
 ]
 

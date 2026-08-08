@@ -333,20 +333,6 @@ void record_function_call_source_use_in_table(
 #endif
 }
 
-SourceUseOwnership alias_use_ownership_for_origin(AliasUseEmissionOrigin origin)
-{
-  switch(origin) {
-  case AliasUseEmissionOrigin::NestedSourceTemplateId:
-    return SourceUseOwnership::NestedDerived;
-  case AliasUseEmissionOrigin::ResolvedAliasTemplateId:
-  case AliasUseEmissionOrigin::DirectSourceTemplateId:
-  case AliasUseEmissionOrigin::PatternTemplateId:
-  case AliasUseEmissionOrigin::QualifiedSourceTemplateId:
-    return SourceUseOwnership::Direct;
-  }
-  return SourceUseOwnership::Direct;
-}
-
 semantic_source_use::SemanticSourceUse make_alias_use_source_use(
     const AliasUseSourceDecision & decision)
 {
@@ -356,7 +342,7 @@ semantic_source_use::SemanticSourceUse make_alias_use_source_use(
           use,
           semantic_source_use::SourceUseKind::AliasUse,
           semantic_source_use::SourceUseRole::TypeUse,
-          decision.ownership,
+          SourceUseOwnership::Direct,
           decision.location,
           decision.use_anchor,
           decision.selected_decl_anchor,
@@ -867,7 +853,7 @@ void record_alias_use_source_use(
     const TemplateWitnessContext & ctx,
     const AliasUseSourceDecision & decision)
 {
-  if(!alias_use_recording_enabled(ctx)) {
+  if(!source_capture_enabled(ctx)) {
     return;
   }
   if(!source_location_is_from_primary_file(ctx, decision.location)) {
@@ -890,7 +876,7 @@ void emit_alias_use(const TemplateWitnessContext & ctx,
   if(!source_location_is_from_primary_file(ctx, request.use_location)) {
     return;
   }
-  if(!alias_use_recording_enabled(ctx, request.origin)) {
+  if(!source_capture_enabled(ctx)) {
     return;
   }
   AliasUseSourceDecision decision;
@@ -900,7 +886,6 @@ void emit_alias_use(const TemplateWitnessContext & ctx,
                  request.use_location);
   decision.template_id_occurrence = request.template_id_occurrence;
   decision.template_name = request.template_name;
-  decision.ownership = alias_use_ownership_for_origin(request.origin);
   if(request.selected_decl_anchor_explicit) {
     decision.selected_decl_location = request.selected_decl_location;
     decision.selected_decl_anchor = request.selected_decl_anchor;

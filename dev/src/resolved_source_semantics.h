@@ -85,13 +85,8 @@ struct ResolvedAliasTemplateId
     const cpp_decl::TemplateIdSyntax * template_id_syntax;
   } source = {nullptr};
   const std::string * source_location = nullptr;
-  const semantic_source_use::SourceTemplateIdOccurrence * source_occurrence =
-      nullptr;
-  witness::AliasUseEmissionOrigin emission_origin =
-      witness::AliasUseEmissionOrigin::NestedSourceTemplateId;
   bool dependent_pattern = false;
   bool source_is_template_id = false;
-  bool completed_result_formatting = false;
 
   const std::vector<cpp_decl::TemplateArgumentSyntax> *
   source_argument_syntaxes() const

@@ -24,8 +24,7 @@ enum class WitnessProducerSite
 
   ClassTemplateReference02 = 6,
 
-  AliasTemplateArgumentSemantics02 = 10,
-  AliasCallsemantic02,
+  AliasCanonicalOccurrence = 11,
 
   FunctionSemanticTemplateFunction,
 
@@ -39,10 +38,6 @@ const char * producer_site_name(WitnessProducerSite site);
 enum class WitnessUpstreamRoute
 {
   Unknown = 0,
-  AliasDependentPattern,
-  AliasResolvedInstantiation,
-  AliasDirectTemplateArgument,
-  AliasTemplateDeclarationPattern,
   AliasCanonicalOccurrence,
 };
 

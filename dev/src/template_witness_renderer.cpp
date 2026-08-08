@@ -1631,36 +1631,6 @@ void drop_template_header_pattern_events(vector<WitnessEvent> & events,
   compact_events(events, drop);
 }
 
-bool alias_event_has_source_spelled_explicit_arguments(
-    const WitnessEvent & event)
-{
-  const semantic_source_use::SourceTemplateIdOccurrence & occurrence =
-      event.template_id_occurrence;
-  if(event.kind != WitnessEventKind::AliasUse ||
-     !occurrence.present ||
-     !occurrence.source_spelled ||
-     !occurrence.argument_list_spelled ||
-     occurrence.synthesized) {
-    return false;
-  }
-  size_t explicit_bindings = 0;
-  for(size_t i = 0; i < event.bindings.size(); ++i) {
-    if(event.bindings[i].source == "explicit") {
-      ++explicit_bindings;
-    }
-  }
-  if(explicit_bindings == 0) {
-    return false;
-  }
-  size_t source_spelled_args = 0;
-  for(size_t i = 0; i < occurrence.arguments.size(); ++i) {
-    if(occurrence.arguments[i].source_spelled) {
-      ++source_spelled_args;
-    }
-  }
-  return source_spelled_args >= explicit_bindings;
-}
-
 bool location_in_any_template_body_range(
     int line_no,
     int column,
@@ -1821,10 +1791,8 @@ struct WitnessBuilder
 
   vector<WitnessEvent> function_calls;
   vector<witness_provenance::RendererEventLineage> function_call_lineages;
-  vector<WitnessEvent> class_events;
-  vector<witness_provenance::RendererEventLineage> class_lineages;
-  vector<WitnessEvent> alias_events;
-  vector<witness_provenance::RendererEventLineage> alias_lineages;
+  vector<WitnessEvent> direct_events;
+  vector<witness_provenance::RendererEventLineage> direct_lineages;
   map<EventKey, WitnessEvent> variable_events;
   map<EventKey, witness_provenance::RendererEventLineage> variable_lineages;
   string source_path;
@@ -1852,14 +1820,10 @@ struct WitnessBuilder
       const WitnessEvent & event,
       const witness_provenance::RendererEventLineage * lineage = nullptr)
   {
-    if(event.kind == WitnessEventKind::ClassUse) {
-      class_events.push_back(event);
-      if(trace && lineage) class_lineages.push_back(*lineage);
-      return;
-    }
-    if(event.kind == WitnessEventKind::AliasUse) {
-      alias_events.push_back(event);
-      if(trace && lineage) alias_lineages.push_back(*lineage);
+    if(event.kind == WitnessEventKind::ClassUse ||
+       event.kind == WitnessEventKind::AliasUse) {
+      direct_events.push_back(event);
+      if(trace && lineage) direct_lineages.push_back(*lineage);
       return;
     }
     if(event.kind == WitnessEventKind::VariableUse) {
@@ -1889,16 +1853,12 @@ struct WitnessBuilder
       vector<witness_provenance::RendererEventLineage> * out_lineages = nullptr)
   {
     vector<WitnessEvent> events;
-    events.insert(events.end(), class_events.begin(), class_events.end());
+    events.insert(events.end(), direct_events.begin(), direct_events.end());
     vector<witness_provenance::RendererEventLineage> lineages;
     if(trace) {
-      lineages.insert(lineages.end(), class_lineages.begin(), class_lineages.end());
-    }
-    events.insert(events.end(), alias_events.begin(), alias_events.end());
-    if(trace) {
       lineages.insert(lineages.end(),
-                      alias_lineages.begin(),
-                      alias_lineages.end());
+                      direct_lineages.begin(),
+                      direct_lineages.end());
     }
     for(map<EventKey, WitnessEvent>::const_iterator it = variable_events.begin();
         it != variable_events.end();
@@ -1973,18 +1933,14 @@ struct WitnessBuilder
   explicit WitnessBuilder(const string &) {}
 
   vector<WitnessEvent> function_calls;
-  vector<WitnessEvent> class_events;
-  vector<WitnessEvent> alias_events;
+  vector<WitnessEvent> direct_events;
   map<tuple<string, string, string, string, string>, WitnessEvent> variable_events;
 
   void consume_direct_event(const WitnessEvent & event)
   {
-    if(event.kind == WitnessEventKind::ClassUse) {
-      class_events.push_back(event);
-      return;
-    }
-    if(event.kind == WitnessEventKind::AliasUse) {
-      alias_events.push_back(event);
+    if(event.kind == WitnessEventKind::ClassUse ||
+       event.kind == WitnessEventKind::AliasUse) {
+      direct_events.push_back(event);
       return;
     }
     if(event.kind == WitnessEventKind::VariableUse) {
@@ -1999,8 +1955,7 @@ struct WitnessBuilder
   vector<WitnessEvent> finish()
   {
     vector<WitnessEvent> events;
-    events.insert(events.end(), class_events.begin(), class_events.end());
-    events.insert(events.end(), alias_events.begin(), alias_events.end());
+    events.insert(events.end(), direct_events.begin(), direct_events.end());
     for(map<tuple<string, string, string, string, string>, WitnessEvent>::const_iterator
             it = variable_events.begin();
         it != variable_events.end();
@@ -3136,7 +3091,6 @@ void normalize_source_defined_template_calls(vector<WitnessEvent> & events,
   vector<char> drop(events.size(), 0);
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].kind != WitnessEventKind::FunctionCall &&
-       events[i].kind != WitnessEventKind::AliasUse &&
        events[i].kind != WitnessEventKind::VariableUse) {
       continue;
     }
@@ -3151,10 +3105,6 @@ void normalize_source_defined_template_calls(vector<WitnessEvent> & events,
                                            template_body_lines,
                                            &body_parameter_names)) {
       if(events[i].kind == WitnessEventKind::VariableUse) {
-        continue;
-      }
-      if(events[i].kind == WitnessEventKind::AliasUse &&
-         alias_event_has_source_spelled_explicit_arguments(events[i])) {
         continue;
       }
       drop[i] = 1;
@@ -3571,6 +3521,10 @@ void run_renderer_pass(
   function();
   current_renderer_trace() = previous;
 
+  const bool formatting_only_pass =
+      string(pass) == "normalize_names" ||
+      string(pass) == "normalize_bindings";
+
   for(size_t i = 0; i < events.size() && i < lineages.size(); ++i) {
     for(size_t j = 0; j < before_events.size() && j < before_lineages.size(); ++j) {
       if(lineages[i].event_id != before_lineages[j].event_id) continue;
@@ -3579,7 +3533,8 @@ void run_renderer_pass(
         const bool replaced =
             fields.find("kind") != string::npos ||
             fields.find("location") != string::npos ||
-            fields.find("entity") != string::npos ||
+            (!formatting_only_pass &&
+             fields.find("entity") != string::npos) ||
             fields.find("selection") != string::npos;
         witness_provenance::note_renderer_action(
             session,

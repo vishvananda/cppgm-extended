@@ -526,9 +526,8 @@ const char * producer_site_name(WitnessProducerSite site)
   switch(site) {
   CPPGM_PRODUCER_NAME(Unknown, "unknown");
   CPPGM_PRODUCER_NAME(ClassTemplateReference02, "class.class_template_reference.02");
-  CPPGM_PRODUCER_NAME(AliasTemplateArgumentSemantics02,
-                      "alias.template_argument_semantics.02");
-  CPPGM_PRODUCER_NAME(AliasCallsemantic02, "alias.callsemantic.02");
+  CPPGM_PRODUCER_NAME(AliasCanonicalOccurrence,
+                      "alias.canonical_occurrence");
   CPPGM_PRODUCER_NAME(FunctionSemanticTemplateFunction,
                       "function.semantic_template_function");
   CPPGM_PRODUCER_NAME(VariableTemplateInstantiation,
@@ -545,14 +544,6 @@ const char * upstream_route_name(WitnessUpstreamRoute route)
   switch(route) {
   case WitnessUpstreamRoute::Unknown:
     return "unknown";
-  case WitnessUpstreamRoute::AliasDependentPattern:
-    return "alias.dependent_pattern";
-  case WitnessUpstreamRoute::AliasResolvedInstantiation:
-    return "alias.resolved_instantiation";
-  case WitnessUpstreamRoute::AliasDirectTemplateArgument:
-    return "alias.direct_template_argument";
-  case WitnessUpstreamRoute::AliasTemplateDeclarationPattern:
-    return "alias.template_declaration_pattern";
   case WitnessUpstreamRoute::AliasCanonicalOccurrence:
     return "alias.canonical_occurrence";
   }

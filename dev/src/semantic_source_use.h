@@ -498,6 +498,10 @@ inline bool variable_use_equivalent_ignoring_location(
 inline void record_source_use(SemanticSourceUseTable & table,
                               const SemanticSourceUse & use)
 {
+  if(use.kind == SourceUseKind::AliasUse) {
+    table.uses.push_back(use);
+    return;
+  }
   if(use.kind == SourceUseKind::FunctionCall) {
     for(std::size_t i = 0; i < table.uses.size(); ++i) {
       if(function_call_equivalent_ignoring_binding_spacing(table.uses[i], use)) {

@@ -357,6 +357,14 @@ bool ast_node_syntax_has_template_dependency(
     template_api::TemplateEnvironmentHandle scope,
     const CppAstNode & node);
 
+bool template_argument_syntax_mentions_bound_name(
+    const semantic_model::Scope & scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax);
+
+bool template_id_syntax_has_dependent_owner(
+    const semantic_model::Scope & scope,
+    const cpp_decl::TemplateIdSyntax & syntax);
+
 void compute_text_template_dependency_flags(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
