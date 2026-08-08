@@ -65,31 +65,15 @@ enum class TemplateIdSourceDependency : unsigned char
 
 struct TemplateIdSyntax
 {
-  enum SourceRoleFlag : unsigned char
-  {
-    TISR_NONE = 0,
-    TISR_NESTED_TEMPLATE_ARGUMENT = 1,
-    TISR_QUALIFIED_MEMBER_OWNER = 2,
-    TISR_STATIC_MEMBER_DEFINITION_VALUE = 4
-  };
-
   QualifiedName name;
   // Exact location of the final template-name token, excluding qualifiers.
   uint32_t source_location_id = 0;
-  unsigned char source_role_flags = TISR_NONE;
+  bool source_is_nested_template_argument = false;
+  bool source_is_qualified_member_owner = false;
+  bool source_is_static_member_definition_value = false;
   std::vector<TemplateIdSyntax> qualifier_template_id_syntaxes;
   std::vector<std::string> arguments;
   std::vector<TemplateArgumentSyntax> argument_syntaxes;
-
-  bool has_source_role(SourceRoleFlag role) const
-  {
-    return (source_role_flags & role) != 0;
-  }
-
-  void note_source_role(SourceRoleFlag role)
-  {
-    source_role_flags |= role;
-  }
 };
 
 struct DependentAliasTemplateArgumentSyntax

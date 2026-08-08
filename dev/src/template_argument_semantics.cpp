@@ -20781,7 +20781,12 @@ TemplateIdSyntax clone_template_id_for_template_substitution(
   TemplateIdSyntax out;
   out.name = source.name;
   out.source_location_id = source.source_location_id;
-  out.source_role_flags = source.source_role_flags;
+  out.source_is_nested_template_argument =
+      source.source_is_nested_template_argument;
+  out.source_is_qualified_member_owner =
+      source.source_is_qualified_member_owner;
+  out.source_is_static_member_definition_value =
+      source.source_is_static_member_definition_value;
   out.qualifier_template_id_syntaxes.reserve(
       source.qualifier_template_id_syntaxes.size());
   for(size_t i = 0; i < source.qualifier_template_id_syntaxes.size(); ++i) {

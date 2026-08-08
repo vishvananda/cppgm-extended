@@ -743,13 +743,11 @@ public:
     const template_api::ScopedSourceTypeMaterialization
       source_type_materialization(
           ctx.template_witness_context().session != nullptr,
-            qualifier_template_id.has_source_role(
-                TemplateIdSyntax::TISR_STATIC_MEMBER_DEFINITION_VALUE) ?
+            qualifier_template_id.source_is_static_member_definition_value ?
                 template_api::SourceTypeMaterializationOwner::
                     StaticMemberInitializer :
                 template_api::SourceTypeMaterializationOwner::None,
-            qualifier_template_id.has_source_role(
-                TemplateIdSyntax::TISR_STATIC_MEMBER_DEFINITION_VALUE) ?
+            qualifier_template_id.source_is_static_member_definition_value ?
                 template_api::SourceTypeMaterializationOperation::
                     StaticMemberInitializer :
                 template_api::SourceTypeMaterializationOperation::None);
@@ -761,8 +759,7 @@ public:
            source_use_location,
            owner_type,
            &scope,
-           qualifier_template_id.has_source_role(
-               TemplateIdSyntax::TISR_STATIC_MEMBER_DEFINITION_VALUE) ?
+           qualifier_template_id.source_is_static_member_definition_value ?
                template_api::ClassTemplateSourceUseMode::
                    StaticMemberDefinitionValueUse :
                template_api::ClassTemplateSourceUseMode::QualifiedValueUse) ||

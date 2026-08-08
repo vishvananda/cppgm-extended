@@ -731,11 +731,9 @@ public:
         resolved.dependent_arguments = true;
         if(resolved.source_syntax) {
           resolved.source_is_nested_template_argument =
-              resolved.source_syntax->has_source_role(
-                  cpp_decl::TemplateIdSyntax::TISR_NESTED_TEMPLATE_ARGUMENT);
+              resolved.source_syntax->source_is_nested_template_argument;
           resolved.source_is_qualified_member_owner =
-              resolved.source_syntax->has_source_role(
-                  cpp_decl::TemplateIdSyntax::TISR_QUALIFIED_MEMBER_OWNER);
+              resolved.source_syntax->source_is_qualified_member_owner;
         }
         ctx_.observe_resolved_class_template_id(resolved);
       }

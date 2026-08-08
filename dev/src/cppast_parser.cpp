@@ -1091,8 +1091,7 @@ bool build_empty_function_type_id_from_call_expression(const CppAstNode & expr,
 void mark_template_id_syntax_as_nested_argument(
     cpp_decl::TemplateIdSyntax & syntax)
 {
-  syntax.note_source_role(
-      cpp_decl::TemplateIdSyntax::TISR_NESTED_TEMPLATE_ARGUMENT);
+  syntax.source_is_nested_template_argument = true;
   for(std::size_t i = 0;
       i < syntax.qualifier_template_id_syntaxes.size();
       ++i) {
@@ -1124,8 +1123,7 @@ void mark_ast_template_ids_as_nested_argument(CppAstNode & node)
 void mark_template_id_syntax_as_static_member_definition_value(
     cpp_decl::TemplateIdSyntax & syntax)
 {
-  syntax.note_source_role(
-      cpp_decl::TemplateIdSyntax::TISR_STATIC_MEMBER_DEFINITION_VALUE);
+  syntax.source_is_static_member_definition_value = true;
   for(std::size_t i = 0;
       i < syntax.qualifier_template_id_syntaxes.size();
       ++i) {
@@ -1640,8 +1638,7 @@ void build_qualifier_template_id_syntaxes(
 
     cpp_decl::TemplateIdSyntax syntax;
     syntax.name.rooted = parsed.rooted;
-    syntax.note_source_role(
-        cpp_decl::TemplateIdSyntax::TISR_QUALIFIED_MEMBER_OWNER);
+    syntax.source_is_qualified_member_owner = true;
     syntax.source_location_id =
         tokens[component.name_component.first].location_id;
     for(size_t qualifier_index = 0; qualifier_index < i; ++qualifier_index) {
@@ -11193,14 +11190,13 @@ bool CppAstParser::parse_keyword_cast_expression(CppAstNode & out)
       CppAstNode * current = pending.back();
       pending.pop_back();
       if(current->template_id_syntax) {
-        current->template_id_syntax->note_source_role(
-            cpp_decl::TemplateIdSyntax::TISR_NESTED_TEMPLATE_ARGUMENT);
+        current->template_id_syntax->source_is_nested_template_argument = true;
       }
       for(size_t i = 0;
           i < current->qualifier_template_id_syntaxes.size();
           ++i) {
-        current->qualifier_template_id_syntaxes[i].note_source_role(
-            cpp_decl::TemplateIdSyntax::TISR_NESTED_TEMPLATE_ARGUMENT);
+        current->qualifier_template_id_syntaxes[i]
+            .source_is_nested_template_argument = true;
       }
       for(size_t i = 0; i < current->children.size(); ++i) {
         pending.push_back(&current->children[i]);
