@@ -861,16 +861,7 @@ struct ClassInfo
   std::set<std::string> reference_named_members_in_progress;
   struct TypedefMemberDeclarationSite
   {
-    enum SourceTemplateTypeDependency : unsigned char
-    {
-      STTD_UNKNOWN,
-      STTD_FIXED,
-      STTD_DEPENDENT
-    };
-
     uint32_t source_location_id = 0;
-    SourceTemplateTypeDependency source_template_type_dependency =
-        STTD_UNKNOWN;
     std::size_t token_start = 0;
     std::size_t token_end = 0;
   };

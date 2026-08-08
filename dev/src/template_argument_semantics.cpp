@@ -20781,12 +20781,7 @@ TemplateIdSyntax clone_template_id_for_template_substitution(
   TemplateIdSyntax out;
   out.name = source.name;
   out.source_location_id = source.source_location_id;
-  out.source_is_nested_template_argument =
-      source.source_is_nested_template_argument;
-  out.source_is_qualified_member_owner =
-      source.source_is_qualified_member_owner;
-  out.source_is_static_member_definition_value =
-      source.source_is_static_member_definition_value;
+  out.source_role_flags = source.source_role_flags;
   out.qualifier_template_id_syntaxes.reserve(
       source.qualifier_template_id_syntaxes.size());
   for(size_t i = 0; i < source.qualifier_template_id_syntaxes.size(); ++i) {
@@ -24499,7 +24494,9 @@ bool source_type_binding_is_fixed_class_member(
     const string & name,
     const TypePtr & resolved_type)
 {
-  if(name.empty() || !resolved_type) {
+  const template_api::TemplateWitnessSession * witness_session =
+      template_api::current_template_witness_session();
+  if(!witness_session || name.empty() || !resolved_type) {
     return false;
   }
   for(Scope * current = &scope; current; current = current->parent) {
@@ -24530,13 +24527,20 @@ bool source_type_binding_is_fixed_class_member(
       for(size_t i = 0; i < sites->second.size(); ++i) {
         const ClassInfo::TypedefMemberDeclarationSite & site =
             sites->second[i];
-        if(site.source_template_type_dependency ==
-               ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT) {
+        const auto dependency =
+            witness_session->source_type_dependencies.find(
+                site.source_location_id);
+        if(dependency ==
+               witness_session->source_type_dependencies.end()) {
+          continue;
+        }
+        if(dependency->second ==
+               template_api::TemplateWitnessSession::STD_DEPENDENT) {
           return false;
         }
         found_source_binding = found_source_binding ||
-            site.source_template_type_dependency ==
-                ClassInfo::TypedefMemberDeclarationSite::STTD_FIXED;
+            dependency->second ==
+                template_api::TemplateWitnessSession::STD_FIXED;
       }
     }
     if(found_source_binding) {

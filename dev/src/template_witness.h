@@ -256,6 +256,13 @@ struct TemplateWitnessSession
     SVD_DEPENDENT
   };
 
+  enum SourceTypeDependency : unsigned char
+  {
+    STD_UNKNOWN,
+    STD_FIXED,
+    STD_DEPENDENT
+  };
+
   struct ParameterizedClassSourceOccurrence
   {
     const semantic_model::ClassTemplateDecl * origin = nullptr;
@@ -275,6 +282,8 @@ struct TemplateWitnessSession
   std::vector<TemplateWitnessTemplateHeaderContext> template_header_contexts;
   std::unordered_map<const semantic_model::ValueBinding *,
                      SourceValueDependency> source_value_dependencies;
+  std::unordered_map<uint32_t, SourceTypeDependency>
+      source_type_dependencies;
   std::unordered_set<uint32_t> fixed_class_argument_occurrences;
   std::unordered_map<uint32_t, ParameterizedClassSourceOccurrence>
       class_source_occurrences;

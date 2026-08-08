@@ -1264,26 +1264,12 @@ void bind_member_named_type(SemanticContext & ctx,
 {
   std::vector<ClassInfo::TypedefMemberDeclarationSite> & sites =
       info.typedef_member_declaration_sites[name];
-  const ClassInfo::TypedefMemberDeclarationSite::SourceTemplateTypeDependency
-      source_dependency =
-          !info.source_template ||
-          ctx.template_witness_context().session == nullptr ?
-          ClassInfo::TypedefMemberDeclarationSite::STTD_UNKNOWN :
-          ctx.type_depends_on_template_parameter(type) ?
-              ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT :
-              ClassInfo::TypedefMemberDeclarationSite::STTD_FIXED;
   bool already_processed = false;
   for(std::size_t i = 0; i < sites.size(); ++i) {
     if(sites[i].source_location_id == declaration.source_location_id &&
-       sites[i].token_start == declaration.token_start &&
+      sites[i].token_start == declaration.token_start &&
        sites[i].token_end == declaration.token_end) {
       already_processed = true;
-      if(source_dependency ==
-             ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT ||
-         sites[i].source_template_type_dependency ==
-             ClassInfo::TypedefMemberDeclarationSite::STTD_UNKNOWN) {
-        sites[i].source_template_type_dependency = source_dependency;
-      }
       break;
     }
   }
@@ -1294,10 +1280,26 @@ void bind_member_named_type(SemanticContext & ctx,
   if(!already_processed) {
     ClassInfo::TypedefMemberDeclarationSite site;
     site.source_location_id = declaration.source_location_id;
-    site.source_template_type_dependency = source_dependency;
     site.token_start = declaration.token_start;
     site.token_end = declaration.token_end;
     sites.push_back(site);
+  }
+  if(info.source_template && declaration.source_location_id != 0) {
+    template_api::TemplateWitnessSession * witness_session =
+        ctx.template_witness_context().session;
+    if(witness_session) {
+      const template_api::TemplateWitnessSession::SourceTypeDependency
+          dependency = ctx.type_depends_on_template_parameter(type) ?
+              template_api::TemplateWitnessSession::STD_DEPENDENT :
+              template_api::TemplateWitnessSession::STD_FIXED;
+      template_api::TemplateWitnessSession::SourceTypeDependency & recorded =
+          witness_session->source_type_dependencies
+              [declaration.source_location_id];
+      if(dependency == template_api::TemplateWitnessSession::STD_DEPENDENT ||
+         recorded == template_api::TemplateWitnessSession::STD_UNKNOWN) {
+        recorded = dependency;
+      }
+    }
   }
   semantic_scope_mutation::bind_named_type_with_access(
       *info.member_scope, name, type, access);

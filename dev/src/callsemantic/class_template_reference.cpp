@@ -233,7 +233,8 @@ bool complete_source_type_materialization(
   const bool resolved_initializer_source =
       (operation == template_api::SourceTypeMaterializationOperation::
                         StaticMemberInitializer &&
-       resolved.source_syntax->source_is_static_member_definition_value) ||
+       resolved.source_syntax->has_source_role(
+           TemplateIdSyntax::TISR_STATIC_MEMBER_DEFINITION_VALUE)) ||
       (operation == template_api::SourceTypeMaterializationOperation::
                         VariableTemplateInitializer &&
        template_api::class_template_source_use_is_qualified_value(
@@ -1937,9 +1938,11 @@ public:
       }
       if(resolved.source_syntax) {
         resolved.source_is_nested_template_argument =
-            resolved.source_syntax->source_is_nested_template_argument;
+            resolved.source_syntax->has_source_role(
+                TemplateIdSyntax::TISR_NESTED_TEMPLATE_ARGUMENT);
         resolved.source_is_qualified_member_owner =
-            resolved.source_syntax->source_is_qualified_member_owner;
+            resolved.source_syntax->has_source_role(
+                TemplateIdSyntax::TISR_QUALIFIED_MEMBER_OWNER);
         resolved.nested_source_use =
             resolved.source_is_nested_template_argument ||
             (resolved.source_is_qualified_member_owner &&
