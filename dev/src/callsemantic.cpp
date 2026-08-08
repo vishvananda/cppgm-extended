@@ -1861,7 +1861,6 @@ private:
     witness::AliasUseEmitRequest request;
     bool parameterized = false;
     bool has_class_context = false;
-    bool has_structured_owner = false;
   };
   typedef std::tuple<const void *, uint32_t, const TemplateIdSyntax *,
                      std::string> AliasSourceOccurrenceKey;
@@ -21140,7 +21139,6 @@ private:
             alias_template.parameters, source_arg_texts);
     std::string alias_template_name =
         template_api::alias_template_witness_entity(&alias_template);
-    bool has_structured_alias_owner = false;
     if(alias_template.declaring_scope &&
        alias_template.declaring_scope->class_info &&
        source_syntax) {
@@ -21172,7 +21170,6 @@ private:
                     source_owner_base;
         alias_template_name = semantic_owner_name +
             source_owner_arguments + "::" + alias_template.name;
-        has_structured_alias_owner = true;
       }
     }
     if(resolved.dependent_pattern) {
@@ -21408,55 +21405,53 @@ private:
     CPPGM_SET_WITNESS_PRODUCER(
         request,
         witness::WitnessProducerSite::AliasCanonicalOccurrence);
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+    const auto pending_occurrence =
+        pending_alias_source_occurrences_.find(occurrence_key);
     const bool occurrence_already_pending =
-        pending_alias_source_occurrences_.find(occurrence_key) !=
-        pending_alias_source_occurrences_.end();
+        pending_occurrence != pending_alias_source_occurrences_.end();
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
     ++resolved_source_state_->alias_completed_candidates;
     if(occurrence_already_pending) {
       ++resolved_source_state_->alias_prepublication_merges;
     }
 #endif
-    PendingAliasSourceOccurrence & pending =
-        pending_alias_source_occurrences_[occurrence_key];
-    if(pending.parameterized &&
-       !parameterized_source_result &&
-       has_class_context) {
-      const size_t materialization_limit =
-          std::min(
-              std::min(pending.request.bindings.size(),
-                       request.bindings.size()),
-              request.template_id_occurrence.arguments.size());
-      for(size_t i = 0; i < materialization_limit; ++i) {
-        if(!request.template_id_occurrence.arguments[i].current_specialization) {
-          continue;
-        }
-        pending.request.bindings[i] = request.bindings[i];
-        if(i < pending.request.template_id_occurrence.arguments.size()) {
-          pending.request.template_id_occurrence.arguments[i] =
-              request.template_id_occurrence.arguments[i];
-          pending.request.template_id_occurrence.
-              has_current_specialization_argument = true;
-        }
+    if(occurrence_already_pending) {
+      PendingAliasSourceOccurrence & pending = pending_occurrence->second;
+      if(pending.parameterized == parameterized_source_result &&
+         !pending.has_class_context &&
+         has_class_context) {
+        pending.request = std::move(request);
         pending.has_class_context = true;
+      } else if(pending.parameterized &&
+                !parameterized_source_result &&
+                has_class_context) {
+        const size_t materialization_limit =
+            std::min(
+                std::min(pending.request.bindings.size(),
+                         request.bindings.size()),
+                request.template_id_occurrence.arguments.size());
+        for(size_t i = 0; i < materialization_limit; ++i) {
+          if(!request.template_id_occurrence.arguments[i].
+                  current_specialization) {
+            continue;
+          }
+          pending.request.bindings[i] = request.bindings[i];
+          if(i < pending.request.template_id_occurrence.arguments.size()) {
+            pending.request.template_id_occurrence.arguments[i] =
+                request.template_id_occurrence.arguments[i];
+            pending.request.template_id_occurrence.
+                has_current_specialization_argument = true;
+          }
+          pending.has_class_context = true;
+        }
       }
     }
-    const bool prefer_parameterized =
-        parameterized_source_result && !pending.parameterized;
-    const bool same_parameterization =
-        parameterized_source_result == pending.parameterized;
-    const bool context_is_not_weaker =
-        !pending.has_class_context || has_class_context;
-    const bool owner_is_not_weaker =
-        !pending.has_structured_owner || has_structured_alias_owner;
-    if(prefer_parameterized ||
-       (same_parameterization &&
-        context_is_not_weaker &&
-        owner_is_not_weaker)) {
+    if(!occurrence_already_pending) {
+      PendingAliasSourceOccurrence & pending =
+          pending_alias_source_occurrences_[occurrence_key];
       pending.request = std::move(request);
       pending.parameterized = parameterized_source_result;
       pending.has_class_context = has_class_context;
-      pending.has_structured_owner = has_structured_alias_owner;
     }
   }
 
