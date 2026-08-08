@@ -2797,23 +2797,10 @@ ScopedTemplateWitnessEntryContext maybe_enter_function_body_materialization_cont
     SemanticContext & ctx,
     const semantic_model::FunctionBinding * binding)
 {
-  if(ctx.template_witness_context().session == nullptr) {
-    return ScopedTemplateWitnessEntryContext();
-  }
-  if(current_template_witness_entry_context().origin ==
-         TemplateWitnessOrigin::Closure ||
-     !function_binding_has_template_identity(binding)) {
-    return ScopedTemplateWitnessEntryContext(
-        SourceTypeMaterializationOwner::FunctionBody,
-        SourceTypeMaterializationOperation::SourceTypeNode);
-  }
-  return ScopedTemplateWitnessEntryContext(
-      make_function_binding_closure_entry_context(
-          ctx,
-          TemplateClosureReason::EnsureDefinition,
-          binding),
-      SourceTypeMaterializationOwner::FunctionBody,
-      SourceTypeMaterializationOperation::SourceTypeNode);
+  return maybe_enter_function_binding_closure_context(
+      ctx,
+      TemplateClosureReason::EnsureDefinition,
+      binding);
 }
 
 ScopedTemplateWitnessEntryContext maybe_enter_class_closure_context(
@@ -7264,7 +7251,7 @@ TemplateInstantiationResult acquire_variable_instantiation(
   const auto instantiate = [&]()
   {
     const ScopedSourceTypeMaterialization source_type_materialization(
-        current_template_witness_session() != nullptr,
+        ctx.template_witness_context().session != nullptr,
         SourceTypeMaterializationOwner::VariableTemplateInitializer,
         SourceTypeMaterializationOperation::VariableTemplateInitializer);
     return template_instantiation::instantiate_variable_template(

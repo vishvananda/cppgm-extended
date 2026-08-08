@@ -25,7 +25,7 @@ namespace template_witness_detail {
 struct SourceTokenIndex;
 }
 
-enum class SourceTypeMaterializationOwner
+enum class SourceTypeMaterializationOwner : unsigned char
 {
   None,
   FunctionBody,
@@ -34,7 +34,7 @@ enum class SourceTypeMaterializationOwner
   VariableTemplateInitializer
 };
 
-enum class SourceTypeMaterializationOperation
+enum class SourceTypeMaterializationOperation : unsigned char
 {
   None,
   SourceTypeNode,
@@ -310,18 +310,10 @@ class ScopedTemplateWitnessEntryContext
 public:
   ScopedTemplateWitnessEntryContext();
   explicit ScopedTemplateWitnessEntryContext(const TemplateWitnessEntryContext & context);
-  ScopedTemplateWitnessEntryContext(
-      SourceTypeMaterializationOwner owner,
-      SourceTypeMaterializationOperation operation);
-  ScopedTemplateWitnessEntryContext(
-      const TemplateWitnessEntryContext & context,
-      SourceTypeMaterializationOwner owner,
-      SourceTypeMaterializationOperation operation);
   ~ScopedTemplateWitnessEntryContext();
 
 private:
   bool active_;
-  bool source_type_materialization_active_;
 };
 
 class ScopedTemplateWitnessSourceTypeLookup
@@ -1748,56 +1740,21 @@ inline ScopedTemplateWitnessSession::~ScopedTemplateWitnessSession()
 }
 
 inline ScopedTemplateWitnessEntryContext::ScopedTemplateWitnessEntryContext()
-  : active_(false), source_type_materialization_active_(false)
+  : active_(false)
 {}
 
 inline ScopedTemplateWitnessEntryContext::ScopedTemplateWitnessEntryContext(
     const TemplateWitnessEntryContext & context)
-  : active_(template_witness_detail::current_witness_session_storage() != nullptr),
-    source_type_materialization_active_(false)
+  : active_(template_witness_detail::current_witness_session_storage() != nullptr)
 {
   if(active_) {
     template_witness_detail::current_witness_entry_contexts_storage().push_back(
         context);
-  }
-}
-
-inline ScopedTemplateWitnessEntryContext::ScopedTemplateWitnessEntryContext(
-    SourceTypeMaterializationOwner owner,
-    SourceTypeMaterializationOperation operation)
-  : active_(false),
-    source_type_materialization_active_(
-        template_witness_detail::current_witness_session_storage() != nullptr &&
-        operation != SourceTypeMaterializationOperation::None)
-{
-  if(source_type_materialization_active_) {
-    source_type_materialization_detail::push(owner, operation);
-  }
-}
-
-inline ScopedTemplateWitnessEntryContext::ScopedTemplateWitnessEntryContext(
-    const TemplateWitnessEntryContext & context,
-    SourceTypeMaterializationOwner owner,
-    SourceTypeMaterializationOperation operation)
-  : active_(template_witness_detail::current_witness_session_storage() != nullptr),
-    source_type_materialization_active_(
-        template_witness_detail::current_witness_session_storage() != nullptr &&
-        operation != SourceTypeMaterializationOperation::None)
-{
-  if(active_) {
-    template_witness_detail::current_witness_entry_contexts_storage().push_back(
-        context);
-  }
-  if(source_type_materialization_active_) {
-    source_type_materialization_detail::push(owner, operation);
   }
 }
 
 inline ScopedTemplateWitnessEntryContext::~ScopedTemplateWitnessEntryContext()
 {
-  if(source_type_materialization_active_) {
-    source_type_materialization_detail::pop();
-  }
   if(active_ &&
      !template_witness_detail::current_witness_entry_contexts_storage().empty()) {
     template_witness_detail::current_witness_entry_contexts_storage().pop_back();

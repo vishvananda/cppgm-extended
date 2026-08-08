@@ -1266,8 +1266,8 @@ void bind_member_named_type(SemanticContext & ctx,
       info.typedef_member_declaration_sites[name];
   const ClassInfo::TypedefMemberDeclarationSite::SourceTemplateTypeDependency
       source_dependency =
-          template_api::current_template_witness_session() == nullptr ||
-          !info.source_template ?
+          !info.source_template ||
+          ctx.template_witness_context().session == nullptr ?
           ClassInfo::TypedefMemberDeclarationSite::STTD_UNKNOWN :
           ctx.type_depends_on_template_parameter(type) ?
               ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT :
@@ -12023,6 +12023,96 @@ private:
   int saved_depth_;
 };
 
+void record_source_template_value_dependencies_for_witness(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    const std::vector<std::string> & member_names)
+{
+  template_api::TemplateWitnessSession * witness_session =
+      ctx.template_witness_context().session;
+  if(!witness_session || !info.source_template || !info.member_scope) {
+    return;
+  }
+  const auto find_current_binding =
+      [&](const std::string & name) -> ValueBinding *
+      {
+        std::map<std::string, ValueBinding>::iterator found =
+            info.member_scope->values.find(name);
+        return found == info.member_scope->values.end() ? nullptr :
+                                                         &found->second;
+      };
+  std::set<ValueBinding *> visiting;
+  std::function<template_api::TemplateWitnessSession::SourceValueDependency(
+      ValueBinding &)>
+      classify;
+  classify =
+      [&](ValueBinding & binding)
+          -> template_api::TemplateWitnessSession::SourceValueDependency
+      {
+        const auto recorded =
+            witness_session->source_value_dependencies.find(&binding);
+        if(recorded != witness_session->source_value_dependencies.end()) {
+          return recorded->second;
+        }
+        if(!binding.constant_initializer ||
+           !binding.constant_initializer_scope) {
+          return template_api::TemplateWitnessSession::SVD_UNKNOWN;
+        }
+        if(!visiting.insert(&binding).second) {
+          return template_api::TemplateWitnessSession::SVD_DEPENDENT;
+        }
+
+        bool dependent = template_argument_semantics::
+            expression_syntax_uses_template_binding(
+                *binding.constant_initializer_scope,
+                *binding.constant_initializer);
+        std::function<void(const CppAstNode &)> inspect_member_references;
+        inspect_member_references = [&](const CppAstNode & node) -> void
+        {
+          if(dependent) return;
+          if(node.kind == CppAstKind::id_expression && !node.value.empty()) {
+            const ValueBinding * referenced =
+                ctx.lookup_value_node(*binding.constant_initializer_scope,
+                                      node,
+                                      node.value);
+            if(referenced &&
+               referenced != &binding &&
+               referenced->owner_class == &info) {
+              ValueBinding * retained =
+                  find_current_binding(referenced->name);
+              if(retained &&
+                 classify(*retained) ==
+                     template_api::TemplateWitnessSession::SVD_DEPENDENT) {
+                dependent = true;
+              }
+            }
+          }
+          for(std::size_t i = 0; i < node.children.size(); ++i) {
+            inspect_member_references(node.children[i]);
+          }
+        };
+        if(!dependent) {
+          inspect_member_references(*binding.constant_initializer);
+        }
+        const template_api::TemplateWitnessSession::SourceValueDependency
+            result = dependent ?
+                template_api::TemplateWitnessSession::SVD_DEPENDENT :
+                template_api::TemplateWitnessSession::SVD_FIXED;
+        witness_session->source_value_dependencies[&binding] = result;
+        visiting.erase(&binding);
+        return result;
+      };
+
+  for(std::size_t i = 0; i < member_names.size(); ++i) {
+    ValueBinding * binding = find_current_binding(member_names[i]);
+    if(binding &&
+       binding->constant_initializer &&
+       binding->constant_initializer_scope) {
+      (void)classify(*binding);
+    }
+  }
+}
+
 void finalize_class_constant_members(SemanticContext & ctx,
                                      ClassInfo & info)
 {
@@ -12142,78 +12232,16 @@ void finalize_class_constant_members(SemanticContext & ctx,
             info.member_scope->values.find(name);
         return found == info.member_scope->values.end() ? nullptr : &found->second;
       };
-  std::set<ValueBinding *> source_dependency_visiting;
-  std::function<template_api::TemplateWitnessSession::SourceValueDependency(
-      ValueBinding &)>
-      classify_source_template_value_dependency;
-  template_api::TemplateWitnessSession * witness_session =
-      template_api::current_template_witness_session();
-  const bool classify_source_template_value_dependencies = witness_session &&
-      info.source_template != nullptr;
-  if(classify_source_template_value_dependencies) {
-    classify_source_template_value_dependency =
-        [&](ValueBinding & binding)
-            -> template_api::TemplateWitnessSession::SourceValueDependency
-        {
-          const auto recorded =
-              witness_session->source_value_dependencies.find(&binding);
-          if(recorded != witness_session->source_value_dependencies.end()) {
-            return recorded->second;
-          }
-          if(!binding.constant_initializer ||
-             !binding.constant_initializer_scope) {
-            return template_api::TemplateWitnessSession::SVD_UNKNOWN;
-          }
-          if(!source_dependency_visiting.insert(&binding).second) {
-            return template_api::TemplateWitnessSession::SVD_DEPENDENT;
-          }
-
-          bool dependent = template_argument_semantics::
-              expression_syntax_uses_template_binding(
-                  *binding.constant_initializer_scope,
-                  *binding.constant_initializer);
-          std::function<void(const CppAstNode &)> inspect_member_references;
-          inspect_member_references = [&](const CppAstNode & node) -> void
-          {
-            if(dependent) return;
-            if(node.kind == CppAstKind::id_expression && !node.value.empty()) {
-              const ValueBinding * referenced =
-                  ctx.lookup_value_node(*binding.constant_initializer_scope,
-                                        node,
-                                        node.value);
-              if(referenced &&
-                 referenced != &binding &&
-                 referenced->owner_class == &info) {
-                ValueBinding * retained = find_current_binding(referenced->name);
-                if(retained &&
-                   classify_source_template_value_dependency(*retained) ==
-                       template_api::TemplateWitnessSession::SVD_DEPENDENT) {
-                  dependent = true;
-                }
-              }
-            }
-            for(std::size_t i = 0; i < node.children.size(); ++i) {
-              inspect_member_references(node.children[i]);
-            }
-          };
-          if(!dependent) {
-            inspect_member_references(*binding.constant_initializer);
-          }
-          const template_api::TemplateWitnessSession::SourceValueDependency
-              result = dependent ?
-                  template_api::TemplateWitnessSession::SVD_DEPENDENT :
-                  template_api::TemplateWitnessSession::SVD_FIXED;
-          witness_session->source_value_dependencies[&binding] = result;
-          source_dependency_visiting.erase(&binding);
-          return result;
-        };
-  }
   std::vector<std::string> member_names;
   for(std::map<std::string, ValueBinding>::const_iterator it =
           info.member_scope->values.begin();
       it != info.member_scope->values.end();
       ++it) {
     member_names.push_back(it->first);
+  }
+  if(ctx.template_witness_context().session && info.source_template) {
+    record_source_template_value_dependencies_for_witness(
+        ctx, info, member_names);
   }
   for(std::size_t member_index = 0;
       member_index < member_names.size();
@@ -12234,9 +12262,6 @@ void finalize_class_constant_members(SemanticContext & ctx,
     }
     if(!binding->constant_initializer || !binding->constant_initializer_scope) {
       continue;
-    }
-    if(classify_source_template_value_dependencies) {
-      (void)classify_source_template_value_dependency(*binding);
     }
     if(class_instantiation_is_dependent(ctx, info)) {
       binding->dependent_template_value = true;

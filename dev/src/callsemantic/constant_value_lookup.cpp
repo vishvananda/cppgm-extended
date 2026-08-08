@@ -741,8 +741,8 @@ public:
     const ScopedTemplateUseLocation source_use_location_guard(
         source_use_location);
     const template_api::ScopedSourceTypeMaterialization
-        source_type_materialization(
-            template_api::current_template_witness_session() != nullptr,
+      source_type_materialization(
+          ctx.template_witness_context().session != nullptr,
             qualifier_template_id.source_is_static_member_definition_value ?
                 template_api::SourceTypeMaterializationOwner::
                     StaticMemberInitializer :

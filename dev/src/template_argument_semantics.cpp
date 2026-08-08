@@ -24639,16 +24639,16 @@ void substitute_type_pack_template_id_arguments(
         continue;
       }
       argument.substituted_from_template_binding = true;
-      template_api::TemplateWitnessSession * witness_session =
-          template_api::current_template_witness_session();
-      if(witness_session &&
-         preserve_source_syntax &&
-         argument.source_location_id != 0 &&
-         source_type_binding_is_fixed_class_member(scope,
-                                                   it->first,
-                                                   it->second)) {
-        witness_session->fixed_class_argument_occurrences.insert(
-            argument.source_location_id);
+      if(preserve_source_syntax && argument.source_location_id != 0) {
+        template_api::TemplateWitnessSession * witness_session =
+            template_api::current_template_witness_session();
+        if(witness_session &&
+           source_type_binding_is_fixed_class_member(scope,
+                                                     it->first,
+                                                     it->second)) {
+          witness_session->fixed_class_argument_occurrences.insert(
+              argument.source_location_id);
+        }
       }
       if(argument.pack_expansion) {
         pack_expansion_consumed = true;
