@@ -13,6 +13,8 @@ struct CppAstNode;
 
 namespace semantic_statement {
 
+void validate_statement_context(const CppAstNode & node);
+
 void analyze_statement(SemanticContext & ctx,
                        semantic_model::Scope & scope,
                        const cpp_decl::TypePtr & return_type,

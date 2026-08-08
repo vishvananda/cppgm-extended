@@ -8,6 +8,7 @@
 #include "semantic_errors.h"
 #include "semantic_fallback_audit.h"
 #include "semantic_lookup.h"
+#include "semantic_statement.h"
 #include "semantic_utils.h"
 
 #include <unordered_map>
@@ -2119,6 +2120,8 @@ bool class_member_body_has_invalid_nondependent_lookup(
       continue;
     }
 
+    semantic_statement::validate_statement_context(*body);
+
     AtomNameSet visible_names = member_names;
     AtomNameSet dependent_value_names;
     if(declarator) {
@@ -2156,6 +2159,7 @@ bool function_template_body_has_invalid_nondependent_lookup(
     const CppAstNode *& offending_node,
     std::string & offending_name)
 {
+  semantic_statement::validate_statement_context(body);
   AtomNameSet visible_names =
       non_type_template_parameter_names(parameters);
   AtomNameSet type_names =

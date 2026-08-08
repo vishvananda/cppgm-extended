@@ -980,10 +980,85 @@ void analyze_statement_impl(SemanticContext & ctx,
                             bool * saw_void_return = nullptr,
                             const TypePtr & active_switch_type = TypePtr());
 
+bool subtree_contains_case_label_for_enclosing_switch(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::case_statement ||
+     node.kind == CppAstKind::default_statement) {
+    return true;
+  }
+  if(node.kind == CppAstKind::switch_statement ||
+     node.kind == CppAstKind::lambda_expression ||
+     node.kind == CppAstKind::function_definition ||
+     node.kind == CppAstKind::special_member_definition ||
+     node.kind == CppAstKind::class_specifier) {
+    return false;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(subtree_contains_case_label_for_enclosing_switch(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool simple_declaration_has_initializer(const CppAstNode & node)
+{
+  if(node.kind != CppAstKind::simple_declaration) {
+    return false;
+  }
+  const CppAstNode * declarators =
+      find_child_kind(node, CppAstKind::init_declarator_list);
+  if(!declarators) {
+    return false;
+  }
+  for(size_t i = 0; i < declarators->children.size(); ++i) {
+    const CppAstNode & declarator = declarators->children[i];
+    if(declarator.kind == CppAstKind::init_declarator &&
+       find_child_kind(declarator, CppAstKind::initializer)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool statement_exposes_initialized_declaration(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::case_statement && node.children.size() == 2) {
+    return statement_exposes_initialized_declaration(node.children[1]);
+  }
+  if((node.kind == CppAstKind::default_statement ||
+      node.kind == CppAstKind::labeled_statement ||
+      node.kind == CppAstKind::attributed_statement) &&
+     node.children.size() == 1) {
+    return statement_exposes_initialized_declaration(node.children[0]);
+  }
+  return simple_declaration_has_initializer(node) ||
+         node.kind == CppAstKind::structured_binding_declaration;
+}
+
+void validate_case_labels_do_not_bypass_initialization(const CppAstNode & node)
+{
+  if(node.kind != CppAstKind::compound_statement) {
+    return;
+  }
+  bool initialized_declaration_is_in_scope = false;
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(initialized_declaration_is_in_scope &&
+       subtree_contains_case_label_for_enclosing_switch(child)) {
+      throw logic_error("case or default label bypasses variable initialization");
+    }
+    if(statement_exposes_initialized_declaration(child)) {
+      initialized_declaration_is_in_scope = true;
+    }
+  }
+}
+
 void validate_statement_context(const CppAstNode & node,
                                 size_t loop_depth,
                                 size_t switch_depth)
 {
+  validate_case_labels_do_not_bypass_initialization(node);
   if(node.kind == CppAstKind::break_statement &&
      loop_depth == 0 && switch_depth == 0) {
     throw logic_error("break statement is outside a loop or switch");
@@ -3293,6 +3368,11 @@ void analyze_statement_impl(SemanticContext & ctx,
 }
 
 }  // namespace
+
+void validate_statement_context(const CppAstNode & node)
+{
+  validate_statement_context(node, 0, 0);
+}
 
 void analyze_statement(SemanticContext & ctx,
                        Scope & scope,
