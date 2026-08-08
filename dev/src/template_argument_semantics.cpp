@@ -24499,9 +24499,7 @@ bool source_type_binding_is_fixed_class_member(
     const string & name,
     const TypePtr & resolved_type)
 {
-  const template_api::TemplateWitnessSession * witness_session =
-      template_api::current_template_witness_session();
-  if(!witness_session || name.empty() || !resolved_type) {
+  if(name.empty() || !resolved_type) {
     return false;
   }
   for(Scope * current = &scope; current; current = current->parent) {
@@ -24532,20 +24530,13 @@ bool source_type_binding_is_fixed_class_member(
       for(size_t i = 0; i < sites->second.size(); ++i) {
         const ClassInfo::TypedefMemberDeclarationSite & site =
             sites->second[i];
-        const auto dependency =
-            witness_session->source_type_dependencies.find(
-                site.source_location_id);
-        if(dependency ==
-               witness_session->source_type_dependencies.end()) {
-          continue;
-        }
-        if(dependency->second ==
-               template_api::TemplateWitnessSession::STD_DEPENDENT) {
+        if(site.source_template_type_dependency ==
+               ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT) {
           return false;
         }
         found_source_binding = found_source_binding ||
-            dependency->second ==
-                template_api::TemplateWitnessSession::STD_FIXED;
+            site.source_template_type_dependency ==
+                ClassInfo::TypedefMemberDeclarationSite::STTD_FIXED;
       }
     }
     if(found_source_binding) {
