@@ -84,7 +84,11 @@ bool argument_uses_fixed_class_binding(
   if(!argument || argument->dependent) {
     return false;
   }
-  if(syntax.has_fixed_class_binding()) {
+  const template_api::TemplateWitnessSession * session =
+      template_api::current_template_witness_session();
+  if(session && syntax.source_location_id != 0 &&
+     session->fixed_class_argument_occurrences.count(
+         syntax.source_location_id) != 0) {
     return true;
   }
   if(argument->kind == TemplateArgument::TA_TYPE) {
@@ -129,7 +133,7 @@ void classify_source_dependency(
         *resolved.use_scope, syntax, argument);
     dependent = dependent || syntax.pack_expansion ||
         (!fixed_binding &&
-         (syntax.dependent || syntax.has_substituted_template_binding() ||
+         (syntax.dependent || syntax.substituted_from_template_binding ||
           template_argument_semantics::
               template_argument_syntax_mentions_bound_name(
                   *resolved.use_scope, syntax)));
@@ -207,7 +211,7 @@ bool complete_source_type_materialization(
         (*resolved.arguments)[i].source_syntax.get();
     arguments_avoid_template_substitution =
         syntax &&
-        !syntax->has_substituted_template_binding() &&
+        !syntax->substituted_from_template_binding &&
         !template_argument_semantics::
             template_argument_syntax_mentions_bound_name(
                 *resolved.use_scope, *syntax);

@@ -491,7 +491,7 @@ bool template_argument_syntax_has_dependent_source_argument(
     const TemplateArgumentSyntax & syntax)
 {
   if(syntax.dependent || syntax.pack_expansion ||
-     syntax.has_substituted_template_binding()) {
+     syntax.substituted_from_template_binding) {
     return true;
   }
   if(syntax.template_id &&
@@ -15648,7 +15648,8 @@ private:
     out.source_text = source.source_text;
     out.pack_expansion = source.pack_expansion;
     out.dependent = source.dependent;
-    out.source_binding_provenance = source.source_binding_provenance;
+    out.substituted_from_template_binding =
+        source.substituted_from_template_binding;
     out.has_source_token_start = source.has_source_token_start;
     out.source_token_start = source.source_token_start;
     out.source_location_id = source.source_location_id;
@@ -20076,7 +20077,10 @@ private:
             if(argument.dependent) {
               return false;
             }
-            if(syntax.has_fixed_class_binding()) {
+            if(template_witness_session_ &&
+               syntax.source_location_id != 0 &&
+               template_witness_session_->fixed_class_argument_occurrences.count(
+                   syntax.source_location_id) != 0) {
               return true;
             }
             if(argument.kind == TemplateArgument::TA_TYPE) {
@@ -20111,7 +20115,7 @@ private:
               << (arguments[i].source_syntax->dependent ? "yes" : "no")
               << ",retained_substituted="
               << (arguments[i].source_syntax->
-                      has_substituted_template_binding() ? "yes" : "no")
+                      substituted_from_template_binding ? "yes" : "no")
               << ",retained_resolved_type="
               << (arguments[i].source_syntax->resolved_type ?
                       describe_type(arguments[i].source_syntax->resolved_type) :
@@ -20142,7 +20146,7 @@ private:
           out << ",syntax_dependent="
               << (syntax.dependent ? "yes" : "no")
               << ",substituted="
-              << (syntax.has_substituted_template_binding() ? "yes" : "no")
+              << (syntax.substituted_from_template_binding ? "yes" : "no")
               << ",resolved_type="
               << (syntax.resolved_type ? describe_type(syntax.resolved_type) :
                                          std::string("none"));

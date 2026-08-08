@@ -13979,7 +13979,7 @@ bool substitute_bound_template_template_names_in_argument_syntax(
     }
   }
   if(changed) {
-    syntax.note_substituted_template_binding();
+    syntax.substituted_from_template_binding = true;
   }
   return changed;
 }
@@ -15570,7 +15570,7 @@ void thread_type_replacements_into_template_argument_syntax(
         it != type_replacements.end();
         ++it) {
       if(argument_syntax_mentions_identifier(source_arg, it->first)) {
-        target_arg.note_substituted_template_binding();
+        target_arg.substituted_from_template_binding = true;
         break;
       }
     }
@@ -15708,7 +15708,7 @@ TemplateArgumentSyntax make_expanded_type_pack_argument_syntax(
     TemplateArgumentSyntax out =
         clone_argument_syntax_for_template_substitution(
             *source_argument->source_syntax);
-    out.note_substituted_template_binding();
+    out.substituted_from_template_binding = true;
     if(out.source_text.empty()) {
       out.source_text = source.text;
     }
@@ -15721,7 +15721,7 @@ TemplateArgumentSyntax make_expanded_type_pack_argument_syntax(
     return out;
   }
   TemplateArgumentSyntax out = source;
-  out.note_substituted_template_binding();
+  out.substituted_from_template_binding = true;
   const string text = reparseable_type_argument_text(type);
   if(out.source_text.empty()) {
     out.source_text = source.text;
@@ -17263,7 +17263,7 @@ bool substitute_dependent_argument_syntax_with_replacements(
     changed = true;
   }
   if(changed) {
-    syntax.note_substituted_template_binding();
+    syntax.substituted_from_template_binding = true;
     populate_template_argument_component_syntax_from_nodes(syntax);
     const string structured_text = current_structured_argument_text(syntax);
     if(!structured_text.empty()) {
@@ -21971,11 +21971,11 @@ void collect_template_argument_substitution_state(
     const TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
     state.has_substituted_argument =
         state.has_substituted_argument ||
-        argument.has_substituted_template_binding();
+        argument.substituted_from_template_binding;
     state.has_unsubstituted_dependent_argument =
         state.has_unsubstituted_dependent_argument ||
         (argument.dependent &&
-         !argument.has_substituted_template_binding());
+         !argument.substituted_from_template_binding);
     if(argument.template_id) {
       collect_template_argument_substitution_state(*argument.template_id,
                                                    state);
@@ -24381,7 +24381,7 @@ bool expand_bound_packs_in_argument_syntax(
     syntax.pack_expansion = false;
   }
   if(changed) {
-    syntax.note_substituted_template_binding();
+    syntax.substituted_from_template_binding = true;
     if(!preserved_resolved_type) {
       syntax.resolved_type.reset();
     }
@@ -24638,12 +24638,17 @@ void substitute_type_pack_template_id_arguments(
       if(!argument_syntax_mentions_identifier(argument, it->first)) {
         continue;
       }
-      argument.note_substituted_template_binding();
-      if(preserve_source_syntax &&
+      argument.substituted_from_template_binding = true;
+      template_api::TemplateWitnessSession * witness_session =
+          template_api::current_template_witness_session();
+      if(witness_session &&
+         preserve_source_syntax &&
+         argument.source_location_id != 0 &&
          source_type_binding_is_fixed_class_member(scope,
                                                    it->first,
                                                    it->second)) {
-        argument.note_fixed_class_binding();
+        witness_session->fixed_class_argument_occurrences.insert(
+            argument.source_location_id);
       }
       if(argument.pack_expansion) {
         pack_expansion_consumed = true;
@@ -25102,7 +25107,7 @@ bool argument_syntax_uses_bound_template_type_impl(
     Scope & scope,
     const TemplateArgumentSyntax & syntax)
 {
-  if(syntax.has_substituted_template_binding()) {
+  if(syntax.substituted_from_template_binding) {
     return true;
   }
   map<string, TypePtr> replacements;
@@ -25481,7 +25486,7 @@ bool substitute_bound_replacements_in_argument_syntax(Scope & scope,
     changed = true;
   }
   if(changed) {
-    syntax.note_substituted_template_binding();
+    syntax.substituted_from_template_binding = true;
   }
   if(changed && syntax.template_id) {
     syntax.text = template_id_syntax_lookup_text(*syntax.template_id);

@@ -3766,7 +3766,8 @@ static TemplateArgumentSyntax clone_template_argument_syntax_for_mangling(
   out.source_text = source.source_text;
   out.pack_expansion = source.pack_expansion;
   out.dependent = source.dependent;
-  out.source_binding_provenance = source.source_binding_provenance;
+  out.substituted_from_template_binding =
+      source.substituted_from_template_binding;
   out.has_source_token_start = source.has_source_token_start;
   out.source_token_start = source.source_token_start;
   out.source_location_id = source.source_location_id;

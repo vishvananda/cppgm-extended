@@ -3651,13 +3651,20 @@ void note_substituted_source_argument(
     fixed_binding = template_argument_semantics::
         argument_syntax_uses_fixed_class_value(scope, *syntax);
   }
-  if(fixed_binding) {
-    argument.source_syntax->note_fixed_class_binding();
+  template_api::TemplateWitnessSession * witness_session =
+      template_api::current_template_witness_session();
+  const uint32_t source_occurrence_id =
+      argument.source_syntax->source_location_id != 0 ?
+          argument.source_syntax->source_location_id :
+          syntax->source_location_id;
+  if(fixed_binding && witness_session && source_occurrence_id != 0) {
+    witness_session->fixed_class_argument_occurrences.insert(
+        source_occurrence_id);
   }
   const bool substituted = template_argument_semantics::
       argument_syntax_uses_template_binding(scope, *syntax);
   if(substituted) {
-    argument.source_syntax->note_substituted_template_binding();
+    argument.source_syntax->substituted_from_template_binding = true;
   }
 }
 
