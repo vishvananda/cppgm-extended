@@ -340,6 +340,16 @@ If the artifact disappears, recover this exact file. Do not create a more
 favorable replacement baseline. A new performance epoch requires a written
 plan amendment and user approval.
 
+The artifact was lost when `/tmp` was cleared on 2026-08-07. The user approved
+recreating the evidence. The replacement was recorded at the same fixed commit
+with the same compiler configuration, frozen workload epoch, and header
+digest. Its SHA-256 is
+`cefe54dacaaa8f6c5757cc90b3b9af2738507f55ab40d6abc226466114c2390b`;
+its medians are 176,018,488,694 instructions, 757,092,352 bytes maximum RSS,
+and 593,022,976 bytes peak footprint. Historical phase entries retain their
+original comparison. New measurements identify and use this recreated fixed
+artifact.
+
 ### Phase measurements
 
 Commit each correctness-clean phase, then record one three-run candidate:
@@ -405,12 +415,14 @@ another phase.
 
 The final checkpoint compares with the fixed baseline:
 
-- median instructions must be below `175889730826`;
+- median instructions must be below `176018488694` for measurements made
+  after the 2026-08-07 baseline recreation;
 - a reduction smaller than 0.5% receives one confirmation batch, and both
   medians must remain below the fixed value;
-- peak footprint may not exceed `598688440` bytes, the fixed value plus 1%;
-- RSS at or above `786732524` bytes, the fixed value plus 3%, receives one
-  three-run confirmation batch;
+- peak footprint may not exceed `598953205` bytes, the recreated fixed value
+  plus 1%;
+- RSS at or above `779805122` bytes, the recreated fixed value plus 3%,
+  receives one three-run confirmation batch;
 - a second RSS median at or above that threshold fails;
 - production source lines under `dev/` and `dev/src/` must show a net deletion
   from the fixed checkpoint.

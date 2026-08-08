@@ -338,7 +338,7 @@ with the configured host compiler.
   Phase 7 must remove the accumulated collection and emission scaffolding and
   satisfy the repeatable final reduction rule.
 
-## Phase 7 evidence
+## Phase 7 evidence: static producer convergence
 
 - Correctness and cleanup commits: `4368a3cba`, `76477f727`, `4a7ef4cdf`, and
   `0662098ba13097ae0ac059593443a311f769a59b`.
@@ -358,6 +358,15 @@ with the configured host compiler.
   replay routes. `class.class_template_reference.02` is the sole class owner:
   4,530 attempts and 1,952 final-visible rows. Its 56 replacements are
   same-producer occurrence enrichment, not competing semantic ownership.
+
+That conclusion was too weak. The producer label was assigned at the final
+submission boundary, so distinct upstream observations all appeared to be the
+same `.02` producer. The absence of a cross-producer collision pair therefore
+did not prove occurrence idempotence. The same report shows the missed work:
+only 2,048 of the 4,530 attempts inserted a row; 2,310 were exact duplicates,
+116 were rejected, and 56 replaced an earlier row. The corrective audit below
+supersedes the occurrence-convergence claim while preserving the producer-
+migration evidence in this section.
 - The first final performance batch is
   `/tmp/cppgm-class-use-final.json` (SHA-256
   `8f7425d341669d8c0389653711b3414ec792bc63b238755f5f1bca9dbdab289f`):
@@ -406,7 +415,10 @@ with the configured host compiler.
 | --- | --- | --- | --- | --- | --- |
 | 4 | instructions `+0.84%` versus fixed at Phase 5 | Four Phase 4 medians were between `+0.59%` and `+0.80%`; Phase 5 adds only `+0.06%` versus rolling, so the remaining increase is cumulative result/observer scaffolding rather than its owner substitution | Remove remaining transient result/observer scaffolding and finish with a repeatable reduction below the fixed median | 7 | closed in `0662098ba`; two final medians are `-0.25%` and `-0.20%` |
 
-## Final audit
+## Original Phase 7 audit
+
+These checks established static producer convergence. The corrective audit
+below adds the missing dynamic publication criterion.
 
 - [x] One direct class producer and one observation pass
 - [x] Zero replay routes
@@ -418,6 +430,235 @@ with the configured host compiler.
 - [x] PA1-PA38 report passes
 - [x] Inception passes
 - [x] No open cleanup obligation
+
+## Corrective occurrence-idempotence audit
+
+### Why the first plan stopped early
+
+The implementation did remove the eight independent recovery analyzers. It
+did not prove that the surviving semantic operation completed each source
+occurrence only once. Four evidence and acceptance mistakes hid that gap:
+
+1. `WitnessProducerSite` described the final submit call, not the upstream
+   semantic route. Once all routes called the observer, every attempt carried
+   `class.class_template_reference.02`.
+2. Unique visible ownership answered which producer could supply a row. It did
+   not answer how many times that producer reconstructed or submitted the same
+   occurrence.
+3. The Phase 7 narrative discussed the 56 replacements as enrichment but did
+   not treat the 2,310 exact duplicates and 116 rejections as an open semantic
+   obligation. The source table and renderer continued to hide them.
+4. Correctness, net code deletion, a small instruction reduction, and
+   inception all passed. Those gates showed that the rewrite was safe and
+   useful, but none measured completed-candidate or publication identity.
+
+The alias plan later stated the missing rule explicitly: attempts must equal
+insertions, renderer row selection must be zero, and class occurrence
+idempotence must be proved before shared deduplication can be narrowed. That
+rule triggered this correction.
+
+### Semantic correction
+
+Commit `c64e15f5ea87703c01bdfb7b8861d527c6fc43b4` gives the surviving class
+operation a source-occurrence collector instead of relying on downstream
+arbitration.
+
+- Nondependent observations use the stable source-location ID, semantic class
+  template, role, selected declaration, and source-use mode. A repeated
+  observation with no stronger ownership is rejected before a
+  `ClassUseEmitRequest` is constructed.
+- Dependent and current-specialization observations may complete again because
+  later analysis can supply a more concrete selection or richer pack data.
+  The collector merges those candidates by semantic occurrence and equivalent
+  primary bindings before publication.
+- Candidate preference is semantic: selected specialization outranks primary,
+  source-owned outranks direct and nested ownership, and a materialized type
+  outranks an incidental qualifier or static-owner observation.
+- Finalization consults the completed explicit-specialization registry for a
+  candidate first seen as primary. This removes the renderer's late explicit-
+  specialization preference without another lookup or source scan.
+- Materialized value-argument policy is applied before publication. The source
+  table, `WitnessBuilder`, and generic renderer passes no longer arbitrate or
+  deduplicate class rows.
+
+`TemplateIdSyntax *` is not used as identity because normal analysis clones
+syntax objects. The stable source-location ID supplies source identity, while
+the semantic template and bindings prevent unrelated occurrences from being
+merged.
+
+### Corrective provenance
+
+- Diagnostic trace:
+  `/tmp/cppgm-alias-class-final4-provenance.s6Gn4n`
+- Report:
+  `/tmp/cppgm-alias-class-final4-provenance-report.json`
+- Report SHA-256:
+  `c3245c5e915a2686dfccb53e1052085a64aea170424e95011084b8cdc4737b62`
+- Corpus: 1,305 traces and 22,696 records; unknown producer attempts are zero.
+
+The diagnostic counters now distinguish semantic observation from table
+publication:
+
+| Stage | Count | Meaning |
+| --- | ---: | --- |
+| Early repeated observations | 2,335 | Stopped before request construction |
+| Completed candidates | 2,262 | Reached the pre-publication collector |
+| Pre-publication merges | 249 | Later or richer candidates merged into an existing occurrence |
+| Collected occurrences | 2,013 | Distinct candidate rows after merging |
+| Published occurrences | 2,008 | Five materialized value-argument rows filtered by semantic lifecycle policy |
+| Source-table attempts / insertions | 2,008 / 2,008 | Every publication is a first insertion |
+| Final visible rows | 1,953 | Public output is unchanged on the current strict corpus |
+
+Exact duplicates, rejections, replacements, and enrichments are all zero. The
+same-corpus checkpoint immediately before the correction had 4,503 attempts:
+2,049 insertions, 2,282 exact duplicates, 116 rejections, and 56 replacements
+for the same 1,953 visible rows. The original Phase 7 report had the same
+shape at 4,530 attempts on its then-current corpus.
+
+Class events at `c64e15f5e` have zero actions in `build_events`,
+`canonicalize_locations_and_dedupe`, explicit-specialization preference, and
+`dedupe_visible_events`. The earlier explanation for the remaining 55 late
+removals was not sufficient. Calling 49 of them visibility policy described
+the renderer mechanism without establishing that the submitted rows were
+valid semantic events. The materialization-boundary audit below supersedes
+that explanation.
+
+### Materialization-boundary audit
+
+Commit `1cb08182ac9512b65636aff2e8cc3dd4bce6b0d4` moves all 55 decisions ahead
+of source-table publication and deletes the corresponding class branches from
+the renderer. The audit artifact is
+`/tmp/cppgm-class-materialization-boundary-audit.json`, SHA-256
+`0e549ad701bbb6de1bddf8cf4207d98e55b74d0103967e47e8f99b2282bd49fa`.
+It contains every old row, its late-removal reason, the old and new stage
+counts, and the patched-Clang result for each fixture.
+
+The final diagnostic trace is
+`/tmp/cppgm-class-materialization-reasons.C1ctHs`; its analyzer report is
+`/tmp/cppgm-class-materialization-final-provenance-report.json`, SHA-256
+`c90c911cbba028cde097cb37aff01439521406498548ec08738e0b1b4a6bc859`.
+
+The old rows divide as follows:
+
+| Old late decision | Rows | What the row represented | New owner of the decision |
+| --- | ---: | --- | --- |
+| Concrete template-body replay | 23 | A dependent source template-id revisited with concrete bindings | Source-pattern dependency and materialization state in the typed observer |
+| Unmaterialized template-body replay | 19 | An internal type, SFINAE, or constant-analysis result with no materialized source type location | Source-pattern dependency and materialization state in the typed observer |
+| Inferred-binding replay | 6 | A source pattern revisited through a deduced or substituted binding frame | Source-pattern dependency and materialization state in the typed observer |
+| Template-header replay | 1 | A dependent qualifier template-id anchored to the wrong qualifier token | Corrected qualifier name anchor plus source-pattern dependency |
+| Static owner without variable instantiation | 5 | An owner candidate from a static-member pattern whose variable specialization never materialized | Variable-instantiation lifecycle at class collection finalization |
+| Alias-expanded reference declaration | 1 | A class recovered through a typedef on a reference declaration | Alias observation accepts only a non-template `MaterializedTypeUse` |
+
+The first four groups are 49 observations of shared dependent source syntax,
+not 49 distinct typed source nodes. CPPGM revisits that syntax while resolving
+types, SFINAE, constants, and instantiated bodies. Clang may perform the same
+semantic work, but its witness visitor sees a class use only when the AST
+contains a concrete `TemplateSpecializationTypeLoc`. It does not turn every
+internal resolution result into a new source location. CPPGM now records
+whether the source occurrence is a dependent pattern and rejects a later
+concrete replay before constructing a public source-table row.
+
+Five dependent source patterns do materialize on the strict corpus. They are
+kept for explicit semantic reasons, all recorded in the artifact:
+
+| Materialization reason | Rows | Fixtures |
+| --- | ---: | --- |
+| Variable-template initializer instantiation | 2 | `100-dependent-reference-alias-default-nontype.t`, `300-dependent-variable-template-empty-pack-enable-if-selection.t` |
+| Fixed class constant in an instantiated type | 2 | `100-dependent-nontype-functional-cast-body-check.t`, `100-template-static-constant-nontype-argument.t` |
+| Fixed conversion result type | 1 | `100-out-of-class-conversion-operator-definition.t` |
+
+These correspond to typed materialization in the patched Clang: its variable
+specialization visitor traverses a materialized initializer, and instantiated
+function bodies can contain concrete class type locations for the fixed
+constant and conversion cases. They are not general exemptions for template
+bodies.
+
+The static-owner decision now follows the variable lifecycle. Of the 29 old
+owner candidates, 24 have a matching `VariableInstantiation` event and become
+ordinary qualifier uses before table submission. The other five are not
+published. For the typedef case, Clang's declaration fallback requires a
+construct expression: line 13 of
+`400-nonmember-template-compound-assignment-const-lhs.t` materializes the
+class, while the reference declaration on line 14 does not. CPPGM now makes
+the same distinction at alias observation.
+
+The patched-Clang row audit compiled all 45 affected fixtures successfully.
+Across the 55 disputed locations, it emitted zero class rows. This verifies
+that the old renderer did not discard public Clang facts. It was compensating
+for invalid CPPGM submissions, and those submissions are now gone.
+
+| Class stage | Before | After |
+| --- | ---: | ---: |
+| Completed candidates | 2,262 | 2,209 |
+| Collected occurrences | 2,013 | 1,959 |
+| Source-table attempts | 2,008 | 1,953 |
+| Source-table insertions | 2,008 | 1,953 |
+| Source-table rows | 2,008 | 1,953 |
+| Public rows | 1,953 | 1,953 |
+| Renderer removals | 55 | 0 |
+
+The six collected occurrences that do not publish are five static owners
+without variable materialization and one existing value-argument lifecycle
+case. No class row reaches the source table and then disappears. The renderer
+still normalizes names and binding spelling for class rows; those operations
+do not choose visibility or merge occurrences.
+
+A separate diagnostic experiment removed the older typed-source replay
+boundary and produced 51 extra rows across 37 tests. That boundary remains.
+It represents the same concrete-TypeLoc requirement as the patched Clang and
+stops observation before payload construction. The audit does not justify
+skipping the compiler's normal type, SFINAE, or constant analysis merely
+because no witness row materializes.
+
+### Correctness, size, and performance
+
+- The ordinary and provenance direct-LowIR strict gates pass 1,305/1,305.
+- The PA1-PA38 report passes 4,860/4,860.
+- The materialization follow-up deletes 384 net production lines
+  (`+525 / -909`). The combined implementation deletes 2,760 net production
+  lines from the alias fixed checkpoint (`+2,085 / -4,845`). `dev/src`
+  contains 414,034 lines.
+- `Type` remains 280 bytes, `TemplateArgument` 136, `ClassInfo` 1,136,
+  `ResolvedClassTemplateIdView` 104, and `ResolvedAliasTemplateId` 80.
+- Ordinary `cppgm++` is 16,997,488 bytes; Mach-O `__TEXT` is 12,955,648 bytes
+  and `__DATA` is 442,368 bytes.
+- The reboot removed the original fixed artifact. With user approval, the
+  exact post-counter fixed commit `05b0c7a21` was rebuilt and recorded for
+  three runs. `/tmp/cppgm-alias-convergence-fixed.json` has SHA-256
+  `cefe54dacaaa8f6c5757cc90b3b9af2738507f55ab40d6abc226466114c2390b`.
+  Its medians are 176,018,488,694 instructions, 757,092,352 bytes maximum
+  RSS, and 593,022,976 bytes peak footprint.
+- The first three-run candidate is
+  `/tmp/cppgm-class-materialization-final.json`, SHA-256
+  `7783ba63df480b0cc99de35df963a797081170d443220d77bef712f92ff0df3d`.
+  It records 175,351,702,134 instructions (`-0.38%`), 746,659,840 bytes
+  maximum RSS (`-1.38%`), and 575,410,176 bytes peak footprint (`-2.97%`).
+- The required independent confirmation is
+  `/tmp/cppgm-class-materialization-final-confirmation.json`, SHA-256
+  `a70ead2bd8d1d284b8ce239a62108ce92349848859a872506d1433a026d2bda0`.
+  It records 175,259,947,802 instructions (`-0.43%`), 742,637,568 bytes
+  maximum RSS (`-1.91%`), and 575,533,056 bytes peak footprint (`-2.95%`).
+  Both instruction medians are below the recreated fixed checkpoint.
+- Baseline RSS ranged from 651,206,656 to 760,893,440 bytes across its three
+  runs, a 16.84% maximum-to-minimum spread relative to the minimum. Candidate
+  RSS spreads were 0.94% and 0.59%. Neither candidate median triggers the 3%
+  warning threshold.
+- Inception is not rerun at this follow-up commit. Alias convergence still has
+  open phases; its final checkpoint owns the next combined self-host run.
+
+### Corrective final audit
+
+- [x] One static class producer and no replay routes
+- [x] Repeated nondependent observations stop before payload construction
+- [x] Dependent candidate enrichment occurs before publication
+- [x] Class attempts equal insertions; all table conflict actions are zero
+- [x] No class row is removed or merged after source-table insertion
+- [x] All 55 former late removals have a typed materialization decision
+- [x] Patched Clang emits zero rows at all 55 rejected locations
+- [x] Strict and PA1-PA38 correctness pass
+- [x] Production source and both confirmed instruction medians are below fixed
+- [x] Hot semantic structures do not grow; RSS and footprint pass
+- [ ] Combined inception passes
 
 ## Follow-up witness-family convergence audit
 

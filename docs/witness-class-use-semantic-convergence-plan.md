@@ -26,6 +26,24 @@ The promoted three-run result for `a42c915e3` therefore supplies the fixed
 performance baseline for this work. It includes the diagnostic counters added
 during the first experiment.
 
+The Phase 7 implementation reached one static producer but did not reach one
+publication per semantic source occurrence. Its final report recorded 4,530
+class submissions for 2,048 inserted rows, including 2,310 exact duplicates,
+116 rejections, and 56 replacements. The alias-convergence work exposed this
+gap because its occurrence-idempotence criterion required attempts to equal
+insertions. Commit `c64e15f5e` applies that stronger criterion to class use.
+The corrective evidence is recorded in the class-use ledger; the original
+Phase 7 completion claim should be read as producer convergence, not completed
+occurrence convergence.
+
+The next audit found a second gap: 55 class rows still entered the source table
+and disappeared in renderer policy. Commit `1cb08182a` moves those decisions
+to typed source materialization and variable lifecycle. The renderer no longer
+removes a class row. The ledger records the row-by-row comparison with the
+patched Clang, including all five dependent patterns that legitimately
+materialize. The completion criteria below therefore require table rows and
+public rows to agree, not only attempts and insertions.
+
 ## Objective
 
 Replace nine class-use analyzers with one typed source-resolution model and one
@@ -598,6 +616,13 @@ The work finishes after all of these checks pass:
   application;
 - class-use table replacements and renderer drops caused by competing
   producers reach zero and their dead policies are removed;
+- completed class-use candidates are identified before publication, repeated
+  nondependent observations are stopped before request construction, and final
+  class-use attempts equal insertions with zero duplicate, rejected, replaced,
+  or enriched table actions;
+- every class visibility decision is made from typed source materialization or
+  semantic lifecycle before source-table insertion; the renderer may normalize
+  spelling but may not remove or merge a class row;
 - the production source diff has net line deletion;
 - strict, full report, and inception pass;
 - the final instruction result satisfies the repeatable-reduction rule against

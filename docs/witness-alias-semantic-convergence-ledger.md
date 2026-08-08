@@ -6,13 +6,13 @@ is lifecycle Phase 6 at `05b0c7a21ff497cd2186fabc2096bf04cc6e931b`.
 
 ## Fixed evidence
 
-- Fixed performance artifact:
+- Original fixed performance artifact, lost in the reboot:
   `/tmp/cppgm-alias-convergence-fixed.json`, copied byte-for-byte from
   `/tmp/cppgm-lifecycle-phase-6-final.json`.
-- Fixed and initial rolling SHA-256:
+- Original fixed and initial rolling SHA-256:
   `f3321ba42cf500112b8d183a903a73cb92a5a58604ff6ff986043c9d4cf012ca`.
-- Fixed medians: 175,889,730,826 instructions, 763,817,984 bytes maximum RSS,
-  and 592,760,832 bytes peak footprint.
+- Original fixed medians: 175,889,730,826 instructions, 763,817,984 bytes
+  maximum RSS, and 592,760,832 bytes peak footprint.
 - Workload epoch: `9764b3835e3c6996b6b80803054f80e1cf50f98e`.
 - Corrected lifecycle prerequisite: `025730e00d8ea16aa1b98a4257a53b35481d9e69`
   in this worktree. Its committed production diff from the fixed checkpoint is
@@ -27,6 +27,24 @@ is lifecycle Phase 6 at `05b0c7a21ff497cd2186fabc2096bf04cc6e931b`.
   `pa24/tests/spec/500-direct-alias-remains-deduced.t` the public log has 16
   lines and the debug log has 36. Debug output adds declaration locations,
   named bindings, candidate counts, drop locations, and lifecycle detail.
+
+### Recreated fixed artifact after reboot
+
+The reboot on 2026-08-07 removed the fixed file from `/tmp`. With user
+approval, the fixed compiler was rebuilt at the exact post-counter commit
+`05b0c7a21ff497cd2186fabc2096bf04cc6e931b` and the unchanged frozen workload
+was recorded for three runs. The replacement artifact is
+`/tmp/cppgm-alias-convergence-fixed.json`, SHA-256
+`cefe54dacaaa8f6c5757cc90b3b9af2738507f55ab40d6abc226466114c2390b`.
+Its medians are 176,018,488,694 instructions, 757,092,352 bytes maximum RSS,
+and 593,022,976 bytes peak footprint. The workload epoch and 51-header digest
+remain unchanged.
+
+The historical phase deltas in this ledger continue to describe the original
+fixed artifact. Measurements after the reboot compare with the recreated
+artifact and identify it explicitly. Its instruction median is 0.07% above
+the lost artifact, RSS is 0.88% below it, and footprint is 0.04% above it; the
+replacement is not uniformly more favorable.
 
 ## Checkpoints
 
