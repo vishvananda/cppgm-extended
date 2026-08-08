@@ -161,6 +161,7 @@ FRONTEND_OBJ_BASENAMES_nsdecl := \
 	template_signature_ops \
 	template_specialization \
 	witness_api \
+	witness_text \
 	witness_provenance \
 	template_type_ops \
 	types
@@ -257,6 +258,7 @@ FRONTEND_OBJ_BASENAMES_nsinit := \
 	template_signature_ops \
 	template_specialization \
 	witness_api \
+	witness_text \
 	witness_provenance \
 	template_type_ops \
 	types
