@@ -20,6 +20,23 @@ lifecycle observer cleanup. Performance comparisons therefore include the
 diagnostic code that could affect compiler layout, even though ordinary runs
 compile the diagnostic paths out.
 
+Implementation update, 2026-08-08:
+
+- Alias implementation, provenance, strict, broad, size, and performance work
+  is complete through `ed605692bb9b55cbad9f510ac1a85fd3352ed574`.
+- Inception is a joint gate for this plan and
+  `docs/witness-class-materialization-semantic-ownership-plan.md`. Per user
+  direction, do not run it until both plans have finished their implementation
+  and evidence work. This plan remains open only on that joint gate.
+- Phase 4 was amended after deletion experiments showed that ordinary semantic
+  analysis does not visit every template header, base, default, declaration
+  type, and unevaluated expression that owns a public alias row. The retained
+  source-pattern traversal is the primary analyzer for those positions. It no
+  longer instantiates the alias target, reconstructs an observer request, or
+  publishes through a separate route; it builds typed arguments and enters the
+  canonical completion boundary. The execution ledger records the failed
+  deletion evidence and the resulting boundary.
+
 ## Objective
 
 Make alias-template resolution produce one typed source result and publish one
@@ -37,8 +54,9 @@ The final implementation must have:
   construction arms;
 - one parameterized result for dependent alias-template-ids, created during
   normal template analysis and reused during substitution;
-- no recursive template-declaration walk whose purpose is to rediscover alias
-  uses after normal semantic analysis;
+- no recursive template-declaration walk that re-resolves or reinstantiates an
+  alias already owned by normal semantic analysis; source-pattern analysis may
+  cover declaration positions that normal semantic analysis does not visit;
 - no source-token scan to relocate an alias name after resolution;
 - no second alias observation in `template_argument_semantics` after the same
   template-id was already resolved;
@@ -546,10 +564,11 @@ Exit evidence:
 - exact duplicate attempts fall by the measured contribution of this route;
 - failed speculative paths own no visible output.
 
-## Phase 4: Delete the recursive template-pattern alias walk
+## Phase 4: Converge template-pattern alias analysis
 
-Move nested alias ownership into the typed children produced by normal type,
-expression, qualified-id, and template-argument analysis.
+Move nested alias ownership into typed children produced by normal type,
+expression, qualified-id, and template-argument analysis. Keep a source-pattern
+analyzer only for declaration positions that those operations do not visit.
 
 1. Retain child alias results while analyzing template parameter clauses,
    declaration types, bases, return types, and expressions.
@@ -557,13 +576,14 @@ expression, qualified-id, and template-argument analysis.
    child results.
 3. Submit child occurrences through the same source collector as direct alias
    results.
-4. Remove alias lookup and alias instantiation from
-   `analyze_template_declaration_source_patterns`.
-5. Delete its `recorded_alias_uses` set, recursive alias lambdas, exact-lookup
-   guard reconstruction, and pack-specific manual observation.
-6. Delete the whole syntax walker if no non-alias responsibility remains. If a
-   remaining responsibility exists, record it explicitly and keep no alias
-   code in the walk.
+4. Remove alias target instantiation, exact-lookup guard reconstruction, and
+   direct observation from `analyze_template_declaration_source_patterns`.
+5. For a source position with no normal semantic owner, select the alias once,
+   build typed parameterized arguments from structured syntax, and enter the
+   canonical completion boundary.
+6. Delete traversal of any position that normal semantic analysis demonstrably
+   owns. Record the strict-corpus rows lost when a proposed deletion has no
+   replacement owner.
 7. Remove dead route IDs and `AliasUseEmissionOrigin` cases as they reach zero.
 
 The migration suite must cover nested type-ids, template-template arguments,
@@ -572,11 +592,11 @@ that hit `prefer_source_spelled_alias` and the nested-derived rejection path.
 
 Exit evidence:
 
-- the recursive pattern route is zero;
+- the old recursive-pattern producer route is zero;
 - nested-derived submissions are created only when they are independently
   source-facing;
-- no second lookup, argument resolution, or alias instantiation occurs for
-  witness capture;
+- no second alias target instantiation or observer request occurs for witness
+  capture;
 - all previously unique walker rows have a typed semantic owner.
 
 ## Phase 5: Remove location, owner, and payload recovery
@@ -649,7 +669,8 @@ Those passes must not decide which semantic alias result survives.
    unique-output ownership.
 5. Record final production lines, structure sizes, binary sections, strict and
    broad correctness, and performance.
-6. Run inception from an isolated object root.
+6. After this plan and the class-materialization ownership plan are both
+   complete, run their shared inception gate from an isolated object root.
 7. Close every ledger obligation or name its owner and next phase.
 
 Do not remove `--witness-debug` in this phase under an output-parity claim. If
@@ -697,7 +718,7 @@ actual count in the ledger because later test additions may raise it.
 
 ### Inception gate
 
-Run after the final committed cleanup:
+Run only after the final committed cleanup for both active witness plans:
 
 ```sh
 make inception \
@@ -742,12 +763,13 @@ The work is complete when:
 - alias instantiation has one completed semantic result and one observation
   boundary;
 - the nine result-arm observation calls, direct replay, dependent side effect,
-  and recursive pattern walk are gone;
+  and recursive alias target instantiation are gone;
 - every visible alias row comes from a typed source occurrence;
 - alias table arbitration and renderer row selection are gone;
 - alias provenance reports one insertion per attempt and no destructive
   renderer action;
-- strict, broad, and inception gates pass;
+- strict and broad gates pass, followed by the joint inception gate after both
+  active witness plans are complete;
 - production code is net smaller than the fixed checkpoint;
 - median instructions are lower than the fixed checkpoint;
 - footprint and RSS meet their final gates;

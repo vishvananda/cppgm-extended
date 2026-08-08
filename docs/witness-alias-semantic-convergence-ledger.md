@@ -55,6 +55,9 @@ replacement is not uniformly more favorable.
 | 2. Direct source owner | `f5529cc60` | 1,416 | 653 / 573 / 176 / 14 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.43% fixed / -0.26% rolling; RSS -2.55% / -2.35%; footprint -2.94% / -2.86% | complete |
 | 3. Dependent pattern result | `bd3b81402` | 1,416 | 671 / 579 / 164 / 2 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.12% fixed / +0.31% rolling; RSS -1.43% / +1.15%; footprint -2.93% / +0.02% | complete |
 | 4. Pattern analysis | `2252c751b` | 1,211 | 854 / 328 / 27 / 2 | diagnostic and ordinary 1,305/1,305 | not required | instructions -0.39% fixed / -0.27% rolling; RSS -2.14% / -0.72%; footprint -2.94% / -0.01% | complete |
+| 5. Structured source facts | `7b2ecdadf` | 564 | 564 / 0 / 0 / 0 | diagnostic and ordinary 1,305/1,305 | 4,860/4,860 | instructions -0.10% fixed / +0.34% rolling; RSS -1.05% / +0.87%; footprint -2.81% / +0.14% | complete |
+| 6. Occurrence idempotence | `ed605692b` | 564 | 564 / 0 / 0 / 0 | diagnostic and ordinary 1,305/1,305 | 4,860/4,860 | confirmed instructions -0.33% fixed / +0.10% rolling; RSS -2.08% / -0.17%; footprint -2.96% / -0.01% | complete |
+| 7. Audit and handoff | `ed605692b` | 564 | 564 / 0 / 0 / 0 | diagnostic and ordinary 1,305/1,305 | 4,860/4,860 | final gate passes; no RSS warning | joint inception pending |
 
 ## Phase 0: upstream route evidence
 
@@ -218,3 +221,205 @@ The three-run candidate is `/tmp/cppgm-alias-phase-4.json`, SHA-256
 Its medians are 175,199,806,939 instructions, 747,466,752 bytes maximum RSS,
 and 575,352,832 bytes peak footprint. Both comparisons pass without a warning,
 and this candidate becomes the rolling baseline.
+
+### Phase 4 boundary amendment
+
+Deleting `analyze_template_declaration_source_patterns` did not transfer its
+rows to normal semantic analysis. It removed required alias output from 88
+strict fixtures. Template headers, bases, defaults, declaration types, and
+unevaluated expressions are not all otherwise analyzed when the enclosing
+template remains uninstantiated. Making the ordinary completion paths run
+during the source-capture pause was also invalid: it created five false member
+alias rows, and one concrete replay replaced a source-pattern binding.
+
+The retained traversal is therefore a primary source analyzer, not a replay of
+an already-owned semantic result. Its alias branch selects the declaration,
+resolves structured source arguments when possible, creates typed dependent
+arguments otherwise, and enters `complete_resolved_alias_template_id`. It no
+longer instantiates the alias target, reconstructs an exact-lookup guard, calls
+the observer directly, or uses a separate producer route. The old
+`template_declaration_pattern` route is gone. Later template instantiations may
+complete the same occurrence again for compilation, but they cannot publish a
+second source-table row.
+
+## Phase 5: structured source facts replace recovery
+
+Commit `7b2ecdadf7ea57aafeb3e26000440b7f5bd06140` completes the location and
+owner cleanup:
+
+- Alias occurrence identity is the selected alias identity plus the stable
+  source-location ID. Syntax identity and normalized location are fallbacks
+  only when the stable ID is unavailable.
+- The same-line pending-class scan used to recover a member alias owner is
+  deleted. Qualified owners come from `TemplateIdSyntax` and the selected
+  alias declaration.
+- Alias completion and source-pattern analysis use structured dependency
+  checks. The `template_argument_texts_mention_*` checks that selected among
+  competing alias rows are gone; helpers with those names remain only where
+  class semantics still use them.
+- `qualify_member_alias_events_from_class_uses`,
+  `canonicalize_placeholder_member_alias_owners`,
+  `normalize_selected_decl_to_line_start`, `unwrap_single_pack_binding`, and
+  `use_template_argument_binding_policy` are absent.
+- The walker creates typed parameterized `TemplateArgument` values and enters
+  the canonical completion boundary. There is one static
+  `observe_resolved_alias_template_id` call and one direct `emit_alias_use`
+  call outside `witness_api.cpp`.
+
+The first final performance batch at this commit exposed structured dependency
+checks on every alias completion. They are needed only for member aliases. The
+corrected commit moves those checks behind that condition and removes the
+avoidable work. The retained result is 72 bytes, down from 80 bytes.
+
+## Phase 6: one alias publication per occurrence
+
+The alias source table now consumes the canonical occurrence vector directly.
+Alias rows bypass generic source-table deduplication, so the final provenance
+gate would expose any repeated publication. The alias replacement map in
+`WitnessBuilder`, alias preference and collapse passes, renderer owner repair,
+`AliasUseEmissionOrigin`, capture-pause alias policy, old route IDs, and the
+old producer IDs are deleted.
+
+Commit `ed605692bb9b55cbad9f510ac1a85fd3352ed574` narrows the last
+prepublication policy. A first-writer experiment changed only four strict
+comparisons. In those cases the source pattern preceded its class context and
+therefore spelled a current specialization as `function` or `Iter`; the later
+typed class context supplied `function<R (Args...)>` or `Iter<B>`. The final
+collector no longer ranks parameterized, concrete, context-rich, or
+structured-owner payloads. It keeps the first result and permits only two
+materialization transitions:
+
+1. attach a class context to a retained parameterized source pattern;
+2. fill current-specialization fields when the concrete class replay supplies
+   them.
+
+This is completion of one retained occurrence, not selection between two
+public rows. Removing the generic ranking also deletes the unused
+`has_structured_owner` state. From the end of Phase 4 through this commit, the
+production `dev/` diff is 228 additions and 376 deletions, a net deletion of
+148 lines.
+
+### Final provenance
+
+- Trace: `/tmp/cppgm-alias-final-provenance3.1uzSbj`.
+- Report: `/tmp/cppgm-alias-final-provenance3-report.json`.
+- Report SHA-256:
+  `d05a15c2442a888286ac650ccb1b06f112035eaf29180a752ccb58476c1060ce`.
+- Corpus: 1,305 trace files and 22,476 records.
+
+The alias route has 564 attempts, 564 insertions, 564 surviving table rows,
+and 564 final visible rows. Exact duplicates, rejections, replacements,
+enrichments, unknown producers, and unknown routes are all zero. Renderer work
+on aliases is formatting only: 267 binding rewrites and six name rewrites. No
+renderer pass removes or replaces an alias row.
+
+The semantic consolidation counters are earlier than publication. They record
+1,332 completed alias candidates, 768 repeated completions of an existing
+source occurrence, 564 collected occurrences, and 564 publications. These
+repeats include ordinary alias resolution required by separate template
+instantiations and the source-pattern/concrete-materialization transition.
+They do not perform another alias-target instantiation for witness capture and
+do not reach the source table. The only payload update allowed by the collector
+is the named class/current-specialization materialization above.
+
+## Phase 7: final audit and handoff
+
+Ordinary direct-LowIR strict validation passes 1,305/1,305. The diagnostic
+provenance build passes the same 1,305/1,305 corpus. The full PA1-PA38 report
+passes 4,860/4,860 with direct LowIR comparison. The provenance analyzer unit
+tests pass three tests.
+
+The cumulative production diff from the fixed checkpoint is 2,125 additions
+and 5,033 deletions under `dev/`, a net deletion of 2,908 lines. Under
+`dev/src/` it is 2,123 additions and 5,033 deletions, a net deletion of 2,910
+lines. The analyzer changes under `scripts/` are a net addition of 197 lines
+and are not production compiler code.
+
+The final ordinary binary is 16,989,176 bytes. Mach-O `__TEXT` is 12,947,456
+bytes, `__DATA_CONST` is 57,344 bytes, and `__DATA` is 442,368 bytes. Relative
+to the fixed binary, the file is 118,664 bytes smaller, `__TEXT` is 102,400
+bytes smaller, and `__DATA` is 4,096 bytes smaller. The ordinary binary has no
+`witness_provenance` symbols.
+
+Final hot structure sizes are:
+
+| Type | Bytes |
+| --- | ---: |
+| `Type` | 280 |
+| `TemplateArgument` | 136 |
+| `ClassInfo` | 1,136 |
+| `FunctionBinding` | 824 |
+| `ValueBinding` | 504 |
+| `AliasTemplateDecl` | 264 |
+| `TemplateLifecycleTransition` | 80 |
+| `OutOfClassStaticMemberDecl` | 136 |
+| `OutOfClassMemberFunctionDecl` | 240 |
+| `ResolvedClassTemplateIdView` | 104 |
+| `ResolvedAliasTemplateId` | 72 |
+| `ResolvedQualifiedId` | 40 |
+| `ResolvedOwnerReference` | 32 |
+| `RetainedAliasClassUse` | 16 |
+
+No hot semantic structure grew from the fixed checkpoint. Direct alias results
+remain operation-local. The publication map retains one request per canonical
+source occurrence only while witness capture is active; ordinary compilation
+does not allocate it without a witness session.
+
+### Final performance
+
+The first exact-checkpoint batch is
+`/tmp/cppgm-alias-final-materialization.json`, SHA-256
+`bcf19725b6939ef28c4f01ca4632d8d68d712b6b33e6ae5b19a6c848235d6a96`.
+Its medians are 175,254,366,045 instructions, 743,993,344 bytes maximum RSS,
+and 575,062,016 bytes peak footprint. Against the recreated fixed baseline,
+those are -0.43%, -1.73%, and -3.03%. Against the rolling class-materialization
+checkpoint, they are -0.00%, +0.18%, and -0.08%.
+
+Because the instruction reduction is below 0.5%, the required independent
+confirmation is `/tmp/cppgm-alias-final-materialization-confirmation.json`,
+SHA-256
+`f3987022a055666467c99304a514129e4230bde6d1da3025cc3c86d2350eacb7`.
+Its medians are 175,436,303,700 instructions, 741,371,904 bytes maximum RSS,
+and 575,488,000 bytes peak footprint. Against fixed, those are -0.33%, -2.08%,
+and -2.96%; against rolling they are +0.10%, -0.17%, and -0.01%. Both
+instruction medians are below fixed. The confirmation has the less favorable
+instruction result and is the reported final value. Neither batch triggers the
+3% RSS warning.
+
+### Non-alias handoff
+
+Class publication now has 1,953 attempts, insertions, table rows, and visible
+rows, with no table or renderer arbitration. Its semantic collector records
+2,209 completed candidates, 2,190 early repeats, 250 prepublication merges,
+1,959 collected occurrences, and 1,953 publications. The six nonpublished
+occurrences are owned by the class-materialization policy and its separate
+plan.
+
+Function calls remain the global deduplication owner. The strict corpus has
+920 function attempts, 787 insertions, 133 exact source-table duplicates, and
+599 visible rows. The renderer removes 177 source-defined calls, nine rows in
+location canonicalization, one template-header pattern, and one final visible
+duplicate. A function-call convergence phase must add upstream route identity
+before deleting a feed, then move those visibility decisions to the typed call
+result. Variable uses are already 31 attempts, 31 insertions, and 31 visible
+rows.
+
+Shared table and renderer deduplication therefore remain for function calls,
+not aliases. `--witness-debug` also remains: its output is not equal to
+`--witness`, so alias convergence does not justify removing that interface.
+
+### Inception state
+
+No final inception comparison has run for this checkpoint. An early invocation
+exited during the prerequisite frontend build, before self-host compilation,
+because the reduced `nsdecl` link omitted `witness_text` while `callsemantic`
+referenced anonymous-namespace normalization. Commit
+`5677fb2175ca50e13ab3f2a9684e65aaaf092663` adds `witness_text` to the
+`nsdecl` and `nsinit` reduced-link source sets. Targeted links and the ordinary
+root build pass after that correction; the measured `cppgm++` source set was
+already correct.
+
+Per user direction, inception remains pending until this alias plan and
+`docs/witness-class-materialization-semantic-ownership-plan.md` have both
+completed. The joint runner must use a fresh isolated object root. This is a
+deferred joint gate, not a failed self-host result.
