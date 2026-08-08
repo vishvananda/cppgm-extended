@@ -35,14 +35,20 @@ typedef std::shared_ptr<Type> TypePtr;
 
 struct TemplateArgumentSyntax
 {
+  enum SourceBindingProvenance : unsigned char
+  {
+    SBP_NONE = 0,
+    SBP_SUBSTITUTED_TEMPLATE = 1,
+    SBP_FIXED_CLASS = 2
+  };
+
   std::string text;
   std::string source_text;
   bool pack_expansion = false;
   bool dependent = false;
-  // The structured argument has been rewritten from a template binding.
-  // Witness source-use policy must use this provenance instead of comparing
-  // rendered source and substituted spellings.
-  bool substituted_from_template_binding = false;
+  // One byte replaces the earlier substitution boolean and can also retain a
+  // fixed class-member result across structured syntax clones.
+  unsigned char source_binding_provenance = SBP_NONE;
   bool source_defaulted = false;
   bool has_source_token_start = false;
   std::size_t source_token_start = 0;
@@ -52,6 +58,34 @@ struct TemplateArgumentSyntax
   std::shared_ptr<CppAstNode> source_type_id;
   std::shared_ptr<CppAstNode> expression;
   TypePtr resolved_type;
+
+  bool has_substituted_template_binding() const
+  {
+    return (source_binding_provenance & SBP_SUBSTITUTED_TEMPLATE) != 0;
+  }
+
+  bool has_fixed_class_binding() const
+  {
+    return (source_binding_provenance & SBP_FIXED_CLASS) != 0;
+  }
+
+  void note_substituted_template_binding()
+  {
+    source_binding_provenance |= SBP_SUBSTITUTED_TEMPLATE;
+  }
+
+  void note_fixed_class_binding()
+  {
+    source_binding_provenance |= SBP_FIXED_CLASS;
+  }
+};
+
+enum class TemplateIdSourceDependency : unsigned char
+{
+  Unknown,
+  UnresolvedDependent,
+  UnresolvedOwnerDependent,
+  ResolvedDependent
 };
 
 struct TemplateIdSyntax

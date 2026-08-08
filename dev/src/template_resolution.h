@@ -14,6 +14,11 @@ class SemanticContext;
 
 namespace template_resolution {
 
+bool source_type_argument_is_current_specialization(
+    semantic_model::Scope & scope,
+    const cpp_decl::TemplateArgumentSyntax * syntax,
+    const cpp_decl::TypePtr & resolved_type);
+
 bool resolve_non_type_template_parameter_type(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

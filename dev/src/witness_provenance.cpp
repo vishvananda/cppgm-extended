@@ -417,35 +417,6 @@ std::string source_attempt_record(const SourceAttempt & attempt,
       << ",\"occurrence_current_specialization_use\":"
       << (use.template_id_occurrence.current_specialization_use ?
               "true" : "false")
-      << ",\"class_source_use_mode\":"
-      << use.template_id_occurrence.diagnostic_class_source_use_mode
-      << ",\"source_arguments_dependent\":"
-      << (use.template_id_occurrence.diagnostic_source_arguments_dependent ?
-              "true" : "false")
-      << ",\"source_in_template_body\":"
-      << (use.template_id_occurrence.diagnostic_source_in_template_body ?
-              "true" : "false")
-      << ",\"source_in_template_header\":"
-      << (use.template_id_occurrence.diagnostic_source_in_template_header ?
-              "true" : "false")
-      << ",\"inside_source_template\":"
-      << (use.template_id_occurrence.diagnostic_inside_source_template ?
-              "true" : "false")
-      << ",\"scope_has_template_placeholders\":"
-      << (use.template_id_occurrence.
-              diagnostic_scope_has_template_placeholders ? "true" : "false")
-      << ",\"dependent_source_pattern\":"
-      << (use.template_id_occurrence.diagnostic_dependent_source_pattern ?
-              "true" : "false")
-      << ",\"materialized_variable_initializer\":"
-      << (use.template_id_occurrence.
-              diagnostic_materialized_variable_initializer ? "true" : "false")
-      << ",\"fixed_class_constant_source\":"
-      << (use.template_id_occurrence.diagnostic_fixed_class_constant_source ?
-              "true" : "false")
-      << ",\"fixed_conversion_alias_source\":"
-      << (use.template_id_occurrence.diagnostic_fixed_conversion_alias_source ?
-              "true" : "false")
       << ",\"binding_sources\":[";
   for(std::size_t i = 0; i < use.bindings.size(); ++i) {
     if(i != 0) out << ',';
@@ -879,6 +850,55 @@ void note_semantic_consolidation(
          << ",\"prepublication_merges\":" << prepublication_merges
          << ",\"collected_occurrences\":" << collected_occurrences
          << ",\"published_occurrences\":" << published_occurrences
+         << '}';
+  state.records.push_back(record.str());
+}
+
+void note_class_materialization_decision(
+    const template_api::TemplateWitnessSession & session,
+    const std::string & location,
+    const std::string & template_name,
+    std::uint32_t source_occurrence_id,
+    int source_use_mode,
+    const std::string & typed_owner,
+    const std::string & structured_arguments,
+    bool typed_materialization)
+{
+  if(!enabled()) return;
+  std::lock_guard<std::mutex> lock(trace_mutex());
+  SessionState & state = state_for_session_locked(session);
+  std::ostringstream record;
+  record << "{\"record\":\"class_materialization_decision\""
+         << ",\"location\":" << quoted(location)
+         << ",\"template_name\":" << quoted(template_name)
+         << ",\"source_occurrence_id\":" << source_occurrence_id
+         << ",\"source_use_mode\":" << source_use_mode
+         << ",\"typed_owner\":" << quoted(typed_owner)
+         << ",\"structured_arguments\":" << quoted(structured_arguments)
+         << ",\"typed_materialization\":"
+         << (typed_materialization ? "true" : "false")
+         << '}';
+  state.records.push_back(record.str());
+}
+
+void note_class_parameterized_source(
+    const template_api::TemplateWitnessSession & session,
+    const std::string & location,
+    const std::string & template_name,
+    std::uint32_t source_occurrence_id,
+    int source_use_mode,
+    const std::string & structured_arguments)
+{
+  if(!enabled()) return;
+  std::lock_guard<std::mutex> lock(trace_mutex());
+  SessionState & state = state_for_session_locked(session);
+  std::ostringstream record;
+  record << "{\"record\":\"class_parameterized_source\""
+         << ",\"location\":" << quoted(location)
+         << ",\"template_name\":" << quoted(template_name)
+         << ",\"source_occurrence_id\":" << source_occurrence_id
+         << ",\"source_use_mode\":" << source_use_mode
+         << ",\"structured_arguments\":" << quoted(structured_arguments)
          << '}';
   state.records.push_back(record.str());
 }

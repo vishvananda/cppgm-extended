@@ -740,6 +740,17 @@ public:
     TypePtr owner_type;
     const ScopedTemplateUseLocation source_use_location_guard(
         source_use_location);
+    const template_api::ScopedSourceTypeMaterialization
+        source_type_materialization(
+            template_api::current_template_witness_session() != nullptr,
+            qualifier_template_id.source_is_static_member_definition_value ?
+                template_api::SourceTypeMaterializationOwner::
+                    StaticMemberInitializer :
+                template_api::SourceTypeMaterializationOwner::None,
+            qualifier_template_id.source_is_static_member_definition_value ?
+                template_api::SourceTypeMaterializationOperation::
+                    StaticMemberInitializer :
+                template_api::SourceTypeMaterializationOperation::None);
     if(!template_api::type::resolve_template_id_syntax_type(
            *this,
            scope,

@@ -1255,7 +1255,8 @@ bool is_trivially_move_constructible_type_for_host_abi_local(SemanticContext & c
   return is_trivially_move_constructible_type_for_host_abi_impl(ctx, type, visiting);
 }
 
-void bind_member_named_type(ClassInfo & info,
+void bind_member_named_type(SemanticContext & ctx,
+                            ClassInfo & info,
                             const std::string & name,
                             const TypePtr & type,
                             MemberAccess access,
@@ -1263,12 +1264,26 @@ void bind_member_named_type(ClassInfo & info,
 {
   std::vector<ClassInfo::TypedefMemberDeclarationSite> & sites =
       info.typedef_member_declaration_sites[name];
+  const ClassInfo::TypedefMemberDeclarationSite::SourceTemplateTypeDependency
+      source_dependency =
+          template_api::current_template_witness_session() == nullptr ||
+          !info.source_template ?
+          ClassInfo::TypedefMemberDeclarationSite::STTD_UNKNOWN :
+          ctx.type_depends_on_template_parameter(type) ?
+              ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT :
+              ClassInfo::TypedefMemberDeclarationSite::STTD_FIXED;
   bool already_processed = false;
   for(std::size_t i = 0; i < sites.size(); ++i) {
     if(sites[i].source_location_id == declaration.source_location_id &&
        sites[i].token_start == declaration.token_start &&
        sites[i].token_end == declaration.token_end) {
       already_processed = true;
+      if(source_dependency ==
+             ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT ||
+         sites[i].source_template_type_dependency ==
+             ClassInfo::TypedefMemberDeclarationSite::STTD_UNKNOWN) {
+        sites[i].source_template_type_dependency = source_dependency;
+      }
       break;
     }
   }
@@ -1279,6 +1294,7 @@ void bind_member_named_type(ClassInfo & info,
   if(!already_processed) {
     ClassInfo::TypedefMemberDeclarationSite site;
     site.source_location_id = declaration.source_location_id;
+    site.source_template_type_dependency = source_dependency;
     site.token_start = declaration.token_start;
     site.token_end = declaration.token_end;
     sites.push_back(site);
@@ -9659,7 +9675,7 @@ void collect_class_simple_declaration(SemanticContext & ctx,
           ctx, *info.member_scope, alias, &info);
       alias = refine_instantiated_class_alias(
           ctx, *info.member_scope, alias);
-      bind_member_named_type(info, member_name, alias, access, init_decl);
+      bind_member_named_type(ctx, info, member_name, alias, access, init_decl);
       continue;
     }
 
@@ -10268,7 +10284,8 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                 deferred[j].name,
                                 deferred[j].type_id_text,
                                 alias);
-        bind_member_named_type(info,
+        bind_member_named_type(ctx,
+                               info,
                                deferred[j].name,
                                alias,
                                access,
@@ -10323,7 +10340,12 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
             make_dependent_class_alias_placeholder(info, member_name, type_id_text);
         trace_class_alias_store(
             ctx, info, "reference-typedef-fallback", member_name, type_id_text, alias);
-        bind_member_named_type(info, member_name, alias, access, init_decl);
+        bind_member_named_type(ctx,
+                               info,
+                               member_name,
+                               alias,
+                               access,
+                               init_decl);
       }
       return;
     }
@@ -10370,7 +10392,12 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
               make_dependent_class_alias_placeholder(info, member_name, type_id_text);
           trace_class_alias_store(
               ctx, info, "reference-typedef-declarator-fallback", member_name, type_id_text, alias);
-          bind_member_named_type(info, member_name, alias, access, init_decl);
+          bind_member_named_type(ctx,
+                                 info,
+                                 member_name,
+                                 alias,
+                                 access,
+                                 init_decl);
         }
       }
       continue;
@@ -10406,7 +10433,12 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
       }
       TypePtr stored_alias = alias ? alias : member_type;
       stored_alias = refine_instantiated_class_alias(ctx, *info.member_scope, stored_alias);
-      bind_member_named_type(info, member_name, stored_alias, access, init_decl);
+      bind_member_named_type(ctx,
+                             info,
+                             member_name,
+                             stored_alias,
+                             access,
+                             init_decl);
       continue;
     }
 
@@ -12110,6 +12142,72 @@ void finalize_class_constant_members(SemanticContext & ctx,
             info.member_scope->values.find(name);
         return found == info.member_scope->values.end() ? nullptr : &found->second;
       };
+  std::set<ValueBinding *> source_dependency_visiting;
+  std::function<template_api::TemplateWitnessSession::SourceValueDependency(
+      ValueBinding &)>
+      classify_source_template_value_dependency;
+  template_api::TemplateWitnessSession * witness_session =
+      template_api::current_template_witness_session();
+  const bool classify_source_template_value_dependencies = witness_session &&
+      info.source_template != nullptr;
+  if(classify_source_template_value_dependencies) {
+    classify_source_template_value_dependency =
+        [&](ValueBinding & binding)
+            -> template_api::TemplateWitnessSession::SourceValueDependency
+        {
+          const auto recorded =
+              witness_session->source_value_dependencies.find(&binding);
+          if(recorded != witness_session->source_value_dependencies.end()) {
+            return recorded->second;
+          }
+          if(!binding.constant_initializer ||
+             !binding.constant_initializer_scope) {
+            return template_api::TemplateWitnessSession::SVD_UNKNOWN;
+          }
+          if(!source_dependency_visiting.insert(&binding).second) {
+            return template_api::TemplateWitnessSession::SVD_DEPENDENT;
+          }
+
+          bool dependent = template_argument_semantics::
+              expression_syntax_uses_template_binding(
+                  *binding.constant_initializer_scope,
+                  *binding.constant_initializer);
+          std::function<void(const CppAstNode &)> inspect_member_references;
+          inspect_member_references = [&](const CppAstNode & node) -> void
+          {
+            if(dependent) return;
+            if(node.kind == CppAstKind::id_expression && !node.value.empty()) {
+              const ValueBinding * referenced =
+                  ctx.lookup_value_node(*binding.constant_initializer_scope,
+                                        node,
+                                        node.value);
+              if(referenced &&
+                 referenced != &binding &&
+                 referenced->owner_class == &info) {
+                ValueBinding * retained = find_current_binding(referenced->name);
+                if(retained &&
+                   classify_source_template_value_dependency(*retained) ==
+                       template_api::TemplateWitnessSession::SVD_DEPENDENT) {
+                  dependent = true;
+                }
+              }
+            }
+            for(std::size_t i = 0; i < node.children.size(); ++i) {
+              inspect_member_references(node.children[i]);
+            }
+          };
+          if(!dependent) {
+            inspect_member_references(*binding.constant_initializer);
+          }
+          const template_api::TemplateWitnessSession::SourceValueDependency
+              result = dependent ?
+                  template_api::TemplateWitnessSession::SVD_DEPENDENT :
+                  template_api::TemplateWitnessSession::SVD_FIXED;
+          witness_session->source_value_dependencies[&binding] = result;
+          source_dependency_visiting.erase(&binding);
+          return result;
+        };
+  }
   std::vector<std::string> member_names;
   for(std::map<std::string, ValueBinding>::const_iterator it =
           info.member_scope->values.begin();
@@ -12136,6 +12234,9 @@ void finalize_class_constant_members(SemanticContext & ctx,
     }
     if(!binding->constant_initializer || !binding->constant_initializer_scope) {
       continue;
+    }
+    if(classify_source_template_value_dependencies) {
+      (void)classify_source_template_value_dependency(*binding);
     }
     if(class_instantiation_is_dependent(ctx, info)) {
       binding->dependent_template_value = true;
@@ -12338,7 +12439,12 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
             make_dependent_class_alias_placeholder(info, member_name, type_id_text);
         trace_class_alias_store(
             ctx, info, "dependent-typedef-fallback", member_name, type_id_text, alias);
-        bind_member_named_type(info, member_name, alias, access, init_decl);
+        bind_member_named_type(ctx,
+                               info,
+                               member_name,
+                               alias,
+                               access,
+                               init_decl);
       }
       return;
     }
@@ -12403,7 +12509,12 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
               make_dependent_class_alias_placeholder(info, member_name, type_id_text);
           trace_class_alias_store(
               ctx, info, "dependent-typedef-declarator-fallback", member_name, type_id_text, alias);
-          bind_member_named_type(info, member_name, alias, access, init_decl);
+          bind_member_named_type(ctx,
+                                 info,
+                                 member_name,
+                                 alias,
+                                 access,
+                                 init_decl);
           continue;
         }
       }
@@ -12433,7 +12544,8 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
         alias = make_dependent_class_alias_placeholder(
             info, member_name, dependent_typedef_type_text(filtered_specifiers));
       }
-      bind_member_named_type(info,
+      bind_member_named_type(ctx,
+                             info,
                              member_name,
                              alias ? alias : member_type,
                              access,

@@ -13979,7 +13979,7 @@ bool substitute_bound_template_template_names_in_argument_syntax(
     }
   }
   if(changed) {
-    syntax.substituted_from_template_binding = true;
+    syntax.note_substituted_template_binding();
   }
   return changed;
 }
@@ -15570,7 +15570,7 @@ void thread_type_replacements_into_template_argument_syntax(
         it != type_replacements.end();
         ++it) {
       if(argument_syntax_mentions_identifier(source_arg, it->first)) {
-        target_arg.substituted_from_template_binding = true;
+        target_arg.note_substituted_template_binding();
         break;
       }
     }
@@ -15708,7 +15708,7 @@ TemplateArgumentSyntax make_expanded_type_pack_argument_syntax(
     TemplateArgumentSyntax out =
         clone_argument_syntax_for_template_substitution(
             *source_argument->source_syntax);
-    out.substituted_from_template_binding = true;
+    out.note_substituted_template_binding();
     if(out.source_text.empty()) {
       out.source_text = source.text;
     }
@@ -15721,7 +15721,7 @@ TemplateArgumentSyntax make_expanded_type_pack_argument_syntax(
     return out;
   }
   TemplateArgumentSyntax out = source;
-  out.substituted_from_template_binding = true;
+  out.note_substituted_template_binding();
   const string text = reparseable_type_argument_text(type);
   if(out.source_text.empty()) {
     out.source_text = source.text;
@@ -17263,7 +17263,7 @@ bool substitute_dependent_argument_syntax_with_replacements(
     changed = true;
   }
   if(changed) {
-    syntax.substituted_from_template_binding = true;
+    syntax.note_substituted_template_binding();
     populate_template_argument_component_syntax_from_nodes(syntax);
     const string structured_text = current_structured_argument_text(syntax);
     if(!structured_text.empty()) {
@@ -21567,6 +21567,26 @@ bool scope_chain_has_unqualified_template_bound_name(const Scope & scope,
   return false;
 }
 
+bool scope_chain_has_dependent_named_type(const Scope & scope,
+                                          const string & name)
+{
+  const string normalized = strip_elaborated_type_prefix(trim_space(name));
+  if(normalized.empty()) {
+    return false;
+  }
+  for(const Scope * current = &scope; current; current = current->parent) {
+    const auto found = current->named_types.find(normalized);
+    if(found != current->named_types.end()) {
+      return found->second &&
+          named_type_has_dependent_semantic(found->second);
+    }
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+  }
+  return false;
+}
+
 bool qualified_name_mentions_unqualified_template_bound_name(
     const Scope & scope,
     const QualifiedName & name)
@@ -21951,11 +21971,11 @@ void collect_template_argument_substitution_state(
     const TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
     state.has_substituted_argument =
         state.has_substituted_argument ||
-        argument.substituted_from_template_binding;
+        argument.has_substituted_template_binding();
     state.has_unsubstituted_dependent_argument =
         state.has_unsubstituted_dependent_argument ||
         (argument.dependent &&
-         !argument.substituted_from_template_binding);
+         !argument.has_substituted_template_binding());
     if(argument.template_id) {
       collect_template_argument_substitution_state(*argument.template_id,
                                                    state);
@@ -24361,7 +24381,7 @@ bool expand_bound_packs_in_argument_syntax(
     syntax.pack_expansion = false;
   }
   if(changed) {
-    syntax.substituted_from_template_binding = true;
+    syntax.note_substituted_template_binding();
     if(!preserved_resolved_type) {
       syntax.resolved_type.reset();
     }
@@ -24474,6 +24494,58 @@ bool argument_syntax_carries_substituted_resolved_type(
              compact_source_argument_key(text);
 }
 
+bool source_type_binding_is_fixed_class_member(
+    Scope & scope,
+    const string & name,
+    const TypePtr & resolved_type)
+{
+  if(name.empty() || !resolved_type) {
+    return false;
+  }
+  for(Scope * current = &scope; current; current = current->parent) {
+    ClassInfo * concrete = current->class_info;
+    if(!concrete || !concrete->source_template) {
+      continue;
+    }
+    const auto binding = current->named_types.find(name);
+    if(binding == current->named_types.end() ||
+       !binding->second ||
+       !type_equals(strip_top_level_cv(binding->second),
+                    strip_top_level_cv(resolved_type))) {
+      continue;
+    }
+    bool found_source_binding = false;
+    for(auto instance =
+            concrete->source_template->reference_instantiations.begin();
+        instance != concrete->source_template->reference_instantiations.end();
+        ++instance) {
+      const ClassInfo * source = instance->second;
+      if(!source || !source->dependent_instantiation) {
+        continue;
+      }
+      const auto sites = source->typedef_member_declaration_sites.find(name);
+      if(sites == source->typedef_member_declaration_sites.end()) {
+        continue;
+      }
+      for(size_t i = 0; i < sites->second.size(); ++i) {
+        const ClassInfo::TypedefMemberDeclarationSite & site =
+            sites->second[i];
+        if(site.source_template_type_dependency ==
+               ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT) {
+          return false;
+        }
+        found_source_binding = found_source_binding ||
+            site.source_template_type_dependency ==
+                ClassInfo::TypedefMemberDeclarationSite::STTD_FIXED;
+      }
+    }
+    if(found_source_binding) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void substitute_type_pack_template_id_arguments(
     TemplateIdSyntax & syntax,
     Scope & scope,
@@ -24566,7 +24638,13 @@ void substitute_type_pack_template_id_arguments(
       if(!argument_syntax_mentions_identifier(argument, it->first)) {
         continue;
       }
-      argument.substituted_from_template_binding = true;
+      argument.note_substituted_template_binding();
+      if(preserve_source_syntax &&
+         source_type_binding_is_fixed_class_member(scope,
+                                                   it->first,
+                                                   it->second)) {
+        argument.note_fixed_class_binding();
+      }
       if(argument.pack_expansion) {
         pack_expansion_consumed = true;
       }
@@ -25024,7 +25102,7 @@ bool argument_syntax_uses_bound_template_type_impl(
     Scope & scope,
     const TemplateArgumentSyntax & syntax)
 {
-  if(syntax.substituted_from_template_binding) {
+  if(syntax.has_substituted_template_binding()) {
     return true;
   }
   map<string, TypePtr> replacements;
@@ -25403,7 +25481,7 @@ bool substitute_bound_replacements_in_argument_syntax(Scope & scope,
     changed = true;
   }
   if(changed) {
-    syntax.substituted_from_template_binding = true;
+    syntax.note_substituted_template_binding();
   }
   if(changed && syntax.template_id) {
     syntax.text = template_id_syntax_lookup_text(*syntax.template_id);
@@ -27437,6 +27515,8 @@ bool template_id_syntax_has_dependent_owner(
   if(!syntax.name.rooted) {
     for(size_t i = 0; i < syntax.name.qualifiers.size(); ++i) {
       if(scope_chain_has_unqualified_template_bound_name(
+             scope, syntax.name.qualifiers[i]) ||
+         scope_chain_has_dependent_named_type(
              scope, syntax.name.qualifiers[i])) {
         return true;
       }
@@ -27485,6 +27565,97 @@ bool argument_syntax_uses_bound_template_type(
     const TemplateArgumentSyntax & syntax)
 {
   return argument_syntax_uses_bound_template_type_impl(scope, syntax);
+}
+
+bool argument_syntax_uses_template_binding(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  return argument_syntax_mentions_unqualified_template_bound_name(scope,
+                                                                  syntax);
+}
+
+bool argument_syntax_uses_fixed_class_value(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  const template_api::TemplateWitnessSession * witness_session =
+      template_api::current_template_witness_session();
+  if(!witness_session) {
+    return false;
+  }
+  bool matched = false;
+  bool dependent = false;
+  std::function<void(const CppAstNode &)> inspect;
+  inspect = [&](const CppAstNode & node) -> void
+  {
+    if(node.kind == CppAstKind::id_expression && !node.value.empty()) {
+      const ValueBinding * binding = nullptr;
+      if(lookup_leaf_value_binding(scope, node.value, binding) && binding) {
+        const auto recorded =
+            witness_session->source_value_dependencies.find(binding);
+        if(recorded != witness_session->source_value_dependencies.end()) {
+          matched = matched ||
+              recorded->second ==
+                  template_api::TemplateWitnessSession::SVD_FIXED;
+          dependent = dependent ||
+              recorded->second ==
+                  template_api::TemplateWitnessSession::SVD_DEPENDENT;
+        }
+      }
+    }
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      inspect(node.children[i]);
+    }
+  };
+  if(syntax.expression) inspect(*syntax.expression);
+  if(syntax.type_id) inspect(*syntax.type_id);
+  return matched && !dependent;
+}
+
+bool argument_syntax_uses_fixed_class_type(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax,
+    const TypePtr & resolved_type)
+{
+  const CppAstNode * type_id = syntax.source_type_id ?
+      syntax.source_type_id.get() : syntax.type_id.get();
+  const CppAstNode * type_name = type_id ?
+      direct_type_name_type_id_child(*type_id) : nullptr;
+  bool has_template_id = type_name &&
+      type_name->template_id_syntax &&
+      !type_name->template_id_syntax->name.name.empty();
+  for(size_t i = 0;
+      type_name && !has_template_id &&
+          i < type_name->qualifier_template_id_syntaxes.size();
+      ++i) {
+    has_template_id =
+        !type_name->qualifier_template_id_syntaxes[i].name.name.empty();
+  }
+  if(!type_name || has_template_id) {
+    return false;
+  }
+  string name;
+  if(const QualifiedName * qualified = cppast_qualified_name_syntax(*type_name)) {
+    if(qualified->rooted ||
+       !qualified->qualifiers.empty() ||
+       qualified->name.empty()) {
+      return false;
+    }
+    name = qualified->name;
+  } else {
+    name = strip_elaborated_type_prefix(trim_space(type_name->value));
+  }
+  return is_identifier_text(name) &&
+      source_type_binding_is_fixed_class_member(scope, name, resolved_type);
+}
+
+bool expression_syntax_uses_template_binding(
+    Scope & scope,
+    const CppAstNode & syntax)
+{
+  return expression_node_mentions_unqualified_template_bound_name(scope,
+                                                                  syntax);
 }
 
 void clear_pack_element_source_provenance(CppAstNode & node)

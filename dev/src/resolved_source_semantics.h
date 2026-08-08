@@ -18,6 +18,26 @@ struct Scope;
 
 namespace resolved_source_semantics {
 
+struct ResolvedSourceTypeMaterialization
+{
+  semantic_model::ClassTemplateDecl * origin = nullptr;
+  semantic_model::ClassInfo * instance = nullptr;
+  const cpp_decl::TemplateIdSyntax * source_syntax = nullptr;
+  const std::vector<template_model::TemplateArgument> * arguments = nullptr;
+  const template_api::ClassSpecializationSelection * selection = nullptr;
+  cpp_decl::TypePtr resolved_type;
+  uint32_t source_occurrence_id = 0;
+  template_api::SourceTypeMaterializationOwner owner =
+      template_api::SourceTypeMaterializationOwner::None;
+  bool materialized_source_type = false;
+
+  bool valid() const
+  {
+    return origin && instance && source_syntax && arguments && selection &&
+        resolved_type && materialized_source_type;
+  }
+};
+
 // Non-owning view of the semantic facts produced while resolving one source
 // class-template-id. Retained source results copy compact handles from this
 // view instead of owning another template argument graph.
@@ -40,6 +60,8 @@ struct ResolvedClassTemplateIdView
       semantic_source_use::SourceUseOwnership::SourceOwned;
   semantic_source_use::SourceUseRole source_role =
       semantic_source_use::SourceUseRole::TypeUse;
+  cpp_decl::TemplateIdSourceDependency source_dependency =
+      cpp_decl::TemplateIdSourceDependency::Unknown;
   bool dependent_arguments = false;
   bool nested_source_use = false;
   bool clear_template_id_occurrence = false;

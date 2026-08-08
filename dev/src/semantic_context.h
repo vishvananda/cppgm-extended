@@ -43,6 +43,7 @@ struct ClassSpecializationSelection;
 
 namespace resolved_source_semantics {
 struct ResolvedClassTemplateIdView;
+struct ResolvedSourceTypeMaterialization;
 struct ResolvedAliasTemplateId;
 struct ResolvedOwnerReference;
 }  // namespace resolved_source_semantics
@@ -730,7 +731,9 @@ public:
       semantic_model::FunctionBinding * source_function = nullptr,
       const cpp_decl::TemplateIdSyntax * source_syntax = nullptr) = 0;
   virtual void observe_resolved_class_template_id(
-      const resolved_source_semantics::ResolvedClassTemplateIdView & resolved) = 0;
+      const resolved_source_semantics::ResolvedClassTemplateIdView & resolved,
+      const resolved_source_semantics::ResolvedSourceTypeMaterialization *
+          materialization = nullptr) = 0;
   virtual void submit_resolved_class_use(
       witness::ClassUseEmitRequest request) = 0;
   virtual void observe_resolved_alias_template_id(

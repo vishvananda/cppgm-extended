@@ -160,6 +160,24 @@ void note_semantic_consolidation(
     std::size_t collected_occurrences,
     std::size_t published_occurrences);
 
+void note_class_materialization_decision(
+    const template_api::TemplateWitnessSession & session,
+    const std::string & location,
+    const std::string & template_name,
+    std::uint32_t source_occurrence_id,
+    int source_use_mode,
+    const std::string & typed_owner,
+    const std::string & structured_arguments,
+    bool typed_materialization);
+
+void note_class_parameterized_source(
+    const template_api::TemplateWitnessSession & session,
+    const std::string & location,
+    const std::string & template_name,
+    std::uint32_t source_occurrence_id,
+    int source_use_mode,
+    const std::string & structured_arguments);
+
 void finish_session(const template_api::TemplateWitnessSession & session,
                     const std::string & source_path);
 

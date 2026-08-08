@@ -12,6 +12,8 @@ int main()
   std::cout << "Type " << sizeof(cpp_decl::Type) << '\n';
   std::cout << "TemplateArgument "
             << sizeof(template_model::TemplateArgument) << '\n';
+  std::cout << "TemplateIdSyntax "
+            << sizeof(cpp_decl::TemplateIdSyntax) << '\n';
   std::cout << "ClassInfo " << sizeof(semantic_model::ClassInfo) << '\n';
   std::cout << "FunctionBinding "
             << sizeof(semantic_model::FunctionBinding) << '\n';
@@ -26,6 +28,10 @@ int main()
             << sizeof(semantic_model::OutOfClassMemberFunctionDecl) << '\n';
   std::cout << "ResolvedClassTemplateIdView "
             << sizeof(resolved_source_semantics::ResolvedClassTemplateIdView)
+            << '\n';
+  std::cout << "ResolvedSourceTypeMaterialization "
+            << sizeof(
+                   resolved_source_semantics::ResolvedSourceTypeMaterialization)
             << '\n';
   std::cout << "ResolvedAliasTemplateId "
             << sizeof(resolved_source_semantics::ResolvedAliasTemplateId)

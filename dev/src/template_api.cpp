@@ -201,6 +201,16 @@ thread_local std::vector<TemplateIdSourceArgumentFrame>
     template_id_source_argument_stack;
 thread_local std::map<TemplateIdSourceArgumentKey,
                       std::vector<std::string> > template_id_source_argument_cache;
+struct SourceTypeMaterializationFrame
+{
+  SourceTypeMaterializationOwner owner =
+      SourceTypeMaterializationOwner::None;
+  SourceTypeMaterializationOperation operation =
+      SourceTypeMaterializationOperation::None;
+};
+
+thread_local std::vector<SourceTypeMaterializationFrame>
+    source_type_materialization_stack;
 
 bool has_nonempty_location(const std::vector<std::string> & locations)
 {
@@ -1453,6 +1463,54 @@ TemplateClosureReason closure_reason_for_function_binding_acquisition_cause(
 }
 
 }  // namespace
+
+void source_type_materialization_detail::push(
+    SourceTypeMaterializationOwner owner,
+    SourceTypeMaterializationOperation operation)
+{
+  SourceTypeMaterializationFrame frame;
+  frame.owner = owner;
+  frame.operation = operation;
+  source_type_materialization_stack.push_back(frame);
+}
+
+void source_type_materialization_detail::pop()
+{
+  source_type_materialization_stack.pop_back();
+}
+
+SourceTypeMaterializationOwner current_source_type_materialization_owner()
+{
+  return source_type_materialization_stack.empty() ?
+      SourceTypeMaterializationOwner::None :
+      source_type_materialization_stack.back().owner;
+}
+
+SourceTypeMaterializationOperation
+current_source_type_materialization_operation()
+{
+  return source_type_materialization_stack.empty() ?
+      SourceTypeMaterializationOperation::None :
+      source_type_materialization_stack.back().operation;
+}
+
+const char * source_type_materialization_owner_name(
+    SourceTypeMaterializationOwner owner)
+{
+  switch(owner) {
+    case SourceTypeMaterializationOwner::FunctionBody:
+      return "function_body";
+    case SourceTypeMaterializationOwner::DeclarationType:
+      return "declaration_type";
+    case SourceTypeMaterializationOwner::StaticMemberInitializer:
+      return "static_member_initializer";
+    case SourceTypeMaterializationOwner::VariableTemplateInitializer:
+      return "variable_template_initializer";
+    case SourceTypeMaterializationOwner::None:
+      break;
+  }
+  return "none";
+}
 
 std::string canonicalize_template_parameter_source_text(
     const std::vector<template_model::TemplateParameterInfo> & parameters,
@@ -2739,10 +2797,23 @@ ScopedTemplateWitnessEntryContext maybe_enter_function_body_materialization_cont
     SemanticContext & ctx,
     const semantic_model::FunctionBinding * binding)
 {
-  return maybe_enter_function_binding_closure_context(
-      ctx,
-      TemplateClosureReason::EnsureDefinition,
-      binding);
+  if(ctx.template_witness_context().session == nullptr) {
+    return ScopedTemplateWitnessEntryContext();
+  }
+  if(current_template_witness_entry_context().origin ==
+         TemplateWitnessOrigin::Closure ||
+     !function_binding_has_template_identity(binding)) {
+    return ScopedTemplateWitnessEntryContext(
+        SourceTypeMaterializationOwner::FunctionBody,
+        SourceTypeMaterializationOperation::SourceTypeNode);
+  }
+  return ScopedTemplateWitnessEntryContext(
+      make_function_binding_closure_entry_context(
+          ctx,
+          TemplateClosureReason::EnsureDefinition,
+          binding),
+      SourceTypeMaterializationOwner::FunctionBody,
+      SourceTypeMaterializationOperation::SourceTypeNode);
 }
 
 ScopedTemplateWitnessEntryContext maybe_enter_class_closure_context(
@@ -7192,6 +7263,10 @@ TemplateInstantiationResult acquire_variable_instantiation(
 
   const auto instantiate = [&]()
   {
+    const ScopedSourceTypeMaterialization source_type_materialization(
+        current_template_witness_session() != nullptr,
+        SourceTypeMaterializationOwner::VariableTemplateInitializer,
+        SourceTypeMaterializationOperation::VariableTemplateInitializer);
     return template_instantiation::instantiate_variable_template(
         ctx,
         *request.decl,

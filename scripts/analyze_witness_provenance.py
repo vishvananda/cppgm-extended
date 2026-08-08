@@ -85,9 +85,66 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
     lifecycle_output: list[dict[str, Any]] = []
     unknown_producers: collections.Counter[str] = collections.Counter()
     semantic_consolidation: dict[str, collections.Counter[str]] = {}
+    class_materialization = collections.Counter()
+    class_materialization_decisions: list[dict[str, Any]] = []
+    class_parameterized_sources: list[dict[str, Any]] = []
 
     for record in records:
         record_kind = record.get("record")
+        if record_kind == "class_parameterized_source":
+            class_parameterized_sources.append(
+                {
+                    "location": str(record.get("location", "")),
+                    "template_name": str(record.get("template_name", "")),
+                    "source_occurrence_id": int(
+                        record.get("source_occurrence_id", 0)
+                    ),
+                    "source_use_mode": int(record.get("source_use_mode", -1)),
+                    "structured_arguments": str(
+                        record.get("structured_arguments", "")
+                    ),
+                    "source": record.get("_trace_file", ""),
+                }
+            )
+            continue
+        if record_kind == "class_materialization_decision":
+            typed_owner = str(record.get("typed_owner", "none"))
+            typed_materialization = bool(record.get("typed_materialization", False))
+            legacy_admitted = bool(record.get("legacy_admitted", False))
+            class_materialization["decisions"] += 1
+            class_materialization[
+                f"typed_owner:{typed_owner}"
+            ] += 1
+            class_materialization[
+                "typed_admitted" if typed_materialization else "typed_rejected"
+            ] += 1
+            if "legacy_admitted" in record:
+                class_materialization[
+                    "legacy_admitted" if legacy_admitted else "legacy_rejected"
+                ] += 1
+                if typed_materialization != legacy_admitted:
+                    class_materialization["shadow_mismatch"] += 1
+            class_materialization_decisions.append(
+                {
+                    "location": str(record.get("location", "")),
+                    "template_name": str(record.get("template_name", "")),
+                    "source_occurrence_id": int(
+                        record.get("source_occurrence_id", 0)
+                    ),
+                    "source_use_mode": int(record.get("source_use_mode", -1)),
+                    "typed_owner": typed_owner,
+                    "structured_arguments": str(
+                        record.get("structured_arguments", "")
+                    ),
+                    "typed_materialization": typed_materialization,
+                    "source": record.get("_trace_file", ""),
+                }
+            )
+            if "legacy_admitted" in record:
+                class_materialization_decisions[-1][
+                    "legacy_admitted"
+                ] = legacy_admitted
+            continue
         if record_kind == "semantic_consolidation":
             family = str(record.get("family", "unknown"))
             counts = semantic_consolidation.setdefault(
@@ -287,6 +344,23 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
             family: sorted_counter(counts)
             for family, counts in sorted(semantic_consolidation.items())
         },
+        "class_materialization_summary": sorted_counter(class_materialization),
+        "class_materialization_decisions": sorted(
+            class_materialization_decisions,
+            key=lambda item: (
+                item["location"],
+                item["template_name"],
+                item["typed_owner"],
+            ),
+        ),
+        "class_parameterized_sources": sorted(
+            class_parameterized_sources,
+            key=lambda item: (
+                item["location"],
+                item["template_name"],
+                item["structured_arguments"],
+            ),
+        ),
         "unknown_producer_attempts": sorted_counter(unknown_producers),
     }
 

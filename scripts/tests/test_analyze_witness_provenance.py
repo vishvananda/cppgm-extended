@@ -126,6 +126,50 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
             },
         )
 
+    def test_class_materialization_shadow_decisions_are_reported(self):
+        report = MODULE.build_report(
+            [
+                self.record(
+                    "class_materialization_decision",
+                    location="test.t:4:9",
+                    template_name="Box",
+                    source_occurrence_id=17,
+                    source_use_mode=0,
+                    typed_owner="declaration_type",
+                    structured_arguments="type:dependent=no",
+                    typed_materialization=True,
+                    legacy_admitted=True,
+                ),
+                self.record(
+                    "class_materialization_decision",
+                    location="test.t:8:3",
+                    template_name="Other",
+                    source_occurrence_id=21,
+                    source_use_mode=3,
+                    typed_owner="none",
+                    structured_arguments="",
+                    typed_materialization=False,
+                    legacy_admitted=True,
+                ),
+            ]
+        )
+        self.assertEqual(
+            report["class_materialization_summary"],
+            {
+                "decisions": 2,
+                "legacy_admitted": 2,
+                "shadow_mismatch": 1,
+                "typed_admitted": 1,
+                "typed_owner:declaration_type": 1,
+                "typed_owner:none": 1,
+                "typed_rejected": 1,
+            },
+        )
+        self.assertEqual(
+            report["class_materialization_decisions"][0]["source_occurrence_id"],
+            17,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

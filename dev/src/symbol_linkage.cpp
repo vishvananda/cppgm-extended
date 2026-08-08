@@ -3736,6 +3736,12 @@ static TemplateIdSyntax clone_template_id_syntax_for_mangling(
   TemplateIdSyntax out;
   out.name = source.name;
   out.source_location_id = source.source_location_id;
+  out.source_is_nested_template_argument =
+      source.source_is_nested_template_argument;
+  out.source_is_qualified_member_owner =
+      source.source_is_qualified_member_owner;
+  out.source_is_static_member_definition_value =
+      source.source_is_static_member_definition_value;
   out.qualifier_template_id_syntaxes.reserve(
       source.qualifier_template_id_syntaxes.size());
   for(size_t i = 0; i < source.qualifier_template_id_syntaxes.size(); ++i) {
@@ -3760,8 +3766,7 @@ static TemplateArgumentSyntax clone_template_argument_syntax_for_mangling(
   out.source_text = source.source_text;
   out.pack_expansion = source.pack_expansion;
   out.dependent = source.dependent;
-  out.substituted_from_template_binding =
-      source.substituted_from_template_binding;
+  out.source_binding_provenance = source.source_binding_provenance;
   out.has_source_token_start = source.has_source_token_start;
   out.source_token_start = source.source_token_start;
   out.source_location_id = source.source_location_id;

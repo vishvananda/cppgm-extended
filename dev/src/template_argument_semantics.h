@@ -267,7 +267,6 @@ void append_non_bool_static_value_dependencies_in_template_argument_syntax(
     const cpp_decl::TemplateArgumentSyntax & syntax,
     const cpp_decl::TypePtr & bound_value_type,
     std::vector<template_model::TemplateValueDependency> & out);
-
 void note_template_value_dependencies_for_witness(
     SemanticContext & ctx,
     const std::vector<template_model::TemplateValueDependency> & dependencies);
@@ -460,6 +459,19 @@ bool resolve_type_argument_input(template_api::TemplateServices & services,
 bool argument_syntax_uses_bound_template_type(
     semantic_model::Scope & scope,
     const cpp_decl::TemplateArgumentSyntax & syntax);
+bool argument_syntax_uses_template_binding(
+    semantic_model::Scope & scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax);
+bool argument_syntax_uses_fixed_class_value(
+    semantic_model::Scope & scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax);
+bool argument_syntax_uses_fixed_class_type(
+    semantic_model::Scope & scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax,
+    const cpp_decl::TypePtr & resolved_type);
+bool expression_syntax_uses_template_binding(
+    semantic_model::Scope & scope,
+    const CppAstNode & syntax);
 
 enum StandardMetaMemberTypeResolution
 {

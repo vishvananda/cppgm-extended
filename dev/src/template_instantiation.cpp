@@ -8715,6 +8715,13 @@ bool replay_witness_static_member_definition_if_needed(
     return true;
   }
 
+  const template_api::ScopedSourceTypeMaterialization
+      source_type_materialization(
+          template_api::current_template_witness_session() != nullptr,
+          template_api::SourceTypeMaterializationOwner::
+              StaticMemberInitializer,
+          template_api::SourceTypeMaterializationOperation::
+              StaticMemberInitializer);
   Scope & init_scope = ctx.append_template_scope(*info.member_scope);
   if(!partial) {
     bind_template_arguments_into_scope(ctx,

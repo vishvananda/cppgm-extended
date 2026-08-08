@@ -21,6 +21,42 @@ struct FunctionSymbolOptions;
 
 namespace template_api {
 
+class ScopedSourceTypeMaterialization
+{
+public:
+  ScopedSourceTypeMaterialization(
+      bool witness_session_enabled,
+      SourceTypeMaterializationOwner owner,
+      SourceTypeMaterializationOperation operation)
+    : active_(witness_session_enabled &&
+              operation != SourceTypeMaterializationOperation::None)
+  {
+    if(active_) {
+      source_type_materialization_detail::push(owner, operation);
+    }
+  }
+  ~ScopedSourceTypeMaterialization()
+  {
+    if(active_) {
+      source_type_materialization_detail::pop();
+    }
+  }
+
+  ScopedSourceTypeMaterialization(
+      const ScopedSourceTypeMaterialization &) = delete;
+  ScopedSourceTypeMaterialization & operator=(
+      const ScopedSourceTypeMaterialization &) = delete;
+
+private:
+  bool active_ = false;
+};
+
+SourceTypeMaterializationOwner current_source_type_materialization_owner();
+SourceTypeMaterializationOperation
+current_source_type_materialization_operation();
+const char * source_type_materialization_owner_name(
+    SourceTypeMaterializationOwner owner);
+
 enum NonTypeArgumentStatus
 {
   NT_ARG_PARSE_FAILED,

@@ -3587,6 +3587,80 @@ bool simple_bound_member_type_argument_syntax(
   return true;
 }
 
+bool simple_unqualified_type_argument_name_from_node(
+    const CppAstNode * type_id,
+    std::string & name)
+{
+  name.clear();
+  if(!type_id ||
+     type_id->kind != CppAstKind::type_id ||
+     type_id->children.size() != 1 ||
+     type_id->children[0].kind != CppAstKind::type_specifier_seq ||
+     type_id->children[0].children.size() != 1) {
+    return false;
+  }
+  const CppAstNode * type_name = &type_id->children[0].children[0];
+  if(type_name->kind != CppAstKind::type_name ||
+     type_name_has_actual_template_id_syntax(*type_name)) {
+    return false;
+  }
+  const QualifiedName * qualified = cppast_qualified_name_syntax(*type_name);
+  if(qualified) {
+    if(qualified->rooted ||
+       !qualified->qualifiers.empty() ||
+       qualified->name.empty()) {
+      return false;
+    }
+    name = qualified->name;
+  } else {
+    name = strip_elaborated_type_prefix(trim_space(type_name->value));
+  }
+  return is_identifier_text(name);
+}
+
+bool simple_unqualified_source_type_argument_name(
+    const TemplateArgumentSyntax * syntax,
+    std::string & name)
+{
+  if(!syntax) {
+    name.clear();
+    return false;
+  }
+  return simple_unqualified_type_argument_name_from_node(
+      syntax->source_type_id ? syntax->source_type_id.get() :
+                               syntax->type_id.get(),
+      name);
+}
+
+void note_substituted_source_argument(
+    Scope & scope,
+    const TemplateArgumentSyntax * syntax,
+    TemplateArgument & argument)
+{
+  if(!syntax ||
+     !argument.source_syntax ||
+     argument.dependent) {
+    return;
+  }
+  bool fixed_binding = false;
+  if(argument.kind == TemplateArgument::TA_TYPE) {
+    fixed_binding = template_argument_semantics::
+        argument_syntax_uses_fixed_class_type(
+            scope, *syntax, argument.type);
+  } else if(argument.kind == TemplateArgument::TA_VALUE) {
+    fixed_binding = template_argument_semantics::
+        argument_syntax_uses_fixed_class_value(scope, *syntax);
+  }
+  if(fixed_binding) {
+    argument.source_syntax->note_fixed_class_binding();
+  }
+  const bool substituted = template_argument_semantics::
+      argument_syntax_uses_template_binding(scope, *syntax);
+  if(substituted) {
+    argument.source_syntax->note_substituted_template_binding();
+  }
+}
+
 bool stable_class_member_scope_lookup(const ClassInfo & info)
 {
   return (info.complete || info.reference_members_collected) &&
@@ -4259,6 +4333,9 @@ void overlay_default_argument_use_scope_bindings(
 
 void reattach_template_argument_source_syntaxes_from_inputs(
     const template_argument_semantics::ExpandedTemplateArgumentInputs & inputs,
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const std::vector<TemplateParameterInfo> & parameters,
     std::vector<TemplateArgument> & arguments)
 {
   const std::size_t explicit_count =
@@ -4268,6 +4345,13 @@ void reattach_template_argument_source_syntaxes_from_inputs(
       continue;
     }
     attach_template_argument_source_syntax(inputs.syntax_for(i), arguments[i]);
+    if(services.witness_context.session != nullptr &&
+       i < parameters.size()) {
+      note_substituted_source_argument(
+          scope,
+          inputs.syntax_for(i),
+          arguments[i]);
+    }
   }
 }
 
@@ -12386,6 +12470,28 @@ bool can_skip_resolved_non_dependent_pattern_check(
 
 }  // namespace
 
+bool source_type_argument_is_current_specialization(
+    Scope & scope,
+    const TemplateArgumentSyntax * syntax,
+    const TypePtr & resolved_type)
+{
+  std::string name;
+  if(!resolved_type ||
+     !simple_unqualified_source_type_argument_name(syntax, name)) {
+    return false;
+  }
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->class_info &&
+       current->class_info->source_template &&
+       current->class_info->type &&
+       type_equals(strip_top_level_cv(resolved_type),
+                   strip_top_level_cv(current->class_info->type))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool expand_dependent_alias_pattern_for_partial_order(
     SemanticContext & ctx,
     Scope & scope,
@@ -13283,6 +13389,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
               services,
               argument_scope,
               *syntax);
+      note_substituted_source_argument(raw_argument_scope, syntax, out);
     }
     return true;
   }
@@ -13618,6 +13725,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
     template_argument_semantics::note_template_value_dependencies_for_witness(
         *services.semantic_context,
         out.mutable_rare().value_dependencies);
+    note_substituted_source_argument(raw_argument_scope, syntax, out);
   }
   return true;
 }
@@ -13864,7 +13972,12 @@ bool resolve_template_arguments(
         ++counters->resolve_template_argument_cache_hits;
       }
       out = fast_cached->arguments;
-      reattach_template_argument_source_syntaxes_from_inputs(resolution_inputs, out);
+      reattach_template_argument_source_syntaxes_from_inputs(
+          resolution_inputs,
+          services,
+          raw_scope,
+          parameters,
+          out);
       if(fast_cached->success) {
         rehydrate_cached_defaulted_non_type_argument_witness_dependencies(
             services,
@@ -13938,7 +14051,12 @@ bool resolve_template_arguments(
         note_resolve_template_arguments_fast_cache_entry(cache_key, cached->second);
       }
       out = cached->second.arguments;
-      reattach_template_argument_source_syntaxes_from_inputs(resolution_inputs, out);
+      reattach_template_argument_source_syntaxes_from_inputs(
+          resolution_inputs,
+          services,
+          raw_scope,
+          parameters,
+          out);
       if(cached->second.success) {
         rehydrate_cached_defaulted_non_type_argument_witness_dependencies(
             services,
@@ -14080,7 +14198,7 @@ bool resolve_template_arguments(
 	          note_cache_failure();
 	          return false;
 	        }
-        out.push_back(arg);
+	        out.push_back(arg);
         ++text_index;
       }
       note_cache_success();
