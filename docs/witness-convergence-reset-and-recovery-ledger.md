@@ -18,7 +18,7 @@
 | Phase | Commit | Correctness | Provenance | Performance | Status |
 | --- | --- | --- | --- | --- | --- |
 | 0. Preserve and restore | `afcdb6ae29c4` | 1,339/1,530 expanded; 1,305/1,305 tracked; broad 4,862/4,862 | 1,529 traces; exact ordinary parity | 175,251,868,297 instructions | complete |
-| 1. Expanded ownership evidence | commit pending | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,229 records; zero unknown routes | 175,152,378,823 instructions | complete |
+| 1. Expanded ownership evidence | `0f69cf8011d5` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,229 records; zero unknown routes | 175,152,378,823 instructions | complete |
 | 2. Class materialization | pending | pending | pending | pending | pending |
 | 3. Alias convergence | pending | pending | pending | pending | pending |
 | 4. Lifecycle ownership | pending | pending | pending | pending | pending |

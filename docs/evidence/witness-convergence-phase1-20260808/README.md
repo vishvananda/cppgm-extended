@@ -9,6 +9,7 @@ checked in here so a reboot does not erase the result.
 ## Identity and commands
 
 - Starting commit: `afcdb6ae29c402895cac2712bc763f2e964c83b3`
+- Phase 1 implementation commit: `0f69cf8011d5`
 - Host compiler: `/usr/local/opt/llvm/bin/clang++`
 - Ordinary object root: `../obj/witness-recovery-phase1-ordinary-20260808`
 - Provenance object root: `../obj/witness-recovery-phase1-provenance-20260808`
