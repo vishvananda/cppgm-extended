@@ -20,7 +20,7 @@
 | 0. Preserve and restore | `afcdb6ae29c4` | 1,339/1,530 expanded; 1,305/1,305 tracked; broad 4,862/4,862 | 1,529 traces; exact ordinary parity | 175,251,868,297 instructions | complete |
 | 1. Expanded ownership evidence | `0f69cf8011d5` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,229 records; zero unknown routes | 175,152,378,823 instructions | complete |
 | 2a. Concrete typedef deferral probe | uncommitted | 1,322/1,530 expanded; broad 4,722/4,862 | 1,511 traces; 17 new witness failures | benchmark does not compile | rejected |
-| 2. Class materialization | `8596cb9567b0` restart | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; exact ordinary parity | 175,579,014,888 instructions | lookup migration pending |
+| 2. Class materialization | `ee6a5dde60cc` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,235 records; exact ordinary parity | 175,688,178,308 instructions | resolution slice complete; non-completing modes pending |
 | 3. Alias convergence | pending | pending | pending | pending | pending |
 | 4. Lifecycle ownership | pending | pending | pending | pending | pending |
 | 5. Function and variable results | pending | pending | pending | pending | pending |
@@ -527,3 +527,136 @@ that resolve a member type. Registration, declaration indexing, template
 parameter binding, state reset, and diagnostic iteration remain raw storage
 operations. Only after strict, broad, provenance, and performance parity is
 re-established may concrete typedef and alias targets become lazy.
+
+## Phase 2 member-type lookup consolidation checkpoint
+
+Commit `ee6a5dde60cca46ffed906a5f5e9175dbdbe5dc9` removes seven direct
+class-member type-map fast paths from consumers that are asking to resolve a
+member. The accepted slice covers known-owner resolution, dependent-member
+owner discovery, concrete member-type traits, instantiation-owner recovery,
+out-of-class nested-owner traversal, and nested-class refresh after owner
+completion. Class targets now enter the canonical completing lookup; namespace
+targets retain direct inline-namespace lookup.
+
+This is deliberately narrower than replacing every `Scope::named_types` read.
+The rejected broad variants established four distinct non-completing modes:
+
+- generic lexical search must inspect the scopes that are already visible
+  without turning a search probe into class completion;
+- in-progress class and alias construction must see the bindings collected so
+  far without recursively completing the class being built;
+- type-equivalence and binding-cache probes must not mutate semantic state;
+- inherited-using discovery must inspect declared base members without
+  changing the active owner or completion order.
+
+The first broad rewrite introduced 13 strict regressions and fixed none. A
+later reduction localized three batch-only regressions to in-progress alias
+canonicalization and inherited-using/equivalence/cache probes. Those variants
+were discarded; no visibility filter, renderer recovery, text reparse, or
+reference change was used to hide the failures. The next code slice must name
+the non-completing query modes explicitly before declaration indexing or lazy
+alias targets are attempted again.
+
+### Remaining direct class-member map operations
+
+The remaining `member_scope->named_types` operations divide into three groups:
+
+- seven operations are the implementation and access-control guard of the
+  canonical lookup itself;
+- eight reads are the non-completing modes above, including inherited-using
+  discovery, partially collected alias canonicalization, friend/access cached
+  equivalence, name hiding, and call-side binding/equivalence probes;
+- 16 operations register, index, preserve, reset, bind, or diagnostically
+  iterate storage and are not semantic lookup consumers.
+
+This classification is the boundary for the next phase. Raw storage operations
+are not migration targets. Non-completing reads become explicit APIs first;
+only then can their duplicated traversal or ownership logic be compared and
+collapsed.
+
+### Correctness and static evidence
+
+The warning-free ordinary build uses Homebrew Clang and isolated object root
+`../obj/witness-recovery-lookup-migration-ordinary-20260809`. Its binary
+SHA-256 is
+`c1ec07c11edef6cd42376bd8fd36360e27eb512bb9f796cc56a62ca97c5caa10`;
+the file is 17,009,648 bytes. Mach-O `__TEXT` is 12,955,648 bytes, `__text`
+is 11,792,249 bytes, `__DATA_CONST` is 57,344 bytes, and `__DATA` is 442,368
+bytes. It contains no provenance symbol. Relative to the restart ordinary
+binary, this intermediate slice adds 4,360 file bytes, 4,096 `__TEXT` bytes,
+and 464 `__text` bytes. The cleanup owner is the next explicit non-completing
+query API and the eventual deletion of the corresponding duplicate raw
+branches.
+
+The full expanded strict run is exactly unchanged:
+
+- PA19: 268/279, with 11 witness mismatches;
+- PA20: 148/158, with ten witness mismatches;
+- PA22: 244/293, with 49 witness mismatches;
+- PA23: 302/385, with 83 witness mismatches;
+- PA24: 377/415, with 38 witness mismatches;
+- total: 1,339/1,530, with the same 191 gaps and no LowIR drift.
+
+The strict-log SHA-256 is
+`cd31be5615fe8965e2fa9e7a6d5b069e45ebf6b83fb62fe31452dad30280e11f`;
+the failure-manifest SHA-256 is
+`aba47657850ef74f99513089ee89dec00d8c794427a995a7669dcc050ae447d4`;
+and the 3,060-output manifest SHA-256 is
+`e5add38dada683f43e3b06cde738ded2d56874e9a28e99bd514bef761894a429`.
+All three are identical to the restart checkpoint.
+
+The PA1-PA38 direct-LowIR report passes 4,862/4,862; its log SHA-256 is
+`c4eac0aeff1dfbd6af90ce48e755e56d031c8f1eb8980f380dfe878af6f55758`.
+All 23 forbidden text-reparse categories remain zero, and the materialization
+audit has no findings. Twenty-nine analyzer and performance-gate unit tests
+pass.
+
+### Diagnostic parity
+
+The diagnostic build uses object root
+`../obj/witness-recovery-lookup-migration-provenance-20260809`. Its binary
+SHA-256 is
+`f7b4a25c06c2ad673fea45ae1e575d260f2d047fcc4a334634decbf6680a7661`
+and it is 17,172,184 bytes. The strict run writes 1,529 traces, reproduces the
+ordinary strict log byte for byte, and produces the same 3,060-output
+manifest. The only untraced input remains the one compiler-exit case from the
+restart checkpoint.
+
+- trace directory:
+  `/tmp/cppgm-recovery-lookup-migration-provenance.aIZX1c`;
+- raw relative trace-manifest SHA-256:
+  `710297a8ad710c586d709c1cc63af5895bf3ea6b9048529f35766527cfbb9655`;
+- 63,235-record report SHA-256:
+  `791d32ffe7ff14dbb833cdbef099f241b307a0d82ce86cbd235e076c1a601fac`;
+- convergence report SHA-256:
+  `d24f908959d20db6355a7b855f07e32802b833fb82e7231c33922d328cc62bc0`;
+- unknown producer attempts: zero;
+- unexercised diagnostic sites: zero.
+
+Raw diagnostic hashes differ because each report records the fresh trace path
+and process-specific filename. After removing that volatile `source` field,
+both the provenance report and convergence report are structurally identical
+to the restart reports. The semantic counters remain 821 published alias
+occurrences from 1,970 completion decisions and 2,573 published class
+occurrences from 2,919 completed candidates. The convergence report remains
+1,339 matching and 191 mismatching outputs, classified as 24 alias tests, 61
+class tests, 86 function tests, three variable tests, and 79 lifecycle tests.
+
+### Performance checkpoint
+
+The three-run comparison report is
+`/tmp/cppgm-witness-recovery-lookup-migration-perf.json`, SHA-256
+`3c50b2ecde1d4b317b18476b1519840d78255003dcb2236139635d3a499d1a06`.
+It uses commit `ee6a5dde60cc` and the unchanged workload epoch.
+
+| Metric | Minimum | Median | Maximum | Rolling delta |
+| --- | ---: | ---: | ---: | ---: |
+| Instructions | 175,532,287,224 | 175,688,178,308 | 175,753,439,482 | +0.06% |
+| Maximum RSS | 745,381,888 | 747,089,920 | 758,132,736 | -1.33% |
+| Peak footprint | 575,729,664 | 576,249,856 | 576,479,232 | -0.02% |
+
+The slice passes the 0.5% instruction and 1% footprint limits. RSS is below
+the rolling median and does not trigger the 3% confirmation rule. Against the
+fixed Phase 0 final reference, the current medians are +0.2490% instructions,
+-0.0926% RSS, and +0.0697% footprint. This is acceptable for an intermediate
+phase, but it does not satisfy the final instruction-reduction requirement.

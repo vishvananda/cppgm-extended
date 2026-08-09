@@ -105,14 +105,25 @@ Class-member declaration indexing, named-type lookup, and alias-target
 resolution must converge before target evaluation becomes lazy. That
 convergence is the first behavior-preserving implementation stage.
 
+The first lookup-migration slice adds a further prerequisite. Completing
+member resolution is not interchangeable with inspecting bindings that already
+exist. Generic lexical search, in-progress class collection,
+inherited-using discovery, type-equivalence checks, and binding-cache probes
+must not trigger class completion or mutate semantic state. These become
+explicit non-completing query modes before their raw map reads are removed.
+Registration, reset, template-parameter binding, declaration indexing, and
+diagnostic iteration remain storage operations rather than lookup consumers.
+
 ### Short execution order
 
 1. Preserve the rejected experiment evidence and restore `b03f2530d`.
 2. Reconfirm 1,339/1,530 strict and 4,862/4,862 broad from a clean generated
    output surface. Record a new rolling performance baseline after all current
    diagnostics compile in.
-3. Route class-member named-type consumers through one semantic lookup
-   operation. Keep eager target resolution during this migration.
+3. Route completing class-member named-type consumers through the canonical
+   resolving lookup. Give already-bound, in-progress, equivalence, cache, and
+   inherited-using probes explicit non-completing query modes. Keep eager
+   target resolution during this migration.
 4. Split declaration indexing from target resolution while preserving nested
    declarations, access, lookup, and overload obligations. Enable laziness
    only after strict and broad parity.
@@ -465,7 +476,12 @@ Start from the clean 62 class-gap set, not the dirty 195-gap set.
 1. Inventory every direct class-member read from `Scope::named_types`. Route
    consumers that may encounter a deferred declaration through one canonical
    member-type lookup operation. Keep current eager resolution until this
-   migration passes strict and broad tests.
+   migration passes strict and broad tests. Do not route generic lexical
+   search, in-progress collection, equivalence/cache probes, or inherited-using
+   discovery through completing lookup. Introduce named non-completing query
+   modes for those consumers, then remove their duplicate raw-map traversal.
+   Leave registration, indexing, reset, binding, and diagnostic iteration as
+   explicit storage operations.
 2. Split declaration indexing from alias-target evaluation in the primary
    class collector. Index the name, access, source declaration, and embedded
    semantic declarations once. A typedef that declares an enum or class must
