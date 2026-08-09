@@ -429,6 +429,12 @@ void record_variable_use_source_use_in_table(
   const semantic_source_use::SemanticSourceUse use =
       make_variable_use_source_use(decision);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  const witness_provenance::ScopedUpstreamRoute provenance_route(
+      use.ownership == semantic_source_use::SourceUseOwnership::NestedDerived ?
+          witness_provenance::WitnessUpstreamRoute::
+              VariableInitializerReplay :
+          witness_provenance::WitnessUpstreamRoute::
+              VariableDirectInstantiation);
   const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
       session,
       table,
@@ -968,6 +974,13 @@ void finalize_variable_use_source_uses(TemplateWitnessSession * session)
     const template_api::PendingVariableSourceUse & pending =
         session->pending_variable_source_uses[i];
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+    const witness_provenance::ScopedUpstreamRoute provenance_route(
+        pending.source_use.ownership ==
+                semantic_source_use::SourceUseOwnership::NestedDerived ?
+            witness_provenance::WitnessUpstreamRoute::
+                VariableInitializerReplay :
+            witness_provenance::WitnessUpstreamRoute::
+                VariableDirectInstantiation);
     const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
         session,
         &session->source_use_table,

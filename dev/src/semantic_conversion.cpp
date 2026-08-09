@@ -169,6 +169,10 @@ void record_conversion_function_source_use(SemanticContext & ctx,
   request.candidates_built = 1;
   request.candidates_viable = 1;
   request.candidate_count = 1;
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  const witness_provenance::ScopedUpstreamRoute provenance_route(
+      witness_provenance::WitnessUpstreamRoute::FunctionConversion);
+#endif
   semantic_template_function::emit_function_template_call_source_use(ctx, request);
 }
 

@@ -63,6 +63,13 @@ struct LifecycleAttempt
   std::string kind;
   std::string location;
   std::string entity;
+  int cause = 0;
+  int entry_origin = 0;
+  int closure_reason = 0;
+  std::string trigger_entity;
+  std::string trigger_decl_location;
+  std::string detail;
+  bool public_source_required = false;
 };
 
 std::mutex & trace_mutex()
@@ -423,6 +430,43 @@ std::string source_attempt_record(const SourceAttempt & attempt,
     out << quoted(use.bindings[i].source);
   }
   out << "]"
+      << ",\"binding_args\":[";
+  for(std::size_t i = 0; i < use.bindings.size(); ++i) {
+    if(i != 0) out << ',';
+    out << quoted(use.bindings[i].arg);
+  }
+  out << "]"
+      << ",\"binding_type_like\":[";
+  for(std::size_t i = 0; i < use.bindings.size(); ++i) {
+    if(i != 0) out << ',';
+    out << (use.bindings[i].type_like ? "true" : "false");
+  }
+  out << "]"
+      << ",\"occurrence_argument_texts\":[";
+  for(std::size_t i = 0;
+      i < use.template_id_occurrence.arguments.size();
+      ++i) {
+    if(i != 0) out << ',';
+    out << quoted(use.template_id_occurrence.arguments[i].text);
+  }
+  out << "]"
+      << ",\"occurrence_argument_semantic_texts\":[";
+  for(std::size_t i = 0;
+      i < use.template_id_occurrence.arguments.size();
+      ++i) {
+    if(i != 0) out << ',';
+    out << quoted(use.template_id_occurrence.arguments[i].semantic_text);
+  }
+  out << "]"
+      << ",\"occurrence_argument_dependent\":[";
+  for(std::size_t i = 0;
+      i < use.template_id_occurrence.arguments.size();
+      ++i) {
+    if(i != 0) out << ',';
+    out << (use.template_id_occurrence.arguments[i].dependent ?
+                "true" : "false");
+  }
+  out << "]"
       << ",\"specialization_binding_sources\":[";
   for(std::size_t i = 0; i < use.specialization_bindings.size(); ++i) {
     if(i != 0) out << ',';
@@ -517,6 +561,28 @@ const char * upstream_route_name(WitnessUpstreamRoute route)
     return "unknown";
   case WitnessUpstreamRoute::AliasCanonicalOccurrence:
     return "alias.canonical_occurrence";
+  case WitnessUpstreamRoute::ClassResolvedTemplateId:
+    return "class.resolved_template_id";
+  case WitnessUpstreamRoute::ClassDeclarationTypeSource:
+    return "class.declaration_type_source";
+  case WitnessUpstreamRoute::ClassExplicitSpecializationSource:
+    return "class.explicit_specialization_source";
+  case WitnessUpstreamRoute::ClassQualifiedValueSource:
+    return "class.qualified_value_source";
+  case WitnessUpstreamRoute::ClassNestedSourceTemplateId:
+    return "class.nested_source_template_id";
+  case WitnessUpstreamRoute::FunctionConstantValueLookup:
+    return "function.constant_value_lookup";
+  case WitnessUpstreamRoute::FunctionConversion:
+    return "function.conversion";
+  case WitnessUpstreamRoute::FunctionDeclval:
+    return "function.declval";
+  case WitnessUpstreamRoute::FunctionOverloadResolution:
+    return "function.overload_resolution";
+  case WitnessUpstreamRoute::VariableDirectInstantiation:
+    return "variable.direct_instantiation";
+  case WitnessUpstreamRoute::VariableInitializerReplay:
+    return "variable.initializer_replay";
   }
   return "unknown";
 }
@@ -711,6 +777,15 @@ ScopedLifecycleAttempt::ScopedLifecycleAttempt(
   attempt.kind = lifecycle_kind_name(event.kind);
   attempt.location = event.location;
   attempt.entity = event.entity;
+  attempt.cause = static_cast<int>(event.cause);
+  attempt.entry_origin = static_cast<int>(event.entry_context.origin);
+  attempt.closure_reason =
+      static_cast<int>(event.entry_context.closure_reason);
+  attempt.trigger_entity = event.entry_context.trigger_entity;
+  attempt.trigger_decl_location =
+      event.entry_context.trigger_decl_location;
+  attempt.detail = event.detail;
+  attempt.public_source_required = event.public_source_required;
   token_ = next_token();
   lifecycle_attempts()[token_] = attempt;
 }
@@ -744,6 +819,15 @@ ScopedLifecycleAttempt::~ScopedLifecycleAttempt()
          << ",\"kind\":" << quoted(attempt.kind)
          << ",\"location\":" << quoted(attempt.location)
          << ",\"entity\":" << quoted(attempt.entity)
+         << ",\"cause\":" << attempt.cause
+         << ",\"entry_origin\":" << attempt.entry_origin
+         << ",\"closure_reason\":" << attempt.closure_reason
+         << ",\"trigger_entity\":" << quoted(attempt.trigger_entity)
+         << ",\"trigger_decl_location\":"
+         << quoted(attempt.trigger_decl_location)
+         << ",\"detail\":" << quoted(attempt.detail)
+         << ",\"public_source_required\":"
+         << (attempt.public_source_required ? "true" : "false")
          << ",\"collided_producers\":"
          << producer_array(attempt.collided_producers)
          << '}';
@@ -850,6 +934,40 @@ void note_semantic_consolidation(
          << ",\"prepublication_merges\":" << prepublication_merges
          << ",\"collected_occurrences\":" << collected_occurrences
          << ",\"published_occurrences\":" << published_occurrences
+         << '}';
+  state.records.push_back(record.str());
+}
+
+void note_alias_completion(
+    const template_api::TemplateWitnessSession & session,
+    const std::string & operation,
+    const std::string & action,
+    const std::string & location,
+    std::uint32_t source_occurrence_id,
+    const std::string & source_template_name,
+    const std::string & selected_template_name,
+    const std::string & selected_decl_location,
+    bool parameterized,
+    bool has_class_context,
+    bool resolved_type)
+{
+  if(!enabled()) return;
+  std::lock_guard<std::mutex> lock(trace_mutex());
+  SessionState & state = state_for_session_locked(session);
+  std::ostringstream record;
+  record << "{\"record\":\"alias_completion\""
+         << ",\"operation\":" << quoted(operation)
+         << ",\"action\":" << quoted(action)
+         << ",\"location\":" << quoted(location)
+         << ",\"source_occurrence_id\":" << source_occurrence_id
+         << ",\"source_template_name\":" << quoted(source_template_name)
+         << ",\"selected_template_name\":" << quoted(selected_template_name)
+         << ",\"selected_decl_location\":"
+         << quoted(selected_decl_location)
+         << ",\"parameterized\":" << (parameterized ? "true" : "false")
+         << ",\"has_class_context\":"
+         << (has_class_context ? "true" : "false")
+         << ",\"resolved_type\":" << (resolved_type ? "true" : "false")
          << '}';
   state.records.push_back(record.str());
 }

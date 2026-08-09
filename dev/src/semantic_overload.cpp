@@ -2238,6 +2238,10 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
       binding.source = "explicit";
       binding.type_like = true;
       request.bindings.push_back(binding);
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+      const witness_provenance::ScopedUpstreamRoute provenance_route(
+          witness_provenance::WitnessUpstreamRoute::FunctionDeclval);
+#endif
       semantic_template_function::emit_function_template_call_source_use(
           ctx,
           request);
@@ -3147,6 +3151,10 @@ void note_function_call_source_event(
   }
   source_use.candidate_count = static_cast<int>(visible_candidate_count);
   source_use.candidates_built = static_cast<int>(visible_candidate_count);
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  const witness_provenance::ScopedUpstreamRoute provenance_route(
+      witness_provenance::WitnessUpstreamRoute::FunctionOverloadResolution);
+#endif
   semantic_template_function::emit_function_template_call_source_use(ctx, source_use);
 }
 

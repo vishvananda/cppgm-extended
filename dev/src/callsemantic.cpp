@@ -12075,6 +12075,34 @@ private:
         }
       }
       if(!materialized_value_argument) {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+        witness_provenance::WitnessUpstreamRoute provenance_route =
+            witness_provenance::WitnessUpstreamRoute::Unknown;
+        switch(request.origin) {
+        case witness::ClassUseEmissionOrigin::ResolvedTemplateId:
+          provenance_route = witness_provenance::WitnessUpstreamRoute::
+              ClassResolvedTemplateId;
+          break;
+        case witness::ClassUseEmissionOrigin::DeclarationTypeSource:
+          provenance_route = witness_provenance::WitnessUpstreamRoute::
+              ClassDeclarationTypeSource;
+          break;
+        case witness::ClassUseEmissionOrigin::ExplicitSpecializationSource:
+          provenance_route = witness_provenance::WitnessUpstreamRoute::
+              ClassExplicitSpecializationSource;
+          break;
+        case witness::ClassUseEmissionOrigin::QualifiedValueSource:
+          provenance_route = witness_provenance::WitnessUpstreamRoute::
+              ClassQualifiedValueSource;
+          break;
+        case witness::ClassUseEmissionOrigin::NestedSourceTemplateId:
+          provenance_route = witness_provenance::WitnessUpstreamRoute::
+              ClassNestedSourceTemplateId;
+          break;
+        }
+        const witness_provenance::ScopedUpstreamRoute class_route(
+            provenance_route);
+#endif
         const bool published =
             witness::emit_class_use(template_witness_context(), request);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
@@ -20836,6 +20864,14 @@ private:
     const bool occurrence_already_pending =
         pending_occurrence != pending_alias_source_occurrences_.end();
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+    std::string provenance_action = occurrence_already_pending ?
+        "ignored_repeat" : "first_completion";
+    const std::string provenance_operation = parameterized_source_result ?
+        "parameterized_resolution" :
+        resolved.resolved_type ?
+            "concrete_resolution" : "source_pattern_resolution";
+    const std::string provenance_selected_decl_location =
+        request.selected_decl_location;
     ++resolved_source_state_->alias_completed_candidates;
     if(occurrence_already_pending) {
       ++resolved_source_state_->alias_prepublication_merges;
@@ -20846,6 +20882,9 @@ private:
       if(pending.parameterized == parameterized_source_result &&
          !pending.has_class_context &&
          has_class_context) {
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+        provenance_action = "class_context_upgrade";
+#endif
         pending.request = std::move(request);
         pending.has_class_context = true;
       } else if(pending.parameterized &&
@@ -20861,6 +20900,9 @@ private:
                   current_specialization) {
             continue;
           }
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+          provenance_action = "current_specialization_enrichment";
+#endif
           pending.request.bindings[i] = request.bindings[i];
           if(i < pending.request.template_id_occurrence.arguments.size()) {
             pending.request.template_id_occurrence.arguments[i] =
@@ -20879,6 +20921,22 @@ private:
       pending.parameterized = parameterized_source_result;
       pending.has_class_context = has_class_context;
     }
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+    if(template_witness_session_) {
+      witness_provenance::note_alias_completion(
+          *template_witness_session_,
+          provenance_operation,
+          provenance_action,
+          use_location,
+          source_location_id,
+          alias_template_name,
+          alias_template.name,
+          provenance_selected_decl_location,
+          parameterized_source_result,
+          has_class_context,
+          resolved.resolved_type != nullptr);
+    }
+#endif
   }
 
   bool function_result_matches_class_template_use(

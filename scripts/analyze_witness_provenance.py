@@ -12,12 +12,7 @@ from typing import Any, Iterable
 
 
 SOURCE_PRODUCERS = [
-    *(f"class.callsemantic.{index:02d}" for index in (6, 7, 10)),
-    "class.callsemantic.13",
     "class.class_template_reference.02",
-    "class.constant_value_lookup.02",
-    "class.constant_value_lookup.03",
-    "class.template_instantiation",
     "alias.canonical_occurrence",
     "function.semantic_template_function",
     "variable.template_instantiation",
@@ -28,10 +23,18 @@ LIFECYCLE_PRODUCERS = [
 ]
 
 UPSTREAM_ROUTES = [
-    "nested_class_use.ast_node",
-    "nested_class_use.template_arguments",
-    "class_use.static_member_definition_ast_node",
-    "class_use.resolved_alias_type",
+    "alias.canonical_occurrence",
+    "class.resolved_template_id",
+    "class.declaration_type_source",
+    "class.explicit_specialization_source",
+    "class.qualified_value_source",
+    "class.nested_source_template_id",
+    "function.constant_value_lookup",
+    "function.conversion",
+    "function.declval",
+    "function.overload_resolution",
+    "variable.direct_instantiation",
+    "variable.initializer_replay",
 ]
 
 ALIAS_UPSTREAM_ROUTES = [
@@ -76,7 +79,9 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
         collections.Counter()
     )
     renderer = nested_counter()
-    upstream = collections.Counter({route: 0 for route in UPSTREAM_ROUTES})
+    upstream_routes: dict[str, collections.Counter[str]] = {
+        route: collections.Counter() for route in UPSTREAM_ROUTES
+    }
     alias_routes: dict[str, collections.Counter[str]] = {
         route: collections.Counter() for route in ALIAS_UPSTREAM_ROUTES
     }
@@ -85,12 +90,56 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
     lifecycle_output: list[dict[str, Any]] = []
     unknown_producers: collections.Counter[str] = collections.Counter()
     semantic_consolidation: dict[str, collections.Counter[str]] = {}
+    source_attempt_decisions: list[dict[str, Any]] = []
+    lifecycle_attempt_decisions: list[dict[str, Any]] = []
+    lifecycle_attempt_context = collections.Counter()
+    alias_completion = collections.Counter()
+    alias_completion_decisions: list[dict[str, Any]] = []
     class_materialization = collections.Counter()
     class_materialization_decisions: list[dict[str, Any]] = []
     class_parameterized_sources: list[dict[str, Any]] = []
 
     for record in records:
         record_kind = record.get("record")
+        if record_kind == "alias_completion":
+            operation = str(record.get("operation", "unknown"))
+            action = str(record.get("action", "unknown"))
+            source_name = str(record.get("source_template_name", ""))
+            selected_name = str(record.get("selected_template_name", ""))
+            parameterized = bool(record.get("parameterized", False))
+            alias_completion["decisions"] += 1
+            alias_completion[f"operation:{operation}"] += 1
+            alias_completion[f"action:{action}"] += 1
+            alias_completion[
+                "source_selected_match"
+                if source_name.split("::")[-1] == selected_name
+                else "source_selected_mismatch"
+            ] += 1
+            alias_completion[
+                "parameterized" if parameterized else "concrete"
+            ] += 1
+            alias_completion_decisions.append(
+                {
+                    "operation": operation,
+                    "action": action,
+                    "location": str(record.get("location", "")),
+                    "source_occurrence_id": int(
+                        record.get("source_occurrence_id", 0)
+                    ),
+                    "source_template_name": source_name,
+                    "selected_template_name": selected_name,
+                    "selected_decl_location": str(
+                        record.get("selected_decl_location", "")
+                    ),
+                    "parameterized": parameterized,
+                    "has_class_context": bool(
+                        record.get("has_class_context", False)
+                    ),
+                    "resolved_type": bool(record.get("resolved_type", False)),
+                    "source": record.get("_trace_file", ""),
+                }
+            )
+            continue
         if record_kind == "class_parameterized_source":
             class_parameterized_sources.append(
                 {
@@ -167,6 +216,44 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
             if producer == "unknown":
                 unknown_producers[record_kind] += 1
 
+            if record_kind == "lifecycle_attempt":
+                lifecycle_attempt_context[
+                    f"entry_origin:{int(record.get('entry_origin', 0))}"
+                ] += 1
+                lifecycle_attempt_context[
+                    f"closure_reason:{int(record.get('closure_reason', 0))}"
+                ] += 1
+                lifecycle_attempt_context[
+                    f"cause:{int(record.get('cause', 0))}"
+                ] += 1
+                lifecycle_attempt_context[
+                    "public_source_required"
+                    if bool(record.get("public_source_required", False))
+                    else "not_public_source_required"
+                ] += 1
+                lifecycle_attempt_decisions.append(
+                    {
+                        key: record.get(key)
+                        for key in (
+                            "producer",
+                            "action",
+                            "kind",
+                            "location",
+                            "entity",
+                            "cause",
+                            "entry_origin",
+                            "closure_reason",
+                            "trigger_entity",
+                            "trigger_decl_location",
+                            "detail",
+                            "public_source_required",
+                        )
+                    }
+                )
+                lifecycle_attempt_decisions[-1]["source"] = record.get(
+                    "_trace_file", ""
+                )
+
             collided = sorted(set(record.get("collided_producers", [])))
             for other in collided:
                 if producer == other:
@@ -180,8 +267,46 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
 
             if record_kind == "source_attempt":
                 action = str(record.get("action", ""))
+                route = str(record.get("upstream_route", "unknown"))
+                route_counts = upstream_routes.setdefault(
+                    route, collections.Counter()
+                )
+                route_counts["attempts"] += 1
+                route_counts[action] += 1
+                route_counts[f"kind:{record.get('kind', 'unknown')}"] += 1
+                source_attempt_decisions.append(
+                    {
+                        key: record.get(key)
+                        for key in (
+                            "producer",
+                            "upstream_route",
+                            "action",
+                            "kind",
+                            "role",
+                            "ownership",
+                            "location",
+                            "spelling_anchor",
+                            "selected_entity",
+                            "selected_decl",
+                            "template_name",
+                            "selection",
+                            "binding_sources",
+                            "binding_args",
+                            "binding_type_like",
+                            "specialization_binding_sources",
+                            "occurrence_present",
+                            "occurrence_argument_texts",
+                            "occurrence_argument_semantic_texts",
+                            "occurrence_argument_dependent",
+                            "changed_fields",
+                            "collided_producers",
+                        )
+                    }
+                )
+                source_attempt_decisions[-1]["source"] = record.get(
+                    "_trace_file", ""
+                )
                 if record.get("kind") == "alias_use":
-                    route = str(record.get("upstream_route", "unknown"))
                     route_counts = alias_routes.setdefault(
                         route, collections.Counter()
                     )
@@ -203,6 +328,10 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
                     alias_routes.setdefault(route, collections.Counter())[
                         "surviving_rows"
                     ] += 1
+            for route in set(record.get("upstream_routes", [])):
+                upstream_routes.setdefault(route, collections.Counter())[
+                    "surviving_rows"
+                ] += 1
             continue
 
         if record_kind == "final_lifecycle_event":
@@ -224,6 +353,10 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
             renderer[str(record.get("pass", "unknown"))][key] += 1
             for producer in set(record.get("producers", [])):
                 renderer[str(record.get("pass", "unknown"))][f"producer:{producer}"] += 1
+            for route in set(record.get("upstream_routes", [])):
+                renderer[str(record.get("pass", "unknown"))][
+                    f"route:{route}"
+                ] += 1
             if record.get("kind") == "alias_use":
                 for route in set(record.get("upstream_routes", [])):
                     route_key = f"{record.get('pass', 'unknown')}:{key}"
@@ -239,6 +372,10 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
                     alias_routes.setdefault(route, collections.Counter())[
                         "final_visible_rows"
                     ] += 1
+            for route in set(record.get("upstream_routes", [])):
+                upstream_routes.setdefault(route, collections.Counter())[
+                    "final_visible_rows"
+                ] += 1
             if len(producers) == 1:
                 unique_output.append(
                     {
@@ -250,9 +387,6 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
                     }
                 )
             continue
-
-        if record_kind == "upstream_route":
-            upstream[str(record.get("route", "unknown"))] += 1
 
     coverage_output: dict[str, dict[str, int]] = {}
     for site in SOURCE_PRODUCERS + LIFECYCLE_PRODUCERS:
@@ -304,9 +438,13 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
             "surviving_rows": counts["surviving_rows"],
             "final_visible_rows": counts["final_visible_rows"],
         }
+    upstream_route_output: dict[str, dict[str, int]] = {}
+    for route in UPSTREAM_ROUTES + ["unknown"]:
+        counts = upstream_routes.get(route, collections.Counter())
+        upstream_route_output[route] = dict(sorted(counts.items()))
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "trace_files": len({record["_trace_file"] for record in records}),
         "records": len(records),
         "site_coverage": coverage_output,
@@ -316,6 +454,28 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
         "lifecycle_collision_matrix": collision_output(lifecycle_collision_pairs),
         "replacement_matrix": replacement_output,
         "renderer_ownership": renderer_output,
+        "source_attempt_decisions": sorted(
+            source_attempt_decisions,
+            key=lambda item: (
+                str(item.get("kind", "")),
+                str(item.get("location", "")),
+                str(item.get("template_name", "")),
+                str(item.get("upstream_route", "")),
+                str(item.get("action", "")),
+            ),
+        ),
+        "lifecycle_attempt_context_summary": sorted_counter(
+            lifecycle_attempt_context
+        ),
+        "lifecycle_attempt_decisions": sorted(
+            lifecycle_attempt_decisions,
+            key=lambda item: (
+                str(item.get("kind", "")),
+                str(item.get("location", "")),
+                str(item.get("entity", "")),
+                str(item.get("action", "")),
+            ),
+        ),
         "unique_output_ownership": sorted(
             unique_output,
             key=lambda item: (
@@ -334,7 +494,7 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
                 item["producers"],
             ),
         ),
-        "upstream_route_count": dict(sorted(upstream.items())),
+        "upstream_route_coverage": upstream_route_output,
         "alias_upstream_route_coverage": alias_route_output,
         "alias_renderer_ownership_by_route": {
             route: sorted_counter(counts)
@@ -344,6 +504,17 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
             family: sorted_counter(counts)
             for family, counts in sorted(semantic_consolidation.items())
         },
+        "alias_completion_summary": sorted_counter(alias_completion),
+        "alias_completion_decisions": sorted(
+            alias_completion_decisions,
+            key=lambda item: (
+                item["location"],
+                item["source_template_name"],
+                item["selected_template_name"],
+                item["operation"],
+                item["action"],
+            ),
+        ),
         "class_materialization_summary": sorted_counter(class_materialization),
         "class_materialization_decisions": sorted(
             class_materialization_decisions,

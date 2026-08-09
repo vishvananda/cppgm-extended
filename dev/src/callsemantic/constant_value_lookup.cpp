@@ -637,6 +637,10 @@ public:
             "defaulted");
       }
     }
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+    const witness_provenance::ScopedUpstreamRoute provenance_route(
+        witness_provenance::WitnessUpstreamRoute::FunctionConstantValueLookup);
+#endif
     semantic_template_function::emit_function_template_call_source_use(
         *this,
         request);

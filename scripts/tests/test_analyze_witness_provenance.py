@@ -92,6 +92,48 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
             1,
         )
 
+    def test_function_route_owns_attempt_table_and_visible_row(self):
+        route = "function.overload_resolution"
+        producer = "function.semantic_template_function"
+        report = MODULE.build_report(
+            [
+                self.record(
+                    "source_attempt",
+                    producer=producer,
+                    upstream_route=route,
+                    action="inserted",
+                    kind="function_call",
+                    location="test.t:4:3",
+                    template_name="f",
+                    collided_producers=[],
+                ),
+                self.record(
+                    "final_table_row",
+                    producers=[producer],
+                    upstream_routes=[route],
+                    kind="function_call",
+                ),
+                self.record(
+                    "final_visible",
+                    producers=[producer],
+                    upstream_routes=[route],
+                    kind="function_call",
+                    source="test.t",
+                    location="test.t:4:3",
+                    template_name="f",
+                ),
+            ]
+        )
+        coverage = report["upstream_route_coverage"][route]
+        self.assertEqual(coverage["attempts"], 1)
+        self.assertEqual(coverage["kind:function_call"], 1)
+        self.assertEqual(coverage["surviving_rows"], 1)
+        self.assertEqual(coverage["final_visible_rows"], 1)
+        self.assertEqual(
+            report["source_attempt_decisions"][0]["location"],
+            "test.t:4:3",
+        )
+
     def test_semantic_consolidation_counts_are_aggregated(self):
         report = MODULE.build_report(
             [
@@ -124,6 +166,51 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
                 "collected_occurrences": 6,
                 "published_occurrences": 5,
             },
+        )
+
+    def test_alias_completion_and_lifecycle_context_are_reported(self):
+        report = MODULE.build_report(
+            [
+                self.record(
+                    "alias_completion",
+                    operation="parameterized_resolution",
+                    action="ignored_repeat",
+                    location="test.t:4:9",
+                    source_occurrence_id=17,
+                    source_template_name="owner<T>::alias",
+                    selected_template_name="alias",
+                    selected_decl_location="test.t:2:7",
+                    parameterized=True,
+                    has_class_context=True,
+                    resolved_type=False,
+                ),
+                self.record(
+                    "lifecycle_attempt",
+                    producer="lifecycle.transition_observer.01",
+                    action="inserted",
+                    kind="variable_instantiation",
+                    location="test.t:7:3",
+                    entity="value<int>",
+                    collided_producers=[],
+                    entry_origin=1,
+                    closure_reason=3,
+                    cause=2,
+                    public_source_required=True,
+                ),
+            ]
+        )
+        self.assertEqual(report["alias_completion_summary"]["decisions"], 1)
+        self.assertEqual(
+            report["alias_completion_summary"]["action:ignored_repeat"], 1
+        )
+        self.assertEqual(
+            report["lifecycle_attempt_context_summary"]["entry_origin:1"], 1
+        )
+        self.assertEqual(
+            report["lifecycle_attempt_context_summary"][
+                "public_source_required"
+            ],
+            1,
         )
 
     def test_class_materialization_shadow_decisions_are_reported(self):

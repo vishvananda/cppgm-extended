@@ -39,6 +39,17 @@ enum class WitnessUpstreamRoute
 {
   Unknown = 0,
   AliasCanonicalOccurrence,
+  ClassResolvedTemplateId,
+  ClassDeclarationTypeSource,
+  ClassExplicitSpecializationSource,
+  ClassQualifiedValueSource,
+  ClassNestedSourceTemplateId,
+  FunctionConstantValueLookup,
+  FunctionConversion,
+  FunctionDeclval,
+  FunctionOverloadResolution,
+  VariableDirectInstantiation,
+  VariableInitializerReplay,
 };
 
 const char * upstream_route_name(WitnessUpstreamRoute route);
@@ -159,6 +170,19 @@ void note_semantic_consolidation(
     std::size_t prepublication_merges,
     std::size_t collected_occurrences,
     std::size_t published_occurrences);
+
+void note_alias_completion(
+    const template_api::TemplateWitnessSession & session,
+    const std::string & operation,
+    const std::string & action,
+    const std::string & location,
+    std::uint32_t source_occurrence_id,
+    const std::string & source_template_name,
+    const std::string & selected_template_name,
+    const std::string & selected_decl_location,
+    bool parameterized,
+    bool has_class_context,
+    bool resolved_type);
 
 void note_class_materialization_decision(
     const template_api::TemplateWitnessSession & session,

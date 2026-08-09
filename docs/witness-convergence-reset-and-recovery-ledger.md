@@ -17,8 +17,8 @@
 
 | Phase | Commit | Correctness | Provenance | Performance | Status |
 | --- | --- | --- | --- | --- | --- |
-| 0. Preserve and restore | checkpoint pending | 1,339/1,530 expanded; 1,305/1,305 tracked; broad 4,862/4,862 | 1,529 traces; exact ordinary parity | 175,251,868,297 instructions | complete |
-| 1. Expanded ownership evidence | pending | pending | pending | pending | pending |
+| 0. Preserve and restore | `afcdb6ae29c4` | 1,339/1,530 expanded; 1,305/1,305 tracked; broad 4,862/4,862 | 1,529 traces; exact ordinary parity | 175,251,868,297 instructions | complete |
+| 1. Expanded ownership evidence | commit pending | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,229 records; zero unknown routes | 175,152,378,823 instructions | complete |
 | 2. Class materialization | pending | pending | pending | pending | pending |
 | 3. Alias convergence | pending | pending | pending | pending | pending |
 | 4. Lifecycle ownership | pending | pending | pending | pending | pending |
@@ -81,7 +81,7 @@ The PA15 and PA19 negative fixtures remain unchanged.
 - [x] Provenance analyzer unit tests clean
 - [x] Ordinary/provenance output parity
 - [x] Post-diagnostic three-run fixed baseline
-- [ ] Clean Phase 0 commit
+- [x] Clean Phase 0 commit (`afcdb6ae29c402895cac2712bc763f2e964c83b3`)
 
 ### Correctness and static evidence
 
@@ -191,3 +191,55 @@ The three instruction samples are 175,685,187,235, 175,241,699,573, and
 bytes. Relative to the recreated alias fixed artifact, this checkpoint is
 -0.44% instructions, -1.23% RSS, and -2.90% footprint. All advisory checks
 pass without an RSS warning.
+
+## Phase 1: expanded ownership evidence
+
+The durable evidence summary is
+`docs/evidence/witness-convergence-phase1-20260808/README.md`. Phase 1 adds
+stable diagnostic route IDs at the true class, alias, function, variable, and
+lifecycle semantic operations, detailed source binding and lifecycle context,
+and an occurrence-level strict mismatch analyzer.
+
+All five final producers and all twelve typed upstream routes are exercised.
+There are no unknown producer attempts or unknown routes, and no reduced test
+was needed merely to exercise instrumentation. The 1,529 traces contain
+63,229 records; the same PA23 compiler-exit case remains the only test without
+a flushed trace.
+
+Ordinary and diagnostic strict output are byte-for-byte identical. Both have
+the Phase 0 strict-log hash and 3,060-output manifest hash. The ordinary binary
+contains no provenance symbol and has exactly the Phase 0 file and Mach-O
+section sizes. Static materialization and text-reparse audits are clean, 23
+analyzer/audit unit tests pass, and the direct-LowIR broad report passes
+4,862/4,862.
+
+The 191 remaining mismatching outputs classify as follows. Tests may appear
+in more than one family.
+
+| Family | Failing tests | Changed | Missing expected | Unexpected actual | Ordering only |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Alias | 24 | 18 | 16 | 2 | 0 |
+| Class | 62 | 57 | 36 | 10 | 0 |
+| Function | 86 | 40 | 62 | 35 | 1 |
+| Variable | 3 | 1 | 0 | 2 | 0 |
+| Lifecycle | 79 | 0 | 158 | 127 | 0 |
+
+The key semantic-work findings are:
+
+- alias completion has 821 first completions, 1,050 ignored repeats, 95
+  class-context upgrades, and four current-specialization enrichments;
+- class analysis has 3,270 early repeats and 336 prepublication merges; 15
+  missing expected class rows correlate with 49 repeated rejected typed
+  materialization decisions, while 21 have no class/materialization attempt;
+- the sole final class duplicate is one nested source-owned occurrence in the
+  PA22 sibling-namespace fixture;
+- function publication has 177 overload-resolution duplicates, 91 `declval`
+  duplicates, and four conversion duplicates;
+- variable publication is 31 direct and three initializer-replay attempts;
+- lifecycle mismatches are missing/extra entity transitions and remain
+  independent of source-row admission.
+
+Phase 1 performance passes against the fixed checkpoint: -0.06%
+instructions, +0.49% maximum RSS, and -0.03% peak footprint. No RSS rerun is
+triggered. Phase 2 begins with repeated rejected class source IDs, then repairs
+the class occurrences with no semantic attempt.
