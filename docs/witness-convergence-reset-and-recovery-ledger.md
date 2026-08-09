@@ -20,7 +20,7 @@
 | 0. Preserve and restore | `afcdb6ae29c4` | 1,339/1,530 expanded; 1,305/1,305 tracked; broad 4,862/4,862 | 1,529 traces; exact ordinary parity | 175,251,868,297 instructions | complete |
 | 1. Expanded ownership evidence | `0f69cf8011d5` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,229 records; zero unknown routes | 175,152,378,823 instructions | complete |
 | 2a. Concrete typedef deferral probe | uncommitted | 1,322/1,530 expanded; broad 4,722/4,862 | 1,511 traces; 17 new witness failures | benchmark does not compile | rejected |
-| 2. Class materialization | pending | pending | pending | pending | pending |
+| 2. Class materialization | `8596cb9567b0` restart | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; exact ordinary parity | 175,579,014,888 instructions | lookup migration pending |
 | 3. Alias convergence | pending | pending | pending | pending | pending |
 | 4. Lifecycle ownership | pending | pending | pending | pending | pending |
 | 5. Function and variable results | pending | pending | pending | pending | pending |
@@ -419,3 +419,111 @@ probe as evidence, remove it from the working tree, and restart from
 Static audits remain clean. The materialization audit reports no findings, the
 text-reparse audit exits cleanly, and 25 provenance, convergence, and
 performance-gate unit tests pass.
+
+## Phase 2 restart after the rejected probe
+
+The rejected typedef-deferral patch has been removed. The production semantic
+sources match `b03f2530dad6513aabfa1064a8919bb61fea7d3f`, while the recovery
+plan, owner-state diagnostics, and performance-policy correction remain on the
+active branch. Commit `8596cb9567b04fff5d883345c281a23050e08d18` changes the
+performance gate defaults to the governing policy: three runs, a 0.5%
+instruction limit, a 1% footprint limit, and a 3% RSS warning followed by a
+second complete three-run confirmation. Twenty-six analyzer and gate tests
+pass.
+
+### Fresh ordinary checkpoint
+
+The ordinary compiler was rebuilt with Homebrew Clang 22.1.0 and isolated
+object root `../obj/witness-recovery-restart-ordinary-20260809`. The build is
+warning-free. Its binary SHA-256 is
+`3d21ee5f596c130674c6615b3c6b7a797b24ea8b48e54be00eb45a116d2a2715`;
+the file is 17,005,288 bytes. Mach-O `__TEXT` is 12,951,552 bytes, `__text`
+is 11,791,785 bytes, `__DATA_CONST` is 57,344 bytes, and `__DATA` is 442,368
+bytes. The binary contains no `witness_provenance` symbol.
+
+The expanded strict result is unchanged:
+
+- PA19: 268/279, with 11 witness mismatches;
+- PA20: 148/158, with ten witness mismatches;
+- PA22: 244/293, with 49 witness mismatches;
+- PA23: 302/385, with 83 witness mismatches;
+- PA24: 377/415, with 38 witness mismatches;
+- total: 1,339/1,530, with the exact prior 191-gap manifest and no direct
+  LowIR mismatch.
+
+The strict log SHA-256 is
+`cd31be5615fe8965e2fa9e7a6d5b069e45ebf6b83fb62fe31452dad30280e11f`.
+The failure-manifest SHA-256 remains
+`aba47657850ef74f99513089ee89dec00d8c794427a995a7669dcc050ae447d4`.
+The fresh relative-path manifest of all 3,060 witness and LowIR outputs has
+SHA-256
+`e5add38dada683f43e3b06cde738ded2d56874e9a28e99bd514bef761894a429`.
+
+The PA1-PA38 direct-LowIR report passes 4,862/4,862. Its log SHA-256 is
+`17690eaaac57ef327c06a8a927d8a61727d1ed26063af215007650646e338ccc`.
+The materialization audit has no findings and retains its two documented
+decision boundaries. All 23 forbidden text-reparse categories are zero.
+
+### Fresh diagnostic parity
+
+The diagnostic compiler uses object root
+`../obj/witness-recovery-restart-provenance-20260809`. Its binary SHA-256 is
+`64757349be1083b2926ba59395c5dd32d242a155d3ea58c22b87f7468b2e7a07`;
+the file is 17,171,920 bytes. Mach-O `__TEXT` is 13,086,720 bytes, `__text`
+is 11,913,049 bytes, `__DATA_CONST` is 57,344 bytes, and `__DATA` is 446,464
+bytes.
+
+The strict run writes 1,529 traces and reproduces the ordinary per-PA counts,
+strict-log hash, and 191-gap set. Its 3,060-output manifest is byte-for-byte
+identical to the ordinary manifest. The only missing trace remains
+`pa23/tests/spec/300-nondeduced-partial-pattern-recursive-completion.t`, whose
+compiler exit prevents session finalization.
+
+- trace directory: `/tmp/cppgm-recovery-restart-provenance.WQ9LVg`;
+- relative trace-manifest SHA-256:
+  `9c3a308c7a73039670ef16aa8597ca8f3643aa91486a24e8b220c977e40021dd`;
+- 63,235-record report SHA-256:
+  `c2a4f965b29197af2b490cbac32f1ec51517feaee6ea2e77ce14dfcd3cc447d7`;
+- convergence report SHA-256:
+  `93ba1341d5ad862a35c7fd685012e1e4146ed6658cd49da94e0327149387055a`;
+- unknown producer attempts: zero;
+- unexercised diagnostic sites: zero.
+
+The fresh convergence report still contains 191 mismatching outputs. Its
+current analyzer classification is 24 alias tests, 61 class tests, 86 function
+tests, three variable tests, and 79 lifecycle tests. These categories overlap.
+The class family contains 57 changed rows, 36 missing rows, and eight extra
+rows; alias contains 18 changed, 16 missing, and two extra rows. The ordinary
+compiler was restored after the diagnostic run and its SHA-256 was reverified.
+
+### Rolling performance checkpoint
+
+The post-diagnostic three-run artifact is
+`/tmp/cppgm-witness-recovery-restart-rolling.json`, SHA-256
+`a3d44051f474267dea57d399657b4f25e8f9428540bbf34887044eeae32cdd9c`.
+It records commit `8596cb9567b04fff5d883345c281a23050e08d18` against workload epoch
+`9764b3835e3c6996b6b80803054f80e1cf50f98e`.
+
+| Metric | Minimum | Median | Maximum |
+| --- | ---: | ---: | ---: |
+| Instructions | 175,434,108,616 | 175,579,014,888 | 175,818,099,215 |
+| Maximum RSS | 750,571,520 | 757,129,216 | 759,046,144 |
+| Peak footprint | 575,901,696 | 576,348,160 | 576,438,272 |
+
+Against `/tmp/cppgm-class-materialization-ownership-fixed.json`, the median is
++0.19% instructions, +1.25% maximum RSS, and +0.09% peak footprint. Every
+check passes and the RSS result does not require confirmation. The comparison
+report SHA-256 is
+`f8d966aeeb8edb62602631b706630e4b5086126204bbebd6c7d01f4cb2da159f`.
+This artifact is the rolling baseline for the member-type lookup migration;
+the Phase 0 fixed artifact remains the final instruction-reduction reference.
+
+### Restart disposition
+
+The next semantic change is not another deferral attempt. First, classify all
+direct reads of class-member `Scope::named_types`. Remove duplicate direct-map
+fast paths, inherited traversals, and post-lookup fallbacks from consumers
+that resolve a member type. Registration, declaration indexing, template
+parameter binding, state reset, and diagnostic iteration remain raw storage
+operations. Only after strict, broad, provenance, and performance parity is
+re-established may concrete typedef and alias targets become lazy.
