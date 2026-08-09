@@ -337,6 +337,27 @@ class ValidatePerfRegressionTest(unittest.TestCase):
         self.assertTrue(args.advisory)
         self.assertFalse(hasattr(args, "runs"))
 
+    def test_parser_defaults_match_project_gate_policy(self):
+        parser = MODULE.build_parser()
+        check = parser.parse_args(["check", "--baseline", "baseline.json"])
+        self.assertEqual(check.runs, 3)
+        self.assertEqual(check.instruction_tolerance, 0.005)
+        self.assertEqual(check.rss_tolerance, 0.03)
+        self.assertEqual(check.footprint_tolerance, 0.01)
+
+        compare = parser.parse_args(
+            [
+                "compare",
+                "--baseline",
+                "baseline.json",
+                "--candidate",
+                "candidate.json",
+            ]
+        )
+        self.assertEqual(compare.instruction_tolerance, 0.005)
+        self.assertEqual(compare.rss_tolerance, 0.03)
+        self.assertEqual(compare.footprint_tolerance, 0.01)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -760,7 +760,7 @@ def build_parser():
     check = subparsers.add_parser("check", help="check against a baseline JSON file")
     check.add_argument("--baseline", required=True)
     check.add_argument("--report")
-    check.add_argument("--instruction-tolerance", type=float, default=0.01)
+    check.add_argument("--instruction-tolerance", type=float, default=0.005)
     check.add_argument(
         "--rss-warning-tolerance",
         "--rss-tolerance",
@@ -772,8 +772,8 @@ def build_parser():
             "the threshold is reached, and a second exceedance fails"
         ),
     )
-    check.add_argument("--footprint-tolerance", type=float, default=0.03)
-    add_common_args(check, runs_default=1)
+    check.add_argument("--footprint-tolerance", type=float, default=0.01)
+    add_common_args(check, runs_default=3)
     check.set_defaults(func=command_check)
 
     compare = subparsers.add_parser(
@@ -783,7 +783,7 @@ def build_parser():
     compare.add_argument("--candidate", required=True)
     compare.add_argument("--report")
     compare.add_argument("--advisory", action="store_true")
-    compare.add_argument("--instruction-tolerance", type=float, default=0.01)
+    compare.add_argument("--instruction-tolerance", type=float, default=0.005)
     compare.add_argument(
         "--rss-warning-tolerance",
         "--rss-tolerance",
@@ -791,7 +791,7 @@ def build_parser():
         type=float,
         default=0.03,
     )
-    compare.add_argument("--footprint-tolerance", type=float, default=0.03)
+    compare.add_argument("--footprint-tolerance", type=float, default=0.01)
     compare.set_defaults(func=command_compare)
 
     return parser

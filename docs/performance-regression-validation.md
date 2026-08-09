@@ -41,9 +41,9 @@ scripts/validate_perf_regression.py record \
 
 ## Check A Candidate
 
-Candidate validation defaults to one run because repeated compile tests are
-expensive. The script compares the candidate median against the saved baseline
-median and fails if instruction count or memory rises past tolerance.
+Candidate validation collects three runs and compares the median against the
+saved baseline median. Instruction count and peak footprint use hard limits.
+Maximum RSS uses the confirmation rule below.
 
 ```sh
 scripts/validate_perf_regression.py check \
@@ -55,9 +55,9 @@ scripts/validate_perf_regression.py check \
 
 Default tolerances are:
 
-- `--instruction-tolerance 0.01`
+- `--instruction-tolerance 0.005`
 - `--rss-warning-tolerance 0.03`
-- `--footprint-tolerance 0.03`
+- `--footprint-tolerance 0.01`
 
 Maximum RSS uses a warning-and-confirmation rule. A result at or above the RSS
 threshold starts one more batch with the same run count. The candidate fails
@@ -65,9 +65,9 @@ when the confirmation batch also reaches or exceeds the threshold. The
 `--rss-tolerance` spelling remains as a compatibility alias. Instruction and
 footprint limits remain hard gates on each batch.
 
-Use `--runs 3` when the governing plan requires a three-run median. The
-automatic RSS confirmation then collects three more runs. Do not start an
-extra batch after that confirmation.
+Each check collects a three-run median. An RSS warning collects three more
+runs for the confirmation median. Do not start another batch after that
+confirmation.
 
 A failed hard gate or confirmed RSS warning starts a regression investigation.
 The failure rejects the measured implementation; an in-scope correction may
