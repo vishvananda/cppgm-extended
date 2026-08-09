@@ -1,5 +1,11 @@
 # Class-Use Materialization Semantic Ownership Plan
 
+> **Expanded-corpus reset, 2026-08-08:** Execution advanced without the clean
+> Phase 0 baseline and the dirty implementation regresses the expanded strict
+> corpus. Follow `docs/witness-convergence-reset-and-recovery-plan.md` before
+> resuming this plan. Inception remains forbidden until both active plans pass
+> the recovery plan's final gates.
+
 ## Status and handoff
 
 This plan is a corrective follow-up to
@@ -527,4 +533,3 @@ performance decision are recorded in the ledger.
 - [ ] Inception passes
 - [ ] Final production source and instruction medians are below fixed
 - [ ] Footprint, RSS, and hot-structure gates pass
-

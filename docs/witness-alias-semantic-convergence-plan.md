@@ -1,5 +1,11 @@
 # Alias-Use Semantic Convergence Plan
 
+> **Expanded-corpus reset, 2026-08-08:** The 1,530-reference audit invalidates
+> this plan's earlier completion claim. Follow
+> `docs/witness-convergence-reset-and-recovery-plan.md` before resuming any
+> phase here. Inception remains pending until the recovery plan and the class
+> materialization plan are both complete on the expanded corpus.
+
 ## Status and handoff
 
 This plan follows the completed class-use and lifecycle convergence work. It
