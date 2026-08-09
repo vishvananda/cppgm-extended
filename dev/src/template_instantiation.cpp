@@ -8721,7 +8721,11 @@ bool replay_witness_static_member_definition_if_needed(
           template_api::SourceTypeMaterializationOwner::
               StaticMemberInitializer,
           template_api::SourceTypeMaterializationOperation::
-              StaticMemberInitializer);
+              StaticMemberInitializer,
+          static_member.initializer,
+          nullptr,
+          &binding,
+          true);
   Scope & init_scope = ctx.append_template_scope(*info.member_scope);
   if(!partial) {
     bind_template_arguments_into_scope(ctx,

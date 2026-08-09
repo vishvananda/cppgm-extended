@@ -13365,6 +13365,17 @@ void populate_class_info(SemanticContext & ctx,
     ctx.discard_class_function_bindings_for_reset(info);
     reset_reference_member_state_for_full_collection(info);
   }
+  const template_api::ScopedSourceTypeMaterialization
+      source_type_materialization_owner(
+          ctx.template_witness_context().session != nullptr,
+          template_api::SourceTypeMaterializationOwner::None,
+          template_api::SourceTypeMaterializationOperation::
+              ContainingSemanticOwner,
+          &node,
+          nullptr,
+          &info,
+          info.template_instantiation_tracked &&
+              !info.dependent_instantiation);
   bool full_collection_finished = false;
   struct FullCollectionGuard
   {

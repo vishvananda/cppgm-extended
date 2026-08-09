@@ -223,7 +223,17 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
                     source_occurrence_id=17,
                     source_use_mode=0,
                     typed_owner="declaration_type",
-                    structured_arguments="type:dependent=no",
+                    active_owner="declaration_type",
+                    active_operation="source_type_node",
+                    exact_source_node=True,
+                    semantic_owner_committed=True,
+                    structured_arguments=(
+                        "semantic_owner_kind=function_body;"
+                        "semantic_owner_entity=convert;"
+                        "function_source_template=yes;"
+                        "function_output_requirements=3;"
+                        "type:dependent=no"
+                    ),
                     typed_materialization=True,
                     legacy_admitted=True,
                 ),
@@ -255,6 +265,33 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
         self.assertEqual(
             report["class_materialization_decisions"][0]["source_occurrence_id"],
             17,
+        )
+        self.assertEqual(
+            report["class_materialization_decisions"][0]["active_operation"],
+            "source_type_node",
+        )
+        self.assertTrue(
+            report["class_materialization_decisions"][0]["exact_source_node"]
+        )
+        self.assertTrue(
+            report["class_materialization_decisions"][0][
+                "semantic_owner_committed"
+            ]
+        )
+        self.assertEqual(
+            report["class_materialization_decisions"][0]["source_dependency"],
+            -1,
+        )
+        self.assertEqual(
+            report["class_materialization_decisions"][0][
+                "semantic_owner_state"
+            ],
+            {
+                "function_output_requirements": "3",
+                "function_source_template": "yes",
+                "semantic_owner_entity": "convert",
+                "semantic_owner_kind": "function_body",
+            },
         )
 
 

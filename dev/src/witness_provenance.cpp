@@ -979,6 +979,10 @@ void note_class_materialization_decision(
     std::uint32_t source_occurrence_id,
     int source_use_mode,
     const std::string & typed_owner,
+    const std::string & active_owner,
+    const std::string & active_operation,
+    bool exact_source_node,
+    bool semantic_owner_committed,
     const std::string & structured_arguments,
     bool typed_materialization)
 {
@@ -992,6 +996,12 @@ void note_class_materialization_decision(
          << ",\"source_occurrence_id\":" << source_occurrence_id
          << ",\"source_use_mode\":" << source_use_mode
          << ",\"typed_owner\":" << quoted(typed_owner)
+         << ",\"active_owner\":" << quoted(active_owner)
+         << ",\"active_operation\":" << quoted(active_operation)
+         << ",\"exact_source_node\":"
+         << (exact_source_node ? "true" : "false")
+         << ",\"semantic_owner_committed\":"
+         << (semantic_owner_committed ? "true" : "false")
          << ",\"structured_arguments\":" << quoted(structured_arguments)
          << ",\"typed_materialization\":"
          << (typed_materialization ? "true" : "false")

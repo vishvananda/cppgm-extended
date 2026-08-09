@@ -207,6 +207,13 @@ struct SourceTypeMaterializationFrame
       SourceTypeMaterializationOwner::None;
   SourceTypeMaterializationOperation operation =
       SourceTypeMaterializationOperation::None;
+  const CppAstNode * source_root = nullptr;
+  const CppAstNode * semantic_owner_root = nullptr;
+  std::uint32_t source_occurrence_id = 0;
+  const void * semantic_owner = nullptr;
+  SourceTypeMaterializationOwner semantic_owner_kind =
+      SourceTypeMaterializationOwner::None;
+  bool semantic_owner_committed = false;
 };
 
 thread_local std::vector<SourceTypeMaterializationFrame>
@@ -1466,11 +1473,34 @@ TemplateClosureReason closure_reason_for_function_binding_acquisition_cause(
 
 void source_type_materialization_detail::push(
     SourceTypeMaterializationOwner owner,
-    SourceTypeMaterializationOperation operation)
+    SourceTypeMaterializationOperation operation,
+    const CppAstNode * source_root,
+    const cpp_decl::TemplateIdSyntax * source_syntax,
+    const void * semantic_owner,
+    bool semantic_owner_committed)
 {
-  SourceTypeMaterializationFrame frame;
+  SourceTypeMaterializationFrame frame =
+      source_type_materialization_stack.empty() ?
+          SourceTypeMaterializationFrame() :
+          source_type_materialization_stack.back();
   frame.owner = owner;
   frame.operation = operation;
+  if(source_root) {
+    frame.source_root = source_root;
+  }
+  if(source_syntax) {
+    frame.source_occurrence_id = source_syntax->source_location_id;
+  } else if(source_root) {
+    frame.source_occurrence_id = 0;
+  }
+  if(semantic_owner) {
+    frame.semantic_owner = semantic_owner;
+    frame.semantic_owner_kind =
+        owner == SourceTypeMaterializationOwner::None ?
+            SourceTypeMaterializationOwner::DeclarationType : owner;
+    frame.semantic_owner_root = source_root;
+    frame.semantic_owner_committed = semantic_owner_committed;
+  }
   source_type_materialization_stack.push_back(frame);
 }
 
@@ -1494,6 +1524,149 @@ current_source_type_materialization_operation()
       source_type_materialization_stack.back().operation;
 }
 
+namespace {
+
+bool template_id_syntax_contains_source_occurrence(
+    const cpp_decl::TemplateIdSyntax & syntax,
+    std::uint32_t source_occurrence_id);
+
+bool ast_node_contains_template_id_source_occurrence(
+    const CppAstNode & node,
+    std::uint32_t source_occurrence_id)
+{
+  if(node.template_id_syntax &&
+     template_id_syntax_contains_source_occurrence(
+         *node.template_id_syntax, source_occurrence_id)) {
+    return true;
+  }
+  for(std::size_t i = 0;
+      i < node.qualifier_template_id_syntaxes.size();
+      ++i) {
+    if(template_id_syntax_contains_source_occurrence(
+           node.qualifier_template_id_syntaxes[i], source_occurrence_id)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(ast_node_contains_template_id_source_occurrence(
+           node.qualifier_type_syntaxes[i], source_occurrence_id)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+    if(ast_node_contains_template_id_source_occurrence(
+           node.exception_type_id_syntaxes[i], source_occurrence_id)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.alignment_specifier_nodes.size(); ++i) {
+    if(ast_node_contains_template_id_source_occurrence(
+           node.alignment_specifier_nodes[i], source_occurrence_id)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_node_contains_template_id_source_occurrence(
+           node.children[i], source_occurrence_id)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool template_argument_syntax_contains_source_occurrence(
+    const cpp_decl::TemplateArgumentSyntax & argument,
+    std::uint32_t source_occurrence_id)
+{
+  return
+      (argument.template_id &&
+       template_id_syntax_contains_source_occurrence(
+           *argument.template_id, source_occurrence_id)) ||
+      (argument.type_id &&
+       ast_node_contains_template_id_source_occurrence(
+           *argument.type_id, source_occurrence_id)) ||
+      (argument.source_type_id &&
+       ast_node_contains_template_id_source_occurrence(
+           *argument.source_type_id, source_occurrence_id)) ||
+      (argument.expression &&
+       ast_node_contains_template_id_source_occurrence(
+           *argument.expression, source_occurrence_id));
+}
+
+bool template_id_syntax_contains_source_occurrence(
+    const cpp_decl::TemplateIdSyntax & syntax,
+    std::uint32_t source_occurrence_id)
+{
+  if(source_occurrence_id != 0 &&
+     syntax.source_location_id == source_occurrence_id) {
+    return true;
+  }
+  for(std::size_t i = 0;
+      i < syntax.qualifier_template_id_syntaxes.size();
+      ++i) {
+    if(template_id_syntax_contains_source_occurrence(
+           syntax.qualifier_template_id_syntaxes[i], source_occurrence_id)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(template_argument_syntax_contains_source_occurrence(
+           syntax.argument_syntaxes[i], source_occurrence_id)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace
+
+bool current_source_type_materialization_matches(
+    const cpp_decl::TemplateIdSyntax * source_syntax)
+{
+  if(!source_syntax || source_syntax->source_location_id == 0 ||
+     source_type_materialization_stack.empty()) {
+    return false;
+  }
+  const SourceTypeMaterializationFrame & frame =
+      source_type_materialization_stack.back();
+  const bool operation_matches =
+      frame.source_occurrence_id == source_syntax->source_location_id ||
+      (frame.source_root &&
+       ast_node_contains_template_id_source_occurrence(
+           *frame.source_root,
+           source_syntax->source_location_id));
+  if(!operation_matches) {
+    return false;
+  }
+  return !frame.semantic_owner_root ||
+      ast_node_contains_template_id_source_occurrence(
+          *frame.semantic_owner_root,
+          source_syntax->source_location_id);
+}
+
+bool current_source_type_materialization_owner_committed()
+{
+  return !source_type_materialization_stack.empty() &&
+      source_type_materialization_stack.back().semantic_owner &&
+      source_type_materialization_stack.back().semantic_owner_committed;
+}
+
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+SourceTypeMaterializationOwner
+current_source_type_materialization_semantic_owner_kind()
+{
+  return source_type_materialization_stack.empty() ?
+      SourceTypeMaterializationOwner::None :
+      source_type_materialization_stack.back().semantic_owner_kind;
+}
+
+const void * current_source_type_materialization_semantic_owner()
+{
+  return source_type_materialization_stack.empty() ?
+      nullptr : source_type_materialization_stack.back().semantic_owner;
+}
+#endif
+
 const char * source_type_materialization_owner_name(
     SourceTypeMaterializationOwner owner)
 {
@@ -1507,6 +1680,24 @@ const char * source_type_materialization_owner_name(
     case SourceTypeMaterializationOwner::VariableTemplateInitializer:
       return "variable_template_initializer";
     case SourceTypeMaterializationOwner::None:
+      break;
+  }
+  return "none";
+}
+
+const char * source_type_materialization_operation_name(
+    SourceTypeMaterializationOperation operation)
+{
+  switch(operation) {
+    case SourceTypeMaterializationOperation::ContainingSemanticOwner:
+      return "containing_semantic_owner";
+    case SourceTypeMaterializationOperation::SourceTypeNode:
+      return "source_type_node";
+    case SourceTypeMaterializationOperation::StaticMemberInitializer:
+      return "static_member_initializer";
+    case SourceTypeMaterializationOperation::VariableTemplateInitializer:
+      return "variable_template_initializer";
+    case SourceTypeMaterializationOperation::None:
       break;
   }
   return "none";
@@ -7253,7 +7444,11 @@ TemplateInstantiationResult acquire_variable_instantiation(
     const ScopedSourceTypeMaterialization source_type_materialization(
         ctx.template_witness_context().session != nullptr,
         SourceTypeMaterializationOwner::VariableTemplateInitializer,
-        SourceTypeMaterializationOperation::VariableTemplateInitializer);
+        SourceTypeMaterializationOperation::VariableTemplateInitializer,
+        request.decl ? request.decl->initializer : nullptr,
+        nullptr,
+        request.decl,
+        true);
     return template_instantiation::instantiate_variable_template(
         ctx,
         *request.decl,

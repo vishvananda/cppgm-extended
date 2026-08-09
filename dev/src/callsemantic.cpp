@@ -19123,6 +19123,20 @@ private:
     hooks.lookup_type_node =
         [this, &scope, reference_class_templates_only](const CppAstNode & node)
         {
+          template_api::SourceTypeMaterializationOwner materialization_owner =
+              template_api::current_source_type_materialization_owner();
+          if(materialization_owner ==
+                 template_api::SourceTypeMaterializationOwner::None) {
+            materialization_owner =
+                template_api::SourceTypeMaterializationOwner::DeclarationType;
+          }
+          const template_api::ScopedSourceTypeMaterialization
+              source_type_materialization(
+                  template_witness_session_ != nullptr,
+                  materialization_owner,
+                  template_api::SourceTypeMaterializationOperation::
+                      SourceTypeNode,
+                  &node);
           const string lookup_name =
               !node.value.empty() &&
                   (node.kind == CppAstKind::type_name ||
@@ -20222,6 +20236,116 @@ private:
       std::ostringstream detail;
       detail << "source_dependency="
              << static_cast<int>(source_dependency) << ";"
+             << "instance_tracked="
+             << (instance->template_instantiation_tracked ? "yes" : "no")
+             << ";header_tracked="
+             << (instance->source_capture_header_instantiation_tracked ?
+                     "yes" : "no")
+             << ";instantiation_in_progress="
+             << (instance->template_instantiation_in_progress ? "yes" : "no")
+             << ";full_collection_in_progress="
+             << (instance->full_member_collection_in_progress ? "yes" : "no")
+             << ";reference_collection_in_progress="
+             << (instance->reference_member_collection_in_progress ?
+                     "yes" : "no")
+             << ";definition_output_in_progress="
+             << (instance->definition_output_in_progress ? "yes" : "no")
+             << ";";
+      const template_api::SourceTypeMaterializationOwner semantic_owner_kind =
+          template_api::current_source_type_materialization_semantic_owner_kind();
+      const void * semantic_owner =
+          template_api::current_source_type_materialization_semantic_owner();
+      detail << "semantic_owner_kind="
+             << template_api::source_type_materialization_owner_name(
+                    semantic_owner_kind)
+             << ";";
+      if(semantic_owner_kind ==
+             template_api::SourceTypeMaterializationOwner::FunctionBody &&
+         semantic_owner) {
+        const FunctionBinding & binding =
+            *static_cast<const FunctionBinding *>(semantic_owner);
+        detail << "semantic_owner_entity=" << binding.name << ";"
+               << "function_source_template="
+               << (binding.source_template ? "yes" : "no") << ";"
+               << "function_instantiation_arguments="
+               << (binding.has_instantiation_arguments ||
+                       !binding.instantiation_arguments.empty() ?
+                       "yes" : "no")
+               << ";function_output_requirements="
+               << binding.output_requirements << ";"
+               << "function_definition_output_in_progress="
+               << (binding.definition_output_in_progress ? "yes" : "no")
+               << ";function_definition_output_emitted="
+               << (binding.definition_output_emitted ? "yes" : "no")
+               << ";function_materialized_by_enclosing_closure="
+               << (binding.template_definition_materialized_by_enclosing_closure ?
+                       "yes" : "no")
+               << ";function_required_by_public_source_call="
+               << (binding.template_definition_required_by_public_source_call ?
+                       "yes" : "no")
+               << ";function_explicit_specialization="
+               << (binding.is_explicit_specialization ? "yes" : "no")
+               << ";function_owner_class_tracked="
+               << (binding.owner_class &&
+                       binding.owner_class->template_instantiation_tracked ?
+                       "yes" : "no")
+               << ";function_owner_class_dependent="
+               << (binding.owner_class &&
+                       binding.owner_class->dependent_instantiation ?
+                       "yes" : "no")
+               << ";";
+      } else if(semantic_owner_kind ==
+                    template_api::SourceTypeMaterializationOwner::
+                        DeclarationType &&
+                semantic_owner) {
+        const ClassInfo & owner = *static_cast<const ClassInfo *>(semantic_owner);
+        detail << "semantic_owner_entity=" << owner.qualified_name << ";"
+               << "class_source_template="
+               << (owner.source_template ? "yes" : "no") << ";"
+               << "class_tracked="
+               << (owner.template_instantiation_tracked ? "yes" : "no")
+               << ";class_dependent="
+               << (owner.dependent_instantiation ? "yes" : "no")
+               << ";class_complete=" << (owner.complete ? "yes" : "no")
+               << ";class_full_collection_in_progress="
+               << (owner.full_member_collection_in_progress ? "yes" : "no")
+               << ";class_reference_collection_in_progress="
+               << (owner.reference_member_collection_in_progress ? "yes" : "no")
+               << ";class_definition_output_in_progress="
+               << (owner.definition_output_in_progress ? "yes" : "no")
+               << ";class_definition_output_emitted="
+               << (owner.definition_output_emitted ? "yes" : "no")
+               << ";";
+      } else if(semantic_owner_kind ==
+                    template_api::SourceTypeMaterializationOwner::
+                        StaticMemberInitializer &&
+                semantic_owner) {
+        const ValueBinding & binding =
+            *static_cast<const ValueBinding *>(semantic_owner);
+        detail << "semantic_owner_entity=" << binding.name << ";"
+               << "value_output_requirements=" << binding.output_requirements
+               << ";value_definition_output_emitted="
+               << (binding.definition_output_emitted ? "yes" : "no")
+               << ";value_owner_class_tracked="
+               << (binding.owner_class &&
+                       binding.owner_class->template_instantiation_tracked ?
+                       "yes" : "no")
+               << ";";
+      } else if(semantic_owner_kind ==
+                    template_api::SourceTypeMaterializationOwner::
+                        VariableTemplateInitializer &&
+                semantic_owner) {
+        const VariableTemplateDecl & decl =
+            *static_cast<const VariableTemplateDecl *>(semantic_owner);
+        detail << "semantic_owner_entity=" << decl.name << ";"
+               << "value_variable_template_instantiations="
+               << decl.instantiations.size() << ";"
+               << "value_variable_template_explicit_specializations="
+               << decl.explicit_specializations.size() << ";"
+               << "value_variable_template_partial_specializations="
+               << decl.partial_specializations.size() << ";";
+      }
+      detail
              << structured_argument_description();
       witness_provenance::note_class_materialization_decision(
           *template_witness_session_,
@@ -20234,6 +20358,13 @@ private:
               template_api::source_type_materialization_owner_name(
                   materialization->owner) :
               "none",
+          template_api::source_type_materialization_owner_name(
+              template_api::current_source_type_materialization_owner()),
+          template_api::source_type_materialization_operation_name(
+              template_api::current_source_type_materialization_operation()),
+          template_api::current_source_type_materialization_matches(
+              resolved.source_syntax),
+          template_api::current_source_type_materialization_owner_committed(),
           detail.str(),
           typed_materialization_admitted);
     }

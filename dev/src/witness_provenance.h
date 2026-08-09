@@ -191,6 +191,10 @@ void note_class_materialization_decision(
     std::uint32_t source_occurrence_id,
     int source_use_mode,
     const std::string & typed_owner,
+    const std::string & active_owner,
+    const std::string & active_operation,
+    bool exact_source_node,
+    bool semantic_owner_committed,
     const std::string & structured_arguments,
     bool typed_materialization);
 

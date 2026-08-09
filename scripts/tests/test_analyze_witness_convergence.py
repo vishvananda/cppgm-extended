@@ -15,6 +15,22 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AnalyzeWitnessConvergenceTest(unittest.TestCase):
+    def test_absolute_location_disambiguates_shared_test_basename(self):
+        record = {
+            "location": "/repo/pa23/tests/general/shared.t:4:3",
+            "source": "/tmp/shared.t.1.jsonl",
+        }
+        self.assertTrue(
+            MODULE._record_belongs_to_test(
+                record, "pa23/tests/general/shared.t"
+            )
+        )
+        self.assertFalse(
+            MODULE._record_belongs_to_test(
+                record, "pa24/tests/general/shared.t"
+            )
+        )
+
     def test_parse_source_and_lifecycle_events(self):
         events = MODULE.parse_witness(
             """translation-unit
@@ -97,6 +113,78 @@ template-closure-events
             provenance = report["tests"][0]["occurrences"][0]["provenance"]
             self.assertEqual(
                 provenance["semantic_routes"], ["alias.canonical_occurrence"]
+            )
+
+    def test_exact_materialization_candidates_are_compared_with_references(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tests = root / "pa19" / "tests" / "general"
+            tests.mkdir(parents=True)
+            witness = """translation-unit
+  class-use at tests/general/sample.t:4:3
+    template A
+    selected primary
+"""
+            (tests / "sample.ref.witness").write_text(witness, encoding="utf-8")
+            (tests / "sample.my.witness").write_text(witness, encoding="utf-8")
+            report = MODULE.build_report(
+                root,
+                ("pa19",),
+                {
+                    "class_materialization_decisions": [
+                        {
+                            "location": "/repo/pa19/tests/general/sample.t:4:3",
+                            "template_name": "A",
+                            "active_owner": "declaration_type",
+                            "active_operation": "source_type_node",
+                            "exact_source_node": True,
+                            "semantic_owner_committed": True,
+                            "semantic_owner_state": {
+                                "semantic_owner_kind": "declaration_type"
+                            },
+                            "source_dependency": 1,
+                            "typed_materialization": False,
+                            "source": "/tmp/pa19/sample.t.1.jsonl",
+                        },
+                        {
+                            "location": "/repo/pa19/tests/general/sample.t:8:3",
+                            "template_name": "B",
+                            "active_owner": "declaration_type",
+                            "active_operation": "source_type_node",
+                            "exact_source_node": True,
+                            "semantic_owner_committed": True,
+                            "semantic_owner_state": {
+                                "semantic_owner_kind": "declaration_type"
+                            },
+                            "source_dependency": 1,
+                            "typed_materialization": False,
+                            "source": "/tmp/pa19/sample.t.1.jsonl",
+                        },
+                        {
+                            "location": "/repo/pa19/tests/general/sample.t:12:3",
+                            "template_name": "C",
+                            "active_owner": "declaration_type",
+                            "active_operation": "containing_semantic_owner",
+                            "exact_source_node": True,
+                            "semantic_owner_committed": True,
+                            "semantic_owner_state": {
+                                "semantic_owner_kind": "declaration_type"
+                            },
+                            "source_dependency": 1,
+                            "typed_materialization": False,
+                            "source": "/tmp/pa19/sample.t.1.jsonl",
+                        },
+                    ]
+                },
+            )
+            self.assertEqual(
+                report["class_materialization_candidate_summary"],
+                {
+                    "candidate_decisions": 2,
+                    "candidate_occurrences": 2,
+                    "patched_clang_present_occurrences": 1,
+                    "patched_clang_absent_occurrences": 1,
+                },
             )
 
 

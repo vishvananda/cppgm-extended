@@ -254,6 +254,13 @@ def _record_belongs_to_test(record: dict[str, Any], test: str) -> bool:
     if f"/{assignment}/" in source and test_name in source:
         return True
     location = str(record.get("location", ""))
+    location_assignments = {
+        candidate
+        for candidate in STRICT_PAS
+        if f"/{candidate}/" in location
+    }
+    if location_assignments:
+        return assignment in location_assignments and test_name in location
     return test_name in location and not any(
         f"/{other}/" in source for other in STRICT_PAS if other != assignment
     )
@@ -377,6 +384,115 @@ def correlate_provenance(
     }
 
 
+def audit_class_materialization_candidates(
+    expected_by_test: dict[str, list[WitnessEvent]],
+    provenance: dict[str, Any],
+) -> tuple[dict[str, int], list[dict[str, Any]]]:
+    tests_by_name: dict[str, list[str]] = collections.defaultdict(list)
+    for test in expected_by_test:
+        tests_by_name[pathlib.Path(test).name].append(test)
+
+    grouped: dict[tuple[str, str, str, bool], dict[str, Any]] = {}
+    candidate_decisions = 0
+    for decision in provenance.get("class_materialization_decisions", []):
+        operation = str(decision.get("active_operation", "none"))
+        semantic_owner_kind = str(
+            decision.get("semantic_owner_state", {}).get(
+                "semantic_owner_kind", "none"
+            )
+        )
+        materialization_operation = operation in {
+            "source_type_node",
+            "static_member_initializer",
+            "variable_template_initializer",
+        }
+        owner_matches_operation = (
+            operation == "source_type_node"
+            and semantic_owner_kind in {"declaration_type", "function_body"}
+        ) or operation == semantic_owner_kind
+        candidate = (
+            int(decision.get("source_dependency", -1)) > 0
+            and bool(decision.get("semantic_owner_committed", False))
+            and materialization_operation
+            and owner_matches_operation
+            and bool(decision.get("exact_source_node", False))
+        )
+        if not candidate:
+            continue
+        candidate_decisions += 1
+        location = str(decision.get("location", ""))
+        template_name = str(decision.get("template_name", ""))
+        source_name = pathlib.Path(location.rsplit(":", 2)[0]).name
+        matching_tests = [
+            test
+            for test in tests_by_name.get(source_name, [])
+            if _record_belongs_to_test(decision, test)
+        ]
+        test = matching_tests[0] if len(matching_tests) == 1 else ""
+        expected_event = next(
+            (
+                event
+                for event in expected_by_test.get(test, [])
+                if event.family == "class_use"
+                and _same_location(event.location, location)
+                and _same_template(event.template_name, template_name)
+            ),
+            None,
+        )
+        expected = expected_event is not None
+        display_location = expected_event.location if expected_event else location
+        display_template = (
+            expected_event.template_name if expected_event else template_name
+        )
+        key = (test, display_location, display_template, expected)
+        item = grouped.setdefault(
+            key,
+            {
+                "test": test,
+                "location": display_location,
+                "template_name": display_template,
+                "patched_clang_presence": expected,
+                "decision_count": 0,
+                "typed_materialization_count": 0,
+                "owners": set(),
+                "operations": set(),
+            },
+        )
+        item["decision_count"] += 1
+        item["typed_materialization_count"] += int(
+            bool(decision.get("typed_materialization", False))
+        )
+        item["owners"].add(str(decision.get("active_owner", "none")))
+        item["operations"].add(operation)
+
+    candidates: list[dict[str, Any]] = []
+    for item in grouped.values():
+        copied = dict(item)
+        copied["owners"] = sorted(item["owners"])
+        copied["operations"] = sorted(item["operations"])
+        candidates.append(copied)
+    candidates.sort(
+        key=lambda item: (
+            item["test"],
+            item["location"],
+            item["template_name"],
+        )
+    )
+    return (
+        {
+            "candidate_decisions": candidate_decisions,
+            "candidate_occurrences": len(candidates),
+            "patched_clang_present_occurrences": sum(
+                int(item["patched_clang_presence"]) for item in candidates
+            ),
+            "patched_clang_absent_occurrences": sum(
+                int(not item["patched_clang_presence"]) for item in candidates
+            ),
+        },
+        candidates,
+    )
+
+
 def build_report(
     repo_root: pathlib.Path,
     strict_pas: Iterable[str] = STRICT_PAS,
@@ -391,17 +507,20 @@ def build_report(
     owner_counts: collections.Counter[tuple[str, str]] = collections.Counter()
     matching = 0
     missing_actual_files = 0
+    expected_by_test: dict[str, list[WitnessEvent]] = {}
 
     for reference in references:
         actual = _actual_path(reference)
         expected_text = reference.read_text(encoding="utf-8")
         actual_text = actual.read_text(encoding="utf-8") if actual.exists() else ""
+        relative_test = str(_test_path_from_reference(reference).relative_to(repo_root))
+        expected_events = parse_witness(expected_text)
+        expected_by_test[relative_test] = expected_events
         if expected_text == actual_text:
             matching += 1
             continue
         if not actual.exists():
             missing_actual_files += 1
-        expected_events = parse_witness(expected_text)
         actual_events = parse_witness(actual_text)
         occurrences = classify_events(expected_events, actual_events)
         ordering_only = not occurrences and expected_text != actual_text
@@ -424,7 +543,6 @@ def build_report(
                     _occurrence("ordering_only", expected_event, actual_event)
                 )
                 break
-        relative_test = str(_test_path_from_reference(reference).relative_to(repo_root))
         test_families: set[str] = set()
         for occurrence in occurrences:
             occurrence["provenance"] = correlate_provenance(
@@ -459,6 +577,9 @@ def build_report(
         {"family": key[0], "route": key[1], "occurrences": count}
         for key, count in sorted(owner_counts.items())
     ]
+    materialization_summary, materialization_candidates = (
+        audit_class_materialization_candidates(expected_by_test, provenance)
+    )
     return {
         "schema_version": 1,
         "references": len(references),
@@ -467,6 +588,8 @@ def build_report(
         "missing_actual_files": missing_actual_files,
         "family_summary": family_summary,
         "ownership_summary": ownership_summary,
+        "class_materialization_candidate_summary": materialization_summary,
+        "class_materialization_candidates": materialization_candidates,
         "tests": tests,
     }
 

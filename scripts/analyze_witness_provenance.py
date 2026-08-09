@@ -7,6 +7,7 @@ import argparse
 import collections
 import json
 import pathlib
+import re
 import sys
 from typing import Any, Iterable
 
@@ -160,6 +161,30 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
             typed_owner = str(record.get("typed_owner", "none"))
             typed_materialization = bool(record.get("typed_materialization", False))
             legacy_admitted = bool(record.get("legacy_admitted", False))
+            structured_arguments = str(record.get("structured_arguments", ""))
+            detail_fields = {
+                match.group(1): match.group(2)
+                for match in re.finditer(
+                    r"(?:^|;)([a-z][a-z0-9_]*)=([^;]*)",
+                    structured_arguments,
+                )
+            }
+            semantic_owner_state = {
+                key: value
+                for key, value in detail_fields.items()
+                if key == "semantic_owner_kind"
+                or key == "semantic_owner_entity"
+                or key.startswith("function_")
+                or key.startswith("class_")
+                or key.startswith("value_")
+            }
+            dependency_match = re.search(
+                r"(?:^|;)source_dependency=(\d+)(?:;|$)",
+                structured_arguments,
+            )
+            source_dependency = (
+                int(dependency_match.group(1)) if dependency_match else -1
+            )
             class_materialization["decisions"] += 1
             class_materialization[
                 f"typed_owner:{typed_owner}"
@@ -182,9 +207,19 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
                     ),
                     "source_use_mode": int(record.get("source_use_mode", -1)),
                     "typed_owner": typed_owner,
-                    "structured_arguments": str(
-                        record.get("structured_arguments", "")
+                    "active_owner": str(record.get("active_owner", "none")),
+                    "active_operation": str(
+                        record.get("active_operation", "none")
                     ),
+                    "exact_source_node": bool(
+                        record.get("exact_source_node", False)
+                    ),
+                    "semantic_owner_committed": bool(
+                        record.get("semantic_owner_committed", False)
+                    ),
+                    "source_dependency": source_dependency,
+                    "semantic_owner_state": semantic_owner_state,
+                    "structured_arguments": structured_arguments,
                     "typed_materialization": typed_materialization,
                     "source": record.get("_trace_file", ""),
                 }

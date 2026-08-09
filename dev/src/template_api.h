@@ -27,12 +27,22 @@ public:
   ScopedSourceTypeMaterialization(
       bool witness_session_enabled,
       SourceTypeMaterializationOwner owner,
-      SourceTypeMaterializationOperation operation)
+      SourceTypeMaterializationOperation operation,
+      const CppAstNode * source_root = nullptr,
+      const cpp_decl::TemplateIdSyntax * source_syntax = nullptr,
+      const void * semantic_owner = nullptr,
+      bool semantic_owner_committed = false)
     : active_(witness_session_enabled &&
               operation != SourceTypeMaterializationOperation::None)
   {
     if(active_) {
-      source_type_materialization_detail::push(owner, operation);
+      source_type_materialization_detail::push(
+          owner,
+          operation,
+          source_root,
+          source_syntax,
+          semantic_owner,
+          semantic_owner_committed);
     }
   }
   ~ScopedSourceTypeMaterialization()
@@ -56,6 +66,16 @@ SourceTypeMaterializationOperation
 current_source_type_materialization_operation();
 const char * source_type_materialization_owner_name(
     SourceTypeMaterializationOwner owner);
+const char * source_type_materialization_operation_name(
+    SourceTypeMaterializationOperation operation);
+bool current_source_type_materialization_matches(
+    const cpp_decl::TemplateIdSyntax * source_syntax);
+bool current_source_type_materialization_owner_committed();
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+SourceTypeMaterializationOwner
+current_source_type_materialization_semantic_owner_kind();
+const void * current_source_type_materialization_semantic_owner();
+#endif
 
 enum NonTypeArgumentStatus
 {

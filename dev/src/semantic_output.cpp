@@ -5157,7 +5157,11 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
             source_type_materialization(
                 ctx.template_witness_context().session != nullptr,
                 template_api::SourceTypeMaterializationOwner::FunctionBody,
-                template_api::SourceTypeMaterializationOperation::SourceTypeNode);
+                template_api::SourceTypeMaterializationOperation::SourceTypeNode,
+                binding.body,
+                nullptr,
+                &binding,
+                true);
         const ScopedTemplateUseLocation instantiation_use_location(
             binding.instantiation_use_location);
         emit_function_body_and_collect();
@@ -5346,7 +5350,11 @@ void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
       source_type_materialization(
           ctx.template_witness_context().session != nullptr,
           template_api::SourceTypeMaterializationOwner::FunctionBody,
-          template_api::SourceTypeMaterializationOperation::SourceTypeNode);
+          template_api::SourceTypeMaterializationOperation::SourceTypeNode,
+          binding.body,
+          nullptr,
+          &binding,
+          true);
   analyze_function_body_semantics_impl(ctx, scope, binding, false, true, false);
 }
 

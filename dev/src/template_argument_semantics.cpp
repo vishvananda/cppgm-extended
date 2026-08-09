@@ -1245,6 +1245,20 @@ bool parse_type_id_node_for_templates(template_api::TemplateServices & services,
     return false;
   }
 
+  template_api::SourceTypeMaterializationOwner materialization_owner =
+      template_api::current_source_type_materialization_owner();
+  if(materialization_owner ==
+         template_api::SourceTypeMaterializationOwner::None) {
+    materialization_owner =
+        template_api::SourceTypeMaterializationOwner::DeclarationType;
+  }
+  const template_api::ScopedSourceTypeMaterialization
+      source_type_materialization(
+          services.witness_context.session != nullptr,
+          materialization_owner,
+          template_api::SourceTypeMaterializationOperation::SourceTypeNode,
+          &type_id);
+
   const bool capture_source_locations =
       witness::source_capture_enabled(services.witness_context);
   const string inherited_use_location =

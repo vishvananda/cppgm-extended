@@ -243,3 +243,111 @@ Phase 1 performance passes against the fixed checkpoint: -0.06%
 instructions, +0.49% maximum RSS, and -0.03% peak footprint. No RSS rerun is
 triggered. Phase 2 begins with repeated rejected class source IDs, then repairs
 the class occurrences with no semantic attempt.
+
+## Phase 2: class materialization ownership investigation
+
+Phase 2 first separates three facts that the original probe conflated:
+
+1. the containing semantic owner (`ClassInfo`, `FunctionBinding`, static
+   `ValueBinding`, or `VariableTemplateDecl`);
+2. the nested parser operation currently resolving a type node; and
+3. exact containment of the stable `TemplateIdSyntax::source_location_id` in
+   both the operation node and its semantic owner.
+
+The diagnostic compiler uses isolated object root
+`../obj/witness-recovery-phase2-owner-state-20260809` and Homebrew Clang. The
+ordinary output remains exactly at the Phase 1 checkpoint:
+
+- strict: 1,339/1,530 passing with the same 191 gaps;
+- per PA failures: 11, 10, 49, 83, and 38;
+- 3,060-output manifest SHA-256:
+  `3ff5c80c9a64f0b4bec8273ce678e0fd83c252e4c77aee66eafb7190bffb2d2b`;
+- diagnostic strict-log SHA-256:
+  `cd31be5615fe8965e2fa9e7a6d5b069e45ebf6b83fb62fe31452dad30280e11f`;
+- analyzer tests: 11/11 passing.
+
+The final owner-state corpus has 1,529 traces and 63,235 records. Its report is
+`/tmp/cppgm-phase2-owner-state-full-r2-report.json`, SHA-256
+`b178e7faa7988efa435ef72cfd1270e5eb0dcb08539da33881d8ecd71ebef15b`.
+The exact-owner convergence report is
+`/tmp/cppgm-phase2-owner-state-full-r3-convergence.json`, SHA-256
+`da7229768c7c448f6c1005f272df09d406abfce164b5cfb6ce4a1e5f3498101b`.
+
+### What the owner probe disproves
+
+An active committed owner is necessary but not a materialization fact. Exact
+source containment plus matching owner kind still finds 377 occurrences:
+only 18 exist in patched-Clang output and 359 do not. Therefore no combination
+of owner kind, collection state, output state, or source mode can be the final
+admission rule.
+
+The declaration results are especially decisive. All 771 rejected decisions
+and all five accepted decisions occur while a tracked concrete class-template
+specialization is incomplete and performing full member collection. The
+state is identical. The distinction is demand:
+
+- `impl<int>` eagerly resolves the unused member typedef target `slot<int>`;
+  patched Clang has no concrete source `TypeLoc` there;
+- the member function declaration must instantiate `lock<mutex_type>`, and
+  patched Clang does have that source `TypeLoc`;
+- the `graph<...>` typedef target becomes materialized only when a later
+  qualified lookup demands the alias.
+
+This is unnecessary semantic work, not a witness visibility policy. Phase 2
+must split class declaration indexing from member-alias target resolution and
+defer a concrete typedef/alias target until semantic lookup demands it.
+
+Function ownership has a second structural split. No candidate owned by a
+`FunctionBinding` with `source_template != nullptr` appears in patched-Clang
+output. Valid dependent body materializations are ordinary source bodies or
+non-template members of instantiated class templates. The current whole-body
+scope is therefore too broad; the typed result must originate at the source
+type operation in a body that the reference AST actually materializes, not at
+CPPGM code-generation or SFINAE analysis of a function-template body.
+
+The static-member positive is not yet owned correctly. Its later constant
+lookup carries `StaticMemberInitializer` as an operation but inherits
+`main`'s `FunctionBinding` as semantic owner. The real initializer pass owns a
+`ValueBinding`; it must retain the stable occurrence result for the later
+lookup. The audit now rejects the inherited-main case instead of treating
+source mode as ownership. The variable-template initializer already has an
+exact `VariableTemplateDecl` owner.
+
+### Missing class rows are not one problem
+
+Of the 36 missing expected class rows, only four currently reach an exact,
+matching materialization operation: `lock`, `defaults`, `graph`, and `find`.
+The other 32 belong to separate semantic boundaries:
+
+- out-of-class/current-specialization owner source;
+- direct qualified member-template source;
+- alias-expanded result source;
+- CTAD/deduced variable source;
+- nested-name-specifier source in a materialized variable initializer; or
+- a direct source occurrence for which CPPGM never creates a class-use
+  attempt.
+
+They must be repaired at those producers after the materialization branch is
+narrowed. Treating all 36 as replay admission would recreate the late policy
+the consolidation is meant to remove.
+
+### Next implementation slice
+
+1. Index concrete class member typedefs and aliases once without resolving
+   their targets. Extend the existing `DeferredMemberAlias` side map with a
+   structured declaration handle; do not grow `Type`, `TemplateArgument`, or
+   `ClassInfo`.
+2. Resolve and bind that handle once from `lookup_member_type`, carrying the
+   exact source occurrence and class owner through the demand operation.
+3. Prove the unused `slot<T>` work disappears while demanded `graph<...>` and
+   member signatures such as `lock<...>` remain.
+4. Move function-body materialization from a whole-body scope to the concrete
+   source-type operation and exclude function-template-instantiation analysis
+   structurally, not with names, locations, source modes, or renderer rules.
+5. Make static initializer analysis retain its exact `ValueBinding`-owned
+   result; remove the later constant-lookup admission.
+6. Only after these paths are correct, repair the 32 non-materialization rows
+   at their actual producer boundaries and delete the old late class policies.
+
+No performance gate is recorded for this diagnostic-only investigation. The
+next correctness-clean semantic slice receives the required three-run gate.

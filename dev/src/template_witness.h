@@ -37,6 +37,7 @@ enum class SourceTypeMaterializationOwner : unsigned char
 enum class SourceTypeMaterializationOperation : unsigned char
 {
   None,
+  ContainingSemanticOwner,
   SourceTypeNode,
   StaticMemberInitializer,
   VariableTemplateInitializer
@@ -44,7 +45,11 @@ enum class SourceTypeMaterializationOperation : unsigned char
 
 namespace source_type_materialization_detail {
 void push(SourceTypeMaterializationOwner owner,
-          SourceTypeMaterializationOperation operation);
+          SourceTypeMaterializationOperation operation,
+          const CppAstNode * source_root,
+          const cpp_decl::TemplateIdSyntax * source_syntax,
+          const void * semantic_owner,
+          bool semantic_owner_committed);
 void pop();
 }
 
