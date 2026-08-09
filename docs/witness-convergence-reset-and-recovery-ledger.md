@@ -763,3 +763,100 @@ alias-target evaluation without allowing a dependent placeholder to escape
 through an unclassified raw lookup. Nested enum/class declarations, access,
 multiple declarators, template-parameter bindings, and storage preservation
 remain mandatory declaration-side work during that split.
+
+## Phase 2 concrete alias index checkpoint
+
+Commit `a15320571546542c9929c4f829ac26485ab646d3` separates concrete
+class-alias declaration work from target evaluation without changing when the
+target is evaluated yet. The primary collector now indexes a stable structured
+handle, and the existing canonical deferred-alias resolver owns both typedef
+declarators and alias-declaration type-ids. Concrete typedefs and `using`
+aliases invoke that resolver immediately in this checkpoint; dependent-class
+collection remains on its prior path.
+
+The typedef handle retains pointers to the original decl-specifier sequence,
+init-declarator list, individual declarator, and declaration. It does not copy
+a `TypePtr`, serialize an AST, or reconstruct semantics from source text. The
+indexing pass still calls `prepare_namespace_scope_specifiers` with embedded
+type and named-forward collection enabled. Resolution calls the same
+structured preparation operation with both collection flags disabled. Thus a
+declaration such as `typedef enum { white, black } color_type;` collects the
+enum and enumerators exactly once before target evaluation, while target
+resolution cannot repeat or skip that declaration-side work.
+
+Declaration-site recording is now independent of binding a resolved type. It
+records the name and source boundary with unknown type dependency during
+indexing, then refines that dependency when the canonical resolver binds the
+type. The resolver also retains a self-deferred entry when current-class
+recursion asks it to defer again instead of erasing the replacement entry.
+Name extraction and type-id construction share one structured declarator
+walk; no second parameter analysis, local semantic scope, text reparse,
+visibility filter, renderer recovery, or reference change was introduced.
+
+### Correctness and static evidence
+
+The warning-free ordinary compiler uses Homebrew Clang and object root
+`../obj/witness-recovery-alias-index-split-ordinary-20260809`. Its SHA-256 is
+`e929585b01daf41c5b0984b4448cd86c48028b15fcdafa9a261c49c13899439b`;
+the preserved binary is
+`/tmp/cppgm-recovery-alias-index-split-ordinary-20260809`. It is 17,011,672
+bytes. Mach-O `__TEXT` remains 12,955,648 bytes, `__text` is 11,795,353 bytes,
+`__DATA_CONST` is 57,344 bytes, and `__DATA` is 442,368 bytes. There is no
+provenance symbol. Relative to the bound-query checkpoint this temporary
+structural slice adds 1,976 file bytes and 3,152 `__text` bytes; deletion of
+the old eager arm and unused target work owns that migration cost.
+
+The two declaration-indexing guards are byte-for-byte unchanged:
+
+- `300-template-body-typedef-enum-member-lookup.t` still compiles and retains
+  witness SHA-256
+  `91474ad904d01a0a4d835095dc31d9c5274614dc3a1dde3081a65ef56a89a73c`;
+- `100-class-template-member-index-ignores-parameter-name.t` still compiles
+  and retains witness SHA-256
+  `ae77a1195d9b16b9dc10dfbee1960513d0362765ce6ee14364179f5c964f18a6`.
+
+All 24 known alias-gap fixtures retain their preceding witness hashes. The
+full expanded strict run is byte-for-byte unchanged: PA19 is 268/279, PA20 is
+148/158, PA22 is 244/293, PA23 is 302/385, and PA24 is 377/415, for the same
+1,339/1,530 result and the same 191 gaps. The strict-log SHA-256 remains
+`cd31be5615fe8965e2fa9e7a6d5b069e45ebf6b83fb62fe31452dad30280e11f`,
+and the 3,060-output manifest remains
+`e5add38dada683f43e3b06cde738ded2d56874e9a28e99bd514bef761894a429`.
+
+The complete PA1-PA38 direct-LowIR report passes 4,862/4,862. Its log is
+`/tmp/cppgm-recovery-alias-index-split-broad.log`, SHA-256
+`cd0e33e0b6b496e590a3e05e940de8c07498c14d79d7bfbe8420bbed7a119040`;
+only assignment-label ordering differs from the preceding successful report.
+The strict text-reparse audit reports zero in all 23 categories. The witness
+materialization audit has no findings, two decision boundaries, and six
+forbidden symbols; its report SHA-256 is
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+Forty-six provenance, convergence, audit, and performance-gate unit tests
+pass.
+
+### Performance evidence
+
+The three-run report is
+`/tmp/cppgm-witness-recovery-alias-index-split-perf.json`, SHA-256
+`082bc099aa1061650563beb1bf78f87d09d00c8f8a26bae5f2588e83fca4261c`.
+
+| Metric | Minimum | Median | Maximum | Rolling delta |
+| --- | ---: | ---: | ---: | ---: |
+| Instructions | 175,367,085,755 | 175,493,273,172 | 175,615,267,557 | -0.07% |
+| Maximum RSS | 737,550,336 | 742,948,864 | 752,787,456 | -0.42% |
+| Peak footprint | 575,590,400 | 575,623,168 | 576,069,632 | -0.04% |
+
+All metrics pass without an RSS confirmation batch. Against the fixed Phase 0
+reference, the medians are +0.1377% instructions, -0.6463% RSS, and -0.0391%
+footprint. This is a valid intermediate checkpoint but still does not satisfy
+the final instruction-reduction requirement. The promoted rolling baseline is
+`/tmp/cppgm-witness-recovery-alias-index-split-rolling.json`, SHA-256
+`d681f35b4d09868c1dbf66fc6e6f182aef89c8cb00639447e73707f2e2031495`.
+
+### Disposition
+
+Declaration indexing and target evaluation now have a tested boundary. The
+next slice may remove the immediate resolver call, make the canonical
+member-type lookup resolve indexed names on demand, and prove that unused
+targets such as `slot<T>` disappear while demanded aliases in member
+signatures, out-of-class definitions, SFINAE, and hosted headers still resolve.
