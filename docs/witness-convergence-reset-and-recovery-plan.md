@@ -29,6 +29,102 @@ Do not continue semantic implementation from the present dirty compiler tree.
 Preserve its evidence first, then reconstruct the useful changes on the clean
 control in small correctness-clean phases.
 
+## Current decision, 2026-08-09
+
+Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
+diagnostic class-owner evidence to the Phase 1 checkpoint without changing
+ordinary output. Two uncommitted files contain a rejected typedef-deferral
+experiment:
+
+- `dev/src/semantic_class_model.cpp`;
+- `dev/src/semantic_model.h`.
+
+The experiment adds 152 lines and removes eight. Its patch SHA-256 is
+`f40f0f9420534a5740d9e288b30acad4481252450c5dba51d2065cc8d5c92879`.
+Preserve that identity and the evidence in the recovery ledger, then remove
+the experiment before the next semantic slice. Do not layer fixes onto it.
+
+| State | Strict witness | Other strict failures | PA1-PA38 | Performance |
+| --- | ---: | ---: | ---: | --- |
+| Restart point | 1,339/1,530, with 191 mismatches | 0 direct-LowIR regressions | 4,862/4,862 | valid Phase 1 gate |
+| Rejected experiment | 1,322/1,530, with 208 mismatches | 14 LowIR-only failures; 222 distinct failing strict tests | 4,722/4,862 | benchmark compilation fails |
+
+The rejected experiment fixes none of the 191 restart mismatches and adds 17
+witness failures. It also prevents 18 provenance sessions from flushing and
+breaks hosted libc++ compilation in PA35 through PA37. No valid performance
+report exists for this state because the frozen benchmark exits during its
+first run.
+
+### Remaining mismatch inventory at the restart point
+
+The 191 failing outputs overlap event families. They contain 565 row-level
+differences:
+
+| Family | Failing outputs | Changed rows | Missing rows | Extra rows | Ordering only |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Alias use | 24 | 18 | 16 | 2 | 0 |
+| Class use | 62 | 57 | 36 | 10 | 0 |
+| Function call | 86 | 40 | 62 | 35 | 1 |
+| Variable use | 3 | 1 | 0 | 2 | 0 |
+| Lifecycle | 79 | 0 | 158 | 127 | 0 |
+
+The 36 alias row differences form five concrete groups:
+
+| Alias group | Rows | Required semantic owner |
+| --- | ---: | --- |
+| Missing source-pattern occurrences | 16 | primary source-pattern analysis |
+| Extra implicit-instantiation occurrences | 2 | explicit-source traversal boundary |
+| Wrong argument or empty-pack provenance | 9 | structured template-argument result |
+| Wrong owner presentation | 3 | selected and lexical owner facts |
+| Wrong structured source spelling | 6 | retained source AST/token layout |
+
+### Findings that change the execution order
+
+The patched-Clang witness visitor uses the default
+`RecursiveASTVisitor` template policy. It visits explicit source patterns and
+explicit specializations, and it does not traverse implicit template
+instantiations. Class uses come from `TemplateSpecializationTypeLoc`, deduced
+type locations, one CTAD fallback, and nested-name-specifier types inside a
+materialized variable-template initializer. Alias uses come from the same
+explicit source type-location traversal.
+
+CPPGM resolves many class-member typedef targets while collecting a
+concrete class specialization. The rejected experiment tried to defer that
+work before all consumers shared a demand boundary. It exposed two missing
+prerequisites:
+
+1. The early return for a typedef declaration skipped semantic children such
+   as the anonymous enum and enumerators in `typedef enum { white, black }
+   color_type;`.
+2. Many semantic paths fetch entries from `Scope::named_types`. A dependent
+   placeholder can escape without calling `lookup_member_type`, so lookup,
+   overload resolution, SFINAE, hosted headers, and code generation observe an
+   unresolved type.
+
+Class-member declaration indexing, named-type lookup, and alias-target
+resolution must converge before target evaluation becomes lazy. That
+convergence is the first behavior-preserving implementation stage.
+
+### Short execution order
+
+1. Preserve the rejected experiment evidence and restore `b03f2530d`.
+2. Reconfirm 1,339/1,530 strict and 4,862/4,862 broad from a clean generated
+   output surface. Record a new rolling performance baseline after all current
+   diagnostics compile in.
+3. Route class-member named-type consumers through one semantic lookup
+   operation. Keep eager target resolution during this migration.
+4. Split declaration indexing from target resolution while preserving nested
+   declarations, access, lookup, and overload obligations. Enable laziness
+   only after strict and broad parity.
+5. Finish class source-occurrence convergence, then alias convergence, using
+   the patched-Clang explicit-source traversal boundary.
+6. Converge lifecycle transitions, followed by function-call and variable-use
+   results.
+7. Delete migration scaffolding and generic arbitration whose counters reach
+   zero.
+8. Pass strict, broad, provenance, size, and performance gates. Run inception
+   last.
+
 ## Why the reset is necessary
 
 The prior completion claims were based on 1,305 tracked witness references.
@@ -366,21 +462,34 @@ counts do not grow.
 
 Start from the clean 62 class-gap set, not the dirty 195-gap set.
 
-1. Introduce a compact parameterized source-occurrence handle during primary
-   template-id analysis.
-2. Produce `ResolvedSourceTypeMaterialization` only when an operation analyzes
-   that exact source AST type node into a concrete type. General lookup,
-   SFINAE, constant query, and replay paths may consume types but may not set
-   the fact.
-3. Migrate the five audited positive owners one by one: variable-template
-   initializer, static-member initializer, instantiated function-body type,
-   declaration type, and conversion-function body.
-4. For each owner, compare typed materialization with patched-Clang presence
-   and absence across the entire corpus. Keep the 55 known rejected locations
-   at zero and classify every newly covered location by the same rule.
-5. Delete the overbroad materialization scopes and all ambient lifecycle,
-   source-mode, conversion-name, and source-spelling admission logic.
-6. Delete shadow fields immediately after parity is established.
+1. Inventory every direct class-member read from `Scope::named_types`. Route
+   consumers that may encounter a deferred declaration through one canonical
+   member-type lookup operation. Keep current eager resolution until this
+   migration passes strict and broad tests.
+2. Split declaration indexing from alias-target evaluation in the primary
+   class collector. Index the name, access, source declaration, and embedded
+   semantic declarations once. A typedef that declares an enum or class must
+   still collect that type and its members before the collector returns.
+3. Add focused parity coverage for anonymous enum typedefs, multiple
+   declarators, current-specialization lookup, out-of-class definitions,
+   friend access, member signatures, SFINAE, and hosted libc++ traits.
+4. Introduce a compact parameterized source-occurrence handle during primary
+   template-id analysis. Preserve the explicit source pattern instead of
+   manufacturing an occurrence from each implicit instantiation.
+5. Produce `ResolvedSourceTypeMaterialization` only when an operation analyzes
+   the exact source AST type node into a concrete type. Lookup, SFINAE,
+   constant queries, and code-generation replay may consume a type without
+   creating another source occurrence.
+6. Match the patched-Clang traversal domain: source patterns and explicit
+   specializations are primary; deduced type locations, CTAD fallback, and a
+   materialized variable-template initializer use their explicit semantic
+   boundaries.
+7. Resolve the 36 missing and ten extra presence rows before changing payload
+   formatting. Resolve the 57 changed payload rows from the same completed
+   source result.
+8. Delete overbroad materialization scopes plus ambient lifecycle,
+   source-mode, conversion-name, and source-spelling admission logic. Delete
+   each shadow field after its parity question closes.
 
 Acceptance:
 
@@ -396,11 +505,14 @@ Acceptance:
 Start from the clean 24 alias-gap set and preserve the useful behavior shown by
 the 12 alias-family fixes in the dirty experiment.
 
-1. Factor declaration indexing from alias-target resolution in the primary
-   template declaration collector. Publish one typed member-alias handle.
+1. Reuse the Phase 2 declaration index and canonical named-type lookup. Publish
+   one typed member-alias handle after the collector has preserved all
+   declaration-side semantic work.
 2. Remove the local reconstructed `Scope`/`AliasTemplateDecl` bridge and the
    second `parse_template_parameters` pass.
-3. Make the canonical alias completion result carry separate structured facts
+3. Produce the 16 missing alias rows from primary explicit-source analysis.
+   Stop the two extra rows by excluding implicit-instantiation traversal.
+4. Make the canonical alias completion result carry separate structured facts
    for:
    - resolved type and arguments;
    - exact source AST and anchor;
@@ -409,11 +521,12 @@ the 12 alias-family fixes in the dirty experiment.
    - selected concrete owner;
    - explicit public owner mode from lookup;
    - nested child occurrence ownership.
-4. Make builtin, cache, direct, dependent, current-specialization, member, and
+5. Fix nine argument and empty-pack rows from structured argument provenance,
+   three owner rows from lexical and selected owner facts, and six spelling
+   rows from retained source layout. Do not parse rendered text.
+6. Make builtin, cache, direct, dependent, current-specialization, member, and
    fallback arms finish through that one completion boundary.
-5. Resolve the four observed clusters through those facts: spelling, owner
-   presentation, extra qualified occurrences, and missing nested occurrence.
-6. Delete first-writer enrichment, recursive alias target instantiation,
+7. Delete first-writer enrichment, recursive alias target instantiation,
    consumer replay, and alias-specific table/renderer conflict policy as their
    provenance counts reach zero.
 
@@ -484,6 +597,12 @@ obligations.
 ### Phase 7: Final correctness and performance gates
 
 Run from a committed, clean worktree with an isolated object root:
+
+0. Align the performance tool with this plan before recording a candidate.
+   `check` must default to three runs, 0.5% instructions, 1% footprint, and a
+   3% RSS warning. The RSS warning must start one second three-run batch, and a
+   second median at or above 3% must fail. Add parser-default tests so the
+   documented policy cannot drift from the executable defaults.
 
 1. focused positive/negative fixtures for every migrated owner;
 2. ordinary and provenance strict with direct LowIR: 1,530/1,530;

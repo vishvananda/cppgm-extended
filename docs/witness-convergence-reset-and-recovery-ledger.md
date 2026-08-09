@@ -19,6 +19,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 0. Preserve and restore | `afcdb6ae29c4` | 1,339/1,530 expanded; 1,305/1,305 tracked; broad 4,862/4,862 | 1,529 traces; exact ordinary parity | 175,251,868,297 instructions | complete |
 | 1. Expanded ownership evidence | `0f69cf8011d5` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,229 records; zero unknown routes | 175,152,378,823 instructions | complete |
+| 2a. Concrete typedef deferral probe | uncommitted | 1,322/1,530 expanded; broad 4,722/4,862 | 1,511 traces; 17 new witness failures | benchmark does not compile | rejected |
 | 2. Class materialization | pending | pending | pending | pending | pending |
 | 3. Alias convergence | pending | pending | pending | pending | pending |
 | 4. Lifecycle ownership | pending | pending | pending | pending | pending |
@@ -351,3 +352,70 @@ the consolidation is meant to remove.
 
 No performance gate is recorded for this diagnostic-only investigation. The
 next correctness-clean semantic slice receives the required three-run gate.
+
+## Rejected Phase 2 concrete-typedef deferral probe
+
+The uncommitted probe adds structured typedef declaration pointers to
+`ClassInfo::DeferredMemberAlias`, indexes typedef names during concrete class
+collection, and resolves the target when `lookup_member_type` requests it.
+The diff adds 152 lines and removes eight across two files. Its patch SHA-256
+is `f40f0f9420534a5740d9e288b30acad4481252450c5dba51d2065cc8d5c92879`.
+Both ordinary and provenance builds complete with Homebrew Clang.
+
+### Correctness result
+
+The fresh strict run compares all 1,530 references:
+
+- 1,322 pass and 208 witness comparisons fail;
+- none of the 191 restart gaps close;
+- 17 new witness failures appear;
+- 14 other tests fail direct LowIR while their witness comparison does not;
+- 222 distinct strict tests fail across witness, LowIR, or compiler status;
+- 1,511 provenance traces flush, down from 1,529.
+
+The 17 new witness failures have manifest SHA-256
+`209a47ed3a64d965e456ed10379564adb5c9c47aebd25e1b437e1d2fbc470729`.
+The 14 LowIR-only failures have manifest SHA-256
+`a491032c2382b04b31200eb1cd62fbe0a2b5e38ea2e6a698b6c525ccfa94426c`.
+The strict log SHA-256 is
+`eac2a4c0d5a926e4f158a77b67f03f18721ba68edcd9ce9b878f2c66315bb2a2`.
+
+The broad run passes 4,722 of 4,862 tests. Its 140 failures include 41 in
+PA35, 51 in PA36, and four PA37 object-roundtrip cases. The remaining unique
+failures occur in PA19, PA22 through PA25, PA27, PA32, and PA34. The broad log
+SHA-256 is
+`00d98b030329bf22c232755b54c19ce9e7f0e9295fa867e8a173c1ad819ee766`.
+
+### Performance result
+
+No candidate report exists. The frozen performance workload exits during run
+one while resolving a libc++ `unordered_set` dependency. The partial process
+retires 35,689,074,472 instructions before failing, which cannot serve as a
+candidate sample. The last valid result remains the Phase 1 gate: -0.06%
+instructions, +0.49% RSS, and -0.03% footprint against the fixed baseline.
+
+The performance script uses defaults that differ from the governing policy.
+`check` uses one run, 1% instructions, 3% RSS, and 3% footprint. Phase 2 must
+change those defaults to three runs, 0.5%, 3%, and 1% before it records another
+candidate.
+
+### Semantic diagnosis and disposition
+
+The probe returns from `collect_class_simple_declaration` after it indexes the
+typedef name. That return skips embedded declarations. The reduced
+`typedef enum { white, black } color_type;` case then loses its enumerators.
+
+The probe also assumes every consumer reaches `lookup_member_type` before it
+uses the placeholder. Many class, template, overload, and hosted-library paths
+fetch entries from `Scope::named_types`. Those consumers receive the unresolved
+placeholder and fail in SFINAE, default argument evaluation, member lookup,
+LowIR generation, or hosted compilation.
+
+The class and alias work still benefits from demand-driven target resolution,
+but the compiler needs one member-type lookup boundary first. Preserve this
+probe as evidence, remove it from the working tree, and restart from
+`b03f2530dad6513aabfa1064a8919bb61fea7d3f`.
+
+Static audits remain clean. The materialization audit reports no findings, the
+text-reparse audit exits cleanly, and 25 provenance, convergence, and
+performance-gate unit tests pass.
