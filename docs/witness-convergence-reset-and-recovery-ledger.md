@@ -20,7 +20,7 @@
 | 0. Preserve and restore | `afcdb6ae29c4` | 1,339/1,530 expanded; 1,305/1,305 tracked; broad 4,862/4,862 | 1,529 traces; exact ordinary parity | 175,251,868,297 instructions | complete |
 | 1. Expanded ownership evidence | `0f69cf8011d5` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,229 records; zero unknown routes | 175,152,378,823 instructions | complete |
 | 2a. Concrete typedef deferral probe | uncommitted | 1,322/1,530 expanded; broad 4,722/4,862 | 1,511 traces; 17 new witness failures | benchmark does not compile | rejected |
-| 2. Class materialization | `ee6a5dde60cc` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,235 records; exact ordinary parity | 175,688,178,308 instructions | resolution slice complete; non-completing modes pending |
+| 2. Class materialization | `6196b6a2020d` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,235 records; exact ordinary parity | 175,624,602,849 instructions | lookup modes complete; declaration indexing pending |
 | 3. Alias convergence | pending | pending | pending | pending | pending |
 | 4. Lifecycle ownership | pending | pending | pending | pending | pending |
 | 5. Function and variable results | pending | pending | pending | pending | pending |
@@ -660,3 +660,106 @@ the rolling median and does not trigger the 3% confirmation rule. Against the
 fixed Phase 0 final reference, the current medians are +0.2490% instructions,
 -0.0926% RSS, and +0.0697% footprint. This is acceptable for an intermediate
 phase, but it does not satisfy the final instruction-reduction requirement.
+
+## Phase 2 bound-member query checkpoint
+
+Commit `6196b6a2020d9ed42da464c5f6ec9f8c327810ec` introduces one read-only
+`find_bound_member_type` boundary and routes all eight non-completing
+class-member consumers through it. The query returns a borrowed pointer to the
+already-bound `TypePtr`. It does not collect or complete members, traverse
+bases, resolve deferred aliases, enforce access, or copy the shared pointer.
+
+The migrated consumers are inherited-using discovery, friend alias
+equivalence, partially collected class-alias canonicalization, call-side alias
+binding/equivalence probes, and direct name-hiding detection. The only direct
+`member_scope->named_types` reads that remain are:
+
+- the read-only query implementation;
+- the canonical completing lookup implementation and its access guard;
+- base registration, template-parameter binding, nested-type registration,
+  storage reset/preservation, and diagnostic iteration.
+
+The first result-struct version was not retained. It copied `TypePtr` on every
+query and grew the ordinary binary by 440 bytes over the accepted resolution
+slice. Returning a borrowed pointer removes the retain/release work. The final
+ordinary binary is only 48 bytes larger than the preceding checkpoint and its
+`__text` section is 48 bytes smaller.
+
+### Correctness and size evidence
+
+The warning-free ordinary build uses Homebrew Clang and object root
+`../obj/witness-recovery-bound-member-query-ordinary-20260809`. Its SHA-256 is
+`2ea5ba6740b9e696a0529730ea11ad21e51fed2361401010951b2273f3a6729d`;
+the file is 17,009,696 bytes. Mach-O `__TEXT` is 12,955,648 bytes, `__text`
+is 11,792,201 bytes, `__DATA_CONST` is 57,344 bytes, and `__DATA` is 442,368
+bytes. It contains no provenance symbol.
+
+All 13 tests that exposed the rejected broad lookup rewrite pass. The complete
+strict run is byte-for-byte identical to the restart and resolution-only
+checkpoints: 1,339/1,530, the same 191-gap manifest, and no LowIR drift. The
+strict-log SHA-256 is
+`cd31be5615fe8965e2fa9e7a6d5b069e45ebf6b83fb62fe31452dad30280e11f`;
+the 3,060-output manifest SHA-256 is
+`e5add38dada683f43e3b06cde738ded2d56874e9a28e99bd514bef761894a429`.
+
+The PA1-PA38 report passes 4,862/4,862. Its log SHA-256 is
+`17690eaaac57ef327c06a8a927d8a61727d1ed26063af215007650646e338ccc`,
+identical to the restart broad report. The materialization audit has no
+findings and retains its two decision boundaries; every forbidden text-reparse
+category is zero; 32 provenance, convergence, path-normalization, audit, and
+performance-gate tests pass.
+
+### Provenance evidence
+
+The diagnostic build uses object root
+`../obj/witness-recovery-bound-member-query-provenance-20260809`. Its binary
+SHA-256 is
+`1a88f2be602070c09a115e84ce6c4d121b3ad7753d211b6f5b5c72a42c1b8d8b`
+and it is 17,172,232 bytes. The diagnostic strict log and all 3,060 outputs are
+byte-for-byte identical to the ordinary results.
+
+- trace directory:
+  `/tmp/cppgm-recovery-bound-member-query-provenance.tAdWKW`;
+- trace files: 1,529;
+- raw relative trace-manifest SHA-256:
+  `7526639bb0ffc4b1a7ba6081587e13aa696aea6771181eb12279b59c6d9f098e`;
+- 63,235-record report SHA-256:
+  `0c18c5b3dd39891701224d74305131bbeae9e5964fda62b1f3efab24fd3d50ad`;
+- convergence report SHA-256:
+  `ea1cb160d088e2304d38a517f4916833c0577bb125d91189f1b17f6cf8a9d938`;
+- unknown producer attempts: zero;
+- unexercised diagnostic sites: zero.
+
+After the volatile trace `source` field is removed, the provenance and
+convergence reports are structurally identical to the resolution-only
+checkpoint. The 821 alias publications, 2,573 class publications, and all 191
+gap classifications are unchanged.
+
+### Performance evidence
+
+The three-run report is
+`/tmp/cppgm-witness-recovery-bound-member-query-perf.json`, SHA-256
+`b8baa932fbb95cb221140f8f05f4f3b78070a013190722a3e4a342d499feaaaa`.
+
+| Metric | Minimum | Median | Maximum | Rolling delta |
+| --- | ---: | ---: | ---: | ---: |
+| Instructions | 175,621,294,180 | 175,624,602,849 | 175,714,363,994 | -0.04% |
+| Maximum RSS | 742,047,744 | 746,057,728 | 753,078,272 | -0.14% |
+| Peak footprint | 575,635,456 | 575,827,968 | 576,163,840 | -0.07% |
+
+Every metric improves against the preceding rolling median, so no RSS
+confirmation batch is required. Against the fixed Phase 0 reference, the
+medians are +0.2127% instructions, -0.2306% RSS, and -0.0036% footprint. The
+new rolling baseline is
+`/tmp/cppgm-witness-recovery-bound-member-query-rolling.json`, SHA-256
+`e0dd42a347e80a1586eec97915dde949ddcc88342db5fd81db7a3b79da0edd27`.
+The final instruction-reduction requirement remains open.
+
+### Disposition
+
+Member-type consumers now have explicit completing and non-completing
+boundaries. The next semantic slice can separate declaration indexing from
+alias-target evaluation without allowing a dependent placeholder to escape
+through an unclassified raw lookup. Nested enum/class declarations, access,
+multiple declarators, template-parameter bindings, and storage preservation
+remain mandatory declaration-side work during that split.
