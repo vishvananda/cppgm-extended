@@ -2209,8 +2209,13 @@ std::string dependent_member_type_owner_text_from_scope(
          !member_scope) {
         continue;
       }
-      if(member_scope->named_types.find(member_name) !=
-         member_scope->named_types.end()) {
+      TypePtr member_type =
+          template_api::lookup_named_type_for_semantic_use(
+              service_type_system(services),
+              scope.require(),
+              *member_scope,
+              member_name);
+      if(member_type) {
         return it->first;
       }
     }
@@ -36322,22 +36327,11 @@ bool lookup_concrete_member_type_for_trait(
   const auto find_member_type =
       [&](Scope & target_scope) -> bool
       {
-        auto direct =
-            target_scope.named_types.find(member_name);
-        if(direct != target_scope.named_types.end() && direct->second) {
-          out = direct->second;
-          return true;
-        }
-        if(target_scope.class_info &&
-           type_system.resolve_member_type_lookup(scope.require(),
-                                                  *target_scope.class_info,
-                                                  member_name,
-                                                  true,
-                                                  out) &&
-           out) {
-          return true;
-        }
-        return false;
+        out = template_api::lookup_named_type_for_semantic_use(type_system,
+                                                               scope.require(),
+                                                               target_scope,
+                                                               member_name);
+        return out != nullptr;
       };
 
   if(find_member_type(*member_scope)) {

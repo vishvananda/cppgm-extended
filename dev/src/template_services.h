@@ -121,6 +121,27 @@ inline cpp_decl::TypePtr lookup_direct_named_type_in_inline_namespaces(
   return lookup_direct_named_type_in_inline_namespaces_impl(scope, name, visited);
 }
 
+inline cpp_decl::TypePtr lookup_named_type_for_semantic_use(
+    TemplateTypeSystem & type_system,
+    semantic_model::Scope & lexical_scope,
+    semantic_model::Scope & target_scope,
+    const std::string & name,
+    bool ensure_current_reference_members = true)
+{
+  if(target_scope.class_info) {
+    cpp_decl::TypePtr member;
+    if(type_system.resolve_member_type_lookup(lexical_scope,
+                                              *target_scope.class_info,
+                                              name,
+                                              ensure_current_reference_members,
+                                              member)) {
+      return member;
+    }
+    return cpp_decl::TypePtr();
+  }
+  return lookup_direct_named_type_in_inline_namespaces(target_scope, name);
+}
+
 inline semantic_model::Scope * resolve_direct_namespace_in_inline_namespaces_impl(
     semantic_model::Scope & scope,
     const std::string & name,

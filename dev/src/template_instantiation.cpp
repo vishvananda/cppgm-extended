@@ -348,15 +348,17 @@ bool recover_instantiation_owner_member_type(SemanticContext & ctx,
     return false;
   }
 
-  auto found =
-      instantiation_owner->member_scope->named_types.find(member_name);
-  if(found == instantiation_owner->member_scope->named_types.end() ||
-     !found->second ||
-     found->second.get() == type.get()) {
+  semantic_lookup::MemberTypeLookupResult found =
+      semantic_lookup::lookup_member_type(ctx,
+                                          *instantiation_owner,
+                                          member_name,
+                                          true,
+                                          instantiation_owner->member_scope.get());
+  if(!found.type || found.type.get() == type.get()) {
     return false;
   }
 
-  TypePtr member_type = found->second;
+  TypePtr member_type = found.type;
   if(template_argument_semantics::type_depends_on_template_parameter(ctx,
                                                                     member_type)) {
     TypePtr resolved;
@@ -7265,12 +7267,16 @@ ValueBinding * static_member_definition_binding_for_key(SemanticContext & ctx,
     const std::string member_class_name =
         semantic_utils::strip_trailing_top_level_template_arguments(
             qualified.qualifiers[i]);
-    auto found =
-        current->member_scope->named_types.find(member_class_name);
-    if(found == current->member_scope->named_types.end()) {
+    semantic_lookup::MemberTypeLookupResult found =
+        semantic_lookup::lookup_member_type(ctx,
+                                            *current,
+                                            member_class_name,
+                                            true,
+                                            nullptr);
+    if(!found.type) {
       return nullptr;
     }
-    ClassInfo * nested = ctx.class_info_for_type(found->second);
+    ClassInfo * nested = ctx.class_info_for_type(found.type);
     if(!nested || nested->enclosing_scope != current->member_scope.get()) {
       return nullptr;
     }

@@ -32549,10 +32549,14 @@ private:
         if(completed_owner && completed_owner->member_scope) {
           ClassInfo * refreshed = class_info_for_type(type);
           if((!refreshed || refreshed == info) && !nested_name.empty()) {
-            auto found =
-                completed_owner->member_scope->named_types.find(nested_name);
-            if(found != completed_owner->member_scope->named_types.end()) {
-              refreshed = class_info_for_type(found->second);
+            semantic_lookup::MemberTypeLookupResult found =
+                semantic_lookup::lookup_member_type(*this,
+                                                    *completed_owner,
+                                                    nested_name,
+                                                    true,
+                                                    nullptr);
+            if(found.type) {
+              refreshed = class_info_for_type(found.type);
             }
           }
           if(refreshed && refreshed != info) {

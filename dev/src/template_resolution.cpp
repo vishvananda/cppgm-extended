@@ -3778,12 +3778,6 @@ bool try_resolve_member_type_on_known_owner(
   }
 
   if(member_scope->class_info) {
-    auto direct =
-        member_scope->named_types.find(member_name);
-    if(direct != member_scope->named_types.end()) {
-      out = direct->second;
-      return out != nullptr;
-    }
     if(type_system.resolve_member_type_lookup(raw_argument_scope,
                                               *member_scope->class_info,
                                               member_name,
@@ -3803,11 +3797,6 @@ bool try_resolve_member_type_on_known_owner(
          completed_scope &&
          completed_scope->class_info) {
         member_scope = completed_scope;
-        direct = member_scope->named_types.find(member_name);
-        if(direct != member_scope->named_types.end()) {
-          out = direct->second;
-          return out != nullptr;
-        }
         if(type_system.resolve_member_type_lookup(raw_argument_scope,
                                                   *member_scope->class_info,
                                                   member_name,
