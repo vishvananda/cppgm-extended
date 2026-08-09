@@ -20,7 +20,7 @@
 | 0. Preserve and restore | `afcdb6ae29c4` | 1,339/1,530 expanded; 1,305/1,305 tracked; broad 4,862/4,862 | 1,529 traces; exact ordinary parity | 175,251,868,297 instructions | complete |
 | 1. Expanded ownership evidence | `0f69cf8011d5` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,229 records; zero unknown routes | 175,152,378,823 instructions | complete |
 | 2a. Concrete typedef deferral probe | uncommitted | 1,322/1,530 expanded; broad 4,722/4,862 | 1,511 traces; 17 new witness failures | benchmark does not compile | rejected |
-| 2. Class materialization | `6196b6a2020d` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,529 traces; 63,235 records; exact ordinary parity | 175,624,602,849 instructions | lookup modes complete; declaration indexing pending |
+| 2. Class materialization | `3ecce93b9` | 1,339/1,530 expanded; broad 4,862/4,862 | 1,530 traces; 63,674 records; exact ordinary parity | 170,176,676,238 instructions | complete |
 | 3. Alias convergence | pending | pending | pending | pending | pending |
 | 4. Lifecycle ownership | pending | pending | pending | pending | pending |
 | 5. Function and variable results | pending | pending | pending | pending | pending |
@@ -860,3 +860,145 @@ next slice may remove the immediate resolver call, make the canonical
 member-type lookup resolve indexed names on demand, and prove that unused
 targets such as `slot<T>` disappear while demanded aliases in member
 signatures, out-of-class definitions, SFINAE, and hosted headers still resolve.
+
+## Phase 2 lazy concrete alias target checkpoint
+
+Commit `3ecce93b9` completes the class-materialization phase. Concrete typedef
+and alias declarations are still indexed during class collection, but primary
+class-template instantiations no longer evaluate their targets immediately.
+The canonical completing `lookup_member_type` operation resolves an indexed
+alias on first demand, binds the result, and supplies the same operation to
+inherited traversal. Explicit class specializations and non-template classes
+retain eager resolution because their declarations are concrete source
+semantics rather than substituted primary-template bodies.
+
+The read-only declaration-presence query is separate from both completing
+lookup and the existing bound-type query. Name-hiding checks can therefore ask
+whether a member type was declared without evaluating its target. No raw map
+consumer, dependent placeholder, secondary alias resolver, text reparse,
+visibility filter, renderer rule, or reference update was added.
+
+### Demand and correctness evidence
+
+The required unused-target reduction is direct. In
+`100-class-template-member-index-ignores-parameter-name.t`, provenance records
+one resolution of the demanded `mutex_type` alias and no resolution of the
+unused `type = slot<T>` target. The witness remains byte-for-byte at SHA-256
+`ae77a1195d9b16b9dc10dfbee1960513d0362765ce6ee14364179f5c964f18a6`.
+The embedded-declaration guard
+`300-template-body-typedef-enum-member-lookup.t` still emits the enum work and
+retains witness SHA-256
+`91474ad904d01a0a4d835095dc31d9c5274614dc3a1dde3081a65ef56a89a73c`.
+
+The change also repairs the compiler exit in
+`pa23/tests/spec/300-nondeduced-partial-pattern-recursive-completion.t`. Its
+LowIR is now nonempty, with SHA-256
+`29915ea9bb235d54a5fc92b945a98268f34a969ac2ea12da1283bf550d78edaa`;
+its witness remains at the existing baseline hash and is still one of the
+lifecycle/default-argument naming gaps. This is a semantic correctness repair,
+not a witness-only admission.
+
+The full expanded strict result remains:
+
+- PA19: 268/279, with 11 witness mismatches;
+- PA20: 148/158, with ten witness mismatches;
+- PA22: 244/293, with 49 witness mismatches;
+- PA23: 302/385, with 83 witness mismatches;
+- PA24: 377/415, with 38 witness mismatches;
+- total: 1,339/1,530, with the same 191 reference gaps and no LowIR or status
+  regression.
+
+The strict log is
+`/tmp/cppgm-recovery-lazy-alias-final-ordinary-parity-strict.log`, SHA-256
+`ac91fb09aaf7072efb69b9c7169185f19bb70c331d18cb26e1b16068118f4045`.
+The 3,060-output manifest is
+`/tmp/cppgm-recovery-lazy-alias-final-ordinary-parity-output-manifest.txt`,
+SHA-256
+`91877068ad9d0a9d7dcb471ec99288f65b0e3960a6e8843a0ba34ba5e8764346`.
+Relative to the preceding eager structural checkpoint, the PA23 LowIR is the
+only changed output; all witness outputs, including all 24 alias-gap outputs,
+are byte-for-byte unchanged.
+
+The first PA1-PA38 report passed 4,856/4,862 because six PA35/PA36 hosted tests
+timed out while PA35, PA36, and PA37 were running concurrently. It reported no
+semantic mismatches. A lower-concurrency PA35/PA36 retry passed 182/182, so the
+combined accepted broad result is 4,862/4,862. The logs are:
+
+- `/tmp/cppgm-recovery-lazy-alias-final-broad.log`, SHA-256
+  `9a8ea2c29f7c1e807dfbdee4361be9fbbea6704e58c9dc34c7326f72b644348b`;
+- `/tmp/cppgm-recovery-lazy-alias-final-broad-pa35-pa36-rerun.log`, SHA-256
+  `ddc2525f99912ceab20504906ab419959de3f4f0e6c82e9018567aaa1c6b942f`.
+
+All 23 forbidden text-reparse categories are zero. The materialization audit
+has no findings, two decision boundaries, and six forbidden symbols; its
+report SHA-256 is
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+The combined analyzer, audit, path-normalization, and performance-gate suite
+passes 49 tests.
+
+### Provenance parity
+
+The diagnostic build uses isolated object root
+`../obj/witness-recovery-lazy-alias-final-provenance-20260809`. A fresh
+like-for-like strict run proves exact parity: its strict-log hash and
+3,060-output manifest hash are identical to the ordinary values above. The
+previously exiting PA23 case now flushes, so all 1,530 inputs have a trace.
+
+- trace directory:
+  `/tmp/cppgm-recovery-lazy-alias-final-provenance.Em41kE`;
+- relative trace-manifest SHA-256:
+  `93d571276fe5a2a6f7a514b839a25dcee5e2ea7f8867b4792ca5aa7822e214f3`;
+- 63,674-record report:
+  `/tmp/cppgm-recovery-lazy-alias-final-provenance-report.json`, SHA-256
+  `0cf9244d984150eb1247f9a6883e12ca767e35da49a511d07be96d5dba0b331a`;
+- convergence report:
+  `/tmp/cppgm-recovery-lazy-alias-final-convergence.json`, SHA-256
+  `6f5750fc8c66e3faf0c19f07830e38aa992c25fc5d476b517b63c2cceed2ecc0`;
+- unknown producer attempts: zero;
+- unexercised diagnostic sites: zero.
+
+Alias consolidation records 1,967 completion decisions, 1,146
+prepublication merges, and 821 publications. Class consolidation records
+2,975 completed candidates, 3,382 early repeats, 361 prepublication merges,
+and 2,604 publications. The convergence report remains 1,339 matching and 191
+mismatching outputs. Alias output specifically remains 24 tests: 18 changed
+rows, 16 missing expected rows, and two unexpected rows.
+
+### Size and performance evidence
+
+The warning-free ordinary binary is preserved at
+`/tmp/cppgm-recovery-lazy-alias-final-ordinary-20260809`. Its SHA-256 is
+`dcf2334e61af6bcb332751553746b05a0f1a449c39bb2b5c211473a5f05c647b`;
+it is 17,011,960 bytes. Mach-O `__TEXT` is 12,955,648 bytes, `__text` is
+11,795,529 bytes, `__DATA_CONST` is 57,344 bytes, and `__DATA` is 442,368
+bytes. It contains no `witness_provenance` symbol. Relative to the eager alias
+index checkpoint, this final Phase 2 binary adds 288 file bytes and 176
+`__text` bytes; the semantic work reduction is visible in the instruction
+gate rather than binary size.
+
+The three-run comparison report is
+`/tmp/cppgm-witness-recovery-lazy-alias-final-perf.json`, SHA-256
+`310cef546fd38199f45d5e1ffeb4be9ee4ae8b92f27c8d22c72c234c4d99d899`.
+
+| Metric | Minimum | Median | Maximum | Rolling delta |
+| --- | ---: | ---: | ---: | ---: |
+| Instructions | 169,717,597,185 | 170,176,676,238 | 170,298,381,387 | -3.03% |
+| Maximum RSS | 740,360,192 | 750,972,928 | 753,262,592 | +1.08% |
+| Peak footprint | 567,689,216 | 568,193,024 | 568,410,112 | -1.29% |
+
+The candidate passes the 0.5% instruction and 1% footprint limits. RSS stays
+below the 3% warning threshold, so no confirmation batch is required. Against
+the fixed Phase 0 reference, the medians are -2.89594% instructions, +0.42670%
+RSS, and -1.32942% footprint. This already meets the final instruction and
+footprint reduction requirement, although the final gate will be rerun after
+all remaining phases. The promoted rolling baseline is
+`/tmp/cppgm-witness-recovery-lazy-alias-final-rolling.json`, SHA-256
+`3e4749b9cd40b4ed7003818e79a6650ff4933c38adba88ab1892ad6d080370e3`.
+
+### Disposition
+
+Class declaration indexing, completing lookup, non-completing lookup, and
+on-demand concrete alias resolution now have separate semantic boundaries.
+Phase 2 is complete. Phase 3 starts from the unchanged 24 alias-output gaps
+and must repair their source occurrences at this canonical completion path,
+without restoring eager target evaluation or adding output policy.
