@@ -594,14 +594,14 @@ bool friend_member_alias_resolves_to_current_class(const ClassInfo * current_cla
     return false;
   }
 
-  auto found =
-      current_class->member_scope->named_types.find(member_name);
-  if(found == current_class->member_scope->named_types.end()) {
+  const TypePtr * found =
+      find_bound_member_type(*current_class, member_name);
+  if(!found) {
     return false;
   }
 
   TypePtr current_type = strip_top_level_cv(remove_reference_type(current_class->type));
-  TypePtr alias_type = strip_top_level_cv(remove_reference_type(found->second));
+  TypePtr alias_type = strip_top_level_cv(remove_reference_type(*found));
   return current_type && alias_type && type_equals(current_type, alias_type);
 }
 
@@ -2481,6 +2481,20 @@ bool same_inline_namespace_class_template_entity(const ClassTemplateDecl * lhs,
                                                  const ClassTemplateDecl * rhs)
 {
   return same_inline_namespace_class_template_entity_impl(lhs, rhs);
+}
+
+const TypePtr * find_bound_member_type(const ClassInfo & info,
+                                       const string & name)
+{
+  if(!info.member_scope) {
+    return nullptr;
+  }
+  Scope::NamedTypeMap::const_iterator found =
+      info.member_scope->named_types.find(name);
+  if(found == info.member_scope->named_types.end()) {
+    return nullptr;
+  }
+  return &found->second;
 }
 
 TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,

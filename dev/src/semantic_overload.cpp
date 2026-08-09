@@ -8761,9 +8761,10 @@ bool scope_has_direct_type_name(Scope & current,
     return false;
   }
 
+  const TypePtr * bound_type =
+      semantic_lookup::find_bound_member_type(*lexical_class, name);
   return lexical_class->member_scope &&
-         (lexical_class->member_scope->named_types.find(name) !=
-              lexical_class->member_scope->named_types.end() ||
+         (bound_type ||
           lexical_class->member_scope->class_templates.find(name) !=
               lexical_class->member_scope->class_templates.end() ||
           lexical_class->member_scope->alias_templates.find(name) !=

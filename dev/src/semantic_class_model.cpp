@@ -1974,10 +1974,10 @@ TypePtr lookup_visible_member_alias_owner_type(SemanticContext & ctx,
       if(member.type) {
         return member.type;
       }
-      auto found =
-          info.member_scope->named_types.find(name);
-      if(found != info.member_scope->named_types.end()) {
-        return found->second;
+      const TypePtr * found =
+          semantic_lookup::find_bound_member_type(info, name);
+      if(found) {
+        return *found;
       }
     }
     return TypePtr();
@@ -2271,12 +2271,12 @@ TypePtr try_resolve_instantiated_member_alias_type(SemanticContext & ctx,
   }
   if(!owner_info) {
     if(current_info && current_info->member_scope) {
-      auto direct =
-          current_info->member_scope->named_types.find(member_name);
-      if(direct != current_info->member_scope->named_types.end() &&
-         direct->second &&
-         !type_equals(direct->second, type)) {
-        TypePtr member_type = direct->second;
+      const TypePtr * direct =
+          semantic_lookup::find_bound_member_type(*current_info, member_name);
+      if(direct &&
+         *direct &&
+         !type_equals(*direct, type)) {
+        TypePtr member_type = *direct;
         if(ctx.type_depends_on_template_parameter(member_type)) {
           TypePtr resolved_member;
           if(semantic_dependent_type::resolve_instantiated_dependent_type(
@@ -2347,11 +2347,12 @@ TypePtr canonicalize_member_typedef_type(SemanticContext & ctx,
     if(!name.empty() &&
        name.find("::") == std::string::npos &&
        name.find('<') == std::string::npos) {
-      const auto found = current_info->member_scope->named_types.find(name);
-      if(found != current_info->member_scope->named_types.end() &&
-         found->second &&
-         !type_equals(found->second, base)) {
-        return apply_cv(found->second, cv_const, cv_volatile);
+      const TypePtr * found =
+          semantic_lookup::find_bound_member_type(*current_info, name);
+      if(found &&
+         *found &&
+         !type_equals(*found, base)) {
+        return apply_cv(*found, cv_const, cv_volatile);
       }
     }
   }

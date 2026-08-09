@@ -24292,12 +24292,12 @@ private:
     if(!type_equals(alias_owner, info.type)) {
       return type;
     }
-    const auto found =
-        info.member_scope->named_types.find(alias_name);
-    return found != info.member_scope->named_types.end() &&
-           found->second &&
-           !type_equals(found->second, type) ?
-        found->second :
+    const TypePtr * found =
+        semantic_lookup::find_bound_member_type(info, alias_name);
+    return found &&
+           *found &&
+           !type_equals(*found, type) ?
+        *found :
         type;
   }
 
@@ -27182,10 +27182,10 @@ private:
       if(!owner_info || !owner_info->member_scope) {
         return TypePtr();
       }
-      auto found =
-          owner_info->member_scope->named_types.find(members[0]);
-      if(found != owner_info->member_scope->named_types.end()) {
-        return found->second;
+      const TypePtr * found =
+          semantic_lookup::find_bound_member_type(*owner_info, members[0]);
+      if(found) {
+        return *found;
       }
 
       return lookup_enclosing_type_before_reference_placeholder(

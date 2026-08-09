@@ -382,10 +382,10 @@ void collect_inherited_using_target_classes(SemanticContext & ctx,
       ctx.ensure_class_reference_members(*base);
     }
     if(base->member_scope) {
-      auto found =
-          base->member_scope->named_types.find(name);
-      if(found != base->member_scope->named_types.end()) {
-        if(ClassInfo * target = class_info_for_using_target_type(ctx, found->second)) {
+      const TypePtr * found =
+          semantic_lookup::find_bound_member_type(*base, name);
+      if(found) {
+        if(ClassInfo * target = class_info_for_using_target_type(ctx, *found)) {
           out.push_back(target);
         }
         continue;

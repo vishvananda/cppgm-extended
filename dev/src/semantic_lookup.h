@@ -220,6 +220,11 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
                                           const std::string & name,
                                           bool ensure_current_reference_members = true,
                                           Scope * lexical_scope = nullptr);
+// Read-only direct-binding query. This does not collect or complete members,
+// traverse bases, resolve deferred aliases, or enforce access.
+const cpp_decl::TypePtr * find_bound_member_type(
+    const ClassInfo & info,
+    const std::string & name);
 bool cached_member_type_access_allowed(SemanticContext & ctx,
                                        ClassInfo & info,
                                        const std::string & name,
