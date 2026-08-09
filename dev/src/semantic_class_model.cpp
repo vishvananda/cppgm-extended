@@ -1255,21 +1255,22 @@ bool is_trivially_move_constructible_type_for_host_abi_local(SemanticContext & c
   return is_trivially_move_constructible_type_for_host_abi_impl(ctx, type, visiting);
 }
 
-void bind_member_named_type(SemanticContext & ctx,
-                            ClassInfo & info,
-                            const std::string & name,
-                            const TypePtr & type,
-                            MemberAccess access,
-                            const CppAstNode & declaration)
+void record_member_named_type_declaration(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    const std::string & name,
+    const TypePtr * type,
+    const CppAstNode & declaration)
 {
   std::vector<ClassInfo::TypedefMemberDeclarationSite> & sites =
       info.typedef_member_declaration_sites[name];
   const ClassInfo::TypedefMemberDeclarationSite::SourceTemplateTypeDependency
       source_dependency =
+          !type ||
           !info.source_template ||
           ctx.template_witness_context().session == nullptr ?
           ClassInfo::TypedefMemberDeclarationSite::STTD_UNKNOWN :
-          ctx.type_depends_on_template_parameter(type) ?
+          ctx.type_depends_on_template_parameter(*type) ?
               ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT :
               ClassInfo::TypedefMemberDeclarationSite::STTD_FIXED;
   bool already_processed = false;
@@ -1299,6 +1300,17 @@ void bind_member_named_type(SemanticContext & ctx,
     site.token_end = declaration.token_end;
     sites.push_back(site);
   }
+}
+
+void bind_member_named_type(SemanticContext & ctx,
+                            ClassInfo & info,
+                            const std::string & name,
+                            const TypePtr & type,
+                            MemberAccess access,
+                            const CppAstNode & declaration)
+{
+  record_member_named_type_declaration(
+      ctx, info, name, &type, declaration);
   semantic_scope_mutation::bind_named_type_with_access(
       *info.member_scope, name, type, access);
 }
@@ -1462,17 +1474,19 @@ std::string dependent_typedef_type_text(const CppAstNode & filtered_specifiers)
   return text;
 }
 
-bool make_typedef_abstract_declarator(const CppAstNode & source,
-                                      std::string & name,
-                                      CppAstNode & target)
+bool traverse_typedef_declarator(const CppAstNode & source,
+                                 std::string & name,
+                                 CppAstNode * target)
 {
   if(source.kind != CppAstKind::declarator &&
      source.kind != CppAstKind::abstract_declarator) {
     return false;
   }
-  target = source;
-  target.kind = CppAstKind::abstract_declarator;
-  target.children.clear();
+  if(target) {
+    *target = source;
+    target->kind = CppAstKind::abstract_declarator;
+    target->children.clear();
+  }
   bool found_name = false;
   for(size_t i = 0; i < source.children.size(); ++i) {
     const CppAstNode & child = source.children[i];
@@ -1488,22 +1502,40 @@ bool make_typedef_abstract_declarator(const CppAstNode & source,
       if(child.children.size() != 1 || found_name) {
         return false;
       }
-      CppAstNode nested = child;
       CppAstNode nested_abstract;
-      if(!make_typedef_abstract_declarator(child.children[0],
-                                           name,
-                                           nested_abstract)) {
+      if(!traverse_typedef_declarator(child.children[0],
+                                      name,
+                                      target ? &nested_abstract : nullptr)) {
         return false;
       }
-      nested.children.clear();
-      nested.children.push_back(nested_abstract);
-      target.children.push_back(nested);
+      if(target) {
+        CppAstNode nested = child;
+        nested.children.clear();
+        nested.children.push_back(nested_abstract);
+        target->children.push_back(nested);
+      }
       found_name = true;
       continue;
     }
-    target.children.push_back(child);
+    if(target) {
+      target->children.push_back(child);
+    }
   }
   return found_name;
+}
+
+bool make_typedef_abstract_declarator(const CppAstNode & source,
+                                      std::string & name,
+                                      CppAstNode & target)
+{
+  return traverse_typedef_declarator(source, name, &target);
+}
+
+bool typedef_declarator_name(const CppAstNode & declarator,
+                             std::string & name)
+{
+  name.clear();
+  return traverse_typedef_declarator(declarator, name, nullptr);
 }
 
 bool make_typedef_type_id_from_declarator(const CppAstNode & specifiers,
@@ -6398,7 +6430,7 @@ void prepare_method_parse_context(const CppAstNode * specifiers,
   }
 }
 
-bool prepare_class_member_declaration_context(
+bool prepare_class_member_declaration_context_impl(
     SemanticContext & ctx,
     Scope & member_scope,
     const CppAstNode & specifiers,
@@ -6406,6 +6438,7 @@ bool prepare_class_member_declaration_context(
     bool collect_embedded_types,
     bool collect_named_forward_declarations,
     bool reference_class_templates_only,
+    bool defer_typedef_target_evaluation,
     PreparedClassMemberDeclarationContext & out)
 {
   out = PreparedClassMemberDeclarationContext();
@@ -6420,6 +6453,8 @@ bool prepare_class_member_declaration_context(
 
   out.filtered_specifiers =
       filtered_class_member_decl_specifiers(out.resolved_specifiers);
+  out.declaration_is_typedef =
+      decl_spec_contains_token(out.resolved_specifiers, KW_TYPEDEF);
   CppAstNode expanded_specifiers;
   const bool scope_has_bound_packs =
       !member_scope.named_type_packs.empty() ||
@@ -6442,12 +6477,66 @@ bool prepare_class_member_declaration_context(
   const bool has_auto = decl_spec_contains_token(out.resolved_specifiers, KW_AUTO);
   out.parsed_decl_spec =
       has_auto ||
+      (defer_typedef_target_evaluation && out.declaration_is_typedef) ||
       ctx.parse_decl_spec(out.filtered_specifiers,
                           member_scope,
                           out.declaration_is_typedef,
                           out.base,
                           reference_class_templates_only);
   return true;
+}
+
+bool prepare_class_member_declaration_context(
+    SemanticContext & ctx,
+    Scope & member_scope,
+    const CppAstNode & specifiers,
+    const CppAstNode * declarators,
+    bool collect_embedded_types,
+    bool collect_named_forward_declarations,
+    bool reference_class_templates_only,
+    PreparedClassMemberDeclarationContext & out)
+{
+  return prepare_class_member_declaration_context_impl(
+      ctx,
+      member_scope,
+      specifiers,
+      declarators,
+      collect_embedded_types,
+      collect_named_forward_declarations,
+      reference_class_templates_only,
+      false,
+      out);
+}
+
+void index_concrete_class_typedef(ClassInfo & info,
+                                  const std::string & name,
+                                  const CppAstNode & specifiers,
+                                  const CppAstNode & declarators,
+                                  const CppAstNode & declarator,
+                                  const CppAstNode & declaration,
+                                  MemberAccess access)
+{
+  ClassInfo::DeferredMemberAlias indexed;
+  indexed.typedef_specifiers = &specifiers;
+  indexed.typedef_declarators = &declarators;
+  indexed.typedef_declarator = &declarator;
+  indexed.declaration = &declaration;
+  info.deferred_member_aliases[name] = indexed;
+  info.member_scope->named_type_access[name] = access;
+}
+
+void index_concrete_class_alias(ClassInfo & info,
+                                const std::string & name,
+                                const CppAstNode & type_id,
+                                const std::string & type_id_text,
+                                MemberAccess access)
+{
+  ClassInfo::DeferredMemberAlias indexed;
+  indexed.type_id = &type_id;
+  indexed.declaration = &type_id;
+  indexed.type_id_text = type_id_text;
+  info.deferred_member_aliases[name] = indexed;
+  info.member_scope->named_type_access[name] = access;
 }
 
 namespace {
@@ -9575,14 +9664,15 @@ void collect_class_simple_declaration(SemanticContext & ctx,
   }
 
   PreparedClassMemberDeclarationContext prepared_decl;
-  if(!prepare_class_member_declaration_context(ctx,
-                                               *info.member_scope,
-                                               *specifiers,
-                                               declarators,
-                                               true,
-                                               true,
-                                               true,
-                                               prepared_decl)) {
+  if(!prepare_class_member_declaration_context_impl(ctx,
+                                                    *info.member_scope,
+                                                    *specifiers,
+                                                    declarators,
+                                                    true,
+                                                    true,
+                                                    true,
+                                                    true,
+                                                    prepared_decl)) {
     throw std::logic_error("unsupported class member embedded type-specifier" +
                            ctx.source_location_for_node(node));
   }
@@ -9624,6 +9714,37 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                              diagnostic_location_for_member(ctx, init_decl, &node));
     }
 
+    if(is_typedef) {
+      if(has_mutable_specifier) {
+        throw std::logic_error("unsupported mutable class typedef");
+      }
+      std::string member_name;
+      if(!typedef_declarator_name(init_decl.children[0], member_name) ||
+         member_name.empty()) {
+        throw std::logic_error("unsupported class member typedef" +
+                               diagnostic_location_for_member(ctx, init_decl, &node));
+      }
+      if(class_redeclares_template_parameter_name(info, member_name)) {
+        throw std::logic_error("template parameter redeclared" +
+                               diagnostic_location_for_member(ctx, init_decl, &node));
+      }
+      record_member_named_type_declaration(
+          ctx, info, member_name, nullptr, init_decl);
+      index_concrete_class_typedef(info,
+                                   member_name,
+                                   *specifiers,
+                                   *declarators,
+                                   init_decl.children[0],
+                                   init_decl,
+                                   access);
+      TypePtr alias;
+      if(!resolve_deferred_class_alias(ctx, info, member_name, alias) || !alias) {
+        throw std::logic_error("unsupported class member type" +
+                               diagnostic_location_for_member(ctx, init_decl, &node));
+      }
+      continue;
+    }
+
     PreparedMethodParseContext prepared_method;
     prepare_method_parse_context(&prepared_decl.resolved_specifiers,
                                  init_decl.children[0],
@@ -9657,29 +9778,6 @@ void collect_class_simple_declaration(SemanticContext & ctx,
     }
 
     TypePtr stripped = strip_top_level_cv(member_type);
-    if(is_typedef) {
-      if(has_mutable_specifier) {
-        throw std::logic_error("unsupported mutable class typedef");
-      }
-      TypePtr alias = member_type;
-      TypePtr rebound_alias;
-      if(rebind_concrete_class_typedef(ctx,
-                                       info,
-                                       prepared_decl.resolved_specifiers,
-                                       init_decl.children[0],
-                                       rebound_alias) &&
-         (ctx.type_depends_on_template_parameter(member_type) ||
-          !ctx.type_depends_on_template_parameter(rebound_alias))) {
-        alias = rebound_alias;
-      }
-      alias = canonicalize_member_typedef_type(
-          ctx, *info.member_scope, alias, &info);
-      alias = refine_instantiated_class_alias(
-          ctx, *info.member_scope, alias);
-      bind_member_named_type(ctx, info, member_name, alias, access, init_decl);
-      continue;
-    }
-
     if(stripped && stripped->kind == Type::TK_FUNCTION) {
       if(has_mutable_specifier) {
         throw std::logic_error("unsupported mutable member function");
@@ -11961,31 +12059,102 @@ bool resolve_deferred_class_alias(SemanticContext & ctx,
       info.deferred_member_aliases.find(alias_name);
   if(found == info.deferred_member_aliases.end() ||
      found->second.resolving ||
-     !found->second.type_id ||
+     (!found->second.type_id &&
+      (!found->second.typedef_specifiers ||
+       !found->second.typedef_declarators ||
+       !found->second.typedef_declarator ||
+       !found->second.declaration)) ||
      !info.member_scope) {
     return false;
   }
 
   found->second.resolving = true;
   try {
-    TypePtr alias =
-        parse_or_defer_class_alias_type_id(ctx,
-                                           info,
-                                           alias_name,
-                                           *found->second.type_id,
-                                           found->second.type_id_text,
-                                           found->second.dependent_class);
+    const bool indexed_typedef = found->second.typedef_specifiers != nullptr;
+    TypePtr alias;
+    if(indexed_typedef) {
+      PreparedClassMemberDeclarationContext prepared;
+      if(!prepare_class_member_declaration_context_impl(
+             ctx,
+             *info.member_scope,
+             *found->second.typedef_specifiers,
+             found->second.typedef_declarators,
+             false,
+             false,
+             true,
+             false,
+             prepared) ||
+         !prepared.declaration_is_typedef ||
+         !prepared.parsed_decl_spec) {
+        info.deferred_member_aliases.erase(found);
+        return false;
+      }
+      std::string resolved_name;
+      TypePtr member_type;
+      const CppAstNode * initializer =
+          class_member_initializer(*found->second.declaration);
+      const bool has_auto =
+          decl_spec_contains_token(prepared.resolved_specifiers, KW_AUTO);
+      if(!parse_class_member_declarator_type(
+             ctx,
+             *info.member_scope,
+             prepared.resolved_specifiers,
+             *found->second.typedef_declarator,
+             initializer,
+             prepared.base,
+             has_auto,
+             resolved_name,
+             member_type,
+             true) ||
+         resolved_name != alias_name ||
+         !member_type) {
+        info.deferred_member_aliases.erase(found);
+        return false;
+      }
+      member_type = callsemantic_internal::apply_initializer_array_bound(
+          ctx, *info.member_scope, member_type, initializer);
+      alias = member_type;
+      TypePtr rebound_alias;
+      if(rebind_concrete_class_typedef(ctx,
+                                       info,
+                                       prepared.resolved_specifiers,
+                                       *found->second.typedef_declarator,
+                                       rebound_alias) &&
+         (ctx.type_depends_on_template_parameter(member_type) ||
+          !ctx.type_depends_on_template_parameter(rebound_alias))) {
+        alias = rebound_alias;
+      }
+      alias = canonicalize_member_typedef_type(
+          ctx, *info.member_scope, alias, &info);
+    } else {
+      alias = parse_or_defer_class_alias_type_id(ctx,
+                                                 info,
+                                                 alias_name,
+                                                 *found->second.type_id,
+                                                 found->second.type_id_text,
+                                                 found->second.dependent_class);
+    }
     if(alias) {
       alias = refine_instantiated_class_alias(ctx, *info.member_scope, alias);
       trace_class_alias_store(ctx,
                               info,
-                              "resolve-deferred-reference",
+                              indexed_typedef ? "resolve-indexed-typedef" :
+                                                "resolve-deferred-reference",
                               alias_name,
                               found->second.type_id_text,
                               alias);
       std::map<std::string, MemberAccess>::const_iterator access =
           info.member_scope->named_type_access.find(alias_name);
-      if(access != info.member_scope->named_type_access.end()) {
+      if(indexed_typedef && found->second.declaration) {
+        bind_member_named_type(
+            ctx,
+            info,
+            alias_name,
+            alias,
+            access != info.member_scope->named_type_access.end() ?
+                access->second : MA_PUBLIC,
+            *found->second.declaration);
+      } else if(access != info.member_scope->named_type_access.end()) {
         semantic_scope_mutation::bind_template_named_type_with_access(
             *info.member_scope, alias_name, alias, access->second);
       } else {
@@ -11994,7 +12163,9 @@ bool resolve_deferred_class_alias(SemanticContext & ctx,
       }
       out = alias;
     }
-    info.deferred_member_aliases.erase(found);
+    if(found->second.resolving) {
+      info.deferred_member_aliases.erase(found);
+    }
     return out != nullptr;
   } catch(...) {
     found->second.resolving = false;
@@ -13524,24 +13695,35 @@ void populate_class_info(SemanticContext & ctx,
           throw std::logic_error("class alias-declaration missing type-id");
         }
         const std::string type_id_text = node_text(*type_id);
-        TypePtr alias =
-            parse_or_defer_class_alias_type_id(ctx,
-                                               info,
-                                               member.value,
-                                               *type_id,
-                                               type_id_text,
-                                               dependent_class);
+        TypePtr alias;
+        if(dependent_class) {
+          alias = parse_or_defer_class_alias_type_id(ctx,
+                                                     info,
+                                                     member.value,
+                                                     *type_id,
+                                                     type_id_text,
+                                                     true);
+        } else {
+          index_concrete_class_alias(info,
+                                     member.value,
+                                     *type_id,
+                                     type_id_text,
+                                     inner_access);
+          resolve_deferred_class_alias(ctx, info, member.value, alias);
+        }
         if(!alias) {
           if(info.source_template && !dependent_class) {
             throw TemplateSubstitutionFailure("unsupported class alias-declaration");
           }
           throw std::logic_error("unsupported class alias-declaration");
         }
-        alias = refine_instantiated_class_alias(ctx, *info.member_scope, alias);
-        trace_class_alias_store(
-            ctx, info, "populate-anonymous", member.value, type_id_text, alias);
-        semantic_scope_mutation::bind_template_named_type_with_access(
-            *info.member_scope, member.value, alias, inner_access);
+        if(dependent_class) {
+          alias = refine_instantiated_class_alias(ctx, *info.member_scope, alias);
+          trace_class_alias_store(
+              ctx, info, "populate-anonymous", member.value, type_id_text, alias);
+          semantic_scope_mutation::bind_template_named_type_with_access(
+              *info.member_scope, member.value, alias, inner_access);
+        }
         continue;
       }
       throw std::logic_error("unsupported anonymous class member in hosted slice");
@@ -13649,14 +13831,22 @@ void populate_class_info(SemanticContext & ctx,
         throw std::logic_error("class alias-declaration missing type-id");
       }
       const std::string type_id_text = node_text(*type_id);
-      TypePtr alias =
-          parse_or_defer_class_alias_type_id(ctx,
-                                             info,
-                                             child.value,
-                                             *type_id,
-                                             type_id_text,
-                                             dependent_class);
-      alias = refine_instantiated_class_alias(ctx, *info.member_scope, alias);
+      TypePtr alias;
+      if(dependent_class) {
+        alias = parse_or_defer_class_alias_type_id(ctx,
+                                                   info,
+                                                   child.value,
+                                                   *type_id,
+                                                   type_id_text,
+                                                   true);
+      } else {
+        index_concrete_class_alias(info,
+                                   child.value,
+                                   *type_id,
+                                   type_id_text,
+                                   current_access);
+        resolve_deferred_class_alias(ctx, info, child.value, alias);
+      }
       if(!alias) {
         std::ostringstream out;
         out << "unsupported class alias-declaration";
@@ -13673,10 +13863,13 @@ void populate_class_info(SemanticContext & ctx,
         }
         throw std::logic_error(out.str());
       }
-      trace_class_alias_store(
-          ctx, info, "populate-top", child.value, type_id_text, alias);
-      semantic_scope_mutation::bind_template_named_type_with_access(
-          *info.member_scope, child.value, alias, current_access);
+      if(dependent_class) {
+        alias = refine_instantiated_class_alias(ctx, *info.member_scope, alias);
+        trace_class_alias_store(
+            ctx, info, "populate-top", child.value, type_id_text, alias);
+        semantic_scope_mutation::bind_template_named_type_with_access(
+            *info.member_scope, child.value, alias, current_access);
+      }
       continue;
     }
     if(child.kind == CppAstKind::using_declaration) {

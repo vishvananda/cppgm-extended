@@ -834,6 +834,10 @@ struct ClassInfo
   struct DeferredMemberAlias
   {
     const CppAstNode * type_id = nullptr;
+    const CppAstNode * typedef_specifiers = nullptr;
+    const CppAstNode * typedef_declarators = nullptr;
+    const CppAstNode * typedef_declarator = nullptr;
+    const CppAstNode * declaration = nullptr;
     std::string type_id_text;
     bool dependent_class = false;
     bool resolving = false;
