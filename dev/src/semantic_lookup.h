@@ -225,6 +225,10 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
 const cpp_decl::TypePtr * find_bound_member_type(
     const ClassInfo & info,
     const std::string & name);
+// Read-only declaration-presence query. This includes indexed aliases whose
+// targets have not been resolved, but performs no semantic work.
+bool has_declared_member_type(const ClassInfo & info,
+                              const std::string & name);
 bool cached_member_type_access_allowed(SemanticContext & ctx,
                                        ClassInfo & info,
                                        const std::string & name,

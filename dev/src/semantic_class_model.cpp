@@ -3723,6 +3723,13 @@ bool type_id_syntax_mentions_current_class_member_type(const ClassInfo & info,
   return false;
 }
 
+bool concrete_class_alias_requires_immediate_resolution(
+    const ClassInfo & info)
+{
+  return !info.source_template ||
+         info.is_explicit_specialization;
+}
+
 bool template_argument_syntax_mentions_current_class_member_type(
     const ClassInfo & info,
     const TemplateArgumentSyntax & syntax)
@@ -9737,10 +9744,14 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                                    init_decl.children[0],
                                    init_decl,
                                    access);
-      TypePtr alias;
-      if(!resolve_deferred_class_alias(ctx, info, member_name, alias) || !alias) {
-        throw std::logic_error("unsupported class member type" +
-                               diagnostic_location_for_member(ctx, init_decl, &node));
+      if(concrete_class_alias_requires_immediate_resolution(info)) {
+        TypePtr alias;
+        if(!resolve_deferred_class_alias(ctx, info, member_name, alias) || !alias) {
+          throw std::logic_error("unsupported class member type" +
+                                 diagnostic_location_for_member(ctx,
+                                                                init_decl,
+                                                                &node));
+        }
       }
       continue;
     }
@@ -13709,6 +13720,9 @@ void populate_class_info(SemanticContext & ctx,
                                      *type_id,
                                      type_id_text,
                                      inner_access);
+          if(!concrete_class_alias_requires_immediate_resolution(info)) {
+            continue;
+          }
           resolve_deferred_class_alias(ctx, info, member.value, alias);
         }
         if(!alias) {
@@ -13845,6 +13859,9 @@ void populate_class_info(SemanticContext & ctx,
                                    *type_id,
                                    type_id_text,
                                    current_access);
+        if(!concrete_class_alias_requires_immediate_resolution(info)) {
+          continue;
+        }
         resolve_deferred_class_alias(ctx, info, child.value, alias);
       }
       if(!alias) {

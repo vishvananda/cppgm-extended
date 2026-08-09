@@ -2497,6 +2497,14 @@ const TypePtr * find_bound_member_type(const ClassInfo & info,
   return &found->second;
 }
 
+bool has_declared_member_type(const ClassInfo & info,
+                              const string & name)
+{
+  return find_bound_member_type(info, name) != nullptr ||
+         info.deferred_member_aliases.find(name) !=
+             info.deferred_member_aliases.end();
+}
+
 TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,
                                       Scope & scope,
                                       Scope & lookup_scope,
@@ -5255,18 +5263,12 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
     ctx.ensure_class_reference_named_member(info, name);
   }
 
-  auto direct =
-      info.member_scope->named_types.find(name);
+  TypePtr resolved_direct_alias;
+  semantic_class_model::resolve_deferred_class_alias(
+      ctx, info, name, resolved_direct_alias);
+  auto direct = info.member_scope->named_types.find(name);
   if(direct != info.member_scope->named_types.end()) {
-    TypePtr direct_type = direct->second;
-    TypePtr resolved_deferred_alias;
-    if(semantic_class_model::resolve_deferred_class_alias(ctx,
-                                                          info,
-                                                          name,
-                                                          resolved_deferred_alias) &&
-       resolved_deferred_alias) {
-      direct_type = resolved_deferred_alias;
-    }
+    const TypePtr & direct_type = direct->second;
     const MemberAccess direct_access =
         named_type_access_for_lookup(*info.member_scope, name);
     if(lexical_scope &&
@@ -5311,6 +5313,10 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
        current->reference_named_members_collected.count(name) == 0) {
       ctx.ensure_class_reference_named_member(*current, name);
     }
+
+    TypePtr resolved_inherited_alias;
+    semantic_class_model::resolve_deferred_class_alias(
+        ctx, *current, name, resolved_inherited_alias);
 
     auto found =
         current->member_scope->named_types.find(name);
