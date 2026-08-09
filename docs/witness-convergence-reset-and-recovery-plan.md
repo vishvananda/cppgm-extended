@@ -76,7 +76,99 @@ The 36 alias row differences form five concrete groups:
 | Extra implicit-instantiation occurrences | 2 | explicit-source traversal boundary |
 | Wrong argument or empty-pack provenance | 9 | structured template-argument result |
 | Wrong owner presentation | 3 | selected and lexical owner facts |
-| Wrong structured source spelling | 6 | retained source AST/token layout |
+| Wrong semantic argument rendering | 6 | structured template-argument printer |
+
+### Patched-Clang alias text contract, 2026-08-09
+
+The alias oracle does not copy template-argument text from the source file.
+At patched LLVM commit `59c5d9c70`,
+`clang/lib/Frontend/FrontendAction.cpp` does the following work for an alias
+use:
+
+1. The default `RecursiveASTVisitor` visits a written
+   `TemplateSpecializationTypeLoc`. Its default
+   `shouldVisitTemplateInstantiations()` result is `false`, so the visitor
+   skips implicit instantiation bodies.
+2. `VisitTemplateSpecializationTypeLoc` takes the occurrence location from
+   `getTemplateNameLoc()` and the selected alias from the semantic
+   `TypeAliasTemplateDecl`.
+3. It takes arguments from
+   `TemplateSpecializationType::template_arguments()`. It renders each one
+   with `TemplateArgument::print(PrintingPolicy, ..., true)`. Clang prints
+   types through `QualType::print`, dependent expressions through
+   `Expr::printPretty`, template names through `TemplateName::print`, and
+   packs by printing their structured elements.
+4. `buildBindings` zips the alias parameter list with that source-occurrence
+   semantic argument list. `TemplateSpecializationTypeLoc::getNumArgs()` is
+   the size of the same list. Omitted defaults and omitted empty packs do not
+   create alias bindings.
+5. The checked-in reference generator reads the JSON and passes it to
+   `render_emit_templates_text`. Its public normalization changes a
+   small set of generic type spellings. It does not recover alias arguments
+   from source lines, token ranges, or `TemplateArgumentLoc` text.
+
+The semantic printer preserves structured sugar and qualifier form; it does
+not canonicalize every argument to an unsugared type. It also does not retain
+the writer's whitespace. Fresh raw JSON from the patched compiler shows the
+boundary:
+
+| Written argument | Patched-Clang argument |
+| --- | --- |
+| `sizeof(Next::has_key(...)) == sizeof(support::no_tag)` | `sizeof (Next::has_key(...)) == sizeof(support::no_tag)` |
+| `Args&&...` | `Args &&...` |
+| `T(Args...)` | `T (Args...)` |
+| `list<I + 1, void(Tail...)>` | `list<I + 1, void (Tail...)>` |
+| `typename Parameters::binding` | `typename Parameters::binding` |
+| unqualified `has_context_from` | unqualified `has_context_from` |
+
+The last two rows matter as much as whitespace. Clang prints the semantic
+template-name form held by the argument. It neither expands
+`Parameters::binding` with inferred owner arguments nor replaces an
+unqualified dependent template name with the selected declaration's qualified
+name.
+
+The 1,530-reference corpus contains 835 alias-use events and 1,274 alias
+bindings. All 1,274 bindings are `source=explicit`. Six alias events have no
+binding. No alias binding is defaulted, deduced, or rendered as an empty
+`<>` pack. These counts match Clang's source-occurrence argument model and
+explain the empty-pack failures.
+
+CPPGM uses a different payload boundary. Alias resolution carries
+resolved `TemplateArgument` values, `source_argument_texts`, and
+`TemplateArgumentSyntax`. The observer favors source-derived strings in
+several paths, then `template_witness_source_binding_arg_text` returns those
+strings for most explicit type arguments. Later helpers remove selected text
+fragments or normalize whitespace. The resolved argument vector can also
+contain defaulted or expanded pack elements that Clang's alias
+`TemplateSpecializationType` does not publish. This combination causes the
+six spelling mismatches, the owner changes, and the synthetic empty-pack
+bindings.
+
+The paused `ExplicitArgumentsOnly` probe fixes the omission of zero-length
+pack bindings, but it still infers Clang's source-occurrence list from a
+resolved argument vector and a string count. The source-spacing probe is also
+the wrong model. Copied fragment AST nodes use fragment-relative token spans,
+and those spans cannot recover original-file text. Neither probe is a
+promotable Phase 3 implementation.
+
+Phase 3 will use this parity contract:
+
+- source syntax owns the occurrence identity, source anchor, traversal
+  eligibility, and structured qualifier form;
+- the selected semantic alias declaration owns the public template entity;
+- the normal argument-resolution operation produces a stack-scoped
+  source-occurrence argument result, with one converted semantic argument per
+  written template argument before default insertion or pack flattening;
+- one Clang-compatible structured printer renders those semantic arguments;
+- the alias binding builder zips parameters with source-occurrence arguments
+  and marks each emitted binding explicit;
+- alias publication never copies raw argument text, scans a source line,
+  repairs token spacing, or reconstructs a binding from the expanded alias
+  target.
+
+Source strings may still enter parsing and lookup before the compiler has a
+semantic argument. They stop being witness payload once normal resolution has
+produced the structured result.
 
 ### Findings that change the execution order
 
@@ -531,18 +623,31 @@ the 12 alias-family fixes in the dirty experiment.
 4. Make the canonical alias completion result carry separate structured facts
    for:
    - resolved type and arguments;
-   - exact source AST and anchor;
+   - source-occurrence arguments before defaults and pack flattening;
+   - parsed source AST, qualifier form, and anchor;
    - selected alias declaration;
    - lexical source owner;
    - selected concrete owner;
    - explicit public owner mode from lookup;
    - nested child occurrence ownership.
-5. Fix nine argument and empty-pack rows from structured argument provenance,
-   three owner rows from lexical and selected owner facts, and six spelling
-   rows from retained source layout. Do not parse rendered text.
-6. Make builtin, cache, direct, dependent, current-specialization, member, and
+5. Add one semantic template-argument printer with the same kind dispatch as
+   Clang's `TemplateArgument::print`: type, value or expression, template
+   name, template expansion, and pack. Reuse the compiler's structured type
+   and expression printers. Extend those printers where their formatting
+   differs from the patched-Clang policy; do not add alias-only string edits.
+6. Build public alias bindings by zipping alias parameters with the
+   source-occurrence semantic arguments. Do not emit omitted defaults or an
+   omitted empty pack. Fix the nine argument and pack rows through this
+   builder, the three owner rows through selected declaration and qualifier
+   facts, and the six rendering rows through the semantic printer.
+7. Produce the source-occurrence arguments during the existing argument
+   resolution. Do not run a second parse, a second semantic argument
+   resolution, or alias-target instantiation to create witness payload.
+8. Make builtin, cache, direct, dependent, current-specialization, member, and
    fallback arms finish through that one completion boundary.
-7. Delete first-writer enrichment, recursive alias target instantiation,
+9. Delete `source_argument_texts` from alias payload selection, the
+   `ExplicitArgumentsOnly` probe, source-spacing repair, first-writer
+   enrichment, recursive alias target instantiation,
    consumer replay, and alias-specific table/renderer conflict policy as their
    provenance counts reach zero.
 
@@ -551,6 +656,9 @@ Acceptance:
 - zero alias-use mismatch on 1,530 tests;
 - one successful completion and one insertion per source occurrence;
 - no second AST parameter analysis or alias-target instantiation;
+- all public alias bindings come from the source-occurrence semantic argument
+  result and are explicit;
+- no alias binding comes from raw source text or renderer spacing repair;
 - alias duplicate/reject/replace/enrich actions are zero;
 - alias table rows equal public rows;
 - tracked strict and broad suites are exact.
