@@ -3543,12 +3543,47 @@ std::string normalize_witness_angle_spacing(const std::string & text)
   return semantic_utils::trim_space(out);
 }
 
+std::string canonical_witness_fundamental_type_key(const std::string & text)
+{
+  std::string key = callsemantic_internal::remove_space_chars(
+      callsemantic_internal::normalize_type_lookup_name(text));
+  if(key == "signed" || key == "signedint") {
+    return "int";
+  }
+  if(key == "short" || key == "shortint" ||
+     key == "signedshort" || key == "signedshortint") {
+    return "shortint";
+  }
+  if(key == "long" || key == "longint" ||
+     key == "signedlong" || key == "signedlongint") {
+    return "longint";
+  }
+  if(key == "longlong" || key == "longlongint" ||
+     key == "signedlonglong" || key == "signedlonglongint") {
+    return "longlongint";
+  }
+  if(key == "unsigned") {
+    return "unsignedint";
+  }
+  if(key == "unsignedshort") {
+    return "unsignedshortint";
+  }
+  if(key == "unsignedlong") {
+    return "unsignedlongint";
+  }
+  if(key == "unsignedlonglong") {
+    return "unsignedlonglongint";
+  }
+  return key;
+}
+
 bool template_argument_is_witness_default_equivalent(
     SemanticContext & ctx,
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
     std::size_t index,
-    bool allow_explicit_default_equivalent)
+    bool allow_explicit_default_equivalent,
+    semantic_model::Scope * default_argument_scope = nullptr)
 {
   if(index >= parameters.size() || index >= arguments.size()) {
     return false;
@@ -3579,19 +3614,65 @@ bool template_argument_is_witness_default_equivalent(
                                                     index));
   const std::string rendered_arg_text =
       semantic_utils::trim_space(template_witness_argument_text(ctx, argument));
-  return template_witness_text_matches_default(parameter,
-                                               rendered_arg_text,
-                                               default_text) ||
-         template_witness_text_matches_default(parameter,
-                                               rendered_arg_text,
-                                               substituted_default_text);
+  if(template_witness_text_matches_default(parameter,
+                                           rendered_arg_text,
+                                           default_text) ||
+     template_witness_text_matches_default(parameter,
+                                           rendered_arg_text,
+                                           substituted_default_text)) {
+    return true;
+  }
+  if(parameter.kind == template_model::TemplateParameterInfo::TP_TYPE &&
+     (template_argument_semantics::normalized_type_lookup_text_matches(
+          rendered_arg_text,
+          default_text) ||
+      template_argument_semantics::normalized_type_lookup_text_matches(
+          rendered_arg_text,
+          substituted_default_text))) {
+    return true;
+  }
+  const cpp_decl::TypePtr argument_type =
+      cpp_decl::strip_top_level_cv(argument.type);
+  if(parameter.kind == template_model::TemplateParameterInfo::TP_TYPE &&
+     argument_type &&
+     argument_type->kind == cpp_decl::Type::TK_FUNDAMENTAL) {
+    const std::string argument_type_key =
+        canonical_witness_fundamental_type_key(
+            cpp_decl::template_argument_type_text(argument.type));
+    if(argument_type_key ==
+           canonical_witness_fundamental_type_key(default_text) ||
+       argument_type_key ==
+           canonical_witness_fundamental_type_key(substituted_default_text)) {
+      return true;
+    }
+  }
+  if(parameter.kind != template_model::TemplateParameterInfo::TP_NON_TYPE ||
+     argument.kind != template_model::TemplateArgument::TA_VALUE ||
+     argument.dependent ||
+     !cpp_decl::is_integral_type(argument.type) ||
+     !default_argument_scope) {
+    return false;
+  }
+  const std::string default_name =
+      substituted_default_text.empty() ?
+          semantic_utils::trim_space(default_text) :
+          substituted_default_text;
+  if(!callsemantic_internal::is_identifier_text(default_name)) {
+    return false;
+  }
+  const semantic_model::ValueBinding * default_binding =
+      ctx.lookup_value(*default_argument_scope, default_name);
+  return default_binding &&
+      default_binding->has_constant_value &&
+      default_binding->constant_value == argument.value;
 }
 
 std::size_t witness_visible_template_argument_count(
     SemanticContext & ctx,
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
-    bool allow_explicit_default_equivalent)
+    bool allow_explicit_default_equivalent,
+    semantic_model::Scope * default_argument_scope = nullptr)
 {
   if(parameters.size() != arguments.size()) {
     return arguments.size();
@@ -3608,7 +3689,8 @@ std::size_t witness_visible_template_argument_count(
            parameters,
            arguments,
            count - 1,
-           allow_explicit_default_equivalent)) {
+           allow_explicit_default_equivalent,
+           default_argument_scope)) {
       break;
     }
     --count;
@@ -3628,7 +3710,8 @@ std::size_t witness_visible_class_template_argument_count(
       ctx,
       info.source_template->parameters,
       info.instantiation_arguments,
-      allow_explicit_default_equivalent);
+      allow_explicit_default_equivalent,
+      info.source_template->declaring_scope);
 }
 
 std::size_t witness_visible_class_template_argument_count(
@@ -3636,11 +3719,28 @@ std::size_t witness_visible_class_template_argument_count(
     const cpp_decl::ClassTemplateSpecializationMangleInfo & info,
     bool allow_explicit_default_equivalent)
 {
+  const semantic_model::ClassTemplateDecl * class_template =
+      static_cast<const semantic_model::ClassTemplateDecl *>(
+          info.class_template_decl);
+  if(allow_explicit_default_equivalent &&
+     class_template &&
+     !class_template->explicit_specializations.empty() &&
+     class_template->explicit_specializations.count(
+         template_argument_identity_key(
+             ctx, info.arguments.const_values())) != 0) {
+    return info.arguments.size();
+  }
+  const std::vector<template_model::TemplateParameterInfo> & parameters =
+      class_template &&
+              class_template->parameters.size() == info.arguments.size() ?
+          class_template->parameters :
+          info.template_parameters;
   return witness_visible_template_argument_count(
       ctx,
-      info.template_parameters,
+      parameters,
       info.arguments,
-      allow_explicit_default_equivalent);
+      allow_explicit_default_equivalent,
+      class_template ? class_template->declaring_scope : nullptr);
 }
 
 std::string source_spelled_enum_witness_argument_text(
@@ -4218,6 +4318,11 @@ std::string default_elided_type_argument_text(
           named_type->named_rare().named_member_name);
     }
   }
+  if(semantic_model::ClassInfo * info = ctx.class_info_for_type(type)) {
+    if(info->is_explicit_specialization) {
+      return class_witness_output_qualified_name_for_lifecycle(ctx, *info);
+    }
+  }
   if(std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
          mangle_info =
              cpp_decl::named_type_class_template_specialization_mangle_info_const(type)) {
@@ -4233,7 +4338,7 @@ std::string default_elided_type_argument_text(
     }
   }
   if(semantic_model::ClassInfo * info = ctx.class_info_for_type(type)) {
-    return class_witness_output_qualified_name(ctx, *info);
+    return class_witness_output_qualified_name_for_lifecycle(ctx, *info);
   }
   const std::string canonical_named_key =
       canonical_named_type_key_for_witness(type);
@@ -4320,7 +4425,7 @@ std::string class_template_mangle_info_witness_text(
   }
   out << "<";
   const std::size_t visible_count =
-      witness_visible_class_template_argument_count(ctx, info, false);
+      witness_visible_class_template_argument_count(ctx, info, true);
   for(std::size_t i = 0; i < visible_count && i < info.arguments.size(); ++i) {
     if(i != 0) {
       out << ", ";
@@ -4398,7 +4503,7 @@ bool class_template_mangle_info_contains_default_elided_type_for_witness(
   if(depth > 8) {
     return false;
   }
-  if(witness_visible_class_template_argument_count(ctx, info, false) <
+  if(witness_visible_class_template_argument_count(ctx, info, true) <
      info.arguments.size()) {
     return true;
   }
@@ -4465,7 +4570,7 @@ bool type_contains_default_elided_template_argument(
     }
   }
   if(semantic_model::ClassInfo * info = ctx.class_info_for_type(type)) {
-    if(witness_visible_class_template_argument_count(ctx, *info, false) <
+    if(witness_visible_class_template_argument_count(ctx, *info, true) <
        info->instantiation_arguments.size()) {
       return true;
     }
@@ -5956,7 +6061,14 @@ void append_class_template_witness_bindings(
           }
           const template_model::TemplateArgument & argument =
               info->instantiation_arguments[argument_index + j];
-          all_defaulted = all_defaulted && argument.source_defaulted;
+          all_defaulted = all_defaulted &&
+              template_argument_is_witness_default_equivalent(
+                  ctx,
+                  params,
+                  info->instantiation_arguments,
+                  argument_index + j,
+                  true,
+                  info->source_template->declaring_scope);
           const std::string element_text =
               witness_argument_text_for_binding(ctx, argument);
           source_binding.pack_arguments.push_back(element_text);
@@ -5979,7 +6091,13 @@ void append_class_template_witness_bindings(
         ctx,
         info->instantiation_arguments[argument_index++]);
     source_binding.source =
-        info->instantiation_arguments[argument_index - 1].source_defaulted ?
+        template_argument_is_witness_default_equivalent(
+            ctx,
+            params,
+            info->instantiation_arguments,
+            argument_index - 1,
+            true,
+            info->source_template->declaring_scope) ?
             "defaulted" :
             "explicit";
     out.push_back(source_binding);
@@ -6706,10 +6824,22 @@ std::string template_witness_explicit_binding_source(
     const std::vector<template_model::TemplateArgument> * all_arguments =
         nullptr,
     std::size_t parameter_index = 0,
-    bool treat_explicit_defaults_as_defaulted = true)
+    bool treat_explicit_defaults_as_defaulted = true,
+    semantic_model::Scope * default_argument_scope = nullptr)
 {
   if(!treat_explicit_defaults_as_defaulted) {
     return explicit_source;
+  }
+  if(all_parameters &&
+     all_arguments &&
+     template_argument_is_witness_default_equivalent(
+         ctx,
+         *all_parameters,
+         *all_arguments,
+         parameter_index,
+         true,
+         default_argument_scope)) {
+    return defaulted_source;
   }
   const std::string rendered_arg_text =
       semantic_utils::trim_space(template_witness_argument_text(ctx, arg));
@@ -6925,7 +7055,8 @@ void append_template_witness_source_bindings(
     const std::vector<std::string> & explicit_argument_texts,
     const std::string & explicit_source,
     const std::string & defaulted_source,
-    bool treat_explicit_defaults_as_defaulted)
+    bool treat_explicit_defaults_as_defaulted,
+    semantic_model::Scope * default_argument_scope)
 {
   retain_enum_value_bindings_for_witness_source(ctx, arguments);
   std::size_t arg_index = 0;
@@ -6984,7 +7115,8 @@ void append_template_witness_source_bindings(
                   &parameters,
                   &arguments,
                   i,
-                  treat_explicit_defaults_as_defaulted);
+                  treat_explicit_defaults_as_defaulted,
+                  default_argument_scope);
           any_explicit = any_explicit || element_source == explicit_source;
           element_text = template_witness_source_binding_arg_text(
               ctx,
@@ -7040,7 +7172,8 @@ void append_template_witness_source_bindings(
                                                    &parameters,
                                                    &arguments,
                                                    i,
-                                                   treat_explicit_defaults_as_defaulted);
+                                                   treat_explicit_defaults_as_defaulted,
+                                                   default_argument_scope);
       binding.arg =
           template_witness_source_binding_arg_text(
               ctx,

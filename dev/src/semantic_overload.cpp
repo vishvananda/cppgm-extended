@@ -1737,6 +1737,8 @@ std::string function_candidate_rejection_drop_reason(const std::string & rejecti
   }
   if(rejection.find("too many args") != std::string::npos ||
      rejection.find("argument count mismatch") != std::string::npos ||
+     rejection.find("argument count/type shape mismatch") !=
+         std::string::npos ||
      rejection.find("member argument count mismatch") != std::string::npos) {
     return "too_many_arguments";
   }

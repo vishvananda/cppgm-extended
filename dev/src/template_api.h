@@ -752,7 +752,8 @@ void append_template_witness_source_bindings(
     const std::vector<std::string> & explicit_argument_texts,
     const std::string & explicit_source,
     const std::string & defaulted_source,
-    bool treat_explicit_defaults_as_defaulted = true);
+    bool treat_explicit_defaults_as_defaulted = true,
+    semantic_model::Scope * default_argument_scope = nullptr);
 
 // Print the structured spelling carried by a resolved source-occurrence
 // argument.  This follows template-argument kind and parsed AST structure; it

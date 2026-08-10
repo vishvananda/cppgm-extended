@@ -12589,7 +12589,9 @@ private:
           *use.arguments,
           source_arg_texts,
           "explicit",
-          "defaulted");
+          "defaulted",
+          true,
+          source_origin->declaring_scope);
     }
     if(use.selection.parameters &&
        use.selection.parameters != &source_origin->parameters) {
@@ -21520,7 +21522,9 @@ private:
           arguments,
           *resolved.source_argument_texts,
           "explicit",
-          "defaulted");
+          "defaulted",
+          true,
+          class_template->declaring_scope);
       if(canonical_parameters) {
         canonicalize_template_parameter_source_bindings(
             request.bindings,
@@ -21667,7 +21671,9 @@ private:
         arguments,
         source_arg_texts,
         "explicit",
-        "defaulted");
+        "defaulted",
+        true,
+        class_template->declaring_scope);
     if(!nested_partial_source_argument &&
        selection.parameters &&
        selection.parameters != &class_template->parameters) {

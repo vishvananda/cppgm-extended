@@ -1343,6 +1343,129 @@ Phase 3 remains open. Nineteen changed class rows, two unexpected rows, and
 three ordering cases remain. Selection payloads and owner qualification are
 the next class-use clusters. Inception is still forbidden.
 
+## Default-equivalent rebinding checkpoint, 2026-08-10
+
+The `offset_ptr` rebinding fixture supplied the primary template's three
+trailing defaults explicitly. The initial class-use path recognized the two
+fundamental type defaults, but not the declaration-scope constant
+`alignment_value`. Dependent rebinding then retained all four arguments in
+its mangle metadata and printed the expanded spelling in nested class,
+function-call, and lifecycle entities.
+
+The shared witness default-equivalence check now covers all consumers. It
+compares canonical fundamental spellings such as `long int` and `long`, and it
+resolves a named integral default through the template declaration scope
+before comparing the retained constant value. Class source bindings,
+class-instantiation bindings, nested mangle names, and lifecycle names use the
+same result. The three class source-binding call sites pass the primary
+template's declaring scope instead of asking the renderer to guess where a
+named default came from.
+
+Explicit specializations remain a separate semantic identity. Before eliding
+an explicit-equivalent argument list, the mangle path checks the primary
+template's explicit-specialization registry. The two `plus<void>` PA24
+fixtures therefore keep their full specialization spelling. This guard is
+based on the structured template argument identity key, not a template name,
+source location, or fixture filter.
+
+The same focused fixture exposed an independent rejection label. Constructor
+selection already records `argument count/type shape mismatch`; the witness
+drop classifier now maps that existing rejection to `too_many_arguments`.
+The classifier previously fell through to `substitution_failure` because it
+recognized only the shorter `argument count mismatch` spelling.
+
+Exactly three expanded outputs change from the typed-character checkpoint:
+
+- `pa23/tests/spec/500-defaulted-rebind-constructor-deduction.t` becomes
+  byte-exact, including its direct LowIR output;
+- `pa22/tests/spec/300-nested-member-template-definition-parameter-alias-default.t`
+  remains mismatched, but one extra candidate drop is now classified as
+  `too_many_arguments` instead of `substitution_failure`;
+- `pa23/tests/general/500-weak-ptr-shared-ptr-template-ctor.t` remains
+  mismatched for independent presence, ordering, and rejection rows, while
+  the same arity drop receives the corrected label.
+
+No previously exact output regresses. Expanded convergence improves from
+1,427 to 1,428 matching outputs:
+
+- class-use changes fall from 19 to 16 rows and from 19 to 18 tests; the two
+  unexpected rows and three ordering cases remain;
+- function-call changes fall from 37 to 36 rows and from 56 to 55 tests; the
+  18 missing rows, 13 unexpected rows, and one ordering case remain;
+- lifecycle additional definition demands fall from ten to eight, missing
+  rows fall from 64 to 55, unexpected rows fall from 39 to 32, failing tests
+  fall from 42 to 41, and warning tests fall from nine to eight.
+
+Correctness and diagnostic evidence from the Homebrew-Clang builds:
+
+- the preserved strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence passes 1,428/1,530, leaving 102 known mismatches;
+- ordinary and provenance compilers produce identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,342 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero;
+- the structure-size report is byte-identical to the parent checkpoint.
+  `Type` remains 280 bytes, `TemplateArgument` 136 bytes,
+  `TemplateIdSyntax` 160 bytes, and `ClassInfo` 1,136 bytes.
+
+The standalone boundary reports also retain the parent counts. The
+template-side audit has four service adapters, two service bundles, 15 direct
+semantic-service accesses, 115 text-recovery bridges, 65 canonical-key
+metadata sites, 140 witness source-location sites, and 197 mixed
+`callsemantic.cpp` exceptions. The semantic-side audit retains five
+output-readiness queries, ten template-service mentions, and nine internal
+header sites. These ratchets did not grow in this checkpoint.
+
+The ordinary convergence report is
+`/tmp/cppgm-default-elision-convergence-final-20260810.json`, SHA-256
+`6dfe21694ac8a517102e2183eb8a7ec3d4b0a583fe154925cc2ed69fe79a1dc1`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-default-elision-provenance-final-20260810/provenance-analysis.json`
+and
+`/tmp/cppgm-default-elision-provenance-final-20260810/convergence.json`, with
+SHA-256 values
+`e70259c4054fe02e025c7e77bc55ba2f12232a1f4b59f9fe2fd6c0fb9b4664f9`
+and
+`2df9702c79f145dfee50a68a6af82fe6b4ce2a08cd70e7efaf901aba273da959`.
+The byte-identical output manifest is
+`/tmp/cppgm-default-elision-output-manifest-20260810.txt`, SHA-256
+`036f7dcde4746d12e33a7b5e44615ff89335c956f715b8d462df17761f8f76b9`.
+The broad report is `/tmp/cppgm-default-elision-broad-20260810.log`, SHA-256
+`c2ea7c619b29208514e15674bd4d5fc973d8076f6e8f95b37326a371af5b7e4a`.
+The materialization audit remains byte-identical to the parent at SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+The structure-size report retains SHA-256
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The shared three-run candidate record passes both performance comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.06% | +0.68% | -3.89% | `/tmp/cppgm-default-elision-vs-fixed-20260810.json` |
+| Typed-character parent | -0.13% | +1.01% | +0.09% | `/tmp/cppgm-default-elision-vs-parent-20260810.json` |
+
+The raw candidate record has SHA-256
+`c06ebe4bb267663079cf3024541eea135cf731d9360c0b9c58239ed3a34ce34e`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`f2845a4fc12feef01da62816ad9035b8ff6e43e6780e6037192333bfeca76f66`
+and
+`9a3da9d3e90fc2f98021000e306fd5d41a4b6bef3c5b2e15672a771728ec00df`.
+The candidate metadata names commit `8fe771919` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 3 remains open. Sixteen changed class rows, two unexpected class rows,
+and three class ordering cases remain. Selection payloads and owner
+qualification are still the next class-use clusters. Inception remains
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
