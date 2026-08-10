@@ -2886,7 +2886,16 @@ void normalize_event_bindings(vector<WitnessEvent> & events,
     if(keep_count == 0 || keep_count == events[i].bindings.size()) {
       continue;
     }
+    const size_t source_argument_count =
+        events[i].template_id_occurrence.present &&
+                events[i].template_id_occurrence.source_spelled ?
+            events[i].template_id_occurrence.arguments.size() :
+            0;
     for(size_t j = keep_count; j < events[i].bindings.size(); ++j) {
+      if(j < source_argument_count &&
+         events[i].bindings[j].source == "explicit") {
+        continue;
+      }
       events[i].bindings[j].source = "defaulted";
     }
   }

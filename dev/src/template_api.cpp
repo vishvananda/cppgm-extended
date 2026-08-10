@@ -6309,7 +6309,11 @@ std::string template_witness_source_binding_arg_text(
     // Clang's TemplateArgument::print renders a semantic TemplateName here.
     // In particular, the written `template` disambiguator is parsing syntax,
     // not part of the public template-name spelling.
-    return template_witness_semantic_argument_text(ctx, arg);
+    std::string text = template_witness_semantic_argument_text(ctx, arg);
+    if(text.compare(0, 2, "::") == 0) {
+      text.erase(0, 2);
+    }
+    return text;
   }
   if(has_explicit_text &&
      !template_type_parameter_feeds_non_type_parameter(parameters, parameter_index)) {
@@ -6359,6 +6363,9 @@ std::string template_witness_defaulted_source_binding_arg_text(
     const template_model::TemplateArgument & arg)
 {
   if(arg.kind == template_model::TemplateArgument::TA_VALUE && !arg.dependent) {
+    if(arg.value == 0 && cpp_decl::is_pointer_type(arg.type)) {
+      return "nullptr";
+    }
     return template_witness_argument_text(ctx, arg);
   }
   return template_witness_source_binding_arg_text(ctx,
@@ -6594,12 +6601,25 @@ void append_template_witness_source_bindings(
       [&](const template_model::TemplateParameterInfo & parameter,
           std::size_t arg_index_for_parameter) -> std::string
   {
+    const bool class_type_argument_differs_from_default =
+        parameter.kind == template_model::TemplateParameterInfo::TP_TYPE &&
+        parameter.default_argument &&
+        arg_index_for_parameter < arguments.size() &&
+        arguments[arg_index_for_parameter].type &&
+        ctx.class_info_for_type(arguments[arg_index_for_parameter].type) &&
+        !template_argument_is_witness_default_equivalent(
+            ctx,
+            parameters,
+            arguments,
+            arg_index_for_parameter,
+            true);
     if(policy ==
            TemplateWitnessSourceBindingPolicy::
                DeducedWithDefaultedTrailingDefaults &&
        !parameter.parameter_pack &&
        parameter.default_argument &&
-       arg_index_for_parameter >= required_count) {
+       arg_index_for_parameter >= required_count &&
+       !class_type_argument_differs_from_default) {
       return "defaulted";
     }
     return source;

@@ -940,6 +940,100 @@ nested structured spellings, binding-source labels, selection payloads, and
 ordering. The two unexpected class rows also remain. Inception is still
 forbidden.
 
+## Default binding provenance checkpoint, 2026-08-10
+
+Two independent shortcuts were relabeling supplied class arguments as
+defaults. The deduced binding builder marked every trailing parameter that had
+a declared default as `defaulted`, even when a supplied class-type argument
+was structurally different. Later, the renderer used any shortened class alias
+to relabel the same trailing positions again, including positions visibly
+spelled in the source template-id.
+
+The deduced builder now checks class-type arguments against the declared
+default before assigning the defaulted label. Fundamental and non-type
+arguments retain the established fallback because their default provenance can
+be lost during rebinding. The renderer also retains an explicit label when the
+structured source occurrence contains that argument position. These two facts
+remove the false default alias that shortened a nested argument list; the full
+type consequently survives into its function-call and constructor lifecycle
+events.
+
+The same defaulted-binding builder now prints a typed null pointer as
+`nullptr`. Semantic template-name arguments discard a redundant leading global
+qualifier. Together, this clears four class-use rows and three complete
+outputs. The imported-member fixture also clears one function-call row, two
+missing lifecycle rows, one unexpected lifecycle row, and one additional
+definition demand.
+
+Correctness and diagnostic evidence from fresh isolated Homebrew-Clang builds:
+
+- the preserved original strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence improves from 1,416 to 1,419 matching outputs, leaving
+  111 known mismatches and no new failing output;
+- the class-use inventory falls from 40 to 36 changed rows and from 29 to 26
+  failing tests; it still has zero missing rows, two unexpected rows, and
+  three ordering cases;
+- the function-call inventory falls from 42 to 41 changed rows and from 60 to
+  59 failing tests;
+- the lifecycle inventory falls from 14 to 13 additional definition demands,
+  from 85 to 83 missing rows, from 56 to 55 unexpected rows, and from 48 to 47
+  failing tests;
+- ordinary and provenance compilers produce identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,358 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the canonical PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper unit suites pass
+  60/60;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The template-side and semantic-side boundary reports are byte-identical to the
+parent checkpoint. The semantic audit therefore retains five output-readiness
+queries, ten template-service mentions, and nine internal-header sites. These
+existing counts are not acceptance gates for this payload slice.
+
+The ordinary convergence report is
+`/tmp/cppgm-default-source-convergence-20260810.json`, SHA-256
+`a50f65a5e047d5525592e94a51235682faddd312d70ee93588251cc1cb759baa`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-default-source-provenance.LQZ3Zl/provenance-analysis.json` and
+`/tmp/cppgm-default-source-provenance.LQZ3Zl/convergence.json`, with SHA-256
+values
+`74fcc053596918a17b8b13e2ede317827b0f138722030cb4cf0feab3e26a6802`
+and
+`e99d4c318a90d0045910de17d732a3eb7c1187253c62b47ad3a99ec131636a42`.
+The byte-identical ordinary/provenance output manifest has SHA-256
+`3ccddc1df5c745cebd718fe7aad73f663e79f0ccc9ada6561bc2f37a7a473b8c`.
+The broad report is `/tmp/cppgm-default-source-broad-20260810.log`, SHA-256
+`2b7fcd185f3cca40e405ab13b1bb6b81add75dde95292d29b4985e1e0c8517c7`.
+The materialization audit remains byte-identical to the preceding checkpoints
+at SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+Both three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.99% | +0.43% | -3.85% | `185e4060544263ee173f247a7219cdd9b211bc9d1a9005070c8019539d1a97d1` |
+| Prior rolling checkpoint | +0.11% | -0.23% | +0.05% | `5eaa6b51fd8e9f1515101537c1314b1f317b4814a398d5e61abf330a0d317bd7` |
+
+The reports are `/tmp/cppgm-default-source-vs-fixed-20260810.json` and
+`/tmp/cppgm-default-source-vs-rolling-20260810.json`. The shared raw candidate
+is `/tmp/cppgm-default-source-raw-candidate-20260810.json`, SHA-256
+`1672aa8ead29eb7f897743425f072f26b9b9c646e33ed85e6762ee5d8be87a2a`.
+Its metadata names commit `d9dbc0706` because the measurements cover this
+uncommitted checkpoint.
+
+Phase 3 remains open. Thirty-six changed class rows, two unexpected class
+rows, and three class ordering cases remain. Nested structured spellings and
+selection payloads are the next class-use clusters. Inception is still
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
