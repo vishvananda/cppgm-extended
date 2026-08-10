@@ -236,6 +236,8 @@ semantic_source_use::SourceBinding source_binding_from_event(
       normalize_source_event_angle_spacing(binding.arg) : binding.arg;
   out.source = binding.source;
   out.type_like = binding.type_like;
+  out.function_type_argument = binding.function_type_argument;
+  out.structured_type_spelling = binding.structured_type_spelling;
   out.preserve_qualified_member = binding.preserve_qualified_member;
   out.pack_binding = binding.pack_binding;
   out.pack_aggregate = binding.pack_aggregate;

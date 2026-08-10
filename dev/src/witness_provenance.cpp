@@ -443,6 +443,18 @@ std::string source_attempt_record(const SourceAttempt & attempt,
     out << (use.bindings[i].type_like ? "true" : "false");
   }
   out << "]"
+      << ",\"binding_function_type_argument\":[";
+  for(std::size_t i = 0; i < use.bindings.size(); ++i) {
+    if(i != 0) out << ',';
+    out << (use.bindings[i].function_type_argument ? "true" : "false");
+  }
+  out << "]"
+      << ",\"binding_structured_type_spelling\":[";
+  for(std::size_t i = 0; i < use.bindings.size(); ++i) {
+    if(i != 0) out << ',';
+    out << (use.bindings[i].structured_type_spelling ? "true" : "false");
+  }
+  out << "]"
       << ",\"occurrence_argument_texts\":[";
   for(std::size_t i = 0;
       i < use.template_id_occurrence.arguments.size();

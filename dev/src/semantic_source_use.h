@@ -103,6 +103,8 @@ struct SourceBinding
   std::string arg;
   std::string source;
   bool type_like = false;
+  bool function_type_argument = false;
+  bool structured_type_spelling = false;
   bool preserve_qualified_member = false;
   bool pack_binding = false;
   bool pack_aggregate = false;
@@ -212,6 +214,8 @@ inline bool operator==(const SourceBinding & lhs, const SourceBinding & rhs)
          lhs.arg == rhs.arg &&
          lhs.source == rhs.source &&
          lhs.type_like == rhs.type_like &&
+         lhs.function_type_argument == rhs.function_type_argument &&
+         lhs.structured_type_spelling == rhs.structured_type_spelling &&
          lhs.preserve_qualified_member == rhs.preserve_qualified_member &&
          lhs.pack_binding == rhs.pack_binding &&
          lhs.pack_aggregate == rhs.pack_aggregate &&
@@ -394,6 +398,8 @@ inline bool source_bindings_equivalent_ignoring_space(
     if(lhs[i].param != rhs[i].param ||
        lhs[i].source != rhs[i].source ||
        lhs[i].type_like != rhs[i].type_like ||
+       lhs[i].function_type_argument != rhs[i].function_type_argument ||
+       lhs[i].structured_type_spelling != rhs[i].structured_type_spelling ||
        lhs[i].preserve_qualified_member != rhs[i].preserve_qualified_member ||
        lhs[i].pack_aggregate != rhs[i].pack_aggregate ||
        lhs[i].function_pointer_parameter != rhs[i].function_pointer_parameter ||

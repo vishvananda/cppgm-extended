@@ -850,6 +850,96 @@ Phase 3 remains open. The next class payload work must recover structured
 argument spelling, binding-source labels, selection payloads, and ordering.
 The two unexpected class rows also remain. Inception is still forbidden.
 
+## Structured class argument spelling checkpoint, 2026-08-10
+
+Class source bindings carried only a broad `type_like` bit into the renderer.
+The renderer consequently had to infer function declarator layout from text,
+and its general type normalizer discarded semantic array and cv spellings.
+That lost the space before function parameter lists, shortened `unsigned int`
+inside arrays, and collapsed `const volatile` fundamental types to their
+written source order.
+
+The source-binding carrier now records two narrower semantic facts: whether
+the argument is a function type, and whether its structured semantic spelling
+must survive rendering. Explicit array arguments and `const volatile`
+fundamental arguments use the semantic type printer. Function-type arguments
+use their typed status to restore the parameter-list space after identifier or
+template-id results while leaving pointer results unchanged. Both facts cross
+the source-use consolidation boundary, participate in equality, and appear in
+provenance records. The renderer cache key includes the structured-spelling
+fact, avoiding traversal-order-dependent reuse.
+
+This clears nine class-use rows: five function-type spellings, two cv
+spellings, and two direct array spellings. Six complete outputs leave the
+failure manifest. The nested `filter_core` row in the PA24 array fixture still
+shortens `block<unsigned int[4], 4>` internally, so that test remains open.
+
+Correctness and diagnostic evidence from fresh isolated Homebrew-Clang builds:
+
+- the preserved original strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence improves from 1,410 to 1,416 matching outputs, leaving
+  114 known mismatches and no new failing output;
+- the class-use inventory falls from 49 to 40 changed rows and from 35 to 29
+  failing tests; it still has zero missing rows, two unexpected rows, and
+  three ordering cases;
+- function-call and lifecycle inventories are unchanged;
+- ordinary and provenance compilers produce identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,361 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the canonical PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper unit suites pass
+  60/60;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The template-side boundary ratchet is byte-identical to the parent checkpoint.
+The semantic-side audit retains the parent's five output-readiness queries,
+ten template-service mentions, and nine internal-header sites. These existing
+counts are not acceptance gates for this payload slice.
+
+The ordinary convergence report is
+`/tmp/cppgm-structured-type-convergence-20260810.json`, SHA-256
+`e9e8b9df1305ed8fb86a5038eec963a24314320c831c7f999bffad2ad4864448`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-structured-type-provenance.MqslIt/provenance-analysis.json` and
+`/tmp/cppgm-structured-type-provenance.MqslIt/convergence.json`, with SHA-256
+values
+`619264dcffcc12a1a35ac030368dada1857994bac551b543742dbd4c667f0423`
+and
+`9d2a706a844a57e52dc2161f197f4365c79af5a4e5e5bafce8b7dec2e0547344`.
+The byte-identical ordinary/provenance output manifest has SHA-256
+`90e17c91b525f0ecba99c36d4655e17e689bbe0dc89993c4679d687baf451eb8`.
+The broad report is `/tmp/cppgm-structured-type-broad-20260810.log`, SHA-256
+`80730739ddf67f969e1c8c840033972b1f6f6fbcbb2e6dcfc203d3557f78d522`.
+The materialization audit remains byte-identical to the preceding checkpoints
+at SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+Both three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.09% | +0.66% | -3.89% | `304506e8f706d75bf78ffe1f89075ec64c9fae03820adb4c9cc263ba9b13921b` |
+| Prior rolling checkpoint | -0.07% | +1.82% | +0.07% | `94ea840cd4746131ec1d6fe1b033928d748706a39845d8c4a62a521548aa304c` |
+
+The reports are `/tmp/cppgm-structured-type-vs-fixed-20260810.json` and
+`/tmp/cppgm-structured-type-vs-rolling-20260810.json`. The shared raw
+candidate is `/tmp/cppgm-structured-type-raw-candidate-20260810.json`,
+SHA-256
+`f34a3c954695914365b516b6305723b6d41af99f62b98ed6ce81c399bfc99de1`.
+Its metadata names commit `ce1ce270f` because the measurements cover this
+uncommitted checkpoint.
+
+Phase 3 remains open. The next class payload work must recover the remaining
+nested structured spellings, binding-source labels, selection payloads, and
+ordering. The two unexpected class rows also remain. Inception is still
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

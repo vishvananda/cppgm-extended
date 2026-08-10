@@ -1305,7 +1305,8 @@ string normalize_const_order(const string & text)
 
 string normalize_binding_arg_for_event(const string & arg);
 string normalize_binding_arg_for_event(const string & arg,
-                                       bool preserve_const_char_array);
+                                       bool preserve_const_char_array,
+                                       bool preserve_structured_type_spelling);
 bool is_simple_identifier_text(const string & text);
 
 string unqualified_template_name_text(const string & text)
@@ -1355,7 +1356,8 @@ void canonicalize_function_pointer_binding_args(vector<WitnessEvent> & events)
 
 string normalize_binding_arg_for_event(const string & arg);
 string normalize_binding_arg_for_event(const string & arg,
-                                       bool preserve_const_char_array);
+                                       bool preserve_const_char_array,
+                                       bool preserve_structured_type_spelling);
 string normalize_function_template_argument_spacing(const string & text);
 
 void canonicalize_is_same_partial_bindings(vector<WitnessEvent> & events)
@@ -2054,11 +2056,14 @@ void normalize_event_names(vector<WitnessEvent> & events,
 }
 
 string normalize_binding_arg_for_event(const string & arg,
-                                       bool preserve_const_char_array)
+                                       bool preserve_const_char_array,
+                                       bool preserve_structured_type_spelling)
 {
-  typedef pair<string, bool> CacheKey;
+  typedef tuple<string, bool, bool> CacheKey;
   static map<CacheKey, string> cache;
-  const CacheKey key(arg, preserve_const_char_array);
+  const CacheKey key(arg,
+                     preserve_const_char_array,
+                     preserve_structured_type_spelling);
   map<CacheKey, string>::const_iterator cached = cache.find(key);
   if(cached != cache.end()) {
     return cached->second;
@@ -2077,7 +2082,9 @@ string normalize_binding_arg_for_event(const string & arg,
   value = std::regex_replace(value, qualified_local_regex, "$2");
   value = std::regex_replace(value, local_regex, "");
   value = normalize_const_order(value);
-  value = normalize_source_event_type_spellings(value);
+  if(!preserve_structured_type_spelling) {
+    value = normalize_source_event_type_spellings(value);
+  }
   while(true) {
     const string collapsed =
         std::regex_replace(value, separated_angle_regex, ">>");
@@ -2160,10 +2167,12 @@ string normalize_function_template_argument_spacing(const string & text)
 
 string normalize_binding_arg_for_event(const string & arg)
 {
-  return normalize_binding_arg_for_event(arg, false);
+  return normalize_binding_arg_for_event(arg, false, false);
 }
 
-string normalize_type_like_function_declarator_spacing(const string & text)
+string normalize_type_like_function_declarator_spacing(
+    const string & text,
+    bool function_type_argument)
 {
   string out = trim_space(text);
   int angle_depth = 0;
@@ -2180,7 +2189,11 @@ string normalize_type_like_function_declarator_spacing(const string & text)
     if(ch == '(' &&
        angle_depth == 0 &&
        i > 0 &&
-       out[i - 1] == '>') {
+       !std::isspace(static_cast<unsigned char>(out[i - 1])) &&
+       ((function_type_argument &&
+         (std::isalnum(static_cast<unsigned char>(out[i - 1])) ||
+          out[i - 1] == '_')) ||
+        out[i - 1] == '>')) {
       out.insert(i, " ");
       break;
     }
@@ -2214,12 +2227,15 @@ string normalize_binding_arg_for_event(const WitnessBinding & binding)
 {
   const string normalized =
       normalize_binding_arg_for_event(binding.arg,
-                                      binding.source == "explicit");
+                                      binding.source == "explicit",
+                                      binding.structured_type_spelling);
   const string normalized_only =
       normalized == "unsigned" ? "unsigned int" : normalized;
   if(binding.type_like) {
     return normalize_template_closing_angle_spacing(
-        normalize_type_like_function_declarator_spacing(normalized_only));
+        normalize_type_like_function_declarator_spacing(
+            normalized_only,
+            binding.function_type_argument));
   }
   return normalized_only;
 }

@@ -6200,6 +6200,23 @@ bool source_text_drops_array_cv(const cpp_decl::TypePtr & type,
            source_key.find("volatile") == std::string::npos));
 }
 
+bool explicit_type_argument_requires_structured_spelling(
+    const cpp_decl::TypePtr & type)
+{
+  if(!type) {
+    return false;
+  }
+  const cpp_decl::TypePtr unqualified = cpp_decl::strip_top_level_cv(type);
+  if(unqualified && unqualified->kind == cpp_decl::Type::TK_ARRAY) {
+    return true;
+  }
+  return type->kind == cpp_decl::Type::TK_CV &&
+         type->cv_const &&
+         type->cv_volatile &&
+         unqualified &&
+         unqualified->kind == cpp_decl::Type::TK_FUNDAMENTAL;
+}
+
 bool is_builtin_type_keyword_spelling(const std::string & text)
 {
   return text == "bool" ||
@@ -6303,8 +6320,9 @@ std::string template_witness_source_binding_arg_text(
       return witness_lookup_text_for_type_argument(ctx, arg.type);
     }
     const std::string source_text = semantic_utils::trim_space(explicit_text);
+    std::string semantic_text;
     if(arg.kind == template_model::TemplateArgument::TA_TYPE && arg.type) {
-      const std::string semantic_text =
+      semantic_text =
           semantic_utils::trim_space(witness_lookup_text_for_type_argument(ctx,
                                                                            arg.type));
       if(source_text_drops_array_cv(arg.type, source_text, semantic_text)) {
@@ -6318,12 +6336,18 @@ std::string template_witness_source_binding_arg_text(
                                                     resolved_typedef_text)) {
       return resolved_typedef_text;
     }
+    if(explicit_type_argument_requires_structured_spelling(arg.type) &&
+       !semantic_text.empty()) {
+      return normalize_witness_function_type_argument_text(arg.type,
+                                                          semantic_text);
+    }
     const std::string structured_text =
         witness_non_side_effect_named_type_text(arg.type, source_text);
     if(!structured_text.empty()) {
       return structured_text;
     }
-    return source_text;
+    return normalize_witness_function_type_argument_text(arg.type,
+                                                        source_text);
   }
   return template_witness_argument_text(ctx, arg);
 }
@@ -6760,6 +6784,15 @@ void append_template_witness_source_bindings(
     }
     binding.type_like = template_witness_argument_is_type_like(
         arguments[arg_index]);
+    binding.function_type_argument =
+        arguments[arg_index].kind == template_model::TemplateArgument::TA_TYPE &&
+        arguments[arg_index].type &&
+        cpp_decl::strip_top_level_cv(arguments[arg_index].type)->kind ==
+            cpp_decl::Type::TK_FUNCTION;
+    binding.structured_type_spelling =
+        arguments[arg_index].kind == template_model::TemplateArgument::TA_TYPE &&
+        explicit_type_argument_requires_structured_spelling(
+            arguments[arg_index].type);
     if(explicit_index < explicit_argument_texts.size()) {
       binding.source =
           template_witness_explicit_binding_source(ctx,

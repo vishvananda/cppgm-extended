@@ -179,6 +179,8 @@ struct TemplateWitnessSourceBinding
   std::string arg;
   std::string source;
   bool type_like = false;
+  bool function_type_argument = false;
+  bool structured_type_spelling = false;
   bool preserve_qualified_member = false;
   bool pack_binding = false;
   bool pack_aggregate = false;
