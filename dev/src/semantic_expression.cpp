@@ -2663,7 +2663,7 @@ bool try_overloaded_unary_operator(SemanticContext & ctx,
       operator_functions,
       operator_templates);
   semantic_overload::CallAnalysisHints hints;
-  hints.use_location = ctx.source_location_for_node(node.children[0]);
+  hints.use_location = ctx.source_location_for_node_token(node);
   hints.adl_candidates_precollected = true;
   const auto handle_unresolved_operator =
       [&](const logic_error & error) -> bool
@@ -4723,6 +4723,7 @@ ExprInfo analyze_unevaluated_sizeof_operand(SemanticContext & ctx,
                                             Scope & scope,
                                             const CppAstNode & expr_node)
 {
+  const ScopedUnevaluatedOperand unevaluated_operand;
   if(expr_node.kind == CppAstKind::parenthesized_expression &&
      expr_node.children.size() == 1) {
     return analyze_unevaluated_sizeof_operand(ctx, scope, expr_node.children[0]);
@@ -5797,12 +5798,16 @@ ExprInfo analyze_expression_for_target(SemanticContext & ctx,
                                                                             expr);
   ExprInfo converted;
   ConversionRank rank = CR_BAD;
+  ArgumentConversionOptions conversion_options =
+      semantic_policy::no_output_materialization_argument_conversion();
+  conversion_options.source_use_location =
+      ctx.source_location_for_node_syntax_start(node);
   if(ctx.try_argument_conversion(scope,
                                  target,
                                  expr,
                                  converted,
                                  rank,
-                                 semantic_policy::no_output_materialization_argument_conversion())) {
+                                 conversion_options)) {
     return converted;
   }
   return expr;
@@ -7267,6 +7272,8 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
     return string();
   };
   const string operator_name = overloaded_operator_name();
+  const bool require_rhs_for_shift_overload =
+      operator_name == "operator<<" || operator_name == "operator>>";
   ExprInfo lhs = ctx.analyze_expression(scope, node.children[0]);
   const OverloadableOperandInfo lhs_operand =
       classify_overloadable_operator_operand(ctx, lhs.type);
@@ -7447,7 +7454,9 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
             operator_functions,
             operator_templates);
         semantic_overload::CallAnalysisHints hints;
-        hints.use_location = ctx.source_location_for_node(node.children[1]);
+        hints.use_location = require_rhs_for_shift_overload ?
+            ctx.source_location_for_node(node.children[1]) :
+            ctx.source_location_for_node_token(node);
         hints.explicit_member_base = &lhs;
         hints.explicit_member_arg_prefix = 1;
         hints.explicit_member_declared_in = member_declared_in;
@@ -7474,9 +7483,6 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           return handle_unresolved_operator(error);
         }
       };
-
-  const bool require_rhs_for_shift_overload =
-      operator_name == "operator<<" || operator_name == "operator>>";
 
   ExprInfo overloaded_result;
 
@@ -8426,7 +8432,12 @@ ExprInfo analyze_subscript_expression(SemanticContext & ctx,
         call.kind = CppAstKind::call_expression;
         call.children.push_back(member_callee);
         call.children.push_back(arguments);
-        return ctx.analyze_call_expression(scope, call);
+        semantic_overload::CallAnalysisHints hints;
+        hints.use_location = ctx.source_location_for_node_token(node);
+        return ctx.analyze_call_expression(
+            scope,
+            call,
+            semantic_overload::CallAnalysisOptions(true, &hints));
       }
     }
   }
@@ -9549,7 +9560,7 @@ ExprInfo analyze_assignment_expression(SemanticContext & ctx,
             operator_templates);
 
         semantic_overload::CallAnalysisHints hints;
-        hints.use_location = ctx.source_location_for_node(node.children[1]);
+        hints.use_location = ctx.source_location_for_node_token(node);
         hints.adl_candidates_precollected = true;
         hints.args.push_back(&lhs);
         hints.args.push_back(&rhs_expr);

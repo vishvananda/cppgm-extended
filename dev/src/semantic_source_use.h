@@ -23,6 +23,7 @@ enum class SourceUseRole
   StaticMemberDefinitionOwner,
   ValueUse,
   CallUse,
+  DeclvalCall,
 };
 
 enum class SourceUseOwnership
@@ -128,6 +129,15 @@ struct SemanticSourceUse
   SourceUseKind kind = SourceUseKind::FunctionCall;
   SourceUseRole role = SourceUseRole::Unknown;
   SourceUseOwnership ownership = SourceUseOwnership::Direct;
+  // One-based traversal order in the translation unit's post-token stream.
+  // Zero means that the semantic producer does not own a source span.
+  std::size_t source_traversal_order = 0;
+  // Stable semantic identity used only to order a member call before the
+  // class-template owner named by the same source occurrence.
+  const void * semantic_class_template_identity = nullptr;
+  std::string semantic_class_specialization_key;
+  const void * semantic_owner_class_template_identity = nullptr;
+  std::string semantic_owner_class_specialization_key;
 
   std::string location;
   SourceAnchor spelling_anchor;
@@ -493,12 +503,18 @@ inline void record_source_use(SemanticSourceUseTable & table,
   if(use.kind == SourceUseKind::FunctionCall) {
     for(std::size_t i = 0; i < table.uses.size(); ++i) {
       if(function_call_equivalent_ignoring_binding_spacing(table.uses[i], use)) {
+        if(table.uses[i].source_traversal_order == 0) {
+          table.uses[i].source_traversal_order = use.source_traversal_order;
+        }
         return;
       }
     }
   }
   for(std::size_t i = 0; i < table.uses.size(); ++i) {
     if(table.uses[i] == use) {
+      if(table.uses[i].source_traversal_order == 0) {
+        table.uses[i].source_traversal_order = use.source_traversal_order;
+      }
       return;
     }
   }

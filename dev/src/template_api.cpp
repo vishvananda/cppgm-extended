@@ -352,6 +352,7 @@ ClassSpecializationSelection to_api_class_specialization_selection_impl(
   out.argument_syntaxes = selection.argument_syntaxes;
   out.pack_sizes = selection.pack_sizes;
   out.selection_key = selection.selection_key;
+  out.value_dependencies = selection.value_dependencies;
   out.kind = to_api_match_kind(selection.kind);
   out.reentrant_primary = selection.reentrant_primary;
   return out;
@@ -491,6 +492,7 @@ bool template_argument_contains_named_function_local_type_for_witness(
 }
 
 const semantic_model::ClassInfo * class_witness_owner(
+    SemanticContext & ctx,
     const semantic_model::ClassInfo & info)
 {
   cpp_decl::TypePtr type = cpp_decl::strip_top_level_cv(info.type);
@@ -501,6 +503,9 @@ const semantic_model::ClassInfo * class_witness_owner(
     if(owner_type && owner_type->kind == cpp_decl::Type::TK_NAMED) {
       semantic_model::ClassInfo * owner =
           owner_type->named_rare().named_class_info;
+      if(!owner) {
+        owner = ctx.class_info_for_type(owner_type);
+      }
       if(owner && owner != &info) {
         return owner;
       }
@@ -514,6 +519,163 @@ const semantic_model::ClassInfo * class_witness_owner(
     }
   }
   return nullptr;
+}
+
+std::string conversion_result_template_name(const CppAstNode & node)
+{
+  if(const cpp_decl::TemplateIdSyntax * syntax =
+         cppast_template_id_syntax(node)) {
+    if(!syntax->name.name.empty()) {
+      return syntax->name.name;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const std::string name = conversion_result_template_name(node.children[i]);
+    if(!name.empty()) {
+      return name;
+    }
+  }
+  return std::string();
+}
+
+std::string conversion_result_pattern_template_name(
+    const semantic_model::FunctionBinding & binding)
+{
+  if(!binding.source_template) {
+    return std::string();
+  }
+  cpp_decl::TypePtr pattern = cpp_decl::strip_top_level_cv(
+      binding.source_template->type_pattern);
+  if(pattern && pattern->kind == cpp_decl::Type::TK_FUNCTION) {
+    pattern = pattern->inner;
+  }
+  if(pattern &&
+     (pattern->kind == cpp_decl::Type::TK_POINTER ||
+      pattern->kind == cpp_decl::Type::TK_LVALUE_REFERENCE ||
+      pattern->kind == cpp_decl::Type::TK_RVALUE_REFERENCE)) {
+    pattern = pattern->inner;
+  }
+  pattern = cpp_decl::strip_top_level_cv(pattern);
+  void * class_template_identity = nullptr;
+  std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax> arguments;
+  if(pattern &&
+     cpp_decl::named_type_dependent_class_template(
+         pattern,
+         class_template_identity,
+         arguments) &&
+     class_template_identity) {
+    const semantic_model::ClassTemplateDecl * decl =
+        static_cast<const semantic_model::ClassTemplateDecl *>(
+            class_template_identity);
+    if(decl && !decl->name.empty()) {
+      return semantic_utils::unqualified_member_name(decl->name);
+    }
+  }
+  return conversion_result_template_name(
+      binding.source_template->result_type_pattern);
+}
+
+std::string conversion_result_base_type_text(
+    SemanticContext & ctx,
+    const cpp_decl::TypePtr & type)
+{
+  cpp_decl::TypePtr base = cpp_decl::strip_top_level_cv(type);
+  if(!base) {
+    return std::string();
+  }
+  if(base->kind == cpp_decl::Type::TK_NAMED) {
+    if(semantic_model::ClassInfo * info = ctx.class_info_for_type(base)) {
+      return class_witness_output_qualified_name(ctx, *info);
+    }
+    return semantic_utils::strip_elaborated_type_prefix(
+        cpp_decl::named_type_display_text(base));
+  }
+  return cpp_decl::template_argument_type_text(base);
+}
+
+std::string conversion_operator_log_entity(
+    SemanticContext & ctx,
+    const semantic_model::FunctionBinding & binding,
+    const std::string & owner)
+{
+  cpp_decl::TypePtr function_type = cpp_decl::strip_top_level_cv(
+      binding.declared_type ? binding.declared_type : binding.type);
+  if(!binding.is_conversion_operator ||
+     !function_type ||
+     function_type->kind != cpp_decl::Type::TK_FUNCTION ||
+     !function_type->inner ||
+     owner.empty()) {
+    return std::string();
+  }
+
+  cpp_decl::TypePtr target = function_type->inner;
+  enum class Indirection { None, Pointer, LvalueReference, RvalueReference };
+  Indirection indirection = Indirection::None;
+  if(target->kind == cpp_decl::Type::TK_POINTER) {
+    indirection = Indirection::Pointer;
+    target = target->inner;
+  } else if(target->kind == cpp_decl::Type::TK_LVALUE_REFERENCE) {
+    indirection = Indirection::LvalueReference;
+    target = target->inner;
+  } else if(target->kind == cpp_decl::Type::TK_RVALUE_REFERENCE) {
+    indirection = Indirection::RvalueReference;
+    target = target->inner;
+  }
+
+  std::string cv;
+  if(target && target->kind == cpp_decl::Type::TK_CV) {
+    if(target->cv_const) {
+      cv = "const";
+    }
+    if(target->cv_volatile) {
+      if(!cv.empty()) {
+        cv += " ";
+      }
+      cv += "volatile";
+    }
+    target = target->inner;
+  }
+
+  std::string target_text;
+  if(binding.source_template) {
+    target_text = conversion_result_pattern_template_name(binding);
+  }
+  if(target_text.empty()) {
+    target_text = conversion_result_base_type_text(ctx, target);
+  }
+  // Clang names a by-value conversion function by the converted class
+  // template, alias target, or deduced class name, not by concrete class
+  // specialization arguments.  Reference and pointer conversion names retain
+  // their concrete target spelling, so keep those on the full typed path.
+  if(indirection == Indirection::None) {
+    target_text = semantic_utils::strip_trailing_top_level_template_arguments(
+        semantic_utils::unqualified_member_name(target_text));
+  }
+  target_text = semantic_utils::strip_elaborated_type_prefix(target_text);
+  if(target_text.empty()) {
+    return std::string();
+  }
+
+  std::string suffix;
+  switch(indirection) {
+  case Indirection::Pointer:
+    suffix = " *";
+    break;
+  case Indirection::LvalueReference:
+    suffix = " &";
+    break;
+  case Indirection::RvalueReference:
+    suffix = " &&";
+    break;
+  case Indirection::None:
+    break;
+  }
+
+  if(indirection == Indirection::Pointer && !cv.empty()) {
+    return cv + " " + owner + "::operator " + target_text + suffix;
+  }
+  return owner + "::" + (cv.empty() ? std::string() : cv + " ") +
+      "operator " + target_text + suffix;
 }
 
 std::string binding_log_entity(SemanticContext & ctx,
@@ -534,6 +696,13 @@ std::string binding_log_entity(SemanticContext & ctx,
             class_witness_output_qualified_name(
                 ctx,
                 *binding->owner_class);
+    if(binding->is_conversion_operator) {
+      const std::string conversion_entity =
+          conversion_operator_log_entity(ctx, *binding, owner);
+      if(!conversion_entity.empty()) {
+        return conversion_entity;
+      }
+    }
     return owner + "::" + simple_name;
   }
   return semantic_model::function_binding_qualified_name_for_symbol(*binding);
@@ -709,7 +878,7 @@ std::string class_log_entity(SemanticContext & ctx,
   } else if(class_is_named_function_local_for_witness(info)) {
     entity = info->name;
   } else {
-    entity = class_witness_output_qualified_name(ctx, *info);
+    entity = class_witness_output_qualified_name_for_lifecycle(ctx, *info);
   }
   return entity;
 }
@@ -2873,6 +3042,63 @@ std::string alias_template_witness_entity(
   return alias_template_log_entity(decl);
 }
 
+std::string alias_template_witness_source_entity(
+    SemanticContext & ctx,
+    const semantic_model::AliasTemplateDecl * decl,
+    const semantic_model::ClassTemplateDecl * lexical_source_class_template,
+    const std::vector<cpp_decl::TemplateArgumentSyntax> *
+        lexical_source_class_arguments,
+    const semantic_model::ClassInfo * selected_concrete_owner)
+{
+  if(!decl) {
+    return std::string();
+  }
+  if(selected_concrete_owner && !lexical_source_class_template) {
+    return class_witness_output_qualified_name(ctx, *selected_concrete_owner) +
+        "::" + decl->name;
+  }
+  if(!lexical_source_class_template) {
+    return alias_template_log_entity(decl);
+  }
+
+  std::ostringstream owner;
+  owner << class_template_witness_qualified_name(
+      ctx, *lexical_source_class_template);
+  if(lexical_source_class_arguments) {
+    const std::vector<template_model::TemplateParameterInfo> * parameters =
+        nullptr;
+    for(std::size_t i = 0;
+        i < lexical_source_class_template->partial_specializations.size();
+        ++i) {
+      const semantic_model::PartialClassTemplateSpecializationDecl & partial =
+          lexical_source_class_template->partial_specializations[i];
+      if(&partial.arg_syntaxes == lexical_source_class_arguments) {
+        parameters = &partial.parameters;
+        break;
+      }
+    }
+    owner << "<";
+    for(std::size_t i = 0;
+        i < lexical_source_class_arguments->size();
+        ++i) {
+      if(i != 0) {
+        owner << ", ";
+      }
+      std::string argument =
+          callsemantic_internal::render_template_argument_syntax(
+              (*lexical_source_class_arguments)[i]);
+      if(parameters) {
+        argument = canonicalize_template_parameter_log_text(
+            *parameters, argument);
+      }
+      owner << argument;
+    }
+    owner << ">";
+  }
+  owner << "::" << decl->name;
+  return owner.str();
+}
+
 TemplateFunctionDefinitionClosureState function_definition_closure_state(
     SemanticContext & ctx,
     const semantic_model::FunctionBinding * binding)
@@ -3590,13 +3816,16 @@ std::string class_witness_output_qualified_name_impl(
   if(class_is_named_function_local_for_witness(&info)) {
     return info.name;
   }
-  const semantic_model::ClassInfo * owner = class_witness_owner(info);
+  const semantic_model::ClassInfo * owner = class_witness_owner(ctx, info);
   if(!info.source_template &&
      !info.is_lambda_closure &&
      owner &&
      !info.name.empty()) {
     return normalize_witness_angle_spacing(
-        class_witness_output_qualified_name_impl(ctx, *owner, false) +
+        class_witness_output_qualified_name_impl(
+            ctx,
+            *owner,
+            allow_explicit_default_equivalent) +
         "::" + info.name);
   }
   if(!info.source_template &&
@@ -3625,7 +3854,10 @@ std::string class_witness_output_qualified_name_impl(
     return normalize_witness_angle_spacing(
         semantic_model::class_output_qualified_name(info));
   }
-  if(!visible_count_override && info.source_template && info.type) {
+  if(!visible_count_override &&
+     !allow_explicit_default_equivalent &&
+     info.source_template &&
+     info.type) {
     if(std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
            mangle_info =
                cpp_decl::named_type_class_template_specialization_mangle_info_const(
@@ -3656,7 +3888,8 @@ std::string class_witness_output_qualified_name_impl(
               info.name);
   bool rebuild_from_structured_arguments =
       !structured_template_name.empty() &&
-      !info.instantiation_arguments.empty();
+      (!info.instantiation_arguments.empty() ||
+       (info.source_template && owner && !info.dependent_instantiation));
   for(std::size_t i = 0;
       !rebuild_from_structured_arguments &&
       i < visible_count &&
@@ -3721,7 +3954,10 @@ std::string class_witness_output_qualified_name_impl(
           visible_count);
   const std::string qualified_name =
       owner ?
-          class_witness_output_qualified_name_impl(ctx, *owner, false) +
+          class_witness_output_qualified_name_impl(
+              ctx,
+              *owner,
+              allow_explicit_default_equivalent) +
               "::" + specialization_name :
           (info.enclosing_scope ?
                class_template_witness_scope_qualified_name(
@@ -3796,9 +4032,43 @@ std::string default_elided_type_argument_text(
     }
     return normalize_witness_angle_spacing(text);
   }
+  if(type &&
+     (type->kind == cpp_decl::Type::TK_LVALUE_REFERENCE ||
+      type->kind == cpp_decl::Type::TK_RVALUE_REFERENCE) &&
+     type->inner) {
+    cpp_decl::TypePtr referenced = cpp_decl::strip_top_level_cv(type->inner);
+    if(!(referenced &&
+         referenced->kind == cpp_decl::Type::TK_NAMED &&
+         referenced->named_rare().named_member_owner_type &&
+         !cpp_decl::named_type_class_template_specialization_mangle_info_const(
+              referenced))) {
+      referenced.reset();
+    }
+    if(referenced) {
+      return normalize_witness_angle_spacing(
+          default_elided_type_argument_text(ctx, type->inner) +
+          (type->kind == cpp_decl::Type::TK_LVALUE_REFERENCE ? " &" : " &&"));
+    }
+  }
   const std::string enum_text = witness_text_for_qualified_enum_type(type);
   if(!enum_text.empty()) {
     return enum_text;
+  }
+  cpp_decl::TypePtr named_type = cpp_decl::strip_top_level_cv(type);
+  if(named_type &&
+     named_type->kind == cpp_decl::Type::TK_NAMED &&
+     named_type->named_rare().named_member_owner_type &&
+     !named_type->named_rare().named_member_name.empty() &&
+     !cpp_decl::named_type_class_template_specialization_mangle_info_const(
+          named_type)) {
+    cpp_decl::TypePtr owner_type = cpp_decl::strip_top_level_cv(
+        named_type->named_rare().named_member_owner_type);
+    if(semantic_model::ClassInfo * owner =
+           ctx.class_info_for_type(owner_type)) {
+      return normalize_witness_angle_spacing(
+          class_witness_output_qualified_name(ctx, *owner) + "::" +
+          named_type->named_rare().named_member_name);
+    }
   }
   if(std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
          mangle_info =
@@ -4267,6 +4537,16 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
       request.origin ==
           TemplateMemberValueInstantiationOrigin::RetainedDependency;
   transition.retained_dependency = retained_dependency;
+  if(retained_dependency &&
+     binding.variable_template_instantiation &&
+     binding.variable_template_instantiation->source_template) {
+    // A retained member-variable-template dependency is still an acquisition
+    // of its VariableTemplateDecl.  Keep it on the same lifecycle identity and
+    // public entity as an ordinary variable-template instantiation instead of
+    // manufacturing a second specialized static-member outcome.
+    transition.variable_template =
+        binding.variable_template_instantiation->source_template;
+  }
   const bool trace_enabled = parser_trace::enabled("template.resolve");
   const auto trace_skip =
       [&](const char * reason) -> void
@@ -4316,7 +4596,8 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
     trace_skip("explicit-specialization");
     return transition;
   }
-  if(!class_info_has_template_instantiation_key(*binding.owner_class)) {
+  if(!class_info_has_template_instantiation_key(*binding.owner_class) &&
+     !enclosing_template_instantiation_owner(binding.owner_class)) {
     trace_skip("no-template-key");
     return transition;
   }
@@ -4344,7 +4625,8 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
       binding.witness_static_member_definition_replayed = true;
     }
   };
-  if(template_witness_source_type_lookup_active() &&
+  if(!retained_dependency &&
+     template_witness_source_type_lookup_active() &&
      template_witness_qualified_member_type_lookup_active()) {
     template_model::TemplateValueDependency dependency;
     dependency.entity =
@@ -4360,7 +4642,7 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
           witness_visible_class_template_argument_count(
               ctx,
               *binding.owner_class,
-              false);
+              true);
       dependency.has_visible_owner_argument_count = true;
     }
     dependency.entity_has_template_identity =
@@ -4385,7 +4667,8 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
     trace_skip("empty-entity-or-decl");
     return transition;
   }
-  if(source_type_lookup_is_collecting_owner_template_members(ctx, binding)) {
+  if(!retained_dependency &&
+     source_type_lookup_is_collecting_owner_template_members(ctx, binding)) {
     trace_skip("source-type-owner-collection");
     return transition;
   }
@@ -4402,7 +4685,7 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
           witness_visible_class_template_argument_count(
               ctx,
               *binding.owner_class,
-              false);
+              true);
       dependency.has_visible_owner_argument_count = true;
     }
     dependency.entity_has_template_identity =
@@ -5216,6 +5499,9 @@ std::string witness_argument_text_for_binding(
     if((cpp_decl::is_reference_type(arg.type) &&
         !ctx.type_depends_on_template_parameter(arg.type)) ||
        type_contains_default_elided_template_argument(ctx, arg.type, 0) ||
+       template_argument_contains_named_function_local_type_for_witness(
+           ctx,
+           arg) ||
        arg.text.empty() ||
        witness_argument_text_should_prefer_structured(structured_text,
                                                       arg.text)) {
@@ -5724,6 +6010,11 @@ std::string template_witness_argument_text(
       return normalize_witness_function_type_argument_text(arg.type,
                                                           structured_text);
     }
+    if(template_argument_contains_named_function_local_type_for_witness(ctx,
+                                                                        arg)) {
+      return normalize_witness_function_type_argument_text(arg.type,
+                                                          structured_text);
+    }
     if(arg.text.empty() ||
        witness_argument_text_should_prefer_structured(structured_text,
                                                       arg.text)) {
@@ -5959,6 +6250,14 @@ std::string template_witness_source_binding_arg_text(
 {
   if(arg.kind == template_model::TemplateArgument::TA_VALUE) {
     return template_witness_value_binding_arg_text(ctx, arg, explicit_text);
+  }
+  if((arg.kind == template_model::TemplateArgument::TA_CLASS_TEMPLATE ||
+      arg.kind == template_model::TemplateArgument::TA_ALIAS_TEMPLATE) &&
+     arg.source_syntax) {
+    // Clang's TemplateArgument::print renders a semantic TemplateName here.
+    // In particular, the written `template` disambiguator is parsing syntax,
+    // not part of the public template-name spelling.
+    return template_witness_semantic_argument_text(ctx, arg);
   }
   if(has_explicit_text &&
      !template_type_parameter_feeds_non_type_parameter(parameters, parameter_index)) {
@@ -6427,6 +6726,232 @@ void append_template_witness_source_bindings(
     }
     out.push_back(binding);
     ++arg_index;
+  }
+}
+
+namespace {
+
+std::map<std::string, std::string>
+injected_class_type_name_replacements(
+    SemanticContext & ctx,
+    const semantic_model::Scope * source_scope,
+    const semantic_model::ClassTemplateDecl *
+        lexical_source_class_template,
+    const std::vector<cpp_decl::TemplateArgumentSyntax> *
+        lexical_source_class_arguments)
+{
+  std::map<std::string, std::string> out;
+  if(lexical_source_class_template &&
+     !lexical_source_class_template->name.empty()) {
+    const std::string & name = lexical_source_class_template->name;
+    bool shadowed = false;
+    for(const semantic_model::Scope * lookup = source_scope;
+        lookup;
+        lookup = lookup->parent) {
+      semantic_model::Scope::NamedTypeMap::const_iterator named_type =
+          lookup->named_types.find(name);
+      if(named_type != lookup->named_types.end()) {
+        const semantic_model::ClassInfo * info =
+            ctx.class_info_for_type(named_type->second);
+        shadowed = !info ||
+            info->source_template != lexical_source_class_template;
+        break;
+      }
+      const auto class_template = lookup->class_templates.find(name);
+      if(class_template != lookup->class_templates.end()) {
+        shadowed = class_template->second != lexical_source_class_template;
+        break;
+      }
+    }
+    if(!shadowed) {
+      std::ostringstream text;
+      text << name << "<";
+      if(lexical_source_class_arguments) {
+        for(std::size_t i = 0;
+            i < lexical_source_class_arguments->size();
+            ++i) {
+          if(i != 0) {
+            text << ", ";
+          }
+          text << callsemantic_internal::render_template_argument_syntax(
+              (*lexical_source_class_arguments)[i]);
+        }
+      } else {
+        const std::vector<template_model::TemplateParameterInfo> & parameters =
+            lexical_source_class_template->parameters;
+        for(std::size_t i = 0; i < parameters.size(); ++i) {
+          if(i != 0) {
+            text << ", ";
+          }
+          const template_model::TemplateParameterInfo & parameter =
+              parameters[i];
+          if(!parameter.name.empty()) {
+            text << parameter.name;
+          } else if(!parameter.placeholder_key.empty()) {
+            text << parameter.placeholder_key;
+          } else {
+            text << "template-parameter-0-" << i;
+          }
+          if(parameter.parameter_pack) {
+            text << "...";
+          }
+        }
+      }
+      text << ">";
+      out[name] = text.str();
+    }
+  }
+
+  std::set<const semantic_model::ClassInfo *> seen;
+  for(const semantic_model::Scope * current = source_scope;
+      current;
+      current = current->parent) {
+    const semantic_model::ClassInfo * info = current->class_info;
+    if(!info ||
+       !seen.insert(info).second ||
+       !info->source_template ||
+       info->source_template->parameters.empty()) {
+      continue;
+    }
+    const std::string name = !info->source_template->name.empty() ?
+        info->source_template->name : info->name;
+    if(name.empty() || out.count(name) != 0) {
+      continue;
+    }
+
+    bool shadowed = false;
+    for(const semantic_model::Scope * lookup = source_scope;
+        lookup;
+        lookup = lookup->parent) {
+      semantic_model::Scope::NamedTypeMap::const_iterator found =
+          lookup->named_types.find(name);
+      if(found != lookup->named_types.end()) {
+        shadowed = ctx.class_info_for_type(found->second) != info;
+        break;
+      }
+      if(lookup == current) {
+        break;
+      }
+    }
+    if(shadowed) {
+      continue;
+    }
+
+    std::ostringstream text;
+    text << name << "<";
+    const std::vector<template_model::TemplateParameterInfo> & parameters =
+        info->source_template->parameters;
+    for(std::size_t i = 0; i < parameters.size(); ++i) {
+      if(i != 0) {
+        text << ", ";
+      }
+      const template_model::TemplateParameterInfo & parameter = parameters[i];
+      if(!parameter.name.empty()) {
+        text << parameter.name;
+      } else if(!parameter.placeholder_key.empty()) {
+        text << parameter.placeholder_key;
+      } else {
+        text << "template-parameter-0-" << i;
+      }
+      if(parameter.parameter_pack) {
+        text << "...";
+      }
+    }
+    text << ">";
+    out[name] = text.str();
+  }
+  return out;
+}
+
+std::string template_witness_semantic_argument_text_with_replacements(
+    SemanticContext & ctx,
+    const template_model::TemplateArgument & argument,
+    const std::map<std::string, std::string> & type_name_replacements,
+    bool preserve_template_name_source_disambiguator)
+{
+  std::string text;
+  if(argument.source_syntax) {
+    if(argument.kind == template_model::TemplateArgument::TA_VALUE &&
+       argument.source_syntax->expression) {
+      text = callsemantic_internal::render_template_argument_expression(
+          *argument.source_syntax->expression,
+          type_name_replacements);
+    } else {
+      text = callsemantic_internal::render_template_argument_syntax(
+          *argument.source_syntax,
+          type_name_replacements,
+          preserve_template_name_source_disambiguator ||
+              (argument.kind !=
+                   template_model::TemplateArgument::TA_CLASS_TEMPLATE &&
+               argument.kind !=
+                   template_model::TemplateArgument::TA_ALIAS_TEMPLATE));
+    }
+  } else if(argument.kind == template_model::TemplateArgument::TA_VALUE &&
+            argument.expression) {
+    text = callsemantic_internal::render_template_argument_expression(
+        *argument.expression);
+  } else {
+    text = template_witness_argument_text(ctx, argument);
+  }
+  text = semantic_utils::trim_space(text);
+  if(argument.source_syntax &&
+     argument.source_syntax->pack_expansion &&
+     (text.size() < 3 || text.compare(text.size() - 3, 3, "...") != 0)) {
+    text += "...";
+  }
+  return text;
+}
+
+}  // namespace
+
+std::string template_witness_semantic_argument_text(
+    SemanticContext & ctx,
+    const template_model::TemplateArgument & argument,
+    const semantic_model::Scope * source_scope)
+{
+  const std::map<std::string, std::string> type_name_replacements =
+      injected_class_type_name_replacements(ctx,
+                                            source_scope,
+                                            nullptr,
+                                            nullptr);
+  return template_witness_semantic_argument_text_with_replacements(
+      ctx, argument, type_name_replacements, false);
+}
+
+void append_alias_template_witness_source_bindings(
+    SemanticContext & ctx,
+    std::vector<TemplateWitnessSourceBinding> & out,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::vector<template_model::TemplateArgument> &
+        source_occurrence_arguments,
+    const semantic_model::Scope & source_scope,
+    const semantic_model::ClassTemplateDecl * lexical_source_class_template,
+    const std::vector<cpp_decl::TemplateArgumentSyntax> *
+        lexical_source_class_arguments)
+{
+  const std::map<std::string, std::string> type_name_replacements =
+      injected_class_type_name_replacements(
+          ctx,
+          &source_scope,
+          lexical_source_class_template,
+          lexical_source_class_arguments);
+  const std::size_t count =
+      std::min(parameters.size(), source_occurrence_arguments.size());
+  for(std::size_t i = 0; i < count; ++i) {
+    TemplateWitnessSourceBinding binding;
+    binding.param = template_witness_binding_param_name(parameters[i], i);
+    binding.type_like = template_witness_argument_is_type_like(
+        source_occurrence_arguments[i]);
+    binding.function_pointer_parameter =
+        template_parameter_is_function_pointer_value(parameters[i]);
+    binding.pack_binding = parameters[i].parameter_pack;
+    binding.arg = template_witness_semantic_argument_text_with_replacements(
+        ctx,
+        source_occurrence_arguments[i],
+        type_name_replacements,
+        true);
+    binding.source = "explicit";
+    out.push_back(binding);
   }
 }
 

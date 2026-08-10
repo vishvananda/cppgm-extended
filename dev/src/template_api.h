@@ -101,6 +101,9 @@ struct ClassSpecializationSelection
   const std::vector<cpp_decl::TemplateArgumentSyntax> * argument_syntaxes = nullptr;
   std::map<std::string, std::size_t> pack_sizes;
   std::string selection_key;
+  // Value dependencies that contributed to this selected specialization.
+  // Instantiation retains them until a semantic consumer reads its value.
+  std::vector<template_model::TemplateValueDependency> value_dependencies;
   MatchKind kind = MS_PRIMARY;
   bool reentrant_primary = false;
 };
@@ -569,6 +572,13 @@ std::string function_binding_template_trace_key(
     const semantic_model::FunctionBinding * binding);
 std::string alias_template_witness_entity(
     const semantic_model::AliasTemplateDecl * decl);
+std::string alias_template_witness_source_entity(
+    SemanticContext & ctx,
+    const semantic_model::AliasTemplateDecl * decl,
+    const semantic_model::ClassTemplateDecl * lexical_source_class_template,
+    const std::vector<cpp_decl::TemplateArgumentSyntax> *
+        lexical_source_class_arguments,
+    const semantic_model::ClassInfo * selected_concrete_owner = nullptr);
 
 struct TemplateFunctionDefinitionClosureState
 {
@@ -621,6 +631,9 @@ ScopedTemplateWitnessEntryContext maybe_enter_value_binding_closure_context(
     SemanticContext & ctx,
     TemplateClosureReason reason,
     const semantic_model::ValueBinding * binding);
+bool source_location_is_inside_recorded_template_body(
+    const TemplateWitnessContext & ctx,
+    const std::string & location);
 
 void note_output_tracked_class_instantiation_if_needed(
     SemanticContext & ctx,
@@ -698,6 +711,11 @@ std::string class_witness_output_qualified_name(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info);
 
+std::size_t witness_visible_class_template_argument_count(
+    SemanticContext & ctx,
+    const semantic_model::ClassInfo & info,
+    bool allow_explicit_default_equivalent);
+
 std::string class_template_witness_qualified_name(
     SemanticContext & ctx,
     const semantic_model::ClassTemplateDecl & decl);
@@ -730,6 +748,29 @@ void append_template_witness_source_bindings(
     const std::string & explicit_source,
     const std::string & defaulted_source,
     bool treat_explicit_defaults_as_defaulted = true);
+
+// Print the structured spelling carried by a resolved source-occurrence
+// argument.  This follows template-argument kind and parsed AST structure; it
+// does not read source text or token spans.
+std::string template_witness_semantic_argument_text(
+    SemanticContext & ctx,
+    const template_model::TemplateArgument & argument,
+    const semantic_model::Scope * source_scope = nullptr);
+
+// Alias TypeLocs expose the semantic arguments written at the occurrence,
+// before default insertion or pack flattening.  Keep their public binding
+// contract separate from instantiation-oriented binding construction.
+void append_alias_template_witness_source_bindings(
+    SemanticContext & ctx,
+    std::vector<TemplateWitnessSourceBinding> & out,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::vector<template_model::TemplateArgument> &
+        source_occurrence_arguments,
+    const semantic_model::Scope & source_scope,
+    const semantic_model::ClassTemplateDecl *
+        lexical_source_class_template = nullptr,
+    const std::vector<cpp_decl::TemplateArgumentSyntax> *
+        lexical_source_class_arguments = nullptr);
 
 namespace binding {
 

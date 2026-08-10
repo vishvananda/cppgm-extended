@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <map>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -233,6 +234,20 @@ const CppAstNode * find_child_kind(const CppAstNode & node,
 MemberAccess default_access_for_class_kind(const std::string & class_kind);
 MemberAccess access_from_node(const CppAstNode & node);
 std::string describe_expression_for_diagnostic(const CppAstNode & node);
+std::string render_template_argument_expression(const CppAstNode & node);
+std::string render_template_argument_expression(
+    const CppAstNode & node,
+    const std::map<std::string, std::string> & type_name_replacements);
+std::string render_template_argument_type(const CppAstNode & node);
+std::string render_template_argument_syntax(
+    const cpp_decl::TemplateArgumentSyntax & syntax);
+std::string render_template_argument_syntax(
+    const cpp_decl::TemplateArgumentSyntax & syntax,
+    const std::map<std::string, std::string> & type_name_replacements);
+std::string render_template_argument_syntax(
+    const cpp_decl::TemplateArgumentSyntax & syntax,
+    const std::map<std::string, std::string> & type_name_replacements,
+    bool preserve_source_template_disambiguator);
 std::string describe_scope_bindings_for_diagnostic(const Scope & scope);
 void set_expr_metadata(DumpNode & node,
                        const TypePtr & type,

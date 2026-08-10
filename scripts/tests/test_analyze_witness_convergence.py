@@ -75,6 +75,68 @@ template-closure-events
             ["changed", "missing_expected", "unexpected_actual"],
         )
 
+    def test_lifecycle_classification_uses_normalized_fact_sets(self):
+        expected = MODULE.parse_witness(
+            """translation-unit
+template-closure-events
+  ensure-definition
+    entity make<int>
+  function-instantiation
+    entity make<int>
+"""
+        )
+        actual = MODULE.parse_witness(
+            """translation-unit
+template-closure-events
+  require-definition
+    entity make<int>
+  ensure-definition
+    entity make<int>
+  function-instantiation
+    entity make<int>
+  function-instantiation
+    entity make<int>
+"""
+        )
+        self.assertEqual(MODULE.classify_events(expected, actual), [])
+
+    def test_lifecycle_classification_warns_only_for_extra_demand(self):
+        expected = MODULE.parse_witness("translation-unit\n")
+        actual = MODULE.parse_witness(
+            """translation-unit
+template-closure-events
+  require-definition
+    entity extra<int>
+"""
+        )
+        occurrences = MODULE.classify_events(expected, actual)
+        self.assertEqual(len(occurrences), 1)
+        self.assertEqual(
+            occurrences[0]["classification"], "additional_definition_demand"
+        )
+        self.assertEqual(occurrences[0]["entity"], "extra<int>")
+
+    def test_lifecycle_classification_keeps_terminals_distinct(self):
+        expected = MODULE.parse_witness(
+            """translation-unit
+template-closure-events
+  class-instantiation
+    entity box<int>
+"""
+        )
+        actual = MODULE.parse_witness(
+            """translation-unit
+template-closure-events
+  variable-instantiation
+    entity box<int>::value
+"""
+        )
+        occurrences = MODULE.classify_events(expected, actual)
+        self.assertEqual(
+            [item["classification"] for item in occurrences],
+            ["missing_expected", "unexpected_actual"],
+        )
+
     def test_report_counts_mismatching_outputs_and_routes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -114,6 +176,28 @@ template-closure-events
             self.assertEqual(
                 provenance["semantic_routes"], ["alias.canonical_occurrence"]
             )
+
+    def test_report_counts_warning_only_output_as_matching(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tests = root / "pa19" / "tests" / "general"
+            tests.mkdir(parents=True)
+            (tests / "sample.ref.witness").write_text(
+                "translation-unit\n", encoding="utf-8"
+            )
+            (tests / "sample.my.witness").write_text(
+                """translation-unit
+template-closure-events
+  ensure-definition
+    entity extra<int>
+""",
+                encoding="utf-8",
+            )
+            report = MODULE.build_report(root, ("pa19",))
+            self.assertEqual(report["matching_outputs"], 1)
+            self.assertEqual(report["mismatching_outputs"], 0)
+            self.assertEqual(report["warning_outputs"], 1)
+            self.assertEqual(len(report["warnings"]), 1)
 
     def test_exact_materialization_candidates_are_compared_with_references(self):
         with tempfile.TemporaryDirectory() as directory:

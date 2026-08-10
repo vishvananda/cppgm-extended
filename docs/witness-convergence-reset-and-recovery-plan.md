@@ -25,9 +25,57 @@ complete, and inception remains forbidden until every final gate here passes.
   `/Users/vishvananda/llvm-project-template-metrics-20260416/build-clang-template-trace/bin/clang++`
 - Patched LLVM checkout: `59c5d9c...`
 
-Do not continue semantic implementation from the present dirty compiler tree.
-Preserve its evidence first, then reconstruct the useful changes on the clean
-control in small correctness-clean phases.
+The branch has advanced past the rejected experiment described below. The
+active uncommitted implementation and its evidence belong to the current
+work. Preserve them. Do not reset the worktree to `b03f2530d` or the clean
+control. Read `handoff.md` before editing; it records the current build,
+focused results, reference changes, known defects, and next steps. The
+following "Current decision" section remains as recovery history for the
+rejected typedef-deferral experiment.
+
+## Semantic-argument checkpoint, 2026-08-09
+
+The current Phase 3 slice is a promotable intermediate checkpoint, not Phase 3
+completion. It consolidates alias source-occurrence arguments and ownership,
+restores source traversal order and macro provenance, narrows class
+materialization admission, and repairs the direct-materialization constructor
+profile exposed by the broad gate.
+
+Correctness evidence from the Homebrew-Clang build in
+`obj/witness-recovery-alias-semantic-arguments-20260809`:
+
+- the original tracked strict manifest passes 1,305/1,305;
+- the expanded strict corpus passes 1,391/1,530, improving the preceding
+  1,386/1,530 checkpoint by five outputs with no new mismatch;
+- the canonical PA1-PA38 report passes 4,862/4,862;
+- the witness analyzer, matcher, normalization, and performance unit suites
+  pass 96/96;
+- the apparent PA22 direct-LowIR complaint is a harness artifact: the generated
+  `300-member-operator-template-active-owner.my.witness.lowir` is byte-identical
+  to its `.ref` output.
+
+The final expanded report is
+`/tmp/cppgm-recovery-final-strict-20260809.json`, SHA-256
+`ef8139da4804ce8963e74a55cbafff513665c86c4be51982813580a8512b03ee`.
+The preserved 1,305-reference manifest is
+`/tmp/cppgm-original-1305-refs.txt`, SHA-256
+`c4a6fa94406234ddfa02c568c04e3026afdb6a00d5eaa69e832e8fcedfb6b536`.
+
+Both required three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.87% | -1.24% | -4.39% | `/tmp/cppgm-alias-convergence-checkpoint-20260809.json` |
+| Class-materialization rolling baseline | -1.13% | -0.06% | -1.57% | `/tmp/cppgm-class-materialization-ownership-checkpoint-20260809.json` |
+
+The report SHA-256 values are respectively
+`7232cc723e00335f133b973813f6527ae6a02bdafb869986cde77d90d8146985`
+and
+`5177ae085a178c3c079b87752be704e7172ba998cdd250ba95f0349c7144ccf7`.
+The instruction and memory reductions permit this slice to become the next
+rolling checkpoint. The remaining 139 expanded mismatches, repeated alias
+completion scaffolding, and second source-pattern parameter analysis remain
+Phase 3 debt; inception is still forbidden.
 
 ## Current decision, 2026-08-09
 
@@ -106,6 +154,122 @@ use:
    `render_emit_templates_text`. Its public normalization changes a
    small set of generic type spellings. It does not recover alias arguments
    from source lines, token ranges, or `TemplateArgumentLoc` text.
+
+The direct JSON entry point is important here. `clang_witness_json_to_ref.py`
+calls `render_emit_templates_text` on the parsed document; it does not call
+`parse_emit_templates_text`. The source-scanning occurrence recovery,
+inline-namespace discovery, location repair, and binding inference in the
+latter function are therefore legacy text-import behavior, not part of the
+patched-Clang reference contract.
+
+The direct JSON renderer performs only these public transformations:
+
+- normalize location paths by converting separators, replacing a Homebrew or
+  other libc++ include prefix with `libc++/`, and removing the `paN/` prefix
+  before `tests/` or `course/`;
+- remove checkout paths embedded in local/lambda entity names while retaining
+  their line and column, and remove Clang's `__local_N` discriminator;
+- normalize a narrow group of type spellings: east-to-west `const`, integral
+  literal suffixes, spacing between pointer stars and pointer cv-qualifiers,
+  built-in spellings such as `unsigned int`, and five dependent member names
+  such as `T::value_type`;
+- collapse an exactly duplicated entity-owner prefix, remove a contradictory
+  `worse_conversion` drop when the same function declaration already has a
+  nonviability reason, and coalesce exactly identical raw source-event
+  objects; closure rows are sorted and coalesced by kind and normalized
+  entity because the compact projection omits their provenance.
+
+The first two groups are portability presentation. The narrow spelling group
+can change the exact reference text, but it cannot add an alias binding,
+choose a declaration, expand an injected class name, or change which source
+occurrence is visited. The final group requires separate source-use and
+closure policies. Exact raw source-event coalescing cannot merge two events
+that disagree semantically or only become equal after spelling normalization.
+Compact closure coalescing can merge provenance-distinct lifecycle demands,
+but that provenance remains available in raw JSON and debug witness output.
+
+The normalization audit found one concrete oracle defect in the supposedly
+narrow spelling group. `normalize_const_order` had two no-whitespace regular
+expressions that did not require `const` to begin at a token boundary. They
+therefore treated identifier suffixes as type qualifiers: for example,
+`remove_const` became `constremove_`, `is_const` became `constis_`, and
+`forwarding_top_const` became `constforwarding_top_`. This is the source of
+the `constremove_` rows previously attributed to CPPGM alias spelling. The
+unsafe expressions are removed and covered by a renderer unit test. All
+affected references must be regenerated from fresh patched-Clang JSON; CPPGM
+must continue to print the semantically correct identifiers.
+
+This finding also changes how the remaining renderer rewrites are treated.
+Only path relocation and removal of checkout paths from compiler-generated
+local-entity names are presumed harmless. Integral-suffix removal, dependent
+member-owner stripping, duplicate-owner collapse, and compact closure
+coalescing are lossy presentation operations. Before accepting the
+regenerated corpus, record how many raw JSON fields or rows each operation
+changes and inspect every operation that changes an alias row. A
+normalization that changes a user identifier, merges two distinct source-use
+events, or repairs an impossible producer spelling is an oracle bug to remove,
+not a parity rule to reproduce in CPPGM.
+
+### Raw duplicate audit, 2026-08-09
+
+Removing both Python coalescing steps and regenerating all 1,530 strict
+references exposed 152 additional rows in 64 files. The result is sharply
+split:
+
+- 150 rows are compact closure rows: 26 `ensure-definition`, 52
+  `function-instantiation`, 53 `require-definition`, and 19
+  `variable-instantiation` rows;
+- none of those 150 rows is an exact duplicate in patched-Clang JSON; every
+  pair differs in declaration/use location, trigger, trigger declaration, or
+  reason, but the compact closure format does not print those fields;
+- only two additional source-use rows exist, both `class-use` rows for
+  `sink<int>` in
+  `pa24/tests/spec/100-out-of-class-conversion-operator-definition.t`;
+- those two are exact raw JSON duplicates. Clang's default
+  `RecursiveASTVisitor` visits a conversion operator's conversion type once
+  through `TraverseDeclarationNameInfo` and again through the function
+  `TypeSourceInfo`;
+- there are no duplicate raw alias-use, function-call, or variable-use rows in
+  the corpus.
+
+The invariant is therefore family-specific. Source-use convergence remains
+one row per explicit source occurrence, especially for aliases; the two
+conversion-type traversal overlaps are harmless exact-event coalescing at the
+oracle boundary and are not a shape CPPGM should manufacture. Closure
+lifecycle collection may contain repeated `(kind, entity)` rows when their
+provenance differs. The compact public projection continues to coalesce those
+rows, while debug output retains them. CPPGM must not add semantic machinery
+solely to reproduce a multiplicity that the public format cannot distinguish.
+
+Closure correctness is compared as normalized semantic facts, not as a raw
+event log and not as one undifferentiated "some closure happened" bit:
+
+- `require-definition` and `ensure-definition` both produce one
+  `definition-demand` fact for their normalized entity;
+- `function-instantiation`, `class-instantiation`, `alias-instantiation`,
+  `variable-instantiation`, and `class-finalization` remain distinct terminal
+  outcome facts;
+- event multiplicity, source location, trigger, trigger declaration, reason,
+  and detail do not participate in the ordinary correctness key; they remain
+  available in raw JSON and debug witness output;
+- a missing reference fact fails the closure gate;
+- an unexpected terminal outcome fails because it can indicate eager or
+  incorrect instantiation;
+- an additional `definition-demand` fact is reported as a warning for semantic
+  and performance investigation, but does not fail correctness by itself.
+
+Thus "at least one" means at least one event for every required normalized
+closure fact. It never means that one arbitrary closure row is sufficient for
+the translation unit or even for an entity. The matching harness must compare
+these fact sets explicitly so correctness does not depend on renderer
+multiplicity or ordering.
+
+Parity work must consequently target the patched-Clang structured argument
+printer before Python presentation normalization. CPPGM may apply the same
+pure path and spelling presentation at its final text boundary, but semantic
+resolution must not learn these rewrites. In particular, do not use owner
+collapse or broad normalized-row deduplication to compensate for repeated
+source-use semantic work.
 
 The semantic printer preserves structured sugar and qualifier form; it does
 not canonicalize every argument to an unsugared type. It also does not retain
@@ -351,8 +515,11 @@ five failures are:
    generated LowIR loses the conversion-function body and required nested
    definitions.
 3. `pa23/tests/spec/300-dependent-member-template-call-enable-if.t`: the
-   generated symbol changes a value-template argument from the required
-   `Lv0E` form to `Li0E`.
+   generated symbol changes a value-template argument from the checked-in
+   `Lv0E` form to `Li0E`. Subsequent oracle validation found the checked-in
+   LowIR reference stale: Homebrew Clang 22, patched Clang 23, and Clang 22
+   targeting both x86-64 and AArch64 Linux all emit `Li0E`. The fixture must be
+   corrected rather than restoring the old compiler's untyped-value encoding.
 4. `pa30/tests/general/300-runtime-function-local-static-storage.t`: compiler
    execution fails before the expected runtime check.
 5. `pa30/tests/general/300-runtime-local-class-enclosing-enumerator.t`:
@@ -665,21 +832,27 @@ Acceptance:
 
 ### Phase 4: Repair lifecycle ownership independently
 
-1. Classify the clean 79 lifecycle gaps by semantic demand:
-   `ensure-definition`, `require-definition`, class instantiation, function
-   instantiation, and variable instantiation.
+1. Classify the clean 79 lifecycle gaps by normalized semantic fact:
+   `definition-demand`, class instantiation, function instantiation, alias
+   instantiation, variable instantiation, and class finalization.
 2. Attach each demand to the operation that creates or consumes the required
    semantic entity. Do not infer lifecycle from a source-use row, and do not
    use lifecycle context to admit a source-use row.
-3. Collapse repeated demand production at the owning entity/state transition,
-   not in the renderer.
-4. Recheck the two PA23 LowIR regressions while migrating conversion-function
+3. Permit provenance-distinct repeated lifecycle events internally. Do not
+   add semantic state solely to reproduce or suppress Clang event
+   multiplicity. Preserve locations, triggers, reasons, and details in debug
+   output.
+4. Make the strict matcher compare normalized closure fact sets. Missing
+   facts and unexpected terminal outcomes fail; additional definition-demand
+   facts warn and require an explanation before the phase is promoted.
+5. Recheck the two PA23 LowIR regressions while migrating conversion-function
    and enable-if ownership; lifecycle output and generated definitions must
    agree on the same semantic result.
 
-Acceptance: zero lifecycle mismatches, exact PA23 LowIR, no lifecycle-driven
-class/alias admission, and one recorded state transition per public lifecycle
-event.
+Acceptance: zero missing closure facts, zero unexpected terminal outcomes,
+all extra definition-demand warnings explained, exact PA23 LowIR, and no
+lifecycle-driven class/alias admission. Raw event multiplicity and provenance
+are diagnostic rather than ordinary correctness requirements.
 
 ### Phase 5: Converge function-call and variable-use results
 
@@ -729,7 +902,8 @@ Run from a committed, clean worktree with an isolated object root:
    documented policy cannot drift from the executable defaults.
 
 1. focused positive/negative fixtures for every migrated owner;
-2. ordinary and provenance strict with direct LowIR: 1,530/1,530;
+2. ordinary and provenance strict with direct LowIR: 1,530/1,530, using exact
+   source-use matching and normalized closure-fact matching;
 3. PA1-PA38 report: 4,862/4,862 or the then-current fully explained count;
 4. provenance invariants for every event family;
 5. materialization, text-reparse, duplicate-semantic-walk, and analyzer unit
@@ -791,7 +965,8 @@ unmeasured regressions elsewhere.
 - [ ] Recovery checkpoint passes tracked strict and full broad correctness
 - [ ] Class materialization originates only at source-node semantic operations
 - [ ] Alias declaration indexing has no second semantic parameter analysis
-- [ ] Alias, class, function, variable, and lifecycle mismatches are all zero
+- [ ] Alias, class, function, and variable source-use mismatches are all zero
+- [ ] Closure fact gate has no missing facts or unexpected terminal outcomes
 - [ ] Strict with direct LowIR passes 1,530/1,530
 - [ ] PA1-PA38 report passes the complete current corpus
 - [ ] PA23 LowIR and PA30 runtime regressions are resolved semantically

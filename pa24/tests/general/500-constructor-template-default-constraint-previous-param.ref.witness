@@ -1,7 +1,7 @@
 translation-unit
   alias-use at tests/general/500-constructor-template-default-constraint-previous-param.t:57:13
     template meta::constraint_t
-    bind #1 = !constmeta::is_<T>::value source=explicit
+    bind #1 = !meta::is_const<T>::value source=explicit
     bind #2 = meta::defaulted_constraint source=explicit
   alias-use at tests/general/500-constructor-template-default-constraint-previous-param.t:60:13
     template meta::constraint_t
@@ -33,6 +33,6 @@ template-closure-events
   require-definition
     entity mutable_buffer::mutable_buffer
   variable-instantiation
-    entity constmeta::is_<char>::value
+    entity meta::is_const<char>::value
   variable-instantiation
     entity meta::is_same<span<char, 18446744073709551615>, span<char, 18446744073709551615>>::value

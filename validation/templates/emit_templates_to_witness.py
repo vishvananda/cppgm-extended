@@ -204,8 +204,6 @@ def normalize_const_order(text: str) -> str:
     patterns = [
         (r"\b([A-Za-z_][A-Za-z0-9_:]*)\s+const(\s*[*&])", r"const \1\2"),
         (r"\b([A-Za-z_][A-Za-z0-9_:]*)\s+const\b", r"const \1"),
-        (r"([A-Za-z_][A-Za-z0-9_:]*)const([*&])", r"const\1\2"),
-        (r"([A-Za-z_][A-Za-z0-9_:]*)const\b", r"const\1"),
     ]
     changed = True
     while changed:
@@ -233,11 +231,6 @@ def normalize_public_type_spellings(text: str) -> str:
 
 def normalize_template_log_type_spellings(text: str) -> str:
     value = re.sub(r"__local_\d+", "", text)
-    value = re.sub(
-        r"\b([A-Za-z_][A-Za-z0-9_]*)::"
-        r"(value_type|iterator|const_iterator|reference|const_reference)\b",
-        r"\2",
-        value)
     replacements = [
         ("unsigned long long int", "unsigned long long"),
         ("unsigned long int", "unsigned long"),
@@ -1432,9 +1425,6 @@ def normalize_binding_arg(arg: str,
         if lambda_location:
             return f"(lambda at {lambda_location})"
     value = normalize_public_type_spellings(value)
-    value = re.sub(r"\b([A-Za-z_][A-Za-z0-9_]*)::(value_type|iterator|const_iterator|reference|const_reference)\b",
-                   r"\2",
-                   value)
     return value
 
 
@@ -1672,37 +1662,6 @@ def render_emit_templates_debug_text(document: Dict) -> str:
     return render_emit_templates_text_impl(document, debug=True)
 
 
-def public_event_render_key(event: Dict) -> Tuple:
-    bindings = tuple(
-        (normalize_public_type_spellings(binding.get("arg", "")),
-         binding.get("source", ""))
-        for binding in event.get("bindings", [])
-    )
-    specialization_bindings = tuple(
-        (normalize_public_type_spellings(binding.get("arg", "")),
-         binding.get("source", ""))
-        for binding in event.get("specialization_bindings", [])
-    )
-    drops = tuple(
-        (normalize_template_log_entity(drop.get("candidate", "")),
-         drop.get("reason", ""))
-        for drop in event.get("drops", [])
-    )
-    return (
-        event.get("kind", ""),
-        normalize_witness_location(event.get("location", "")),
-        normalize_template_log_entity(event.get("selected", event.get("template", ""))),
-        normalize_template_log_entity(event.get("template", "")),
-        normalize_template_log_entity(event.get("resolved", "")),
-        event.get("selection", ""),
-        bindings,
-        specialization_bindings,
-        normalize_public_type_spellings(str(event.get("value", ""))),
-        normalize_template_log_entity(event.get("guide", "")),
-        drops,
-    )
-
-
 def public_render_events(document: Dict, debug: bool) -> List[Dict]:
     events = copy.deepcopy(list(document.get("events", [])))
     if debug:
@@ -1711,7 +1670,7 @@ def public_render_events(document: Dict, debug: bool) -> List[Dict]:
     seen = set()
     out: List[Dict] = []
     for event in events:
-        key = public_event_render_key(event)
+        key = json.dumps(event, sort_keys=True, separators=(",", ":"))
         if key in seen:
             continue
         seen.add(key)

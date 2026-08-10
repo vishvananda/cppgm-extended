@@ -15,4 +15,4 @@ template-closure-events
   require-definition
     entity pick
   variable-instantiation
-    entity constis_<const int>::value
+    entity is_const<const int>::value

@@ -41,13 +41,13 @@ translation-unit
     bind #1 = visitor_tag source=explicit
     bind #2 = visitor_type source=explicit
   class-use at tests/general/400-member-alias-template-template-partial-deduction-owner.t:110:27
-    template boost::value_type
+    template boost::parameter::value_type
     selected primary
     bind #1 = args source=explicit
     bind #2 = color_tag source=explicit
     bind #3 = void source=explicit
   class-use at tests/general/400-member-alias-template-template-partial-deduction-owner.t:111:27
-    template boost::value_type
+    template boost::parameter::value_type
     selected primary
     bind #1 = args source=explicit
     bind #2 = visitor_tag source=explicit

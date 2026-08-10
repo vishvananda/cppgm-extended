@@ -87,6 +87,9 @@ string normalize_compact_type_layout(const string & text)
   out = std::regex_replace(out, lvalue_ref_suffix_regex, "$1 &");
   out = std::regex_replace(out, call_paren_regex, "$1 (");
   replace_all(out, "operator (", "operator(");
+  replace_all(out, "operator &&", "operator&&");
+  replace_all(out, "operator &", "operator&");
+  replace_all(out, "operator *", "operator*");
   out = std::regex_replace(out, pointer_const_regex, "*const");
   out = std::regex_replace(out, pointer_volatile_regex, "*volatile");
   out = std::regex_replace(out, pointer_rvalue_ref_regex, "*&&");
@@ -605,6 +608,13 @@ struct WitnessEvent
   SourceUseOwnership ownership = SourceUseOwnership::Direct;
   semantic_source_use::SourceUseRole source_role =
       semantic_source_use::SourceUseRole::Unknown;
+  size_t source_traversal_order = 0;
+  const void * semantic_class_template_identity = nullptr;
+  string semantic_class_specialization_key;
+  const void * semantic_owner_class_template_identity = nullptr;
+  string semantic_owner_class_specialization_key;
+  size_t member_owner_call_group_order = 0;
+  int member_owner_call_group_rank = 0;
   string location;
   string raw_location;
   SourceAnchorKind use_anchor_kind = SourceAnchorKind::None;
@@ -881,6 +891,15 @@ WitnessEvent witness_event_from_source_use(
   event.kind = use.kind;
   event.ownership = use.ownership;
   event.source_role = use.role;
+  event.source_traversal_order = use.source_traversal_order;
+  event.semantic_class_template_identity =
+      use.semantic_class_template_identity;
+  event.semantic_class_specialization_key =
+      use.semantic_class_specialization_key;
+  event.semantic_owner_class_template_identity =
+      use.semantic_owner_class_template_identity;
+  event.semantic_owner_class_specialization_key =
+      use.semantic_owner_class_specialization_key;
   event.location = !use.spelling_anchor.location.empty() ?
       use.spelling_anchor.location :
       use.location;
@@ -1005,8 +1024,52 @@ int witness_event_kind_sort_rank(WitnessEventKind kind)
   return 0;
 }
 
+void group_member_calls_with_source_owner_class_uses(
+    vector<WitnessEvent> & events)
+{
+  for(size_t class_index = 0; class_index < events.size(); ++class_index) {
+    WitnessEvent & class_event = events[class_index];
+    if(class_event.kind != WitnessEventKind::ClassUse ||
+       class_event.selection !=
+           semantic_source_use::SourceSelectionKind::PartialSpecialization ||
+       class_event.semantic_class_template_identity == nullptr) {
+      continue;
+    }
+    for(size_t call_index = 0; call_index < events.size(); ++call_index) {
+      WitnessEvent & call_event = events[call_index];
+      if(call_event.kind != WitnessEventKind::FunctionCall ||
+         call_event.source_traversal_order == 0 ||
+         call_event.location != class_event.location ||
+         call_event.semantic_owner_class_template_identity !=
+             class_event.semantic_class_template_identity ||
+         call_event.semantic_owner_class_specialization_key !=
+             class_event.semantic_class_specialization_key) {
+        continue;
+      }
+      call_event.member_owner_call_group_order =
+          call_event.source_traversal_order;
+      call_event.member_owner_call_group_rank = 1;
+      class_event.member_owner_call_group_order =
+          std::max(class_event.member_owner_call_group_order,
+                   call_event.source_traversal_order);
+      class_event.member_owner_call_group_rank = 2;
+    }
+  }
+}
+
+size_t witness_event_source_sort_order(const WitnessEvent & event)
+{
+  const size_t source_order =
+      event.member_owner_call_group_order != 0 ?
+          std::max(event.source_traversal_order,
+                   event.member_owner_call_group_order) :
+          event.source_traversal_order;
+  return source_order != 0 ? source_order : static_cast<size_t>(-1);
+}
+
 void sort_events(vector<WitnessEvent> & events)
 {
+  group_member_calls_with_source_owner_class_uses(events);
 #if !defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   std::stable_sort(events.begin(),
                    events.end(),
@@ -1030,9 +1093,15 @@ void sort_events(vector<WitnessEvent> & events)
                          right_path_split == string::npos ?
                              rhs.location :
                              rhs.location.substr(0, right_path_split);
+                     const size_t left_source_order =
+                         witness_event_source_sort_order(lhs);
+                     const size_t right_source_order =
+                         witness_event_source_sort_order(rhs);
                      return std::make_tuple(left_path,
                                             left_loc.line,
                                             left_loc.column,
+                                            left_source_order,
+                                            lhs.member_owner_call_group_rank,
                                             witness_event_kind_sort_rank(lhs.kind),
                                             binding_source_sort_rank(lhs),
                                             rendered_ownership_sort_key(lhs.ownership),
@@ -1042,6 +1111,8 @@ void sort_events(vector<WitnessEvent> & events)
                          std::make_tuple(right_path,
                                          right_loc.line,
                                          right_loc.column,
+                                         right_source_order,
+                                         rhs.member_owner_call_group_rank,
                                          witness_event_kind_sort_rank(rhs.kind),
                                          binding_source_sort_rank(rhs),
                                          rendered_ownership_sort_key(rhs.ownership),
@@ -1070,9 +1141,15 @@ void sort_events(vector<WitnessEvent> & events)
                          right_path_split == string::npos ?
                              rhs.location :
                              rhs.location.substr(0, right_path_split);
+                     const size_t left_source_order =
+                         witness_event_source_sort_order(lhs);
+                     const size_t right_source_order =
+                         witness_event_source_sort_order(rhs);
                      return std::make_tuple(left_path,
                                             left_loc.line,
                                             left_loc.column,
+                                            left_source_order,
+                                            lhs.member_owner_call_group_rank,
                                             witness_event_kind_sort_rank(lhs.kind),
                                             binding_source_sort_rank(lhs),
                                             rendered_ownership_sort_key(lhs.ownership),
@@ -1082,6 +1159,8 @@ void sort_events(vector<WitnessEvent> & events)
                          std::make_tuple(right_path,
                                          right_loc.line,
                                          right_loc.column,
+                                         right_source_order,
+                                         rhs.member_owner_call_group_rank,
                                          witness_event_kind_sort_rank(rhs.kind),
                                          binding_source_sort_rank(rhs),
                                          rendered_ownership_sort_key(rhs.ownership),
@@ -1204,10 +1283,6 @@ string normalize_const_order(const string & text)
       "\\b(?!const\\b)(?!volatile\\b)([A-Za-z_][A-Za-z0-9_:]*)\\s+volatile(\\s*[*&])");
   static const std::regex volatile_suffix_regex(
       "\\b(?!const\\b)(?!volatile\\b)([A-Za-z_][A-Za-z0-9_:]*)\\s+volatile\\b");
-  static const std::regex compact_const_before_indirection_regex(
-      "([A-Za-z_][A-Za-z0-9_:]*)const([*&])");
-  static const std::regex compact_const_suffix_regex(
-      "([A-Za-z_][A-Za-z0-9_:]*)const\\b");
   string value = text;
   value = move_postfix_cv_before_type_atoms(value, "const");
   value = move_postfix_cv_before_type_atoms(value, "volatile");
@@ -1224,17 +1299,13 @@ string normalize_const_order(const string & text)
   value = std::regex_replace(value, volatile_before_indirection_regex,
                              "volatile $1$2");
   value = std::regex_replace(value, volatile_suffix_regex, "volatile $1");
-  value = std::regex_replace(value, compact_const_before_indirection_regex,
-                             "const$1$2");
-  value = std::regex_replace(value, compact_const_suffix_regex, "const$1");
   cache[text] = value;
   return value;
 }
 
 string normalize_binding_arg_for_event(const string & arg);
 string normalize_binding_arg_for_event(const string & arg,
-                                       bool preserve_qualified_member,
-                                       bool preserve_const_char_array = false);
+                                       bool preserve_const_char_array);
 bool is_simple_identifier_text(const string & text);
 
 string unqualified_template_name_text(const string & text)
@@ -1267,7 +1338,6 @@ void canonicalize_function_pointer_binding_args(vector<WitnessEvent> & events)
 {
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].kind != WitnessEventKind::ClassUse &&
-       events[i].kind != WitnessEventKind::AliasUse &&
        events[i].kind != WitnessEventKind::VariableUse) {
       continue;
     }
@@ -1285,89 +1355,8 @@ void canonicalize_function_pointer_binding_args(vector<WitnessEvent> & events)
 
 string normalize_binding_arg_for_event(const string & arg);
 string normalize_binding_arg_for_event(const string & arg,
-                                       bool preserve_qualified_member,
                                        bool preserve_const_char_array);
 string normalize_function_template_argument_spacing(const string & text);
-
-string semantic_or_source_argument_text(
-    const semantic_source_use::SourceTemplateArgumentOccurrence & argument)
-{
-  return !argument.semantic_text.empty() ? argument.semantic_text :
-      argument.text;
-}
-
-void clear_binding_pack_shape(WitnessBinding & binding)
-{
-  binding.pack_binding = false;
-  binding.pack_aggregate = false;
-  binding.pack_arguments.clear();
-}
-
-void apply_alias_source_spelled_binding_args(WitnessEvent & event)
-{
-  if(event.kind != WitnessEventKind::AliasUse || event.bindings.empty()) {
-    return;
-  }
-  const semantic_source_use::SourceTemplateIdOccurrence & occurrence =
-      event.template_id_occurrence;
-  if(!occurrence.present ||
-     !occurrence.source_spelled ||
-     !occurrence.argument_list_spelled ||
-     occurrence.arguments.empty()) {
-    return;
-  }
-  const size_t limit = std::min(event.bindings.size(),
-                                occurrence.arguments.size());
-  for(size_t i = 0; i < limit; ++i) {
-    if(event.bindings[i].source != "explicit" ||
-       !occurrence.arguments[i].source_spelled) {
-      continue;
-    }
-    const semantic_source_use::SourceTemplateArgumentOccurrence & argument =
-        occurrence.arguments[i];
-    if(event.bindings[i].pack_aggregate &&
-       (argument.current_specialization ||
-        argument.preserve_qualified_member)) {
-      string replacement = argument.semantic_text;
-      if(replacement.empty() &&
-         event.bindings[i].pack_binding &&
-         !event.bindings[i].pack_arguments.empty()) {
-        replacement = event.bindings[i].pack_arguments[0];
-      }
-      if(!replacement.empty()) {
-        event.bindings[i].arg =
-            normalize_binding_arg_for_event(
-                replacement,
-                argument.preserve_qualified_member);
-        clear_binding_pack_shape(event.bindings[i]);
-      }
-      continue;
-    }
-    if(argument.current_specialization) {
-      if(!argument.semantic_text.empty()) {
-        event.bindings[i].arg =
-            normalize_binding_arg_for_event(
-                argument.semantic_text,
-                argument.preserve_qualified_member);
-      }
-      continue;
-    }
-    event.bindings[i].arg =
-        normalize_binding_arg_for_event(
-            semantic_or_source_argument_text(argument),
-            argument.preserve_qualified_member);
-    if(argument.preserve_qualified_member) {
-      event.bindings[i].preserve_qualified_member = true;
-    }
-  }
-}
-
-void apply_alias_source_spelled_binding_args(vector<WitnessEvent> & events)
-{
-  for(size_t i = 0; i < events.size(); ++i) {
-    apply_alias_source_spelled_binding_args(events[i]);
-  }
-}
 
 void canonicalize_is_same_partial_bindings(vector<WitnessEvent> & events)
 {
@@ -1473,6 +1462,9 @@ void canonicalize_qualified_binding_arguments(vector<WitnessEvent> & events)
   map<tuple<string, string, string>, string> aliases;
   set<tuple<string, string, string> > ambiguous;
   for(size_t i = 0; i < events.size(); ++i) {
+    if(events[i].kind == WitnessEventKind::AliasUse) {
+      continue;
+    }
     for(size_t j = 0; j < events[i].bindings.size(); ++j) {
       collect_qualified_binding_alias(events[i],
                                       events[i].bindings[j],
@@ -1490,6 +1482,9 @@ void canonicalize_qualified_binding_arguments(vector<WitnessEvent> & events)
     return;
   }
   for(size_t i = 0; i < events.size(); ++i) {
+    if(events[i].kind == WitnessEventKind::AliasUse) {
+      continue;
+    }
     for(size_t j = 0; j < events[i].bindings.size(); ++j) {
       apply_qualified_binding_alias(events[i], events[i].bindings[j], aliases);
     }
@@ -2059,12 +2054,11 @@ void normalize_event_names(vector<WitnessEvent> & events,
 }
 
 string normalize_binding_arg_for_event(const string & arg,
-                                       bool preserve_qualified_member,
                                        bool preserve_const_char_array)
 {
-  typedef tuple<string, bool, bool> CacheKey;
+  typedef pair<string, bool> CacheKey;
   static map<CacheKey, string> cache;
-  const CacheKey key(arg, preserve_qualified_member, preserve_const_char_array);
+  const CacheKey key(arg, preserve_const_char_array);
   map<CacheKey, string>::const_iterator cached = cache.find(key);
   if(cached != cache.end()) {
     return cached->second;
@@ -2073,8 +2067,6 @@ string normalize_binding_arg_for_event(const string & arg,
   static const std::regex qualified_local_regex(
       "\\b([A-Za-z_][A-Za-z0-9_]*::)+([A-Za-z_][A-Za-z0-9_]*__local_\\d+)");
   static const std::regex local_regex("__local_\\d+");
-  static const std::regex member_typedef_regex(
-      "\\b([A-Za-z_][A-Za-z0-9_]*)::(value_type|iterator|const_iterator|reference|const_reference)\\b");
   static const std::regex separated_angle_regex(">\\s+>");
   string value = arg;
   value = std::regex_replace(value, libcxx_namespace_regex, "std::");
@@ -2086,9 +2078,6 @@ string normalize_binding_arg_for_event(const string & arg,
   value = std::regex_replace(value, local_regex, "");
   value = normalize_const_order(value);
   value = normalize_source_event_type_spellings(value);
-  if(!preserve_qualified_member) {
-    value = std::regex_replace(value, member_typedef_regex, "$2");
-  }
   while(true) {
     const string collapsed =
         std::regex_replace(value, separated_angle_regex, ">>");
@@ -2225,7 +2214,6 @@ string normalize_binding_arg_for_event(const WitnessBinding & binding)
 {
   const string normalized =
       normalize_binding_arg_for_event(binding.arg,
-                                      binding.preserve_qualified_member,
                                       binding.source == "explicit");
   const string normalized_only =
       normalized == "unsigned" ? "unsigned int" : normalized;
@@ -2815,13 +2803,16 @@ void normalize_event_bindings(vector<WitnessEvent> & events,
                               const string & input_path)
 {
   for(size_t i = 0; i < events.size(); ++i) {
-    for(size_t j = 0; j < events[i].bindings.size(); ++j) {
-      events[i].bindings[j].arg =
-          normalize_binding_arg_for_event(events[i].bindings[j]);
-    }
-    for(size_t j = 0; j < events[i].specialization_bindings.size(); ++j) {
-      events[i].specialization_bindings[j].arg =
-          normalize_binding_arg_for_event(events[i].specialization_bindings[j]);
+    if(events[i].kind != WitnessEventKind::AliasUse) {
+      for(size_t j = 0; j < events[i].bindings.size(); ++j) {
+        events[i].bindings[j].arg =
+            normalize_binding_arg_for_event(events[i].bindings[j]);
+      }
+      for(size_t j = 0; j < events[i].specialization_bindings.size(); ++j) {
+        events[i].specialization_bindings[j].arg =
+            normalize_binding_arg_for_event(
+                events[i].specialization_bindings[j]);
+      }
     }
     events[i].template_name =
         normalize_entity_name_for_event(events[i].template_name);
@@ -2845,21 +2836,8 @@ void normalize_event_bindings(vector<WitnessEvent> & events,
     }
   }
   canonicalize_function_pointer_binding_args(events);
-  apply_alias_source_spelled_binding_args(events);
   canonicalize_is_same_partial_bindings(events);
   canonicalize_qualified_binding_arguments(events);
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::AliasUse) {
-      continue;
-    }
-    vector<WitnessBinding> source_written_bindings;
-    for(size_t j = 0; j < events[i].bindings.size(); ++j) {
-      if(events[i].bindings[j].source != "defaulted") {
-        source_written_bindings.push_back(events[i].bindings[j]);
-      }
-    }
-    events[i].bindings.swap(source_written_bindings);
-  }
   const map<string, string> aliases = build_defaulted_class_aliases(events);
   apply_event_name_aliases(events, aliases);
   apply_defaulted_binding_aliases(events, aliases);
@@ -3105,6 +3083,10 @@ void normalize_source_defined_template_calls(vector<WitnessEvent> & events,
                                            template_body_lines,
                                            &body_parameter_names)) {
       if(events[i].kind == WitnessEventKind::VariableUse) {
+        continue;
+      }
+      if(events[i].source_role ==
+         semantic_source_use::SourceUseRole::DeclvalCall) {
         continue;
       }
       drop[i] = 1;

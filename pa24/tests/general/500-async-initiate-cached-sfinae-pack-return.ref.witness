@@ -49,7 +49,7 @@ translation-unit
     bind #1 = T source=explicit
   alias-use at tests/general/500-async-initiate-cached-sfinae-pack-return.t:241:9
     template conditional_t
-    bind #1 = constis_<remove_reference_t<RawCompletionToken>>::value source=explicit
+    bind #1 = is_const<remove_reference_t<RawCompletionToken>>::value source=explicit
     bind #2 = const T source=explicit
     bind #3 = T source=explicit
   alias-use at tests/general/500-async-initiate-cached-sfinae-pack-return.t:241:32
@@ -110,13 +110,13 @@ template-closure-events
   variable-instantiation
     entity are_completion_signatures<void (int, int, int)>::value
   variable-instantiation
-    entity constis_<executor_binder<handler, executor>>::value
-  variable-instantiation
     entity has_initiate<append_t<executor_binder<handler, executor>, int, int>, void (int)>::value
   variable-instantiation
     entity has_initiate<executor_binder<handler, executor>, void (int, int, int)>::value
   variable-instantiation
     entity has_initiate<handler, void (int, int, int)>::value
+  variable-instantiation
+    entity is_const<executor_binder<handler, executor>>::value
   variable-instantiation
     entity is_signature<append_t<executor_binder<handler, executor>, int, int>>::value
   variable-instantiation

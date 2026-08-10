@@ -273,6 +273,17 @@ void note_template_value_dependencies_for_witness(
 bool collect_template_member_value_dependency_if_active(
     const template_model::TemplateValueDependency & dependency);
 
+class ScopedTemplateMemberValueDependencyCollection
+{
+public:
+  explicit ScopedTemplateMemberValueDependencyCollection(
+      std::vector<template_model::TemplateValueDependency> & out);
+  ~ScopedTemplateMemberValueDependencyCollection();
+
+private:
+  std::vector<template_model::TemplateValueDependency> * saved_;
+};
+
 class ScopedTemplateMemberValueDependencyCollectionPause
 {
 public:
@@ -374,10 +385,6 @@ void compute_text_template_dependency_flags(
 bool text_mentions_non_namespace_binding_names(
     template_api::TemplateEnvironmentHandle scope,
     const std::string & text);
-
-void canonicalize_alias_template_source_argument_texts(
-    const std::vector<template_model::TemplateParameterInfo> & parameters,
-    std::vector<std::string> & arg_texts);
 
 void mark_alias_template_value_owner_argument_facts(
     template_api::TemplateServices & services,

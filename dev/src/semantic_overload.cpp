@@ -2210,23 +2210,68 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
     return false;
   }
 
-  if(witness::function_call_recording_enabled(
-         ctx.template_witness_context(),
-         witness::FunctionCallEmissionOrigin::DeclvalCall) &&
-     template_api::template_witness_declval_call_source_capture_enabled() &&
-     !template_argument_semantics::argument_syntax_uses_bound_template_type(
-         scope, *arg_syntax) &&
-     !ctx.type_depends_on_template_parameter(declval_type)) {
-    const std::string public_location =
+  const bool declval_recording_enabled =
+      witness::function_call_recording_enabled(
+          ctx.template_witness_context(),
+          witness::FunctionCallEmissionOrigin::DeclvalCall);
+  const bool declval_argument_uses_bound_template_type =
+      template_argument_semantics::argument_syntax_uses_bound_template_type(
+          scope, *arg_syntax);
+  const bool declval_type_dependent =
+      ctx.type_depends_on_template_parameter(declval_type);
+  if(declval_recording_enabled &&
+     !declval_argument_uses_bound_template_type &&
+     !declval_type_dependent) {
+    std::string public_location =
         normalize_template_witness_location(
             template_api::template_witness_detail::source_location_for_location_id(
                 ctx.template_witness_context(),
                 template_id->source_location_id));
+    std::ostringstream qualified_declval_name_stream;
+    if(template_id->name.rooted) {
+      qualified_declval_name_stream << "::";
+    }
+    for(std::size_t i = 0;
+        i < template_id->name.qualifiers.size();
+        ++i) {
+      qualified_declval_name_stream << template_id->name.qualifiers[i] << "::";
+    }
+    qualified_declval_name_stream << template_id->name.name;
+    std::string qualified_declval_name = qualified_declval_name_stream.str();
+    if(!template_id->name.rooted && template_id->name.qualifiers.empty()) {
+      const std::vector<FunctionBinding *> semantic_declval_bindings =
+          ctx.lookup_function_template_id_node(
+              scope,
+              node.children[0],
+              *template_id,
+              semantic_policy::without_body_instantiation());
+      if(semantic_declval_bindings.size() == 1 &&
+         semantic_declval_bindings[0]) {
+        const std::string semantic_declval_name =
+            template_api::function_binding_witness_entity(
+                ctx,
+                semantic_declval_bindings[0]);
+        if(!semantic_declval_name.empty()) {
+          qualified_declval_name = semantic_declval_name;
+        }
+      }
+    }
+    if(!template_id->name.qualifiers.empty()) {
+      const std::string qualified_start =
+          template_api::template_witness_detail::source_location_for_token_index(
+              ctx.template_witness_context(),
+              template_id->source_token_start);
+      if(!qualified_start.empty()) {
+        public_location =
+            normalize_template_witness_location(qualified_start);
+      }
+    }
     if(!public_location.empty()) {
       semantic_template_function::FunctionTemplateCallSourceUseRequest request;
       request.use_location = public_location;
-      request.template_name = "declval";
-      request.selected = "declval";
+      request.template_name = qualified_declval_name;
+      request.selected = qualified_declval_name;
+      request.role = semantic_source_use::SourceUseRole::DeclvalCall;
       request.selection = witness::SourceSelectionKind::Instantiation;
       request.origin = witness::FunctionCallEmissionOrigin::DeclvalCall;
       witness::TemplateWitnessSourceBinding binding;
@@ -2245,6 +2290,21 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
       semantic_template_function::emit_function_template_call_source_use(
           ctx,
           request);
+    }
+  }
+
+  if(!semantic_expression::unevaluated_operand_active() &&
+     !declval_type_dependent) {
+    std::vector<FunctionBinding *> declval_bindings =
+        ctx.lookup_function_template_id_node(
+            scope,
+            node.children[0],
+            *template_id,
+            semantic_policy::without_body_instantiation());
+    if(declval_bindings.size() == 1 && declval_bindings[0]) {
+      (void)semantic_template_function::
+          acquire_existing_required_function_definition(ctx,
+                                                        declval_bindings[0]);
     }
   }
 
@@ -2717,9 +2777,10 @@ void note_function_call_source_event(
     const std::vector<CandidateMatch> & matches,
     const BestCandidateSelection & selection,
     const std::vector<template_api::TemplateWitnessSourceDrop> & initial_drops,
-    bool constructor_source_is_direct_construction,
+    bool constructor_source_location_is_authoritative,
     std::size_t explicit_arg_count,
-    std::size_t built_candidate_count)
+    std::size_t built_candidate_count,
+    std::size_t source_traversal_order = 0)
 {
   const bool trace_source_decision =
       parser_trace::enabled("witness.call");
@@ -2772,6 +2833,16 @@ void note_function_call_source_event(
   if(callee_node &&
      (callee_node->kind == CppAstKind::member_expression ||
       callee_node->kind == CppAstKind::id_expression)) {
+    const QualifiedName * qualified_callee =
+        callee_node->kind == CppAstKind::id_expression ?
+            cppast_qualified_name_syntax(*callee_node) : nullptr;
+    if(qualified_callee &&
+       (qualified_callee->rooted || !qualified_callee->qualifiers.empty()) &&
+       chosen->owner_class &&
+       !chosen->is_method) {
+      public_location = normalize_template_witness_location(
+          ctx.source_location_for_node_syntax_start(*callee_node));
+    }
     std::string exact_name_location =
         normalize_template_witness_location(
             source_location_for_name_in_subtree(ctx,
@@ -2787,18 +2858,22 @@ void note_function_call_source_event(
                   unqualified_selected,
                   true));
     }
+    const bool source_spelled_template_id =
+        callee_node->kind == CppAstKind::id_expression &&
+        cppast_template_id_syntax(*callee_node) != nullptr;
     bool should_use_exact_name_location =
-        callee_node->kind == CppAstKind::member_expression;
+        callee_node->kind == CppAstKind::member_expression ||
+        (chosen->is_method && !source_spelled_template_id);
     if(callee_node->kind == CppAstKind::id_expression) {
       const ParsedSourceLocation parsed_public =
           parse_source_location(public_location);
       const ParsedSourceLocation parsed_exact =
           parse_source_location(exact_name_location);
-      should_use_exact_name_location =
-          parsed_public.valid &&
-          parsed_exact.valid &&
-          parsed_public.file == parsed_exact.file &&
-          parsed_exact.line > parsed_public.line;
+      should_use_exact_name_location = should_use_exact_name_location ||
+          (parsed_public.valid &&
+           parsed_exact.valid &&
+           parsed_public.file == parsed_exact.file &&
+           parsed_exact.line > parsed_public.line);
     }
     if(should_use_exact_name_location && !exact_name_location.empty()) {
       public_location = exact_name_location;
@@ -2806,11 +2881,16 @@ void note_function_call_source_event(
   }
   bool constructor_source_syntax = false;
   if(chosen->is_constructor) {
-    public_location = refine_constructor_call_source_location(ctx,
-                                                              selected_name,
-                                                              template_name,
-                                                              public_location,
-                                                              &constructor_source_syntax);
+    if(constructor_source_location_is_authoritative) {
+      constructor_source_syntax = true;
+    } else {
+      public_location = refine_constructor_call_source_location(
+          ctx,
+          selected_name,
+          template_name,
+          public_location,
+          &constructor_source_syntax);
+    }
   } else {
     public_location = refine_operator_call_source_location(ctx,
                                                            selected_name,
@@ -2827,7 +2907,7 @@ void note_function_call_source_event(
   }
   if(chosen->is_constructor &&
      !constructor_source_syntax &&
-     !constructor_source_is_direct_construction) {
+     !constructor_source_location_is_authoritative) {
     trace_return("constructor-not-source-syntax", public_location);
     return;
   }
@@ -2911,6 +2991,8 @@ void note_function_call_source_event(
     trace << "function-call-source-record"
           << " use=" << use_location
           << " public=" << public_location
+          << " authoritative="
+          << (constructor_source_location_is_authoritative ? "yes" : "no")
           << " template=" << template_name
           << " selected=" << selected_name;
     parser_trace::note("witness.call", public_location, trace.str());
@@ -2954,6 +3036,7 @@ void note_function_call_source_event(
   }
   semantic_template_function::FunctionTemplateCallSourceUseRequest source_use;
   source_use.binding = chosen;
+  source_use.source_traversal_order = source_traversal_order;
   source_use.use_location = public_location;
   source_use.template_name = template_name;
   source_use.selected = selected_name;
@@ -3110,7 +3193,7 @@ void note_function_call_source_event(
   }
   if(chosen->is_constructor &&
      !constructor_source_syntax &&
-     !constructor_source_is_direct_construction) {
+     !constructor_source_location_is_authoritative) {
     for(std::size_t i = 0; i < source_use.drops.size(); ++i) {
       if(source_use.drops[i].reason == "bad_conversion") {
         return;
@@ -8017,10 +8100,14 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
       throw NoViableConstructorError(
           "cannot construct an object of abstract class type");
     }
-    const ConstructorSelectionOptions ctor_options =
+    ConstructorSelectionOptions ctor_options =
         constructor_lifecycle_service::selection_options_for(
             constructor_lifecycle_service::direct_initialization_profile(
                 "functional cast"));
+    if(options.hints && !options.hints->use_location.empty()) {
+      ctor_options.source_witness_location = options.hints->use_location;
+      ctor_options.source_witness_location_is_authoritative = true;
+    }
     constructor_lifecycle_service::ConstructorSelectionResult ctor;
     if(direct_braced_init) {
       constructor_lifecycle_service::select_constructor_for_direct_braced_init_into(
@@ -12284,6 +12371,19 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
          template_witness_source_capture_enabled_for_calls(ctx)) {
         const std::string witness_use_location =
             constructor_witness_source_location(options, std::string(), source_args);
+        if(parser_trace::enabled("witness.call")) {
+          std::ostringstream trace;
+          trace << "constructor-source-context context="
+                << (options.context ? options.context : "")
+                << " authoritative="
+                << (options.source_witness_location_is_authoritative ?
+                        "yes" : "no")
+                << " instantiate=" << (options.instantiate_bodies ? "yes" : "no")
+                << " emit-probe="
+                << (options.emit_source_witness_without_body_instantiation ?
+                        "yes" : "no");
+          parser_trace::note("witness.call", witness_use_location, trace.str());
+        }
         note_function_call_source_event(ctx,
                                         witness_use_location,
                                         target_info.name,
@@ -12294,7 +12394,7 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                         state.matches,
                                         exact_selection,
                                         state.source_drops,
-                                        options.source_witness_direct_construction,
+                                        options.source_witness_location_is_authoritative,
                                         0,
                                         state.built_candidates.size());
       }
@@ -12397,6 +12497,19 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
      template_witness_source_capture_enabled_for_calls(ctx)) {
     const std::string witness_use_location =
         constructor_witness_source_location(options, std::string(), source_args);
+    if(parser_trace::enabled("witness.call")) {
+      std::ostringstream trace;
+      trace << "constructor-source-context context="
+            << (options.context ? options.context : "")
+            << " authoritative="
+            << (options.source_witness_location_is_authoritative ?
+                    "yes" : "no")
+            << " instantiate=" << (options.instantiate_bodies ? "yes" : "no")
+            << " emit-probe="
+            << (options.emit_source_witness_without_body_instantiation ?
+                    "yes" : "no");
+      parser_trace::note("witness.call", witness_use_location, trace.str());
+    }
     append_unmaterialized_copy_move_constructor_arity_drop(ctx,
                                                            target_info,
                                                            source_args.size(),
@@ -12413,7 +12526,7 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                     state.matches,
                                     selection,
                                     state.source_drops,
-                                    options.source_witness_direct_construction,
+                                    options.source_witness_location_is_authoritative,
                                     0,
                                     state.built_candidates.size());
   }
@@ -12881,7 +12994,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
                                         state.matches,
                                         exact_selection,
                                         state.source_drops,
-                                        options.source_witness_direct_construction,
+                                        options.source_witness_location_is_authoritative,
                                         0,
                                         state.built_candidates.size());
       }
@@ -13014,7 +13127,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
                                     state.matches,
                                     selection,
                                     state.source_drops,
-                                    options.source_witness_direct_construction,
+                                    options.source_witness_location_is_authoritative,
                                     0,
                                     state.built_candidates.size());
   }
@@ -13606,7 +13719,7 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
   }
   if(template_witness_source_capture_enabled_for_calls(ctx)) {
     note_function_call_source_event(ctx,
-                                    ctx.source_location_for_node(node),
+                                    ctx.source_location_for_node_token(node),
                                     operator_name,
                                     &node,
                                     chosen,
@@ -13617,7 +13730,8 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
                                     assignment_source_drops,
                                     false,
                                     0,
-                                    assignment_candidates.size());
+                                    assignment_candidates.size(),
+                                    node.token_end + 1);
   }
   return require_and_make_resolved_call_result(ctx,
                                                function_type->inner,
@@ -13729,6 +13843,19 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
   TypePtr deferred_functional_cast_type;
   const CallAnalysisHints * effective_hints = hints;
   CallAnalysisHints merged_lookup_hints;
+  CallAnalysisHints functional_cast_hints;
+  const auto functional_cast_options_for =
+      [&](const CppAstNode & source_node) -> CallAnalysisOptions
+      {
+        functional_cast_hints = effective_hints ?
+            *effective_hints : CallAnalysisHints();
+        if(functional_cast_hints.use_location.empty()) {
+          functional_cast_hints.use_location =
+              ctx.source_location_for_node_syntax_start(source_node);
+        }
+        return CallAnalysisOptions(instantiate_bodies,
+                                   &functional_cast_hints);
+      };
   vector<ExprInfo> merged_lookup_arg_values;
   SharedCallArgumentAnalyzer argument_analyzer(ctx, scope, arg_nodes, options);
   ExprInfo hinted_member_implicit_object_arg;
@@ -13857,7 +13984,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                      functional_cast_type,
                                      arg_nodes,
                                      direct_braced_init,
-                                     CallAnalysisOptions(instantiate_bodies));
+                                     functional_cast_options_for(
+                                         *conversion_type_id));
     }
   }
   const auto required_parameter_count =
@@ -15028,7 +15156,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                        deferred_functional_cast_type,
                                        arg_nodes,
                                        direct_braced_init,
-                                       CallAnalysisOptions(instantiate_bodies));
+                                       functional_cast_options_for(
+                                           lookup_callee_node));
       }
     }
     use_function_lookup =
@@ -15122,7 +15251,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                      deferred_functional_cast_type,
                                      arg_nodes,
                                      direct_braced_init,
-                                     CallAnalysisOptions(instantiate_bodies));
+                                     functional_cast_options_for(
+                                         lookup_callee_node));
     }
     if(candidates.empty()) {
         if(deferred_functional_cast_type) {
@@ -15131,7 +15261,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                          deferred_functional_cast_type,
                                          arg_nodes,
                                          direct_braced_init,
-                                         CallAnalysisOptions(instantiate_bodies));
+                                         functional_cast_options_for(
+                                             lookup_callee_node));
         }
         ostringstream out;
         out << "unknown function " << lookup_callee_node.value;
@@ -15694,7 +15825,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         match.call_args.push_back(arg);
         match.source_args.push_back(source_arg);
         match.source_arg_locations.push_back(
-            ctx.source_location_for_node(*arg_nodes[j]));
+            ctx.source_location_for_node_syntax_start(*arg_nodes[j]));
         match.list_initialization_args.push_back(
             arg_nodes[j]->kind == CppAstKind::braced_init_list);
         if(explicit_index + arg_offset < function_type->params.size()) {
@@ -16023,7 +16154,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                       direct_function_source_drops,
                                       false,
                                       source_explicit_template_arg_count,
-                                      candidates.size());
+                                      candidates.size(),
+                                      node.token_end + 1);
     }
     return make_resolved_call_result(ctx,
                                      function_type->inner,

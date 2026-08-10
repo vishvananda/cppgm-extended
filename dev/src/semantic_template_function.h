@@ -25,6 +25,7 @@ struct FunctionTemplateDeduction
 struct FunctionTemplateCallSourceUseRequest
 {
   semantic_model::FunctionBinding * binding = nullptr;
+  std::size_t source_traversal_order = 0;
   std::string use_location;
   std::string template_name;
   std::string selected;

@@ -201,8 +201,7 @@ inline bool class_use_recording_enabled(
 inline bool function_call_origin_records_during_source_capture_pause(
     FunctionCallEmissionOrigin origin)
 {
-  return origin == FunctionCallEmissionOrigin::DeclvalCall &&
-         template_api::template_witness_declval_call_source_capture_enabled();
+  return origin == FunctionCallEmissionOrigin::DeclvalCall;
 }
 
 inline bool function_call_recording_enabled(
@@ -240,6 +239,9 @@ struct ClassUseSourceDecision
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
 #endif
+  std::size_t source_traversal_order = 0;
+  const void * semantic_class_template_identity = nullptr;
+  std::string semantic_class_specialization_key;
   std::string location;
   TemplateWitnessSourceAnchor use_anchor;
   std::string template_name;
@@ -257,6 +259,7 @@ struct ClassUseEmitRequest
   WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
 #endif
   uint32_t source_occurrence_id = 0;
+  std::size_t source_traversal_order = 0;
   semantic_model::ClassTemplateDecl * semantic_template = nullptr;
   std::string semantic_specialization_key;
   std::string location;
@@ -272,6 +275,7 @@ struct ClassUseEmitRequest
   SourceUseOwnership ownership = SourceUseOwnership::Direct;
   SourceUseRole role = SourceUseRole::TypeUse;
   ClassUseEmissionOrigin origin = ClassUseEmissionOrigin::ResolvedTemplateId;
+  bool record_during_source_capture_pause = false;
 };
 
 struct AliasUseSourceDecision
@@ -279,12 +283,12 @@ struct AliasUseSourceDecision
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
 #endif
+  std::size_t source_traversal_order = 0;
   std::string location;
   TemplateWitnessSourceAnchor use_anchor;
   std::string template_name;
   std::string selected_decl_location;
   TemplateWitnessSourceAnchor selected_decl_anchor;
-  std::string expanded_to;
   SourceTemplateIdOccurrence template_id_occurrence;
   std::vector<TemplateWitnessSourceBinding> bindings;
 };
@@ -294,6 +298,7 @@ struct AliasUseEmitRequest
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
 #endif
+  std::size_t source_traversal_order = 0;
   std::string use_location;
   SourceTemplateIdOccurrence template_id_occurrence;
   std::string template_name;
@@ -301,7 +306,6 @@ struct AliasUseEmitRequest
   bool selected_decl_has_name_location = false;
   TemplateWitnessSourceAnchor selected_decl_anchor;
   bool selected_decl_anchor_explicit = false;
-  std::string expanded_to;
   std::vector<TemplateWitnessSourceBinding> bindings;
 };
 
@@ -345,6 +349,9 @@ struct FunctionCallSourceDecision
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
 #endif
+  std::size_t source_traversal_order = 0;
+  const void * semantic_owner_class_template_identity = nullptr;
+  std::string semantic_owner_class_specialization_key;
   std::string location;
   TemplateWitnessSourceAnchor use_anchor;
   std::string template_name;

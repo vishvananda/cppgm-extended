@@ -25,10 +25,12 @@ LIFECYCLE_HEADERS = {
     "ensure-definition",
     "function-instantiation",
     "class-instantiation",
+    "alias-instantiation",
     "variable-instantiation",
     "class-finalization",
 }
 LOCATION_RE = re.compile(r"^  ([a-z-]+) at (.+)$")
+CLOSURE_HEADER_RE = re.compile(r"^template-closure-events(?:\r?\n|\Z)", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -43,6 +45,11 @@ class WitnessEvent:
     @property
     def block(self) -> str:
         return "\n".join(self.lines)
+
+
+def _witness_source_text(text: str) -> str:
+    match = CLOSURE_HEADER_RE.search(text)
+    return text[: match.start()] if match else text
 
 
 def parse_witness(text: str) -> list[WitnessEvent]:
@@ -135,16 +142,6 @@ def _subtract_exact(
 def _pair_score(expected: WitnessEvent, actual: WitnessEvent) -> int:
     if expected.family != actual.family:
         return 0
-    if expected.family == "lifecycle":
-        if expected.kind == actual.kind and expected.entity == actual.entity:
-            return 5
-        if (
-            expected.kind == actual.kind
-            and expected.location
-            and expected.location == actual.location
-        ):
-            return 4
-        return 0
     if expected.location != actual.location:
         return 0
     if expected.template_name == actual.template_name:
@@ -154,7 +151,7 @@ def _pair_score(expected: WitnessEvent, actual: WitnessEvent) -> int:
     return 0
 
 
-def classify_events(
+def _classify_source_events(
     expected: list[WitnessEvent], actual: list[WitnessEvent]
 ) -> list[dict[str, Any]]:
     missing, extra = _subtract_exact(expected, actual)
@@ -192,6 +189,62 @@ def classify_events(
     )
 
 
+def _lifecycle_fact_kind(kind: str) -> str:
+    normalized = kind.replace("-", "_")
+    if normalized in {"require_definition", "ensure_definition"}:
+        return "definition_demand"
+    return normalized
+
+
+def _lifecycle_fact_map(
+    events: Iterable[WitnessEvent],
+) -> dict[tuple[str, str], WitnessEvent]:
+    facts: dict[tuple[str, str], WitnessEvent] = {}
+    for event in events:
+        key = (_lifecycle_fact_kind(event.kind), event.entity)
+        facts.setdefault(key, event)
+    return facts
+
+
+def classify_events(
+    expected: list[WitnessEvent], actual: list[WitnessEvent]
+) -> list[dict[str, Any]]:
+    expected_source = [event for event in expected if event.family != "lifecycle"]
+    actual_source = [event for event in actual if event.family != "lifecycle"]
+    occurrences = _classify_source_events(expected_source, actual_source)
+
+    expected_facts = _lifecycle_fact_map(
+        event for event in expected if event.family == "lifecycle"
+    )
+    actual_facts = _lifecycle_fact_map(
+        event for event in actual if event.family == "lifecycle"
+    )
+    for key in sorted(set(expected_facts) - set(actual_facts)):
+        occurrences.append(
+            _occurrence("missing_expected", expected_facts[key], None)
+        )
+    for key in sorted(set(actual_facts) - set(expected_facts)):
+        classification = (
+            "additional_definition_demand"
+            if key[0] == "definition_demand"
+            else "unexpected_actual"
+        )
+        occurrences.append(
+            _occurrence(classification, None, actual_facts[key])
+        )
+    return sorted(
+        occurrences,
+        key=lambda item: (
+            item["family"],
+            item["location"],
+            item["template_name"],
+            item["kind"],
+            item["entity"],
+            item["classification"],
+        ),
+    )
+
+
 def _occurrence(
     classification: str,
     expected: WitnessEvent | None,
@@ -204,6 +257,7 @@ def _occurrence(
         "unexpected_actual": "absence",
         "changed": "content",
         "ordering_only": "ordering",
+        "additional_definition_demand": "warning",
     }[classification]
     return {
         "classification": classification,
@@ -321,7 +375,9 @@ def correlate_provenance(
         for decision in provenance.get("lifecycle_attempt_decisions", []):
             if not _record_belongs_to_test(decision, test):
                 continue
-            if decision.get("kind") != occurrence["kind"]:
+            if _lifecycle_fact_kind(str(decision.get("kind", ""))) != (
+                _lifecycle_fact_kind(occurrence["kind"])
+            ):
                 continue
             entity = occurrence["entity"]
             if entity and entity != decision.get("entity"):
@@ -501,6 +557,7 @@ def build_report(
     provenance = provenance or {}
     references = _strict_references(repo_root, strict_pas)
     tests: list[dict[str, Any]] = []
+    warnings: list[dict[str, Any]] = []
     family_counts: dict[str, collections.Counter[str]] = collections.defaultdict(
         collections.Counter
     )
@@ -523,18 +580,30 @@ def build_report(
             missing_actual_files += 1
         actual_events = parse_witness(actual_text)
         occurrences = classify_events(expected_events, actual_events)
-        ordering_only = not occurrences and expected_text != actual_text
+        expected_source_text = _witness_source_text(expected_text)
+        actual_source_text = _witness_source_text(actual_text)
+        source_occurrences = [
+            item for item in occurrences if item["family"] != "lifecycle"
+        ]
+        ordering_only = (
+            expected_source_text != actual_source_text and not source_occurrences
+        )
         if ordering_only:
-            actual_blocks = [event.block for event in actual_events]
-            for index, expected_event in enumerate(expected_events):
+            expected_source_events = [
+                event for event in expected_events if event.family != "lifecycle"
+            ]
+            actual_source_events = [
+                event for event in actual_events if event.family != "lifecycle"
+            ]
+            actual_blocks = [event.block for event in actual_source_events]
+            for index, expected_event in enumerate(expected_source_events):
                 if index < len(actual_blocks) and (
                     expected_event.block == actual_blocks[index]
                 ):
                     continue
                 actual_event = next(
                     (
-                        event
-                        for event in actual_events
+                        event for event in actual_source_events
                         if event.block == expected_event.block
                     ),
                     expected_event,
@@ -544,12 +613,16 @@ def build_report(
                 )
                 break
         test_families: set[str] = set()
+        warning_families: set[str] = set()
         for occurrence in occurrences:
             occurrence["provenance"] = correlate_provenance(
                 occurrence, relative_test, provenance
             )
             family = occurrence["family"]
-            test_families.add(family)
+            if occurrence["classification"] == "additional_definition_demand":
+                warning_families.add(family)
+            else:
+                test_families.add(family)
             family_counts[family][occurrence["classification"]] += 1
             routes = occurrence["provenance"]["semantic_routes"] or [
                 "no_matching_attempt"
@@ -558,6 +631,30 @@ def build_report(
                 owner_counts[(family, route)] += 1
         for family in test_families:
             family_counts[family]["tests"] += 1
+        for family in warning_families:
+            family_counts[family]["warning_tests"] += 1
+        warning_occurrences = [
+            item
+            for item in occurrences
+            if item["classification"] == "additional_definition_demand"
+        ]
+        if warning_occurrences:
+            warnings.append(
+                {
+                    "test": relative_test,
+                    "reference": str(reference.relative_to(repo_root)),
+                    "actual": str(actual.relative_to(repo_root)),
+                    "occurrences": warning_occurrences,
+                }
+            )
+        failure_occurrences = [
+            item
+            for item in occurrences
+            if item["classification"] != "additional_definition_demand"
+        ]
+        if not failure_occurrences:
+            matching += 1
+            continue
         tests.append(
             {
                 "test": relative_test,
@@ -585,11 +682,13 @@ def build_report(
         "references": len(references),
         "matching_outputs": matching,
         "mismatching_outputs": len(tests),
+        "warning_outputs": len(warnings),
         "missing_actual_files": missing_actual_files,
         "family_summary": family_summary,
         "ownership_summary": ownership_summary,
         "class_materialization_candidate_summary": materialization_summary,
         "class_materialization_candidates": materialization_candidates,
+        "warnings": warnings,
         "tests": tests,
     }
 

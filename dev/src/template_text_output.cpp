@@ -214,17 +214,9 @@ std::string move_postfix_cv_before_type_atoms(std::string value,
 std::string normalize_public_closure_const_order(const std::string & text)
 {
   static const std::regex volatile_const_regex("\\bvolatile\\s+const\\b");
-  static const std::regex compact_const_before_indirection_regex(
-      "([A-Za-z_][A-Za-z0-9_:]*)const([*&])");
-  static const std::regex compact_const_suffix_regex(
-      "([A-Za-z_][A-Za-z0-9_:]*)const\\b");
   std::string out = move_postfix_cv_before_type_atoms(text, "const");
   out = move_postfix_cv_before_type_atoms(out, "volatile");
-  out = std::regex_replace(out, volatile_const_regex, "const volatile");
-  out = std::regex_replace(out,
-                           compact_const_before_indirection_regex,
-                           "const$1$2");
-  return std::regex_replace(out, compact_const_suffix_regex, "const$1");
+  return std::regex_replace(out, volatile_const_regex, "const volatile");
 }
 
 bool public_operator_punctuator_start(char ch)
@@ -547,7 +539,12 @@ bool member_function_closure_can_be_owned_by_class_use(
   }
   const std::string owner_name =
       unqualified_entity_name(strip_trailing_template_id(event.owner_entity));
-  const std::string member_name = unqualified_entity_name(event.normalized_entity);
+  std::string member_name = unqualified_entity_name(event.normalized_entity);
+  while(member_name.compare(0, 6, "const ") == 0 ||
+        member_name.compare(0, 9, "volatile ") == 0) {
+    member_name.erase(0,
+                      member_name.compare(0, 6, "const ") == 0 ? 6 : 9);
+  }
   return member_name == owner_name ||
          member_name == "~" + owner_name ||
          member_name.compare(0, 8, "operator") == 0;

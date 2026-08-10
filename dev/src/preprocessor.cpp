@@ -1214,7 +1214,11 @@ Preprocessor::Preprocessor(const string & file,
   cursor(this),
   raw_input(&cursor),
   pragma_op_nesting(0),
-  counter_macro_value(0)
+  counter_macro_value(0),
+  last_output_from_macro_expansion_(false),
+  macro_expansion_source_file_(),
+  macro_expansion_source_line_(0),
+  macro_expansion_source_column_(0)
 {
   macroizer.set_context_provider([this]() {
     return ExpansionContext{this->file(),
@@ -1477,11 +1481,14 @@ EPPToken Preprocessor::get()
   EPPToken token;
 
   auto output = false;
+  bool output_from_macro_expansion = false;
   do {
+    output_from_macro_expansion = false;
     if(!injections.empty()) {
       token = cursor.get();
       output = process(token.type, token.data, false);
     } else if(macroizer.active()) {
+      output_from_macro_expansion = true;
       token = macroizer.get();
       if(token.type == PP_EOF) {
         continue;
@@ -1492,6 +1499,7 @@ EPPToken Preprocessor::get()
       output = process(token.type, token.data, true);
     }
   } while (output == false);
+  last_output_from_macro_expansion_ = output_from_macro_expansion;
   if (token.type == PP_NEW_LINE)
       token.type = PP_WHITESPACE;
   return token;
@@ -2343,6 +2351,10 @@ bool Preprocessor::process(const EPPTokenType type, const string & data,
     } else if(allow_macro_start &&
               type == PP_IDENTIFIER &&
               macroizer.macro_exists(data)) {
+      macro_expansion_source_file_ =
+          cursor.token_file_ptr ? *cursor.token_file_ptr : cursor.token_file;
+      macro_expansion_source_line_ = cursor.token_line;
+      macro_expansion_source_column_ = cursor.token_column;
       macroizer.begin(raw_input, EPPToken{type, data});
       cursor.clear_token_line_start();
     } else if(type == PP_IDENTIFIER && data == "_Pragma") {

@@ -60,6 +60,64 @@ def witness_document(assignment: str):
 
 
 class WitnessPathNormalizationTests(unittest.TestCase):
+    def test_public_witness_coalesces_exact_source_and_compact_closure_rows(self):
+        document = witness_document("pa22")
+        document["events"].append(dict(document["events"][0]))
+        repeated_closure = dict(document["closure_events"][0])
+        repeated_closure["trigger_decl"] = (
+            "/checkout/pa22/tests/spec/movable.t:9:1"
+        )
+        document["closure_events"].append(repeated_closure)
+
+        output = RENDERER.render_emit_templates_text(document)
+
+        self.assertEqual(output.count("  class-use at "), 1)
+        self.assertEqual(output.count("  class-finalization\n"), 1)
+
+    def test_public_witness_does_not_merge_distinct_raw_source_events(self):
+        document = witness_document("pa22")
+        distinct = dict(document["events"][0])
+        distinct["selected_decl_location"] = (
+            "/checkout/pa22/tests/spec/movable.t:3:8"
+        )
+        document["events"].append(distinct)
+
+        output = RENDERER.render_emit_templates_text(document)
+
+        self.assertEqual(output.count("  class-use at "), 2)
+
+    def test_const_normalization_does_not_rewrite_identifier_suffixes(self):
+        self.assertEqual(
+            RENDERER.normalize_public_type_spellings(
+                "typename remove_const<T>::type"
+            ),
+            "typename remove_const<T>::type",
+        )
+        self.assertEqual(
+            RENDERER.normalize_template_log_type_spellings(
+                "meta::is_const<T>::value"
+            ),
+            "meta::is_const<T>::value",
+        )
+        self.assertEqual(
+            RENDERER.normalize_public_type_spellings("value_type const *"),
+            "const value_type *",
+        )
+
+    def test_public_normalization_preserves_qualified_member_names(self):
+        self.assertEqual(
+            RENDERER.normalize_template_log_type_spellings(
+                "segment::const_iterator"
+            ),
+            "segment::const_iterator",
+        )
+        self.assertEqual(
+            RENDERER.normalize_binding_arg(
+                "traits::value_type", [], None
+            ),
+            "traits::value_type",
+        )
+
     def test_public_witness_ignores_assignment_directory(self):
         pa18 = RENDERER.render_emit_templates_text(witness_document("pa18"))
         pa23 = RENDERER.render_emit_templates_text(witness_document("pa23"))

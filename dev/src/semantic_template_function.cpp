@@ -495,9 +495,8 @@ void emit_function_template_call_source_use(
   const bool declval_call =
       request.origin == witness::FunctionCallEmissionOrigin::DeclvalCall;
   const bool source_capture_enabled =
-      declval_call ?
-          template_api::template_witness_declval_call_source_capture_enabled() :
-          witness::function_call_source_capture_enabled();
+      witness::function_call_recording_enabled(ctx.template_witness_context(),
+                                               request.origin);
   if(!source_capture_enabled ||
      (!binding && !has_explicit_source_target) ||
      (binding && !binding->source_template) ||
@@ -516,6 +515,15 @@ void emit_function_template_call_source_use(
 
   witness::FunctionCallSourceDecision decision;
   decision.origin = request.origin;
+  decision.source_traversal_order = request.source_traversal_order;
+  if(binding &&
+     binding->owner_class &&
+     binding->owner_class->source_template) {
+    decision.semantic_owner_class_template_identity =
+        binding->owner_class->source_template;
+    decision.semantic_owner_class_specialization_key =
+        semantic_model::class_instantiation_key(*binding->owner_class);
+  }
   witness::set_use_anchor(decision.location,
                           decision.use_anchor,
                           public_location);

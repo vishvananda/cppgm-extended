@@ -359,29 +359,6 @@ bool is_structured_bool_result_member_name(const string & name)
   return name == kStructuredBoolResultMemberName;
 }
 
-bool alias_source_text_has_suffix(const string & text, const string & suffix)
-{
-  return text.size() >= suffix.size() &&
-         text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
-bool is_simple_alias_source_identifier_text(const string & text)
-{
-  if(text.empty()) {
-    return false;
-  }
-  if(!(std::isalpha(static_cast<unsigned char>(text[0])) || text[0] == '_')) {
-    return false;
-  }
-  for(size_t i = 1; i < text.size(); ++i) {
-    if(!(std::isalnum(static_cast<unsigned char>(text[i])) ||
-         text[i] == '_')) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool named_type_has_function_local_marker(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(remove_reference_type(type));
@@ -393,31 +370,6 @@ bool named_type_has_function_local_marker(const TypePtr & type)
 }
 
 }  // namespace
-
-void canonicalize_alias_template_source_argument_texts(
-    const vector<TemplateParameterInfo> & parameters,
-    vector<string> & arg_texts)
-{
-  const size_t limit = std::min(parameters.size(), arg_texts.size());
-  for(size_t i = 0; i < limit; ++i) {
-    string text = semantic_utils::trim_space(arg_texts[i]);
-    if(!parameters[i].parameter_pack &&
-       alias_source_text_has_suffix(text, "...")) {
-      text = semantic_utils::trim_space(text.substr(0, text.size() - 3));
-    }
-    if(parameters[i].kind == TemplateParameterInfo::TP_TYPE) {
-      const string typename_prefix = "typename ";
-      if(text.compare(0, typename_prefix.size(), typename_prefix) == 0) {
-        const string rest =
-            semantic_utils::trim_space(text.substr(typename_prefix.size()));
-        if(is_simple_alias_source_identifier_text(rest)) {
-          text = rest;
-        }
-      }
-    }
-    arg_texts[i] = text;
-  }
-}
 
 bool template_parameter_is_function_pointer_value(
     const TemplateParameterInfo & parameter)
@@ -1633,13 +1585,6 @@ bool scope_has_template_placeholders(template_api::TemplateServices & services,
 
 namespace {
 
-bool try_resolve_concrete_unary_type_transform_template_id(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const QualifiedName & template_id,
-    const std::vector<std::string> & arg_texts,
-    const std::vector<TemplateArgumentSyntax> * arg_syntaxes,
-    TypePtr & out);
 bool should_defer_unresolved_type_lookup(template_api::TemplateServices & services,
                                          Scope & scope,
                                          const string & text);
@@ -3377,21 +3322,6 @@ bool try_make_dependent_qualified_template_id_type(
 
 }  // namespace
 
-bool try_resolve_concrete_enable_if_alias_template_id(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const QualifiedName & template_id,
-    const std::vector<std::string> & arg_texts,
-    const std::vector<TemplateArgumentSyntax> * arg_syntaxes,
-    TypePtr & out);
-bool try_resolve_concrete_require_alias_template_id(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const QualifiedName & template_id,
-    const std::vector<std::string> & arg_texts,
-    const std::vector<TemplateArgumentSyntax> * arg_syntaxes,
-    TypePtr & out);
-
 Scope & standard_meta_argument_scope(
     Scope & fallback,
     const std::vector<Scope *> * argument_scopes,
@@ -3457,33 +3387,6 @@ bool resolve_template_id_syntax_type(template_api::TemplateServices & services,
   }
 
   if(try_resolve_type_pack_element_template_id(
-         services,
-         effective_argument_scope,
-         syntax.name,
-         arg_texts,
-         &syntax.argument_syntaxes,
-         out)) {
-    return true;
-  }
-  if(try_resolve_concrete_enable_if_alias_template_id(
-         services,
-         effective_argument_scope,
-         syntax.name,
-         arg_texts,
-         &syntax.argument_syntaxes,
-         out)) {
-    return true;
-  }
-  if(try_resolve_concrete_require_alias_template_id(
-         services,
-         effective_argument_scope,
-         syntax.name,
-         arg_texts,
-         &syntax.argument_syntaxes,
-         out)) {
-    return true;
-  }
-  if(try_resolve_concrete_unary_type_transform_template_id(
          services,
          effective_argument_scope,
          syntax.name,
@@ -5928,15 +5831,19 @@ void append_structured_bool_value_dependencies_for_class_info(
     vector<TemplateValueDependency> & out,
     set<const ClassInfo *> & visiting);
 void attach_template_value_dependency_owner_identity(
+    template_api::TemplateServices & services,
     const ClassInfo * owner,
     TemplateValueDependency & dependency)
 {
-  if(!owner) {
+  if(!services.semantic_context || !owner) {
     return;
   }
   dependency.value_owner = owner;
   dependency.visible_owner_argument_count =
-      owner->instantiation_arguments.size();
+      template_api::witness_visible_class_template_argument_count(
+          *services.semantic_context,
+          *owner,
+          true);
   dependency.has_visible_owner_argument_count = true;
 }
 
@@ -6182,25 +6089,6 @@ int & template_member_value_dependency_collection_pause_depth()
   static thread_local int depth = 0;
   return depth;
 }
-
-class ScopedTemplateMemberValueDependencyCollection
-{
-public:
-  explicit ScopedTemplateMemberValueDependencyCollection(
-      vector<TemplateValueDependency> & out)
-    : saved_(active_template_member_value_dependency_collection())
-  {
-    active_template_member_value_dependency_collection() = &out;
-  }
-
-  ~ScopedTemplateMemberValueDependencyCollection()
-  {
-    active_template_member_value_dependency_collection() = saved_;
-  }
-
-private:
-  vector<TemplateValueDependency> * saved_;
-};
 
 bool collect_template_member_value_dependency_if_active_impl(
     const TemplateValueDependency & dependency)
@@ -6465,7 +6353,9 @@ void append_member_value_binding_dependency(
           binding.declaration_scope :
           owner->member_scope.get();
   dependency.value_binding = &binding;
-  attach_template_value_dependency_owner_identity(owner, dependency);
+  attach_template_value_dependency_owner_identity(services,
+                                                  owner,
+                                                  dependency);
   dependency.value_name = member_name;
   dependency.entity_has_template_identity =
       template_api::value_or_owner_has_template_identity(&binding) ||
@@ -6531,7 +6421,8 @@ void append_structured_bool_integral_constant_dependency(
   dependency.value_scope =
       member.binding ? member.binding->declaration_scope : nullptr;
   dependency.value_binding = member.binding;
-  attach_template_value_dependency_owner_identity(integral_constant,
+  attach_template_value_dependency_owner_identity(services,
+                                                  integral_constant,
                                                   dependency);
   dependency.value_name = kStructuredBoolResultMemberName;
   dependency.entity_has_template_identity =
@@ -6777,7 +6668,8 @@ void append_static_member_value_dependency_for_type(
           member.binding->declaration_scope :
           dependency_owner->member_scope.get();
   dependency.value_binding = member.binding;
-  attach_template_value_dependency_owner_identity(dependency_owner,
+  attach_template_value_dependency_owner_identity(services,
+                                                  dependency_owner,
                                                   dependency);
   dependency.value_name = member.binding->name;
   dependency.entity_has_template_identity =
@@ -7666,14 +7558,27 @@ void note_template_value_dependency_for_witness(
     return;
   }
   std::string trigger_entity = dependency.entity;
-  const ValueBinding * resolved_binding = dependency.value_binding;
-  if(dependency.value_scope && !dependency.value_name.empty()) {
+  const ValueBinding * resolved_binding = nullptr;
+  if(dependency.value_owner && !dependency.value_name.empty()) {
+    // Class population may replace the member scope after a speculative
+    // dependency was retained.  ClassInfo identity survives that reset, so
+    // rehydrate the current binding through its semantic owner instead of
+    // dereferencing the captured scope or ValueBinding pointer.
+    semantic_lookup::MemberValueLookupResult current =
+        semantic_lookup::lookup_member_value(
+            const_cast<ClassInfo &>(*dependency.value_owner),
+            dependency.value_name);
+    resolved_binding = current.binding;
+    trigger_entity = dependency.value_name;
+  } else if(dependency.value_scope && !dependency.value_name.empty()) {
     std::map<std::string, ValueBinding>::iterator current =
         dependency.value_scope->values.find(dependency.value_name);
     if(current != dependency.value_scope->values.end()) {
       resolved_binding = &current->second;
     }
     trigger_entity = dependency.value_name;
+  } else {
+    resolved_binding = dependency.value_binding;
   }
   if(resolved_binding) {
     const ScopedTemplateValueDependencyLifecycleResume lifecycle_resume;
@@ -7687,7 +7592,7 @@ void note_template_value_dependency_for_witness(
     template_api::TemplateMemberValueInstantiationRequest request;
     request.origin = template_api::TemplateMemberValueInstantiationOrigin::
         RetainedDependency;
-    request.source_binding = dependency.value_binding;
+    request.source_binding = resolved_binding;
     request.source_owner = dependency.value_owner;
     request.visible_owner_argument_count =
         dependency.visible_owner_argument_count;
@@ -14055,6 +13960,20 @@ bool expand_builtin_type_trait_type_arg(
   return expand_builtin_trait_type_arg_ast(services, scope, node, out);
 }
 
+ScopedTemplateMemberValueDependencyCollection::
+ScopedTemplateMemberValueDependencyCollection(
+    vector<TemplateValueDependency> & out)
+  : saved_(active_template_member_value_dependency_collection())
+{
+  active_template_member_value_dependency_collection() = &out;
+}
+
+ScopedTemplateMemberValueDependencyCollection::
+~ScopedTemplateMemberValueDependencyCollection()
+{
+  active_template_member_value_dependency_collection() = saved_;
+}
+
 ScopedTemplateMemberValueDependencyCollectionPause::
 ScopedTemplateMemberValueDependencyCollectionPause(bool active)
   : active_(active)
@@ -14122,7 +14041,7 @@ void append_structured_bool_value_dependencies_in_template_argument_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const TemplateArgumentSyntax & syntax,
-    vector<TemplateValueDependency> & out)
+  vector<TemplateValueDependency> & out)
 {
   const ScopedStructuredBoolDependencySyntaxScan active_scan(scope, syntax);
   if(!active_scan.active()) {
@@ -14156,6 +14075,10 @@ void append_non_bool_static_value_dependencies_in_template_argument_syntax(
     const TypePtr & bound_value_type,
     vector<TemplateValueDependency> & out)
 {
+  TypePtr stripped = strip_top_level_cv(remove_reference_type(bound_value_type));
+  if(!stripped || is_bool_type(stripped)) {
+    return;
+  }
   TemplateArgumentSyntax expanded_syntax;
   const TemplateArgumentSyntax * effective_syntax = &syntax;
   if(prepare_structured_bool_dependency_argument_syntax(
@@ -19315,57 +19238,6 @@ TypePtr collapse_rvalue_reference_type(const TypePtr & inner)
   return make_rvalue_reference_raw(inner);
 }
 
-bool try_resolve_concrete_unary_type_transform_template_id(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const QualifiedName & template_id,
-    const std::vector<std::string> & arg_texts,
-    const std::vector<TemplateArgumentSyntax> * arg_syntaxes,
-    TypePtr & out)
-{
-  out.reset();
-  if(arg_texts.size() != 1) {
-    return false;
-  }
-
-  const builtin_type_transforms::Kind transform_kind =
-      builtin_type_transforms::kind_for_alias_template_name(template_id.name);
-  if(transform_kind == builtin_type_transforms::BTK_UNKNOWN) {
-    return false;
-  }
-
-  TypePtr arg_type;
-  bool resolved_arg = false;
-  const TemplateArgumentSyntax * arg_syntax =
-      arg_syntaxes && arg_syntaxes->size() == 1 ? &(*arg_syntaxes)[0] : nullptr;
-  if(arg_syntax) {
-    resolved_arg =
-        resolve_type_argument_syntax_type(services, scope, *arg_syntax, true, arg_type) &&
-        arg_type != nullptr;
-  }
-  if(arg_type &&
-     service_type_depends_on_template_parameter(services, arg_type)) {
-    TypePtr resolved_arg_type;
-    if(resolve_instantiated_dependent_type(services,
-                                           scope,
-                                           arg_type,
-                                           resolved_arg_type) &&
-       resolved_arg_type) {
-      arg_type = resolved_arg_type;
-      resolved_arg = true;
-    }
-  }
-  if(!resolved_arg ||
-     !arg_type ||
-     service_type_depends_on_template_parameter(services, arg_type)) {
-    return false;
-  }
-
-  return semantic_builtins::apply_builtin_type_transform_kind(transform_kind,
-                                                             arg_type,
-                                                             out);
-}
-
 void append_alias_template_source_bindings_impl(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -19725,15 +19597,6 @@ bool try_resolve_alias_template_id_locally(
     return false;
   }
 
-  if(try_resolve_concrete_enable_if_alias_template_id(
-         services,
-         effective_argument_scope,
-         template_id,
-         arg_texts,
-         arg_syntaxes,
-         out)) {
-    return true;
-  }
   if(!services.semantic_context) {
     return false;
   }
@@ -20800,12 +20663,17 @@ TemplateIdSyntax clone_template_id_for_template_substitution(
   TemplateIdSyntax out;
   out.name = source.name;
   out.source_location_id = source.source_location_id;
+  out.has_source_token_span = source.has_source_token_span;
+  out.source_token_start = source.source_token_start;
+  out.source_token_end = source.source_token_end;
   out.source_is_nested_template_argument =
       source.source_is_nested_template_argument;
   out.source_is_qualified_member_owner =
       source.source_is_qualified_member_owner;
   out.source_is_static_member_definition_value =
       source.source_is_static_member_definition_value;
+  out.name_has_template_disambiguator =
+      source.name_has_template_disambiguator;
   out.qualifier_template_id_syntaxes.reserve(
       source.qualifier_template_id_syntaxes.size());
   for(size_t i = 0; i < source.qualifier_template_id_syntaxes.size(); ++i) {
@@ -23583,6 +23451,12 @@ bool substitute_type_pack_expression_node(
     substitute_type_pack_template_id_arguments(*out.template_id_syntax,
                                                scope,
                                                type_replacements);
+    if(node.template_id_syntax) {
+      thread_type_replacements_into_template_id_syntax(
+          *out.template_id_syntax,
+          *node.template_id_syntax,
+          type_replacements);
+    }
     out.value = qualified_name_text(out.template_id_syntax->name) + "<";
     for(size_t i = 0; i < out.template_id_syntax->arguments.size(); ++i) {
       if(i != 0) {
@@ -23596,6 +23470,12 @@ bool substitute_type_pack_expression_node(
     substitute_type_pack_template_id_arguments(out.qualifier_template_id_syntaxes[i],
                                                scope,
                                                type_replacements);
+    if(i < node.qualifier_template_id_syntaxes.size()) {
+      thread_type_replacements_into_template_id_syntax(
+          out.qualifier_template_id_syntaxes[i],
+          node.qualifier_template_id_syntaxes[i],
+          type_replacements);
+    }
     if(out.qualified_name_syntax &&
        i < out.qualified_name_syntax->qualifiers.size() &&
        !out.qualifier_template_id_syntaxes[i].name.name.empty()) {
@@ -34462,314 +34342,6 @@ bool resolve_standard_meta_type_argument(
   return out != nullptr;
 }
 
-bool try_resolve_concrete_enable_if_alias_template_id(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const QualifiedName & template_id,
-    const std::vector<std::string> & arg_texts,
-    const std::vector<TemplateArgumentSyntax> * arg_syntaxes,
-    TypePtr & out)
-{
-  out.reset();
-  const bool is_enable_if_alias =
-      (template_id.name == "__enable_if_t" ||
-       template_id.name == "enable_if_t") &&
-      !arg_texts.empty() &&
-      arg_texts.size() <= 2;
-  if(!is_enable_if_alias || !scope.valid()) {
-    return false;
-  }
-
-  Scope & raw_scope = scope.require();
-  AliasTemplateDecl * alias_decl =
-      lookup_alias_template_impl(
-          services,
-          raw_scope,
-          template_id);
-  if(!alias_decl ||
-     alias_decl->name != template_id.name ||
-     alias_decl->parameters.empty() ||
-     alias_decl->parameters[0].kind != TemplateParameterInfo::TP_NON_TYPE ||
-     !is_bool_type(alias_decl->parameters[0].value_type) ||
-     (arg_texts.size() > 1 &&
-      (alias_decl->parameters.size() < 2 ||
-       alias_decl->parameters[1].kind != TemplateParameterInfo::TP_TYPE))) {
-    return false;
-  }
-
-  TemplateIdSyntax syntax;
-  syntax.name = template_id;
-  syntax.arguments = arg_texts;
-  if(arg_syntaxes) {
-    syntax.argument_syntaxes = *arg_syntaxes;
-  }
-
-  const TemplateArgumentSyntax * condition_syntax =
-      arg_syntaxes && !arg_syntaxes->empty() ? &(*arg_syntaxes)[0] : nullptr;
-  const auto make_dependent_alias =
-      [&]() -> bool
-      {
-        vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
-        dependent_arguments.reserve(arg_texts.size());
-        for(size_t i = 0; i < arg_texts.size(); ++i) {
-          DependentAliasTemplateArgumentSyntax dependent_argument;
-          dependent_argument.text = trim_space(arg_texts[i]);
-          if(arg_syntaxes && i < arg_syntaxes->size()) {
-            dependent_argument.syntax = (*arg_syntaxes)[i];
-          }
-          if(dependent_argument.syntax.text.empty()) {
-            dependent_argument.syntax.text = dependent_argument.text;
-          }
-          if(i == 1) {
-            TypePtr type_argument;
-            if(resolve_standard_meta_type_argument(
-                   services, raw_scope, syntax, i, type_argument) &&
-               type_argument) {
-              dependent_argument.type = type_argument;
-              dependent_argument.syntax.resolved_type = type_argument;
-            }
-          }
-          dependent_arguments.push_back(dependent_argument);
-        }
-
-        ostringstream display;
-        display << alias_decl->name << "<";
-        for(size_t i = 0; i < dependent_arguments.size(); ++i) {
-          if(i != 0) {
-            display << ", ";
-          }
-          display << dependent_arguments[i].text;
-        }
-        display << ">";
-        const string display_text = display.str();
-        const string qualified_text =
-            alias_decl->declaring_scope ?
-                semantic_lookup::scope_qualified_name(*alias_decl->declaring_scope,
-                                                      display_text) :
-                display_text;
-        out = make_dependent_alias_type(display_text,
-                                        qualified_text,
-                                        alias_decl,
-                                        dependent_arguments);
-        return out != nullptr;
-      };
-
-  const bool condition_is_top_level_call =
-      condition_syntax &&
-      condition_syntax->expression &&
-      condition_syntax->expression->kind == CppAstKind::call_expression;
-  if(services.witness_context.session != nullptr &&
-     condition_syntax &&
-     !condition_is_top_level_call &&
-     template_argument_syntax_mentions_template_dependency(
-         services,
-         scope,
-         *condition_syntax,
-         false)) {
-    TemplateArgumentSyntax prepared_condition_syntax;
-    const TemplateArgumentSyntax * dependency_condition_syntax =
-        condition_syntax;
-    if(prepare_standard_meta_bool_argument_syntax(services,
-                                                  scope,
-                                                  *condition_syntax,
-                                                  prepared_condition_syntax)) {
-      dependency_condition_syntax = &prepared_condition_syntax;
-    }
-    if(template_argument_syntax_mentions_template_dependency(
-           services,
-           scope,
-           *dependency_condition_syntax,
-           false)) {
-      return make_dependent_alias();
-    }
-  }
-
-  bool condition_value = false;
-  NonTypeArgumentStatus condition_status = NT_ARG_PARSE_FAILED;
-  bool condition_resolved = false;
-  if(condition_syntax &&
-     template_argument_syntax_needs_structured_bool_preparation(
-         *condition_syntax)) {
-    condition_resolved =
-        resolve_standard_meta_bool_argument_from_syntax(services,
-                                                        raw_scope,
-                                                        syntax,
-                                                        condition_value,
-                                                        &condition_status);
-    if(!condition_resolved && condition_status == NT_ARG_DEPENDENT) {
-      return make_dependent_alias();
-    }
-  }
-  if(!condition_resolved &&
-     !resolve_standard_meta_bool_argument(
-         services, raw_scope, syntax, condition_value)) {
-    if(condition_status == NT_ARG_DEPENDENT ||
-       (condition_syntax &&
-        template_argument_syntax_mentions_template_dependency(
-            services,
-            scope,
-            *condition_syntax,
-            false))) {
-      return make_dependent_alias();
-    }
-    return false;
-  }
-  if(!condition_value) {
-    throw_substitution_failure(
-        std::string("alias template substitution failed [alias ") +
-            alias_decl->name + "]",
-        std::string(),
-        "template-resolution");
-  }
-
-  if(arg_texts.size() == 1) {
-    out = make_fundamental(FT_VOID);
-    return true;
-  }
-
-  return resolve_standard_meta_type_argument(services, raw_scope, syntax, 1, out) &&
-         out != nullptr;
-}
-
-bool try_resolve_concrete_require_alias_template_id(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const QualifiedName & template_id,
-    const std::vector<std::string> & arg_texts,
-    const std::vector<TemplateArgumentSyntax> * arg_syntaxes,
-    TypePtr & out)
-{
-  out.reset();
-  if(template_id.name != "_Require" || !scope.valid()) {
-    return false;
-  }
-
-  Scope & raw_scope = scope.require();
-  AliasTemplateDecl * alias_decl =
-      lookup_alias_template_impl(
-          services,
-          raw_scope,
-          template_id);
-  if(!alias_decl ||
-     alias_decl->name != template_id.name ||
-     !scope_is_std_namespace_or_inline_child(alias_decl->declaring_scope)) {
-    return false;
-  }
-
-  TemplateIdSyntax syntax;
-  syntax.name = template_id;
-  syntax.arguments = arg_texts;
-  if(arg_syntaxes) {
-    syntax.argument_syntaxes = *arg_syntaxes;
-  }
-  if(syntax.argument_syntaxes.size() != syntax.arguments.size()) {
-    return false;
-  }
-
-  bool saw_dependent = false;
-  for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
-    bool condition_value = false;
-    NonTypeArgumentStatus condition_status = NT_ARG_PARSE_FAILED;
-    try {
-      condition_status =
-          evaluate_structured_bool_template_argument(
-              services,
-              template_api::make_template_environment(raw_scope),
-              syntax.argument_syntaxes[i],
-              condition_value);
-      if(condition_status != NT_ARG_EVALUATED &&
-         (syntax.argument_syntaxes[i].resolved_type ||
-          syntax.argument_syntaxes[i].type_id ||
-          syntax.argument_syntaxes[i].template_id)) {
-        TypePtr condition_type;
-        if(resolve_standard_meta_type_argument(
-               services, raw_scope, syntax, i, condition_type) &&
-           condition_type) {
-          condition_status =
-              evaluate_structured_bool_constant_type(
-                  services,
-                  template_api::make_template_environment(raw_scope),
-                  condition_type,
-                  condition_value);
-        }
-      }
-    } catch(const DependentQualifiedTypeMissingTypenameError &) {
-      condition_status = NT_ARG_DEPENDENT;
-    } catch(const TemplateSubstitutionFailure &) {
-      condition_status = NT_ARG_EVAL_FAILED;
-    } catch(const SemanticSoftFailure &) {
-      condition_status = NT_ARG_EVAL_FAILED;
-    } catch(const SemanticDiagnosticError &) {
-      condition_status = NT_ARG_EVAL_FAILED;
-    } catch(const semantic_fallback_audit::SemanticFallbackError &) {
-      condition_status = NT_ARG_EVAL_FAILED;
-    } catch(const logic_error &) {
-      condition_status = NT_ARG_EVAL_FAILED;
-    }
-
-    if(condition_status == NT_ARG_EVALUATED) {
-      if(!condition_value) {
-        throw_substitution_failure(
-            std::string("alias template substitution failed [alias ") +
-                alias_decl->name + "]",
-            std::string(),
-            "template-resolution");
-      }
-      continue;
-    }
-    if(condition_status == NT_ARG_DEPENDENT ||
-       template_argument_syntax_mentions_template_dependency(
-           services,
-           scope,
-           syntax.argument_syntaxes[i],
-           false)) {
-      saw_dependent = true;
-      continue;
-    }
-    return false;
-  }
-
-  if(saw_dependent) {
-    vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
-    dependent_arguments.reserve(arg_texts.size());
-    for(size_t i = 0; i < arg_texts.size(); ++i) {
-      DependentAliasTemplateArgumentSyntax dependent_argument;
-      dependent_argument.text = trim_space(arg_texts[i]);
-      if(i < syntax.argument_syntaxes.size()) {
-        dependent_argument.syntax = syntax.argument_syntaxes[i];
-      }
-      if(dependent_argument.syntax.text.empty()) {
-        dependent_argument.syntax.text = dependent_argument.text;
-      }
-      dependent_arguments.push_back(dependent_argument);
-    }
-
-    ostringstream display;
-    display << alias_decl->name << "<";
-    for(size_t i = 0; i < dependent_arguments.size(); ++i) {
-      if(i != 0) {
-        display << ", ";
-      }
-      display << dependent_arguments[i].text;
-    }
-    display << ">";
-    const string display_text = display.str();
-    const string qualified_text =
-        alias_decl->declaring_scope ?
-            semantic_lookup::scope_qualified_name(*alias_decl->declaring_scope,
-                                                  display_text) :
-            display_text;
-    out = make_dependent_alias_type(display_text,
-                                    qualified_text,
-                                    alias_decl,
-                                    dependent_arguments);
-    return out != nullptr;
-  }
-
-  out = make_fundamental(FT_VOID);
-  return true;
-}
-
 StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -40110,7 +39682,10 @@ void note_structured_bool_value_members_in_template_argument_syntax(
     const TemplateArgumentSyntax & syntax)
 {
   if(!services.semantic_context ||
-     services.witness_context.session == nullptr) {
+     services.witness_context.session == nullptr ||
+     template_argument_syntax_has_template_dependency(services,
+                                                      scope,
+                                                      syntax)) {
     return;
   }
 
@@ -40951,6 +40526,38 @@ bool evaluate_dependent_type_expression_leaf(
   return out != nullptr;
 }
 
+void note_concrete_declval_source_call_leaves(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const CppAstNode & node)
+{
+  if(!services.semantic_context) {
+    return;
+  }
+  if(node.kind == CppAstKind::call_expression &&
+     !node.children.empty()) {
+    const TemplateIdSyntax * callee =
+        cppast_template_id_syntax(node.children[0]);
+    if(callee && callee->name.name == "declval") {
+      try {
+        (void)services.semantic_context->analyze_expression(scope, node);
+      } catch(const TemplateSubstitutionFailure &) {
+      } catch(const SemanticSoftFailure &) {
+      } catch(const SemanticDiagnosticError &) {
+      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+      } catch(const logic_error &) {
+      }
+      return;
+    }
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    note_concrete_declval_source_call_leaves(
+        services,
+        scope,
+        node.children[i]);
+  }
+}
+
 bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
                                    Scope & scope,
                                    const CppAstNode & node,
@@ -41049,6 +40656,14 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
     // Concrete annotations outside those patterns belong to the current
     // substitution and must remain available for non-spellable local types.
     request_expr = &expanded_expr;
+  }
+  if(witness::function_call_recording_enabled(
+         services.witness_context,
+         witness::FunctionCallEmissionOrigin::DeclvalCall)) {
+    const semantic_expression::ScopedUnevaluatedOperand unevaluated_operand;
+    note_concrete_declval_source_call_leaves(services,
+                                             scope,
+                                             expr);
   }
   if(scope_has_template_placeholders(services,
                                      template_api::make_template_environment(scope)) &&

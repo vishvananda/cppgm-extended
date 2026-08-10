@@ -92,6 +92,41 @@ std::string prefer_later_source_location_text(const std::string & first,
   return parsed_second.column >= parsed_first.column ? second : first;
 }
 
+std::string prefer_earlier_source_location_text(const std::string & first,
+                                                const std::string & second)
+{
+  if(first.empty()) {
+    return second;
+  }
+  if(second.empty()) {
+    return first;
+  }
+  const ParsedSourceLocation parsed_first = parse_source_location_text(first);
+  const ParsedSourceLocation parsed_second = parse_source_location_text(second);
+  if(!parsed_first.valid || !parsed_second.valid ||
+     parsed_first.file != parsed_second.file) {
+    return first;
+  }
+  if(parsed_second.line < parsed_first.line) {
+    return second;
+  }
+  if(parsed_second.line > parsed_first.line) {
+    return first;
+  }
+  return parsed_second.column < parsed_first.column ? second : first;
+}
+
+std::string earliest_callsem_source_location_text(const CallSemNode & node)
+{
+  std::string earliest = callsem_node_source_location_text(node);
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    earliest = prefer_earlier_source_location_text(
+        earliest,
+        earliest_callsem_source_location_text(node.children[i]));
+  }
+  return earliest;
+}
+
 std::string constructor_probe_use_location(const ExprInfo & expr)
 {
   return prefer_later_source_location_text(parser_trace::current_use_location(),
@@ -2848,6 +2883,19 @@ bool try_argument_conversion(SemanticContext & ctx,
       ctor_options.emit_source_witness_without_body_instantiation =
           options.instantiate_user_defined_bodies;
       ctor_options.use_location = constructor_probe_use_location(expr);
+      if(!target_is_reference) {
+        ctor_options.source_witness_location = options.source_use_location;
+        if(ctor_options.source_witness_location.empty()) {
+          ctor_options.source_witness_location =
+              earliest_callsem_source_location_text(expr.node);
+        }
+        if(ctor_options.source_witness_location.empty()) {
+          ctor_options.source_witness_location =
+              parser_trace::current_use_location();
+        }
+        ctor_options.source_witness_location_is_authoritative =
+            !ctor_options.source_witness_location.empty();
+      }
       ctor = ctx.select_constructor_from_exprs(scope,
                                                *target_class,
                                                ctor_source_args,

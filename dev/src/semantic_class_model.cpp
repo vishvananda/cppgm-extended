@@ -10802,6 +10802,7 @@ bool reference_collection_needs_template_declaration(const CppAstNode & node)
      payload->kind == CppAstKind::alias_declaration ||
      payload->kind == CppAstKind::deduction_guide_declaration ||
      payload->kind == CppAstKind::function_definition ||
+     payload->kind == CppAstKind::special_member_definition ||
      payload->kind == CppAstKind::special_member_declaration ||
      payload->kind == CppAstKind::simple_declaration) {
     return true;

@@ -15,8 +15,8 @@ template-closure-events
   function-instantiation
     entity adaptor<int>::range<false>::begin
   function-instantiation
-    entity adaptor<int>::range<false>::iterator
+    entity adaptor<int>::range<false>::iterator::iterator
   require-definition
     entity adaptor<int>::range<false>::begin
   require-definition
-    entity adaptor<int>::range<false>::iterator
+    entity adaptor<int>::range<false>::iterator::iterator

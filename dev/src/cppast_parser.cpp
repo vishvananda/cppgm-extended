@@ -1120,6 +1120,63 @@ void mark_ast_template_ids_as_nested_argument(CppAstNode & node)
   }
 }
 
+void rebase_fragment_template_id_source_spans(CppAstNode & node,
+                                              std::size_t base_token);
+
+void rebase_fragment_template_id_source_spans(
+    cpp_decl::TemplateIdSyntax & syntax,
+    std::size_t base_token)
+{
+  if(syntax.has_source_token_span) {
+    syntax.source_token_start += base_token;
+    syntax.source_token_end += base_token;
+  }
+  for(std::size_t i = 0;
+      i < syntax.qualifier_template_id_syntaxes.size();
+      ++i) {
+    rebase_fragment_template_id_source_spans(
+        syntax.qualifier_template_id_syntaxes[i], base_token);
+  }
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    cpp_decl::TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
+    if(argument.template_id) {
+      rebase_fragment_template_id_source_spans(*argument.template_id,
+                                               base_token);
+    }
+    if(argument.type_id) {
+      rebase_fragment_template_id_source_spans(*argument.type_id, base_token);
+    }
+    if(argument.expression) {
+      rebase_fragment_template_id_source_spans(*argument.expression,
+                                               base_token);
+    }
+    if(argument.source_type_id) {
+      rebase_fragment_template_id_source_spans(*argument.source_type_id,
+                                               base_token);
+    }
+  }
+}
+
+void rebase_fragment_template_id_source_spans(CppAstNode & node,
+                                              std::size_t base_token)
+{
+  if(node.template_id_syntax) {
+    rebase_fragment_template_id_source_spans(*node.template_id_syntax,
+                                             base_token);
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    rebase_fragment_template_id_source_spans(
+        node.qualifier_template_id_syntaxes[i], base_token);
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    rebase_fragment_template_id_source_spans(node.qualifier_type_syntaxes[i],
+                                             base_token);
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    rebase_fragment_template_id_source_spans(node.children[i], base_token);
+  }
+}
+
 void mark_template_id_syntax_as_static_member_definition_value(
     cpp_decl::TemplateIdSyntax & syntax)
 {
@@ -1239,6 +1296,18 @@ void build_template_argument_syntax_from_range(
   const bool template_id_pack_expansion =
       template_id_range.second != range.second;
 
+  qualified_name_parser::QualifiedNameParseResult source_name;
+  if(qualified_name_parser::parse_qualified_name(
+         tokens,
+         template_id_range.first,
+         lookup,
+         qualified_name_parser::UnqualifiedNameOptions(),
+         source_name) &&
+     source_name.end == template_id_range.second) {
+    argument.name_has_template_disambiguator =
+        source_name.name_has_template_disambiguator;
+  }
+
   cpp_decl::TemplateIdSyntax nested_template_id;
   if(build_template_id_syntax_from_range(tokens,
                                          lookup,
@@ -1302,6 +1371,8 @@ void build_template_argument_syntax_from_range(
           parsed_type_argument.has_source_token_start = true;
           parsed_type_argument.source_token_start = argument.source_token_start;
           parsed_type_argument.source_location_id = argument.source_location_id;
+          parsed_type_argument.name_has_template_disambiguator =
+              argument.name_has_template_disambiguator;
           parsed_type_argument.template_id = argument.template_id;
           parsed_type_argument.pack_expansion =
               parsed_type_argument.pack_expansion || template_id_pack_expansion;
@@ -1357,6 +1428,8 @@ void build_template_argument_syntax_from_range(
       parsed_argument.has_source_token_start = true;
       parsed_argument.source_token_start = argument.source_token_start;
       parsed_argument.source_location_id = argument.source_location_id;
+      parsed_argument.name_has_template_disambiguator =
+          argument.name_has_template_disambiguator;
       mark_template_argument_syntax_as_nested_argument(parsed_argument);
       argument = std::move(parsed_argument);
       return true;
@@ -1481,7 +1554,14 @@ bool build_template_id_syntax_from_range(
          qualified_name_parser::UnqualifiedNameOptions(),
          parsed) &&
      parsed.end == range.second) {
-    return build_template_id_syntax(tokens, lookup, parsed, out, parser_context);
+    const bool built =
+        build_template_id_syntax(tokens, lookup, parsed, out, parser_context);
+    if(built) {
+      out.has_source_token_span = true;
+      out.source_token_start = range.first;
+      out.source_token_end = range.second;
+    }
+    return built;
   }
 
   for(size_t open = range.first; open < range.second; ++open) {
@@ -1514,6 +1594,11 @@ bool build_template_id_syntax_from_range(
 
     out = cpp_decl::TemplateIdSyntax();
     out.name = build_qualified_name_syntax(head_tokens, head_parsed);
+    out.has_source_token_span = true;
+    out.source_token_start = range.first;
+    out.source_token_end = range.second;
+    out.name_has_template_disambiguator =
+        head_parsed.name_has_template_disambiguator;
     out.source_location_id =
         tokens[range.first + head_parsed.name_template_head_component.first].location_id;
     qualified_name_parser::QualifiedNameParseResult original_head_parsed;
@@ -1562,6 +1647,12 @@ bool build_template_id_syntax(
 
   out = cpp_decl::TemplateIdSyntax();
   out.name.rooted = parsed.rooted;
+  out.has_source_token_span = true;
+  out.source_token_start = !parsed.qualifiers.empty() ?
+      parsed.qualifiers.front().first : parsed.name_component.first;
+  out.source_token_end = parsed.end;
+  out.name_has_template_disambiguator =
+      parsed.name_has_template_disambiguator;
   out.source_location_id =
       tokens[parsed.name_template_head_component.first].location_id;
   for(size_t i = 0; i < parsed.qualifiers.size(); ++i) {
@@ -1639,6 +1730,11 @@ void build_qualifier_template_id_syntaxes(
     cpp_decl::TemplateIdSyntax syntax;
     syntax.name.rooted = parsed.rooted;
     syntax.source_is_qualified_member_owner = true;
+    syntax.has_source_token_span = true;
+    syntax.source_token_start = component.name_component.first;
+    syntax.source_token_end = component.end;
+    syntax.name_has_template_disambiguator =
+        component.has_template_disambiguator;
     syntax.source_location_id =
         tokens[component.name_component.first].location_id;
     for(size_t qualifier_index = 0; qualifier_index < i; ++qualifier_index) {
@@ -11820,6 +11916,7 @@ bool CppAstParser::parse_template_argument_fragment_syntax(
     if(parsed_to_end(type_parser,
                      type_parser.parse_type_id(type_argument),
                      type_pack_expansion)) {
+      rebase_fragment_template_id_source_spans(type_argument, start);
       out.type_id.reset(new CppAstNode(std::move(type_argument)));
       out.pack_expansion =
           type_pack_expansion || has_trailing_pack_expansion;
@@ -11840,6 +11937,7 @@ bool CppAstParser::parse_template_argument_fragment_syntax(
   if(parsed_to_end(expr_parser,
                    expr_parser.parse_assignment_expression(expr_argument),
                    expr_pack_expansion)) {
+    rebase_fragment_template_id_source_spans(expr_argument, start);
     if(!out.type_id) {
       CppAstNode function_type_id;
       if(build_empty_function_type_id_from_call_expression(expr_argument,
@@ -12342,6 +12440,9 @@ void CppAstParser::attach_qualified_name_syntax_from_span(CppAstNode & node,
 
       cpp_decl::TemplateIdSyntax template_id;
       template_id.name = head_syntax;
+      template_id.has_source_token_span = true;
+      template_id.source_token_start = start;
+      template_id.source_token_end = end;
       template_id.source_location_id =
           tokens[start + head_parsed.name_template_head_component.first]
               .location_id;

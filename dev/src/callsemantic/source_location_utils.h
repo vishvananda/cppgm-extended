@@ -44,6 +44,11 @@ public:
                           IRecogTokenSequence * token_sequence);
 
   std::string source_location_for_node(const CppAstNode & node) const;
+  std::string source_location_for_node_syntax_start(
+      const CppAstNode & node) const;
+  std::string source_location_for_identifier_before_node_syntax(
+      const CppAstNode & node) const;
+  std::string source_location_for_node_token(const CppAstNode & node) const;
   std::string source_location_for_name_in_node(const CppAstNode & node,
                                                const std::string & name,
                                                bool prefer_last = false) const;

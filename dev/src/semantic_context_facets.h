@@ -122,7 +122,7 @@ struct ConstructorSelectionOptions
   bool allow_explicit = true;
   bool initializer_list_only = false;
   bool synthesize_implicit_copy_move = true;
-  bool source_witness_direct_construction = false;
+  bool source_witness_location_is_authoritative = false;
   bool emit_source_witness_without_body_instantiation = false;
 };
 

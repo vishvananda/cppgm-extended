@@ -39,6 +39,10 @@ struct TemplateArgumentSyntax
   std::string source_text;
   bool pack_expansion = false;
   bool dependent = false;
+  // Preserve a written `template` disambiguator on a qualified argument name.
+  // The semantic argument printer decides whether the resolved argument is
+  // still dependent enough for Clang's TemplateName spelling to retain it.
+  bool name_has_template_disambiguator = false;
   // The structured argument has been rewritten from a template binding.
   // Witness source-use policy must use this provenance instead of comparing
   // rendered source and substituted spellings.
@@ -68,9 +72,18 @@ struct TemplateIdSyntax
   QualifiedName name;
   // Exact location of the final template-name token, excluding qualifiers.
   uint32_t source_location_id = 0;
+  // Original post-token span.  This remains distinct from the public source
+  // location because every token in a macro expansion shares the invocation
+  // location while still having a deterministic traversal order.
+  bool has_source_token_span = false;
+  std::size_t source_token_start = 0;
+  std::size_t source_token_end = 0;
   bool source_is_nested_template_argument = false;
   bool source_is_qualified_member_owner = false;
   bool source_is_static_member_definition_value = false;
+  // Preserve the parsed `template` disambiguator on the final component.
+  // This is qualifier syntax, not part of template entity identity.
+  bool name_has_template_disambiguator = false;
   std::vector<TemplateIdSyntax> qualifier_template_id_syntaxes;
   std::vector<std::string> arguments;
   std::vector<TemplateArgumentSyntax> argument_syntaxes;

@@ -89,6 +89,13 @@ struct RetainedAliasClassUse
   }
 };
 
+enum class AliasPublicOwnerMode
+{
+  DeclaringScope,
+  SourceDeclaration,
+  SelectedConcrete,
+};
+
 // Stack-scoped semantic result for one source alias-template-id. A dependent
 // pattern may be valid before its arguments can be reduced to TemplateArgument
 // values; in that case the canonical source syntax is the parameterized
@@ -98,9 +105,34 @@ struct ResolvedAliasTemplateId
 {
   semantic_model::AliasTemplateDecl * origin = nullptr;
   semantic_model::Scope * use_scope = nullptr;
+  // Lexical class-template pattern containing the written occurrence.  This
+  // is distinct from `use_scope`: primary-pattern traversal happens before a
+  // concrete ClassInfo exists, while lookup may use an overlay scope that has
+  // no lexical class owner.  A non-null argument view identifies an explicit
+  // or partial specialization; null means the primary template parameters.
+  semantic_model::ClassTemplateDecl * lexical_source_class_template = nullptr;
+  const std::vector<cpp_decl::TemplateArgumentSyntax> *
+      lexical_source_class_arguments = nullptr;
+  // Concrete class selected by a qualified member-alias occurrence. This is
+  // distinct from the lexical source-pattern owner above.
+  semantic_model::ClassInfo * selected_concrete_owner = nullptr;
+  // Public ownership is selected semantically and kept separate from the
+  // lexical class containing the written occurrence.  For example, an alias
+  // declared by an outer class template can be used inside a nested class
+  // template; the latter supplies source bindings but does not own the alias.
+  semantic_model::ClassTemplateDecl * public_source_owner_template = nullptr;
+  const std::vector<cpp_decl::TemplateArgumentSyntax> *
+      public_source_owner_arguments = nullptr;
+  AliasPublicOwnerMode public_owner_mode =
+      AliasPublicOwnerMode::DeclaringScope;
   cpp_decl::TypePtr resolved_type;
   const std::vector<template_model::TemplateArgument> * arguments = nullptr;
-  const std::vector<std::string> * source_argument_texts = nullptr;
+  // One semantic argument per argument written at this source occurrence.
+  // Unlike `arguments`, this view excludes omitted defaults and preserves a
+  // written pack expansion as one argument instead of its instantiated
+  // elements.  The active resolution operation owns the vector.
+  const std::vector<template_model::TemplateArgument> *
+      source_occurrence_arguments = nullptr;
   union
   {
     const std::vector<cpp_decl::TemplateArgumentSyntax> * argument_syntaxes;
@@ -109,6 +141,7 @@ struct ResolvedAliasTemplateId
   const std::string * source_location = nullptr;
   bool dependent_pattern = false;
   bool source_is_template_id = false;
+  bool explicit_source_traversal = false;
 
   const std::vector<cpp_decl::TemplateArgumentSyntax> *
   source_argument_syntaxes() const
@@ -140,7 +173,7 @@ struct ResolvedAliasTemplateId
 
   bool valid() const
   {
-    return origin && use_scope && (source_argument_texts || arguments);
+    return origin && use_scope && source_occurrence_arguments;
   }
 };
 

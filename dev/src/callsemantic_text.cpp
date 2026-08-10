@@ -1137,15 +1137,564 @@ MemberAccess access_from_node(const CppAstNode & node)
   return MA_PRIVATE;
 }
 
-string describe_expression_for_diagnostic(const CppAstNode & node)
+namespace {
+
+using StructuredTypeNameReplacements = map<string, string>;
+
+string render_structured_expression(const CppAstNode & node,
+                                    bool template_argument_policy,
+                                    const StructuredTypeNameReplacements *
+                                        type_name_replacements,
+                                    bool final_template_disambiguator = false);
+string render_structured_type(
+    const CppAstNode & node,
+    const StructuredTypeNameReplacements * type_name_replacements,
+    bool final_template_disambiguator = false);
+string render_structured_template_argument(
+    const TemplateArgumentSyntax & syntax,
+    const StructuredTypeNameReplacements * type_name_replacements,
+    bool preserve_source_template_disambiguator = true);
+
+bool structured_expression_contains_qualified_id(const CppAstNode & node)
 {
+  if(node.qualified_name_syntax &&
+     (!node.qualified_name_syntax->qualifiers.empty() ||
+      node.qualified_name_syntax->rooted)) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(structured_expression_contains_qualified_id(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+string render_structured_template_id_with_prefix_drop(
+    const TemplateIdSyntax & syntax,
+    size_t prefix_drop,
+    const StructuredTypeNameReplacements * type_name_replacements,
+    bool preserve_final_template_disambiguator = true);
+
+string render_structured_qualified_name(
+    const QualifiedName & name,
+    const CppAstLazyVector<TemplateIdSyntax> * node_qualifier_template_ids,
+    const vector<TemplateIdSyntax> * template_qualifier_template_ids,
+    size_t prefix_drop,
+    bool final_template_disambiguator,
+    const StructuredTypeNameReplacements * type_name_replacements)
+{
+  ostringstream out;
+  if(name.rooted && prefix_drop == 0) {
+    out << "::";
+  }
+  for(size_t i = prefix_drop; i < name.qualifiers.size(); ++i) {
+    if(i != prefix_drop) {
+      out << "::";
+    }
+    const TemplateIdSyntax * component = nullptr;
+    if(node_qualifier_template_ids &&
+       i < node_qualifier_template_ids->size() &&
+       !(*node_qualifier_template_ids)[i].name.name.empty()) {
+      component = &(*node_qualifier_template_ids)[i];
+    } else if(template_qualifier_template_ids &&
+              i < template_qualifier_template_ids->size() &&
+              !(*template_qualifier_template_ids)[i].name.name.empty()) {
+      component = &(*template_qualifier_template_ids)[i];
+    }
+    if(component) {
+      out << render_structured_template_id_with_prefix_drop(
+          *component, i, type_name_replacements);
+    } else {
+      out << name.qualifiers[i];
+    }
+  }
+  if(prefix_drop < name.qualifiers.size()) {
+    out << "::";
+  }
+  if(final_template_disambiguator) {
+    out << "template ";
+  }
+  out << name.name;
+  return out.str();
+}
+
+string render_structured_template_id_with_prefix_drop(
+    const TemplateIdSyntax & syntax,
+    size_t prefix_drop,
+    const StructuredTypeNameReplacements * type_name_replacements,
+    bool preserve_final_template_disambiguator)
+{
+  ostringstream out;
+  out << render_structured_qualified_name(
+             syntax.name,
+             nullptr,
+             &syntax.qualifier_template_id_syntaxes,
+             prefix_drop,
+             preserve_final_template_disambiguator &&
+                 syntax.name_has_template_disambiguator,
+             type_name_replacements)
+      << "<";
+  const size_t count = !syntax.argument_syntaxes.empty() ?
+      syntax.argument_syntaxes.size() : syntax.arguments.size();
+  for(size_t i = 0; i < count; ++i) {
+    if(i != 0) {
+      out << ", ";
+    }
+    if(i < syntax.argument_syntaxes.size()) {
+      out << render_structured_template_argument(
+          syntax.argument_syntaxes[i], type_name_replacements);
+    } else {
+      out << trim_space(syntax.arguments[i]);
+    }
+  }
+  out << ">";
+  return out.str();
+}
+
+string render_structured_node_name(
+    const CppAstNode & node,
+    const StructuredTypeNameReplacements * type_name_replacements,
+    bool permit_type_name_replacement,
+    bool final_template_disambiguator = false)
+{
+  string text;
+  if(node.template_id_syntax) {
+    text = render_structured_template_id_with_prefix_drop(
+        *node.template_id_syntax, 0, type_name_replacements);
+  } else if(node.qualified_name_syntax) {
+    const QualifiedName & name = *node.qualified_name_syntax;
+    StructuredTypeNameReplacements::const_iterator replacement =
+        type_name_replacements ?
+            type_name_replacements->find(name.name) :
+            StructuredTypeNameReplacements::const_iterator();
+    if(permit_type_name_replacement &&
+       type_name_replacements &&
+       !name.rooted &&
+       name.qualifiers.empty() &&
+       replacement != type_name_replacements->end()) {
+      text = replacement->second;
+    } else {
+      text = render_structured_qualified_name(
+          name,
+          &node.qualifier_template_id_syntaxes,
+          nullptr,
+          0,
+          final_template_disambiguator,
+          type_name_replacements);
+    }
+  } else {
+    StructuredTypeNameReplacements::const_iterator replacement =
+        type_name_replacements ?
+            type_name_replacements->find(node.value) :
+            StructuredTypeNameReplacements::const_iterator();
+    text = permit_type_name_replacement &&
+               type_name_replacements &&
+               replacement != type_name_replacements->end() ?
+        replacement->second : node.value;
+  }
+  if(node.has_leading_typename &&
+     text.compare(0, 9, "typename ") != 0) {
+    text = "typename " + text;
+  }
+  return text;
+}
+
+string render_structured_type_sequence(
+    const CppAstNode & node,
+    const StructuredTypeNameReplacements * type_name_replacements,
+    bool final_template_disambiguator = false)
+{
+  ostringstream out;
+  // QualType::print places top-level cv qualifiers before the base type even
+  // when the declaration grammar accepted them after it.  Preserve the AST
+  // distinction instead of repairing the completed binding as text.
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(node.children[i].kind != CppAstKind::cv_qualifier) {
+      continue;
+    }
+    const string child = render_structured_type(
+        node.children[i], type_name_replacements);
+    if(child.empty()) {
+      continue;
+    }
+    if(out.tellp() > 0) {
+      out << " ";
+    }
+    out << child;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(node.children[i].kind == CppAstKind::cv_qualifier) {
+      continue;
+    }
+    const string child = render_structured_type(
+        node.children[i],
+        type_name_replacements,
+        final_template_disambiguator);
+    if(child.empty()) {
+      continue;
+    }
+    if(out.tellp() > 0) {
+      out << " ";
+    }
+    out << child;
+  }
+  if(out.tellp() > 0) {
+    return out.str();
+  }
+  return render_structured_node_name(node,
+                                     type_name_replacements,
+                                     true,
+                                     final_template_disambiguator);
+}
+
+string render_structured_parameter_declaration(
+    const CppAstNode & node,
+    const StructuredTypeNameReplacements * type_name_replacements)
+{
+  string base;
+  const CppAstNode * declarator = nullptr;
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(node.children[i].kind == CppAstKind::decl_specifier_seq ||
+       node.children[i].kind == CppAstKind::type_specifier_seq) {
+      base = render_structured_type_sequence(node.children[i],
+                                             type_name_replacements);
+    } else if(node.children[i].kind == CppAstKind::declarator ||
+              node.children[i].kind == CppAstKind::abstract_declarator) {
+      declarator = &node.children[i];
+    }
+  }
+  if(!declarator) {
+    return base.empty() ?
+        render_structured_node_name(node, type_name_replacements, true) :
+        base;
+  }
+
+  string out = base;
+  for(size_t i = 0; i < declarator->children.size(); ++i) {
+    const CppAstNode & child = declarator->children[i];
+    if(child.kind == CppAstKind::parameter_pack) {
+      out += "...";
+    } else if(child.kind == CppAstKind::ptr_operator) {
+      out += (out.empty() ? string() : string(" ")) + child.value;
+    } else {
+      const string suffix = render_structured_type(child,
+                                                   type_name_replacements);
+      if(!suffix.empty()) {
+        out += (out.empty() ? string() : string(" ")) + suffix;
+      }
+    }
+  }
+  return out;
+}
+
+string apply_structured_declarator(
+    string base,
+    const CppAstNode & declarator,
+    const StructuredTypeNameReplacements * type_name_replacements)
+{
+  for(size_t i = 0; i < declarator.children.size(); ++i) {
+    const CppAstNode & child = declarator.children[i];
+    switch(child.kind) {
+    case CppAstKind::ptr_operator:
+      if(!base.empty() && base[base.size() - 1] != '*' &&
+         base[base.size() - 1] != '&') {
+        base += " ";
+      }
+      base += child.value;
+      break;
+    case CppAstKind::cv_qualifier:
+      if(!base.empty() && base[base.size() - 1] != '*') {
+        base += " ";
+      }
+      base += child.value;
+      break;
+    case CppAstKind::parameter_pack:
+    case CppAstKind::ellipsis:
+      base += "...";
+      break;
+    case CppAstKind::parameter_clause:
+    {
+      ostringstream parameters;
+      parameters << "(";
+      for(size_t j = 0; j < child.children.size(); ++j) {
+        if(j != 0) {
+          parameters << ", ";
+        }
+        parameters << render_structured_parameter_declaration(
+            child.children[j], type_name_replacements);
+      }
+      parameters << ")";
+      if(!base.empty()) {
+        base += " ";
+      }
+      base += parameters.str();
+      break;
+    }
+    case CppAstKind::array_suffix:
+      base += render_structured_type(child, type_name_replacements);
+      break;
+    case CppAstKind::nested_declarator:
+      if(!child.children.empty()) {
+        base = "(" + apply_structured_declarator(
+            base, child.children[0], type_name_replacements) + ")";
+      }
+      break;
+    default:
+    {
+      const string part = render_structured_type(child,
+                                                 type_name_replacements);
+      if(!part.empty()) {
+        if(!base.empty()) {
+          base += " ";
+        }
+        base += part;
+      }
+      break;
+    }
+    }
+  }
+  return base;
+}
+
+string render_structured_type(
+    const CppAstNode & node,
+    const StructuredTypeNameReplacements * type_name_replacements,
+    bool final_template_disambiguator)
+{
+  switch(node.kind) {
+  case CppAstKind::type_id:
+  {
+    string base;
+    const CppAstNode * declarator = nullptr;
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(node.children[i].kind == CppAstKind::type_specifier_seq ||
+         node.children[i].kind == CppAstKind::decl_specifier_seq) {
+        base = render_structured_type_sequence(node.children[i],
+                                               type_name_replacements,
+                                               final_template_disambiguator);
+      } else if(node.children[i].kind == CppAstKind::declarator ||
+                node.children[i].kind == CppAstKind::abstract_declarator) {
+        declarator = &node.children[i];
+      }
+    }
+    return declarator ?
+        apply_structured_declarator(base,
+                                    *declarator,
+                                    type_name_replacements) :
+        base;
+  }
+  case CppAstKind::type_specifier_seq:
+  case CppAstKind::decl_specifier_seq:
+    return render_structured_type_sequence(node,
+                                           type_name_replacements,
+                                           final_template_disambiguator);
+  case CppAstKind::type_specifier:
+  case CppAstKind::decl_specifier:
+  case CppAstKind::type_name:
+  case CppAstKind::base_name:
+  case CppAstKind::identifier:
+    return render_structured_node_name(node,
+                                       type_name_replacements,
+                                       true,
+                                       final_template_disambiguator);
+  case CppAstKind::class_forward_declaration:
+  {
+    string key;
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(node.children[i].kind == CppAstKind::class_key) {
+        key = node.children[i].value;
+        break;
+      }
+    }
+    const string name = render_structured_node_name(
+        node,
+        type_name_replacements,
+        true,
+        final_template_disambiguator);
+    return key.empty() ? name : key + " " + name;
+  }
+  case CppAstKind::decltype_specifier:
+    if(node.children.size() == 1) {
+      return string(node.is_typeof_specifier ? "__typeof__(" : "decltype(") +
+          render_structured_expression(node.children[0],
+                                       true,
+                                       type_name_replacements) + ")";
+    }
+    return render_structured_node_name(node,
+                                       type_name_replacements,
+                                       true);
+  case CppAstKind::parameter_declaration:
+    return render_structured_parameter_declaration(node,
+                                                   type_name_replacements);
+  case CppAstKind::parameter_clause:
+  {
+    ostringstream out;
+    out << "(";
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(i != 0) {
+        out << ", ";
+      }
+      out << render_structured_parameter_declaration(
+          node.children[i], type_name_replacements);
+    }
+    out << ")";
+    return out.str();
+  }
+  case CppAstKind::ptr_operator:
+  case CppAstKind::cv_qualifier:
+    return node.value;
+  case CppAstKind::parameter_pack:
+  case CppAstKind::ellipsis:
+    return "...";
+  case CppAstKind::array_suffix:
+    if(node.children.size() == 1) {
+      return "[" + render_structured_expression(node.children[0],
+                                                 true,
+                                                 type_name_replacements) + "]";
+    }
+    return node.value.empty() ? "[]" : node.value;
+  case CppAstKind::abstract_declarator:
+  case CppAstKind::declarator:
+    return apply_structured_declarator(string(),
+                                       node,
+                                       type_name_replacements);
+  default:
+    if(node.template_id_syntax || node.qualified_name_syntax ||
+       !node.value.empty()) {
+      return render_structured_node_name(node,
+                                         type_name_replacements,
+                                         true);
+    }
+    return string();
+  }
+}
+
+string render_structured_template_argument(
+    const TemplateArgumentSyntax & syntax,
+    const StructuredTypeNameReplacements * type_name_replacements,
+    bool preserve_source_template_disambiguator)
+{
+  string out;
+  const bool final_template_disambiguator =
+      preserve_source_template_disambiguator &&
+      syntax.name_has_template_disambiguator;
+  // A directly parsed template-id is the complete argument spelling.  Prefer
+  // it to the accompanying type fragment so nested template arguments and
+  // qualifier-template syntax are retained by the structured printer.
+  if(syntax.template_id) {
+    out = render_structured_template_id_with_prefix_drop(
+        *syntax.template_id,
+        0,
+        type_name_replacements,
+        preserve_source_template_disambiguator);
+  } else if(syntax.type_id &&
+            syntax.expression &&
+            structured_expression_contains_qualified_id(*syntax.expression)) {
+    // When the fragment parser retains both parses, the expression grammar
+    // wins unless semantic template-id resolution has already selected the
+    // direct template-id case above.  This covers dependent functional casts
+    // such as `bool(Bn::value)`.  Keep a function type such as
+    // `void(Tail...)` on the type branch; its expression alternative has no
+    // qualified value-id.
+    out = render_structured_expression(*syntax.expression,
+                                       true,
+                                       type_name_replacements,
+                                       final_template_disambiguator);
+  } else if(syntax.type_id) {
+    out = render_structured_type(*syntax.type_id,
+                                 type_name_replacements,
+                                 final_template_disambiguator);
+  } else if(syntax.expression) {
+    out = render_structured_expression(*syntax.expression,
+                                       true,
+                                       type_name_replacements,
+                                       final_template_disambiguator);
+  } else {
+    out = trim_space(syntax.text);
+  }
+  if(syntax.pack_expansion &&
+     (out.size() < 3 || out.compare(out.size() - 3, 3, "...") != 0)) {
+    out += "...";
+  }
+  return out;
+}
+
+string render_structured_expression(const CppAstNode & node,
+                                    bool template_argument_policy,
+                                    const StructuredTypeNameReplacements *
+                                        type_name_replacements,
+                                    bool final_template_disambiguator)
+{
+  if(node.kind == CppAstKind::cast_expression &&
+     node.children.size() == 2) {
+    const string type = render_structured_type(node.children[0],
+                                               type_name_replacements);
+    const string operand = render_structured_expression(
+        node.children[1], template_argument_policy, type_name_replacements);
+    if(!node.value.empty()) {
+      return node.value + "<" + type + ">(" + operand + ")";
+    }
+    return "(" + type + ")" + operand;
+  }
+  if(node.kind == CppAstKind::pack_expansion_expression &&
+     node.children.size() == 1) {
+    return render_structured_expression(node.children[0],
+                                        template_argument_policy,
+                                        type_name_replacements) +
+           "...";
+  }
+  if(node.kind == CppAstKind::decltype_specifier &&
+     node.children.size() == 1) {
+    return string(node.is_typeof_specifier ? "__typeof__(" : "decltype(") +
+           render_structured_expression(node.children[0],
+                                        template_argument_policy,
+                                        type_name_replacements) +
+           ")";
+  }
+  if(node.kind == CppAstKind::braced_init_list) {
+    ostringstream out;
+    out << "{";
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(i != 0) {
+        out << ", ";
+      }
+      out << render_structured_expression(node.children[i],
+                                          template_argument_policy,
+                                          type_name_replacements);
+    }
+    out << "}";
+    return out.str();
+  }
   if(!node.children.empty()) {
     if(node.kind == CppAstKind::unary_expression && node.children.size() == 1) {
-      return node.value + describe_expression_for_diagnostic(node.children[0]);
+      return node.value +
+          render_structured_expression(node.children[0],
+                                       template_argument_policy,
+                                       type_name_replacements);
     }
     if(node.kind == CppAstKind::binary_expression && node.children.size() == 2) {
-      return describe_expression_for_diagnostic(node.children[0]) + " " + node.value + " " +
-             describe_expression_for_diagnostic(node.children[1]);
+      return render_structured_expression(node.children[0],
+                                          template_argument_policy,
+                                          type_name_replacements) +
+             " " + node.value + " " +
+             render_structured_expression(node.children[1],
+                                          template_argument_policy,
+                                          type_name_replacements);
+    }
+    if(node.kind == CppAstKind::conditional_expression &&
+       node.children.size() == 3) {
+      return render_structured_expression(node.children[0],
+                                          template_argument_policy,
+                                          type_name_replacements) +
+             " ? " +
+             render_structured_expression(node.children[1],
+                                          template_argument_policy,
+                                          type_name_replacements) +
+             " : " +
+             render_structured_expression(node.children[2],
+                                          template_argument_policy,
+                                          type_name_replacements);
     }
     if(node.kind == CppAstKind::call_expression && node.children.size() == 2 &&
        (node.children[1].kind == CppAstKind::argument_list ||
@@ -1153,43 +1702,74 @@ string describe_expression_for_diagnostic(const CppAstNode & node)
       if(node.children[1].kind == CppAstKind::argument_list &&
          node.children[1].children.size() == 1 &&
          node.children[1].children[0].kind == CppAstKind::braced_init_list) {
-        return describe_expression_for_diagnostic(node.children[0]) +
-               describe_expression_for_diagnostic(node.children[1].children[0]);
+        return render_structured_expression(node.children[0],
+                                            template_argument_policy,
+                                            type_name_replacements) +
+               render_structured_expression(node.children[1].children[0],
+                                            template_argument_policy,
+                                            type_name_replacements);
       }
       ostringstream out;
-      out << describe_expression_for_diagnostic(node.children[0]) << "(";
+      out << render_structured_expression(node.children[0],
+                                          template_argument_policy,
+                                          type_name_replacements)
+          << "(";
       for(size_t i = 0; i < node.children[1].children.size(); ++i) {
         if(i != 0) {
           out << ", ";
         }
-        out << describe_expression_for_diagnostic(node.children[1].children[i]);
+        out << render_structured_expression(node.children[1].children[i],
+                                            template_argument_policy,
+                                            type_name_replacements);
       }
       out << ")";
       return out.str();
     }
     if(node.kind == CppAstKind::parenthesized_expression && node.children.size() == 1) {
-      return "(" + describe_expression_for_diagnostic(node.children[0]) + ")";
+      return "(" + render_structured_expression(node.children[0],
+                                                 template_argument_policy,
+                                                 type_name_replacements) +
+             ")";
     }
     if(node.kind == CppAstKind::fold_expression) {
       if(node.children.size() == 2) {
         if(node.children[0].kind == CppAstKind::ellipsis) {
           return "(... " + node.value + " " +
-                 describe_expression_for_diagnostic(node.children[1]) + ")";
+                 render_structured_expression(node.children[1],
+                                              template_argument_policy,
+                                              type_name_replacements) +
+                 ")";
         }
         if(node.children[1].kind == CppAstKind::ellipsis) {
-          return "(" + describe_expression_for_diagnostic(node.children[0]) + " " +
+          return "(" +
+                 render_structured_expression(node.children[0],
+                                              template_argument_policy,
+                                              type_name_replacements) +
+                 " " +
                  node.value + " ...)";
         }
       }
       if(node.children.size() == 3 && node.children[1].kind == CppAstKind::ellipsis) {
-        return "(" + describe_expression_for_diagnostic(node.children[0]) + " " +
+        return "(" +
+               render_structured_expression(node.children[0],
+                                            template_argument_policy,
+                                            type_name_replacements) +
+               " " +
                node.value + " ... " + node.value + " " +
-               describe_expression_for_diagnostic(node.children[2]) + ")";
+               render_structured_expression(node.children[2],
+                                            template_argument_policy,
+                                            type_name_replacements) +
+               ")";
       }
     }
     if(node.kind == CppAstKind::member_expression && node.children.size() == 2) {
-      return describe_expression_for_diagnostic(node.children[0]) + node.value +
-             describe_expression_for_diagnostic(node.children[1]);
+      return render_structured_expression(node.children[0],
+                                          template_argument_policy,
+                                          type_name_replacements) +
+             node.value +
+             render_structured_expression(node.children[1],
+                                          template_argument_policy,
+                                          type_name_replacements);
     }
     if(node.kind == CppAstKind::type_trait_expression && !node.children.empty()) {
       ostringstream out;
@@ -1198,40 +1778,101 @@ string describe_expression_for_diagnostic(const CppAstNode & node)
         if(i != 0) {
           out << ", ";
         }
-        out << describe_expression_for_diagnostic(node.children[i]);
+        out << render_structured_expression(node.children[i],
+                                            template_argument_policy,
+                                            type_name_replacements);
       }
       out << ")";
       return out.str();
     }
     if(node.kind == CppAstKind::sizeof_pack_expression &&
        node.children.size() == 1) {
-      return "sizeof...(" + describe_expression_for_diagnostic(node.children[0]) + ")";
+      return "sizeof...(" +
+             render_structured_expression(node.children[0],
+                                          template_argument_policy,
+                                          type_name_replacements) +
+             ")";
     }
     if(node.kind == CppAstKind::sizeof_expression &&
        node.children.size() == 1) {
-      return "sizeof(" + describe_expression_for_diagnostic(node.children[0]) + ")";
-    }
-    if(node.kind == CppAstKind::braced_init_list) {
-      ostringstream out;
-      out << "{";
-      for(size_t i = 0; i < node.children.size(); ++i) {
-        if(i != 0) {
-          out << ", ";
-        }
-        out << describe_expression_for_diagnostic(node.children[i]);
-      }
-      out << "}";
-      return out.str();
+      const bool type_operand = node.children[0].kind == CppAstKind::type_id;
+      return string(template_argument_policy && !type_operand ?
+                        "sizeof (" : "sizeof(") +
+             (type_operand ?
+                  render_structured_type(node.children[0],
+                                         type_name_replacements) :
+                  render_structured_expression(node.children[0],
+                                               template_argument_policy,
+                                               type_name_replacements)) +
+             ")";
     }
     if(node.kind == CppAstKind::type_id) {
-      return node_text(node);
+      return render_structured_type(node, type_name_replacements);
     }
+  }
+
+  if(node.template_id_syntax || node.qualified_name_syntax) {
+    return render_structured_node_name(node,
+                                       type_name_replacements,
+                                       false,
+                                       final_template_disambiguator);
   }
 
   if(!node.value.empty()) {
     return node.value;
   }
   return node_text(node);
+}
+
+}  // namespace
+
+string describe_expression_for_diagnostic(const CppAstNode & node)
+{
+  return render_structured_expression(node, false, nullptr);
+}
+
+string render_template_argument_expression(const CppAstNode & node)
+{
+  return render_structured_expression(node, true, nullptr);
+}
+
+string render_template_argument_expression(
+    const CppAstNode & node,
+    const map<string, string> & type_name_replacements)
+{
+  return render_structured_expression(node,
+                                      true,
+                                      &type_name_replacements);
+}
+
+string render_template_argument_type(const CppAstNode & node)
+{
+  return render_structured_type(node, nullptr);
+}
+
+string render_template_argument_syntax(
+    const TemplateArgumentSyntax & syntax)
+{
+  return render_structured_template_argument(syntax, nullptr);
+}
+
+string render_template_argument_syntax(
+    const TemplateArgumentSyntax & syntax,
+    const map<string, string> & type_name_replacements)
+{
+  return render_structured_template_argument(syntax,
+                                             &type_name_replacements);
+}
+
+string render_template_argument_syntax(
+    const TemplateArgumentSyntax & syntax,
+    const map<string, string> & type_name_replacements,
+    bool preserve_source_template_disambiguator)
+{
+  return render_structured_template_argument(
+      syntax,
+      &type_name_replacements,
+      preserve_source_template_disambiguator);
 }
 
 string describe_scope_bindings_for_diagnostic(const Scope & scope)

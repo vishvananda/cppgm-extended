@@ -9879,6 +9879,36 @@ ClassInfo * instantiate_selected_class_template(
   }
   const bool current_arguments_dependent =
       template_arguments_are_dependent_for_instantiation(ctx, arguments);
+  const auto retain_selection_value_dependencies =
+      [&](ClassInfo & info) -> void
+      {
+        for(std::size_t i = 0;
+            i < specialization.value_dependencies.size();
+            ++i) {
+          const TemplateValueDependency & dependency =
+              specialization.value_dependencies[i];
+          bool found = false;
+          for(std::size_t j = 0;
+              j < info.template_value_dependencies.size();
+              ++j) {
+            TemplateValueDependency & existing =
+                info.template_value_dependencies[j];
+            if(existing.entity == dependency.entity &&
+               existing.decl_location == dependency.decl_location) {
+              found = true;
+              if(!existing.value_binding && dependency.value_binding) {
+                existing = dependency;
+              }
+              break;
+            }
+          }
+          if(!found &&
+             !dependency.entity.empty() &&
+             !dependency.decl_location.empty()) {
+            info.template_value_dependencies.push_back(dependency);
+          }
+        }
+      };
   const auto trace_class_instantiation = [&](const char * stage,
                                              ClassInfo * info,
                                              const char * reason = nullptr)
@@ -9927,6 +9957,7 @@ ClassInfo * instantiate_selected_class_template(
     if(reference_found != decl.reference_instantiations.end()) {
       if(reference_found->second) {
         if(reference_found->second->reference_member_collection_in_progress) {
+          retain_selection_value_dependencies(*reference_found->second);
           trace_class_instantiation("reuse-reference-in-progress",
                                     reference_found->second);
           return reference_found->second;
@@ -9943,6 +9974,7 @@ ClassInfo * instantiate_selected_class_template(
   ClassInfo * info = nullptr;
   if(found != decl.instantiations.end()) {
     info = found->second;
+    retain_selection_value_dependencies(*info);
     info->reentrant_primary_selection = specialization.reentrant_primary;
     if(!instantiation_use_location.empty()) {
       info->first_qualifier_use_location =
@@ -10027,6 +10059,7 @@ ClassInfo * instantiate_selected_class_template(
     template_audit::set_creation_context(
         *info, "instantiate_class_template [" + decl.name + "]");
   }
+  retain_selection_value_dependencies(*info);
   const bool selected_partial_mangle_context =
       bound_parameters &&
       bound_parameters != &decl.parameters &&
@@ -10121,6 +10154,45 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                          (decl.body ? ctx.source_location_for_node(*decl.body)
                                     : std::string()));
   DiagnosticContext::Guard diagnostic_guard(diagnostic_context);
+  std::vector<TemplateValueDependency> signature_value_dependencies;
+  std::unique_ptr<template_argument_semantics::
+                      ScopedTemplateMemberValueDependencyCollection>
+      signature_dependency_collection;
+  if(template_api::current_template_witness_session() != nullptr &&
+     template_api::template_witness_detail::
+         current_lifecycle_pause_depth_storage() != 0) {
+    signature_dependency_collection.reset(
+        new template_argument_semantics::
+            ScopedTemplateMemberValueDependencyCollection(
+                signature_value_dependencies));
+  }
+  const auto finish_signature_dependency_capture =
+      [&](FunctionBinding * binding, bool retain_dependencies) -> void
+      {
+        signature_dependency_collection.reset();
+        if(binding && retain_dependencies) {
+          binding->witness_signature_value_dependencies =
+              signature_value_dependencies;
+        }
+        if(binding) {
+          for(std::size_t i = 0;
+              i < binding->witness_signature_value_dependencies.size();
+              ++i) {
+            (void)template_argument_semantics::
+                collect_template_member_value_dependency_if_active(
+                    binding->witness_signature_value_dependencies[i]);
+          }
+        }
+        if(!retain_dependencies) {
+          for(std::size_t i = 0;
+              i < signature_value_dependencies.size();
+              ++i) {
+            (void)template_argument_semantics::
+                collect_template_member_value_dependency_if_active(
+                    signature_value_dependencies[i]);
+          }
+        }
+      };
   const std::string instantiation_use_location =
       !instantiation_use_location_override.empty() ?
           instantiation_use_location_override :
@@ -10712,6 +10784,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
        found->second->source_template == cache_source_decl &&
        ctx.function_binding_is_live(found->second) &&
        !template_arguments_are_dependent_for_instantiation(ctx, arguments)) {
+      finish_signature_dependency_capture(found->second, false);
       return found->second;
     }
     Scope * cache_instantiation_context_scope =
@@ -10920,6 +10993,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         !template_arguments_are_dependent_for_instantiation(ctx, arguments) &&
         (!instantiation_owner || !instantiation_owner->dependent_instantiation) &&
         binding_signature_is_concrete(*found->second);
+    finish_signature_dependency_capture(found->second, false);
     return found->second;
   }
 
@@ -12329,6 +12403,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
             InstantiatedFunctionOutputMode::RequireDefinition :
             InstantiatedFunctionOutputMode::TrackOnly);
   }
+  finish_signature_dependency_capture(binding, true);
   return binding;
 }
 
@@ -12373,9 +12448,12 @@ const ValueBinding * instantiate_variable_template(
         emit_source_use &&
         witness::source_location_capture_enabled(ctx.template_witness_context(),
                                                  effective_use_location);
+    const bool member_variable_template =
+        decl.declaring_scope && decl.declaring_scope->class_info;
     const bool record_direct_source_use_during_pause =
         emit_source_use &&
         !source_capture_enabled &&
+        !member_variable_template &&
         source_use_scope != nullptr &&
         witness::enabled(ctx.template_witness_context()) &&
         witness::source_location_is_from_primary_file(

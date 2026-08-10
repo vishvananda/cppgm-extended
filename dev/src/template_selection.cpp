@@ -312,6 +312,31 @@ void cache_class_specialization_selection(
   decl.specialization_selection_cache[key] = entry;
 }
 
+void append_selection_value_dependencies(
+    std::vector<TemplateValueDependency> & out,
+    const std::vector<TemplateValueDependency> & dependencies)
+{
+  for(std::size_t i = 0; i < dependencies.size(); ++i) {
+    const TemplateValueDependency & dependency = dependencies[i];
+    bool found = false;
+    for(std::size_t j = 0; j < out.size(); ++j) {
+      if(out[j].entity == dependency.entity &&
+         out[j].decl_location == dependency.decl_location) {
+        found = true;
+        if(!out[j].value_binding && dependency.value_binding) {
+          out[j] = dependency;
+        }
+        break;
+      }
+    }
+    if(!found &&
+       !dependency.entity.empty() &&
+       !dependency.decl_location.empty()) {
+      out.push_back(dependency);
+    }
+  }
+}
+
 bool type_has_class_template_metadata(const cpp_decl::TypePtr & type);
 
 bool template_argument_has_class_template_metadata(const TemplateArgument & argument)
@@ -541,14 +566,23 @@ void replay_selected_partial_class_value_dependencies(
     std::vector<TemplateArgument> replay_arguments;
     std::map<std::string, std::size_t> replay_pack_sizes;
     std::size_t replay_score = 0;
-    (void)template_specialization::match_partial_class_specialization(
-        services,
-        use_scope,
-        partial,
-        arguments,
-        replay_arguments,
-        replay_score,
-        &replay_pack_sizes);
+    std::vector<TemplateValueDependency> replay_dependencies;
+    {
+      const template_argument_semantics::
+          ScopedTemplateMemberValueDependencyCollection dependency_collection(
+              replay_dependencies);
+      (void)template_specialization::match_partial_class_specialization(
+          services,
+          use_scope,
+          partial,
+          arguments,
+          replay_arguments,
+          replay_score,
+          &replay_pack_sizes);
+    }
+    template_argument_semantics::note_template_value_dependencies_for_witness(
+        *services.semantic_context,
+        replay_dependencies);
   } catch(const std::exception &) {
   }
 }
@@ -659,6 +693,10 @@ ClassSpecializationSelection select_class_specialization(
   std::map<std::string, std::size_t> partial_pack_sizes;
   std::size_t partial_score = 0;
   bool partial_match_deferred = false;
+  std::vector<TemplateValueDependency> selection_value_dependencies;
+  std::map<const PartialClassTemplateSpecializationDecl *,
+           std::vector<TemplateValueDependency> >
+      partial_value_dependencies;
   const PartialClassTemplateSpecializationDecl * chosen_partial =
       select_best_partial_specialization(
           decl.partial_specializations,
@@ -669,18 +707,41 @@ ClassSpecializationSelection select_class_specialization(
           {
             const template_api::ScopedTemplateWitnessSourceCapturePause
                 source_capture_pause;
-            const template_api::ScopedTemplateWitnessLifecyclePause
-                lifecycle_pause;
             bool candidate_deferred = false;
-            const bool matched =
-                template_specialization::match_partial_class_specialization(services,
-                                                                            use_scope,
-                                                                            partial,
-                                                                            arguments,
-                                                                            deduced_arguments,
-                                                                            specificity_score,
-                                                                            &deduced_pack_sizes,
-                                                                            &candidate_deferred);
+            bool matched = false;
+            std::vector<TemplateValueDependency> candidate_value_dependencies;
+            {
+              const template_argument_semantics::
+                  ScopedTemplateMemberValueDependencyCollection
+                      dependency_collection(candidate_value_dependencies);
+              const template_api::ScopedTemplateWitnessLifecyclePause
+                  lifecycle_pause;
+              matched =
+                  template_specialization::match_partial_class_specialization(
+                      services,
+                      use_scope,
+                      partial,
+                      arguments,
+                      deduced_arguments,
+                      specificity_score,
+                      &deduced_pack_sizes,
+                      &candidate_deferred);
+            }
+            append_selection_value_dependencies(selection_value_dependencies,
+                                                candidate_value_dependencies);
+            partial_value_dependencies[&partial] =
+                candidate_value_dependencies;
+            // The local collector shadows a collector owned by an enclosing
+            // specialization or function-signature candidate.  Hand the
+            // retained facts back to that parent so they remain conditional
+            // on the enclosing candidate's own commit decision.
+            for(std::size_t i = 0;
+                i < candidate_value_dependencies.size();
+                ++i) {
+              (void)template_argument_semantics::
+                  collect_template_member_value_dependency_if_active(
+                      candidate_value_dependencies[i]);
+            }
             if(candidate_deferred) {
               partial_match_deferred = true;
             }
@@ -732,6 +793,7 @@ ClassSpecializationSelection select_class_specialization(
     if(!selection_deferred) {
       replay_concrete_class_value_dependencies(services, use_scope, arguments);
     }
+    selection.value_dependencies = selection_value_dependencies;
     if(use_selection_cache &&
        !selection_deferred &&
        !saw_reentrant_primary_selection &&
@@ -745,6 +807,18 @@ ClassSpecializationSelection select_class_specialization(
                                 *chosen_partial,
                                 partial_arguments,
                                 partial_pack_sizes);
+  const std::vector<TemplateValueDependency> & chosen_value_dependencies =
+      partial_value_dependencies[chosen_partial];
+  // The winning partial has crossed its own specialization-selection commit
+  // boundary.  If this selection is nested inside another candidate, normal
+  // lifecycle pausing retains these dependencies in the enclosing collector;
+  // otherwise they are observable now.  Dependencies from rejected partials
+  // never take this route.
+  if(services.semantic_context) {
+    template_argument_semantics::note_template_value_dependencies_for_witness(
+        *services.semantic_context,
+        chosen_value_dependencies);
+  }
   replay_selected_partial_class_value_dependencies(
       services,
       use_scope,
@@ -753,6 +827,7 @@ ClassSpecializationSelection select_class_specialization(
       partial_arguments,
       partial_pack_sizes);
   replay_concrete_class_value_dependencies(services, use_scope, arguments);
+  selection.value_dependencies = chosen_value_dependencies;
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
     trace << "class-specialization name=" << decl.name

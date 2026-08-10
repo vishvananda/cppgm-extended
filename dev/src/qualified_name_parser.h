@@ -17,6 +17,7 @@ struct NameComponentParseResult
   std::size_t end = 0;
   std::pair<std::size_t, std::size_t> name_component;
   bool has_template_suffix = false;
+  bool has_template_disambiguator = false;
   std::vector<std::pair<std::size_t, std::size_t> > template_arg_ranges;
 };
 
@@ -43,6 +44,7 @@ struct UnqualifiedNameParseResult
   std::pair<std::size_t, std::size_t> name_component;
   UnqualifiedNameKind kind = UNQ_COMPONENT;
   bool has_template_suffix = false;
+  bool has_template_disambiguator = false;
   bool operator_is_conversion = false;
   std::vector<std::pair<std::size_t, std::size_t> > template_arg_ranges;
 };
@@ -56,6 +58,7 @@ struct QualifiedNameParseResult
   std::pair<std::size_t, std::size_t> name_template_head_component;
   UnqualifiedNameKind name_kind = UNQ_COMPONENT;
   bool name_has_template_suffix = false;
+  bool name_has_template_disambiguator = false;
   bool operator_is_conversion = false;
   std::vector<std::pair<std::size_t, std::size_t> > name_template_arg_ranges;
   std::size_t end = 0;

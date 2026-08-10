@@ -1348,8 +1348,6 @@ inline std::string normalize_template_log_type_spellings(const std::string & tex
   static const std::regex std_inline_namespace_regex(
       "\\bstd::__(?:[0-9]+|ndk[0-9]+)::");
   static const std::regex local_regex("__local_\\d+");
-  static const std::regex member_typedef_regex(
-      "\\b([A-Za-z_][A-Za-z0-9_]*)::(value_type|iterator|const_iterator|reference|const_reference)\\b");
   static const std::regex integer_suffix_regex("\\b([0-9]+)[uUlL]+\\b");
   static const std::regex const_before_indirection_regex(
       "\\b([A-Za-z_][A-Za-z0-9_:]*(?:<[^<>]*>)?)\\s+const(\\s*[*&])");
@@ -1361,7 +1359,6 @@ inline std::string normalize_template_log_type_spellings(const std::string & tex
   std::string out = text;
   out = std::regex_replace(out, std_inline_namespace_regex, "std::");
   out = std::regex_replace(out, local_regex, "");
-  out = std::regex_replace(out, member_typedef_regex, "$2");
   replace_all(out, "unsigned long long int", "unsigned long long");
   replace_all(out, "unsigned long int", "unsigned long");
   replace_all(out, "long long int", "long long");

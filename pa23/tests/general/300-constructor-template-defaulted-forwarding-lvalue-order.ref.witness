@@ -13,6 +13,6 @@ template-closure-events
   require-definition
     entity box::box
   variable-instantiation
-    entity constis_<const value &>::value
+    entity is_const<const value &>::value
   variable-instantiation
     entity is_same<box &, const value &>::value

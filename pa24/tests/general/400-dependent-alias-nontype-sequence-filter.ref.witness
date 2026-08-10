@@ -11,11 +11,11 @@ translation-unit
     bind #2 = 0 source=explicit
   alias-use at tests/general/400-dependent-alias-nontype-sequence-filter.t:100:5
     template from_sequence
-    bind #1 = make_integer_sequence<typename constremove_<decltype(N::value)>::type, N::value> source=explicit
+    bind #1 = make_integer_sequence<typename remove_const<decltype(N::value)>::type, N::value> source=explicit
     bind #2 = F source=explicit
   alias-use at tests/general/400-dependent-alias-nontype-sequence-filter.t:101:9
     template make_integer_sequence
-    bind #1 = typename constremove_<decltype(N::value)>::type source=explicit
+    bind #1 = typename remove_const<decltype(N::value)>::type source=explicit
     bind #2 = N::value source=explicit
   alias-use at tests/general/400-dependent-alias-nontype-sequence-filter.t:107:16
     template from_sequence

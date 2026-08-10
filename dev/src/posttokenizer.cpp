@@ -610,7 +610,9 @@ inline void PostTokenizer::capture_current_location()
     cached_location_file_valid = true;
   }
   if(file_only_source_locations || file_only_source_locations_enabled()) {
-    current_location_id = location_table->add(file_index, 1, 1);
+    current_location_id = location_table->add(
+        file_index, 1, 1,
+        location_provider->current_source_is_macro_expansion());
     return;
   }
 
@@ -619,7 +621,9 @@ inline void PostTokenizer::capture_current_location()
   if(line == 0 || column == 0) {
     return;
   }
-  current_location_id = location_table->add(file_index, line, column);
+  current_location_id = location_table->add(
+      file_index, line, column,
+      location_provider->current_source_is_macro_expansion());
 }
 
 inline void PostTokenizer::process(const EPPTokenType type,

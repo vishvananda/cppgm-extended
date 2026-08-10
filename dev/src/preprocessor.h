@@ -36,11 +36,17 @@ struct Preprocessor : IPPTokenSource, ISourceLocationProvider
   inline bool current_file_is_system_header() const
       {return !files.empty() && files.back()->system_header;};
   const std::string & current_source_file() const override
-      {return cursor.token_file_ptr ? *cursor.token_file_ptr : cursor.token_file;};
+      {return last_output_from_macro_expansion_ ?
+          macro_expansion_source_file_ :
+          (cursor.token_file_ptr ? *cursor.token_file_ptr : cursor.token_file);};
   uint32_t current_source_line() const override
-      {return cursor.token_line;};
+      {return last_output_from_macro_expansion_ ?
+          macro_expansion_source_line_ : cursor.token_line;};
   uint32_t current_source_column() const override
-      {return cursor.token_column;};
+      {return last_output_from_macro_expansion_ ?
+          macro_expansion_source_column_ : cursor.token_column;};
+  bool current_source_is_macro_expansion() const override
+      {return last_output_from_macro_expansion_;};
   inline bool complete()
       {return cursor.complete() && !macroizer.active(); };
   const std::vector<std::string> & dependency_files() const
@@ -177,6 +183,10 @@ protected:
   std::vector<EPPToken> directive_tokens;
   std::size_t pragma_op_nesting;
   unsigned long long counter_macro_value;
+  bool last_output_from_macro_expansion_;
+  std::string macro_expansion_source_file_;
+  uint32_t macro_expansion_source_line_;
+  uint32_t macro_expansion_source_column_;
 
   void note_dependency(const std::string & path, bool system);
 };

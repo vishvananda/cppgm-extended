@@ -101,7 +101,8 @@ TemplateWitnessSourceAnchor normalized_decl_anchor_or_default(
     const std::string & decl_location);
 
 semantic_source_use::SourceBinding source_binding_from_event(
-    const TemplateWitnessSourceBinding & binding);
+    const TemplateWitnessSourceBinding & binding,
+    bool normalize_angle_spacing = true);
 
 std::string populate_common_source_use_fields(
     semantic_source_use::SemanticSourceUse & use,
@@ -142,6 +143,11 @@ semantic_source_use::SemanticSourceUse make_class_use_source_use(
     semantic_source_use::SourceUseRole role)
 {
   semantic_source_use::SemanticSourceUse use;
+  use.source_traversal_order = decision.source_traversal_order;
+  use.semantic_class_template_identity =
+      decision.semantic_class_template_identity;
+  use.semantic_class_specialization_key =
+      decision.semantic_class_specialization_key;
   const std::string selected_decl_location = populate_common_source_use_fields(
       use,
       semantic_source_use::SourceUseKind::ClassUse,
@@ -175,6 +181,10 @@ ClassUseSourceDecision class_use_source_decision_from_request(
 {
   ClassUseSourceDecision decision;
   CPPGM_SET_WITNESS_PRODUCER(decision, request.producer_site);
+  decision.source_traversal_order = request.source_traversal_order;
+  decision.semantic_class_template_identity = request.semantic_template;
+  decision.semantic_class_specialization_key =
+      request.semantic_specialization_key;
   decision.location = request.location;
   if(request.use_anchor_present && !request.use_anchor_location.empty()) {
     decision.use_anchor.location = request.use_anchor_location;
@@ -217,11 +227,13 @@ void record_class_use_source_use_in_table(
 }
 
 semantic_source_use::SourceBinding source_binding_from_event(
-    const TemplateWitnessSourceBinding & binding)
+    const TemplateWitnessSourceBinding & binding,
+    bool normalize_angle_spacing)
 {
   semantic_source_use::SourceBinding out;
   out.param = binding.param;
-  out.arg = normalize_source_event_angle_spacing(binding.arg);
+  out.arg = normalize_angle_spacing ?
+      normalize_source_event_angle_spacing(binding.arg) : binding.arg;
   out.source = binding.source;
   out.type_like = binding.type_like;
   out.preserve_qualified_member = binding.preserve_qualified_member;
@@ -230,7 +242,9 @@ semantic_source_use::SourceBinding source_binding_from_event(
   out.pack_arguments.reserve(binding.pack_arguments.size());
   for(std::size_t i = 0; i < binding.pack_arguments.size(); ++i) {
     out.pack_arguments.push_back(
-        normalize_source_event_angle_spacing(binding.pack_arguments[i]));
+        normalize_angle_spacing ?
+            normalize_source_event_angle_spacing(binding.pack_arguments[i]) :
+            binding.pack_arguments[i]);
   }
   out.function_pointer_parameter = binding.function_pointer_parameter;
   return out;
@@ -266,6 +280,11 @@ semantic_source_use::SemanticSourceUse make_function_call_source_use(
     const FunctionCallSourceDecision & decision)
 {
   semantic_source_use::SemanticSourceUse use;
+  use.source_traversal_order = decision.source_traversal_order;
+  use.semantic_owner_class_template_identity =
+      decision.semantic_owner_class_template_identity;
+  use.semantic_owner_class_specialization_key =
+      decision.semantic_owner_class_specialization_key;
   const std::string selected_decl_location =
       populate_common_source_use_fields(
           use,
@@ -337,6 +356,7 @@ semantic_source_use::SemanticSourceUse make_alias_use_source_use(
     const AliasUseSourceDecision & decision)
 {
   semantic_source_use::SemanticSourceUse use;
+  use.source_traversal_order = decision.source_traversal_order;
   const std::string selected_decl_location =
       populate_common_source_use_fields(
           use,
@@ -349,7 +369,6 @@ semantic_source_use::SemanticSourceUse make_alias_use_source_use(
           decision.selected_decl_location,
           decision.template_name,
           true);
-  use.expanded_to = decision.expanded_to;
   use.template_id_occurrence = decision.template_id_occurrence;
   if(!decision.template_name.empty()) {
     use.selected_entity.kind = semantic_source_use::EntityRefKind::Named;
@@ -357,7 +376,11 @@ semantic_source_use::SemanticSourceUse make_alias_use_source_use(
     use.selected_entity.decl_location = selected_decl_location;
   }
   for(std::size_t i = 0; i < decision.bindings.size(); ++i) {
-    use.bindings.push_back(source_binding_from_event(decision.bindings[i]));
+    // Alias source-occurrence arguments have already been rendered from their
+    // semantic AST.  A generic angle-space pass cannot distinguish a template
+    // closer from `>` or `>>` inside decltype and would corrupt the payload.
+    use.bindings.push_back(source_binding_from_event(decision.bindings[i],
+                                                    false));
   }
   return use;
 }
@@ -616,7 +639,9 @@ bool emit_class_use(const TemplateWitnessContext & ctx,
                        std::string("emit-class-use ctx template=") +
                            request.template_name +
                            " origin=" +
-                           std::to_string(static_cast<int>(request.origin)));
+                           std::to_string(static_cast<int>(request.origin)) +
+                           " traversal-order=" +
+                           std::to_string(request.source_traversal_order));
   }
   if(request.location.empty()) {
     return false;
@@ -624,7 +649,8 @@ bool emit_class_use(const TemplateWitnessContext & ctx,
   if(!source_location_is_from_primary_file(ctx, request.location)) {
     return false;
   }
-  if(!class_use_recording_enabled(ctx, request.origin)) {
+  if(!class_use_recording_enabled(ctx, request.origin) &&
+     !request.record_during_source_capture_pause) {
     return false;
   }
   const ClassUseSourceDecision decision =
@@ -703,7 +729,9 @@ void record_class_use_source_use(
     parser_trace::note("witness.emit",
                        decision.location,
                        std::string("record-class-use-source-use template=") +
-                           decision.template_name);
+                           decision.template_name +
+                           " traversal-order=" +
+                           std::to_string(decision.source_traversal_order));
   }
   semantic_source_use::SemanticSourceUseTable * table =
       template_api::current_semantic_source_use_table();
@@ -887,6 +915,7 @@ void emit_alias_use(const TemplateWitnessContext & ctx,
   }
   AliasUseSourceDecision decision;
   CPPGM_SET_WITNESS_PRODUCER(decision, request.producer_site);
+  decision.source_traversal_order = request.source_traversal_order;
   set_use_anchor(decision.location,
                  decision.use_anchor,
                  request.use_location);
@@ -901,7 +930,6 @@ void emit_alias_use(const TemplateWitnessContext & ctx,
                              request.selected_decl_location,
                              request.selected_decl_has_name_location);
   }
-  decision.expanded_to = request.expanded_to;
   decision.bindings = request.bindings;
   semantic_source_use::SemanticSourceUseTable * table = ctx.source_use_table;
   if(table == nullptr && ctx.session != nullptr) {

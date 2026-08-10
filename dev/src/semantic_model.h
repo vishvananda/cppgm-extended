@@ -709,6 +709,10 @@ struct FunctionBinding
   bool is_explicit_specialization = false;
   std::map<std::string, std::size_t> instantiation_pack_sizes;
   std::string template_instantiation_key;
+  // Retain member-value facts discovered while substituting the signature so
+  // cached specializations can replay them into an enclosing candidate.
+  std::vector<template_model::TemplateValueDependency>
+      witness_signature_value_dependencies;
   // A concrete function-template specialization has one immutable signature.
   // Signature-only overload probes may reuse it without rebuilding the
   // template argument scope once initial substitution and validation finish.
@@ -1577,6 +1581,13 @@ struct AliasTemplateDecl
 
   Scope * declaring_scope = nullptr;
   Scope * pattern_scope = nullptr;
+  // Source class-template declaration that lexically owns this alias
+  // declaration.  Source-pattern member scopes intentionally have no
+  // ClassInfo, so retaining this typed declaration link avoids recovering the
+  // public owner from whichever use-site completion happens to run first.
+  ClassTemplateDecl * source_owner_template = nullptr;
+  const std::vector<cpp_decl::TemplateArgumentSyntax> *
+      source_owner_arguments = nullptr;
   std::string name;
   MemberAccess access = MA_PUBLIC;
   const CppAstNode * type_id = nullptr;

@@ -144,6 +144,60 @@ string SourceLocationTokenView::source_location_for_node(const CppAstNode & node
   return string(" at ") + location;
 }
 
+string SourceLocationTokenView::source_location_for_node_syntax_start(
+    const CppAstNode & node) const
+{
+  if(token_sequence_ != nullptr && node.token_end > node.token_start) {
+    const string location = source_location_for_token_index(node.token_start);
+    if(!location.empty()) {
+      return location;
+    }
+  }
+  return source_location_for_node(node);
+}
+
+string SourceLocationTokenView::source_location_for_identifier_before_node_syntax(
+    const CppAstNode & node) const
+{
+  if(token_sequence_ != nullptr && node.token_start > 0) {
+    const RecogToken & previous = token_sequence_->peek(node.token_start - 1);
+    if(previous.is_identifier()) {
+      const string location = source_location_for_token_index(node.token_start - 1);
+      if(!location.empty()) {
+        return location;
+      }
+    }
+  }
+  return string();
+}
+
+string SourceLocationTokenView::source_location_for_node_token(
+    const CppAstNode & node) const
+{
+  if(token_sequence_ != nullptr && node.has_token &&
+     node.token_end > node.token_start) {
+    size_t begin = node.token_start;
+    size_t end = node.token_end;
+    if(node.children.size() == 2 &&
+       node.children[0].token_end <= node.children[1].token_start) {
+      begin = node.children[0].token_end;
+      end = node.children[1].token_start;
+    }
+    for(size_t i = begin; i < end; ++i) {
+      const RecogToken & token = token_sequence_->peek(i);
+      if(token.kind != node.token_kind ||
+         (node.token_kind == RT_SIMPLE && token.simple_type != node.simple_type)) {
+        continue;
+      }
+      const string location = source_location_for_token_index(i);
+      if(!location.empty()) {
+        return location;
+      }
+    }
+  }
+  return source_location_for_node(node);
+}
+
 string SourceLocationTokenView::source_location_for_name_in_node(const CppAstNode & node,
                                                 const string & name,
                                                 bool prefer_last) const

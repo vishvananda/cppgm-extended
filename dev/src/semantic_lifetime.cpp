@@ -1412,7 +1412,21 @@ bool analyze_direct_class_materialization_initializer(SemanticContext & ctx,
     return false;
   }
 
-  out = ctx.analyze_expression_for_target(scope, *payload, target_type);
+  ConstructorSelectionOptions ctor_options =
+      constructor_lifecycle_service::selection_options_for(
+          constructor_lifecycle_service::direct_initialization_profile(
+              "direct materialization initializer"));
+  ctor_options.source_witness_location =
+      ctx.source_location_for_node_syntax_start(*payload);
+  ctor_options.source_witness_location_is_authoritative =
+      !ctor_options.source_witness_location.empty();
+  if(!ctx.try_analyze_target_aware_expression(scope,
+                                              *payload,
+                                              target_type,
+                                              out,
+                                              &ctor_options)) {
+    out = ctx.analyze_expression_for_target(scope, *payload, target_type);
+  }
   if(!type_equals(strip_top_level_cv(out.type), strip_top_level_cv(target_type))) {
     return false;
   }
@@ -1537,6 +1551,12 @@ void note_elided_direct_materialization_constructor_witness(
   ctor_options.instantiate_bodies = false;
   ctor_options.synthesize_implicit_copy_move = false;
   ctor_options.use_location = ctx.source_location_for_node(initializer);
+  const CppAstNode * source_payload = unwrap_initializer_payload(&initializer);
+  ctor_options.source_witness_location = source_payload ?
+      earliest_source_location_for_node(ctx, *source_payload) :
+      callsem_node_source_location_text(direct_init.node);
+  ctor_options.source_witness_location_is_authoritative =
+      !ctor_options.source_witness_location.empty();
 
   constructor_lifecycle_service::ConstructorSelectionResult selection;
   try
@@ -2553,7 +2573,7 @@ FunctionBinding * append_constructor_call_action(
         if(ctor_options.source_witness_location.empty() &&
            !source_witness_location.empty()) {
           ctor_options.source_witness_location = source_witness_location;
-          ctor_options.source_witness_direct_construction = true;
+          ctor_options.source_witness_location_is_authoritative = true;
         }
         constructor_lifecycle_service::apply_selection_profile(
             ctor_options,
@@ -2579,7 +2599,7 @@ FunctionBinding * append_constructor_call_action(
       if(ctor_options.source_witness_location.empty() &&
          !source_witness_location.empty()) {
         ctor_options.source_witness_location = source_witness_location;
-        ctor_options.source_witness_direct_construction = true;
+        ctor_options.source_witness_location_is_authoritative = true;
       }
       constructor_lifecycle_service::apply_selection_profile(
           ctor_options,
@@ -2606,7 +2626,7 @@ FunctionBinding * append_constructor_call_action(
       if(ctor_options.source_witness_location.empty() &&
          !source_witness_location.empty()) {
         ctor_options.source_witness_location = source_witness_location;
-        ctor_options.source_witness_direct_construction = true;
+        ctor_options.source_witness_location_is_authoritative = true;
       }
       constructor_lifecycle_service::apply_selection_profile(
           ctor_options,
@@ -3608,7 +3628,7 @@ void append_target_initialization_actions(SemanticContext & ctx,
                                              uses_function_style_constructor_args);
     if(!target_use_location.empty()) {
       ctor_options.source_witness_location = target_use_location;
-      ctor_options.source_witness_direct_construction = true;
+      ctor_options.source_witness_location_is_authoritative = true;
     }
     append_constructor_call_action(ctx,
                                    scope,
@@ -4706,7 +4726,7 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
   if(!initializer && !object_use_location.empty()) {
     ctor_options.use_location = object_use_location;
   }
-  ctor_options.source_witness_direct_construction = true;
+  ctor_options.source_witness_location_is_authoritative = true;
   const bool payload_is_literal =
       payload &&
       (payload->kind == CppAstKind::literal ||

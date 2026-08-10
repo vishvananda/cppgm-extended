@@ -10,6 +10,6 @@ translation-unit
     bind #1 = 1 source=explicit
 template-closure-events
   variable-instantiation
-    entity iterator<0>::index
+    entity detail::iterator<0>::index
   variable-instantiation
     entity number<1>::value

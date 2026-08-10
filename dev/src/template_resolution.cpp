@@ -3113,9 +3113,7 @@ bool function_template_deduction_cache_allowed(SemanticContext & ctx,
   if(counters) {
     ++counters->function_template_deduction_cache_allowed_checks;
   }
-  if(parser_trace::enabled("template.resolve") ||
-     witness::source_capture_enabled(ctx) ||
-     decl.parameters.empty()) {
+  if(decl.parameters.empty()) {
     return false;
   }
   for(std::size_t i = 0; i < args.size(); ++i) {
@@ -4423,8 +4421,6 @@ void rehydrate_cached_defaulted_non_type_argument_witness_dependencies(
         attach_template_argument_source_syntax(&default_syntax, argument);
       }
 
-      const template_argument_semantics::ScopedDefaultTemplateArgumentEvaluation
-          default_argument_evaluation;
       const template_api::TemplateEnvironmentHandle default_argument_env =
           template_api::make_template_environment(*default_argument_scope);
       std::vector<TemplateValueDependency> value_dependencies =
@@ -4460,6 +4456,13 @@ void rehydrate_cached_defaulted_non_type_argument_witness_dependencies(
               services,
               default_argument_env,
               dependency_default_syntax);
+      if(dependency_default_syntax.expression) {
+        template_argument_semantics::
+            note_constant_value_member_instantiations_in_expression(
+                services,
+                *default_argument_scope,
+                *dependency_default_syntax.expression);
+      }
     } else if(i < inputs.texts.size() && !argument.source_syntax) {
       attach_template_argument_source_syntax(inputs.syntax_for(i), argument);
     }
@@ -13386,6 +13389,13 @@ bool resolve_template_argument(template_api::TemplateServices & services,
               argument_scope,
               *syntax);
       note_substituted_source_argument(raw_argument_scope, syntax, out);
+      if(syntax->expression) {
+        template_argument_semantics::
+            note_constant_value_member_instantiations_in_expression(
+                services,
+                raw_argument_scope,
+                *syntax->expression);
+      }
     }
     return true;
   }
@@ -14256,8 +14266,11 @@ bool resolve_template_arguments(
 
     TemplateArgument arg;
     const CppAstNode & child = parameters[i].default_argument->children[0];
-    const template_argument_semantics::ScopedDefaultTemplateArgumentEvaluation
-        default_argument_evaluation;
+    std::unique_ptr<
+        template_argument_semantics::ScopedDefaultTemplateArgumentEvaluation>
+        default_argument_evaluation(
+            new template_argument_semantics::
+                ScopedDefaultTemplateArgumentEvaluation());
     const template_api::TemplateEnvironmentHandle default_argument_env =
         template_api::make_template_environment(*default_argument_scope);
     if(parameters[i].kind != TemplateParameterInfo::TP_NON_TYPE) {
@@ -14586,8 +14599,30 @@ bool resolve_template_arguments(
           arg.expression.reset(new CppAstNode(substituted_default_expression));
         }
         attach_template_argument_source_syntax(&default_syntax, arg);
+        const template_api::TemplateWitnessEntryContext entry_context =
+            template_api::current_template_witness_entry_context();
+        const std::string default_use_location =
+            !services.witness_context.public_use_location.empty() ?
+                services.witness_context.public_use_location :
+                parser_trace::current_use_location();
+        const bool committed_default =
+            entry_context.origin ==
+                template_api::TemplateWitnessOrigin::Closure ||
+            !template_api::source_location_is_inside_recorded_template_body(
+                services.witness_context,
+                default_use_location);
+        if(committed_default) {
+          default_argument_evaluation.reset();
+        }
         if(services.witness_context.session != nullptr &&
            services.semantic_context) {
+          if(committed_default && dependency_default_syntax.expression) {
+            template_argument_semantics::
+                note_constant_value_member_instantiations_in_expression(
+                    services,
+                    *default_argument_scope,
+                    *dependency_default_syntax.expression);
+          }
           template_argument_semantics::
               append_structured_bool_value_dependencies_in_template_argument_syntax(
                   services,
@@ -18026,6 +18061,45 @@ bool deduce_function_template_arguments(SemanticContext & ctx,
   if(cached != cache.end()) {
     if(counters) {
       ++counters->function_template_deduction_cache_hits;
+    }
+    const bool replay_observations =
+        witness::source_capture_enabled(ctx) ||
+        parser_trace::enabled("template.resolve");
+    if(replay_observations) {
+      static thread_local std::size_t observation_replay_depth = 0;
+      if(observation_replay_depth == 0) {
+        struct ObservationReplayGuard
+        {
+          explicit ObservationReplayGuard(std::size_t & depth_in)
+            : depth(depth_in)
+          {
+            ++depth;
+          }
+
+          ~ObservationReplayGuard()
+          {
+            --depth;
+          }
+
+          std::size_t & depth;
+        } replay_guard(observation_replay_depth);
+        std::vector<TemplateArgument> observed_arguments;
+        std::map<std::string, std::size_t> observed_pack_sizes;
+        try {
+          (void)deduce_function_template_arguments_uncached(
+              ctx,
+              decl,
+              args,
+              observed_arguments,
+              use_scope,
+              &observed_pack_sizes);
+        } catch(const std::exception &) {
+          // This pass exists only to reproduce witness or diagnostic
+          // observations that a cache hit would otherwise skip. The cached
+          // deduction remains the semantic result even when replay cannot
+          // complete.
+        }
+      }
     }
     out = cached->second.arguments;
     if(pack_sizes_out) {

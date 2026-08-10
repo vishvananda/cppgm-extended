@@ -174,6 +174,7 @@ const char * source_use_role_name(semantic_source_use::SourceUseRole role)
     return "static_member_definition_owner";
   case semantic_source_use::SourceUseRole::ValueUse: return "value";
   case semantic_source_use::SourceUseRole::CallUse: return "call";
+  case semantic_source_use::SourceUseRole::DeclvalCall: return "declval_call";
   }
   return "unknown";
 }

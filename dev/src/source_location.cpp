@@ -7,7 +7,7 @@ using namespace std;
 SourceLocationTable::SourceLocationTable()
 {
   files.push_back(string());
-  locations.push_back(SourceLocation{0, 0, 0});
+  locations.push_back(SourceLocation{0, false, 0, 0});
 }
 
 uint16_t SourceLocationTable::add_file(const string & path)
@@ -27,7 +27,8 @@ uint16_t SourceLocationTable::add_file(const string & path)
   return index;
 }
 
-uint32_t SourceLocationTable::add(uint16_t file_index, uint32_t line, uint32_t column)
+uint32_t SourceLocationTable::add(uint16_t file_index, uint32_t line,
+                                  uint32_t column, bool macro_expansion)
 {
   if(file_index == 0 || line == 0 || column == 0) {
     return 0;
@@ -36,6 +37,7 @@ uint32_t SourceLocationTable::add(uint16_t file_index, uint32_t line, uint32_t c
   if(!locations.empty()) {
     const SourceLocation & previous = locations.back();
     if(previous.file_index == file_index &&
+       previous.macro_expansion == macro_expansion &&
        previous.line == line &&
        previous.column == column) {
       return static_cast<uint32_t>(locations.size() - 1);
@@ -47,7 +49,8 @@ uint32_t SourceLocationTable::add(uint16_t file_index, uint32_t line, uint32_t c
   }
 
   const uint32_t index = static_cast<uint32_t>(locations.size());
-  locations.push_back(SourceLocation{file_index, line, column});
+  locations.push_back(
+      SourceLocation{file_index, macro_expansion, line, column});
   return index;
 }
 

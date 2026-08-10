@@ -27,6 +27,10 @@ struct ClassSpecializationSelection
   const std::vector<cpp_decl::TemplateArgumentSyntax> * argument_syntaxes = nullptr;
   std::map<std::string, std::size_t> pack_sizes;
   std::string selection_key;
+  // Member values evaluated while choosing this specialization belong to the
+  // selected class.  Retain them until a semantic consumer actually reads a
+  // value from that class instead of publishing every speculative candidate.
+  std::vector<template_model::TemplateValueDependency> value_dependencies;
   MatchKind kind = MS_PRIMARY;
   bool reentrant_primary = false;
 };

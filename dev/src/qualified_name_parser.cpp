@@ -215,6 +215,7 @@ struct QualifiedNameCursor : RecogTokenCursor
          tokens.peek(identifier_start - 2).is_simple(OP_COLON2));
 
     out = NameComponentParseResult();
+    out.has_template_disambiguator = forced_template;
     out.name_component = make_pair(identifier_start, pos);
     out.end = pos;
     if(peek().is_simple(OP_LT)) {
@@ -551,6 +552,8 @@ struct QualifiedNameCursor : RecogTokenCursor
       out.kind = UNQ_DESTRUCTOR;
       out.name_component = component.name_component;
       out.has_template_suffix = component.has_template_suffix;
+      out.has_template_disambiguator =
+          component.has_template_disambiguator;
       out.template_arg_ranges = component.template_arg_ranges;
       return true;
     }
@@ -605,6 +608,7 @@ struct QualifiedNameCursor : RecogTokenCursor
     out.name_component = component.name_component;
     out.kind = UNQ_COMPONENT;
     out.has_template_suffix = component.has_template_suffix;
+    out.has_template_disambiguator = component.has_template_disambiguator;
     out.template_arg_ranges = component.template_arg_ranges;
     return true;
   }
@@ -669,6 +673,8 @@ struct QualifiedNameCursor : RecogTokenCursor
     out.name_template_head_component = final_component.name_component;
     out.name_kind = final_component.kind;
     out.name_has_template_suffix = final_component.has_template_suffix;
+    out.name_has_template_disambiguator =
+        final_component.has_template_disambiguator;
     out.operator_is_conversion = final_component.operator_is_conversion;
     out.name_template_arg_ranges = final_component.template_arg_ranges;
     out.end = final_component.end;

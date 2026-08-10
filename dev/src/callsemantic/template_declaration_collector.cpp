@@ -612,7 +612,13 @@ public:
         if(specialization_changed) {
           ++primary->specialization_epoch;
         }
-        analyze_template_declaration_source_patterns(scope, pattern_scope, node);
+        analyze_template_declaration_source_patterns(
+            scope,
+            pattern_scope,
+            node,
+            TypePtr(),
+            primary,
+            &class_template_id->argument_syntaxes);
         if(incoming_is_definition) {
           const template_api::ClassSpecializationSelection specialization =
               template_api::specialization::select_class_specialization(
@@ -744,7 +750,13 @@ public:
              existing.class_node->kind == CppAstKind::class_forward_declaration) {
             existing.class_node = &inner;
           }
-          analyze_template_declaration_source_patterns(scope, pattern_scope, node);
+          analyze_template_declaration_source_patterns(
+              scope,
+              pattern_scope,
+              node,
+              TypePtr(),
+              primary,
+              &existing.arg_syntaxes);
           ++primary->specialization_epoch;
           if(owner_template_for_member_partial) {
             record_owner_member_class_template_partial_specialization(
@@ -770,7 +782,13 @@ public:
               primary->partial_specializations.back());
         }
         ++primary->specialization_epoch;
-        analyze_template_declaration_source_patterns(scope, pattern_scope, node);
+        analyze_template_declaration_source_patterns(
+            scope,
+            pattern_scope,
+            node,
+            TypePtr(),
+            primary,
+            &primary->partial_specializations.back().arg_syntaxes);
         return;
       }
 
@@ -928,7 +946,8 @@ public:
               class_template_scope->class_info,
               *existing);
         }
-        analyze_template_declaration_source_patterns(scope, pattern_scope, node);
+        analyze_template_declaration_source_patterns(
+            scope, pattern_scope, node, TypePtr(), existing);
         return;
       }
 
@@ -953,8 +972,14 @@ public:
             class_template_scope->class_info,
             *decl);
       }
+      ClassTemplateDecl * source_class_template = decl.get();
       class_templates.push_back(std::move(decl));
-      analyze_template_declaration_source_patterns(scope, pattern_scope, node);
+      analyze_template_declaration_source_patterns(
+          scope,
+          pattern_scope,
+          node,
+          TypePtr(),
+          source_class_template);
       return;
     }
 
@@ -977,6 +1002,9 @@ public:
       unique_ptr<AliasTemplateDecl> decl(new AliasTemplateDecl());
       decl->declaring_scope = &scope;
       decl->pattern_scope = &pattern_scope;
+      decl->source_owner_template = callbacks.source_declaration_owner;
+      decl->source_owner_arguments =
+          callbacks.source_declaration_owner_arguments;
       decl->name = inner.value;
       decl->access = access;
       decl->type_id = type_id;
@@ -1861,12 +1889,11 @@ public:
                {
                  return node_has_simple_type(child, KW_FRIEND);
                });
-    const bool defer_nonmember_function_template_source_uses =
-        !scope.class_info &&
+    const bool defer_function_template_source_uses =
         !template_parameters.empty() &&
         declarator_declares_function_entity(*declarator) &&
         !source_uses_are_for_friend_template;
-    if(!defer_nonmember_function_template_source_uses) {
+    if(!defer_function_template_source_uses) {
       analyze_template_declaration_source_patterns(scope, pattern_scope, node);
     }
     PreparedMethodParseContext prepared_special_member_method;
@@ -2583,8 +2610,15 @@ public:
         type = reparsed_type;
       }
     }
-    if(defer_nonmember_function_template_source_uses) {
-      analyze_template_declaration_source_patterns(scope, pattern_scope, node, type);
+    if(defer_function_template_source_uses) {
+      analyze_template_declaration_source_patterns(
+          scope,
+          pattern_scope,
+          node,
+          type,
+          nullptr,
+          nullptr,
+          function_template_parse_scope);
     }
     if(function_template_entity_scope != &scope &&
        !function_template_entity_scope->class_info) {
@@ -5294,10 +5328,21 @@ private:
   void analyze_template_declaration_source_patterns(Scope & lexical_scope,
                                                     Scope & pattern_scope,
                                                     const CppAstNode & node,
-                                                    const TypePtr & function_type = TypePtr())
+                                                    const TypePtr & function_type = TypePtr(),
+                                                    ClassTemplateDecl *
+                                                        lexical_source_class_template = nullptr,
+                                                    const vector<TemplateArgumentSyntax> *
+                                                        lexical_source_class_arguments = nullptr,
+                                                    Scope * source_analysis_scope = nullptr)
   {
     callbacks.declaration_services->analyze_template_declaration_source_patterns(
-        lexical_scope, pattern_scope, node, function_type);
+        lexical_scope,
+        pattern_scope,
+        node,
+        function_type,
+        lexical_source_class_template,
+        lexical_source_class_arguments,
+        source_analysis_scope);
   }
 
   ClassTemplateDecl * direct_class_template(Scope & scope, const string & name)

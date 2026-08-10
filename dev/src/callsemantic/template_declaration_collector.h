@@ -228,7 +228,11 @@ struct TemplateDeclarationParsingServices
       semantic_model::Scope & lexical_scope,
       semantic_model::Scope & pattern_scope,
       const CppAstNode & node,
-      const cpp_decl::TypePtr & function_type) = 0;
+      const cpp_decl::TypePtr & function_type,
+      semantic_model::ClassTemplateDecl * lexical_source_class_template,
+      const std::vector<cpp_decl::TemplateArgumentSyntax> *
+          lexical_source_class_arguments,
+      semantic_model::Scope * source_analysis_scope) = 0;
   virtual bool fill_trailing_default_template_argument_texts(
       semantic_model::Scope & pattern_scope,
       const std::vector<template_model::TemplateParameterInfo> & parameters,
@@ -243,6 +247,9 @@ struct TemplateDeclarationCollectorServices
   TemplateDeclarationSourceServices * source_services = nullptr;
   OutOfClassMemberResolutionServices * out_of_class_services = nullptr;
   FunctionTemplateDeclarationPolicy * function_policy = nullptr;
+  semantic_model::ClassTemplateDecl * source_declaration_owner = nullptr;
+  const std::vector<cpp_decl::TemplateArgumentSyntax> *
+      source_declaration_owner_arguments = nullptr;
 };
 
 void collect_template_declaration_impl(

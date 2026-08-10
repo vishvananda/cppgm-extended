@@ -128,6 +128,21 @@ public:
   ~SemanticContext() override {}
 
   virtual std::string source_location_for_node(const CppAstNode & node) const = 0;
+  virtual std::string source_location_for_node_token(
+      const CppAstNode & node) const
+  {
+    return source_location_for_node(node);
+  }
+  virtual std::string source_location_for_node_syntax_start(
+      const CppAstNode & node) const
+  {
+    return source_location_for_node(node);
+  }
+  virtual std::string source_location_for_identifier_before_node_syntax(
+      const CppAstNode &) const
+  {
+    return std::string();
+  }
   virtual std::string source_location_for_name_in_node(const CppAstNode & node,
                                                        const std::string & name,
                                                        bool prefer_last = false) const = 0;
@@ -736,8 +751,9 @@ public:
           materialization = nullptr) = 0;
   virtual void submit_resolved_class_use(
       witness::ClassUseEmitRequest request) = 0;
-  virtual void observe_resolved_alias_template_id(
-      const resolved_source_semantics::ResolvedAliasTemplateId & resolved) = 0;
+  virtual bool observe_resolved_alias_template_id(
+      const resolved_source_semantics::ResolvedAliasTemplateId & resolved,
+      bool source_occurrence_collection) = 0;
   virtual semantic_model::ClassInfo * instantiate_selected_class_template(
       semantic_model::ClassTemplateDecl & decl,
       semantic_model::Scope & use_scope,
