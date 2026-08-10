@@ -12496,7 +12496,9 @@ private:
           request.specialization_bindings,
           *selection.parameters,
           selection.arguments,
-          "deduced");
+          "deduced",
+          template_api::TemplateWitnessSourceBindingPolicy::FixedSource,
+          &selection.pack_sizes);
     }
     request.ownership = witness::SourceUseOwnership::SourceOwned;
     request.role = role;
@@ -12596,7 +12598,9 @@ private:
           request.specialization_bindings,
           *use.selection.parameters,
           use.selection.arguments,
-          "deduced");
+          "deduced",
+          template_api::TemplateWitnessSourceBindingPolicy::FixedSource,
+          &use.selection.pack_sizes);
     }
     request.ownership = witness::SourceUseOwnership::SourceOwned;
     request.role = role;
@@ -21671,7 +21675,9 @@ private:
           request.specialization_bindings,
           *selection.parameters,
           selection.arguments,
-          "deduced");
+          "deduced",
+          template_api::TemplateWitnessSourceBindingPolicy::FixedSource,
+          &selection.pack_sizes);
     }
     request.ownership = resolved.source_ownership;
     request.role = resolved.source_role;

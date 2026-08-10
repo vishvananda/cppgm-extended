@@ -763,6 +763,93 @@ Phase 3 remains open. The class-use family has no missing rows, but 55 changed
 and two unexpected class rows remain. Function-call, lifecycle, payload, and
 ordering convergence also remain. Inception is still forbidden.
 
+## Selected partial pack partition checkpoint, 2026-08-10
+
+Partial-specialization selection already retained the exact number of
+arguments deduced for each parameter pack, including zero-length packs. Class
+witness construction discarded that map and divided the flattened argument
+vector greedily: the first pack consumed every argument not reserved for a
+later non-pack parameter, leaving later packs empty.
+
+The shared source-binding builder now accepts the selected pack-size map. It
+looks up the current parameter by name or placeholder key and consumes exactly
+that many flattened arguments. When selection has no size for a pack, the
+existing trailing-non-pack fallback remains in force. Resolved source uses,
+materialized alias class uses, and out-of-class static declaration uses pass
+the committed selection map; unrelated binding paths keep their prior
+behavior.
+
+This clears six class-use rows across five tests. The repaired cases cover two
+adjacent non-type/type packs, repeated packs, an empty prefix pack, a recursive
+pack with a fixed middle parameter, and a bound template-template application.
+Four complete outputs leave the failure manifest. The recursive-pack test
+still has its preexisting lifecycle mismatch, although its class-use row is
+now exact.
+
+Correctness and diagnostic evidence from fresh isolated Homebrew-Clang builds:
+
+- the preserved original strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence improves from 1,406 to 1,410 matching outputs, leaving
+  120 known mismatches and no new failing output;
+- the class-use inventory falls from 55 to 49 changed rows and from 40 to 35
+  failing tests; it still has zero missing rows, two unexpected rows, and
+  three ordering cases;
+- function-call and lifecycle inventories are unchanged;
+- ordinary and provenance compilers produce identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,389 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the canonical PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper unit suites pass
+  60/60;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The template-side boundary ratchet is byte-identical to the parent checkpoint.
+The semantic-side audit retains the parent's five output-readiness queries,
+ten template-service mentions, and nine internal-header sites. These existing
+counts are not acceptance gates for this payload slice.
+
+The ordinary convergence report is
+`/tmp/cppgm-pack-partition-convergence-20260810.json`, SHA-256
+`b6d5213cb50d4d5bbfc16990ea7ffb9c53be1b4b7c63779cbf9b56538f52130d`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-pack-partition-provenance.8Ew1PD/provenance-analysis.json` and
+`/tmp/cppgm-pack-partition-provenance.8Ew1PD/convergence.json`, with SHA-256
+values
+`937606185e5736fbac472286be055887e1e4b0595f52063a42a047c0c1bbdc7f`
+and
+`4a6a9c4c85fc28ee6af88c43c685dc09190b285a114250cb54fa1c4e58720888`.
+The byte-identical ordinary/provenance output manifest has SHA-256
+`5fbf777c8c3f4728ed4078192c2a4b51fd9cb5c9e82144121bd5e1ebd007b34c`.
+The broad report is `/tmp/cppgm-pack-partition-broad-20260810.log`, SHA-256
+`b16a58f16ae10a73ae7fe6d1e12686d41cb68e6e3c4d696e65b00fa323ff57ff`.
+The materialization audit remains byte-identical to the preceding checkpoints
+at SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+Both three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.02% | -1.14% | -3.96% | `3450887838108377c9b5eafdea6019b7e7160bb4849f49e5527b59ee3932bc43` |
+| Prior rolling checkpoint | -0.01% | -1.36% | -0.04% | `9693d5cb598951f5bb8a489c2ecbc142c67841244db3e6a29289ab2dafe58b52` |
+
+The reports are `/tmp/cppgm-pack-partition-vs-fixed-20260810.json` and
+`/tmp/cppgm-pack-partition-vs-rolling-20260810.json`. The shared raw candidate
+is `/tmp/cppgm-pack-partition-raw-candidate-20260810.json`, SHA-256
+`0338a1c39d2a99116b2d06c56e695ae3fbee55fb0bbc1bbf6420d41e34970f70`.
+Its metadata names commit `28950ee69` because the measurements cover this
+uncommitted checkpoint.
+
+Phase 3 remains open. The next class payload work must recover structured
+argument spelling, binding-source labels, selection payloads, and ordering.
+The two unexpected class rows also remain. Inception is still forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

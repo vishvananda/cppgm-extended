@@ -741,7 +741,8 @@ void append_template_witness_source_bindings(
     const std::vector<template_model::TemplateArgument> & arguments,
     const std::string & source,
     TemplateWitnessSourceBindingPolicy policy =
-        TemplateWitnessSourceBindingPolicy::FixedSource);
+        TemplateWitnessSourceBindingPolicy::FixedSource,
+    const std::map<std::string, std::size_t> * pack_sizes = nullptr);
 
 void append_template_witness_source_bindings(
     SemanticContext & ctx,

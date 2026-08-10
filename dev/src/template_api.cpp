@@ -6547,7 +6547,8 @@ void append_template_witness_source_bindings(
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
     const std::string & source,
-    TemplateWitnessSourceBindingPolicy policy)
+    TemplateWitnessSourceBindingPolicy policy,
+    const std::map<std::string, std::size_t> * pack_sizes)
 {
   std::size_t trailing_default_count = 0;
   if(policy ==
@@ -6588,16 +6589,45 @@ void append_template_witness_source_bindings(
     binding.source = binding_source_for_parameter(parameters[i], arg_index);
     if(parameters[i].parameter_pack) {
       binding.pack_binding = true;
-      std::size_t trailing_non_pack = 0;
-      for(std::size_t j = i + 1; j < parameters.size(); ++j) {
-        if(!parameters[j].parameter_pack) {
-          ++trailing_non_pack;
+      std::size_t selected_pack_size = 0;
+      bool has_selected_pack_size = false;
+      if(pack_sizes) {
+        if(!parameters[i].name.empty()) {
+          std::map<std::string, std::size_t>::const_iterator named_size =
+              pack_sizes->find(parameters[i].name);
+          if(named_size != pack_sizes->end()) {
+            selected_pack_size = named_size->second;
+            has_selected_pack_size = true;
+          }
+        }
+        if(!has_selected_pack_size &&
+           !parameters[i].placeholder_key.empty()) {
+          std::map<std::string, std::size_t>::const_iterator placeholder_size =
+              pack_sizes->find(parameters[i].placeholder_key);
+          if(placeholder_size != pack_sizes->end()) {
+            selected_pack_size = placeholder_size->second;
+            has_selected_pack_size = true;
+          }
         }
       }
-      if(arguments.size() < arg_index + trailing_non_pack) {
-        break;
+      std::size_t pack_end = arg_index;
+      if(has_selected_pack_size) {
+        if(selected_pack_size > arguments.size() - arg_index) {
+          break;
+        }
+        pack_end += selected_pack_size;
+      } else {
+        std::size_t trailing_non_pack = 0;
+        for(std::size_t j = i + 1; j < parameters.size(); ++j) {
+          if(!parameters[j].parameter_pack) {
+            ++trailing_non_pack;
+          }
+        }
+        if(arguments.size() < arg_index + trailing_non_pack) {
+          break;
+        }
+        pack_end = arguments.size() - trailing_non_pack;
       }
-      const std::size_t pack_end = arguments.size() - trailing_non_pack;
       binding.type_like =
           template_witness_argument_range_is_type_like(arguments,
                                                       arg_index,
