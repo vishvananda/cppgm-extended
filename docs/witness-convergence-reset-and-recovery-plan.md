@@ -1034,6 +1034,94 @@ rows, and three class ordering cases remain. Nested structured spellings and
 selection payloads are the next class-use clusters. Inception is still
 forbidden.
 
+## Object-pointer binding spelling checkpoint, 2026-08-10
+
+Object-pointer non-type template arguments retained their resolved variable
+binding, but witness construction still printed the local source spelling.
+That lost the declaration namespace in both a direct class binding and a
+rebound nested specialization name.
+
+The witness argument printer now follows the retained non-type value binding
+to its declaration and renders the address with the declaration scope's
+qualified name. The formatter is limited to nondependent object pointers. It
+rejects function pointers, parameters and fields, function-local declarations,
+invalid names, and unresolved or cyclic rebinding chains. The specialization,
+mangle-info, source-binding, and explicit-value paths all use the same typed
+formatter; none performs a lookup or reparses source text.
+
+This clears three class-use rows in two PA23 tests. Both complete outputs now
+match, which also removes their derivative lifecycle differences: three
+additional definition demands, seven missing rows, and four unexpected rows.
+
+Correctness and diagnostic evidence from fresh isolated Homebrew-Clang builds:
+
+- the preserved original strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence improves from 1,419 to 1,421 matching outputs, leaving
+  109 known mismatches and no new failing output;
+- the class-use inventory falls from 36 to 33 changed rows and from 26 to 24
+  failing tests; it still has zero missing rows, two unexpected rows, and
+  three ordering cases;
+- the function-call inventory is unchanged at 41 changed rows across 59
+  failing tests;
+- the lifecycle inventory falls from 13 to ten additional definition demands,
+  from 83 to 76 missing rows, from 55 to 51 unexpected rows, and from 47 to 45
+  failing tests;
+- ordinary and provenance compilers produce identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,358 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the canonical PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper unit suites pass
+  60/60;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The template-side and semantic-side boundary reports are byte-identical to the
+parent checkpoint. The semantic audit therefore retains five output-readiness
+queries, ten template-service mentions, and nine internal-header sites. These
+existing counts are not acceptance gates for this payload slice.
+
+The ordinary convergence report is
+`/tmp/cppgm-object-pointer-ordinary-convergence-20260810.json`, SHA-256
+`9ef048c58785ec5d01e0b0dbb0d6a4edeca7f1171ae9acf617c4ae1d53dc174d`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-object-pointer-provenance.1OPvHl/provenance-analysis.json` and
+`/tmp/cppgm-object-pointer-provenance.1OPvHl/convergence.json`, with SHA-256
+values
+`ad07cc58711c59d768c6e3b21a684c3c40c6a7c535f6aee12a32fb94c9d213c2`
+and
+`1fa5d25503764bd4ca17a3c88075d8d85b3c3a99791796c8bb803775ac05620d`.
+The byte-identical ordinary/provenance output manifest has SHA-256
+`25624a32eea081e0a6a42381d5034a00dd8dd16a799605eb365822eb95594a0b`.
+The broad report is `/tmp/cppgm-object-pointer-broad-20260810.log`, SHA-256
+`f0ef1ab0a7465f3b373203cf660ae8cd1b5fa8874c055f72ad5e6f6bd03eae16`.
+The materialization audit remains byte-identical to the preceding checkpoints
+at SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+Both three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.00% | -7.51% | -3.98% | `c87904c6f813324aa83532c28129bb4324430f7760a2f4b27d520106aac750bd` |
+| Prior rolling checkpoint | -0.01% | -7.91% | -0.14% | `53ad206d111fae52c92b391f4d931202709682bec14da39c0d2dd226bae53175` |
+
+The reports are `/tmp/cppgm-object-pointer-vs-fixed-20260810.json` and
+`/tmp/cppgm-object-pointer-vs-rolling-20260810.json`. The shared raw candidate
+is `/tmp/cppgm-object-pointer-raw-candidate-20260810.json`, SHA-256
+`39342e173c2711b43f8ed32a8fcac0b4e720a03a17d4fc02dde05238855d0f9c`.
+Its metadata names commit `a5d38157a` because the measurements cover this
+uncommitted checkpoint.
+
+Phase 3 remains open. Thirty-three changed class rows, two unexpected class
+rows, and three class ordering cases remain. Selection payloads, owner
+qualification, and dependent pack spelling are the next class-use clusters.
+Inception is still forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

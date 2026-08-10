@@ -3609,6 +3609,45 @@ bool template_argument_has_member_pointer_type(
          base->kind == cpp_decl::Type::TK_MEMBER_POINTER;
 }
 
+std::string object_pointer_witness_argument_text(
+    const template_model::TemplateArgument & argument)
+{
+  if(argument.kind != template_model::TemplateArgument::TA_VALUE ||
+     argument.dependent) {
+    return std::string();
+  }
+  cpp_decl::TypePtr base = cpp_decl::strip_top_level_cv(argument.type);
+  if(!base ||
+     base->kind != cpp_decl::Type::TK_POINTER ||
+     !base->inner ||
+     cpp_decl::is_function_type(base->inner)) {
+    return std::string();
+  }
+
+  const semantic_model::ValueBinding * binding = argument.rare().value_binding;
+  for(unsigned depth = 0;
+      binding && binding->non_type_template_value_binding && depth < 8;
+      ++depth) {
+    if(binding->non_type_template_value_binding == binding) {
+      return std::string();
+    }
+    binding = binding->non_type_template_value_binding;
+  }
+  if(!binding ||
+     binding->non_type_template_value_binding ||
+     binding->kind != semantic_model::ValueBinding::VK_VARIABLE ||
+     !binding->declaration_scope ||
+     binding->declaration_scope->function ||
+     binding->name.find("::") != std::string::npos ||
+     !is_qualified_identifier_value_text(binding->name)) {
+    return std::string();
+  }
+  const std::string qualified_name =
+      semantic_lookup::scope_qualified_name(*binding->declaration_scope,
+                                            binding->name);
+  return qualified_name.empty() ? std::string() : "&" + qualified_name;
+}
+
 std::string member_pointer_witness_argument_text(
     SemanticContext & ctx,
     const template_model::TemplateArgument & argument)
@@ -3750,17 +3789,23 @@ std::string witness_specialization_name_for_visible_args(
       if(!enum_source_text.empty()) {
         out << enum_source_text;
       } else {
-        const std::string member_pointer_text =
-            member_pointer_witness_argument_text(ctx, arguments[i]);
-        if(!member_pointer_text.empty()) {
-          out << member_pointer_text;
+        const std::string object_pointer_text =
+            object_pointer_witness_argument_text(arguments[i]);
+        if(!object_pointer_text.empty()) {
+          out << object_pointer_text;
         } else {
-          out << template_model::template_argument_text(
-              arguments[i],
-              [&ctx](const cpp_decl::TypePtr & type)
-              {
-                return default_elided_type_argument_text(ctx, type);
-              });
+          const std::string member_pointer_text =
+              member_pointer_witness_argument_text(ctx, arguments[i]);
+          if(!member_pointer_text.empty()) {
+            out << member_pointer_text;
+          } else {
+            out << template_model::template_argument_text(
+                arguments[i],
+                [&ctx](const cpp_decl::TypePtr & type)
+                {
+                  return default_elided_type_argument_text(ctx, type);
+                });
+          }
         }
       }
     }
@@ -4201,6 +4246,12 @@ std::string class_template_mangle_info_witness_text(
         source_spelled_enum_witness_argument_text(argument);
     if(!enum_source_text.empty()) {
       out << enum_source_text;
+      continue;
+    }
+    const std::string object_pointer_text =
+        object_pointer_witness_argument_text(argument);
+    if(!object_pointer_text.empty()) {
+      out << object_pointer_text;
       continue;
     }
     out << template_model::template_argument_text(
@@ -5522,6 +5573,11 @@ std::string witness_argument_text_for_binding(
     const template_model::TemplateArgument & arg)
 {
   if(arg.kind == template_model::TemplateArgument::TA_VALUE) {
+    const std::string object_pointer_text =
+        object_pointer_witness_argument_text(arg);
+    if(!object_pointer_text.empty()) {
+      return object_pointer_text;
+    }
     const std::string member_pointer_text =
         member_pointer_witness_argument_text(ctx, arg);
     if(!member_pointer_text.empty()) {
@@ -6027,6 +6083,11 @@ std::string template_witness_argument_text(
     const template_model::TemplateArgument & arg)
 {
   if(arg.kind == template_model::TemplateArgument::TA_VALUE) {
+    const std::string object_pointer_text =
+        object_pointer_witness_argument_text(arg);
+    if(!object_pointer_text.empty()) {
+      return object_pointer_text;
+    }
     const std::string member_pointer_text =
         member_pointer_witness_argument_text(ctx, arg);
     if(!member_pointer_text.empty()) {
@@ -6138,6 +6199,11 @@ std::string template_witness_value_binding_arg_text(
       enum_witness_enumerator_text_for_value(ctx, arg);
   if(!enumerator_text.empty()) {
     return enumerator_text;
+  }
+  const std::string object_pointer_text =
+      object_pointer_witness_argument_text(arg);
+  if(!object_pointer_text.empty()) {
+    return object_pointer_text;
   }
   if(arg.kind == template_model::TemplateArgument::TA_VALUE &&
      arg.source_syntax) {
