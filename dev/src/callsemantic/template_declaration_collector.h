@@ -252,6 +252,9 @@ struct TemplateDeclarationCollectorServices
       source_declaration_owner_arguments = nullptr;
 };
 
+bool template_declarator_declares_function_entity(
+    const CppAstNode & declarator);
+
 void collect_template_declaration_impl(
     SemanticContext & ctx,
     TemplateDeclarationCollectorState & state,

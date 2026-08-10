@@ -18,6 +18,12 @@ bool declarator_declared_identifier(const CppAstNode & node,
 std::set<std::string> template_parameter_names(
     const std::vector<template_model::TemplateParameterInfo> & parameters);
 
+std::set<std::string> template_parameter_declaration_names(
+    const CppAstNode & parameter_clause);
+
+std::set<std::string> type_alias_declaration_names(
+    const CppAstNode & declaration);
+
 bool template_body_has_invalid_nondependent_id_expression(
     SemanticContext & ctx,
     semantic_model::Scope & scope,

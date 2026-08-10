@@ -129,6 +129,82 @@ std::set<std::string> template_parameter_names(
   return names;
 }
 
+std::set<std::string> template_parameter_declaration_names(
+    const CppAstNode & parameter_clause)
+{
+  std::set<std::string> names;
+  const CppAstNode * list =
+      find_child_kind(parameter_clause, CppAstKind::template_parameter_list);
+  if(!list) {
+    return names;
+  }
+  for(std::size_t i = 0; i < list->children.size(); ++i) {
+    const CppAstNode & parameter = list->children[i];
+    if(parameter.kind == CppAstKind::type_parameter) {
+      for(std::size_t j = 0; j < parameter.children.size(); ++j) {
+        if(parameter.children[j].kind == CppAstKind::identifier &&
+           !parameter.children[j].value.empty()) {
+          names.insert(parameter.children[j].value);
+        }
+      }
+      continue;
+    }
+    if(parameter.kind != CppAstKind::non_type_template_parameter) {
+      continue;
+    }
+    for(std::size_t j = 0; j < parameter.children.size(); ++j) {
+      if(parameter.children[j].kind != CppAstKind::declarator &&
+         parameter.children[j].kind != CppAstKind::abstract_declarator) {
+        continue;
+      }
+      std::string name;
+      if(declarator_declared_identifier(parameter.children[j], name) &&
+         !name.empty()) {
+        names.insert(name);
+      }
+      break;
+    }
+  }
+  return names;
+}
+
+std::set<std::string> type_alias_declaration_names(
+    const CppAstNode & declaration)
+{
+  std::set<std::string> names;
+  if(declaration.kind == CppAstKind::alias_declaration) {
+    if(!declaration.value.empty()) {
+      names.insert(declaration.value);
+    }
+    return names;
+  }
+  if(declaration.kind != CppAstKind::simple_declaration) {
+    return names;
+  }
+  const CppAstNode * specifiers =
+      find_child_kind(declaration, CppAstKind::decl_specifier_seq);
+  if(!specifiers ||
+     !cpp_decl::decl_spec_contains_token(*specifiers, KW_TYPEDEF)) {
+    return names;
+  }
+  const CppAstNode * declarators =
+      find_child_kind(declaration, CppAstKind::init_declarator_list);
+  if(!declarators) {
+    return names;
+  }
+  for(std::size_t i = 0; i < declarators->children.size(); ++i) {
+    const CppAstNode & init_declarator = declarators->children[i];
+    const CppAstNode * declarator =
+        find_child_kind(init_declarator, CppAstKind::declarator);
+    std::string name;
+    if(declarator && declarator_declared_identifier(*declarator, name) &&
+       !name.empty()) {
+      names.insert(name);
+    }
+  }
+  return names;
+}
+
 static AtomNameSet template_parameter_atom_names(
     const std::vector<TemplateParameterInfo> & parameters)
 {

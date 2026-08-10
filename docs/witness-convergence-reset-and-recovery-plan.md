@@ -77,6 +77,88 @@ rolling checkpoint. The remaining 139 expanded mismatches, repeated alias
 completion scaffolding, and second source-pattern parameter analysis remain
 Phase 3 debt; inception is still forbidden.
 
+## Member-template source ownership checkpoint, 2026-08-10
+
+This is another promotable intermediate Phase 3 checkpoint, not Phase 3
+completion. It removes the second semantic template-parameter analysis from
+generic class-member source scanning. Member function templates now receive an
+early lexical, alias-only source walk; their typed class and type semantics stay
+with the canonical function-template collector. Structured identifier and type
+alias facts preserve outer class-template dependency without reparsing template
+parameters or template-argument source text. Member variable templates retain
+the lexical source walk needed for their distinct source-use behavior.
+
+The alias completion boundary now checks stable source-syntax identity before
+replaying source-witness completion. The declaration source walker is the sole
+recursive owner of nested alias occurrences, while repeated SFINAE
+instantiations still perform their required semantic work. Provenance across all
+1,530 tests records:
+
+- 835 alias candidates, 835 collected occurrences, and 835 published
+  occurrences, with zero early repeats and zero prepublication merges;
+- zero repeated central semantic-completion replays, down from 1,279;
+- 376 nested source-walk visits covering 36 unique occurrences, with 340
+  revisits explicitly classified and ignored before semantic resolution;
+- 835 first completions split into 144 concrete, 375 parameterized, and 316
+  source-collection operations.
+
+Correctness evidence from the final Homebrew-Clang ordinary and provenance
+builds:
+
+- the original tracked strict manifest remains byte-exact at 1,305/1,305;
+- the expanded strict corpus passes 1,392/1,530, fixing the member-variable
+  template alias case and leaving 138 mismatches with no new mismatch family;
+- the canonical PA1-PA38 report with direct LowIR comparison passes
+  4,862/4,862;
+- the focused convergence, provenance, materialization, text-reparse, and path
+  normalization unit suites pass 42/42;
+- both materialization decision boundaries pass audit with no finding, and all
+  23 forbidden text-reparse categories remain zero;
+- ordinary and provenance builds produce no warning.
+
+Full repository unit discovery ran 249 tests with one skip and one unrelated,
+reproducible error in
+`BatchTimeoutHarnessTests.test_driver_assignment_wrapper_uses_worker_script`:
+its temporary `basic.my.impl.exit_status` file is absent. The focused suites
+covering this checkpoint all pass; the independent batch-timeout harness defect
+is not treated as evidence against this semantic checkpoint.
+
+Removing the duplicate semantic pre-walk also changes only private LowIR
+constructor suffix allocation (`__ov2`/`__ov3`) in
+`pa22/tests/spec/300-member-operator-template-active-owner.ref`. Calls,
+function bodies, Itanium object symbols, runtime behavior, and witness output
+are unchanged. The fixture now records the canonical no-witness build order,
+and PA22 passes 308/308 with direct comparison.
+
+The final provenance analysis is
+`/tmp/cppgm-member-source-owner-provenance.rl3vcg/provenance-analysis.json`,
+SHA-256
+`ba716077aff8d74c252a0e1330b8b4f4c352fee715d739017269439486707a31`.
+Its convergence report is
+`/tmp/cppgm-member-source-owner-provenance.rl3vcg/convergence.json`, SHA-256
+`2462ecf7ca21f3f29754fbcc0193c8658ece452f535dbf1b1eced11c9e3aebe1`.
+The broad report is
+`/tmp/cppgm-member-source-owner-broad-final.nBnyF1/report.log`, SHA-256
+`52e3ef7bea1a674d8e1a508d626e741bc51250698564a5d352e5be97a0d6ab8c`.
+
+Both required three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.33% | -0.51% | -4.04% | `892a7a2aacc436789d20566c3ae7fae03aef005dcd746080dcd9d20cf5363fef` |
+| Prior rolling baseline | +0.30% | +1.39% | +0.39% | `a58802cab06702a55030977971dcf0f46a09c2fe55e8c9a60dfbbea64fc51c55` |
+
+The reports are
+`/tmp/cppgm-member-source-owner-vs-fixed-20260810.json` and
+`/tmp/cppgm-member-source-owner-vs-rolling-20260810.json`. Their candidate
+metadata names the preceding commit because the measurements cover this
+uncommitted worktree immediately before its checkpoint commit.
+
+Phase 3 remains open: the nested traversal still performs 340 guarded revisits,
+the completed-occurrence set remains an ownership registry, and 138 expanded
+class-use, function-call, and lifecycle mismatches remain. Inception is still
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

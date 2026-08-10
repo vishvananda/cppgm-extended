@@ -1287,6 +1287,11 @@ void build_template_argument_syntax_from_range(
   argument.source_location_id = tokens[range.first].location_id;
   argument.text =
       template_angle::token_span_text_spaced(tokens, range.first, range.second);
+  for(std::size_t i = range.first; i < range.second; ++i) {
+    if(tokens.peek(i).is_identifier()) {
+      argument.source_identifier_names.push_back(tokens.peek(i).source);
+    }
+  }
 
   std::pair<std::size_t, std::size_t> template_id_range = range;
   if(template_id_range.second > template_id_range.first &&
@@ -1373,6 +1378,8 @@ void build_template_argument_syntax_from_range(
           parsed_type_argument.source_location_id = argument.source_location_id;
           parsed_type_argument.name_has_template_disambiguator =
               argument.name_has_template_disambiguator;
+          parsed_type_argument.source_identifier_names =
+              argument.source_identifier_names;
           parsed_type_argument.template_id = argument.template_id;
           parsed_type_argument.pack_expansion =
               parsed_type_argument.pack_expansion || template_id_pack_expansion;
@@ -1430,6 +1437,8 @@ void build_template_argument_syntax_from_range(
       parsed_argument.source_location_id = argument.source_location_id;
       parsed_argument.name_has_template_disambiguator =
           argument.name_has_template_disambiguator;
+      parsed_argument.source_identifier_names =
+          argument.source_identifier_names;
       mark_template_argument_syntax_as_nested_argument(parsed_argument);
       argument = std::move(parsed_argument);
       return true;

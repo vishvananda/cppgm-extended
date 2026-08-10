@@ -72,7 +72,7 @@ def audit(root: Path) -> dict[str, object]:
         ),
         (
             root / "dev/src/callsemantic.cpp",
-            "const cpp_decl::TemplateIdSourceDependency source_dependency =",
+            "cpp_decl::TemplateIdSourceDependency source_dependency =",
             "const auto claim_nondependent_source_observation =",
             "concrete dependent-source admission",
         ),

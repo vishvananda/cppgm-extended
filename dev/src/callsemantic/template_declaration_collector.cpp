@@ -6645,6 +6645,12 @@ private:
 
 }  // namespace
 
+bool template_declarator_declares_function_entity(
+    const CppAstNode & declarator)
+{
+  return declarator_declares_function_entity(declarator);
+}
+
 void collect_template_declaration_impl(
     SemanticContext & ctx,
     TemplateDeclarationCollectorState & state,

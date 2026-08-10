@@ -21313,6 +21313,76 @@ bool expression_node_mentions_identifier(const CppAstNode & node,
   return false;
 }
 
+bool qualified_name_structurally_mentions_identifier(
+    const QualifiedName & qualified,
+    const string & name)
+{
+  if(name.empty()) {
+    return false;
+  }
+  if(qualified.name == name) {
+    return true;
+  }
+  for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
+    if(callsemantic_internal::contains_identifier_token(
+           qualified.qualifiers[i], name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool expression_node_structurally_mentions_identifier(
+    const CppAstNode & node,
+    const string & name)
+{
+  if(const QualifiedName * qualified = cppast_qualified_name_syntax(node)) {
+    if(qualified_name_structurally_mentions_identifier(*qualified, name)) {
+      return true;
+    }
+  }
+  if(node.kind == CppAstKind::identifier && node.value == name) {
+    return true;
+  }
+  if(node.template_id_syntax &&
+     (qualified_name_structurally_mentions_identifier(
+          node.template_id_syntax->name, name) ||
+      template_id_syntax_mentions_identifier(*node.template_id_syntax, name))) {
+    return true;
+  }
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     expression_node_structurally_mentions_identifier(
+         *cppast_conversion_type_id_syntax_storage(node), name)) {
+    return true;
+  }
+  if(cppast_base_type_syntax_storage(node) &&
+     expression_node_structurally_mentions_identifier(
+         *cppast_base_type_syntax_storage(node), name)) {
+    return true;
+  }
+  for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(qualified_name_structurally_mentions_identifier(
+           node.qualifier_template_id_syntaxes[i].name, name) ||
+       template_id_syntax_mentions_identifier(
+           node.qualifier_template_id_syntaxes[i], name)) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(expression_node_structurally_mentions_identifier(
+           node.qualifier_type_syntaxes[i], name)) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(expression_node_structurally_mentions_identifier(node.children[i],
+                                                        name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool expression_node_mentions_template_template_parameter_name(
     const CppAstNode & node,
     const string & name)
@@ -27410,6 +27480,64 @@ bool template_argument_syntax_mentions_bound_name(
 {
   return argument_syntax_mentions_unqualified_template_bound_name(scope,
                                                                   syntax);
+}
+
+bool template_argument_syntax_structurally_mentions_identifier(
+    const TemplateArgumentSyntax & syntax,
+    const string & name)
+{
+  if(name.empty()) {
+    return false;
+  }
+  if(std::find(syntax.source_identifier_names.begin(),
+               syntax.source_identifier_names.end(),
+               name) != syntax.source_identifier_names.end()) {
+    return true;
+  }
+  if(syntax.template_id &&
+     (qualified_name_structurally_mentions_identifier(
+          syntax.template_id->name, name) ||
+      template_id_syntax_mentions_identifier(*syntax.template_id, name))) {
+    return true;
+  }
+  if(syntax.type_id &&
+     expression_node_structurally_mentions_identifier(*syntax.type_id, name)) {
+    return true;
+  }
+  if(syntax.source_type_id &&
+     expression_node_structurally_mentions_identifier(*syntax.source_type_id,
+                                                      name)) {
+    return true;
+  }
+  return syntax.expression &&
+      expression_node_structurally_mentions_identifier(*syntax.expression,
+                                                       name);
+}
+
+bool template_id_syntax_owner_structurally_mentions_identifier(
+    const TemplateIdSyntax & syntax,
+    const string & name)
+{
+  if(name.empty() || syntax.name.rooted) {
+    return false;
+  }
+  for(size_t i = 0; i < syntax.name.qualifiers.size(); ++i) {
+    if(callsemantic_internal::contains_identifier_token(
+           syntax.name.qualifiers[i], name)) {
+      return true;
+    }
+  }
+  for(size_t i = 0;
+      i < syntax.qualifier_template_id_syntaxes.size();
+      ++i) {
+    const TemplateIdSyntax & qualifier =
+        syntax.qualifier_template_id_syntaxes[i];
+    if(qualifier.name.name == name ||
+       template_id_syntax_mentions_identifier(qualifier, name)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool template_id_syntax_has_dependent_owner(

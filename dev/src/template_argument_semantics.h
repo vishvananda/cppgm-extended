@@ -371,6 +371,14 @@ bool template_argument_syntax_mentions_bound_name(
     const semantic_model::Scope & scope,
     const cpp_decl::TemplateArgumentSyntax & syntax);
 
+bool template_argument_syntax_structurally_mentions_identifier(
+    const cpp_decl::TemplateArgumentSyntax & syntax,
+    const std::string & name);
+
+bool template_id_syntax_owner_structurally_mentions_identifier(
+    const cpp_decl::TemplateIdSyntax & syntax,
+    const std::string & name);
+
 bool template_id_syntax_has_dependent_owner(
     const semantic_model::Scope & scope,
     const cpp_decl::TemplateIdSyntax & syntax);

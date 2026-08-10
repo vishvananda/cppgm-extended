@@ -37,6 +37,10 @@ struct TemplateArgumentSyntax
 {
   std::string text;
   std::string source_text;
+  // Identifier tokens recorded when the source argument is parsed.  Semantic
+  // source-pattern analysis uses this structured lexical fact without
+  // reparsing the argument text or its enclosing template parameters.
+  std::vector<std::string> source_identifier_names;
   bool pack_expansion = false;
   bool dependent = false;
   // Preserve a written `template` disambiguator on a qualified argument name.
@@ -64,6 +68,7 @@ enum class TemplateIdSourceDependency : unsigned char
   Unknown,
   UnresolvedDependent,
   UnresolvedOwnerDependent,
+  UnresolvedLexicalParameterDependent,
   ResolvedDependent
 };
 
