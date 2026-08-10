@@ -329,6 +329,103 @@ Phase 3 remains open. Seventeen missing class-use rows, the same-location bool
 ordering case, function-call convergence, and lifecycle convergence remain.
 Inception is still forbidden.
 
+## Cv-qualified variable construction checkpoint, 2026-08-10
+
+This promotable Phase 3 checkpoint connects direct class declaration types to
+the patched-Clang oracle's deduced variable-construction occurrence.
+`TemplateWitnessVisitor::VisitVarDecl` emits that second occurrence
+when a variable initializer is a `CXXConstructExpr` and the declaration's
+`TypeLoc` is not itself a direct template-specialization location. A top-level
+cv wrapper creates that shape: the written template-id remains an
+explicit class-use, while the semantic construction contributes a deduced use
+at the same template-id anchor.
+
+The compiler retains the source occurrence ID with the existing typed
+class-result capture. A non-braced, cv-qualified object declaration with an
+initializer publishes the additional materialized use from the canonical
+`ClassInfo` and `ClassTemplateDecl` result. Alias declarations keep their
+existing materialization behavior, and braced initialization stays on its
+separate typed path. The implementation does not inspect a source line,
+rendered name, fixture identity, or location priority.
+
+This checkpoint restores three missing class-use rows:
+
+- both `constexpr U<int>` variables in the PA23 constexpr-union fixture;
+- the `const result<int>` variable in the PA24 conversion-function-template
+  top-cv fixture.
+
+The two fixtures become exact. Expanded convergence improves from
+1,399/1,530 to 1,401/1,530 because the two PA23 rows share one output.
+Remaining mismatches fall from 131 to 129. The class-use inventory improves
+from 47 to 45 failing tests and from 17 to 14 missing rows; its 54 changed
+rows, two unexpected rows, and three ordering-only cases are unchanged.
+Function-call and lifecycle inventories are unchanged.
+
+Measurements rejected two broader policies before promotion. Treating
+generic qualified-value queries as exact source-type materialization produced
+101 unrelated implicit query rows and regressed convergence to 1,353/1,530.
+Admitting every exact source node with a committed semantic owner produced
+304 unexpected class rows across 217 tests and regressed convergence to
+1,251/1,530. The accepted patch excludes both experiments. Source-node
+exactness and semantic-owner commitment cannot distinguish public source
+occurrences when implicit instantiation reuses an AST. The accepted path uses
+the typed variable-declaration result visited by the oracle.
+
+Correctness evidence from the final ordinary and provenance Homebrew-Clang
+builds:
+
+- the preserved original strict witness manifest remains byte-exact at
+  1,305/1,305;
+- the expanded strict corpus passes 1,401/1,530 with 129 remaining mismatches;
+- ordinary and provenance builds produce byte-identical witness and LowIR
+  output for all 3,060 compared files and no build warning;
+- all 1,530 provenance sessions flush, producing 61,338 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation records 2,981 completed candidates, 3,300 early
+  repeats, 350 prepublication merges, 2,631 collected occurrences, and 2,620
+  publications;
+- the canonical PA1-PA38 report with direct LowIR comparison passes
+  4,862/4,862;
+- the focused convergence, provenance, materialization, text-reparse, and path
+  normalization suites pass 42/42;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The final ordinary convergence report is
+`/tmp/cppgm-cv-construction-convergence-final-20260810.json`, SHA-256
+`177db6a42cc80861f04d1cfa52afa87c361d166e19ab61f530e312e5c42d06bc`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-cv-construction-provenance.acZJxc/provenance-analysis.json` and
+`/tmp/cppgm-cv-construction-provenance.acZJxc/convergence.json`, with SHA-256
+values `50f532221619ef9049d892dca0c3d5e166e6186f0790a1b30353ae64a61bb5c9`
+and `599b7b475cc47e6425fd80efc1c1782c246ede294a675c66d8af708c947efef3`.
+The broad report is `/tmp/cppgm-cv-construction-broad-20260810.log`, SHA-256
+`ef0e6e0c7c8e6a91152de872101a331af400a4b326fd68589be528a4cb345d5f`.
+The materialization audit is
+`/tmp/cppgm-cv-construction-materialization-audit-20260810.json`, SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+Both required three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.30% | -0.42% | -3.95% | `4a4a7a2d616d7756528b36d06735bfc375c3429b82236c43e7bfbcf3bf8eba06` |
+| Prior rolling checkpoint | +0.04% | -0.24% | +0.07% | `d45a67fbcd31e32bedd20a41546f98bd3e6537606980e0805de355e38b73f6fc` |
+
+The reports are `/tmp/cppgm-cv-construction-vs-fixed-20260810.json` and
+`/tmp/cppgm-cv-construction-vs-rolling-20260810.json`. The shared raw
+three-run candidate is
+`/tmp/cppgm-cv-construction-raw-candidate-20260810.json`, SHA-256
+`bbcf0057db91a2322fecbb39a153e11efebfc613bfc1055ce1d5b3c2ca9bfbf0`.
+Their candidate metadata names the preceding commit because the measurements
+cover this uncommitted worktree immediately before its checkpoint commit.
+
+Phase 3 remains open. Fourteen missing class-use rows still divide between
+typed declaration materialization, rooted static definitions, member-template
+defaults, static-member initializer replay, and related semantic-owner
+families. Function-call, lifecycle, and ordering convergence remain.
+Inception is still forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

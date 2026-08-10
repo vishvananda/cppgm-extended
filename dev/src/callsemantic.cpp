@@ -1431,6 +1431,7 @@ private:
   struct AliasClassUseCapture
   {
     uint32_t handle = 0;
+    uint32_t source_location_id = 0;
     bool through_alias = false;
   };
   struct ResolvedSourceState
@@ -12231,6 +12232,8 @@ private:
       }
       if(resolved.source_syntax &&
          resolved.source_syntax->source_location_id != 0) {
+        state->active_alias->source_location_id =
+            resolved.source_syntax->source_location_id;
         state->by_source_location_id[
             resolved.source_syntax->source_location_id] = handle;
       }
@@ -12431,7 +12434,7 @@ private:
     capture_named_type_alias_source(scope, name, type);
   }
 
-  void observe_materialized_alias_class_use(
+  void observe_materialized_class_use(
       Scope & scope,
       uint32_t handle,
       const std::string & use_location,
@@ -22951,13 +22954,27 @@ private:
                                             alias_capture.capture.handle);
     } else if(out && capture_template_source_uses &&
               // Braced initialization has its own typed materialization path;
-              // do not also publish the declaration type as an alias use.
+              // do not also publish the declaration type as a materialized use.
               !declaration_uses_braced_initializer(initializer) &&
-              alias_capture.capture.through_alias) {
-      observe_materialized_alias_class_use(
+              (alias_capture.capture.through_alias ||
+               (initializer && alias_capture.capture.handle != 0 &&
+                (decl_spec_contains_token(specifiers, KW_CONST) ||
+                 decl_spec_contains_token(specifiers, KW_VOLATILE) ||
+                 decl_spec_contains_token(specifiers, KW_CONSTEXPR))))) {
+      std::string materialized_use_location =
+          source_location_for_node(specifiers);
+      if(!alias_capture.capture.through_alias &&
+         alias_capture.capture.source_location_id != 0) {
+        materialized_use_location =
+            template_api::template_witness_detail::
+                source_location_for_location_id(
+                    template_witness_context(),
+                    alias_capture.capture.source_location_id);
+      }
+      observe_materialized_class_use(
           scope,
           alias_capture.capture.handle,
-          source_location_for_node(specifiers),
+          materialized_use_location,
           declaration_alias_class_use_role(out));
     }
     out = apply_constexpr_object_qualifier(specifiers, out, is_typedef);
