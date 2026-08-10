@@ -420,10 +420,95 @@ three-run candidate is
 Their candidate metadata names the preceding commit because the measurements
 cover this uncommitted worktree immediately before its checkpoint commit.
 
-Phase 3 remains open. Fourteen missing class-use rows still divide between
+## Static-member initializer replay checkpoint, 2026-08-10
+
+The out-of-class static-member replay now revisits a general initializer when
+a semantic value acquisition requires that definition. The replay uses the
+retained AST, the concrete member binding, and its bound instantiation scope.
+It suppresses output materialization while running normal expression
+semantics. Aggregate and function-pointer initializers keep their existing
+typed paths.
+
+Header and output scans can request storage without acquiring the value. The
+member-value transition now promotes an active public semantic use to an
+explicit initializer-replay fact. Retained dependencies and output-only
+visits leave it false. A separate one-time bit lets a later value acquisition
+revisit an initializer after an earlier output visit recorded the definition
+owner. This boundary prevents an unused `keyword<Tag>::instance` definition
+from acquiring a constructor occurrence. The decision uses semantic
+acquisition state, not a fixture, identifier, source line, or location
+ordering.
+
+This checkpoint restores three class-use rows:
+
+- the constructed `n::keyword<tag::color_map>` initializer in the rooted PA22
+  static definition;
+- both `bucket_array_base<true>` qualifiers recovered from PA24 `sizeof`
+  type-id alternatives.
+
+The class-use inventory improves from 14 to 11 missing rows. Its 45 failing
+tests, 54 changed rows, two unexpected rows, and three ordering-only cases are
+unchanged. Expanded convergence remains 1,401/1,530 because both affected
+outputs retain earlier mismatches. No mismatch is added or changed.
+
+Correctness evidence from the final ordinary and provenance Homebrew-Clang
+builds:
+
+- the preserved original strict manifest remains byte-exact at 1,305/1,305;
+- the expanded corpus remains 1,401/1,530, with exactly three missing
+  class-use occurrences removed and no added occurrence;
+- ordinary and provenance builds produce byte-identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,362 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation records 2,985 completed candidates, 3,301 early
+  repeats, 351 prepublication merges, 2,634 collected occurrences, and 2,623
+  publications;
+- the canonical PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, and path suites
+  pass 42/42;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The final ordinary convergence report is
+`/tmp/cppgm-static-initializer-convergence-final2-20260810.json`, SHA-256
+`36305b18333bce7a7fd5c0f3a6dabd23e5be9f2055f836e6475bd4c8223bd500`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-static-initializer-provenance-final2.692LsF/provenance-analysis.json`
+and
+`/tmp/cppgm-static-initializer-provenance-final2.692LsF/convergence.json`, with
+SHA-256 values
+`d00770bd54a7b28eaa071785ba0c762395c21e50c68deadd3a3a2d71777f10b5` and
+`d6e95d33f189c2b5183261829fdd257ca3c1e3fde6cb4f6d64329c445e4a3128`.
+The broad report is
+`/tmp/cppgm-static-initializer-broad-final2-20260810.log`,
+SHA-256
+`cd0e33e0b6b496e590a3e05e940de8c07498c14d79d7bfbe8420bbed7a119040`.
+The materialization audit remains byte-identical to the prior checkpoint at
+SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+Both required three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.26% | -0.63% | -3.99% | `eca2dcce72b871b22d87c38b4f103551137e95c36070418dd06c6f33f0f80baa` |
+| Prior rolling checkpoint | +0.04% | -0.20% | -0.05% | `5a49d5566d5ffc0bc62bd3b4fe29e59d3c05f2377033b9f1ce0d3144676d1674` |
+
+The reports are
+`/tmp/cppgm-static-initializer-vs-fixed-final2-20260810.json` and
+`/tmp/cppgm-static-initializer-vs-rolling-final2-20260810.json`. The shared raw
+candidate is
+`/tmp/cppgm-static-initializer-raw-candidate-final2-20260810.json`,
+SHA-256
+`83dd3ca2663e910ed0d440767e060ac6296c43495c64503fa719a772c86d0bd6`.
+Its candidate metadata names the preceding commit because the measurements
+cover this uncommitted worktree immediately before its checkpoint commit.
+
+Phase 3 remains open. Eleven missing class-use rows still divide between
 typed declaration materialization, rooted static definitions, member-template
-defaults, static-member initializer replay, and related semantic-owner
-families. Function-call, lifecycle, and ordering convergence remain.
+defaults, nested static owners, and related semantic-owner families.
+Function-call, lifecycle, and ordering convergence remain.
 Inception is still forbidden.
 
 ## Current decision, 2026-08-09

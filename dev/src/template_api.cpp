@@ -4616,13 +4616,22 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
   const auto replay_static_member_definition_once =
       [&]() -> void
   {
-    if(binding.witness_static_member_definition_replayed) {
+    const bool replay_initializer =
+        request.replay_static_member_initializer &&
+        !binding.witness_static_member_initializer_replayed;
+    if(binding.witness_static_member_definition_replayed &&
+       !replay_initializer) {
       return;
     }
     if(template_instantiation::replay_witness_static_member_definition_if_needed(
            ctx,
-           binding)) {
+           binding,
+           nullptr,
+           replay_initializer)) {
       binding.witness_static_member_definition_replayed = true;
+      if(replay_initializer) {
+        binding.witness_static_member_initializer_replayed = true;
+      }
     }
   };
   if(!retained_dependency &&
@@ -5365,9 +5374,17 @@ void observe_template_member_value_transition(
     const semantic_model::ValueBinding & binding,
     const TemplateMemberValueInstantiationRequest & request)
 {
+  TemplateMemberValueInstantiationRequest effective_request = request;
+  if(effective_request.origin ==
+         TemplateMemberValueInstantiationOrigin::SemanticUse &&
+     ctx.template_witness_context().public_source_use_active) {
+    effective_request.replay_static_member_initializer = true;
+  }
   observe_template_lifecycle_transition(
       ctx,
-      materialize_template_member_value_transition(ctx, binding, request));
+      materialize_template_member_value_transition(ctx,
+                                                   binding,
+                                                   effective_request));
 }
 
 TemplateLifecycleTransition

@@ -2565,6 +2565,7 @@ private:
                                     nullptr;
     if(template_witness_session_ != nullptr) {
       out.public_use_location = parser_trace::current_use_location();
+      out.public_source_use_active = !out.public_use_location.empty();
       if(token_sequence != nullptr) {
         out.primary_source_file = token_sequence->primary_source_file();
       }

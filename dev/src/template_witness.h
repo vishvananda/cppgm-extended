@@ -298,6 +298,7 @@ struct TemplateWitnessContext
   semantic_source_use::SemanticSourceUseTable * source_use_table = nullptr;
   TemplateWitnessEntryContext entry_context;
   std::string public_use_location;
+  bool public_source_use_active = false;
   std::string primary_source_file;
   const IRecogTokenSequence * token_sequence = nullptr;
   const SourceLocationTable * source_locations = nullptr;

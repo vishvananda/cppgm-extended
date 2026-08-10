@@ -8654,10 +8654,11 @@ bool apply_out_of_class_static_member_definitions_to_reference(
 
 namespace {
 
-void replay_witness_function_pointer_initializer(SemanticContext & ctx,
-                                                 Scope & scope,
-                                                 const TypePtr & target,
-                                                 const CppAstNode * initializer)
+void replay_witness_static_member_initializer(SemanticContext & ctx,
+                                              Scope & scope,
+                                              const TypePtr & target,
+                                              const CppAstNode * initializer,
+                                              bool replay_general_initializer)
 {
   const CppAstNode * payload =
       callsemantic_internal::unwrap_initializer_payload(initializer);
@@ -8681,10 +8682,11 @@ void replay_witness_function_pointer_initializer(SemanticContext & ctx,
     const std::size_t count =
         std::min(aggregate->fields.size(), field_initializers.size());
     for(std::size_t i = 0; i < count; ++i) {
-      replay_witness_function_pointer_initializer(ctx,
-                                                  scope,
-                                                  aggregate->fields[i].type,
-                                                  field_initializers[i]);
+      replay_witness_static_member_initializer(ctx,
+                                               scope,
+                                               aggregate->fields[i].type,
+                                               field_initializers[i],
+                                               replay_general_initializer);
     }
     return;
   }
@@ -8693,6 +8695,16 @@ void replay_witness_function_pointer_initializer(SemanticContext & ctx,
      !node_has_simple_type(*payload, OP_AMP) ||
      payload->children.size() != 1 ||
      payload->children[0].kind != CppAstKind::id_expression) {
+    // Only a semantic expression acquisition owns general initializer
+    // replay. Lifecycle and header/output discovery must not visit an
+    // otherwise uninstantiated VarDecl initializer.
+    if(replay_general_initializer) {
+      try {
+        (void)ctx.analyze_expression_without_output_materialization(scope,
+                                                                    *payload);
+      } catch(const std::exception &) {
+      }
+    }
     return;
   }
 
@@ -8720,7 +8732,8 @@ void replay_witness_function_pointer_initializer(SemanticContext & ctx,
 bool replay_witness_static_member_definition_if_needed(
     SemanticContext & ctx,
     const ValueBinding & binding,
-    const ClassInfo * owner_override)
+    const ClassInfo * owner_override,
+    bool replay_general_initializer)
 {
   ClassInfo * owner = binding.owner_class ?
       binding.owner_class :
@@ -8838,10 +8851,11 @@ bool replay_witness_static_member_definition_if_needed(
                                        static_member->parameters,
                                        replay_arguments);
   }
-  replay_witness_function_pointer_initializer(ctx,
-                                              init_scope,
-                                              binding.type,
-                                              static_member->initializer);
+  replay_witness_static_member_initializer(ctx,
+                                           init_scope,
+                                           binding.type,
+                                           static_member->initializer,
+                                           replay_general_initializer);
   return true;
 }
 
