@@ -3351,6 +3351,70 @@ static bool value_argument_has_named_enum_type(
           named_type_display_text(base).compare(0, 5, "enum ") == 0);
 }
 
+std::string narrow_character_literal_witness_text(unsigned long long value)
+{
+  switch(value) {
+  case '\a':
+    return "'\\a'";
+  case '\b':
+    return "'\\b'";
+  case '\t':
+    return "'\\t'";
+  case '\n':
+    return "'\\n'";
+  case '\v':
+    return "'\\v'";
+  case '\f':
+    return "'\\f'";
+  case '\r':
+    return "'\\r'";
+  case '\\':
+    return "'\\\\'";
+  case '\'':
+    return "'\\''";
+  default:
+    break;
+  }
+  if(value >= 0x20 && value <= 0x7e) {
+    return std::string("'") + static_cast<char>(value) + "'";
+  }
+  static const char hex_digits[] = "0123456789abcdef";
+  std::string out = "'\\x00'";
+  out[3] = hex_digits[(value >> 4) & 0xf];
+  out[4] = hex_digits[value & 0xf];
+  return out;
+}
+
+std::string typed_character_witness_argument_text(
+    const template_model::TemplateArgument & arg,
+    bool include_narrow_character_cast)
+{
+  if(arg.kind != template_model::TemplateArgument::TA_VALUE ||
+     arg.dependent ||
+     !arg.type) {
+    return std::string();
+  }
+  const cpp_decl::TypePtr base = cpp_decl::strip_top_level_cv(arg.type);
+  if(!base || base->kind != cpp_decl::Type::TK_FUNDAMENTAL) {
+    return std::string();
+  }
+  const bool plain_char = base->fundamental == FT_CHAR;
+  const bool narrow_character =
+      plain_char ||
+      base->fundamental == FT_SIGNED_CHAR ||
+      base->fundamental == FT_UNSIGNED_CHAR;
+  if(!narrow_character || cpp_decl::type_size(base) != 1) {
+    return std::string();
+  }
+  const unsigned long long value =
+      static_cast<unsigned long long>(arg.value) & 0xffULL;
+  const std::string literal = narrow_character_literal_witness_text(value);
+  if(plain_char || !include_narrow_character_cast) {
+    return literal;
+  }
+  return "(" + type_to_string(base->fundamental) + ")" + literal;
+}
+
 std::string retained_enum_witness_argument_text(
     SemanticContext & ctx,
     const template_model::TemplateArgument & arg)
@@ -3817,12 +3881,18 @@ std::string witness_specialization_name_for_visible_args(
             if(!member_pointer_text.empty()) {
               out << member_pointer_text;
             } else {
-              out << template_model::template_argument_text(
-                  arguments[i],
-                  [&ctx](const cpp_decl::TypePtr & type)
-                  {
-                    return default_elided_type_argument_text(ctx, type);
-                  });
+              const std::string character_text =
+                  typed_character_witness_argument_text(arguments[i], false);
+              if(!character_text.empty()) {
+                out << character_text;
+              } else {
+                out << template_model::template_argument_text(
+                    arguments[i],
+                    [&ctx](const cpp_decl::TypePtr & type)
+                    {
+                      return default_elided_type_argument_text(ctx, type);
+                    });
+              }
             }
           }
         }
@@ -4277,6 +4347,12 @@ std::string class_template_mangle_info_witness_text(
         object_pointer_witness_argument_text(argument);
     if(!object_pointer_text.empty()) {
       out << object_pointer_text;
+      continue;
+    }
+    const std::string character_text =
+        typed_character_witness_argument_text(argument, false);
+    if(!character_text.empty()) {
+      out << character_text;
       continue;
     }
     out << template_model::template_argument_text(
@@ -5603,6 +5679,11 @@ std::string witness_argument_text_for_binding(
     if(!retained_enum_text.empty()) {
       return retained_enum_text;
     }
+    const std::string character_text =
+        typed_character_witness_argument_text(arg, true);
+    if(!character_text.empty()) {
+      return character_text;
+    }
     const std::string object_pointer_text =
         object_pointer_witness_argument_text(arg);
     if(!object_pointer_text.empty()) {
@@ -6118,6 +6199,11 @@ std::string template_witness_argument_text(
     if(!retained_enum_text.empty()) {
       return retained_enum_text;
     }
+    const std::string character_text =
+        typed_character_witness_argument_text(arg, true);
+    if(!character_text.empty()) {
+      return character_text;
+    }
     const std::string object_pointer_text =
         object_pointer_witness_argument_text(arg);
     if(!object_pointer_text.empty()) {
@@ -6239,6 +6325,11 @@ std::string template_witness_value_binding_arg_text(
       object_pointer_witness_argument_text(arg);
   if(!object_pointer_text.empty()) {
     return object_pointer_text;
+  }
+  const std::string character_text =
+      typed_character_witness_argument_text(arg, true);
+  if(!character_text.empty()) {
+    return character_text;
   }
   if(arg.kind == template_model::TemplateArgument::TA_VALUE &&
      arg.source_syntax) {

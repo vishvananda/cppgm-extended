@@ -86,6 +86,10 @@ struct TemplateIdSyntax
   bool source_is_nested_template_argument = false;
   bool source_is_qualified_member_owner = false;
   bool source_is_static_member_definition_value = false;
+  // Literal-operator template arguments are synthesized from the literal
+  // token.  They participate in resolution like explicit arguments, but the
+  // source-level template binding is deduction.
+  bool source_arguments_are_deduced = false;
   // Preserve the parsed `template` disambiguator on the final component.
   // This is qualifier syntax, not part of template entity identity.
   bool name_has_template_disambiguator = false;

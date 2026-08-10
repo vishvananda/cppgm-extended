@@ -13787,7 +13787,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
   if(direct_template_id) {
     direct_explicit_template_name = direct_template_id->name;
     explicit_template_arg_texts = direct_template_id->arguments;
-    source_explicit_template_arg_count = explicit_template_arg_texts.size();
+    source_explicit_template_arg_count =
+        direct_template_id->source_arguments_are_deduced ?
+            0 : explicit_template_arg_texts.size();
   }
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;

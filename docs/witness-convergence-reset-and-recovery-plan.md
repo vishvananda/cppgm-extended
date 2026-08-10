@@ -1239,6 +1239,110 @@ rows, and three class ordering cases remain. Selection payloads, owner
 qualification, and dependent pack spelling remain the next class-use clusters.
 Inception is still forbidden.
 
+## Typed character argument checkpoint, 2026-08-10
+
+Resolved `char`, `signed char`, and `unsigned char` non-type template
+arguments carried a canonical type and integral value, while the generic
+argument printer emitted the value as a decimal integer. Class bindings,
+partial-specialization bindings, and lifecycle entity names lost their
+character-literal spelling. Numeric user-defined literal lowering also
+built a synthetic template-id that overload resolution treated as an explicit
+template-id. The source witness then labeled the literal operator's character
+pack `source=explicit`.
+
+The template witness formatter derives narrow-character spelling from the
+fundamental type and value. Direct template-argument contexts add the
+`signed char` or `unsigned char` cast used by Clang's `TemplateArgument`
+printer. Nested template-id contexts emit the character literal without that
+cast. The formatter handles named control escapes, printable ASCII, quote and
+backslash escapes, and two-digit lowercase hexadecimal escapes.
+
+Numeric literal-operator lowering marks its synthetic `TemplateIdSyntax`
+arguments as source-deduced. Overload resolution consumes the synthetic
+character arguments, while function-call witness attribution uses an explicit
+argument count of zero. The four custom template-id clone paths preserve the
+flag. `TemplateIdSyntax` remains 160 bytes.
+
+The change updates five witness outputs and makes four tests byte-exact. The
+PA23 static-data case retains one independent selection defect at its first
+use: CPPGM selects the explicit specialization where the reference selects the
+partial specialization. All other character spellings in that test match,
+including its lifecycle entity.
+
+Expanded convergence improves from 1,423 to 1,427 matching outputs:
+
+- class-use changes fall from 25 to 19 rows and from 21 to 19 tests; the two
+  unexpected rows and three ordering cases remain;
+- function-call changes fall from 40 to 37 rows and from 58 to 56 tests; the
+  missing, unexpected, and ordering inventories remain unchanged;
+- lifecycle missing rows fall from 67 to 64, unexpected rows fall from 42 to
+  39, and failing tests fall from 45 to 42. The ten additional definition
+  demands and nine warning tests remain.
+
+Correctness evidence from the Homebrew-Clang builds:
+
+- the preserved strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence passes 1,427/1,530, leaving 103 known mismatches;
+- ordinary and provenance compilers produce identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,358 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation retains 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero;
+- the structure-size report matches the parent. `Type` remains 280 bytes,
+  `TemplateArgument` 136 bytes, `TemplateIdSyntax` 160 bytes, and `ClassInfo`
+  1,136 bytes.
+
+The standalone semantic/template boundary ratchet repeats the parent counts:
+five output-readiness queries, ten template-service mentions, and nine
+internal-header sites. The plan does not use that ratchet as an acceptance gate
+for this witness slice.
+
+The ordinary convergence report is
+`/tmp/cppgm-char-origin-convergence-20260810.json`, SHA-256
+`139941045eb1c0474da32650375c132ba734328df8620bdc3b6f346422602e89`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-char-origin-provenance-20260810/provenance-analysis.json` and
+`/tmp/cppgm-char-origin-provenance-20260810/convergence.json`, with SHA-256
+values
+`645e19efe6df73bae8dff2a23c6abce9b90fa72a478e0bfc255498dd74387bd6`
+and
+`1805e8c1858813ffe5661dbce206dd48beeae7249895574b5cdad9ba0e7c1431`.
+The byte-identical output manifest is
+`/tmp/cppgm-char-origin-output-manifest-20260810.txt`, SHA-256
+`c6c3d9dc32fb6f7cf4655ccfd720bc62b54a7f1aa33d7b6e3858ac6631d2b797`.
+The broad report is `/tmp/cppgm-char-origin-broad-20260810.log`, SHA-256
+`762686ab2c9a42e7da8a3c3aa418e358893d135baae4d9028574f7062d2a2022`.
+The structure-size report is
+`/tmp/cppgm-char-origin-structure-sizes-20260810.txt`, SHA-256
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+The materialization audit retains SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+The three-run performance record passes both comparison gates:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.93% | -0.32% | -3.97% | `/tmp/cppgm-char-origin-vs-fixed-20260810.json` |
+| Contemporaneous parent | -0.10% | -0.71% | -0.03% | `/tmp/cppgm-char-origin-vs-contemporary-parent-20260810.json` |
+
+The raw candidate record has SHA-256
+`95711d5127961270f6547a9c8e132c043db7b8f1d43b1d911af24eeab06fcf33`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`36a3ef19b538f95ca99f108e9a3ccc3ff167383c0357b90a89bd68481dd7662d`
+and
+`ab9e7254c1fcd70c83ca94a859cf66bb8770e8316409fa8ffbc31b5c54205af2`.
+
+Phase 3 remains open. Nineteen changed class rows, two unexpected rows, and
+three ordering cases remain. Selection payloads and owner qualification are
+the next class-use clusters. Inception is still forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

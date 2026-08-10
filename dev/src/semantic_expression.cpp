@@ -285,6 +285,7 @@ ExprInfo analyze_numeric_user_defined_literal_template(SemanticContext & ctx,
   TemplateIdSyntax template_id;
   template_id.name.name = operator_name;
   template_id.source_location_id = node.source_location_id;
+  template_id.source_arguments_are_deduced = true;
   template_id.arguments.reserve(literal_text.size());
   template_id.argument_syntaxes.reserve(literal_text.size());
   for(size_t i = 0; i < literal_text.size(); ++i) {

@@ -20831,6 +20831,7 @@ TemplateIdSyntax clone_template_id_for_template_substitution(
       source.source_is_qualified_member_owner;
   out.source_is_static_member_definition_value =
       source.source_is_static_member_definition_value;
+  out.source_arguments_are_deduced = source.source_arguments_are_deduced;
   out.name_has_template_disambiguator =
       source.name_has_template_disambiguator;
   out.qualifier_template_id_syntaxes.reserve(
