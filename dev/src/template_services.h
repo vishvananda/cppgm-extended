@@ -273,9 +273,11 @@ struct ScopedTemplateDependentTypeExprUseLocation
 
 inline bool try_leaf_resolve_type_lookup(TemplateTypeSystem & type_system,
                                          const TemplateTypeLookupRequest & request,
-                                         cpp_decl::TypePtr & out)
+                                         cpp_decl::TypePtr & out,
+                                         semantic_model::Scope *& resolved_scope)
 {
   out.reset();
+  resolved_scope = nullptr;
   if(!request.scope || request.name.name.empty()) {
     return false;
   }
@@ -384,6 +386,9 @@ inline bool try_leaf_resolve_type_lookup(TemplateTypeSystem & type_system,
 
     if(current->class_info) {
       out = lookup_member_type(*current, *current->class_info, request.name.name);
+      if(out) {
+        resolved_scope = current;
+      }
       return out != nullptr;
     }
 
@@ -394,6 +399,7 @@ inline bool try_leaf_resolve_type_lookup(TemplateTypeSystem & type_system,
       return false;
     }
     out = apply_request_cv(direct);
+    resolved_scope = current;
     return out != nullptr;
   }
 
@@ -403,11 +409,13 @@ inline bool try_leaf_resolve_type_lookup(TemplateTypeSystem & type_system,
     if(direct &&
        elaborated_kind_matches_type(type_system.model, request.elaborated_kind, direct)) {
       out = apply_request_cv(direct);
+      resolved_scope = current;
       return out != nullptr;
     }
     if(current->class_info) {
       out = lookup_member_type(*current, *current->class_info, request.name.name);
       if(out) {
+        resolved_scope = current;
         return true;
       }
     }
@@ -420,6 +428,9 @@ inline bool try_leaf_resolve_type_lookup(TemplateTypeSystem & type_system,
                                *current->function->lexical_access_class,
                                request.name.name);
       if(out) {
+        resolved_scope = current->function->lexical_access_class->member_scope ?
+            current->function->lexical_access_class->member_scope.get() :
+            current;
         return true;
       }
     }
@@ -645,7 +656,12 @@ public:
       return false;
     }
     out.reset();
-    if(try_leaf_resolve_type_lookup(*this, request, out)) {
+    semantic_model::Scope * resolved_scope = nullptr;
+    if(try_leaf_resolve_type_lookup(*this, request, out, resolved_scope)) {
+      if(ctx_.template_witness_context().session && resolved_scope) {
+        ctx_.observe_named_type_alias_source_result(
+            *resolved_scope, request.name.name, out);
+      }
       return true;
     }
     if(request.elaborated_kind != TETK_NONE &&

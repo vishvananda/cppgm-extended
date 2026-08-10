@@ -240,6 +240,95 @@ between typed materialization, rooted static, member-default, and related
 semantic-owner families; function-call and lifecycle convergence also remain.
 Inception is still forbidden.
 
+## Alias declaration-result materialization checkpoint, 2026-08-10
+
+This promotable Phase 3 checkpoint connects named alias and typedef
+declarations to the concrete class-template result returned by typed lookup.
+The declaration collector records alias identity even when no concrete class
+handle exists yet. A later exact leaf lookup supplies the resolved type and
+declaring scope, upgrades that identity to the canonical class instance, and
+publishes a declaration-type source occurrence only when the declaration is
+semantically materialized. This path uses `Scope`, `Type`, `ClassInfo`, and
+`ClassTemplateDecl` identity throughout; it does not inspect rendered names,
+source lines, or location priorities.
+
+Class member typedefs participate in the same identity registry, and selected
+partial-specialization arguments now come from the existing typed
+`ClassTemplateUseInfo` selection. Braced initialization remains on its own
+typed initializer/materialization path, so aggregate declarations do not also
+publish a duplicate alias declaration-type occurrence.
+
+Four previously missing class-use rows are restored:
+
+- the concrete `integral_constant<bool, true>` result of the PA23
+  `invocable_impl<...>::type` member alias;
+- the partial `graph<...>` result of the PA23 local `graph_type` typedef;
+- the partial `async_result<...>` result of the PA24 local `result` typedef;
+- the primary `fork_t<0>` result of the PA24
+  `relationship_t::fork_t` member typedef.
+
+The `async_result` output becomes exact. The graph and fork fixtures retain
+unrelated pre-existing class/lifecycle differences, and the bool fixture now
+has the recovered same-location row as an ordering-only difference. Ordering
+is deliberately left for a later ordering cluster rather than encoded as a
+location or priority exception.
+
+The expanded corpus improves from 1,398/1,530 to 1,399/1,530. Remaining
+mismatches fall from 132 to 131. The class-use inventory improves from 49 to 47
+failing tests and from 21 to 17 missing rows; its 54 changed rows and two
+unexpected rows are unchanged, while ordering-only cases rise from two to
+three because of the recovered bool row. Function-call and lifecycle
+inventories are unchanged.
+
+Correctness evidence from the final ordinary and provenance Homebrew-Clang
+builds:
+
+- the preserved original strict manifest remains byte-exact at 1,305/1,305;
+- the expanded strict corpus passes 1,399/1,530;
+- ordinary and provenance builds produce byte-identical witness and LowIR
+  output for all 3,060 compared files and no build warning;
+- all 1,530 provenance sessions flush, producing 61,329 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation records 2,976 completed candidates, 3,300 early
+  repeats, 348 prepublication merges, 2,628 collected occurrences, and 2,617
+  publications;
+- the canonical PA1-PA38 report with direct LowIR comparison passes
+  4,862/4,862;
+- the focused convergence, provenance, materialization, text-reparse, and path
+  normalization suites pass 42/42;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The final ordinary convergence report is
+`/tmp/cppgm-alias-result-convergence-final-20260810.json`, SHA-256
+`3c39e98b1f437cde3a479359d47b7f796c6af34aab5e28252abef30677372d4d`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-alias-result-provenance.5EW1qq/provenance-analysis.json` and
+`/tmp/cppgm-alias-result-provenance.5EW1qq/convergence.json`, with SHA-256
+values `3ea531e5a255e2317990e84ccc7896a86e5bca3726ad7f67b914071215174e4f`
+and `678ece93a2fb7b046bd0b038dd9897998d9c1aed18ec396516e02f833e0183df`.
+The broad report is `/tmp/cppgm-alias-result-broad-20260810.log`, SHA-256
+`52e3ef7bea1a674d8e1a508d626e741bc51250698564a5d352e5be97a0d6ab8c`.
+The materialization audit is
+`/tmp/cppgm-alias-result-materialization-audit-20260810.json`, SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+Both required three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.27% | -1.14% | -3.99% | `d0d7fa373026b5846229821d20b470ec90da40cd650116fd0499e5a0fb9a15a4` |
+| Prior rolling checkpoint | +0.07% | -0.96% | +0.03% | `9be4538f2a18947695aac472d0af255c90265dd5d0c6b20465b61ed913b46f1f` |
+
+The reports are `/tmp/cppgm-alias-result-vs-fixed-20260810.json` and
+`/tmp/cppgm-alias-result-vs-rolling-20260810.json`. Their candidate metadata
+names the preceding commit because the measurements cover this uncommitted
+worktree immediately before its checkpoint commit.
+
+Phase 3 remains open. Seventeen missing class-use rows, the same-location bool
+ordering case, function-call convergence, and lifecycle convergence remain.
+Inception is still forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

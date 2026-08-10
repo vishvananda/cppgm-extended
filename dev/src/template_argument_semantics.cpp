@@ -9699,6 +9699,7 @@ TypePtr lookup_concrete_type_in_resolved_scope(
   }
 
   TypePtr direct;
+  Scope * direct_scope = &resolved_scope;
   if(resolved_scope.class_info) {
     if(!services.semantic_context) {
       return TypePtr();
@@ -9716,6 +9717,9 @@ TypePtr lookup_concrete_type_in_resolved_scope(
                                                 &lexical_scope.require() :
                                                 nullptr);
     direct = member.type;
+    if(member.declared_in && member.declared_in->member_scope) {
+      direct_scope = member.declared_in->member_scope.get();
+    }
   } else {
     auto local =
         resolved_scope.named_types.find(normalized_name);
@@ -9758,6 +9762,11 @@ TypePtr lookup_concrete_type_in_resolved_scope(
   if(resolve_instantiated_dependent_type(services, lexical_scope, direct, resolved) &&
      resolved) {
     direct = resolved;
+  }
+  if(services.witness_context.session &&
+     services.semantic_context && direct_scope) {
+    services.semantic_context->observe_named_type_alias_source_result(
+        *direct_scope, normalized_name, direct);
   }
   return direct;
 }

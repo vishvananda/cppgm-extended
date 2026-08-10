@@ -163,6 +163,10 @@ public:
       const std::string & name,
       const cpp_decl::TypePtr & type,
       uint32_t expanded_class_use_handle) = 0;
+  virtual void observe_named_type_alias_source_result(
+      semantic_model::Scope & scope,
+      const std::string & name,
+      const cpp_decl::TypePtr & type) = 0;
   virtual bool node_comes_from_standard_include_path(
       const CppAstNode * node) const = 0;
   virtual bool definition_comes_from_standard_include_path(

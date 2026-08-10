@@ -310,6 +310,18 @@ semantic_source_use::SourceUseRole declaration_alias_class_use_role(
   return semantic_source_use::SourceUseRole::TypeUse;
 }
 
+bool declaration_uses_braced_initializer(const CppAstNode * initializer)
+{
+  if(!initializer) {
+    return false;
+  }
+  if(initializer->kind == CppAstKind::braced_init_list) {
+    return true;
+  }
+  return initializer->children.size() == 1 &&
+         initializer->children[0].kind == CppAstKind::braced_init_list;
+}
+
 bool class_hierarchy_contains_class(const ClassInfo * root, const ClassInfo * target)
 {
   if(!root || !target) {
@@ -12169,26 +12181,38 @@ private:
     completed_alias_source_occurrences_.clear();
   }
 
-  uint32_t retain_alias_class_use_source(
-      const resolved_source_semantics::ResolvedClassTemplateIdView & resolved)
+  uint32_t retain_alias_class_use_result(ClassTemplateDecl * origin,
+                                         ClassInfo * instance)
   {
     ResolvedSourceState * state = resolved_source_state_.get();
-    if(!state || !state->active_alias || !resolved.origin || !resolved.instance ||
-       resolved.instance->source_template != resolved.origin) {
+    if(!state || !state->active_alias || !origin || !instance ||
+       instance->source_template != origin) {
       return 0;
     }
-    const auto key = std::make_pair(resolved.origin, resolved.instance);
+    const auto key = std::make_pair(origin, instance);
     const auto found = state->by_class_result.find(key);
     if(found != state->by_class_result.end()) {
+      if(instance->type) {
+        state->by_type.emplace(instance->type.get(), found->second);
+      }
       return found->second;
     }
     resolved_source_semantics::RetainedAliasClassUse retained;
-    retained.origin = resolved.origin;
-    retained.instance = resolved.instance;
+    retained.origin = origin;
+    retained.instance = instance;
     state->aliases.push_back(retained);
     const uint32_t handle = static_cast<uint32_t>(state->aliases.size());
     state->by_class_result.emplace(key, handle);
+    if(instance->type) {
+      state->by_type.emplace(instance->type.get(), handle);
+    }
     return handle;
+  }
+
+  uint32_t retain_alias_class_use_source(
+      const resolved_source_semantics::ResolvedClassTemplateIdView & resolved)
+  {
+    return retain_alias_class_use_result(resolved.origin, resolved.instance);
   }
 
   void capture_alias_class_use_source(
@@ -12213,34 +12237,62 @@ private:
     }
   }
 
-  void capture_named_type_alias_source(const Scope & scope,
-                                       const std::string & name)
+  void capture_named_type_alias_source(
+      const Scope & scope,
+      const std::string & name,
+      const TypePtr & resolved_type = TypePtr())
   {
     ResolvedSourceState * state = resolved_source_state_.get();
     if(!state || !state->active_alias || name.empty()) {
       return;
     }
     uint32_t handle = 0;
+    bool named_alias = false;
     const auto by_scope = state->by_scope_name.find(std::make_pair(&scope, name));
     if(by_scope != state->by_scope_name.end()) {
+      named_alias = true;
       handle = by_scope->second;
-    } else if(scope.class_info && scope.class_info->source_template) {
+    }
+    if(scope.class_info && scope.class_info->source_template) {
       const auto by_template = state->by_source_template_name.find(
           std::make_pair(scope.class_info->source_template, name));
       if(by_template != state->by_source_template_name.end()) {
-        handle = by_template->second;
+        named_alias = true;
+        if(handle == 0) {
+          handle = by_template->second;
+        }
       }
     }
-    if(handle == 0) {
+
+    TypePtr named_type = resolved_type;
+    if(!named_type) {
       const auto named = scope.named_types.find(name);
       if(named != scope.named_types.end() && named->second) {
-        const auto by_type = state->by_type.find(named->second.get());
-        if(by_type != state->by_type.end()) {
-          const resolved_source_semantics::RetainedAliasClassUse & retained =
-              state->aliases[by_type->second - 1];
-          if(!retained.origin || name != retained.origin->name) {
-            handle = by_type->second;
-          }
+        named_type = named->second;
+      }
+    }
+    if(handle == 0 && named_alias && named_type &&
+       !type_depends_on_template_parameter(named_type)) {
+      TypePtr base = strip_top_level_cv(remove_reference_type(named_type));
+      while(base && base->kind == Type::TK_ARRAY) {
+        base = strip_top_level_cv(base->inner);
+      }
+      ClassInfo * const instance = class_info_for_type(base);
+      if(instance && instance->source_template) {
+        handle = retain_alias_class_use_result(instance->source_template,
+                                               instance);
+        if(handle != 0) {
+          state->by_type.emplace(named_type.get(), handle);
+        }
+      }
+    }
+    if(handle == 0 && named_type) {
+      const auto by_type = state->by_type.find(named_type.get());
+      if(by_type != state->by_type.end()) {
+        const resolved_source_semantics::RetainedAliasClassUse & retained =
+            state->aliases[by_type->second - 1];
+        if(!retained.origin || name != retained.origin->name) {
+          handle = by_type->second;
         }
       }
     }
@@ -12344,18 +12396,39 @@ private:
       const TypePtr & type,
       uint32_t expanded_class_use_handle) override
   {
-    (void)type;
     ResolvedSourceState * state = resolved_source_state_.get();
-    if(!state || name.empty() || expanded_class_use_handle == 0) {
+    if(!state || name.empty()) {
       return;
     }
-    state->by_scope_name[std::make_pair(&scope, name)] =
-        expanded_class_use_handle;
-    if(scope.class_info && scope.class_info->source_template) {
-      state->by_source_template_name[
-          std::make_pair(scope.class_info->source_template, name)] =
-          expanded_class_use_handle;
+    const std::pair<const Scope *, std::string> scope_key(&scope, name);
+    // A zero handle still records that this declaration is an alias.  A later
+    // typed lookup can attach the concrete class result without rediscovering
+    // the declaration from source text.
+    const auto scope_binding =
+        state->by_scope_name.emplace(scope_key, expanded_class_use_handle);
+    if(expanded_class_use_handle != 0) {
+      scope_binding.first->second = expanded_class_use_handle;
     }
+    if(scope.class_info && scope.class_info->source_template) {
+      const std::pair<const ClassTemplateDecl *, std::string> template_key(
+          scope.class_info->source_template, name);
+      const auto template_binding = state->by_source_template_name.emplace(
+          template_key, expanded_class_use_handle);
+      if(expanded_class_use_handle != 0) {
+        template_binding.first->second = expanded_class_use_handle;
+      }
+    }
+    if(expanded_class_use_handle != 0 && type) {
+      state->by_type.emplace(type.get(), expanded_class_use_handle);
+    }
+  }
+
+  void observe_named_type_alias_source_result(
+      Scope & scope,
+      const std::string & name,
+      const TypePtr & type) override
+  {
+    capture_named_type_alias_source(scope, name, type);
   }
 
   void observe_materialized_alias_class_use(
@@ -12379,20 +12452,14 @@ private:
     if(!retained.valid()) {
       return;
     }
-    template_api::ClassSpecializationSelection selection;
-    selection.parameters = &retained.origin->parameters;
-    selection.binding_scope = retained.origin->pattern_scope;
-    selection.class_node = retained.origin->class_node;
-    selection.kind = template_api::MS_PRIMARY;
-    if(retained.instance->is_explicit_specialization) {
-      selection.class_node = retained.instance->template_output_node;
-      selection.kind = template_api::MS_EXPLICIT_SPECIALIZATION;
-    } else if(retained.instance->template_output_node &&
-              retained.origin->class_node &&
-              retained.instance->template_output_node !=
-                  retained.origin->class_node) {
+    template_api::ClassTemplateUseInfo use;
+    if(!template_api::class_template_use_info_for_class(
+           *this, scope, retained.instance, use, true) ||
+       !use.has_selection || use.origin != retained.origin) {
       return;
     }
+    const template_api::ClassSpecializationSelection & selection =
+        use.selection;
     witness::ClassUseEmitRequest request;
     request.semantic_template = retained.origin;
     request.semantic_specialization_key =
@@ -12416,6 +12483,15 @@ private:
         "deduced",
         template_api::TemplateWitnessSourceBindingPolicy::
             DeducedWithDefaultedTrailingDefaults);
+    if(selection.parameters &&
+       selection.parameters != &retained.origin->parameters) {
+      template_api::append_template_witness_source_bindings(
+          *this,
+          request.specialization_bindings,
+          *selection.parameters,
+          selection.arguments,
+          "deduced");
+    }
     request.ownership = witness::SourceUseOwnership::SourceOwned;
     request.role = role;
     request.origin = witness::ClassUseEmissionOrigin::DeclarationTypeSource;
@@ -22874,6 +22950,9 @@ private:
                                             out,
                                             alias_capture.capture.handle);
     } else if(out && capture_template_source_uses &&
+              // Braced initialization has its own typed materialization path;
+              // do not also publish the declaration type as an alias use.
+              !declaration_uses_braced_initializer(initializer) &&
               alias_capture.capture.through_alias) {
       observe_materialized_alias_class_use(
           scope,

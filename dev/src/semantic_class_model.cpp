@@ -1313,6 +1313,10 @@ void bind_member_named_type(SemanticContext & ctx,
       ctx, info, name, &type, declaration);
   semantic_scope_mutation::bind_named_type_with_access(
       *info.member_scope, name, type, access);
+  if(ctx.template_witness_context().session) {
+    ctx.retain_named_type_alias_source_result(
+        *info.member_scope, name, type, 0);
+  }
 }
 
 bool first_identifier_text_in_subtree(const CppAstNode & node, std::string & out)
