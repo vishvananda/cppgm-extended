@@ -754,6 +754,10 @@ public:
       const resolved_source_semantics::ResolvedClassTemplateIdView & resolved,
       const resolved_source_semantics::ResolvedSourceTypeMaterialization *
           materialization = nullptr) = 0;
+  virtual bool observe_retained_current_class_template_id(
+      semantic_model::Scope & source_scope,
+      const cpp_decl::TemplateIdSyntax & source_syntax,
+      semantic_model::ClassInfo & current_info) = 0;
   virtual void submit_resolved_class_use(
       witness::ClassUseEmitRequest request) = 0;
   virtual bool observe_resolved_alias_template_id(

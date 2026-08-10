@@ -678,6 +678,91 @@ Phase 3 remains open. Two missing class-use rows remain in the function-result
 owner path for the `graph` fixture. Function-call, lifecycle, payload, and
 ordering convergence remain. Inception is still forbidden.
 
+## Current-specialization result-owner class-use checkpoint, 2026-08-10
+
+Concrete class collection now carries the selected `ClassInfo` through source
+type resolution for deferred member aliases. The owner frame uses the typedef
+specifier sequence or alias type-id as its source root, so the frame covers the
+written template-id instead of the declarator that names the alias.
+
+The class-template reference path replays a retained current-specialization
+use only when the source pattern remains dependent, the committed declaration
+owner matches the selected class instance by identity, and the active AST root
+contains the source occurrence. The replay resolves partial-specialization
+arguments in their pattern scope, keeps the concrete member scope as the
+observation owner, and preserves Clang's trailing primary-default bit. A
+single template API predicate checks owner kind, commitment, and identity.
+The implementation does not parse source text or filter by template name,
+fixture, or source location.
+
+This checkpoint restores both `graph` class-use rows at lines 41 and 45 in
+`pa23/tests/spec/500-function-result-template-id-shadowed-argument.t`. The
+CPPGM witness matches the reference byte for byte, including the explicit
+partial parameters and the defaulted sixth binding.
+
+Homebrew Clang produced the following correctness evidence:
+
+- the preserved original strict manifest matches 1,305/1,305 outputs;
+- the expanded corpus matches 1,406/1,530 outputs, with 124 known
+  mismatches;
+- the class-use inventory has zero missing rows, 55 changed rows, two
+  unexpected rows, three ordering cases, and 40 failing tests;
+- function-call and lifecycle inventories match the preceding checkpoint;
+- ordinary and provenance compilers produce identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,395 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation reports 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the canonical PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper unit suites pass
+  60/60;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The standalone semantic/template boundary ratchet repeats the parent
+checkpoint's legacy counts: five output-readiness queries, ten template
+service mentions, and nine internal-header sites. Its unit tests pass. This
+ratchet is not an acceptance gate for the current witness slice.
+
+The ordinary convergence report is
+`/tmp/cppgm-current-result-owner-convergence-final-20260810.json`, SHA-256
+`eacbfc9c2dbb9976ec9af2c2e832ca6eec410e13edab554f169f3be0afcfcd61`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-result-owner-provenance.7djiaJ/provenance-analysis.json` and
+`/tmp/cppgm-result-owner-provenance.7djiaJ/convergence.json`, with SHA-256
+values
+`802c02c99441b0eb536bd2f9f5c8a17d3c4460364547bfca82b7f5cd2b1cfe28`
+and
+`80adc43c9e39d0316890c142c1bc8219b724e119da4ba5a74c01b6950f67acce`.
+The broad report is
+`/tmp/cppgm-current-result-owner-broad-20260810.log`, SHA-256
+`e8c46dce5f21842ef075303de56f5b9cab812f3beb2e3c56bf65be9ad6cf6be9`.
+The materialization audit remains byte-identical to the prior checkpoint at
+SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+Both required three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.01% | +0.22% | -3.92% | `aa6e0f76b79c17415d3f1e539c3aee512fd3a7b879b7b4af604277da16e50bcc` |
+| Prior rolling checkpoint | +0.07% | +0.30% | +0.05% | `f98a8d425066c47d23624ab3afb2c0ec0b20687af7e4778f166bac9dc70f96df` |
+
+The reports are `/tmp/cppgm-current-result-owner-vs-fixed-20260810.json`
+and `/tmp/cppgm-current-result-owner-vs-rolling-20260810.json`. The shared
+raw candidate is
+`/tmp/cppgm-current-result-owner-raw-candidate-20260810.json`, SHA-256
+`7b08c5047098ac974d25de208462e2c81329e303c2bb913b3d527ce4567edc7c`.
+Its metadata names the preceding commit because the measurements cover this
+uncommitted worktree before the checkpoint commit.
+
+Phase 3 remains open. The class-use family has no missing rows, but 55 changed
+and two unexpected class rows remain. Function-call, lifecycle, payload, and
+ordering convergence also remain. Inception is still forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

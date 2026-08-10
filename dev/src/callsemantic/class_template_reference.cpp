@@ -1989,6 +1989,24 @@ public:
           resolved.source_use_mode ==
           template_api::ClassTemplateSourceUseMode::QualifiedValueUse;
       classify_source_dependency(resolved);
+      Scope & source_scope = resolved.source_scope ?
+          *resolved.source_scope : *resolved.use_scope;
+      if(resolved.source_syntax &&
+         resolved.instance &&
+         resolved.source_dependency ==
+             TemplateIdSourceDependency::UnresolvedDependent &&
+         template_api::
+             current_source_type_materialization_commits_semantic_owner(
+                 template_api::SourceTypeMaterializationOwner::DeclarationType,
+                 resolved.instance) &&
+         template_api::current_source_type_materialization_matches(
+             resolved.source_syntax) &&
+         ctx.observe_retained_current_class_template_id(
+             source_scope,
+             *resolved.source_syntax,
+             *resolved.instance)) {
+        return;
+      }
       resolved_source_semantics::ResolvedSourceTypeMaterialization
           materialization;
       const bool materialized =

@@ -12159,6 +12159,21 @@ bool resolve_deferred_class_alias(SemanticContext & ctx,
     return false;
   }
 
+  const CppAstNode * materialization_root = found->second.typedef_specifiers ?
+      found->second.typedef_specifiers :
+      (found->second.type_id ? found->second.type_id :
+                               found->second.declaration);
+  const template_api::ScopedSourceTypeMaterialization
+      source_type_materialization_owner(
+          ctx.template_witness_context().session != nullptr,
+          template_api::SourceTypeMaterializationOwner::DeclarationType,
+          template_api::SourceTypeMaterializationOperation::
+              ContainingSemanticOwner,
+          materialization_root,
+          nullptr,
+          &info,
+          info.template_instantiation_tracked &&
+              !info.dependent_instantiation);
   found->second.resolving = true;
   try {
     const bool indexed_typedef = found->second.typedef_specifiers != nullptr;

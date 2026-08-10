@@ -71,6 +71,9 @@ const char * source_type_materialization_operation_name(
 bool current_source_type_materialization_matches(
     const cpp_decl::TemplateIdSyntax * source_syntax);
 bool current_source_type_materialization_owner_committed();
+bool current_source_type_materialization_commits_semantic_owner(
+    SourceTypeMaterializationOwner owner,
+    const void * semantic_owner);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
 SourceTypeMaterializationOwner
 current_source_type_materialization_semantic_owner_kind();

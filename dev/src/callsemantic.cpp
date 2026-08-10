@@ -19758,18 +19758,23 @@ private:
         source_type_lookup_guard;
     bool retained_current_class_use_observed = false;
     if(template_witness_session_ != nullptr) {
-      if(direct_template_id_syntax) {
+      if(scope.class_info && direct_template_id_syntax) {
         retained_current_class_use_observed =
             observe_retained_current_class_template_id(
                 scope,
-                *direct_template_id_syntax) ||
+                *direct_template_id_syntax,
+                *scope.class_info) ||
             retained_current_class_use_observed;
       }
-      for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+      for(size_t i = 0;
+          scope.class_info &&
+              i < node.qualifier_template_id_syntaxes.size();
+          ++i) {
         retained_current_class_use_observed =
             observe_retained_current_class_template_id(
                 scope,
-                node.qualifier_template_id_syntaxes[i]) ||
+                node.qualifier_template_id_syntaxes[i],
+                *scope.class_info) ||
             retained_current_class_use_observed;
       }
     }
@@ -20881,14 +20886,14 @@ private:
 
   bool observe_retained_current_class_template_id(
       Scope & scope,
-      const TemplateIdSyntax & syntax)
+      const TemplateIdSyntax & syntax,
+      ClassInfo & current_info) override
   {
-    if(!scope.class_info ||
-       !scope.class_info->source_template ||
+    if(!current_info.source_template ||
        syntax.name.name.empty()) {
       return false;
     }
-    ClassInfo & info = *scope.class_info;
+    ClassInfo & info = current_info;
     ClassTemplateDecl & class_template = *info.source_template;
     if(unqualified_member_name(syntax.name.name) != class_template.name) {
       return false;
@@ -20963,6 +20968,22 @@ private:
          !template_arguments_are_dependent(resolved_source_arguments)) {
         return false;
       }
+      for(size_t i = 0;
+          i < resolved_source_arguments.size() &&
+              i < selected_partial->arg_syntaxes.size();
+          ++i) {
+        if(selected_partial->arg_syntaxes[i].source_defaulted) {
+          resolved_source_arguments[i].source_defaulted = true;
+        }
+      }
+      if(resolved_source_arguments.size() == class_template.parameters.size() &&
+         !class_template.parameters.empty() &&
+         class_template.parameters.back().default_argument) {
+        // Clang retains the trailing primary-template default bit on a
+        // current partial-specialization type even when its injected spelling
+        // names the corresponding partial parameter.
+        resolved_source_arguments.back().source_defaulted = true;
+      }
       canonicalize_simple_dependent_argument_texts(resolved_source_arguments);
       source_arguments = &resolved_source_arguments;
     }
@@ -20970,14 +20991,22 @@ private:
       return false;
     }
 
+    Scope & observation_scope = info.member_scope ? *info.member_scope : scope;
+    vector<string> source_argument_texts = syntax.arguments;
+    while(!source_argument_texts.empty() &&
+          source_argument_texts.size() <= source_arguments->size() &&
+          (*source_arguments)[source_argument_texts.size() - 1].source_defaulted) {
+      source_argument_texts.pop_back();
+    }
     const string key = template_args_identity_key(*source_arguments);
     resolved_source_semantics::ResolvedClassTemplateIdView resolved;
     resolved.origin = &class_template;
     resolved.instance = &info;
-    resolved.use_scope = &scope;
+    resolved.use_scope = &observation_scope;
+    resolved.source_scope = &scope;
     resolved.arguments = source_arguments;
     resolved.selection = &selection;
-    resolved.source_argument_texts = &syntax.arguments;
+    resolved.source_argument_texts = &source_argument_texts;
     resolved.source_argument_syntaxes = &syntax.argument_syntaxes;
     resolved.source_syntax = &syntax;
     resolved.instantiation_key = &key;
