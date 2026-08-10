@@ -1621,6 +1621,13 @@ struct OutOfClassStaticMemberDecl
 {
   Scope * declaring_scope = nullptr;
   Scope * pattern_scope = nullptr;
+  // Definitions for nested members are retained by the first source owner.
+  // Keep both that declaration and the immediate semantic member owner so
+  // replay can select the concrete owner without parsing the qualified name.
+  ClassTemplateDecl * source_owner_template = nullptr;
+  ClassTemplateDecl * member_owner_template = nullptr;
+  const CppAstNode * source_owner_declaration = nullptr;
+  const cpp_decl::TemplateIdSyntax * source_owner_syntax = nullptr;
   cpp_decl::QualifiedName qualified_name_syntax;
   const CppAstNode * node = nullptr;
   const CppAstNode * specifiers = nullptr;

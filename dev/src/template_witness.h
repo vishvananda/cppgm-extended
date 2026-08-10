@@ -14,6 +14,10 @@
 #include "template_lifecycle.h"
 #include "witness_provenance.h"
 
+namespace cpp_decl {
+struct Type;
+}
+
 namespace semantic_model {
 struct ClassTemplateDecl;
 struct ValueBinding;
@@ -161,6 +165,9 @@ struct TemplateLifecycleEvent
   std::string normalized_trigger_entity;
   std::string owner_entity;
   std::string trigger_owner_entity;
+  // Session-local semantic identity for a variable's owning class.  Public
+  // rendering remains textual, but visibility policy compares this type.
+  const cpp_decl::Type * semantic_owner_type = nullptr;
   bool template_related = false;
   bool directly_owned = true;
   bool cross_owner_dependency = false;

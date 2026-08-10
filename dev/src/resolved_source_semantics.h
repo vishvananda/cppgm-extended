@@ -195,13 +195,17 @@ struct ResolvedQualifiedId
 struct ResolvedOwnerReference
 {
   semantic_model::ClassInfo * owner = nullptr;
+  // The source template and declaration identify the written qualifier even
+  // when `owner` is a nested concrete instantiation.
+  semantic_model::ClassTemplateDecl * source_owner_template = nullptr;
+  const CppAstNode * source_owner_declaration = nullptr;
   semantic_model::Scope * source_scope = nullptr;
   const cpp_decl::TemplateIdSyntax * source_syntax = nullptr;
   const CppAstNode * source_anchor = nullptr;
 
   bool valid() const
   {
-    return owner && source_scope && source_syntax;
+    return owner && source_owner_declaration && source_scope && source_syntax;
   }
 };
 

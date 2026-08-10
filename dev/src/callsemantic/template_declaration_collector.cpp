@@ -2999,6 +2999,22 @@ public:
                 template_decl->specifiers = specifiers;
                 template_decl->declarator = declarator;
               }
+              observe_out_of_class_owner_reference(
+                  resolved_out_of_class_owner_reference(
+                      pattern_scope,
+                      qualified_member,
+                      function_identifier ? function_identifier : &inner,
+                      owner),
+                  matched_owner_parameters);
+              if(specifiers) {
+                observe_out_of_class_owner_reference(
+                    resolved_out_of_class_owner_reference(
+                        pattern_scope,
+                        qualified_member,
+                        specifiers,
+                        owner),
+                    matched_owner_parameters);
+              }
               return;
             }
             if(owner_template_decl && matches_owner_template_parameters) {
@@ -3501,6 +3517,9 @@ public:
             }
             stored.declaring_scope = &scope;
             stored.pattern_scope = &pattern_scope;
+            stored.source_owner_template = owner_template;
+            stored.member_owner_template = owner ? owner->source_template : nullptr;
+            stored.source_owner_declaration = owner_template->class_node;
             stored.node = &inner;
             stored.specifiers = specifiers;
             stored.declarator = declarator;
@@ -3513,6 +3532,11 @@ public:
                     static_member_name,
                     static_member_identifier ? static_member_identifier : &inner,
                     template_owner ? template_owner : owner);
+            stored.source_owner_syntax =
+                static_member_identifier ?
+                    cppast_qualifier_template_id_syntax(
+                        *static_member_identifier,
+                        owner_template_qualifier_index) : nullptr;
             stored.owner_reference_handle =
                 ctx.retain_resolved_out_of_class_owner_reference(
                     retained_owner_pattern);
@@ -3537,6 +3561,11 @@ public:
                                                                  CppAstKind::identifier) :
                                                              nullptr,
                                                          out_of_class_static_member)) {
+                if(out_of_class_static_member &&
+                   out_of_class_static_member->owner_class) {
+                  stored.member_owner_template =
+                      out_of_class_static_member->owner_class->source_template;
+                }
                 const resolved_source_semantics::ResolvedOwnerReference
                     resolved_owner = resolved_out_of_class_owner_reference(
                         pattern_scope,
@@ -5948,6 +5977,14 @@ private:
   {
     resolved_source_semantics::ResolvedOwnerReference resolved;
     resolved.owner = owner;
+    for(ClassInfo * current = owner;
+        current && !resolved.source_owner_template;
+        current = current->enclosing_scope ?
+            current->enclosing_scope->class_info : nullptr) {
+      resolved.source_owner_template = current->source_template;
+      resolved.source_owner_declaration = current->source_template ?
+          current->source_template->class_node : nullptr;
+    }
     resolved.source_scope = &scope;
     resolved.source_anchor = source_anchor;
     if(!source_anchor || qualified.qualifiers.empty()) {

@@ -11899,6 +11899,24 @@ private:
 #endif
       const bool candidate_preferred =
           (request.use_anchor_present && !existing.use_anchor_present) ||
+          (request.role ==
+               witness::SourceUseRole::StaticMemberDefinitionOwner &&
+           existing.role ==
+               witness::SourceUseRole::StaticMemberDefinitionOwner &&
+           request.static_member_owner && existing.static_member_owner &&
+           request.static_member_owner != existing.static_member_owner &&
+           [&]() -> bool
+           {
+             for(const ClassInfo * current = request.static_member_owner;
+                 current;
+                 current = current->enclosing_scope ?
+                     current->enclosing_scope->class_info : nullptr) {
+               if(current == existing.static_member_owner) {
+                 return true;
+               }
+             }
+             return false;
+           }()) ||
           (request.use_anchor_present == existing.use_anchor_present &&
            std::make_tuple(selection_rank(request.selection),
                            ownership_rank(request.ownership),
@@ -11967,7 +11985,7 @@ private:
     if(!resolved_source_state_) {
       return;
     }
-    std::set<std::string> materialized_variable_owners;
+    std::set<const cpp_decl::Type *> materialized_variable_owner_types;
     if(template_witness_session_) {
       for(std::size_t i = 0;
           i < template_witness_session_->lifecycle_events.size();
@@ -11978,18 +11996,8 @@ private:
            witness::TemplateLifecycleEventKind::VariableInstantiation) {
           continue;
         }
-        const std::string normalized_entity =
-            !event.normalized_entity.empty() ?
-                event.normalized_entity :
-                template_api::template_witness_detail::
-                    normalize_template_log_entity(event.entity);
-        const std::string owner = !event.owner_entity.empty() ?
-            event.owner_entity :
-            template_api::template_witness_detail::owner_entity(
-                normalized_entity);
-        if(!owner.empty()) {
-          materialized_variable_owners.insert(
-              witness_text::normalize_anonymous_namespace_segments(owner));
+        if(event.semantic_owner_type) {
+          materialized_variable_owner_types.insert(event.semantic_owner_type);
         }
       }
     }
@@ -12003,31 +12011,9 @@ private:
           resolved_source_state_->pending_class_uses[i];
       if(request.role ==
              witness::SourceUseRole::StaticMemberDefinitionOwner) {
-        std::ostringstream bound_owner;
-        bound_owner << request.template_name;
-        std::size_t visible_binding_count = request.bindings.size();
-        while(visible_binding_count != 0 &&
-              request.bindings[visible_binding_count - 1].source ==
-                  "defaulted") {
-          --visible_binding_count;
-        }
-        if(!request.bindings.empty()) {
-          bound_owner << "<";
-          for(std::size_t binding_index = 0;
-              binding_index < visible_binding_count;
-              ++binding_index) {
-            if(binding_index != 0) {
-              bound_owner << ", ";
-            }
-            bound_owner << request.bindings[binding_index].arg;
-          }
-          bound_owner << ">";
-        }
-        const std::string normalized_owner =
-            witness_text::normalize_anonymous_namespace_segments(
-                template_api::template_witness_detail::
-                    normalize_template_log_entity(bound_owner.str()));
-        if(materialized_variable_owners.count(normalized_owner) == 0) {
+        if(!request.static_member_owner_type ||
+           materialized_variable_owner_types.count(
+               request.static_member_owner_type) == 0) {
           continue;
         }
         request.role = witness::SourceUseRole::QualifierUse;
@@ -12456,13 +12442,22 @@ private:
        !template_source_capture_enabled()) {
       return;
     }
-    ClassInfo & owner = *resolved.owner;
-    ClassTemplateDecl * const origin = owner.source_template;
-    if(!origin || owner.instantiation_arguments.empty() ||
-       unqualified_member_name(resolved.source_syntax->name.name) !=
-           origin->name) {
+    ClassInfo * const static_member_owner =
+        role == witness::SourceUseRole::StaticMemberDefinitionOwner ?
+            resolved.owner : nullptr;
+    ClassInfo * source_owner = resolved.owner;
+    while(source_owner &&
+          (!source_owner->source_template ||
+           source_owner->source_template->class_node !=
+               resolved.source_owner_declaration)) {
+      source_owner = source_owner->enclosing_scope ?
+          source_owner->enclosing_scope->class_info : nullptr;
+    }
+    if(!source_owner || source_owner->instantiation_arguments.empty()) {
       return;
     }
+    ClassInfo & owner = *source_owner;
+    ClassTemplateDecl * const origin = owner.source_template;
     const bool specialized =
         owner.is_explicit_specialization ||
         (owner.template_output_node && origin->class_node &&
@@ -12476,7 +12471,7 @@ private:
 
     const std::string location =
         source_location_for_template_id_syntax_name(*resolved.source_syntax);
-    if(!source_location_points_at_identifier(location, origin->name)) {
+    if(location.empty()) {
       return;
     }
 
@@ -12522,6 +12517,9 @@ private:
       }
     }
     request.role = role;
+    request.static_member_owner = static_member_owner;
+    request.static_member_owner_type =
+        static_member_owner ? static_member_owner->type.get() : nullptr;
     request.origin = role == witness::SourceUseRole::QualifierUse ?
         witness::ClassUseEmissionOrigin::QualifiedValueSource :
         witness::ClassUseEmissionOrigin::DeclarationTypeSource;
@@ -26756,6 +26754,14 @@ private:
   {
     resolved_source_semantics::ResolvedOwnerReference resolved;
     resolved.owner = owner;
+    for(ClassInfo * current = owner;
+        current && !resolved.source_owner_template;
+        current = current->enclosing_scope ?
+            current->enclosing_scope->class_info : nullptr) {
+      resolved.source_owner_template = current->source_template;
+      resolved.source_owner_declaration = current->source_template ?
+          current->source_template->class_node : nullptr;
+    }
     resolved.source_scope = &scope;
     resolved.source_anchor = source_anchor;
     if(!source_anchor || qualified.qualifiers.empty()) {

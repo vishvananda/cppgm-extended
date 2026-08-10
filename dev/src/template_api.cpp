@@ -5317,6 +5317,10 @@ void observe_template_lifecycle_transition(
   event.kind = TemplateLifecycleEventKind::VariableInstantiation;
   event.entity = entity;
   event.decl_location = decl_location;
+  const semantic_model::ClassInfo * const semantic_owner =
+      transition.value_owner ? transition.value_owner : binding.owner_class;
+  event.semantic_owner_type = semantic_owner ?
+      semantic_owner->type.get() : nullptr;
   event.entity_has_template_identity =
       value_or_owner_has_template_identity(&binding) ||
       transition.variable_template != nullptr;

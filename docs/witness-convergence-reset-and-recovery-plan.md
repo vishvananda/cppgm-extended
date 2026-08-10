@@ -159,6 +159,87 @@ the completed-occurrence set remains an ownership registry, and 138 expanded
 class-use, function-call, and lifecycle mismatches remain. Inception is still
 forbidden.
 
+## Out-of-class owner presence checkpoint, 2026-08-10
+
+This promotable Phase 3 checkpoint moves out-of-class class-use presence onto
+typed declaration and materialization facts. Out-of-class member-template and
+static-member collection now retain the source class-template declaration,
+the structured source template-id, and, when semantic lookup succeeds, the
+immediate member-owner template. Replayed nested static definitions match the
+concrete owner through the canonical class-template declaration identity; they
+do not recover the owner from rendered template names or reparsed source text.
+
+Static-definition owner occurrences are collected before their storage is
+necessarily required, but publication is now gated by the variable
+instantiation transition for the same semantic owner type. A more-specific
+nested owner replaces an enclosing-owner candidate for the same source
+occurrence. This separates source discovery from the semantic fact that makes
+the row visible and prevents unused static definitions from creating public
+class-use rows.
+
+The expanded corpus improves from 1,392/1,530 to 1,398/1,530 with no added or
+changed mismatch. Ten missing class-use occurrences are restored across the
+following source-owner families:
+
+- nested static members in PA19 and PA20;
+- nested methods, constructors, address-pack statics, and member-template
+  statics in PA22;
+- all four partial-owner `traits<A, false>` occurrences in PA24.
+
+Six outputs become exact. The PA24 partial-owner fixture retains only its two
+pre-existing function-call drop mismatches. The class-use inventory falls from
+56 failing tests and 31 missing rows to 49 failing tests and 21 missing rows;
+the 54 changed rows, two unexpected rows, and two ordering-only cases are
+unchanged. The full convergence result is 132 remaining mismatches: 49
+class-use tests, 60 function-call tests, and 48 lifecycle tests, with overlap
+between families.
+
+Correctness evidence from the final ordinary and provenance Homebrew-Clang
+builds:
+
+- the original tracked strict manifest remains byte-exact at 1,305/1,305;
+- the expanded strict corpus passes 1,398/1,530;
+- ordinary and provenance builds produce identical 3,060-file output
+  manifests and no warning;
+- all 1,530 provenance sessions flush, producing 61,316 records with no
+  unknown producer and no unexercised producer site;
+- class provenance records 2,613 attempts, 2,612 insertions/public rows, and
+  the one known exact nested-source duplicate;
+- the canonical PA1-PA38 report with direct LowIR comparison passes
+  4,862/4,862;
+- the focused convergence, provenance, materialization, text-reparse, and path
+  normalization suites pass 42/42;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The final convergence report is
+`/tmp/cppgm-class-presence-convergence-final-20260810.json`, SHA-256
+`cae0bb144a284194a84f70332c492354fa856316dc797494ecf38de76625f2e5`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-class-presence-provenance.5Y5C3C/provenance-analysis.json` and
+`/tmp/cppgm-class-presence-provenance.5Y5C3C/convergence.json`, with SHA-256
+values `657b9d7e64ec787908a29abeda3ddee28dd4765b04f193a89b75d633e4981309`
+and `bd1b2b996c875b8ca48ce9623f2b0955cbff317f4010e7a971e8d418ee58d1cc`.
+The broad report is `/tmp/cppgm-class-presence-broad-20260810.log`, SHA-256
+`b7f26853da7c693a05da4d95b8db38985e9ce06ef3e86b9df24325c311608dad`.
+
+Both required three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.34% | -0.18% | -4.01% | `837f7c4e888052232c18a4e85ff2f814431b1c883034a2db886f66f8ff341c71` |
+| Prior rolling baseline | -0.08% | -0.26% | +0.04% | `a69930a1d5b815dfa0b2ec67bc0297ecb36f3f7343a3520eda248583d7f1f505` |
+
+The reports are `/tmp/cppgm-class-presence-vs-fixed-20260810.json` and
+`/tmp/cppgm-class-presence-vs-rolling-20260810.json`. Their candidate metadata
+names the preceding commit because the measurements cover this uncommitted
+worktree immediately before its checkpoint commit.
+
+Phase 3 remains open. Twenty-one missing class-use occurrences still divide
+between typed materialization, rooted static, member-default, and related
+semantic-owner families; function-call and lifecycle convergence also remain.
+Inception is still forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

@@ -7293,6 +7293,72 @@ ValueBinding * static_member_definition_binding_for_key(SemanticContext & ctx,
   return direct_static_member_definition_binding(*current, qualified.name);
 }
 
+class ScopedTemplateWitnessSourceCaptureResume
+{
+public:
+  ScopedTemplateWitnessSourceCaptureResume()
+    : saved_depth_(template_api::template_witness_detail::
+                       current_source_capture_pause_depth_storage())
+  {
+    template_api::template_witness_detail::
+        current_source_capture_pause_depth_storage() = 0;
+  }
+
+  ~ScopedTemplateWitnessSourceCaptureResume()
+  {
+    template_api::template_witness_detail::
+        current_source_capture_pause_depth_storage() = saved_depth_;
+  }
+
+  ScopedTemplateWitnessSourceCaptureResume(
+      const ScopedTemplateWitnessSourceCaptureResume &) = delete;
+  ScopedTemplateWitnessSourceCaptureResume & operator=(
+      const ScopedTemplateWitnessSourceCaptureResume &) = delete;
+
+private:
+  int saved_depth_;
+};
+
+resolved_source_semantics::ResolvedOwnerReference
+reconstruct_out_of_class_static_member_owner_reference(
+    const OutOfClassStaticMemberDecl & member,
+    ClassInfo & concrete_owner)
+{
+  resolved_source_semantics::ResolvedOwnerReference resolved;
+  resolved.owner = &concrete_owner;
+  resolved.source_owner_template = member.source_owner_template;
+  resolved.source_owner_declaration = member.source_owner_declaration;
+  resolved.source_scope = member.pattern_scope ?
+      member.pattern_scope : member.declaring_scope;
+  resolved.source_anchor = member.declarator ?
+      member.declarator : member.node;
+  resolved.source_syntax = member.source_owner_syntax;
+  return resolved;
+}
+
+void observe_out_of_class_static_member_owner_reference(
+    SemanticContext & ctx,
+    const OutOfClassStaticMemberDecl & member,
+    ClassInfo & concrete_owner)
+{
+  const resolved_source_semantics::ResolvedOwnerReference reconstructed =
+      reconstruct_out_of_class_static_member_owner_reference(
+          member, concrete_owner);
+  if(reconstructed.valid()) {
+    ctx.observe_resolved_out_of_class_owner_reference(
+        reconstructed,
+        nullptr,
+        witness::SourceUseRole::StaticMemberDefinitionOwner);
+    return;
+  }
+  if(member.owner_reference_handle != 0) {
+    ctx.observe_retained_out_of_class_owner_reference(
+        member.owner_reference_handle,
+        concrete_owner,
+        witness::SourceUseRole::StaticMemberDefinitionOwner);
+  }
+}
+
 void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
                                                   ClassTemplateDecl & decl,
                                                   ClassInfo & info,
@@ -7343,10 +7409,11 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
     if(member->is_explicit_specialization) {
       continue;
     }
-    ctx.observe_retained_out_of_class_owner_reference(
-        it->second.owner_reference_handle,
-        info,
-        witness::SourceUseRole::StaticMemberDefinitionOwner);
+    {
+      const ScopedTemplateWitnessSourceCaptureResume source_capture_resume;
+      observe_out_of_class_static_member_owner_reference(
+          ctx, it->second, info);
+    }
     if(witness::source_capture_enabled(ctx)) {
       member->witness_static_member_definition_source_captured = true;
     }
@@ -8587,32 +8654,6 @@ bool apply_out_of_class_static_member_definitions_to_reference(
 
 namespace {
 
-class ScopedTemplateWitnessSourceCaptureResume
-{
-public:
-  ScopedTemplateWitnessSourceCaptureResume()
-    : saved_depth_(template_api::template_witness_detail::
-                       current_source_capture_pause_depth_storage())
-  {
-    template_api::template_witness_detail::
-        current_source_capture_pause_depth_storage() = 0;
-  }
-
-  ~ScopedTemplateWitnessSourceCaptureResume()
-  {
-    template_api::template_witness_detail::
-        current_source_capture_pause_depth_storage() = saved_depth_;
-  }
-
-  ScopedTemplateWitnessSourceCaptureResume(
-      const ScopedTemplateWitnessSourceCaptureResume &) = delete;
-  ScopedTemplateWitnessSourceCaptureResume & operator=(
-      const ScopedTemplateWitnessSourceCaptureResume &) = delete;
-
-private:
-  int saved_depth_;
-};
-
 void replay_witness_function_pointer_initializer(SemanticContext & ctx,
                                                  Scope & scope,
                                                  const TypePtr & target,
@@ -8692,32 +8733,71 @@ bool replay_witness_static_member_definition_if_needed(
   }
 
   ClassInfo & info = *owner;
-  ClassTemplateDecl & decl = *info.source_template;
-  const PartialClassTemplateSpecializationDecl * partial =
-      selected_partial_specialization(decl, info);
-  const std::map<std::string, OutOfClassStaticMemberDecl> & static_member_definitions =
-      partial ?
-          (!partial->witness_static_member_definitions.empty() ?
-               partial->witness_static_member_definitions :
-               partial->static_member_definitions) :
-          (!decl.witness_static_member_definitions.empty() ?
-               decl.witness_static_member_definitions :
-               decl.static_member_definitions);
-  std::map<std::string, OutOfClassStaticMemberDecl>::const_iterator found =
-      static_member_definitions.find(binding.name);
-  if(found == static_member_definitions.end()) {
+  ClassInfo * source_owner = &info;
+  const PartialClassTemplateSpecializationDecl * source_partial = nullptr;
+  const OutOfClassStaticMemberDecl * static_member = nullptr;
+  for(ClassInfo * candidate_owner = &info;
+      candidate_owner && !static_member;
+      candidate_owner = candidate_owner->enclosing_scope ?
+          candidate_owner->enclosing_scope->class_info : nullptr) {
+    ClassTemplateDecl * const candidate_decl = candidate_owner->source_template;
+    if(!candidate_decl) {
+      continue;
+    }
+    const PartialClassTemplateSpecializationDecl * const candidate_partial =
+        selected_partial_specialization(*candidate_decl, *candidate_owner);
+    const std::map<std::string, OutOfClassStaticMemberDecl> & definitions =
+        candidate_partial ?
+            (!candidate_partial->witness_static_member_definitions.empty() ?
+                 candidate_partial->witness_static_member_definitions :
+                 candidate_partial->static_member_definitions) :
+            (!candidate_decl->witness_static_member_definitions.empty() ?
+                 candidate_decl->witness_static_member_definitions :
+                 candidate_decl->static_member_definitions);
+    std::map<std::string, OutOfClassStaticMemberDecl>::const_iterator found =
+        candidate_owner == &info ? definitions.find(binding.name) :
+                                   definitions.end();
+    if(candidate_owner != &info) {
+      for(found = definitions.begin(); found != definitions.end(); ++found) {
+        const OutOfClassStaticMemberDecl & candidate = found->second;
+        if(candidate.qualified_name_syntax.name != binding.name ||
+           candidate.qualified_name_syntax.qualifiers.empty()) {
+          continue;
+        }
+        const CppAstNode * const candidate_owner_identity =
+            candidate.member_owner_template ?
+                (candidate.member_owner_template->
+                     deferred_definition_source_identity ?
+                     candidate.member_owner_template->
+                         deferred_definition_source_identity :
+                     candidate.member_owner_template->class_node) :
+                nullptr;
+        const CppAstNode * const binding_owner_identity =
+            info.source_template->deferred_definition_source_identity ?
+                info.source_template->deferred_definition_source_identity :
+                info.source_template->class_node;
+        if(candidate_owner_identity &&
+           candidate_owner_identity == binding_owner_identity) {
+          break;
+        }
+      }
+    }
+    if(found != definitions.end()) {
+      source_owner = candidate_owner;
+      source_partial = candidate_partial;
+      static_member = &found->second;
+    }
+  }
+  if(!static_member) {
     return false;
   }
 
-  const OutOfClassStaticMemberDecl & static_member = found->second;
   {
     const ScopedTemplateWitnessSourceCaptureResume source_capture_resume;
-    ctx.observe_retained_out_of_class_owner_reference(
-        static_member.owner_reference_handle,
-        info,
-        witness::SourceUseRole::StaticMemberDefinitionOwner);
+    observe_out_of_class_static_member_owner_reference(
+        ctx, *static_member, info);
   }
-  if(!static_member.initializer) {
+  if(!static_member->initializer) {
     return true;
   }
 
@@ -8728,21 +8808,40 @@ bool replay_witness_static_member_definition_if_needed(
               StaticMemberInitializer,
           template_api::SourceTypeMaterializationOperation::
               StaticMemberInitializer,
-          static_member.initializer,
+          static_member->initializer,
           nullptr,
           &binding,
           true);
   Scope & init_scope = ctx.append_template_scope(*info.member_scope);
-  if(!partial) {
+  if(!source_partial) {
+    std::vector<const ClassInfo *> owner_chain;
+    for(const ClassInfo * current = &info;
+        current;
+        current = current->enclosing_scope ?
+            current->enclosing_scope->class_info : nullptr) {
+      owner_chain.push_back(current);
+      if(current == source_owner) {
+        break;
+      }
+    }
+    std::vector<TemplateArgument> replay_arguments;
+    for(std::vector<const ClassInfo *>::const_reverse_iterator it =
+            owner_chain.rbegin();
+        it != owner_chain.rend();
+        ++it) {
+      replay_arguments.insert(replay_arguments.end(),
+                              (*it)->instantiation_arguments.begin(),
+                              (*it)->instantiation_arguments.end());
+    }
     bind_template_arguments_into_scope(ctx,
                                        init_scope,
-                                       static_member.parameters,
-                                       info.instantiation_arguments);
+                                       static_member->parameters,
+                                       replay_arguments);
   }
   replay_witness_function_pointer_initializer(ctx,
                                               init_scope,
                                               binding.type,
-                                              static_member.initializer);
+                                              static_member->initializer);
   return true;
 }
 
