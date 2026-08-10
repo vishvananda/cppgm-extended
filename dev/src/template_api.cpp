@@ -3936,6 +3936,10 @@ std::string class_template_mangle_info_witness_text(
     SemanticContext & ctx,
     const cpp_decl::ClassTemplateSpecializationMangleInfo & info,
     unsigned depth);
+std::string class_template_mangle_info_source_binding_text(
+    SemanticContext & ctx,
+    const cpp_decl::ClassTemplateSpecializationMangleInfo & info,
+    unsigned depth);
 bool class_template_mangle_info_contains_qualified_enum_for_witness(
     SemanticContext & ctx,
     const cpp_decl::ClassTemplateSpecializationMangleInfo & info,
@@ -4403,10 +4407,70 @@ bool named_type_needs_qualified_enum_witness_text(const cpp_decl::TypePtr & type
   return !witness_text_for_qualified_enum_type(type).empty();
 }
 
-std::string class_template_mangle_info_witness_text(
+std::string class_template_mangle_info_witness_text_impl(
     SemanticContext & ctx,
     const cpp_decl::ClassTemplateSpecializationMangleInfo & info,
+    unsigned depth,
+    bool source_binding);
+
+bool class_template_has_unnamed_namespace_owner(
+    const semantic_model::ClassTemplateDecl & decl)
+{
+  for(const semantic_model::Scope * scope = decl.declaring_scope;
+      scope;
+      scope = scope->parent) {
+    if(scope->namespace_scope && scope->name == "<unnamed>") {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string source_binding_type_argument_text(
+    SemanticContext & ctx,
+    const cpp_decl::TypePtr & type,
     unsigned depth)
+{
+  if(!type || depth > 8) {
+    return std::string();
+  }
+  if(std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
+         mangle_info =
+             cpp_decl::named_type_class_template_specialization_mangle_info_const(
+                 type)) {
+    const semantic_model::ClassTemplateDecl * class_template =
+        static_cast<const semantic_model::ClassTemplateDecl *>(
+            mangle_info->class_template_decl);
+    if(class_template &&
+       class_template_has_unnamed_namespace_owner(*class_template)) {
+      return class_template_mangle_info_witness_text_impl(
+          ctx, *mangle_info, depth + 1, true);
+    }
+  }
+  return default_elided_type_argument_text(ctx, type);
+}
+
+std::string class_template_source_binding_qualified_name(
+    SemanticContext & ctx,
+    const semantic_model::ClassTemplateDecl & decl)
+{
+  const semantic_model::ClassInfo * owner =
+      nearest_scope_class_info(decl.declaring_scope);
+  if(owner) {
+    return class_witness_output_qualified_name(ctx, *owner) +
+        "::" + decl.name;
+  }
+  return decl.declaring_scope ?
+      semantic_lookup::scope_qualified_name(*decl.declaring_scope,
+                                            decl.name) :
+      decl.name;
+}
+
+std::string class_template_mangle_info_witness_text_impl(
+    SemanticContext & ctx,
+    const cpp_decl::ClassTemplateSpecializationMangleInfo & info,
+    unsigned depth,
+    bool source_binding)
 {
   if(depth > 8) {
     return std::string();
@@ -4416,7 +4480,9 @@ std::string class_template_mangle_info_witness_text(
       static_cast<const semantic_model::ClassTemplateDecl *>(
           info.class_template_decl);
   if(class_template) {
-    out << class_template_witness_qualified_name(ctx, *class_template);
+    out << (source_binding ?
+        class_template_source_binding_qualified_name(ctx, *class_template) :
+        class_template_witness_qualified_name(ctx, *class_template));
   } else {
     if(!info.template_scope_prefix.empty()) {
       out << info.template_scope_prefix << "::";
@@ -4433,7 +4499,9 @@ std::string class_template_mangle_info_witness_text(
     const template_model::TemplateArgument & argument = info.arguments[i];
     if(argument.kind == template_model::TemplateArgument::TA_TYPE &&
        argument.type) {
-      out << default_elided_type_argument_text(ctx, argument.type);
+      out << (source_binding ?
+          source_binding_type_argument_text(ctx, argument.type, depth + 1) :
+          default_elided_type_argument_text(ctx, argument.type));
       continue;
     }
     const std::string enum_source_text =
@@ -4462,13 +4530,35 @@ std::string class_template_mangle_info_witness_text(
     }
     out << template_model::template_argument_text(
         argument,
-        [&ctx](const cpp_decl::TypePtr & current_type)
+        [&ctx, depth, source_binding](
+            const cpp_decl::TypePtr & current_type)
         {
-          return default_elided_type_argument_text(ctx, current_type);
+          return source_binding ?
+              source_binding_type_argument_text(
+                  ctx, current_type, depth + 1) :
+              default_elided_type_argument_text(ctx, current_type);
         });
   }
   out << ">";
   return normalize_witness_angle_spacing(out.str());
+}
+
+std::string class_template_mangle_info_witness_text(
+    SemanticContext & ctx,
+    const cpp_decl::ClassTemplateSpecializationMangleInfo & info,
+    unsigned depth)
+{
+  return class_template_mangle_info_witness_text_impl(
+      ctx, info, depth, false);
+}
+
+std::string class_template_mangle_info_source_binding_text(
+    SemanticContext & ctx,
+    const cpp_decl::ClassTemplateSpecializationMangleInfo & info,
+    unsigned depth)
+{
+  return class_template_mangle_info_witness_text_impl(
+      ctx, info, depth, true);
 }
 
 bool class_template_mangle_info_contains_qualified_enum_for_witness(
@@ -6237,7 +6327,8 @@ std::string witness_lookup_text_for_type_argument(
              cpp_decl::named_type_class_template_specialization_mangle_info_const(type)) {
     if(!mangle_info->template_name.empty()) {
       const std::string structured =
-          class_template_mangle_info_witness_text(ctx, *mangle_info, 0);
+          class_template_mangle_info_source_binding_text(
+              ctx, *mangle_info, 0);
       if(structured.find("_GLOBAL__N_") == std::string::npos) {
         return structured;
       }
@@ -6307,6 +6398,33 @@ std::string witness_lookup_text_for_type_argument(
 }
 // template-boundary-audit: end text_recovery_bridge
 
+std::string semantic_template_entity_argument_text(
+    SemanticContext & ctx,
+    const template_model::TemplateArgument & argument)
+{
+  if((argument.kind != template_model::TemplateArgument::TA_CLASS_TEMPLATE &&
+      argument.kind != template_model::TemplateArgument::TA_ALIAS_TEMPLATE) ||
+     argument.dependent ||
+     !argument.template_decl) {
+    return std::string();
+  }
+  const std::string name =
+      semantic_utils::trim_space(argument.template_entity_name());
+  if(name.empty()) {
+    return std::string();
+  }
+  if(argument.template_owner_type) {
+    const std::string owner =
+        semantic_utils::trim_space(
+            witness_lookup_text_for_type_argument(
+                ctx, argument.template_owner_type));
+    return owner.empty() ? std::string() : owner + "::" + name;
+  }
+  const std::string scope_prefix =
+      semantic_utils::trim_space(argument.template_entity_scope_prefix());
+  return scope_prefix.empty() ? name : scope_prefix + "::" + name;
+}
+
 std::string template_witness_argument_text(
     SemanticContext & ctx,
     const template_model::TemplateArgument & arg)
@@ -6331,6 +6449,14 @@ std::string template_witness_argument_text(
         member_pointer_witness_argument_text(ctx, arg);
     if(!member_pointer_text.empty()) {
       return member_pointer_text;
+    }
+  }
+  if(arg.kind == template_model::TemplateArgument::TA_CLASS_TEMPLATE ||
+     arg.kind == template_model::TemplateArgument::TA_ALIAS_TEMPLATE) {
+    const std::string entity_text =
+        semantic_template_entity_argument_text(ctx, arg);
+    if(!entity_text.empty()) {
+      return entity_text;
     }
   }
   if(arg.kind == template_model::TemplateArgument::TA_TYPE && arg.type) {
@@ -6428,16 +6554,16 @@ std::string template_witness_value_binding_arg_text(
 {
   const std::string trimmed_explicit =
       semantic_utils::trim_space(explicit_text);
+  const std::string enumerator_text =
+      retained_enum_witness_argument_text(ctx, arg);
+  if(!enumerator_text.empty()) {
+    return enumerator_text;
+  }
   if(arg.kind == template_model::TemplateArgument::TA_VALUE &&
      !arg.dependent &&
      value_argument_has_named_enum_type(arg) &&
      is_qualified_identifier_value_text(trimmed_explicit)) {
     return trimmed_explicit;
-  }
-  const std::string enumerator_text =
-      retained_enum_witness_argument_text(ctx, arg);
-  if(!enumerator_text.empty()) {
-    return enumerator_text;
   }
   const std::string object_pointer_text =
       object_pointer_witness_argument_text(arg);
@@ -6619,7 +6745,10 @@ std::string template_witness_source_binding_arg_text(
     // Clang's TemplateArgument::print renders a semantic TemplateName here.
     // In particular, the written `template` disambiguator is parsing syntax,
     // not part of the public template-name spelling.
-    std::string text = template_witness_semantic_argument_text(ctx, arg);
+    std::string text = semantic_template_entity_argument_text(ctx, arg);
+    if(text.empty()) {
+      text = template_witness_semantic_argument_text(ctx, arg);
+    }
     if(text.compare(0, 2, "::") == 0) {
       text.erase(0, 2);
     }

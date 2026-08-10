@@ -1466,6 +1466,124 @@ and three class ordering cases remain. Selection payloads and owner
 qualification are still the next class-use clusters. Inception remains
 forbidden.
 
+## Semantic source-binding identity checkpoint, 2026-08-10
+
+Template-template and nested class source bindings could retain a spelling
+from the use site after resolution had identified a different semantic owner.
+That left unqualified template identities in deduced payloads, dropped a real
+namespace owner from member alias-template arguments, exposed the anonymous
+namespace in source bindings, and preserved a namespace alias on a resolved
+enumerator.
+
+Resolved class- and alias-template arguments now render their structured
+template entity. A member template uses its resolved owner type; a namespace
+template uses its retained declaration-scope prefix. Structured class-template
+types have a separate source-binding name policy based on their declaration
+scope. It omits an unnamed namespace from the public source binding, while
+nested arguments keep the established renderer unless the nested declaration
+itself has an unnamed-namespace owner. That narrow recursion boundary avoids
+rebuilding unrelated cv-qualified, defaulted, and deeply recursive types.
+
+Explicit enum-value bindings now prefer the unique retained semantic
+enumerator before the written qualified identifier. Namespace aliases such as
+`bi::aq` therefore become the declaration identity `boost::aq`; ambiguous enum
+values still fall back to the source spelling. None of these paths reparses
+source text or filters by a template, namespace, fixture, or source location.
+
+Exactly four expanded witness outputs change from the default-equivalence
+checkpoint:
+
+- `pa22/tests/spec/200-deduced-template-template-qualified-identity.t` and
+  `pa22/tests/general/400-member-alias-template-template-empty-template-id-argument.t`
+  become byte-exact;
+- `pa22/tests/general/200-alias-template-template-argument-use-scope.t`
+  clears all three class-use differences and remains mismatched only for an
+  independent missing lifecycle row;
+- `pa24/tests/general/400-concrete-recursive-node-layout-retry.t` clears its
+  namespace-alias enum binding and retains its independent lifecycle gaps.
+
+No LowIR, stdout, stderr, or exit-status output changes, and no previously
+exact witness regresses. Expanded convergence improves from 1,428 to 1,430
+matching outputs. Changed class-use rows fall from 16 to nine and affected
+tests from 18 to 14; the two unexpected rows and three ordering cases remain.
+Function-call and lifecycle inventories are unchanged.
+
+Correctness and diagnostic evidence from the isolated Homebrew-Clang builds:
+
+- the preserved strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence passes 1,430/1,530, leaving 100 known mismatches;
+- ordinary and provenance compilers produce identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,347 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the PA1-PA38 direct-LowIR run passes all 4,862 tests. The first aggressive
+  `5 x 12` run passed 4,847 and timed out 15 hosted PA35/PA36 tests; the
+  conservative PA35/PA36 retry passes 182/182;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper suites pass 60/60;
+- both static materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero;
+- the structure-size report is byte-identical to the parent. `Type` remains
+  280 bytes, `TemplateArgument` 136 bytes, `TemplateIdSyntax` 160 bytes, and
+  `ClassInfo` 1,136 bytes.
+
+The standalone boundary reports retain the parent counts: four service
+adapters, two service bundles, 15 direct semantic-service accesses, 115
+text-recovery bridges, 65 canonical-key metadata sites, 140 witness
+source-location sites, and 197 mixed `callsemantic.cpp` exceptions on the
+template side; five output-readiness queries, ten template-service mentions,
+and nine internal header sites on the semantic side.
+
+The ordinary binary is 17,151,160 bytes, 5,696 bytes larger than the parent.
+Its Mach-O `__TEXT` segment grows by one 4,096-byte page to 13,041,664 bytes;
+`__DATA_CONST` remains 61,440 bytes and `__DATA` remains 442,368 bytes. The
+ordinary binary contains no provenance symbols.
+
+The provenance analysis and convergence reports are
+`/tmp/cppgm-owner-qualified-provenance-final-20260810.Mi0iRj/provenance-analysis.json`
+and
+`/tmp/cppgm-owner-qualified-provenance-final-20260810.Mi0iRj/convergence.json`,
+with SHA-256 values
+`e30a215c1aab1956127a0749ee54f5e2c5f98a7ad25995ff8495c420c51b916d`
+and
+`fada3fdf84a961198f9c607ccb8bbe7a0dd0d69eaa204ff5e17de0fde5234974`.
+The byte-identical ordinary/provenance output manifest is
+`/tmp/cppgm-owner-qualified-output-manifest-20260810.txt`, SHA-256
+`c294156ba09a9c8dfb4c1048cd3338a616f59c04ff5490b68ae9f4db46a9f495`.
+The initial broad report and conservative retry have SHA-256 values
+`dc7a333a78e75b0b16fa73dde6035c133d183259d33f2568a54091d7cbb92e8d`
+and
+`ddc2525f99912ceab20504906ab419959de3f4f0e6c82e9018567aaa1c6b942f`.
+The materialization and structure-size reports remain byte-identical to the
+parent at SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The shared three-run candidate record passes both performance comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.75% | -0.30% | -3.91% | `/tmp/cppgm-owner-qualified-vs-fixed-20260810.json` |
+| Default-equivalence parent | +0.32% | -0.97% | -0.02% | `/tmp/cppgm-owner-qualified-vs-parent-20260810.json` |
+
+The raw candidate record has SHA-256
+`3b3f69b22119cfd9ebdc37f25be76b7ca783295911da0ab0286a1bfe1fd36c99`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`cc97e81a6f62d6329a33f427a1bc6d1b08cbe61848375f9c8c89aa83baa8e325`
+and
+`c9dcf88137edfff205cdebf4e4d7b2ca2cb1b37e93da99f1a5096928be1f1b5a`.
+The candidate metadata names commit `004056c58` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 3 remains open. Nine changed class rows, two unexpected class rows, and
+three class ordering cases remain. Partial-selection payloads and dependent
+pack spellings are the next coherent class-use clusters. Inception remains
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
