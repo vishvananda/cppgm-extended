@@ -3351,7 +3351,7 @@ static bool value_argument_has_named_enum_type(
           named_type_display_text(base).compare(0, 5, "enum ") == 0);
 }
 
-std::string enum_witness_enumerator_text_for_value(
+std::string retained_enum_witness_argument_text(
     SemanticContext & ctx,
     const template_model::TemplateArgument & arg)
 {
@@ -3360,31 +3360,44 @@ std::string enum_witness_enumerator_text_for_value(
      !value_argument_has_named_enum_type(arg)) {
     return std::string();
   }
-  semantic_model::Scope * enum_scope = ctx.scope_for_type(arg.type);
-  if(!enum_scope) {
+  cpp_decl::TypePtr base = cpp_decl::strip_top_level_cv(arg.type);
+  TemplateWitnessSession * session = ctx.template_witness_context().session;
+  if(!session || !base) {
     return std::string();
   }
-  std::string match;
-  for(std::map<std::string, semantic_model::ValueBinding>::const_iterator it =
-          enum_scope->values.begin();
-      it != enum_scope->values.end();
-      ++it) {
-    const semantic_model::ValueBinding & binding = it->second;
-    if(binding.kind != semantic_model::ValueBinding::VK_VARIABLE ||
-       !binding.declaration_node ||
-       binding.declaration_node->kind != CppAstKind::enumerator ||
-       !binding.has_constant_value ||
-       binding.constant_value != arg.value ||
-       !cpp_decl::type_equals(cpp_decl::strip_top_level_cv(binding.type),
-                              cpp_decl::strip_top_level_cv(arg.type))) {
-      continue;
-    }
-    if(!match.empty()) {
-      return std::string();
-    }
-    match = semantic_lookup::scope_qualified_name(*enum_scope, binding.name);
+  std::map<std::pair<std::string, long long>,
+           TemplateWitnessSession::RetainedEnumValueBinding>::const_iterator
+      retained = session->retained_enum_value_bindings.find(
+          std::make_pair(base->named_key, arg.value));
+  if(retained == session->retained_enum_value_bindings.end()) {
+    return std::string();
   }
-  return match;
+  const semantic_model::ValueBinding * binding = retained->second.binding;
+  const semantic_model::Scope * enum_scope = retained->second.scope;
+  if(!binding ||
+     !enum_scope ||
+     binding->kind != semantic_model::ValueBinding::VK_VARIABLE ||
+     !binding->declaration_node ||
+     binding->declaration_node->kind != CppAstKind::enumerator ||
+     !binding->has_constant_value ||
+     binding->constant_value != arg.value ||
+     !cpp_decl::type_equals(cpp_decl::strip_top_level_cv(binding->type),
+                            base)) {
+    return std::string();
+  }
+  std::map<std::string, semantic_model::ValueBinding>::const_iterator found =
+      enum_scope->values.find(binding->name);
+  if(found == enum_scope->values.end() || &found->second != binding) {
+    return std::string();
+  }
+  if(!semantic_conversion::is_unscoped_enum_type(arg.type) &&
+     enum_scope->parent &&
+     !enum_scope->name.empty()) {
+    return semantic_lookup::scope_qualified_name(*enum_scope->parent,
+                                                 enum_scope->name) +
+        "::" + binding->name;
+  }
+  return semantic_lookup::scope_qualified_name(*enum_scope, binding->name);
 }
 
 bool type_is_non_dependent_reference_argument(
@@ -3789,22 +3802,28 @@ std::string witness_specialization_name_for_visible_args(
       if(!enum_source_text.empty()) {
         out << enum_source_text;
       } else {
-        const std::string object_pointer_text =
-            object_pointer_witness_argument_text(arguments[i]);
-        if(!object_pointer_text.empty()) {
-          out << object_pointer_text;
+        const std::string retained_enum_text =
+            retained_enum_witness_argument_text(ctx, arguments[i]);
+        if(!retained_enum_text.empty()) {
+          out << retained_enum_text;
         } else {
-          const std::string member_pointer_text =
-              member_pointer_witness_argument_text(ctx, arguments[i]);
-          if(!member_pointer_text.empty()) {
-            out << member_pointer_text;
+          const std::string object_pointer_text =
+              object_pointer_witness_argument_text(arguments[i]);
+          if(!object_pointer_text.empty()) {
+            out << object_pointer_text;
           } else {
-            out << template_model::template_argument_text(
-                arguments[i],
-                [&ctx](const cpp_decl::TypePtr & type)
-                {
-                  return default_elided_type_argument_text(ctx, type);
-                });
+            const std::string member_pointer_text =
+                member_pointer_witness_argument_text(ctx, arguments[i]);
+            if(!member_pointer_text.empty()) {
+              out << member_pointer_text;
+            } else {
+              out << template_model::template_argument_text(
+                  arguments[i],
+                  [&ctx](const cpp_decl::TypePtr & type)
+                  {
+                    return default_elided_type_argument_text(ctx, type);
+                  });
+            }
           }
         }
       }
@@ -4246,6 +4265,12 @@ std::string class_template_mangle_info_witness_text(
         source_spelled_enum_witness_argument_text(argument);
     if(!enum_source_text.empty()) {
       out << enum_source_text;
+      continue;
+    }
+    const std::string retained_enum_text =
+        retained_enum_witness_argument_text(ctx, argument);
+    if(!retained_enum_text.empty()) {
+      out << retained_enum_text;
       continue;
     }
     const std::string object_pointer_text =
@@ -5573,6 +5598,11 @@ std::string witness_argument_text_for_binding(
     const template_model::TemplateArgument & arg)
 {
   if(arg.kind == template_model::TemplateArgument::TA_VALUE) {
+    const std::string retained_enum_text =
+        retained_enum_witness_argument_text(ctx, arg);
+    if(!retained_enum_text.empty()) {
+      return retained_enum_text;
+    }
     const std::string object_pointer_text =
         object_pointer_witness_argument_text(arg);
     if(!object_pointer_text.empty()) {
@@ -6083,6 +6113,11 @@ std::string template_witness_argument_text(
     const template_model::TemplateArgument & arg)
 {
   if(arg.kind == template_model::TemplateArgument::TA_VALUE) {
+    const std::string retained_enum_text =
+        retained_enum_witness_argument_text(ctx, arg);
+    if(!retained_enum_text.empty()) {
+      return retained_enum_text;
+    }
     const std::string object_pointer_text =
         object_pointer_witness_argument_text(arg);
     if(!object_pointer_text.empty()) {
@@ -6196,7 +6231,7 @@ std::string template_witness_value_binding_arg_text(
     return trimmed_explicit;
   }
   const std::string enumerator_text =
-      enum_witness_enumerator_text_for_value(ctx, arg);
+      retained_enum_witness_argument_text(ctx, arg);
   if(!enumerator_text.empty()) {
     return enumerator_text;
   }
@@ -6638,6 +6673,24 @@ std::string template_witness_source_argument_text(
   return template_witness_argument_text(ctx, arg);
 }
 
+namespace {
+
+void
+retain_enum_value_bindings_for_witness_source(
+    SemanticContext & ctx,
+    const std::vector<template_model::TemplateArgument> & arguments)
+{
+  template_api::with_template_services(
+      ctx,
+      [&](TemplateServices & services)
+      {
+        template_argument_semantics::
+            retain_unique_enum_value_bindings_for_witness(services, arguments);
+      });
+}
+
+}  // namespace
+
 void append_template_witness_source_bindings(
     SemanticContext & ctx,
     std::vector<TemplateWitnessSourceBinding> & out,
@@ -6647,6 +6700,7 @@ void append_template_witness_source_bindings(
     TemplateWitnessSourceBindingPolicy policy,
     const std::map<std::string, std::size_t> * pack_sizes)
 {
+  retain_enum_value_bindings_for_witness_source(ctx, arguments);
   std::size_t trailing_default_count = 0;
   if(policy ==
      TemplateWitnessSourceBindingPolicy::DeducedWithDefaultedTrailingDefaults) {
@@ -6765,7 +6819,8 @@ void append_template_witness_source_bindings(
     }
     binding.type_like = template_witness_argument_is_type_like(
         arguments[arg_index]);
-    binding.arg = template_witness_argument_text(ctx, arguments[arg_index]);
+    binding.arg = template_witness_argument_text(ctx,
+                                                 arguments[arg_index]);
     out.push_back(binding);
     ++arg_index;
   }
@@ -6781,6 +6836,7 @@ void append_template_witness_source_bindings(
     const std::string & defaulted_source,
     bool treat_explicit_defaults_as_defaulted)
 {
+  retain_enum_value_bindings_for_witness_source(ctx, arguments);
   std::size_t arg_index = 0;
   std::size_t explicit_index = 0;
   for(std::size_t i = 0; i < parameters.size(); ++i) {
@@ -6799,7 +6855,8 @@ void append_template_witness_source_bindings(
       if(arguments.size() < arg_index + trailing_non_pack) {
         break;
       }
-      const std::size_t pack_end = arguments.size() - trailing_non_pack;
+      const std::size_t pack_end =
+          arguments.size() - trailing_non_pack;
       const std::size_t pack_count = pack_end - arg_index;
       binding.type_like =
           template_witness_argument_range_is_type_like(arguments,
@@ -6871,12 +6928,14 @@ void append_template_witness_source_bindings(
     binding.type_like = template_witness_argument_is_type_like(
         arguments[arg_index]);
     binding.function_type_argument =
-        arguments[arg_index].kind == template_model::TemplateArgument::TA_TYPE &&
+        arguments[arg_index].kind ==
+            template_model::TemplateArgument::TA_TYPE &&
         arguments[arg_index].type &&
         cpp_decl::strip_top_level_cv(arguments[arg_index].type)->kind ==
             cpp_decl::Type::TK_FUNCTION;
     binding.structured_type_spelling =
-        arguments[arg_index].kind == template_model::TemplateArgument::TA_TYPE &&
+        arguments[arg_index].kind ==
+            template_model::TemplateArgument::TA_TYPE &&
         explicit_type_argument_requires_structured_spelling(
             arguments[arg_index].type);
     if(explicit_index < explicit_argument_texts.size()) {

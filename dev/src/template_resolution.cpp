@@ -12991,6 +12991,24 @@ bool resolve_template_argument(template_api::TemplateServices & services,
           syntax_template_id ? syntax_template_id->name.name : std::string(),
           std::move(syntax_template_id_arg_texts));
   out = TemplateArgument();
+  struct ScopedWitnessEnumArgumentRetention
+  {
+    ScopedWitnessEnumArgumentRetention(
+        template_api::TemplateServices & services,
+        TemplateArgument & argument)
+        : services(services), argument(argument)
+    {}
+
+    ~ScopedWitnessEnumArgumentRetention()
+    {
+      template_argument_semantics::retain_unique_enum_value_binding_for_witness(
+          services,
+          argument);
+    }
+
+    template_api::TemplateServices & services;
+    TemplateArgument & argument;
+  } witness_enum_argument_retention(services, out);
   const std::string trimmed = trim_space(text);
   std::string rewritten = trimmed;
   out.text = rewritten;

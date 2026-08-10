@@ -97,6 +97,156 @@ using callsemantic_internal::match_wrapped_type_text;
 using callsemantic_internal::normalize_type_lookup_name;
 using callsemantic_internal::reparseable_type_argument_text;
 
+void retain_unique_enum_value_binding_for_witness(
+    template_api::TemplateServices & services,
+    const TemplateArgument & argument)
+{
+  if(services.witness_context.session == nullptr ||
+     !services.semantic_context ||
+     argument.kind != TemplateArgument::TA_VALUE ||
+     argument.dependent) {
+    return;
+  }
+
+  TypePtr base = strip_top_level_cv(argument.type);
+  if(!base ||
+     base->kind != Type::TK_NAMED ||
+     (base->named_key.compare(0, 5, "enum ") != 0 &&
+      named_type_display_text(base).compare(0, 5, "enum ") != 0)) {
+    return;
+  }
+  Scope * enum_scope = services.semantic_context->scope_for_type(argument.type);
+  if(!enum_scope) {
+    return;
+  }
+
+  const ValueBinding * match = nullptr;
+  for(std::map<std::string, ValueBinding>::const_iterator it =
+          enum_scope->values.begin();
+      it != enum_scope->values.end();
+      ++it) {
+    const ValueBinding & binding = it->second;
+    if(binding.kind != ValueBinding::VK_VARIABLE ||
+       !binding.declaration_node ||
+       binding.declaration_node->kind != CppAstKind::enumerator ||
+       !binding.has_constant_value ||
+       binding.constant_value != argument.value ||
+       !type_equals(strip_top_level_cv(binding.type), base)) {
+      continue;
+    }
+    if(match) {
+      return;
+    }
+    match = &binding;
+  }
+  if(!match) {
+    return;
+  }
+
+  template_api::TemplateWitnessSession::RetainedEnumValueBinding retained;
+  retained.binding = match;
+  retained.scope = enum_scope;
+  services.witness_context.session->retained_enum_value_bindings[
+      std::make_pair(base->named_key, argument.value)] = retained;
+}
+
+namespace {
+
+void retain_nested_enum_value_bindings_for_witness(
+    template_api::TemplateServices & services,
+    const TemplateArgument & argument,
+    std::set<const Type *> & visited_types,
+    std::set<const ClassTemplateSpecializationMangleInfo *> & visited_infos);
+
+void retain_nested_enum_value_bindings_in_type_for_witness(
+    template_api::TemplateServices & services,
+    const TypePtr & type,
+    std::set<const Type *> & visited_types,
+    std::set<const ClassTemplateSpecializationMangleInfo *> & visited_infos)
+{
+  if(!type || !visited_types.insert(type.get()).second) {
+    return;
+  }
+
+  std::shared_ptr<const ClassTemplateSpecializationMangleInfo> info =
+      named_type_class_template_specialization_mangle_info_const(type);
+  if(info && visited_infos.insert(info.get()).second) {
+    const std::vector<TemplateArgument> & arguments = info->arguments;
+    for(std::size_t i = 0; i < arguments.size(); ++i) {
+      retain_nested_enum_value_bindings_for_witness(
+          services,
+          arguments[i],
+          visited_types,
+          visited_infos);
+    }
+    for(std::size_t i = 0; i < info->mangle_arguments.size(); ++i) {
+      retain_nested_enum_value_bindings_for_witness(
+          services,
+          info->mangle_arguments[i],
+          visited_types,
+          visited_infos);
+    }
+  }
+
+  retain_nested_enum_value_bindings_in_type_for_witness(
+      services,
+      type->inner,
+      visited_types,
+      visited_infos);
+  retain_nested_enum_value_bindings_in_type_for_witness(
+      services,
+      type->owner,
+      visited_types,
+      visited_infos);
+  for(std::size_t i = 0; i < type->params.size(); ++i) {
+    retain_nested_enum_value_bindings_in_type_for_witness(
+        services,
+        type->params[i],
+        visited_types,
+        visited_infos);
+  }
+}
+
+void retain_nested_enum_value_bindings_for_witness(
+    template_api::TemplateServices & services,
+    const TemplateArgument & argument,
+    std::set<const Type *> & visited_types,
+    std::set<const ClassTemplateSpecializationMangleInfo *> & visited_infos)
+{
+  retain_unique_enum_value_binding_for_witness(services, argument);
+  retain_nested_enum_value_bindings_in_type_for_witness(
+      services,
+      argument.type,
+      visited_types,
+      visited_infos);
+  retain_nested_enum_value_bindings_in_type_for_witness(
+      services,
+      argument.template_owner_type,
+      visited_types,
+      visited_infos);
+}
+
+}  // namespace
+
+void retain_unique_enum_value_bindings_for_witness(
+    template_api::TemplateServices & services,
+    const std::vector<TemplateArgument> & arguments)
+{
+  if(services.witness_context.session == nullptr ||
+     !services.semantic_context) {
+    return;
+  }
+  std::set<const Type *> visited_types;
+  std::set<const ClassTemplateSpecializationMangleInfo *> visited_infos;
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    retain_nested_enum_value_bindings_for_witness(
+        services,
+        arguments[i],
+        visited_types,
+        visited_infos);
+  }
+}
+
 bool resolve_instantiated_template_argument(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

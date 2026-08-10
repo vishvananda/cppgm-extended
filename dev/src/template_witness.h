@@ -3,6 +3,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <deque>
+#include <map>
 #include <regex>
 #include <string>
 #include <unordered_map>
@@ -20,6 +21,7 @@ struct Type;
 
 namespace semantic_model {
 struct ClassTemplateDecl;
+struct Scope;
 struct ValueBinding;
 }
 
@@ -277,6 +279,12 @@ struct TemplateWitnessSession
         cpp_decl::TemplateIdSourceDependency::Unknown;
   };
 
+  struct RetainedEnumValueBinding
+  {
+    const semantic_model::ValueBinding * binding = nullptr;
+    const semantic_model::Scope * scope = nullptr;
+  };
+
   std::string primary_source_file;
   std::vector<TemplateLifecycleEvent> lifecycle_events;
   std::unordered_map<TemplateLifecycleIdentity,
@@ -296,6 +304,8 @@ struct TemplateWitnessSession
   std::unordered_set<uint32_t> fixed_class_argument_occurrences;
   std::unordered_map<uint32_t, ParameterizedClassSourceOccurrence>
       class_source_occurrences;
+  std::map<std::pair<std::string, long long>, RetainedEnumValueBinding>
+      retained_enum_value_bindings;
 };
 
 struct TemplateWitnessContext

@@ -616,6 +616,9 @@ ClassSpecializationSelection select_class_specialization(
 {
   ClassSpecializationSelection selection =
       make_primary_class_selection(decl, key, arguments);
+  template_argument_semantics::retain_unique_enum_value_bindings_for_witness(
+      services,
+      selection.arguments);
   const bool use_selection_cache =
       class_specialization_selection_cache_enabled(
           services,
@@ -803,6 +806,9 @@ ClassSpecializationSelection select_class_specialization(
     return selection;
   }
 
+  template_argument_semantics::retain_unique_enum_value_bindings_for_witness(
+      services,
+      partial_arguments);
   apply_partial_class_selection(selection,
                                 *chosen_partial,
                                 partial_arguments,

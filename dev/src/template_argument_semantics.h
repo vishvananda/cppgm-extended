@@ -23,6 +23,14 @@ class SemanticContext;
 
 namespace template_argument_semantics {
 
+void retain_unique_enum_value_binding_for_witness(
+    template_api::TemplateServices & services,
+    const template_model::TemplateArgument & argument);
+
+void retain_unique_enum_value_bindings_for_witness(
+    template_api::TemplateServices & services,
+    const std::vector<template_model::TemplateArgument> & arguments);
+
 void append_alias_template_source_bindings(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

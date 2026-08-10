@@ -1122,6 +1122,123 @@ rows, and three class ordering cases remain. Selection payloads, owner
 qualification, and dependent pack spelling are the next class-use clusters.
 Inception is still forbidden.
 
+## Retained enum-value spelling checkpoint, 2026-08-10
+
+Resolved enum-valued non-type template arguments retained their type and
+integral value but not the semantic enumerator that supplied the witness
+spelling. Nested specialization and rebound default paths therefore printed a
+cast or integral value after the original source argument was no longer the
+public semantic argument.
+
+Argument resolution and class-specialization selection now retain a unique
+matching enumerator in the active witness session. The retained fact consists
+of the enumerator binding and enum scope, indexed by canonical enum type and
+value. Structured class-template arguments are traversed recursively so nested
+enum arguments use the same carrier. Retention rejects dependent arguments,
+non-enum values, and enum values with more than one matching enumerator.
+
+Witness formatting consumes the retained binding and scope. It does not scan a
+semantic scope, perform a lookup, or reparse source text. Scoped enums include
+the enum name; unscoped enums use the enumerator's declaration scope. The
+carrier is not part of `TemplateArgument::RareData`: it exists only in
+`TemplateWitnessSession`, and the retention helpers return before inspecting
+arguments or constructing traversal sets when no witness session is active.
+
+The change clears eight class-use rows across three PA23 tests and one
+function-call row in PA20. The two PA23 result-SFINAE outputs also lose nine
+missing and nine unexpected lifecycle facts derived from the old spelling.
+Expanded convergence improves from 1,421 to 1,423 matching outputs with no new
+mismatch:
+
+- class-use changes fall from 33 to 25 rows and from 24 to 21 tests, with two
+  unexpected rows and three ordering-only cases unchanged;
+- function-call changes fall from 41 to 40 rows and from 59 to 58 tests;
+- lifecycle missing rows fall from 76 to 67 and unexpected rows from 51 to 42;
+  the ten additional definition demands, 45 failing tests, and nine warnings
+  are unchanged.
+
+Correctness and diagnostic evidence from the final guarded implementation:
+
+- the preserved original strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence passes 1,423/1,530, leaving 107 known mismatches;
+- final isolated ordinary and provenance compilers produce identical witness
+  and LowIR output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,352 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the canonical PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper suites pass 60/60;
+- the ordinary semantic-structure size report is byte-identical to the parent;
+  `TemplateArgument` remains 136 bytes, `Type` 280 bytes, and `ClassInfo` 1,136
+  bytes;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The ordinary convergence report is
+`/tmp/cppgm-enum-sidecar-guarded-convergence-20260810.json`, SHA-256
+`c3a6a6ba6971f12f80100abfd1114a0be7049779154544a95f2a7c8faec1239b`.
+The final provenance analysis and convergence reports are
+`/tmp/cppgm-enum-sidecar-guarded-provenance.I92Ys1/provenance-analysis.json`
+and
+`/tmp/cppgm-enum-sidecar-guarded-provenance.I92Ys1/convergence.json`, with
+SHA-256 values
+`f04d14e2dd1df120aaa4a4d6e19865d452b99868f7aacb045502fb39c8ff99bd`
+and
+`790f6e0363f08cc9dabbbce111b828a7c9e94b65c2c76af82c680980fd4f0879`.
+The byte-identical output manifest is
+`/tmp/cppgm-enum-sidecar-guarded-output-manifest-20260810.txt`, SHA-256
+`4f6d78323982450c284e5fa15bba1b8cca9200250605f826e1dcdbd855a705d2`.
+The broad report is
+`/tmp/cppgm-enum-sidecar-guarded-broad-20260810.log`, SHA-256
+`cd0e33e0b6b496e590a3e05e940de8c07498c14d79d7bfbe8420bbed7a119040`.
+The materialization audit remains unchanged at SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+The structure-size report is
+`/tmp/cppgm-enum-sidecar-guarded-structure-sizes-20260810.txt`, SHA-256
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+Performance required a baseline investigation. The guarded three-run candidate
+passes the fixed alias-convergence baseline at -1.00% instructions, -0.21% RSS,
+and -3.93% footprint. Against the historical object-pointer rolling file it is
+-0.00% instructions, +7.90% RSS, and +0.06% footprint. The required second
+batch remains above the historical RSS threshold at +8.60%, while instructions
+are -0.11% and footprint is +0.14%. The historical RSS gate therefore fails;
+it is not reported as a pass.
+
+The regression investigation rebuilt the exact parent commit `04236cb18` from
+an empty object root and measured it in the current host state. Its
+760,057,856-byte RSS median is also above the historical 700,223,488-byte
+median. The historical parent batch ranges from 671,674,368 to 736,587,776
+bytes, while the contemporaneous guarded candidate is 755,519,488 bytes.
+Comparison with the contemporaneous parent passes at -0.17% instructions,
+-0.60% RSS, and +0.01% footprint. This identifies host RSS state, not the
+candidate, as the source of the historical warning. The historical file
+remains preserved, and the contemporaneous exact-parent measurement becomes
+the refreshed rolling reference for this checkpoint.
+
+The fixed-baseline report is
+`/tmp/cppgm-enum-sidecar-guarded-vs-fixed-20260810.json`, SHA-256
+`84ef60c86db375591a25bb654146c7ad291b8e7ff94272ac6a500ed3ca9b3c7b`.
+The historical rolling confirmation report is
+`/tmp/cppgm-enum-sidecar-guarded-confirmation-vs-rolling-20260810.json`,
+SHA-256
+`aab8a3e38d90eab88f8b935555fbf1325dd7c58e07260d9ff22f3444bc2f2310`.
+The refreshed parent raw record and passing comparison are
+`/tmp/cppgm-object-pointer-parent-contemporary-raw-20260810.json` and
+`/tmp/cppgm-enum-sidecar-guarded-primary-vs-contemporary-parent-20260810.json`,
+with SHA-256 values
+`1cefbf0ac1bf9a3123e20a8b0dcc9519472bd76379c0ede7cc6e1133c949e502`
+and
+`1495f65f2f1e5ed8af9bf10ecf706d429a6578bec9dfbbb01b33be4d94cccfbd`.
+
+Phase 3 remains open. Twenty-five changed class rows, two unexpected class
+rows, and three class ordering cases remain. Selection payloads, owner
+qualification, and dependent pack spelling remain the next class-use clusters.
+Inception is still forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
