@@ -817,7 +817,8 @@ public:
                     semantic_lookup::current_function_scope(
                         *request.argument_scope) :
                     nullptr,
-                request.lookup.source_syntax) :
+                request.lookup.source_syntax,
+                source_scope) :
             ctx_.instantiate_selected_class_template(
                 *request.class_template,
                 *request.lookup.scope,

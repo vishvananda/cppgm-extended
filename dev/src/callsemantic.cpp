@@ -7234,7 +7234,8 @@ private:
         const vector<TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
         const string * precomputed_key = nullptr,
         FunctionBinding * source_function = nullptr,
-        const TemplateIdSyntax * source_syntax = nullptr) override
+        const TemplateIdSyntax * source_syntax = nullptr,
+        Scope * source_scope = nullptr) override
   {
     const callsemantic::ClassTemplateReferenceCallbacks & callbacks =
         class_template_reference_callbacks();
@@ -7250,7 +7251,8 @@ private:
         source_arg_syntaxes,
         precomputed_key,
         source_function,
-        source_syntax);
+        source_syntax,
+        source_scope);
   }
 
     ClassInfo * reference_selected_class_template_instantiation_with_key(

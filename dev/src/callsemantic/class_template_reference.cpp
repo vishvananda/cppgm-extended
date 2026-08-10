@@ -108,6 +108,8 @@ void classify_source_dependency(
   if(!resolved.source_syntax || !resolved.use_scope || !resolved.origin) {
     return;
   }
+  Scope & source_scope = resolved.source_scope ?
+      *resolved.source_scope : *resolved.use_scope;
   template_api::TemplateWitnessSession * session =
       template_api::current_template_witness_session();
   const ClassTemplateDecl * occurrence_origin =
@@ -130,13 +132,13 @@ void classify_source_dependency(
                            const TemplateArgument * argument)
   {
     const bool fixed_binding = argument_uses_fixed_class_binding(
-        *resolved.use_scope, syntax, argument);
+        source_scope, syntax, argument);
     dependent = dependent || syntax.pack_expansion ||
         (!fixed_binding &&
          (syntax.dependent || syntax.substituted_from_template_binding ||
           template_argument_semantics::
               template_argument_syntax_mentions_bound_name(
-                  *resolved.use_scope, syntax)));
+                  source_scope, syntax)));
   };
   for(std::size_t i = 0;
       i < resolved.source_syntax->argument_syntaxes.size();
@@ -159,13 +161,13 @@ void classify_source_dependency(
       if(argument.kind == TemplateArgument::TA_TYPE &&
          !argument.source_defaulted &&
          template_resolution::source_type_argument_is_current_specialization(
-             *resolved.use_scope, argument.source_syntax.get(), argument.type)) {
+             source_scope, argument.source_syntax.get(), argument.type)) {
         dependent = true;
       }
     }
   }
   const bool dependent_owner = template_argument_semantics::
-      template_id_syntax_has_dependent_owner(*resolved.use_scope,
+      template_id_syntax_has_dependent_owner(source_scope,
                                              *resolved.source_syntax);
   if(dependent || dependent_owner) {
     resolved.source_dependency = dependent ?
@@ -201,6 +203,8 @@ bool complete_source_type_materialization(
     return false;
   }
 
+  Scope & source_scope = resolved.source_scope ?
+      *resolved.source_scope : *resolved.use_scope;
   bool arguments_avoid_template_substitution = !resolved.arguments->empty();
   bool arguments_include_fixed_binding = false;
   for(std::size_t i = 0;
@@ -214,11 +218,11 @@ bool complete_source_type_materialization(
         !syntax->substituted_from_template_binding &&
         !template_argument_semantics::
             template_argument_syntax_mentions_bound_name(
-                *resolved.use_scope, *syntax);
+                source_scope, *syntax);
     arguments_include_fixed_binding =
         arguments_include_fixed_binding ||
         (syntax && argument_uses_fixed_class_binding(
-                       *resolved.use_scope,
+                       source_scope,
                        *syntax,
                        &(*resolved.arguments)[i]));
   }
@@ -1634,7 +1638,8 @@ public:
                                                                  arg_syntaxes,
                                                                  &dependent_arguments,
                                                                  nullptr,
-                                                                 source_syntax);
+                                                                 source_syntax,
+                                                                 &use_scope);
     remember_raw_reference_cache(decl, raw_cache_key, referenced_info);
     return referenced_info;
   }
@@ -1650,7 +1655,8 @@ public:
         const vector<TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
         const string * precomputed_key = nullptr,
         FunctionBinding * source_function = nullptr,
-        const TemplateIdSyntax * source_syntax = nullptr)
+        const TemplateIdSyntax * source_syntax = nullptr,
+        Scope * source_scope = nullptr)
   {
     return reference_selected_class_template_instantiation_with_key(decl,
                                                                     use_scope,
@@ -1662,7 +1668,8 @@ public:
                                                                     source_arg_syntaxes,
                                                                     nullptr,
                                                                     source_function,
-                                                                    source_syntax);
+                                                                    source_syntax,
+                                                                    source_scope);
   }
 
     ClassInfo * reference_selected_class_template_instantiation_with_key(
@@ -1677,7 +1684,8 @@ public:
         const vector<TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
         const bool * precomputed_dependent_arguments = nullptr,
         FunctionBinding * source_function = nullptr,
-        const TemplateIdSyntax * source_syntax = nullptr)
+        const TemplateIdSyntax * source_syntax = nullptr,
+        Scope * source_scope = nullptr)
   {
     const CppAstNode * class_node = specialization.class_node;
     Scope * binding_scope = specialization.binding_scope;
@@ -1782,6 +1790,7 @@ public:
       resolved.origin = &decl;
       resolved.instance = resolved_info;
       resolved.use_scope = &use_scope;
+      resolved.source_scope = source_scope ? source_scope : &use_scope;
       resolved.arguments = &arguments;
       resolved.selection = &specialization;
       resolved.source_argument_texts = source_arg_texts;
@@ -2565,13 +2574,14 @@ ClassInfo * reference_selected_class_template_instantiation(
     const std::vector<TemplateArgumentSyntax> * source_arg_syntaxes,
     const std::string * precomputed_key,
     FunctionBinding * source_function,
-    const TemplateIdSyntax * source_syntax)
+    const TemplateIdSyntax * source_syntax,
+    Scope * source_scope)
 {
   ClassTemplateReference ref(ctx, callbacks);
   return ref.reference_selected_class_template_instantiation(
       decl, use_scope, arguments, specialization, source_arg_texts,
       source_use_mode, source_arg_syntaxes, precomputed_key, source_function,
-      source_syntax);
+      source_syntax, source_scope);
 }
 
 ClassInfo * reference_selected_class_template_instantiation_with_key(

@@ -46,6 +46,10 @@ struct ResolvedClassTemplateIdView
   semantic_model::ClassTemplateDecl * origin = nullptr;
   semantic_model::ClassInfo * instance = nullptr;
   semantic_model::Scope * use_scope = nullptr;
+  // Scope in which the written template arguments were resolved. Member
+  // template lookup can select a different `use_scope`, so source-dependency
+  // classification must not infer lexical ownership from that binding scope.
+  semantic_model::Scope * source_scope = nullptr;
   const std::vector<template_model::TemplateArgument> * arguments = nullptr;
   const template_api::ClassSpecializationSelection * selection = nullptr;
   const std::vector<std::string> * source_argument_texts = nullptr;

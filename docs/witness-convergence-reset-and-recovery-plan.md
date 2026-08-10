@@ -511,6 +511,84 @@ defaults, nested static owners, and related semantic-owner families.
 Function-call, lifecycle, and ordering convergence remain.
 Inception is still forbidden.
 
+## Member-template lexical source-scope checkpoint, 2026-08-10
+
+Class-template reference resolution now keeps the scope used to bind a
+selected template separate from the scope that resolved its written template
+arguments. Member-template lookup can select an instantiated member scope even
+when the source occurrence was written at file scope. Source-dependency
+classification now uses the argument scope for bound-name, fixed-binding,
+current-specialization, dependent-owner, and typed-materialization decisions.
+The selected binding scope continues to own instantiation and lookup.
+
+This distinction fixes four class-use rows in
+`pa23/tests/general/500-member-template-default-qualified-suffix-owner.t`.
+The explicit `begin_iter` argument resolves to the same type as an enclosing
+`iterator` specialization inside the selected member-template scope. It is not
+a source occurrence of that current specialization because the argument was
+written and resolved at file scope. The prior classifier inferred lexical
+ownership from the selected scope and suppressed the `defaults` and `equal_to`
+uses at lines 48, 49, 50, and 54. The accepted change carries the existing
+argument-scope result through the semantic interface. It does not inspect an
+alias spelling, a template name, a fixture, or a source location.
+
+The focused PA23 witness is now byte-exact. Expanded convergence improves from
+1,401 to 1,402 matching outputs. The class-use inventory falls from 11 to seven
+missing rows and from 45 to 44 failing tests. Its 54 changed rows, two
+unexpected rows, and three ordering-only cases are unchanged. Function-call
+and lifecycle inventories are unchanged.
+
+Correctness evidence from the ordinary and provenance Homebrew-Clang builds:
+
+- the preserved original strict manifest remains byte-exact at 1,305/1,305;
+- the expanded corpus passes 1,402/1,530 with 128 known mismatches;
+- ordinary and provenance builds produce byte-identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,374 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation records 2,989 completed candidates, 3,302 early
+  repeats, 351 prepublication merges, 2,638 collected occurrences, and 2,627
+  publications;
+- the canonical PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path, and
+  performance unit suites pass 57/57;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The ordinary convergence report is
+`/tmp/cppgm-member-default-convergence-20260810.json`, SHA-256
+`9f417670b42abecb5f8b70dc74bf8a228dfe482d25691b1cc092ba0689d797fd`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-member-default-provenance.iVxiZR/provenance-analysis.json` and
+`/tmp/cppgm-member-default-provenance.iVxiZR/convergence.json`, with SHA-256
+values `162cf83da992c4237a259953cf5b55f0ed1189032f1bc2046d72bccf2077640f`
+and `d6b7b647bbbe33d616e9e23bd1770e49fe554cbb905e41b04612869a41abe2ea`.
+The broad report is `/tmp/cppgm-member-default-broad-20260810.log`, SHA-256
+`1f5b8ce24acb1ddcb834e86fd67e5581f2505cc5fbc74c9465c8d826384594b6`.
+The materialization audit remains byte-identical to the prior checkpoint at
+SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+Both required three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.98% | -0.68% | -3.95% | `870be6c2f3da83ebc9951def8c81f2c5c3f5fd41fd250391abc4a2b533aabc47` |
+| Prior rolling checkpoint | +0.29% | -0.05% | +0.04% | `26cc77e6b3c1b51b5f305bcd2afa7af605d7cc82ee71480fc69ff724236def28` |
+
+The reports are `/tmp/cppgm-member-default-vs-fixed-20260810.json` and
+`/tmp/cppgm-member-default-vs-rolling-20260810.json`. The shared raw candidate
+is `/tmp/cppgm-member-default-raw-candidate-20260810.json`, SHA-256
+`b51708577c6cc33e40f995a03eea61e3a2b1ca4ca148135ded05daca18ee1a53`.
+Its candidate metadata names the preceding commit because the measurements
+cover this uncommitted worktree immediately before its checkpoint commit.
+
+Phase 3 remains open. Seven missing class-use rows remain across typed member
+declarations, dependent current-instantiation values, rooted static
+definitions, nested static owners, and function-result ownership.
+Function-call, lifecycle, and ordering convergence remain. Inception is still
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

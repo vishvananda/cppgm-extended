@@ -76,7 +76,8 @@ semantic_model::ClassInfo * reference_selected_class_template_instantiation(
     const std::vector<cpp_decl::TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
     const std::string * precomputed_key = nullptr,
     semantic_model::FunctionBinding * source_function = nullptr,
-    const cpp_decl::TemplateIdSyntax * source_syntax = nullptr);
+    const cpp_decl::TemplateIdSyntax * source_syntax = nullptr,
+    semantic_model::Scope * source_scope = nullptr);
 
 semantic_model::ClassInfo * reference_selected_class_template_instantiation_with_key(
     SemanticContext & ctx,

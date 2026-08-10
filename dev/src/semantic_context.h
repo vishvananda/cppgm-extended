@@ -748,7 +748,8 @@ public:
       const std::vector<cpp_decl::TemplateArgumentSyntax> * source_arg_syntaxes = nullptr,
       const std::string * precomputed_key = nullptr,
       semantic_model::FunctionBinding * source_function = nullptr,
-      const cpp_decl::TemplateIdSyntax * source_syntax = nullptr) = 0;
+      const cpp_decl::TemplateIdSyntax * source_syntax = nullptr,
+      semantic_model::Scope * source_scope = nullptr) = 0;
   virtual void observe_resolved_class_template_id(
       const resolved_source_semantics::ResolvedClassTemplateIdView & resolved,
       const resolved_source_semantics::ResolvedSourceTypeMaterialization *
