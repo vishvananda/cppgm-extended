@@ -589,6 +589,95 @@ definitions, nested static owners, and function-result ownership.
 Function-call, lifecycle, and ordering convergence remain. Inception is still
 forbidden.
 
+## Fixed-member and static-declaration class-use checkpoint, 2026-08-10
+
+Class source materialization now distinguishes fixed member bindings from
+bindings that only become concrete during replay. The witness session records
+source-template dependency for member typedefs and static values by semantic
+owner and member name. Type dependency includes direct template parameters and
+transitive member aliases. The legacy fixed-binding path is unchanged; the
+extended path admits a dependent source template-id only when every argument
+is a fixed source member binding.
+
+Out-of-class static-member reconstruction now carries the resolved declaration
+type and its retained template-id syntax. Rooted declaration types produce
+their explicit and materialized class-use occurrences, while nested owner
+arguments are paired with their semantic template arguments recursively. This
+uses retained AST and semantic types. It does not reparse source text or filter
+by fixture, template name, or source location.
+
+The checkpoint restores five of the seven missing class-use rows:
+
+- `lock<int>` from a fixed member typedef;
+- `bool_constant<false>` from a fixed current-instantiation static value;
+- the explicit and materialized `n::keyword<tag::color_map>` declaration-type
+  occurrences in the rooted static definition;
+- the nested `bytes<4, 7>` occurrence in the static data-member definition.
+
+The lock and `bool_constant` witnesses are byte-exact. Rooted static class-use
+presence is exact, but that fixture retains a lifecycle mismatch. The bytes
+occurrence is present, but its non-type argument rendering remains changed.
+The two `graph` function-result occurrences remain missing.
+
+Expanded convergence improves from 1,402 to 1,405 matching outputs and from
+128 to 125 known mismatches. The class-use inventory falls from seven to two
+missing rows and from 44 to 41 failing tests. It has 55 changed rows, two
+unexpected rows, and three ordering-only cases. Function-call and lifecycle
+inventories are unchanged.
+
+Correctness evidence from the ordinary and provenance Homebrew-Clang builds:
+
+- the preserved original strict manifest remains byte-exact at 1,305/1,305;
+- the expanded corpus passes 1,405/1,530 with 125 known mismatches;
+- ordinary and provenance builds produce byte-identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,389 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation records 2,997 completed candidates, 3,303 early
+  repeats, 354 prepublication merges, 2,643 collected occurrences, and 2,632
+  publications;
+- the canonical PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, and semantic-boundary unit suites pass 57/57;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero.
+
+The ordinary convergence report is
+`/tmp/cppgm-class-presence-convergence-final8-20260810.json`, SHA-256
+`3d026293f60ab37fe742bbb06a6e03eb5dd0237f15c4368301283a28b90e2a8f`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-class-presence-provenance-final.pt0aG2/provenance-analysis.json`
+and
+`/tmp/cppgm-class-presence-provenance-final.pt0aG2/convergence.json`, with
+SHA-256 values
+`57d77a843c2b4c6cf051ba8145ce24958c44c808eee430a3b5acb6e556c6a9d8`
+and
+`03f775e380113b59e0894cf91ba2a861a8103dfeb9327322f1ef2aa3e3ce1032`.
+The broad report is `/tmp/cppgm-class-presence-broad-20260810.log`, SHA-256
+`40fc8a1fd12832f2b6b066a51229984981f2dc4ce6934d0feca0f57da0fb904d`.
+The materialization audit remains byte-identical to the prior checkpoint at
+SHA-256
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`.
+
+Both required three-run performance comparisons pass:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.08% | -0.07% | -3.97% | `2fc0b6a0b0f4e89b08e0f7345b9add91f194cf4454f1a58981df5e8a1d08d663` |
+| Prior rolling checkpoint | -0.10% | +0.60% | -0.01% | `96e34b2a746326c67fb7408e8a7348bfe70a0d9bf1f7b570eb39363b080b70ba` |
+
+The reports are `/tmp/cppgm-class-presence-vs-fixed-final-20260810.json` and
+`/tmp/cppgm-class-presence-vs-rolling-final-20260810.json`. The shared raw
+candidate is
+`/tmp/cppgm-class-presence-raw-candidate-final-20260810.json`, SHA-256
+`3b2ea968461a61a7396e73b20ad59563d86acfd87eefb7d74946e26c7afae4ec`.
+Its candidate metadata names the preceding commit because the measurements
+cover this uncommitted worktree immediately before its checkpoint commit.
+
+Phase 3 remains open. Two missing class-use rows remain in the function-result
+owner path for the `graph` fixture. Function-call, lifecycle, payload, and
+ordering convergence remain. Inception is still forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

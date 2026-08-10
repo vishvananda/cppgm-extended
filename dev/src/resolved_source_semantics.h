@@ -206,6 +206,9 @@ struct ResolvedOwnerReference
   semantic_model::Scope * source_scope = nullptr;
   const cpp_decl::TemplateIdSyntax * source_syntax = nullptr;
   const CppAstNode * source_anchor = nullptr;
+  cpp_decl::TypePtr declaration_type;
+  const cpp_decl::TemplateIdSyntax * declaration_type_source_syntax = nullptr;
+  const CppAstNode * declaration_type_source_anchor = nullptr;
 
   bool valid() const
   {

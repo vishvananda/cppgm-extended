@@ -3537,6 +3537,9 @@ public:
                     cppast_qualifier_template_id_syntax(
                         *static_member_identifier,
                         owner_template_qualifier_index) : nullptr;
+            stored.source_type_syntax = specifiers ?
+                callsemantic::first_template_id_syntax_in_subtree(
+                    *specifiers) : nullptr;
             stored.owner_reference_handle =
                 ctx.retain_resolved_out_of_class_owner_reference(
                     retained_owner_pattern);

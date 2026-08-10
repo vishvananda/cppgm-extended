@@ -480,13 +480,26 @@ bool argument_syntax_uses_template_binding(
 bool argument_syntax_uses_fixed_class_value(
     semantic_model::Scope & scope,
     const cpp_decl::TemplateArgumentSyntax & syntax);
+bool argument_syntax_uses_fixed_current_class_value(
+    semantic_model::Scope & scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax);
 bool argument_syntax_uses_fixed_class_type(
+    semantic_model::Scope & scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax,
+    const cpp_decl::TypePtr & resolved_type);
+bool argument_syntax_uses_fixed_concrete_class_type(
     semantic_model::Scope & scope,
     const cpp_decl::TemplateArgumentSyntax & syntax,
     const cpp_decl::TypePtr & resolved_type);
 bool expression_syntax_uses_template_binding(
     semantic_model::Scope & scope,
     const CppAstNode & syntax);
+bool expression_syntax_uses_template_parameters(
+    const CppAstNode & syntax,
+    const std::vector<template_model::TemplateParameterInfo> & parameters);
+bool expression_syntax_mentions_identifier(
+    const CppAstNode & syntax,
+    const std::string & name);
 
 enum StandardMetaMemberTypeResolution
 {

@@ -24472,12 +24472,67 @@ bool argument_syntax_carries_substituted_resolved_type(
              compact_source_argument_key(text);
 }
 
-bool source_type_binding_is_fixed_class_member(
+bool unqualified_class_member_type_argument_name(
+    const TemplateArgumentSyntax & syntax,
+    string & name)
+{
+  name.clear();
+  const CppAstNode * type_id = syntax.source_type_id ?
+      syntax.source_type_id.get() : syntax.type_id.get();
+  const CppAstNode * type_name = type_id ?
+      direct_type_name_type_id_child(*type_id) : nullptr;
+  bool has_template_id = type_name &&
+      type_name->template_id_syntax &&
+      !type_name->template_id_syntax->name.name.empty();
+  for(size_t i = 0;
+      type_name && !has_template_id &&
+          i < type_name->qualifier_template_id_syntaxes.size();
+      ++i) {
+    has_template_id =
+        !type_name->qualifier_template_id_syntaxes[i].name.name.empty();
+  }
+  if(has_template_id) {
+    return false;
+  }
+  if(type_name) {
+    if(const QualifiedName * qualified =
+           cppast_qualified_name_syntax(*type_name)) {
+      if(qualified->rooted ||
+         !qualified->qualifiers.empty() ||
+         qualified->name.empty()) {
+        return false;
+      }
+      name = qualified->name;
+    } else {
+      name = strip_elaborated_type_prefix(trim_space(type_name->value));
+    }
+  } else if(syntax.expression &&
+            syntax.expression->kind == CppAstKind::id_expression) {
+    const QualifiedName * qualified =
+        cppast_qualified_name_syntax(*syntax.expression);
+    if(qualified) {
+      if(qualified->rooted ||
+         !qualified->qualifiers.empty() ||
+         qualified->name.empty()) {
+        return false;
+      }
+      name = qualified->name;
+    } else {
+      name = trim_space(syntax.expression->value);
+    }
+  } else {
+    return false;
+  }
+  return is_identifier_text(name);
+}
+
+bool source_type_binding_is_fixed_class_member_impl(
     Scope & scope,
     const string & name,
-    const TypePtr & resolved_type)
+    const TypePtr & resolved_type,
+    bool inspect_concrete)
 {
-  if(name.empty() || !resolved_type) {
+  if(name.empty()) {
     return false;
   }
   for(Scope * current = &scope; current; current = current->parent) {
@@ -24488,22 +24543,31 @@ bool source_type_binding_is_fixed_class_member(
     const auto binding = current->named_types.find(name);
     if(binding == current->named_types.end() ||
        !binding->second ||
-       !type_equals(strip_top_level_cv(binding->second),
-                    strip_top_level_cv(resolved_type))) {
+       (resolved_type &&
+        !type_equals(strip_top_level_cv(binding->second),
+                     strip_top_level_cv(resolved_type)))) {
       continue;
     }
-    bool found_source_binding = false;
-    for(auto instance =
-            concrete->source_template->reference_instantiations.begin();
-        instance != concrete->source_template->reference_instantiations.end();
-        ++instance) {
-      const ClassInfo * source = instance->second;
-      if(!source || !source->dependent_instantiation) {
-        continue;
+    if(inspect_concrete) {
+      const template_api::TemplateWitnessSession * witness_session =
+          template_api::current_template_witness_session();
+      if(witness_session) {
+        const auto recorded =
+            witness_session->source_class_type_dependencies.find(
+                std::make_pair(concrete->source_template, name));
+        if(recorded !=
+               witness_session->source_class_type_dependencies.end()) {
+          return recorded->second ==
+              template_api::TemplateWitnessSession::SVD_FIXED;
+        }
       }
-      const auto sites = source->typedef_member_declaration_sites.find(name);
-      if(sites == source->typedef_member_declaration_sites.end()) {
-        continue;
+    }
+    bool found_source_binding = false;
+    const auto inspect_sites = [&](const ClassInfo & source) -> bool
+    {
+      const auto sites = source.typedef_member_declaration_sites.find(name);
+      if(sites == source.typedef_member_declaration_sites.end()) {
+        return true;
       }
       for(size_t i = 0; i < sites->second.size(); ++i) {
         const ClassInfo::TypedefMemberDeclarationSite & site =
@@ -24516,12 +24580,37 @@ bool source_type_binding_is_fixed_class_member(
             site.source_template_type_dependency ==
                 ClassInfo::TypedefMemberDeclarationSite::STTD_FIXED;
       }
+      return true;
+    };
+    if(inspect_concrete && !inspect_sites(*concrete)) {
+      return false;
+    }
+    for(auto instance =
+            concrete->source_template->reference_instantiations.begin();
+        instance != concrete->source_template->reference_instantiations.end();
+        ++instance) {
+      const ClassInfo * source = instance->second;
+      if(!source || !source->dependent_instantiation) {
+        continue;
+      }
+      if(!inspect_sites(*source)) {
+        return false;
+      }
     }
     if(found_source_binding) {
       return true;
     }
   }
   return false;
+}
+
+bool source_type_binding_is_fixed_class_member(
+    Scope & scope,
+    const string & name,
+    const TypePtr & resolved_type)
+{
+  return source_type_binding_is_fixed_class_member_impl(
+      scope, name, resolved_type, false);
 }
 
 void substitute_type_pack_template_id_arguments(
@@ -27654,41 +27743,108 @@ bool argument_syntax_uses_fixed_class_value(
   return matched && !dependent;
 }
 
+bool argument_syntax_uses_fixed_current_class_value(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  const template_api::TemplateWitnessSession * witness_session =
+      template_api::current_template_witness_session();
+  if(!witness_session) {
+    return false;
+  }
+  bool matched = false;
+  bool dependent = false;
+  std::function<void(const CppAstNode &)> inspect;
+  inspect = [&](const CppAstNode & node) -> void
+  {
+    if(node.kind == CppAstKind::id_expression && !node.value.empty()) {
+      const ValueBinding * binding = nullptr;
+      (void)lookup_leaf_value_binding(scope, node.value, binding);
+      const QualifiedName * qualified = cppast_qualified_name_syntax(node);
+      const TemplateIdSyntax * qualifier_template_id =
+          !node.qualifier_template_id_syntaxes.empty() ?
+              &node.qualifier_template_id_syntaxes.back() : nullptr;
+      const bool qualified_template_member =
+          qualified &&
+          !qualified->qualifiers.empty() &&
+          qualifier_template_id &&
+          !qualifier_template_id->name.name.empty();
+      const ClassTemplateDecl * current_owner_template = nullptr;
+      if(qualified_template_member) {
+        const string owner_name = unqualified_member_name(
+            qualifier_template_id->name.name);
+        for(Scope * current = &scope;
+            current && !current_owner_template;
+            current = current->parent) {
+          ClassInfo * info = current->class_info;
+          if(!info ||
+             !info->source_template ||
+             info->source_template->name != owner_name) {
+            continue;
+          }
+          current_owner_template = info->source_template;
+          if(!binding) {
+            binding = semantic_lookup::lookup_member_value(
+                *info, qualified->name).binding;
+          }
+        }
+      }
+      if(binding &&
+         (!qualified_template_member || current_owner_template)) {
+        const auto recorded =
+            witness_session->source_value_dependencies.find(binding);
+        if(recorded != witness_session->source_value_dependencies.end()) {
+          matched = matched ||
+              recorded->second ==
+                  template_api::TemplateWitnessSession::SVD_FIXED;
+          dependent = dependent ||
+              recorded->second ==
+                  template_api::TemplateWitnessSession::SVD_DEPENDENT;
+        }
+      }
+      if(current_owner_template) {
+        const auto recorded =
+            witness_session->source_class_value_dependencies.find(
+                std::make_pair(current_owner_template, qualified->name));
+        if(recorded !=
+               witness_session->source_class_value_dependencies.end()) {
+          matched = matched ||
+              recorded->second ==
+                  template_api::TemplateWitnessSession::SVD_FIXED;
+          dependent = dependent ||
+              recorded->second ==
+                  template_api::TemplateWitnessSession::SVD_DEPENDENT;
+        }
+      }
+    }
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      inspect(node.children[i]);
+    }
+  };
+  if(syntax.expression) inspect(*syntax.expression);
+  if(syntax.type_id) inspect(*syntax.type_id);
+  return matched && !dependent;
+}
+
 bool argument_syntax_uses_fixed_class_type(
     Scope & scope,
     const TemplateArgumentSyntax & syntax,
     const TypePtr & resolved_type)
 {
-  const CppAstNode * type_id = syntax.source_type_id ?
-      syntax.source_type_id.get() : syntax.type_id.get();
-  const CppAstNode * type_name = type_id ?
-      direct_type_name_type_id_child(*type_id) : nullptr;
-  bool has_template_id = type_name &&
-      type_name->template_id_syntax &&
-      !type_name->template_id_syntax->name.name.empty();
-  for(size_t i = 0;
-      type_name && !has_template_id &&
-          i < type_name->qualifier_template_id_syntaxes.size();
-      ++i) {
-    has_template_id =
-        !type_name->qualifier_template_id_syntaxes[i].name.name.empty();
-  }
-  if(!type_name || has_template_id) {
-    return false;
-  }
   string name;
-  if(const QualifiedName * qualified = cppast_qualified_name_syntax(*type_name)) {
-    if(qualified->rooted ||
-       !qualified->qualifiers.empty() ||
-       qualified->name.empty()) {
-      return false;
-    }
-    name = qualified->name;
-  } else {
-    name = strip_elaborated_type_prefix(trim_space(type_name->value));
-  }
-  return is_identifier_text(name) &&
+  return unqualified_class_member_type_argument_name(syntax, name) &&
       source_type_binding_is_fixed_class_member(scope, name, resolved_type);
+}
+
+bool argument_syntax_uses_fixed_concrete_class_type(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax,
+    const TypePtr & resolved_type)
+{
+  string name;
+  return unqualified_class_member_type_argument_name(syntax, name) &&
+      source_type_binding_is_fixed_class_member_impl(
+          scope, name, resolved_type, true);
 }
 
 bool expression_syntax_uses_template_binding(
@@ -27697,6 +27853,33 @@ bool expression_syntax_uses_template_binding(
 {
   return expression_node_mentions_unqualified_template_bound_name(scope,
                                                                   syntax);
+}
+
+bool expression_syntax_uses_template_parameters(
+    const CppAstNode & syntax,
+    const vector<TemplateParameterInfo> & parameters)
+{
+  for(size_t i = 0; i < parameters.size(); ++i) {
+    if((!parameters[i].name.empty() &&
+        expression_node_mentions_identifier(syntax, parameters[i].name))) {
+      return true;
+    }
+    for(size_t j = 0; j < parameters[i].alternate_names.size(); ++j) {
+      if(!parameters[i].alternate_names[j].empty() &&
+         expression_node_mentions_identifier(
+             syntax, parameters[i].alternate_names[j])) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool expression_syntax_mentions_identifier(
+    const CppAstNode & syntax,
+    const string & name)
+{
+  return expression_node_mentions_identifier(syntax, name);
 }
 
 void clear_pack_element_source_provenance(CppAstNode & node)

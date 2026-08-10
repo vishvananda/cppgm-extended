@@ -7322,7 +7322,8 @@ private:
 resolved_source_semantics::ResolvedOwnerReference
 reconstruct_out_of_class_static_member_owner_reference(
     const OutOfClassStaticMemberDecl & member,
-    ClassInfo & concrete_owner)
+    ClassInfo & concrete_owner,
+    const ValueBinding * binding)
 {
   resolved_source_semantics::ResolvedOwnerReference resolved;
   resolved.owner = &concrete_owner;
@@ -7333,17 +7334,21 @@ reconstruct_out_of_class_static_member_owner_reference(
   resolved.source_anchor = member.declarator ?
       member.declarator : member.node;
   resolved.source_syntax = member.source_owner_syntax;
+  resolved.declaration_type = binding ? binding->type : TypePtr();
+  resolved.declaration_type_source_syntax = member.source_type_syntax;
+  resolved.declaration_type_source_anchor = member.specifiers;
   return resolved;
 }
 
 void observe_out_of_class_static_member_owner_reference(
     SemanticContext & ctx,
     const OutOfClassStaticMemberDecl & member,
-    ClassInfo & concrete_owner)
+    ClassInfo & concrete_owner,
+    const ValueBinding * binding)
 {
   const resolved_source_semantics::ResolvedOwnerReference reconstructed =
       reconstruct_out_of_class_static_member_owner_reference(
-          member, concrete_owner);
+          member, concrete_owner, binding);
   if(reconstructed.valid()) {
     ctx.observe_resolved_out_of_class_owner_reference(
         reconstructed,
@@ -7412,7 +7417,7 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
     {
       const ScopedTemplateWitnessSourceCaptureResume source_capture_resume;
       observe_out_of_class_static_member_owner_reference(
-          ctx, it->second, info);
+          ctx, it->second, info, member);
     }
     if(witness::source_capture_enabled(ctx)) {
       member->witness_static_member_definition_source_captured = true;
@@ -8808,7 +8813,7 @@ bool replay_witness_static_member_definition_if_needed(
   {
     const ScopedTemplateWitnessSourceCaptureResume source_capture_resume;
     observe_out_of_class_static_member_owner_reference(
-        ctx, *static_member, info);
+        ctx, *static_member, info, &binding);
   }
   if(!static_member->initializer) {
     return true;

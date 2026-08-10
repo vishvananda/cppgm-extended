@@ -12515,6 +12515,207 @@ private:
     return static_cast<uint32_t>(state->out_of_class_owners.size());
   }
 
+  bool submit_out_of_class_static_declaration_class_use(
+      Scope & source_scope,
+      ClassInfo & instance,
+      const TemplateIdSyntax & source_syntax,
+      const std::string & location,
+      witness::SourceUseRole role,
+      bool materialized_type)
+  {
+    if(location.empty() || !instance.source_template) {
+      return false;
+    }
+    ClassTemplateDecl * source_origin =
+        lookup_class_template(source_scope, source_syntax.name);
+    if(source_origin != instance.source_template) {
+      return false;
+    }
+    template_api::ClassTemplateUseInfo use;
+    if(!template_api::class_template_use_info_for_class(
+           *this, source_scope, &instance, use, true) ||
+       !use.has_selection || use.origin != source_origin || !use.arguments) {
+      return false;
+    }
+
+    witness::ClassUseEmitRequest request;
+    request.source_occurrence_id = materialized_type ?
+        0 : source_syntax.source_location_id;
+    request.source_traversal_order =
+        source_syntax.has_source_token_span ?
+            source_syntax.source_token_start + 1 : 0;
+    request.semantic_template = source_origin;
+    request.semantic_specialization_key =
+        template_args_identity_key(*use.arguments);
+    request.location = location;
+    request.use_anchor_present = true;
+    request.use_anchor_location = location;
+    request.template_name =
+        template_api::class_template_witness_qualified_name(
+            *this, *source_origin);
+    request.selection =
+        source_selection_kind_for_match_kind(use.selection.kind);
+    const witness::TemplateWitnessSourceAnchor selected_decl_anchor =
+        class_use_selected_decl_anchor(source_origin, use.selection);
+    request.selected_decl_location = selected_decl_anchor.location;
+    request.selected_decl_anchor = selected_decl_anchor;
+    if(materialized_type) {
+      template_api::append_template_witness_source_bindings(
+          *this,
+          request.bindings,
+          source_origin->parameters,
+          *use.arguments,
+          "deduced",
+          template_api::TemplateWitnessSourceBindingPolicy::
+              DeducedWithDefaultedTrailingDefaults);
+    } else {
+      const std::vector<std::string> source_arg_texts =
+          template_id_argument_texts_preserving_spacing(source_syntax);
+      request.template_id_occurrence =
+          witness::make_source_template_id_occurrence(location,
+                                                      source_arg_texts);
+      fill_template_id_source_occurrence_argument_facts(
+          source_scope,
+          source_arg_texts,
+          &source_syntax.argument_syntaxes,
+          *use.arguments,
+          request.template_id_occurrence);
+      template_api::append_template_witness_source_bindings(
+          *this,
+          request.bindings,
+          source_origin->parameters,
+          *use.arguments,
+          source_arg_texts,
+          "explicit",
+          "defaulted");
+    }
+    if(use.selection.parameters &&
+       use.selection.parameters != &source_origin->parameters) {
+      template_api::append_template_witness_source_bindings(
+          *this,
+          request.specialization_bindings,
+          *use.selection.parameters,
+          use.selection.arguments,
+          "deduced");
+    }
+    request.ownership = witness::SourceUseOwnership::SourceOwned;
+    request.role = role;
+    request.origin =
+        witness::ClassUseEmissionOrigin::DeclarationTypeSource;
+    submit_resolved_class_use(std::move(request));
+    return true;
+  }
+
+  void observe_out_of_class_static_declaration_nested_argument(
+      Scope & source_scope,
+      const TemplateArgumentSyntax & source_argument,
+      const TemplateArgument & semantic_argument)
+  {
+    if(semantic_argument.kind != TemplateArgument::TA_TYPE ||
+       !semantic_argument.type) {
+      return;
+    }
+    TypePtr base = strip_top_level_cv(
+        remove_reference_type(semantic_argument.type));
+    while(base && base->kind == Type::TK_ARRAY) {
+      base = strip_top_level_cv(base->inner);
+    }
+    ClassInfo * instance = class_info_for_type(base);
+    if(!instance || !instance->source_template) {
+      return;
+    }
+
+    const CppAstNode * source_type_id = source_argument.type_id ?
+        source_argument.type_id.get() :
+        source_argument.source_type_id.get();
+    const TemplateIdSyntax * source_syntax = source_argument.template_id ?
+        source_argument.template_id.get() :
+        source_type_id ?
+            callsemantic::first_template_id_syntax_in_subtree(
+                *source_type_id) : nullptr;
+    if(!source_syntax) {
+      return;
+    }
+    const std::string location =
+        source_location_for_template_id_syntax_name(*source_syntax);
+    if(!submit_out_of_class_static_declaration_class_use(
+           source_scope,
+           *instance,
+           *source_syntax,
+           location,
+           witness::SourceUseRole::TypeUse,
+           false)) {
+      return;
+    }
+
+    const std::size_t nested_count = std::min(
+        source_syntax->argument_syntaxes.size(),
+        instance->instantiation_arguments.size());
+    for(std::size_t i = 0; i < nested_count; ++i) {
+      observe_out_of_class_static_declaration_nested_argument(
+          source_scope,
+          source_syntax->argument_syntaxes[i],
+          instance->instantiation_arguments[i]);
+    }
+  }
+
+  void observe_out_of_class_static_declaration_uses(
+      const resolved_source_semantics::ResolvedOwnerReference & resolved,
+      ClassInfo & owner)
+  {
+    if(!resolved.source_scope) {
+      return;
+    }
+    Scope & source_scope = *resolved.source_scope;
+    if(resolved.declaration_type &&
+       resolved.declaration_type_source_syntax &&
+       resolved.declaration_type_source_syntax->name.rooted) {
+      TypePtr base = strip_top_level_cv(
+          remove_reference_type(resolved.declaration_type));
+      while(base && base->kind == Type::TK_ARRAY) {
+        base = strip_top_level_cv(base->inner);
+      }
+      ClassInfo * declaration_type = class_info_for_type(base);
+      if(declaration_type) {
+        const std::string explicit_location =
+            source_location_for_template_id_syntax_name(
+                *resolved.declaration_type_source_syntax);
+        (void)submit_out_of_class_static_declaration_class_use(
+            source_scope,
+            *declaration_type,
+            *resolved.declaration_type_source_syntax,
+            explicit_location,
+            witness::SourceUseRole::TypeUse,
+            false);
+        const std::string materialized_location =
+            resolved.declaration_type_source_anchor ?
+                source_location_for_node(
+                    *resolved.declaration_type_source_anchor) :
+                std::string();
+        (void)submit_out_of_class_static_declaration_class_use(
+            source_scope,
+            *declaration_type,
+            *resolved.declaration_type_source_syntax,
+            materialized_location,
+            witness::SourceUseRole::MaterializedTypeUse,
+            true);
+      }
+    }
+
+    if(!resolved.source_syntax) {
+      return;
+    }
+    const std::size_t count = std::min(
+        resolved.source_syntax->argument_syntaxes.size(),
+        owner.instantiation_arguments.size());
+    for(std::size_t i = 0; i < count; ++i) {
+      observe_out_of_class_static_declaration_nested_argument(
+          source_scope,
+          resolved.source_syntax->argument_syntaxes[i],
+          owner.instantiation_arguments[i]);
+    }
+  }
+
   void observe_resolved_out_of_class_owner_reference(
       const resolved_source_semantics::ResolvedOwnerReference & resolved,
       const vector<TemplateParameterInfo> * canonical_parameters,
@@ -12606,6 +12807,9 @@ private:
         witness::ClassUseEmissionOrigin::QualifiedValueSource :
         witness::ClassUseEmissionOrigin::DeclarationTypeSource;
     submit_resolved_class_use(std::move(request));
+    if(role == witness::SourceUseRole::StaticMemberDefinitionOwner) {
+      observe_out_of_class_static_declaration_uses(resolved, owner);
+    }
   }
 
   void observe_retained_out_of_class_owner_reference(

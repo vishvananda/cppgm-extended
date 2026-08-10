@@ -46,6 +46,11 @@ using namespace semantic_conversion;
 using namespace semantic_lookup;
 using namespace semantic_model;
 
+void record_source_template_value_dependencies_for_witness(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    const std::vector<std::string> & member_names);
+
 namespace {
 
 const int kMaxReferenceMemberCollectionDepth = 512;
@@ -1260,19 +1265,76 @@ void record_member_named_type_declaration(
     ClassInfo & info,
     const std::string & name,
     const TypePtr * type,
-    const CppAstNode & declaration)
+    const CppAstNode & declaration,
+    const CppAstNode * source_type_syntax = nullptr)
 {
   std::vector<ClassInfo::TypedefMemberDeclarationSite> & sites =
       info.typedef_member_declaration_sites[name];
+  const CppAstNode & source_syntax =
+      source_type_syntax ? *source_type_syntax : declaration;
+  bool source_named_type_is_dependent = false;
+  template_api::TemplateWitnessSession * witness_session =
+      ctx.template_witness_context().session;
+  if(info.source_template && witness_session) {
+    for(auto recorded =
+            witness_session->source_class_type_dependencies.begin();
+        recorded != witness_session->source_class_type_dependencies.end();
+        ++recorded) {
+      if(recorded->first.first != info.source_template ||
+         recorded->first.second == name ||
+         recorded->second !=
+             template_api::TemplateWitnessSession::SVD_DEPENDENT) {
+        continue;
+      }
+      if(template_argument_semantics::expression_syntax_mentions_identifier(
+             source_syntax, recorded->first.second) ||
+         (&source_syntax != &declaration &&
+          template_argument_semantics::expression_syntax_mentions_identifier(
+              declaration, recorded->first.second))) {
+        source_named_type_is_dependent = true;
+        break;
+      }
+    }
+  }
+  const bool source_syntax_is_dependent =
+      info.source_template &&
+      (source_named_type_is_dependent ||
+       template_argument_semantics::expression_syntax_uses_template_binding(
+           *info.member_scope, source_syntax) ||
+       template_argument_semantics::expression_syntax_uses_template_parameters(
+           source_syntax, info.source_template->parameters) ||
+       (&source_syntax != &declaration &&
+        (template_argument_semantics::expression_syntax_uses_template_binding(
+             *info.member_scope, declaration) ||
+         template_argument_semantics::expression_syntax_uses_template_parameters(
+             declaration, info.source_template->parameters))));
   const ClassInfo::TypedefMemberDeclarationSite::SourceTemplateTypeDependency
       source_dependency =
           !type ||
           !info.source_template ||
           ctx.template_witness_context().session == nullptr ?
           ClassInfo::TypedefMemberDeclarationSite::STTD_UNKNOWN :
-          ctx.type_depends_on_template_parameter(*type) ?
+          (ctx.type_depends_on_template_parameter(*type) ||
+           source_syntax_is_dependent) ?
               ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT :
               ClassInfo::TypedefMemberDeclarationSite::STTD_FIXED;
+  if(info.source_template &&
+     witness_session &&
+     source_dependency !=
+         ClassInfo::TypedefMemberDeclarationSite::STTD_UNKNOWN) {
+    template_api::TemplateWitnessSession::SourceValueDependency & recorded =
+        witness_session->source_class_type_dependencies[
+            std::make_pair(info.source_template, name)];
+    const template_api::TemplateWitnessSession::SourceValueDependency result =
+        source_dependency ==
+                ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT ?
+            template_api::TemplateWitnessSession::SVD_DEPENDENT :
+            template_api::TemplateWitnessSession::SVD_FIXED;
+    if(recorded == template_api::TemplateWitnessSession::SVD_UNKNOWN ||
+       result == template_api::TemplateWitnessSession::SVD_DEPENDENT) {
+      recorded = result;
+    }
+  }
   bool already_processed = false;
   for(std::size_t i = 0; i < sites.size(); ++i) {
     if(sites[i].source_location_id == declaration.source_location_id &&
@@ -1307,10 +1369,11 @@ void bind_member_named_type(SemanticContext & ctx,
                             const std::string & name,
                             const TypePtr & type,
                             MemberAccess access,
-                            const CppAstNode & declaration)
+                            const CppAstNode & declaration,
+                            const CppAstNode * source_type_syntax = nullptr)
 {
   record_member_named_type_declaration(
-      ctx, info, name, &type, declaration);
+      ctx, info, name, &type, declaration, source_type_syntax);
   semantic_scope_mutation::bind_named_type_with_access(
       *info.member_scope, name, type, access);
   if(ctx.template_witness_context().session) {
@@ -9922,6 +9985,10 @@ void collect_class_simple_declaration(SemanticContext & ctx,
         }
       }
       info.member_scope->values[member_name] = binding;
+      if(ctx.template_witness_context().session) {
+        record_source_template_value_dependencies_for_witness(
+            ctx, info, std::vector<std::string>(1, member_name));
+      }
       continue;
     }
 
@@ -10403,7 +10470,8 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                deferred[j].name,
                                alias,
                                access,
-                               *deferred[j].declaration);
+                               *deferred[j].declaration,
+                               &deferred[j].type_id);
       }
       return;
     }
@@ -10459,7 +10527,8 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                member_name,
                                alias,
                                access,
-                               init_decl);
+                               init_decl,
+                               &node);
       }
       return;
     }
@@ -10511,7 +10580,8 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                  member_name,
                                  alias,
                                  access,
-                                 init_decl);
+                                 init_decl,
+                                 &node);
         }
       }
       continue;
@@ -10552,7 +10622,8 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                              member_name,
                              stored_alias,
                              access,
-                             init_decl);
+                             init_decl,
+                             &node);
       continue;
     }
 
@@ -10683,6 +10754,10 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
         }
       }
       info.member_scope->values[member_name] = binding;
+      if(ctx.template_witness_context().session) {
+        record_source_template_value_dependencies_for_witness(
+            ctx, info, std::vector<std::string>(1, member_name));
+      }
       continue;
     }
 
@@ -12169,7 +12244,8 @@ bool resolve_deferred_class_alias(SemanticContext & ctx,
             alias,
             access != info.member_scope->named_type_access.end() ?
                 access->second : MA_PUBLIC,
-            *found->second.declaration);
+            *found->second.declaration,
+            found->second.typedef_specifiers);
       } else if(access != info.member_scope->named_type_access.end()) {
         semantic_scope_mutation::bind_template_named_type_with_access(
             *info.member_scope, alias_name, alias, access->second);
@@ -12240,6 +12316,18 @@ void record_source_template_value_dependencies_for_witness(
         const auto recorded =
             witness_session->source_value_dependencies.find(&binding);
         if(recorded != witness_session->source_value_dependencies.end()) {
+          if(info.source_template) {
+            template_api::TemplateWitnessSession::SourceValueDependency &
+                source_result =
+                    witness_session->source_class_value_dependencies[
+                        std::make_pair(info.source_template, binding.name)];
+            if(source_result ==
+                   template_api::TemplateWitnessSession::SVD_UNKNOWN ||
+               recorded->second ==
+                   template_api::TemplateWitnessSession::SVD_DEPENDENT) {
+              source_result = recorded->second;
+            }
+          }
           return recorded->second;
         }
         if(!binding.constant_initializer ||
@@ -12287,6 +12375,18 @@ void record_source_template_value_dependencies_for_witness(
                 template_api::TemplateWitnessSession::SVD_DEPENDENT :
                 template_api::TemplateWitnessSession::SVD_FIXED;
         witness_session->source_value_dependencies[&binding] = result;
+        if(info.source_template) {
+          template_api::TemplateWitnessSession::SourceValueDependency &
+              source_result =
+                  witness_session->source_class_value_dependencies[
+                      std::make_pair(info.source_template, binding.name)];
+          if(source_result ==
+                 template_api::TemplateWitnessSession::SVD_UNKNOWN ||
+             result ==
+                 template_api::TemplateWitnessSession::SVD_DEPENDENT) {
+            source_result = result;
+          }
+        }
         visiting.erase(&binding);
         return result;
       };
@@ -12657,7 +12757,8 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
                                member_name,
                                alias,
                                access,
-                               init_decl);
+                               init_decl,
+                               &node);
       }
       return;
     }
@@ -12727,7 +12828,8 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
                                  member_name,
                                  alias,
                                  access,
-                                 init_decl);
+                                 init_decl,
+                                 &node);
           continue;
         }
       }
@@ -12762,7 +12864,8 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
                              member_name,
                              alias ? alias : member_type,
                              access,
-                             init_decl);
+                             init_decl,
+                             &node);
       continue;
     }
 
@@ -12867,19 +12970,25 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
       binding.access = access;
       binding.owner_class = &info;
       binding.is_thread_local = is_thread_local_member;
+      binding.has_storage_definition = false;
       binding.declaration_node = &init_decl;
-      if(init_decl.children.size() > 1 &&
-         init_decl.children[1].kind == CppAstKind::initializer &&
-         init_decl.children[1].children.size() == 1) {
+      binding.requires_constant_initializer = is_constexpr_member;
+      if(initializer && initializer->children.size() == 1) {
+        binding.constant_initializer = initializer;
+        binding.constant_initializer_scope = info.member_scope.get();
         long long value = 0;
         if(ctx.evaluate_constant_expression(*info.member_scope,
-                                            init_decl.children[1].children[0],
+                                            initializer->children[0],
                                             value)) {
           binding.has_constant_value = true;
           binding.constant_value = value;
         }
       }
       info.member_scope->values[member_name] = binding;
+      if(ctx.template_witness_context().session) {
+        record_source_template_value_dependencies_for_witness(
+            ctx, info, std::vector<std::string>(1, member_name));
+      }
       continue;
     }
 

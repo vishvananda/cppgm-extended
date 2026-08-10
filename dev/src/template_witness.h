@@ -287,6 +287,10 @@ struct TemplateWitnessSession
   std::vector<TemplateWitnessTemplateHeaderContext> template_header_contexts;
   std::unordered_map<const semantic_model::ValueBinding *,
                      SourceValueDependency> source_value_dependencies;
+  std::map<std::pair<const semantic_model::ClassTemplateDecl *, std::string>,
+           SourceValueDependency> source_class_value_dependencies;
+  std::map<std::pair<const semantic_model::ClassTemplateDecl *, std::string>,
+           SourceValueDependency> source_class_type_dependencies;
   std::unordered_set<uint32_t> fixed_class_argument_occurrences;
   std::unordered_map<uint32_t, ParameterizedClassSourceOccurrence>
       class_source_occurrences;

@@ -1629,6 +1629,7 @@ struct OutOfClassStaticMemberDecl
   ClassTemplateDecl * member_owner_template = nullptr;
   const CppAstNode * source_owner_declaration = nullptr;
   const cpp_decl::TemplateIdSyntax * source_owner_syntax = nullptr;
+  const cpp_decl::TemplateIdSyntax * source_type_syntax = nullptr;
   cpp_decl::QualifiedName qualified_name_syntax;
   const CppAstNode * node = nullptr;
   const CppAstNode * specifiers = nullptr;

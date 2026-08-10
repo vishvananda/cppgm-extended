@@ -102,6 +102,27 @@ bool argument_uses_fixed_class_binding(
   return false;
 }
 
+bool argument_uses_extended_fixed_class_binding(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax,
+    const TemplateArgument * argument)
+{
+  if(!argument || argument->dependent) {
+    return false;
+  }
+  if(argument_uses_fixed_class_binding(scope, syntax, argument)) {
+    return true;
+  }
+  if(argument->kind == TemplateArgument::TA_TYPE) {
+    return template_argument_semantics::
+        argument_syntax_uses_fixed_concrete_class_type(
+            scope, syntax, argument->type);
+  }
+  return argument->kind == TemplateArgument::TA_VALUE &&
+      template_argument_semantics::
+          argument_syntax_uses_fixed_current_class_value(scope, syntax);
+}
+
 void classify_source_dependency(
     resolved_source_semantics::ResolvedClassTemplateIdView & resolved)
 {
@@ -205,33 +226,42 @@ bool complete_source_type_materialization(
 
   Scope & source_scope = resolved.source_scope ?
       *resolved.source_scope : *resolved.use_scope;
-  bool arguments_avoid_template_substitution = !resolved.arguments->empty();
-  bool arguments_include_fixed_binding = false;
+  bool legacy_arguments_avoid_template_substitution =
+      !resolved.arguments->empty();
+  bool legacy_arguments_include_fixed_binding = false;
+  bool arguments_are_fixed_bindings = !resolved.arguments->empty();
   for(std::size_t i = 0;
-      arguments_avoid_template_substitution &&
-          i < resolved.arguments->size();
+      i < resolved.arguments->size();
       ++i) {
     const TemplateArgumentSyntax * syntax =
         (*resolved.arguments)[i].source_syntax.get();
-    arguments_avoid_template_substitution =
-        syntax &&
-        !syntax->substituted_from_template_binding &&
-        !template_argument_semantics::
-            template_argument_syntax_mentions_bound_name(
-                source_scope, *syntax);
-    arguments_include_fixed_binding =
-        arguments_include_fixed_binding ||
-        (syntax && argument_uses_fixed_class_binding(
-                       source_scope,
-                       *syntax,
-                       &(*resolved.arguments)[i]));
+    const TemplateArgument & argument = (*resolved.arguments)[i];
+    const bool legacy_fixed_binding =
+        syntax && argument_uses_fixed_class_binding(
+                      source_scope, *syntax, &argument);
+    const bool extended_fixed_binding =
+        syntax && argument_uses_extended_fixed_class_binding(
+                      source_scope, *syntax, &argument);
+    if(legacy_arguments_avoid_template_substitution) {
+      legacy_arguments_avoid_template_substitution =
+          syntax &&
+          !syntax->substituted_from_template_binding &&
+          !template_argument_semantics::
+              template_argument_syntax_mentions_bound_name(
+                  source_scope, *syntax);
+      legacy_arguments_include_fixed_binding =
+          legacy_arguments_include_fixed_binding || legacy_fixed_binding;
+    }
+    arguments_are_fixed_bindings =
+        arguments_are_fixed_bindings && extended_fixed_binding;
   }
 
   const bool resolved_source_type_node =
       resolved.source_dependency ==
           TemplateIdSourceDependency::UnresolvedDependent &&
-      arguments_avoid_template_substitution &&
-      arguments_include_fixed_binding &&
+      ((legacy_arguments_avoid_template_substitution &&
+        legacy_arguments_include_fixed_binding) ||
+       arguments_are_fixed_bindings) &&
       operation ==
           template_api::SourceTypeMaterializationOperation::SourceTypeNode;
   const bool resolved_initializer_source =
