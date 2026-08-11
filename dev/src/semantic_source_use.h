@@ -134,6 +134,10 @@ struct SemanticSourceUse
   // One-based traversal order in the translation unit's post-token stream.
   // Zero means that the semantic producer does not own a source span.
   std::size_t source_traversal_order = 0;
+  // Some overload operations already publish candidate failures in their
+  // semantic phase order. Preserve that order instead of applying the legacy
+  // renderer-wide reason priority.
+  bool preserve_semantic_drop_order = false;
   // Stable semantic identity used only to order a member call before the
   // class-template owner named by the same source occurrence.
   const void * semantic_class_template_identity = nullptr;
@@ -512,6 +516,9 @@ inline void record_source_use(SemanticSourceUseTable & table,
         if(table.uses[i].source_traversal_order == 0) {
           table.uses[i].source_traversal_order = use.source_traversal_order;
         }
+        table.uses[i].preserve_semantic_drop_order =
+            table.uses[i].preserve_semantic_drop_order ||
+            use.preserve_semantic_drop_order;
         return;
       }
     }
@@ -521,6 +528,9 @@ inline void record_source_use(SemanticSourceUseTable & table,
       if(table.uses[i].source_traversal_order == 0) {
         table.uses[i].source_traversal_order = use.source_traversal_order;
       }
+      table.uses[i].preserve_semantic_drop_order =
+          table.uses[i].preserve_semantic_drop_order ||
+          use.preserve_semantic_drop_order;
       return;
     }
   }

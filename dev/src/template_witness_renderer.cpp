@@ -609,6 +609,7 @@ struct WitnessEvent
   semantic_source_use::SourceUseRole source_role =
       semantic_source_use::SourceUseRole::Unknown;
   size_t source_traversal_order = 0;
+  bool preserve_semantic_drop_order = false;
   const void * semantic_class_template_identity = nullptr;
   string semantic_class_specialization_key;
   const void * semantic_owner_class_template_identity = nullptr;
@@ -776,6 +777,9 @@ void note_renderer_trace_action(const WitnessEvent & event,
 void normalize_drop_order(vector<WitnessEvent> & events)
 {
   for(size_t i = 0; i < events.size(); ++i) {
+    if(events[i].preserve_semantic_drop_order) {
+      continue;
+    }
     std::stable_sort(
         events[i].drops.begin(),
         events[i].drops.end(),
@@ -892,6 +896,7 @@ WitnessEvent witness_event_from_source_use(
   event.ownership = use.ownership;
   event.source_role = use.role;
   event.source_traversal_order = use.source_traversal_order;
+  event.preserve_semantic_drop_order = use.preserve_semantic_drop_order;
   event.semantic_class_template_identity =
       use.semantic_class_template_identity;
   event.semantic_class_specialization_key =

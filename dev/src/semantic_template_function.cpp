@@ -543,6 +543,8 @@ void emit_function_template_call_source_use(
   witness::FunctionCallSourceDecision decision;
   decision.origin = request.origin;
   decision.source_traversal_order = request.source_traversal_order;
+  decision.preserve_semantic_drop_order =
+      request.preserve_semantic_drop_order;
   if(binding &&
      binding->owner_class &&
      binding->owner_class->source_template) {

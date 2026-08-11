@@ -527,6 +527,24 @@ std::vector<SourceTokenRef> same_line_source_tokens(
   return out;
 }
 
+std::size_t source_occurrence_traversal_order(
+    SemanticContext & ctx,
+    const std::string & location)
+{
+  const ParsedSourceLocation parsed = parse_source_location(location);
+  if(!parsed.valid) {
+    return 0;
+  }
+  const std::vector<SourceTokenRef> tokens =
+      same_line_source_tokens(ctx, parsed);
+  for(std::size_t i = 0; i < tokens.size(); ++i) {
+    if(tokens[i].column == parsed.column) {
+      return tokens[i].index + 1;
+    }
+  }
+  return 0;
+}
+
 std::string overloaded_operator_token(const std::string & selected_name)
 {
   static const std::pair<const char *, const char *> operators[] = {
@@ -792,6 +810,13 @@ bool constructor_selection_is_speculative_user_defined_conversion_probe(
          std::string(options.context) == "user-defined conversion constructor" &&
          !options.instantiate_bodies &&
          !options.emit_source_witness_without_body_instantiation;
+}
+
+bool constructor_selection_is_user_defined_conversion_source(
+    const ConstructorSelectionOptions & options)
+{
+  return options.context &&
+         std::string(options.context) == "user-defined conversion constructor";
 }
 
 const CppAstNode * default_argument_payload(const CppAstNode * default_arg)
@@ -1296,6 +1321,11 @@ bool template_argument_mentions_deduction_parameter(
     const std::vector<TemplateParameterInfo> & parameters,
     const TemplateArgument & argument);
 
+bool dependent_template_argument_mentions_deduction_parameter(
+    SemanticContext & ctx,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const cpp_decl::DependentAliasTemplateArgumentSyntax & argument);
+
 bool type_mentions_deduction_parameter(
     SemanticContext & ctx,
     const std::vector<TemplateParameterInfo> & parameters,
@@ -1314,6 +1344,26 @@ bool type_mentions_deduction_parameter(
   {
     if(find_template_parameter(parameters, base)) {
       return true;
+    }
+    void * dependent_template_decl = nullptr;
+    std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax>
+        dependent_arguments;
+    if(cpp_decl::named_type_dependent_class_template(
+           base,
+           dependent_template_decl,
+           dependent_arguments) ||
+       cpp_decl::named_type_dependent_alias_template(
+           base,
+           dependent_template_decl,
+           dependent_arguments)) {
+      for(std::size_t i = 0; i < dependent_arguments.size(); ++i) {
+        if(dependent_template_argument_mentions_deduction_parameter(
+               ctx,
+               parameters,
+               dependent_arguments[i])) {
+          return true;
+        }
+      }
     }
     ClassInfo * info = ctx.class_info_for_type(base);
     if(info) {
@@ -1382,6 +1432,66 @@ bool template_argument_mentions_deduction_parameter(
              parameters, argument.text);
 }
 
+bool dependent_template_argument_mentions_deduction_parameter(
+    SemanticContext & ctx,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const cpp_decl::DependentAliasTemplateArgumentSyntax & argument)
+{
+  if(argument.type &&
+     type_mentions_deduction_parameter(ctx, parameters, argument.type)) {
+    return true;
+  }
+  for(std::size_t i = 0;
+      i < argument.syntax.source_identifier_names.size();
+      ++i) {
+    for(std::size_t j = 0; j < parameters.size(); ++j) {
+      if(!parameters[j].name.empty() &&
+         argument.syntax.source_identifier_names[i] == parameters[j].name) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool dependent_class_template_pattern_mismatches_actual(
+    SemanticContext & ctx,
+    const TypePtr & pattern,
+    const TypePtr & actual)
+{
+  void * pattern_template_ptr = nullptr;
+  std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax>
+      pattern_arguments;
+  if(!cpp_decl::named_type_dependent_class_template(
+         pattern,
+         pattern_template_ptr,
+         pattern_arguments) ||
+     !pattern_template_ptr) {
+    return false;
+  }
+  const ClassTemplateDecl * pattern_template =
+      static_cast<const ClassTemplateDecl *>(pattern_template_ptr);
+
+  void * actual_template_ptr = nullptr;
+  std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax>
+      actual_arguments;
+  if(cpp_decl::named_type_dependent_class_template(
+         actual,
+         actual_template_ptr,
+         actual_arguments)) {
+    return !semantic_lookup::same_inline_namespace_class_template_entity(
+        pattern_template,
+        static_cast<const ClassTemplateDecl *>(actual_template_ptr));
+  }
+
+  TypePtr actual_base = strip_top_level_cv(remove_reference_type(actual));
+  ClassInfo * actual_info = ctx.class_info_for_type(actual_base);
+  return !actual_info ||
+         !semantic_lookup::same_inline_namespace_class_template_entity(
+             pattern_template,
+             actual_info->source_template);
+}
+
 bool template_deduction_reason_has_nondeduced_mismatch(SemanticContext & ctx,
                                                        FunctionTemplateDecl & decl,
                                                        const std::vector<ExprInfo> & args)
@@ -1399,6 +1509,11 @@ bool template_deduction_reason_has_nondeduced_mismatch(SemanticContext & ctx,
     if(template_deduction_reason_has_shape_mismatch(decl.parameters,
                                                     pattern,
                                                     actual)) {
+      return true;
+    }
+    if(dependent_class_template_pattern_mismatches_actual(ctx,
+                                                         pattern,
+                                                         actual)) {
       return true;
     }
     const std::string pattern_template = named_template_base_name(pattern);
@@ -2768,6 +2883,39 @@ bool function_call_source_drop_is_internal_member_template_arity_detail(
          drop_reason_is_argument_count_mismatch(drop.reason);
 }
 
+bool function_template_arguments_are_all_source_defaulted(
+    const FunctionBinding * binding)
+{
+  if(!binding || binding->instantiation_arguments.empty()) {
+    return false;
+  }
+  for(std::size_t i = 0; i < binding->instantiation_arguments.size(); ++i) {
+    if(!binding->instantiation_arguments[i].source_defaulted) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool function_call_source_drop_is_conversion_probe_default_constructor_detail(
+    const FunctionBinding * chosen,
+    const FunctionBinding * dropped,
+    const std::string & reason,
+    bool preserve_conversion_semantic_drop_order)
+{
+  return preserve_conversion_semantic_drop_order &&
+         drop_reason_is_argument_count_mismatch(reason) &&
+         chosen &&
+         chosen->is_constructor &&
+         chosen->source_template &&
+         dropped &&
+         dropped->is_constructor &&
+         !dropped->source_template &&
+         !dropped->is_copy_constructor &&
+         !dropped->is_move_constructor &&
+         dropped->params.size() == 1;
+}
+
 void note_function_call_source_event(
     SemanticContext & ctx,
     const std::string & use_location,
@@ -2782,7 +2930,8 @@ void note_function_call_source_event(
     bool constructor_source_location_is_authoritative,
     std::size_t explicit_arg_count,
     std::size_t built_candidate_count,
-    std::size_t source_traversal_order = 0)
+    std::size_t source_traversal_order = 0,
+    bool user_defined_conversion_constructor_source = false)
 {
   const bool trace_source_decision =
       parser_trace::enabled("witness.call");
@@ -3036,9 +3185,24 @@ void note_function_call_source_event(
   if(!template_related) {
     return;
   }
+  const bool selected_source_is_prvalue =
+      selection.index < matches.size() &&
+      matches[selection.index].source_args.size() == 1 &&
+      matches[selection.index].source_args[0].category == VC_PRVALUE;
+  const bool preserve_conversion_semantic_drop_order =
+      user_defined_conversion_constructor_source &&
+      (selected_source_is_prvalue ||
+       function_template_arguments_are_all_source_defaulted(chosen));
   semantic_template_function::FunctionTemplateCallSourceUseRequest source_use;
   source_use.binding = chosen;
+  source_use.preserve_semantic_drop_order =
+      preserve_conversion_semantic_drop_order;
   source_use.source_traversal_order = source_traversal_order;
+  if(source_use.source_traversal_order == 0 &&
+     user_defined_conversion_constructor_source) {
+    source_use.source_traversal_order =
+        source_occurrence_traversal_order(ctx, public_location);
+  }
   source_use.use_location = public_location;
   source_use.template_name = template_name;
   source_use.selected = selected_name;
@@ -3126,6 +3290,13 @@ void note_function_call_source_event(
     }
     const std::string reason =
         function_candidate_rejection_drop_reason(candidate_rejections[i]);
+    if(function_call_source_drop_is_conversion_probe_default_constructor_detail(
+           chosen,
+           built_candidates[i],
+           reason,
+           preserve_conversion_semantic_drop_order)) {
+      continue;
+    }
     if(implicit_assignment_drop_is_represented_by_selected_owner(
            built_candidates[i], reason)) {
       continue;
@@ -5747,9 +5918,18 @@ bool function_template_accepts_argument_count_fast(FunctionTemplateDecl & decl,
   return argument_count <= decl.params_pattern.size();
 }
 
-bool constructor_template_matches_source_args_fast(SemanticContext & ctx,
-                                                   FunctionTemplateDecl & decl,
-                                                   const vector<ExprInfo> & source_args)
+enum class ConstructorTemplateFastMatch
+{
+  Match,
+  ArgumentCountMismatch,
+  NonForwardingRvalueMismatch,
+  TemplateEntityMismatch
+};
+
+ConstructorTemplateFastMatch constructor_template_matches_source_args_fast(
+    SemanticContext & ctx,
+    FunctionTemplateDecl & decl,
+    const vector<ExprInfo> & source_args)
 {
   if(!constructor_template_accepts_argument_count_fast(decl, source_args.size())) {
     if(parser_trace::enabled("template.resolve")) {
@@ -5760,11 +5940,11 @@ bool constructor_template_matches_source_args_fast(SemanticContext & ctx,
             << " args=" << source_args.size();
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
-    return false;
+    return ConstructorTemplateFastMatch::ArgumentCountMismatch;
   }
 
   if(source_args.size() != 1 || decl.params_pattern.size() != 1 || !source_args[0].type) {
-    return true;
+    return ConstructorTemplateFastMatch::Match;
   }
 
   TypePtr pattern_base = strip_top_level_cv(decl.params_pattern[0].second);
@@ -5781,7 +5961,7 @@ bool constructor_template_matches_source_args_fast(SemanticContext & ctx,
             << " category=" << static_cast<int>(source_args[0].category);
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
-    return false;
+    return ConstructorTemplateFastMatch::NonForwardingRvalueMismatch;
   }
 
   TypePtr pattern_object =
@@ -5805,16 +5985,17 @@ bool constructor_template_matches_source_args_fast(SemanticContext & ctx,
             << " arg=" << describe_type(source_args[0].type);
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
-    return compatible;
+    return compatible ? ConstructorTemplateFastMatch::Match :
+                        ConstructorTemplateFastMatch::TemplateEntityMismatch;
   }
 
   const string pattern_template = named_template_base_name(decl.params_pattern[0].second);
   if(pattern_template.empty()) {
-    return true;
+    return ConstructorTemplateFastMatch::Match;
   }
   if(template_base_name_is_direct_template_template_parameter(decl.parameters,
                                                              pattern_template)) {
-    return true;
+    return ConstructorTemplateFastMatch::Match;
   }
 
   string actual_template;
@@ -5829,7 +6010,7 @@ bool constructor_template_matches_source_args_fast(SemanticContext & ctx,
     actual_template = named_template_base_name(source_args[0].type);
   }
   if(actual_template.empty()) {
-    return true;
+    return ConstructorTemplateFastMatch::Match;
   }
 
   // Constructor fast filtering must tolerate injected-class-name spellings in
@@ -5851,7 +6032,8 @@ bool constructor_template_matches_source_args_fast(SemanticContext & ctx,
           << " arg-template=" << actual_template;
     parser_trace::note("template.resolve", std::string(), trace.str());
   }
-  return compatible;
+  return compatible ? ConstructorTemplateFastMatch::Match :
+                      ConstructorTemplateFastMatch::TemplateEntityMismatch;
 }
 
 int compare_template_specialization_preference(const CandidateMatch & current,
@@ -11609,14 +11791,32 @@ void append_constructor_template_candidates(
            ctx, *constructor_templates[i])) {
       continue;
     }
-    if(!constructor_template_matches_source_args_fast(ctx,
-                                                     *constructor_templates[i],
-                                                     source_args)) {
+    const ConstructorTemplateFastMatch fast_match =
+        constructor_template_matches_source_args_fast(
+            ctx,
+            *constructor_templates[i],
+            source_args);
+    if(fast_match != ConstructorTemplateFastMatch::Match) {
+      std::string reason;
+      switch(fast_match) {
+      case ConstructorTemplateFastMatch::ArgumentCountMismatch:
+        reason = constructor_template_argument_count_drop_reason(
+            *constructor_templates[i],
+            source_args.size());
+        break;
+      case ConstructorTemplateFastMatch::NonForwardingRvalueMismatch:
+        reason = "bad_conversion";
+        break;
+      case ConstructorTemplateFastMatch::TemplateEntityMismatch:
+        reason = "non_deduced_mismatch";
+        break;
+      case ConstructorTemplateFastMatch::Match:
+        break;
+      }
       append_template_function_candidate_drop(
           ctx,
           constructor_templates[i],
-          constructor_template_argument_count_drop_reason(*constructor_templates[i],
-                                                         source_args.size()),
+          reason,
           &source_drops);
       continue;
     }
@@ -12403,7 +12603,10 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                         state.source_drops,
                                         options.source_witness_location_is_authoritative,
                                         0,
-                                        state.built_candidates.size());
+                                        state.built_candidates.size(),
+                                        0,
+                                        constructor_selection_is_user_defined_conversion_source(
+                                            options));
       }
       args_out = std::move(state.matches[exact_selection.index].args);
       if(ranks_out) {
@@ -12535,7 +12738,10 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                     state.source_drops,
                                     options.source_witness_location_is_authoritative,
                                     0,
-                                    state.built_candidates.size());
+                                    state.built_candidates.size(),
+                                    0,
+                                    constructor_selection_is_user_defined_conversion_source(
+                                        options));
   }
   args_out = std::move(state.matches[selection.index].args);
   if(ranks_out) {
@@ -13005,7 +13211,10 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
                                         state.source_drops,
                                         options.source_witness_location_is_authoritative,
                                         0,
-                                        state.built_candidates.size());
+                                        state.built_candidates.size(),
+                                        0,
+                                        constructor_selection_is_user_defined_conversion_source(
+                                            options));
       }
       args_out = std::move(state.matches[exact_selection.index].args);
       return chosen;
@@ -13142,7 +13351,10 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
                                     state.source_drops,
                                     options.source_witness_location_is_authoritative,
                                     0,
-                                    state.built_candidates.size());
+                                    state.built_candidates.size(),
+                                    0,
+                                    constructor_selection_is_user_defined_conversion_source(
+                                        options));
   }
   args_out = std::move(state.matches[selection.index].args);
   return chosen;

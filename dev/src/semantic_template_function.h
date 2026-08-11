@@ -26,6 +26,7 @@ struct FunctionTemplateCallSourceUseRequest
 {
   semantic_model::FunctionBinding * binding = nullptr;
   std::size_t source_traversal_order = 0;
+  bool preserve_semantic_drop_order = false;
   std::string use_location;
   std::string template_name;
   std::string selected;

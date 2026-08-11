@@ -3407,6 +3407,142 @@ Phase 5 remains open on the 47 function-call tests and the one class-use test.
 Phase 4 remains open on the lazy-alias lifecycle oracle divergence. Inception
 remains forbidden.
 
+## Typed constructor-rejection checkpoint, 2026-08-11
+
+This Phase 5 slice replaces three generic constructor-candidate fallbacks with
+typed semantic outcomes. The deduction-failure classifier walks dependent
+class-template and alias-template argument carriers to find template-parameter
+uses. If both sides identify class templates, the classifier compares their
+structured declarations with inline-namespace equivalence instead of relying
+on display-name fallback.
+
+The constructor fast filter returns `Match`, `ArgumentCountMismatch`,
+`NonForwardingRvalueMismatch`, or `TemplateEntityMismatch`. Its caller maps
+those results to the public arity, conversion, and non-deduced failure reasons.
+This removes the false `substitution_failure` results for the defaulted member
+call and distinct friend class-template entities, and it changes the rejected
+`weak_ptr` constructor template from a false arity failure to
+`non_deduced_mismatch`.
+
+User-defined conversion construction carries its semantic source order and
+drop-order ownership through the typed function-call request, decision,
+source-use table, and renderer event. A conversion from a prvalue, or a
+constructor template selected entirely from defaulted template arguments,
+publishes its ordered deduction and candidate phases. In that
+same semantic domain, an ordinary zero-explicit-argument constructor is not
+published as an arity failure beside the selected converting constructor
+template. Direct construction and lvalue-deduced conversion keep the existing
+candidate-priority policy. The rule uses value category, template-argument
+provenance, constructor kind, and parameter shape; it does not inspect a
+rendered name, fixture path, source line, or source text.
+
+These changes make four complete outputs exact:
+
+- `pa20/tests/general/400-defaulted-template-member-call-rematerialization.t`;
+- `pa22/tests/general/300-friend-function-template-distinct-class-template-entities.t`;
+- `pa22/tests/spec/300-nested-member-template-definition-parameter-alias-default.t`;
+- `pa23/tests/general/500-weak-ptr-shared-ptr-template-ctor.t`.
+
+The direct-construction, default-argument, and lvalue-deduced constructor
+controls retain exact witness and byte-exact LowIR. The expanded comparison
+reports 1,485 exact outputs, up from 1,481. The 1,530-reference inventory has
+45 known mismatches, no warning output, and no missing actual file.
+Function-call debt is now 23 changed, 18 missing, 13 unexpected, and one
+ordering-only occurrence across 43 tests. Class-use remains one changed row in
+one test, and lifecycle remains the one lazy-alias class-instantiation gap.
+The ordinary and provenance strict runs both report PA19 0, PA20 0, PA22 8,
+PA23 27, and PA24 10 residuals.
+
+The final Homebrew-Clang validation produced these results:
+
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862, including PA30 runtime;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  witness and LowIR files match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,884 records, 5,014 source
+  attempts, and 6,298 lifecycle attempts with no unknown producer and no
+  unexercised producer site;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and tracked structure-size reports match the parent byte
+  for byte.
+
+Function publication ownership remains open. The semantic producer makes
+1,515 attempts for 1,037 inserted rows, including 478 exact duplicates. The
+renderer removes 239 source-defined calls, nine
+location duplicates, three header-pattern rows, and one visible duplicate;
+its legacy drop-order pass rewrites 43 events. The new typed order bit
+narrows that arbitration for the two semantic conversion domains proved here,
+but it is migration scaffolding to delete after the producer owns canonical
+ordering for every call. This checkpoint adds 253 and removes 21 production
+lines; Phase 5 owns that net growth and the final simplification gate.
+
+The ordinary convergence report is
+`/tmp/cppgm-phase5-drop-convergence-20260811.json`, SHA-256
+`a75af0cf11f6c30f149a72aba7e83588f4f692a0007a759edb56cccf110c97cb`.
+The provenance trace directory is
+`/tmp/cppgm-phase5-drop-provenance-trace-20260811`. The provenance analysis
+and correlated convergence reports are
+`/tmp/cppgm-phase5-drop-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase5-drop-provenance-convergence-20260811.json`, with SHA-256
+values
+`079c93e333871ad74e78db94e6fe82151c53f07ec02f5cae81b325b9787b6a1e`
+and
+`b6354c0cab12d0eb08c295fd684e5393bad8b9833bd8704fca87e6168e491baf`.
+The byte-identical ordinary and provenance output manifests both have SHA-256
+`72ce0dd2a807fbe3fdcba1e61e54541b40672d51f1636a7cb6accae24c2367e1`;
+their empty difference has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The strict, broad, and 60-test helper reports are
+`/tmp/cppgm-phase5-drop-strict-20260811.log`,
+`/tmp/cppgm-phase5-drop-broad-20260811.log`, and
+`/tmp/cppgm-phase5-drop-helper-tests-20260811.log`, with SHA-256 values
+`d4f050cc8a663108d4bb86565246035f31cd52489da81943ff11620efd8359bf`,
+`ef5cd67f7ea9c1e84b245b4b9b621ae212b882c47f633a972873b1ac80e205b0`,
+and
+`c4519d5ea01ae0b752cae3cf083beb96ac856296f05d903a00b6ccff48c54d99`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain their parent SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary is 17,193,384 bytes, 4,944 bytes larger than the parent.
+Its Mach-O `__TEXT` segment grows by 4,096 bytes to 13,070,336 bytes;
+`__DATA_CONST` and `__DATA` remain unchanged at 61,440 and 442,368 bytes. It
+contains no witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-phase5-drop-ordinary-20260811`, SHA-256
+`c61e6af17fb95b0fc7a1945d5eaf08743ed27c08435bd83e480c66e86cadc2cf`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.97% | +0.33% | -3.95% | `/tmp/cppgm-phase5-drop-perf-fixed-20260811.txt` |
+| Function-binding parent | +0.17% | -0.74% | +0.05% | `/tmp/cppgm-phase5-drop-perf-parent-20260811.txt` |
+
+The candidate medians are 174,319,837,098 instructions, 759,595,008 bytes
+maximum RSS, and 569,569,280 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-phase5-drop-raw-candidate-20260811.json`, SHA-256
+`1d490f4b497d9727d5a05e03de693a9e6d4841d55cdd77e5de8ad29c3b84f07c`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`5b8eda17719cbdd1686f3702d190cbe87168675086100fd0a10b0ffbcdc2dd52`
+and
+`a8c037d66668bf5ae56abc2a1e23d58271d68de8b56bfe43ba630b5843fe1c5a`.
+The candidate metadata names commit `d87aa8723` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 5 remains open on the 43 function-call tests and the one class-use test.
+Phase 4 remains open on the lazy-alias lifecycle oracle divergence. Inception
+remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
