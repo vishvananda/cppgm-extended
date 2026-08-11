@@ -2742,6 +2742,142 @@ two missing and five unexpected variable-instantiation facts in signature and
 candidate-transaction cases. The class-use divergence and function-call
 inventory remain. Inception remains forbidden.
 
+## Static-value signature-transaction checkpoint, 2026-08-11
+
+This Phase 4 slice closes the remaining seven-fact static-member group by
+separating committed signature dependencies from speculative template and
+conversion probes. A nested function-template signature now collects member
+value dependencies transactionally. The dependencies follow the resulting
+function binding and publish when that binding is acquired or emitted; a
+rejected nested signature does not leak its fixed predicate observations.
+Conversion-function-template target probes use the same transaction and
+publish only a viable candidate for the requested target when no ordinary
+standard conversion already satisfies the request.
+
+Structured dependency discovery now walks concrete components inside an
+otherwise dependent template argument and expands resolved alias-template
+targets without requiring every argument to be nondependent. The scan has an
+alias recursion guard and pauses witness source capture while inspecting the
+target. A concrete class's durable source-member classification distinguishes
+fixed predicates from dependent initializers: fixed sibling predicates remain
+conditional during nested substitution, while a demanded dependent initializer
+can publish the semantic value facts that define it. Full materialization of a
+concrete class also scans the structured declaration signature of method-like
+member templates, excluding their bodies.
+
+Two narrower rules prevent the positive discovery paths from restoring false
+facts. A fixed current-class member used only while materializing a source type
+node does not emit an ordinary lifecycle observation. Function signature
+dependencies bubble through an enclosing collection before publication, so a
+cached signature behaves like a newly instantiated one. These are typed
+semantic decisions; the implementation adds no fixture, name, source-location,
+or source-text filter.
+
+The checkpoint removes these five unexpected variable-instantiation facts:
+
+- `M<int>::v` from
+  `pa20/tests/general/100-lazy-static-value-before-shadowing-typedef.t`;
+- two rejected `is_same` predicates from
+  `pa23/tests/general/400-defaulted-sfinae-conversion-function-template-symbol.t`;
+- `first::is_same<X, int>::value` from
+  `pa23/tests/spec/300-dependent-nontype-result-lexical-template-lookup-sfinae.t`;
+- `has_get<const json_like &, json_like>::value` from
+  `pa23/tests/spec/400-dependent-decltype-member-template-conversion-operator.t`.
+
+It restores both expected definition demands in
+`pa23/tests/general/500-reference-member-dependent-variadic-return.t`:
+`integral_constant<bool, false>::value` and
+`integral_constant<unsigned long, 2>::value`.
+
+Three complete outputs leave the mismatch inventory, with no newly mismatching
+output. Expanded convergence improves from 1,458 to 1,461 matching outputs.
+The current inventory contains 1,530 references, 69 known mismatches, one
+warning output, and no missing actual file. Class-use remains one changed row
+in one test. Function-call inventory remains 36 changed, 18 missing, 13
+unexpected, and one ordering-only occurrence across 55 tests. Lifecycle debt
+falls from 24 to 22 missing facts and from ten to five unexpected facts. It now
+spans 14 tests and retains the one explained additional-definition-demand
+warning.
+
+The final Homebrew-Clang validation records:
+
+- the focused seven-fact set has the expected fact-level result, and all 28
+  nearby regression controls remain exact;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- all 1,530 ordinary and provenance witness sessions complete;
+- all 3,060 ordinary/provenance witness and LowIR files match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,895 records with no
+  unknown producer attempt and no unexercised producer site;
+- lifecycle attempts fall from 6,321 to 6,298 as the five rejected facts are
+  removed and the two dependent-initializer facts are restored;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and structure-size reports match the parent byte for byte.
+
+The focused fact and 28-fixture control artifacts are
+`/tmp/cppgm-seven-facts-dependent-publish.5UGuyy` and
+`/tmp/cppgm-seven-facts-regression-final2.ZYzqDl`. The ordinary convergence
+report is
+`/tmp/cppgm-seven-static-values-convergence-final2-20260811.json`, SHA-256
+`f4cbf5ddcb66121e64e7e376ba50d65e3c49b72770ef97815f25f8a41613d285`.
+The provenance trace directory is
+`/tmp/cppgm-seven-static-values-provenance-final-20260811.ID314X`. The
+provenance analysis and correlated convergence reports are
+`/tmp/cppgm-seven-static-values-provenance-analysis-final-20260811.json` and
+`/tmp/cppgm-seven-static-values-provenance-convergence-final-20260811.json`,
+with SHA-256 values
+`10351e7b56ded2e4e309c912e6100f99b21159272b51d0a3ebf5978c6eaf6bcd`
+and
+`4a722e8692561a49faa48176fc6942012ac34c81625bc466bfcfa3f78d4956cf`.
+The 3,060-file ordinary/provenance output manifest is
+`/tmp/cppgm-seven-static-values-output-manifest-final-20260811.txt`, SHA-256
+`b6fbeb6bf01ab1b25d2bed872a64d64d89ed67ad219d4f5907df81fb7f4c6493`.
+
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain their parent SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+The 60-test helper report is
+`/tmp/cppgm-seven-static-values-helper-tests-20260811.log`, SHA-256
+`48bbbdc24aaa676955756ee6f7ca6f80241b0a93814a4e89b9d906ad767878c0`.
+
+The ordinary binary is 17,182,936 bytes, 15,144 bytes larger than the parent.
+Its Mach-O `__TEXT` segment grows by 8,192 bytes to 13,062,144 bytes;
+`__DATA_CONST` and `__DATA` remain unchanged at 61,440 and 442,368 bytes. It
+contains no witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-seven-static-values-ordinary-20260811`, SHA-256
+`3cb9a38560c3b05d888fd29c6e8034ea8f9ceac4ec1d17e373e775bfc4a4de24`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.96% | -0.48% | -4.00% | `/tmp/cppgm-seven-static-values-perf-fixed-20260811.txt` |
+| Static-member-definition parent | +0.17% | +0.10% | -0.01% | `/tmp/cppgm-seven-static-values-perf-parent-20260811.txt` |
+
+The candidate medians are 174,336,505,809 instructions, 753,442,816 bytes
+maximum RSS, and 569,323,520 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-seven-static-values-raw-candidate-20260811.json`, SHA-256
+`b9e87e3261a8c1042b9bb38e0d61bccecdb16450724b10b2bfba311d741347ab`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`f101e62b07565c1fefa9cfdce9e88a053273140fc7e3a926ae1e77adc1ba8077`
+and
+`a0b51c0713d56ffb559251bb4f081999607f7ca2271aff7b35e680c4fb37ca48`.
+The candidate metadata names commit `a50e3035a` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 4 remains open with 22 missing and five unexpected lifecycle facts
+across 14 tests and one lifecycle warning. The class-use divergence and
+function-call inventory remain. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

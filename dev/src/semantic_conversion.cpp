@@ -18,6 +18,7 @@
 #include "semantic_metrics.h"
 #include "semantic_template_function.h"
 #include "template_api.h"
+#include "template_argument_semantics.h"
 #include "template_instantiation.h"
 
 using namespace std;
@@ -3142,49 +3143,99 @@ bool try_argument_conversion(SemanticContext & ctx,
         for(size_t target_index = 0;
             target_index < conversion_targets.size();
             ++target_index) {
-          TypePtr conversion_target = conversion_targets[target_index];
-          TypePtr target_function_type =
-              build_conversion_function_template_target_type(ctx,
-                                                             template_use_scope,
-                                                             *decl,
-                                                             conversion_target);
-          if(!target_function_type) {
-            continue;
-          }
-
-          semantic_template_function::FunctionTemplateDeduction result;
-          if(!semantic_template_function::deduce_function_template_from_target_type(
-                 ctx, *decl, target_function_type, &template_use_scope, result)) {
-            continue;
-          }
-
+          const TypePtr conversion_target = conversion_targets[target_index];
           FunctionBinding * binding = nullptr;
-          try
+          std::vector<template_model::TemplateValueDependency>
+              candidate_value_dependencies;
+          bool candidate_added = false;
           {
-            binding = semantic_template_function::acquire_function_template_binding(
-                ctx,
-                *decl,
-                result.arguments,
-                &template_use_scope,
-                result.pack_sizes.empty() ? nullptr : &result.pack_sizes,
-                false);
+            const template_argument_semantics::
+                ScopedTemplateMemberValueDependencyCollection
+                    dependency_collection(candidate_value_dependencies);
+            const template_argument_semantics::
+                ScopedTemplateMemberValueDependencyCommitDeferral
+                    dependency_commit_deferral;
+            const template_api::ScopedTemplateWitnessLifecyclePause
+                lifecycle_pause;
+            const TypePtr target_function_type =
+                build_conversion_function_template_target_type(
+                    ctx,
+                    template_use_scope,
+                    *decl,
+                    conversion_target);
+            if(!target_function_type) {
+              continue;
+            }
+
+            semantic_template_function::FunctionTemplateDeduction result;
+            if(!semantic_template_function::deduce_function_template_from_target_type(
+                   ctx, *decl, target_function_type, &template_use_scope, result)) {
+              continue;
+            }
+
+            try
+            {
+              binding = semantic_template_function::acquire_function_template_binding(
+                  ctx,
+                  *decl,
+                  result.arguments,
+                  &template_use_scope,
+                  result.pack_sizes.empty() ? nullptr : &result.pack_sizes,
+                  false);
+            }
+            catch(const TemplateSubstitutionFailure &)
+            {
+              binding = nullptr;
+            }
+            if(binding) {
+              update_conversion_function_template_binding_result(
+                  ctx,
+                  *binding,
+                  conversion_target);
+
+              const size_t candidate_count_before = candidates.size();
+              maybe_add_conversion_function_candidate(
+                  binding,
+                  declared_in ? declared_in : binding->owner_class,
+                  visible.path_access,
+                  visible.path_offset);
+              candidate_added = candidates.size() != candidate_count_before;
+
+              // The signature may be reused from cache, so merge both newly
+              // discovered and previously retained facts onto the semantic
+              // candidate that will cross (or lose) overload selection.
+              const template_argument_semantics::
+                  ScopedTemplateMemberValueDependencyCollection
+                      retained_collection(
+                          binding->witness_signature_value_dependencies);
+              for(size_t dependency_index = 0;
+                  dependency_index < candidate_value_dependencies.size();
+                  ++dependency_index) {
+                (void)template_argument_semantics::
+                    collect_template_member_value_dependency_if_active(
+                        candidate_value_dependencies[dependency_index]);
+              }
+            }
           }
-          catch(const TemplateSubstitutionFailure &)
-          {
-            binding = nullptr;
+          const TypePtr primary_conversion_target =
+              conversion_function_template_deduction_target_type(target);
+          if(binding &&
+             candidate_added &&
+             primary_conversion_target &&
+             type_equals(conversion_target, primary_conversion_target) &&
+             standard_conversion_rank(target, expr) == CR_BAD) {
+            // A viable conversion-template candidate for the requested target
+            // participates in overload ranking even when a better conversion
+            // function ultimately wins.  Alternate reference/object probes
+            // and probes shadowed by an ordinary standard conversion remain
+            // conditional and must not publish their predicate values.
+            template_argument_semantics::note_template_value_dependencies_for_witness(
+                ctx,
+                candidate_value_dependencies);
           }
           if(!binding) {
             continue;
           }
-          update_conversion_function_template_binding_result(ctx,
-                                                             *binding,
-                                                             conversion_target);
-
-          maybe_add_conversion_function_candidate(
-              binding,
-              declared_in ? declared_in : binding->owner_class,
-              visible.path_access,
-              visible.path_offset);
           break;
         }
       }

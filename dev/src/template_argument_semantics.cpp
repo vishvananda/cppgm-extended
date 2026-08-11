@@ -6240,6 +6240,18 @@ int & template_member_value_dependency_collection_pause_depth()
   return depth;
 }
 
+int & template_member_value_dependency_commit_deferral_depth()
+{
+  static thread_local int depth = 0;
+  return depth;
+}
+
+int & template_nested_signature_dependent_value_publication_depth()
+{
+  static thread_local int depth = 0;
+  return depth;
+}
+
 bool collect_template_member_value_dependency_if_active_impl(
     const TemplateValueDependency & dependency)
 {
@@ -7399,19 +7411,27 @@ void append_structured_bool_value_dependencies_in_argument_syntax(
   }
 }
 
+void append_alias_template_target_value_dependencies(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const TemplateIdSyntax & syntax,
+    vector<TemplateValueDependency> & out);
+
 void append_structured_bool_value_dependencies_in_template_id_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const TemplateIdSyntax & syntax,
     vector<TemplateValueDependency> & out)
 {
+  append_alias_template_target_value_dependencies(
+      services, scope, syntax, out);
   for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
     append_structured_bool_value_dependencies_in_argument_syntax(
         services, scope, syntax.argument_syntaxes[i], out);
   }
 }
 
-void append_alias_template_target_value_dependencies_for_qualified_value(
+void append_alias_template_target_value_dependencies(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const TemplateIdSyntax & syntax,
@@ -7429,6 +7449,21 @@ void append_alias_template_target_value_dependencies_for_qualified_value(
      !alias_template->type_id) {
     return;
   }
+  static thread_local set<const AliasTemplateDecl *> active_alias_targets;
+  if(!active_alias_targets.insert(alias_template).second) {
+    return;
+  }
+  struct ActiveAliasTargetGuard
+  {
+    ActiveAliasTargetGuard(set<const AliasTemplateDecl *> & active,
+                           const AliasTemplateDecl * decl)
+      : active(active), decl(decl) {}
+    ~ActiveAliasTargetGuard() { active.erase(decl); }
+    set<const AliasTemplateDecl *> & active;
+    const AliasTemplateDecl * decl;
+  } active_alias_target_guard(active_alias_targets, alias_template);
+  const template_api::ScopedTemplateWitnessSourceCapturePause
+      source_capture_pause;
   const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
       function_call_source_capture_pause;
   const template_api::ScopedTemplateWitnessDeclvalCallSourceCapturePause
@@ -7441,9 +7476,7 @@ void append_alias_template_target_value_dependencies_for_qualified_value(
          syntax.arguments,
          &syntax.argument_syntaxes,
          resolved_arguments,
-         alias_template->declaring_scope) ||
-     template_api::template_arguments_are_dependent(*services.semantic_context,
-                                                    resolved_arguments)) {
+         alias_template->declaring_scope)) {
     return;
   }
 
@@ -7505,7 +7538,7 @@ void append_structured_bool_value_dependencies_for_qualified_value(
            cppast_qualifier_template_id_syntax(node, qualifier_index)) {
       TypePtr owner_type;
       const size_t before = out.size();
-      append_alias_template_target_value_dependencies_for_qualified_value(
+      append_alias_template_target_value_dependencies(
           services,
           scope,
           *qualifier_template_id,
@@ -7645,6 +7678,26 @@ void append_structured_bool_value_dependencies_in_expression_ast_impl(
   try {
     if(expression_ast_mentions_template_dependency(
            services, scope, node, false)) {
+      // A dependent enclosing type or expression can still contain concrete
+      // nested template arguments.  Those subexpressions have already crossed
+      // their own semantic boundary and must not be discarded merely because
+      // a sibling still names a template parameter.
+      if(const TemplateIdSyntax * template_id =
+             cppast_template_id_syntax(node)) {
+        append_structured_bool_value_dependencies_in_template_id_syntax(
+            services, scope, *template_id, out);
+      }
+      for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+        if(const TemplateIdSyntax * qualifier_template_id =
+               cppast_qualifier_template_id_syntax(node, i)) {
+          append_structured_bool_value_dependencies_in_template_id_syntax(
+              services, scope, *qualifier_template_id, out);
+        }
+      }
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        append_structured_bool_value_dependencies_in_expression_ast_impl(
+            services, scope, node.children[i], out);
+      }
       return;
     }
     append_structured_bool_value_dependencies_for_qualified_value(
@@ -7685,6 +7738,10 @@ void note_template_value_dependency_for_witness(
     parser_trace::note("template.resolve", std::string(), trace.str());
   }
   if(dependency.entity.empty() || dependency.decl_location.empty()) {
+    return;
+  }
+  if(template_member_value_dependency_commit_deferral_depth() != 0 &&
+     collect_template_member_value_dependency_if_active_impl(dependency)) {
     return;
   }
   if(template_value_dependency_emission_paused()) {
@@ -7832,6 +7889,29 @@ void note_structured_bool_value_member_if_needed(
   if(definition_demand) {
     request.origin = template_api::TemplateMemberValueInstantiationOrigin::
         DefinitionDemand;
+  }
+  bool publish_dependent_nested_signature_value = false;
+  if(template_nested_signature_dependent_value_publication_active() &&
+     info.source_template) {
+    const auto recorded = services.witness_context.session->
+        source_class_value_dependencies.find(
+            std::make_pair(info.source_template, member.binding->name));
+    publish_dependent_nested_signature_value =
+        recorded != services.witness_context.session->
+                        source_class_value_dependencies.end() &&
+        recorded->second ==
+            template_api::TemplateWitnessSession::SVD_DEPENDENT;
+  }
+  if(publish_dependent_nested_signature_value) {
+    // A dependent source initializer is the predicate being evaluated by the
+    // nested signature.  Publish that definition demand even while fixed
+    // sibling observations remain transactional until substitution succeeds.
+    const ScopedTemplateValueDependencyLifecycleResume lifecycle_resume;
+    template_api::observe_template_member_value_transition(
+        *services.semantic_context,
+        *member.binding,
+        request);
+    return;
   }
   template_api::observe_template_member_value_transition(
       *services.semantic_context,
@@ -14169,6 +14249,45 @@ ScopedTemplateMemberValueDependencyCollectionPause::
   }
 }
 
+ScopedTemplateMemberValueDependencyCommitDeferral::
+ScopedTemplateMemberValueDependencyCommitDeferral(bool active)
+  : active_(active)
+{
+  if(active_) {
+    ++template_member_value_dependency_commit_deferral_depth();
+  }
+}
+
+ScopedTemplateMemberValueDependencyCommitDeferral::
+~ScopedTemplateMemberValueDependencyCommitDeferral()
+{
+  if(active_) {
+    --template_member_value_dependency_commit_deferral_depth();
+  }
+}
+
+ScopedTemplateNestedSignatureDependentValuePublication::
+ScopedTemplateNestedSignatureDependentValuePublication(bool active)
+  : active_(active)
+{
+  if(active_) {
+    ++template_nested_signature_dependent_value_publication_depth();
+  }
+}
+
+ScopedTemplateNestedSignatureDependentValuePublication::
+~ScopedTemplateNestedSignatureDependentValuePublication()
+{
+  if(active_) {
+    --template_nested_signature_dependent_value_publication_depth();
+  }
+}
+
+bool template_nested_signature_dependent_value_publication_active()
+{
+  return template_nested_signature_dependent_value_publication_depth() != 0;
+}
+
 bool collect_template_member_value_dependency_if_active(
     const TemplateValueDependency & dependency)
 {
@@ -14233,11 +14352,6 @@ void append_structured_bool_value_dependencies_in_template_argument_syntax(
          syntax,
          expanded_syntax)) {
     effective_syntax = &expanded_syntax;
-  }
-  if(template_argument_syntax_has_template_dependency(services,
-                                                     scope,
-                                                     *effective_syntax)) {
-    return;
   }
   append_structured_bool_value_dependencies_in_argument_syntax(
       services,
@@ -27970,6 +28084,23 @@ bool argument_syntax_uses_fixed_current_class_value(
           dependent = dependent ||
               recorded->second ==
                   template_api::TemplateWitnessSession::SVD_DEPENDENT;
+        }
+        if(binding->owner_class &&
+           binding->owner_class->source_template &&
+           !qualified_template_member) {
+          const auto source_recorded =
+              witness_session->source_class_value_dependencies.find(
+                  std::make_pair(binding->owner_class->source_template,
+                                 binding->name));
+          if(source_recorded !=
+                 witness_session->source_class_value_dependencies.end()) {
+            matched = matched ||
+                source_recorded->second ==
+                    template_api::TemplateWitnessSession::SVD_FIXED;
+            dependent = dependent ||
+                source_recorded->second ==
+                    template_api::TemplateWitnessSession::SVD_DEPENDENT;
+          }
         }
       }
       if(current_owner_template) {

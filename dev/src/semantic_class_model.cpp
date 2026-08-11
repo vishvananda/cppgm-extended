@@ -12443,6 +12443,7 @@ void finalize_class_constant_members(SemanticContext & ctx,
            !binding.constant_initializer_scope) {
           return false;
         }
+        const ScopedTemplateWitnessLifecycleResume lifecycle_resume;
         return semantic_template_class::note_constant_value_member_instantiations_in_expression(
             ctx,
             *binding.constant_initializer_scope,

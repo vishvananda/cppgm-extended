@@ -10254,6 +10254,37 @@ ClassInfo * instantiate_selected_class_template(
   return info;
 }
 
+namespace {
+
+thread_local int function_template_signature_capture_depth = 0;
+
+class ScopedFunctionTemplateSignatureCapture
+{
+public:
+  explicit ScopedFunctionTemplateSignatureCapture(bool active)
+    : active_(active), nested_(active && function_template_signature_capture_depth != 0)
+  {
+    if(active_) {
+      ++function_template_signature_capture_depth;
+    }
+  }
+
+  ~ScopedFunctionTemplateSignatureCapture()
+  {
+    if(active_) {
+      --function_template_signature_capture_depth;
+    }
+  }
+
+  bool nested() const { return nested_; }
+
+private:
+  bool active_;
+  bool nested_;
+};
+
+}  // namespace
+
 FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                 FunctionTemplateDecl & decl,
                                                 const std::vector<TemplateArgument> & arguments,
@@ -10275,13 +10306,21 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                          (decl.body ? ctx.source_location_for_node(*decl.body)
                                     : std::string()));
   DiagnosticContext::Guard diagnostic_guard(diagnostic_context);
+  const ScopedFunctionTemplateSignatureCapture signature_capture(
+      template_api::current_template_witness_session() != nullptr &&
+      !include_body);
+  const template_argument_semantics::
+      ScopedTemplateNestedSignatureDependentValuePublication
+          nested_signature_dependent_value_publication(
+              signature_capture.nested());
+  const template_api::ScopedTemplateWitnessLifecyclePause
+      nested_signature_lifecycle_pause(signature_capture.nested());
   std::vector<TemplateValueDependency> signature_value_dependencies;
   std::unique_ptr<template_argument_semantics::
                       ScopedTemplateMemberValueDependencyCollection>
       signature_dependency_collection;
   if(template_api::current_template_witness_session() != nullptr &&
-     template_api::template_witness_detail::
-         current_lifecycle_pause_depth_storage() != 0) {
+     !include_body) {
     signature_dependency_collection.reset(
         new template_argument_semantics::
             ScopedTemplateMemberValueDependencyCollection(

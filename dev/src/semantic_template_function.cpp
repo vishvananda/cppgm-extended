@@ -3,12 +3,36 @@
 #include <sstream>
 
 #include "semantic_context.h"
+#include "template_argument_semantics.h"
 #include "template_api.h"
 #include "template_resolution.h"
 
 namespace semantic_template_function {
 
 namespace {
+
+void commit_signature_value_dependencies(
+    SemanticContext & ctx,
+    semantic_model::FunctionBinding * binding)
+{
+  if(!binding || ctx.template_witness_context().session == nullptr) {
+    return;
+  }
+  std::vector<template_model::TemplateValueDependency> publish;
+  for(std::size_t i = 0;
+      i < binding->witness_signature_value_dependencies.size();
+      ++i) {
+    if(template_argument_semantics::
+           collect_template_member_value_dependency_if_active(
+               binding->witness_signature_value_dependencies[i])) {
+      continue;
+    }
+    publish.push_back(binding->witness_signature_value_dependencies[i]);
+  }
+  template_argument_semantics::note_template_value_dependencies_for_witness(
+      ctx,
+      publish);
+}
 
 void clear_deduction(FunctionTemplateDeduction & out)
 {
@@ -439,12 +463,14 @@ semantic_model::FunctionBinding * acquire_function_definition_binding(
     semantic_model::FunctionBinding * binding,
     semantic_model::Scope & use_scope)
 {
-  return acquire_function_binding(
+  binding = acquire_function_binding(
       ctx,
       binding,
       &use_scope,
       template_api::TemplateFunctionBindingAcquisitionCause::None,
       true);
+  commit_signature_value_dependencies(ctx, binding);
+  return binding;
 }
 
 semantic_model::FunctionBinding * acquire_required_function_definition_binding(
@@ -490,6 +516,7 @@ void emit_function_template_call_source_use(
     const FunctionTemplateCallSourceUseRequest & request)
 {
   semantic_model::FunctionBinding * binding = request.binding;
+  commit_signature_value_dependencies(ctx, binding);
   const bool has_explicit_source_target =
       !request.template_name.empty() || !request.selected.empty();
   const bool declval_call =

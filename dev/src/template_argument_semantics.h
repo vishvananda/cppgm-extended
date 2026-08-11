@@ -302,6 +302,29 @@ private:
   bool active_;
 };
 
+class ScopedTemplateMemberValueDependencyCommitDeferral
+{
+public:
+  explicit ScopedTemplateMemberValueDependencyCommitDeferral(bool active = true);
+  ~ScopedTemplateMemberValueDependencyCommitDeferral();
+
+private:
+  bool active_;
+};
+
+class ScopedTemplateNestedSignatureDependentValuePublication
+{
+public:
+  explicit ScopedTemplateNestedSignatureDependentValuePublication(
+      bool active = true);
+  ~ScopedTemplateNestedSignatureDependentValuePublication();
+
+private:
+  bool active_;
+};
+
+bool template_nested_signature_dependent_value_publication_active();
+
 NonTypeArgumentStatus evaluate_non_type_argument_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

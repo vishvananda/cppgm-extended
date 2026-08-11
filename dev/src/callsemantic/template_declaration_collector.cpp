@@ -27,6 +27,7 @@
 #include "template_instantiation.h"
 #include "template_model.h"
 #include "template_scope.h"
+#include "template_services.h"
 #include "types.h"
 #include "witness_api.h"
 
@@ -2619,6 +2620,44 @@ public:
           nullptr,
           nullptr,
           function_template_parse_scope);
+    }
+    if(ctx.template_witness_context().session != nullptr &&
+       method_like_template &&
+       parse_scope->class_info &&
+       parse_scope->class_info->source_template &&
+       parse_scope->class_info->full_member_collection_in_progress &&
+       !parse_scope->class_info->dependent_instantiation) {
+      // Full materialization of a concrete class commits the concrete pieces
+      // of its member-template declarations.  Scan the structured signature
+      // tree so a nondependent nested condition is retained even when a
+      // sibling (such as a variadic return component) remains dependent.
+      vector<template_model::TemplateValueDependency> value_dependencies;
+      vector<CppAstNode> signature_nodes;
+      if(specifiers) {
+        signature_nodes.push_back(*specifiers);
+      }
+      if(declarator) {
+        signature_nodes.push_back(*declarator);
+      }
+      template_api::with_template_services(
+          ctx,
+          [&](template_api::TemplateServices & services)
+          {
+            for(size_t signature_index = 0;
+                signature_index < signature_nodes.size();
+                ++signature_index) {
+              template_argument_semantics::
+                  append_structured_bool_value_dependencies_in_expression_ast(
+                      services,
+                      template_api::make_template_environment(
+                          *function_template_parse_scope),
+                      signature_nodes[signature_index],
+                      value_dependencies);
+            }
+          });
+      template_argument_semantics::note_template_value_dependencies_for_witness(
+          ctx,
+          value_dependencies);
     }
     if(function_template_entity_scope != &scope &&
        !function_template_entity_scope->class_info) {

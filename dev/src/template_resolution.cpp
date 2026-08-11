@@ -13044,6 +13044,14 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       }
       bound_value_type = parameter.value_type;
     }
+    const bool fixed_current_class_source_value =
+        syntax &&
+        template_api::current_source_type_materialization_operation() ==
+            template_api::SourceTypeMaterializationOperation::SourceTypeNode &&
+        template_argument_semantics::
+            argument_syntax_uses_fixed_current_class_value(
+                raw_argument_scope,
+                *syntax);
 
     const auto try_resolve_named_non_type =
         [&](const std::string & candidate_text) -> bool
@@ -13063,7 +13071,9 @@ bool resolve_template_argument(template_api::TemplateServices & services,
           services,
           parameter,
           named_binding);
-      if(services.semantic_context && named_binding) {
+      if(services.semantic_context &&
+         named_binding &&
+         !fixed_current_class_source_value) {
         template_api::observe_template_member_value_transition(
             *services.semantic_context,
             *named_binding);
@@ -13087,7 +13097,9 @@ bool resolve_template_argument(template_api::TemplateServices & services,
           services,
           parameter,
           named_binding);
-      if(services.semantic_context && named_binding) {
+      if(services.semantic_context &&
+         named_binding &&
+         !fixed_current_class_source_value) {
         template_api::observe_template_member_value_transition(
             *services.semantic_context,
             *named_binding);
