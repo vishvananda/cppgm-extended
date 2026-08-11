@@ -4771,6 +4771,7 @@ bool try_analyze_recovered_sizeof_type_id_operand(SemanticContext & ctx,
 }
 
 ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
+                                          Scope & scope,
                                           const ValueBinding & binding,
                                           bool allow_constant_fold = true);
 
@@ -5202,7 +5203,10 @@ ExprInfo make_value_binding_expr(SemanticContext & ctx,
     return make_enumerator_value_expr(node, binding);
   }
   if(binding.kind == ValueBinding::VK_VARIABLE && binding.owner_class) {
-    return make_static_member_variable_expr(ctx, binding, allow_constant_fold);
+    return make_static_member_variable_expr(ctx,
+                                            scope,
+                                            binding,
+                                            allow_constant_fold);
   }
   if(binding.kind == ValueBinding::VK_FIELD) {
     MemberValueLookupResult member;
@@ -5445,12 +5449,28 @@ bool try_analyze_non_type_template_object_pointer_value(
 }
 
 ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
+                                          Scope & scope,
                                           const ValueBinding & binding,
                                           bool allow_constant_fold)
 {
   const bool evaluated_use = !unevaluated_operand_active();
   const bool publish_witness_lifecycle =
       static_member_witness_publication_pause_depth == 0;
+  const FunctionBinding * enclosing_function = current_function_scope(scope);
+  const bool function_definition_value_demand =
+      enclosing_function != nullptr;
+  const auto observe_value_demand = [&]() -> void
+  {
+    template_api::TemplateMemberValueInstantiationRequest request;
+    if(function_definition_value_demand) {
+      request.origin = template_api::TemplateMemberValueInstantiationOrigin::
+          DefinitionDemand;
+    }
+    request.emit_lifecycle_event = publish_witness_lifecycle;
+    template_api::observe_template_member_value_transition(ctx,
+                                                           binding,
+                                                           request);
+  };
   FoldedIntegralLiteral folded_literal;
   const bool force_storage_load =
       storage_backed_primary_template_static_member(binding);
@@ -5461,6 +5481,9 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
      allow_constant_fold &&
      !force_storage_load &&
      can_inline_constexpr_static_member_initializer_without_storage(binding)) {
+    if(function_definition_value_demand) {
+      observe_value_demand();
+    }
     const CppAstNode & payload =
         static_member_initializer_payload(*binding.constant_initializer);
     return ctx.analyze_expression_for_target(*binding.constant_initializer_scope,
@@ -5523,12 +5546,7 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
     }
     if(can_fold) {
       if(witness::source_capture_enabled(ctx)) {
-        template_api::TemplateMemberValueInstantiationRequest request;
-        request.emit_lifecycle_event = publish_witness_lifecycle;
-        template_api::observe_template_member_value_transition(
-            ctx,
-            binding,
-            request);
+        observe_value_demand();
       }
       ExprInfo result;
       result.type = strip_top_level_cv(binding.type);
@@ -5572,6 +5590,10 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
         }
         ctx.track_instantiated_class(binding.owner_class);
         template_api::TemplateMemberValueInstantiationRequest request;
+        if(function_definition_value_demand) {
+          request.origin = template_api::TemplateMemberValueInstantiationOrigin::
+              DefinitionDemand;
+        }
         request.emit_lifecycle_event = publish_witness_lifecycle;
         template_api::observe_template_member_value_transition(
             ctx,
@@ -6255,7 +6277,7 @@ ExprInfo analyze_member_expression(SemanticContext & ctx,
     return make_enumerator_value_expr(node.children[1], *field.binding);
   }
   if(field.binding->kind == ValueBinding::VK_VARIABLE) {
-    return make_static_member_variable_expr(ctx, *field.binding);
+    return make_static_member_variable_expr(ctx, scope, *field.binding);
   }
   if(field.binding->kind != ValueBinding::VK_FIELD) {
     throw NotDataMemberExpressionError("member expression is not a data member");

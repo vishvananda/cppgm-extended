@@ -2599,6 +2599,149 @@ Phase 4 remains open with 37 missing and 11 unexpected lifecycle facts across
 25 tests and one lifecycle warning. The class-use divergence and function-call
 inventory remain. Inception remains forbidden.
 
+## Static-member definition-demand checkpoint, 2026-08-11
+
+This Phase 4 slice separates a static member's semantic-value observation from
+an expression that actually demands the member definition. A typed
+`DefinitionDemand` origin now joins ordinary semantic use and retained
+dependency replay. Definition demands bypass source-type collection filters,
+publish a source-required variable-instantiation transition, and may replay a
+static-member initializer when the enclosing source use is public. A later
+definition demand can upgrade an earlier constant-cache semantic claim exactly
+once, so eager constant folding cannot hide the terminal lifecycle fact.
+
+Qualified constant reads, materialized leaf member reads, and successful
+structured-bool evaluations now send the typed definition demand. Unqualified
+cache reads remain semantic observations; this preserves the suppression of
+direct cached NTTP constants such as `_Rp`, `Limits::max`, and `M<int>::v`.
+Structured-bool dependency discovery no longer recurses through every type
+argument, which removes the false
+`integral_constant<bool, false>::value` publication. The namespace-alias
+fallback scan is also removed so selected/result types do not expose unrelated
+members such as `forward_reference::value`.
+
+Two narrow completion paths cover the remaining positive cases in this group.
+A concrete primary selection reached after reentrant partial matching commits
+the provisional primary's retained value dependencies, because those demands
+participated in choosing the enclosing specialization rather than a rejected
+candidate. A materialized template conversion operator revisits its concrete
+body on the witness path when definition acquisition completed without
+ordinary function output, allowing folded constexpr conversions to expose
+their body-owned value demand. This body revisit is deliberately limited to
+conversion operators; applying it to every acquired function produced
+speculative constructor and function lifecycle facts in the rejected trial.
+
+Five complete outputs leave the mismatch inventory, with no newly mismatching
+output:
+
+- `pa22/tests/general/400-recursive-pack-alias-carries-expanded-type-syntax.t`;
+- `pa23/tests/general/300-boost-enable-if-type-condition-static-keyword-overload.t`;
+- `pa23/tests/general/500-bool-alias-function-template-result-metadata.t`;
+- `pa23/tests/general/500-constructor-pack-default-rewritten-pointer.t`;
+- `pa24/tests/general/500-reentrant-static-query-callable-enable-if-cache.t`.
+
+The variable facts also become exact in
+`pa23/tests/general/400-member-alias-template-template-partial-deduction-owner.t`
+and `pa23/tests/spec/100-explicit-member-template-leading-pack.t`; those two
+outputs retain unrelated class/default-source differences.
+
+Expanded convergence improves from 1,453 to 1,458 matching outputs. The
+current inventory contains 1,530 references, 72 known mismatches, one warning
+output, and no missing actual file. Class-use remains one changed row in one
+test. Function-call inventory remains 36 changed, 18 missing, 13 unexpected,
+and one ordering-only occurrence across 55 tests. Lifecycle debt falls from
+37 to 24 missing facts and from 11 to ten unexpected facts. It now spans 19
+tests and retains the one explained additional-definition-demand warning.
+
+The final Homebrew-Clang validation records:
+
+- the preserved pre-expansion strict manifest passes 1,305/1,305 byte for
+  byte;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- all 1,530 ordinary and diagnostic witness sessions complete;
+- all 3,060 ordinary and diagnostic witness/LowIR files match byte for byte;
+- all 1,530 provenance sessions flush, producing 61,819 records with no
+  unknown producer attempt and no unexercised producer site;
+- lifecycle attempts rise from 6,058 to 6,321 as definition-demand
+  observations replace semantic-only observations;
+- class materialization admits three additional conversion function-body
+  scopes, while public class-use output remains unchanged;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero;
+- template-boundary, semantic-boundary, and structure-size reports match the
+  parent byte for byte.
+
+The ordinary convergence report is
+`/tmp/cppgm-static-member-definition-demand-convergence-final-20260811.json`,
+SHA-256
+`da6daf21353aa5dcce9eaa449446813041f3957523fbd1e8874c658fecade129`.
+The provenance trace directory is
+`/tmp/cppgm-static-member-definition-demand-provenance-final-20260811.ADPkuf`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-static-member-definition-demand-provenance-analysis-final-20260811.json`
+and
+`/tmp/cppgm-static-member-definition-demand-provenance-convergence-final-20260811.json`,
+with SHA-256 values
+`5f3e48c9759ebfaeb82665bef1348f1b658b71f369acf131dbbef4095f0d1c00`
+and
+`39e0b3010613093f326f06d927fc018fcbefa6c9fcf6d57746b7d50639274062`.
+The 3,060-file ordinary/diagnostic manifest is
+`/tmp/cppgm-static-member-definition-demand-output-manifest-final-20260811.txt`,
+SHA-256
+`b9f1861dc198b2e2c65c90866b3e3872a3bdbed0aa8888bf22ad8a3076865770`.
+The broad report is
+`/tmp/cppgm-static-member-definition-demand-broad-20260811.log`, SHA-256
+`707b292e3b7f1da2ba45ac6fa125de4bfde2854f9528ca4f04f6fd2cf239b9bb`.
+
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain their parent SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+The 60-test helper report is
+`/tmp/cppgm-static-member-definition-demand-helper-tests-20260811.log`,
+SHA-256
+`89dca6d45768101e3cdb4abd11a17579376aedc2934d91af7bd609e8749aab43`.
+
+The ordinary binary is 17,167,792 bytes, 200 bytes larger than the parent. Its
+Mach-O `__TEXT`, `__DATA_CONST`, and `__DATA` segments remain unchanged at
+13,053,952, 61,440, and 442,368 bytes. It contains no provenance symbols. The
+frozen binary is
+`/tmp/cppgm-static-member-definition-demand-ordinary-20260811`, SHA-256
+`2115cb1d26c3695d58323b5accb5415e7f0bb54447364fb1557a2efc27236a6b`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.13% | -0.58% | -3.99% | `/tmp/cppgm-static-member-definition-demand-perf-fixed-20260811.txt` |
+| Function-local-lifecycle parent | -0.00% | -0.63% | -0.01% | `/tmp/cppgm-static-member-definition-demand-perf-parent-20260811.txt` |
+
+The candidate medians are 174,034,768,225 instructions, 752,672,768 bytes
+maximum RSS, and 569,384,960 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-static-member-definition-demand-raw-candidate-20260811.json`,
+SHA-256
+`64ddb7d7c63a63e97ff7fced23faf0798b23ba5fce3d72a69ba5fe6ea47bca18`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`e461ae26b2879d00241f435473984d1dd8ca3bfe8f35d5b2c51111196c5d34cf`
+and
+`6826e42a259123648983fbc319d3f6f61dc0fd942950c9d85cc34fb06287b180`.
+The candidate metadata names commit `1baac354a` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 4 remains open with 24 missing and ten unexpected lifecycle facts across
+19 tests and one lifecycle warning. The remaining static-member-only debt is
+two missing and five unexpected variable-instantiation facts in signature and
+candidate-transaction cases. The class-use divergence and function-call
+inventory remain. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

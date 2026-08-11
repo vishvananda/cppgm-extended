@@ -19,6 +19,7 @@
 #include "semantic_expression.h"
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
+#include "semantic_output.h"
 #include "semantic_trace.h"
 #include "semantic_utils.h"
 #include "symbol_linkage.h"
@@ -4993,6 +4994,12 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
   const bool retained_dependency =
       request.origin ==
           TemplateMemberValueInstantiationOrigin::RetainedDependency;
+  const bool definition_demand =
+      request.origin ==
+          TemplateMemberValueInstantiationOrigin::DefinitionDemand;
+  const bool explicit_value_demand =
+      retained_dependency || definition_demand;
+  transition.definition_demand = definition_demand;
   transition.retained_dependency = retained_dependency;
   if(retained_dependency &&
      binding.variable_template_instantiation &&
@@ -5091,7 +5098,7 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
       }
     }
   };
-  if(!retained_dependency &&
+  if(!explicit_value_demand &&
      template_witness_source_type_lookup_active() &&
      template_witness_qualified_member_type_lookup_active()) {
     template_model::TemplateValueDependency dependency;
@@ -5133,7 +5140,7 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
     trace_skip("empty-entity-or-decl");
     return transition;
   }
-  if(!retained_dependency &&
+  if(!explicit_value_demand &&
      source_type_lookup_is_collecting_owner_template_members(ctx, binding)) {
     trace_skip("source-type-owner-collection");
     return transition;
@@ -5172,6 +5179,18 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
     binding.witness_member_value_source_capture_noted = true;
     replay_static_member_definition_once();
   }
+  if(trace_enabled) {
+    std::ostringstream trace;
+    trace << "member-value-instantiation-ready"
+          << " name=" << binding.name
+          << " owner=" << binding.owner_class->qualified_name
+          << " demand="
+          << (definition_demand ? "definition" :
+              (retained_dependency ? "retained" : "semantic"))
+          << " lifecycle-pause="
+          << template_witness_detail::current_lifecycle_pause_depth_storage();
+    parser_trace::note("template.resolve", std::string(), trace.str());
+  }
   transition.transition_kind = TemplateLifecycleTransitionKind::Instantiated;
   return transition;
 }
@@ -5189,6 +5208,8 @@ enum TemplateLifecycleIdentityFlag
   LifecycleIdentityFinalizedClass = 64u,
   LifecycleIdentityTemplateDeclaration = 128u,
 };
+
+constexpr unsigned int LifecycleStateDefinitionDemandClaimed = 1u << 31;
 
 TemplateLifecycleIdentity template_lifecycle_value_identity(
     const semantic_model::ValueBinding * binding,
@@ -5343,9 +5364,20 @@ bool claim_template_lifecycle_transition(
       unsigned int & state =
           session->lifecycle_transition_states[request_identity];
       if((state & bit) != 0) {
+        // An eager constant-cache read can observe the semantic value before
+        // the expression that actually requires the VarDecl definition.  Let
+        // that later definition demand publish the transition exactly once.
+        if(transition.definition_demand &&
+           (state & LifecycleStateDefinitionDemandClaimed) == 0) {
+          state |= LifecycleStateDefinitionDemandClaimed;
+          return true;
+        }
         return false;
       }
       state |= bit;
+      if(transition.definition_demand) {
+        state |= LifecycleStateDefinitionDemandClaimed;
+      }
       return true;
     }
   }
@@ -5803,10 +5835,12 @@ void observe_template_lifecycle_transition(
   event.entity_has_template_identity =
       value_or_owner_has_template_identity(&binding) ||
       transition.variable_template != nullptr;
-  event.detail = transition.retained_dependency ?
+  const bool explicit_value_demand =
+      transition.retained_dependency || transition.definition_demand;
+  event.detail = explicit_value_demand ?
       std::string() :
       created_new_detail(transition.created_new);
-  event.cause = transition.retained_dependency ?
+  event.cause = explicit_value_demand ?
       TemplateLifecycleCause::TrackInstantiation :
       (variable_template_acquisition ?
            transition.cause :
@@ -5814,7 +5848,7 @@ void observe_template_lifecycle_transition(
   event.location = variable_template_acquisition ?
       current_template_log_location(ctx) :
       decl_location;
-  event.public_source_required = transition.retained_dependency;
+  event.public_source_required = explicit_value_demand;
 
   if(variable_template_acquisition &&
      event.cause == TemplateLifecycleCause::TrackInstantiation &&
@@ -5845,8 +5879,8 @@ void observe_template_member_value_transition(
     const TemplateMemberValueInstantiationRequest & request)
 {
   TemplateMemberValueInstantiationRequest effective_request = request;
-  if(effective_request.origin ==
-         TemplateMemberValueInstantiationOrigin::SemanticUse &&
+  if(effective_request.origin !=
+         TemplateMemberValueInstantiationOrigin::RetainedDependency &&
      ctx.template_witness_context().public_source_use_active) {
     effective_request.replay_static_member_initializer = true;
   }
@@ -8732,6 +8766,20 @@ TemplateInstantiationResult acquire_function_binding_in_current_context(
           TemplateLifecycleTransitionKind::DefinitionMaterialized,
           TemplateLifecycleCause::RequireDefinition);
     }
+  }
+  if(definition_lifecycle_requested &&
+     result.definition_materialized &&
+     use_scope &&
+     result.function_binding->is_conversion_operator &&
+     function_binding_has_template_identity(result.function_binding)) {
+    // Definition acquisition can complete without ordinary output emission
+    // (for example, a constexpr conversion folded by its caller).  Revisit
+    // the concrete body on the witness path so value-definition demands in
+    // that body are attributed to the acquired specialization.
+    semantic_output::analyze_function_body_for_witness_semantics(
+        ctx,
+        *use_scope,
+        *result.function_binding);
   }
   const bool declaration_instantiation =
       request.cause ==

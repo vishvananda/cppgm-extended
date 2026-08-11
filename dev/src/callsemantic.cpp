@@ -13986,37 +13986,6 @@ private:
     const bool source_capture_enabled = template_source_capture_enabled();
     const bool explicit_source_analysis =
         source_occurrence_collection;
-    const bool namespace_scope_alias =
-        !decl.declaring_scope || !decl.declaring_scope->class_info;
-    const bool complete_argument_set =
-        std::find_if(arguments.begin(),
-                     arguments.end(),
-                     [](const TemplateArgument & argument)
-                     {
-                       return argument.kind == TemplateArgument::TA_TYPE &&
-                              !argument.type;
-                     }) == arguments.end();
-    if(template_witness_session_ != nullptr &&
-       namespace_scope_alias &&
-       complete_argument_set &&
-       !dependent_arguments &&
-       resolved_alias &&
-       !type_depends_on_template_parameter(resolved_alias)) {
-      template_api::with_template_services(
-          *this,
-          [&](template_api::TemplateServices & services)
-          {
-            for(size_t i = 0; i < arguments.size(); ++i) {
-              if(arguments[i].kind == TemplateArgument::TA_TYPE) {
-                template_argument_semantics::
-                    note_structured_bool_value_member_for_type_if_needed(
-                        services,
-                        template_api::make_template_environment(use_scope),
-                        arguments[i].type);
-              }
-            }
-          });
-    }
     if(raw_use_location.empty() ||
        (!resolved_alias && !resolved.dependent_pattern &&
         !explicit_source_analysis)) {

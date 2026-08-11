@@ -103,7 +103,8 @@ public:
   }
 
   bool materialize_constant_binding_value(ValueBinding & binding,
-                                          constant_eval::ConstexprValue & value)
+                                          constant_eval::ConstexprValue & value,
+                                          bool definition_demand = false)
   {
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
@@ -119,18 +120,26 @@ public:
        binding.owner_class->reentrant_primary_selection) {
       return false;
     }
-    if(value_binding_has_constexpr_value(binding)) {
+    const auto observe_materialized_value = [&]() -> void
+    {
+      template_api::TemplateMemberValueInstantiationRequest request;
+      if(definition_demand) {
+        request.origin = template_api::TemplateMemberValueInstantiationOrigin::
+            DefinitionDemand;
+      }
       template_api::observe_template_member_value_transition(
           *this,
-          binding);
+          binding,
+          request);
+    };
+    if(value_binding_has_constexpr_value(binding)) {
+      observe_materialized_value();
       value = value_binding_constexpr_value(binding);
       attach_constant_object_storage_identity(binding, value);
       return true;
     }
     if(binding.has_constant_value) {
-      template_api::observe_template_member_value_transition(
-          *this,
-          binding);
+      observe_materialized_value();
       value = constant_eval::make_integral_value(binding.constant_value, binding.type);
       attach_constant_object_storage_identity(binding, value);
       return true;
@@ -198,9 +207,7 @@ public:
       binding.has_constant_value = true;
       binding.constant_value = integral;
     }
-    template_api::observe_template_member_value_transition(
-        *this,
-        binding);
+    observe_materialized_value();
     attach_constant_object_storage_identity(binding, value);
     return true;
   }
@@ -801,9 +808,13 @@ public:
              })) {
         MemberValueLookupResult member = lookup_member_value(*info, "value");
         if(member.binding && member.binding->kind != ValueBinding::VK_FIELD) {
+          template_api::TemplateMemberValueInstantiationRequest request;
+          request.origin = template_api::TemplateMemberValueInstantiationOrigin::
+              DefinitionDemand;
           template_api::observe_template_member_value_transition(
               ctx,
-              *member.binding);
+              *member.binding,
+              request);
         }
         template_api::with_template_services(
             ctx,
@@ -826,7 +837,8 @@ public:
     return resolved.selected_value &&
            materialize_constant_binding_value(
                const_cast<ValueBinding &>(*resolved.selected_value),
-                                               out);
+               out,
+               true);
   }
 
   Scope * resolve_qualified_scope_for_node(Scope & scope,

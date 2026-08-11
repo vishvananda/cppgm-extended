@@ -107,6 +107,7 @@ struct TemplateLifecycleTransition
   bool definition_materialized = false;
   bool class_finalized = false;
   bool include_definition_materialized_detail = false;
+  bool definition_demand = false;
   bool retained_dependency = false;
   bool use_declaration_as_event_location = false;
   bool has_visible_owner_argument_count = false;

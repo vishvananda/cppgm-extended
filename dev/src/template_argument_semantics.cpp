@@ -6998,22 +6998,6 @@ void append_structured_bool_value_dependencies_for_class_info(
       append_template_value_dependency(out, dependencies[j]);
     }
   }
-  for(size_t i = 0; i < info.instantiation_arguments.size(); ++i) {
-    const TemplateArgument & argument = info.instantiation_arguments[i];
-    if(argument.kind != TemplateArgument::TA_TYPE || !argument.type) {
-      continue;
-    }
-    ClassInfo * arg_info =
-        template_api::find_named_type_class_info(service_type_system(services).model,
-                                                 argument.type);
-    if(arg_info) {
-      append_structured_bool_value_dependencies_for_class_info(
-          services,
-          *arg_info,
-          out,
-          visiting);
-    }
-  }
   for(size_t i = 0; i < info.bases.size(); ++i) {
     if(info.bases[i].type) {
       append_structured_bool_value_dependencies_for_class_info(
@@ -7805,7 +7789,8 @@ void note_structured_bool_value_dependencies_for_class_info(
 
 void note_structured_bool_value_member_if_needed(
     template_api::TemplateServices & services,
-    const ClassInfo & info)
+    const ClassInfo & info,
+    bool definition_demand = false)
 {
   if(!services.semantic_context ||
      services.witness_context.session == nullptr ||
@@ -7843,15 +7828,22 @@ void note_structured_bool_value_member_if_needed(
   if(!member.binding || member.binding->kind == ValueBinding::VK_FIELD) {
     return;
   }
+  template_api::TemplateMemberValueInstantiationRequest request;
+  if(definition_demand) {
+    request.origin = template_api::TemplateMemberValueInstantiationOrigin::
+        DefinitionDemand;
+  }
   template_api::observe_template_member_value_transition(
       *services.semantic_context,
-      *member.binding);
+      *member.binding,
+      request);
 }
 
 void note_structured_bool_value_member_if_needed(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
-    const TypePtr & type)
+    const TypePtr & type,
+    bool definition_demand = false)
 {
   if(!services.semantic_context ||
      services.witness_context.session == nullptr ||
@@ -7861,7 +7853,10 @@ void note_structured_bool_value_member_if_needed(
   ClassInfo * direct_info =
       template_api::find_named_type_class_info(service_type_system(services).model, type);
   if(direct_info) {
-    note_structured_bool_value_member_if_needed(services, *direct_info);
+    note_structured_bool_value_member_if_needed(
+        services,
+        *direct_info,
+        definition_demand);
   }
   ClassInfo * prepared_info = nullptr;
   {
@@ -7875,7 +7870,10 @@ void note_structured_bool_value_member_if_needed(
     }
   }
   if(prepared_info) {
-    note_structured_bool_value_member_if_needed(services, *prepared_info);
+    note_structured_bool_value_member_if_needed(
+        services,
+        *prepared_info,
+        definition_demand);
     return;
   }
 }
@@ -9620,12 +9618,24 @@ bool lookup_leaf_constant_value(Scope & scope,
                                 const CppAstNode * node,
                                 constant_eval::ConstexprValue & out)
 {
+  const QualifiedName * qualified_node =
+      node && node->kind == CppAstKind::id_expression ?
+          qualified_syntax_if_qualified(*node) :
+          nullptr;
+  const auto observe_value = [&](const ValueBinding & value_binding) -> void
+  {
+    template_api::TemplateMemberValueInstantiationRequest request;
+    if(qualified_node) {
+      request.origin = template_api::TemplateMemberValueInstantiationOrigin::
+          DefinitionDemand;
+    }
+    template_api::observe_template_member_value_transition(
+        *services.semantic_context,
+        value_binding,
+        request);
+  };
   const ValueBinding * binding = nullptr;
   if(!lookup_leaf_value_binding(scope, name, binding)) {
-    const QualifiedName * qualified_node =
-        node && node->kind == CppAstKind::id_expression ?
-            qualified_syntax_if_qualified(*node) :
-            nullptr;
     if(qualified_node) {
       if(lookup_leaf_qualified_value_binding(
              services, scope, *qualified_node, node, binding)) {
@@ -9657,9 +9667,7 @@ bool lookup_leaf_constant_value(Scope & scope,
   }
   if(binding->has_constant_value) {
     if(services.semantic_context) {
-      template_api::observe_template_member_value_transition(
-          *services.semantic_context,
-          *binding);
+      observe_value(*binding);
     }
     out = constant_eval::make_integral_value(
         binding->constant_value,
@@ -9668,9 +9676,7 @@ bool lookup_leaf_constant_value(Scope & scope,
   }
   if(value_binding_has_constexpr_value(*binding)) {
     if(services.semantic_context) {
-      template_api::observe_template_member_value_transition(
-          *services.semantic_context,
-          *binding);
+      observe_value(*binding);
     }
     out = value_binding_constexpr_value(*binding);
     return out.kind != constant_eval::ConstexprValue::CV_INVALID;
@@ -9695,9 +9701,13 @@ bool lookup_leaf_constant_value(Scope & scope,
   }
   if(binding->has_constant_value) {
     if(services.semantic_context) {
+      template_api::TemplateMemberValueInstantiationRequest request;
+      request.origin = template_api::TemplateMemberValueInstantiationOrigin::
+          DefinitionDemand;
       template_api::observe_template_member_value_transition(
           *services.semantic_context,
-          *binding);
+          *binding,
+          request);
     }
     out = constant_eval::make_integral_value(
         binding->constant_value,
@@ -9706,9 +9716,13 @@ bool lookup_leaf_constant_value(Scope & scope,
   }
   if(value_binding_has_constexpr_value(*binding)) {
     if(services.semantic_context) {
+      template_api::TemplateMemberValueInstantiationRequest request;
+      request.origin = template_api::TemplateMemberValueInstantiationOrigin::
+          DefinitionDemand;
       template_api::observe_template_member_value_transition(
           *services.semantic_context,
-          *binding);
+          *binding,
+          request);
     }
     out = value_binding_constexpr_value(*binding);
     return out.kind != constant_eval::ConstexprValue::CV_INVALID;
@@ -10123,6 +10137,17 @@ bool materialize_leaf_member_constant_binding(
     bool * evaluation_incomplete,
     bool note_value_instantiation)
 {
+  const auto observe_definition_demand =
+      [&](const ValueBinding & value_binding) -> void
+      {
+        template_api::TemplateMemberValueInstantiationRequest request;
+        request.origin = template_api::TemplateMemberValueInstantiationOrigin::
+            DefinitionDemand;
+        template_api::observe_template_member_value_transition(
+            *services.semantic_context,
+            value_binding,
+            request);
+      };
   if(binding.kind == ValueBinding::VK_FIELD) {
     return false;
   }
@@ -10142,9 +10167,7 @@ bool materialize_leaf_member_constant_binding(
     if(note_value_instantiation &&
        services.semantic_context &&
        !owner_value_evaluation_incomplete) {
-      template_api::observe_template_member_value_transition(
-          *services.semantic_context,
-          binding);
+      observe_definition_demand(binding);
     }
     if(note_value_instantiation && !owner_value_evaluation_incomplete) {
       note_non_bool_static_value_dependency_for_witness(services, binding);
@@ -10160,9 +10183,7 @@ bool materialize_leaf_member_constant_binding(
     if(note_value_instantiation &&
        services.semantic_context &&
        !owner_value_evaluation_incomplete) {
-      template_api::observe_template_member_value_transition(
-          *services.semantic_context,
-          binding);
+      observe_definition_demand(binding);
     }
     if(note_value_instantiation && !owner_value_evaluation_incomplete) {
       note_non_bool_static_value_dependency_for_witness(services, binding);
@@ -10263,9 +10284,7 @@ bool materialize_leaf_member_constant_binding(
   if(note_value_instantiation &&
      services.semantic_context &&
      !current_owner_value_evaluation_incomplete) {
-    template_api::observe_template_member_value_transition(
-        *services.semantic_context,
-        *active);
+    observe_definition_demand(*active);
   }
   if(note_value_instantiation &&
      !current_owner_value_evaluation_incomplete) {
@@ -14338,7 +14357,7 @@ bool lookup_type_member_constant_value(
   }
 
   if(is_structured_bool_result_member_name(member_name)) {
-    note_structured_bool_value_member_if_needed(services, scope, type);
+    note_structured_bool_value_member_if_needed(services, scope, type, true);
   }
   return true;
 }
@@ -38069,7 +38088,7 @@ NonTypeArgumentStatus evaluate_structured_bool_constant_type(
                                       type,
                                       out,
                                       &structured_evaluation_incomplete)) {
-    note_structured_bool_value_member_if_needed(services, scope, type);
+    note_structured_bool_value_member_if_needed(services, scope, type, true);
     return NT_ARG_EVALUATED;
   }
   if(structured_evaluation_incomplete) {
@@ -38087,7 +38106,7 @@ NonTypeArgumentStatus evaluate_structured_bool_constant_type(
          kStructuredBoolResultMemberName,
          member_value) &&
      constant_eval::constexpr_value_truthy(member_value, truthy)) {
-    note_structured_bool_value_member_if_needed(services, scope, type);
+    note_structured_bool_value_member_if_needed(services, scope, type, true);
     out = truthy;
     return NT_ARG_EVALUATED;
   }

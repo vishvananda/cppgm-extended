@@ -663,6 +663,7 @@ void observe_anonymous_member_class_completion(
 enum class TemplateMemberValueInstantiationOrigin
 {
   SemanticUse,
+  DefinitionDemand,
   RetainedDependency,
 };
 

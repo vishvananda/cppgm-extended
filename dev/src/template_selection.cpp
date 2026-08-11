@@ -796,6 +796,17 @@ ClassSpecializationSelection select_class_specialization(
     if(!selection_deferred) {
       replay_concrete_class_value_dependencies(services, use_scope, arguments);
     }
+    if(!selection_deferred &&
+       saw_reentrant_primary_selection &&
+       services.semantic_context) {
+      // A provisional primary chosen during recursive partial matching is not
+      // a rejected candidate: its value demands are part of deciding the
+      // enclosing specialization.  Commit them when that enclosing selection
+      // reaches a concrete primary result.
+      template_argument_semantics::note_template_value_dependencies_for_witness(
+          *services.semantic_context,
+          selection_value_dependencies);
+    }
     selection.value_dependencies = selection_value_dependencies;
     if(use_selection_cache &&
        !selection_deferred &&
