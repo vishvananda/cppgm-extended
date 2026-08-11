@@ -2208,6 +2208,139 @@ Phase 3 remains open. The only remaining class-use row is the recorded
 Clang/runtime oracle divergence; the next coherent work should move to the
 function-call or lifecycle inventory. Inception remains forbidden.
 
+## Semantic value-entity checkpoint, 2026-08-10
+
+This promotable Phase 4 slice canonicalizes resolved non-type template
+arguments when they identify lifecycle entities. Concrete class
+specialization keys already carried resolved enum values, but their public
+class and variable-instantiation names preferred retained source syntax such
+as `LinkMode`, `BaseHookType`, `ck::by`, and `bi::aq`. An unsigned non-type
+argument whose stored value was `-1` was likewise printed as signed instead
+of according to its semantic type width.
+
+Semantic class and entity output now prefers the retained resolved enumerator
+and formats integral values through their actual unsigned type. Source-binding
+output continues to preserve its source-first spelling. The implementation
+uses the existing structured template arguments and semantic enum facts; it
+adds no source-name, source-location, fixture, rendered-text, or reparsing
+rule.
+
+The checkpoint removes eight missing/unexpected variable-instantiation pairs
+without adding an occurrence. They were distributed across four tests:
+
+- one pair in
+  `pa23/tests/general/400-enum-nttp-cstyle-cast-default-rebind.t`;
+- one pair in
+  `pa23/tests/general/500-owner-enum-nontype-result-sfinae.t`;
+- five pairs in
+  `pa24/tests/general/400-concrete-recursive-node-layout-retry.t`;
+- one pair in
+  `pa24/tests/general/500-constructor-template-default-constraint-previous-param.t`.
+
+Only these four witness files change relative to the semantic static-member
+parent, and all LowIR files remain byte-identical. The first two witnesses are
+now exact. The recursive-node witness retains unrelated missing class and
+function lifecycle facts, while the constructor witness retains an unrelated
+function-call rejection-payload difference.
+
+Expanded convergence improves from 1,442 to 1,444 matching outputs. The final
+inventory has 1,530 references, 86 known mismatches, eight warning outputs,
+and no missing actual file. Class-use remains one changed row in one test.
+Function-call inventory is unchanged at 36 changed, 18 missing, 13
+unexpected, and one ordering-only occurrence across 55 tests. Lifecycle debt
+improves from 55 missing and 27 unexpected facts in 39 tests to 47 missing
+and 19 unexpected facts in 36 tests, plus the same eight explained
+additional-definition-demand warnings.
+
+Correctness and diagnostic evidence from the final Homebrew-Clang builds:
+
+- the preserved strict manifest remains byte-exact at 1,305/1,305;
+- ordinary and provenance compilers produce byte-identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,327 records with no
+  unknown producer and no unexercised producer site;
+- the six-record increase from the immediately preceding diagnostic run is
+  rejected class-materialization decision multiplicity; public output and
+  all class consolidation counts are unchanged;
+- class consolidation keeps 3,000 completed candidates, 3,303 early repeats,
+  355 prepublication merges, 2,645 collected occurrences, and 2,632
+  publications;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the focused convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template and semantic boundary
+  counts are unchanged;
+- the structure-size report is byte-identical to the parent. `Type` remains
+  280 bytes, `TemplateArgument` 136 bytes, `TemplateIdSyntax` 160 bytes,
+  `ClassInfo` 1,136 bytes, and `TemplateLifecycleTransition` 80 bytes.
+
+The ordinary binary is 17,166,600 bytes. Its Mach-O `__TEXT` segment is
+13,053,952 bytes, one page larger than the parent; `__DATA_CONST` remains
+61,440 bytes and `__DATA` remains 442,368 bytes. It contains no provenance
+symbols. The frozen ordinary binary is
+`/tmp/cppgm-semantic-value-entities-final-ordinary-20260810`, SHA-256
+`40f719f21fd20e2ba05f60ef22328cc97194102e92d55ebd038e891bf12c2d1e`.
+
+The final ordinary convergence report is
+`/tmp/cppgm-semantic-value-entities-final-convergence-20260810.json`, SHA-256
+`3249d3e36cc96900a80bd315fd04f760e9db4e3307d83fe3df0e4e0242a2b40e`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-semantic-value-entities-final-provenance-20260810.XuLPWT/provenance-analysis.json`
+and
+`/tmp/cppgm-semantic-value-entities-final-provenance-convergence-20260810.json`,
+with SHA-256 values
+`e7b117282575d93477c1ed95a855f59cb2762cbef95bed495a2b69eff07df821`
+and
+`0a93764ed3175f807676e5b772347c9ee10549dbfd31f9822c5d2bc29953c6b9`.
+The byte-identical ordinary/provenance output manifest is
+`/tmp/cppgm-semantic-value-entities-final-output-manifest-20260810.txt`,
+SHA-256
+`8489f8fe8b9f62b1a21e5ec531d0604c124148cc29f61be64ef120d12a6036ca`.
+The broad report is
+`/tmp/cppgm-semantic-value-entities-broad-20260810.log`, SHA-256
+`f2d0c710e7a61931549ecacfaa1425a73d3f41c702ffca7b1bd01a4ca9599068`.
+
+The materialization, structure-size, and zero-finding text-reparse reports
+retain their parent SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`,
+and
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`.
+The template and semantic boundary reports retain SHA-256 values
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`
+and
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`.
+The 60-test helper report is
+`/tmp/cppgm-semantic-value-entities-helper-tests-20260810.log`, SHA-256
+`4b0b2ee09967b4e688e4fa94a2730de1b3a9d8fcd4c379b84a24d42a9dbba573`.
+
+The final three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.94% | +0.22% | -3.89% | `/tmp/cppgm-semantic-value-entities-final-perf-fixed-20260810.txt` |
+| Semantic static-member parent | +0.22% | -0.60% | +0.01% | `/tmp/cppgm-semantic-value-entities-final-perf-parent-20260810.txt` |
+
+The candidate medians are 174,369,067,851 instructions, 758,771,712 bytes
+maximum RSS, and 569,933,824 bytes peak footprint. Wall time is recorded but
+is not the gate signal. The raw candidate record is
+`/tmp/cppgm-semantic-value-entities-final-raw-candidate-20260810.json`,
+SHA-256
+`f7b88e61064502b07417deee8a85d61e46fb3c40fd54ce728972c694584f0a27`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`e06b85a7efc7ad74a8440c6a27da782c21bbd00b3586c31be1b90c02670e2104`
+and
+`bc987c962335312b252fd96b15694bbb60a1840c695e0322b1446445929f26b6`.
+The candidate metadata names commit `e54dfe019` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 4 remains open. Its lifecycle inventory still contains 47 missing and
+19 unexpected terminal facts across 36 tests, with eight recorded
+additional-definition-demand warnings. The single recorded class-use oracle
+divergence and function-call inventory also remain. Inception remains
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

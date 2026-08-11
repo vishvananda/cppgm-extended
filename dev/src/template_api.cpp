@@ -3981,6 +3981,13 @@ bool class_template_mangle_info_contains_default_elided_type_for_witness(
     const cpp_decl::ClassTemplateSpecializationMangleInfo & info,
     unsigned depth);
 
+namespace {
+
+std::string unsigned_integral_witness_value_text(
+    const template_model::TemplateArgument & arg);
+
+}  // namespace
+
 std::string witness_specialization_name_for_visible_args(
     SemanticContext & ctx,
     const std::string & name,
@@ -3997,15 +4004,15 @@ std::string witness_specialization_name_for_visible_args(
        arguments[i].type) {
       out << default_elided_type_argument_text(ctx, arguments[i].type);
     } else {
-      const std::string enum_source_text =
-          source_spelled_enum_witness_argument_text(arguments[i]);
-      if(!enum_source_text.empty()) {
-        out << enum_source_text;
+      const std::string retained_enum_text =
+          retained_enum_witness_argument_text(ctx, arguments[i]);
+      if(!retained_enum_text.empty()) {
+        out << retained_enum_text;
       } else {
-        const std::string retained_enum_text =
-            retained_enum_witness_argument_text(ctx, arguments[i]);
-        if(!retained_enum_text.empty()) {
-          out << retained_enum_text;
+        const std::string enum_source_text =
+            source_spelled_enum_witness_argument_text(arguments[i]);
+        if(!enum_source_text.empty()) {
+          out << enum_source_text;
         } else {
           const std::string object_pointer_text =
               object_pointer_witness_argument_text(arguments[i]);
@@ -4022,12 +4029,18 @@ std::string witness_specialization_name_for_visible_args(
               if(!character_text.empty()) {
                 out << character_text;
               } else {
-                out << template_model::template_argument_text(
-                    arguments[i],
-                    [&ctx](const cpp_decl::TypePtr & type)
-                    {
-                      return default_elided_type_argument_text(ctx, type);
-                    });
+                const std::string unsigned_text =
+                    unsigned_integral_witness_value_text(arguments[i]);
+                if(!unsigned_text.empty()) {
+                  out << unsigned_text;
+                } else {
+                  out << template_model::template_argument_text(
+                      arguments[i],
+                      [&ctx](const cpp_decl::TypePtr & type)
+                      {
+                        return default_elided_type_argument_text(ctx, type);
+                      });
+                }
               }
             }
           }
@@ -4536,14 +4549,18 @@ std::string class_template_mangle_info_witness_text_impl(
           default_elided_type_argument_text(ctx, argument.type));
       continue;
     }
+    const std::string retained_enum_text =
+        retained_enum_witness_argument_text(ctx, argument);
     const std::string enum_source_text =
         source_spelled_enum_witness_argument_text(argument);
+    if(!source_binding && !retained_enum_text.empty()) {
+      out << retained_enum_text;
+      continue;
+    }
     if(!enum_source_text.empty()) {
       out << enum_source_text;
       continue;
     }
-    const std::string retained_enum_text =
-        retained_enum_witness_argument_text(ctx, argument);
     if(!retained_enum_text.empty()) {
       out << retained_enum_text;
       continue;
@@ -4558,6 +4575,12 @@ std::string class_template_mangle_info_witness_text_impl(
         typed_character_witness_argument_text(argument, false);
     if(!character_text.empty()) {
       out << character_text;
+      continue;
+    }
+    const std::string unsigned_text =
+        unsigned_integral_witness_value_text(argument);
+    if(!source_binding && !unsigned_text.empty()) {
+      out << unsigned_text;
       continue;
     }
     out << template_model::template_argument_text(
