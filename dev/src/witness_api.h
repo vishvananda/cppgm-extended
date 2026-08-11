@@ -261,6 +261,7 @@ struct ClassUseEmitRequest
   uint32_t source_occurrence_id = 0;
   std::size_t source_traversal_order = 0;
   semantic_model::ClassTemplateDecl * semantic_template = nullptr;
+  const semantic_model::ClassInfo * semantic_instance = nullptr;
   std::string semantic_specialization_key;
   std::string location;
   bool use_anchor_present = false;
@@ -279,6 +280,10 @@ struct ClassUseEmitRequest
   // has a corresponding variable-instantiation transition.
   const semantic_model::ClassInfo * static_member_owner = nullptr;
   const cpp_decl::Type * static_member_owner_type = nullptr;
+  // Reference resolution can select a partial before its definition is
+  // instantiated. Nested source arguments defer visibility until the final
+  // semantic graph proves that the selected instance is an enclosing base.
+  bool nested_partial_selection_visibility_deferred = false;
   bool record_during_source_capture_pause = false;
 };
 

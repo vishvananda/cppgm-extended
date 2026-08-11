@@ -1691,6 +1691,117 @@ three class ordering cases remain. Partial-selection payloads and dependent
 pack spellings are still the next class-use clusters. Inception remains
 forbidden.
 
+## Materialized nested partial-selection checkpoint, 2026-08-10
+
+The patched Clang witness path resolves a nested class-template-id through its
+`ClassTemplateSpecializationDecl`. It reports a partial specialization only
+after that specialization declaration has been instantiated from the partial.
+CPPGM selected the matching partial earlier, while resolving the reference.
+Publishing that eager selection immediately exposed a partial for identity-only
+uses where Clang still reported the primary template.
+
+Nested source-argument requests now retain their semantic instance and defer
+partial-selection visibility until final class-use collection. Collection
+builds one index of the direct semantic base instances present in the pending
+source graph. A deferred selection remains partial when that specialization is
+materialized as an enclosing source class's base; otherwise the published use
+is demoted to the primary template and its partial bindings are removed. The
+same specialization identity can make the partial visible across occurrences,
+matching Clang's declaration-level state. The path uses semantic instance and
+base relationships only; it does not inspect template names, fixture paths,
+source locations, or source text.
+
+Exactly two expanded witness outputs change from the canonical nested parameter
+binding checkpoint, and both become byte-exact:
+
+- `pa24/tests/specialization/400-defaulted-nested-class-argument-partial-specialization.t`;
+- `pa24/tests/specialization/400-dependent-nested-nontype-partial-specialization.t`.
+
+Three focused controls remain byte-exact, including nested partial matches used
+only through a pointer, a type-identity argument, or another non-base source
+position. No LowIR, stdout, stderr, or exit-status file changes, and no
+previously exact witness regresses. Expanded convergence improves from 1,432
+to 1,434 matching outputs. Changed class-use rows fall from seven to five and
+affected tests fall from 12 to ten; the two unexpected rows and three ordering
+cases remain. Function-call and lifecycle inventories are unchanged.
+
+Correctness and diagnostic evidence from the final Homebrew-Clang builds:
+
+- the preserved strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence passes 1,434/1,530, leaving 96 known mismatches;
+- ordinary and provenance compilers produce identical witness and LowIR output
+  for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,346 records with no unknown
+  producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862 on the first conservative
+  `4 x 4` run;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper suites pass 60/60;
+- both static materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero;
+- the structure-size report is byte-identical to the parent. `Type` remains
+  280 bytes, `TemplateArgument` 136 bytes, `TemplateIdSyntax` 160 bytes, and
+  `ClassInfo` 1,136 bytes.
+
+The boundary reports also retain their parent counts: four service adapters,
+two service bundles, 15 direct semantic-service accesses, 115 text-recovery
+bridges, 65 canonical-key metadata sites, 140 witness source-location sites,
+and 197 mixed `callsemantic.cpp` exceptions on the template side; five
+output-readiness queries, ten template-service mentions, and nine internal
+header sites on the semantic side.
+
+The ordinary binary is 17,155,776 bytes, 232 bytes larger than the parent. Its
+Mach-O loadable segments are unchanged: `__TEXT` is 13,045,760 bytes,
+`__DATA_CONST` is 61,440 bytes, and `__DATA` is 442,368 bytes. The increase is
+confined to link-edit/debug metadata, and the ordinary binary contains no
+provenance symbols.
+
+The final ordinary convergence report is
+`/tmp/cppgm-nested-partial-base-expanded2-convergence-20260810.json`, SHA-256
+`3bdd078fa7d2d2486792b0c1833fd0993090a098e706595f7d7727b1c27df41c`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-nested-partial-base-provenance-final-20260810/provenance-analysis.json`
+and
+`/tmp/cppgm-nested-partial-base-provenance-final-20260810/convergence.json`,
+with SHA-256 values
+`59c865c604ef019ba8453d7ad278c54b682fd2e58fe1c3b98c4e6e0d516b50b0`
+and
+`48597a397e664a9a4efae558925085f926806da5d94abd7b683a9079bb465be0`.
+The byte-identical ordinary/provenance output manifest is
+`/tmp/cppgm-nested-partial-base-output-manifest-20260810.txt`, SHA-256
+`3aa8a4b5a614c49d54f990f0015be2d82f36bec896553c0c49ae665e199008`.
+The broad report is
+`/tmp/cppgm-nested-partial-base-broad-final-20260810.log`, SHA-256
+`4f27fd87b43730307b07a833ba928215f2e325966f0a7a194051365755fa140f`.
+The materialization and structure-size reports remain byte-identical to the
+parent at SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The final three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.04% | -0.45% | -3.93% | `/tmp/cppgm-nested-partial-base-vs-fixed-final-20260810.json` |
+| Canonical nested binding parent | -0.03% | -1.55% | -0.03% | `/tmp/cppgm-nested-partial-base-vs-parent-20260810.json` |
+
+The raw candidate record has SHA-256
+`1186edaaade22cf51eda7c151fb0da47c3eb808d29acf15276f682de9f8b28e9`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`0fc54708f916044429a1026d4a17ccd359264c1e924c98d2cd0722f7d8aae9d9`
+and
+`783715117b8e0d585572d39bbee2abcabe2272aaaadb507688d4d24e513ca434`.
+The candidate metadata names commit `47484f893` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 3 remains open. Five changed class rows, two unexpected class rows, and
+three class ordering cases remain. Dependent pack spellings are the next
+coherent class-use cluster. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

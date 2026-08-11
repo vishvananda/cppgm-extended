@@ -12020,6 +12020,24 @@ private:
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
     std::size_t published_occurrences = 0;
 #endif
+    unordered_set<const ClassInfo *> semantic_base_instances;
+    for(std::size_t candidate_index = 0;
+        candidate_index < resolved_source_state_->pending_class_uses.size();
+        ++candidate_index) {
+      const ClassInfo * const enclosing =
+          resolved_source_state_->pending_class_uses[candidate_index].
+              semantic_instance;
+      if(!enclosing) {
+        continue;
+      }
+      for(std::size_t base_index = 0;
+          base_index < enclosing->bases.size();
+          ++base_index) {
+        if(enclosing->bases[base_index].type) {
+          semantic_base_instances.insert(enclosing->bases[base_index].type);
+        }
+      }
+    }
     for(std::size_t i = 0;
         i < resolved_source_state_->pending_class_uses.size();
         ++i) {
@@ -12035,6 +12053,19 @@ private:
         request.role = witness::SourceUseRole::QualifierUse;
       }
       ClassTemplateDecl * const origin = request.semantic_template;
+      if(request.nested_partial_selection_visibility_deferred &&
+         semantic_base_instances.count(request.semantic_instance) == 0) {
+        request.selection = witness::SourceSelectionKind::Primary;
+        request.specialization_bindings.clear();
+        template_api::ClassSpecializationSelection primary_selection;
+        primary_selection.kind = template_api::MS_PRIMARY;
+        primary_selection.class_node = origin ? origin->class_node : nullptr;
+        primary_selection.parameters = origin ? &origin->parameters : nullptr;
+        witness::set_selected_decl_anchor(
+            request.selected_decl_location,
+            request.selected_decl_anchor,
+            class_use_selected_decl_anchor(origin, primary_selection));
+      }
       if(origin &&
          request.selection == witness::SourceSelectionKind::Primary &&
          !request.semantic_specialization_key.empty()) {
@@ -21591,6 +21622,7 @@ private:
           resolved.source_syntax && resolved.source_syntax->has_source_token_span ?
               resolved.source_syntax->source_token_start + 1 : 0;
       request.semantic_template = class_template;
+      request.semantic_instance = instance;
       request.semantic_specialization_key = resolved.instantiation_key ?
           *resolved.instantiation_key : template_args_identity_key(arguments);
       request.location = use_location;
@@ -21722,12 +21754,6 @@ private:
         resolved.source_is_nested_template_argument &&
         !resolved.source_is_qualified_member_owner &&
         selection.kind == template_api::MS_PARTIAL_SPECIALIZATION;
-    if(nested_partial_source_argument) {
-      visible_selection.kind = template_api::MS_PRIMARY;
-      visible_selection.class_node = class_template->class_node;
-      visible_selection.parameters = &class_template->parameters;
-      visible_selection.arguments = arguments;
-    }
 
     const witness::TemplateWitnessSourceAnchor selected_decl_anchor =
         class_use_selected_decl_anchor(class_template, visible_selection);
@@ -21746,6 +21772,7 @@ private:
         resolved.source_syntax && resolved.source_syntax->has_source_token_span ?
             resolved.source_syntax->source_token_start + 1 : 0;
     request.semantic_template = class_template;
+    request.semantic_instance = instance;
     request.semantic_specialization_key = resolved.instantiation_key ?
         *resolved.instantiation_key : template_args_identity_key(arguments);
     request.location = use_location;
@@ -21793,8 +21820,7 @@ private:
         "defaulted",
         true,
         class_template->declaring_scope);
-    if(!nested_partial_source_argument &&
-       selection.parameters &&
+    if(selection.parameters &&
        selection.parameters != &class_template->parameters) {
       template_api::append_template_witness_source_bindings(
           *this,
@@ -21807,6 +21833,8 @@ private:
     }
     request.ownership = resolved.source_ownership;
     request.role = resolved.source_role;
+    request.nested_partial_selection_visibility_deferred =
+        nested_partial_source_argument;
     if(declaration_type_use || definition_pattern_use) {
       request.origin =
           witness::ClassUseEmissionOrigin::DeclarationTypeSource;
