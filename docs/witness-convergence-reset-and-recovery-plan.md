@@ -1584,6 +1584,113 @@ three class ordering cases remain. Partial-selection payloads and dependent
 pack spellings are the next coherent class-use clusters. Inception remains
 forbidden.
 
+## Canonical nested parameter binding checkpoint, 2026-08-10
+
+The retained current-specialization path already canonicalized a template
+parameter when it was the complete type argument. It stopped at an enclosing
+class-template specialization, however. Out-of-class partial-specialization
+definitions therefore exposed lexical names such as `Pair<Key, Value>` and
+`V<A>` in their first owner binding, while a later occurrence of the same
+owner used the stable `type-parameter-0-*` identity.
+
+The same recursive canonicalizer now consumes both structured class-type
+carriers: concrete specialization mangle metadata and retained dependent
+class-template metadata. It walks semantic type and value arguments, matches
+parameters by placeholder identity, preserves written non-parameter
+arguments, and omits retained defaulted arguments. The dependent carrier is
+converted according to its stored argument kind and value facts. The path
+does not parse source text or select behavior by template name, fixture, or
+source location.
+
+Exactly two expanded witness outputs change from the semantic source-binding
+checkpoint, and both become byte-exact:
+
+- `pa22/tests/general/100-partial-specialization-member-typedef-outdef.t`;
+- `pa22/tests/general/100-partial-static-out-of-class-dependent-return-definition.t`.
+
+No LowIR, stdout, stderr, or exit-status file changes, and no previously exact
+witness regresses. Expanded convergence improves from 1,430 to 1,432 matching
+outputs. Changed class-use rows fall from nine to seven and affected tests
+fall from 14 to 12; the two unexpected rows and three ordering cases remain.
+Function-call and lifecycle inventories are unchanged.
+
+Correctness and diagnostic evidence from the final Homebrew-Clang builds:
+
+- the preserved strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence passes 1,432/1,530, leaving 98 known mismatches;
+- ordinary and provenance compilers produce identical witness and LowIR
+  output for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,346 records with no
+  unknown producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862 on the first conservative
+  `4 x 4` run;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, semantic-boundary, and class-audit helper suites pass 60/60;
+- both static materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero;
+- the structure-size report is byte-identical to the parent. `Type` remains
+  280 bytes, `TemplateArgument` 136 bytes, `TemplateIdSyntax` 160 bytes, and
+  `ClassInfo` 1,136 bytes.
+
+The boundary reports also retain their parent counts: four service adapters,
+two service bundles, 15 direct semantic-service accesses, 115 text-recovery
+bridges, 65 canonical-key metadata sites, 140 witness source-location sites,
+and 197 mixed `callsemantic.cpp` exceptions on the template side; five
+output-readiness queries, ten template-service mentions, and nine internal
+header sites on the semantic side.
+
+The ordinary binary is 17,155,544 bytes, 4,384 bytes larger than the parent.
+Its Mach-O `__TEXT` segment grows by one 4,096-byte page to 13,045,760 bytes;
+`__DATA_CONST` remains 61,440 bytes and `__DATA` remains 442,368 bytes. The
+ordinary binary contains no provenance symbols.
+
+The final ordinary convergence report is
+`/tmp/cppgm-placeholder-canonical-final-convergence-20260810.json`, SHA-256
+`e4675c78eb768c3ee0d4c0277bf4f4ef6588a7c7955adb5b8c2a746993306fc2`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-placeholder-canonical-provenance-final2-20260810.p0DEy4/provenance-analysis.json`
+and
+`/tmp/cppgm-placeholder-canonical-provenance-final2-20260810.p0DEy4/convergence.json`,
+with SHA-256 values
+`0f5c6bbe6ef50dceb9224271759db0a50f3174ec0e795b4341f53495860f0d16`
+and
+`83ba218ee8c7d06ccfb627942fe79a529f290793dab810488adc2b4dac421f9e`.
+The byte-identical ordinary/provenance output manifest is
+`/tmp/cppgm-placeholder-canonical-final-output-manifest-20260810.txt`, SHA-256
+`df7e0751d8efae599375411575f1ab6a67fab199c3e1896b9176377a874ccf7a`.
+The broad report is
+`/tmp/cppgm-placeholder-canonical-broad-20260810.log`, SHA-256
+`a28c59811cdf1fa8d23568f611809709796ff3d26a998261a36517ace1a1ffdf`.
+The materialization and structure-size reports remain byte-identical to the
+parent at SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The final three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.02% | +1.11% | -3.90% | `/tmp/cppgm-placeholder-canonical-final-vs-fixed-20260810.json` |
+| Semantic source-binding parent | -0.27% | +1.42% | +0.00% | `/tmp/cppgm-placeholder-canonical-final-vs-parent-20260810.json` |
+
+The raw candidate record has SHA-256
+`20e56ef4bcddb688fdb1abfadae812043d50c4ecfd4c4c34fd5e1748b176337f`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`7ba5ba3b708bf9f9934c2aa7910ce9e59a13b077fc520945d0843c10fac8281b`
+and
+`f4b0275409f229d7ccde315877f3740350e877da6caae741db0b64d1de86e1aa`.
+The candidate metadata names commit `5546143b9` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 3 remains open. Seven changed class rows, two unexpected class rows, and
+three class ordering cases remain. Partial-selection payloads and dependent
+pack spellings are still the next class-use clusters. Inception remains
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

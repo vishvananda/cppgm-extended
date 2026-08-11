@@ -20749,35 +20749,159 @@ private:
     }
   }
 
-  bool type_argument_template_parameter_witness_name(
+  bool canonical_template_parameter_type_witness_text(
       const TypePtr & type,
       const std::vector<TemplateParameterInfo> & canonical_parameters,
-      std::string & out) const
+      std::string & out,
+      unsigned depth = 0)
   {
-    if(!type) {
+    if(!type || depth > 8) {
       return false;
     }
     switch(type->kind) {
     case Type::TK_NAMED:
-      if(type->named_semantic_kind != Type::NSK_TEMPLATE_PARAMETER) {
+      if(type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER) {
+        for(std::size_t i = 0; i < canonical_parameters.size(); ++i) {
+          const TemplateParameterInfo & parameter = canonical_parameters[i];
+          if(parameter.kind != TemplateParameterInfo::TP_TYPE) {
+            continue;
+          }
+          if(type->named_key == parameter.placeholder_key) {
+            out = stable_template_parameter_witness_name(parameter, i);
+            return true;
+          }
+        }
         return false;
       }
-      for(std::size_t i = 0; i < canonical_parameters.size(); ++i) {
-        const TemplateParameterInfo & parameter = canonical_parameters[i];
-        if(parameter.kind != TemplateParameterInfo::TP_TYPE) {
-          continue;
+      if(std::shared_ptr<const ClassTemplateSpecializationMangleInfo>
+             mangle_info =
+                 named_type_class_template_specialization_mangle_info_const(
+                     type)) {
+        if(mangle_info->template_name.empty()) {
+          return false;
         }
-        if(type->named_key == parameter.placeholder_key) {
-          out = stable_template_parameter_witness_name(parameter, i);
+        std::size_t visible_count = mangle_info->arguments.size();
+        while(visible_count > 0 &&
+              mangle_info->arguments[visible_count - 1].source_defaulted) {
+          --visible_count;
+        }
+        bool canonicalized = false;
+        std::ostringstream rendered;
+        const ClassTemplateDecl * nested_template =
+            static_cast<const ClassTemplateDecl *>(
+                mangle_info->class_template_decl);
+        if(nested_template) {
+          rendered << template_api::class_template_witness_qualified_name(
+              *this, *nested_template);
+        } else {
+          if(!mangle_info->template_scope_prefix.empty()) {
+            rendered << mangle_info->template_scope_prefix << "::";
+          }
+          rendered << mangle_info->template_name;
+        }
+        rendered << "<";
+        for(std::size_t i = 0; i < visible_count; ++i) {
+          if(i != 0) {
+            rendered << ", ";
+          }
+          const TemplateArgument & argument = mangle_info->arguments[i];
+          std::string argument_text;
+          if(argument.kind == TemplateArgument::TA_TYPE &&
+             canonical_template_parameter_type_witness_text(
+                 argument.type,
+                 canonical_parameters,
+                 argument_text,
+                 depth + 1)) {
+            canonicalized = true;
+          } else if(argument.kind == TemplateArgument::TA_VALUE &&
+                    value_argument_template_parameter_witness_name(
+                        argument,
+                        canonical_parameters,
+                        argument_text)) {
+            canonicalized = true;
+          } else {
+            argument_text =
+                template_api::template_witness_source_argument_text(
+                    *this, argument);
+          }
+          rendered << argument_text;
+        }
+        rendered << ">";
+        if(canonicalized) {
+          out = rendered.str();
+          return true;
+        }
+      }
+      if(type->named_rare().named_dependent_class_template_decl) {
+        const ClassTemplateDecl & nested_template =
+            *static_cast<const ClassTemplateDecl *>(
+                type->named_rare().named_dependent_class_template_decl);
+        const vector<DependentAliasTemplateArgumentSyntax> &
+            dependent_arguments =
+                type->named_rare().named_dependent_class_arguments;
+        std::size_t visible_count = dependent_arguments.size();
+        while(visible_count > 0 &&
+              dependent_arguments[visible_count - 1].source_defaulted) {
+          --visible_count;
+        }
+        bool canonicalized = false;
+        std::ostringstream rendered;
+        rendered << template_api::class_template_witness_qualified_name(
+            *this, nested_template) << "<";
+        for(std::size_t i = 0; i < visible_count; ++i) {
+          if(i != 0) {
+            rendered << ", ";
+          }
+          const DependentAliasTemplateArgumentSyntax & source_argument =
+              dependent_arguments[i];
+          std::string argument_text;
+          if(source_argument.type &&
+             canonical_template_parameter_type_witness_text(
+                 source_argument.type,
+                 canonical_parameters,
+                 argument_text,
+                 depth + 1)) {
+            canonicalized = true;
+          } else {
+            TemplateArgument argument;
+            argument.kind =
+                source_argument.has_non_type_value ||
+                source_argument.dependent_value ||
+                source_argument.value_binding ||
+                source_argument.function_value ?
+                TemplateArgument::TA_VALUE : TemplateArgument::TA_TYPE;
+            argument.type = source_argument.type;
+            argument.text = source_argument.text;
+            argument.value = source_argument.value;
+            argument.dependent = source_argument.dependent_value ||
+                (source_argument.type &&
+                 type_depends_on_template_parameter(source_argument.type));
+            argument.source_defaulted = source_argument.source_defaulted;
+            if(argument.kind == TemplateArgument::TA_VALUE &&
+               value_argument_template_parameter_witness_name(
+                   argument,
+                   canonical_parameters,
+                   argument_text)) {
+              canonicalized = true;
+            } else {
+              argument_text =
+                  template_api::template_witness_source_argument_text(
+                      *this, argument);
+            }
+          }
+          rendered << argument_text;
+        }
+        rendered << ">";
+        if(canonicalized) {
+          out = rendered.str();
           return true;
         }
       }
       return false;
 
     case Type::TK_CV:
-      if(!type_argument_template_parameter_witness_name(type->inner,
-                                                        canonical_parameters,
-                                                        out)) {
+      if(!canonical_template_parameter_type_witness_text(
+             type->inner, canonical_parameters, out, depth + 1)) {
         return false;
       }
       if(type->cv_const) {
@@ -20789,36 +20913,32 @@ private:
       return true;
 
     case Type::TK_POINTER:
-      if(!type_argument_template_parameter_witness_name(type->inner,
-                                                        canonical_parameters,
-                                                        out)) {
+      if(!canonical_template_parameter_type_witness_text(
+             type->inner, canonical_parameters, out, depth + 1)) {
         return false;
       }
       out += " *";
       return true;
 
     case Type::TK_LVALUE_REFERENCE:
-      if(!type_argument_template_parameter_witness_name(type->inner,
-                                                        canonical_parameters,
-                                                        out)) {
+      if(!canonical_template_parameter_type_witness_text(
+             type->inner, canonical_parameters, out, depth + 1)) {
         return false;
       }
       out += " &";
       return true;
 
     case Type::TK_RVALUE_REFERENCE:
-      if(!type_argument_template_parameter_witness_name(type->inner,
-                                                        canonical_parameters,
-                                                        out)) {
+      if(!canonical_template_parameter_type_witness_text(
+             type->inner, canonical_parameters, out, depth + 1)) {
         return false;
       }
       out += " &&";
       return true;
 
     case Type::TK_ARRAY:
-      if(!type_argument_template_parameter_witness_name(type->inner,
-                                                        canonical_parameters,
-                                                        out)) {
+      if(!canonical_template_parameter_type_witness_text(
+             type->inner, canonical_parameters, out, depth + 1)) {
         return false;
       }
       if(type->has_bound) {
@@ -20866,7 +20986,7 @@ private:
   void canonicalize_template_parameter_source_bindings(
       std::vector<witness::TemplateWitnessSourceBinding> & bindings,
       const std::vector<TemplateArgument> & arguments,
-      const std::vector<TemplateParameterInfo> & canonical_parameters) const
+      const std::vector<TemplateParameterInfo> & canonical_parameters)
   {
     const std::size_t count = std::min(bindings.size(), arguments.size());
     for(std::size_t i = 0; i < count; ++i) {
@@ -20883,9 +21003,8 @@ private:
         continue;
       }
       std::string canonical;
-      if(type_argument_template_parameter_witness_name(arguments[i].type,
-                                                       canonical_parameters,
-                                                       canonical)) {
+      if(canonical_template_parameter_type_witness_text(
+             arguments[i].type, canonical_parameters, canonical)) {
         bindings[i].arg = canonical;
       }
     }
