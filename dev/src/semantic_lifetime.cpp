@@ -266,8 +266,8 @@ std::string literal_start_source_location(SemanticContext & ctx,
       -static_cast<int>(node.value.size()));
 }
 
-std::string earliest_source_location_for_node(SemanticContext & ctx,
-                                              const CppAstNode & node)
+std::string earliest_source_location_for_node_impl(SemanticContext & ctx,
+                                                   const CppAstNode & node)
 {
   const std::string literal_start = literal_start_source_location(ctx, node);
   if(!literal_start.empty()) {
@@ -293,7 +293,7 @@ std::string earliest_source_location_for_node(SemanticContext & ctx,
   for(size_t i = 0; i < node.children.size(); ++i) {
     best = prefer_earlier_source_location_text(
         best,
-        earliest_source_location_for_node(ctx, node.children[i]));
+        earliest_source_location_for_node_impl(ctx, node.children[i]));
   }
   return best;
 }
@@ -4208,6 +4208,12 @@ void append_move_assignment_actions_for_subobject(SemanticContext & ctx,
 }
 
 }  // namespace
+
+std::string earliest_source_location_for_node(SemanticContext & ctx,
+                                              const CppAstNode & node)
+{
+  return earliest_source_location_for_node_impl(ctx, node);
+}
 
 void require_destructor_action_if_needed(SemanticContext & ctx,
                                          const TypePtr & type,

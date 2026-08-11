@@ -78,10 +78,33 @@ struct CallableEmissionDecision
   bool mark_output_required_now = false;
 };
 
+struct SemanticFunctionCallDrop
+{
+  std::string candidate;
+  std::string location;
+  std::string reason;
+};
+
+struct ConstructorSourceCallResult
+{
+  semantic_model::FunctionBinding * selected = nullptr;
+  std::string selected_location;
+  std::vector<SemanticFunctionCallDrop> drops;
+  int candidate_count = -1;
+  int candidates_built = -1;
+  int candidates_viable = -1;
+  bool preserve_semantic_drop_order = false;
+};
+
 struct ArgumentConversionSelection
 {
   semantic_model::FunctionBinding * constructor = nullptr;
   semantic_model::FunctionBinding * conversion_function = nullptr;
+  std::vector<SemanticFunctionCallDrop> drops;
+  int candidate_count = -1;
+  int candidates_built = -1;
+  int candidates_viable = -1;
+  bool preserve_semantic_drop_order = false;
 };
 
 struct ArgumentConversionOptions
@@ -107,6 +130,7 @@ struct ArgumentConversionOptions
   bool prefer_conversion_function_object_result;
   ArgumentConversionSelection * selection_out;
   std::string source_use_location;
+  bool defer_source_result_to_enclosing_call = false;
 };
 
 struct ConstructorSelectionOptions
@@ -124,6 +148,10 @@ struct ConstructorSelectionOptions
   bool synthesize_implicit_copy_move = true;
   bool source_witness_location_is_authoritative = false;
   bool emit_source_witness_without_body_instantiation = false;
+  bool user_defined_conversion_source = false;
+  bool non_explicit_construction = false;
+  ConstructorSourceCallResult * source_call_result_out = nullptr;
+  bool source_call_result_capture_only = false;
 };
 
 struct PreparedDeclarationSpecifiers

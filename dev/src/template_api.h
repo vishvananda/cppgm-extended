@@ -575,6 +575,12 @@ std::string function_binding_witness_entity(
 std::string function_binding_witness_decl_location(
     SemanticContext & ctx,
     const semantic_model::FunctionBinding * binding);
+std::string function_template_witness_entity(
+    SemanticContext & ctx,
+    const semantic_model::FunctionTemplateDecl * decl);
+std::string function_template_witness_decl_location(
+    SemanticContext & ctx,
+    const semantic_model::FunctionTemplateDecl * decl);
 std::string function_binding_template_trace_key(
     const semantic_model::FunctionBinding * binding);
 std::string alias_template_witness_entity(

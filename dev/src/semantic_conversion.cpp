@@ -21,6 +21,7 @@
 #include "template_api.h"
 #include "template_argument_semantics.h"
 #include "template_instantiation.h"
+#include "witness_api.h"
 
 using namespace std;
 
@@ -58,6 +59,40 @@ ParsedSourceLocation parse_source_location_text(const std::string & text)
   return parsed;
 }
 
+std::size_t source_occurrence_traversal_order(
+    SemanticContext & ctx,
+    const std::string & location)
+{
+  const ParsedSourceLocation parsed = parse_source_location_text(
+      template_api::normalize_template_witness_source_location(location));
+  const template_api::TemplateWitnessContext witness_ctx =
+      ctx.template_witness_context();
+  if(!parsed.valid ||
+     !(witness_ctx.token_sequence && witness_ctx.source_locations)) {
+    return 0;
+  }
+  const std::size_t token_count = witness_ctx.token_sequence->size();
+  for(std::size_t i = 0; i < token_count; ++i) {
+    const RecogToken & token = witness_ctx.token_sequence->peek(i);
+    if(token.is_eof()) {
+      break;
+    }
+    if(token.location_id == 0 ||
+       token.location_id >= witness_ctx.source_locations->locations.size()) {
+      continue;
+    }
+    const SourceLocation & source_location =
+        witness_ctx.source_locations->locations[token.location_id];
+    if(source_location.file_index < witness_ctx.source_locations->files.size() &&
+       witness_ctx.source_locations->files[source_location.file_index] == parsed.file &&
+       static_cast<int>(source_location.line) == parsed.line &&
+       static_cast<int>(source_location.column) == parsed.column) {
+      return i + 1;
+    }
+  }
+  return 0;
+}
+
 std::string callsem_node_source_location_text(const CallSemNode & node)
 {
   if(!node.has_source_location()) {
@@ -68,30 +103,6 @@ std::string callsem_node_source_location_text(const CallSemNode & node)
       << callsem_source_line(node) << ":"
       << callsem_source_column(node);
   return out.str();
-}
-
-std::string prefer_later_source_location_text(const std::string & first,
-                                              const std::string & second)
-{
-  if(first.empty()) {
-    return second;
-  }
-  if(second.empty()) {
-    return first;
-  }
-  const ParsedSourceLocation parsed_first = parse_source_location_text(first);
-  const ParsedSourceLocation parsed_second = parse_source_location_text(second);
-  if(!parsed_first.valid || !parsed_second.valid ||
-     parsed_first.file != parsed_second.file) {
-    return first;
-  }
-  if(parsed_second.line > parsed_first.line) {
-    return second;
-  }
-  if(parsed_second.line < parsed_first.line) {
-    return first;
-  }
-  return parsed_second.column >= parsed_first.column ? second : first;
 }
 
 std::string prefer_earlier_source_location_text(const std::string & first,
@@ -131,8 +142,10 @@ std::string earliest_callsem_source_location_text(const CallSemNode & node)
 
 std::string constructor_probe_use_location(const ExprInfo & expr)
 {
-  return prefer_later_source_location_text(parser_trace::current_use_location(),
-                                           callsem_node_source_location_text(expr.node));
+  const std::string source_location =
+      earliest_callsem_source_location_text(expr.node);
+  return !source_location.empty() ? source_location :
+                                    parser_trace::current_use_location();
 }
 
 TypePtr conversion_reference_target_object_type(const TypePtr & type)
@@ -187,10 +200,43 @@ bool dependent_conversion_candidate_can_bind_known_argument(
              target_class_template;
 }
 
-void record_conversion_function_source_use(SemanticContext & ctx,
-                                           const ExprInfo & source_expr,
-                                           FunctionBinding * binding,
-                                           const std::string & source_use_location)
+void append_unique_semantic_call_drop(
+    std::vector<SemanticFunctionCallDrop> & drops,
+    const SemanticFunctionCallDrop & drop)
+{
+  if(drop.candidate.empty() || drop.reason.empty()) {
+    return;
+  }
+  for(std::size_t i = 0; i < drops.size(); ++i) {
+    if(drops[i].candidate == drop.candidate &&
+       drops[i].location == drop.location &&
+       drops[i].reason == drop.reason) {
+      return;
+    }
+  }
+  drops.push_back(drop);
+}
+
+void append_unique_semantic_call_drop(
+    std::vector<SemanticFunctionCallDrop> & drops,
+    const std::string & candidate,
+    const std::string & location,
+    const std::string & reason)
+{
+  SemanticFunctionCallDrop drop;
+  drop.candidate = candidate;
+  drop.location = location;
+  drop.reason = reason;
+  append_unique_semantic_call_drop(drops, drop);
+}
+
+void record_user_defined_conversion_source_use(
+    SemanticContext & ctx,
+    const ExprInfo & source_expr,
+    FunctionBinding * binding,
+    const std::string & source_use_location,
+    const std::vector<SemanticFunctionCallDrop> & drops,
+    int candidates_viable)
 {
   std::string public_location = source_use_location;
   if(public_location.empty()) {
@@ -203,9 +249,20 @@ void record_conversion_function_source_use(SemanticContext & ctx,
   semantic_template_function::FunctionTemplateCallSourceUseRequest request;
   request.binding = binding;
   request.use_location = public_location;
-  request.candidates_built = 1;
-  request.candidates_viable = 1;
-  request.candidate_count = 1;
+  request.source_traversal_order =
+      source_occurrence_traversal_order(ctx, public_location);
+  request.preserve_semantic_drop_order = !drops.empty();
+  request.candidates_built = static_cast<int>(drops.size() + 1);
+  request.candidates_viable = candidates_viable;
+  request.candidate_count = static_cast<int>(drops.size() + 1);
+  request.drops.reserve(drops.size());
+  for(std::size_t i = 0; i < drops.size(); ++i) {
+    witness::TemplateWitnessSourceDrop drop;
+    drop.candidate = drops[i].candidate;
+    drop.location = drops[i].location;
+    drop.reason = drops[i].reason;
+    request.drops.push_back(drop);
+  }
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   const witness_provenance::ScopedUpstreamRoute provenance_route(
       witness_provenance::WitnessUpstreamRoute::FunctionConversion);
@@ -2700,6 +2757,11 @@ bool try_argument_conversion(SemanticContext & ctx,
                              ConversionRank & rank,
                              const ArgumentConversionOptions & options)
 {
+  const bool capture_source_facts =
+      options.selection_out != nullptr ||
+      (options.instantiate_user_defined_bodies &&
+       witness::function_call_source_capture_enabled() &&
+       witness::source_capture_enabled(ctx));
   if(options.selection_out) {
     *options.selection_out = ArgumentConversionSelection();
   }
@@ -2840,6 +2902,7 @@ bool try_argument_conversion(SemanticContext & ctx,
   };
 
   vector<UserDefinedCandidate> candidates;
+  vector<SemanticFunctionCallDrop> conversion_template_drops;
 
   TypePtr target_base = strip_top_level_cv(target);
   const bool target_is_reference =
@@ -2850,6 +2913,8 @@ bool try_argument_conversion(SemanticContext & ctx,
   if(target_is_reference) {
     target_class_type = strip_top_level_cv(target_base->inner);
   }
+  ConstructorSourceCallResult constructor_probe_source_call;
+  bool constructor_probe_attempted = false;
 
   // `std::initializer_list<T>` arguments are only formed from an actual
   // initializer_list object or from braced-init-list target-aware analysis
@@ -2893,8 +2958,13 @@ bool try_argument_conversion(SemanticContext & ctx,
                   false));
       ctor_options.emit_source_witness_without_body_instantiation =
           options.instantiate_user_defined_bodies;
-      ctor_options.use_location = constructor_probe_use_location(expr);
-      if(!target_is_reference) {
+      constructor_probe_attempted = capture_source_facts;
+      if(capture_source_facts) {
+        ctor_options.source_call_result_out = &constructor_probe_source_call;
+        ctor_options.source_call_result_capture_only = true;
+        ctor_options.use_location = constructor_probe_use_location(expr);
+      }
+      if(capture_source_facts && !target_is_reference) {
         ctor_options.source_witness_location = options.source_use_location;
         if(ctor_options.source_witness_location.empty()) {
           ctor_options.source_witness_location =
@@ -3150,6 +3220,8 @@ bool try_argument_conversion(SemanticContext & ctx,
             conversion_function_template_deduction_target_types(
                 target,
                 options.prefer_conversion_function_object_result);
+        bool template_candidate_added = false;
+        bool template_substitution_failed = false;
         for(size_t target_index = 0;
             target_index < conversion_targets.size();
             ++target_index) {
@@ -3174,12 +3246,14 @@ bool try_argument_conversion(SemanticContext & ctx,
                     *decl,
                     conversion_target);
             if(!target_function_type) {
+              template_substitution_failed = true;
               continue;
             }
 
             semantic_template_function::FunctionTemplateDeduction result;
             if(!semantic_template_function::deduce_function_template_from_target_type(
                    ctx, *decl, target_function_type, &template_use_scope, result)) {
+              template_substitution_failed = true;
               continue;
             }
 
@@ -3196,6 +3270,7 @@ bool try_argument_conversion(SemanticContext & ctx,
             catch(const TemplateSubstitutionFailure &)
             {
               binding = nullptr;
+              template_substitution_failed = true;
             }
             if(binding) {
               update_conversion_function_template_binding_result(
@@ -3210,6 +3285,8 @@ bool try_argument_conversion(SemanticContext & ctx,
                   visible.path_access,
                   visible.path_offset);
               candidate_added = candidates.size() != candidate_count_before;
+              template_candidate_added =
+                  template_candidate_added || candidate_added;
 
               // The signature may be reused from cache, so merge both newly
               // discovered and previously retained facts onto the semantic
@@ -3247,6 +3324,18 @@ bool try_argument_conversion(SemanticContext & ctx,
             continue;
           }
           break;
+        }
+        if(capture_source_facts &&
+           !template_candidate_added &&
+           template_substitution_failed) {
+          append_unique_semantic_call_drop(
+              conversion_template_drops,
+              template_api::function_template_witness_entity(ctx, decl),
+              template_api::normalize_template_witness_source_location(
+                  template_api::function_template_witness_decl_location(
+                      ctx,
+                      decl)),
+              "substitution_failure");
         }
       }
     }
@@ -3364,6 +3453,73 @@ bool try_argument_conversion(SemanticContext & ctx,
   const UserDefinedCandidate & selected = candidates[best];
   FunctionBinding * selected_conversion_function =
       selected.conversion_function;
+  vector<SemanticFunctionCallDrop> operation_drops;
+  const auto append_constructor_probe_drops = [&]()
+  {
+    if(!capture_source_facts || !constructor_probe_attempted) {
+      return;
+    }
+    for(size_t i = 0; i < constructor_probe_source_call.drops.size(); ++i) {
+      const SemanticFunctionCallDrop & drop =
+          constructor_probe_source_call.drops[i];
+      if(selected.kind == UserDefinedCandidate::CONVERSION_FUNCTION &&
+         drop.reason != "explicit_not_allowed" &&
+         drop.reason != "bad_conversion" &&
+         drop.reason != "substitution_failure" &&
+         drop.reason != "non_deduced_mismatch" &&
+         drop.reason != "inconsistent") {
+        continue;
+      }
+      append_unique_semantic_call_drop(operation_drops, drop);
+    }
+  };
+  if(capture_source_facts) {
+    if(selected.kind == UserDefinedCandidate::CONVERSION_FUNCTION) {
+      for(size_t i = 0; i < conversion_template_drops.size(); ++i) {
+        append_unique_semantic_call_drop(operation_drops,
+                                         conversion_template_drops[i]);
+      }
+      append_constructor_probe_drops();
+      if(constructor_probe_source_call.selected) {
+        append_unique_semantic_call_drop(
+            operation_drops,
+            template_api::function_binding_witness_entity(
+                ctx,
+                constructor_probe_source_call.selected),
+            constructor_probe_source_call.selected_location.empty() ?
+                template_api::function_binding_witness_decl_location(
+                    ctx,
+                    constructor_probe_source_call.selected) :
+                constructor_probe_source_call.selected_location,
+            (constructor_probe_source_call.selected->is_copy_constructor ||
+             constructor_probe_source_call.selected->is_move_constructor) ?
+                "bad_conversion" :
+                "worse_conversion");
+      }
+    } else {
+      append_constructor_probe_drops();
+      for(size_t i = 0; i < conversion_template_drops.size(); ++i) {
+        append_unique_semantic_call_drop(operation_drops,
+                                         conversion_template_drops[i]);
+      }
+    }
+    for(size_t i = 0; i < candidates.size(); ++i) {
+      if(i == best ||
+         candidates[i].kind != UserDefinedCandidate::CONVERSION_FUNCTION ||
+         !candidates[i].conversion_function) {
+        continue;
+      }
+      append_unique_semantic_call_drop(
+          operation_drops,
+          template_api::function_binding_witness_entity(
+              ctx,
+              candidates[i].conversion_function),
+          template_api::function_binding_witness_decl_location(
+              ctx,
+              candidates[i].conversion_function),
+          "worse_conversion");
+    }
+  }
   out = selected.expr;
   if(selected.kind == UserDefinedCandidate::CONSTRUCTOR) {
     if(!selected.constructor || !selected.constructor_target_class) {
@@ -3443,15 +3599,34 @@ bool try_argument_conversion(SemanticContext & ctx,
       out = inherited_result;
     }
   }
-  if(options.instantiate_user_defined_bodies) {
-    record_conversion_function_source_use(ctx,
-                                          selected.source_expr,
-                                          selected_conversion_function,
-                                          options.source_use_location);
+  if(options.instantiate_user_defined_bodies &&
+     capture_source_facts &&
+     !options.defer_source_result_to_enclosing_call) {
+    FunctionBinding * selected_source_function =
+        selected.kind == UserDefinedCandidate::CONSTRUCTOR ?
+            selected.constructor :
+            selected_conversion_function;
+    record_user_defined_conversion_source_use(
+        ctx,
+        selected.source_expr,
+        selected_source_function,
+        options.source_use_location,
+        operation_drops,
+        static_cast<int>(candidates.size()));
   }
   if(options.selection_out) {
     options.selection_out->constructor = selected.constructor;
     options.selection_out->conversion_function = selected_conversion_function;
+    options.selection_out->drops = operation_drops;
+    options.selection_out->candidate_count =
+        static_cast<int>(operation_drops.size() + candidates.size());
+    options.selection_out->candidates_built =
+        options.selection_out->candidate_count;
+    options.selection_out->candidates_viable =
+        static_cast<int>(candidates.size());
+    options.selection_out->preserve_semantic_drop_order =
+        selected.kind == UserDefinedCandidate::CONVERSION_FUNCTION ||
+        constructor_probe_source_call.preserve_semantic_drop_order;
   }
   rank = CR_USER_DEFINED;
   return true;

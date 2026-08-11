@@ -3543,6 +3543,171 @@ Phase 5 remains open on the 43 function-call tests and the one class-use test.
 Phase 4 remains open on the lazy-alias lifecycle oracle divergence. Inception
 remains forbidden.
 
+## Unified user-defined conversion result checkpoint, 2026-08-11
+
+This Phase 5 checkpoint gives an enclosing function call typed ownership of
+the user-defined conversion selected for each argument. Candidate matches and
+the overload cache retain an optional `ArgumentConversionSelection` only while
+witness capture is active. Constructor probes report a typed
+`ConstructorSourceCallResult`, including the selected function, failed
+candidate drops, explicit and total argument counts, and the narrow semantic
+ordering domains required by constructor conversion. The enclosing call is
+then the single final publisher. Direct conversions continue to publish in
+their semantic traversal order.
+
+The constructor lifecycle profile now carries typed
+`user_defined_conversion_source` and `non_explicit_construction` intent. The
+overload path no longer discovers the user-defined conversion case through a
+context string. Function-template witness identity, declaration location, and
+conversion-operator parameter identity are likewise retained as semantic
+facts. Conversion result locations come from the earliest retained syntax
+location in the converted argument, which also corrects the prior string
+literal end-location result. These rules contain no fixture name, path,
+rendered-name, source-line, or source-text filter.
+
+The checkpoint makes these 11 complete outputs exact:
+
+- `pa23/tests/general/300-constructor-template-keeps-ctor-refinement-viable.t`;
+- `pa23/tests/general/300-copy-init-ignores-explicit-converting-ctor-template.t`;
+- `pa23/tests/general/400-defaulted-sfinae-conversion-function-template-symbol.t`;
+- `pa23/tests/spec/300-constructor-template-initial-sequence-beats-const-conversion-template.t`;
+- `pa23/tests/spec/300-conversion-function-template-object-result-copy-init.t`;
+- `pa23/tests/spec/300-conversion-function-template-owner-result-copy-init.t`;
+- `pa23/tests/spec/500-conversion-function-template-same-name-target.t`;
+- `pa23/tests/spec/500-template-template-conversion-operator-reference-target.t`;
+- `pa24/tests/general/200-constructor-template-parameter-shadows-instantiated-type.t`;
+- `pa24/tests/general/500-constructor-template-default-constraint-previous-param.t`;
+- `pa24/tests/spec/400-concrete-alias-target-nested-conversion-template.t`.
+
+The focused run covers those outputs and 12 direct-conversion, construction,
+assignment, and cached-overload controls; all 23 retain byte-exact witness and
+LowIR output. Expanded convergence improves from 1,485 to 1,496 exact outputs.
+The 1,530-reference inventory has 34 known mismatches, no warning output, and
+no missing actual file. Exactly the 11 listed tests leave the mismatch set;
+there is no new or reclassified residual. Function-call debt is now 11
+changed, 17 missing, 13 unexpected, and one ordering-only occurrence across
+32 tests. Class-use remains one changed row in one test, and lifecycle remains
+the one lazy-alias class-instantiation gap.
+
+The final Homebrew-Clang validation produced these results:
+
+- the ordinary strict run reports PA19 279 compared with zero failures, PA20
+  158 with zero, PA22 293 with eight residuals, PA23 385 with 19, and PA24 415
+  with seven; its expected nonzero exit is therefore exactly the documented
+  34-test residual set;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862, including PA30 runtime;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  witness and LowIR files match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,876 records, 5,015 source
+  attempts, and 6,298 lifecycle attempts with no unknown producer attempt and
+  no unexercised producer site;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and tracked structure-size reports match the parent byte
+  for byte.
+
+Function publication ownership is smaller but remains open. The semantic
+producer makes 1,516 attempts for 1,038 inserted rows, including 478 exact
+duplicates, and leaves 786 final visible rows. The renderer removes 239
+source-defined calls, nine location duplicates, three header-pattern rows,
+and one visible duplicate. Its legacy drop-order pass rewrites 35 events,
+down from 43 at the parent. The structured drop order is now producer-owned
+for the direct-constructor phase containing both arity and conversion failure,
+and for non-explicit construction containing both explicit rejection and
+conversion failure. Broader renderer arbitration remains Phase 5 debt.
+
+The ordinary convergence report is
+`/tmp/cppgm-phase5-conversion-perf-gated-convergence-20260811.json`, SHA-256
+`1cd0bd58142eda37b83c49c0214a30b3bab2226f27a9b040ab29c36637015736`.
+The provenance trace directory is
+`/tmp/cppgm-phase5-conversion-perf-gated-provenance-trace-20260811`. The
+provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase5-conversion-perf-gated-provenance-analysis-20260811.json`
+and
+`/tmp/cppgm-phase5-conversion-perf-gated-provenance-convergence-20260811.json`,
+with SHA-256 values
+`c7c76d5bb167df83b5772e73bd832ab23e92caf6070b43712aab48f59a619f11`
+and
+`6e81f5c58ff4ee5277c76d7d465c737dab631965ed8fdecabd5515a49d0d296f`.
+The byte-identical ordinary and provenance output manifests both have SHA-256
+`c80049e58ee071ecb904ec3544b60b008cf54780ba1256238e72945881ed2192`;
+their empty difference has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The strict, broad, and 60-test helper reports are
+`/tmp/cppgm-phase5-conversion-perf-gated-strict-20260811.log`,
+`/tmp/cppgm-phase5-conversion-perf-gated-broad-20260811.log`, and
+`/tmp/cppgm-phase5-conversion-perf-gated-helper-tests-20260811.log`, with
+SHA-256 values
+`f021b83aaf2dcd4af3f286008c2f5fd4a211f39578c448e92afbfb3a7ae5bee0`,
+`2c55d9a8f8656a12ffb2682082debe472fd9300b392c48fc1dbf2e0fbbe99850`,
+and
+`83c9dea806f41e69c0dfbae199d5bc1b2ab36915fe469a4b83c1ea8fa567dc0a`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain their parent SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary is 17,233,064 bytes, 39,680 bytes larger than the parent.
+Its Mach-O `__TEXT` segment grows by 28,672 bytes to 13,099,008 bytes;
+`__DATA_CONST` and `__DATA` remain 61,440 and 442,368 bytes, and `__LINKEDIT`
+grows by 12,288 bytes to 4,067,328 bytes. It contains no witness-provenance
+symbols. The frozen binary is
+`/tmp/cppgm-phase5-conversion-perf-gated-ordinary-20260811`, SHA-256
+`456c68a4ee499c7194771e28e2990ed01b01a352fc22a324903b6598b6538356`.
+
+The first complete implementation was correctly rejected by the performance
+gate. Its three-run medians were 211,253,294,271 instructions, 751,890,432
+bytes maximum RSS, and 568,934,400 bytes peak footprint. It regressed
+instructions by 20.02% against the fixed baseline and 21.19% against the
+parent because ordinary witness-off compilation still allocated and populated
+witness-only selections, drops, and source-location traversal. The raw record
+and two reports are
+`/tmp/cppgm-phase5-conversion-fully-final-raw-candidate-20260811.json`,
+`/tmp/cppgm-phase5-conversion-fully-final-perf-fixed-20260811.txt`, and
+`/tmp/cppgm-phase5-conversion-fully-final-perf-parent-20260811.txt`, with
+SHA-256 values
+`1a6e5450792aff4485a9a63b54617d5d6b93a122c7a89bfd5fcaabf842be83b5`,
+`cdbe222810a1aa1d03646090d490b2f5bc8981c5654f055dc989ddede0e6f2f3`,
+and
+`e52c6b581b09490f13381fa0478ef0f5c22bcf3b90e6cf8e635275eab1cf74d7`.
+
+The implementation was changed in scope: selection storage is optional,
+cache ownership is optional, and all new source-fact collection and traversal
+is gated on active witness capture. The corrected candidate was then measured
+once with a fresh three-run record and passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.25% | +0.10% | -4.03% | `/tmp/cppgm-phase5-conversion-perf-gated-fixed-20260811.txt` |
+| Typed constructor-rejection parent | -0.28% | -0.23% | -0.08% | `/tmp/cppgm-phase5-conversion-perf-gated-parent-20260811.txt` |
+
+The corrected medians are 173,824,076,764 instructions, 757,870,592 bytes
+maximum RSS, and 569,106,432 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-phase5-conversion-perf-gated-raw-candidate-20260811.json`,
+SHA-256
+`d580307d76449e1f904c93c6525d304908194411cc326d4fc67206f7a39a1061`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`0827dc51d12b5ad7c305576b9cdc6da49879c5723f5c025f23a06900f62b917a`
+and
+`6b1c348cf97f832b36e69c29129b674bc06c096334b1d2859549f20c2f425925`.
+The candidate metadata names commit `d1b17272d` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 754 and removes 84 production lines before this ledger
+entry. Phase 5 owns that net growth and the final simplification gate. It
+remains open on the 32 function-call tests and the one class-use test. Phase 4
+remains open on the lazy-alias lifecycle oracle divergence. Inception remains
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

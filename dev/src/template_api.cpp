@@ -3117,6 +3117,58 @@ std::string function_binding_witness_decl_location(
   return binding_decl_location(ctx, binding);
 }
 
+std::string function_template_witness_entity(
+    SemanticContext & ctx,
+    const semantic_model::FunctionTemplateDecl * decl)
+{
+  if(!decl) {
+    return std::string();
+  }
+  std::string function_name = decl->name;
+  cpp_decl::TypePtr function_type =
+      cpp_decl::strip_top_level_cv(decl->type_pattern);
+  if(decl->is_conversion_operator &&
+     function_type &&
+     function_type->kind == cpp_decl::Type::TK_FUNCTION &&
+     function_type->inner) {
+    const template_model::TemplateParameterInfo * parameter =
+        template_model::find_template_parameter(decl->parameters,
+                                                function_type->inner);
+    if(parameter) {
+      for(std::size_t i = 0; i < decl->parameters.size(); ++i) {
+        if(&decl->parameters[i] == parameter) {
+          function_name = "operator " +
+              stable_template_parameter_log_name(*parameter, i);
+          break;
+        }
+      }
+    } else {
+      function_name = "operator " +
+          cpp_decl::template_argument_type_text(function_type->inner);
+    }
+  }
+  if(decl->declaring_scope) {
+    if(decl->declaring_scope->class_info) {
+      return class_witness_output_qualified_name(
+                 ctx,
+                 *decl->declaring_scope->class_info) +
+          "::" + function_name;
+    }
+    return semantic_lookup::scope_symbol_qualified_name(*decl->declaring_scope,
+                                                        function_name);
+  }
+  return function_name;
+}
+
+std::string function_template_witness_decl_location(
+    SemanticContext & ctx,
+    const semantic_model::FunctionTemplateDecl * decl)
+{
+  const semantic_model::SourceDeclAnchorCache & anchor =
+      semantic_trace::function_template_decl_anchor(ctx, decl);
+  return semantic_model::source_decl_anchor_location(anchor);
+}
+
 std::string function_binding_template_trace_key(
     const semantic_model::FunctionBinding * binding)
 {

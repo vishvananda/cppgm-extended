@@ -20,6 +20,9 @@ struct CppAstNode;
 
 namespace semantic_lifetime {
 
+std::string earliest_source_location_for_node(SemanticContext & ctx,
+                                              const CppAstNode & node);
+
 bool has_designated_braced_init(const CppAstNode & node);
 
 bool scalar_list_initialization_has_narrowing_conversion(

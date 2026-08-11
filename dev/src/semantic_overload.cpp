@@ -806,8 +806,7 @@ std::string constructor_witness_source_location(
 bool constructor_selection_is_speculative_user_defined_conversion_probe(
     const ConstructorSelectionOptions & options)
 {
-  return options.context &&
-         std::string(options.context) == "user-defined conversion constructor" &&
+  return options.user_defined_conversion_source &&
          !options.instantiate_bodies &&
          !options.emit_source_witness_without_body_instantiation;
 }
@@ -815,8 +814,7 @@ bool constructor_selection_is_speculative_user_defined_conversion_probe(
 bool constructor_selection_is_user_defined_conversion_source(
     const ConstructorSelectionOptions & options)
 {
-  return options.context &&
-         std::string(options.context) == "user-defined conversion constructor";
+  return options.user_defined_conversion_source;
 }
 
 const CppAstNode * default_argument_payload(const CppAstNode * default_arg)
@@ -1558,19 +1556,7 @@ std::string function_template_witness_name(
     SemanticContext & ctx,
     const FunctionTemplateDecl * decl)
 {
-  if(!decl) {
-    return std::string();
-  }
-  if(decl->declaring_scope) {
-    if(decl->declaring_scope->class_info) {
-      return template_api::class_witness_output_qualified_name(
-                 ctx,
-                 *decl->declaring_scope->class_info) +
-          "::" + decl->name;
-    }
-    return semantic_lookup::scope_symbol_qualified_name(*decl->declaring_scope, decl->name);
-  }
-  return decl->name;
+  return template_api::function_template_witness_entity(ctx, decl);
 }
 
 struct FunctionWitnessDeclAnchor
@@ -1604,7 +1590,8 @@ FunctionWitnessDeclAnchor function_template_witness_decl_anchor(
 std::string function_template_witness_decl_location(SemanticContext & ctx,
                                                     const FunctionTemplateDecl * decl)
 {
-  return function_template_witness_decl_anchor(ctx, decl).location;
+  return normalize_template_witness_location(
+      template_api::function_template_witness_decl_location(ctx, decl));
 }
 
 FunctionWitnessDeclAnchor constructor_template_witness_decl_anchor(
@@ -1857,15 +1844,21 @@ std::string function_candidate_rejection_drop_reason(const std::string & rejecti
      rejection.find("member argument count mismatch") != std::string::npos) {
     return "too_many_arguments";
   }
+  if(rejection.find("missing defaults") != std::string::npos) {
+    return "too_few_arguments";
+  }
   if(rejection.find("conversion failed") != std::string::npos ||
      rejection.find("non-forwarding-rvalue") != std::string::npos) {
     return "bad_conversion";
+  }
+  if(rejection.find("explicit constructor not allowed") != std::string::npos) {
+    return "explicit_not_allowed";
   }
   if(rejection.find("arg analysis failed") != std::string::npos ||
      rejection.find("argument analysis failed") != std::string::npos ||
      rejection.find("default analysis failed") != std::string::npos ||
      rejection.find("substitution") != std::string::npos ||
-     rejection.find("missing defaults") != std::string::npos) {
+     rejection.find("missing default template argument") != std::string::npos) {
     return "substitution_failure";
   }
   return "substitution_failure";
@@ -2682,6 +2675,8 @@ struct CandidateMatch
   vector<bool> list_initialization_args;
   vector<vector<ConversionRank> > list_initialization_element_ranks;
   vector<bool> needs_rematerialization;
+  std::shared_ptr<vector<ArgumentConversionSelection> >
+      argument_conversion_selections;
   size_t explicit_arg_count = static_cast<size_t>(-1);
 };
 
@@ -2931,7 +2926,10 @@ void note_function_call_source_event(
     std::size_t explicit_arg_count,
     std::size_t built_candidate_count,
     std::size_t source_traversal_order = 0,
-    bool user_defined_conversion_constructor_source = false)
+    bool user_defined_conversion_constructor_source = false,
+    bool non_explicit_constructor_source = false,
+    ConstructorSourceCallResult * source_call_result_out = nullptr,
+    bool source_call_result_capture_only = false)
 {
   const bool trace_source_decision =
       parser_trace::enabled("witness.call");
@@ -2960,12 +2958,43 @@ void note_function_call_source_event(
     return;
   }
 
-  const bool template_related = chosen->source_template != nullptr;
+  const ArgumentConversionSelection * semantic_argument_conversion = nullptr;
+  size_t semantic_argument_conversion_index = static_cast<size_t>(-1);
+  if(selection.index < matches.size() &&
+     matches[selection.index].argument_conversion_selections) {
+    const vector<ArgumentConversionSelection> & conversions =
+        *matches[selection.index].argument_conversion_selections;
+    for(size_t i = 0; i < conversions.size(); ++i) {
+      const FunctionBinding * conversion_source =
+          conversions[i].conversion_function ?
+              conversions[i].conversion_function :
+              conversions[i].constructor;
+      if(conversion_source && conversion_source->source_template) {
+        semantic_argument_conversion = &conversions[i];
+        semantic_argument_conversion_index = i;
+        break;
+      }
+    }
+  }
+  const ArgumentConversionSelection * selected_argument_conversion =
+      !chosen->source_template ? semantic_argument_conversion : nullptr;
+  const size_t selected_argument_conversion_index =
+      selected_argument_conversion ? semantic_argument_conversion_index :
+                                     static_cast<size_t>(-1);
+  FunctionBinding * source_selected =
+      selected_argument_conversion ?
+          (selected_argument_conversion->conversion_function ?
+               selected_argument_conversion->conversion_function :
+               selected_argument_conversion->constructor) :
+          chosen;
+  const bool template_related =
+      source_selected && source_selected->source_template != nullptr;
   if(witness::template_witness_source_type_lookup_active()) {
     trace_return("type-lookup-active");
     return;
   }
-  const std::string selected_name = function_binding_witness_name(ctx, chosen);
+  const std::string selected_name =
+      function_binding_witness_name(ctx, source_selected);
   const std::string unqualified_selected =
       selected_name.substr(selected_name.rfind("::") == std::string::npos ?
                                0 :
@@ -2981,6 +3010,25 @@ void note_function_call_source_event(
   }
 
   std::string public_location = normalize_template_witness_location(use_location);
+  if(selected_argument_conversion && selection.index < matches.size()) {
+    const CandidateMatch & selected_match = matches[selection.index];
+    std::string conversion_location;
+    if(selected_argument_conversion_index <
+       selected_match.source_arg_locations.size()) {
+      conversion_location =
+          selected_match.source_arg_locations[selected_argument_conversion_index];
+    }
+    if(conversion_location.empty() &&
+       selected_argument_conversion_index < selected_match.source_args.size()) {
+      conversion_location = callsem_node_source_location_text(
+          selected_match.source_args[selected_argument_conversion_index].node);
+    }
+    conversion_location =
+        normalize_template_witness_location(conversion_location);
+    if(!conversion_location.empty()) {
+      public_location = conversion_location;
+    }
+  }
   if(callee_node &&
      (callee_node->kind == CppAstKind::member_expression ||
       callee_node->kind == CppAstKind::id_expression)) {
@@ -3058,16 +3106,20 @@ void note_function_call_source_event(
   }
   if(chosen->is_constructor &&
      !constructor_source_syntax &&
-     !constructor_source_location_is_authoritative) {
+     !constructor_source_location_is_authoritative &&
+     !source_call_result_out) {
     trace_return("constructor-not-source-syntax", public_location);
     return;
   }
   if(!chosen->is_constructor &&
      unqualified_selected.compare(0, 8, "operator") != 0) {
-    bool source_call_syntax =
-        source_location_points_at_identifier(ctx,
-                                             public_location,
-                                             unqualified_selected);
+    bool source_call_syntax = selected_argument_conversion != nullptr;
+    if(!source_call_syntax) {
+      source_call_syntax =
+          source_location_points_at_identifier(ctx,
+                                               public_location,
+                                               unqualified_selected);
+    }
     if(!source_call_syntax) {
       source_call_syntax =
           source_location_has_identifier_on_or_after(ctx,
@@ -3137,6 +3189,60 @@ void note_function_call_source_event(
       return;
     }
   }
+  if(chosen->source_template &&
+     semantic_argument_conversion &&
+     selection.index < matches.size()) {
+    FunctionBinding * nested_selected =
+        semantic_argument_conversion->conversion_function ?
+            semantic_argument_conversion->conversion_function :
+            semantic_argument_conversion->constructor;
+    if(nested_selected && nested_selected != chosen &&
+       nested_selected->source_template) {
+      const CandidateMatch & selected_match = matches[selection.index];
+      std::string nested_location;
+      if(semantic_argument_conversion_index <
+         selected_match.source_arg_locations.size()) {
+        nested_location = selected_match.source_arg_locations[
+            semantic_argument_conversion_index];
+      }
+      if(nested_location.empty() &&
+         semantic_argument_conversion_index < selected_match.source_args.size()) {
+        nested_location = callsem_node_source_location_text(
+            selected_match.source_args[semantic_argument_conversion_index].node);
+      }
+      nested_location = normalize_template_witness_location(nested_location);
+      if(nested_location.empty()) {
+        nested_location = public_location;
+      }
+      semantic_template_function::FunctionTemplateCallSourceUseRequest nested_use;
+      nested_use.binding = nested_selected;
+      nested_use.use_location = nested_location;
+      nested_use.source_traversal_order =
+          source_occurrence_traversal_order(ctx, nested_location);
+      nested_use.preserve_semantic_drop_order =
+          semantic_argument_conversion->preserve_semantic_drop_order;
+      nested_use.candidate_count =
+          semantic_argument_conversion->candidate_count;
+      nested_use.candidates_built =
+          semantic_argument_conversion->candidates_built;
+      nested_use.candidates_viable =
+          semantic_argument_conversion->candidates_viable;
+      nested_use.drops.reserve(semantic_argument_conversion->drops.size());
+      for(size_t i = 0; i < semantic_argument_conversion->drops.size(); ++i) {
+        witness::TemplateWitnessSourceDrop drop;
+        drop.candidate = semantic_argument_conversion->drops[i].candidate;
+        drop.location = semantic_argument_conversion->drops[i].location;
+        drop.reason = semantic_argument_conversion->drops[i].reason;
+        nested_use.drops.push_back(drop);
+      }
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+      const witness_provenance::ScopedUpstreamRoute nested_provenance_route(
+          witness_provenance::WitnessUpstreamRoute::FunctionOverloadResolution);
+#endif
+      semantic_template_function::emit_function_template_call_source_use(ctx,
+                                                                          nested_use);
+    }
+  }
   if(trace_source_decision) {
     std::ostringstream trace;
     trace << "function-call-source-record"
@@ -3149,11 +3255,12 @@ void note_function_call_source_event(
     parser_trace::note("witness.call", public_location, trace.str());
   }
   const FunctionWitnessDeclAnchor selected_decl_anchor =
-      function_binding_witness_decl_anchor(ctx, chosen);
+      function_binding_witness_decl_anchor(ctx, source_selected);
   const std::string selected_decl_location =
       normalize_template_witness_location(selected_decl_anchor.location);
   const bool source_constructor_template_call_requires_definition =
       chosen->is_constructor &&
+      source_selected == chosen &&
       !chosen->is_explicit_specialization &&
       !template_api::class_is_explicit_specialization(chosen->owner_class) &&
       !template_api::class_is_explicit_specialization(chosen->lexical_access_class) &&
@@ -3182,7 +3289,7 @@ void note_function_call_source_event(
       !source_location_in_template_body_range(ctx, public_location))) {
     chosen->template_definition_required_by_public_source_call = true;
   }
-  if(!template_related) {
+  if(!template_related && !source_call_result_out) {
     return;
   }
   const bool selected_source_is_prvalue =
@@ -3192,9 +3299,9 @@ void note_function_call_source_event(
   const bool preserve_conversion_semantic_drop_order =
       user_defined_conversion_constructor_source &&
       (selected_source_is_prvalue ||
-       function_template_arguments_are_all_source_defaulted(chosen));
+       function_template_arguments_are_all_source_defaulted(source_selected));
   semantic_template_function::FunctionTemplateCallSourceUseRequest source_use;
-  source_use.binding = chosen;
+  source_use.binding = source_selected;
   source_use.preserve_semantic_drop_order =
       preserve_conversion_semantic_drop_order;
   source_use.source_traversal_order = source_traversal_order;
@@ -3241,13 +3348,32 @@ void note_function_call_source_event(
         reason);
   };
 
+  const bool argument_conversion_selected =
+      selected_argument_conversion && source_selected != chosen;
+  const auto drop_survives_argument_conversion_selection =
+      [&](const std::string &) -> bool
+  {
+    return !argument_conversion_selected;
+  };
+  if(selected_argument_conversion) {
+    for(size_t i = 0; i < selected_argument_conversion->drops.size(); ++i) {
+      append_drop(selected_argument_conversion->drops[i].candidate,
+                  selected_argument_conversion->drops[i].location,
+                  selected_argument_conversion->drops[i].reason);
+    }
+    source_use.preserve_semantic_drop_order =
+        source_use.preserve_semantic_drop_order ||
+        selected_argument_conversion->preserve_semantic_drop_order;
+  }
+
   for(std::size_t i = 0; i < initial_drops.size(); ++i) {
     if((suppress_source_drops &&
         !source_drop_survives_out_of_class_member_definition_suppression(
             initial_drops[i].reason)) ||
        function_call_source_drop_is_internal_member_template_arity_detail(
            chosen,
-           initial_drops[i])) {
+           initial_drops[i]) ||
+       !drop_survives_argument_conversion_selection(initial_drops[i].reason)) {
       continue;
     }
     append_drop(initial_drops[i].candidate,
@@ -3290,11 +3416,15 @@ void note_function_call_source_event(
     }
     const std::string reason =
         function_candidate_rejection_drop_reason(candidate_rejections[i]);
+    if(!drop_survives_argument_conversion_selection(reason)) {
+      continue;
+    }
     if(function_call_source_drop_is_conversion_probe_default_constructor_detail(
            chosen,
            built_candidates[i],
            reason,
-           preserve_conversion_semantic_drop_order)) {
+           preserve_conversion_semantic_drop_order ||
+               non_explicit_constructor_source)) {
       continue;
     }
     if(implicit_assignment_drop_is_represented_by_selected_owner(
@@ -3344,10 +3474,22 @@ void note_function_call_source_event(
            matches[match_index].function)) {
       continue;
     }
-    const std::string reason =
+    std::string reason =
         function_candidate_rank_drop_reason(matches[match_index],
                                             ctx,
                                             matches[selection.index]);
+    if(non_explicit_constructor_source &&
+       matches[match_index].function &&
+       (matches[match_index].function->is_copy_constructor ||
+        matches[match_index].function->is_move_constructor) &&
+       std::find(matches[match_index].ranks.begin(),
+                 matches[match_index].ranks.end(),
+                 CR_USER_DEFINED) != matches[match_index].ranks.end()) {
+      reason = "bad_conversion";
+    }
+    if(!drop_survives_argument_conversion_selection(reason)) {
+      continue;
+    }
     if(implicit_assignment_drop_is_represented_by_selected_owner(
            matches[match_index].function, reason)) {
       continue;
@@ -3364,9 +3506,35 @@ void note_function_call_source_event(
                     FunctionWitnessDeclLocationKind::CandidateDrop),
                 reason);
   }
+  bool has_bad_conversion_drop = false;
+  bool has_too_many_arguments_drop = false;
+  bool has_explicit_not_allowed_drop = false;
+  for(std::size_t i = 0; i < source_use.drops.size(); ++i) {
+    has_bad_conversion_drop = has_bad_conversion_drop ||
+        source_use.drops[i].reason == "bad_conversion";
+    has_too_many_arguments_drop = has_too_many_arguments_drop ||
+        source_use.drops[i].reason == "too_many_arguments";
+    has_explicit_not_allowed_drop = has_explicit_not_allowed_drop ||
+        source_use.drops[i].reason == "explicit_not_allowed";
+  }
+  const bool direct_constructor_candidate_phase_order =
+      chosen->is_constructor &&
+      source_selected == chosen &&
+      !user_defined_conversion_constructor_source &&
+      has_too_many_arguments_drop &&
+      has_bad_conversion_drop;
+  const bool non_explicit_constructor_rejection_order =
+      non_explicit_constructor_source &&
+      has_explicit_not_allowed_drop &&
+      has_bad_conversion_drop;
+  source_use.preserve_semantic_drop_order =
+      source_use.preserve_semantic_drop_order ||
+      direct_constructor_candidate_phase_order ||
+      non_explicit_constructor_rejection_order;
   if(chosen->is_constructor &&
      !constructor_source_syntax &&
-     !constructor_source_location_is_authoritative) {
+     !constructor_source_location_is_authoritative &&
+     !source_call_result_out) {
     for(std::size_t i = 0; i < source_use.drops.size(); ++i) {
       if(source_use.drops[i].reason == "bad_conversion") {
         return;
@@ -3405,8 +3573,44 @@ void note_function_call_source_event(
       visible_candidate_count = source_use.drops.size() + 1;
     }
   }
+  if(selected_argument_conversion &&
+     selected_argument_conversion->candidate_count >= 0 &&
+     visible_candidate_count < static_cast<size_t>(
+         selected_argument_conversion->candidate_count)) {
+    visible_candidate_count = static_cast<size_t>(
+        selected_argument_conversion->candidate_count);
+  }
   source_use.candidate_count = static_cast<int>(visible_candidate_count);
   source_use.candidates_built = static_cast<int>(visible_candidate_count);
+  if(selected_argument_conversion &&
+     selected_argument_conversion->candidates_viable >= 0) {
+    source_use.candidates_viable =
+        selected_argument_conversion->candidates_viable;
+  }
+  if(source_call_result_out) {
+    source_call_result_out->selected = chosen;
+    source_call_result_out->selected_location = selected_decl_location;
+    source_call_result_out->drops.clear();
+    source_call_result_out->drops.reserve(source_use.drops.size());
+    for(std::size_t i = 0; i < source_use.drops.size(); ++i) {
+      SemanticFunctionCallDrop drop;
+      drop.candidate = source_use.drops[i].candidate;
+      drop.location = source_use.drops[i].location;
+      drop.reason = source_use.drops[i].reason;
+      source_call_result_out->drops.push_back(drop);
+    }
+    source_call_result_out->candidate_count = source_use.candidate_count;
+    source_call_result_out->candidates_built = source_use.candidates_built;
+    source_call_result_out->candidates_viable = source_use.candidates_viable;
+    source_call_result_out->preserve_semantic_drop_order =
+        source_use.preserve_semantic_drop_order;
+    if(source_call_result_capture_only) {
+      return;
+    }
+  }
+  if(!template_related) {
+    return;
+  }
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   const witness_provenance::ScopedUpstreamRoute provenance_route(
       witness_provenance::WitnessUpstreamRoute::FunctionOverloadResolution);
@@ -3807,6 +4011,12 @@ bool rematerialize_candidate_match_args(SemanticContext & ctx,
   if(match.source_args.size() < match.params.size()) {
     return false;
   }
+  const bool capture_argument_conversion_selections =
+      template_witness_source_capture_enabled_for_calls(ctx);
+  if(capture_argument_conversion_selections) {
+    match.argument_conversion_selections.reset(
+        new vector<ArgumentConversionSelection>(match.params.size()));
+  }
   for(size_t i = 0; i < match.params.size(); ++i) {
     if(!match.params[i]) {
       continue;
@@ -3814,6 +4024,12 @@ bool rematerialize_candidate_match_args(SemanticContext & ctx,
     ExprInfo rematerialized;
     ConversionRank rank = CR_BAD;
     ArgumentConversionOptions effective_conversion_options = conversion_options;
+    std::unique_ptr<ArgumentConversionSelection> conversion_selection;
+    if(capture_argument_conversion_selections) {
+      conversion_selection.reset(new ArgumentConversionSelection());
+      effective_conversion_options.selection_out = conversion_selection.get();
+      effective_conversion_options.defer_source_result_to_enclosing_call = true;
+    }
     if(i < match.source_arg_locations.size() &&
        !match.source_arg_locations[i].empty()) {
       effective_conversion_options.source_use_location =
@@ -3826,6 +4042,9 @@ bool rematerialize_candidate_match_args(SemanticContext & ctx,
                                     rank,
                                     effective_conversion_options)) {
       return false;
+    }
+    if(capture_argument_conversion_selections) {
+      (*match.argument_conversion_selections)[i] = *conversion_selection;
     }
     if(i < match.args.size()) {
       match.args[i] = rematerialized;
@@ -5474,6 +5693,7 @@ struct CachedArgumentConversionResult
   bool available = false;
   ExprInfo converted_expr;
   ConversionRank rank = CR_BAD;
+  std::shared_ptr<ArgumentConversionSelection> selection;
 };
 
 unsigned argument_conversion_option_bits(const ArgumentConversionOptions & options)
@@ -5529,6 +5749,9 @@ bool try_cached_overload_argument_conversion(
       if(found->second.available) {
         out = found->second.converted_expr;
         rank = found->second.rank;
+        if(options.selection_out && found->second.selection) {
+          *options.selection_out = *found->second.selection;
+        }
       }
       return found->second.available;
     }
@@ -5550,6 +5773,10 @@ bool try_cached_overload_argument_conversion(
     if(available) {
       cached_result.converted_expr = out;
       cached_result.rank = rank;
+      if(options.selection_out) {
+        cached_result.selection.reset(
+            new ArgumentConversionSelection(*options.selection_out));
+      }
     }
     conversion_cache.insert(make_pair(cache_key, cached_result));
     return available;
@@ -5767,6 +5994,9 @@ bool try_memoized_argument_conversion(
       if(found->second.available) {
         out = found->second.converted_expr;
         rank = found->second.rank;
+        if(options.selection_out && found->second.selection) {
+          *options.selection_out = *found->second.selection;
+        }
       }
       return found->second.available;
     }
@@ -5779,6 +6009,10 @@ bool try_memoized_argument_conversion(
     if(available) {
       cached_result.converted_expr = out;
       cached_result.rank = rank;
+      if(options.selection_out) {
+        cached_result.selection.reset(
+            new ArgumentConversionSelection(*options.selection_out));
+      }
     }
     conversion_cache.insert(make_pair(cache_key, cached_result));
     return available;
@@ -11782,7 +12016,7 @@ void append_constructor_template_candidates(
     if(constructor_templates[i]->is_explicit && !options.allow_explicit) {
       append_template_function_candidate_drop(ctx,
                                               constructor_templates[i],
-                                              "explicit_constructor_not_allowed",
+                                              "explicit_not_allowed",
                                               &source_drops);
       continue;
     }
@@ -11968,7 +12202,7 @@ void append_constructor_template_node_candidates(
     if(constructor_template->is_explicit && !options.allow_explicit) {
       append_template_function_candidate_drop(ctx,
                                               constructor_template,
-                                              "explicit_constructor_not_allowed",
+                                              "explicit_not_allowed",
                                               &source_drops);
       continue;
     }
@@ -12377,6 +12611,8 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
   }
   note_overload_candidate_set(ctx);
   ConstructorSelectionState state;
+  const bool capture_argument_conversion_selections =
+      template_witness_source_capture_enabled_for_calls(ctx);
   auto append_candidate = [&](FunctionBinding * candidate)
   {
     if(!state.begin_candidate(ctx, candidate, true)) {
@@ -12445,6 +12681,11 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                                        target_info,
                                                        candidate,
                                                        options));
+      std::unique_ptr<ArgumentConversionSelection> conversion_selection;
+      if(capture_argument_conversion_selections) {
+        conversion_selection.reset(new ArgumentConversionSelection());
+        conversion_options.selection_out = conversion_selection.get();
+      }
       conversion_options.materialize_standard_adjustments =
           !options.instantiate_bodies;
       conversion_options.prefer_conversion_function_object_result =
@@ -12509,6 +12750,13 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
           j + explicit_param_offset < function_type->params.size() ?
               function_type->params[j + explicit_param_offset] :
               TypePtr());
+      if(capture_argument_conversion_selections) {
+        if(!match.argument_conversion_selections) {
+          match.argument_conversion_selections.reset(
+              new vector<ArgumentConversionSelection>());
+        }
+        match.argument_conversion_selections->push_back(*conversion_selection);
+      }
     }
     match.explicit_arg_count = match.params.size();
 
@@ -12606,7 +12854,10 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                         state.built_candidates.size(),
                                         0,
                                         constructor_selection_is_user_defined_conversion_source(
-                                            options));
+                                            options),
+                                        options.non_explicit_construction,
+                                        options.source_call_result_out,
+                                        options.source_call_result_capture_only);
       }
       args_out = std::move(state.matches[exact_selection.index].args);
       if(ranks_out) {
@@ -12627,6 +12878,58 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                          append_candidate);
 
   if(state.matches.empty()) {
+    if(options.source_call_result_out) {
+      ConstructorSourceCallResult & result = *options.source_call_result_out;
+      result = ConstructorSourceCallResult();
+      const auto append_result_drop =
+          [&](const std::string & candidate,
+              const std::string & location,
+              const std::string & reason)
+      {
+        if(candidate.empty() || reason.empty()) {
+          return;
+        }
+        for(size_t i = 0; i < result.drops.size(); ++i) {
+          if(result.drops[i].candidate == candidate &&
+             result.drops[i].location == location &&
+             result.drops[i].reason == reason) {
+            return;
+          }
+        }
+        SemanticFunctionCallDrop drop;
+        drop.candidate = candidate;
+        drop.location = location;
+        drop.reason = reason;
+        result.drops.push_back(drop);
+      };
+      for(size_t i = 0; i < state.source_drops.size(); ++i) {
+        append_result_drop(state.source_drops[i].candidate,
+                           state.source_drops[i].location,
+                           state.source_drops[i].reason);
+      }
+      for(size_t i = 0;
+          i < state.built_candidates.size() &&
+          i < state.candidate_rejections.size();
+          ++i) {
+        if(!state.built_candidates[i] || state.candidate_rejections[i].empty()) {
+          continue;
+        }
+        append_result_drop(
+            function_binding_witness_name(ctx, state.built_candidates[i]),
+            function_binding_witness_decl_location(
+                ctx,
+                state.built_candidates[i],
+                FunctionWitnessDeclLocationKind::CandidateDrop),
+            function_candidate_rejection_drop_reason(
+                state.candidate_rejections[i]));
+      }
+      result.candidate_count = static_cast<int>(result.drops.size());
+      result.candidates_built =
+          static_cast<int>(state.built_candidates.size() +
+                           state.source_drops.size());
+      result.candidates_viable = 0;
+      result.preserve_semantic_drop_order = true;
+    }
     if(parser_trace::enabled("overload") && !state.candidate_rejections.empty()) {
       for(size_t i = 0; i < state.candidate_rejections.size(); ++i) {
         ostringstream trace;
@@ -12741,7 +13044,10 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                     state.built_candidates.size(),
                                     0,
                                     constructor_selection_is_user_defined_conversion_source(
-                                        options));
+                                        options),
+                                    options.non_explicit_construction,
+                                    options.source_call_result_out,
+                                    options.source_call_result_capture_only);
   }
   args_out = std::move(state.matches[selection.index].args);
   if(ranks_out) {
@@ -12819,6 +13125,8 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
   }
   note_overload_candidate_set(ctx);
   ConstructorSelectionState state;
+  const bool capture_argument_conversion_selections =
+      template_witness_source_capture_enabled_for_calls(ctx);
   const CallAnalysisOptions constructor_arg_options =
       semantic_policy::call_analysis(options.instantiate_bodies);
   SharedCallArgumentAnalyzer argument_analyzer(
@@ -12957,6 +13265,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
     string arg_error;
     for(size_t j = 0; okay && j < effective_arg_nodes.size(); ++j) {
       ExprInfo arg;
+      std::unique_ptr<ArgumentConversionSelection> conversion_selection;
       try {
         ExprInfo source_arg;
         const ExprInfo * source_identity = nullptr;
@@ -13026,6 +13335,10 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
         conversion_options.prefer_conversion_function_object_result =
             options.prefer_conversion_function_object_result &&
             class_copy_or_move_candidate;
+        if(capture_argument_conversion_selections) {
+          conversion_selection.reset(new ArgumentConversionSelection());
+          conversion_options.selection_out = conversion_selection.get();
+        }
         try
         {
           if(has_fixed_param) {
@@ -13097,6 +13410,14 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
         match.ranks.push_back(rank);
         match.call_args.push_back(source_arg);
         match.source_args.push_back(source_arg);
+        if(capture_argument_conversion_selections) {
+          match.source_arg_locations.push_back(
+              semantic_lifetime::earliest_source_location_for_node(
+                  ctx,
+                  analyze_copy_move_list_element ?
+                      *copy_move_list_elements[0] :
+                      *effective_arg_nodes[j]));
+        }
       } catch(const logic_error & e) {
         candidate_rejection = candidate->name + ": arg analysis failed: " + e.what();
         if(parser_trace::enabled("overload")) {
@@ -13119,6 +13440,13 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
           j + explicit_param_offset < function_type->params.size() ?
               function_type->params[j + explicit_param_offset] :
               TypePtr());
+      if(capture_argument_conversion_selections) {
+        if(!match.argument_conversion_selections) {
+          match.argument_conversion_selections.reset(
+              new vector<ArgumentConversionSelection>());
+        }
+        match.argument_conversion_selections->push_back(*conversion_selection);
+      }
     }
     match.explicit_arg_count = match.params.size();
 
@@ -13214,7 +13542,10 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
                                         state.built_candidates.size(),
                                         0,
                                         constructor_selection_is_user_defined_conversion_source(
-                                            options));
+                                            options),
+                                        options.non_explicit_construction,
+                                        options.source_call_result_out,
+                                        options.source_call_result_capture_only);
       }
       args_out = std::move(state.matches[exact_selection.index].args);
       return chosen;
@@ -13354,7 +13685,10 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
                                     state.built_candidates.size(),
                                     0,
                                     constructor_selection_is_user_defined_conversion_source(
-                                        options));
+                                        options),
+                                    options.non_explicit_construction,
+                                    options.source_call_result_out,
+                                    options.source_call_result_capture_only);
   }
   args_out = std::move(state.matches[selection.index].args);
   return chosen;
@@ -13460,6 +13794,8 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
   ScopedCallSemConstructionPath construction_path("overload.assignment-expression");
   const bool instantiate_bodies =
       ctx.current_analysis_policy().instantiate_function_bodies;
+  const bool capture_argument_conversion_selections =
+      template_witness_source_capture_enabled_for_calls(ctx);
   struct AssignmentCandidate
   {
     FunctionBinding * binding = nullptr;
@@ -13731,6 +14067,9 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
     match.args.push_back(adjusted_this);
     match.call_args.push_back(adjusted_this);
     match.source_args.push_back(this_source_arg);
+    if(capture_argument_conversion_selections) {
+      match.source_arg_locations.push_back(std::string());
+    }
     match.params.push_back(function_type->params[0]);
     match.comparison_params.push_back(ranking_implicit_object_parameter);
     match.list_initialization_args.push_back(false);
@@ -13738,10 +14077,19 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
         vector<ConversionRank>());
     match.needs_rematerialization.push_back(instantiate_bodies &&
                                             converted_this_ok);
+    if(capture_argument_conversion_selections) {
+      if(!match.argument_conversion_selections) {
+        match.argument_conversion_selections.reset(
+            new vector<ArgumentConversionSelection>());
+      }
+      match.argument_conversion_selections->push_back(
+          ArgumentConversionSelection());
+    }
 
     ExprInfo rhs;
     ExprInfo source_rhs;
     ConversionRank rhs_rank = CR_BAD;
+    std::unique_ptr<ArgumentConversionSelection> rhs_conversion_selection;
     try
     {
       if(!should_use_target_aware_argument_analysis(node.children[1],
@@ -13755,6 +14103,10 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
       ArgumentConversionOptions conversion_options =
           semantic_policy::without_user_defined_body_instantiation();
       conversion_options.materialize_standard_adjustments = false;
+      if(capture_argument_conversion_selections) {
+        rhs_conversion_selection.reset(new ArgumentConversionSelection());
+        conversion_options.selection_out = rhs_conversion_selection.get();
+      }
       if(!ctx.try_argument_conversion(scope,
                                       function_type->params[1],
                                       source_rhs,
@@ -13774,7 +14126,15 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
     match.args.push_back(rhs);
     match.call_args.push_back(rhs);
     match.source_args.push_back(source_rhs);
+    if(capture_argument_conversion_selections) {
+      match.source_arg_locations.push_back(
+          ctx.source_location_for_node_syntax_start(node.children[1]));
+    }
     match.params.push_back(function_type->params[1]);
+    if(capture_argument_conversion_selections) {
+      match.argument_conversion_selections->push_back(
+          *rhs_conversion_selection);
+    }
     match.list_initialization_args.push_back(
         node.children[1].kind == CppAstKind::braced_init_list);
     vector<ConversionRank> element_ranks;
@@ -13978,6 +14338,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       effective_options.instantiate_bodies &&
       !semantic_expression::unevaluated_operand_active();
   const bool instantiate_bodies = effective_options.instantiate_bodies;
+  const bool capture_argument_conversion_selections =
+      template_witness_source_capture_enabled_for_calls(ctx);
   const CallAnalysisHints * hints = effective_options.hints;
   const std::string hint_use_location =
       hints && !hints->use_location.empty() ?
@@ -15898,6 +16260,14 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           match.call_args.push_back(adjusted_this);
           match.source_args.push_back(this_source_arg);
           match.source_arg_locations.push_back(std::string());
+          if(capture_argument_conversion_selections) {
+            if(!match.argument_conversion_selections) {
+              match.argument_conversion_selections.reset(
+                  new vector<ArgumentConversionSelection>());
+            }
+            match.argument_conversion_selections->push_back(
+                ArgumentConversionSelection());
+          }
           match.params.push_back(function_type->params[0]);
           match.comparison_params.push_back(
               ranking_implicit_object_parameter);
@@ -15929,6 +16299,10 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         ExprInfo source_arg;
         const ExprInfo * source_identity = nullptr;
         ConversionRank rank = CR_EXACT;
+        std::unique_ptr<ArgumentConversionSelection> conversion_selection;
+        if(capture_argument_conversion_selections) {
+          conversion_selection.reset(new ArgumentConversionSelection());
+        }
         try {
           if(explicit_index + arg_offset < function_type->params.size()) {
             const TypePtr target = function_type->params[explicit_index + arg_offset];
@@ -15962,6 +16336,11 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
               for(size_t k = 0; k < member_pointer_options.size(); ++k) {
                 ExprInfo option_arg;
                 ConversionRank option_rank = CR_BAD;
+                std::unique_ptr<ArgumentConversionSelection> option_selection;
+                if(capture_argument_conversion_selections) {
+                  option_selection.reset(new ArgumentConversionSelection());
+                  conversion_options.selection_out = option_selection.get();
+                }
                 if(!try_cached_overload_argument_conversion(ctx,
                                                             scope,
                                                             target,
@@ -15980,6 +16359,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                   best_rank = option_rank;
                   best_arg = option_arg;
                   best_source_arg = member_pointer_options[k];
+                  if(capture_argument_conversion_selections) {
+                    *conversion_selection = *option_selection;
+                  }
                 } else if(option_rank == best_rank) {
                   ambiguous_member_pointer_option = true;
                 }
@@ -16000,6 +16382,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
               converted_from_member_pointer_option = true;
             }
             if(!converted_from_member_pointer_option) {
+              if(capture_argument_conversion_selections) {
+                conversion_options.selection_out = conversion_selection.get();
+              }
               const bool needs_target_aware_analysis =
                   (arg_nodes[j]->kind == CppAstKind::lambda_expression &&
                    target_class && target_class->is_lambda_closure) ||
@@ -16063,6 +16448,14 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         match.source_args.push_back(source_arg);
         match.source_arg_locations.push_back(
             ctx.source_location_for_node_syntax_start(*arg_nodes[j]));
+        if(capture_argument_conversion_selections) {
+          if(!match.argument_conversion_selections) {
+            match.argument_conversion_selections.reset(
+                new vector<ArgumentConversionSelection>());
+          }
+          match.argument_conversion_selections->push_back(
+              *conversion_selection);
+        }
         match.list_initialization_args.push_back(
             arg_nodes[j]->kind == CppAstKind::braced_init_list);
         if(explicit_index + arg_offset < function_type->params.size()) {

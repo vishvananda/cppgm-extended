@@ -28,10 +28,12 @@ ConstructorSelectionOptions derive_selection_options(
   case ConstructorIntent::UserDefinedConversionConstructorProbe:
     options.allow_user_defined = false;
     options.allow_explicit = false;
+    options.user_defined_conversion_source = true;
     break;
   case ConstructorIntent::NonExplicitConstruction:
     options.allow_explicit = false;
     options.prefer_conversion_function_object_result = true;
+    options.non_explicit_construction = true;
     break;
   case ConstructorIntent::CopyListInitialization:
     options.allow_explicit = false;
@@ -154,6 +156,11 @@ void apply_selection_profile(ConstructorSelectionOptions & options,
       options.allow_explicit && derived.allow_explicit;
   options.initializer_list_only =
       options.initializer_list_only || derived.initializer_list_only;
+  options.user_defined_conversion_source =
+      options.user_defined_conversion_source ||
+      derived.user_defined_conversion_source;
+  options.non_explicit_construction =
+      options.non_explicit_construction || derived.non_explicit_construction;
 }
 
 ConstructorSelectionResult select_constructor_from_exprs(
