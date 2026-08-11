@@ -571,6 +571,20 @@ bool source_binding_scope_is_template_dependent(const Scope * binding_scope)
   return false;
 }
 
+bool source_scope_is_function_template_instantiation(const Scope * source_scope)
+{
+  for(const Scope * current = source_scope;
+      current != nullptr && !current->namespace_scope;
+      current = current->parent) {
+    if(current->function &&
+       current->function->source_template &&
+       !current->function->is_explicit_specialization) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool source_identifier_binding_retains_template_dependency(
     SemanticContext & ctx,
     const Scope * source_scope,
@@ -3434,6 +3448,20 @@ void note_function_call_source_event(
       source_template_id_occurrence.source_spelled &&
       !source_template_id_occurrence.has_dependent_argument &&
       !source_call_retains_dependency;
+  const std::string source_call_location = source_call_node ?
+      normalize_template_witness_location(
+          ctx.source_location_for_node_syntax_start(*source_call_node)) :
+      std::string();
+  const bool admitted_concrete_source_call =
+      source_call_node &&
+      source_call_node->kind == CppAstKind::call_expression &&
+      !source_call_location.empty() &&
+      !source_location_in_template_body_range(ctx, source_call_location) &&
+      !source_binding_scope_is_template_dependent(source_scope) &&
+      !source_scope_is_function_template_instantiation(source_scope) &&
+      !source_call_retains_dependency;
+  const bool admitted_source_call =
+      admitted_source_template_id || admitted_concrete_source_call;
   if(trace_source_decision && source_template_id) {
     std::ostringstream trace;
     trace << "function-call-source-template-id"
@@ -3454,17 +3482,17 @@ void note_function_call_source_event(
                  source_template_id_occurrence.name_anchor.location);
     return;
   }
-  if(!general_source_capture_enabled && !admitted_source_template_id) {
+  if(!general_source_capture_enabled && !admitted_source_call) {
     trace_return("source-capture-paused");
     return;
   }
   if(!template_witness_source_capture_enabled_for_calls(ctx) &&
-     !admitted_source_template_id) {
+     !admitted_source_call) {
     trace_return("call-capture-paused");
     return;
   }
   if(witness::template_witness_source_type_lookup_active() &&
-     !admitted_source_template_id) {
+     !admitted_source_call) {
     trace_return("type-lookup-active");
     return;
   }
@@ -3475,6 +3503,12 @@ void note_function_call_source_event(
   }
 
   std::string public_location = normalize_template_witness_location(use_location);
+  if(source_call_node) {
+    public_location = prefer_later_source_location(
+        public_location,
+        normalize_template_witness_location(
+            ctx.source_location_for_node_syntax_start(*source_call_node)));
+  }
   if(selected_argument_conversion && selection.index < matches.size()) {
     const CandidateMatch & selected_match = matches[selection.index];
     std::string conversion_location;
@@ -3569,7 +3603,8 @@ void note_function_call_source_event(
     trace_return("empty-public-location");
     return;
   }
-  if(!witness::source_location_capture_enabled(ctx.template_witness_context(),
+  if(!admitted_source_call &&
+     !witness::source_location_capture_enabled(ctx.template_witness_context(),
                                                public_location)) {
     trace_return("location-capture-disabled", public_location);
     return;
@@ -3774,8 +3809,8 @@ void note_function_call_source_event(
   source_use.binding = source_selected;
   source_use.source_call_precedes_nested_callee =
       source_call_precedes_nested_callee;
-  source_use.origin = admitted_source_template_id ?
-      witness::FunctionCallEmissionOrigin::AdmittedSourceTemplateId :
+  source_use.origin = admitted_source_call ?
+      witness::FunctionCallEmissionOrigin::AdmittedSourceCall :
       witness::FunctionCallEmissionOrigin::OverloadSelectedCall;
   source_use.template_id_occurrence = source_template_id_occurrence;
   source_use.preserve_semantic_drop_order =
@@ -3793,6 +3828,11 @@ void note_function_call_source_event(
   source_use.selected_decl_anchor.kind = selected_decl_anchor.kind;
   source_use.explicit_arg_count = explicit_arg_count;
   source_use.candidates_viable = static_cast<int>(matches.size());
+  const bool explicit_member_source_call =
+      callee_node &&
+      callee_node->kind == CppAstKind::member_expression &&
+      (node_has_simple_type(*callee_node, OP_DOT) ||
+       node_has_simple_type(*callee_node, OP_ARROW));
   const bool suppress_source_drops =
       function_call_source_drops_follow_out_of_class_member_definition(chosen);
 
@@ -3831,7 +3871,7 @@ void note_function_call_source_event(
   {
     return !argument_conversion_selected;
   };
-  if(selected_argument_conversion) {
+  if(selected_argument_conversion && !explicit_member_source_call) {
     for(size_t i = 0; i < selected_argument_conversion->drops.size(); ++i) {
       append_drop(selected_argument_conversion->drops[i].candidate,
                   selected_argument_conversion->drops[i].location,
@@ -3843,7 +3883,8 @@ void note_function_call_source_event(
   }
 
   for(std::size_t i = 0; i < initial_drops.size(); ++i) {
-    if((suppress_source_drops &&
+    if(explicit_member_source_call ||
+       (suppress_source_drops &&
         !source_drop_survives_out_of_class_member_definition_suppression(
             initial_drops[i].reason)) ||
        function_call_source_drop_is_internal_member_template_arity_detail(
@@ -3893,6 +3934,9 @@ void note_function_call_source_event(
     const std::string reason =
         function_candidate_rejection_drop_reason(candidate_rejections[i]);
     if(!drop_survives_argument_conversion_selection(reason)) {
+      continue;
+    }
+    if(explicit_member_source_call) {
       continue;
     }
     if(function_call_source_drop_is_conversion_probe_default_constructor_detail(
@@ -3964,6 +4008,9 @@ void note_function_call_source_event(
       reason = "bad_conversion";
     }
     if(!drop_survives_argument_conversion_selection(reason)) {
+      continue;
+    }
+    if(explicit_member_source_call) {
       continue;
     }
     if(implicit_assignment_drop_is_represented_by_selected_owner(
@@ -15905,9 +15952,29 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                 member_name->name);
     const template_api::ScopedTemplateWitnessDeclvalCallSourceCapturePause
         declval_witness_pause(destructor_member_call);
-    ExprInfo base = hints && hints->explicit_member_base ?
-        *hints->explicit_member_base :
-        ctx.analyze_expression(scope, member_callee_node.children[0]);
+    ExprInfo base;
+    if(hints && hints->explicit_member_base) {
+      base = *hints->explicit_member_base;
+    } else if(member_callee_node.children[0].kind ==
+                  CppAstKind::call_expression) {
+      CallAnalysisHints nested_base_hints;
+      nested_base_hints.use_location =
+          ctx.source_location_for_node_syntax_start(node);
+      if(nested_base_hints.use_location.empty()) {
+        nested_base_hints.use_location = ctx.source_location_for_node(node);
+      }
+      nested_base_hints.use_location = refine_fragment_use_location(
+          ctx,
+          member_callee_node.children[0],
+          nested_base_hints.use_location);
+      base = analyze_call_expression(
+          ctx,
+          scope,
+          member_callee_node.children[0],
+          CallAnalysisOptions(instantiate_bodies, &nested_base_hints));
+    } else {
+      base = ctx.analyze_expression(scope, member_callee_node.children[0]);
+    }
     TypePtr base_type = strip_top_level_cv(remove_reference_type(base.type));
     ClassInfo * class_info = nullptr;
     if(node_has_simple_type(member_callee_node, OP_DOT)) {

@@ -521,9 +521,9 @@ void emit_function_template_call_source_use(
       !request.template_name.empty() || !request.selected.empty();
   const bool declval_call =
       request.origin == witness::FunctionCallEmissionOrigin::DeclvalCall;
-  const bool admitted_source_template_id =
+  const bool admitted_source_call =
       request.origin ==
-          witness::FunctionCallEmissionOrigin::AdmittedSourceTemplateId;
+          witness::FunctionCallEmissionOrigin::AdmittedSourceCall;
   const bool source_capture_enabled =
       witness::function_call_recording_enabled(ctx.template_witness_context(),
                                                request.origin);
@@ -531,7 +531,7 @@ void emit_function_template_call_source_use(
      (!binding && !has_explicit_source_target) ||
      (binding && !binding->source_template) ||
      (!declval_call &&
-      !admitted_source_template_id &&
+      !admitted_source_call &&
       witness::template_witness_source_type_lookup_active())) {
     return;
   }
@@ -540,6 +540,7 @@ void emit_function_template_call_source_use(
       template_api::normalize_template_witness_source_location(request.use_location);
   if(public_location.empty() ||
      (!declval_call &&
+      !admitted_source_call &&
       !witness::source_location_capture_enabled(ctx.template_witness_context(),
                                                 public_location))) {
     return;

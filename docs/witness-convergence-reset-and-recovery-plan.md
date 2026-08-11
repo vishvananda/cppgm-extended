@@ -3854,6 +3854,149 @@ remains open on the 23 function-call tests and the one class-use test. Phase 4
 remains open on the lazy-alias lifecycle oracle divergence. Inception remains
 forbidden.
 
+## Concrete call boundary and explicit-member ownership checkpoint, 2026-08-11
+
+This Phase 5 checkpoint extends the typed source-call admission boundary from
+explicit source template-ids to concrete source call expressions. A concrete
+call may pass the existing definition-capture, call-capture, type-lookup, and
+location-capture pauses only when it has a retained source call node and
+anchor, is outside a registered template body, has no template-bound names in
+its binding scope, is not owned by a function-template instantiation, and
+retains no source dependency. The public origin is consequently named
+`AdmittedSourceCall`; dependent replays retain the ordinary capture policy.
+
+An explicit member call whose receiver is itself a call is now analyzed as a
+call expression with a typed source-use hint for the enclosing call. This
+preserves the nested callee's real source anchor and ordering instead of
+letting generic expression analysis discard it. The change fixes both nested
+call omissions without a second semantic algorithm.
+
+Candidate telemetry also moves to the source syntax owner. The patched-Clang
+corpus contains 233 function-call events with candidate drops and no explicit
+dot/arrow member source call owns any of them. CPPGM now classifies an
+explicit member source call from its `member_expression` plus `.` or `->`
+operator and does not publish selected-conversion, initial-rejection,
+nonviable, or viable-nonselected drops for that source event. Qualified static
+member calls remain `id_expression` owners and retain candidate telemetry.
+The rule contains no fixture, path, line, rendered-name, source-text, or token
+exception.
+
+These seven tests leave the expanded mismatch set:
+
+- `pa22/tests/general/300-nested-member-template-prvalue-dtor-output.t`;
+- `pa22/tests/spec/300-nested-class-member-template-nontype-return-key.t`;
+- `pa23/tests/general/100-out-of-class-member-template-overload-head-definition.t`;
+- `pa23/tests/general/300-using-base-specialization-beats-derived-generic-reference.t`;
+- `pa23/tests/spec/200-instantiated-member-alias-cv-partial-order.t`;
+- `pa23/tests/spec/200-member-operator-fixed-tag-default-partial-order.t`;
+- `pa23/tests/spec/300-void-t-decltype-call-sidecar-partial-specialization.t`.
+
+The member-operator fixture still has the same additional `ensure-definition`
+fact for `tagged_argument<weight_tag, supplied_map>::get_value` under both the
+parent binary and this candidate. It is an already-known additional
+definition demand, not a regression from candidate-drop ownership; normalized
+closure matching permits it. The other six repaired outputs are byte-exact.
+A 23-fixture focused matrix covers the seven repaired cases, the first
+over-admission regressions, all nine preceding checkpoint controls, and the
+qualified-static candidate control. It has 21 byte-exact outputs; the two
+non-byte-exact outputs are the explained member-operator definition demand and
+the still-open qualified-static drop residual.
+
+Expanded convergence improves from 1,505 to 1,512 exact outputs. The
+1,530-reference inventory has 18 known mismatches, no warning output, and no
+missing actual file. Function-call debt falls from 29 mismatched occurrences
+across 23 tests to 20 occurrences across 16 tests: nine changed rows, four
+missing rows, and seven unexpected rows. Class-use remains one changed row in
+one test, and lifecycle remains the one lazy-alias class-instantiation gap.
+No test enters the mismatch set or changes family.
+
+The final Homebrew-Clang validation produced these results:
+
+- the ordinary and provenance strict runs both report PA19 279 compared with
+  zero failures, PA20 158 with zero, PA22 293 with three residuals, PA23 385
+  with eleven, and PA24 415 with four; their expected nonzero exit is exactly
+  the documented 18-test residual set;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862, including PA30 runtime;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  ordinary/provenance witness and LowIR pairs match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,198 records, 4,772 source
+  attempts, and 6,298 lifecycle attempts with no unknown producer attempt and
+  no unexercised producer site;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and tracked structure-size reports match the parent byte
+  for byte.
+
+The function producer now makes 1,273 attempts for 841 inserted rows,
+including 432 exact duplicates, and leaves 793 final visible rows. The parent
+made 1,259 attempts for 836 inserted rows, including 423 exact duplicates, and
+left 788 visible rows. The renderer still removes 44 source-defined calls,
+three location duplicates, and one visible duplicate. Its legacy drop-order
+pass rewrites 27 events instead of the parent's 29. These remaining destructive
+actions and duplicates remain Phase 5 ownership debt.
+
+The ordinary convergence report is
+`/tmp/cppgm-phase5-call-boundary-convergence-20260811.json`, SHA-256
+`a1d2a59da9241766e583e16e16980cb742f8c8b2531de4f8d7cbe2543bfdc454`.
+The provenance trace directory is
+`/tmp/cppgm-phase5-call-boundary-provenance-trace-20260811.E4kNks`. The
+provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase5-call-boundary-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase5-call-boundary-provenance-convergence-20260811.json`, with
+SHA-256 values
+`1d26f210297b60296581c939ea250916f3167e5ddfef3986a025064c30439976`
+and
+`d7285cfb432501d41b644080589b3d82ce552811b531b891115aabac2104d037`.
+The byte-identical ordinary and provenance manifests both have SHA-256
+`061fbf60c0478b3f9d82ab183c7e2495df85240c6864eba1496df16a90d7a943`;
+their empty difference has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The 60-test helper report is
+`/tmp/cppgm-phase5-call-boundary-helper-tests-20260811.log`, SHA-256
+`f03b9e7006ef5203dbc3b8f9eb0e2b6dbf39eb018241ae1a4671b4abb382e61f`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports have SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary remains 17,243,768 bytes. Its Mach-O `__TEXT`,
+`__DATA_CONST`, `__DATA`, and `__LINKEDIT` segments remain unchanged from the
+parent at 13,107,200, 61,440, 442,368, and 4,067,328 bytes. It contains no
+witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-phase5-call-boundary-ordinary-20260811`, SHA-256
+`809a624b3868e30f92f349dad5e4c78929d99e1563f40eee6b0d3fafe3e2b977`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.01% | -2.37% | -4.05% | `/tmp/cppgm-phase5-call-boundary-perf-fixed-20260811.txt` |
+| Typed source-call parent | +0.02% | -0.41% | +0.00% | `/tmp/cppgm-phase5-call-boundary-perf-parent-20260811.txt` |
+
+The candidate medians are 174,244,744,619 instructions, 739,184,640 bytes
+maximum RSS, and 569,016,320 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-phase5-call-boundary-raw-candidate-20260811.json`, SHA-256
+`252dc2006c95ceec2ae9ed94781ba1b8dc799b29058617f9ecad31d023e02dfa`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`5af559ca97f35d165a615cda88fee94008357f33cb33fa8f6a69381c64e49df4`
+and
+`72be472246ec8eb94645ca265edfc0b50d1171ea65d30875e20c37835fe262cb`.
+The candidate metadata names commit `ddd1ad331` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 84 and removes 16 production lines before this ledger
+entry. Phase 5 remains open on the 16 function-call tests and the one class-use
+test. Phase 4 remains open on the lazy-alias lifecycle oracle divergence.
+Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

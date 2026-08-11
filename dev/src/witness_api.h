@@ -54,7 +54,7 @@ enum class ClassUseEmissionOrigin
 enum class FunctionCallEmissionOrigin
 {
   OverloadSelectedCall,
-  AdmittedSourceTemplateId,
+  AdmittedSourceCall,
   ConstexprDirectCall,
   DeclvalCall
 };
@@ -202,7 +202,7 @@ inline bool class_use_recording_enabled(
 inline bool function_call_origin_records_during_source_capture_pause(
     FunctionCallEmissionOrigin origin)
 {
-  return origin == FunctionCallEmissionOrigin::AdmittedSourceTemplateId ||
+  return origin == FunctionCallEmissionOrigin::AdmittedSourceCall ||
       origin == FunctionCallEmissionOrigin::DeclvalCall;
 }
 
