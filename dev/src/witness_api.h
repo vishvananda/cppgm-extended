@@ -281,9 +281,13 @@ struct ClassUseEmitRequest
   const semantic_model::ClassInfo * static_member_owner = nullptr;
   const cpp_decl::Type * static_member_owner_type = nullptr;
   // Reference resolution can select a partial before its definition is
-  // instantiated. Nested source arguments defer visibility until the final
-  // semantic graph proves that the selected instance is an enclosing base.
-  bool nested_partial_selection_visibility_deferred = false;
+  // instantiated. Defer public visibility until the final semantic graph
+  // records the corresponding specialization materialization.
+  bool partial_selection_visibility_deferred = false;
+  // Nested source arguments use the selected instance as a type argument
+  // before CPPGM completes it. For those occurrences, a direct enclosing-base
+  // relationship is the materialization fact that matches Clang's AST.
+  bool partial_selection_visibility_requires_enclosing_base = false;
   bool record_during_source_capture_pause = false;
 };
 

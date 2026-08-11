@@ -1802,6 +1802,144 @@ Phase 3 remains open. Five changed class rows, two unexpected class rows, and
 three class ordering cases remain. Dependent pack spellings are the next
 coherent class-use cluster. Inception remains forbidden.
 
+## Residual structured class payload checkpoint, 2026-08-10
+
+Five changed class-use rows remained after nested partial-selection deferral.
+Four came from semantic facts already present in the compiler but omitted from
+the final class-use request:
+
+- a nonnested partial specialization had a materialized definition or owned a
+  nested class use, but the final collector still demoted it to the primary;
+- a concrete out-of-class static-data owner retained the primary selection
+  made while parsing its dependent declaration instead of selecting the
+  partial against the resolved arguments;
+- a defaulted unsigned non-type argument passed through signed decimal
+  formatting;
+- an array nested inside a class-template type argument lost its structured
+  fundamental-type spelling.
+
+Final class-use collection now indexes both direct semantic bases and enclosing
+semantic member owners. Deferred nonnested partial selections remain visible
+when the selected instance has materialized semantic definition state or owns
+a nested pending use. Nested source arguments keep the stricter direct-base
+condition from the previous checkpoint. Concrete out-of-class owners reselect
+their specialization through `ClassTemplateUseInfo`, retain the selected
+declaration anchor, and carry structured main and partial bindings, including
+pack sizes. Template binding rendering now applies typed character and unsigned
+integral formatting to defaulted values and recursively detects structured
+array or cv-qualified type arguments. Template-internal queries expose the
+materialization and enclosing-owner facts, so `callsemantic.cpp` does not add a
+mixed metadata exception.
+
+Exactly four expanded witness outputs change from the materialized nested
+partial-selection checkpoint, and all four become byte-exact:
+
+- `pa22/tests/general/400-partial-specialization-redecl-member-template-empty-pack.t`;
+- `pa23/tests/general/400-static-data-nttp-pack-sizeof-bound.t`;
+- `pa23/tests/general/500-constructor-sfinae-namespace-constant-symbol.t`;
+- `pa24/tests/general/500-array-type-argument-sfinae-static-value.t`.
+
+No LowIR, stdout, stderr, or exit-status file changes, and no previously exact
+witness regresses. Expanded convergence improves from 1,434 to 1,438 matching
+outputs. Changed class-use rows fall from five to one and affected tests fall
+from ten to six. The two unexpected rows and three ordering cases remain.
+Function-call and lifecycle inventories are unchanged.
+
+The sole changed class-use row is
+`pa22/tests/general/400-template-template-fixed-prefix-pack-order.t`. The
+patched Clang oracle selects the line 9 variadic partial and its executable
+returns 1. CPPGM and GCC select the line 16 fixed-arity partial and the
+assignment executable returns 0. Changing CPPGM to reproduce the Clang witness
+would break the existing runtime contract. The row therefore remains a known
+oracle divergence; witness publication continues to describe CPPGM's selected
+specialization.
+
+Correctness and diagnostic evidence from the final Homebrew-Clang builds:
+
+- the preserved strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence passes 1,438/1,530, leaving 92 known mismatches;
+- ordinary and provenance compilers produce identical witness and LowIR output
+  for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,345 records with no unknown
+  producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862 on the first conservative
+  `4 x 4` run;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both static materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero;
+- the structure-size report is byte-identical to the parent. `Type` remains
+  280 bytes, `TemplateArgument` 136 bytes, `TemplateIdSyntax` 160 bytes, and
+  `ClassInfo` 1,136 bytes.
+
+A separate non-gate discovery of all 249 script unit tests has one pre-existing
+batch-wrapper error and one platform skip. The error reproduces in isolation;
+the failing test and every wrapper it exercises are unchanged from the parent.
+The scoped 60-test helper gate and the official assignment report both pass.
+
+The boundary reports retain their parent counts: four service adapters, two
+service bundles, 15 direct semantic-service accesses, 115 text-recovery
+bridges, 65 canonical-key metadata sites, 140 witness source-location sites,
+and 197 mixed `callsemantic.cpp` exceptions on the template side; five
+output-readiness queries, ten template-service mentions, and nine internal
+header sites on the semantic side.
+
+The ordinary binary is 17,160,888 bytes, 5,112 bytes larger than the parent.
+Its Mach-O `__TEXT` segment grows by one 4,096-byte page to 13,049,856 bytes;
+`__DATA_CONST` remains 61,440 bytes and `__DATA` remains 442,368 bytes. The
+ordinary binary contains no provenance symbols.
+
+The final ordinary convergence report is
+`/tmp/cppgm-residual-class-payload-final-convergence-20260810.json`, SHA-256
+`cc54fb30abdcb1260e4b0bb42ae72e7e3d1031a8871637189b301710eacab209`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-residual-class-payload-provenance-final-20260810.FzQOEX/provenance-analysis.json`
+and
+`/tmp/cppgm-residual-class-payload-provenance-convergence-20260810.json`, with
+SHA-256 values
+`b6085c79ee1666bf6269efe397ec52a924ea9486bacf1e28c179d55cc243b1f5`
+and
+`554cc88c3e585e025983e865e069db959fc8e045825ab70755305937dcb30fff`.
+The byte-identical ordinary/provenance output manifest is
+`/tmp/cppgm-residual-class-payload-output-manifest-20260810.txt`, SHA-256
+`b890ddac2303fd80b27d120e45a0eefe22efc767ba4f60cd3e3758e19a10d559`.
+The broad report is
+`/tmp/cppgm-residual-class-payload-broad-20260810.log`, SHA-256
+`ffaab2c0d5d75431a84b26b850a9835e72ce7cdb50ce2c5ec5521bf9711ca9b0`.
+The materialization and structure-size reports remain byte-identical to the
+parent at SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+The final template and semantic boundary reports have SHA-256 values
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`
+and
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`.
+
+The final three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.97% | -0.16% | -3.89% | `/tmp/cppgm-residual-class-payload-perf-fixed-20260810.txt` |
+| Materialized nested partial parent | +0.07% | +0.29% | +0.04% | `/tmp/cppgm-residual-class-payload-perf-parent-20260810.txt` |
+
+The raw candidate record has SHA-256
+`1853f455f5ab10d6b6a8053e83d91ffb7b58c2ed7bf59cc0a7a2b7f4c8417e4b`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`0808041444ec0517892a264e816fbd6f1bb2a4bf9a88ef24f028a4b6e313fd3b`
+and
+`70d9afe7e5c7f220787b13bab2dedbc00c161237971c0329a3771a05430baccb`.
+The candidate metadata names commit `37e59031a` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 3 remains open. One changed class row is the recorded Clang/runtime
+oracle divergence. Two unexpected class rows and three class ordering cases
+remain as implementation work. The ordering cases are the next coherent
+class-use cluster. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

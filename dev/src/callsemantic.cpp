@@ -12021,6 +12021,7 @@ private:
     std::size_t published_occurrences = 0;
 #endif
     unordered_set<const ClassInfo *> semantic_base_instances;
+    unordered_set<const ClassInfo *> semantic_member_owner_instances;
     for(std::size_t candidate_index = 0;
         candidate_index < resolved_source_state_->pending_class_uses.size();
         ++candidate_index) {
@@ -12029,6 +12030,10 @@ private:
               semantic_instance;
       if(!enclosing) {
         continue;
+      }
+      if(const ClassInfo * member_owner =
+             template_api::class_template_enclosing_instance(enclosing)) {
+        semantic_member_owner_instances.insert(member_owner);
       }
       for(std::size_t base_index = 0;
           base_index < enclosing->bases.size();
@@ -12053,8 +12058,17 @@ private:
         request.role = witness::SourceUseRole::QualifierUse;
       }
       ClassTemplateDecl * const origin = request.semantic_template;
-      if(request.nested_partial_selection_visibility_deferred &&
-         semantic_base_instances.count(request.semantic_instance) == 0) {
+      const bool partial_selection_materialized =
+          request.partial_selection_visibility_requires_enclosing_base ?
+              semantic_base_instances.count(request.semantic_instance) != 0 :
+              request.semantic_instance &&
+                  (template_api::
+                       class_template_instance_has_materialized_definition(
+                       request.semantic_instance) ||
+                   semantic_member_owner_instances.count(
+                       request.semantic_instance) != 0);
+      if(request.partial_selection_visibility_deferred &&
+         !partial_selection_materialized) {
         request.selection = witness::SourceSelectionKind::Primary;
         request.specialization_bindings.clear();
         template_api::ClassSpecializationSelection primary_selection;
@@ -12798,6 +12812,7 @@ private:
     witness::ClassUseEmitRequest request;
     request.source_occurrence_id = resolved.source_syntax->source_location_id;
     request.semantic_template = origin;
+    request.semantic_instance = &owner;
     request.semantic_specialization_key =
         template_args_identity_key(owner.instantiation_arguments);
     request.location = location;
@@ -12805,16 +12820,52 @@ private:
     request.use_anchor_location = location;
     request.template_name =
         template_api::class_template_witness_qualified_name(*this, *origin);
-    request.selection = specialized ?
-        witness::SourceSelectionKind::ExplicitSpecialization :
-        witness::SourceSelectionKind::Primary;
-    const semantic_model::SourceDeclAnchorCache & selected_anchor =
-        semantic_trace::class_decl_anchor(*this, &owner);
-    witness::set_selected_decl_anchor(request.selected_decl_location,
-                                      request.selected_decl_anchor,
-                                      selected_anchor);
+    template_api::ClassTemplateUseInfo concrete_use;
+    const bool has_concrete_selection =
+        !dependent_arguments &&
+        template_api::class_template_use_info_for_class(
+            *this,
+            *resolved.source_scope,
+            &owner,
+            concrete_use,
+            true) &&
+        concrete_use.has_selection &&
+        !concrete_use.explicit_case &&
+        concrete_use.origin == origin;
+    request.selection = has_concrete_selection ?
+        source_selection_kind_for_match_kind(concrete_use.selection.kind) :
+        specialized ?
+            witness::SourceSelectionKind::ExplicitSpecialization :
+            witness::SourceSelectionKind::Primary;
+    if(has_concrete_selection) {
+      witness::set_selected_decl_anchor(
+          request.selected_decl_location,
+          request.selected_decl_anchor,
+          class_use_selected_decl_anchor(origin, concrete_use.selection));
+    } else {
+      const semantic_model::SourceDeclAnchorCache & selected_anchor =
+          semantic_trace::class_decl_anchor(*this, &owner);
+      witness::set_selected_decl_anchor(request.selected_decl_location,
+                                        request.selected_decl_anchor,
+                                        selected_anchor);
+    }
+    const bool materialized_partial =
+        has_concrete_selection &&
+        concrete_use.selection.kind == template_api::MS_PARTIAL_SPECIALIZATION;
     template_api::append_class_template_witness_bindings(
-        *this, &owner, request.bindings);
+        *this, &owner, request.bindings, materialized_partial);
+    if(materialized_partial &&
+       concrete_use.selection.parameters &&
+       concrete_use.selection.parameters != &origin->parameters) {
+      template_api::append_template_witness_source_bindings(
+          *this,
+          request.specialization_bindings,
+          *concrete_use.selection.parameters,
+          concrete_use.selection.arguments,
+          "deduced",
+          template_api::TemplateWitnessSourceBindingPolicy::FixedSource,
+          &concrete_use.selection.pack_sizes);
+    }
     if(canonical_parameters && !canonical_parameters->empty()) {
       for(size_t i = 0; i < request.bindings.size(); ++i) {
         const TemplateArgumentSyntax * syntax =
@@ -21833,7 +21884,9 @@ private:
     }
     request.ownership = resolved.source_ownership;
     request.role = resolved.source_role;
-    request.nested_partial_selection_visibility_deferred =
+    request.partial_selection_visibility_deferred =
+        selection.kind == template_api::MS_PARTIAL_SPECIALIZATION;
+    request.partial_selection_visibility_requires_enclosing_base =
         nested_partial_source_argument;
     if(declaration_type_use || definition_pattern_use) {
       request.origin =

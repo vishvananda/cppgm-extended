@@ -428,6 +428,10 @@ bool class_template_use_info_for_class(
     semantic_model::ClassInfo * info,
     ClassTemplateUseInfo & out,
     bool select_specialization = true);
+bool class_template_instance_has_materialized_definition(
+    const semantic_model::ClassInfo * info);
+const semantic_model::ClassInfo * class_template_enclosing_instance(
+    const semantic_model::ClassInfo * info);
 bool template_id_matches_class_template_origin(
     const cpp_decl::QualifiedName & template_id,
     const ClassTemplateUseInfo & info);
@@ -704,7 +708,8 @@ void append_function_template_witness_bindings(
 void append_class_template_witness_bindings(
     SemanticContext & ctx,
     const semantic_model::ClassInfo * info,
-    std::vector<TemplateWitnessSourceBinding> & out);
+    std::vector<TemplateWitnessSourceBinding> & out,
+    bool prefer_structured_type_spelling = false);
 
 std::string canonicalize_template_parameter_source_text(
     const std::vector<template_model::TemplateParameterInfo> & parameters,

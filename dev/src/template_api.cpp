@@ -2167,6 +2167,38 @@ bool class_template_use_info_for_class(
       ctx, scope, info, out, select_specialization);
 }
 
+bool class_template_instance_has_materialized_definition(
+    const semantic_model::ClassInfo * info)
+{
+  if(!info) {
+    return false;
+  }
+  return info->template_instantiation_tracked ||
+      info->source_capture_header_instantiation_tracked ||
+      info->complete ||
+      info->reference_members_collected ||
+      info->implicit_special_members_ensured ||
+      info->definition_output_emitted ||
+      !info->fields.empty() ||
+      !info->methods.empty() ||
+      !info->method_declaration_order.empty() ||
+      !info->bases.empty() ||
+      !info->anonymous_member_classes.empty() ||
+      (info->member_scope &&
+       (!info->member_scope->values.empty() ||
+        !info->member_scope->function_sets.empty() ||
+        !info->member_scope->function_templates.empty() ||
+        !info->member_scope->alias_templates.empty() ||
+        !info->member_scope->variable_templates.empty()));
+}
+
+const semantic_model::ClassInfo * class_template_enclosing_instance(
+    const semantic_model::ClassInfo * info)
+{
+  return info && info->enclosing_scope ?
+      info->enclosing_scope->class_info : nullptr;
+}
+
 bool template_id_matches_class_template_origin(
     const cpp_decl::QualifiedName & template_id,
     const ClassTemplateUseInfo & info)
@@ -6111,11 +6143,26 @@ void append_function_template_witness_bindings(
 void append_class_template_witness_bindings(
     SemanticContext & ctx,
     const semantic_model::ClassInfo * info,
-    std::vector<TemplateWitnessSourceBinding> & out)
+    std::vector<TemplateWitnessSourceBinding> & out,
+    bool prefer_structured_type_spelling)
 {
   if(!(info && info->source_template)) {
     return;
   }
+  const auto argument_text =
+      [&](const template_model::TemplateArgument & argument) -> std::string
+  {
+    if(prefer_structured_type_spelling &&
+       argument.kind == template_model::TemplateArgument::TA_TYPE &&
+       argument.type) {
+      const std::string structured =
+          witness_lookup_text_for_type_argument(ctx, argument.type);
+      if(!structured.empty()) {
+        return structured;
+      }
+    }
+    return witness_argument_text_for_binding(ctx, argument);
+  };
   const std::vector<template_model::TemplateParameterInfo> & params =
       info->source_template->parameters;
   std::size_t argument_index = 0;
@@ -6142,6 +6189,8 @@ void append_class_template_witness_bindings(
                 info->instantiation_arguments,
                 argument_index,
                 argument_index + pack_count);
+        source_binding.structured_type_spelling =
+            prefer_structured_type_spelling && source_binding.type_like;
         std::ostringstream pack_text;
         pack_text << "<";
         bool all_defaulted = true;
@@ -6159,8 +6208,7 @@ void append_class_template_witness_bindings(
                   argument_index + j,
                   true,
                   info->source_template->declaring_scope);
-          const std::string element_text =
-              witness_argument_text_for_binding(ctx, argument);
+          const std::string element_text = argument_text(argument);
           source_binding.pack_arguments.push_back(element_text);
           pack_text << element_text;
         }
@@ -6177,8 +6225,9 @@ void append_class_template_witness_bindings(
     }
     source_binding.type_like = template_witness_argument_is_type_like(
         info->instantiation_arguments[argument_index]);
-    source_binding.arg = witness_argument_text_for_binding(
-        ctx,
+    source_binding.structured_type_spelling =
+        prefer_structured_type_spelling && source_binding.type_like;
+    source_binding.arg = argument_text(
         info->instantiation_arguments[argument_index++]);
     source_binding.source =
         template_argument_is_witness_default_equivalent(
@@ -6637,20 +6686,50 @@ bool source_text_drops_array_cv(const cpp_decl::TypePtr & type,
 }
 
 bool explicit_type_argument_requires_structured_spelling(
-    const cpp_decl::TypePtr & type)
+    SemanticContext & ctx,
+    const cpp_decl::TypePtr & type,
+    unsigned depth = 0)
 {
-  if(!type) {
+  if(!type || depth > 8) {
     return false;
   }
   const cpp_decl::TypePtr unqualified = cpp_decl::strip_top_level_cv(type);
   if(unqualified && unqualified->kind == cpp_decl::Type::TK_ARRAY) {
     return true;
   }
-  return type->kind == cpp_decl::Type::TK_CV &&
-         type->cv_const &&
-         type->cv_volatile &&
-         unqualified &&
-         unqualified->kind == cpp_decl::Type::TK_FUNDAMENTAL;
+  if(type->kind == cpp_decl::Type::TK_CV &&
+     type->cv_const &&
+     type->cv_volatile &&
+     unqualified &&
+     unqualified->kind == cpp_decl::Type::TK_FUNDAMENTAL) {
+    return true;
+  }
+  if(std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
+         mangle_info =
+             cpp_decl::named_type_class_template_specialization_mangle_info_const(
+                 type)) {
+    for(std::size_t i = 0; i < mangle_info->arguments.size(); ++i) {
+      const template_model::TemplateArgument & argument =
+          mangle_info->arguments[i];
+      if(argument.kind == template_model::TemplateArgument::TA_TYPE &&
+         explicit_type_argument_requires_structured_spelling(
+             ctx, argument.type, depth + 1)) {
+        return true;
+      }
+    }
+  }
+  if(semantic_model::ClassInfo * info = ctx.class_info_for_type(type)) {
+    for(std::size_t i = 0; i < info->instantiation_arguments.size(); ++i) {
+      const template_model::TemplateArgument & argument =
+          info->instantiation_arguments[i];
+      if(argument.kind == template_model::TemplateArgument::TA_TYPE &&
+         explicit_type_argument_requires_structured_spelling(
+             ctx, argument.type, depth + 1)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool is_builtin_type_keyword_spelling(const std::string & text)
@@ -6779,7 +6858,7 @@ std::string template_witness_source_binding_arg_text(
                                                     resolved_typedef_text)) {
       return resolved_typedef_text;
     }
-    if(explicit_type_argument_requires_structured_spelling(arg.type) &&
+    if(explicit_type_argument_requires_structured_spelling(ctx, arg.type) &&
        !semantic_text.empty()) {
       return normalize_witness_function_type_argument_text(arg.type,
                                                           semantic_text);
@@ -6804,6 +6883,16 @@ std::string template_witness_defaulted_source_binding_arg_text(
   if(arg.kind == template_model::TemplateArgument::TA_VALUE && !arg.dependent) {
     if(arg.value == 0 && cpp_decl::is_pointer_type(arg.type)) {
       return "nullptr";
+    }
+    const std::string character_text =
+        typed_character_witness_argument_text(arg, true);
+    if(!character_text.empty()) {
+      return character_text;
+    }
+    const std::string unsigned_text =
+        unsigned_integral_witness_value_text(arg);
+    if(!unsigned_text.empty()) {
+      return unsigned_text;
     }
     return template_witness_argument_text(ctx, arg);
   }
@@ -7289,7 +7378,7 @@ void append_template_witness_source_bindings(
         arguments[arg_index].kind ==
             template_model::TemplateArgument::TA_TYPE &&
         explicit_type_argument_requires_structured_spelling(
-            arguments[arg_index].type);
+            ctx, arguments[arg_index].type);
     if(explicit_index < explicit_argument_texts.size()) {
       binding.source =
           template_witness_explicit_binding_source(ctx,
