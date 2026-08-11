@@ -3271,6 +3271,142 @@ this uncommitted checkpoint.
 Phase 4 remains open on the one lazy-alias lifecycle divergence. The class-use
 divergence and function-call inventory remain. Inception remains forbidden.
 
+## Function-call template-binding checkpoint, 2026-08-11
+
+This first promotable Phase 5 slice replaces consumer reconstruction of
+function-template binding provenance with the concrete typed arguments already
+committed by deduction and substitution. Non-pack and pack arguments now use
+`TemplateArgument::source_defaulted`; explicit provenance continues to follow
+the source parameter position required for a leading explicit pack, and all
+other committed arguments are deduced. The obsolete scan that inferred
+defaulting from whether a parameter pattern appeared in the call signature is
+deleted.
+
+Function binding text now also projects three typed semantic cases directly.
+A concrete null pointer argument prints `nullptr` from its pointer type and
+zero value. A concrete function pointer prints the qualified semantic function
+binding, using its primary template entity when appropriate. Deduced type
+arguments use the resolved semantic type, while explicit type arguments retain
+their source spelling. These rules contain no rendered-name, fixture, source
+location, or source-text exception.
+
+The slice makes eight complete outputs exact:
+
+- defaulted non-type deduction overriding a declaration default;
+- braced member-template deduction with a defaulted trailing parameter;
+- explicit member-template leading-pack provenance;
+- constructor-template and dependent-pointer null arguments;
+- direct and specialized function-pointer non-type arguments;
+- the cached async initiation result whose deduced argument must be
+  `executor_binder<handler, executor>`, not its source alias expression.
+
+The specialized function-pointer fixture still differs byte-for-byte only
+because patched Clang emits a duplicate `ensure-definition sample` event that
+the normalized closure comparison treats as equivalent to CPPGM's committed
+definition demand. Its source-use row is now exact.
+
+Expanded convergence improves from 1,473 to 1,481 exact outputs. The current
+1,530-reference inventory has 49 known mismatches, no warning output, and no
+missing actual file. Function-call debt falls from 36 to 27 changed rows and
+from 55 to 47 affected tests; its 18 missing, 13 unexpected, and one
+ordering-only occurrences are unchanged. Class-use remains one changed row in
+one test, and lifecycle remains the one lazy-alias class-instantiation gap
+documented by the preceding checkpoint. The ordinary and provenance strict
+runs therefore intentionally report the same 49 residual tests; correctness
+for this intermediate checkpoint means that the explained set only shrinks,
+not that Phase 5 acceptance has been reached.
+
+The final Homebrew-Clang validation records:
+
+- all eight corrected fixtures and the explicit/deduced pack controls retain
+  exact source-use output and byte-exact LowIR;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862, including the PA30
+  runtime surface;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  ordinary/provenance witness and LowIR pairs match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,889 records, 5,014 source
+  attempts, and 6,298 lifecycle attempts with no unknown producer attempt and
+  no unexercised producer site;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and structure-size reports match the parent byte for
+  byte.
+
+The remaining function publication debt is deliberately not hidden by this
+slice. The semantic producer still makes 1,515 attempts for 1,037 inserted
+rows, including 478 exact duplicates. The renderer still removes 239
+source-defined calls, nine location duplicates, three header-pattern rows, and
+one visible duplicate. Those counters remain Phase 5 ownership work; removing
+the blanket source-defined-call pass before semantic admission distinguishes
+evaluated source calls from unevaluated or replayed calls regresses the corpus.
+
+The ordinary convergence report is
+`/tmp/cppgm-phase5-bindings-convergence-20260811.json`, SHA-256
+`c2b7d2af51b10ee679757e56867d12b632c595eed94a5e3d817acb065066e48d`.
+The provenance trace directory is
+`/tmp/cppgm-phase5-bindings-provenance-20260811.MH1cUg`. The provenance
+analysis and correlated convergence reports are
+`/tmp/cppgm-phase5-bindings-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase5-bindings-provenance-convergence-20260811.json`, with
+SHA-256 values
+`52bae5a9b8e1e2f3e1021d7b14b64a8cd476a41c6a7f35f723d2a4ede7d0c092`
+and
+`03c8429c825f85a969b5bf7de05422d660ec546a8b5d264066f842576a78c85a`.
+The byte-identical ordinary and provenance output manifests have SHA-256
+`156033a2743f7a7d9deaaa1e25e11ebf065143206c54ec1c2c6bb4079fef29b2`;
+their empty difference has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The strict, broad, and 60-test helper reports are
+`/tmp/cppgm-phase5-bindings-strict-20260811.log`,
+`/tmp/cppgm-phase5-bindings-broad-20260811.log`, and
+`/tmp/cppgm-phase5-bindings-helper-tests-20260811.log`, with SHA-256 values
+`b44bed82db425bce3dfe62782d6bb11e848fd580a52ccbd80424874a46bc9fb3`,
+`2c8a4ec00b35d1ee56b723b5f5e0e32c4f13ea955cbc00134cfe15d3d283589e`,
+and
+`570f2a92161246eb29097f917100f33889c4746086ca9e121b64ec7238791b86`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain their parent SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary is 17,188,440 bytes, 480 bytes larger than the parent.
+Its Mach-O `__TEXT`, `__DATA_CONST`, and `__DATA` segments remain unchanged at
+13,066,240, 61,440, and 442,368 bytes. It contains no witness-provenance
+symbols. The frozen binary is
+`/tmp/cppgm-phase5-bindings-ordinary-20260811`, SHA-256
+`eb01fe03ec785b32802b9d5315133aedee9ca83c0a2063169ca1f97cf831a0b9`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.14% | +1.08% | -4.01% | `/tmp/cppgm-phase5-bindings-perf-fixed-20260811.txt` |
+| Inheritance/lifecycle parent | -0.25% | +1.29% | -0.09% | `/tmp/cppgm-phase5-bindings-perf-parent-20260811.txt` |
+
+The candidate medians are 174,019,949,538 instructions, 765,247,488 bytes
+maximum RSS, and 569,257,984 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-phase5-bindings-raw-candidate-20260811.json`, SHA-256
+`46d8397ea6747207c48956f706d0d570e959c2fddba92584ef50fa36d6c6ae42`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`7d467b7a0758c50581df7731e79688e283738f503fb414b63fd4f6fd40fe7d4c`
+and
+`e685566a336910c192ce33ef2a5397d3ac967ddd8b963c8ad1870fd835169607`.
+The candidate metadata names commit `517229262` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 5 remains open on the 47 function-call tests and the one class-use test.
+Phase 4 remains open on the lazy-alias lifecycle oracle divergence. Inception
+remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

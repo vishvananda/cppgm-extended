@@ -3899,6 +3899,50 @@ std::string object_pointer_witness_argument_text(
   return qualified_name.empty() ? std::string() : "&" + qualified_name;
 }
 
+std::string null_pointer_witness_argument_text(
+    const template_model::TemplateArgument & argument)
+{
+  if(argument.kind != template_model::TemplateArgument::TA_VALUE ||
+     argument.dependent ||
+     argument.value != 0 ||
+     argument.rare().value_binding ||
+     argument.rare().function_value) {
+    return std::string();
+  }
+  cpp_decl::TypePtr base = cpp_decl::strip_top_level_cv(argument.type);
+  return base && base->kind == cpp_decl::Type::TK_POINTER ? "nullptr" :
+                                                            std::string();
+}
+
+std::string function_pointer_witness_argument_text(
+    const template_model::TemplateArgument & argument)
+{
+  if(argument.kind != template_model::TemplateArgument::TA_VALUE ||
+     argument.dependent ||
+     !argument.rare().function_value) {
+    return std::string();
+  }
+  cpp_decl::TypePtr base = cpp_decl::strip_top_level_cv(argument.type);
+  if(!base ||
+     base->kind != cpp_decl::Type::TK_POINTER ||
+     !base->inner ||
+     !cpp_decl::is_function_type(base->inner)) {
+    return std::string();
+  }
+
+  const semantic_model::FunctionBinding & binding =
+      *argument.rare().function_value;
+  if(binding.source_template &&
+     binding.source_template->declaring_scope) {
+    return "&" + semantic_lookup::scope_symbol_qualified_name(
+        *binding.source_template->declaring_scope,
+        binding.source_template->name);
+  }
+  const std::string name =
+      semantic_model::function_binding_qualified_name_for_symbol(binding);
+  return name.empty() ? std::string() : "&" + name;
+}
+
 std::string member_pointer_witness_argument_text(
     SemanticContext & ctx,
     const template_model::TemplateArgument & argument)
@@ -6147,7 +6191,8 @@ std::string normalize_witness_function_type_argument_text(
 
 std::string witness_argument_text_for_binding(
     SemanticContext & ctx,
-    const template_model::TemplateArgument & arg)
+    const template_model::TemplateArgument & arg,
+    bool prefer_semantic_type_spelling = false)
 {
   if(arg.kind == template_model::TemplateArgument::TA_VALUE) {
     const std::string retained_enum_text =
@@ -6159,6 +6204,16 @@ std::string witness_argument_text_for_binding(
         typed_character_witness_argument_text(arg, true);
     if(!character_text.empty()) {
       return character_text;
+    }
+    const std::string null_pointer_text =
+        null_pointer_witness_argument_text(arg);
+    if(!null_pointer_text.empty()) {
+      return null_pointer_text;
+    }
+    const std::string function_pointer_text =
+        function_pointer_witness_argument_text(arg);
+    if(!function_pointer_text.empty()) {
+      return function_pointer_text;
     }
     const std::string object_pointer_text =
         object_pointer_witness_argument_text(arg);
@@ -6174,7 +6229,8 @@ std::string witness_argument_text_for_binding(
   if(arg.kind == template_model::TemplateArgument::TA_TYPE && arg.type) {
     const std::string structured_text =
         witness_lookup_text_for_type_argument(ctx, arg.type);
-    if((cpp_decl::is_reference_type(arg.type) &&
+    if(prefer_semantic_type_spelling ||
+       (cpp_decl::is_reference_type(arg.type) &&
         !ctx.type_depends_on_template_parameter(arg.type)) ||
        type_contains_default_elided_template_argument(ctx, arg.type, 0) ||
        template_argument_contains_named_function_local_type_for_witness(
@@ -6283,19 +6339,6 @@ bool type_contains_template_parameter_placeholder(
   return false;
 }
 
-bool function_template_parameter_is_deduced_from_call(
-    const semantic_model::FunctionTemplateDecl & decl,
-    const template_model::TemplateParameterInfo & param)
-{
-  for(std::size_t i = 0; i < decl.params_pattern.size(); ++i) {
-    if(type_contains_template_parameter_placeholder(decl.params_pattern[i].second,
-                                                   param)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 }  // namespace
 
 void append_function_template_witness_bindings(
@@ -6316,15 +6359,6 @@ void append_function_template_witness_bindings(
     source_binding.param = witness_binding_param_name(param, i);
     source_binding.function_pointer_parameter =
         template_parameter_is_function_pointer_value(param);
-    const bool explicit_source = i < explicit_arg_count;
-    const bool defaulted_source =
-        !explicit_source &&
-        param.default_argument &&
-        !function_template_parameter_is_deduced_from_call(
-            *binding->source_template,
-            param);
-    source_binding.source = explicit_source ? "explicit" :
-        (defaulted_source ? "defaulted" : "deduced");
     if(param.parameter_pack) {
       source_binding.pack_binding = true;
       std::size_t pack_count = 0;
@@ -6349,6 +6383,16 @@ void append_function_template_witness_bindings(
       if(pack_count == 0) {
         source_binding.arg = "<>";
       } else {
+        bool all_defaulted = true;
+        for(std::size_t j = 0;
+            j < pack_count && argument_index + j <
+                binding->instantiation_arguments.size();
+            ++j) {
+          all_defaulted = all_defaulted &&
+              binding->instantiation_arguments[argument_index + j].source_defaulted;
+        }
+        source_binding.source = all_defaulted ? "defaulted" :
+            (i < explicit_arg_count ? "explicit" : "deduced");
         source_binding.pack_aggregate = pack_count > 1;
         source_binding.type_like =
             template_witness_argument_range_is_type_like(
@@ -6366,12 +6410,17 @@ void append_function_template_witness_bindings(
           }
           const std::string element_text = witness_argument_text_for_binding(
               ctx,
-              binding->instantiation_arguments[argument_index + j]);
+              binding->instantiation_arguments[argument_index + j],
+              source_binding.source == "deduced");
           source_binding.pack_arguments.push_back(element_text);
           pack_text << element_text;
         }
         pack_text << ">";
         source_binding.arg = pack_text.str();
+      }
+      if(pack_count == 0) {
+        source_binding.source =
+            i < explicit_arg_count ? "explicit" : "deduced";
       }
       argument_index += pack_count;
       out.push_back(source_binding);
@@ -6382,9 +6431,14 @@ void append_function_template_witness_bindings(
     }
     source_binding.type_like = template_witness_argument_is_type_like(
         binding->instantiation_arguments[argument_index]);
+    source_binding.source =
+        binding->instantiation_arguments[argument_index].source_defaulted ?
+            "defaulted" :
+        (i < explicit_arg_count ? "explicit" : "deduced");
     source_binding.arg = witness_argument_text_for_binding(
         ctx,
-        binding->instantiation_arguments[argument_index++]);
+        binding->instantiation_arguments[argument_index++],
+        source_binding.source == "deduced");
     out.push_back(source_binding);
   }
 }
