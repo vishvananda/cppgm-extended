@@ -20,6 +20,18 @@ public:
 
 bool unevaluated_operand_active();
 
+class ScopedStaticMemberWitnessPublicationPause
+{
+public:
+  ScopedStaticMemberWitnessPublicationPause();
+  ~ScopedStaticMemberWitnessPublicationPause();
+
+  ScopedStaticMemberWitnessPublicationPause(
+      const ScopedStaticMemberWitnessPublicationPause &) = delete;
+  ScopedStaticMemberWitnessPublicationPause & operator=(
+      const ScopedStaticMemberWitnessPublicationPause &) = delete;
+};
+
 semantic_conversion::ExprInfo analyze_expression(SemanticContext & ctx,
                                                  semantic_model::Scope & scope,
                                                  const CppAstNode & node);

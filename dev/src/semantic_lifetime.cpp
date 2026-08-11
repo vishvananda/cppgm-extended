@@ -19,6 +19,7 @@
 #include "semantic_context.h"
 #include "semantic_conversion.h"
 #include "semantic_errors.h"
+#include "semantic_expression.h"
 #include "semantic_lookup.h"
 #include "semantic_model.h"
 #include "semantic_overload.h"
@@ -4625,7 +4626,12 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
       return;
     }
 
-    ExprInfo object = ctx.analyze_id_expression(scope, synthetic_identifier_node(name));
+    ExprInfo object;
+    {
+      const semantic_expression::ScopedStaticMemberWitnessPublicationPause
+          static_member_publication_pause;
+      object = ctx.analyze_id_expression(scope, synthetic_identifier_node(name));
+    }
     append_target_initialization_actions(ctx,
                                          scope,
                                          type,
@@ -4642,7 +4648,12 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
     return;
   }
 
-  ExprInfo object = ctx.analyze_id_expression(scope, synthetic_identifier_node(name));
+  ExprInfo object;
+  {
+    const semantic_expression::ScopedStaticMemberWitnessPublicationPause
+        static_member_publication_pause;
+    object = ctx.analyze_id_expression(scope, synthetic_identifier_node(name));
+  }
   ExprInfo object_ptr = ctx.make_address_of_expr(object);
   const CppAstNode * payload = unwrap_initializer_payload(initializer);
   if(initializer &&

@@ -12001,7 +12001,8 @@ private:
     if(!resolved_source_state_) {
       return;
     }
-    std::set<const cpp_decl::Type *> materialized_variable_owner_types;
+    std::set<std::pair<const cpp_decl::Type *, std::string> >
+        materialized_variable_members;
     if(template_witness_session_) {
       for(std::size_t i = 0;
           i < template_witness_session_->lifecycle_events.size();
@@ -12012,8 +12013,10 @@ private:
            witness::TemplateLifecycleEventKind::VariableInstantiation) {
           continue;
         }
-        if(event.semantic_owner_type) {
-          materialized_variable_owner_types.insert(event.semantic_owner_type);
+        if(event.semantic_owner_type && !event.semantic_member_name.empty()) {
+          materialized_variable_members.insert(
+              std::make_pair(event.semantic_owner_type,
+                             event.semantic_member_name));
         }
       }
     }
@@ -12050,9 +12053,11 @@ private:
           resolved_source_state_->pending_class_uses[i];
       if(request.role ==
              witness::SourceUseRole::StaticMemberDefinitionOwner) {
-        if(!request.static_member_owner_type ||
-           materialized_variable_owner_types.count(
-               request.static_member_owner_type) == 0) {
+        if(!request.static_member_owner ||
+           request.static_member_name.empty() ||
+           materialized_variable_members.count(
+               std::make_pair(request.static_member_owner->type.get(),
+                              request.static_member_name)) == 0) {
           continue;
         }
         request.role = witness::SourceUseRole::QualifierUse;
@@ -12770,7 +12775,8 @@ private:
   void observe_resolved_out_of_class_owner_reference(
       const resolved_source_semantics::ResolvedOwnerReference & resolved,
       const vector<TemplateParameterInfo> * canonical_parameters,
-      witness::SourceUseRole role) override
+      witness::SourceUseRole role,
+      const ValueBinding * static_member_binding = nullptr) override
   {
     if(!resolved.valid() ||
        !template_source_capture_enabled()) {
@@ -12889,8 +12895,8 @@ private:
     }
     request.role = role;
     request.static_member_owner = static_member_owner;
-    request.static_member_owner_type =
-        static_member_owner ? static_member_owner->type.get() : nullptr;
+    request.static_member_name = static_member_binding ?
+        static_member_binding->name : std::string();
     request.origin = role == witness::SourceUseRole::QualifierUse ?
         witness::ClassUseEmissionOrigin::QualifiedValueSource :
         witness::ClassUseEmissionOrigin::DeclarationTypeSource;
@@ -12903,7 +12909,8 @@ private:
   void observe_retained_out_of_class_owner_reference(
       uint32_t handle,
       ClassInfo & concrete_owner,
-      witness::SourceUseRole role) override
+      witness::SourceUseRole role,
+      const ValueBinding * static_member_binding = nullptr) override
   {
     if(!resolved_source_state_ || handle == 0 ||
        handle > resolved_source_state_->out_of_class_owners.size()) {
@@ -12912,7 +12919,8 @@ private:
     resolved_source_semantics::ResolvedOwnerReference resolved =
         resolved_source_state_->out_of_class_owners[handle - 1];
     resolved.owner = &concrete_owner;
-    observe_resolved_out_of_class_owner_reference(resolved, nullptr, role);
+    observe_resolved_out_of_class_owner_reference(
+        resolved, nullptr, role, static_member_binding);
   }
 
   AliasTemplateDecl * lookup_alias_template(Scope & scope, const string & name) override
@@ -20708,6 +20716,8 @@ private:
                                         const CppAstNode & expr,
                                         TypePtr & type)
   {
+    const semantic_expression::ScopedStaticMemberWitnessPublicationPause
+        static_member_publication_pause;
     try
     {
       const CppAstNode * operand = &expr;

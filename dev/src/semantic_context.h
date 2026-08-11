@@ -153,11 +153,13 @@ public:
       const resolved_source_semantics::ResolvedOwnerReference & resolved,
       const std::vector<template_model::TemplateParameterInfo> *
           canonical_parameters,
-      semantic_source_use::SourceUseRole role) = 0;
+      semantic_source_use::SourceUseRole role,
+      const semantic_model::ValueBinding * static_member_binding = nullptr) = 0;
   virtual void observe_retained_out_of_class_owner_reference(
       uint32_t handle,
       semantic_model::ClassInfo & concrete_owner,
-      semantic_source_use::SourceUseRole role) = 0;
+      semantic_source_use::SourceUseRole role,
+      const semantic_model::ValueBinding * static_member_binding = nullptr) = 0;
   virtual void retain_named_type_alias_source_result(
       semantic_model::Scope & scope,
       const std::string & name,

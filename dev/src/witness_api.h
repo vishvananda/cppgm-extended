@@ -276,10 +276,10 @@ struct ClassUseEmitRequest
   SourceUseOwnership ownership = SourceUseOwnership::Direct;
   SourceUseRole role = SourceUseRole::TypeUse;
   ClassUseEmissionOrigin origin = ClassUseEmissionOrigin::ResolvedTemplateId;
-  // Static-definition source rows remain pending until this semantic owner
+  // Static-definition source rows remain pending until this semantic member
   // has a corresponding variable-instantiation transition.
   const semantic_model::ClassInfo * static_member_owner = nullptr;
-  const cpp_decl::Type * static_member_owner_type = nullptr;
+  std::string static_member_name;
   // Reference resolution can select a partial before its definition is
   // instantiated. Defer public visibility until the final semantic graph
   // records the corresponding specialization materialization.

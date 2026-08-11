@@ -669,6 +669,7 @@ struct TemplateMemberValueInstantiationRequest
   std::size_t visible_owner_argument_count = 0;
   bool has_visible_owner_argument_count = false;
   bool replay_static_member_initializer = false;
+  bool emit_lifecycle_event = true;
 };
 
 TemplateLifecycleTransition materialize_template_member_value_transition(

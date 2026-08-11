@@ -167,9 +167,10 @@ struct TemplateLifecycleEvent
   std::string normalized_trigger_entity;
   std::string owner_entity;
   std::string trigger_owner_entity;
-  // Session-local semantic identity for a variable's owning class.  Public
-  // rendering remains textual, but visibility policy compares this type.
+  // Session-local semantic identity for a member variable. Public rendering
+  // remains textual, but visibility policy compares the owner and member.
   const cpp_decl::Type * semantic_owner_type = nullptr;
+  std::string semantic_member_name;
   bool template_related = false;
   bool directly_owned = true;
   bool cross_owner_dependency = false;

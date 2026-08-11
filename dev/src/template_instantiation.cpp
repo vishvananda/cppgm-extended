@@ -7353,14 +7353,16 @@ void observe_out_of_class_static_member_owner_reference(
     ctx.observe_resolved_out_of_class_owner_reference(
         reconstructed,
         nullptr,
-        witness::SourceUseRole::StaticMemberDefinitionOwner);
+        witness::SourceUseRole::StaticMemberDefinitionOwner,
+        binding);
     return;
   }
   if(member.owner_reference_handle != 0) {
     ctx.observe_retained_out_of_class_owner_reference(
         member.owner_reference_handle,
         concrete_owner,
-        witness::SourceUseRole::StaticMemberDefinitionOwner);
+        witness::SourceUseRole::StaticMemberDefinitionOwner,
+        binding);
   }
 }
 

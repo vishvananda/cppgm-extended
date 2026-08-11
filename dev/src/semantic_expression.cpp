@@ -61,6 +61,7 @@ using DumpNode = CallSemNode;
 namespace {
 
 thread_local std::size_t unevaluated_operand_depth = 0;
+thread_local std::size_t static_member_witness_publication_pause_depth = 0;
 
 }  // namespace
 
@@ -77,6 +78,18 @@ ScopedUnevaluatedOperand::~ScopedUnevaluatedOperand()
 bool unevaluated_operand_active()
 {
   return unevaluated_operand_depth != 0;
+}
+
+ScopedStaticMemberWitnessPublicationPause::
+    ScopedStaticMemberWitnessPublicationPause()
+{
+  ++static_member_witness_publication_pause_depth;
+}
+
+ScopedStaticMemberWitnessPublicationPause::~
+    ScopedStaticMemberWitnessPublicationPause()
+{
+  --static_member_witness_publication_pause_depth;
 }
 
 namespace {
@@ -5435,13 +5448,17 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
                                           const ValueBinding & binding,
                                           bool allow_constant_fold)
 {
+  const bool evaluated_use = !unevaluated_operand_active();
+  const bool publish_witness_lifecycle =
+      static_member_witness_publication_pause_depth == 0;
   FoldedIntegralLiteral folded_literal;
   const bool force_storage_load =
       storage_backed_primary_template_static_member(binding);
   const bool constant_foldable_static_member =
       binding.requires_constant_initializer ||
       is_const_object_type(remove_reference_type(binding.type));
-  if(allow_constant_fold &&
+  if(evaluated_use &&
+     allow_constant_fold &&
      !force_storage_load &&
      can_inline_constexpr_static_member_initializer_without_storage(binding)) {
     const CppAstNode & payload =
@@ -5450,7 +5467,8 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
                                              payload,
                                              strip_top_level_cv(binding.type));
   }
-  if(allow_constant_fold &&
+  if(evaluated_use &&
+     allow_constant_fold &&
      constant_foldable_static_member &&
      (is_integral_type(binding.type) ||
       is_floating_type(strip_top_level_cv(binding.type)) ||
@@ -5505,9 +5523,12 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
     }
     if(can_fold) {
       if(witness::source_capture_enabled(ctx)) {
+        template_api::TemplateMemberValueInstantiationRequest request;
+        request.emit_lifecycle_event = publish_witness_lifecycle;
         template_api::observe_template_member_value_transition(
             ctx,
-            binding);
+            binding,
+            request);
       }
       ExprInfo result;
       result.type = strip_top_level_cv(binding.type);
@@ -5524,7 +5545,9 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
     }
   }
 
-  if(binding.owner_class && binding.owner_class->member_scope) {
+  if(evaluated_use &&
+     binding.owner_class &&
+     binding.owner_class->member_scope) {
     if(binding.owner_class->source_template &&
        !binding.owner_class->out_of_class_static_member_definitions_applied) {
       template_api::TemplateClassFinalizationRequest request;
@@ -5548,9 +5571,12 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
           binding.owner_class->has_late_required_static_member_output = true;
         }
         ctx.track_instantiated_class(binding.owner_class);
+        template_api::TemplateMemberValueInstantiationRequest request;
+        request.emit_lifecycle_event = publish_witness_lifecycle;
         template_api::observe_template_member_value_transition(
             ctx,
-            required->second);
+            required->second,
+            request);
       }
     }
   }

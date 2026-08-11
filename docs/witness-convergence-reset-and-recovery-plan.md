@@ -2077,6 +2077,137 @@ and
 `pa24/tests/general/500-dependent-qualified-sizeof-static-member.t`. They form
 the next class-use cluster. Inception remains forbidden.
 
+## Semantic static-member publication checkpoint, 2026-08-10
+
+Out-of-class static-member owner rows were promoted when any member variable
+of the same class had a variable-instantiation event. That owner-only test
+published definitions that Clang did not materialize in
+`300-boost-enable-if-type-condition-static-keyword-overload.t` and
+`500-dependent-qualified-sizeof-static-member.t`.
+
+Pending owner rows now carry the static member name from the resolved binding.
+Lifecycle events carry a copied semantic key made from the stable owner type
+and member name. Final collection promotes a pending row only when that full
+key has a public variable-instantiation event. The copied name is required:
+debugger inspection of the first pointer-based implementation found that a
+reconstructed nested `ValueBinding` had already expired before final
+collection. The semantic key also preserves the expected nested owner row in
+`300-template-nested-static-member-out-of-class-definition.t`.
+
+Two implementation-only expression paths no longer publish member-variable
+lifecycle events. Object lifetime analysis synthesizes an id-expression for
+the object whose initialization actions it is constructing, and constant
+evaluation resolves a `sizeof` operand through a second unevaluated type
+query. A narrow static-member publication scope covers those operations.
+Static-member materialization and initializer replay still run, but the
+public lifecycle observer is not entered. The existing unevaluated-expression
+scope also prevents constant folding, output requirements, and lifecycle
+publication while the ordinary `sizeof` operand is typed. No renderer,
+source-name, source-location, fixture, or rendered-text rule was added.
+
+The checkpoint removes the two remaining unexpected class-use rows and five
+unexpected lifecycle rows. Three of the lifecycle rows are the synthetic
+`formatter`, `out`, and `what` member probes in
+`pa22/tests/general/400-partial-specialization-conversion-operator-pointer-binding.t`;
+that witness is now byte-exact. The PA24 `sizes` witness is also byte-exact.
+The PA23 `keyword::instance` class and lifecycle rows are gone, leaving only
+the pre-existing missing
+`std::is_same<boost::parameter::in_reference,
+boost::parameter::consume_reference>::value` event.
+
+Expanded convergence improves from 1,440 to 1,442 matching outputs and leaves
+88 known mismatches with no missing output file. Class-use debt is now the
+single recorded changed row in
+`pa22/tests/general/400-template-template-fixed-prefix-pack-order.t`.
+Function-call inventory is unchanged. Lifecycle debt now has 55 missing and
+27 unexpected terminal facts in 39 tests, plus eight additional-definition-
+demand warnings.
+
+Correctness and diagnostic evidence from the final Homebrew-Clang builds:
+
+- the preserved strict manifest remains byte-exact at 1,305/1,305;
+- ordinary and provenance compilers produce identical witness and LowIR output
+  for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,321 records with no unknown
+  producer and no unexercised producer site;
+- class consolidation keeps 3,000 completed candidates, 3,303 early repeats,
+  355 prepublication merges, and 2,645 collected occurrences; publications
+  fall from 2,634 to 2,632 with the two rejected owner rows;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template and semantic boundary
+  counts are unchanged;
+- the structure-size report is byte-identical to the parent. `Type` remains
+  280 bytes, `TemplateArgument` 136 bytes, `TemplateIdSyntax` 160 bytes,
+  `ClassInfo` 1,136 bytes, and `TemplateLifecycleTransition` 80 bytes.
+
+The optional full repository unit discovery repeated its already documented
+result: 249 tests ran with one skip and the unrelated
+`BatchTimeoutHarnessTests.test_driver_assignment_wrapper_uses_worker_script`
+error because its temporary `basic.my.impl.exit_status` file is absent. The
+focused 60-test checkpoint suite passes in full.
+
+The ordinary binary is 17,162,504 bytes. Its Mach-O `__TEXT` segment remains
+13,049,856 bytes, `__DATA_CONST` remains 61,440 bytes, and `__DATA` remains
+442,368 bytes. It contains no provenance symbols. The frozen ordinary binary
+is `/tmp/cppgm-semantic-static-member-ordinary-final2-20260810`, SHA-256
+`27f85992415e0abbe2a7cbe00bceeda12ca2a2979e7636922d0eb3d6235243cc`.
+
+The final ordinary convergence report is
+`/tmp/cppgm-semantic-static-member-final2-convergence-20260810.json`, SHA-256
+`9f55a7498c392e29212712451b3ec1131309ccfb2ede828046d49662ed0eb473`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-semantic-static-member-provenance-final2-20260810.ngowea/provenance-analysis.json`
+and
+`/tmp/cppgm-semantic-static-member-provenance-final2-convergence-20260810.json`,
+with SHA-256 values
+`641a4acfe8cb06750a0616def057e3b88db8fed5d00cad44914f5151e6211bba`
+and
+`15a823729899bc009a28aa4d4616ce624f6238d5c3b9f468979d88329eaeaa29`.
+The byte-identical ordinary/provenance output manifest is
+`/tmp/cppgm-semantic-static-member-final2-output-manifest-20260810.txt`,
+SHA-256
+`bbb2d4eb965065efe3309790e05089a5e678c14b6337fce80cc946d765a4e55e`.
+The broad report is
+`/tmp/cppgm-semantic-static-member-final2-broad-20260810.log`, SHA-256
+`a1cd8904fe388e5eb720df340edf24fa22f8ef74000895e19bbb34645dc896b2`.
+
+The materialization, structure-size, and zero-finding text-reparse reports
+retain their parent SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`,
+and
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`.
+The template and semantic boundary reports retain SHA-256 values
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`
+and
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`.
+
+The final three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.15% | +0.83% | -3.91% | `/tmp/cppgm-semantic-static-member-final2-perf-fixed-20260810.txt` |
+| Same-location ordering parent | -0.17% | +1.10% | +0.04% | `/tmp/cppgm-semantic-static-member-final2-perf-parent-20260810.txt` |
+
+The candidate medians are 173,986,033,714 instructions, 763,371,520 bytes
+maximum RSS, and 569,851,904 bytes peak footprint. The raw candidate record is
+`/tmp/cppgm-semantic-static-member-final2-raw-candidate-20260810.json`,
+SHA-256
+`35272cd94e94e96a960b810bf08e9bf128d880fc011b29db6c8207f9bacedc62`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`88a8c51851d7e9be8395dbfa9b3a05f4f367040f69cdf31c2430170698899cbb`
+and
+`42158fd8b5bd5e4e311b2b708467e083061f73839fddeac334e69b62214285c1`.
+The candidate metadata names commit `44f13cab6` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 3 remains open. The only remaining class-use row is the recorded
+Clang/runtime oracle divergence; the next coherent work should move to the
+function-call or lifecycle inventory. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

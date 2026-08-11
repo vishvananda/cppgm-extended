@@ -5723,6 +5723,7 @@ void observe_template_lifecycle_transition(
       transition.value_owner ? transition.value_owner : binding.owner_class;
   event.semantic_owner_type = semantic_owner ?
       semantic_owner->type.get() : nullptr;
+  event.semantic_member_name = binding.name;
   event.entity_has_template_identity =
       value_or_owner_has_template_identity(&binding) ||
       transition.variable_template != nullptr;
@@ -5773,11 +5774,13 @@ void observe_template_member_value_transition(
      ctx.template_witness_context().public_source_use_active) {
     effective_request.replay_static_member_initializer = true;
   }
-  observe_template_lifecycle_transition(
-      ctx,
+  const TemplateLifecycleTransition transition =
       materialize_template_member_value_transition(ctx,
                                                    binding,
-                                                   effective_request));
+                                                   effective_request);
+  if(effective_request.emit_lifecycle_event) {
+    observe_template_lifecycle_transition(ctx, transition);
+  }
 }
 
 TemplateLifecycleTransition
