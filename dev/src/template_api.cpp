@@ -16,6 +16,7 @@
 #include "semantic_hotspot.h"
 #include "semantic_class_model.h"
 #include "semantic_errors.h"
+#include "semantic_expression.h"
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
 #include "semantic_trace.h"
@@ -5687,9 +5688,14 @@ void observe_template_lifecycle_transition(
     observe_class_lifecycle_transition(ctx, transition);
     return;
   }
+  if(transition.function_binding &&
+     semantic_expression::unevaluated_operand_active()) {
+    return;
+  }
   std::string function_event_location;
   if((transition.function_binding &&
       (transition.function_binding->is_inherited_constructor ||
+       transition.function_binding->synthesized ||
        (transition.function_binding->owner_class &&
         transition.function_binding->owner_class->dependent_instantiation))) ||
      !claim_template_lifecycle_transition(

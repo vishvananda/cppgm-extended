@@ -19,6 +19,7 @@
 #include "semantic_class_model.h"
 #include "semantic_context.h"
 #include "semantic_errors.h"
+#include "semantic_expression.h"
 #include "semantic_lookup.h"
 #include "semantic_template_function.h"
 #include "semantic_trace.h"
@@ -254,14 +255,15 @@ const semantic_model::FieldInfo * aggregate_input_field(SemanticContext & ctx,
   return storage_info ? first_aggregate_field(*storage_info) : &field;
 }
 
-bool analyze_expression(SemanticContext & ctx,
-                        Scope & scope,
-                        const CppAstNode & expr,
-                        ExprInfo & out)
+bool analyze_expression_without_output_materialization(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & expr,
+    ExprInfo & out)
 {
   try
   {
-    out = ctx.analyze_expression(scope, expr);
+    out = ctx.analyze_expression_without_output_materialization(scope, expr);
     return true;
   }
   catch(const std::logic_error & e)
@@ -2783,8 +2785,10 @@ bool expression_is_nothrow(SemanticContext & ctx,
                            const CppAstNode & expr,
                            bool & out)
 {
+  const semantic_expression::ScopedUnevaluatedOperand unevaluated_operand;
   ExprInfo analyzed;
-  if(!analyze_expression(ctx, scope, expr, analyzed)) {
+  if(!analyze_expression_without_output_materialization(
+         ctx, scope, expr, analyzed)) {
     return false;
   }
 

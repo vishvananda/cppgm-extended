@@ -9943,13 +9943,15 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
 
   FunctionBinding * match = preferred_overloads[0];
 
-  match = require_output_definition ?
-      semantic_template_function::acquire_function_definition_binding(ctx, match, scope) :
-      semantic_template_function::acquire_required_function_definition_binding(
-          ctx,
-          match,
-          scope);
-  if(require_output_definition) {
+  const bool materialize_output_definition =
+      require_output_definition &&
+      ctx.current_analysis_policy().materialize_direct_call_output &&
+      !semantic_expression::unevaluated_operand_active();
+  if(materialize_output_definition) {
+    match = semantic_template_function::acquire_function_definition_binding(
+        ctx,
+        match,
+        scope);
     ctx.require_function_definition(match,
                                     OutputReason::FunctionIdUse,
                                     !match->is_deleted);
@@ -10169,9 +10171,12 @@ bool collect_overloaded_member_pointer_argument_options(
        binding->is_constructor || binding->is_destructor) {
       continue;
     }
-    ctx.require_function_definition(binding,
-                                    OutputReason::FunctionIdUse,
-                                    !binding->is_deleted);
+    if(ctx.current_analysis_policy().materialize_direct_call_output &&
+       !semantic_expression::unevaluated_operand_active()) {
+      ctx.require_function_definition(binding,
+                                      OutputReason::FunctionIdUse,
+                                      !binding->is_deleted);
+    }
     out.push_back(make_member_pointer_function_id_expr(ctx,
                                                        unary_node,
                                                        operand_node,
@@ -12958,11 +12963,13 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
         constructor_template_set_accepts_argument_count(target_info,
                                                         effective_arg_nodes.size());
     if(selected_exact && !constructor_template_may_beat_exact) {
-      FunctionBinding * chosen =
-          semantic_template_function::acquire_function_definition_binding(
-              ctx,
-              state.matches[exact_selection.index].function,
-              scope);
+      FunctionBinding * chosen = state.matches[exact_selection.index].function;
+      if(options.instantiate_bodies) {
+        chosen = semantic_template_function::acquire_function_definition_binding(
+            ctx,
+            chosen,
+            scope);
+      }
       reject_deleted_selected_constructor(chosen);
       if(!rematerialize_candidate_match_args(ctx,
                                              scope,
@@ -13094,9 +13101,13 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
     throw logic_error(out.str());
   }
 
-  FunctionBinding * chosen =
-      semantic_template_function::acquire_function_definition_binding(
-          ctx, state.matches[selection.index].function, scope);
+  FunctionBinding * chosen = state.matches[selection.index].function;
+  if(options.instantiate_bodies) {
+    chosen = semantic_template_function::acquire_function_definition_binding(
+        ctx,
+        chosen,
+        scope);
+  }
   reject_deleted_selected_constructor(chosen);
   if(!rematerialize_candidate_match_args(ctx,
                                          scope,
@@ -13750,8 +13761,12 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
 {
   ScopedFunctionBindingCandidateBorrow binding_borrow(ctx);
   ScopedCallSemConstructionPath construction_path("overload.call-expression");
-  const bool instantiate_bodies = options.instantiate_bodies;
-  const CallAnalysisHints * hints = options.hints;
+  CallAnalysisOptions effective_options = options;
+  effective_options.instantiate_bodies =
+      effective_options.instantiate_bodies &&
+      !semantic_expression::unevaluated_operand_active();
+  const bool instantiate_bodies = effective_options.instantiate_bodies;
+  const CallAnalysisHints * hints = effective_options.hints;
   const std::string hint_use_location =
       hints && !hints->use_location.empty() ?
           refine_fragment_use_location(ctx, node, hints->use_location) :
@@ -13861,7 +13876,10 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                    &functional_cast_hints);
       };
   vector<ExprInfo> merged_lookup_arg_values;
-  SharedCallArgumentAnalyzer argument_analyzer(ctx, scope, arg_nodes, options);
+  SharedCallArgumentAnalyzer argument_analyzer(ctx,
+                                               scope,
+                                               arg_nodes,
+                                               effective_options);
   ExprInfo hinted_member_implicit_object_arg;
   bool hinted_member_implicit_object_ready = false;
   const auto get_hinted_member_implicit_object_arg = [&]() -> const ExprInfo &
@@ -14353,7 +14371,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                      callee_expr,
                      converted_callee,
                      callee_rank,
-                     semantic_policy::rematerialization_conversion(options))) {
+                     semantic_policy::rematerialization_conversion(
+                         effective_options))) {
                 throw logic_error("failed to materialize conversion-function-pointer callee");
               }
 
@@ -14742,7 +14761,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                     implicit_object_expr,
                                     converted_object,
                                     object_rank,
-                                    semantic_policy::rematerialization_conversion(options))) {
+                                    semantic_policy::rematerialization_conversion(
+                                        effective_options))) {
       throw logic_error("invalid pointer-to-member call object");
     }
     call_args.push_back(converted_object);
@@ -14775,7 +14795,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                       source_arg,
                                       converted_arg,
                                       rank,
-                                      semantic_policy::rematerialization_conversion(options))) {
+                                      semantic_policy::rematerialization_conversion(
+                                          effective_options))) {
         throw logic_error("invalid pointer-to-member call argument");
       }
       call_args.push_back(converted_arg);
@@ -15093,7 +15114,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     }
     ExprInfo builtin_result;
     if(try_analyze_builtin_call_expression(ctx, scope, lookup_callee_node.value, arg_nodes,
-                                           options,
+                                           effective_options,
                                            builtin_result)) {
       return builtin_result;
     }
@@ -16096,7 +16117,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
        !rematerialize_candidate_match_args(ctx,
                                            scope,
                                            selected_match,
-                                           semantic_policy::rematerialization_conversion(options),
+                                           semantic_policy::rematerialization_conversion(
+                                               effective_options),
                                            true)) {
       throw logic_error("failed to rematerialize selected call conversions");
     }

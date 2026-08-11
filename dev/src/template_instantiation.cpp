@@ -19,6 +19,7 @@
 #include "pack_parameter_analysis.h"
 #include "semantic_class_model.h"
 #include "semantic_errors.h"
+#include "semantic_expression.h"
 #include "semantic_lookup.h"
 #include "semantic_lifetime.h"
 #include "semantic_overload.h"
@@ -11100,6 +11101,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                     *found->second);
     }
     if((include_body || explicit_specialization) &&
+       !semantic_expression::unevaluated_operand_active() &&
        (found->second->has_definition || explicit_specialization)) {
       apply_function_instantiation_intent(
           ctx,
@@ -12514,6 +12516,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       (!instantiation_owner || !instantiation_owner->dependent_instantiation) &&
       binding_signature_is_concrete(*binding);
   if((include_body || explicit_specialization) &&
+     !semantic_expression::unevaluated_operand_active() &&
      (binding->has_definition || explicit_specialization)) {
     apply_function_instantiation_intent(
         ctx,

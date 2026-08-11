@@ -2341,6 +2341,142 @@ additional-definition-demand warnings. The single recorded class-use oracle
 divergence and function-call inventory also remain. Inception remains
 forbidden.
 
+## Unevaluated function lifecycle checkpoint, 2026-08-11
+
+This promotable Phase 4 slice prevents unevaluated expressions from
+publishing function lifecycle output. `decltype` and `noexcept` still require
+overload resolution, return-type analysis, constant evaluation, and in some
+cases a function body. Those semantic operations continue. The analysis
+policy suppresses direct-call materialization intent, and the output tracker
+rejects the terminal function-instantiation or definition transition that an
+evaluated call would publish.
+
+The first implementation stopped function-body acquisition globally. It
+removed the spurious lifecycle facts but broke the PA21
+constexpr/noexcept/decltype static-assert control and the PA34 libstdc++
+uninitialized-copy local-alias control. The final implementation keeps body
+acquisition available for type and constexpr correctness, carries an
+unevaluated-aware call policy through overload selection and conversion, and
+declines lifecycle claims at the output-tracking boundaries. Both controls
+pass in the final build.
+
+The focused matrix covers seven affected families:
+
+- a forward-only member operator;
+- a member-template call operator queried by `noexcept`;
+- qualified-alias member deduction;
+- a converting constructor with a concrete owner pack;
+- a hidden-friend query in `decltype` and `noexcept`;
+- out-of-class member-template cache reset behavior;
+- a function-type pack template argument.
+
+Six target witnesses are exact and the seventh retains only its known
+same-location call-ordering difference. Three of four independent controls
+are exact; the fourth retains its unchanged pre-existing ensure-definition
+warning. All eleven focused LowIR outputs are byte-identical to their
+references.
+
+Expanded convergence improves from 1,444 to 1,450 matching outputs. The final
+inventory has 1,530 references, 80 known mismatches, one warning output, and
+no missing actual file. Class-use remains one changed row in one test.
+Function-call inventory remains 36 changed, 18 missing, 13 unexpected, and
+one ordering-only occurrence across 55 tests. Lifecycle debt now has 47
+missing and 11 unexpected facts across 28 tests, plus one explained
+additional-definition-demand warning. The parent had the same 47 missing
+facts, 19 unexpected facts, and eight additional-definition-demand warnings.
+
+Correctness and diagnostic evidence from the final Homebrew-Clang builds:
+
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- ordinary and provenance compilers produce byte-identical witness and LowIR
+  output for all 1,530 sessions;
+- all 1,530 provenance sessions flush, producing 61,255 records with no
+  unknown producer attempt and no unexercised producer site;
+- alias and class consolidation counts remain unchanged: class-use keeps
+  3,000 completed candidates, 3,303 early repeats, 355 prepublication merges,
+  2,645 collected occurrences, and 2,632 publications;
+- all 16 typed class-materialization admissions remain unchanged; only six
+  rejected lookup-only decisions disappear relative to the parent;
+- the focused convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template, semantic-boundary,
+  and structure-size reports are byte-identical to the parent.
+
+The historical dynamic class-materialization audit builder still contains
+its pre-existing stale five-accept expectation. This checkpoint does not
+count that builder as a passing gate. Its focused unit/helper suite passes,
+while the public class route, typed admissions, and consolidation counts
+above provide the parent-ratchet evidence for this non-class change.
+
+The ordinary convergence report is
+`/tmp/cppgm-unevaluated-function-lifecycle-final-20260811.json`, SHA-256
+`62476a7c9495a9f26064234ed882e7e5d813460c404b623288d9ba2392184cb5`.
+The provenance analysis and provenance-correlated convergence reports are
+`/tmp/cppgm-unevaluated-function-lifecycle-provenance-analysis-20260811.json`
+and
+`/tmp/cppgm-unevaluated-function-lifecycle-provenance-convergence-20260811.json`,
+with SHA-256 values
+`798832b8fdb75b18330cb86c59790cbb68e2d163dff5d975544f41362631f4d2`
+and
+`36fea8402b1692442c382894f17dab57e9a9e8eedeb1db0f6387b952751a3a0a`.
+The byte-identical ordinary/provenance output manifest is
+`/tmp/cppgm-unevaluated-function-lifecycle-output-manifest-20260811.txt`,
+SHA-256
+`4d54a18bc35fcbf90d82be831ee39711b85d24d33d38a6dda024bd9e77f74146`.
+The broad report is
+`/tmp/cppgm-unevaluated-function-lifecycle-broad-final-20260811.log`,
+SHA-256
+`78b100ad578e57206924bbbea8697635cb1593247a264698198ceec746abcbbb`.
+
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain their parent SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+The 60-test helper report is
+`/tmp/cppgm-unevaluated-function-lifecycle-helper-tests-20260811.log`,
+SHA-256
+`d796303094fc166d4c0a8ca259345ca0ab0f6da96fd9245a5b09b49542cbb20c`.
+
+The ordinary binary is 17,166,840 bytes, 240 bytes larger than the parent.
+Its Mach-O `__TEXT`, `__DATA_CONST`, and `__DATA` segments remain unchanged at
+13,053,952, 61,440, and 442,368 bytes. It contains no provenance symbols. The
+frozen binary is
+`/tmp/cppgm-unevaluated-function-lifecycle-ordinary-20260811`, SHA-256
+`446a9c092ab8c5666aeb5a9b2137e21fb53ec1774b53754195a76fdf0731fde5`.
+
+The final three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.00% | -0.70% | -4.00% | `/tmp/cppgm-unevaluated-function-lifecycle-perf-fixed-20260811.txt` |
+| Semantic value-entity parent | -0.06% | -0.92% | -0.11% | `/tmp/cppgm-unevaluated-function-lifecycle-perf-parent-20260811.txt` |
+
+The candidate medians are 174,264,985,242 instructions, 751,800,320 bytes
+maximum RSS, and 569,323,520 bytes peak footprint. Wall time is informational.
+The raw candidate record is
+`/tmp/cppgm-unevaluated-function-lifecycle-raw-candidate-20260811.json`,
+SHA-256
+`8fe6dc115c845f7a4abde623209033ebd563854f01973058fcacc4f36554c019`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`033672db6633e6a6861b0924dbb4502cc0f9a5de324ec98f16bab1c422764130`
+and
+`063af7b5467dbd42a32295f0a68e6b1cea1acb2f8a913b3fa2da18fba24eda92`.
+The candidate metadata names commit `239b5e16a` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 4 remains open. This checkpoint requires passing focused, broad,
+provenance-equivalence, audit, binary, and performance gates. The recovery
+plan tracks convergence debt as a separate inventory. Its remaining 47
+missing and 11 unexpected lifecycle facts, one lifecycle warning, class-use
+divergence, and function-call inventory remain future work. Inception remains
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

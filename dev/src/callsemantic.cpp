@@ -4697,6 +4697,8 @@ private:
     try {
       AnalysisPolicy suppressed_policy = analysis_policy_;
       suppressed_policy.instantiate_function_bodies = false;
+      suppressed_policy.materialize_direct_call_output = false;
+      suppressed_policy.materialize_user_defined_output = false;
       ScopedAnalysisPolicyOverride suppression(*this, suppressed_policy);
       const semantic_expression::ScopedUnevaluatedOperand
           unevaluated_operand;
