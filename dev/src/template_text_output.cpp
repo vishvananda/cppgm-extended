@@ -861,8 +861,13 @@ std::set<std::string> non_materialized_function_closure_entities(
   using template_api::TemplateLifecycleEventKind;
   std::set<std::string> saw_non_materialized;
   std::set<std::string> saw_materialized;
+  std::set<std::string> saw_direct_definition_requirement;
   for(std::size_t i = 0; i < lifecycle_events.size(); ++i) {
     const template_api::TemplateLifecycleEvent & event = *lifecycle_events[i];
+    if(event.kind == TemplateLifecycleEventKind::RequireDefinition &&
+       event.directly_owned) {
+      saw_direct_definition_requirement.insert(event.normalized_entity);
+    }
     if(event.kind != TemplateLifecycleEventKind::FunctionInstantiation) {
       continue;
     }
@@ -877,7 +882,8 @@ std::set<std::string> non_materialized_function_closure_entities(
   for(std::set<std::string>::const_iterator it = saw_non_materialized.begin();
       it != saw_non_materialized.end();
       ++it) {
-    if(saw_materialized.count(*it) == 0) {
+    if(saw_materialized.count(*it) == 0 &&
+       saw_direct_definition_requirement.count(*it) == 0) {
       out.insert(*it);
     }
   }
@@ -909,6 +915,10 @@ bool render_public_closure_event(
     return false;
   }
   if(is_function_lifecycle_event(event) && event.public_source_required) {
+    if(event.entity_is_defaulted_copy_or_move_assignment) {
+      return event.kind ==
+          template_api::TemplateLifecycleEventKind::RequireDefinition;
+    }
     if(event.kind == template_api::TemplateLifecycleEventKind::RequireDefinition &&
        public_closure_event_is_owned_by_explicit_source_event(
            explicit_instantiation_entities,
@@ -958,7 +968,11 @@ bool render_public_closure_event(
   if(event.kind == TemplateLifecycleEventKind::RequireDefinition &&
      public_closure_event_is_owned_by_explicit_source_event(
          explicit_instantiation_entities,
-         event)) {
+         event) &&
+     (event.entity_is_explicit_instantiation_definition ||
+      (event.entity_is_constructor &&
+       !event.entity_is_member_function_template &&
+       !event.entity_definition_materialized_by_enclosing_closure))) {
     return false;
   }
   if(event.kind == TemplateLifecycleEventKind::RequireDefinition &&
@@ -987,7 +1001,11 @@ bool render_public_closure_event(
   if(event.kind == TemplateLifecycleEventKind::EnsureDefinition &&
      public_closure_event_is_owned_by_explicit_source_event(
          explicit_class_instantiation_entities,
-         event)) {
+         event) &&
+     (event.entity_is_explicit_instantiation_definition ||
+      (event.entity_is_constructor &&
+       !event.entity_is_member_function_template &&
+       !event.entity_definition_materialized_by_enclosing_closure))) {
     return false;
   }
   if(event.kind == TemplateLifecycleEventKind::EnsureDefinition &&

@@ -5453,6 +5453,17 @@ void observe_function_lifecycle_transition(
       binding->is_constructor &&
       (binding->is_copy_constructor || binding->is_move_constructor) &&
       (binding->is_defaulted || binding->synthesized);
+  event.entity_is_defaulted_copy_or_move_assignment =
+      (binding->is_copy_assignment || binding->is_move_assignment) &&
+      (binding->is_defaulted || binding->synthesized);
+  event.entity_is_explicit_instantiation_definition =
+      binding->is_explicit_instantiation_definition;
+  event.entity_is_constructor = binding->is_constructor;
+  event.entity_is_member_function_template =
+      binding->source_template &&
+      binding->source_template->is_member_function_template;
+  event.entity_definition_materialized_by_enclosing_closure =
+      binding->template_definition_materialized_by_enclosing_closure;
   switch(transition.transition_kind) {
   case TemplateLifecycleTransitionKind::DefinitionRequired:
     event.kind = TemplateLifecycleEventKind::RequireDefinition;
