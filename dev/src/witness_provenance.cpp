@@ -513,6 +513,8 @@ std::string lifecycle_event_full(const template_api::TemplateLifecycleEvent & ev
       << event.entry_context.trigger_has_template_identity << '|'
       << event.entity_has_template_identity << '|'
       << event.entity_is_unnamed_class << '|'
+      << event.entity_is_function_local_class << '|'
+      << event.entity_is_function_local_class_member << '|'
       << event.entity_is_constexpr_function << '|'
       << event.entity_is_defaulted_copy_or_move_constructor << '|'
       << event.public_source_required;

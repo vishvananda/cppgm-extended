@@ -904,6 +904,10 @@ bool render_public_closure_event(
   if(event.cause == template_api::TemplateLifecycleCause::ExplicitSpecialization) {
     return false;
   }
+  if(event.entity_is_function_local_class_member &&
+     event.kind != template_api::TemplateLifecycleEventKind::FunctionInstantiation) {
+    return false;
+  }
   if(is_function_lifecycle_event(event) && event.public_source_required) {
     if(event.kind == template_api::TemplateLifecycleEventKind::RequireDefinition &&
        public_closure_event_is_owned_by_explicit_source_event(
@@ -1077,7 +1081,8 @@ bool render_public_closure_event(
            source_owner_entities.end()) {
       return false;
     }
-    if(event.entity_is_unnamed_class) {
+    if(event.entity_is_unnamed_class ||
+       event.entity_is_function_local_class) {
       return true;
     }
     if(event.cause == template_api::TemplateLifecycleCause::TrackInstantiation &&
@@ -1105,7 +1110,8 @@ bool render_public_closure_event(
          template_api::TemplateLifecycleCause::ExplicitInstantiationDeclaration &&
      event.cause !=
          template_api::TemplateLifecycleCause::ExplicitInstantiationDefinition &&
-     !event.entity_is_unnamed_class) {
+     !event.entity_is_unnamed_class &&
+     !event.entity_is_function_local_class) {
     return false;
   }
   if(event.kind == TemplateLifecycleEventKind::RequireDefinition &&

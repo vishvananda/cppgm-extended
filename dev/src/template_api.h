@@ -649,6 +649,12 @@ void note_output_tracked_class_instantiation_if_needed(
 void observe_source_unnamed_class_completion(
     SemanticContext & ctx,
     semantic_model::ClassInfo & info);
+void observe_source_function_local_class_completion(
+    SemanticContext & ctx,
+    semantic_model::ClassInfo & info);
+void observe_function_local_class_member_definition_materialized(
+    SemanticContext & ctx,
+    semantic_model::FunctionBinding & binding);
 void observe_anonymous_member_class_completion(
     SemanticContext & ctx,
     semantic_model::ClassInfo & owner,

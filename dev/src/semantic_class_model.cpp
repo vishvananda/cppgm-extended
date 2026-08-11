@@ -14152,6 +14152,7 @@ void collect_class_declaration(SemanticContext & ctx,
   } else {
     ensure_class_reference_members(ctx, *info);
   }
+  template_api::observe_source_function_local_class_completion(ctx, *info);
 }
 
 void ensure_implicit_special_members(SemanticContext & ctx,

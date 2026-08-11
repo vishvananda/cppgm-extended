@@ -160,6 +160,8 @@ struct TemplateLifecycleEvent
   std::string detail;
   bool entity_has_template_identity = false;
   bool entity_is_unnamed_class = false;
+  bool entity_is_function_local_class = false;
+  bool entity_is_function_local_class_member = false;
   bool entity_is_constexpr_function = false;
   bool entity_is_defaulted_copy_or_move_constructor = false;
   bool public_source_required = false;
@@ -1379,8 +1381,8 @@ inline std::string normalize_template_log_type_spellings(const std::string & tex
   static const std::regex const_suffix_regex(
       "\\b([A-Za-z_][A-Za-z0-9_:]*(?:<[^<>]*>)?)\\s+const\\b");
   static const std::regex double_pointer_space_regex("\\*\\s+\\*");
-  static const std::regex member_function_scope_regex(
-      "::([A-Za-z_~][A-Za-z0-9_~]*) \\(");
+  static const std::regex function_scope_regex(
+      "(^|::)([A-Za-z_~][A-Za-z0-9_~]*) \\(");
   std::string out = text;
   out = std::regex_replace(out, std_inline_namespace_regex, "std::");
   out = std::regex_replace(out, local_regex, "");
@@ -1405,7 +1407,7 @@ inline std::string normalize_template_log_type_spellings(const std::string & tex
     out = collapsed;
   }
   out = normalize_compact_type_layout(out);
-  return std::regex_replace(out, member_function_scope_regex, "::$1(");
+  return std::regex_replace(out, function_scope_regex, "$1$2(");
 }
 
 inline std::string collapse_duplicate_owner_prefix(const std::string & entity)

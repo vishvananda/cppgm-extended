@@ -2477,6 +2477,128 @@ missing and 11 unexpected lifecycle facts, one lifecycle warning, class-use
 divergence, and function-call inventory remain future work. Inception remains
 forbidden.
 
+## Function-local class lifecycle checkpoint, 2026-08-11
+
+This Phase 4 slice publishes lifecycle facts for named classes declared in
+function-template specializations. Class collection now records finalization
+and instantiation after a complete, nondependent local class acquires template
+identity. Function output records a local member definition only after the
+compiler emits that definition. The public projection keeps the class facts
+and the terminal member-instantiation fact while omitting internal
+require/ensure-definition companion transitions.
+
+Local lifecycle identities include the enclosing function specialization and
+its semantic parameter spellings. This distinguishes, for example, the two
+`visit` specializations in the PA19 provenance fixture. The same identity
+qualifies local constructors, destructors, and methods. Two diagnostic flags
+mark local classes and their members without changing the 80-byte ordinary
+`TemplateLifecycleTransition` structure. The witness normalizer also removes
+the stray space before a top-level enclosing-function parameter list.
+
+Three target witnesses and their LowIR outputs now match byte for byte:
+
+- `pa19/tests/general/100-local-dependent-base-lookup-provenance.t`;
+- `pa19/tests/general/300-function-template-local-class-specialization-identity.t`;
+- `pa20/tests/general/200-member-init-covarying-type-index-pack.t`.
+
+These targets account for ten missing lifecycle facts: six local-class
+finalization/instantiation facts and four local-member function-instantiation
+facts. Four independent local-class controls retain exact witness and LowIR
+output:
+
+- `pa19/tests/general/100-local-type-cross-namespace-operator-template.t`;
+- `pa19/tests/general/100-template-member-local-class-functional-cast-argument.t`;
+- `pa19/tests/general/100-template-local-anonymous-union-nested-struct.t`;
+- `pa19/tests/general/100-nested-class-template-local-class-argument.t`.
+
+Expanded convergence improves from 1,450 to 1,453 matching outputs. The
+current inventory contains 1,530 references, 77 known mismatches, one warning
+output, and no missing actual file. Class-use remains one changed row in one
+test. Function-call inventory remains 36 changed, 18 missing, 13 unexpected,
+and one ordering-only occurrence across 55 tests. Lifecycle debt falls from
+47 to 37 missing facts and remains at 11 unexpected facts. It now spans 25
+tests and retains one explained additional-definition-demand warning.
+
+The final Homebrew-Clang validation records:
+
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- all 1,530 ordinary and diagnostic witness sessions complete;
+- all 3,060 ordinary and diagnostic witness/LowIR files match byte for byte;
+- all 1,530 provenance sessions flush, producing 61,303 records with no
+  unknown producer attempt and no unexercised producer site;
+- lifecycle attempts rise from 6,037 to 6,058, while alias and class
+  consolidation counts remain unchanged;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero;
+- template-boundary, semantic-boundary, and structure-size reports match the
+  parent byte for byte.
+
+The ordinary convergence report is
+`/tmp/cppgm-function-local-lifecycle-convergence-final-20260811.json`, SHA-256
+`54249a26583624e70bdf88c701bcce4289e9b7005583e4d7af1fe0cc09ee58f3`.
+The provenance trace directory is
+`/tmp/cppgm-function-local-lifecycle-provenance-final-20260811.CDNxM6`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-function-local-lifecycle-provenance-analysis-final-20260811.json`
+and
+`/tmp/cppgm-function-local-lifecycle-provenance-convergence-final-20260811.json`,
+with SHA-256 values
+`9ef15f74cdfa7a7077a97da432d5a6ed76b72ed5a11c0dfe25f25d2a3c7656e1`
+and
+`491f888fb47380772d261b95c3e127e19732ed08b29d4121b681bbff2aad98e1`.
+The 3,060-file ordinary/diagnostic manifest is
+`/tmp/cppgm-function-local-lifecycle-output-manifest-final-20260811.txt`,
+SHA-256
+`739f5f3cbaebccc085f1dbf9104df985f82f5368688db49f84c91d7374941467`.
+The broad report is
+`/tmp/cppgm-function-local-lifecycle-broad-final-20260811.log`, SHA-256
+`535eaf3777ab5311f1c6fad6af1b8e2cea690dee48edfc2612a04ca50f6d1ce3`.
+
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain their parent SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+The 60-test helper report is
+`/tmp/cppgm-function-local-lifecycle-helper-tests-20260811.log`, SHA-256
+`34140db7ba6d61034a26db5fbb60af90796d0f7742a2fdfc0ae74fe5a3cf5b7f`.
+
+The ordinary binary is 17,167,592 bytes, 752 bytes larger than the parent. Its
+Mach-O `__TEXT`, `__DATA_CONST`, and `__DATA` segments remain unchanged at
+13,053,952, 61,440, and 442,368 bytes. It contains no provenance symbols. The
+frozen binary is
+`/tmp/cppgm-function-local-lifecycle-ordinary-20260811`, SHA-256
+`a7b17160064efcd9f7fee23588e8e0d541a07e5d84c4bf6b321f5846ce4a4393`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.12% | +0.05% | -3.97% | `/tmp/cppgm-function-local-lifecycle-perf-fixed-20260811.txt` |
+| Unevaluated-function parent | -0.13% | +0.75% | +0.02% | `/tmp/cppgm-function-local-lifecycle-perf-parent-20260811.txt` |
+
+The candidate medians are 174,038,816,975 instructions, 757,473,280 bytes
+maximum RSS, and 569,450,496 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-function-local-lifecycle-raw-candidate-20260811.json`, SHA-256
+`c6621eab23329828a7579c9c10b23a49db2acfd096da8e179b2190242d9ed973`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`4db57c3979924aea62b980c60bb23b041028438278fe1f9ebc8d12f37b0752df`
+and
+`58ad00e33ed8b389e8c9558c509041ad6763e731de8e646d5a169f6405f5ceda`.
+The candidate metadata names commit `181a660ce` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 4 remains open with 37 missing and 11 unexpected lifecycle facts across
+25 tests and one lifecycle warning. The class-use divergence and function-call
+inventory remain. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

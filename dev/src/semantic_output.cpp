@@ -5187,6 +5187,8 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
   emit_function_variant(function_entry_point_symbol(binding, symbol_linkage::SMEK_COMPLETE),
                         symbol_linkage::SMEK_COMPLETE);
   output_guard.finish();
+  template_api::observe_function_local_class_member_definition_materialized(
+      ctx, binding);
   binding.output_emitted = true;
   binding.cached_body_output.reset();
   if(binding_has_out_of_class_member_definition(binding) ||
