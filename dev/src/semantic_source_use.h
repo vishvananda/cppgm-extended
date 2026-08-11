@@ -134,6 +134,10 @@ struct SemanticSourceUse
   // One-based traversal order in the translation unit's post-token stream.
   // Zero means that the semantic producer does not own a source span.
   std::size_t source_traversal_order = 0;
+  // A call whose callable expression is itself a call is visited before that
+  // nested callee by the source AST traversal, even when both share the first
+  // token location.
+  bool source_call_precedes_nested_callee = false;
   // Some overload operations already publish candidate failures in their
   // semantic phase order. Preserve that order instead of applying the legacy
   // renderer-wide reason priority.
@@ -516,6 +520,9 @@ inline void record_source_use(SemanticSourceUseTable & table,
         if(table.uses[i].source_traversal_order == 0) {
           table.uses[i].source_traversal_order = use.source_traversal_order;
         }
+        table.uses[i].source_call_precedes_nested_callee =
+            table.uses[i].source_call_precedes_nested_callee ||
+            use.source_call_precedes_nested_callee;
         table.uses[i].preserve_semantic_drop_order =
             table.uses[i].preserve_semantic_drop_order ||
             use.preserve_semantic_drop_order;

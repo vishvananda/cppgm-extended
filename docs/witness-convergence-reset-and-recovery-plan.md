@@ -3708,6 +3708,152 @@ remains open on the 32 function-call tests and the one class-use test. Phase 4
 remains open on the lazy-alias lifecycle oracle divergence. Inception remains
 forbidden.
 
+## Typed source-call admission checkpoint, 2026-08-11
+
+This Phase 5 checkpoint gives overload-selected function calls a structured
+source template-id occurrence and admits only source-concrete calls while
+definition capture or type lookup is paused. `TemplateArgumentSyntax` retains
+whether its written form was dependent when substitution clears the active
+dependency bit. When an instantiated body has already replaced that syntax,
+the call producer locates the corresponding call in the caller function
+template's retained AST by typed template-name location and classifies the
+original call and its pattern scope. It does not reparse source text or token
+spans.
+
+The semantic admission rule also distinguishes calls on a dependent current
+specialization, dependent receivers and arguments, local dependent aliases,
+and pack-expanded calls from a genuinely nondependent explicit template-id in
+a template body. A concrete admitted call may record through the existing
+source-capture and type-lookup pauses; a dependent replay is rejected before
+publication. The admitted occurrence supplies the exact final name anchor for
+an unqualified template-id. Qualified calls retain their established
+qualifier-start public anchor.
+
+Function-call ordering now carries a typed fact for a callable expression
+that is itself a call. The renderer uses that fact only as a function-to-
+function nesting tie-break, leaving the existing class/member semantic groups
+unchanged. These rules contain no fixture name, path, rendered-name,
+source-line, or source-text exception.
+
+The checkpoint makes these nine complete outputs exact:
+
+- `pa22/tests/general/300-nondependent-member-template-id-call.t`;
+- `pa22/tests/spec/300-function-explicit-specialization-declaration-before-primary-definition.t`;
+- `pa22/tests/spec/300-noexcept-member-template-call-operator.t`;
+- `pa23/tests/general/100-dependent-braced-overload-signature.t`;
+- `pa23/tests/general/300-constexpr-forwarded-function-designator-pack-call.t`;
+- `pa23/tests/general/400-function-type-pack-element-substitution.t`;
+- `pa24/tests/general/100-member-function-template-explicit-specialization-definition.t`;
+- `pa24/tests/general/100-member-template-specialization-return-prefers-member-call.t`;
+- `pa24/tests/general/300-defaulted-decltype-call-pack-sfinae.t`.
+
+Focused validation covers those outputs, all 13 initial regressions exposed by
+the first strict run, and the direct qualified-call, ordering, constructor,
+and dependent-replay controls. The refined implementation leaves every
+control byte-exact. Expanded convergence improves from 1,496 to 1,505 exact
+outputs. The 1,530-reference inventory has 25 known mismatches, no warning
+output, and no missing actual file. Exactly the nine listed tests leave the
+mismatch set; no test enters or changes family. Function-call debt is now 13
+changed rows, nine missing rows, and seven unexpected rows across 23 tests.
+Class-use remains one changed row in one test, and lifecycle remains the one
+lazy-alias class-instantiation gap.
+
+The final Homebrew-Clang validation produced these results:
+
+- the ordinary and provenance strict runs both report PA19 279 compared with
+  zero failures, PA20 158 with zero, PA22 293 with five residuals, PA23 385
+  with 16, and PA24 415 with four; their expected nonzero exit is exactly the
+  documented 25-test residual set;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862, including PA30 runtime;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  ordinary/provenance witness and LowIR pairs match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,177 records, 4,758 source
+  attempts, and 6,298 lifecycle attempts with no unknown producer attempt and
+  no unexercised producer site;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and tracked structure-size reports match the parent byte
+  for byte.
+
+Typed admission substantially reduces the still-open publication debt. The
+function producer now makes 1,259 attempts for 836 inserted rows, including
+423 exact duplicates, and leaves 788 final visible rows. The renderer removes
+44 source-defined calls, three location duplicates, and one visible duplicate;
+its legacy drop-order pass rewrites 29 events. The parent made 1,516 function
+attempts for 1,038 inserted rows and removed 239 source-defined calls, nine
+location duplicates, and one visible duplicate while rewriting 35 drop
+orders. The remaining destructive actions are Phase 5 ownership work, not a
+dedup acceptance claim.
+
+The ordinary convergence report is
+`/tmp/cppgm-phase5-source-call-convergence-20260811.json`, SHA-256
+`eb581d7516afb88e04ae11147431c08c5a2870056ecbfb210040aeb517bf8f91`.
+The provenance trace directory is
+`/tmp/cppgm-phase5-source-call-provenance-trace-20260811`. The provenance
+analysis and correlated convergence reports are
+`/tmp/cppgm-phase5-source-call-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase5-source-call-provenance-convergence-20260811.json`, with
+SHA-256 values
+`2f6736cc68fa75f0acb5e9eb14da02b4567ee23987ebba82c87d42d82e352e54`
+and
+`359197aca370b76940912b8ebb286a3bf667eb368bd92a817e5f9f212cd7a512`.
+The byte-identical ordinary and provenance output manifests both have SHA-256
+`a51e0dedf82b7c9a5ac9d3910ad7bdb68f0c04c7cb71f7fa8656c8da2d1e99b2`;
+their empty difference has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The strict, broad, and 60-test helper reports are
+`/tmp/cppgm-phase5-source-call-final-strict-20260811.log`,
+`/tmp/cppgm-phase5-source-call-broad-20260811.log`, and
+`/tmp/cppgm-phase5-source-call-helper-tests-20260811.log`, with SHA-256 values
+`98a614cd75e085ae9c3b812a50c669c02fcc1720fd934897050ba95992824be8`,
+`4e3e18197661fdc4fe873637a160a4196ebb9c756fe734eba66da9b33093fffb`,
+and
+`7ffeb776aa6040e60949ce2376011a8febaf2032356e3bdcc6611c1e25e22d1b`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain their parent SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary is 17,243,768 bytes, 10,704 bytes larger than the parent.
+Its Mach-O `__TEXT` segment grows by 8,192 bytes to 13,107,200 bytes;
+`__DATA_CONST`, `__DATA`, and `__LINKEDIT` remain 61,440, 442,368, and
+4,067,328 bytes. It contains no witness-provenance symbols. The frozen binary
+is `/tmp/cppgm-phase5-source-call-ordinary-20260811`, SHA-256
+`98a60bf732a58829c680482982553ba6ebab349a85eb539a528e0d358c92584d`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.03% | -1.96% | -4.05% | `/tmp/cppgm-phase5-source-call-perf-fixed-20260811.txt` |
+| User-defined-conversion parent | +0.22% | -2.06% | -0.02% | `/tmp/cppgm-phase5-source-call-perf-parent-20260811.txt` |
+
+The candidate medians are 174,206,115,689 instructions, 742,252,544 bytes
+maximum RSS, and 569,004,032 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-phase5-source-call-raw-candidate-20260811.json`, SHA-256
+`3d3d7a6652031593819c23fd35ab5dd32701d2a7612f51930814b913290d0097`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`b4f5fdae8f929d8e776b92e710533003f6ed43e4b8aa3e4fc40dafa39a1d4346`
+and
+`4258136ffd1eb93c8fb06fecaa64c54c6583940beed38e221add586d5676b073`.
+The candidate metadata names commit `254cd600f` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 540 and removes ten production lines before this ledger
+entry. Phase 5 owns that net growth and the final simplification gate. It
+remains open on the 23 function-call tests and the one class-use test. Phase 4
+remains open on the lazy-alias lifecycle oracle divergence. Inception remains
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

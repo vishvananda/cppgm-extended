@@ -15273,6 +15273,8 @@ void update_dependent_argument_with_type(
     }
     argument.syntax.expression.reset();
   }
+  argument.syntax.source_dependent =
+      argument.syntax.source_dependent || argument.syntax.dependent;
   argument.syntax.pack_expansion = false;
   argument.syntax.dependent = false;
   argument.syntax.resolved_type = type;
@@ -22853,6 +22855,7 @@ bool template_id_syntax_from_class_template_type(const TypePtr & type,
     }
     syntax.text = argument_text;
     if(!argument.dependent) {
+      syntax.source_dependent = syntax.source_dependent || syntax.dependent;
       syntax.dependent = false;
       if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
         syntax.resolved_type = argument.type;
@@ -40810,6 +40813,7 @@ void clear_template_id_syntax_dependent_flags(TemplateIdSyntax & syntax)
 void clear_template_argument_syntax_dependent_flags(
     TemplateArgumentSyntax & syntax)
 {
+  syntax.source_dependent = syntax.source_dependent || syntax.dependent;
   syntax.dependent = false;
   if(!argument_syntax_carries_substituted_resolved_type(syntax)) {
     syntax.resolved_type.reset();
@@ -40884,6 +40888,7 @@ void clear_template_argument_syntax_dependent_flags(
     template_api::TemplateEnvironmentHandle scope,
     TemplateArgumentSyntax & syntax)
 {
+  syntax.source_dependent = syntax.source_dependent || syntax.dependent;
   syntax.dependent = false;
   if(!argument_syntax_carries_substituted_resolved_type(syntax) ||
      (syntax.resolved_type &&

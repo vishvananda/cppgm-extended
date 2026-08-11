@@ -521,13 +521,18 @@ void emit_function_template_call_source_use(
       !request.template_name.empty() || !request.selected.empty();
   const bool declval_call =
       request.origin == witness::FunctionCallEmissionOrigin::DeclvalCall;
+  const bool admitted_source_template_id =
+      request.origin ==
+          witness::FunctionCallEmissionOrigin::AdmittedSourceTemplateId;
   const bool source_capture_enabled =
       witness::function_call_recording_enabled(ctx.template_witness_context(),
                                                request.origin);
   if(!source_capture_enabled ||
      (!binding && !has_explicit_source_target) ||
      (binding && !binding->source_template) ||
-     (!declval_call && witness::template_witness_source_type_lookup_active())) {
+     (!declval_call &&
+      !admitted_source_template_id &&
+      witness::template_witness_source_type_lookup_active())) {
     return;
   }
 
@@ -543,6 +548,8 @@ void emit_function_template_call_source_use(
   witness::FunctionCallSourceDecision decision;
   decision.origin = request.origin;
   decision.source_traversal_order = request.source_traversal_order;
+  decision.source_call_precedes_nested_callee =
+      request.source_call_precedes_nested_callee;
   decision.preserve_semantic_drop_order =
       request.preserve_semantic_drop_order;
   if(binding &&
@@ -559,6 +566,7 @@ void emit_function_template_call_source_use(
   decision.template_name = function_call_template_name(request);
   decision.selected = function_call_selected_name(ctx, request);
   decision.role = request.role;
+  decision.template_id_occurrence = request.template_id_occurrence;
   decision.selection = request.selection != witness::SourceSelectionKind::None ?
       request.selection :
       (binding && binding->is_explicit_specialization ?

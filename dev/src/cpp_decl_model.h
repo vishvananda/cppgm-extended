@@ -43,6 +43,9 @@ struct TemplateArgumentSyntax
   std::vector<std::string> source_identifier_names;
   bool pack_expansion = false;
   bool dependent = false;
+  // Preserve whether the written argument was dependent after instantiation
+  // clears the active dependency bit on its substituted syntax copy.
+  bool source_dependent = false;
   // Preserve a written `template` disambiguator on a qualified argument name.
   // The semantic argument printer decides whether the resolved argument is
   // still dependent enough for Clang's TemplateName spelling to retain it.

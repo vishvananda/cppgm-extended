@@ -26,6 +26,7 @@ struct FunctionTemplateCallSourceUseRequest
 {
   semantic_model::FunctionBinding * binding = nullptr;
   std::size_t source_traversal_order = 0;
+  bool source_call_precedes_nested_callee = false;
   bool preserve_semantic_drop_order = false;
   std::string use_location;
   std::string template_name;
@@ -36,6 +37,7 @@ struct FunctionTemplateCallSourceUseRequest
       witness::FunctionCallEmissionOrigin::OverloadSelectedCall;
   std::string selected_decl_location;
   witness::TemplateWitnessSourceAnchor selected_decl_anchor;
+  witness::SourceTemplateIdOccurrence template_id_occurrence;
   std::vector<witness::TemplateWitnessSourceBinding> bindings;
   std::vector<witness::TemplateWitnessSourceDrop> drops;
   std::size_t explicit_arg_count = 0;

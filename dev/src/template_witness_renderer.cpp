@@ -616,6 +616,7 @@ struct WitnessEvent
   string semantic_owner_class_specialization_key;
   size_t same_location_semantic_group_order = 0;
   int same_location_semantic_group_rank = 0;
+  bool source_call_precedes_nested_callee = false;
   string location;
   string raw_location;
   SourceAnchorKind use_anchor_kind = SourceAnchorKind::None;
@@ -896,6 +897,8 @@ WitnessEvent witness_event_from_source_use(
   event.ownership = use.ownership;
   event.source_role = use.role;
   event.source_traversal_order = use.source_traversal_order;
+  event.source_call_precedes_nested_callee =
+      use.source_call_precedes_nested_callee;
   event.preserve_semantic_drop_order = use.preserve_semantic_drop_order;
   event.semantic_class_template_identity =
       use.semantic_class_template_identity;
@@ -1117,6 +1120,7 @@ typedef tuple<string,
               int,
               int,
               int,
+              int,
               size_t,
               int,
               int,
@@ -1139,6 +1143,7 @@ WitnessEventSortKey witness_event_sort_key(const WitnessEvent & event)
       parsed.line,
       parsed.column,
       witness_event_semantic_sort_rank(event),
+      event.source_call_precedes_nested_callee ? 0 : 1,
       witness_event_source_sort_order(event),
       event.same_location_semantic_group_rank,
       binding_source_sort_rank(event),
@@ -3107,6 +3112,11 @@ void normalize_source_defined_template_calls(vector<WitnessEvent> & events,
       }
       if(events[i].source_role ==
          semantic_source_use::SourceUseRole::DeclvalCall) {
+        continue;
+      }
+      if(events[i].template_id_occurrence.present &&
+         events[i].template_id_occurrence.source_spelled &&
+         !events[i].template_id_occurrence.has_dependent_argument) {
         continue;
       }
       drop[i] = 1;

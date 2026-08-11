@@ -54,6 +54,7 @@ enum class ClassUseEmissionOrigin
 enum class FunctionCallEmissionOrigin
 {
   OverloadSelectedCall,
+  AdmittedSourceTemplateId,
   ConstexprDirectCall,
   DeclvalCall
 };
@@ -201,7 +202,8 @@ inline bool class_use_recording_enabled(
 inline bool function_call_origin_records_during_source_capture_pause(
     FunctionCallEmissionOrigin origin)
 {
-  return origin == FunctionCallEmissionOrigin::DeclvalCall;
+  return origin == FunctionCallEmissionOrigin::AdmittedSourceTemplateId ||
+      origin == FunctionCallEmissionOrigin::DeclvalCall;
 }
 
 inline bool function_call_recording_enabled(
@@ -363,6 +365,7 @@ struct FunctionCallSourceDecision
   WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
 #endif
   std::size_t source_traversal_order = 0;
+  bool source_call_precedes_nested_callee = false;
   bool preserve_semantic_drop_order = false;
   const void * semantic_owner_class_template_identity = nullptr;
   std::string semantic_owner_class_specialization_key;
@@ -374,6 +377,7 @@ struct FunctionCallSourceDecision
   SourceSelectionKind selection = SourceSelectionKind::None;
   std::string selected_decl_location;
   TemplateWitnessSourceAnchor selected_decl_anchor;
+  SourceTemplateIdOccurrence template_id_occurrence;
   TemplateWitnessSourceOwnership ownership =
       TemplateWitnessSourceOwnership::Direct;
   std::vector<TemplateWitnessSourceBinding> bindings;

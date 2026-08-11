@@ -283,6 +283,8 @@ semantic_source_use::SemanticSourceUse make_function_call_source_use(
 {
   semantic_source_use::SemanticSourceUse use;
   use.source_traversal_order = decision.source_traversal_order;
+  use.source_call_precedes_nested_callee =
+      decision.source_call_precedes_nested_callee;
   use.preserve_semantic_drop_order = decision.preserve_semantic_drop_order;
   use.semantic_owner_class_template_identity =
       decision.semantic_owner_class_template_identity;
@@ -303,6 +305,7 @@ semantic_source_use::SemanticSourceUse make_function_call_source_use(
   use.selected = decision.selected;
   use.selected = normalize_source_event_angle_spacing(use.selected);
   use.selection = source_selection_kind_from_event(decision.selection);
+  use.template_id_occurrence = decision.template_id_occurrence;
   if(!decision.selected.empty() || !decision.template_name.empty()) {
     use.selected_entity.kind = semantic_source_use::EntityRefKind::Named;
     use.selected_entity.name =

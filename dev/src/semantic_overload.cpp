@@ -545,6 +545,363 @@ std::size_t source_occurrence_traversal_order(
   return 0;
 }
 
+bool source_syntax_node_retains_template_dependency(
+    SemanticContext & ctx,
+    const CppAstNode & node,
+    const Scope * source_scope);
+
+bool scope_has_template_bound_names(const Scope & scope)
+{
+  return !scope.template_bound_type_names.empty() ||
+      !scope.template_bound_type_pack_names.empty() ||
+      !scope.template_bound_value_names.empty() ||
+      !scope.template_bound_value_pack_names.empty() ||
+      !scope.template_bound_template_names.empty();
+}
+
+bool source_binding_scope_is_template_dependent(const Scope * binding_scope)
+{
+  for(const Scope * current = binding_scope;
+      current != nullptr && !current->namespace_scope;
+      current = current->parent) {
+    if(scope_has_template_bound_names(*current)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool source_identifier_binding_retains_template_dependency(
+    SemanticContext & ctx,
+    const Scope * source_scope,
+    const std::string & name)
+{
+  if(name.empty()) {
+    return false;
+  }
+  for(const Scope * current = source_scope;
+      current != nullptr;
+      current = current->parent) {
+    if(current->template_bound_type_names.count(name) != 0 ||
+       current->template_bound_type_pack_names.count(name) != 0 ||
+       current->template_bound_value_names.count(name) != 0 ||
+       current->template_bound_value_pack_names.count(name) != 0 ||
+       current->template_bound_template_names.count(name) != 0) {
+      return true;
+    }
+
+    Scope::NamedTypeMap::const_iterator type = current->named_types.find(name);
+    if(type != current->named_types.end()) {
+      return (type->second &&
+              ctx.type_depends_on_template_parameter(type->second)) ||
+          source_binding_scope_is_template_dependent(current);
+    }
+
+    std::map<std::string, ValueBinding>::const_iterator value =
+        current->values.find(name);
+    if(value != current->values.end()) {
+      if(value->second.type &&
+         ctx.type_depends_on_template_parameter(value->second.type)) {
+        return true;
+      }
+      if(current->function && current->function->source_template) {
+        const FunctionTemplateDecl & source =
+            *current->function->source_template;
+        for(std::size_t i = 0; i < source.params_pattern.size(); ++i) {
+          if(source.params_pattern[i].first == name &&
+             source.params_pattern[i].second &&
+             ctx.type_depends_on_template_parameter(
+                 source.params_pattern[i].second)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+  }
+  return false;
+}
+
+bool source_template_argument_retains_dependency(
+    SemanticContext & ctx,
+    const TemplateArgumentSyntax & argument,
+    const Scope * source_scope)
+{
+  if(argument.dependent ||
+     argument.source_dependent ||
+     argument.pack_expansion ||
+     argument.substituted_from_template_binding ||
+     (argument.resolved_type &&
+      ctx.type_depends_on_template_parameter(argument.resolved_type))) {
+    return true;
+  }
+  if(argument.template_id) {
+    for(std::size_t i = 0;
+        i < argument.template_id->argument_syntaxes.size();
+        ++i) {
+      if(source_template_argument_retains_dependency(
+             ctx,
+             argument.template_id->argument_syntaxes[i],
+             source_scope)) {
+        return true;
+      }
+    }
+  }
+  if(argument.source_type_id &&
+     source_syntax_node_retains_template_dependency(ctx,
+                                                    *argument.source_type_id,
+                                                    source_scope)) {
+    return true;
+  }
+  if(argument.type_id &&
+     source_syntax_node_retains_template_dependency(ctx,
+                                                    *argument.type_id,
+                                                    source_scope)) {
+    return true;
+  }
+  return argument.expression &&
+      source_syntax_node_retains_template_dependency(ctx,
+                                                     *argument.expression,
+                                                     source_scope);
+}
+
+bool source_template_id_retains_dependency(
+    SemanticContext & ctx,
+    const TemplateIdSyntax & syntax,
+    const Scope * source_scope)
+{
+  for(std::size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
+    if(source_template_id_retains_dependency(
+           ctx,
+           syntax.qualifier_template_id_syntaxes[i],
+           source_scope)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(source_template_argument_retains_dependency(
+           ctx,
+           syntax.argument_syntaxes[i],
+           source_scope)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool scope_has_template_bound_source_name(const Scope * scope,
+                                          const std::string & name)
+{
+  for(const Scope * current = scope;
+      current != nullptr;
+      current = current->parent) {
+    if(current->template_bound_type_names.count(name) != 0 ||
+       current->template_bound_type_pack_names.count(name) != 0 ||
+       current->template_bound_value_names.count(name) != 0 ||
+       current->template_bound_value_pack_names.count(name) != 0 ||
+       current->template_bound_template_names.count(name) != 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool source_template_argument_mentions_bound_name(
+    const TemplateArgumentSyntax & argument,
+    const Scope * scope)
+{
+  for(std::size_t i = 0; i < argument.source_identifier_names.size(); ++i) {
+    if(scope_has_template_bound_source_name(scope,
+                                            argument.source_identifier_names[i])) {
+      return true;
+    }
+  }
+  if(argument.template_id) {
+    for(std::size_t i = 0;
+        i < argument.template_id->argument_syntaxes.size();
+        ++i) {
+      if(source_template_argument_mentions_bound_name(
+             argument.template_id->argument_syntaxes[i],
+             scope)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool source_syntax_node_retains_template_dependency(
+    SemanticContext & ctx,
+    const CppAstNode & node,
+    const Scope * source_scope)
+{
+  if(node.semantic_type &&
+     ctx.type_depends_on_template_parameter(node.semantic_type)) {
+    return true;
+  }
+  if(source_identifier_binding_retains_template_dependency(ctx,
+                                                           source_scope,
+                                                           node.value)) {
+    return true;
+  }
+  if(const TemplateIdSyntax * syntax = cppast_template_id_syntax(node)) {
+    if(source_template_id_retains_dependency(ctx, *syntax, source_scope)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0;
+      i < node.qualifier_template_id_syntaxes.size();
+      ++i) {
+    if(source_template_id_retains_dependency(
+           ctx,
+           node.qualifier_template_id_syntaxes[i],
+           source_scope)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(source_syntax_node_retains_template_dependency(ctx,
+                                                      node.children[i],
+                                                      source_scope)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const TemplateIdSyntax * matching_source_function_template_id(
+    const CppAstNode & node,
+    const std::string & selected_name,
+    const std::string & template_name)
+{
+  const TemplateIdSyntax * syntax = cppast_template_id_syntax(node);
+  if(syntax &&
+     (syntax->name.name == selected_name ||
+      syntax->name.name == template_name)) {
+    return syntax;
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const TemplateIdSyntax * nested = matching_source_function_template_id(
+        node.children[i],
+        selected_name,
+        template_name);
+    if(nested) {
+      return nested;
+    }
+  }
+  return nullptr;
+}
+
+const CppAstNode * find_source_call_pattern_node(
+    const CppAstNode & node,
+    uint32_t template_name_location_id,
+    const std::string & selected_name,
+    const std::string & template_name)
+{
+  if(node.kind == CppAstKind::call_expression && !node.children.empty()) {
+    const TemplateIdSyntax * syntax = matching_source_function_template_id(
+        node.children[0],
+        selected_name,
+        template_name);
+    if(syntax && syntax->source_location_id == template_name_location_id) {
+      return &node;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode * nested = find_source_call_pattern_node(
+        node.children[i],
+        template_name_location_id,
+        selected_name,
+        template_name);
+    if(nested) {
+      return nested;
+    }
+  }
+  return nullptr;
+}
+
+struct SourceCallPattern
+{
+  const CppAstNode * call_node = nullptr;
+  const CppAstNode * callee_node = nullptr;
+  const Scope * scope = nullptr;
+};
+
+SourceCallPattern source_function_call_pattern(
+    const Scope * source_scope,
+    const TemplateIdSyntax & instantiated_syntax,
+    const std::string & selected_name,
+    const std::string & template_name)
+{
+  for(const Scope * current = source_scope;
+      current != nullptr;
+      current = current->parent) {
+    FunctionBinding * caller = current->function;
+    if(!caller ||
+       !caller->source_template ||
+       caller->is_explicit_specialization ||
+       !caller->source_template->body) {
+      continue;
+    }
+    const CppAstNode * pattern_call = find_source_call_pattern_node(
+        *caller->source_template->body,
+        instantiated_syntax.source_location_id,
+        selected_name,
+        template_name);
+    if(!pattern_call || pattern_call->children.empty()) {
+      continue;
+    }
+    SourceCallPattern result;
+    result.call_node = pattern_call;
+    result.callee_node = &pattern_call->children[0];
+    result.scope = caller->source_template->pattern_scope ?
+        caller->source_template->pattern_scope :
+        caller->source_template->declaring_scope;
+    return result;
+  }
+  return SourceCallPattern();
+}
+
+witness::SourceTemplateIdOccurrence make_function_source_template_id_occurrence(
+    SemanticContext & ctx,
+    const TemplateIdSyntax & syntax,
+    const Scope * source_scope)
+{
+  witness::SourceTemplateIdOccurrence occurrence;
+  occurrence.name_anchor.location = source_location_for_token_id(
+      ctx.template_witness_context(),
+      syntax.source_location_id);
+  occurrence.name_anchor.kind = occurrence.name_anchor.location.empty() ?
+      semantic_source_use::SourceAnchorKind::None :
+      semantic_source_use::SourceAnchorKind::Spelling;
+  occurrence.present = !occurrence.name_anchor.location.empty();
+  occurrence.source_spelled = occurrence.present;
+  occurrence.argument_list_spelled = true;
+  occurrence.empty_argument_list = syntax.argument_syntaxes.empty();
+  occurrence.exact_source_arguments = true;
+  occurrence.in_template_body = source_location_in_template_body_range(
+      ctx,
+      occurrence.name_anchor.location);
+  occurrence.arguments.reserve(syntax.argument_syntaxes.size());
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    const TemplateArgumentSyntax & syntax_argument = syntax.argument_syntaxes[i];
+    semantic_source_use::SourceTemplateArgumentOccurrence argument;
+    argument.text = !syntax_argument.source_text.empty() ?
+        syntax_argument.source_text : syntax_argument.text;
+    argument.source_spelled = true;
+    argument.dependent =
+        source_template_argument_retains_dependency(ctx,
+                                                    syntax_argument,
+                                                    source_scope) ||
+        source_template_argument_mentions_bound_name(syntax_argument,
+                                                     source_scope);
+    occurrence.has_dependent_argument =
+        occurrence.has_dependent_argument || argument.dependent;
+    occurrence.arguments.push_back(argument);
+  }
+  return occurrence;
+}
+
 std::string overloaded_operator_token(const std::string & selected_name)
 {
   static const std::pair<const char *, const char *> operators[] = {
@@ -2892,6 +3249,28 @@ bool function_template_arguments_are_all_source_defaulted(
   return true;
 }
 
+bool source_call_targets_current_dependent_specialization(
+    const FunctionBinding * selected,
+    const Scope * source_scope)
+{
+  if(!selected || !selected->owner_class) {
+    return false;
+  }
+  for(const Scope * current = source_scope;
+      current != nullptr;
+      current = current->parent) {
+    const FunctionBinding * caller = current->function;
+    if(!caller) {
+      continue;
+    }
+    return !caller->is_explicit_specialization &&
+        caller->owner_class &&
+        caller->owner_class == selected->owner_class &&
+        caller->owner_class->source_template;
+  }
+  return false;
+}
+
 bool function_call_source_drop_is_conversion_probe_default_constructor_detail(
     const FunctionBinding * chosen,
     const FunctionBinding * dropped,
@@ -2929,7 +3308,10 @@ void note_function_call_source_event(
     bool user_defined_conversion_constructor_source = false,
     bool non_explicit_constructor_source = false,
     ConstructorSourceCallResult * source_call_result_out = nullptr,
-    bool source_call_result_capture_only = false)
+    bool source_call_result_capture_only = false,
+    Scope * source_scope = nullptr,
+    const CppAstNode * source_call_node = nullptr,
+    bool source_call_precedes_nested_callee = false)
 {
   const bool trace_source_decision =
       parser_trace::enabled("witness.call");
@@ -2952,7 +3334,9 @@ void note_function_call_source_event(
     }
     parser_trace::note("witness.call", use_location, trace.str());
   };
-  if(!template_witness_source_capture_enabled_for_calls(ctx) ||
+  const bool general_source_capture_enabled =
+      witness::source_capture_enabled(ctx.template_witness_context());
+  if(!witness::enabled(ctx.template_witness_context()) ||
      !chosen) {
     trace_return("disabled-or-no-chosen");
     return;
@@ -2989,10 +3373,6 @@ void note_function_call_source_event(
           chosen;
   const bool template_related =
       source_selected && source_selected->source_template != nullptr;
-  if(witness::template_witness_source_type_lookup_active()) {
-    trace_return("type-lookup-active");
-    return;
-  }
   const std::string selected_name =
       function_binding_witness_name(ctx, source_selected);
   const std::string unqualified_selected =
@@ -3003,6 +3383,91 @@ void note_function_call_source_event(
       template_name.substr(template_name.rfind("::") == std::string::npos ?
                                0 :
                                template_name.rfind("::") + 2);
+  const std::string source_template_component =
+      semantic_utils::strip_trailing_top_level_template_arguments(
+          unqualified_template);
+  const TemplateIdSyntax * source_template_id = callee_node ?
+      matching_source_function_template_id(*callee_node,
+                                           unqualified_selected,
+                                           source_template_component) :
+      nullptr;
+  const CppAstNode * dependency_call_node = source_call_node;
+  const Scope * dependency_scope = source_scope;
+  if(source_template_id && source_call_node) {
+    const SourceCallPattern pattern = source_function_call_pattern(
+        source_scope,
+        *source_template_id,
+        unqualified_selected,
+        source_template_component);
+    if(pattern.call_node && pattern.callee_node) {
+      const TemplateIdSyntax * pattern_template_id =
+          matching_source_function_template_id(*pattern.callee_node,
+                                               unqualified_selected,
+                                               source_template_component);
+      if(pattern_template_id) {
+        source_template_id = pattern_template_id;
+        dependency_call_node = pattern.call_node;
+        dependency_scope = pattern.scope;
+      }
+    }
+  }
+  witness::SourceTemplateIdOccurrence source_template_id_occurrence;
+  if(source_template_id) {
+    source_template_id_occurrence =
+        make_function_source_template_id_occurrence(ctx,
+                                                    *source_template_id,
+                                                    dependency_scope);
+  }
+  const bool source_call_retains_dependency =
+      (dependency_call_node &&
+       source_syntax_node_retains_template_dependency(ctx,
+                                                      *dependency_call_node,
+                                                      dependency_scope)) ||
+      (source_call_node &&
+       source_syntax_node_retains_template_dependency(ctx,
+                                                      *source_call_node,
+                                                      source_scope)) ||
+      source_call_targets_current_dependent_specialization(source_selected,
+                                                           source_scope);
+  const bool admitted_source_template_id =
+      source_template_id_occurrence.present &&
+      source_template_id_occurrence.source_spelled &&
+      !source_template_id_occurrence.has_dependent_argument &&
+      !source_call_retains_dependency;
+  if(trace_source_decision && source_template_id) {
+    std::ostringstream trace;
+    trace << "function-call-source-template-id"
+          << " name=" << source_template_component
+          << " present="
+          << (source_template_id_occurrence.present ? "yes" : "no")
+          << " dependent="
+          << (source_template_id_occurrence.has_dependent_argument ?
+                  "yes" : "no")
+          << " args=" << source_template_id->argument_syntaxes.size();
+    parser_trace::note("witness.call",
+                       source_template_id_occurrence.name_anchor.location,
+                       trace.str());
+  }
+  if(source_template_id_occurrence.has_dependent_argument ||
+     source_call_retains_dependency) {
+    trace_return("dependent-source-template-id",
+                 source_template_id_occurrence.name_anchor.location);
+    return;
+  }
+  if(!general_source_capture_enabled && !admitted_source_template_id) {
+    trace_return("source-capture-paused");
+    return;
+  }
+  if(!template_witness_source_capture_enabled_for_calls(ctx) &&
+     !admitted_source_template_id) {
+    trace_return("call-capture-paused");
+    return;
+  }
+  if(witness::template_witness_source_type_lookup_active() &&
+     !admitted_source_template_id) {
+    trace_return("type-lookup-active");
+    return;
+  }
   if(unqualified_template == "__declval" ||
      unqualified_selected == "__declval") {
     trace_return("declval");
@@ -3077,6 +3542,11 @@ void note_function_call_source_event(
     if(should_use_exact_name_location && !exact_name_location.empty()) {
       public_location = exact_name_location;
     }
+  }
+  if(admitted_source_template_id &&
+     !source_template_id->name.rooted &&
+     source_template_id->name.qualifiers.empty()) {
+    public_location = source_template_id_occurrence.name_anchor.location;
   }
   bool constructor_source_syntax = false;
   if(chosen->is_constructor) {
@@ -3302,6 +3772,12 @@ void note_function_call_source_event(
        function_template_arguments_are_all_source_defaulted(source_selected));
   semantic_template_function::FunctionTemplateCallSourceUseRequest source_use;
   source_use.binding = source_selected;
+  source_use.source_call_precedes_nested_callee =
+      source_call_precedes_nested_callee;
+  source_use.origin = admitted_source_template_id ?
+      witness::FunctionCallEmissionOrigin::AdmittedSourceTemplateId :
+      witness::FunctionCallEmissionOrigin::OverloadSelectedCall;
+  source_use.template_id_occurrence = source_template_id_occurrence;
   source_use.preserve_semantic_drop_order =
       preserve_conversion_semantic_drop_order;
   source_use.source_traversal_order = source_traversal_order;
@@ -16760,7 +17236,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                              function_type->inner,
                                              result_category);
     }
-    if(template_witness_source_capture_enabled_for_calls(ctx)) {
+    if(witness::enabled(ctx.template_witness_context())) {
       std::string witness_use_location =
           !hint_use_location.empty() ? hint_use_location :
           (hints && !hints->use_location.empty() ? hints->use_location : std::string());
@@ -16786,7 +17262,19 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                       false,
                                       source_explicit_template_arg_count,
                                       candidates.size(),
-                                      node.token_end + 1);
+                                      node.token_end + 1,
+                                      false,
+                                      false,
+                                      nullptr,
+                                      false,
+                                      &scope,
+                                      &node,
+                                      callable_object_call &&
+                                          chosen->is_method &&
+                                          chosen->name.find("operator()") !=
+                                              std::string::npos &&
+                                          lookup_callee_node.kind ==
+                                              CppAstKind::call_expression);
     }
     return make_resolved_call_result(ctx,
                                      function_type->inner,
