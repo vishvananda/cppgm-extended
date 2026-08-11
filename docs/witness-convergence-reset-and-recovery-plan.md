@@ -3139,6 +3139,138 @@ Phase 4 remains open with one missing and two unexpected lifecycle facts
 across three tests. The class-use divergence and function-call inventory
 remain. Inception remains forbidden.
 
+## Inheritance and standard-builtin lifecycle checkpoint, 2026-08-11
+
+This promotable Phase 4 slice removes the final two unexpected terminal
+outcomes without manufacturing or hiding a semantic demand.
+
+Speculative derived-to-base conversion screening now collects only the typed
+reference-member inheritance graph. It rejects unrelated class types without
+completing either class, and completes both sides only after finding a real
+base path for a materialized conversion. Successful reference, pointer, and
+object conversions then recompute the path and adjustment from the completed
+classes. This removes the false
+`basic_tree<int, int, int>::iterator` class-instantiation fact while preserving
+the exact LowIR for non-primary-base adjustments and virtual dispatch.
+
+The function binding model also classifies Clang's standard-library builtin
+domain from structured namespace ownership and the unary non-variadic
+function signature. The lifecycle event carries that typed fact to public
+closure policy. A standard builtin keeps its direct definition demand and all
+raw CPPGM materialization provenance, but it does not publish the terminal
+function-instantiation outcome that Clang skips when its builtin body is not
+required. The renderer does not inspect a rendered entity name, source
+location, fixture, or source text. Renaming the same `forward` declaration out
+of `std` retains the function-instantiation fact, and unrelated `std`
+templates remain unchanged.
+
+The checkpoint removes the unexpected `iterator` class-instantiation and
+`std::forward` function-instantiation outcomes. Expanded convergence remains
+at 1,473 exact outputs because the `std::forward` fixture still has an
+independent function-call rejection-order difference; the iterator fixture
+is now fully exact. The 1,530-reference inventory has 57 known mismatches, no
+warning output, and no missing actual file. Class-use remains one changed row
+in one test. Function-call remains 36 changed, 18 missing, 13 unexpected, and
+one ordering-only occurrence across 55 tests. Lifecycle now has zero
+unexpected terminal outcomes and one missing class-instantiation fact in one
+test.
+
+The remaining lifecycle fact is
+`boost::container::w<boost::container::base_node<recursive_slist> *>::x` in
+`pa24/tests/general/400-concrete-recursive-node-layout-retry.t`. Patched Clang
+eagerly evaluates the target of `de::c` while instantiating the class even
+though no later operation uses that typedef. CPPGM deliberately indexes that
+alias declaration without evaluating its unused target; commits `a15320571`
+and `3ecce93b9` established and guarded that lazy boundary. Reintroducing eager
+alias evaluation would violate the existing alias contract and its negative
+controls. Phase 4 therefore remains open on this one cross-phase oracle
+divergence until a real typed demand for the alias target exists or the final
+oracle policy is reconciled.
+
+The final Homebrew-Clang validation records:
+
+- the iterator fixture and successful inheritance reference, non-primary-base
+  pointer, and inherited virtual-dispatch controls retain exact witness and
+  LowIR output;
+- the `std::forward` fixture has the exact lifecycle set and byte-exact LowIR,
+  while the structurally equivalent non-`std` forwarding control remains
+  fully byte-exact with its function-instantiation outcome;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  ordinary/provenance witness and LowIR pairs match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,894 records and 6,298
+  lifecycle attempts with no unknown producer attempt and no unexercised
+  producer site;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and structure-size reports match the parent byte for
+  byte.
+
+The ordinary convergence report is
+`/tmp/cppgm-final-lifecycle-convergence-20260811.json`, SHA-256
+`c4c684f95d2b08867092e3d241d765137f4847a2773ae09ddf8c006d87a5578b`.
+The provenance trace directory is
+`/tmp/cppgm-final-lifecycle-provenance-20260811.W9ni9o`. The provenance
+analysis and correlated convergence reports are
+`/tmp/cppgm-final-lifecycle-provenance-analysis-20260811.json` and
+`/tmp/cppgm-final-lifecycle-provenance-convergence-20260811.json`, with
+SHA-256 values
+`a05d149ffc081079969087b9bc6626707089804f01f2483e6c32129460a9b5f1`
+and
+`cd9a94de2d198f0d8cab0110f968ccd6ddfbae6b9de5d5f23eced61509efbe68`.
+The byte-identical ordinary and provenance output manifests both have
+SHA-256
+`023315506c7cab1cc3409f5b1c4971a24bcf00833e33ae7cffa50087d5c23386`;
+their empty difference has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The broad and 60-test helper reports are
+`/tmp/cppgm-final-lifecycle-broad-20260811.log` and
+`/tmp/cppgm-final-lifecycle-helper-tests-20260811.log`, with SHA-256 values
+`ff9ff2fdf2e2b6b1778d5245b7a8d32dd1c9ab948363eb326c03d95eee2c6418`
+and
+`5f4639385ecd9520fc1d30714bb9a5990ee98be3ca282edcf8c1c622ce1b9c37`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain their parent SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary is 17,187,960 bytes, 4,664 bytes larger than the parent.
+Its Mach-O `__TEXT` segment grows by 4,096 bytes to 13,066,240 bytes;
+`__DATA_CONST` and `__DATA` remain unchanged at 61,440 and 442,368 bytes. It
+contains no witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-final-lifecycle-ordinary-20260811`, SHA-256
+`22f84177df2d624f37e4de2c5be71dbc100b85674b0c40b7bc9a3b0ed06b67cd`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.89% | -0.21% | -3.92% | `/tmp/cppgm-final-lifecycle-perf-fixed-20260811.txt` |
+| Function-demand parent | +0.21% | -0.20% | +0.06% | `/tmp/cppgm-final-lifecycle-perf-parent-20260811.txt` |
+
+The candidate medians are 174,455,791,159 instructions, 755,466,240 bytes
+maximum RSS, and 569,782,272 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-final-lifecycle-raw-candidate-20260811.json`, SHA-256
+`01ecf6e82392157527734dee18a95ded9090e4c5f7b087b5ee0fa55556925257`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`138c1c9bf0a700c3b1af788f52ad974a19cefe8956c9879cf9ec63c762700658`
+and
+`7c097d4ccdbfae7abb2d057568db1b2c8311441c2d637e39d9d84787e87810cb`.
+The candidate metadata names commit `e6d6811bf` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 4 remains open on the one lazy-alias lifecycle divergence. The class-use
+divergence and function-call inventory remain. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

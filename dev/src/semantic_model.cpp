@@ -364,6 +364,53 @@ Scope & Scope::operator=(Scope && other)
   return *this;
 }
 
+bool function_binding_is_standard_library_builtin(
+    const FunctionBinding & binding)
+{
+  // These are the C++ library functions to which Clang assigns a builtin
+  // identity after checking their semantic namespace and unary signature.
+  // Keep this classification on the binding model so lifecycle policy does
+  // not infer it from a rendered entity name.
+  const Scope * scope = binding.source_template &&
+          binding.source_template->declaring_scope ?
+      binding.source_template->declaring_scope : binding.declaration_scope;
+  while(scope && scope->namespace_scope && scope->inline_namespace) {
+    scope = scope->parent;
+  }
+  if(!scope ||
+     !scope->namespace_scope ||
+     scope->name != "std") {
+    return false;
+  }
+  for(const Scope * parent = scope->parent; parent; parent = parent->parent) {
+    if(parent->namespace_scope &&
+       parent->name != "<global>" &&
+       parent->name != "<unnamed>") {
+      return false;
+    }
+  }
+
+  const cpp_decl::TypePtr function_type =
+      cpp_decl::strip_top_level_cv(binding.type);
+  if(!function_type ||
+     function_type->kind != cpp_decl::Type::TK_FUNCTION ||
+     function_type->variadic ||
+     function_type->params.size() != 1) {
+    return false;
+  }
+
+  std::string name = binding.source_template &&
+          !binding.source_template->name.empty() ?
+      binding.source_template->name : binding.display_name;
+  return name == "addressof" ||
+         name == "__addressof" ||
+         name == "as_const" ||
+         name == "forward" ||
+         name == "forward_like" ||
+         name == "move" ||
+         name == "move_if_noexcept";
+}
+
 std::string describe_scope_bindings(const Scope & scope)
 {
   std::ostringstream out;

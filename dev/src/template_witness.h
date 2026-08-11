@@ -168,6 +168,7 @@ struct TemplateLifecycleEvent
   bool entity_is_explicit_instantiation_definition = false;
   bool entity_is_constructor = false;
   bool entity_is_member_function_template = false;
+  bool entity_is_standard_library_builtin = false;
   bool entity_definition_materialized_by_enclosing_closure = false;
   bool public_source_required = false;
   std::string normalized_entity;

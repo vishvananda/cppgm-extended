@@ -5462,6 +5462,8 @@ void observe_function_lifecycle_transition(
   event.entity_is_member_function_template =
       binding->source_template &&
       binding->source_template->is_member_function_template;
+  event.entity_is_standard_library_builtin =
+      semantic_model::function_binding_is_standard_library_builtin(*binding);
   event.entity_definition_materialized_by_enclosing_closure =
       binding->template_definition_materialized_by_enclosing_closure;
   switch(transition.transition_kind) {

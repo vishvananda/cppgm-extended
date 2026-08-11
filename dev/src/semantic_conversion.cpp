@@ -10,6 +10,7 @@
 #include "cppast_dump.h"
 #include "constructor_lifecycle_service.h"
 #include "parser_trace.h"
+#include "semantic_class_model.h"
 #include "semantic_context.h"
 #include "semantic_dependent_type.h"
 #include "semantic_errors.h"
@@ -1002,7 +1003,7 @@ void ensure_reference_inheritance_graph(SemanticContext & ctx,
   }
   // Speculative overload screening still needs transitive base paths, but it
   // must not force full class-member materialization.
-  ctx.ensure_class_reference_type_members(info);
+  semantic_class_model::ensure_class_reference_type_members(ctx, info);
   for(size_t i = 0; i < info.bases.size(); ++i) {
     if(info.bases[i].type) {
       ensure_reference_inheritance_graph(ctx, *info.bases[i].type, visited);
@@ -1011,13 +1012,8 @@ void ensure_reference_inheritance_graph(SemanticContext & ctx,
 }
 
 ClassInfo * class_info_for_inheritance_conversion(SemanticContext & ctx,
-                                                  const TypePtr & type,
-                                                  bool materialize)
+                                                  const TypePtr & type)
 {
-  if(materialize) {
-    return ensure_complete_class_info(ctx, type);
-  }
-
   ClassInfo * info = ctx.class_info_for_type(type);
   if(!info) {
     return ctx.complete_class_type(type);
@@ -1028,7 +1024,7 @@ ClassInfo * class_info_for_inheritance_conversion(SemanticContext & ctx,
      !info->reference_type_member_collection_in_progress &&
      !info->reference_member_collection_in_progress &&
      !info->full_member_collection_in_progress) {
-    ctx.ensure_class_reference_type_members(*info);
+    semantic_class_model::ensure_class_reference_type_members(ctx, *info);
     if(ClassInfo * refreshed = ctx.class_info_for_type(type)) {
       info = refreshed;
     }
@@ -2407,6 +2403,58 @@ void set_unmaterialized_inheritance_conversion_result(SemanticContext & ctx,
   ctx.set_expr_info_metadata(out, out.type, out.category);
 }
 
+bool try_apply_class_inheritance_conversion(SemanticContext & ctx,
+                                            const TypePtr & target,
+                                            const ExprInfo & expr,
+                                            const TypePtr & target_class_type,
+                                            const TypePtr & source_class_type,
+                                            bool materialize,
+                                            ExprInfo & out)
+{
+  ClassInfo * target_class = class_info_for_inheritance_conversion(
+      ctx, target_class_type);
+  ClassInfo * source_class = class_info_for_inheritance_conversion(
+      ctx, source_class_type);
+  if(!target_class || !source_class) {
+    return false;
+  }
+  if(target_class == source_class) {
+    set_unmaterialized_inheritance_conversion_result(
+        ctx, target, expr, target_class, out);
+    return true;
+  }
+
+  size_t offset = 0;
+  MemberAccess access = MA_PUBLIC;
+  if(!find_unique_base_path(*source_class, target_class, offset, access)) {
+    return false;
+  }
+  if(!materialize) {
+    set_unmaterialized_inheritance_conversion_result(
+        ctx, target, expr, target_class, out);
+    return true;
+  }
+
+  target_class = ensure_complete_class_info(ctx, target_class_type);
+  source_class = ensure_complete_class_info(ctx, source_class_type);
+  if(!target_class || !source_class) {
+    return false;
+  }
+  if(target_class == source_class) {
+    set_unmaterialized_inheritance_conversion_result(
+        ctx, target, expr, target_class, out);
+    return true;
+  }
+  offset = 0;
+  access = MA_PUBLIC;
+  if(!find_unique_base_path(*source_class, target_class, offset, access)) {
+    return false;
+  }
+  out = ctx.apply_base_subobject_adjustment(
+      expr, target, *target_class, offset);
+  return true;
+}
+
 ExprInfo make_unmaterialized_address_of_expr(SemanticContext & ctx,
                                              const ExprInfo & operand)
 {
@@ -2473,23 +2521,14 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
     if(!top_level_cv_allows_reference_binding(target_base->inner, expr_object_type)) {
       return false;
     }
-    ClassInfo * target_class = class_info_for_inheritance_conversion(
-        ctx, strip_top_level_cv(target_base->inner), materialize);
-    ClassInfo * source_class = class_info_for_inheritance_conversion(
-        ctx, expr_object_type, materialize);
-    size_t offset = 0;
-    MemberAccess access = MA_PUBLIC;
-    if(target_class && source_class && target_class == source_class) {
-      set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
-      return true;
-    }
-    if(target_class && source_class &&
-       find_unique_base_path(*source_class, target_class, offset, access)) {
-      if(materialize) {
-        out = ctx.apply_base_subobject_adjustment(expr, target, *target_class, offset);
-      } else {
-        set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
-      }
+    if(try_apply_class_inheritance_conversion(
+           ctx,
+           target,
+           expr,
+           strip_top_level_cv(target_base->inner),
+           expr_object_type,
+           materialize,
+           out)) {
       return true;
     }
   }
@@ -2498,23 +2537,14 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
     if(!top_level_cv_allows_reference_binding(target_base->inner, expr_object_type)) {
       return false;
     }
-    ClassInfo * target_class = class_info_for_inheritance_conversion(
-        ctx, strip_top_level_cv(target_base->inner), materialize);
-    ClassInfo * source_class = class_info_for_inheritance_conversion(
-        ctx, expr_object_type, materialize);
-    size_t offset = 0;
-    MemberAccess access = MA_PUBLIC;
-    if(target_class && source_class && target_class == source_class) {
-      set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
-      return true;
-    }
-    if(target_class && source_class &&
-       find_unique_base_path(*source_class, target_class, offset, access)) {
-      if(materialize) {
-        out = ctx.apply_base_subobject_adjustment(expr, target, *target_class, offset);
-      } else {
-        set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
-      }
+    if(try_apply_class_inheritance_conversion(
+           ctx,
+           target,
+           expr,
+           strip_top_level_cv(target_base->inner),
+           expr_object_type,
+           materialize,
+           out)) {
       return true;
     }
   }
@@ -2533,23 +2563,13 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
                                                   &expr_pointee_base)) {
       return false;
     }
-    ClassInfo * target_class = class_info_for_inheritance_conversion(
-        ctx, target_pointee_base, materialize);
-    ClassInfo * source_class = class_info_for_inheritance_conversion(
-        ctx, expr_pointee_base, materialize);
-    size_t offset = 0;
-    MemberAccess access = MA_PUBLIC;
-    if(target_class && source_class && target_class == source_class) {
-      set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
-      return true;
-    }
-    if(target_class && source_class &&
-       find_unique_base_path(*source_class, target_class, offset, access)) {
-      if(materialize) {
-        out = ctx.apply_base_subobject_adjustment(expr, target, *target_class, offset);
-      } else {
-        set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
-      }
+    if(try_apply_class_inheritance_conversion(ctx,
+                                              target,
+                                              expr,
+                                              target_pointee_base,
+                                              expr_pointee_base,
+                                              materialize,
+                                              out)) {
       return true;
     }
   }
@@ -2572,23 +2592,13 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_NAMED) {
-    ClassInfo * target_class = class_info_for_inheritance_conversion(
-        ctx, target_base, materialize);
-    ClassInfo * source_class = class_info_for_inheritance_conversion(
-        ctx, expr_object_type, materialize);
-    size_t offset = 0;
-    MemberAccess access = MA_PUBLIC;
-    if(target_class && source_class && target_class == source_class) {
-      set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
-      return true;
-    }
-    if(target_class && source_class &&
-       find_unique_base_path(*source_class, target_class, offset, access)) {
-      if(materialize) {
-        out = ctx.apply_base_subobject_adjustment(expr, target, *target_class, offset);
-      } else {
-        set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
-      }
+    if(try_apply_class_inheritance_conversion(ctx,
+                                              target,
+                                              expr,
+                                              target_base,
+                                              expr_object_type,
+                                              materialize,
+                                              out)) {
       return true;
     }
   }

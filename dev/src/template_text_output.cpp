@@ -914,6 +914,10 @@ bool render_public_closure_event(
      event.kind != template_api::TemplateLifecycleEventKind::FunctionInstantiation) {
     return false;
   }
+  if(event.kind == template_api::TemplateLifecycleEventKind::FunctionInstantiation &&
+     event.entity_is_standard_library_builtin) {
+    return false;
+  }
   if(is_function_lifecycle_event(event) && event.public_source_required) {
     if(event.entity_is_defaulted_copy_or_move_assignment) {
       return event.kind ==

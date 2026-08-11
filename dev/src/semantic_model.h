@@ -730,6 +730,8 @@ std::string function_binding_qualified_name_for_symbol(const FunctionBinding & b
 bool function_binding_qualified_name_syntax_for_symbol(
     const FunctionBinding & binding,
     cpp_decl::QualifiedName & out);
+bool function_binding_is_standard_library_builtin(
+    const FunctionBinding & binding);
 
 inline std::vector<std::string> function_binding_abi_tags(const FunctionBinding & binding);
 
