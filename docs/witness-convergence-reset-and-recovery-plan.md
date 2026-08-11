@@ -2878,6 +2878,135 @@ Phase 4 remains open with 22 missing and five unexpected lifecycle facts
 across 14 tests and one lifecycle warning. The class-use divergence and
 function-call inventory remain. Inception remains forbidden.
 
+## Member-class reference lifecycle checkpoint, 2026-08-11
+
+This Phase 4 slice moves member-class instantiation publication to the typed
+class-reference completion boundary. Once semantic reference members have
+been collected, a non-template nested class with a concrete enclosing
+template owner records and publishes its class-instantiation transition. The
+observation is repeated after the analyzer-level ensure so a class first
+collected during paused source capture can publish on its later committed
+use. Named function-local classes retain their separate lifecycle owner.
+
+Anonymous-union reference storage now retains its unnamed source-class
+identity. A non-function-local unnamed member delegates completion to the
+anonymous-member lifecycle path, preserving the public `anonymous union`
+entity, while function-local unnamed classes retain their existing finalized
+and instantiated transitions. A typed concrete outer-owner check permits a
+stale dependent bit without admitting a genuinely dependent class.
+
+Nested class-template specializations no longer borrow the lifecycle fact for
+a non-template member class, and the old nested completion helper excludes
+them as well. Explicit class-template finalization now uses the canonical
+qualified witness entity, repairing `box` to `ns::box`. These decisions use
+class declarations, template bindings, and scope ownership; no fixture,
+source-location, rendered-name, or source-text filter was added.
+
+The checkpoint restores eight missing lifecycle facts and removes two
+unexpected facts. Six complete outputs become exact, with no newly
+mismatching output. Expanded convergence improves from 1,461 to 1,467 matching
+outputs. The current inventory contains 1,530 references, 63 known
+mismatches, no warning output, and no missing actual file. Class-use remains
+one changed row in one test. Function-call inventory remains 36 changed, 18
+missing, 13 unexpected, and one ordering-only occurrence across 55 tests.
+Lifecycle debt falls from 22 to 14 missing facts and from five to three
+unexpected facts, now spanning eight tests.
+
+The remaining class-only exception is the unexpected
+`basic_tree<int, int, int>::iterator` instantiation in
+`pa19/tests/spec/300-current-specialization-nested-constructor-param-alias.t`.
+The missing `w<base_node<recursive_slist>*>::x` class fact in
+`pa24/tests/general/400-concrete-recursive-node-layout-retry.t` follows the
+still-missing `base_node<recursive_slist>::base_node` function demand and is
+assigned to the next function/definition lifecycle slice. The other residual
+facts are function instantiations or definition demands, including the
+adaptor member pair, allocator assignment, extractor call, `N::B::pick`,
+`N::pair`, and `box<int>::add`/`touch` cases.
+
+The final Homebrew-Clang validation records:
+
+- the focused member-class fact set and its function-local, dependent-owner,
+  anonymous-union, and nested-class-template controls have the expected
+  exact lifecycle sets;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- all 1,530 ordinary and provenance witness sessions complete;
+- all 6,120 saved ordinary/provenance witness and LowIR files match byte for
+  byte;
+- all 1,530 provenance sessions flush, producing 69,899 records and 6,300
+  lifecycle attempts with no unknown producer attempt and no unexercised
+  producer site;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and structure-size reports match the parent byte for
+  byte.
+
+The ordinary convergence report is
+`/tmp/cppgm-member-class-reference-convergence-inventory2-20260811.json`,
+SHA-256
+`6b09caf59535b1eeb348f9877aa0d33855fc72909a47830c716be93a004b82fa`.
+The provenance trace directory is
+`/tmp/cppgm-member-class-reference-provenance-20260811.ZS3sca`. The provenance
+analysis and correlated convergence reports are
+`/tmp/cppgm-member-class-reference-provenance-analysis-20260811.json` and
+`/tmp/cppgm-member-class-reference-provenance-convergence-20260811.json`,
+with SHA-256 values
+`95f6d0814613d1999c2c3d44c8d3eae97ac219cf5deeb6cc0b70b11ef251d22e`
+and
+`5f6a9b8af83247372141b404f772ee759927f03168178c8c5f4788b8cee0b993`.
+The 6,120-file ordinary/provenance output manifest is
+`/tmp/cppgm-member-class-reference-output-manifest-20260811.txt`, SHA-256
+`a5ac06c4dee5c719626cafbae955b90d468e7a82fe5e5b3f52468e99e7b29853`.
+The byte-difference manifest is empty.
+
+The broad and 60-test helper reports are
+`/tmp/cppgm-member-class-reference-broad-20260811.log` and
+`/tmp/cppgm-member-class-reference-helper-tests-20260811.log`, with SHA-256
+values
+`33addf729d3c116c74cfbfef28ac99e17dee46296dcf8705a1c9a257e7d796b8`
+and
+`836c4542e9a125277ccc4239235c4a3b603f46597085d475d0a7182cd74d641f`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain their parent SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary is 17,183,296 bytes, 360 bytes larger than the parent. Its
+Mach-O `__TEXT`, `__DATA_CONST`, and `__DATA` segments remain unchanged at
+13,062,144, 61,440, and 442,368 bytes. It contains no witness-provenance
+symbols. The frozen binary is
+`/tmp/cppgm-member-class-reference-ordinary-20260811`, SHA-256
+`d9b8f4071cd2b52b2d6c91dac4d183e143deb392681063252a39f7f4a1f5a1d5`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.10% | -0.08% | -4.04% | `/tmp/cppgm-member-class-reference-perf-fixed-20260811.txt` |
+| Static-value parent | -0.15% | +0.40% | -0.05% | `/tmp/cppgm-member-class-reference-perf-parent-20260811.txt` |
+
+The candidate medians are 174,079,089,956 instructions, 756,486,144 bytes
+maximum RSS, and 569,053,184 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-member-class-reference-raw-candidate-20260811.json`, SHA-256
+`50a2bf12d96b49222f68090a387afe940ac648c5c47fe4b10fef09cc16ae29ab`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`7742fef73a89399c01818c707e7692b4a2e424ee21ec74e797b420cf667aeaa2`
+and
+`0b1287b7f3ee62ca280c5f61ce50980fbdfb72d8761e29b4d4e3962adac2ac93`.
+The candidate metadata names commit `ab68479d5` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 4 remains open with 14 missing and three unexpected lifecycle facts
+across eight tests. The class-use divergence and function-call inventory
+remain. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

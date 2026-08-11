@@ -698,6 +698,9 @@ note_nested_member_class_instantiation_completed_if_needed(
     semantic_model::ClassInfo * info,
     const CppAstNode * preferred_decl_node,
     const CppAstNode * fallback_decl_node);
+void observe_nested_member_class_reference_instantiation(
+    SemanticContext & ctx,
+    semantic_model::ClassInfo & info);
 
 using witness::append_source_drop;
 using witness::append_unique_source_drop;

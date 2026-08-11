@@ -3403,6 +3403,8 @@ void collect_anonymous_union_storage(SemanticContext & ctx,
   const std::string storage_name = class_anonymous_union_storage_name(ordinal);
   ClassInfo * storage_info =
       ctx.create_class_info(*info.member_scope, "union", type_name, &anon);
+  storage_info->source_is_unnamed_class = true;
+  storage_info->source_unnamed_class_node = &anon;
   if(!reference_only && anon.kind == CppAstKind::class_specifier && !storage_info->complete) {
     populate_class_info(ctx, *storage_info, anon);
   } else if(reference_only &&
@@ -12093,6 +12095,7 @@ void ensure_class_reference_members(SemanticContext & ctx,
     }
   } guard{info, reference_member_collection_depth};
   populate_class_reference_members(ctx, info, *reference_node, false);
+  template_api::observe_nested_member_class_reference_instantiation(ctx, info);
 }
 
 bool collect_indirect_parameter_virtual_base_layout(

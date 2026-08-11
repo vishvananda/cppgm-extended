@@ -10246,6 +10246,8 @@ private:
   void ensure_class_reference_members(ClassInfo & info) override
   {
     semantic_class_model::ensure_class_reference_members(*this, info);
+    template_api::observe_nested_member_class_reference_instantiation(
+        *this, info);
     if(template_api::apply_out_of_class_static_member_definitions_to_reference(
            *this,
            info)) {
