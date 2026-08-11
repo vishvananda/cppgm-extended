@@ -1940,6 +1940,143 @@ oracle divergence. Two unexpected class rows and three class ordering cases
 remain as implementation work. The ordering cases are the next coherent
 class-use cluster. Inception remains forbidden.
 
+## Same-location semantic event ordering checkpoint, 2026-08-10
+
+The renderer sorted events at one source location by traversal order before it
+considered the semantic event family. That order works when each producer uses
+the same source token space. Instantiated function-call nodes can carry a local
+order such as 1, while a sibling source class-template-id carries its
+translation-unit order such as 67 or 193. The renderer then placed the call
+before the class use even though Clang visits the class type first.
+
+The renderer now ranks same-location semantic families before their traversal
+orders: class use, alias use, function call, then variable use. The existing
+partial-owner member-call group keeps its explicit call-before-owner order. A
+second structured group handles a materialized class result that has no
+traversal order and shares a location with a source-spelled partial owner. The
+group gives both events the owner's source order and places the materialized
+result first. Both rules use event kind, source role, selection kind, source
+occurrence facts, specialization identity, and traversal order. They do not
+inspect template names, fixture paths, source text, or selected locations.
+
+The checkpoint removes all three class-use ordering rows:
+
+- `pa23/tests/general/500-bool-alias-function-template-result-metadata.t`;
+- `pa23/tests/spec/300-current-specialization-constructor-template-canonical-owner.t`;
+- `pa23/tests/spec/300-current-specialization-constructor-template-owner.t`.
+
+The two constructor-template outputs become byte-exact. The bool-alias output
+still lacks its known `integral_constant<bool, true>::value`
+`variable-instantiation` lifecycle event, but its class-use section now matches
+the reference. No previously exact witness regresses. No LowIR, stdout, stderr,
+or exit-status file changes.
+
+Expanded convergence improves from 1,438 to 1,440 matching outputs and leaves
+90 known mismatches. Class-use debt now consists of one changed row and two
+unexpected rows in three tests. The changed row remains the recorded
+Clang/runtime oracle divergence. Function-call and lifecycle inventories are
+unchanged.
+
+Correctness and diagnostic evidence from the final Homebrew-Clang builds:
+
+- the preserved strict manifest remains byte-exact at 1,305/1,305;
+- expanded convergence passes 1,440/1,530 with no missing output;
+- ordinary and provenance compilers produce identical witness and LowIR output
+  for all 3,060 files;
+- all 1,530 provenance sessions flush, producing 61,345 records with no unknown
+  producer and no unexercised producer site;
+- class consolidation remains at 3,000 completed candidates, 3,303 early
+  repeats, 355 prepublication merges, 2,645 collected occurrences, and 2,634
+  publications;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862 on the first conservative
+  `4 x 4` run;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both static materialization decision boundaries have no finding, and all 23
+  forbidden text-reparse categories remain zero;
+- the structure-size report matches the parent byte for byte. `Type` remains
+  280 bytes, `TemplateArgument` 136 bytes, `TemplateIdSyntax` 160 bytes, and
+  `ClassInfo` 1,136 bytes.
+
+The boundary reports retain their parent counts: four service adapters, two
+service bundles, 15 direct semantic-service accesses, 115 text-recovery
+bridges, 65 canonical-key metadata sites, 140 witness source-location sites,
+and 197 mixed `callsemantic.cpp` exceptions on the template side; five
+output-readiness queries, ten template-service mentions, and nine internal
+header sites on the semantic side.
+
+The six-record increase from the preceding provenance run is confined to
+rejected class-materialization decision probes for
+`pa23/tests/spec/200-dependent-specialized-default-arg-deduction.t`. Two
+consecutive isolated runs of the same provenance binary produced 79 and 73
+records for that test while witness and LowIR output remained byte-exact.
+Producer coverage and class consolidation did not change, so the aggregate
+record count documents this run rather than a deterministic trace-count
+contract.
+
+The ordinary binary is 17,160,928 bytes. Its Mach-O `__TEXT` segment
+remains 13,049,856 bytes, `__DATA_CONST` remains 61,440 bytes, and `__DATA`
+remains 442,368 bytes. The ordinary binary contains no provenance symbols.
+The frozen ordinary binary is
+`/tmp/cppgm-source-event-semantic-order-ordinary-final2-20260810`, SHA-256
+`3969332940921d9b13cf0865f710d75fc45b857e7429e47352c0c07b445db018`.
+
+The final ordinary convergence report is
+`/tmp/cppgm-source-event-semantic-order-final2-convergence-20260810.json`,
+SHA-256
+`63a6189a8146a2a39396a0770092fc4d5babaa9008cfa9a27c2b9701e39dca26`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-source-event-semantic-order-provenance-final2-20260810.xuwlDH/provenance-analysis.json`
+and
+`/tmp/cppgm-source-event-semantic-order-provenance-final2-convergence-20260810.json`,
+with SHA-256 values
+`d3868b76e878044a84fab103ce1bb0e5cde56957165b6b4e8c6d3de4e037c0f6`
+and
+`3ff62b05f54d8edb8449213450d490ff3944156b9338d65e5d83cb93e659633c`.
+The byte-identical ordinary/provenance output manifest is
+`/tmp/cppgm-source-event-semantic-order-final2-output-manifest-20260810.txt`,
+SHA-256
+`609b327109c645136e51447239bad24f6232e57fc2390777c5fba6176f72c6f5`.
+The broad report is
+`/tmp/cppgm-source-event-semantic-order-final2-broad-20260810.log`, SHA-256
+`536862d2247603cbf8be235d66f64f9303ac3879608854168e7984c67f32543d`.
+The materialization and structure-size reports match the parent at SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+The zero-finding text-reparse report retains SHA-256
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`.
+The template and semantic boundary reports retain SHA-256 values
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`
+and
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`.
+
+The final three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.98% | -0.27% | -3.95% | `/tmp/cppgm-source-event-semantic-order-final2-perf-fixed-20260810.txt` |
+| Residual structured payload parent | -0.01% | -0.11% | -0.06% | `/tmp/cppgm-source-event-semantic-order-final2-perf-parent-20260810.txt` |
+
+The raw candidate record is
+`/tmp/cppgm-source-event-semantic-order-final2-raw-candidate-20260810.json`,
+SHA-256
+`8ce08fdf9786dcb96e4ba334204d622d612afb2fc770251f9b1ce32301ef217d`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`c253dc3879dd6d2ab75b0325c2f7ee94870185c8a8c2e7d985bb7eafcb91c58e`
+and
+`6b4dacdf16191077402d6d68c6056fe414d7af248ab60a75e5ede069a70426e4`.
+The candidate metadata names commit `b6d58b1d2` because the measurements cover
+this uncommitted checkpoint.
+
+Phase 3 remains open. The recorded Clang/runtime divergence needs no CPPGM
+change. Two unexpected class rows remain in
+`pa23/tests/general/300-boost-enable-if-type-condition-static-keyword-overload.t`
+and
+`pa24/tests/general/500-dependent-qualified-sizeof-static-member.t`. They form
+the next class-use cluster. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

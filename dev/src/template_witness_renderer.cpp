@@ -613,8 +613,8 @@ struct WitnessEvent
   string semantic_class_specialization_key;
   const void * semantic_owner_class_template_identity = nullptr;
   string semantic_owner_class_specialization_key;
-  size_t member_owner_call_group_order = 0;
-  int member_owner_call_group_rank = 0;
+  size_t same_location_semantic_group_order = 0;
+  int same_location_semantic_group_rank = 0;
   string location;
   string raw_location;
   SourceAnchorKind use_anchor_kind = SourceAnchorKind::None;
@@ -1009,19 +1009,22 @@ int binding_source_sort_rank(const WitnessEvent & event)
   return -(explicit_count * 100 + defaulted_count * 10 - deduced_count);
 }
 
-int witness_event_kind_sort_rank(WitnessEventKind kind)
+int witness_event_semantic_sort_rank(const WitnessEvent & event)
 {
-  switch(kind) {
-  case WitnessEventKind::ClassUse:
-    return 1;
-  case WitnessEventKind::FunctionCall:
-    return 2;
-  case WitnessEventKind::AliasUse:
-    return 3;
-  case WitnessEventKind::VariableUse:
-    return 4;
+  if(event.kind == WitnessEventKind::FunctionCall &&
+     event.same_location_semantic_group_rank == 1) {
+    return 0;
   }
-  return 0;
+  if(event.kind == WitnessEventKind::ClassUse) {
+    return 1;
+  }
+  if(event.kind == WitnessEventKind::AliasUse) {
+    return 2;
+  }
+  if(event.kind == WitnessEventKind::FunctionCall) {
+    return 3;
+  }
+  return 4;
 }
 
 void group_member_calls_with_source_owner_class_uses(
@@ -1046,13 +1049,51 @@ void group_member_calls_with_source_owner_class_uses(
              class_event.semantic_class_specialization_key) {
         continue;
       }
-      call_event.member_owner_call_group_order =
+      call_event.same_location_semantic_group_order =
           call_event.source_traversal_order;
-      call_event.member_owner_call_group_rank = 1;
-      class_event.member_owner_call_group_order =
-          std::max(class_event.member_owner_call_group_order,
+      call_event.same_location_semantic_group_rank = 1;
+      class_event.same_location_semantic_group_order =
+          std::max(class_event.same_location_semantic_group_order,
                    call_event.source_traversal_order);
-      class_event.member_owner_call_group_rank = 2;
+      class_event.same_location_semantic_group_rank = 2;
+    }
+  }
+}
+
+void group_materialized_class_uses_with_source_partial_class_uses(
+    vector<WitnessEvent> & events)
+{
+  for(size_t partial_index = 0;
+      partial_index < events.size();
+      ++partial_index) {
+    WitnessEvent & partial_event = events[partial_index];
+    if(partial_event.kind != WitnessEventKind::ClassUse ||
+       partial_event.selection !=
+           semantic_source_use::SourceSelectionKind::PartialSpecialization ||
+       partial_event.source_traversal_order == 0 ||
+       !partial_event.template_id_occurrence.present ||
+       !partial_event.template_id_occurrence.source_spelled) {
+      continue;
+    }
+    for(size_t materialized_index = 0;
+        materialized_index < events.size();
+        ++materialized_index) {
+      WitnessEvent & materialized_event = events[materialized_index];
+      if(materialized_event.kind != WitnessEventKind::ClassUse ||
+         materialized_event.source_role !=
+             semantic_source_use::SourceUseRole::MaterializedTypeUse ||
+         materialized_event.source_traversal_order != 0 ||
+         materialized_event.location != partial_event.location) {
+        continue;
+      }
+      materialized_event.same_location_semantic_group_order =
+          std::max(materialized_event.same_location_semantic_group_order,
+                   partial_event.source_traversal_order);
+      materialized_event.same_location_semantic_group_rank = 1;
+      partial_event.same_location_semantic_group_order =
+          std::max(partial_event.same_location_semantic_group_order,
+                   partial_event.source_traversal_order);
+      partial_event.same_location_semantic_group_rank = 2;
     }
   }
 }
@@ -1060,113 +1101,62 @@ void group_member_calls_with_source_owner_class_uses(
 size_t witness_event_source_sort_order(const WitnessEvent & event)
 {
   const size_t source_order =
-      event.member_owner_call_group_order != 0 ?
+      event.same_location_semantic_group_order != 0 ?
           std::max(event.source_traversal_order,
-                   event.member_owner_call_group_order) :
+                   event.same_location_semantic_group_order) :
           event.source_traversal_order;
   return source_order != 0 ? source_order : static_cast<size_t>(-1);
+}
+
+typedef tuple<string,
+              int,
+              int,
+              int,
+              size_t,
+              int,
+              int,
+              SourceUseOwnership,
+              string>
+    WitnessEventSortKey;
+
+WitnessEventSortKey witness_event_sort_key(const WitnessEvent & event)
+{
+  const ParsedLocation parsed = parse_line_col(event.location);
+  const string::size_type split = event.location.rfind(':');
+  const string::size_type path_split =
+      split == string::npos ?
+          string::npos : event.location.rfind(':', split - 1);
+  const string path =
+      path_split == string::npos ?
+          event.location : event.location.substr(0, path_split);
+  return std::make_tuple(
+      path,
+      parsed.line,
+      parsed.column,
+      witness_event_semantic_sort_rank(event),
+      witness_event_source_sort_order(event),
+      event.same_location_semantic_group_rank,
+      binding_source_sort_rank(event),
+      rendered_ownership_sort_key(event.ownership),
+      !event.selected.empty() ? event.selected : event.template_name);
 }
 
 void sort_events(vector<WitnessEvent> & events)
 {
   group_member_calls_with_source_owner_class_uses(events);
+  group_materialized_class_uses_with_source_partial_class_uses(events);
 #if !defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   std::stable_sort(events.begin(),
                    events.end(),
                    [](const WitnessEvent & lhs, const WitnessEvent & rhs)
                    {
-                     const ParsedLocation left_loc = parse_line_col(lhs.location);
-                     const ParsedLocation right_loc = parse_line_col(rhs.location);
-                     const string::size_type left_split = lhs.location.rfind(':');
-                     const string::size_type right_split = rhs.location.rfind(':');
-                     const string::size_type left_path_split =
-                         left_split == string::npos ? string::npos :
-                         lhs.location.rfind(':', left_split - 1);
-                     const string::size_type right_path_split =
-                         right_split == string::npos ? string::npos :
-                         rhs.location.rfind(':', right_split - 1);
-                     const string left_path =
-                         left_path_split == string::npos ?
-                             lhs.location :
-                             lhs.location.substr(0, left_path_split);
-                     const string right_path =
-                         right_path_split == string::npos ?
-                             rhs.location :
-                             rhs.location.substr(0, right_path_split);
-                     const size_t left_source_order =
-                         witness_event_source_sort_order(lhs);
-                     const size_t right_source_order =
-                         witness_event_source_sort_order(rhs);
-                     return std::make_tuple(left_path,
-                                            left_loc.line,
-                                            left_loc.column,
-                                            left_source_order,
-                                            lhs.member_owner_call_group_rank,
-                                            witness_event_kind_sort_rank(lhs.kind),
-                                            binding_source_sort_rank(lhs),
-                                            rendered_ownership_sort_key(lhs.ownership),
-                                            !lhs.selected.empty() ?
-                                                lhs.selected :
-                                                lhs.template_name) <
-                         std::make_tuple(right_path,
-                                         right_loc.line,
-                                         right_loc.column,
-                                         right_source_order,
-                                         rhs.member_owner_call_group_rank,
-                                         witness_event_kind_sort_rank(rhs.kind),
-                                         binding_source_sort_rank(rhs),
-                                         rendered_ownership_sort_key(rhs.ownership),
-                                         !rhs.selected.empty() ?
-                                             rhs.selected :
-                                             rhs.template_name);
+                     return witness_event_sort_key(lhs) <
+                         witness_event_sort_key(rhs);
                    });
 #else
   const auto less = [](const WitnessEvent & lhs, const WitnessEvent & rhs)
   {
-                     const ParsedLocation left_loc = parse_line_col(lhs.location);
-                     const ParsedLocation right_loc = parse_line_col(rhs.location);
-                     const string::size_type left_split = lhs.location.rfind(':');
-                     const string::size_type right_split = rhs.location.rfind(':');
-                     const string::size_type left_path_split =
-                         left_split == string::npos ? string::npos :
-                         lhs.location.rfind(':', left_split - 1);
-                     const string::size_type right_path_split =
-                         right_split == string::npos ? string::npos :
-                         rhs.location.rfind(':', right_split - 1);
-                     const string left_path =
-                         left_path_split == string::npos ?
-                             lhs.location :
-                             lhs.location.substr(0, left_path_split);
-                     const string right_path =
-                         right_path_split == string::npos ?
-                             rhs.location :
-                             rhs.location.substr(0, right_path_split);
-                     const size_t left_source_order =
-                         witness_event_source_sort_order(lhs);
-                     const size_t right_source_order =
-                         witness_event_source_sort_order(rhs);
-                     return std::make_tuple(left_path,
-                                            left_loc.line,
-                                            left_loc.column,
-                                            left_source_order,
-                                            lhs.member_owner_call_group_rank,
-                                            witness_event_kind_sort_rank(lhs.kind),
-                                            binding_source_sort_rank(lhs),
-                                            rendered_ownership_sort_key(lhs.ownership),
-                                            !lhs.selected.empty() ?
-                                                lhs.selected :
-                                                lhs.template_name) <
-                         std::make_tuple(right_path,
-                                         right_loc.line,
-                                         right_loc.column,
-                                         right_source_order,
-                                         rhs.member_owner_call_group_rank,
-                                         witness_event_kind_sort_rank(rhs.kind),
-                                         binding_source_sort_rank(rhs),
-                                         rendered_ownership_sort_key(rhs.ownership),
-                                         !rhs.selected.empty() ?
-                                             rhs.selected :
-                                             rhs.template_name);
+    return witness_event_sort_key(lhs) < witness_event_sort_key(rhs);
   };
   RendererTraceContext * trace = current_renderer_trace();
   if(!trace || !trace->lineages || trace->lineages->size() != events.size()) {
