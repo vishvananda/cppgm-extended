@@ -1,9 +1,7 @@
 #include "witness_text.h"
 
 #include <cctype>
-#include <fstream>
 #include <regex>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -515,39 +513,6 @@ std::string normalize_source_token_spacing(const std::string & text)
 }
 
 }  // namespace
-
-std::vector<std::string> inline_namespace_names(
-    const std::vector<std::string> & lines)
-{
-  std::vector<std::string> out;
-  std::set<std::string> seen;
-  static const std::regex pattern("\\binline\\s+namespace\\s+([A-Za-z_][A-Za-z0-9_]*)\\b");
-  for(std::size_t i = 0; i < lines.size(); ++i) {
-    std::smatch match;
-    if(std::regex_search(lines[i], match, pattern)) {
-      const std::string name = match[1].str();
-      if(seen.insert(name).second) {
-        out.push_back(name);
-      }
-    }
-  }
-  return out;
-}
-
-std::vector<std::string> inline_namespace_names_from_source(
-    const std::string & path)
-{
-  std::ifstream in(path.c_str());
-  if(!in) {
-    return std::vector<std::string>();
-  }
-  std::vector<std::string> lines;
-  std::string line;
-  while(std::getline(in, line)) {
-    lines.push_back(line);
-  }
-  return inline_namespace_names(lines);
-}
 
 std::string strip_inline_namespace_segments(
     const std::string & text,

@@ -86,10 +86,13 @@ bool argument_uses_fixed_class_binding(
   }
   const template_api::TemplateWitnessSession * session =
       template_api::current_template_witness_session();
-  if(session && syntax.source_location_id != 0 &&
-     session->fixed_class_argument_occurrences.count(
-         syntax.source_location_id) != 0) {
-    return true;
+  if(session && syntax.source_location_id != 0) {
+    const auto recorded =
+        session->class_source_occurrences.find(syntax.source_location_id);
+    if(recorded != session->class_source_occurrences.end() &&
+       recorded->second.fixed_class_binding) {
+      return true;
+    }
   }
   if(argument->kind == TemplateArgument::TA_TYPE) {
     return template_argument_semantics::argument_syntax_uses_fixed_class_type(
@@ -133,17 +136,13 @@ void classify_source_dependency(
       *resolved.source_scope : *resolved.use_scope;
   template_api::TemplateWitnessSession * session =
       template_api::current_template_witness_session();
-  const ClassTemplateDecl * occurrence_origin =
-      class_template_origin_decl(resolved.instance);
-  if(!occurrence_origin) {
-    occurrence_origin = resolved.origin;
-  }
   const uint32_t source_occurrence_id =
       resolved.source_syntax->source_location_id;
   if(session && source_occurrence_id != 0) {
     const auto recorded =
         session->class_source_occurrences.find(source_occurrence_id);
-    if(recorded != session->class_source_occurrences.end()) {
+    if(recorded != session->class_source_occurrences.end() &&
+       recorded->second.dependency != TemplateIdSourceDependency::Unknown) {
       resolved.source_dependency = recorded->second.dependency;
       return;
     }
@@ -197,7 +196,6 @@ void classify_source_dependency(
     if(session && source_occurrence_id != 0) {
       template_api::TemplateWitnessSession::ParameterizedClassSourceOccurrence &
           record = session->class_source_occurrences[source_occurrence_id];
-      record.origin = occurrence_origin;
       record.dependency = resolved.source_dependency;
     }
   }

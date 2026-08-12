@@ -1567,7 +1567,6 @@ private:
   };
 
   void note_class_source_pattern_dependency(
-      const ClassTemplateDecl * origin,
       const TemplateIdSyntax & syntax,
       bool dependent,
       bool owner_dependent,
@@ -1581,9 +1580,6 @@ private:
     template_api::TemplateWitnessSession::ParameterizedClassSourceOccurrence &
         record = template_witness_session_->class_source_occurrences
             [syntax.source_location_id];
-    if(!record.origin && origin) {
-      record.origin = origin;
-    }
     cpp_decl::TemplateIdSourceDependency & recorded = record.dependency;
     const cpp_decl::TemplateIdSourceDependency candidate =
         lexical_parameter_dependent ?
@@ -18813,13 +18809,7 @@ private:
           if(dependent_source_arguments &&
              !lexical_parameter_dependent_arguments &&
              !shadowed_source_template_name) {
-            ClassTemplateDecl * class_template =
-                dependent_source_owner ?
-                    nullptr :
-                    lookup_class_template(*source_use_pattern_scope,
-                                          nested_syntax.name);
             note_class_source_pattern_dependency(
-                class_template,
                 nested_syntax,
                 true,
                 dependent_source_owner);
@@ -18883,7 +18873,6 @@ private:
               !semantic_source_arguments_resolved ||
               template_arguments_are_dependent(semantic_source_arguments);
           note_class_source_pattern_dependency(
-              class_template,
               nested_syntax,
               semantic_source_pattern_dependent,
               semantic_source_owner_dependent,
@@ -18924,7 +18913,6 @@ private:
                     template_api::ClassTemplateSourceUseMode::DefinitionPattern,
                     &nested_syntax);
                 note_class_source_pattern_dependency(
-                    class_template,
                     nested_syntax,
                     !resolved_info ||
                         type_depends_on_template_parameter(resolved_info->type),
@@ -21133,7 +21121,6 @@ private:
       template_api::TemplateWitnessSession::ParameterizedClassSourceOccurrence &
           record = template_witness_session_->class_source_occurrences
               [resolved.source_syntax->source_location_id];
-      record.origin = class_template;
       if(record.dependency !=
              cpp_decl::TemplateIdSourceDependency::
                  UnresolvedLexicalParameterDependent) {
@@ -21152,8 +21139,7 @@ private:
               ParameterizedClassSourceOccurrence>::const_iterator found =
           template_witness_session_->class_source_occurrences.find(
               resolved.source_syntax->source_location_id);
-      if(found != template_witness_session_->class_source_occurrences.end() &&
-         (!found->second.origin || found->second.origin == class_template)) {
+      if(found != template_witness_session_->class_source_occurrences.end()) {
         source_dependency = found->second.dependency;
       }
     }

@@ -1248,8 +1248,8 @@ std::string render_template_closure_events(
   std::map<std::string, std::string> aliases =
       build_defaulted_source_aliases(session);
   const std::vector<std::string> source_lines = read_source_lines(source_path);
-  const std::vector<std::string> inline_names =
-      witness_text::inline_namespace_names_from_source(source_path);
+  const std::vector<std::string> & inline_names =
+      session.inline_namespace_names;
   std::set<std::string> source_owner_entities =
       ::source_owner_entities(session);
   add_inline_stripped_entities(source_owner_entities, inline_names);

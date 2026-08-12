@@ -217,9 +217,9 @@ struct TemplateWitnessSession
 
   struct ParameterizedClassSourceOccurrence
   {
-    const semantic_model::ClassTemplateDecl * origin = nullptr;
     cpp_decl::TemplateIdSourceDependency dependency =
         cpp_decl::TemplateIdSourceDependency::Unknown;
+    bool fixed_class_binding = false;
   };
 
   struct RetainedEnumValueBinding
@@ -254,7 +254,6 @@ struct TemplateWitnessSession
                      SourceValueDependency> source_value_dependencies;
   std::map<std::pair<const semantic_model::ClassTemplateDecl *, std::string>,
            SourceValueDependency> source_class_value_dependencies;
-  std::unordered_set<uint32_t> fixed_class_argument_occurrences;
   std::unordered_map<uint32_t, ParameterizedClassSourceOccurrence>
       class_source_occurrences;
   std::map<std::pair<std::string, long long>, RetainedEnumValueBinding>

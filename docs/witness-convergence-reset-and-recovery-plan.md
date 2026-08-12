@@ -6865,6 +6865,153 @@ This checkpoint adds 16 and removes 154 production lines, a net deletion of
 138. Phase 6 remains open for the remaining measured nonzero local side stores
 and migration mirrors. Phase 7 and inception remain forbidden.
 
+## Semantic metadata mirror cleanup checkpoint, 2026-08-12
+
+Commit `24aff20cbd1527f03d8c0995110b926b7cada99c` is the parent. This
+Phase 6 checkpoint merges the fixed-class marker into the existing
+source-occurrence record, removes an unnecessary class-template origin guard,
+and stops reparsing source files to rediscover inline namespace names during
+closure rendering. A temporary combined probe covered every one of the 1,530
+tracked strict references and is absent from production. The refined probe
+binary and event log have SHA-256 values
+`19b5788d5f28918e9c5c10a3f0c742cd6c6949aa80892aa5308f0c8f3a848c7b`
+and
+`27f0b019baca7997bc131e423a62df5f96378616660a20188a5faf31390eed84`.
+
+The origin probe observed 8,565 guarded reads, and every read accepted the
+recorded dependency. Provisional writes included seven pattern conflicts and
+11 resolved conflicts, but no conflict reached the guard as a distinct class
+origin. Source-location identity is therefore the actual key, and the
+`ClassTemplateDecl` pointer was a redundant mirror. The fixed-class store had
+35 writes and 32 reads. Four reads could not reconstruct the marker from the
+structured argument alone, so the fact remains explicit but now lives beside
+the dependency in `ParameterizedClassSourceOccurrence`; the separate
+`unordered_set` is deleted. Fixed-only records retain an unknown dependency
+until classification, so the cache fast path now requires a non-unknown
+dependency.
+
+All 1,104 closure renders produced the same inline-namespace list from source
+reparsing and from `TemplateWitnessSession::inline_namespace_names`: 1,089 had
+no inline namespace and 15 had one. Closure rendering now consumes the
+semantic session vector, and the file-reading regex helpers and their stream
+and set dependencies are deleted from `witness_text`.
+
+The same probe investigated
+`public_source_definition_dependencies`. Its 38 propagation inserts, eight
+direct inserts, and 32 trigger reads did not coincide with the existing
+`FunctionBinding` flag. A candidate migration to that flag failed exhaustive
+parent parity on 55 references by emitting extra closure definition-demand
+events. The binding flag has a broader lifetime than this session-scoped
+obligation, so the candidate was fully reverted and the set is deliberately
+retained. The failed parity directory is
+`/tmp/cppgm-phase6-semantic-mirror-parity-20260812.JvEVNU`.
+
+The final Homebrew-Clang validation produced these results:
+
+- all 1,530 direct-reference inputs are byte-exact against the frozen parent
+  for witness output, LowIR, diagnostics, stdout, and exit status;
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs
+  exactly once in its normal report position and has no separate lane;
+- all 1,530 provenance sessions exist. Schema 6 remains exactly 10,587
+  records: 4,289 source publications and 6,298 lifecycle publications. Source
+  ownership remains alias 835, class 2,631, function 791, and variable 32,
+  with no unknown producer or unexercised site;
+- ordinary and provenance compilers have identical status, witness, LowIR,
+  stdout, and diagnostics on all 1,530 inputs. Their sorted 3,060-artifact
+  manifests are also byte-identical to the parent manifest;
+- the 61-test helper suite passes, both compiler builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden text-
+  reparse categories remain zero, and the dynamic class-materialization audit
+  remains exact at five accepted occurrences and 55 rejected rows at 53
+  locations;
+- the semantic boundary matches the parent. The template boundary retains the
+  two reductions established by the parent checkpoint.
+
+The final parent-parity directory is
+`/tmp/cppgm-phase6-semantic-mirror-final-parity-20260812.Qaov7f`; its empty
+mismatch list has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+The ordinary and valid provenance strict reports are
+`/tmp/cppgm-phase6-semantic-mirror-cleanup-ordinary-strict-20260812.log` and
+`/tmp/cppgm-phase6-semantic-mirror-cleanup-provenance-strict-valid-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-semantic-mirror-cleanup-integrated-valid-20260812.log`,
+SHA-256
+`9cc88514e8780e0d041e38acc542a2bcb5d5ed36b235eab2acffd741a9b78133`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-semantic-mirror-provenance-trace-20260812.T1Y9Qe`.
+The analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-semantic-mirror-provenance-analysis-20260812.json` and
+`/tmp/cppgm-phase6-semantic-mirror-provenance-convergence-20260812.json`, with
+SHA-256 values
+`cf25b68bd5b5caad615e2767897fde25b8ada257200a65789c2c960db31f7d2b`
+and
+`57bb0a76ac69a321f63353f1c9b944106c9dfabf458aff2f5c63102f9a96fd91`.
+The sorted ordinary and provenance artifact manifests both retain the parent
+SHA-256
+`05745831554a8da3caf30283a8f2396a53302dc9fef0051be503903cf87bd8c5`.
+
+The helper report is
+`/tmp/cppgm-phase6-semantic-mirror-helper-tests-20260812.log`, SHA-256
+`ea681c98c8a6ae989a906c1b8339b270ba5f437d2e8f99646cc2d202a50f28c7`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and dynamic class-materialization reports have SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`8c8b7136ba50635a25175da91b80eb923410e4343a8fa244c7fdca30196c88d4`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`bdf62aedee939eeea09cf40b97eaea5dda472233d03fafb94ded0282ab5556a9`.
+
+All previously tracked semantic structures remain byte-identical to the
+parent. In addition, `TemplateWitnessSession` shrinks from 536 to 496 bytes,
+and `ParameterizedClassSourceOccurrence` shrinks from 16 to two bytes. The
+structure report is
+`/tmp/cppgm-phase6-semantic-mirror-structure-sizes-20260812.txt`, SHA-256
+`c8890ddc9c6083ab47ad3ec6d468cdd8dfddeb9fa7428a25523506eb08864881`.
+The ordinary binary shrinks by 5,456 bytes to 17,059,568 bytes and contains no
+provenance symbols. Its Mach-O `__TEXT` segment shrinks by 4,096 bytes;
+`__text`, `__gcc_except_tab`, `__cstring`, and `__unwind_info` shrink by 3,696,
+296, 66, and 32 bytes. `__bss` shrinks by 72 bytes. The section report is
+`/tmp/cppgm-phase6-semantic-mirror-binary-sections-20260812.txt`, SHA-256
+`d7f0726535ba91c7a6efc98886ccc2fa63ce27573d36c6f031998791bea50593`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-semantic-mirror-cleanup-ordinary-20260812`, SHA-256
+`42ce9fe3b98996e65c180967228d0f970c82a5a9dd7937376dd8cef726b92dd1`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.99% | +0.53% | -4.05% | `/tmp/cppgm-phase6-semantic-mirror-perf-fixed-20260812.json` |
+| Class-metadata parent | +0.11% | +0.62% | +0.05% | `/tmp/cppgm-phase6-semantic-mirror-perf-parent-20260812.json` |
+
+The candidate medians are 174,278,747,380 instructions, 761,090,048 bytes
+maximum RSS, and 569,016,320 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-semantic-mirror-raw-candidate-20260812.json`, SHA-256
+`91da205c74faa547a7c3247b2672883ff88341bb592c45c3c089b77bb1553212`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`d4f671c2d381abf1ca57f92e4877b79d17365e9eff1d27b2ac7707f172c07dd2`
+and
+`4a38f24974c700491ddb1bf28305f0343e3d66a6e82536b0013c9ed9fc48194a`.
+The candidate metadata names commit `24aff20cb` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 17 and removes 75 production lines, a net deletion of
+58. Phase 6 remains open for the remaining measured nonzero local side stores
+and migration mirrors. The public definition-dependency set is now classified
+as a genuine session-scoped obligation rather than a mirror. Phase 7 and
+inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

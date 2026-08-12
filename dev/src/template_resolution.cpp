@@ -3656,8 +3656,8 @@ void note_substituted_source_argument(
           argument.source_syntax->source_location_id :
           syntax->source_location_id;
   if(fixed_binding && witness_session && source_occurrence_id != 0) {
-    witness_session->fixed_class_argument_occurrences.insert(
-        source_occurrence_id);
+    witness_session->class_source_occurrences
+        [source_occurrence_id].fixed_class_binding = true;
   }
   const bool substituted = template_argument_semantics::
       argument_syntax_uses_template_binding(scope, *syntax);

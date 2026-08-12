@@ -24986,8 +24986,8 @@ void substitute_type_pack_template_id_arguments(
            source_type_binding_is_fixed_class_member(scope,
                                                      it->first,
                                                      it->second)) {
-          witness_session->fixed_class_argument_occurrences.insert(
-              argument.source_location_id);
+          witness_session->class_source_occurrences
+              [argument.source_location_id].fixed_class_binding = true;
         }
       }
       if(argument.pack_expansion) {
