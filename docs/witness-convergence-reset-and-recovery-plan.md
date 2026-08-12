@@ -3997,6 +3997,152 @@ entry. Phase 5 remains open on the 16 function-call tests and the one class-use
 test. Phase 4 remains open on the lazy-alias lifecycle oracle divergence.
 Inception remains forbidden.
 
+## Typed candidate normalization and SFINAE retention checkpoint, 2026-08-11
+
+This Phase 5 checkpoint moves six more function-call outputs onto typed
+candidate facts. Direct functional construction no longer inherits the
+candidate restrictions of an enclosing user-defined-conversion probe.
+Ambiguous argument-count rejection strings are classified from the selected
+function binding's explicit parameter offset, default arguments, and variadic
+function type. Explicit constructors rejected inside a conversion probe retain
+both the explicit rejection and any independently observed conversion failure;
+when a conversion function wins, the duplicate bad-conversion consequence of
+that same explicit rejection is suppressed.
+
+Constructor candidate publication now counts distinct typed candidates rather
+than adding an initial drop that already names a built candidate. For a direct
+constructor-template selection, a nonselected implicit copy or move candidate
+retains its semantic phase before an unbuilt arity rejection. A selected
+argument conversion also establishes that the source wrapper call precedes its
+nested callee at the same source location. These rules repair candidate reason,
+count, phase, and source-event ordering without a fixture, path, line, or
+rendered-name exception.
+
+Concrete explicit source template-ids now retain candidate failures discovered
+while nested function-call capture is paused. The retention gate requires a
+witness session, a source-spelled template-id with no retained dependency, and
+a non-template-dependent binding scope. It covers fast arity rejection,
+argument analysis, deduction, explicit argument resolution, binding
+substitution, and implicit-object conversion. The constexpr direct-call fast
+path also revisits the source overload set once to retain substitution failure
+from a sibling template whose explicit/default template arguments cannot be
+resolved. Repeated semantic passes at the same canonical call identity remain
+separate diagnostic rows; the existing same-call canonicalization boundary now
+prefers the row with more typed candidate drops when their locations tie.
+
+The six newly exact outputs are:
+
+- `pa23/tests/spec/300-template-id-direct-parameter-same-name-deduction.t`;
+- `pa23/tests/spec/500-type-pack-qualified-static-member-expansion.t`;
+- `pa24/tests/general/200-template-template-qualified-default-arg-deduction.t`;
+- `pa23/tests/spec/300-c-style-virtual-base-downcast-sfinae.t`;
+- `pa23/tests/spec/300-dependent-nontype-result-lexical-template-lookup-sfinae.t`;
+- `pa23/tests/spec/300-failed-noexcept-default-nttp-sfinae.t`.
+
+Expanded convergence improves from 1,512 to 1,518 exact outputs. The
+1,530-reference inventory has 12 known mismatches, no warning output, and no
+missing actual file. Function-call debt falls from 20 mismatched occurrences
+across 16 tests to 14 occurrences across ten tests: three changed rows, four
+missing rows, and seven unexpected rows. Class-use remains one changed row in
+one test, and lifecycle remains the one lazy-alias class-instantiation gap. No
+test enters the mismatch set or changes family.
+
+The final Homebrew-Clang validation produced these results:
+
+- the ordinary and provenance strict runs both report PA19 279 compared with
+  zero failures, PA20 158 with zero, PA22 293 with three residuals, PA23 385
+  with six, and PA24 415 with three; their expected nonzero exit is exactly the
+  documented 12-test residual set;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862, including PA30 runtime;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  ordinary/provenance witness and LowIR pairs match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,200 records, 4,772 source
+  attempts, and 6,298 lifecycle attempts with no unknown producer attempt and
+  no unexercised producer site;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and tracked structure-size reports match the parent byte
+  for byte.
+
+The function producer still makes 1,273 attempts and leaves 793 final visible
+rows. It now inserts 842 rows and classifies 431 exact duplicates, compared
+with 841 and 432 at the parent. The additional inserted row is the fact-rich
+reanalysis of the lexical `is_range` SFINAE call. The renderer consequently
+removes four same-location calls instead of three. It still removes 44
+source-defined calls and one visible duplicate, and its legacy drop-order pass
+still rewrites 27 events. There are no rejected, replaced, or enriched function
+attempts. The extra row and all remaining destructive renderer actions remain
+Phase 5 ownership debt.
+
+The ordinary convergence report is
+`/tmp/cppgm-phase5-candidate-normalization-convergence-final-20260811.json`,
+SHA-256
+`ab2b8e22e163abd5cf7c91f58d95641eda30c19c5ff38c2d863d5b0545d16c0e`.
+The PA1-PA38 report is
+`/tmp/cppgm-phase5-candidate-normalization-broad-final-20260811.log`, SHA-256
+`ce27e275e36e6b23f48b36f2a6d84063f9ea9fbf7215e2f6b5635c91568b8967`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase5-candidate-normalization-provenance-trace-final-20260811.pVh7on`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase5-candidate-normalization-provenance-analysis-final-20260811.json`
+and
+`/tmp/cppgm-phase5-candidate-normalization-provenance-convergence-final-20260811.json`,
+with SHA-256 values
+`59d1a08c12bc067dce4b7c2803a11563049cded2f9b12c8501e021c98bcd22d8`
+and
+`c9513d7dab27e35addd8913f60b90659ba9aaa663c071bc83b41e00bcc3d0611`.
+The byte-identical ordinary and provenance manifests both have SHA-256
+`798b22571063da3f33565b7b8c774a87a29a8d80393e9c9aba2bacb2ba183e87`;
+their empty difference has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The 60-test helper report is
+`/tmp/cppgm-phase5-candidate-normalization-helper-tests-20260811.log`, SHA-256
+`12b63368e8d5f8a126c3e80ab17c8b26a798d10d71c37e4a3e7afd886b9f4fec`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports have SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary grows by 13,792 bytes to 17,257,560 bytes. Its Mach-O
+`__TEXT` segment grows by 12,288 bytes to 13,119,488 and `__LINKEDIT` grows by
+4,096 bytes to 4,071,424; `__DATA_CONST` and `__DATA` remain 61,440 and 442,368
+bytes. It contains no witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-phase5-candidate-normalization-ordinary-final-20260811`, SHA-256
+`d597c540929706c1d5865950bfe783e979e4235a6d5d5e329728e1a6a901a600`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.19% | -0.66% | -4.00% | `/tmp/cppgm-phase5-candidate-normalization-perf-fixed-final-20260811.json` |
+| Concrete call-boundary parent | -0.19% | +1.75% | +0.05% | `/tmp/cppgm-phase5-candidate-normalization-perf-parent-final-20260811.json` |
+
+The candidate medians are 173,917,825,578 instructions, 752,111,616 bytes
+maximum RSS, and 569,294,848 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-phase5-candidate-normalization-raw-candidate-final-20260811.json`,
+SHA-256
+`7c9a0b3a1e5ad0815a67db692b2aef74967218bd2a35e807e357289e357decfd`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`5e87b20651587b2d83d369b7143755245cc0c6446c4f54b6c6f8e9c5794f3ca5`
+and
+`8d4013de1dcd52a165b0f4b627167a2f0955fe7ef9ec012cd334be5c9a85c9e8`.
+The candidate metadata names commit `67e179487` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 303 and removes 28 production lines before this ledger
+entry. Phase 5 remains open on the ten function-call tests and the one
+class-use test. Phase 4 remains open on the lazy-alias lifecycle oracle
+divergence. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

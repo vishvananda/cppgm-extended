@@ -2235,6 +2235,45 @@ std::string function_candidate_rejection_drop_reason(const std::string & rejecti
   return "substitution_failure";
 }
 
+std::string function_candidate_rejection_drop_reason(
+    const FunctionBinding * candidate,
+    std::size_t source_argument_count,
+    const std::string & rejection)
+{
+  const bool ambiguous_argument_count_rejection =
+      rejection.find("argument count mismatch") != std::string::npos ||
+      rejection.find("argument count/type shape mismatch") !=
+          std::string::npos ||
+      rejection.find("member argument count mismatch") != std::string::npos;
+  if(candidate && ambiguous_argument_count_rejection) {
+    const std::size_t explicit_offset =
+        function_binding_explicit_parameter_offset(*candidate);
+    const std::size_t parameter_count =
+        candidate->params.size() > explicit_offset ?
+            candidate->params.size() - explicit_offset : 0;
+    std::size_t required_count = candidate->params.size();
+    while(required_count > explicit_offset &&
+          required_count - 1 < candidate->default_arguments.size() &&
+          candidate->default_arguments[required_count - 1]) {
+      --required_count;
+    }
+    required_count = required_count > explicit_offset ?
+        required_count - explicit_offset : 0;
+    if(source_argument_count < required_count) {
+      return "too_few_arguments";
+    }
+    TypePtr function_type = strip_top_level_cv(candidate->type);
+    const bool accepts_extra_arguments =
+        function_type &&
+        function_type->kind == Type::TK_FUNCTION &&
+        (function_type->variadic || function_type->prototype_relaxed);
+    if(!accepts_extra_arguments && source_argument_count > parameter_count) {
+      return "too_many_arguments";
+    }
+  }
+  return function_candidate_rejection_drop_reason(rejection);
+}
+
 bool constructor_is_class_copy_or_move_candidate(const ClassInfo & info,
                                                  const FunctionBinding * binding)
 {
@@ -2323,17 +2362,31 @@ void append_template_function_candidate_drop(
     SemanticContext & ctx,
     const FunctionTemplateDecl * decl,
     const std::string & reason,
-    std::vector<witness::TemplateWitnessSourceDrop> * out)
+    std::vector<witness::TemplateWitnessSourceDrop> * out,
+    bool capture_while_source_paused = false)
 {
-  if(!(out && template_witness_source_capture_enabled_for_calls(ctx) && decl) ||
+  const bool source_capture_active =
+      template_witness_source_capture_enabled_for_calls(ctx) ||
+      (capture_while_source_paused &&
+       witness::enabled(ctx.template_witness_context()));
+  if(!(out && source_capture_active && decl) ||
      reason.empty()) {
     return;
   }
-  witness::append_source_drop(
-      *out,
-      function_template_witness_name(ctx, decl),
-      function_template_witness_decl_location(ctx, decl),
-      reason);
+  const std::string candidate = function_template_witness_name(ctx, decl);
+  const std::string location = function_template_witness_decl_location(ctx, decl);
+  if(template_api::template_witness_source_capture_enabled()) {
+    witness::append_source_drop(*out, candidate, location, reason);
+    return;
+  }
+  if(candidate.empty() || location.empty()) {
+    return;
+  }
+  witness::TemplateWitnessSourceDrop drop;
+  drop.candidate = candidate;
+  drop.location = location;
+  drop.reason = reason;
+  out->push_back(drop);
 }
 
 void hash_combine(std::size_t & seed, std::size_t value)
@@ -3808,7 +3861,8 @@ void note_function_call_source_event(
   semantic_template_function::FunctionTemplateCallSourceUseRequest source_use;
   source_use.binding = source_selected;
   source_use.source_call_precedes_nested_callee =
-      source_call_precedes_nested_callee;
+      source_call_precedes_nested_callee ||
+      selected_argument_conversion != nullptr;
   source_use.origin = admitted_source_call ?
       witness::FunctionCallEmissionOrigin::AdmittedSourceCall :
       witness::FunctionCallEmissionOrigin::OverloadSelectedCall;
@@ -3833,8 +3887,29 @@ void note_function_call_source_event(
       callee_node->kind == CppAstKind::member_expression &&
       (node_has_simple_type(*callee_node, OP_DOT) ||
        node_has_simple_type(*callee_node, OP_ARROW));
+  const std::size_t source_argument_count =
+      selection.index < matches.size() ?
+          matches[selection.index].source_args.size() : 0;
   const bool suppress_source_drops =
       function_call_source_drops_follow_out_of_class_member_definition(chosen);
+  const auto initial_drop_is_represented_by_built_candidate =
+      [&](const witness::TemplateWitnessSourceDrop & drop) -> bool
+  {
+    for(std::size_t i = 0; i < built_candidates.size(); ++i) {
+      if(!built_candidates[i]) {
+        continue;
+      }
+      if(drop.candidate == function_binding_witness_name(ctx, built_candidates[i]) &&
+         drop.location ==
+             function_binding_witness_decl_location(
+                 ctx,
+                 built_candidates[i],
+                 FunctionWitnessDeclLocationKind::CandidateDrop)) {
+        return true;
+      }
+    }
+    return false;
+  };
 
   witness::SourceDropSet seen_drops;
   const std::string selected_owner_decl =
@@ -3932,7 +4007,9 @@ void note_function_call_source_event(
       continue;
     }
     const std::string reason =
-        function_candidate_rejection_drop_reason(candidate_rejections[i]);
+        function_candidate_rejection_drop_reason(built_candidates[i],
+                                                 source_argument_count,
+                                                 candidate_rejections[i]);
     if(!drop_survives_argument_conversion_selection(reason)) {
       continue;
     }
@@ -3964,6 +4041,8 @@ void note_function_call_source_event(
                 reason);
   }
   std::vector<std::size_t> nonselected_match_indices;
+  std::set<std::pair<std::string, std::string> >
+      copy_move_worse_drop_keys;
   for(std::size_t i = 0; i < matches.size(); ++i) {
     if(i == selection.index || !matches[i].function || matches[i].function == chosen) {
       continue;
@@ -4022,12 +4101,61 @@ void note_function_call_source_event(
            reason)) {
       continue;
     }
-    append_drop(function_binding_witness_name(ctx, matches[match_index].function),
-                function_binding_witness_decl_location(
-                    ctx,
-                    matches[match_index].function,
-                    FunctionWitnessDeclLocationKind::CandidateDrop),
-                reason);
+    const std::string candidate_name =
+        function_binding_witness_name(ctx, matches[match_index].function);
+    const std::string candidate_location =
+        function_binding_witness_decl_location(
+            ctx,
+            matches[match_index].function,
+            FunctionWitnessDeclLocationKind::CandidateDrop);
+    append_drop(candidate_name, candidate_location, reason);
+    if(reason == "worse_conversion" &&
+       matches[match_index].function &&
+       (matches[match_index].function->is_copy_constructor ||
+        matches[match_index].function->is_move_constructor)) {
+      copy_move_worse_drop_keys.insert(
+          std::make_pair(candidate_name, candidate_location));
+    }
+  }
+  bool reordered_unbuilt_arity_after_copy_move = false;
+  if(chosen->is_constructor &&
+     source_selected == chosen &&
+     chosen->source_template &&
+     !user_defined_conversion_constructor_source &&
+     !copy_move_worse_drop_keys.empty()) {
+    std::size_t arity_index = source_use.drops.size();
+    for(std::size_t i = 0; i < initial_drops.size(); ++i) {
+      if(!drop_reason_is_argument_count_mismatch(initial_drops[i].reason) ||
+         initial_drop_is_represented_by_built_candidate(initial_drops[i])) {
+        continue;
+      }
+      for(std::size_t j = 0; j < source_use.drops.size(); ++j) {
+        if(source_use.drops[j].candidate == initial_drops[i].candidate &&
+           source_use.drops[j].location == initial_drops[i].location &&
+           source_use.drops[j].reason == initial_drops[i].reason) {
+          arity_index = j;
+          break;
+        }
+      }
+      if(arity_index != source_use.drops.size()) {
+        break;
+      }
+    }
+    if(arity_index != source_use.drops.size()) {
+      for(std::size_t i = arity_index + 1; i < source_use.drops.size(); ++i) {
+        if(source_use.drops[i].reason != "worse_conversion" ||
+           copy_move_worse_drop_keys.count(
+               std::make_pair(source_use.drops[i].candidate,
+                              source_use.drops[i].location)) == 0) {
+          continue;
+        }
+        std::rotate(source_use.drops.begin() + arity_index,
+                    source_use.drops.begin() + i,
+                    source_use.drops.begin() + i + 1);
+        reordered_unbuilt_arity_after_copy_move = true;
+        break;
+      }
+    }
   }
   bool has_bad_conversion_drop = false;
   bool has_too_many_arguments_drop = false;
@@ -4053,7 +4181,8 @@ void note_function_call_source_event(
   source_use.preserve_semantic_drop_order =
       source_use.preserve_semantic_drop_order ||
       direct_constructor_candidate_phase_order ||
-      non_explicit_constructor_rejection_order;
+      non_explicit_constructor_rejection_order ||
+      reordered_unbuilt_arity_after_copy_move;
   if(chosen->is_constructor &&
      !constructor_source_syntax &&
      !constructor_source_location_is_authoritative &&
@@ -4066,7 +4195,18 @@ void note_function_call_source_event(
   }
   std::size_t visible_candidate_count = 0;
   if(chosen->is_constructor) {
-    visible_candidate_count = built_candidate_count + initial_drops.size();
+    visible_candidate_count = built_candidate_count;
+    std::set<std::pair<std::string, std::string> > extra_candidates;
+    for(std::size_t i = 0; i < initial_drops.size(); ++i) {
+      if(!initial_drop_is_represented_by_built_candidate(initial_drops[i]) &&
+         !initial_drops[i].candidate.empty() &&
+         !initial_drops[i].location.empty()) {
+        extra_candidates.insert(
+            std::make_pair(initial_drops[i].candidate,
+                           initial_drops[i].location));
+      }
+    }
+    visible_candidate_count += extra_candidates.size();
     if(visible_candidate_count < source_use.drops.size() + 1) {
       visible_candidate_count = source_use.drops.size() + 1;
     }
@@ -11430,6 +11570,13 @@ void append_function_template_call_candidates_impl(
   QualifiedName explicit_name;
   vector<string> explicit_args;
   const bool has_explicit_args = name_template_id_syntax != nullptr;
+  const bool retain_concrete_explicit_source_candidate_drops =
+      name_template_id_syntax &&
+      witness::enabled(ctx.template_witness_context()) &&
+      !source_template_id_retains_dependency(ctx,
+                                             *name_template_id_syntax,
+                                             &argument_scope) &&
+      !source_binding_scope_is_template_dependent(&argument_scope);
   const bool use_preselected_member_templates =
       lookup_scope.name == "<member-templates>" && lookup_scope.class_info;
   if(name_template_id_syntax) {
@@ -11625,7 +11772,8 @@ void append_function_template_call_candidates_impl(
           ctx,
           templates[i],
           function_template_argument_count_drop_reason(*templates[i], template_arg_count),
-          witness_drops);
+          witness_drops,
+          retain_concrete_explicit_source_candidate_drops);
       continue;
     }
     if(parser_trace::enabled("template.resolve")) {
@@ -11724,7 +11872,8 @@ void append_function_template_call_candidates_impl(
       append_template_function_candidate_drop(ctx,
                                               templates[i],
                                               "substitution_failure",
-                                              witness_drops);
+                                              witness_drops,
+                                              retain_concrete_explicit_source_candidate_drops);
       continue;
     }
 
@@ -11819,6 +11968,12 @@ void append_function_template_call_candidates_impl(
                 << " explicit=yes explicit-arg-resolution-failed";
           parser_trace::note("template.resolve", trace_location, trace.str());
         }
+        append_template_function_candidate_drop(
+            ctx,
+            templates[i],
+            "substitution_failure",
+            witness_drops,
+            retain_concrete_explicit_source_candidate_drops);
         continue;
       }
       if(arg_nodes.empty() &&
@@ -11851,6 +12006,7 @@ void append_function_template_call_candidates_impl(
       ExprInfo & template_implicit_object_arg;
       bool & template_implicit_object_ready;
       const std::string & trace_location;
+      bool capture_concrete_explicit_source_candidate_drops;
 
       bool binding_accepts_implicit_object(FunctionBinding * binding)
       {
@@ -11951,7 +12107,8 @@ void append_function_template_call_candidates_impl(
                 ctx,
                 &candidate_template,
                 deduction_reason,
-                &combination_drops);
+                &combination_drops,
+                capture_concrete_explicit_source_candidate_drops);
             return;
           }
 
@@ -11989,7 +12146,8 @@ void append_function_template_call_candidates_impl(
             append_template_function_candidate_drop(ctx,
                                                     &candidate_template,
                                                     "substitution_failure",
-                                                    &combination_drops);
+                                                    &combination_drops,
+                                                    capture_concrete_explicit_source_candidate_drops);
             return;
           }
           catch(const logic_error & e)
@@ -12004,7 +12162,8 @@ void append_function_template_call_candidates_impl(
             append_template_function_candidate_drop(ctx,
                                                     &candidate_template,
                                                     "substitution_failure",
-                                                    &combination_drops);
+                                                    &combination_drops,
+                                                    capture_concrete_explicit_source_candidate_drops);
             return;
           }
           if(!binding) {
@@ -12020,7 +12179,8 @@ void append_function_template_call_candidates_impl(
             append_template_function_candidate_drop(ctx,
                                                     &candidate_template,
                                                     "implicit_object_conversion_failed",
-                                                    &combination_drops);
+                                                    &combination_drops,
+                                                    capture_concrete_explicit_source_candidate_drops);
             return;
           }
           if(binding_refresh_key.type) {
@@ -12068,7 +12228,8 @@ void append_function_template_call_candidates_impl(
         options.hints,
         template_implicit_object_arg,
         template_implicit_object_ready,
-        trace_location};
+        trace_location,
+        retain_concrete_explicit_source_candidate_drops};
     combination_runner.run(0);
     if(witness_drops && out.size() == candidate_count_before_combinations) {
       for(size_t j = 0; j < combination_drops.size(); ++j) {
@@ -13146,9 +13307,25 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
       candidate_rejection = candidate->name + ": aggregate constructor not considered";
       return;
     }
-    if(binding_declares_explicit_function(*candidate) && !options.allow_explicit) {
+    const bool explicit_not_allowed =
+        binding_declares_explicit_function(*candidate) && !options.allow_explicit;
+    const bool analyze_rejected_explicit_source_candidate =
+        explicit_not_allowed &&
+        options.user_defined_conversion_source &&
+        capture_argument_conversion_selections;
+    if(explicit_not_allowed) {
       candidate_rejection = candidate->name + ": explicit constructor not allowed";
-      return;
+      if(!analyze_rejected_explicit_source_candidate) {
+        return;
+      }
+      witness::append_source_drop(
+          state.source_drops,
+          function_binding_witness_name(ctx, candidate),
+          function_binding_witness_decl_location(
+              ctx,
+              candidate,
+              FunctionWitnessDeclLocationKind::CandidateDrop),
+          "explicit_not_allowed");
     }
     const ClassInfo * access_class =
         candidate->is_inherited_constructor &&
@@ -13295,6 +13472,11 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                                   options,
                                                   match,
                                                   candidate_rejection);
+    }
+
+    if(okay && explicit_not_allowed) {
+      candidate_rejection = candidate->name + ": explicit constructor not allowed";
+      okay = false;
     }
 
     if(okay) {
@@ -13444,6 +13626,8 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                 state.built_candidates[i],
                 FunctionWitnessDeclLocationKind::CandidateDrop),
             function_candidate_rejection_drop_reason(
+                state.built_candidates[i],
+                source_args.size(),
                 state.candidate_rejections[i]));
       }
       result.candidate_count = static_cast<int>(result.drops.size());

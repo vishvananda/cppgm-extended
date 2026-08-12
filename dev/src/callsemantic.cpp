@@ -10963,6 +10963,16 @@ private:
             constructor_lifecycle_service::direct_initialization_profile(
                 "target-aware construction"));
         if(!direct_constructor_source_witness_location.empty()) {
+          // A functional cast names a direct constructor source expression even
+          // when target-aware analysis was entered from an enclosing
+          // user-defined-conversion probe.  Keep the probe's capture plumbing,
+          // but do not let its candidate restrictions become the semantics of
+          // the nested direct construction.
+          if(ctor_options.user_defined_conversion_source) {
+            ctor_options.allow_user_defined = true;
+            ctor_options.allow_explicit = true;
+            ctor_options.user_defined_conversion_source = false;
+          }
           ctor_options.source_witness_location =
               direct_constructor_source_witness_location;
           ctor_options.source_witness_location_is_authoritative = true;

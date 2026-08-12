@@ -644,6 +644,64 @@ public:
             "defaulted");
       }
     }
+    if(template_id_syntax) {
+      std::vector<FunctionTemplateDecl *> candidate_templates;
+      const std::string lookup_leaf =
+          unqualified_member_name(template_id_syntax->name.name);
+      if(binding.owner_class && !lookup_leaf.empty()) {
+        const semantic_lookup::MemberFunctionTemplateLookupResult result =
+            semantic_lookup::lookup_visible_member_function_templates(
+                *binding.owner_class,
+                lookup_leaf);
+        semantic_lookup::append_unique_function_templates(candidate_templates,
+                                                          result.templates);
+      } else {
+        candidate_templates = ctx.lookup_function_templates_node(
+            scope,
+            callee,
+            template_id_syntax->name.name);
+      }
+      for(std::size_t i = 0; i < candidate_templates.size(); ++i) {
+        FunctionTemplateDecl * candidate = candidate_templates[i];
+        if(!candidate || candidate == source_template) {
+          continue;
+        }
+        std::vector<TemplateArgument> candidate_arguments;
+        bool resolved = false;
+        try
+        {
+          resolved = resolve_template_arguments(
+              scope,
+              candidate->parameters,
+              template_id_syntax->arguments,
+              &template_id_syntax->argument_syntaxes,
+              candidate_arguments,
+              candidate->declaring_scope);
+        }
+        catch(const TemplateSubstitutionFailure &)
+        {
+          resolved = false;
+        }
+        if(resolved) {
+          continue;
+        }
+        witness::TemplateWitnessSourceDrop drop;
+        drop.candidate =
+            template_api::function_template_witness_entity(*this, candidate);
+        drop.location =
+            template_api::function_template_witness_decl_location(*this, candidate);
+        drop.reason = "substitution_failure";
+        if(!drop.candidate.empty() && !drop.location.empty()) {
+          request.drops.push_back(drop);
+        }
+      }
+      if(!request.drops.empty()) {
+        request.candidate_count =
+            static_cast<int>(request.drops.size() + 1);
+        request.candidates_built = request.candidate_count;
+        request.candidates_viable = 1;
+      }
+    }
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
     const witness_provenance::ScopedUpstreamRoute provenance_route(
         witness_provenance::WitnessUpstreamRoute::FunctionConstantValueLookup);

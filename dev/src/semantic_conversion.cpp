@@ -3463,6 +3463,21 @@ bool try_argument_conversion(SemanticContext & ctx,
       const SemanticFunctionCallDrop & drop =
           constructor_probe_source_call.drops[i];
       if(selected.kind == UserDefinedCandidate::CONVERSION_FUNCTION &&
+         drop.reason == "bad_conversion") {
+        bool candidate_already_rejected_as_explicit = false;
+        for(size_t j = 0; j < constructor_probe_source_call.drops.size(); ++j) {
+          candidate_already_rejected_as_explicit =
+              candidate_already_rejected_as_explicit ||
+              (constructor_probe_source_call.drops[j].candidate == drop.candidate &&
+               constructor_probe_source_call.drops[j].location == drop.location &&
+               constructor_probe_source_call.drops[j].reason ==
+                   "explicit_not_allowed");
+        }
+        if(candidate_already_rejected_as_explicit) {
+          continue;
+        }
+      }
+      if(selected.kind == UserDefinedCandidate::CONVERSION_FUNCTION &&
          drop.reason != "explicit_not_allowed" &&
          drop.reason != "bad_conversion" &&
          drop.reason != "substitution_failure" &&

@@ -3004,8 +3004,16 @@ void canonicalize_event_locations_and_dedupe(vector<WitnessEvent> & events,
                 {
                   const ParsedLocation left = parse_line_col(events[lhs].location);
                   const ParsedLocation right = parse_line_col(events[rhs].location);
-                  return std::make_pair(left.line, left.column) <
-                      std::make_pair(right.line, right.column);
+                  const std::pair<std::size_t, std::size_t> left_location(
+                      left.line,
+                      left.column);
+                  const std::pair<std::size_t, std::size_t> right_location(
+                      right.line,
+                      right.column);
+                  if(left_location != right_location) {
+                    return left_location < right_location;
+                  }
+                  return events[lhs].drops.size() < events[rhs].drops.size();
                 });
       for(size_t j = 0; j + 1 < it->second.size(); ++j) {
         drop[it->second[j]] = 1;
