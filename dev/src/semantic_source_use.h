@@ -138,10 +138,6 @@ struct SemanticSourceUse
   // nested callee by the source AST traversal, even when both share the first
   // token location.
   bool source_call_precedes_nested_callee = false;
-  // Some overload operations already publish candidate failures in their
-  // semantic phase order. Preserve that order instead of applying the legacy
-  // renderer-wide reason priority.
-  bool preserve_semantic_drop_order = false;
   // Stable semantic identity used only to order a member call before the
   // class-template owner named by the same source occurrence.
   const void * semantic_class_template_identity = nullptr;
@@ -446,6 +442,151 @@ inline bool function_call_equivalent_ignoring_binding_spacing(
          lhs.candidates_viable == rhs.candidates_viable;
 }
 
+inline std::string function_call_effective_location(
+    const SemanticSourceUse & use)
+{
+  return use.spelling_anchor.location.empty() ?
+      use.location : use.spelling_anchor.location;
+}
+
+inline std::string function_call_selected_decl_location(
+    const SemanticSourceUse & use)
+{
+  return use.selected_decl_anchor.location.empty() ?
+      use.selected_entity.decl_location : use.selected_decl_anchor.location;
+}
+
+inline bool function_calls_share_selected_source_identity(
+    const SemanticSourceUse & lhs,
+    const SemanticSourceUse & rhs)
+{
+  return lhs.kind == SourceUseKind::FunctionCall &&
+         rhs.kind == SourceUseKind::FunctionCall &&
+         lhs.role == rhs.role &&
+         lhs.ownership == rhs.ownership &&
+         function_call_effective_location(lhs) ==
+             function_call_effective_location(rhs) &&
+         function_call_selected_decl_location(lhs) ==
+             function_call_selected_decl_location(rhs) &&
+         lhs.template_name == rhs.template_name &&
+         lhs.selected == rhs.selected &&
+         lhs.selection == rhs.selection &&
+         lhs.expanded_to == rhs.expanded_to &&
+         source_bindings_equivalent_ignoring_space(lhs.bindings, rhs.bindings) &&
+         source_bindings_equivalent_ignoring_space(lhs.specialization_bindings,
+                                                   rhs.specialization_bindings);
+}
+
+inline bool source_drops_contain(const std::vector<SourceDrop> & superset,
+                                 const std::vector<SourceDrop> & subset)
+{
+  for(std::size_t i = 0; i < subset.size(); ++i) {
+    bool found = false;
+    for(std::size_t j = 0; j < superset.size(); ++j) {
+      if(superset[j] == subset[i]) {
+        found = true;
+        break;
+      }
+    }
+    if(!found) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool function_call_candidate_facts_dominate(
+    const SemanticSourceUse & candidate,
+    const SemanticSourceUse & existing)
+{
+  if(!source_drops_contain(candidate.drops, existing.drops)) {
+    return false;
+  }
+  const int candidate_metrics[] = {
+      candidate.candidate_count,
+      candidate.candidates_built,
+      candidate.candidates_viable,
+  };
+  const int existing_metrics[] = {
+      existing.candidate_count,
+      existing.candidates_built,
+      existing.candidates_viable,
+  };
+  for(std::size_t i = 0; i < 3; ++i) {
+    if(existing_metrics[i] >= 0 &&
+       candidate_metrics[i] != existing_metrics[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool function_call_binding_prefix_matches(
+    const std::vector<SourceBinding> & prefix,
+    const std::vector<SourceBinding> & full)
+{
+  if(prefix.size() >= full.size()) {
+    return false;
+  }
+  for(std::size_t i = 0; i < prefix.size(); ++i) {
+    if(prefix[i].param != full[i].param ||
+       prefix[i].source != full[i].source ||
+       source_use_arg_compact_key(prefix[i].arg) !=
+           source_use_arg_compact_key(full[i].arg)) {
+      return false;
+    }
+  }
+  for(std::size_t i = prefix.size(); i < full.size(); ++i) {
+    if(full[i].source != "deduced") {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool function_call_is_deduced_trailing_binding_replay(
+    const SemanticSourceUse & shorter,
+    const SemanticSourceUse & longer)
+{
+  const std::string shorter_target =
+      shorter.selected.empty() ? shorter.template_name : shorter.selected;
+  const std::string longer_target =
+      longer.selected.empty() ? longer.template_name : longer.selected;
+  const std::string shorter_decl =
+      function_call_selected_decl_location(shorter);
+  const std::string longer_decl =
+      function_call_selected_decl_location(longer);
+  return shorter.kind == SourceUseKind::FunctionCall &&
+         longer.kind == SourceUseKind::FunctionCall &&
+         function_call_effective_location(shorter) ==
+             function_call_effective_location(longer) &&
+         shorter_target == longer_target &&
+         !shorter_decl.empty() &&
+         !longer_decl.empty() &&
+         shorter_decl != longer_decl &&
+         function_call_binding_prefix_matches(shorter.bindings,
+                                              longer.bindings);
+}
+
+inline void merge_function_call_source_metadata(
+    SemanticSourceUse & preferred,
+    const SemanticSourceUse & other)
+{
+  if(preferred.source_traversal_order == 0 ||
+     (other.source_traversal_order != 0 &&
+      other.source_traversal_order < preferred.source_traversal_order)) {
+    preferred.source_traversal_order = other.source_traversal_order;
+  }
+  preferred.source_call_precedes_nested_callee =
+      preferred.source_call_precedes_nested_callee ||
+      other.source_call_precedes_nested_callee;
+  if(source_template_id_occurrence_is_more_concrete(
+         other.template_id_occurrence,
+         preferred.template_id_occurrence)) {
+    preferred.template_id_occurrence = other.template_id_occurrence;
+  }
+}
+
 inline bool alias_use_equivalent_ignoring_binding_spacing(
     const SemanticSourceUse & lhs,
     const SemanticSourceUse & rhs)
@@ -517,15 +658,38 @@ inline void record_source_use(SemanticSourceUseTable & table,
   if(use.kind == SourceUseKind::FunctionCall) {
     for(std::size_t i = 0; i < table.uses.size(); ++i) {
       if(function_call_equivalent_ignoring_binding_spacing(table.uses[i], use)) {
-        if(table.uses[i].source_traversal_order == 0) {
-          table.uses[i].source_traversal_order = use.source_traversal_order;
-        }
-        table.uses[i].source_call_precedes_nested_callee =
-            table.uses[i].source_call_precedes_nested_callee ||
-            use.source_call_precedes_nested_callee;
-        table.uses[i].preserve_semantic_drop_order =
-            table.uses[i].preserve_semantic_drop_order ||
-            use.preserve_semantic_drop_order;
+        merge_function_call_source_metadata(table.uses[i], use);
+        return;
+      }
+    }
+    for(std::size_t i = 0; i < table.uses.size(); ++i) {
+      if(!function_calls_share_selected_source_identity(table.uses[i], use)) {
+        continue;
+      }
+      const bool use_dominates =
+          function_call_candidate_facts_dominate(use, table.uses[i]);
+      const bool existing_dominates =
+          function_call_candidate_facts_dominate(table.uses[i], use);
+      if(use_dominates && !existing_dominates) {
+        SemanticSourceUse replacement = use;
+        merge_function_call_source_metadata(replacement, table.uses[i]);
+        table.uses[i] = replacement;
+        return;
+      }
+      if(existing_dominates) {
+        merge_function_call_source_metadata(table.uses[i], use);
+        return;
+      }
+    }
+    for(std::size_t i = 0; i < table.uses.size(); ++i) {
+      if(function_call_is_deduced_trailing_binding_replay(table.uses[i], use)) {
+        merge_function_call_source_metadata(table.uses[i], use);
+        return;
+      }
+      if(function_call_is_deduced_trailing_binding_replay(use, table.uses[i])) {
+        SemanticSourceUse replacement = use;
+        merge_function_call_source_metadata(replacement, table.uses[i]);
+        table.uses[i] = replacement;
         return;
       }
     }
@@ -535,9 +699,6 @@ inline void record_source_use(SemanticSourceUseTable & table,
       if(table.uses[i].source_traversal_order == 0) {
         table.uses[i].source_traversal_order = use.source_traversal_order;
       }
-      table.uses[i].preserve_semantic_drop_order =
-          table.uses[i].preserve_semantic_drop_order ||
-          use.preserve_semantic_drop_order;
       return;
     }
   }

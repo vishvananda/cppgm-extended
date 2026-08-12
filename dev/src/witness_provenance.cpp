@@ -329,7 +329,13 @@ bool source_rows_collide(const SemanticSourceUse & lhs,
   switch(lhs.kind) {
   case semantic_source_use::SourceUseKind::FunctionCall:
     return semantic_source_use::function_call_equivalent_ignoring_binding_spacing(
-        lhs, rhs);
+               lhs, rhs) ||
+        semantic_source_use::function_calls_share_selected_source_identity(
+               lhs, rhs) ||
+        semantic_source_use::function_call_is_deduced_trailing_binding_replay(
+               lhs, rhs) ||
+        semantic_source_use::function_call_is_deduced_trailing_binding_replay(
+               rhs, lhs);
   case semantic_source_use::SourceUseKind::AliasUse:
     return semantic_source_use::alias_use_equivalent_ignoring_binding_spacing(
                lhs, rhs) ||

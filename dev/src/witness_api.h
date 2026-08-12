@@ -366,7 +366,6 @@ struct FunctionCallSourceDecision
 #endif
   std::size_t source_traversal_order = 0;
   bool source_call_precedes_nested_callee = false;
-  bool preserve_semantic_drop_order = false;
   const void * semantic_owner_class_template_identity = nullptr;
   std::string semantic_owner_class_specialization_key;
   std::string location;

@@ -285,7 +285,6 @@ semantic_source_use::SemanticSourceUse make_function_call_source_use(
   use.source_traversal_order = decision.source_traversal_order;
   use.source_call_precedes_nested_callee =
       decision.source_call_precedes_nested_callee;
-  use.preserve_semantic_drop_order = decision.preserve_semantic_drop_order;
   use.semantic_owner_class_template_identity =
       decision.semantic_owner_class_template_identity;
   use.semantic_owner_class_specialization_key =

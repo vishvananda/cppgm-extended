@@ -1,5 +1,6 @@
 #include "semantic_template_function.h"
 
+#include <algorithm>
 #include <sstream>
 
 #include "semantic_context.h"
@@ -10,6 +11,81 @@
 namespace semantic_template_function {
 
 namespace {
+
+int function_call_drop_reason_priority(const std::string & reason)
+{
+  if(reason == "bad_conversion" ||
+     reason == "too_few_arguments" ||
+     reason == "too_many_arguments" ||
+     reason == "inconsistent") {
+    return 0;
+  }
+  if(reason == "worse_conversion") {
+    return 1;
+  }
+  if(reason == "better_candidate_selected") {
+    return 2;
+  }
+  if(reason == "non_deduced_mismatch") {
+    return 3;
+  }
+  if(reason == "substitution_failure") {
+    return 4;
+  }
+  return 100;
+}
+
+bool function_call_drop_pair_uses_location_order(
+    const std::string & lhs_reason,
+    const std::string & rhs_reason)
+{
+  return (lhs_reason == "better_candidate_selected" &&
+          rhs_reason == "worse_conversion") ||
+         (lhs_reason == "worse_conversion" &&
+          rhs_reason == "better_candidate_selected");
+}
+
+void canonicalize_function_call_drops(
+    std::vector<witness::TemplateWitnessSourceDrop> & drops)
+{
+  std::stable_sort(
+      drops.begin(),
+      drops.end(),
+      [](const witness::TemplateWitnessSourceDrop & lhs,
+         const witness::TemplateWitnessSourceDrop & rhs)
+      {
+        if(lhs.candidate == rhs.candidate &&
+           function_call_drop_pair_uses_location_order(lhs.reason,
+                                                       rhs.reason)) {
+          const template_api::template_witness_detail::ParsedSourceLocation
+              left_location =
+                  template_api::template_witness_detail::parse_source_location(
+                      lhs.location);
+          const template_api::template_witness_detail::ParsedSourceLocation
+              right_location =
+                  template_api::template_witness_detail::parse_source_location(
+                      rhs.location);
+          if(left_location.valid &&
+             right_location.valid &&
+             std::make_pair(left_location.line, left_location.column) !=
+                 std::make_pair(right_location.line,
+                                right_location.column)) {
+            return std::make_pair(left_location.line, left_location.column) <
+                   std::make_pair(right_location.line,
+                                  right_location.column);
+          }
+        }
+        const int left_priority =
+            function_call_drop_reason_priority(lhs.reason);
+        const int right_priority =
+            function_call_drop_reason_priority(rhs.reason);
+        if(left_priority != right_priority) {
+          return left_priority < right_priority;
+        }
+        return std::make_pair(lhs.candidate, lhs.location) <
+               std::make_pair(rhs.candidate, rhs.location);
+      });
+}
 
 void commit_signature_value_dependencies(
     SemanticContext & ctx,
@@ -546,13 +622,27 @@ void emit_function_template_call_source_use(
     return;
   }
 
+  witness::SourceTemplateIdOccurrence source_occurrence =
+      request.template_id_occurrence;
+  source_occurrence.in_template_body =
+      source_occurrence.in_template_body ||
+      template_api::source_location_is_inside_recorded_template_body(
+          ctx.template_witness_context(), public_location);
+  const bool implicit_template_body_call =
+      source_occurrence.in_template_body &&
+      !declval_call &&
+      !(source_occurrence.present &&
+        source_occurrence.source_spelled &&
+        !source_occurrence.has_dependent_argument);
+  if(implicit_template_body_call) {
+    return;
+  }
+
   witness::FunctionCallSourceDecision decision;
   decision.origin = request.origin;
   decision.source_traversal_order = request.source_traversal_order;
   decision.source_call_precedes_nested_callee =
       request.source_call_precedes_nested_callee;
-  decision.preserve_semantic_drop_order =
-      request.preserve_semantic_drop_order;
   if(binding &&
      binding->owner_class &&
      binding->owner_class->source_template) {
@@ -567,7 +657,7 @@ void emit_function_template_call_source_use(
   decision.template_name = function_call_template_name(request);
   decision.selected = function_call_selected_name(ctx, request);
   decision.role = request.role;
-  decision.template_id_occurrence = request.template_id_occurrence;
+  decision.template_id_occurrence = source_occurrence;
   decision.selection = request.selection != witness::SourceSelectionKind::None ?
       request.selection :
       (binding && binding->is_explicit_specialization ?
@@ -576,6 +666,9 @@ void emit_function_template_call_source_use(
   set_function_call_selected_decl_anchor(ctx, decision, request);
   decision.bindings = request.bindings;
   decision.drops = request.drops;
+  if(!request.preserve_semantic_drop_order) {
+    canonicalize_function_call_drops(decision.drops);
+  }
   decision.candidate_count = request.candidate_count;
   decision.candidates_built = request.candidates_built;
   decision.candidates_viable = request.candidates_viable;

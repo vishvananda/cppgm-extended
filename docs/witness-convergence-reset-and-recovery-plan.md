@@ -4458,6 +4458,136 @@ row is the documented TCC cross-oracle divergence. Phase 4 remains open on the
 lazy-alias lifecycle gap, and the earlier class-use cross-oracle divergence
 also remains documented. Inception remains forbidden.
 
+## Renderer cleanup and semantic publication consolidation checkpoint, 2026-08-11
+
+This checkpoint removes the measured destructive renderer obligations left by
+the Phase 5 migrations. Implicit function calls discovered only while walking
+template bodies are now rejected by the function source-use producer unless
+they are `declval` calls or explicit source-spelled nondependent template-ids.
+Candidate-drop order is canonicalized on the typed call request before the
+source row is published. The public source-use and renderer event layouts no
+longer carry the migration-only `preserve_semantic_drop_order` flag; the typed
+overload result and producer request retain it only long enough to decide
+whether typed candidate order is already authoritative.
+
+The semantic source-use table now owns the last three duplicate-call cases.
+Repeated publication of the same selected call retains the row with the richer
+typed candidate facts. At one constructor source occurrence, a replay that
+selects another declaration but differs only by trailing deduced bindings is
+consolidated into the shorter public binding result. These rules account for
+exactly eight rejected publication attempts across three source calls: four
+replays of `alias::sequence_begin`, two of the index-sequence `pair`
+constructor, and two of `second::is_range<X>`. No fixture, path, or rendered
+name participates in the decision.
+
+The renderer's source-defined-call suppression, drop-order repair,
+same-location function-call canonicalization, and generic visible-event
+deduplication passes are deleted. Their unused signature, binding-preference,
+location, and deduplication helpers are deleted with them. Provenance across
+all 1,530 sessions reports no renderer removal or reordering action. The only
+remaining renderer ownership counters are non-destructive presentation
+normalization: 40 name rewrites and 409 binding rewrites.
+
+The remaining PA24 lifecycle row is not CPPGM semantic ownership debt.
+`de::c = z<df>::ak` is indexed but unused, so CPPGM correctly leaves its alias
+target deferred. Patched Clang eagerly evaluates that unused typedef target
+and emits
+`class-instantiation boost::container::w<boost::container::base_node<recursive_slist> *>::x`.
+Reintroducing eager alias-target evaluation would violate the established lazy
+alias policy, its negative controls, and its performance evidence. This row is
+therefore classified as a cross-oracle divergence alongside the PA22 class-use
+and PA23 TCC/runtime divergences; no lifecycle row is manufactured.
+
+The final Homebrew-Clang validation produced these results:
+
+- focused ordinary outputs for the two richer-candidate replays and the
+  trailing-deduced-binding constructor replay match their references exactly;
+- ordinary and provenance strict validation both report PA19 279 compared
+  with zero failures, PA20 158 with zero, PA22 293 with its one class-use
+  oracle divergence, PA23 385 with its one TCC oracle divergence, and PA24 415
+  with its one lazy-alias oracle divergence;
+- expanded convergence remains 1,527/1,530, with no warning or missing actual
+  output, while the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  ordinary/provenance witness and LowIR artifacts match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,080 records, 4,767 source
+  attempts, and 6,298 lifecycle attempts with no unknown producer attempt and
+  no unexercised producer site;
+- the function producer makes 1,268 attempts, inserts 791 rows, classifies 469
+  exact duplicates, and rejects the eight diagnosed semantic replays. It has
+  no replacement or enrichment action, and all 791 surviving rows are final
+  visible rows;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- the ordinary build is warning-free, both materialization decision
+  boundaries have no finding, all 23 forbidden text-reparse categories remain
+  zero, and the template-boundary, semantic-boundary, and tracked
+  structure-size reports match the parent byte for byte.
+
+The ordinary strict and PA1-PA38 reports are
+`/tmp/cppgm-renderer-cleanup-ordinary-strict-20260811.log` and
+`/tmp/cppgm-renderer-cleanup-broad-20260811.log`, with SHA-256 values
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`
+and
+`04b32f0bd1ea6da27f81b59880c8751d06ed071719f5b260f19852cacd9cc5a9`.
+The provenance trace directory is recorded in
+`/tmp/cppgm-renderer-cleanup-provenance-trace-path-20260811.txt`. The
+provenance analysis and correlated convergence reports are
+`/tmp/cppgm-renderer-cleanup-provenance-analysis-20260811.json` and
+`/tmp/cppgm-renderer-cleanup-provenance-convergence-20260811.json`, with
+SHA-256 values
+`1f1fb14a7cd97695f6accd914950f83b2aaa8db0058401412d838ae5ac1c4af2`
+and
+`a07951e997fcee9d641de96ab63d0c4961cab9c9442069cbd77ca2a4c27ece6a`.
+
+The byte-identical ordinary and provenance manifests both have SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`;
+their empty difference has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+The 60-test helper report is
+`/tmp/cppgm-renderer-cleanup-helper-tests-20260811.log`, SHA-256
+`9e37e25fe90e520f6a789d95a67b8f188d7636376db78f919f23aec345597c04`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain the parent SHA-256
+values:
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary shrinks by 40,440 bytes to 17,225,944 bytes. Its Mach-O
+`__TEXT` segment shrinks by 36,864 bytes to 13,090,816 and `__LINKEDIT`
+shrinks by 4,096 bytes to 4,067,328; `__DATA_CONST` and `__DATA` remain 61,440
+and 442,368 bytes. It contains no witness-provenance symbols. The frozen
+binary is `/tmp/cppgm-renderer-cleanup-ordinary-20260811`, SHA-256
+`572e0b63e591ecaebc2891c5bce7c01360572d26ac56fb8196e8f61e871770c4`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.77% | +0.12% | -3.97% | `/tmp/cppgm-renderer-cleanup-perf-fixed-20260811.json` |
+| Typed call-result parent | +0.43% | +1.23% | +0.06% | `/tmp/cppgm-renderer-cleanup-perf-parent-20260811.json` |
+
+The candidate medians are 174,655,930,109 instructions, 757,981,184 bytes
+maximum RSS, and 569,499,648 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-renderer-cleanup-raw-candidate-20260811.json`, SHA-256
+`9653137266ad2b9e120e9d12d0e3e8e6f5fda98c8941c7d6d28d648d920758ff`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`ab11e86a409a123811787ab66bd5b3d3c1cc9aa6599e34dcceb63c8f03e175f6`
+and
+`6dbd87181714f351b5e1b016f872421039bd3c58d09197de626bdb3e729eba63`.
+The candidate metadata names commit `0014913a1` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 280 and removes 651 production lines before this ledger
+entry, a net deletion of 371 lines. The measured destructive renderer debt is
+now zero. Phase 6 remains open for the broader migration-scaffolding audit;
+Phase 7 and inception remain forbidden until that audit is committed.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
