@@ -21,7 +21,7 @@ namespace callsemantic {
 
 witness::SourceSelectionKind source_selection_kind_for_match_kind(
     template_api::MatchKind kind);
-witness::TemplateWitnessSourceAnchor class_use_selected_decl_anchor(
+std::string class_use_selected_decl_anchor_location(
     SemanticContext & ctx,
     semantic_model::ClassTemplateDecl * class_template,
     const template_api::ClassSpecializationSelection & selection);

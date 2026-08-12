@@ -5345,11 +5345,11 @@ private:
         binding, qualified_name, name, type, linkage);
   }
 
-  witness::TemplateWitnessSourceAnchor class_use_selected_decl_anchor(
+  std::string class_use_selected_decl_anchor_location(
       ClassTemplateDecl * class_template,
       const template_api::ClassSpecializationSelection & selection)
   {
-    return callsemantic::class_use_selected_decl_anchor(
+    return callsemantic::class_use_selected_decl_anchor_location(
         ctx, class_template, selection);
   }
 

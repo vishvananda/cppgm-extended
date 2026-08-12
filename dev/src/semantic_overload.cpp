@@ -1927,32 +1927,16 @@ std::string function_template_witness_name(
   return template_api::function_template_witness_entity(ctx, decl);
 }
 
-struct FunctionWitnessDeclAnchor
-{
-  std::string location;
-  witness::TemplateWitnessSourceAnchorKind kind =
-      witness::TemplateWitnessSourceAnchorKind::None;
-};
-
-FunctionWitnessDeclAnchor function_template_witness_decl_anchor(
+std::string function_template_witness_decl_anchor_location(
     SemanticContext & ctx,
     const FunctionTemplateDecl * decl)
 {
-  FunctionWitnessDeclAnchor anchor;
   const semantic_model::SourceDeclAnchorCache & decl_anchor =
       semantic_trace::function_template_decl_anchor(ctx, decl);
   if(!decl_anchor.name_location.empty()) {
-    anchor.location = normalize_template_witness_location(
-        decl_anchor.name_location);
-    anchor.kind = witness::TemplateWitnessSourceAnchorKind::DeclarationName;
-    return anchor;
+    return normalize_template_witness_location(decl_anchor.name_location);
   }
-  anchor.location = normalize_template_witness_location(
-      decl_anchor.approximate_location);
-  if(!anchor.location.empty()) {
-    anchor.kind = witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-  }
-  return anchor;
+  return normalize_template_witness_location(decl_anchor.approximate_location);
 }
 
 std::string function_template_witness_decl_location(SemanticContext & ctx,
@@ -1962,47 +1946,30 @@ std::string function_template_witness_decl_location(SemanticContext & ctx,
       template_api::function_template_witness_decl_location(ctx, decl));
 }
 
-FunctionWitnessDeclAnchor constructor_template_witness_decl_anchor(
+std::string constructor_template_witness_decl_anchor_location(
     SemanticContext & ctx,
     const FunctionTemplateDecl * decl)
 {
-  FunctionWitnessDeclAnchor anchor;
   if(!decl) {
-    return anchor;
+    return std::string();
   }
   if(decl->definition_inner) {
-    anchor.location = normalize_template_witness_location(
+    return normalize_template_witness_location(
         ctx.source_location_for_node(*decl->definition_inner));
-    anchor.kind = anchor.location.empty() ?
-        witness::TemplateWitnessSourceAnchorKind::None :
-        witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-    return anchor;
   }
   if(decl->inner) {
-    anchor.location = normalize_template_witness_location(
+    return normalize_template_witness_location(
         ctx.source_location_for_node(*decl->inner));
-    anchor.kind = anchor.location.empty() ?
-        witness::TemplateWitnessSourceAnchorKind::None :
-        witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-    return anchor;
   }
   if(decl->definition_node) {
-    anchor.location = normalize_template_witness_location(
+    return normalize_template_witness_location(
         ctx.source_location_for_node(*decl->definition_node));
-    anchor.kind = anchor.location.empty() ?
-        witness::TemplateWitnessSourceAnchorKind::None :
-        witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-    return anchor;
   }
   if(decl->declaration_node) {
-    anchor.location = normalize_template_witness_location(
+    return normalize_template_witness_location(
         ctx.source_location_for_node(*decl->declaration_node));
-    anchor.kind = anchor.location.empty() ?
-        witness::TemplateWitnessSourceAnchorKind::None :
-        witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-    return anchor;
   }
-  return function_template_witness_decl_anchor(ctx, decl);
+  return function_template_witness_decl_anchor_location(ctx, decl);
 }
 
 const ClassInfo * constructor_owner_class(const FunctionBinding * binding)
@@ -2080,7 +2047,7 @@ enum class FunctionWitnessDeclLocationKind
   CandidateDrop,
 };
 
-FunctionWitnessDeclAnchor function_binding_witness_decl_anchor(
+std::string function_binding_witness_decl_anchor_location(
     SemanticContext & ctx,
     const FunctionBinding * binding,
     FunctionWitnessDeclLocationKind kind =
@@ -2097,46 +2064,43 @@ std::string function_binding_witness_decl_location(SemanticContext & ctx,
                                                    FunctionWitnessDeclLocationKind kind =
                                                        FunctionWitnessDeclLocationKind::Selected)
 {
-  return function_binding_witness_decl_anchor(ctx, binding, kind).location;
+  return function_binding_witness_decl_anchor_location(ctx, binding, kind);
 }
 
-FunctionWitnessDeclAnchor function_binding_witness_decl_anchor(
+std::string function_binding_witness_decl_anchor_location(
     SemanticContext & ctx,
     const FunctionBinding * binding,
     FunctionWitnessDeclLocationKind kind)
 {
-  FunctionWitnessDeclAnchor anchor;
   if(!binding) {
-    return anchor;
+    return std::string();
   }
   if(binding->is_constructor) {
     if(binding->source_template) {
-      const FunctionWitnessDeclAnchor template_decl =
-          constructor_template_witness_decl_anchor(ctx, binding->source_template);
-      if(!template_decl.location.empty()) {
+      const std::string template_decl =
+          constructor_template_witness_decl_anchor_location(
+              ctx, binding->source_template);
+      if(!template_decl.empty()) {
         return template_decl;
       }
     }
     if(kind == FunctionWitnessDeclLocationKind::CandidateDrop) {
       const std::string name_decl = constructor_binding_name_location(ctx, binding);
       if(!name_decl.empty()) {
-        anchor.location = name_decl;
-        anchor.kind = witness::TemplateWitnessSourceAnchorKind::DeclarationName;
-        return anchor;
+        return name_decl;
       }
     }
     const std::string implicit_decl =
         implicit_constructor_witness_decl_location(ctx, binding);
     if(!implicit_decl.empty()) {
-      anchor.location = implicit_decl;
-      anchor.kind = witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-      return anchor;
+      return implicit_decl;
     }
   }
   if(binding->source_template) {
-    const FunctionWitnessDeclAnchor source_decl =
-        function_template_witness_decl_anchor(ctx, binding->source_template);
-    if(!source_decl.location.empty()) {
+    const std::string source_decl =
+        function_template_witness_decl_anchor_location(
+            ctx, binding->source_template);
+    if(!source_decl.empty()) {
       return source_decl;
     }
   }
@@ -2149,9 +2113,7 @@ FunctionWitnessDeclAnchor function_binding_witness_decl_anchor(
                                                "operator",
                                                true));
       if(!operator_decl.empty()) {
-        anchor.location = operator_decl;
-        anchor.kind = witness::TemplateWitnessSourceAnchorKind::DeclarationName;
-        return anchor;
+        return operator_decl;
       }
     }
     if(binding->definition_node) {
@@ -2160,9 +2122,7 @@ FunctionWitnessDeclAnchor function_binding_witness_decl_anchor(
                                                "operator",
                                                true));
       if(!operator_decl.empty()) {
-        anchor.location = operator_decl;
-        anchor.kind = witness::TemplateWitnessSourceAnchorKind::DeclarationName;
-        return anchor;
+        return operator_decl;
       }
     }
   }
@@ -2173,31 +2133,21 @@ FunctionWitnessDeclAnchor function_binding_witness_decl_anchor(
      (binding->is_copy_assignment || binding->is_move_assignment)) {
     const semantic_model::SourceDeclAnchorCache & owner_anchor =
         semantic_trace::class_decl_anchor(ctx, binding->owner_class);
-    anchor.location = normalize_template_witness_location(
+    const std::string owner_location = normalize_template_witness_location(
         semantic_model::source_decl_anchor_location(owner_anchor));
-    if(!anchor.location.empty()) {
-      anchor.kind = witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-      return anchor;
+    if(!owner_location.empty()) {
+      return owner_location;
     }
   }
   const semantic_model::SourceDeclAnchorCache & decl_anchor =
       semantic_trace::function_binding_decl_anchor(ctx, binding);
-  anchor.location = normalize_template_witness_location(
+  const std::string decl_location = normalize_template_witness_location(
       semantic_model::source_decl_anchor_location(decl_anchor));
-  if(semantic_model::source_decl_anchor_has_name_location(decl_anchor)) {
-    anchor.kind = witness::TemplateWitnessSourceAnchorKind::DeclarationName;
-    return anchor;
+  if(!decl_location.empty()) {
+    return decl_location;
   }
-  if(!anchor.location.empty()) {
-    anchor.kind = witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-    return anchor;
-  }
-  anchor.location = normalize_template_witness_location(
+  return normalize_template_witness_location(
       candidate_primary_location(ctx, const_cast<FunctionBinding *>(binding)));
-  anchor.kind = anchor.location.empty() ?
-      witness::TemplateWitnessSourceAnchorKind::None :
-      witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-  return anchor;
 }
 
 std::string function_candidate_rejection_drop_reason(const std::string & rejection)
@@ -4013,10 +3963,10 @@ void note_function_call_source_event(
           << " selected=" << selected_name;
     parser_trace::note("witness.call", public_location, trace.str());
   }
-  const FunctionWitnessDeclAnchor selected_decl_anchor =
-      function_binding_witness_decl_anchor(ctx, source_selected);
+  const std::string selected_decl_anchor_location =
+      function_binding_witness_decl_anchor_location(ctx, source_selected);
   const std::string selected_decl_location =
-      normalize_template_witness_location(selected_decl_anchor.location);
+      normalize_template_witness_location(selected_decl_anchor_location);
   const bool source_constructor_template_call_requires_definition =
       chosen->is_constructor &&
       source_selected == chosen &&
@@ -4079,8 +4029,7 @@ void note_function_call_source_event(
   source_use.use_location = public_location;
   source_use.template_name = template_name;
   source_use.selected = selected_name;
-  source_use.selected_decl_anchor.location = selected_decl_anchor.location;
-  source_use.selected_decl_anchor.kind = selected_decl_anchor.kind;
+  source_use.selected_decl_anchor_location = selected_decl_anchor_location;
   source_use.explicit_arg_count = explicit_arg_count;
   source_use.candidates_viable = static_cast<int>(matches.size());
   if(source_selected == chosen && selection.index < matches.size()) {

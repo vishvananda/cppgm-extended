@@ -609,7 +609,7 @@ public:
             semantic_trace::function_template_decl_anchor(*this, source_template) :
             semantic_trace::function_binding_decl_anchor(*this, &binding);
     witness::set_selected_decl_anchor(request.selected_decl_location,
-                                      request.selected_decl_anchor,
+                                      request.selected_decl_anchor_location,
                                       decl_anchor);
     if(binding.source_template) {
       template_api::append_function_template_witness_bindings(
@@ -1561,11 +1561,11 @@ private:
     return true;
   }
 
-  witness::TemplateWitnessSourceAnchor class_use_selected_decl_anchor(
+  std::string class_use_selected_decl_anchor_location(
       ClassTemplateDecl * class_template,
       const template_api::ClassSpecializationSelection & selection) const
   {
-    return callsemantic::class_use_selected_decl_anchor(
+    return callsemantic::class_use_selected_decl_anchor_location(
         ctx, class_template, selection);
   }
 

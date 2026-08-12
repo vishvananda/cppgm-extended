@@ -474,12 +474,10 @@ void set_function_call_selected_decl_anchor(
     witness::FunctionCallSourceDecision & decision,
     const FunctionTemplateCallSourceUseRequest & request)
 {
-  if(!request.selected_decl_anchor.location.empty() ||
-     request.selected_decl_anchor.kind !=
-         witness::TemplateWitnessSourceAnchorKind::None) {
+  if(!request.selected_decl_anchor_location.empty()) {
     witness::set_selected_decl_anchor(decision.selected_decl_location,
-                                      decision.selected_decl_anchor,
-                                      request.selected_decl_anchor);
+                                      decision.selected_decl_anchor_location,
+                                      request.selected_decl_anchor_location);
     return;
   }
   const std::string selected_decl_location =
@@ -489,9 +487,8 @@ void set_function_call_selected_decl_anchor(
                std::string()) :
           request.selected_decl_location;
   witness::set_selected_decl_anchor(decision.selected_decl_location,
-                                    decision.selected_decl_anchor,
-                                    selected_decl_location,
-                                    false);
+                                    decision.selected_decl_anchor_location,
+                                    selected_decl_location);
 }
 
 bool template_argument_is_void_type(const template_model::TemplateArgument & argument)

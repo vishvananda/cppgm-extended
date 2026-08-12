@@ -12683,7 +12683,7 @@ const ValueBinding * instantiate_variable_template(
         const semantic_model::SourceDeclAnchorCache & decl_anchor =
             semantic_trace::variable_template_decl_anchor(ctx, &decl);
         witness::set_selected_decl_anchor(request.selected_decl_location,
-                                          request.selected_decl_anchor,
+                                          request.selected_decl_anchor_location,
                                           decl_anchor);
       } else {
         request.selected_decl_location =

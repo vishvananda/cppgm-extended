@@ -68,12 +68,6 @@ semantic_source_use::SourceSelectionKind source_selection_kind_from_event(
   return semantic_source_use::SourceSelectionKind::None;
 }
 
-TemplateWitnessSourceAnchor normalize_source_anchor(
-    const TemplateWitnessSourceAnchor & anchor);
-TemplateWitnessSourceAnchor normalized_decl_anchor_or_default(
-    const TemplateWitnessSourceAnchor & anchor,
-    const std::string & decl_location);
-
 semantic_source_use::SourceBinding source_binding_from_event(
     const TemplateWitnessSourceBinding & binding,
     bool normalize_angle_spacing = true);
@@ -84,7 +78,7 @@ std::string populate_common_source_use_fields(
     semantic_source_use::SourceUseRole role,
     semantic_source_use::SourceUseOwnership ownership,
     const std::string & location,
-    const TemplateWitnessSourceAnchor & selected_decl_anchor,
+    const std::string & selected_decl_anchor_location,
     const std::string & selected_decl_location,
     const std::string & template_name,
     bool default_selected_decl_anchor)
@@ -96,11 +90,12 @@ std::string populate_common_source_use_fields(
   const std::string normalized_selected_decl_location =
       normalize_template_witness_source_location(selected_decl_location);
   use.selected_decl_anchor_location =
-      (default_selected_decl_anchor ?
-           normalized_decl_anchor_or_default(
-               selected_decl_anchor,
-               normalized_selected_decl_location) :
-           normalize_source_anchor(selected_decl_anchor)).location;
+      normalize_template_witness_source_location(
+          selected_decl_anchor_location);
+  if(default_selected_decl_anchor &&
+     use.selected_decl_anchor_location.empty()) {
+    use.selected_decl_anchor_location = normalized_selected_decl_location;
+  }
   use.template_name = template_name;
   return normalized_selected_decl_location;
 }
@@ -122,7 +117,7 @@ semantic_source_use::SemanticSourceUse make_class_use_source_use(
       role,
       ownership,
       request.location,
-      request.selected_decl_anchor,
+      request.selected_decl_anchor_location,
       request.selected_decl_location,
       request.template_name,
       false);
@@ -193,32 +188,6 @@ semantic_source_use::SourceBinding source_binding_from_event(
   return out;
 }
 
-TemplateWitnessSourceAnchor normalize_source_anchor(
-    const TemplateWitnessSourceAnchor & anchor)
-{
-  TemplateWitnessSourceAnchor out = anchor;
-  out.location = normalize_template_witness_source_location(out.location);
-  if(out.location.empty()) {
-    out.kind = TemplateWitnessSourceAnchorKind::None;
-  }
-  return out;
-}
-
-TemplateWitnessSourceAnchor normalized_decl_anchor_or_default(
-    const TemplateWitnessSourceAnchor & anchor,
-    const std::string & decl_location)
-{
-  TemplateWitnessSourceAnchor normalized = normalize_source_anchor(anchor);
-  if(!normalized.location.empty()) {
-    return normalized;
-  }
-  normalized.location = decl_location;
-  normalized.kind = normalized.location.empty() ?
-      TemplateWitnessSourceAnchorKind::None :
-      TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-  return normalized;
-}
-
 semantic_source_use::SemanticSourceUse make_function_call_source_use(
     const FunctionCallSourceDecision & decision)
 {
@@ -237,7 +206,7 @@ semantic_source_use::SemanticSourceUse make_function_call_source_use(
           decision.role,
           source_use_ownership_from_event(decision.ownership, false),
           decision.location,
-          decision.selected_decl_anchor,
+          decision.selected_decl_anchor_location,
           decision.selected_decl_location,
           decision.template_name,
           true);
@@ -300,13 +269,12 @@ semantic_source_use::SemanticSourceUse make_alias_use_source_use(
   use.source_traversal_order = request.source_traversal_order;
   const std::string location = request.use_location;
   std::string selected_decl_location = request.selected_decl_location;
-  TemplateWitnessSourceAnchor selected_decl_anchor =
-      request.selected_decl_anchor;
+  std::string selected_decl_anchor_location =
+      request.selected_decl_anchor_location;
   if(!request.selected_decl_anchor_explicit) {
     set_selected_decl_anchor(selected_decl_location,
-                             selected_decl_anchor,
-                             request.selected_decl_location,
-                             request.selected_decl_has_name_location);
+                             selected_decl_anchor_location,
+                             request.selected_decl_location);
   }
   const std::string normalized_selected_decl_location =
       populate_common_source_use_fields(
@@ -315,7 +283,7 @@ semantic_source_use::SemanticSourceUse make_alias_use_source_use(
           semantic_source_use::SourceUseRole::TypeUse,
           SourceUseOwnership::Direct,
           location,
-          selected_decl_anchor,
+          selected_decl_anchor_location,
           selected_decl_location,
           request.template_name,
           true);
@@ -369,7 +337,7 @@ semantic_source_use::SemanticSourceUse make_variable_use_source_use(
           semantic_source_use::SourceUseRole::ValueUse,
           request.ownership,
           location,
-          request.selected_decl_anchor,
+          request.selected_decl_anchor_location,
           request.selected_decl_location,
           request.template_name,
           true);
@@ -478,49 +446,23 @@ void retain_variable_use_source_use(
 }  // namespace
 
 void set_selected_decl_anchor(std::string & selected_decl_location,
-                              TemplateWitnessSourceAnchor & selected_decl_anchor,
-                              const std::string & decl_location,
-                              bool has_name_location)
+                              std::string & selected_decl_anchor_location,
+                              const std::string & decl_location)
 {
   selected_decl_location =
       normalize_template_witness_source_location(decl_location);
-  selected_decl_anchor.location = selected_decl_location;
-  selected_decl_anchor.kind =
-      has_name_location ?
-          TemplateWitnessSourceAnchorKind::DeclarationName :
-          (selected_decl_location.empty() ?
-               TemplateWitnessSourceAnchorKind::None :
-               TemplateWitnessSourceAnchorKind::ApproximateDeclaration);
-}
-
-void set_selected_decl_anchor(std::string & selected_decl_location,
-                              TemplateWitnessSourceAnchor & selected_decl_anchor,
-                              const std::string & decl_location,
-                              TemplateWitnessSourceAnchorKind kind)
-{
-  selected_decl_location = decl_location;
-  selected_decl_anchor.location = decl_location;
-  selected_decl_anchor.kind = kind;
-}
-
-void set_selected_decl_anchor(std::string & selected_decl_location,
-                              TemplateWitnessSourceAnchor & selected_decl_anchor,
-                              const TemplateWitnessSourceAnchor & decl_anchor)
-{
-  selected_decl_location = decl_anchor.location;
-  selected_decl_anchor = decl_anchor;
+  selected_decl_anchor_location = selected_decl_location;
 }
 
 void set_selected_decl_anchor(
     std::string & selected_decl_location,
-    TemplateWitnessSourceAnchor & selected_decl_anchor,
+    std::string & selected_decl_anchor_location,
     const semantic_model::SourceDeclAnchorCache & decl_anchor)
 {
   set_selected_decl_anchor(
       selected_decl_location,
-      selected_decl_anchor,
-      semantic_model::source_decl_anchor_location(decl_anchor),
-      semantic_model::source_decl_anchor_has_name_location(decl_anchor));
+      selected_decl_anchor_location,
+      semantic_model::source_decl_anchor_location(decl_anchor));
 }
 
 bool emit_class_use(const TemplateWitnessContext & ctx,

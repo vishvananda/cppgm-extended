@@ -11531,11 +11531,11 @@ private:
     return semantic_lookup::lookup_class_template(*this, scope, name);
   }
 
-  witness::TemplateWitnessSourceAnchor class_use_selected_decl_anchor(
+  std::string class_use_selected_decl_anchor_location(
       ClassTemplateDecl * class_template,
       const template_api::specialization::ClassSpecializationSelection & selection)
   {
-    return callsemantic::class_use_selected_decl_anchor(
+    return callsemantic::class_use_selected_decl_anchor_location(
         *this, class_template, selection);
   }
 
@@ -12081,8 +12081,8 @@ private:
         primary_selection.parameters = origin ? &origin->parameters : nullptr;
         witness::set_selected_decl_anchor(
             request.selected_decl_location,
-            request.selected_decl_anchor,
-            class_use_selected_decl_anchor(origin, primary_selection));
+            request.selected_decl_anchor_location,
+            class_use_selected_decl_anchor_location(origin, primary_selection));
       }
       if(origin &&
          request.selection == witness::SourceSelectionKind::Primary &&
@@ -12099,8 +12099,8 @@ private:
               witness::SourceSelectionKind::ExplicitSpecialization;
           witness::set_selected_decl_anchor(
               request.selected_decl_location,
-              request.selected_decl_anchor,
-              class_use_selected_decl_anchor(origin, final_selection));
+              request.selected_decl_anchor_location,
+              class_use_selected_decl_anchor_location(origin, final_selection));
         }
       }
       bool materialized_value_argument = false;
@@ -12485,8 +12485,8 @@ private:
     request.selection = source_selection_kind_for_match_kind(selection.kind);
     witness::set_selected_decl_anchor(
         request.selected_decl_location,
-        request.selected_decl_anchor,
-        class_use_selected_decl_anchor(retained.origin, selection));
+        request.selected_decl_anchor_location,
+        class_use_selected_decl_anchor_location(retained.origin, selection));
     template_api::append_template_witness_source_bindings(
         *this,
         request.bindings,
@@ -12561,10 +12561,10 @@ private:
             *this, *source_origin);
     request.selection =
         source_selection_kind_for_match_kind(use.selection.kind);
-    const witness::TemplateWitnessSourceAnchor selected_decl_anchor =
-        class_use_selected_decl_anchor(source_origin, use.selection);
-    request.selected_decl_location = selected_decl_anchor.location;
-    request.selected_decl_anchor = selected_decl_anchor;
+    const std::string selected_decl_anchor_location =
+        class_use_selected_decl_anchor_location(source_origin, use.selection);
+    request.selected_decl_location = selected_decl_anchor_location;
+    request.selected_decl_anchor_location = selected_decl_anchor_location;
     if(materialized_type) {
       template_api::append_template_witness_source_bindings(
           *this,
@@ -12798,13 +12798,14 @@ private:
     if(has_concrete_selection) {
       witness::set_selected_decl_anchor(
           request.selected_decl_location,
-          request.selected_decl_anchor,
-          class_use_selected_decl_anchor(origin, concrete_use.selection));
+          request.selected_decl_anchor_location,
+          class_use_selected_decl_anchor_location(origin,
+                                                  concrete_use.selection));
     } else {
       const semantic_model::SourceDeclAnchorCache & selected_anchor =
           semantic_trace::class_decl_anchor(*this, &owner);
       witness::set_selected_decl_anchor(request.selected_decl_location,
-                                        request.selected_decl_anchor,
+                                        request.selected_decl_anchor_location,
                                         selected_anchor);
     }
     const bool materialized_partial =
@@ -21293,10 +21294,10 @@ private:
           break;
         }
       }
-      const witness::TemplateWitnessSourceAnchor selected_decl_anchor =
-          class_use_selected_decl_anchor(class_template, selection);
-      if(!selected_decl_anchor.location.empty() &&
-         use_location == selected_decl_anchor.location) {
+      const std::string selected_decl_anchor_location =
+          class_use_selected_decl_anchor_location(class_template, selection);
+      if(!selected_decl_anchor_location.empty() &&
+         use_location == selected_decl_anchor_location) {
         return;
       }
 
@@ -21316,8 +21317,8 @@ private:
               *this,
               *class_template);
       request.selection = witness::SourceSelectionKind::ExplicitSpecialization;
-      request.selected_decl_location = selected_decl_anchor.location;
-      request.selected_decl_anchor = selected_decl_anchor;
+      request.selected_decl_location = selected_decl_anchor_location;
+      request.selected_decl_anchor_location = selected_decl_anchor_location;
       request.template_id_occurrence =
           witness::make_source_template_id_occurrence(
               use_location,
@@ -21327,8 +21328,8 @@ private:
           scope_is_inside_source_template_context(scope);
       request.template_id_occurrence.current_specialization_use =
           request.template_id_occurrence.in_template_body &&
-          !selected_decl_anchor.location.empty() &&
-          source_location_is_later(selected_decl_anchor.location,
+          !selected_decl_anchor_location.empty() &&
+          source_location_is_later(selected_decl_anchor_location,
                                    use_location);
       request.template_id_occurrence.has_dependent_argument = true;
       for(std::size_t i = 0;
@@ -21438,10 +21439,11 @@ private:
         !resolved.source_is_qualified_member_owner &&
         selection.kind == template_api::MS_PARTIAL_SPECIALIZATION;
 
-    const witness::TemplateWitnessSourceAnchor selected_decl_anchor =
-        class_use_selected_decl_anchor(class_template, visible_selection);
-    if(!selected_decl_anchor.location.empty() &&
-       use_location == selected_decl_anchor.location) {
+    const std::string selected_decl_anchor_location =
+        class_use_selected_decl_anchor_location(class_template,
+                                                visible_selection);
+    if(!selected_decl_anchor_location.empty() &&
+       use_location == selected_decl_anchor_location) {
       return;
     }
 
@@ -21465,8 +21467,8 @@ private:
             *class_template);
     request.selection =
         source_selection_kind_for_match_kind(visible_selection.kind);
-    request.selected_decl_location = selected_decl_anchor.location;
-    request.selected_decl_anchor = selected_decl_anchor;
+    request.selected_decl_location = selected_decl_anchor_location;
+    request.selected_decl_anchor_location = selected_decl_anchor_location;
     request.template_id_occurrence =
         witness::make_source_template_id_occurrence(use_location,
                                                     source_arg_texts);
@@ -21666,11 +21668,9 @@ private:
     const semantic_model::SourceDeclAnchorCache & decl_anchor =
         semantic_trace::alias_template_decl_anchor(*this, &alias_template);
     witness::set_selected_decl_anchor(request.selected_decl_location,
-                                      request.selected_decl_anchor,
+                                      request.selected_decl_anchor_location,
                                       decl_anchor);
     request.selected_decl_anchor_explicit = true;
-    request.selected_decl_has_name_location =
-        semantic_model::source_decl_anchor_has_name_location(decl_anchor);
     if(resolved.resolved_type) {
       const ParsedSourceLocation parsed_decl =
           parse_source_location(request.selected_decl_location);

@@ -51,14 +51,13 @@ witness::SourceSelectionKind source_selection_kind_for_match_kind(
   return witness::SourceSelectionKind::None;
 }
 
-witness::TemplateWitnessSourceAnchor class_use_selected_decl_anchor(
+std::string class_use_selected_decl_anchor_location(
     SemanticContext & ctx,
     ClassTemplateDecl * class_template,
     const template_api::ClassSpecializationSelection & selection)
 {
-  witness::TemplateWitnessSourceAnchor anchor;
   if(class_template == nullptr) {
-    return anchor;
+    return std::string();
   }
   std::vector<const CppAstNode *> decl_candidates;
   if(selection.kind == template_api::MS_PRIMARY) {
@@ -80,6 +79,7 @@ witness::TemplateWitnessSourceAnchor class_use_selected_decl_anchor(
       decl_candidates.push_back(class_template->class_node);
     }
   }
+  std::string location;
   for(size_t i = 0; i < decl_candidates.size(); ++i) {
     if(!decl_candidates[i]) {
       continue;
@@ -87,35 +87,23 @@ witness::TemplateWitnessSourceAnchor class_use_selected_decl_anchor(
     if(decl_candidates[i] == class_template->class_node) {
       const semantic_model::SourceDeclAnchorCache & decl_anchor =
           semantic_trace::class_template_decl_anchor(ctx, class_template);
-      anchor.location =
+      location =
           semantic_model::source_decl_anchor_location(decl_anchor);
-      anchor.kind = semantic_model::source_decl_anchor_has_name_location(decl_anchor) ?
-          witness::TemplateWitnessSourceAnchorKind::DeclarationName :
-          (!anchor.location.empty() ?
-               witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration :
-               witness::TemplateWitnessSourceAnchorKind::None);
     } else {
-      anchor.location =
+      location =
           ctx.source_location_for_name_in_node(*decl_candidates[i],
                                                class_template->name);
-      if(!anchor.location.empty()) {
-        anchor.kind = witness::TemplateWitnessSourceAnchorKind::DeclarationName;
-      } else {
-        anchor.location = ctx.source_location_for_node(*decl_candidates[i]);
-        if(!anchor.location.empty()) {
-          anchor.kind =
-              witness::TemplateWitnessSourceAnchorKind::ApproximateDeclaration;
-        }
+      if(location.empty()) {
+        location = ctx.source_location_for_node(*decl_candidates[i]);
       }
     }
-    anchor.location =
-        template_api::normalize_template_witness_source_location(anchor.location);
-    if(!anchor.location.empty()) {
+    location =
+        template_api::normalize_template_witness_source_location(location);
+    if(!location.empty()) {
       break;
     }
-    anchor.kind = witness::TemplateWitnessSourceAnchorKind::None;
   }
-  return anchor;
+  return location;
 }
 
 bool scope_is_inside_source_template_context(Scope & scope)

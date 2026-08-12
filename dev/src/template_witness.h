@@ -129,19 +129,6 @@ enum class TemplateWitnessSourceOwnership
   NestedDerived,
 };
 
-enum class TemplateWitnessSourceAnchorKind
-{
-  None,
-  DeclarationName,
-  ApproximateDeclaration,
-};
-
-struct TemplateWitnessSourceAnchor
-{
-  std::string location;
-  TemplateWitnessSourceAnchorKind kind = TemplateWitnessSourceAnchorKind::None;
-};
-
 struct TemplateWitnessEntryContext
 {
   TemplateWitnessOrigin origin = TemplateWitnessOrigin::Source;

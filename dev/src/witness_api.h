@@ -27,8 +27,6 @@ using template_api::TemplateWitnessEntryContext;
 using template_api::TemplateWitnessOrigin;
 using template_api::TemplateWitnessSelectionKind;
 using template_api::TemplateWitnessSession;
-using template_api::TemplateWitnessSourceAnchor;
-using template_api::TemplateWitnessSourceAnchorKind;
 using template_api::TemplateWitnessSourceBinding;
 using template_api::TemplateWitnessSourceDrop;
 using template_api::TemplateWitnessSourceOwnership;
@@ -248,7 +246,7 @@ struct ClassUseEmitRequest
   std::string template_name;
   SourceSelectionKind selection = SourceSelectionKind::None;
   std::string selected_decl_location;
-  TemplateWitnessSourceAnchor selected_decl_anchor;
+  std::string selected_decl_anchor_location;
   SourceTemplateIdOccurrence template_id_occurrence;
   std::vector<TemplateWitnessSourceBinding> bindings;
   std::vector<TemplateWitnessSourceBinding> specialization_bindings;
@@ -280,8 +278,7 @@ struct AliasUseEmitRequest
   SourceTemplateIdOccurrence template_id_occurrence;
   std::string template_name;
   std::string selected_decl_location;
-  bool selected_decl_has_name_location = false;
-  TemplateWitnessSourceAnchor selected_decl_anchor;
+  std::string selected_decl_anchor_location;
   bool selected_decl_anchor_explicit = false;
   std::vector<TemplateWitnessSourceBinding> bindings;
 };
@@ -296,7 +293,7 @@ struct VariableUseEmitRequest
   SourceUseOwnership ownership = SourceUseOwnership::Direct;
   SourceSelectionKind selection = SourceSelectionKind::None;
   std::string selected_decl_location;
-  TemplateWitnessSourceAnchor selected_decl_anchor;
+  std::string selected_decl_anchor_location;
   std::vector<TemplateWitnessSourceBinding> bindings;
   std::vector<TemplateWitnessSourceBinding> specialization_bindings;
   const semantic_model::ValueBinding * semantic_owner = nullptr;
@@ -319,7 +316,7 @@ struct FunctionCallSourceDecision
   SourceUseRole role = SourceUseRole::CallUse;
   SourceSelectionKind selection = SourceSelectionKind::None;
   std::string selected_decl_location;
-  TemplateWitnessSourceAnchor selected_decl_anchor;
+  std::string selected_decl_anchor_location;
   SourceTemplateIdOccurrence template_id_occurrence;
   TemplateWitnessSourceOwnership ownership =
       TemplateWitnessSourceOwnership::Direct;
@@ -353,19 +350,11 @@ inline SourceTemplateIdOccurrence make_source_template_id_occurrence(
 }
 
 void set_selected_decl_anchor(std::string & selected_decl_location,
-                              TemplateWitnessSourceAnchor & selected_decl_anchor,
-                              const std::string & decl_location,
-                              bool has_name_location);
-void set_selected_decl_anchor(std::string & selected_decl_location,
-                              TemplateWitnessSourceAnchor & selected_decl_anchor,
-                              const std::string & decl_location,
-                              TemplateWitnessSourceAnchorKind kind);
-void set_selected_decl_anchor(std::string & selected_decl_location,
-                              TemplateWitnessSourceAnchor & selected_decl_anchor,
-                              const TemplateWitnessSourceAnchor & decl_anchor);
+                              std::string & selected_decl_anchor_location,
+                              const std::string & decl_location);
 void set_selected_decl_anchor(
     std::string & selected_decl_location,
-    TemplateWitnessSourceAnchor & selected_decl_anchor,
+    std::string & selected_decl_anchor_location,
     const semantic_model::SourceDeclAnchorCache & decl_anchor);
 
 struct SourceDropKey

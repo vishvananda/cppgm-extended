@@ -36,7 +36,7 @@ struct FunctionTemplateCallSourceUseRequest
   witness::FunctionCallEmissionOrigin origin =
       witness::FunctionCallEmissionOrigin::OverloadSelectedCall;
   std::string selected_decl_location;
-  witness::TemplateWitnessSourceAnchor selected_decl_anchor;
+  std::string selected_decl_anchor_location;
   witness::SourceTemplateIdOccurrence template_id_occurrence;
   std::vector<witness::TemplateWitnessSourceBinding> bindings;
   std::vector<witness::TemplateWitnessSourceDrop> drops;
