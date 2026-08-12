@@ -54,7 +54,6 @@ struct SourceTemplateArgumentOccurrence
   bool dependent = false;
   bool current_specialization = false;
   bool preserve_qualified_member = false;
-  bool referenced_value_initializer_uses_template = false;
   std::vector<std::string> referenced_value_entities;
   std::vector<std::string> referenced_value_decl_locations;
 };
@@ -146,92 +145,11 @@ struct SemanticSourceUseTable
   std::vector<SemanticSourceUse> uses;
 };
 
-inline bool operator==(const SourceTemplateArgumentOccurrence & lhs,
-                       const SourceTemplateArgumentOccurrence & rhs)
-{
-  return lhs.text == rhs.text &&
-         lhs.semantic_text == rhs.semantic_text &&
-         lhs.source_spelled == rhs.source_spelled &&
-         lhs.dependent == rhs.dependent &&
-         lhs.current_specialization == rhs.current_specialization &&
-         lhs.preserve_qualified_member == rhs.preserve_qualified_member &&
-         lhs.referenced_value_initializer_uses_template ==
-             rhs.referenced_value_initializer_uses_template &&
-         lhs.referenced_value_entities == rhs.referenced_value_entities &&
-         lhs.referenced_value_decl_locations ==
-             rhs.referenced_value_decl_locations;
-}
-
-inline bool operator==(const SourceTemplateIdOccurrence & lhs,
-                       const SourceTemplateIdOccurrence & rhs)
-{
-  return lhs.present == rhs.present &&
-         lhs.source_spelled == rhs.source_spelled &&
-         lhs.argument_list_spelled == rhs.argument_list_spelled &&
-         lhs.empty_argument_list == rhs.empty_argument_list &&
-         lhs.in_template_body == rhs.in_template_body &&
-         lhs.synthesized == rhs.synthesized &&
-         lhs.exact_source_arguments == rhs.exact_source_arguments &&
-         lhs.conversion_result_type_use == rhs.conversion_result_type_use &&
-         lhs.function_result_type_use == rhs.function_result_type_use &&
-         lhs.current_specialization_use == rhs.current_specialization_use &&
-         lhs.has_dependent_argument == rhs.has_dependent_argument &&
-         lhs.has_current_specialization_argument ==
-             rhs.has_current_specialization_argument &&
-         lhs.name_location == rhs.name_location &&
-         lhs.arguments == rhs.arguments;
-}
-
-inline bool operator==(const SourceBinding & lhs, const SourceBinding & rhs)
-{
-  return lhs.param == rhs.param &&
-         lhs.arg == rhs.arg &&
-         lhs.source == rhs.source &&
-         lhs.type_like == rhs.type_like &&
-         lhs.function_type_argument == rhs.function_type_argument &&
-         lhs.structured_type_spelling == rhs.structured_type_spelling &&
-         lhs.preserve_qualified_member == rhs.preserve_qualified_member &&
-         lhs.pack_binding == rhs.pack_binding &&
-         lhs.pack_aggregate == rhs.pack_aggregate &&
-         lhs.pack_arguments == rhs.pack_arguments &&
-         lhs.function_pointer_parameter == rhs.function_pointer_parameter;
-}
-
-inline bool operator==(const SourceDrop & lhs, const SourceDrop & rhs)
-{
-  return lhs.candidate == rhs.candidate &&
-         lhs.location == rhs.location &&
-         lhs.reason == rhs.reason;
-}
-
 inline bool operator<(const SourceDrop & lhs, const SourceDrop & rhs)
 {
   if(lhs.candidate != rhs.candidate) return lhs.candidate < rhs.candidate;
   if(lhs.location != rhs.location) return lhs.location < rhs.location;
   return lhs.reason < rhs.reason;
-}
-
-inline bool operator==(const SemanticSourceUse & lhs,
-                       const SemanticSourceUse & rhs)
-{
-  return lhs.kind == rhs.kind &&
-         lhs.role == rhs.role &&
-         lhs.ownership == rhs.ownership &&
-         lhs.location == rhs.location &&
-         lhs.selected_decl_anchor_location ==
-             rhs.selected_decl_anchor_location &&
-         lhs.template_id_occurrence == rhs.template_id_occurrence &&
-         lhs.selected_entity_decl_location ==
-             rhs.selected_entity_decl_location &&
-         lhs.template_name == rhs.template_name &&
-         lhs.selected == rhs.selected &&
-         lhs.selection == rhs.selection &&
-         lhs.bindings == rhs.bindings &&
-         lhs.specialization_bindings == rhs.specialization_bindings &&
-         lhs.drops == rhs.drops &&
-         lhs.candidate_count == rhs.candidate_count &&
-         lhs.candidates_built == rhs.candidates_built &&
-         lhs.candidates_viable == rhs.candidates_viable;
 }
 
 inline std::string source_use_arg_compact_key(const std::string & text)
@@ -245,118 +163,6 @@ inline std::string source_use_arg_compact_key(const std::string & text)
     out.push_back(text[i]);
   }
   return out;
-}
-
-inline bool source_template_id_occurrence_has_data(
-    const SourceTemplateIdOccurrence & occurrence)
-{
-  return occurrence.present ||
-         occurrence.source_spelled ||
-         occurrence.argument_list_spelled ||
-         occurrence.empty_argument_list ||
-         occurrence.in_template_body ||
-         occurrence.synthesized ||
-         occurrence.exact_source_arguments ||
-         occurrence.conversion_result_type_use ||
-         occurrence.function_result_type_use ||
-         occurrence.current_specialization_use ||
-         occurrence.has_dependent_argument ||
-         occurrence.has_current_specialization_argument ||
-         !occurrence.name_location.empty() ||
-         !occurrence.arguments.empty();
-}
-
-inline bool source_template_id_occurrence_has_richer_semantic_text(
-    const SourceTemplateIdOccurrence & candidate,
-    const SourceTemplateIdOccurrence & existing)
-{
-  if(candidate.arguments.size() != existing.arguments.size()) {
-    return false;
-  }
-  bool fills_missing_text = false;
-  for(std::size_t i = 0; i < candidate.arguments.size(); ++i) {
-    if(candidate.arguments[i].text != existing.arguments[i].text) {
-      return false;
-    }
-    if(!existing.arguments[i].semantic_text.empty() &&
-       candidate.arguments[i].semantic_text.empty()) {
-      return false;
-    }
-    if(existing.arguments[i].semantic_text.empty() &&
-       !candidate.arguments[i].semantic_text.empty()) {
-      fills_missing_text = true;
-    }
-  }
-  return fills_missing_text;
-}
-
-inline bool source_template_id_occurrence_is_more_concrete(
-    const SourceTemplateIdOccurrence & candidate,
-    const SourceTemplateIdOccurrence & existing)
-{
-  if(!source_template_id_occurrence_has_data(candidate)) {
-    return false;
-  }
-  if(!source_template_id_occurrence_has_data(existing)) {
-    return true;
-  }
-  if(candidate.present != existing.present ||
-     candidate.source_spelled != existing.source_spelled ||
-     candidate.argument_list_spelled != existing.argument_list_spelled ||
-     candidate.in_template_body != existing.in_template_body ||
-     candidate.arguments.size() != existing.arguments.size()) {
-    return false;
-  }
-  if(existing.exact_source_arguments && !candidate.exact_source_arguments) {
-    return false;
-  }
-  if(candidate.exact_source_arguments && !existing.exact_source_arguments) {
-    return true;
-  }
-  const bool existing_result_type_use =
-      existing.conversion_result_type_use ||
-      existing.function_result_type_use;
-  const bool candidate_result_type_use =
-      candidate.conversion_result_type_use ||
-      candidate.function_result_type_use;
-  if(existing_result_type_use && !candidate_result_type_use) {
-    return false;
-  }
-  if(candidate_result_type_use && !existing_result_type_use) {
-    return true;
-  }
-  if(existing.current_specialization_use &&
-     !candidate.current_specialization_use) {
-    return false;
-  }
-  if(candidate.current_specialization_use &&
-     !existing.current_specialization_use) {
-    return true;
-  }
-  if(source_template_id_occurrence_has_richer_semantic_text(candidate,
-                                                            existing)) {
-    return true;
-  }
-  if(existing.has_current_specialization_argument &&
-     !candidate.has_current_specialization_argument) {
-    bool same_source_text = true;
-    for(std::size_t i = 0; i < candidate.arguments.size(); ++i) {
-      if(candidate.arguments[i].text != existing.arguments[i].text) {
-        same_source_text = false;
-        break;
-      }
-    }
-    if(same_source_text) {
-      return false;
-    }
-  }
-  const bool candidate_concrete =
-      !candidate.has_dependent_argument &&
-      !candidate.has_current_specialization_argument;
-  const bool existing_concrete =
-      !existing.has_dependent_argument &&
-      !existing.has_current_specialization_argument;
-  return candidate_concrete && !existing_concrete;
 }
 
 inline void record_source_use(SemanticSourceUseTable & table,

@@ -272,7 +272,6 @@ struct TemplateWitnessSession
 struct TemplateWitnessContext
 {
   TemplateWitnessSession * session = nullptr;
-  TemplateWitnessEntryContext entry_context;
   std::string public_use_location;
   bool public_source_use_active = false;
   const IRecogTokenSequence * token_sequence = nullptr;
@@ -413,30 +412,6 @@ inline bool source_location_at_or_after(const ParsedSourceLocation & candidate,
     return candidate.line > base.line;
   }
   return candidate.column >= base.column;
-}
-
-inline std::string source_location_key(const std::string & file,
-                                       int line,
-                                       int column)
-{
-  return file + "\n" + std::to_string(line) + "\n" + std::to_string(column);
-}
-
-inline std::string source_location_key_for_location_id(
-    const SourceLocationTable & source_locations,
-    uint32_t location_id)
-{
-  if(location_id == 0 ||
-     location_id >= source_locations.locations.size()) {
-    return std::string();
-  }
-  const SourceLocation & location = source_locations.locations[location_id];
-  if(location.file_index >= source_locations.files.size()) {
-    return std::string();
-  }
-  return source_location_key(source_locations.files[location.file_index],
-                             static_cast<int>(location.line),
-                             static_cast<int>(location.column));
 }
 
 inline bool source_location_matches_parsed(

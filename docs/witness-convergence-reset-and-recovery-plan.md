@@ -6592,6 +6592,148 @@ This checkpoint adds 70 and removes 132 production lines, a net deletion of
 migration mirrors. Function and variable source publication now have no
 generic dedup obligation. Phase 7 and inception remain forbidden.
 
+## Class-result arbitration localization checkpoint, 2026-08-12
+
+Commit `7ea25bb6edf30d4e2899e80292494fedafee0db1` is the parent. This
+Phase 6 checkpoint reduces class-result prepublication arbitration to the
+rules that the complete 1,530-reference corpus actually exercises. A temporary
+probe covered every tracked strict reference and is absent from production.
+Its event log is
+`/tmp/cppgm-phase6-class-result-probe-events-20260812.log`, SHA-256
+`997165b8dc1f89bb99804a9ae4a670a2613d1dc869a30ad4dbe4062f7d4fadba`.
+
+The probe observes 3,004 submitted class results, 2,644 distinct identities,
+and 360 repeated-result merges in 204 sessions. The nonzero arbitration is
+narrow: six candidates replace an existing result through source ownership,
+role, selection, or static-member-owner preference, and 59 candidate
+occurrences enrich an otherwise retained result in 46 sessions. Static-owner
+finalization promotes 36 results and rejects ten; four results use the partial-
+selection fallback and three upgrade to an explicit selection. The 2,805
+first nondependent observation claims and 3,211 repeated claims never perform
+an ownership-rank upgrade.
+
+All generic mirror directions outside that obligation record zero actions.
+Neither side contributes richer pack bindings or specialization bindings;
+reverse occurrence enrichment, traversal-order joins, source-capture-pause
+joins, nondependent ownership-rank upgrades, and materialized-value lifecycle
+suppression are also zero. The checkpoint deletes those branches and their
+dead initializer-template flag. It changes the nondependent observation map
+to an identity set, removes an unused source-location-id mirror, and clears
+the alias idempotence set directly before class finalization. The still-live
+occurrence comparison is now private to the class producer rather than a
+generic source-use policy.
+
+Unused generic source-use equality operators, the unused witness-context
+entry copy, and the unused source-location-key helpers are deleted with the
+same slice. The alias occurrence clear remains intentional: it releases a
+nonzero idempotence set after alias collection and before class finalization.
+The class result queue also remains intentional because 360 repeated semantic
+results still require the six replacement and 59 enrichment decisions above.
+
+The final Homebrew-Clang validation produced these results:
+
+- all 1,055 reference inputs that submit at least one class result are byte-
+  exact against the frozen parent for witness output, LowIR, diagnostics, and
+  exit status;
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs
+  once in its normal report position and has no separate validation lane;
+- all 1,530 provenance sessions exist. Schema 6 remains exactly 10,587
+  records: 4,289 source publications and 6,298 lifecycle publications. Source
+  ownership remains alias 835, class 2,631, function 791, and variable 32,
+  with no unknown producer or unexercised site;
+- ordinary and provenance compilers produce byte-identical witness and LowIR
+  output on all 1,530 references, for 3,060 compared artifacts;
+- the 61-test helper suite passes, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden text-
+  reparse categories remain zero, and the dynamic class-materialization audit
+  remains exact at five accepted occurrences and 55 rejected rows at 53
+  locations;
+- the semantic boundary and all tracked structure sizes match the parent. The
+  template boundary improves by removing two witness-source-location sites.
+
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-class-result-cleanup-ordinary-strict-20260812.log` and
+`/tmp/cppgm-phase6-class-result-cleanup-provenance-strict-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-class-result-cleanup-broad-20260812.log`, SHA-256
+`4b8de40a048454aa3590bc7d2bf60d16e6fc270fd4055ed62c551203ac7f5d31`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-class-result-cleanup-provenance-trace-20260812.sZoV6e`.
+The analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-class-result-cleanup-provenance-analysis-20260812.json`
+and
+`/tmp/cppgm-phase6-class-result-cleanup-provenance-convergence-20260812.json`,
+with SHA-256 values
+`54f7b51718cb55e6671f9d01bbbb8829958138b4f6e10a1480bcd54f4520d12a`
+and
+`557e5856ee0eaebcb1114ebcc8a6ac4d7714918a3d4a921e68520d94f9736236`.
+The direct ordinary/provenance artifact manifests both have SHA-256
+`05745831554a8da3caf30283a8f2396a53302dc9fef0051be503903cf87bd8c5`;
+their empty mismatch list has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The helper report is
+`/tmp/cppgm-phase6-class-result-cleanup-helper-tests-20260812.log`, SHA-256
+`4ecc5f89a8398ebd141672b1cfa8d975e4eb42800bc629b5288f568c72894792`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and dynamic class-materialization reports have SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`8c8b7136ba50635a25175da91b80eb923410e4343a8fa244c7fdca30196c88d4`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`c70ff0679e560962d6d2ef0657f71864ecd9281b689c029f8f334c214eb0c6c4`.
+
+Every tracked semantic structure remains byte-identical to the parent. The
+structure report is
+`/tmp/cppgm-phase6-class-result-cleanup-structure-sizes-20260812.txt`,
+SHA-256
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+The ordinary binary shrinks by 16,472 bytes to 17,075,280 bytes. Its Mach-O
+`__TEXT` segment shrinks by 12,288 bytes, populated text sections shrink by
+15,624 bytes, and `__LINKEDIT` shrinks by 4,096 bytes; `__DATA_CONST` and
+`__DATA` remain 61,440 and 442,368 bytes. The binary contains no provenance
+symbols. The section report is
+`/tmp/cppgm-phase6-class-result-cleanup-binary-sections-20260812.txt`,
+SHA-256
+`6da1516d702f28b94c790a8b25e056b36ca13c638933182bccc437014eddfd58`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-class-result-cleanup-ordinary-20260812`, SHA-256
+`63b1d8e43b8c6b078d2eadf79983d240c6bc2846f58d480ee0d2fefc8b37d62a`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.92% | +0.03% | -4.14% | `/tmp/cppgm-phase6-class-result-cleanup-perf-fixed-20260812.json` |
+| Variable-result parent | -0.09% | +0.10% | -0.09% | `/tmp/cppgm-phase6-class-result-cleanup-perf-parent-20260812.json` |
+
+The candidate medians are 174,399,573,104 instructions, 757,284,864 bytes
+maximum RSS, and 568,483,840 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-class-result-cleanup-raw-candidate-20260812.json`, SHA-256
+`032f97f8311f287e07fa1045772f81057c4f7b86d4705926b027771ded17635d`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`3e133aef16968095740411732a3df4876c69131b82bf276de74291ab69e074df`
+and
+`84bc45efa7ba975e80bb6f12409a1157c4a408981d1aaf2a7dfef7aa425790f4`.
+The candidate metadata names commit `7ea25bb6e` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 156 and removes 415 production lines, a net deletion of
+259. Phase 6 remains open for the remaining nonzero local side stores and
+migration mirrors. Class prepublication now has only its measured nonzero
+replacement and enrichment obligation. Phase 7 and inception remain
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
