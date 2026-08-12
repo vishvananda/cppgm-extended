@@ -5780,6 +5780,140 @@ This checkpoint adds 182 and removes 465 production lines, a net deletion of
 and deduplication-obligation inventory. Phase 7 and inception remain
 forbidden.
 
+## Canonical renderer row and single-sort checkpoint, 2026-08-12
+
+This Phase 6 checkpoint removes the renderer's parallel mirror of the
+canonical source-use row. `RenderedSourceUse` now extends
+`semantic_source_use::SemanticSourceUse`, copies that row once, and retains
+only two transient same-location ordering fields. Template and selected names,
+plus drop candidate names, are normalized on that copy. The renderer derives
+the selected-declaration location from the canonical selected anchor/entity
+fields instead of storing another selected-declaration string.
+
+The field-by-field `witness_event_from_source_use` converter and both ordinary
+and provenance `WitnessBuilder` implementations disappear. Collection now
+constructs rendered rows directly from the source-use table and keeps
+provenance lineages aligned with those rows. The builder's preliminary
+location/kind/entity sort, the redundant sort in `render_events_text`, and the
+post-render text block parser, location sort, and exact-block deduplicator also
+disappear. Typed semantic ordering in `collect_rendered_source_events` is now
+the sole renderer ordering stage. The deleted pre-sorts and text deduplicator
+had no observable obligation: every final ordinary and provenance artifact is
+parent-exact without them.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the normal integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9
+  runs in its normal report position and has no separate validation lane;
+- all 3,060 ordinary and provenance witness/LowIR artifacts are byte-identical
+  to each other and to the canonical-row parent;
+- all 1,530 provenance session files exist. The trace remains parent-exact at
+  26,389 records, 4,766 source attempts, 6,298 lifecycle attempts, and 4,289
+  unique public rows, with no unknown producer or unexercised site;
+- alias remains 835 attempts/insertions/public rows, class remains
+  2,631/2,631/2,631, function remains 1,268 attempts with 791 insertions, 469
+  exact duplicates and eight rejected replays, and variable remains 32/32/32.
+  Both source collision and replacement matrices remain empty;
+- renderer ownership remains limited to the same 409 binding rewrites and 40
+  name rewrites;
+- the focused helper suite passes 60/60, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and neither boundary audit nor any
+  tracked semantic structure size changes;
+- the dynamic class-materialization audit passes with five accepted source
+  occurrences, 55 rejected rows at 53 distinct locations, and no failure.
+
+The clean ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-renderer-canonical-row-final-ordinary-strict-20260812.log`
+and
+`/tmp/cppgm-phase6-renderer-canonical-row-final3-provenance-strict-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated broad report is
+`/tmp/cppgm-phase6-renderer-canonical-row-final-broad-20260812.log`, SHA-256
+`d6e98bf2157553f8c13a63079e7b9d18a18d1fbf9f05c90998a6b7ac9b77bb59`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-renderer-canonical-row-final3-provenance-trace-20260812.T2Q4ZQ`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-renderer-canonical-row-final3-provenance-analysis-20260812.json`
+and
+`/tmp/cppgm-phase6-renderer-canonical-row-final3-provenance-convergence-20260812.json`,
+with SHA-256 values
+`0a9e0872c81ae1ad1e5b7984379afbc0bc9eac52ace8c2874402e3e9008d7eb6`
+and
+`d845da6c9924314573c23115b9d4b6090d76f2b118c77e119e7d2a6e383a3d9c`.
+The ordinary and provenance manifests both have SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+An initial diagnostic provenance pass left one anomalous generated LowIR file
+for PA24's negative non-type substitution comparison. It was not reproducible:
+the exact ordinary and provenance binaries each produced the parent hash in
+ten consecutive focused runs, the repeated full provenance manifest is exact,
+and the final ordinary strict pass also restored the parent hash. The 20-run
+stability record is
+`/tmp/cppgm-phase6-renderer-canonical-row-focused-repeat-stability-20260812.log`,
+SHA-256
+`3e6fe099c7cf0ad9cf8a902ebfeb52a9b8ddbe9fa4691fd2ad71d2ee8ea24c9a`.
+
+The 60-test helper report is
+`/tmp/cppgm-phase6-renderer-canonical-row-final-helper-tests-20260812.log`,
+SHA-256
+`4b58facd4809acb6f832d414374a26819da35bab6b5f47f3f222bc74bbcdc522`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, structure-size, and dynamic class-materialization reports
+have SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`9cd4fb7cf253e1f8c3458381698a1a7542262fcd1713bdc93356fdb704111239`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`,
+and
+`5831282f84a09b3eec18499f670013693dce128b5f7f653c324eb9a6aed4f1fe`.
+
+The ordinary binary shrinks by 31,568 bytes to 17,115,488 bytes. Its Mach-O
+`__TEXT` segment shrinks by 28,672 bytes to 12,992,512; `__text` shrinks by
+27,376 bytes, `__gcc_except_tab` by 816 bytes, `__cstring` by 16 bytes, and
+`__unwind_info` by 144 bytes. `__const`, `__DATA_CONST`, and `__DATA` remain
+201,792, 61,440, and 442,368 bytes; `__LINKEDIT` shrinks by 4,096 bytes to
+4,055,040. The binary contains no provenance symbols. The section report is
+`/tmp/cppgm-phase6-renderer-canonical-row-final-binary-sections-20260812.txt`,
+SHA-256
+`8154d249e586200f8de8b8ef218db6762cbadbc49f5d921edd6bb571dc0f0bb5`.
+The frozen binary is
+`/tmp/cppgm-phase6-renderer-canonical-row-single-sort-ordinary-20260812`,
+SHA-256
+`6a7428168f39e268a086f778ddf728b233e98fc29c38d7bacf96cc932e23cf04`.
+
+The final ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.74% | -0.59% | -4.12% | `/tmp/cppgm-phase6-renderer-canonical-row-final-perf-fixed-20260812.json` |
+| Canonical-row parent | -0.18% | +0.04% | -0.09% | `/tmp/cppgm-phase6-renderer-canonical-row-final-perf-parent-20260812.json` |
+
+The candidate medians are 174,714,431,382 instructions, 752,631,808 bytes
+maximum RSS, and 568,590,336 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-renderer-canonical-row-final-raw-candidate-20260812.json`,
+SHA-256
+`88f70ceacac1cb7bc92911edb706f87609af7c23776e75d9e0b3561007e3509f`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`651ef0283fd1db46a9c1b2d3c68f7d8f06f76afe4eeb94205968189010b7f381`
+and
+`c1069731204000e914b4057bacf808387a46056ec2653d583a33cb1129cddc84`.
+The candidate metadata names commit `75fd84baa` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 144 and removes 365 production lines, a net deletion of
+221. Phase 6 remains open for the remaining source-table generic function
+arbitration/deduplication obligation and migration-mirror inventory. Phase 7
+and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
