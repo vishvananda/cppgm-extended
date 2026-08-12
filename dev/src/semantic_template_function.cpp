@@ -87,6 +87,35 @@ void canonicalize_function_call_drops(
       });
 }
 
+std::string function_source_occurrence_target(
+    const semantic_source_use::SemanticSourceUse & use)
+{
+  return use.selected.empty() ? use.template_name : use.selected;
+}
+
+bool function_source_occurrence_already_published(
+    const template_api::TemplateWitnessContext & ctx,
+    const semantic_source_use::SemanticSourceUse & use)
+{
+  if(ctx.session == nullptr) {
+    return false;
+  }
+  const std::string target_key =
+      semantic_source_use::source_use_arg_compact_key(
+          function_source_occurrence_target(use));
+  const std::vector<semantic_source_use::SemanticSourceUse> & published =
+      ctx.session->source_use_table.uses;
+  for(std::size_t i = 0; i < published.size(); ++i) {
+    if(published[i].kind == semantic_source_use::SourceUseKind::FunctionCall &&
+       published[i].location == use.location &&
+       semantic_source_use::source_use_arg_compact_key(
+           function_source_occurrence_target(published[i])) == target_key) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void commit_signature_value_dependencies(
     SemanticContext & ctx,
     semantic_model::FunctionBinding * binding)
@@ -672,7 +701,12 @@ void emit_function_template_call_source_use(
                                                             use.bindings);
   }
   suppress_defaulted_void_self_substitution_drop(use, binding);
-  witness::emit_function_call(ctx.template_witness_context(),
+  const template_api::TemplateWitnessContext witness_context =
+      ctx.template_witness_context();
+  if(function_source_occurrence_already_published(witness_context, use)) {
+    return;
+  }
+  witness::emit_function_call(witness_context,
                               std::move(use),
                               request.origin);
 }

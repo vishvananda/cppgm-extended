@@ -137,10 +137,6 @@ inline bool source_location_is_from_primary_file(
     const TemplateWitnessContext & ctx,
     const std::string & location)
 {
-  if(!ctx.primary_source_file.empty()) {
-    return source_location_is_from_primary_file(ctx.primary_source_file,
-                                                location);
-  }
   return source_location_is_from_primary_file(ctx.session, location);
 }
 

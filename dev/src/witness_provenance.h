@@ -66,11 +66,3 @@ void finish_session(const template_api::TemplateWitnessSession & session,
                     const std::string & source_path);
 
 }  // namespace witness_provenance
-
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-#define CPPGM_WITNESS_PROVENANCE_PARAMETER(parameter) parameter,
-#define CPPGM_WITNESS_PROVENANCE_ARGUMENT(argument) argument,
-#else
-#define CPPGM_WITNESS_PROVENANCE_PARAMETER(parameter)
-#define CPPGM_WITNESS_PROVENANCE_ARGUMENT(argument)
-#endif

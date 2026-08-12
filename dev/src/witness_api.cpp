@@ -79,17 +79,16 @@ semantic_source_use::SemanticSourceUse normalized_source_use(
   return use;
 }
 
-void record_class_use_source_use_in_table(
-    CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
-    semantic_source_use::SemanticSourceUseTable * table,
+void record_class_use_source_use_in_session(
+    TemplateWitnessSession * session,
     const ClassUseEmitRequest & request)
 {
-  if(table == nullptr) {
+  if(session == nullptr) {
     return;
   }
   const semantic_source_use::SemanticSourceUse use =
       normalized_source_use(request, true, false);
-  semantic_source_use::record_source_use(*table, use);
+  semantic_source_use::record_source_use(session->source_use_table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   witness_provenance::note_source_use_publication(
       session,
@@ -97,20 +96,15 @@ void record_class_use_source_use_in_table(
 #endif
 }
 
-void record_function_call_source_use_in_table(
-    CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
-    semantic_source_use::SemanticSourceUseTable * table,
+void record_function_call_source_use_in_session(
+    TemplateWitnessSession * session,
     semantic_source_use::SemanticSourceUse use)
 {
-  if(table == nullptr) {
+  if(session == nullptr) {
     return;
   }
   use = normalized_source_use(std::move(use), true, true);
-  if(semantic_source_use::function_call_source_use_already_admitted(*table,
-                                                                    use)) {
-    return;
-  }
-  semantic_source_use::record_source_use(*table, use);
+  semantic_source_use::record_source_use(session->source_use_table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   witness_provenance::note_source_use_publication(
       session,
@@ -118,19 +112,18 @@ void record_function_call_source_use_in_table(
 #endif
 }
 
-void record_alias_use_source_use_in_table(
-    CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
-    semantic_source_use::SemanticSourceUseTable * table,
+void record_alias_use_source_use_in_session(
+    TemplateWitnessSession * session,
     semantic_source_use::SemanticSourceUse use)
 {
-  if(table == nullptr) {
+  if(session == nullptr) {
     return;
   }
   // Alias source-occurrence arguments have already been rendered from their
   // semantic AST. A generic angle-space pass cannot distinguish a template
   // closer from `>` or `>>` inside decltype and would corrupt the payload.
   use = normalized_source_use(std::move(use), false, true);
-  semantic_source_use::record_source_use(*table, use);
+  semantic_source_use::record_source_use(session->source_use_table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   witness_provenance::note_source_use_publication(
       session,
@@ -138,12 +131,11 @@ void record_alias_use_source_use_in_table(
 #endif
 }
 
-void record_variable_use_source_use_in_table(
-    CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
-    semantic_source_use::SemanticSourceUseTable * table,
+void record_variable_use_source_use_in_session(
+    TemplateWitnessSession * session,
     const VariableUseEmitRequest & request)
 {
-  if(table == nullptr) {
+  if(session == nullptr) {
     return;
   }
   const semantic_source_use::SemanticSourceUse use =
@@ -156,7 +148,7 @@ void record_variable_use_source_use_in_table(
           witness_provenance::WitnessUpstreamRoute::
               VariableDirectInstantiation);
 #endif
-  semantic_source_use::record_source_use(*table, use);
+  semantic_source_use::record_source_use(session->source_use_table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   witness_provenance::note_source_use_publication(
       session,
@@ -265,15 +257,10 @@ bool emit_class_use(const TemplateWitnessContext & ctx,
      !request.record_during_source_capture_pause) {
     return false;
   }
-  semantic_source_use::SemanticSourceUseTable * table = ctx.source_use_table;
-  if(table == nullptr && ctx.session != nullptr) {
-    table = &ctx.session->source_use_table;
-  }
-  if(table == nullptr) {
+  if(ctx.session == nullptr) {
     return false;
   }
-  record_class_use_source_use_in_table(
-      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, request);
+  record_class_use_source_use_in_session(ctx.session, request);
   return true;
 }
 
@@ -290,12 +277,7 @@ void emit_function_call(const TemplateWitnessContext & ctx,
   if(!function_call_recording_enabled(ctx, origin)) {
     return;
   }
-  semantic_source_use::SemanticSourceUseTable * table = ctx.source_use_table;
-  if(table == nullptr && ctx.session != nullptr) {
-    table = &ctx.session->source_use_table;
-  }
-  record_function_call_source_use_in_table(
-      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, std::move(use));
+  record_function_call_source_use_in_session(ctx.session, std::move(use));
 }
 
 void emit_alias_use(const TemplateWitnessContext & ctx,
@@ -310,12 +292,7 @@ void emit_alias_use(const TemplateWitnessContext & ctx,
   if(!source_capture_enabled(ctx)) {
     return;
   }
-  semantic_source_use::SemanticSourceUseTable * table = ctx.source_use_table;
-  if(table == nullptr && ctx.session != nullptr) {
-    table = &ctx.session->source_use_table;
-  }
-  record_alias_use_source_use_in_table(
-      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, std::move(use));
+  record_alias_use_source_use_in_session(ctx.session, std::move(use));
 }
 
 void emit_variable_use(const VariableUseEmitRequest & request)
@@ -340,13 +317,7 @@ void emit_variable_use(const VariableUseEmitRequest & request)
                                    request);
     return;
   }
-  semantic_source_use::SemanticSourceUseTable * table =
-      template_api::current_semantic_source_use_table();
-  record_variable_use_source_use_in_table(
-      CPPGM_WITNESS_PROVENANCE_ARGUMENT(
-          session)
-      table,
-      request);
+  record_variable_use_source_use_in_session(session, request);
 }
 
 void finalize_variable_use_source_uses(TemplateWitnessSession * session)

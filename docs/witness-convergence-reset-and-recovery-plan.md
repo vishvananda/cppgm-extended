@@ -6331,6 +6331,133 @@ side stores and migration mirrors. Renderer normalization is now explicitly a
 presentation step and no longer an ownership boundary. Phase 7 and inception
 remain forbidden.
 
+## Producer-owned function source-occurrence checkpoint, 2026-08-12
+
+This Phase 6 checkpoint removes generic function-call payload arbitration from
+the public witness API. The semantic function producer now claims a canonical
+source occurrence before publication, keyed by normalized source location and
+the compact selected semantic target. The witness API only normalizes and
+appends the producer's completed row. Exact binding-spacing replay detection,
+candidate-fact dominance, drop containment, and deduced trailing-binding replay
+are deleted from `semantic_source_use.h`.
+
+The claim is supported by the complete historical prepublication trace, not a
+focused assumption. Across all 1,268 chronological function publication
+attempts, `(location, selected-target)` predicts all 791 insertions, all 469
+exact replays, and all eight formerly rejected replays with zero disagreement.
+The final publication ledger also contains 791 unique keys for its 791 function
+rows. The eight non-exact cases are therefore repeated semantic visits to the
+same public source occurrence, not competing witness payloads. The producer
+still completes signature dependencies, bindings, drop ordering, and selected
+declaration facts before making the claim, so suppression does not bypass a
+semantic side effect.
+
+The same slice removes two context mirrors. `TemplateWitnessContext` no longer
+copies a pointer to the session source-use table or the primary source file;
+publication and primary-file filtering use the session directly. The obsolete
+current-table adapter and provenance-only argument/parameter macros disappear,
+and all four witness record helpers take their owning session explicitly.
+
+The final Homebrew-Clang validation produced these results:
+
+- all 66 inputs with a historically observed function replay or rejection are
+  byte-exact against the parent for witness output, LowIR, diagnostics, and
+  exit status;
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output, and the 3,060-artifact manifest is byte-identical to the parent;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs in
+  its normal report position and has no separate validation lane;
+- all 1,530 provenance sessions exist. Schema 6 remains exactly 10,587
+  records: 4,289 source publications and 6,298 lifecycle publications. Source
+  ownership remains alias 835, class 2,631, function 791, and variable 32,
+  with no unknown producer or unexercised site. Function routes remain three
+  constant-value lookup, 11 conversion, 32 `declval`, and 745 overload rows;
+- the 61-test helper suite passes, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, both boundary audits match the parent,
+  and the dynamic class-materialization audit remains exact at five accepted
+  occurrences and 55 rejected rows at 53 locations.
+
+The 66-input report is
+`/tmp/cppgm-phase6-function-occurrence-replay-focused-20260812.log`, SHA-256
+`2827791e0dd8597639435539af1d4db34c8a95ef99f214177492a7ffb96d601a`.
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-function-occurrence-ordinary-strict-20260812.log` and
+`/tmp/cppgm-phase6-function-occurrence-provenance-strict-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-function-occurrence-broad-20260812.log`, SHA-256
+`cb1aa0979cb76970074db3cc007af8da8191a4c9f2ddc60ac8badec36295b9c8`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-function-occurrence-provenance-trace-20260812.d8E0KX`.
+The analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-function-occurrence-provenance-analysis-20260812.json` and
+`/tmp/cppgm-phase6-function-occurrence-provenance-convergence-20260812.json`,
+with SHA-256 values
+`ff4c26c7864afaa7a1d4b7ec6d924788aee8f0e8b15003fd8db843329a9fb3f6`
+and
+`18606eb86a91026018c98c6d91014d314794239fde6cf1b0941916929750983e`.
+The manifest retains SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+The helper report is
+`/tmp/cppgm-phase6-function-occurrence-helper-tests-20260812.log`, SHA-256
+`5b9571ae385e58357ace1b0671ab1700207c74ac798df2ac3c5522f626afff22`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and dynamic class-materialization reports have SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`9cd4fb7cf253e1f8c3458381698a1a7542262fcd1713bdc93356fdb704111239`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5b9d3895d56ef7d3b1195e68b7ddff2035470c28caf0e6892bcfece97b5e838b`.
+
+Every tracked semantic structure remains byte-identical to the parent. The
+structure report is
+`/tmp/cppgm-phase6-function-occurrence-structure-sizes-20260812.txt`, SHA-256
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+The ordinary Mach-O keeps the parent's data allocations while its `__TEXT`
+segment shrinks by 12,288 bytes. `__text` shrinks by 12,240 bytes,
+`__gcc_except_tab` by 420, `__cstring` by 16, and `__unwind_info` by 64, for a
+12,740-byte reduction in populated text sections. The frozen binary is 13,856
+bytes smaller at 17,100,944 bytes and contains no provenance symbols. The
+section report is
+`/tmp/cppgm-phase6-function-occurrence-binary-sections-20260812.txt`, SHA-256
+`6787a384f4715ac53cc94e227c705b89f0e4d722d45642bee3968d43e56a0deb`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-function-occurrence-ordinary-20260812`, SHA-256
+`676e7dc74881e0d15c7c883b65c83c7c07bd82d5ce020411a991a4c9aff4284d`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.11% | -0.26% | -4.06% | `/tmp/cppgm-phase6-function-occurrence-perf-fixed-20260812.json` |
+| Publication-ledger parent | -0.17% | -0.85% | +0.00% | `/tmp/cppgm-phase6-function-occurrence-perf-parent-20260812.json` |
+
+The candidate medians are 174,069,254,108 instructions, 755,130,368 bytes
+maximum RSS, and 568,946,688 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-function-occurrence-raw-candidate-20260812.json`, SHA-256
+`3d662b11a9c9dbb3036cb6023e3740df6eeb1be902eb33b17cd0d0ca3c0670a6`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`cd8314ae0ef565e3ef59106bdea3ab04684e553b9a028e47b51d6d1dd4d6edbe`
+and
+`e09cba560806497c9cc054bd7709caf5aaaea0a6caa5f53104125def7b3b78d7`.
+The candidate metadata names commit `456f33323` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 57 and removes 247 production lines, a net deletion of
+190. Phase 6 remains open for the three named variable-retention decisions and
+the remaining nonzero local side stores and migration mirrors. Producer-side
+function rediscovery and both generic function admission rules are now closed.
+Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

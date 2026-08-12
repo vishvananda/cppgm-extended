@@ -2550,15 +2550,9 @@ private:
   {
     template_api::TemplateWitnessContext out;
     out.session = template_witness_session_;
-    out.source_use_table =
-        template_witness_session_ ? &template_witness_session_->source_use_table :
-                                    nullptr;
     if(template_witness_session_ != nullptr) {
       out.public_use_location = parser_trace::current_use_location();
       out.public_source_use_active = !out.public_use_location.empty();
-      if(token_sequence != nullptr) {
-        out.primary_source_file = token_sequence->primary_source_file();
-      }
     }
     out.token_sequence = token_sequence;
     out.source_locations = source_locations;

@@ -276,11 +276,9 @@ struct TemplateWitnessSession
 struct TemplateWitnessContext
 {
   TemplateWitnessSession * session = nullptr;
-  semantic_source_use::SemanticSourceUseTable * source_use_table = nullptr;
   TemplateWitnessEntryContext entry_context;
   std::string public_use_location;
   bool public_source_use_active = false;
-  std::string primary_source_file;
   const IRecogTokenSequence * token_sequence = nullptr;
   const SourceLocationTable * source_locations = nullptr;
   const template_witness_detail::SourceTokenIndex * source_token_index = nullptr;
@@ -1567,16 +1565,9 @@ void set_template_witness_source_capture_header_instantiation_tracked(
     const semantic_model::ClassInfo * info,
     bool tracked);
 
-inline semantic_source_use::SemanticSourceUseTable *
-current_semantic_source_use_table()
-{
-  TemplateWitnessSession * session = current_template_witness_session();
-  return session ? &session->source_use_table : nullptr;
-}
-
 inline bool semantic_source_use_capture_enabled()
 {
-  return current_semantic_source_use_table() != nullptr;
+  return current_template_witness_session() != nullptr;
 }
 
 inline void record_template_witness_inline_namespace(
