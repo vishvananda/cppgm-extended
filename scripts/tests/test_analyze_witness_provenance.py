@@ -139,6 +139,19 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
         self.assertEqual(report["trace_files"], 3)
         self.assertEqual(report["records"], 0)
 
+    def test_append_only_schema_has_no_replacement_counters(self):
+        report = MODULE.build_report([])
+        self.assertEqual(report["schema_version"], 4)
+        self.assertNotIn("replacement_matrix", report)
+        self.assertNotIn(
+            "replaced",
+            report["site_coverage"]["function.semantic_template_function"],
+        )
+        self.assertNotIn(
+            "enriched",
+            report["site_coverage"]["lifecycle.transition_observer.01"],
+        )
+
     def test_lifecycle_context_is_reported(self):
         report = MODULE.build_report(
             [

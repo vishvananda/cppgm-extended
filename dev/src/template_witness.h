@@ -1963,13 +1963,10 @@ inline void note_template_witness_lifecycle_event(
           event.entry_context.closure_reason) :
       event.cause;
   template_witness_detail::refresh_lifecycle_event_metadata(event);
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  const witness_provenance::ScopedLifecycleAttempt provenance_attempt(
-      *session,
-      producer_site,
-      event);
-#endif
   session->lifecycle_events.push_back(event);
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  witness_provenance::note_lifecycle_record(*session, producer_site, event);
+#endif
 }
 
 inline bool template_witness_source_capture_enabled()

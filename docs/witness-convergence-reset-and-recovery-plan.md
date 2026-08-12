@@ -5914,6 +5914,139 @@ This checkpoint adds 144 and removes 365 production lines, a net deletion of
 arbitration/deduplication obligation and migration-mirror inventory. Phase 7
 and inception remain forbidden.
 
+## Append-only semantic ledger checkpoint, 2026-08-12
+
+This Phase 6 checkpoint replaces speculative source-table and lifecycle
+provenance reconstruction with explicit append-only ledger results. A complete
+1,530-test provenance inventory showed that alias, class, variable, and
+lifecycle recording are insert-only: 835 alias, 2,631 class, 32 variable, and
+6,298 lifecycle attempts all insert exactly once. Function recording has 1,268
+attempts: 791 insertions, 469 exact replays, and eight rejected replays. There
+are no replacements or enrichments in any source family.
+
+An isolated diagnostic build classified all eight non-exact function
+rejections before the temporary probes were removed. Six are the named rule
+that an existing candidate-bearing call result dominates a replay, and two are
+the named rule that an existing shorter binding row suppresses a replay with a
+deduced trailing binding. Both former replacement directions are unexercised.
+The classification trace is
+`/tmp/cppgm-phase6-source-table-branch-trace-results-20260812.log`, SHA-256
+`c87ba4411b3dcecb46aea04fade0b879960202e23a4c0d554f085b737dd79e22`.
+The three exact focused fixtures are recorded in
+`/tmp/cppgm-phase6-source-table-append-only-focused-20260812.log`, SHA-256
+`a52be506b2e60fee88fca3b6f609c3ef971ab1f9ba89042b968dfdd1c889084c`.
+
+`SemanticSourceUseTable::record_source_use` now returns a typed inserted,
+exact-replay, or rejected-replay result plus the affected row index. The table
+directly appends non-function rows. Its function path retains only equivalent
+binding-spacing replay recognition and the two measured rejection rules. The
+generic non-function duplicate scan, both replacement directions, metadata
+merge/enrichment, and their equivalence helpers are deleted.
+
+The provenance build consumes that typed result directly. It no longer copies
+the full table, snapshots every row and lineage, rescans for collisions,
+matches before/after rows, diffs changed fields, or reconstructs replace and
+enrich actions. Lifecycle publication similarly appends the event and records
+its lineage directly, deleting its before/after fingerprint vectors, token
+registry, and key-existence branch. The provenance analyzer schema advances to
+version 4 and removes impossible source/lifecycle replacement and enrichment
+counters; a new analyzer test guards the append-only schema. Renderer rewrite
+diagnostics remain because their 409 binding and 40 name rewrites are still
+measured obligations.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output, and both 3,060-artifact manifests are byte-identical to the parent;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs in
+  its normal report position and has no separate validation lane;
+- all 1,530 provenance sessions exist. The trace has 26,389 records, 4,766
+  source attempts, 6,298 lifecycle insertions, and 4,289 public source rows,
+  with no unknown producer, unexercised site, source collision, replacement,
+  or enrichment;
+- the 61-test helper suite passes, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, neither boundary audit changes, and
+  the dynamic class-materialization audit passes with five accepted source
+  occurrences, 55 rejected rows at 53 distinct locations, and no failure.
+
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-append-only-ledger-probe-strict-20260812.log` and
+`/tmp/cppgm-phase6-append-only-ledger-provenance-strict-20260812.log`. Both
+have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-append-only-ledger-broad-20260812.log`, SHA-256
+`048cf25afedfb10e972d434fcc515a084893e6e150ffda24533f45fed7f02a40`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-append-only-ledger-provenance-trace-20260812.pKi2aV`.
+The analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-append-only-ledger-provenance-analysis-20260812.json` and
+`/tmp/cppgm-phase6-append-only-ledger-provenance-convergence-20260812.json`,
+with SHA-256 values
+`5299d5b920e470965b8a197810195a13755aa6c610cf0524eae110f7cbaba467`
+and
+`908a1a2ee63fe026993295507df0ef84cb30fd0bf22386463b05d6fb748aa7d3`.
+Both manifests retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+The helper report is
+`/tmp/cppgm-phase6-append-only-ledger-helper-tests-20260812.log`, SHA-256
+`875dc98dc2d83270d892efe22e523367d8c1437cf3d60c25db35ca776d883366`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and dynamic class-materialization reports have SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`9cd4fb7cf253e1f8c3458381698a1a7542262fcd1713bdc93356fdb704111239`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`aa2f232e356027e6283bf340fa34500ad8ea9d56d4a674a36af9f58f83ad353b`.
+
+Every tracked semantic structure remains byte-identical to the parent. The
+structure report is
+`/tmp/cppgm-phase6-append-only-ledger-structure-sizes-20260812.txt`, SHA-256
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+The ordinary Mach-O retains the parent's segment allocation while `__text`
+shrinks by 1,392 bytes and `__gcc_except_tab` grows by four bytes, a net 1,388
+section-byte reduction. File padding makes the frozen binary eight bytes
+larger at 17,115,496 bytes; it contains no provenance symbols. The section
+report is
+`/tmp/cppgm-phase6-append-only-ledger-binary-sections-20260812.txt`, SHA-256
+`6f4a07c54978400c3360bcd41745591fe5c674560c192bf61751be5d7835806c`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-append-only-ledger-ordinary-20260812`, SHA-256
+`2d89dcea725098ffa231baa6785aa127be7147d0ede348b5757d10665ccfc239`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.96% | +0.33% | -4.09% | `/tmp/cppgm-phase6-append-only-ledger-perf-fixed-20260812.json` |
+| Canonical-renderer parent | -0.22% | +0.92% | +0.03% | `/tmp/cppgm-phase6-append-only-ledger-perf-parent-20260812.json` |
+
+The candidate medians are 174,328,442,420 instructions, 759,554,048 bytes
+maximum RSS, and 568,741,888 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-append-only-ledger-raw-candidate-20260812.json`, SHA-256
+`939977d193d66f5b9cbde51dc4cbb012be0bfd6f7ce9143802907e3818bfb2d4`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`8d3e33d0592868805bb758043cbe29468814b83211afe1ef1c8ac718502078c5`
+and
+`7b6e0b0029fac2ee829b6dfde82a1ea072beffb6301d2d93d1733940437e25b2`.
+The candidate metadata names commit `f49bc8335` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 154 and removes 536 production lines, a net deletion of
+382. Analyzer tooling adds 14 and removes 26 lines, so the complete code
+change is a net deletion of 394 lines. Phase 6 remains open for producer-side
+function replay ownership, pending-variable prepublication arbitration, and
+the remaining migration-mirror inventory. Phase 7 and inception remain
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

@@ -146,6 +146,19 @@ struct SemanticSourceUseTable
   std::vector<SemanticSourceUse> uses;
 };
 
+enum class SourceUseRecordAction
+{
+  Inserted,
+  ExactReplay,
+  RejectedReplay,
+};
+
+struct SourceUseRecordResult
+{
+  SourceUseRecordAction action = SourceUseRecordAction::Inserted;
+  std::size_t row_index = 0;
+};
+
 inline bool operator==(const SourceTemplateArgumentOccurrence & lhs,
                        const SourceTemplateArgumentOccurrence & rhs)
 {
@@ -409,12 +422,6 @@ inline bool function_call_equivalent_ignoring_binding_spacing(
          lhs.candidates_viable == rhs.candidates_viable;
 }
 
-inline std::string function_call_effective_location(
-    const SemanticSourceUse & use)
-{
-  return use.location;
-}
-
 inline std::string function_call_selected_decl_location(
     const SemanticSourceUse & use)
 {
@@ -430,8 +437,7 @@ inline bool function_calls_share_selected_source_identity(
          rhs.kind == SourceUseKind::FunctionCall &&
          lhs.role == rhs.role &&
          lhs.ownership == rhs.ownership &&
-         function_call_effective_location(lhs) ==
-             function_call_effective_location(rhs) &&
+         lhs.location == rhs.location &&
          function_call_selected_decl_location(lhs) ==
              function_call_selected_decl_location(rhs) &&
          lhs.template_name == rhs.template_name &&
@@ -523,74 +529,13 @@ inline bool function_call_is_deduced_trailing_binding_replay(
       function_call_selected_decl_location(longer);
   return shorter.kind == SourceUseKind::FunctionCall &&
          longer.kind == SourceUseKind::FunctionCall &&
-         function_call_effective_location(shorter) ==
-             function_call_effective_location(longer) &&
+         shorter.location == longer.location &&
          shorter_target == longer_target &&
          !shorter_decl.empty() &&
          !longer_decl.empty() &&
          shorter_decl != longer_decl &&
          function_call_binding_prefix_matches(shorter.bindings,
                                               longer.bindings);
-}
-
-inline void merge_function_call_source_metadata(
-    SemanticSourceUse & preferred,
-    const SemanticSourceUse & other)
-{
-  if(preferred.source_traversal_order == 0 ||
-     (other.source_traversal_order != 0 &&
-      other.source_traversal_order < preferred.source_traversal_order)) {
-    preferred.source_traversal_order = other.source_traversal_order;
-  }
-  preferred.source_call_precedes_nested_callee =
-      preferred.source_call_precedes_nested_callee ||
-      other.source_call_precedes_nested_callee;
-  if(source_template_id_occurrence_is_more_concrete(
-         other.template_id_occurrence,
-         preferred.template_id_occurrence)) {
-    preferred.template_id_occurrence = other.template_id_occurrence;
-  }
-}
-
-inline bool alias_use_equivalent_ignoring_binding_spacing(
-    const SemanticSourceUse & lhs,
-    const SemanticSourceUse & rhs)
-{
-  return lhs.kind == SourceUseKind::AliasUse &&
-         rhs.kind == SourceUseKind::AliasUse &&
-         lhs.role == rhs.role &&
-         lhs.ownership == rhs.ownership &&
-         lhs.location == rhs.location &&
-         lhs.selected_decl_anchor_location ==
-             rhs.selected_decl_anchor_location &&
-         lhs.selected_entity_decl_location ==
-             rhs.selected_entity_decl_location &&
-         lhs.template_name == rhs.template_name &&
-         lhs.selected == rhs.selected &&
-         lhs.selection == rhs.selection &&
-         source_bindings_equivalent_ignoring_space(lhs.bindings, rhs.bindings) &&
-         source_bindings_equivalent_ignoring_space(lhs.specialization_bindings,
-                                                   rhs.specialization_bindings);
-}
-
-inline bool class_use_equivalent_ignoring_binding_spacing(
-    const SemanticSourceUse & lhs,
-    const SemanticSourceUse & rhs)
-{
-  return lhs.kind == SourceUseKind::ClassUse &&
-         rhs.kind == SourceUseKind::ClassUse &&
-         lhs.role == rhs.role &&
-         lhs.location == rhs.location &&
-         lhs.selected_decl_anchor_location ==
-             rhs.selected_decl_anchor_location &&
-         lhs.selected_entity_decl_location ==
-             rhs.selected_entity_decl_location &&
-         lhs.template_name == rhs.template_name &&
-         lhs.selected == rhs.selected &&
-         lhs.selection == rhs.selection &&
-         source_bindings_equivalent_ignoring_space(lhs.bindings, rhs.bindings) &&
-         source_bindings_equivalent_ignoring_space(lhs.specialization_bindings,
-                                                   rhs.specialization_bindings);
 }
 
 inline bool variable_use_equivalent_ignoring_location(
@@ -612,61 +557,46 @@ inline bool variable_use_equivalent_ignoring_location(
                                                    rhs.specialization_bindings);
 }
 
-inline void record_source_use(SemanticSourceUseTable & table,
-                              const SemanticSourceUse & use)
+inline std::size_t function_call_replay_index(
+    const SemanticSourceUseTable & table,
+    const SemanticSourceUse & use)
 {
-  if(use.kind == SourceUseKind::AliasUse) {
-    table.uses.push_back(use);
-    return;
+  if(use.kind != SourceUseKind::FunctionCall) {
+    return table.uses.size();
   }
-  if(use.kind == SourceUseKind::FunctionCall) {
-    for(std::size_t i = 0; i < table.uses.size(); ++i) {
-      if(function_call_equivalent_ignoring_binding_spacing(table.uses[i], use)) {
-        merge_function_call_source_metadata(table.uses[i], use);
-        return;
-      }
-    }
-    for(std::size_t i = 0; i < table.uses.size(); ++i) {
-      if(!function_calls_share_selected_source_identity(table.uses[i], use)) {
-        continue;
-      }
-      const bool use_dominates =
-          function_call_candidate_facts_dominate(use, table.uses[i]);
-      const bool existing_dominates =
-          function_call_candidate_facts_dominate(table.uses[i], use);
-      if(use_dominates && !existing_dominates) {
-        SemanticSourceUse replacement = use;
-        merge_function_call_source_metadata(replacement, table.uses[i]);
-        table.uses[i] = replacement;
-        return;
-      }
-      if(existing_dominates) {
-        merge_function_call_source_metadata(table.uses[i], use);
-        return;
-      }
-    }
-    for(std::size_t i = 0; i < table.uses.size(); ++i) {
-      if(function_call_is_deduced_trailing_binding_replay(table.uses[i], use)) {
-        merge_function_call_source_metadata(table.uses[i], use);
-        return;
-      }
-      if(function_call_is_deduced_trailing_binding_replay(use, table.uses[i])) {
-        SemanticSourceUse replacement = use;
-        merge_function_call_source_metadata(replacement, table.uses[i]);
-        table.uses[i] = replacement;
-        return;
-      }
+  for(std::size_t i = 0; i < table.uses.size(); ++i) {
+    if(function_call_equivalent_ignoring_binding_spacing(table.uses[i], use)) {
+      return i;
     }
   }
   for(std::size_t i = 0; i < table.uses.size(); ++i) {
-    if(table.uses[i] == use) {
-      if(table.uses[i].source_traversal_order == 0) {
-        table.uses[i].source_traversal_order = use.source_traversal_order;
-      }
-      return;
+    if(function_calls_share_selected_source_identity(table.uses[i], use) &&
+       function_call_candidate_facts_dominate(table.uses[i], use)) {
+      return i;
     }
   }
+  for(std::size_t i = 0; i < table.uses.size(); ++i) {
+    if(function_call_is_deduced_trailing_binding_replay(table.uses[i], use)) {
+      return i;
+    }
+  }
+  return table.uses.size();
+}
+
+inline SourceUseRecordResult record_source_use(SemanticSourceUseTable & table,
+                                               const SemanticSourceUse & use)
+{
+  SourceUseRecordResult result;
+  result.row_index = function_call_replay_index(table, use);
+  if(result.row_index != table.uses.size()) {
+    result.action = table.uses[result.row_index] == use ?
+        SourceUseRecordAction::ExactReplay :
+        SourceUseRecordAction::RejectedReplay;
+    return result;
+  }
+  result.action = SourceUseRecordAction::Inserted;
   table.uses.push_back(use);
+  return result;
 }
 
 }  // namespace semantic_source_use

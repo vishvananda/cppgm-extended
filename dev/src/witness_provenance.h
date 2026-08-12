@@ -7,6 +7,7 @@
 namespace semantic_source_use {
 struct SemanticSourceUse;
 struct SemanticSourceUseTable;
+struct SourceUseRecordResult;
 }
 
 namespace template_api {
@@ -76,62 +77,17 @@ private:
 #endif
 };
 
-class ScopedSourceUseAttempt
-{
-public:
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  ScopedSourceUseAttempt(
-      template_api::TemplateWitnessSession * session,
-      semantic_source_use::SemanticSourceUseTable * table,
-      WitnessProducerSite producer,
-      const semantic_source_use::SemanticSourceUse & use);
-  ~ScopedSourceUseAttempt();
-#else
-  ScopedSourceUseAttempt(
-      template_api::TemplateWitnessSession *,
-      semantic_source_use::SemanticSourceUseTable *,
-      WitnessProducerSite,
-      const semantic_source_use::SemanticSourceUse &)
-  {}
-  ~ScopedSourceUseAttempt() = default;
-#endif
+void note_source_use_record(
+    template_api::TemplateWitnessSession * session,
+    semantic_source_use::SemanticSourceUseTable * table,
+    WitnessProducerSite producer,
+    const semantic_source_use::SemanticSourceUse & use,
+    const semantic_source_use::SourceUseRecordResult & result);
 
-  ScopedSourceUseAttempt(const ScopedSourceUseAttempt &) = delete;
-  ScopedSourceUseAttempt & operator=(const ScopedSourceUseAttempt &) = delete;
-
-private:
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  template_api::TemplateWitnessSession * session_ = nullptr;
-  semantic_source_use::SemanticSourceUseTable * table_ = nullptr;
-  std::uint64_t token_ = 0;
-#endif
-};
-
-class ScopedLifecycleAttempt
-{
-public:
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  ScopedLifecycleAttempt(template_api::TemplateWitnessSession & session,
-                         WitnessProducerSite producer,
-                         const template_api::TemplateLifecycleEvent & event);
-  ~ScopedLifecycleAttempt();
-#else
-  ScopedLifecycleAttempt(template_api::TemplateWitnessSession &,
-                         WitnessProducerSite,
-                         const template_api::TemplateLifecycleEvent &)
-  {}
-  ~ScopedLifecycleAttempt() = default;
-#endif
-
-  ScopedLifecycleAttempt(const ScopedLifecycleAttempt &) = delete;
-  ScopedLifecycleAttempt & operator=(const ScopedLifecycleAttempt &) = delete;
-
-private:
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  template_api::TemplateWitnessSession * session_ = nullptr;
-  std::uint64_t token_ = 0;
-#endif
-};
+void note_lifecycle_record(
+    template_api::TemplateWitnessSession & session,
+    WitnessProducerSite producer,
+    const template_api::TemplateLifecycleEvent & event);
 
 struct RendererEventLineage
 {

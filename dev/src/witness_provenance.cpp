@@ -41,37 +41,6 @@ struct SessionState
   bool flushed = false;
 };
 
-struct SourceAttempt
-{
-  SessionState * state = nullptr;
-  SemanticSourceUseTable before;
-  std::vector<RowLineage> before_rows;
-  SemanticSourceUse use;
-  WitnessProducerSite producer = WitnessProducerSite::Unknown;
-  WitnessUpstreamRoute upstream_route = WitnessUpstreamRoute::Unknown;
-  std::vector<std::size_t> collided_indices;
-};
-
-struct LifecycleAttempt
-{
-  SessionState * state = nullptr;
-  WitnessProducerSite producer = WitnessProducerSite::Unknown;
-  std::string key;
-  std::vector<std::string> before;
-  std::set<WitnessProducerSite> collided_producers;
-  bool key_existed_before = false;
-  std::string kind;
-  std::string location;
-  std::string entity;
-  int cause = 0;
-  int entry_origin = 0;
-  int closure_reason = 0;
-  std::string trigger_entity;
-  std::string trigger_decl_location;
-  std::string detail;
-  bool public_source_required = false;
-};
-
 std::mutex & trace_mutex()
 {
   static std::mutex value;
@@ -84,29 +53,11 @@ std::vector<std::unique_ptr<SessionState> > & session_states()
   return value;
 }
 
-std::map<std::uint64_t, SourceAttempt> & source_attempts()
-{
-  static std::map<std::uint64_t, SourceAttempt> value;
-  return value;
-}
-
-std::map<std::uint64_t, LifecycleAttempt> & lifecycle_attempts()
-{
-  static std::map<std::uint64_t, LifecycleAttempt> value;
-  return value;
-}
-
 WitnessUpstreamRoute & current_upstream_route()
 {
   static thread_local WitnessUpstreamRoute value =
       WitnessUpstreamRoute::Unknown;
   return value;
-}
-
-std::uint64_t next_token()
-{
-  static std::uint64_t value = 1;
-  return value++;
 }
 
 std::uint64_t next_row_id()
@@ -317,85 +268,17 @@ void reconcile_rows(SessionState & state, const SemanticSourceUseTable & table)
   }
 }
 
-bool source_rows_collide(const SemanticSourceUse & lhs,
-                         const SemanticSourceUse & rhs)
-{
-  if(lhs == rhs) {
-    return true;
-  }
-  if(lhs.kind != rhs.kind) {
-    return false;
-  }
-  switch(lhs.kind) {
-  case semantic_source_use::SourceUseKind::FunctionCall:
-    return semantic_source_use::function_call_equivalent_ignoring_binding_spacing(
-               lhs, rhs) ||
-        semantic_source_use::function_calls_share_selected_source_identity(
-               lhs, rhs) ||
-        semantic_source_use::function_call_is_deduced_trailing_binding_replay(
-               lhs, rhs) ||
-        semantic_source_use::function_call_is_deduced_trailing_binding_replay(
-               rhs, lhs);
-  case semantic_source_use::SourceUseKind::AliasUse:
-    return semantic_source_use::alias_use_equivalent_ignoring_binding_spacing(
-               lhs, rhs) ||
-        (lhs.location == rhs.location && lhs.role == rhs.role &&
-         lhs.template_name == rhs.template_name);
-  case semantic_source_use::SourceUseKind::ClassUse:
-    return semantic_source_use::class_use_equivalent_ignoring_binding_spacing(
-               lhs, rhs) ||
-        (lhs.location == rhs.location && lhs.role == rhs.role &&
-         lhs.template_name == rhs.template_name);
-  case semantic_source_use::SourceUseKind::VariableUse:
-    return semantic_source_use::variable_use_equivalent_ignoring_location(lhs,
-                                                                           rhs);
-  }
-  return false;
-}
-
-bool source_table_equal(const SemanticSourceUseTable & lhs,
-                        const SemanticSourceUseTable & rhs)
-{
-  return lhs.uses == rhs.uses;
-}
-
-std::string source_use_changed_fields(const SemanticSourceUse & before,
-                                      const SemanticSourceUse & after)
-{
-  std::vector<std::string> fields;
-  if(before.location != after.location) fields.push_back("location");
-  if(before.selected_decl_anchor_location !=
-     after.selected_decl_anchor_location)
-    fields.push_back("selected_decl_anchor");
-  if(!(before.template_id_occurrence == after.template_id_occurrence))
-    fields.push_back("occurrence");
-  if(before.ownership != after.ownership) fields.push_back("ownership");
-  if(before.selection != after.selection) fields.push_back("selection");
-  if(before.selected_entity_decl_location !=
-     after.selected_entity_decl_location)
-    fields.push_back("selected_decl");
-  if(before.bindings != after.bindings) fields.push_back("bindings");
-  if(before.specialization_bindings != after.specialization_bindings)
-    fields.push_back("specialization_bindings");
-  std::ostringstream out;
-  for(std::size_t i = 0; i < fields.size(); ++i) {
-    if(i != 0) out << ',';
-    out << fields[i];
-  }
-  return out.str();
-}
-
-std::string source_attempt_record(const SourceAttempt & attempt,
+std::string source_attempt_record(const SemanticSourceUse & use,
+                                  WitnessProducerSite producer,
+                                  WitnessUpstreamRoute upstream_route,
                                   const std::string & action,
-                                  const std::string & changed_fields,
                                   const std::set<WitnessProducerSite> & collided)
 {
-  const SemanticSourceUse & use = attempt.use;
   std::ostringstream out;
   out << "{\"record\":\"source_attempt\""
-      << ",\"producer\":" << quoted(producer_site_name(attempt.producer))
+      << ",\"producer\":" << quoted(producer_site_name(producer))
       << ",\"upstream_route\":"
-      << quoted(upstream_route_name(attempt.upstream_route))
+      << quoted(upstream_route_name(upstream_route))
       << ",\"action\":" << quoted(action)
       << ",\"kind\":" << quoted(source_use_kind_name(use.kind))
       << ",\"role\":" << quoted(source_use_role_name(use.role))
@@ -493,7 +376,6 @@ std::string source_attempt_record(const SourceAttempt & attempt,
     out << quoted(use.specialization_bindings[i].source);
   }
   out << "]"
-      << ",\"changed_fields\":" << quoted(changed_fields)
       << ",\"collided_producers\":" << producer_array(collided)
       << '}';
   return out.str();
@@ -509,33 +391,6 @@ std::string lifecycle_event_key(const template_api::TemplateLifecycleEvent & eve
       << event.location << '|' << event.entity << '|'
       << event.decl_location << '|' << event.detail;
   return out.str();
-}
-
-std::string lifecycle_event_full(const template_api::TemplateLifecycleEvent & event)
-{
-  std::ostringstream out;
-  out << lifecycle_event_key(event) << '|'
-      << event.entry_context.trigger_entity << '|'
-      << event.entry_context.trigger_decl_location << '|'
-      << event.entry_context.trigger_has_template_identity << '|'
-      << event.entity_has_template_identity << '|'
-      << event.entity_is_unnamed_class << '|'
-      << event.entity_is_function_local_class << '|'
-      << event.entity_is_function_local_class_member << '|'
-      << event.entity_is_constexpr_function << '|'
-      << event.entity_is_defaulted_copy_or_move_constructor << '|'
-      << event.public_source_required;
-  return out.str();
-}
-
-std::vector<std::string> lifecycle_fingerprints(
-    const template_api::TemplateWitnessSession & session)
-{
-  std::vector<std::string> out;
-  for(std::size_t i = 0; i < session.lifecycle_events.size(); ++i) {
-    out.push_back(lifecycle_event_full(session.lifecycle_events[i]));
-  }
-  return out;
 }
 
 std::string safe_filename(const std::string & path)
@@ -630,230 +485,86 @@ ScopedUpstreamRoute::~ScopedUpstreamRoute()
   current_upstream_route() = previous_;
 }
 
-ScopedSourceUseAttempt::ScopedSourceUseAttempt(
+void note_source_use_record(
     template_api::TemplateWitnessSession * session,
     SemanticSourceUseTable * table,
     WitnessProducerSite producer,
-    const SemanticSourceUse & use)
-  : session_(session), table_(table)
+    const SemanticSourceUse & use,
+    const semantic_source_use::SourceUseRecordResult & result)
 {
-  if(!enabled() || session_ == nullptr || table_ == nullptr) {
+  if(!enabled() || session == nullptr || table == nullptr) {
     return;
   }
   std::lock_guard<std::mutex> lock(trace_mutex());
-  SessionState & state = state_for_session_locked(*session_);
-  reconcile_rows(state, *table_);
-  SourceAttempt attempt;
-  attempt.state = &state;
-  attempt.before = *table_;
-  attempt.before_rows = state.rows;
-  attempt.use = use;
-  attempt.producer = producer;
-  attempt.upstream_route = current_upstream_route();
-  for(std::size_t i = 0; i < table_->uses.size(); ++i) {
-    if(source_rows_collide(table_->uses[i], use)) {
-      attempt.collided_indices.push_back(i);
-    }
-  }
-  token_ = next_token();
-  source_attempts()[token_] = attempt;
-}
-
-ScopedSourceUseAttempt::~ScopedSourceUseAttempt()
-{
-  if(token_ == 0 || session_ == nullptr || table_ == nullptr) {
-    return;
-  }
-  std::lock_guard<std::mutex> lock(trace_mutex());
-  std::map<std::uint64_t, SourceAttempt>::iterator found =
-      source_attempts().find(token_);
-  if(found == source_attempts().end()) {
-    return;
-  }
-  SourceAttempt attempt = found->second;
-  source_attempts().erase(found);
-  SessionState & state = *attempt.state;
-
+  SessionState & state = state_for_session_locked(*session);
+  const bool inserted =
+      result.action == semantic_source_use::SourceUseRecordAction::Inserted;
   std::set<WitnessProducerSite> collided_producers;
-  for(std::size_t i = 0; i < attempt.collided_indices.size(); ++i) {
-    const std::size_t index = attempt.collided_indices[i];
-    if(index < attempt.before_rows.size()) {
-      collided_producers.insert(attempt.before_rows[index].producers.begin(),
-                                attempt.before_rows[index].producers.end());
+  if(!inserted && result.row_index < state.rows.size()) {
+    collided_producers = state.rows[result.row_index].producers;
+  }
+
+  reconcile_rows(state, *table);
+  if(result.row_index < state.rows.size()) {
+    state.rows[result.row_index].producers.insert(producer);
+    if(current_upstream_route() != WitnessUpstreamRoute::Unknown) {
+      state.rows[result.row_index].upstream_routes.insert(
+          current_upstream_route());
     }
   }
 
-  const bool unchanged = source_table_equal(attempt.before, *table_);
-  bool exact_before = false;
-  for(std::size_t i = 0; i < attempt.before.uses.size(); ++i) {
-    exact_before = exact_before || attempt.before.uses[i] == attempt.use;
-  }
-  bool exact_after = false;
-  for(std::size_t i = 0; i < table_->uses.size(); ++i) {
-    exact_after = exact_after || table_->uses[i] == attempt.use;
-  }
-
-  std::string action;
-  if(unchanged) {
-    action = exact_before ? "exact_duplicate" : "rejected";
-  } else if(table_->uses.size() > attempt.before.uses.size()) {
-    action = "inserted";
-  } else if(exact_after) {
-    action = "replaced";
-  } else {
-    action = "enriched";
-  }
-
-  std::vector<RowLineage> after_rows(table_->uses.size());
-  std::vector<char> used_before(attempt.before.uses.size(), 0);
-  for(std::size_t i = 0; i < table_->uses.size(); ++i) {
-    for(std::size_t j = 0; j < attempt.before.uses.size(); ++j) {
-      if(!used_before[j] && table_->uses[i] == attempt.before.uses[j]) {
-        after_rows[i] = attempt.before_rows[j];
-        used_before[j] = 1;
-        break;
-      }
-    }
-    if(after_rows[i].row_id == 0) {
-      for(std::size_t j = 0; j < attempt.before.uses.size(); ++j) {
-        if(!used_before[j] &&
-           source_rows_collide(table_->uses[i], attempt.before.uses[j])) {
-          after_rows[i] = attempt.before_rows[j];
-          used_before[j] = 1;
-          break;
-        }
-      }
-    }
-    if(after_rows[i].row_id == 0) {
-      after_rows[i].row_id = next_row_id();
-    }
-    if(source_rows_collide(table_->uses[i], attempt.use)) {
-      after_rows[i].producers.insert(attempt.producer);
-      if(attempt.upstream_route != WitnessUpstreamRoute::Unknown) {
-        after_rows[i].upstream_routes.insert(attempt.upstream_route);
-      }
-      for(std::size_t j = 0; j < attempt.collided_indices.size(); ++j) {
-        const std::size_t index = attempt.collided_indices[j];
-        if(index < attempt.before_rows.size()) {
-          after_rows[i].producers.insert(
-              attempt.before_rows[index].producers.begin(),
-              attempt.before_rows[index].producers.end());
-          after_rows[i].upstream_routes.insert(
-              attempt.before_rows[index].upstream_routes.begin(),
-              attempt.before_rows[index].upstream_routes.end());
-        }
-      }
-    }
-  }
-  state.rows.swap(after_rows);
-
-  std::string changed_fields;
-  for(std::size_t i = 0; i < attempt.before.uses.size(); ++i) {
-    if(!source_rows_collide(attempt.before.uses[i], attempt.use)) {
-      continue;
-    }
-    for(std::size_t j = 0; j < table_->uses.size(); ++j) {
-      if(source_rows_collide(attempt.before.uses[i], table_->uses[j]) &&
-         !(attempt.before.uses[i] == table_->uses[j])) {
-        changed_fields = source_use_changed_fields(attempt.before.uses[i],
-                                                   table_->uses[j]);
-        break;
-      }
-    }
-    if(!changed_fields.empty()) break;
-  }
+  const std::string action = inserted ? "inserted" :
+      (result.action == semantic_source_use::SourceUseRecordAction::ExactReplay ?
+          "exact_duplicate" : "rejected");
   state.records.push_back(
-      source_attempt_record(attempt, action, changed_fields, collided_producers));
+      source_attempt_record(use,
+                            producer,
+                            current_upstream_route(),
+                            action,
+                            collided_producers));
 }
 
-ScopedLifecycleAttempt::ScopedLifecycleAttempt(
+void note_lifecycle_record(
     template_api::TemplateWitnessSession & session,
     WitnessProducerSite producer,
     const template_api::TemplateLifecycleEvent & event)
-  : session_(&session)
 {
   if(!enabled()) {
     return;
   }
   std::lock_guard<std::mutex> lock(trace_mutex());
   SessionState & state = state_for_session_locked(session);
-  LifecycleAttempt attempt;
-  attempt.state = &state;
-  attempt.producer = producer;
-  attempt.key = lifecycle_event_key(event);
-  attempt.before = lifecycle_fingerprints(session);
+  const std::string key = lifecycle_event_key(event);
+  std::set<WitnessProducerSite> collided_producers;
   const std::map<std::string, std::set<WitnessProducerSite> >::const_iterator
-      collided = state.lifecycle_producers.find(attempt.key);
+      collided = state.lifecycle_producers.find(key);
   if(collided != state.lifecycle_producers.end()) {
-    attempt.key_existed_before = true;
-    attempt.collided_producers = collided->second;
+    collided_producers = collided->second;
   }
-  if(!attempt.key_existed_before) {
-    for(std::size_t i = 0; i < session.lifecycle_events.size(); ++i) {
-      if(lifecycle_event_key(session.lifecycle_events[i]) == attempt.key) {
-        attempt.key_existed_before = true;
-        break;
-      }
-    }
-  }
-  attempt.kind = lifecycle_kind_name(event.kind);
-  attempt.location = event.location;
-  attempt.entity = event.entity;
-  attempt.cause = static_cast<int>(event.cause);
-  attempt.entry_origin = static_cast<int>(event.entry_context.origin);
-  attempt.closure_reason =
-      static_cast<int>(event.entry_context.closure_reason);
-  attempt.trigger_entity = event.entry_context.trigger_entity;
-  attempt.trigger_decl_location =
-      event.entry_context.trigger_decl_location;
-  attempt.detail = event.detail;
-  attempt.public_source_required = event.public_source_required;
-  token_ = next_token();
-  lifecycle_attempts()[token_] = attempt;
-}
-
-ScopedLifecycleAttempt::~ScopedLifecycleAttempt()
-{
-  if(token_ == 0 || session_ == nullptr) {
-    return;
-  }
-  std::lock_guard<std::mutex> lock(trace_mutex());
-  std::map<std::uint64_t, LifecycleAttempt>::iterator found =
-      lifecycle_attempts().find(token_);
-  if(found == lifecycle_attempts().end()) {
-    return;
-  }
-  LifecycleAttempt attempt = found->second;
-  lifecycle_attempts().erase(found);
-  const std::vector<std::string> after = lifecycle_fingerprints(*session_);
-  std::string action = "inserted";
-  if(after == attempt.before) {
-    action = "exact_duplicate";
-  } else if(after.size() == attempt.before.size() &&
-            attempt.key_existed_before) {
-    action = "enriched";
-  }
-  attempt.state->lifecycle_producers[attempt.key].insert(attempt.producer);
+  state.lifecycle_producers[key].insert(producer);
   std::ostringstream record;
   record << "{\"record\":\"lifecycle_attempt\""
-         << ",\"producer\":" << quoted(producer_site_name(attempt.producer))
-         << ",\"action\":" << quoted(action)
-         << ",\"kind\":" << quoted(attempt.kind)
-         << ",\"location\":" << quoted(attempt.location)
-         << ",\"entity\":" << quoted(attempt.entity)
-         << ",\"cause\":" << attempt.cause
-         << ",\"entry_origin\":" << attempt.entry_origin
-         << ",\"closure_reason\":" << attempt.closure_reason
-         << ",\"trigger_entity\":" << quoted(attempt.trigger_entity)
+         << ",\"producer\":" << quoted(producer_site_name(producer))
+         << ",\"action\":\"inserted\""
+         << ",\"kind\":" << quoted(lifecycle_kind_name(event.kind))
+         << ",\"location\":" << quoted(event.location)
+         << ",\"entity\":" << quoted(event.entity)
+         << ",\"cause\":" << static_cast<int>(event.cause)
+         << ",\"entry_origin\":"
+         << static_cast<int>(event.entry_context.origin)
+         << ",\"closure_reason\":"
+         << static_cast<int>(event.entry_context.closure_reason)
+         << ",\"trigger_entity\":"
+         << quoted(event.entry_context.trigger_entity)
          << ",\"trigger_decl_location\":"
-         << quoted(attempt.trigger_decl_location)
-         << ",\"detail\":" << quoted(attempt.detail)
+         << quoted(event.entry_context.trigger_decl_location)
+         << ",\"detail\":" << quoted(event.detail)
          << ",\"public_source_required\":"
-         << (attempt.public_source_required ? "true" : "false")
+         << (event.public_source_required ? "true" : "false")
          << ",\"collided_producers\":"
-         << producer_array(attempt.collided_producers)
+         << producer_array(collided_producers)
          << '}';
-  attempt.state->records.push_back(record.str());
+  state.records.push_back(record.str());
 }
 
 std::vector<RendererEventLineage> renderer_table_lineages(
