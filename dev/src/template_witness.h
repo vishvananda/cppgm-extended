@@ -162,12 +162,6 @@ struct TemplateWitnessTemplateHeaderContext
   std::vector<std::string> parameter_names;
 };
 
-struct PendingVariableSourceUse
-{
-  const void * semantic_owner = nullptr;
-  semantic_source_use::SemanticSourceUse source_use;
-};
-
 struct TemplateLifecycleIdentity
 {
   std::size_t entity = 0;
@@ -250,7 +244,9 @@ struct TemplateWitnessSession
   std::unordered_set<const semantic_model::ClassInfo *>
       source_capture_header_instantiation_tracked;
   semantic_source_use::SemanticSourceUseTable source_use_table;
-  std::vector<PendingVariableSourceUse> pending_variable_source_uses;
+  std::map<const semantic_model::ValueBinding *,
+           semantic_source_use::SemanticSourceUse>
+      variable_source_use_results;
   std::vector<std::string> inline_namespace_names;
   std::vector<TemplateWitnessSourceRange> template_body_ranges;
   std::vector<TemplateWitnessTemplateHeaderContext> template_header_contexts;

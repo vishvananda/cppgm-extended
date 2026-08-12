@@ -359,49 +359,6 @@ inline bool source_template_id_occurrence_is_more_concrete(
   return candidate_concrete && !existing_concrete;
 }
 
-inline bool source_bindings_equivalent_ignoring_space(
-    const std::vector<SourceBinding> & lhs,
-    const std::vector<SourceBinding> & rhs)
-{
-  if(lhs.size() != rhs.size()) {
-    return false;
-  }
-  for(std::size_t i = 0; i < lhs.size(); ++i) {
-    if(lhs[i].param != rhs[i].param ||
-       lhs[i].source != rhs[i].source ||
-       lhs[i].type_like != rhs[i].type_like ||
-       lhs[i].function_type_argument != rhs[i].function_type_argument ||
-       lhs[i].structured_type_spelling != rhs[i].structured_type_spelling ||
-       lhs[i].preserve_qualified_member != rhs[i].preserve_qualified_member ||
-       lhs[i].pack_aggregate != rhs[i].pack_aggregate ||
-       lhs[i].function_pointer_parameter != rhs[i].function_pointer_parameter ||
-       source_use_arg_compact_key(lhs[i].arg) !=
-           source_use_arg_compact_key(rhs[i].arg)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-inline bool variable_use_equivalent_ignoring_location(
-    const SemanticSourceUse & lhs,
-    const SemanticSourceUse & rhs)
-{
-  return lhs.kind == SourceUseKind::VariableUse &&
-         rhs.kind == SourceUseKind::VariableUse &&
-         lhs.role == rhs.role &&
-         lhs.ownership == rhs.ownership &&
-         lhs.selected_decl_anchor_location ==
-             rhs.selected_decl_anchor_location &&
-         lhs.selected_entity_decl_location ==
-             rhs.selected_entity_decl_location &&
-         lhs.template_name == rhs.template_name &&
-         lhs.selection == rhs.selection &&
-         source_bindings_equivalent_ignoring_space(lhs.bindings, rhs.bindings) &&
-         source_bindings_equivalent_ignoring_space(lhs.specialization_bindings,
-                                                   rhs.specialization_bindings);
-}
-
 inline void record_source_use(SemanticSourceUseTable & table,
                               const SemanticSourceUse & use)
 {

@@ -1,6 +1,7 @@
 #include "witness_api.h"
 
 #include <cctype>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -156,62 +157,6 @@ void record_variable_use_source_use_in_session(
 #endif
 }
 
-bool variable_source_uses_match_ignoring_location_and_ownership(
-    semantic_source_use::SemanticSourceUse lhs,
-    semantic_source_use::SemanticSourceUse rhs)
-{
-  lhs.ownership = semantic_source_use::SourceUseOwnership::Direct;
-  rhs.ownership = semantic_source_use::SourceUseOwnership::Direct;
-  return semantic_source_use::variable_use_equivalent_ignoring_location(lhs,
-                                                                         rhs);
-}
-
-void retain_variable_use_source_use(
-    TemplateWitnessSession & session,
-    const void * semantic_owner,
-    const VariableUseEmitRequest & request)
-{
-  const semantic_source_use::SemanticSourceUse use =
-      normalized_source_use(request, true, true);
-  for(std::size_t i = 0; i < session.pending_variable_source_uses.size(); ++i) {
-    template_api::PendingVariableSourceUse & pending =
-        session.pending_variable_source_uses[i];
-    if(pending.semantic_owner != semantic_owner ||
-       !variable_source_uses_match_ignoring_location_and_ownership(
-           pending.source_use,
-           use)) {
-      continue;
-    }
-    if(pending.source_use == use) {
-      return;
-    }
-
-    const bool pending_is_nested =
-        pending.source_use.ownership ==
-            semantic_source_use::SourceUseOwnership::NestedDerived;
-    const bool use_is_nested =
-        use.ownership == semantic_source_use::SourceUseOwnership::NestedDerived;
-    if(pending_is_nested != use_is_nested) {
-      if(!use_is_nested) {
-        pending.source_use = use;
-      }
-      return;
-    }
-
-    if(template_api::template_witness_detail::prefer_later_source_location(
-           pending.source_use.location,
-           use.location) == use.location) {
-      pending.source_use = use;
-    }
-    return;
-  }
-
-  template_api::PendingVariableSourceUse pending;
-  pending.semantic_owner = semantic_owner;
-  pending.source_use = use;
-  session.pending_variable_source_uses.push_back(std::move(pending));
-}
-
 }  // namespace
 
 void set_selected_decl_anchor(std::string & selected_decl_location,
@@ -309,43 +254,38 @@ void emit_variable_use(const VariableUseEmitRequest & request)
   }
   TemplateWitnessSession * session =
       template_api::current_template_witness_session();
-  if(request.retain_until_semantic_finalization &&
-     request.semantic_owner != nullptr &&
-     session != nullptr) {
-    retain_variable_use_source_use(*session,
-                                   request.semantic_owner,
-                                   request);
-    return;
-  }
   record_variable_use_source_use_in_session(session, request);
 }
 
-void finalize_variable_use_source_uses(TemplateWitnessSession * session)
+void publish_variable_source_use_results(TemplateWitnessSession * session)
 {
   if(session == nullptr) {
     return;
   }
-  for(std::size_t i = 0; i < session->pending_variable_source_uses.size(); ++i) {
-    const template_api::PendingVariableSourceUse & pending =
-        session->pending_variable_source_uses[i];
+  for(std::map<const semantic_model::ValueBinding *,
+               semantic_source_use::SemanticSourceUse>::const_iterator it =
+          session->variable_source_use_results.begin();
+      it != session->variable_source_use_results.end();
+      ++it) {
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
     const witness_provenance::ScopedUpstreamRoute provenance_route(
-        pending.source_use.ownership ==
+        it->second.ownership ==
                 semantic_source_use::SourceUseOwnership::NestedDerived ?
             witness_provenance::WitnessUpstreamRoute::
                 VariableInitializerReplay :
             witness_provenance::WitnessUpstreamRoute::
                 VariableDirectInstantiation);
 #endif
-    semantic_source_use::record_source_use(session->source_use_table,
-                                           pending.source_use);
+    const semantic_source_use::SemanticSourceUse use =
+        normalized_source_use(it->second, true, true);
+    semantic_source_use::record_source_use(session->source_use_table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
     witness_provenance::note_source_use_publication(
         session,
-        pending.source_use);
+        use);
 #endif
   }
-  session->pending_variable_source_uses.clear();
+  session->variable_source_use_results.clear();
 }
 
 bool append_source_drop(std::vector<semantic_source_use::SourceDrop> & out,

@@ -39,6 +39,7 @@
 #include "template_selection.h"
 #include "template_witness.h"
 #include "symbol_linkage.h"
+#include "witness_api.h"
 
 namespace template_argument_semantics {
 
@@ -12597,6 +12598,51 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   return binding;
 }
 
+namespace {
+
+bool variable_source_use_candidate_is_preferred(
+    const semantic_source_use::SemanticSourceUse & current,
+    const semantic_source_use::SemanticSourceUse & candidate)
+{
+  const bool current_is_nested =
+      current.ownership ==
+          semantic_source_use::SourceUseOwnership::NestedDerived;
+  const bool candidate_is_nested =
+      candidate.ownership ==
+          semantic_source_use::SourceUseOwnership::NestedDerived;
+  if(current_is_nested != candidate_is_nested) {
+    return !candidate_is_nested;
+  }
+  return template_api::template_witness_detail::prefer_later_source_location(
+             current.location,
+             candidate.location) == candidate.location;
+}
+
+void retain_variable_source_use_result(
+    SemanticContext & ctx,
+    const semantic_model::ValueBinding & binding,
+    const witness::VariableUseEmitRequest & request)
+{
+  template_api::TemplateWitnessSession * session =
+      ctx.template_witness_context().session;
+  if(session == nullptr) {
+    return;
+  }
+  const semantic_source_use::SemanticSourceUse candidate = request;
+  std::pair<std::map<const semantic_model::ValueBinding *,
+                     semantic_source_use::SemanticSourceUse>::iterator,
+            bool> inserted =
+      session->variable_source_use_results.insert(
+          std::make_pair(&binding, candidate));
+  if(!inserted.second &&
+     variable_source_use_candidate_is_preferred(inserted.first->second,
+                                                candidate)) {
+    inserted.first->second = candidate;
+  }
+}
+
+}  // namespace
+
 const ValueBinding * instantiate_variable_template(
     SemanticContext & ctx,
     VariableTemplateDecl & decl,
@@ -12628,7 +12674,7 @@ const ValueBinding * instantiate_variable_template(
       [&](const template_selection::VariableSpecializationSelection & selection,
           const ValueBinding & binding,
           bool emit_source_use,
-          bool retain_until_semantic_finalization) -> void
+          bool retain_source_use_result) -> void
   {
     const std::string use_location = parser_trace::current_use_location();
     const std::string effective_use_location =
@@ -12741,12 +12787,13 @@ const ValueBinding * instantiate_variable_template(
             template_api::TemplateWitnessSourceBindingPolicy::
                 DeducedWithDefaultedTrailingDefaults);
       }
-      request.semantic_owner = &binding;
-      request.retain_until_semantic_finalization =
-          retain_until_semantic_finalization;
       request.record_during_source_capture_pause =
           record_direct_source_use_during_pause;
-      witness::emit_variable_use(request);
+      if(retain_source_use_result) {
+        retain_variable_source_use_result(ctx, binding, request);
+      } else {
+        witness::emit_variable_use(request);
+      }
     }
 
     if(trace_enabled) {

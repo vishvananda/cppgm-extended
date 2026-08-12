@@ -901,7 +901,7 @@ public:
     }
     observe_collected_alias_uses();
     observe_collected_class_uses();
-    witness::finalize_variable_use_source_uses(template_witness_session_);
+    witness::publish_variable_source_use_results(template_witness_session_);
     if(memory_census_enabled()) {
       callsemantic::dump_source_ast_memory_census(std::cerr, ast);
       dump_memory_census(std::cerr, out);

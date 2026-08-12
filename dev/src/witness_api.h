@@ -264,8 +264,6 @@ struct VariableUseEmitRequest : semantic_source_use::SemanticSourceUse
     role = semantic_source_use::SourceUseRole::ValueUse;
   }
 
-  const semantic_model::ValueBinding * semantic_owner = nullptr;
-  bool retain_until_semantic_finalization = false;
   bool record_during_source_capture_pause = false;
 };
 
@@ -302,7 +300,7 @@ bool emit_class_use(const TemplateWitnessContext & ctx,
 void emit_alias_use(const TemplateWitnessContext & ctx,
                     semantic_source_use::SemanticSourceUse use);
 void emit_variable_use(const VariableUseEmitRequest & request);
-void finalize_variable_use_source_uses(TemplateWitnessSession * session);
+void publish_variable_source_use_results(TemplateWitnessSession * session);
 void emit_function_call(const TemplateWitnessContext & ctx,
                         semantic_source_use::SemanticSourceUse use,
                         FunctionCallEmissionOrigin origin);

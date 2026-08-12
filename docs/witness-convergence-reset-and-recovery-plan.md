@@ -6458,6 +6458,140 @@ the remaining nonzero local side stores and migration mirrors. Producer-side
 function rediscovery and both generic function admission rules are now closed.
 Phase 7 and inception remain forbidden.
 
+## Producer-owned variable source-result checkpoint, 2026-08-12
+
+This Phase 6 checkpoint replaces the pending-variable witness arbitration
+queue with one typed semantic result per variable-template `ValueBinding`.
+`template_instantiation.cpp`, the producer that owns specialization selection,
+binding construction, initializer replay, and the instantiated value binding,
+now writes the result. The witness API only publishes the completed results at
+the existing post-fixpoint boundary.
+
+The complete retained-variable corpus proves the result identity. All 41
+retention attempts map to 27 stable `ValueBinding` owners. Every repeated owner
+has the same semantic payload: 11 are exact replays, one owner is revisited at
+a later source location, one is revisited first at an earlier token in the
+same source expression, and one direct source use is revisited through its
+nested initializer. No owner carries two distinct variable source results.
+The temporary owner probe is absent from production; its report is
+`/tmp/cppgm-phase6-variable-owner-probe-events-20260812.log`, SHA-256
+`da04bc0bb83d7f5d7cfde3e242bdfeca013a5d0011f1877798a682f539ca82a3`.
+
+Result selection now expresses only the two observed semantic rules. A direct
+source occurrence dominates rediscovery through a variable initializer. Within
+the same ownership mode, the later source location is the public occurrence.
+These rules produce the direct `has_max_size_v` occurrence selected by viable
+overload resolution, preserve the identifier token rather than the enclosing
+template-id start for `flag_v`, and suppress the initializer replay of the
+already-public `v` specialization. Exact rediscovery requires no separate
+branch because assigning the same owner result is harmless.
+
+The old `PendingVariableSourceUse`, its untyped owner pointer, the request's
+semantic-owner and finalization controls, the vector scan, payload equivalence
+with location/ownership masking, and generic binding-spacing comparison are
+deleted. The session result map has a named nonzero lifetime obligation: it
+keeps results stable until overload/SFINAE and initializer evaluation reach the
+semantic fixpoint without growing `ValueBinding` or publishing speculative
+rows. Five member-template results remain immediate; the 27 retained results
+combine with them to produce the same 32 public variable rows.
+
+The final Homebrew-Clang validation produced these results:
+
+- all 26 strict inputs containing a variable publication are byte-exact
+  against the parent for witness output, LowIR, diagnostics, and exit status;
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output, and the 3,060-artifact manifest is byte-identical to the parent;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs in
+  its normal report position and has no separate validation lane;
+- all 1,530 provenance sessions exist. Schema 6 remains exactly 10,587
+  records: 4,289 source publications and 6,298 lifecycle publications. Source
+  ownership remains alias 835, class 2,631, function 791, and variable 32,
+  with no unknown producer or unexercised site. Variable routes remain 29
+  direct instantiations and three initializer replays;
+- the 61-test helper suite passes, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, both boundary audits match the parent,
+  and the dynamic class-materialization audit remains exact at five accepted
+  occurrences and 55 rejected rows at 53 locations.
+
+The focused report is
+`/tmp/cppgm-phase6-variable-result-focused-20260812.log`, SHA-256
+`c75d22c0e31e98316244c3e7611c705919567ab31cac300b574a170b63cd5f05`.
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-variable-result-ordinary-strict-20260812.log` and
+`/tmp/cppgm-phase6-variable-result-provenance-strict-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-variable-result-broad-20260812.log`, SHA-256
+`7abbcf28b3536db0b922ac1d77830b2872fd277ad4d0f35e2a22ff04a401775b`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-variable-result-provenance-trace-20260812.fa3iDO`.
+The analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-variable-result-provenance-analysis-20260812.json` and
+`/tmp/cppgm-phase6-variable-result-provenance-convergence-20260812.json`, with
+SHA-256 values
+`cc4e76b89121ab06244c7d26360764e40c473d8bd5a31e99c477a59d158bd7d8`
+and
+`f832b28d19b3011c1dfde454eb63e9e015cf9d6fb3d3bf5a02cd392c3cd2ae37`.
+The manifest retains SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+The helper report is
+`/tmp/cppgm-phase6-variable-result-helper-tests-20260812.log`, SHA-256
+`c51277bb1aa73243a5c1383a83724f506b9b2f6127b35751d9b8158806cedaac`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and dynamic class-materialization reports have SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`9cd4fb7cf253e1f8c3458381698a1a7542262fcd1713bdc93356fdb704111239`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`84dd84fd162443434170420f34e5cd0269028ff23d238671f33abf66fec12ecf`.
+
+Every tracked semantic structure remains byte-identical to the parent. The
+structure report is
+`/tmp/cppgm-phase6-variable-result-structure-sizes-20260812.txt`, SHA-256
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+The ordinary Mach-O keeps the parent's data allocations while its `__TEXT`
+segment shrinks by 8,192 bytes. `__text` shrinks by 5,808 bytes and
+`__unwind_info` by 48 while `__gcc_except_tab` grows by 168, for a net 5,688
+populated-section-byte reduction. The frozen binary is 9,192 bytes smaller at
+17,091,752 bytes and contains no provenance symbols. The section report is
+`/tmp/cppgm-phase6-variable-result-binary-sections-20260812.txt`, SHA-256
+`72143f61211f843057a4bdc967a9dc1398e1b534e6d19ba04f33acf48e1ddbba`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-variable-result-ordinary-20260812`, SHA-256
+`afd520b3ccc502c35d5991aad6b86b72bf8b400fee0590440cacd071f19941bc`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.83% | -0.08% | -4.05% | `/tmp/cppgm-phase6-variable-result-perf-fixed-20260812.json` |
+| Function-occurrence parent | +0.28% | +0.18% | +0.01% | `/tmp/cppgm-phase6-variable-result-perf-parent-20260812.json` |
+
+The candidate medians are 174,554,101,690 instructions, 756,518,912 bytes
+maximum RSS, and 568,999,936 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-variable-result-raw-candidate-20260812.json`, SHA-256
+`a9dc4dc95555df8c2923c726eb539c5cf8d5be1d875920c6dd3d725d0b96614d`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`82071caf6656805f80811775c564bb8d8af8ee2c3b592112551b9c8c4d0dfd70`
+and
+`4b9ef5d3be6d90129c30a47ab7970ddd67e02a1c3eb11161ce08ca51446abadc`.
+The candidate metadata names commit `5641fd7a4` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 70 and removes 132 production lines, a net deletion of
+62. Phase 6 remains open for the remaining nonzero local side stores and
+migration mirrors. Function and variable source publication now have no
+generic dedup obligation. Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
