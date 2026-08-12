@@ -518,7 +518,6 @@ using WitnessDrop = semantic_source_use::SourceDrop;
 using WitnessEventKind = semantic_source_use::SourceUseKind;
 using SourceUseOwnership = semantic_source_use::SourceUseOwnership;
 using SourceSelectionKind = semantic_source_use::SourceSelectionKind;
-using SourceAnchorKind = semantic_source_use::SourceAnchorKind;
 
 struct ParsedLocation
 {
@@ -555,6 +554,7 @@ ParsedLocation parse_line_col(const string & location)
   return parsed;
 }
 
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
 const char * witness_event_kind_text(WitnessEventKind kind)
 {
   switch(kind) {
@@ -569,6 +569,7 @@ const char * witness_event_kind_text(WitnessEventKind kind)
   }
   return "";
 }
+#endif
 
 struct WitnessEvent
 {
@@ -585,15 +586,11 @@ struct WitnessEvent
   int same_location_semantic_group_rank = 0;
   bool source_call_precedes_nested_callee = false;
   string location;
-  string raw_location;
-  SourceAnchorKind use_anchor_kind = SourceAnchorKind::None;
   semantic_source_use::SourceTemplateIdOccurrence template_id_occurrence;
   string template_name;
   string selected;
   SourceSelectionKind selection = SourceSelectionKind::None;
   string selected_decl_location;
-  string raw_selected_decl_location;
-  SourceAnchorKind selected_decl_anchor_kind = SourceAnchorKind::None;
   string resolved;
   string spelling;
   string pattern;
@@ -608,10 +605,6 @@ struct WitnessEvent
   vector<WitnessBinding> bindings;
   vector<WitnessBinding> specialization_bindings;
   vector<WitnessDrop> drops;
-  bool drop_if_needed = false;
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  string visibility_reason;
-#endif
 };
 
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
@@ -630,37 +623,17 @@ RendererTraceContext *& current_renderer_trace()
   return value;
 }
 
-void merge_renderer_lineage(
-    witness_provenance::RendererEventLineage & retained,
-    const witness_provenance::RendererEventLineage & removed)
-{
-  set<witness_provenance::WitnessProducerSite> producers(
-      retained.producers.begin(), retained.producers.end());
-  producers.insert(removed.producers.begin(), removed.producers.end());
-  retained.producers.assign(producers.begin(), producers.end());
-  set<witness_provenance::WitnessUpstreamRoute> upstream_routes(
-      retained.upstream_routes.begin(), retained.upstream_routes.end());
-  upstream_routes.insert(removed.upstream_routes.begin(),
-                         removed.upstream_routes.end());
-  retained.upstream_routes.assign(upstream_routes.begin(),
-                                  upstream_routes.end());
-}
-
 bool witness_events_equal(const WitnessEvent & lhs, const WitnessEvent & rhs)
 {
   return lhs.kind == rhs.kind &&
       lhs.ownership == rhs.ownership &&
       lhs.source_role == rhs.source_role &&
       lhs.location == rhs.location &&
-      lhs.raw_location == rhs.raw_location &&
-      lhs.use_anchor_kind == rhs.use_anchor_kind &&
       lhs.template_id_occurrence == rhs.template_id_occurrence &&
       lhs.template_name == rhs.template_name &&
       lhs.selected == rhs.selected &&
       lhs.selection == rhs.selection &&
       lhs.selected_decl_location == rhs.selected_decl_location &&
-      lhs.raw_selected_decl_location == rhs.raw_selected_decl_location &&
-      lhs.selected_decl_anchor_kind == rhs.selected_decl_anchor_kind &&
       lhs.resolved == rhs.resolved &&
       lhs.spelling == rhs.spelling &&
       lhs.pattern == rhs.pattern &&
@@ -674,8 +647,7 @@ bool witness_events_equal(const WitnessEvent & lhs, const WitnessEvent & rhs)
       lhs.candidate_count == rhs.candidate_count &&
       lhs.bindings == rhs.bindings &&
       lhs.specialization_bindings == rhs.specialization_bindings &&
-      lhs.drops == rhs.drops &&
-      lhs.drop_if_needed == rhs.drop_if_needed;
+      lhs.drops == rhs.drops;
 }
 
 string renderer_changed_fields(const WitnessEvent & before,
@@ -685,20 +657,15 @@ string renderer_changed_fields(const WitnessEvent & before,
   if(before.kind != after.kind) fields.push_back("kind");
   if(before.ownership != after.ownership) fields.push_back("ownership");
   if(before.source_role != after.source_role) fields.push_back("role");
-  if(before.location != after.location ||
-     before.raw_location != after.raw_location)
+  if(before.location != after.location)
     fields.push_back("location");
-  if(before.use_anchor_kind != after.use_anchor_kind)
-    fields.push_back("anchor");
   if(!(before.template_id_occurrence == after.template_id_occurrence))
     fields.push_back("occurrence");
   if(before.template_name != after.template_name ||
      before.selected != after.selected)
     fields.push_back("entity");
   if(before.selection != after.selection) fields.push_back("selection");
-  if(before.selected_decl_location != after.selected_decl_location ||
-     before.raw_selected_decl_location != after.raw_selected_decl_location ||
-     before.selected_decl_anchor_kind != after.selected_decl_anchor_kind)
+  if(before.selected_decl_location != after.selected_decl_location)
     fields.push_back("selected_decl");
   if(before.bindings != after.bindings) fields.push_back("bindings");
   if(before.specialization_bindings != after.specialization_bindings)
@@ -719,25 +686,6 @@ string renderer_changed_fields(const WitnessEvent & before,
     out += fields[i];
   }
   return out;
-}
-
-void note_renderer_trace_action(const WitnessEvent & event,
-                                const string & action,
-                                const witness_provenance::RendererEventLineage & lineage,
-                                const string & changed_fields = string())
-{
-  RendererTraceContext * trace = current_renderer_trace();
-  if(!trace || !trace->session || !trace->source_path || !trace->pass) return;
-  witness_provenance::note_renderer_action(
-      *trace->session,
-      *trace->source_path,
-      trace->pass,
-      action,
-      lineage,
-      witness_event_kind_text(event.kind),
-      event.location,
-      !event.template_name.empty() ? event.template_name : event.selected,
-      changed_fields);
 }
 
 #endif
@@ -765,49 +713,6 @@ string witness_selection_text(SourceSelectionKind selection,
 string witness_selection_text(const WitnessEvent & event)
 {
   return witness_selection_text(event.selection, event.kind);
-}
-
-void compact_events(vector<WitnessEvent> & events, const vector<char> & drop)
-{
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  RendererTraceContext * trace = current_renderer_trace();
-  const bool trace_active = trace && trace->lineages &&
-      trace->lineages->size() == events.size();
-  if(trace_active) {
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(!drop[i]) continue;
-      for(size_t j = 0; j < events.size(); ++j) {
-        if(!drop[j] && witness_events_equal(events[i], events[j])) {
-          merge_renderer_lineage((*trace->lineages)[j],
-                                 (*trace->lineages)[i]);
-          break;
-        }
-      }
-      note_renderer_trace_action(events[i],
-                                 "removed",
-                                 (*trace->lineages)[i],
-                                 events[i].visibility_reason);
-    }
-  }
-#endif
-  vector<WitnessEvent> kept;
-  kept.reserve(events.size());
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  vector<witness_provenance::RendererEventLineage> kept_lineages;
-  if(trace_active) kept_lineages.reserve(events.size());
-#endif
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(!drop[i]) {
-      kept.push_back(events[i]);
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-      if(trace_active) kept_lineages.push_back((*trace->lineages)[i]);
-#endif
-    }
-  }
-  events.swap(kept);
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  if(trace_active) trace->lineages->swap(kept_lineages);
-#endif
 }
 
 SourceUseOwnership rendered_ownership_sort_key(SourceUseOwnership ownership)
@@ -843,8 +748,6 @@ WitnessEvent witness_event_from_source_use(
   event.location = !use.spelling_anchor.location.empty() ?
       use.spelling_anchor.location :
       use.location;
-  event.raw_location = use.location;
-  event.use_anchor_kind = use.spelling_anchor.kind;
   event.template_id_occurrence = use.template_id_occurrence;
   event.template_name = normalize_source_event_entity_text(use.template_name);
   event.selected = normalize_source_event_entity_text(use.selected);
@@ -852,8 +755,6 @@ WitnessEvent witness_event_from_source_use(
   event.selected_decl_location = !use.selected_decl_anchor.location.empty() ?
       use.selected_decl_anchor.location :
       use.selected_entity.decl_location;
-  event.raw_selected_decl_location = use.selected_entity.decl_location;
-  event.selected_decl_anchor_kind = use.selected_decl_anchor.kind;
   event.expanded_to = normalize_source_event_entity_text(use.expanded_to);
   event.candidate_count = use.candidate_count;
   event.candidates_built = use.candidates_built;
@@ -870,12 +771,6 @@ WitnessEvent witness_event_from_source_use(
   return event;
 }
 
-bool string_ends_with(const string & text, const string & suffix)
-{
-  return text.size() >= suffix.size() &&
-      text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
 string location_source_path(const string & location)
 {
   const string::size_type last_colon = location.rfind(':');
@@ -887,28 +782,6 @@ string location_source_path(const string & location)
     return string();
   }
   return normalize_witness_path(location.substr(0, second_colon));
-}
-
-bool source_file_is_for_input_path(const string & file,
-                                   const string & normalized_input)
-{
-  static std::unordered_map<string, bool> cache;
-  const string key = file + "\n" + normalized_input;
-  std::unordered_map<string, bool>::const_iterator cached = cache.find(key);
-  if(cached != cache.end()) {
-    return cached->second;
-  }
-  const string path = normalize_witness_path(file);
-  if(path.empty() || normalized_input.empty()) {
-    cache[key] = false;
-    return false;
-  }
-  const bool result =
-      path == normalized_input ||
-      string_ends_with(path, "/" + normalized_input) ||
-      string_ends_with(normalized_input, "/" + path);
-  cache[key] = result;
-  return result;
 }
 
 int binding_source_sort_rank(const WitnessEvent & event)
@@ -1418,279 +1291,35 @@ void canonicalize_qualified_binding_arguments(vector<WitnessEvent> & events)
   }
 }
 
-bool is_identifier_token_char(char ch)
-{
-  return std::isalnum(static_cast<unsigned char>(ch)) || ch == '_';
-}
-
-bool text_mentions_any_identifier(const string & text, const set<string> & names)
-{
-  for(size_t i = 0; i < text.size();) {
-    if(!(std::isalpha(static_cast<unsigned char>(text[i])) || text[i] == '_')) {
-      ++i;
-      continue;
-    }
-    const size_t begin = i;
-    ++i;
-    while(i < text.size() && is_identifier_token_char(text[i])) {
-      ++i;
-    }
-    if(names.count(text.substr(begin, i - begin)) != 0) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool event_bindings_mention_any_identifier(const WitnessEvent & event,
-                                           const set<string> & names)
-{
-  for(size_t i = 0; i < event.bindings.size(); ++i) {
-    if(text_mentions_any_identifier(event.bindings[i].arg, names)) {
-      return true;
-    }
-  }
-  for(size_t i = 0; i < event.specialization_bindings.size(); ++i) {
-    if(text_mentions_any_identifier(event.specialization_bindings[i].arg,
-                                    names)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-using TemplateHeaderContext =
-    template_api::TemplateWitnessTemplateHeaderContext;
-
-bool template_header_context_contains_location(
-    const TemplateHeaderContext & context,
-    int line,
-    int column,
-    const string & normalized_input)
-{
-  if(line <= 0 ||
-     !source_file_is_for_input_path(context.file, normalized_input)) {
-    return false;
-  }
-  if(line < context.begin_line || line > context.end_line) {
-    return false;
-  }
-  if(line == context.begin_line &&
-     column > 0 &&
-     column < context.begin_column) {
-    return false;
-  }
-  if(line == context.end_line &&
-     context.end_column > 0 &&
-     column > context.end_column) {
-    return false;
-  }
-  return true;
-}
-
-bool template_header_context_for_location(
-    const vector<TemplateHeaderContext> & contexts,
-    const string & normalized_input,
-    int line,
-    int column,
-    set<string> & parameter_names,
-    bool & class_template_context)
-{
-  class_template_context = false;
-  for(size_t i = 0; i < contexts.size(); ++i) {
-    if(!template_header_context_contains_location(contexts[i],
-                                                  line,
-                                                  column,
-                                                  normalized_input)) {
-      continue;
-    }
-    for(size_t j = 0; j < contexts[i].parameter_names.size(); ++j) {
-      parameter_names.insert(contexts[i].parameter_names[j]);
-    }
-    class_template_context =
-        class_template_context || contexts[i].class_template;
-  }
-  return !parameter_names.empty();
-}
-
-void drop_template_header_pattern_events(vector<WitnessEvent> & events,
-                                         const vector<TemplateHeaderContext> & contexts,
-                                         const string & input_path)
-{
-  if(contexts.empty()) {
-    return;
-  }
-  const string normalized_input = normalize_witness_path(input_path);
-  vector<char> drop(events.size(), 0);
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::FunctionCall) {
-      continue;
-    }
-    const ParsedLocation parsed = parse_line_col(
-        !events[i].location.empty() ? events[i].location : events[i].raw_location);
-    set<string> parameter_names;
-    bool class_template_context = false;
-    if(!template_header_context_for_location(contexts,
-                                             normalized_input,
-                                             parsed.line,
-                                             parsed.column,
-                                             parameter_names,
-                                             class_template_context)) {
-      continue;
-    }
-    (void)class_template_context;
-    if(event_bindings_mention_any_identifier(events[i], parameter_names)) {
-      drop[i] = 1;
-    }
-  }
-  compact_events(events, drop);
-}
-
-string binding_signature_key(const vector<WitnessBinding> & bindings)
-{
-  vector<string> parts;
-  for(size_t i = 0; i < bindings.size(); ++i) {
-    parts.push_back(bindings[i].param + "\x1f" + bindings[i].arg + "\x1f" +
-                    bindings[i].source);
-  }
-  std::sort(parts.begin(), parts.end());
-  string out;
-  for(size_t i = 0; i < parts.size(); ++i) {
-    if(i) {
-      out += "\x1e";
-    }
-    out += parts[i];
-  }
-  return out;
-}
-
-string compact_binding_arg_key(const string & arg)
-{
-  string out;
-  const string normalized = normalize_binding_arg_for_event(arg);
-  out.reserve(normalized.size());
-  for(size_t i = 0; i < normalized.size(); ++i) {
-    if(std::isspace(static_cast<unsigned char>(normalized[i]))) {
-      continue;
-    }
-    out.push_back(normalized[i]);
-  }
-  return out;
-}
-
-string normalized_binding_signature_key(const vector<WitnessBinding> & bindings)
-{
-  vector<string> parts;
-  for(size_t i = 0; i < bindings.size(); ++i) {
-    parts.push_back(bindings[i].param + "\x1f" +
-                    compact_binding_arg_key(bindings[i].arg) + "\x1f" +
-                    bindings[i].source);
-  }
-  std::sort(parts.begin(), parts.end());
-  string out;
-  for(size_t i = 0; i < parts.size(); ++i) {
-    if(i) {
-      out += "\x1e";
-    }
-    out += parts[i];
-  }
-  return out;
-}
-
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
 
 struct WitnessBuilder
 {
-  typedef tuple<string, string, string, string, string> EventKey;
-
-  WitnessBuilder(const string & source_path_in,
-                 const template_api::TemplateWitnessSession * session_in,
+  WitnessBuilder(const string &,
+                 const template_api::TemplateWitnessSession *,
                  bool trace_in)
-    : source_path(source_path_in), session(session_in), trace(trace_in)
+    : trace(trace_in)
   {}
 
-  vector<WitnessEvent> function_calls;
-  vector<witness_provenance::RendererEventLineage> function_call_lineages;
-  vector<WitnessEvent> direct_events;
-  vector<witness_provenance::RendererEventLineage> direct_lineages;
-  map<EventKey, WitnessEvent> variable_events;
-  map<EventKey, witness_provenance::RendererEventLineage> variable_lineages;
-  string source_path;
-  const template_api::TemplateWitnessSession * session = nullptr;
+  vector<WitnessEvent> events;
+  vector<witness_provenance::RendererEventLineage> lineages;
   bool trace = false;
-
-  void note_build_action(
-      const WitnessEvent & event,
-      const string & action,
-      const witness_provenance::RendererEventLineage & lineage)
-  {
-    if(!trace || !session) return;
-    witness_provenance::note_renderer_action(
-        *session,
-        source_path,
-        "build_events",
-        action,
-        lineage,
-        witness_event_kind_text(event.kind),
-        event.location,
-        !event.template_name.empty() ? event.template_name : event.selected);
-  }
 
   void consume_direct_event(
       const WitnessEvent & event,
       const witness_provenance::RendererEventLineage * lineage = nullptr)
   {
-    if(event.kind == WitnessEventKind::ClassUse ||
-       event.kind == WitnessEventKind::AliasUse) {
-      direct_events.push_back(event);
-      if(trace && lineage) direct_lineages.push_back(*lineage);
-      return;
-    }
-    if(event.kind == WitnessEventKind::VariableUse) {
-      const EventKey key = event_key(event);
-      map<EventKey, WitnessEvent>::iterator existing = variable_events.find(key);
-      if(trace && lineage) {
-        witness_provenance::RendererEventLineage retained = *lineage;
-        if(existing != variable_events.end()) {
-          retained = variable_lineages[key];
-          merge_renderer_lineage(retained, *lineage);
-          note_build_action(existing->second,
-                            "replaced",
-                            variable_lineages[key]);
-        }
-        variable_lineages[key] = retained;
-      }
-      variable_events[key] = event;
-      return;
-    }
-    if(event.kind == WitnessEventKind::FunctionCall) {
-      function_calls.push_back(event);
-      if(trace && lineage) function_call_lineages.push_back(*lineage);
+    events.push_back(event);
+    if(trace) {
+      lineages.push_back(lineage ?
+          *lineage : witness_provenance::RendererEventLineage());
     }
   }
 
   vector<WitnessEvent> finish(
       vector<witness_provenance::RendererEventLineage> * out_lineages = nullptr)
   {
-    vector<WitnessEvent> events;
-    events.insert(events.end(), direct_events.begin(), direct_events.end());
-    vector<witness_provenance::RendererEventLineage> lineages;
     if(trace) {
-      lineages.insert(lineages.end(),
-                      direct_lineages.begin(),
-                      direct_lineages.end());
-    }
-    for(map<EventKey, WitnessEvent>::const_iterator it = variable_events.begin();
-        it != variable_events.end();
-        ++it) {
-      events.push_back(it->second);
-      if(trace) lineages.push_back(variable_lineages[it->first]);
-    }
-    events.insert(events.end(), function_calls.begin(), function_calls.end());
-    if(trace) {
-      lineages.insert(lineages.end(),
-                      function_call_lineages.begin(),
-                      function_call_lineages.end());
       vector<size_t> order(events.size());
       for(size_t i = 0; i < order.size(); ++i) order[i] = i;
       std::stable_sort(order.begin(), order.end(),
@@ -1725,25 +1354,6 @@ struct WitnessBuilder
                         !rhs.selected.empty() ? rhs.selected : rhs.template_name);
   }
 
-  static EventKey event_key(const WitnessEvent & event)
-  {
-    const string payload =
-        event.pattern + "|" +
-        event.spelling + "|" +
-        event.value + "|" +
-        event.expanded_to + "|" +
-        event.resolved + "|" +
-        event.selected_decl_location + "|" +
-        binding_signature_key(event.bindings) + "|" +
-        binding_signature_key(event.specialization_bindings);
-    return std::make_tuple(string(witness_event_kind_text(event.kind)),
-                           event.location,
-                           !event.selected.empty() ? event.selected : event.template_name,
-                           event.selection != SourceSelectionKind::None ?
-                               witness_selection_text(event) :
-                               event.expanded_to,
-                           payload);
-  }
 };
 
 #else
@@ -1752,37 +1362,15 @@ struct WitnessBuilder
 {
   explicit WitnessBuilder(const string &) {}
 
-  vector<WitnessEvent> function_calls;
-  vector<WitnessEvent> direct_events;
-  map<tuple<string, string, string, string, string>, WitnessEvent> variable_events;
+  vector<WitnessEvent> events;
 
   void consume_direct_event(const WitnessEvent & event)
   {
-    if(event.kind == WitnessEventKind::ClassUse ||
-       event.kind == WitnessEventKind::AliasUse) {
-      direct_events.push_back(event);
-      return;
-    }
-    if(event.kind == WitnessEventKind::VariableUse) {
-      variable_events[event_key(event)] = event;
-      return;
-    }
-    if(event.kind == WitnessEventKind::FunctionCall) {
-      function_calls.push_back(event);
-    }
+    events.push_back(event);
   }
 
   vector<WitnessEvent> finish()
   {
-    vector<WitnessEvent> events;
-    events.insert(events.end(), direct_events.begin(), direct_events.end());
-    for(map<tuple<string, string, string, string, string>, WitnessEvent>::const_iterator
-            it = variable_events.begin();
-        it != variable_events.end();
-        ++it) {
-      events.push_back(it->second);
-    }
-    events.insert(events.end(), function_calls.begin(), function_calls.end());
     std::stable_sort(events.begin(), events.end(), sort_key_less);
     return events;
   }
@@ -1797,26 +1385,6 @@ struct WitnessBuilder
                         !rhs.selected.empty() ? rhs.selected : rhs.template_name);
   }
 
-  static tuple<string, string, string, string, string> event_key(
-      const WitnessEvent & event)
-  {
-    const string payload =
-        event.pattern + "|" +
-        event.spelling + "|" +
-        event.value + "|" +
-        event.expanded_to + "|" +
-        event.resolved + "|" +
-        event.selected_decl_location + "|" +
-        binding_signature_key(event.bindings) + "|" +
-        binding_signature_key(event.specialization_bindings);
-    return std::make_tuple(string(witness_event_kind_text(event.kind)),
-                           event.location,
-                           !event.selected.empty() ? event.selected : event.template_name,
-                           event.selection != SourceSelectionKind::None ?
-                               witness_selection_text(event) :
-                               event.expanded_to,
-                           payload);
-  }
 };
 
 #endif
@@ -2079,29 +1647,6 @@ string make_bound_template_text(const string & template_name,
   return text;
 }
 
-string event_signature_without_location(const WitnessEvent & event)
-{
-  std::ostringstream out;
-  out << witness_event_kind_text(event.kind) << "\x1f"
-      << event.template_name << "\x1f"
-      << event.selected << "\x1f"
-      << witness_selection_text(event);
-  for(size_t i = 0; i < event.bindings.size(); ++i) {
-    out << "\x1e" << "B" << i << "=" << event.bindings[i].arg
-        << "[" << event.bindings[i].source << "]";
-  }
-  for(size_t i = 0; i < event.specialization_bindings.size(); ++i) {
-    out << "\x1e" << "S" << i << "="
-        << event.specialization_bindings[i].arg << "["
-        << event.specialization_bindings[i].source << "]";
-  }
-  for(size_t i = 0; i < event.drops.size(); ++i) {
-    out << "\x1e" << "D" << event.drops[i].candidate << "="
-        << event.drops[i].reason;
-  }
-  return out.str();
-}
-
 string source_line_location_key(const string & location)
 {
   const ParsedLocation parsed = parse_line_col(location);
@@ -2109,31 +1654,6 @@ string source_line_location_key(const string & location)
     return string();
   }
   return location_source_path(location) + ":" + std::to_string(parsed.line);
-}
-
-void drop_redundant_nested_events(vector<WitnessEvent> & events)
-{
-  set<string> direct_signatures;
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::ClassUse &&
-       events[i].kind != WitnessEventKind::AliasUse &&
-       events[i].ownership != SourceUseOwnership::NestedDerived) {
-      direct_signatures.insert(event_signature_without_location(events[i]));
-    }
-  }
-
-  vector<char> drop(events.size(), 0);
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind == WitnessEventKind::ClassUse ||
-       events[i].kind == WitnessEventKind::AliasUse ||
-       events[i].ownership != SourceUseOwnership::NestedDerived) {
-      continue;
-    }
-    if(direct_signatures.count(event_signature_without_location(events[i])) != 0) {
-      drop[i] = 1;
-    }
-  }
-  compact_events(events, drop);
 }
 
 string apply_text_aliases(const string & text,
@@ -2635,61 +2155,6 @@ void normalize_event_bindings(vector<WitnessEvent> & events,
     }
   }
 
-  {
-    vector<char> drop(events.size(), 0);
-    map<string, size_t> preferred;
-    for(size_t i = 0; i < events.size(); ++i) {
-      if(events[i].kind != WitnessEventKind::ClassUse ||
-         events[i].selection != SourceSelectionKind::Primary ||
-         !events[i].specialization_bindings.empty() ||
-         events[i].bindings.empty()) {
-        continue;
-      }
-      const string full =
-          make_bound_template_text(events[i].template_name,
-                                   events[i].bindings,
-                                   events[i].bindings.size());
-      const string canonical = apply_text_aliases(full, aliases);
-      if(canonical == full) {
-        continue;
-      }
-      const string key = events[i].location + "\x1f" +
-          events[i].template_name + "\x1f" +
-          events[i].selected_decl_location + "\x1f" +
-          witness_selection_text(events[i]) + "\x1f" + canonical;
-      size_t defaulted = 0;
-      for(size_t j = 0; j < events[i].bindings.size(); ++j) {
-        if(events[i].bindings[j].source == "defaulted") {
-          ++defaulted;
-        }
-      }
-      map<string, size_t>::iterator found = preferred.find(key);
-      if(found == preferred.end()) {
-        preferred[key] = i;
-        continue;
-      }
-      size_t best = found->second;
-      size_t best_defaulted = 0;
-      for(size_t j = 0; j < events[best].bindings.size(); ++j) {
-        if(events[best].bindings[j].source == "defaulted") {
-          ++best_defaulted;
-        }
-      }
-      if(defaulted > best_defaulted) {
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-        events[best].visibility_reason = "default_alias_binding_duplicate";
-#endif
-        drop[best] = 1;
-        found->second = i;
-      } else {
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-        events[i].visibility_reason = "default_alias_binding_duplicate";
-#endif
-        drop[i] = 1;
-      }
-    }
-    compact_events(events, drop);
-  }
 }
 
 string source_location_compare_key(const string & location)
@@ -2700,57 +2165,6 @@ string source_location_compare_key(const string & location)
   }
   return location_source_path(location) + ":" +
       std::to_string(parsed.line) + ":" + std::to_string(parsed.column);
-}
-
-bool text_has_anonymous_namespace(const string & text)
-{
-  return text.find("(anonymous namespace)") != string::npos ||
-         text.find("_GLOBAL__N_") != string::npos;
-}
-
-void prefer_anonymous_namespace_class_use_names(vector<WitnessEvent> & events)
-{
-  map<string, string> anonymous_name_by_decl;
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::ClassUse ||
-       events[i].selected_decl_location.empty() ||
-       !text_has_anonymous_namespace(events[i].template_name)) {
-      continue;
-    }
-    const string key =
-        events[i].selected_decl_location + "\x1f" +
-        unqualified_template_name_text(events[i].template_name) + "\x1f" +
-        witness_selection_text(events[i]) + "\x1f" +
-        normalized_binding_signature_key(events[i].bindings) + "\x1f" +
-        normalized_binding_signature_key(events[i].specialization_bindings);
-    string & preferred = anonymous_name_by_decl[key];
-    if(preferred.empty() || events[i].template_name.size() > preferred.size()) {
-      preferred = events[i].template_name;
-    }
-  }
-  if(anonymous_name_by_decl.empty()) {
-    return;
-  }
-  for(size_t i = 0; i < events.size(); ++i) {
-    if(events[i].kind != WitnessEventKind::ClassUse ||
-       events[i].selected_decl_location.empty()) {
-      continue;
-    }
-    const string key =
-        events[i].selected_decl_location + "\x1f" +
-        unqualified_template_name_text(events[i].template_name) + "\x1f" +
-        witness_selection_text(events[i]) + "\x1f" +
-        normalized_binding_signature_key(events[i].bindings) + "\x1f" +
-        normalized_binding_signature_key(events[i].specialization_bindings);
-    map<string, string>::const_iterator found = anonymous_name_by_decl.find(key);
-    if(found == anonymous_name_by_decl.end()) {
-      continue;
-    }
-    events[i].template_name = found->second;
-    if(!events[i].selected.empty()) {
-      events[i].selected = found->second;
-    }
-  }
 }
 
 string render_events_text(const vector<WitnessEvent> & events,
@@ -2993,13 +2407,6 @@ void collect_rendered_source_events(const template_api::TemplateWitnessSession &
                     normalize_event_names(events, session.inline_namespace_names));
   CPPGM_RENDER_PASS("normalize_bindings",
                     normalize_event_bindings(events, source_path));
-  CPPGM_RENDER_PASS("prefer_anonymous_namespace_class_names",
-                    prefer_anonymous_namespace_class_use_names(events));
-  CPPGM_RENDER_PASS("drop_template_header_patterns",
-                    drop_template_header_pattern_events(
-                        events, session.template_header_contexts, source_path));
-  CPPGM_RENDER_PASS("drop_redundant_nested_events",
-                    drop_redundant_nested_events(events));
   CPPGM_RENDER_PASS("sort_visible_events", sort_events(events));
 #undef CPPGM_RENDER_PASS
 
@@ -3024,11 +2431,6 @@ void collect_rendered_source_events(const template_api::TemplateWitnessSession &
   events = source_builder.finish();
   normalize_event_names(events, session.inline_namespace_names);
   normalize_event_bindings(events, source_path);
-  prefer_anonymous_namespace_class_use_names(events);
-  drop_template_header_pattern_events(events,
-                                      session.template_header_contexts,
-                                      source_path);
-  drop_redundant_nested_events(events);
   sort_events(events);
 #endif
 }

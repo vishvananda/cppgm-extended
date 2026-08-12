@@ -4588,6 +4588,107 @@ entry, a net deletion of 371 lines. The measured destructive renderer debt is
 now zero. Phase 6 remains open for the broader migration-scaffolding audit;
 Phase 7 and inception remain forbidden until that audit is committed.
 
+## Zero-obligation renderer arbitration deletion checkpoint, 2026-08-11
+
+This Phase 6 checkpoint deletes every remaining renderer arbitration branch
+whose action count was zero across the 1,530-session provenance corpus. The
+removed branches are template-header pattern suppression, redundant nested
+event suppression, default-alias class duplicate selection, anonymous-
+namespace class-name preference, and variable-event builder replacement. The
+ordinary and provenance builders now append every already-consolidated source
+row directly and sort it; no event-family-specific map or replacement policy
+remains in that boundary.
+
+The deletion also removes the renderer's generic compaction and lineage-merge
+machinery, all source-text identifier scanning and input-path matching used by
+the template-header pass, the nested-event and variable signature builders,
+and four ordinary `WitnessEvent` fields that existed only to diagnose those
+now-deleted arbitration paths. The semantic template-header contexts remain
+because class-instantiation tracking still consumes them upstream; no owned
+semantic behavior was removed.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output, and the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  ordinary/provenance witness and LowIR artifacts match each other and the
+  parent checkpoint byte for byte;
+- all 1,530 provenance sessions flush, producing 69,084 records with no
+  unknown producer attempt and no unexercised producer site;
+- renderer ownership contains only the same non-destructive presentation
+  operations as the parent: 40 name rewrites and 409 binding rewrites;
+- the focused helper/audit suite passes 60/60, the ordinary build is warning-
+  free, and the materialization, text-reparse, template-boundary,
+  semantic-boundary, and tracked structure-size reports match the parent byte
+  for byte.
+
+The ordinary strict and PA1-PA38 reports are
+`/tmp/cppgm-phase6-zero-obligation-ordinary-strict-20260811.log` and
+`/tmp/cppgm-phase6-zero-obligation-broad-20260811.log`, with SHA-256 values
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`
+and
+`1743225cfb8f3332e4f91c2ccb6df7edaf10d6db8c63048fdbd55951569c423c`.
+The provenance trace directory is recorded in
+`/tmp/cppgm-phase6-zero-obligation-provenance-trace-path-20260811.txt`. The
+provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-zero-obligation-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase6-zero-obligation-provenance-convergence-20260811.json`,
+with SHA-256 values
+`ea05b10f74b1cfd2a260277b48392eb99b8f80aa30f549b209e10e78dbbb8e91`
+and
+`cd09751d9ea721dd67902477a173734ade403a8bdcccda57673a007bf693ccad`.
+
+The ordinary and provenance manifests both retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+The 60-test helper report is
+`/tmp/cppgm-phase6-zero-obligation-helper-tests-20260811.log`, SHA-256
+`51a8e9afd01969f7b764e764f3a0120d3b828a21d0021c3aa85db05cd31b5a70`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain the parent SHA-256
+values:
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary shrinks by another 41,448 bytes to 17,184,496 bytes. Its
+Mach-O `__TEXT` segment shrinks by 36,864 bytes to 13,053,952 and
+`__LINKEDIT` shrinks by 4,096 bytes to 4,063,232; `__DATA_CONST` and `__DATA`
+remain 61,440 and 442,368 bytes. It contains no witness-provenance symbols.
+The frozen binary is
+`/tmp/cppgm-phase6-zero-obligation-ordinary-20260811`, SHA-256
+`2ae120a0c95752bad83ada38de3a4d21aaed95a114caa08029827ae9f5e1f347`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.03% | +0.56% | -3.98% | `/tmp/cppgm-phase6-zero-obligation-perf-fixed-20260811.json` |
+| Renderer-cleanup parent | -0.26% | +0.44% | -0.02% | `/tmp/cppgm-phase6-zero-obligation-perf-parent-20260811.json` |
+
+The candidate medians are 174,205,358,551 instructions, 761,331,712 bytes
+maximum RSS, and 569,397,248 bytes peak footprint. The raw candidate record is
+`/tmp/cppgm-phase6-zero-obligation-raw-candidate-20260811.json`, SHA-256
+`37639ab908fbf148035a1b798df10468fc094fb9ffe6d20f39cc7916c6610af6`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`95268f461f15633cf9f7c319091b57c01c7cd5389dd12bf15ee92204f65aa3b3`
+and
+`c6a5cdd72b0269d1fdac22984b32c650a40022297222fc49a63b0d3fca70c877`.
+The candidate metadata names commit `707b30529` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 16 and removes 614 production lines before this ledger
+entry, a net deletion of 598 lines. The renderer now contains no arbitration
+or destructive visibility machinery. Phase 6 remains open for non-renderer
+migration traces, shadow counters, route enums, and unused adapters. Phase 7
+and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
