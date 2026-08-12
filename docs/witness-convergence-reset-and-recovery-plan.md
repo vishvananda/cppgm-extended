@@ -4689,6 +4689,111 @@ or destructive visibility machinery. Phase 6 remains open for non-renderer
 migration traces, shadow counters, route enums, and unused adapters. Phase 7
 and inception remain forbidden.
 
+## Source-use adapter deletion checkpoint, 2026-08-11
+
+This Phase 6 checkpoint removes the unused public source-use adapter layer
+between the class, alias, and variable semantic producers and the canonical
+`SemanticSourceUseTable`. The deleted layer contained three decision DTOs that
+only copied fields from their corresponding emit request, fourteen public
+record, note, and global-emission entry points with no external callers, five
+literal no-op note functions, and the template-API aliases that exposed those
+migration types. Class, alias, and variable emit requests now build the
+canonical source-use row directly. The function-call decision remains because
+semantic call analysis still constructs it as an owned typed result.
+
+Compile-time provenance remains on the direct path: each request's producer
+site is handed to the same scoped table attempt, and retained variable rows
+continue to preserve that site until semantic finalization. The consolidation
+counters and upstream-route scopes were audited but retained because the
+1,530-session analyzer still consumes them and every named route has a measured
+obligation.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output, and the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- all 3,060 ordinary/provenance witness and LowIR artifacts match the parent
+  checkpoint byte for byte;
+- all 1,530 provenance sessions flush, producing the same 69,084 records,
+  4,767 source attempts, 6,298 lifecycle attempts, and 4,289 unique public
+  rows as the parent, with no unknown producer attempt and no unexercised
+  producer site;
+- site coverage, upstream-route coverage, semantic consolidation, collision,
+  replacement, and renderer-ownership summaries are identical to the parent;
+  renderer ownership remains only 40 name rewrites and 409 binding rewrites;
+- the focused helper/audit suite passes 60/60, both ordinary and provenance
+  builds are warning-free, and the materialization, text-reparse,
+  template-boundary, semantic-boundary, and tracked structure-size reports
+  match the parent byte for byte.
+
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-source-adapter-ordinary-strict-20260811.log` and
+`/tmp/cppgm-phase6-source-adapter-provenance-strict-20260811.log`, with
+SHA-256 values
+`09b54528dae94cbe47c7d74e926b4217f3724f32de0dc7bd52f0bbe2ba6e1e0e`
+and
+`dfbc1a52495771dea378898775c7046838438e3833d80fcd21e082b314939331`.
+The PA1-PA38 report is
+`/tmp/cppgm-phase6-source-adapter-broad-20260811.log`, SHA-256
+`8ad851060c3ac6fefc0a9470622090c5c5ddabe8aedc3e508bf2841e7e16a76d`.
+The provenance trace directory is
+`/tmp/cppgm-phase6-source-adapter-provenance-trace-20260811.7jFwjZ`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-source-adapter-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase6-source-adapter-provenance-convergence-20260811.json`,
+with SHA-256 values
+`e7cad8ca57db4b1445c1d60addc552ead88f9f701ddf9f120d5e07b4583bf0a9`
+and
+`6868d8488ce9643d50cae297053e1c26434cc55d14dcf8e85c585a02dce2fec3`.
+
+The ordinary and provenance manifests both retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+The 60-test helper report is
+`/tmp/cppgm-phase6-source-adapter-helper-tests-20260811.log`, SHA-256
+`e370d104c20c6194bcbaeef90cac59460b381c8f7a9be4b4f8d004afe1ef7bf5`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain the parent SHA-256
+values:
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary shrinks by another 8,152 bytes to 17,176,344 bytes. Its
+Mach-O `__TEXT` and `__LINKEDIT` segments each shrink by 4,096 bytes to
+13,049,856 and 4,059,136 bytes; `__DATA_CONST` and `__DATA` remain 61,440 and
+442,368 bytes. It contains no witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-phase6-source-adapter-ordinary-20260811`, SHA-256
+`cbd3706ce0d35c3f20da20f97af9dfb2a2d0de4c8adc617857d549ae6e949401`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.96% | -0.00% | -4.02% | `/tmp/cppgm-phase6-source-adapter-perf-fixed-20260811.json` |
+| Zero-obligation renderer parent | +0.07% | -0.56% | -0.04% | `/tmp/cppgm-phase6-source-adapter-perf-parent-20260811.json` |
+
+The candidate medians are 174,328,995,221 instructions, 757,071,872 bytes
+maximum RSS, and 569,192,448 bytes peak footprint. The raw candidate record is
+`/tmp/cppgm-phase6-source-adapter-raw-candidate-20260811.json`, SHA-256
+`473af8b07cc7ba8ae8fdcbba53e34dc5816aa67a05d182300889008eb01e2774`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`e8d0f791a32b3b7c0c947b00fb109d0b7467809d76916cfaeabf7de7a19a96b7`
+and
+`209af34737ac533b257f3bdb8c87397818af6a7fd2f1682ad1557036de177d13`.
+The candidate metadata names commit `1d3b702a2` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 92 and removes 489 production lines before this ledger
+entry, a net deletion of 397 lines. Phase 6 remains open for the remaining
+trace-only diagnostic inventory, shadow counters, and local semantic mirrors.
+Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

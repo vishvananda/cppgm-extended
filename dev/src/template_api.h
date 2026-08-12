@@ -229,14 +229,11 @@ struct TemplateNestedMemberClassCompletionResult
   bool completed = false;
 };
 
-using witness::AliasUseSourceDecision;
-using witness::ClassUseSourceDecision;
 using witness::FunctionCallSourceDecision;
 using witness::SourceDropSet;
 using witness::SourceSelectionKind;
 using witness::TemplateWitnessSourceBinding;
 using witness::TemplateWitnessSourceDrop;
-using witness::VariableUseSourceDecision;
 using TemplateWitnessSourceDropSet = witness::SourceDropSet;
 
 class ScopedTemplateArgumentSourceLocations
@@ -710,12 +707,6 @@ void observe_nested_member_class_reference_instantiation(
 
 using witness::append_source_drop;
 using witness::append_unique_source_drop;
-using witness::note_alias_use_source_decision;
-using witness::note_class_use_source_decision;
-using witness::note_function_call_source_decision;
-using witness::note_source_owned_class_use_source_decision;
-using witness::note_variable_use_source_decision;
-
 void append_function_template_witness_bindings(
     SemanticContext & ctx,
     const semantic_model::FunctionBinding * binding,

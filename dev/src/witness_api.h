@@ -234,27 +234,6 @@ using template_api::template_witness_source_type_lookup_active;
 using semantic_source_use::SourceUseOwnership;
 using semantic_source_use::SourceUseRole;
 using semantic_source_use::SourceTemplateIdOccurrence;
-// Template-owned lifecycle/log events still live in template_witness.h.
-// The semantic layer records use-site decisions through the typed structs below.
-struct ClassUseSourceDecision
-{
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
-#endif
-  std::size_t source_traversal_order = 0;
-  const void * semantic_class_template_identity = nullptr;
-  std::string semantic_class_specialization_key;
-  std::string location;
-  TemplateWitnessSourceAnchor use_anchor;
-  std::string template_name;
-  SourceSelectionKind selection = SourceSelectionKind::None;
-  std::string selected_decl_location;
-  TemplateWitnessSourceAnchor selected_decl_anchor;
-  SourceTemplateIdOccurrence template_id_occurrence;
-  std::vector<TemplateWitnessSourceBinding> bindings;
-  std::vector<TemplateWitnessSourceBinding> specialization_bindings;
-};
-
 struct ClassUseEmitRequest
 {
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
@@ -293,21 +272,6 @@ struct ClassUseEmitRequest
   bool record_during_source_capture_pause = false;
 };
 
-struct AliasUseSourceDecision
-{
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
-#endif
-  std::size_t source_traversal_order = 0;
-  std::string location;
-  TemplateWitnessSourceAnchor use_anchor;
-  std::string template_name;
-  std::string selected_decl_location;
-  TemplateWitnessSourceAnchor selected_decl_anchor;
-  SourceTemplateIdOccurrence template_id_occurrence;
-  std::vector<TemplateWitnessSourceBinding> bindings;
-};
-
 struct AliasUseEmitRequest
 {
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
@@ -322,22 +286,6 @@ struct AliasUseEmitRequest
   TemplateWitnessSourceAnchor selected_decl_anchor;
   bool selected_decl_anchor_explicit = false;
   std::vector<TemplateWitnessSourceBinding> bindings;
-};
-
-struct VariableUseSourceDecision
-{
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
-#endif
-  std::string location;
-  TemplateWitnessSourceAnchor use_anchor;
-  std::string template_name;
-  SourceUseOwnership ownership = SourceUseOwnership::Direct;
-  SourceSelectionKind selection = SourceSelectionKind::None;
-  std::string selected_decl_location;
-  TemplateWitnessSourceAnchor selected_decl_anchor;
-  std::vector<TemplateWitnessSourceBinding> bindings;
-  std::vector<TemplateWitnessSourceBinding> specialization_bindings;
 };
 
 struct VariableUseEmitRequest
@@ -455,43 +403,14 @@ struct SourceDropSet
   std::set<SourceDropKey> seen;
 };
 
-void note_class_use_source_decision(const ClassUseSourceDecision & decision);
-void note_source_owned_class_use_source_decision(
-    const ClassUseSourceDecision & decision);
-void emit_class_use(const ClassUseEmitRequest & request);
 bool emit_class_use(const TemplateWitnessContext & ctx,
                     const ClassUseEmitRequest & request);
-void emit_class_use_decision(
-    const ClassUseSourceDecision & decision,
-    SourceUseOwnership ownership = SourceUseOwnership::Direct,
-    SourceUseRole role = SourceUseRole::TypeUse,
-    ClassUseEmissionOrigin origin = ClassUseEmissionOrigin::ResolvedTemplateId);
-void record_class_use_source_use(
-    const ClassUseSourceDecision & decision,
-    SourceUseOwnership ownership = SourceUseOwnership::Direct,
-    SourceUseRole role = SourceUseRole::TypeUse);
-void record_source_owned_class_use_source_use(
-    const ClassUseSourceDecision & decision,
-    SourceUseRole role = SourceUseRole::TypeUse);
-void record_source_owned_class_use_source_use(
-    const TemplateWitnessContext & ctx,
-    const ClassUseSourceDecision & decision,
-    SourceUseRole role = SourceUseRole::TypeUse);
-void record_alias_use_source_use(const AliasUseSourceDecision & decision);
-void record_alias_use_source_use(const TemplateWitnessContext & ctx,
-                                 const AliasUseSourceDecision & decision);
 void emit_alias_use(const TemplateWitnessContext & ctx,
                     const AliasUseEmitRequest & request);
 void emit_variable_use(const VariableUseEmitRequest & request);
 void finalize_variable_use_source_uses(TemplateWitnessSession * session);
-void record_function_call_source_use(
-    const FunctionCallSourceDecision & decision);
 void emit_function_call(const TemplateWitnessContext & ctx,
                         const FunctionCallSourceDecision & decision);
-void emit_function_call(const FunctionCallSourceDecision & decision);
-void note_alias_use_source_decision(const AliasUseSourceDecision & decision);
-void note_variable_use_source_decision(const VariableUseSourceDecision & decision);
-void note_function_call_source_decision(const FunctionCallSourceDecision & decision);
 
 bool append_source_drop(std::vector<TemplateWitnessSourceDrop> & out,
                         const std::string & candidate,
