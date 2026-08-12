@@ -1,12 +1,9 @@
 #pragma once
 
-#include <cstdint>
 #include <string>
-#include <vector>
 
 namespace semantic_source_use {
 struct SemanticSourceUse;
-struct SemanticSourceUseTable;
 }
 
 namespace template_api {
@@ -57,42 +54,13 @@ private:
 #endif
 };
 
-void note_source_use_record(
+void note_source_use_publication(
     template_api::TemplateWitnessSession * session,
-    semantic_source_use::SemanticSourceUseTable * table,
     const semantic_source_use::SemanticSourceUse & use);
 
-void note_lifecycle_record(
+void note_lifecycle_publication(
     template_api::TemplateWitnessSession & session,
     const template_api::TemplateLifecycleEvent & event);
-
-struct RendererEventLineage
-{
-  std::uint64_t event_id = 0;
-  std::uint64_t table_row_id = 0;
-  WitnessUpstreamRoute upstream_route = WitnessUpstreamRoute::Unknown;
-};
-
-std::vector<RendererEventLineage> renderer_table_lineages(
-    const template_api::TemplateWitnessSession & session);
-
-void note_renderer_action(const template_api::TemplateWitnessSession & session,
-                          const std::string & source_path,
-                          const std::string & pass,
-                          const std::string & action,
-                          const RendererEventLineage & lineage,
-                          const std::string & kind,
-                          const std::string & location,
-                          const std::string & template_name,
-                          const std::string & changed_fields = std::string());
-
-void note_renderer_final_visible(
-    const template_api::TemplateWitnessSession & session,
-    const std::string & source_path,
-    const RendererEventLineage & lineage,
-    const std::string & kind,
-    const std::string & location,
-    const std::string & template_name);
 
 void finish_session(const template_api::TemplateWitnessSession & session,
                     const std::string & source_path);

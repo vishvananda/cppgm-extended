@@ -156,14 +156,13 @@ template-closure-events
                 root,
                 ("pa19",),
                 {
-                    "source_attempt_decisions": [
+                    "source_publications": [
                         {
                             "kind": "alias_use",
                             "location": "tests/general/sample.t:4:3",
                             "template_name": "A",
                             "producer": "alias.canonical_occurrence",
                             "upstream_route": "alias.canonical_occurrence",
-                            "action": "inserted",
                             "source": "/tmp/pa19/sample.t.1.jsonl",
                         }
                     ]

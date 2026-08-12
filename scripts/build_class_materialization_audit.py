@@ -109,7 +109,7 @@ def build_audit(
     )
     final_class_rows = [
         item
-        for item in provenance.get("unique_output_ownership", [])
+        for item in provenance.get("public_source_ownership", [])
         if item.get("kind") == "class_use"
     ]
     final_by_key: dict[tuple[str, str], list[dict[str, Any]]] = {}
@@ -147,13 +147,6 @@ def build_audit(
     class_route = provenance.get("site_coverage", {}).get(
         "class.class_template_reference.02", {}
     )
-    class_visibility_actions = 0
-    for actions in provenance.get("renderer_ownership", {}).values():
-        owns_class = any(str(key).startswith("producer:class.") for key in actions)
-        if owns_class:
-            class_visibility_actions += int(actions.get("removed", 0))
-            class_visibility_actions += int(actions.get("replaced", 0))
-
     prior_clang = prior_patched_clang_evidence(prior)
     failures: list[str] = []
     if len(accepted) != 5:
@@ -180,18 +173,12 @@ def build_audit(
         failures.append("patched Clang has a row at a rejected location")
     if int(prior_clang.get("compile_failures", -1)) != 0:
         failures.append("patched-Clang rejected-location corpus did not compile cleanly")
-    class_attempts = int(class_route.get("attempts", -1))
-    class_insertions = int(class_route.get("inserted", -1))
-    class_exact_duplicates = int(class_route.get("exact_duplicate", 0))
-    if class_attempts != class_insertions + class_exact_duplicates:
-        failures.append("class source-table attempts are not fully accounted for")
-    if int(class_route.get("inserted", -1)) != int(class_route.get("final_visible_rows", -2)):
-        failures.append("class source-table rows do not equal public rows")
-    if class_visibility_actions != 0:
-        failures.append("renderer performs a class visibility action")
+    class_publications = int(class_route.get("publications", -1))
+    if class_publications != len(final_class_rows):
+        failures.append("class publication coverage does not equal public rows")
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "inputs": {
             "prior_boundary_audit": str(prior_audit_path),
             "prior_boundary_audit_sha256": sha256(prior_audit_path),
@@ -210,13 +197,8 @@ def build_audit(
             "patched_clang_rows_at_rejected_locations": prior_clang.get(
                 "class_rows_at_removed_locations", -1
             ),
-            "class_source_table_attempts": class_route.get("attempts", -1),
-            "class_source_table_insertions": class_route.get("inserted", -1),
-            "class_source_table_exact_duplicates": class_route.get(
-                "exact_duplicate", 0
-            ),
-            "class_public_rows": class_route.get("final_visible_rows", -1),
-            "class_renderer_visibility_actions": class_visibility_actions,
+            "class_source_publications": class_publications,
+            "class_public_rows": len(final_class_rows),
         },
         "accepted": accepted,
         "rejected": rejected,

@@ -6196,6 +6196,141 @@ function rediscovery, the two named function admission rules, the three named
 variable-retention decisions, renderer normalization ownership, and the
 remaining migration-mirror inventory. Phase 7 and inception remain forbidden.
 
+## Publication-only provenance checkpoint, 2026-08-12
+
+This Phase 6 checkpoint removes the renderer-side provenance mirror after the
+single-owner checkpoint proved that all 4,289 published source rows survive in
+the semantic table and reach visible output. The only renderer actions were
+409 binding rewrites and 40 name rewrites on temporary rendering copies. They
+are presentation normalization, not ownership or arbitration, so they no
+longer maintain a second row identity and lineage system.
+
+Provenance now records exactly one `source_publication` for each successful
+source-ledger append and one `lifecycle_publication` for each lifecycle-ledger
+append. Row and event identifiers, row reconciliation, final-table and final-
+lifecycle snapshots, final-visible records, producer and route arrays, and
+renderer action comparison are deleted. The provenance and ordinary builds
+now execute the same renderer normalization and stable sort. Removing that
+instrumentation also exposes and deletes the unused source-path carrier
+through rendered-event collection, binding normalization, and the five
+source-query adapters used by closure output.
+
+Analyzer schema 6 reports the publication ledgers directly. The convergence
+analyzer consumes only that schema, and the dynamic class-materialization
+audit checks class publication coverage against public class rows. Attempt,
+insertion, survival, final-visible, renderer-ownership, and collision mirrors
+are absent from all three tools and their tests.
+
+The final Homebrew-Clang validation produced these results:
+
+- the six focused function and variable owner fixtures are exact;
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output, and both 3,060-artifact manifests are byte-identical to the parent;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs in
+  its normal report position and has no separate validation lane;
+- all 1,530 provenance sessions exist. The trace contains exactly 10,587
+  records: 4,289 source publications and 6,298 lifecycle publications. This is
+  15,325 fewer records than the parent because 4,289 final-table snapshots,
+  6,298 final-lifecycle snapshots, 4,289 final-visible records, and 449
+  renderer-action records are gone;
+- source publication ownership is exact at alias 835, class 2,631, function
+  791, and variable 32. The upstream routes are alias 835; class declaration
+  248, explicit 35, nested 698, qualified 24, and resolved 1,626; function
+  constant lookup 3, conversion 11, `declval` 32, and overload resolution 745;
+  and variable direct 29 and initializer 3. There is no unknown producer or
+  unexercised site;
+- the 61-test focused helper suite passes, both compiler builds are warning-
+  free, both materialization decision boundaries have no finding, all 23
+  forbidden text-reparse categories remain zero, both boundary audits match
+  the parent, and the dynamic class-materialization audit remains exact.
+
+The focused report is
+`/tmp/cppgm-phase6-publication-ledger-focused-final-20260812.log`, SHA-256
+`6c63a13e796ae2f3e89ae959832426d5a66ddbc66786919bcb89efbc11eb6c87`.
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-publication-ledger-ordinary-strict-final2-20260812.log`
+and
+`/tmp/cppgm-phase6-publication-ledger-provenance-strict-final-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-publication-ledger-broad-final-20260812.log`, SHA-256
+`2b3ceb82c43823405df0281886c1c910dcb5b8ce6a53ff2d253ae0351dc683d6`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-publication-ledger-provenance-trace-final-20260812.PLHtJ9`.
+The analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-publication-ledger-provenance-analysis-final-20260812.json`
+and
+`/tmp/cppgm-phase6-publication-ledger-provenance-convergence-final-20260812.json`,
+with SHA-256 values
+`c0b5826772852b2284a3b6ede16c2e4b3d1ba071a26ffcc25f60c2bc97376ae3`
+and
+`115131fe9eee9119f5e26c1f67ce0dc241e4658f3cc69852e06edef47f0c4d60`.
+Both manifests retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+The 61-test helper report is
+`/tmp/cppgm-phase6-publication-ledger-helper-tests-final-20260812.log`,
+SHA-256
+`dd91428ca1bb0c949916b8dcdb0973b53fc4fe6b3104ae30fae99a20ade934ea`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and dynamic class-materialization reports have SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`9cd4fb7cf253e1f8c3458381698a1a7542262fcd1713bdc93356fdb704111239`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`8e69687ea09181a4383144f36b40f998a29e462b4bd8e8b2ea456fd7161313f5`.
+
+Every tracked semantic structure remains byte-identical to the parent. The
+structure report is
+`/tmp/cppgm-phase6-publication-ledger-structure-sizes-final-20260812.txt`,
+SHA-256
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+The ordinary Mach-O keeps the parent's segment allocation; `__text` shrinks by
+16 bytes and `__cstring` grows by 32 bytes. Linker padding makes the frozen
+binary 712 bytes smaller at 17,114,800 bytes, and it contains no
+`witness_provenance` symbols. The section report is
+`/tmp/cppgm-phase6-publication-ledger-binary-sections-final-20260812.txt`,
+SHA-256
+`14a174d9f13fc19b277ce55fc24e69c6b53e5b408cc5cac777298b3157373f5b`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-publication-ledger-ordinary-final-20260812`, SHA-256
+`d1bdf3e7aa09202e9d7d8dccb4fe8817eea1db8173539000fd33d42244c2a248`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.94% | +0.59% | -4.06% | `/tmp/cppgm-phase6-publication-ledger-perf-fixed-final-20260812.json` |
+| Single-owner-publication parent | -0.18% | +1.00% | +0.02% | `/tmp/cppgm-phase6-publication-ledger-perf-parent-final-20260812.json` |
+
+The candidate medians are 174,370,068,998 instructions, 761,581,568 bytes
+maximum RSS, and 568,946,688 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-publication-ledger-raw-candidate-final-20260812.json`,
+SHA-256
+`0a1094e6d8dd48dddb968f6bb6d5d6f4ffde1750b911df2f1b265009c0e30fae`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`ef96f838257c604e2c45a06ce0edf920426bdf207a2c5f0c0d521a7dce8494d1`
+and
+`9d500cfc8e526d9b79284aac45cb3cedc5a23522273a539a445e8920f6cc0f36`.
+The candidate metadata names commit `15f5c501c` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 50 and removes 480 production lines, a net deletion of
+430. Analyzer and audit tooling plus their tests add 107 and remove 240 lines,
+so the complete code change is a net deletion of 563 lines. Phase 6 remains
+open for producer-side function rediscovery, the two named function admission
+rules, the three named variable-retention decisions, and the remaining local
+side stores and migration mirrors. Renderer normalization is now explicitly a
+presentation step and no longer an ownership boundary. Phase 7 and inception
+remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

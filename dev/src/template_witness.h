@@ -1958,7 +1958,7 @@ inline void note_template_witness_lifecycle_event(TemplateLifecycleEvent event)
   template_witness_detail::refresh_lifecycle_event_metadata(event);
   session->lifecycle_events.push_back(event);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  witness_provenance::note_lifecycle_record(*session, event);
+  witness_provenance::note_lifecycle_publication(*session, event);
 #endif
 }
 

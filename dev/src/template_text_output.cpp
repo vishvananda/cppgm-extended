@@ -349,10 +349,9 @@ std::string sort_rendered_source_blocks(const std::string & text)
 }
 
 std::map<std::string, std::string> build_defaulted_source_aliases(
-    const template_api::TemplateWitnessSession & session,
-    const std::string & source_path)
+    const template_api::TemplateWitnessSession & session)
 {
-  return template_api::template_source_defaulted_aliases(session, source_path);
+  return template_api::template_source_defaulted_aliases(session);
 }
 
 std::string strip_trailing_template_id(const std::string & text);
@@ -692,17 +691,15 @@ bool source_mentions_member_outside_declaration(
 }
 
 std::set<std::string> explicit_source_owner_entities(
-    const template_api::TemplateWitnessSession & session,
-    const std::string & source_path)
+    const template_api::TemplateWitnessSession & session)
 {
-  return template_api::template_source_explicit_owner_entities(session, source_path);
+  return template_api::template_source_explicit_owner_entities(session);
 }
 
 std::set<std::string> source_owner_entities(
-    const template_api::TemplateWitnessSession & session,
-    const std::string & source_path)
+    const template_api::TemplateWitnessSession & session)
 {
-  return template_api::template_source_owner_entities(session, source_path);
+  return template_api::template_source_owner_entities(session);
 }
 
 void add_inline_stripped_entities(std::set<std::string> & entities,
@@ -1249,21 +1246,20 @@ std::string render_template_closure_events(
     bool debug)
 {
   std::map<std::string, std::string> aliases =
-      build_defaulted_source_aliases(session, source_path);
+      build_defaulted_source_aliases(session);
   const std::vector<std::string> source_lines = read_source_lines(source_path);
   const std::vector<std::string> inline_names =
       witness_text::inline_namespace_names_from_source(source_path);
   std::set<std::string> source_owner_entities =
-      ::source_owner_entities(session, source_path);
+      ::source_owner_entities(session);
   add_inline_stripped_entities(source_owner_entities, inline_names);
   add_anonymous_namespace_source_aliases(aliases, source_owner_entities);
   const std::set<std::string> explicit_owner_entities =
-      explicit_source_owner_entities(session, source_path);
+      explicit_source_owner_entities(session);
   const std::set<std::string> source_argument_value_entities =
-      template_api::template_source_argument_value_entities(session, source_path);
+      template_api::template_source_argument_value_entities(session);
   const std::set<std::string> source_argument_value_decl_locations =
-      template_api::template_source_argument_value_decl_locations(session,
-                                                                  source_path);
+      template_api::template_source_argument_value_decl_locations(session);
   const std::vector<const template_api::TemplateLifecycleEvent *> lifecycle_events =
       template_api::template_witness_lifecycle_events_by_origin(
           session,

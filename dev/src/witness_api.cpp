@@ -91,9 +91,8 @@ void record_class_use_source_use_in_table(
       normalized_source_use(request, true, false);
   semantic_source_use::record_source_use(*table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  witness_provenance::note_source_use_record(
+  witness_provenance::note_source_use_publication(
       session,
-      table,
       use);
 #endif
 }
@@ -113,9 +112,8 @@ void record_function_call_source_use_in_table(
   }
   semantic_source_use::record_source_use(*table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  witness_provenance::note_source_use_record(
+  witness_provenance::note_source_use_publication(
       session,
-      table,
       use);
 #endif
 }
@@ -134,9 +132,8 @@ void record_alias_use_source_use_in_table(
   use = normalized_source_use(std::move(use), false, true);
   semantic_source_use::record_source_use(*table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  witness_provenance::note_source_use_record(
+  witness_provenance::note_source_use_publication(
       session,
-      table,
       use);
 #endif
 }
@@ -161,9 +158,8 @@ void record_variable_use_source_use_in_table(
 #endif
   semantic_source_use::record_source_use(*table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  witness_provenance::note_source_use_record(
+  witness_provenance::note_source_use_publication(
       session,
-      table,
       use);
 #endif
 }
@@ -373,9 +369,8 @@ void finalize_variable_use_source_uses(TemplateWitnessSession * session)
     semantic_source_use::record_source_use(session->source_use_table,
                                            pending.source_use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-    witness_provenance::note_source_use_record(
+    witness_provenance::note_source_use_publication(
         session,
-        &session->source_use_table,
         pending.source_use);
 #endif
   }

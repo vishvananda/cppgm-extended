@@ -553,23 +553,6 @@ ParsedLocation parse_line_col(const string & location)
   return parsed;
 }
 
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-const char * witness_event_kind_text(SourceUseKind kind)
-{
-  switch(kind) {
-  case SourceUseKind::FunctionCall:
-    return "function_call";
-  case SourceUseKind::ClassUse:
-    return "class_use";
-  case SourceUseKind::AliasUse:
-    return "alias_use";
-  case SourceUseKind::VariableUse:
-    return "variable_use";
-  }
-  return "";
-}
-#endif
-
 struct RenderedSourceUse : semantic_source_use::SemanticSourceUse
 {
   RenderedSourceUse() = default;
@@ -594,70 +577,6 @@ const string & rendered_selected_decl_location(const RenderedSourceUse & event)
       event.selected_entity_decl_location :
       event.selected_decl_anchor_location;
 }
-
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-
-struct RendererTraceContext
-{
-  vector<witness_provenance::RendererEventLineage> * lineages = nullptr;
-};
-
-RendererTraceContext *& current_renderer_trace()
-{
-  static thread_local RendererTraceContext * value = nullptr;
-  return value;
-}
-
-bool witness_events_equal(const RenderedSourceUse & lhs, const RenderedSourceUse & rhs)
-{
-  return lhs.kind == rhs.kind &&
-      lhs.ownership == rhs.ownership &&
-      lhs.role == rhs.role &&
-      lhs.location == rhs.location &&
-      lhs.template_id_occurrence == rhs.template_id_occurrence &&
-      lhs.template_name == rhs.template_name &&
-      lhs.selected == rhs.selected &&
-      lhs.selection == rhs.selection &&
-      rendered_selected_decl_location(lhs) ==
-          rendered_selected_decl_location(rhs) &&
-      lhs.candidates_built == rhs.candidates_built &&
-      lhs.candidates_viable == rhs.candidates_viable &&
-      lhs.bindings == rhs.bindings &&
-      lhs.specialization_bindings == rhs.specialization_bindings &&
-      lhs.drops == rhs.drops;
-}
-
-string renderer_changed_fields(const RenderedSourceUse & before,
-                               const RenderedSourceUse & after)
-{
-  vector<string> fields;
-  if(before.kind != after.kind) fields.push_back("kind");
-  if(before.ownership != after.ownership) fields.push_back("ownership");
-  if(before.role != after.role) fields.push_back("role");
-  if(before.location != after.location)
-    fields.push_back("location");
-  if(!(before.template_id_occurrence == after.template_id_occurrence))
-    fields.push_back("occurrence");
-  if(before.template_name != after.template_name ||
-     before.selected != after.selected)
-    fields.push_back("entity");
-  if(before.selection != after.selection) fields.push_back("selection");
-  if(rendered_selected_decl_location(before) !=
-     rendered_selected_decl_location(after))
-    fields.push_back("selected_decl");
-  if(before.bindings != after.bindings) fields.push_back("bindings");
-  if(before.specialization_bindings != after.specialization_bindings)
-    fields.push_back("specialization_bindings");
-  if(before.drops != after.drops) fields.push_back("drops");
-  string out;
-  for(size_t i = 0; i < fields.size(); ++i) {
-    if(i != 0) out += ',';
-    out += fields[i];
-  }
-  return out;
-}
-
-#endif
 
 string witness_selection_text(SourceSelectionKind selection,
                               SourceUseKind kind)
@@ -873,7 +792,6 @@ void sort_events(vector<RenderedSourceUse> & events)
 {
   group_member_calls_with_source_owner_class_uses(events);
   group_materialized_class_uses_with_source_partial_class_uses(events);
-#if !defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   std::stable_sort(events.begin(),
                    events.end(),
                    [](const RenderedSourceUse & lhs, const RenderedSourceUse & rhs)
@@ -881,34 +799,6 @@ void sort_events(vector<RenderedSourceUse> & events)
                      return witness_event_sort_key(lhs) <
                          witness_event_sort_key(rhs);
                    });
-#else
-  const auto less = [](const RenderedSourceUse & lhs, const RenderedSourceUse & rhs)
-  {
-    return witness_event_sort_key(lhs) < witness_event_sort_key(rhs);
-  };
-  RendererTraceContext * trace = current_renderer_trace();
-  if(!trace || !trace->lineages || trace->lineages->size() != events.size()) {
-    std::stable_sort(events.begin(), events.end(), less);
-    return;
-  }
-  vector<size_t> order(events.size());
-  for(size_t i = 0; i < order.size(); ++i) order[i] = i;
-  std::stable_sort(order.begin(), order.end(),
-                   [&](size_t lhs, size_t rhs)
-                   {
-                     return less(events[lhs], events[rhs]);
-                   });
-  vector<RenderedSourceUse> sorted_events;
-  vector<witness_provenance::RendererEventLineage> sorted_lineages;
-  sorted_events.reserve(events.size());
-  sorted_lineages.reserve(events.size());
-  for(size_t i = 0; i < order.size(); ++i) {
-    sorted_events.push_back(events[order[i]]);
-    sorted_lineages.push_back((*trace->lineages)[order[i]]);
-  }
-  events.swap(sorted_events);
-  trace->lineages->swap(sorted_lineages);
-#endif
 }
 
 bool cv_type_atom_char(char ch)
@@ -1875,8 +1765,7 @@ void apply_defaulted_binding_aliases(vector<RenderedSourceUse> & events,
   }
 }
 
-void normalize_event_bindings(vector<RenderedSourceUse> & events,
-                              const string & input_path)
+void normalize_event_bindings(vector<RenderedSourceUse> & events)
 {
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].kind != SourceUseKind::AliasUse) {
@@ -2023,118 +1912,16 @@ string render_events_text(const vector<RenderedSourceUse> & events,
   return out.str();
 }
 
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-
-template <typename Function>
-void run_renderer_pass(
-    const char * pass,
-    const template_api::TemplateWitnessSession & session,
-    const string & source_path,
-    vector<RenderedSourceUse> & events,
-    vector<witness_provenance::RendererEventLineage> & lineages,
-    const Function & function)
-{
-  if(lineages.size() != events.size()) {
-    function();
-    return;
-  }
-  const vector<RenderedSourceUse> before_events = events;
-  const vector<witness_provenance::RendererEventLineage> before_lineages =
-      lineages;
-  RendererTraceContext trace;
-  trace.lineages = &lineages;
-  RendererTraceContext * previous = current_renderer_trace();
-  current_renderer_trace() = &trace;
-  function();
-  current_renderer_trace() = previous;
-
-  const bool formatting_only_pass =
-      string(pass) == "normalize_names" ||
-      string(pass) == "normalize_bindings";
-
-  for(size_t i = 0; i < events.size() && i < lineages.size(); ++i) {
-    for(size_t j = 0; j < before_events.size() && j < before_lineages.size(); ++j) {
-      if(lineages[i].event_id != before_lineages[j].event_id) continue;
-      if(!witness_events_equal(before_events[j], events[i])) {
-        const string fields = renderer_changed_fields(before_events[j], events[i]);
-        const bool replaced =
-            fields.find("kind") != string::npos ||
-            fields.find("location") != string::npos ||
-            (!formatting_only_pass &&
-             fields.find("entity") != string::npos) ||
-            fields.find("selection") != string::npos;
-        witness_provenance::note_renderer_action(
-            session,
-            source_path,
-            pass,
-            replaced ? "replaced" : "rewritten",
-            lineages[i],
-            witness_event_kind_text(events[i].kind),
-            events[i].location,
-            !events[i].template_name.empty() ?
-                events[i].template_name : events[i].selected,
-            fields);
-      }
-      break;
-    }
-  }
-}
-
-#endif
-
 void collect_rendered_source_events(const template_api::TemplateWitnessSession & session,
-                                    const string & source_path,
-                                    vector<RenderedSourceUse> & events
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-                                    ,
-                                    bool trace_renderer = false)
-#else
-                                    )
-#endif
+                                    vector<RenderedSourceUse> & events)
 {
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  vector<witness_provenance::RendererEventLineage> lineages;
-  if(trace_renderer) {
-    lineages = witness_provenance::renderer_table_lineages(session);
-  }
-  const bool trace_active =
-      trace_renderer && witness_provenance::enabled() &&
-      lineages.size() == session.source_use_table.uses.size();
-  events.reserve(session.source_use_table.uses.size());
-  for(size_t i = 0; i < session.source_use_table.uses.size(); ++i) {
-    events.emplace_back(session.source_use_table.uses[i]);
-  }
-
-#define CPPGM_RENDER_PASS(name, expression) \
-  run_renderer_pass(name, session, source_path, events, lineages, [&]() { expression; })
-  CPPGM_RENDER_PASS("normalize_names",
-                    normalize_event_names(events, session.inline_namespace_names));
-  CPPGM_RENDER_PASS("normalize_bindings",
-                    normalize_event_bindings(events, source_path));
-  CPPGM_RENDER_PASS("sort_visible_events", sort_events(events));
-#undef CPPGM_RENDER_PASS
-
-  if(trace_active && lineages.size() == events.size()) {
-    for(size_t i = 0; i < events.size(); ++i) {
-      witness_provenance::note_renderer_final_visible(
-          session,
-          source_path,
-          lineages[i],
-          witness_event_kind_text(events[i].kind),
-          events[i].location,
-          !events[i].template_name.empty() ?
-              events[i].template_name : events[i].selected);
-    }
-  }
-#else
   events.reserve(session.source_use_table.uses.size());
   for(size_t i = 0; i < session.source_use_table.uses.size(); ++i) {
     events.emplace_back(session.source_use_table.uses[i]);
   }
   normalize_event_names(events, session.inline_namespace_names);
-  normalize_event_bindings(events, source_path);
+  normalize_event_bindings(events);
   sort_events(events);
-#endif
 }
 
 void record_explicit_source_owner_entity(set<string> & out,
@@ -2163,12 +1950,12 @@ std::string render_template_source_witness_text(
 {
   vector<RenderedSourceUse> events;
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  collect_rendered_source_events(session, source_path, events, true);
+  collect_rendered_source_events(session, events);
   const string rendered = render_events_text(events, false);
   witness_provenance::finish_session(session, source_path);
   return rendered;
 #else
-  collect_rendered_source_events(session, source_path, events);
+  collect_rendered_source_events(session, events);
   return render_events_text(events, false);
 #endif
 }
@@ -2179,22 +1966,21 @@ std::string render_template_source_witness_debug_text(
 {
   vector<RenderedSourceUse> events;
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  collect_rendered_source_events(session, source_path, events, true);
+  collect_rendered_source_events(session, events);
   const string rendered = render_events_text(events, true);
   witness_provenance::finish_session(session, source_path);
   return rendered;
 #else
-  collect_rendered_source_events(session, source_path, events);
+  collect_rendered_source_events(session, events);
   return render_events_text(events, true);
 #endif
 }
 
 std::map<std::string, std::string> template_source_defaulted_aliases(
-    const TemplateWitnessSession & session,
-    const std::string & source_path)
+    const TemplateWitnessSession & session)
 {
   vector<RenderedSourceUse> events;
-  collect_rendered_source_events(session, source_path, events);
+  collect_rendered_source_events(session, events);
   map<string, string> aliases = build_defaulted_class_aliases(events, false);
   const map<string, string> predecl_all_defaulted =
       build_predecl_all_defaulted_class_aliases(events);
@@ -2209,11 +1995,10 @@ std::map<std::string, std::string> template_source_defaulted_aliases(
 }
 
 std::set<std::string> template_source_owner_entities(
-    const TemplateWitnessSession & session,
-    const std::string & source_path)
+    const TemplateWitnessSession & session)
 {
   vector<RenderedSourceUse> events;
-  collect_rendered_source_events(session, source_path, events);
+  collect_rendered_source_events(session, events);
   set<string> out;
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].kind == SourceUseKind::FunctionCall) {
@@ -2261,11 +2046,10 @@ std::set<std::string> template_source_owner_entities(
 }
 
 std::set<std::string> template_source_explicit_owner_entities(
-    const TemplateWitnessSession & session,
-    const std::string & source_path)
+    const TemplateWitnessSession & session)
 {
   vector<RenderedSourceUse> events;
-  collect_rendered_source_events(session, source_path, events);
+  collect_rendered_source_events(session, events);
   set<string> out;
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].selection != SourceSelectionKind::ExplicitSpecialization) {
@@ -2303,11 +2087,10 @@ std::set<std::string> template_source_explicit_owner_entities(
 }
 
 std::set<std::string> template_source_argument_value_entities(
-    const TemplateWitnessSession & session,
-    const std::string & source_path)
+    const TemplateWitnessSession & session)
 {
   vector<RenderedSourceUse> events;
-  collect_rendered_source_events(session, source_path, events);
+  collect_rendered_source_events(session, events);
   set<string> out;
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].kind != SourceUseKind::ClassUse &&
@@ -2335,11 +2118,10 @@ std::set<std::string> template_source_argument_value_entities(
 }
 
 std::set<std::string> template_source_argument_value_decl_locations(
-    const TemplateWitnessSession & session,
-    const std::string & source_path)
+    const TemplateWitnessSession & session)
 {
   vector<RenderedSourceUse> events;
-  collect_rendered_source_events(session, source_path, events);
+  collect_rendered_source_events(session, events);
   set<string> out;
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].kind != SourceUseKind::ClassUse &&

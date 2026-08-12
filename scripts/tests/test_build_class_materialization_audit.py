@@ -76,15 +76,12 @@ class ClassMaterializationAuditTest(unittest.TestCase):
             report.write_text(
                 json.dumps(
                     {
-                        "unique_output_ownership": final,
+                        "public_source_ownership": final,
                         "site_coverage": {
                             "class.class_template_reference.02": {
-                                "attempts": 6,
-                                "inserted": 6,
-                                "final_visible_rows": 6,
+                                "publications": 6,
                             }
                         },
-                        "renderer_ownership": {},
                     }
                 ),
                 encoding="utf-8",

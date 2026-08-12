@@ -1,6 +1,7 @@
 #include "witness_provenance.h"
 
 #include <cctype>
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <memory>
@@ -19,19 +20,11 @@ namespace witness_provenance {
 namespace {
 
 using semantic_source_use::SemanticSourceUse;
-using semantic_source_use::SemanticSourceUseTable;
-
-struct RowLineage
-{
-  std::uint64_t row_id = 0;
-  WitnessUpstreamRoute upstream_route = WitnessUpstreamRoute::Unknown;
-};
 
 struct SessionState
 {
   const template_api::TemplateWitnessSession * session_address = nullptr;
   std::string source_path;
-  std::vector<RowLineage> rows;
   std::vector<std::string> records;
   bool flushed = false;
 };
@@ -53,18 +46,6 @@ WitnessUpstreamRoute & current_upstream_route()
   static thread_local WitnessUpstreamRoute value =
       WitnessUpstreamRoute::Unknown;
   return value;
-}
-
-std::uint64_t next_row_id()
-{
-  static std::uint64_t value = 1;
-  return value++;
-}
-
-std::uint64_t next_event_id()
-{
-  static std::uint64_t value = 1;
-  return value++;
 }
 
 std::string json_escape(const std::string & value)
@@ -122,15 +103,6 @@ const char * source_use_producer_name(
   case semantic_source_use::SourceUseKind::VariableUse:
     return "variable.template_instantiation";
   }
-  return "unknown";
-}
-
-const char * source_use_producer_name(const std::string & kind)
-{
-  if(kind == "function_call") return "function.semantic_template_function";
-  if(kind == "class_use") return "class.class_template_reference.02";
-  if(kind == "alias_use") return "alias.canonical_occurrence";
-  if(kind == "variable_use") return "variable.template_instantiation";
   return "unknown";
 }
 
@@ -196,18 +168,6 @@ const char * lifecycle_kind_name(template_api::TemplateLifecycleEventKind kind)
   return "unknown";
 }
 
-std::string producer_array(const char * producer)
-{
-  return std::string("[") + quoted(producer) + ']';
-}
-
-std::string upstream_route_array(WitnessUpstreamRoute route)
-{
-  return route == WitnessUpstreamRoute::Unknown ?
-      "[]" :
-      std::string("[") + quoted(upstream_route_name(route)) + ']';
-}
-
 SessionState & state_for_session_locked(
     const template_api::TemplateWitnessSession & session)
 {
@@ -236,28 +196,14 @@ SessionState & state_for_session_locked(
   return *states.back();
 }
 
-void reconcile_rows(SessionState & state, const SemanticSourceUseTable & table)
-{
-  if(state.rows.size() == table.uses.size()) {
-    return;
-  }
-  state.rows.resize(table.uses.size());
-  for(std::size_t i = 0; i < state.rows.size(); ++i) {
-    if(state.rows[i].row_id == 0) {
-      state.rows[i].row_id = next_row_id();
-    }
-  }
-}
-
-std::string source_attempt_record(const SemanticSourceUse & use,
-                                  WitnessUpstreamRoute upstream_route)
+std::string source_publication_record(const SemanticSourceUse & use,
+                                      WitnessUpstreamRoute upstream_route)
 {
   std::ostringstream out;
-  out << "{\"record\":\"source_attempt\""
+  out << "{\"record\":\"source_publication\""
       << ",\"producer\":" << quoted(source_use_producer_name(use.kind))
       << ",\"upstream_route\":"
       << quoted(upstream_route_name(upstream_route))
-      << ",\"action\":\"inserted\""
       << ",\"kind\":" << quoted(source_use_kind_name(use.kind))
       << ",\"role\":" << quoted(source_use_role_name(use.role))
       << ",\"ownership\":" << quoted(source_use_ownership_name(use.ownership))
@@ -429,25 +375,20 @@ ScopedUpstreamRoute::~ScopedUpstreamRoute()
   current_upstream_route() = previous_;
 }
 
-void note_source_use_record(
+void note_source_use_publication(
     template_api::TemplateWitnessSession * session,
-    SemanticSourceUseTable * table,
     const SemanticSourceUse & use)
 {
-  if(!enabled() || session == nullptr || table == nullptr) {
+  if(!enabled() || session == nullptr) {
     return;
   }
   std::lock_guard<std::mutex> lock(trace_mutex());
   SessionState & state = state_for_session_locked(*session);
-  reconcile_rows(state, *table);
-  if(!state.rows.empty()) {
-    state.rows.back().upstream_route = current_upstream_route();
-  }
   state.records.push_back(
-      source_attempt_record(use, current_upstream_route()));
+      source_publication_record(use, current_upstream_route()));
 }
 
-void note_lifecycle_record(
+void note_lifecycle_publication(
     template_api::TemplateWitnessSession & session,
     const template_api::TemplateLifecycleEvent & event)
 {
@@ -457,9 +398,8 @@ void note_lifecycle_record(
   std::lock_guard<std::mutex> lock(trace_mutex());
   SessionState & state = state_for_session_locked(session);
   std::ostringstream record;
-  record << "{\"record\":\"lifecycle_attempt\""
+  record << "{\"record\":\"lifecycle_publication\""
          << ",\"producer\":\"lifecycle.transition_observer.01\""
-         << ",\"action\":\"inserted\""
          << ",\"kind\":" << quoted(lifecycle_kind_name(event.kind))
          << ",\"location\":" << quoted(event.location)
          << ",\"entity\":" << quoted(event.entity)
@@ -479,84 +419,6 @@ void note_lifecycle_record(
   state.records.push_back(record.str());
 }
 
-std::vector<RendererEventLineage> renderer_table_lineages(
-    const template_api::TemplateWitnessSession & session)
-{
-  std::vector<RendererEventLineage> out;
-  if(!enabled()) {
-    return out;
-  }
-  std::lock_guard<std::mutex> lock(trace_mutex());
-  SessionState & state = state_for_session_locked(session);
-  reconcile_rows(state, session.source_use_table);
-  out.resize(state.rows.size());
-  for(std::size_t i = 0; i < state.rows.size(); ++i) {
-    out[i].event_id = next_event_id();
-    out[i].table_row_id = state.rows[i].row_id;
-    out[i].upstream_route = state.rows[i].upstream_route;
-  }
-  return out;
-}
-
-void note_renderer_action(const template_api::TemplateWitnessSession & session,
-                          const std::string & source_path,
-                          const std::string & pass,
-                          const std::string & action,
-                          const RendererEventLineage & lineage,
-                          const std::string & kind,
-                          const std::string & location,
-                          const std::string & template_name,
-                          const std::string & changed_fields)
-{
-  if(!enabled()) return;
-  std::lock_guard<std::mutex> lock(trace_mutex());
-  SessionState & state = state_for_session_locked(session);
-  std::ostringstream record;
-  record << "{\"record\":\"renderer_action\""
-         << ",\"source\":" << quoted(source_path)
-         << ",\"pass\":" << quoted(pass)
-         << ",\"action\":" << quoted(action)
-         << ",\"event_id\":" << lineage.event_id
-         << ",\"table_row_id\":" << lineage.table_row_id
-         << ",\"producers\":"
-         << producer_array(source_use_producer_name(kind))
-         << ",\"upstream_routes\":"
-         << upstream_route_array(lineage.upstream_route)
-         << ",\"kind\":" << quoted(kind)
-         << ",\"location\":" << quoted(location)
-         << ",\"template_name\":" << quoted(template_name)
-         << ",\"changed_fields\":" << quoted(changed_fields)
-         << '}';
-  state.records.push_back(record.str());
-}
-
-void note_renderer_final_visible(
-    const template_api::TemplateWitnessSession & session,
-    const std::string & source_path,
-    const RendererEventLineage & lineage,
-    const std::string & kind,
-    const std::string & location,
-    const std::string & template_name)
-{
-  if(!enabled()) return;
-  std::lock_guard<std::mutex> lock(trace_mutex());
-  SessionState & state = state_for_session_locked(session);
-  std::ostringstream record;
-  record << "{\"record\":\"final_visible\""
-         << ",\"source\":" << quoted(source_path)
-         << ",\"event_id\":" << lineage.event_id
-         << ",\"table_row_id\":" << lineage.table_row_id
-         << ",\"producers\":"
-         << producer_array(source_use_producer_name(kind))
-         << ",\"upstream_routes\":"
-         << upstream_route_array(lineage.upstream_route)
-         << ",\"kind\":" << quoted(kind)
-         << ",\"location\":" << quoted(location)
-         << ",\"template_name\":" << quoted(template_name)
-         << '}';
-  state.records.push_back(record.str());
-}
-
 void finish_session(const template_api::TemplateWitnessSession & session,
                     const std::string & source_path)
 {
@@ -564,34 +426,6 @@ void finish_session(const template_api::TemplateWitnessSession & session,
   std::lock_guard<std::mutex> lock(trace_mutex());
   SessionState & state = state_for_session_locked(session);
   if(state.flushed) return;
-  reconcile_rows(state, session.source_use_table);
-  for(std::size_t i = 0; i < session.source_use_table.uses.size(); ++i) {
-    const SemanticSourceUse & use = session.source_use_table.uses[i];
-    std::ostringstream record;
-    record << "{\"record\":\"final_table_row\""
-           << ",\"row_id\":" << state.rows[i].row_id
-           << ",\"producers\":"
-           << producer_array(source_use_producer_name(use.kind))
-           << ",\"upstream_routes\":"
-           << upstream_route_array(state.rows[i].upstream_route)
-           << ",\"kind\":" << quoted(source_use_kind_name(use.kind))
-           << ",\"location\":" << quoted(use.location)
-           << ",\"template_name\":" << quoted(use.template_name)
-           << '}';
-    state.records.push_back(record.str());
-  }
-  for(std::size_t i = 0; i < session.lifecycle_events.size(); ++i) {
-    const template_api::TemplateLifecycleEvent & event =
-        session.lifecycle_events[i];
-    std::ostringstream record;
-    record << "{\"record\":\"final_lifecycle_event\""
-           << ",\"producers\":[\"lifecycle.transition_observer.01\"]"
-           << ",\"kind\":" << quoted(lifecycle_kind_name(event.kind))
-           << ",\"location\":" << quoted(event.location)
-           << ",\"entity\":" << quoted(event.entity)
-           << '}';
-    state.records.push_back(record.str());
-  }
 
   const char * directory_value = std::getenv("CPPGM_WITNESS_PROVENANCE_DIR");
   if(directory_value == nullptr || directory_value[0] == '\0') return;

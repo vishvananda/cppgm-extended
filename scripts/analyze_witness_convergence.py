@@ -328,8 +328,8 @@ def correlate_provenance(
     family = occurrence["family"]
     location = occurrence["location"]
     template_name = occurrence["template_name"]
-    source_attempts: list[dict[str, Any]] = []
-    for decision in provenance.get("source_attempt_decisions", []):
+    source_publications: list[dict[str, Any]] = []
+    for decision in provenance.get("source_publications", []):
         if decision.get("kind") != family:
             continue
         if not _record_belongs_to_test(decision, test):
@@ -338,11 +338,11 @@ def correlate_provenance(
             continue
         if not _same_template(template_name, str(decision.get("template_name", ""))):
             continue
-        source_attempts.append(decision)
+        source_publications.append(decision)
 
-    lifecycle_attempts: list[dict[str, Any]] = []
+    lifecycle_publications: list[dict[str, Any]] = []
     if family == "lifecycle":
-        for decision in provenance.get("lifecycle_attempt_decisions", []):
+        for decision in provenance.get("lifecycle_publications", []):
             if not _record_belongs_to_test(decision, test):
                 continue
             if _lifecycle_fact_kind(str(decision.get("kind", ""))) != (
@@ -352,35 +352,38 @@ def correlate_provenance(
             entity = occurrence["entity"]
             if entity and entity != decision.get("entity"):
                 continue
-            lifecycle_attempts.append(decision)
+            lifecycle_publications.append(decision)
 
     routes = sorted(
         {
             str(item.get("upstream_route", "unknown"))
-            for item in source_attempts
+            for item in source_publications
         }
     )
     producers = sorted(
-        {str(item.get("producer", "unknown")) for item in source_attempts}
+        {str(item.get("producer", "unknown")) for item in source_publications}
     )
-    if not routes and lifecycle_attempts:
+    if not routes and lifecycle_publications:
         routes = sorted(
             {
                 "lifecycle:"
                 f"entry_origin={item.get('entry_origin', 0)}:"
                 f"cause={item.get('cause', 0)}:"
                 f"closure_reason={item.get('closure_reason', 0)}"
-                for item in lifecycle_attempts
+                for item in lifecycle_publications
             }
         )
         producers = sorted(
-            {str(item.get("producer", "unknown")) for item in lifecycle_attempts}
+            {
+                str(item.get("producer", "unknown"))
+                for item in lifecycle_publications
+            }
         )
     return {
         "semantic_routes": routes,
         "producers": producers,
-        "source_attempts": source_attempts,
-        "lifecycle_attempts": lifecycle_attempts,
+        "source_publications": source_publications,
+        "lifecycle_publications": lifecycle_publications,
     }
 
 
