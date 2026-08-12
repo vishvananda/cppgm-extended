@@ -7,7 +7,6 @@ import argparse
 import collections
 import json
 import pathlib
-import re
 import sys
 from typing import Any, Iterable
 
@@ -67,7 +66,9 @@ def sorted_counter(counter: collections.Counter[str]) -> dict[str, int]:
     return dict(sorted(counter.items()))
 
 
-def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
+def build_report(
+    records: list[dict[str, Any]], trace_file_count: int | None = None
+) -> dict[str, Any]:
     site_coverage: dict[str, collections.Counter[str]] = {
         site: collections.Counter() for site in SOURCE_PRODUCERS + LIFECYCLE_PRODUCERS
     }
@@ -90,159 +91,12 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
     unique_output: list[dict[str, Any]] = []
     lifecycle_output: list[dict[str, Any]] = []
     unknown_producers: collections.Counter[str] = collections.Counter()
-    semantic_consolidation: dict[str, collections.Counter[str]] = {}
     source_attempt_decisions: list[dict[str, Any]] = []
     lifecycle_attempt_decisions: list[dict[str, Any]] = []
     lifecycle_attempt_context = collections.Counter()
-    alias_completion = collections.Counter()
-    alias_completion_decisions: list[dict[str, Any]] = []
-    class_materialization = collections.Counter()
-    class_materialization_decisions: list[dict[str, Any]] = []
-    class_parameterized_sources: list[dict[str, Any]] = []
 
     for record in records:
         record_kind = record.get("record")
-        if record_kind == "alias_completion":
-            operation = str(record.get("operation", "unknown"))
-            action = str(record.get("action", "unknown"))
-            source_name = str(record.get("source_template_name", ""))
-            selected_name = str(record.get("selected_template_name", ""))
-            parameterized = bool(record.get("parameterized", False))
-            alias_completion["decisions"] += 1
-            alias_completion[f"operation:{operation}"] += 1
-            alias_completion[f"action:{action}"] += 1
-            alias_completion[
-                "source_selected_match"
-                if source_name.split("::")[-1] == selected_name
-                else "source_selected_mismatch"
-            ] += 1
-            alias_completion[
-                "parameterized" if parameterized else "concrete"
-            ] += 1
-            alias_completion_decisions.append(
-                {
-                    "operation": operation,
-                    "action": action,
-                    "location": str(record.get("location", "")),
-                    "source_occurrence_id": int(
-                        record.get("source_occurrence_id", 0)
-                    ),
-                    "source_template_name": source_name,
-                    "selected_template_name": selected_name,
-                    "selected_decl_location": str(
-                        record.get("selected_decl_location", "")
-                    ),
-                    "parameterized": parameterized,
-                    "has_class_context": bool(
-                        record.get("has_class_context", False)
-                    ),
-                    "resolved_type": bool(record.get("resolved_type", False)),
-                    "source": record.get("_trace_file", ""),
-                }
-            )
-            continue
-        if record_kind == "class_parameterized_source":
-            class_parameterized_sources.append(
-                {
-                    "location": str(record.get("location", "")),
-                    "template_name": str(record.get("template_name", "")),
-                    "source_occurrence_id": int(
-                        record.get("source_occurrence_id", 0)
-                    ),
-                    "source_use_mode": int(record.get("source_use_mode", -1)),
-                    "structured_arguments": str(
-                        record.get("structured_arguments", "")
-                    ),
-                    "source": record.get("_trace_file", ""),
-                }
-            )
-            continue
-        if record_kind == "class_materialization_decision":
-            typed_owner = str(record.get("typed_owner", "none"))
-            typed_materialization = bool(record.get("typed_materialization", False))
-            legacy_admitted = bool(record.get("legacy_admitted", False))
-            structured_arguments = str(record.get("structured_arguments", ""))
-            detail_fields = {
-                match.group(1): match.group(2)
-                for match in re.finditer(
-                    r"(?:^|;)([a-z][a-z0-9_]*)=([^;]*)",
-                    structured_arguments,
-                )
-            }
-            semantic_owner_state = {
-                key: value
-                for key, value in detail_fields.items()
-                if key == "semantic_owner_kind"
-                or key == "semantic_owner_entity"
-                or key.startswith("function_")
-                or key.startswith("class_")
-                or key.startswith("value_")
-            }
-            dependency_match = re.search(
-                r"(?:^|;)source_dependency=(\d+)(?:;|$)",
-                structured_arguments,
-            )
-            source_dependency = (
-                int(dependency_match.group(1)) if dependency_match else -1
-            )
-            class_materialization["decisions"] += 1
-            class_materialization[
-                f"typed_owner:{typed_owner}"
-            ] += 1
-            class_materialization[
-                "typed_admitted" if typed_materialization else "typed_rejected"
-            ] += 1
-            if "legacy_admitted" in record:
-                class_materialization[
-                    "legacy_admitted" if legacy_admitted else "legacy_rejected"
-                ] += 1
-                if typed_materialization != legacy_admitted:
-                    class_materialization["shadow_mismatch"] += 1
-            class_materialization_decisions.append(
-                {
-                    "location": str(record.get("location", "")),
-                    "template_name": str(record.get("template_name", "")),
-                    "source_occurrence_id": int(
-                        record.get("source_occurrence_id", 0)
-                    ),
-                    "source_use_mode": int(record.get("source_use_mode", -1)),
-                    "typed_owner": typed_owner,
-                    "active_owner": str(record.get("active_owner", "none")),
-                    "active_operation": str(
-                        record.get("active_operation", "none")
-                    ),
-                    "exact_source_node": bool(
-                        record.get("exact_source_node", False)
-                    ),
-                    "semantic_owner_committed": bool(
-                        record.get("semantic_owner_committed", False)
-                    ),
-                    "source_dependency": source_dependency,
-                    "semantic_owner_state": semantic_owner_state,
-                    "structured_arguments": structured_arguments,
-                    "typed_materialization": typed_materialization,
-                    "source": record.get("_trace_file", ""),
-                }
-            )
-            if "legacy_admitted" in record:
-                class_materialization_decisions[-1][
-                    "legacy_admitted"
-                ] = legacy_admitted
-            continue
-        if record_kind == "semantic_consolidation":
-            family = str(record.get("family", "unknown"))
-            counts = semantic_consolidation.setdefault(
-                family, collections.Counter()
-            )
-            for field in (
-                "completed_candidates",
-                "early_repeats",
-                "prepublication_merges",
-                "collected_occurrences",
-                "published_occurrences",
-            ):
-                counts[field] += int(record.get(field, 0))
-            continue
         if record_kind in {"source_attempt", "lifecycle_attempt"}:
             producer = str(record.get("producer", "unknown"))
             coverage = site_coverage.setdefault(producer, collections.Counter())
@@ -479,8 +333,10 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
         upstream_route_output[route] = dict(sorted(counts.items()))
 
     return {
-        "schema_version": 2,
-        "trace_files": len({record["_trace_file"] for record in records}),
+        "schema_version": 3,
+        "trace_files": trace_file_count if trace_file_count is not None else len(
+            {record["_trace_file"] for record in records}
+        ),
         "records": len(records),
         "site_coverage": coverage_output,
         "unexercised_sites": unexercised,
@@ -535,38 +391,6 @@ def build_report(records: list[dict[str, Any]]) -> dict[str, Any]:
             route: sorted_counter(counts)
             for route, counts in sorted(alias_renderer_routes.items())
         },
-        "semantic_consolidation": {
-            family: sorted_counter(counts)
-            for family, counts in sorted(semantic_consolidation.items())
-        },
-        "alias_completion_summary": sorted_counter(alias_completion),
-        "alias_completion_decisions": sorted(
-            alias_completion_decisions,
-            key=lambda item: (
-                item["location"],
-                item["source_template_name"],
-                item["selected_template_name"],
-                item["operation"],
-                item["action"],
-            ),
-        ),
-        "class_materialization_summary": sorted_counter(class_materialization),
-        "class_materialization_decisions": sorted(
-            class_materialization_decisions,
-            key=lambda item: (
-                item["location"],
-                item["template_name"],
-                item["typed_owner"],
-            ),
-        ),
-        "class_parameterized_sources": sorted(
-            class_parameterized_sources,
-            key=lambda item: (
-                item["location"],
-                item["template_name"],
-                item["structured_arguments"],
-            ),
-        ),
         "unknown_producer_attempts": sorted_counter(unknown_producers),
     }
 
@@ -582,7 +406,7 @@ def main() -> int:
     paths = sorted(args.input_dir.rglob("*.jsonl"))
     if not paths:
         parser.error(f"no JSONL traces found under {args.input_dir}")
-    report = build_report(load_records(paths))
+    report = build_report(load_records(paths), len(paths))
     text = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(text, encoding="utf-8")

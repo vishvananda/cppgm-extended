@@ -66,6 +66,11 @@ def prior_late_removed_rows(prior: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def prior_accepted_rows(prior: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = prior.get("accepted")
+    return rows if isinstance(rows, list) else []
+
+
 def prior_patched_clang_evidence(prior: dict[str, Any]) -> dict[str, Any]:
     evidence = prior.get("patched_clang")
     if isinstance(evidence, dict):
@@ -99,12 +104,9 @@ def build_audit(
     provenance = read_json(provenance_report_path)
     clang_events = load_patched_clang_events(patched_clang_positive_dir)
 
-    typed_observations = [
-        item
-        for item in provenance.get("class_materialization_decisions", [])
-        if item.get("typed_materialization")
-    ]
-    accepted_keys = sorted({event_key(item) for item in typed_observations})
+    accepted_keys = sorted(
+        {event_key(item) for item in prior_accepted_rows(prior)}
+    )
     final_class_rows = [
         item
         for item in provenance.get("unique_output_ownership", [])
@@ -121,13 +123,10 @@ def build_audit(
 
     accepted: list[dict[str, Any]] = []
     for key in accepted_keys:
-        observations = [item for item in typed_observations if event_key(item) == key]
         accepted.append(
             {
                 "location": key[0],
                 "template_name": key[1],
-                "semantic_owners": sorted({str(item.get("typed_owner", "none")) for item in observations}),
-                "typed_observation_count": len(observations),
                 "cppgm_final_rows": final_by_key.get(key, []),
                 "patched_clang_rows": clang_by_key.get(key, []),
             }
@@ -181,8 +180,11 @@ def build_audit(
         failures.append("patched Clang has a row at a rejected location")
     if int(prior_clang.get("compile_failures", -1)) != 0:
         failures.append("patched-Clang rejected-location corpus did not compile cleanly")
-    if int(class_route.get("attempts", -1)) != int(class_route.get("inserted", -2)):
-        failures.append("class source-table attempts do not equal insertions")
+    class_attempts = int(class_route.get("attempts", -1))
+    class_insertions = int(class_route.get("inserted", -1))
+    class_exact_duplicates = int(class_route.get("exact_duplicate", 0))
+    if class_attempts != class_insertions + class_exact_duplicates:
+        failures.append("class source-table attempts are not fully accounted for")
     if int(class_route.get("inserted", -1)) != int(class_route.get("final_visible_rows", -2)):
         failures.append("class source-table rows do not equal public rows")
     if class_visibility_actions != 0:
@@ -210,6 +212,9 @@ def build_audit(
             ),
             "class_source_table_attempts": class_route.get("attempts", -1),
             "class_source_table_insertions": class_route.get("inserted", -1),
+            "class_source_table_exact_duplicates": class_route.get(
+                "exact_duplicate", 0
+            ),
             "class_public_rows": class_route.get("final_visible_rows", -1),
             "class_renderer_visibility_actions": class_visibility_actions,
         },

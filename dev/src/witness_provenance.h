@@ -162,50 +162,6 @@ void note_renderer_final_visible(
     const std::string & location,
     const std::string & template_name);
 
-void note_semantic_consolidation(
-    const template_api::TemplateWitnessSession & session,
-    const std::string & family,
-    std::size_t completed_candidates,
-    std::size_t early_repeats,
-    std::size_t prepublication_merges,
-    std::size_t collected_occurrences,
-    std::size_t published_occurrences);
-
-void note_alias_completion(
-    const template_api::TemplateWitnessSession & session,
-    const std::string & operation,
-    const std::string & action,
-    const std::string & location,
-    std::uint32_t source_occurrence_id,
-    const std::string & source_template_name,
-    const std::string & selected_template_name,
-    const std::string & selected_decl_location,
-    bool parameterized,
-    bool has_class_context,
-    bool resolved_type);
-
-void note_class_materialization_decision(
-    const template_api::TemplateWitnessSession & session,
-    const std::string & location,
-    const std::string & template_name,
-    std::uint32_t source_occurrence_id,
-    int source_use_mode,
-    const std::string & typed_owner,
-    const std::string & active_owner,
-    const std::string & active_operation,
-    bool exact_source_node,
-    bool semantic_owner_committed,
-    const std::string & structured_arguments,
-    bool typed_materialization);
-
-void note_class_parameterized_source(
-    const template_api::TemplateWitnessSession & session,
-    const std::string & location,
-    const std::string & template_name,
-    std::uint32_t source_occurrence_id,
-    int source_use_mode,
-    const std::string & structured_arguments);
-
 void finish_session(const template_api::TemplateWitnessSession & session,
                     const std::string & source_path);
 

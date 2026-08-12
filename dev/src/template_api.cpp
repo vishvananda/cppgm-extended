@@ -1923,13 +1923,6 @@ bool current_source_type_materialization_matches(
           source_syntax->source_location_id);
 }
 
-bool current_source_type_materialization_owner_committed()
-{
-  return !source_type_materialization_stack.empty() &&
-      source_type_materialization_stack.back().semantic_owner &&
-      source_type_materialization_stack.back().semantic_owner_committed;
-}
-
 bool current_source_type_materialization_commits_semantic_owner(
     SourceTypeMaterializationOwner owner,
     const void * semantic_owner)
@@ -1942,58 +1935,6 @@ bool current_source_type_materialization_commits_semantic_owner(
   return frame.semantic_owner_committed &&
       frame.semantic_owner_kind == owner &&
       frame.semantic_owner == semantic_owner;
-}
-
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-SourceTypeMaterializationOwner
-current_source_type_materialization_semantic_owner_kind()
-{
-  return source_type_materialization_stack.empty() ?
-      SourceTypeMaterializationOwner::None :
-      source_type_materialization_stack.back().semantic_owner_kind;
-}
-
-const void * current_source_type_materialization_semantic_owner()
-{
-  return source_type_materialization_stack.empty() ?
-      nullptr : source_type_materialization_stack.back().semantic_owner;
-}
-#endif
-
-const char * source_type_materialization_owner_name(
-    SourceTypeMaterializationOwner owner)
-{
-  switch(owner) {
-    case SourceTypeMaterializationOwner::FunctionBody:
-      return "function_body";
-    case SourceTypeMaterializationOwner::DeclarationType:
-      return "declaration_type";
-    case SourceTypeMaterializationOwner::StaticMemberInitializer:
-      return "static_member_initializer";
-    case SourceTypeMaterializationOwner::VariableTemplateInitializer:
-      return "variable_template_initializer";
-    case SourceTypeMaterializationOwner::None:
-      break;
-  }
-  return "none";
-}
-
-const char * source_type_materialization_operation_name(
-    SourceTypeMaterializationOperation operation)
-{
-  switch(operation) {
-    case SourceTypeMaterializationOperation::ContainingSemanticOwner:
-      return "containing_semantic_owner";
-    case SourceTypeMaterializationOperation::SourceTypeNode:
-      return "source_type_node";
-    case SourceTypeMaterializationOperation::StaticMemberInitializer:
-      return "static_member_initializer";
-    case SourceTypeMaterializationOperation::VariableTemplateInitializer:
-      return "variable_template_initializer";
-    case SourceTypeMaterializationOperation::None:
-      break;
-  }
-  return "none";
 }
 
 std::string canonicalize_template_parameter_source_text(

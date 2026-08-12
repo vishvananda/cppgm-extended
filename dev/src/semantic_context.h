@@ -763,8 +763,7 @@ public:
   virtual void submit_resolved_class_use(
       witness::ClassUseEmitRequest request) = 0;
   virtual bool observe_resolved_alias_template_id(
-      const resolved_source_semantics::ResolvedAliasTemplateId & resolved,
-      bool source_occurrence_collection) = 0;
+      const resolved_source_semantics::ResolvedAliasTemplateId & resolved) = 0;
   virtual semantic_model::ClassInfo * instantiate_selected_class_template(
       semantic_model::ClassTemplateDecl & decl,
       semantic_model::Scope & use_scope,

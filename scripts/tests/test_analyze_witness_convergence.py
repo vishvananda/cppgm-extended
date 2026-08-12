@@ -199,78 +199,18 @@ template-closure-events
             self.assertEqual(report["warning_outputs"], 1)
             self.assertEqual(len(report["warnings"]), 1)
 
-    def test_exact_materialization_candidates_are_compared_with_references(self):
+    def test_retired_materialization_shadow_inventory_is_absent(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             tests = root / "pa19" / "tests" / "general"
             tests.mkdir(parents=True)
-            witness = """translation-unit
-  class-use at tests/general/sample.t:4:3
-    template A
-    selected primary
-"""
+            witness = "translation-unit\n"
             (tests / "sample.ref.witness").write_text(witness, encoding="utf-8")
             (tests / "sample.my.witness").write_text(witness, encoding="utf-8")
-            report = MODULE.build_report(
-                root,
-                ("pa19",),
-                {
-                    "class_materialization_decisions": [
-                        {
-                            "location": "/repo/pa19/tests/general/sample.t:4:3",
-                            "template_name": "A",
-                            "active_owner": "declaration_type",
-                            "active_operation": "source_type_node",
-                            "exact_source_node": True,
-                            "semantic_owner_committed": True,
-                            "semantic_owner_state": {
-                                "semantic_owner_kind": "declaration_type"
-                            },
-                            "source_dependency": 1,
-                            "typed_materialization": False,
-                            "source": "/tmp/pa19/sample.t.1.jsonl",
-                        },
-                        {
-                            "location": "/repo/pa19/tests/general/sample.t:8:3",
-                            "template_name": "B",
-                            "active_owner": "declaration_type",
-                            "active_operation": "source_type_node",
-                            "exact_source_node": True,
-                            "semantic_owner_committed": True,
-                            "semantic_owner_state": {
-                                "semantic_owner_kind": "declaration_type"
-                            },
-                            "source_dependency": 1,
-                            "typed_materialization": False,
-                            "source": "/tmp/pa19/sample.t.1.jsonl",
-                        },
-                        {
-                            "location": "/repo/pa19/tests/general/sample.t:12:3",
-                            "template_name": "C",
-                            "active_owner": "declaration_type",
-                            "active_operation": "containing_semantic_owner",
-                            "exact_source_node": True,
-                            "semantic_owner_committed": True,
-                            "semantic_owner_state": {
-                                "semantic_owner_kind": "declaration_type"
-                            },
-                            "source_dependency": 1,
-                            "typed_materialization": False,
-                            "source": "/tmp/pa19/sample.t.1.jsonl",
-                        },
-                    ]
-                },
-            )
-            self.assertEqual(
-                report["class_materialization_candidate_summary"],
-                {
-                    "candidate_decisions": 2,
-                    "candidate_occurrences": 2,
-                    "patched_clang_present_occurrences": 1,
-                    "patched_clang_absent_occurrences": 1,
-                },
-            )
-
+            report = MODULE.build_report(root, ("pa19",), {})
+            self.assertEqual(report["schema_version"], 2)
+            self.assertNotIn("class_materialization_candidate_summary", report)
+            self.assertNotIn("class_materialization_candidates", report)
 
 if __name__ == "__main__":
     unittest.main()

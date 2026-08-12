@@ -43,7 +43,6 @@ class ClassMaterializationAuditTest(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            accepted = []
             final = [
                 {
                     "kind": "class_use",
@@ -53,14 +52,6 @@ class ClassMaterializationAuditTest(unittest.TestCase):
             ]
             for index in range(5):
                 location = f"/work/pa24/tests/accepted.t:{index + 1}:1"
-                accepted.append(
-                    {
-                        "location": location,
-                        "template_name": f"Good{index}",
-                        "typed_owner": "function_body",
-                        "typed_materialization": True,
-                    }
-                )
                 final.append(
                     {
                         "kind": "class_use",
@@ -85,7 +76,6 @@ class ClassMaterializationAuditTest(unittest.TestCase):
             report.write_text(
                 json.dumps(
                     {
-                        "class_materialization_decisions": accepted,
                         "unique_output_ownership": final,
                         "site_coverage": {
                             "class.class_template_reference.02": {
@@ -146,6 +136,11 @@ class ClassMaterializationAuditTest(unittest.TestCase):
                 "results": prior["patched_clang_rejected_results"],
             },
         )
+
+    def test_reuses_prior_accepted_source_occurrence_set(self):
+        accepted = [{"location": "pa24/tests/a.t:3:7", "template_name": "A"}]
+        self.assertEqual(MODULE.prior_accepted_rows({"accepted": accepted}), accepted)
+        self.assertEqual(MODULE.prior_accepted_rows({}), [])
 
 
 if __name__ == "__main__":

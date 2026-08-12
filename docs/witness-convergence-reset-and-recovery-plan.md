@@ -4903,6 +4903,127 @@ state from three hot semantic layouts. Phase 6 remains open for the remaining
 trace-only diagnostic inventory, shadow counters, and local semantic mirrors.
 Phase 7 and inception remain forbidden.
 
+## Temporary provenance scaffold deletion checkpoint, 2026-08-11
+
+This Phase 6 checkpoint deletes the four temporary provenance record families
+whose parity questions are closed: semantic-consolidation counters,
+alias-completion shadow decisions, class-materialization decision dumps, and
+parameterized-class structured-argument dumps. It also deletes the eight
+session counters that fed those records, the completion-route strings and
+unused alias-observer parameter that existed only to label them, and the
+materialization name/state accessors that had no non-diagnostic caller.
+
+The durable instrumentation remains. Source and lifecycle attempts still
+record producer and upstream-route ownership, table collision and replacement
+facts remain available, and renderer lineage still reaches every final public
+row. The analyzer schema advances to version 3 and the convergence report to
+version 2 after removing the retired fields. The analyzer now counts input
+trace files directly, so the 125 sessions with no durable events remain
+visible without manufacturing a diagnostic record.
+
+The dynamic class-materialization audit no longer depends on live shadow
+decisions. It reuses the five accepted source occurrences from the durable
+prior audit, checks them against the preserved patched-Clang positive corpus
+and current final rows, and retains the 55 rejected-row boundary. The audit
+passes with five accepted occurrences, 55 rejected rows, 2,632 class attempts,
+2,631 insertions, one exact duplicate, 2,631 public rows, and zero renderer
+visibility action.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output, and the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- all 3,060 ordinary/provenance witness and LowIR artifacts match the parent
+  checkpoint byte for byte;
+- all 1,530 provenance session files exist. The retained 26,390 records contain
+  the same 4,767 source attempts, 6,298 lifecycle attempts, and 4,289 unique
+  public rows, with no unknown producer attempt and no unexercised site;
+- source-site, upstream-route, alias-route, renderer-ownership, collision,
+  replacement, and lifecycle-context summaries are identical to the parent;
+- 42,694 temporary records disappear: 4,590 semantic-consolidation records,
+  1,175 alias-completion decisions, 27,169 class-materialization decisions,
+  and 9,760 parameterized-class argument dumps;
+- the focused helper/audit suite passes 60/60 and both ordinary and provenance
+  builds are warning-free.
+
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-trace-scaffold-ordinary-strict-20260811.log` and
+`/tmp/cppgm-phase6-trace-scaffold-provenance-strict-20260811.log`, with
+SHA-256 values
+`e7ea87f80269a4957bb6585cdf65c1cecc44eef69d6fdaa35ee51faccaa64d1f`
+and
+`0a25ecd62f2fc913b452acf02d00a9afb518d0b86e7669fdbef41eb53f618522`.
+The PA1-PA38 report is
+`/tmp/cppgm-phase6-trace-scaffold-broad-20260811.log`, SHA-256
+`3ea26f0c9c3f93314f33bcc0efd6c74c7fcbdbd21029729a0c259a2f5a0afaa6`.
+The provenance trace directory is
+`/tmp/cppgm-phase6-trace-scaffold-provenance-trace-20260811.eq3ljc`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-trace-scaffold-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase6-trace-scaffold-provenance-convergence-20260811.json`, with
+SHA-256 values
+`1725a734d1dddb056c612c823e447273e16a877bf27bd6960e05427fd6b51b29`
+and
+`a6e4039cf32c5ffdc60fc260410edec1d6ec570dd6ff80faa5e79b43f8d4ad6d`.
+
+The ordinary and provenance manifests both retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+The 60-test helper report is
+`/tmp/cppgm-phase6-trace-scaffold-helper-tests-20260811.log`, SHA-256
+`863b88c7d84082730358d171d86f152ec6b93bf489cd61e5e415732f56a8bb75`.
+The updated class-materialization audit is
+`/tmp/cppgm-phase6-trace-scaffold-class-materialization-audit-20260811.json`,
+SHA-256
+`d6583ce29b7ca3e2bd0fb4a4e2eb86c8ba39d231739d711bd9f6b07b6e0f1456`.
+
+The materialization, zero-finding text-reparse, and semantic-boundary reports
+retain their parent SHA-256 values:
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+and
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`.
+The template-boundary report improves its callsemantic metadata exception
+count from 197 to 193; its SHA-256 is
+`30344d116e35125f39911729a1fec11f6fc46ae05cb136f487d91dd5ce617143`.
+All tracked structure sizes remain unchanged. The report is
+`/tmp/cppgm-phase6-trace-scaffold-structure-sizes-20260811.txt`, SHA-256
+`a21919d8e9cba38f9d8b2d66b7aa7db464e5836591ac214595a41b5a218aba79`.
+
+The ordinary binary shrinks by 584 bytes to 17,184,040 bytes. Mach-O segment
+sizes remain unchanged, while `__text` shrinks by 784 bytes, `__cstring` by
+32 bytes, `__const` by 160 bytes, and `__unwind_info` by eight bytes. It
+contains no witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-phase6-trace-scaffold-ordinary-20260811`, SHA-256
+`8b8da62f8b351e931bf2b9c53ce8b7c41fb3263073ee016c5ea847feb1a70c69`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.97% | +0.12% | -4.14% | `/tmp/cppgm-phase6-trace-scaffold-perf-fixed-20260811.json` |
+| Witness semantic side-store parent | +0.07% | +0.12% | +0.02% | `/tmp/cppgm-phase6-trace-scaffold-perf-parent-20260811.json` |
+
+The candidate medians are 174,312,000,648 instructions, 757,993,472 bytes
+maximum RSS, and 568,467,456 bytes peak footprint. The raw candidate record is
+`/tmp/cppgm-phase6-trace-scaffold-raw-candidate-20260811.json`, SHA-256
+`2c0f058e29a2d09701f983d2ed20c332b147f44b96f9299979ef71fb3e29d324`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`25b5818293b79709e996f552dae0a77d8e60bd52ba908737839610b4df9d859a`
+and
+`7a22c345ae6dbc5468177a18cc9c075d4970a1c066fb706c63871741c061cad9`.
+The candidate metadata names commit `06a16812c` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds four and removes 630 production lines, a net deletion of
+626. Analyzer, audit, and helper code add 42 and remove 575 lines, a net
+deletion of 533. The total checkpoint is a net deletion of 1,159 lines before
+this ledger entry. Phase 6 remains open for remaining local semantic mirrors
+and the one measured class-source exact duplicate. Phase 7 and inception
+remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

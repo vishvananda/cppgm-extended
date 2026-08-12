@@ -64,21 +64,11 @@ private:
 SourceTypeMaterializationOwner current_source_type_materialization_owner();
 SourceTypeMaterializationOperation
 current_source_type_materialization_operation();
-const char * source_type_materialization_owner_name(
-    SourceTypeMaterializationOwner owner);
-const char * source_type_materialization_operation_name(
-    SourceTypeMaterializationOperation operation);
 bool current_source_type_materialization_matches(
     const cpp_decl::TemplateIdSyntax * source_syntax);
-bool current_source_type_materialization_owner_committed();
 bool current_source_type_materialization_commits_semantic_owner(
     SourceTypeMaterializationOwner owner,
     const void * semantic_owner);
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-SourceTypeMaterializationOwner
-current_source_type_materialization_semantic_owner_kind();
-const void * current_source_type_materialization_semantic_owner();
-#endif
 
 enum NonTypeArgumentStatus
 {

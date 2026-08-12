@@ -340,36 +340,6 @@ def correlate_provenance(
             continue
         source_attempts.append(decision)
 
-    alias_completions: list[dict[str, Any]] = []
-    if family == "alias_use":
-        for decision in provenance.get("alias_completion_decisions", []):
-            if not _record_belongs_to_test(decision, test):
-                continue
-            if location and not _same_location(
-                location, str(decision.get("location", ""))
-            ):
-                continue
-            if not _same_template(
-                template_name, str(decision.get("source_template_name", ""))
-            ):
-                continue
-            alias_completions.append(decision)
-
-    class_materialization: list[dict[str, Any]] = []
-    if family == "class_use":
-        for decision in provenance.get("class_materialization_decisions", []):
-            if not _record_belongs_to_test(decision, test):
-                continue
-            if location and not _same_location(
-                location, str(decision.get("location", ""))
-            ):
-                continue
-            if not _same_template(
-                template_name, str(decision.get("template_name", ""))
-            ):
-                continue
-            class_materialization.append(decision)
-
     lifecycle_attempts: list[dict[str, Any]] = []
     if family == "lifecycle":
         for decision in provenance.get("lifecycle_attempt_decisions", []):
@@ -393,28 +363,6 @@ def correlate_provenance(
     producers = sorted(
         {str(item.get("producer", "unknown")) for item in source_attempts}
     )
-    operations = sorted(
-        {str(item.get("operation", "unknown")) for item in alias_completions}
-    )
-    typed_owners = sorted(
-        {str(item.get("typed_owner", "none")) for item in class_materialization}
-    )
-    if not routes and alias_completions:
-        routes = sorted(
-            {
-                f"alias.operation:{item.get('operation', 'unknown')}"
-                for item in alias_completions
-            }
-        )
-    if not routes and class_materialization:
-        routes = sorted(
-            {
-                "class.materialization:"
-                f"{item.get('typed_owner', 'none')}:"
-                f"{'admitted' if item.get('typed_materialization') else 'rejected'}"
-                for item in class_materialization
-            }
-        )
     if not routes and lifecycle_attempts:
         routes = sorted(
             {
@@ -431,122 +379,9 @@ def correlate_provenance(
     return {
         "semantic_routes": routes,
         "producers": producers,
-        "alias_operations": operations,
-        "class_materialization_owners": typed_owners,
         "source_attempts": source_attempts,
-        "alias_completions": alias_completions,
-        "class_materialization": class_materialization,
         "lifecycle_attempts": lifecycle_attempts,
     }
-
-
-def audit_class_materialization_candidates(
-    expected_by_test: dict[str, list[WitnessEvent]],
-    provenance: dict[str, Any],
-) -> tuple[dict[str, int], list[dict[str, Any]]]:
-    tests_by_name: dict[str, list[str]] = collections.defaultdict(list)
-    for test in expected_by_test:
-        tests_by_name[pathlib.Path(test).name].append(test)
-
-    grouped: dict[tuple[str, str, str, bool], dict[str, Any]] = {}
-    candidate_decisions = 0
-    for decision in provenance.get("class_materialization_decisions", []):
-        operation = str(decision.get("active_operation", "none"))
-        semantic_owner_kind = str(
-            decision.get("semantic_owner_state", {}).get(
-                "semantic_owner_kind", "none"
-            )
-        )
-        materialization_operation = operation in {
-            "source_type_node",
-            "static_member_initializer",
-            "variable_template_initializer",
-        }
-        owner_matches_operation = (
-            operation == "source_type_node"
-            and semantic_owner_kind in {"declaration_type", "function_body"}
-        ) or operation == semantic_owner_kind
-        candidate = (
-            int(decision.get("source_dependency", -1)) > 0
-            and bool(decision.get("semantic_owner_committed", False))
-            and materialization_operation
-            and owner_matches_operation
-            and bool(decision.get("exact_source_node", False))
-        )
-        if not candidate:
-            continue
-        candidate_decisions += 1
-        location = str(decision.get("location", ""))
-        template_name = str(decision.get("template_name", ""))
-        source_name = pathlib.Path(location.rsplit(":", 2)[0]).name
-        matching_tests = [
-            test
-            for test in tests_by_name.get(source_name, [])
-            if _record_belongs_to_test(decision, test)
-        ]
-        test = matching_tests[0] if len(matching_tests) == 1 else ""
-        expected_event = next(
-            (
-                event
-                for event in expected_by_test.get(test, [])
-                if event.family == "class_use"
-                and _same_location(event.location, location)
-                and _same_template(event.template_name, template_name)
-            ),
-            None,
-        )
-        expected = expected_event is not None
-        display_location = expected_event.location if expected_event else location
-        display_template = (
-            expected_event.template_name if expected_event else template_name
-        )
-        key = (test, display_location, display_template, expected)
-        item = grouped.setdefault(
-            key,
-            {
-                "test": test,
-                "location": display_location,
-                "template_name": display_template,
-                "patched_clang_presence": expected,
-                "decision_count": 0,
-                "typed_materialization_count": 0,
-                "owners": set(),
-                "operations": set(),
-            },
-        )
-        item["decision_count"] += 1
-        item["typed_materialization_count"] += int(
-            bool(decision.get("typed_materialization", False))
-        )
-        item["owners"].add(str(decision.get("active_owner", "none")))
-        item["operations"].add(operation)
-
-    candidates: list[dict[str, Any]] = []
-    for item in grouped.values():
-        copied = dict(item)
-        copied["owners"] = sorted(item["owners"])
-        copied["operations"] = sorted(item["operations"])
-        candidates.append(copied)
-    candidates.sort(
-        key=lambda item: (
-            item["test"],
-            item["location"],
-            item["template_name"],
-        )
-    )
-    return (
-        {
-            "candidate_decisions": candidate_decisions,
-            "candidate_occurrences": len(candidates),
-            "patched_clang_present_occurrences": sum(
-                int(item["patched_clang_presence"]) for item in candidates
-            ),
-            "patched_clang_absent_occurrences": sum(
-                int(not item["patched_clang_presence"]) for item in candidates
-            ),
-        },
-        candidates,
-    )
 
 
 def build_report(
@@ -674,11 +509,8 @@ def build_report(
         {"family": key[0], "route": key[1], "occurrences": count}
         for key, count in sorted(owner_counts.items())
     ]
-    materialization_summary, materialization_candidates = (
-        audit_class_materialization_candidates(expected_by_test, provenance)
-    )
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "references": len(references),
         "matching_outputs": matching,
         "mismatching_outputs": len(tests),
@@ -686,8 +518,6 @@ def build_report(
         "missing_actual_files": missing_actual_files,
         "family_summary": family_summary,
         "ownership_summary": ownership_summary,
-        "class_materialization_candidate_summary": materialization_summary,
-        "class_materialization_candidates": materialization_candidates,
         "warnings": warnings,
         "tests": tests,
     }
