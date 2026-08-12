@@ -22,30 +22,20 @@ struct FunctionTemplateDeduction
   std::map<std::string, std::size_t> pack_sizes;
 };
 
-struct FunctionTemplateCallSourceUseRequest
+struct FunctionTemplateCallSourceUseRequest :
+    semantic_source_use::SemanticSourceUse
 {
+  FunctionTemplateCallSourceUseRequest()
+  {
+    kind = semantic_source_use::SourceUseKind::FunctionCall;
+    role = semantic_source_use::SourceUseRole::CallUse;
+  }
+
   semantic_model::FunctionBinding * binding = nullptr;
-  std::size_t source_traversal_order = 0;
-  bool source_call_precedes_nested_callee = false;
   bool preserve_semantic_drop_order = false;
-  std::string use_location;
-  std::string template_name;
-  std::string selected;
-  semantic_source_use::SourceUseRole role =
-      semantic_source_use::SourceUseRole::CallUse;
-  semantic_source_use::SourceSelectionKind selection =
-      semantic_source_use::SourceSelectionKind::None;
   witness::FunctionCallEmissionOrigin origin =
       witness::FunctionCallEmissionOrigin::OverloadSelectedCall;
-  std::string selected_decl_location;
-  std::string selected_decl_anchor_location;
-  semantic_source_use::SourceTemplateIdOccurrence template_id_occurrence;
-  std::vector<semantic_source_use::SourceBinding> bindings;
-  std::vector<semantic_source_use::SourceDrop> drops;
   std::size_t explicit_arg_count = 0;
-  int candidate_count = -1;
-  int candidates_built = -1;
-  int candidates_viable = -1;
 };
 
 bool deduce_function_template_from_arguments(

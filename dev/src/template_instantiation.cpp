@@ -12668,7 +12668,7 @@ const ValueBinding * instantiate_variable_template(
                  semantic_source_use::SourceSelectionKind::Primary);
     if(source_capture_enabled || record_direct_source_use_during_pause) {
       witness::VariableUseEmitRequest request;
-      request.use_location = effective_use_location;
+      request.location = effective_use_location;
       request.ownership =
           nested_replay_request ?
               semantic_source_use::SourceUseOwnership::NestedDerived :
@@ -12682,15 +12682,15 @@ const ValueBinding * instantiate_variable_template(
       if(selection.parameters == &decl.parameters) {
         const semantic_model::SourceDeclAnchorCache & decl_anchor =
             semantic_trace::variable_template_decl_anchor(ctx, &decl);
-        witness::set_selected_decl_anchor(request.selected_decl_location,
+        witness::set_selected_decl_anchor(request.selected_entity_decl_location,
                                           request.selected_decl_anchor_location,
                                           decl_anchor);
       } else {
-        request.selected_decl_location =
+        request.selected_entity_decl_location =
             normalized_template_name_or_node_location(
                 ctx, selection.declarator, decl.name, true);
-        if(request.selected_decl_location.empty()) {
-          request.selected_decl_location =
+        if(request.selected_entity_decl_location.empty()) {
+          request.selected_entity_decl_location =
               normalized_template_name_or_node_location(
                   ctx, selection.specifiers, decl.name, true);
         }
@@ -12746,9 +12746,6 @@ const ValueBinding * instantiate_variable_template(
           retain_until_semantic_finalization;
       request.record_during_source_capture_pause =
           record_direct_source_use_during_pause;
-      CPPGM_SET_WITNESS_PRODUCER(
-          request,
-          witness::WitnessProducerSite::VariableTemplateInstantiation);
       witness::emit_variable_use(request);
     }
 

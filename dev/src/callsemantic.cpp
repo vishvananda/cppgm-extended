@@ -11771,17 +11771,15 @@ private:
                                               request.origin))) {
       return;
     }
-    CPPGM_SET_WITNESS_PRODUCER(
-        request,
-        witness::WitnessProducerSite::ClassTemplateReference02);
     if(template_resolve_trace_enabled_) {
       std::ostringstream trace;
       trace << "class-use name=" << request.template_name
             << " kind=" << witness::source_selection_text(request.selection)
             << " traversal-order=" << request.source_traversal_order
             << " origin=" << static_cast<int>(request.origin)
-            << " decl=" << (request.selected_decl_location.empty() ?
-                                 "<none>" : request.selected_decl_location)
+            << " decl=" << (request.selected_entity_decl_location.empty() ?
+                                 "<none>" :
+                                 request.selected_entity_decl_location)
             << " bindings={";
       for(std::size_t i = 0; i < request.bindings.size(); ++i) {
         if(i) trace << ',';
@@ -11901,11 +11899,15 @@ private:
     };
     typedef std::tuple<uint32_t, const void *, std::string,
                        std::string> ClassOccurrenceKey;
-    const void * const template_identity = request.semantic_template ?
-        (request.semantic_template->deferred_definition_source_identity ?
+    const void * const template_identity =
+        request.semantic_class_template_identity ?
+        (request.semantic_class_template_identity->
+             deferred_definition_source_identity ?
              static_cast<const void *>(
-                 request.semantic_template->deferred_definition_source_identity) :
-             static_cast<const void *>(request.semantic_template)) :
+                 request.semantic_class_template_identity->
+                     deferred_definition_source_identity) :
+             static_cast<const void *>(
+                 request.semantic_class_template_identity)) :
         nullptr;
     const ClassOccurrenceKey key(
         request.source_occurrence_id,
@@ -12064,7 +12066,8 @@ private:
         }
         request.role = semantic_source_use::SourceUseRole::QualifierUse;
       }
-      ClassTemplateDecl * const origin = request.semantic_template;
+      ClassTemplateDecl * const origin =
+          request.semantic_class_template_identity;
       const bool partial_selection_materialized =
           request.partial_selection_visibility_requires_enclosing_base ?
               semantic_base_instances.count(request.semantic_instance) != 0 :
@@ -12083,17 +12086,17 @@ private:
         primary_selection.class_node = origin ? origin->class_node : nullptr;
         primary_selection.parameters = origin ? &origin->parameters : nullptr;
         witness::set_selected_decl_anchor(
-            request.selected_decl_location,
+            request.selected_entity_decl_location,
             request.selected_decl_anchor_location,
             class_use_selected_decl_anchor_location(origin, primary_selection));
       }
       if(origin &&
          request.selection ==
              semantic_source_use::SourceSelectionKind::Primary &&
-         !request.semantic_specialization_key.empty()) {
+         !request.semantic_class_specialization_key.empty()) {
         const std::map<std::string, ClassTemplateSpecializationDecl>::const_iterator
             explicit_found = origin->explicit_specializations.find(
-                request.semantic_specialization_key);
+                request.semantic_class_specialization_key);
         if(explicit_found != origin->explicit_specializations.end()) {
           template_api::ClassSpecializationSelection final_selection;
           final_selection.kind = template_api::MS_EXPLICIT_SPECIALIZATION;
@@ -12102,7 +12105,7 @@ private:
           request.selection =
               semantic_source_use::SourceSelectionKind::ExplicitSpecialization;
           witness::set_selected_decl_anchor(
-              request.selected_decl_location,
+              request.selected_entity_decl_location,
               request.selected_decl_anchor_location,
               class_use_selected_decl_anchor_location(origin, final_selection));
         }
@@ -12479,8 +12482,8 @@ private:
     const template_api::ClassSpecializationSelection & selection =
         use.selection;
     witness::ClassUseEmitRequest request;
-    request.semantic_template = retained.origin;
-    request.semantic_specialization_key =
+    request.semantic_class_template_identity = retained.origin;
+    request.semantic_class_specialization_key =
         template_args_identity_key(retained.instance->instantiation_arguments);
     request.location = use_location;
     request.template_name =
@@ -12488,7 +12491,7 @@ private:
             *this, *retained.origin);
     request.selection = source_selection_kind_for_match_kind(selection.kind);
     witness::set_selected_decl_anchor(
-        request.selected_decl_location,
+        request.selected_entity_decl_location,
         request.selected_decl_anchor_location,
         class_use_selected_decl_anchor_location(retained.origin, selection));
     template_api::append_template_witness_source_bindings(
@@ -12556,8 +12559,8 @@ private:
     request.source_traversal_order =
         source_syntax.has_source_token_span ?
             source_syntax.source_token_start + 1 : 0;
-    request.semantic_template = source_origin;
-    request.semantic_specialization_key =
+    request.semantic_class_template_identity = source_origin;
+    request.semantic_class_specialization_key =
         template_args_identity_key(*use.arguments);
     request.location = location;
     request.template_name =
@@ -12567,7 +12570,7 @@ private:
         source_selection_kind_for_match_kind(use.selection.kind);
     const std::string selected_decl_anchor_location =
         class_use_selected_decl_anchor_location(source_origin, use.selection);
-    request.selected_decl_location = selected_decl_anchor_location;
+    request.selected_entity_decl_location = selected_decl_anchor_location;
     request.selected_decl_anchor_location = selected_decl_anchor_location;
     if(materialized_type) {
       template_api::append_template_witness_source_bindings(
@@ -12775,9 +12778,9 @@ private:
 
     witness::ClassUseEmitRequest request;
     request.source_occurrence_id = resolved.source_syntax->source_location_id;
-    request.semantic_template = origin;
+    request.semantic_class_template_identity = origin;
     request.semantic_instance = &owner;
-    request.semantic_specialization_key =
+    request.semantic_class_specialization_key =
         template_args_identity_key(owner.instantiation_arguments);
     request.location = location;
     request.template_name =
@@ -12801,14 +12804,14 @@ private:
             semantic_source_use::SourceSelectionKind::Primary;
     if(has_concrete_selection) {
       witness::set_selected_decl_anchor(
-          request.selected_decl_location,
+          request.selected_entity_decl_location,
           request.selected_decl_anchor_location,
           class_use_selected_decl_anchor_location(origin,
                                                   concrete_use.selection));
     } else {
       const semantic_model::SourceDeclAnchorCache & selected_anchor =
           semantic_trace::class_decl_anchor(*this, &owner);
-      witness::set_selected_decl_anchor(request.selected_decl_location,
+      witness::set_selected_decl_anchor(request.selected_entity_decl_location,
                                         request.selected_decl_anchor_location,
                                         selected_anchor);
     }
@@ -21312,9 +21315,9 @@ private:
       request.source_traversal_order =
           resolved.source_syntax && resolved.source_syntax->has_source_token_span ?
               resolved.source_syntax->source_token_start + 1 : 0;
-      request.semantic_template = class_template;
+      request.semantic_class_template_identity = class_template;
       request.semantic_instance = instance;
-      request.semantic_specialization_key = resolved.instantiation_key ?
+      request.semantic_class_specialization_key = resolved.instantiation_key ?
           *resolved.instantiation_key : template_args_identity_key(arguments);
       request.location = use_location;
       request.template_name =
@@ -21323,7 +21326,7 @@ private:
               *class_template);
       request.selection =
           semantic_source_use::SourceSelectionKind::ExplicitSpecialization;
-      request.selected_decl_location = selected_decl_anchor_location;
+      request.selected_entity_decl_location = selected_decl_anchor_location;
       request.selected_decl_anchor_location = selected_decl_anchor_location;
       request.template_id_occurrence =
           witness::make_source_template_id_occurrence(
@@ -21462,9 +21465,9 @@ private:
     request.source_traversal_order =
         resolved.source_syntax && resolved.source_syntax->has_source_token_span ?
             resolved.source_syntax->source_token_start + 1 : 0;
-    request.semantic_template = class_template;
+    request.semantic_class_template_identity = class_template;
     request.semantic_instance = instance;
-    request.semantic_specialization_key = resolved.instantiation_key ?
+    request.semantic_class_specialization_key = resolved.instantiation_key ?
         *resolved.instantiation_key : template_args_identity_key(arguments);
     request.location = use_location;
     request.template_name =
@@ -21473,7 +21476,7 @@ private:
             *class_template);
     request.selection =
         source_selection_kind_for_match_kind(visible_selection.kind);
-    request.selected_decl_location = selected_decl_anchor_location;
+    request.selected_entity_decl_location = selected_decl_anchor_location;
     request.selected_decl_anchor_location = selected_decl_anchor_location;
     request.template_id_occurrence =
         witness::make_source_template_id_occurrence(use_location,
@@ -21594,11 +21597,13 @@ private:
                     AliasPublicOwnerMode::SelectedConcrete ?
                 resolved.selected_concrete_owner : nullptr);
 
-    witness::AliasUseEmitRequest request;
+    semantic_source_use::SemanticSourceUse request;
+    request.kind = semantic_source_use::SourceUseKind::AliasUse;
+    request.role = semantic_source_use::SourceUseRole::TypeUse;
     request.source_traversal_order =
         source_syntax && source_syntax->has_source_token_span ?
             source_syntax->source_token_start + 1 : 0;
-    request.use_location = use_location;
+    request.location = use_location;
     const bool public_owner_refines_lexical_owner =
         resolved.public_owner_mode == resolved_source_semantics::
                 AliasPublicOwnerMode::SourceDeclaration &&
@@ -21673,17 +21678,16 @@ private:
     request.template_name = alias_template_name;
     const semantic_model::SourceDeclAnchorCache & decl_anchor =
         semantic_trace::alias_template_decl_anchor(*this, &alias_template);
-    witness::set_selected_decl_anchor(request.selected_decl_location,
+    witness::set_selected_decl_anchor(request.selected_entity_decl_location,
                                       request.selected_decl_anchor_location,
                                       decl_anchor);
-    request.selected_decl_anchor_explicit = true;
     if(resolved.resolved_type) {
       const ParsedSourceLocation parsed_decl =
-          parse_source_location(request.selected_decl_location);
+          parse_source_location(request.selected_entity_decl_location);
       if(parsed_decl.valid) {
         std::ostringstream line_start;
         line_start << parsed_decl.file << ":" << parsed_decl.line << ":1";
-        request.selected_decl_location = line_start.str();
+        request.selected_entity_decl_location = line_start.str();
       }
     }
     const size_t preserved_binding_limit =
@@ -21694,9 +21698,6 @@ private:
         request.bindings[i].preserve_qualified_member = true;
       }
     }
-    CPPGM_SET_WITNESS_PRODUCER(
-        request,
-        witness::WitnessProducerSite::AliasCanonicalOccurrence);
     const witness_provenance::ScopedUpstreamRoute canonical_route(
         witness_provenance::WitnessUpstreamRoute::AliasCanonicalOccurrence);
     witness::emit_alias_use(template_witness_context(), request);

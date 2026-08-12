@@ -2750,7 +2750,7 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
     }
     if(!public_location.empty()) {
       semantic_template_function::FunctionTemplateCallSourceUseRequest request;
-      request.use_location = public_location;
+      request.location = public_location;
       request.template_name = qualified_declval_name;
       request.selected = qualified_declval_name;
       request.role = semantic_source_use::SourceUseRole::DeclvalCall;
@@ -3920,7 +3920,7 @@ void note_function_call_source_event(
       }
       semantic_template_function::FunctionTemplateCallSourceUseRequest nested_use;
       nested_use.binding = nested_selected;
-      nested_use.use_location = nested_location;
+      nested_use.location = nested_location;
       nested_use.source_traversal_order =
           source_occurrence_traversal_order(ctx, nested_location);
       nested_use.preserve_semantic_drop_order =
@@ -4028,7 +4028,7 @@ void note_function_call_source_event(
     source_use.source_traversal_order =
         source_occurrence_traversal_order(ctx, public_location);
   }
-  source_use.use_location = public_location;
+  source_use.location = public_location;
   source_use.template_name = template_name;
   source_use.selected = selected_name;
   source_use.selected_decl_anchor_location = selected_decl_anchor_location;

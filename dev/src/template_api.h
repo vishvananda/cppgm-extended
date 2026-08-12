@@ -219,8 +219,6 @@ struct TemplateNestedMemberClassCompletionResult
   bool completed = false;
 };
 
-using witness::FunctionCallSourceDecision;
-
 class ScopedTemplateArgumentSourceLocations
 {
 public:

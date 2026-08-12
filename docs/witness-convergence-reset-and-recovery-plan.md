@@ -5658,6 +5658,128 @@ This checkpoint adds 236 and removes 347 production lines, a net deletion of
 111. Phase 6 remains open for the rest of the local semantic mirror and
 generic-dedup obligation inventory. Phase 7 and inception remain forbidden.
 
+## Canonical source-use row checkpoint, 2026-08-12
+
+This Phase 6 checkpoint removes the remaining request and decision objects
+which reconstructed a source-use row at the witness boundary. Class,
+function, and variable request structures now extend
+`semantic_source_use::SemanticSourceUse` and retain only independent producer
+controls or semantic-owner inputs. The alias producer needs no envelope and
+constructs the canonical row directly. Function-call semantic analysis now
+enriches that same row rather than returning a parallel
+`FunctionCallSourceDecision` for the witness layer to translate.
+
+The four `make_*_source_use` reconstruction functions and the shared
+`populate_common_source_use_fields` copier disappear. Binding normalization
+now updates the passed canonical row in place; location normalization and drop
+candidate-name normalization operate on the same row before insertion. Class
+template identities in that row are typed `ClassTemplateDecl*` values rather
+than untyped pointers, so the class request no longer carries a second template
+identity. Producer sites also disappear from all four request paths and from
+the pending variable row: provenance proves that each final family funnel has
+one fixed site (`ClassTemplateReference02`, `AliasCanonicalOccurrence`,
+`FunctionSemanticTemplateFunction`, or `VariableTemplateInstantiation`), so a
+runtime mirror of that constant has no remaining semantic obligation.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the normal integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9
+  runs in its normal report position and has no separate validation lane;
+- all 3,060 ordinary/provenance witness and LowIR artifacts are byte-identical
+  to each other and to the canonical-payload parent;
+- all 1,530 provenance session files exist. The trace remains parent-exact at
+  26,389 records, 4,766 source attempts, 6,298 lifecycle attempts, and 4,289
+  unique public rows, with no unknown producer or unexercised site;
+- alias remains 835 attempts/insertions/public rows, class remains
+  2,631/2,631/2,631, function remains 1,268 attempts with 791 insertions, 469
+  exact duplicates and eight rejected replays, and variable remains 32/32/32.
+  All source collision and replacement matrices remain empty;
+- renderer ownership remains limited to the same 409 binding rewrites and 40
+  name rewrites;
+- the focused helper suite passes 60/60, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and neither boundary audit nor any
+  tracked semantic structure size changes;
+- the dynamic class-materialization audit passes with five accepted source
+  occurrences, 55 rejected locations, and no failure.
+
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-canonical-row-envelope-final-ordinary-strict-20260812.log`
+and
+`/tmp/cppgm-phase6-canonical-row-envelope-final-provenance-strict-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated broad report is
+`/tmp/cppgm-phase6-canonical-row-envelope-final-broad-20260812.log`, SHA-256
+`54b4d8b01560fe2b6ab6ead35778480691f39564b7cd2c8a7ae4fe2612ecfa79`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-canonical-row-envelope-final-provenance-trace-20260812.zymFey`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-canonical-row-envelope-final-provenance-analysis-20260812.json`
+and
+`/tmp/cppgm-phase6-canonical-row-envelope-final-provenance-convergence-20260812.json`,
+with SHA-256 values
+`9d6c75a65bcb31e6e1c2f05a47bf687376be2213fc0d99bf004e77f8e619f1c6`
+and
+`cf78d231c1f1eae58fb6dffae23e2a5bfeb186d8a9e2e9edf9595646b8bf1e85`.
+The ordinary and provenance manifests both have SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+The 60-test helper report is
+`/tmp/cppgm-phase6-canonical-row-envelope-helper-tests-20260812.log`, SHA-256
+`eab14b4fdca783cec2e85b5dd9f692f6725662057a551d6e18b2a54e6ea9effe`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports have SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`9cd4fb7cf253e1f8c3458381698a1a7542262fcd1713bdc93356fdb704111239`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+The dynamic class audit is
+`/tmp/cppgm-phase6-canonical-row-envelope-final-class-materialization-audit-20260812.json`,
+SHA-256
+`4fa13a5db45e8d57e672debeaf2802ebfc87db6c3d5c7b1b8f2317bd2da8b002`.
+
+The ordinary binary shrinks by 4,384 bytes to 17,147,056 bytes. Its Mach-O
+`__TEXT` segment shrinks by 4,096 bytes to 13,021,184; `__text` shrinks by
+3,920 bytes, `__gcc_except_tab` by eight bytes, and `__unwind_info` by 40
+bytes. `__cstring`, `__DATA_CONST`, `__DATA`, and `__LINKEDIT` remain
+191,464, 61,440, 442,368, and 4,059,136 bytes. The binary contains no
+provenance symbols. The frozen binary is
+`/tmp/cppgm-phase6-canonical-row-envelope-final2-ordinary-20260812`, SHA-256
+`672d7064442650d2b53634e2d774b59ab77419a5cae20dfbdd69ce6bdf1ccd6c`.
+
+The final ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.56% | -0.63% | -4.03% | `/tmp/cppgm-phase6-canonical-row-envelope-final-perf-fixed-20260812.json` |
+| Canonical-payload parent | +0.21% | -1.21% | +0.07% | `/tmp/cppgm-phase6-canonical-row-envelope-final-perf-parent-20260812.json` |
+
+The candidate medians are 175,030,016,897 instructions, 752,300,032 bytes
+maximum RSS, and 569,118,720 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-canonical-row-envelope-final-raw-candidate-20260812.json`,
+SHA-256
+`d0c6276a559b82f3bdd6e6c85130e45eb101ff244e98c0d1b6b720a775e83833`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`e0cff0b6fbc5ca0b2f47b3c6064e80f5daeddf62a2c66c29c00383957c2d7bb8`
+and
+`5b1f377c8ba7b8eb01bb02489807bd03394a407da7c65e5f8f5dce22b8fd2f56`.
+The candidate metadata names commit `53d334351` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 182 and removes 465 production lines, a net deletion of
+283. Phase 6 remains open for the remaining source-table generic arbitration
+and deduplication-obligation inventory. Phase 7 and inception remain
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

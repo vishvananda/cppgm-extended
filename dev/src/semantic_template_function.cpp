@@ -471,23 +471,23 @@ std::string function_call_selected_name(
 
 void set_function_call_selected_decl_anchor(
     SemanticContext & ctx,
-    witness::FunctionCallSourceDecision & decision,
+    semantic_source_use::SemanticSourceUse & use,
     const FunctionTemplateCallSourceUseRequest & request)
 {
   if(!request.selected_decl_anchor_location.empty()) {
-    witness::set_selected_decl_anchor(decision.selected_decl_location,
-                                      decision.selected_decl_anchor_location,
+    witness::set_selected_decl_anchor(use.selected_entity_decl_location,
+                                      use.selected_decl_anchor_location,
                                       request.selected_decl_anchor_location);
     return;
   }
   const std::string selected_decl_location =
-      request.selected_decl_location.empty() ?
+      request.selected_entity_decl_location.empty() ?
           (request.binding ?
                template_api::function_binding_witness_decl_location(ctx, request.binding) :
                std::string()) :
-          request.selected_decl_location;
-  witness::set_selected_decl_anchor(decision.selected_decl_location,
-                                    decision.selected_decl_anchor_location,
+          request.selected_entity_decl_location;
+  witness::set_selected_decl_anchor(use.selected_entity_decl_location,
+                                    use.selected_decl_anchor_location,
                                     selected_decl_location);
 }
 
@@ -515,25 +515,25 @@ bool function_call_has_defaulted_void_type_argument(
 }
 
 void suppress_defaulted_void_self_substitution_drop(
-    witness::FunctionCallSourceDecision & decision,
+    semantic_source_use::SemanticSourceUse & use,
     const semantic_model::FunctionBinding * binding)
 {
   if(!function_call_has_defaulted_void_type_argument(binding) ||
-     decision.candidates_built != 2 ||
-     decision.candidates_viable != 1) {
+     use.candidates_built != 2 ||
+     use.candidates_viable != 1) {
     return;
   }
   std::vector<semantic_source_use::SourceDrop> filtered;
-  filtered.reserve(decision.drops.size());
-  for(std::size_t i = 0; i < decision.drops.size(); ++i) {
-    const semantic_source_use::SourceDrop & drop = decision.drops[i];
+  filtered.reserve(use.drops.size());
+  for(std::size_t i = 0; i < use.drops.size(); ++i) {
+    const semantic_source_use::SourceDrop & drop = use.drops[i];
     if(drop.reason == "substitution_failure" &&
-       drop.candidate == decision.selected) {
+       drop.candidate == use.selected) {
       continue;
     }
     filtered.push_back(drop);
   }
-  decision.drops.swap(filtered);
+  use.drops.swap(filtered);
 }
 
 }  // namespace
@@ -617,7 +617,7 @@ void emit_function_template_call_source_use(
   }
 
   const std::string public_location =
-      template_api::normalize_template_witness_source_location(request.use_location);
+      template_api::normalize_template_witness_source_location(request.location);
   if(public_location.empty() ||
      (!declval_call &&
       !admitted_source_call &&
@@ -642,50 +642,39 @@ void emit_function_template_call_source_use(
     return;
   }
 
-  witness::FunctionCallSourceDecision decision;
-  decision.origin = request.origin;
-  decision.source_traversal_order = request.source_traversal_order;
-  decision.source_call_precedes_nested_callee =
-      request.source_call_precedes_nested_callee;
+  semantic_source_use::SemanticSourceUse use = request;
   if(binding &&
      binding->owner_class &&
      binding->owner_class->source_template) {
-    decision.semantic_owner_class_template_identity =
+    use.semantic_owner_class_template_identity =
         binding->owner_class->source_template;
-    decision.semantic_owner_class_specialization_key =
+    use.semantic_owner_class_specialization_key =
         semantic_model::class_instantiation_key(*binding->owner_class);
   }
-  decision.location = public_location;
-  decision.template_name = function_call_template_name(request);
-  decision.selected = function_call_selected_name(ctx, request);
-  decision.role = request.role;
-  decision.template_id_occurrence = source_occurrence;
-  decision.selection = request.selection !=
+  use.location = public_location;
+  use.template_name = function_call_template_name(request);
+  use.selected = function_call_selected_name(ctx, request);
+  use.template_id_occurrence = source_occurrence;
+  use.selection = request.selection !=
           semantic_source_use::SourceSelectionKind::None ?
       request.selection :
       (binding && binding->is_explicit_specialization ?
           semantic_source_use::SourceSelectionKind::ExplicitSpecialization :
           semantic_source_use::SourceSelectionKind::Instantiation);
-  set_function_call_selected_decl_anchor(ctx, decision, request);
-  decision.bindings = request.bindings;
-  decision.drops = request.drops;
+  set_function_call_selected_decl_anchor(ctx, use, request);
   if(!request.preserve_semantic_drop_order) {
-    canonicalize_function_call_drops(decision.drops);
+    canonicalize_function_call_drops(use.drops);
   }
-  decision.candidate_count = request.candidate_count;
-  decision.candidates_built = request.candidates_built;
-  decision.candidates_viable = request.candidates_viable;
-  if(binding && decision.bindings.empty()) {
+  if(binding && use.bindings.empty()) {
     template_api::append_function_template_witness_bindings(ctx,
                                                             binding,
                                                             request.explicit_arg_count,
-                                                            decision.bindings);
+                                                            use.bindings);
   }
-  suppress_defaulted_void_self_substitution_drop(decision, binding);
-  CPPGM_SET_WITNESS_PRODUCER(
-      decision,
-      witness::WitnessProducerSite::FunctionSemanticTemplateFunction);
-  witness::emit_function_call(ctx.template_witness_context(), decision);
+  suppress_defaulted_void_self_substitution_drop(use, binding);
+  witness::emit_function_call(ctx.template_witness_context(),
+                              std::move(use),
+                              request.origin);
 }
 
 }  // namespace semantic_template_function

@@ -593,7 +593,7 @@ public:
     }
 
     semantic_template_function::FunctionTemplateCallSourceUseRequest request;
-    request.use_location = use_location;
+    request.location = use_location;
     request.template_name =
         source_template ? source_template->name : binding.name;
     request.selected =
@@ -608,7 +608,7 @@ public:
         source_template ?
             semantic_trace::function_template_decl_anchor(*this, source_template) :
             semantic_trace::function_binding_decl_anchor(*this, &binding);
-    witness::set_selected_decl_anchor(request.selected_decl_location,
+    witness::set_selected_decl_anchor(request.selected_entity_decl_location,
                                       request.selected_decl_anchor_location,
                                       decl_anchor);
     if(binding.source_template) {

@@ -4,6 +4,10 @@
 #include <string>
 #include <vector>
 
+namespace semantic_model {
+struct ClassTemplateDecl;
+}
+
 namespace semantic_source_use {
 
 enum class SourceUseKind
@@ -112,9 +116,11 @@ struct SemanticSourceUse
   bool source_call_precedes_nested_callee = false;
   // Stable semantic identity used only to order a member call before the
   // class-template owner named by the same source occurrence.
-  const void * semantic_class_template_identity = nullptr;
+  semantic_model::ClassTemplateDecl * semantic_class_template_identity =
+      nullptr;
   std::string semantic_class_specialization_key;
-  const void * semantic_owner_class_template_identity = nullptr;
+  semantic_model::ClassTemplateDecl *
+      semantic_owner_class_template_identity = nullptr;
   std::string semantic_owner_class_specialization_key;
 
   std::string location;

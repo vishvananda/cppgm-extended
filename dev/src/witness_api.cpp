@@ -34,70 +34,47 @@ std::string normalize_source_event_angle_spacing(const std::string & text)
   return out;
 }
 
-semantic_source_use::SourceBinding normalized_source_binding(
-    const semantic_source_use::SourceBinding & binding,
-    bool normalize_angle_spacing = true);
-
-std::string populate_common_source_use_fields(
-    semantic_source_use::SemanticSourceUse & use,
-    semantic_source_use::SourceUseKind kind,
-    semantic_source_use::SourceUseRole role,
-    semantic_source_use::SourceUseOwnership ownership,
-    const std::string & location,
-    const std::string & selected_decl_anchor_location,
-    const std::string & selected_decl_location,
-    const std::string & template_name,
-    bool default_selected_decl_anchor)
+void normalize_source_binding(semantic_source_use::SourceBinding & binding,
+                              bool normalize_angle_spacing)
 {
-  use.kind = kind;
-  use.role = role;
-  use.ownership = ownership;
-  use.location = normalize_template_witness_source_location(location);
-  const std::string normalized_selected_decl_location =
-      normalize_template_witness_source_location(selected_decl_location);
-  use.selected_decl_anchor_location =
-      normalize_template_witness_source_location(
-          selected_decl_anchor_location);
-  if(default_selected_decl_anchor &&
-     use.selected_decl_anchor_location.empty()) {
-    use.selected_decl_anchor_location = normalized_selected_decl_location;
+  if(normalize_angle_spacing) {
+    binding.arg = normalize_source_event_angle_spacing(binding.arg);
   }
-  use.template_name = template_name;
-  return normalized_selected_decl_location;
+  for(std::size_t i = 0; i < binding.pack_arguments.size(); ++i) {
+    if(normalize_angle_spacing) {
+      binding.pack_arguments[i] =
+          normalize_source_event_angle_spacing(binding.pack_arguments[i]);
+    }
+  }
 }
 
-semantic_source_use::SemanticSourceUse make_class_use_source_use(
-    const ClassUseEmitRequest & request,
-    semantic_source_use::SourceUseOwnership ownership,
-    semantic_source_use::SourceUseRole role)
+semantic_source_use::SemanticSourceUse normalized_source_use(
+    semantic_source_use::SemanticSourceUse use,
+    bool normalize_binding_angle_spacing,
+    bool default_selected_decl_anchor)
 {
-  semantic_source_use::SemanticSourceUse use;
-  use.source_traversal_order = request.source_traversal_order;
-  use.semantic_class_template_identity =
-      request.semantic_template;
-  use.semantic_class_specialization_key =
-      request.semantic_specialization_key;
-  const std::string selected_decl_location = populate_common_source_use_fields(
-      use,
-      semantic_source_use::SourceUseKind::ClassUse,
-      role,
-      ownership,
-      request.location,
-      request.selected_decl_anchor_location,
-      request.selected_decl_location,
-      request.template_name,
-      false);
-  use.template_id_occurrence = request.template_id_occurrence;
-  use.selection = request.selection;
-  if(!request.template_name.empty() || !request.selected_decl_location.empty()) {
-    use.selected_entity_decl_location = selected_decl_location;
+  use.location = normalize_template_witness_source_location(use.location);
+  use.selected_entity_decl_location =
+      normalize_template_witness_source_location(
+          use.selected_entity_decl_location);
+  use.selected_decl_anchor_location =
+      normalize_template_witness_source_location(
+          use.selected_decl_anchor_location);
+  if(default_selected_decl_anchor &&
+     use.selected_decl_anchor_location.empty()) {
+    use.selected_decl_anchor_location = use.selected_entity_decl_location;
   }
-  for(std::size_t i = 0; i < request.bindings.size(); ++i) {
-    use.bindings.push_back(normalized_source_binding(request.bindings[i]));
+  use.selected = normalize_source_event_angle_spacing(use.selected);
+  for(std::size_t i = 0; i < use.bindings.size(); ++i) {
+    normalize_source_binding(use.bindings[i], normalize_binding_angle_spacing);
   }
-  for(std::size_t i = 0; i < request.specialization_bindings.size(); ++i) {
-    use.specialization_bindings.push_back(
-        normalized_source_binding(request.specialization_bindings[i]));
+  for(std::size_t i = 0; i < use.specialization_bindings.size(); ++i) {
+    normalize_source_binding(
+        use.specialization_bindings[i], normalize_binding_angle_spacing);
+  }
+  for(std::size_t i = 0; i < use.drops.size(); ++i) {
+    use.drops[i].candidate =
+        normalize_source_event_angle_spacing(use.drops[i].candidate);
   }
   return use;
 }
@@ -105,220 +82,62 @@ semantic_source_use::SemanticSourceUse make_class_use_source_use(
 void record_class_use_source_use_in_table(
     CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
     semantic_source_use::SemanticSourceUseTable * table,
-    const ClassUseEmitRequest & request,
-    semantic_source_use::SourceUseOwnership ownership,
-    semantic_source_use::SourceUseRole role)
+    const ClassUseEmitRequest & request)
 {
   if(table == nullptr) {
     return;
   }
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   const semantic_source_use::SemanticSourceUse use =
-      make_class_use_source_use(request, ownership, role);
+      normalized_source_use(request, true, false);
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
       session,
       table,
-      request.producer_site,
+      witness_provenance::WitnessProducerSite::ClassTemplateReference02,
       use);
-  semantic_source_use::record_source_use(*table, use);
-#else
-  semantic_source_use::record_source_use(
-      *table,
-      make_class_use_source_use(request, ownership, role));
 #endif
-}
-
-semantic_source_use::SourceBinding normalized_source_binding(
-    const semantic_source_use::SourceBinding & binding,
-    bool normalize_angle_spacing)
-{
-  semantic_source_use::SourceBinding out;
-  out.param = binding.param;
-  out.arg = normalize_angle_spacing ?
-      normalize_source_event_angle_spacing(binding.arg) : binding.arg;
-  out.source = binding.source;
-  out.type_like = binding.type_like;
-  out.function_type_argument = binding.function_type_argument;
-  out.structured_type_spelling = binding.structured_type_spelling;
-  out.preserve_qualified_member = binding.preserve_qualified_member;
-  out.pack_binding = binding.pack_binding;
-  out.pack_aggregate = binding.pack_aggregate;
-  out.pack_arguments.reserve(binding.pack_arguments.size());
-  for(std::size_t i = 0; i < binding.pack_arguments.size(); ++i) {
-    out.pack_arguments.push_back(
-        normalize_angle_spacing ?
-            normalize_source_event_angle_spacing(binding.pack_arguments[i]) :
-            binding.pack_arguments[i]);
-  }
-  out.function_pointer_parameter = binding.function_pointer_parameter;
-  return out;
-}
-
-semantic_source_use::SemanticSourceUse make_function_call_source_use(
-    const FunctionCallSourceDecision & decision)
-{
-  semantic_source_use::SemanticSourceUse use;
-  use.source_traversal_order = decision.source_traversal_order;
-  use.source_call_precedes_nested_callee =
-      decision.source_call_precedes_nested_callee;
-  use.semantic_owner_class_template_identity =
-      decision.semantic_owner_class_template_identity;
-  use.semantic_owner_class_specialization_key =
-      decision.semantic_owner_class_specialization_key;
-  const std::string selected_decl_location =
-      populate_common_source_use_fields(
-          use,
-          semantic_source_use::SourceUseKind::FunctionCall,
-          decision.role,
-          decision.ownership,
-          decision.location,
-          decision.selected_decl_anchor_location,
-          decision.selected_decl_location,
-          decision.template_name,
-          true);
-  use.selected = decision.selected;
-  use.selected = normalize_source_event_angle_spacing(use.selected);
-  use.selection = decision.selection;
-  use.template_id_occurrence = decision.template_id_occurrence;
-  if(!decision.selected.empty() || !decision.template_name.empty()) {
-    use.selected_entity_decl_location = selected_decl_location;
-  }
-  for(std::size_t i = 0; i < decision.bindings.size(); ++i) {
-    use.bindings.push_back(normalized_source_binding(decision.bindings[i]));
-  }
-  for(std::size_t i = 0; i < decision.specialization_bindings.size(); ++i) {
-    use.specialization_bindings.push_back(
-        normalized_source_binding(decision.specialization_bindings[i]));
-  }
-  for(std::size_t i = 0; i < decision.drops.size(); ++i) {
-    semantic_source_use::SourceDrop drop;
-    drop.candidate = normalize_source_event_angle_spacing(
-        decision.drops[i].candidate);
-    drop.location = decision.drops[i].location;
-    drop.reason = decision.drops[i].reason;
-    use.drops.push_back(drop);
-  }
-  use.candidate_count = decision.candidate_count;
-  use.candidates_built = decision.candidates_built;
-  use.candidates_viable = decision.candidates_viable;
-  return use;
+  semantic_source_use::record_source_use(*table, use);
 }
 
 void record_function_call_source_use_in_table(
     CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
     semantic_source_use::SemanticSourceUseTable * table,
-    const FunctionCallSourceDecision & decision)
+    semantic_source_use::SemanticSourceUse use)
 {
   if(table == nullptr) {
     return;
   }
+  use = normalized_source_use(std::move(use), true, true);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  const semantic_source_use::SemanticSourceUse use =
-      make_function_call_source_use(decision);
   const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
       session,
       table,
-      decision.producer_site,
+      witness_provenance::WitnessProducerSite::FunctionSemanticTemplateFunction,
       use);
-  semantic_source_use::record_source_use(*table, use);
-#else
-  semantic_source_use::record_source_use(
-      *table,
-      make_function_call_source_use(decision));
 #endif
-}
-
-semantic_source_use::SemanticSourceUse make_alias_use_source_use(
-    const AliasUseEmitRequest & request)
-{
-  semantic_source_use::SemanticSourceUse use;
-  use.source_traversal_order = request.source_traversal_order;
-  const std::string location = request.use_location;
-  std::string selected_decl_location = request.selected_decl_location;
-  std::string selected_decl_anchor_location =
-      request.selected_decl_anchor_location;
-  if(!request.selected_decl_anchor_explicit) {
-    set_selected_decl_anchor(selected_decl_location,
-                             selected_decl_anchor_location,
-                             request.selected_decl_location);
-  }
-  const std::string normalized_selected_decl_location =
-      populate_common_source_use_fields(
-          use,
-          semantic_source_use::SourceUseKind::AliasUse,
-          semantic_source_use::SourceUseRole::TypeUse,
-          semantic_source_use::SourceUseOwnership::Direct,
-          location,
-          selected_decl_anchor_location,
-          selected_decl_location,
-          request.template_name,
-          true);
-  use.template_id_occurrence = request.template_id_occurrence;
-  if(!request.template_name.empty()) {
-    use.selected_entity_decl_location = normalized_selected_decl_location;
-  }
-  for(std::size_t i = 0; i < request.bindings.size(); ++i) {
-    // Alias source-occurrence arguments have already been rendered from their
-    // semantic AST.  A generic angle-space pass cannot distinguish a template
-    // closer from `>` or `>>` inside decltype and would corrupt the payload.
-    use.bindings.push_back(normalized_source_binding(request.bindings[i],
-                                                    false));
-  }
-  return use;
+  semantic_source_use::record_source_use(*table, use);
 }
 
 void record_alias_use_source_use_in_table(
     CPPGM_WITNESS_PROVENANCE_PARAMETER(TemplateWitnessSession * session)
     semantic_source_use::SemanticSourceUseTable * table,
-    const AliasUseEmitRequest & request)
+    semantic_source_use::SemanticSourceUse use)
 {
   if(table == nullptr) {
     return;
   }
+  // Alias source-occurrence arguments have already been rendered from their
+  // semantic AST. A generic angle-space pass cannot distinguish a template
+  // closer from `>` or `>>` inside decltype and would corrupt the payload.
+  use = normalized_source_use(std::move(use), false, true);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  const semantic_source_use::SemanticSourceUse use =
-      make_alias_use_source_use(request);
   const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
       session,
       table,
-      request.producer_site,
+      witness_provenance::WitnessProducerSite::AliasCanonicalOccurrence,
       use);
-  semantic_source_use::record_source_use(*table, use);
-#else
-  semantic_source_use::record_source_use(
-      *table,
-      make_alias_use_source_use(request));
 #endif
-}
-
-semantic_source_use::SemanticSourceUse make_variable_use_source_use(
-    const VariableUseEmitRequest & request)
-{
-  semantic_source_use::SemanticSourceUse use;
-  const std::string location = request.use_location;
-  const std::string selected_decl_location =
-      populate_common_source_use_fields(
-          use,
-          semantic_source_use::SourceUseKind::VariableUse,
-          semantic_source_use::SourceUseRole::ValueUse,
-          request.ownership,
-          location,
-          request.selected_decl_anchor_location,
-          request.selected_decl_location,
-          request.template_name,
-          true);
-  use.selection = request.selection;
-  if(!request.template_name.empty()) {
-    use.selected_entity_decl_location = selected_decl_location;
-  }
-  for(std::size_t i = 0; i < request.bindings.size(); ++i) {
-    use.bindings.push_back(normalized_source_binding(request.bindings[i]));
-  }
-  for(std::size_t i = 0; i < request.specialization_bindings.size(); ++i) {
-    use.specialization_bindings.push_back(
-        normalized_source_binding(request.specialization_bindings[i]));
-  }
-  return use;
+  semantic_source_use::record_source_use(*table, use);
 }
 
 void record_variable_use_source_use_in_table(
@@ -330,7 +149,7 @@ void record_variable_use_source_use_in_table(
     return;
   }
   const semantic_source_use::SemanticSourceUse use =
-      make_variable_use_source_use(request);
+      normalized_source_use(request, true, true);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   const witness_provenance::ScopedUpstreamRoute provenance_route(
       use.ownership == semantic_source_use::SourceUseOwnership::NestedDerived ?
@@ -341,7 +160,7 @@ void record_variable_use_source_use_in_table(
   const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
       session,
       table,
-      request.producer_site,
+      witness_provenance::WitnessProducerSite::VariableTemplateInstantiation,
       use);
 #endif
   semantic_source_use::record_source_use(*table, use);
@@ -363,7 +182,7 @@ void retain_variable_use_source_use(
     const VariableUseEmitRequest & request)
 {
   const semantic_source_use::SemanticSourceUse use =
-      make_variable_use_source_use(request);
+      normalized_source_use(request, true, true);
   for(std::size_t i = 0; i < session.pending_variable_source_uses.size(); ++i) {
     template_api::PendingVariableSourceUse & pending =
         session.pending_variable_source_uses[i];
@@ -382,9 +201,6 @@ void retain_variable_use_source_use(
     if(pending_is_nested != use_is_nested) {
       if(!use_is_nested) {
         pending.source_use = use;
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-        pending.producer_site = request.producer_site;
-#endif
       }
       return;
     }
@@ -393,9 +209,6 @@ void retain_variable_use_source_use(
            pending.source_use.location,
            use.location) == use.location) {
       pending.source_use = use;
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-      pending.producer_site = request.producer_site;
-#endif
     }
     return;
   }
@@ -403,9 +216,6 @@ void retain_variable_use_source_use(
   template_api::PendingVariableSourceUse pending;
   pending.semantic_owner = semantic_owner;
   pending.source_use = use;
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  pending.producer_site = request.producer_site;
-#endif
   session.pending_variable_source_uses.push_back(std::move(pending));
 }
 
@@ -462,24 +272,21 @@ bool emit_class_use(const TemplateWitnessContext & ctx,
     return false;
   }
   record_class_use_source_use_in_table(
-                                       CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session)
-                                       table,
-                                       request,
-                                       request.ownership,
-                                       request.role);
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, request);
   return true;
 }
 
 void emit_function_call(const TemplateWitnessContext & ctx,
-                        const FunctionCallSourceDecision & decision)
+                        semantic_source_use::SemanticSourceUse use,
+                        FunctionCallEmissionOrigin origin)
 {
-  if(decision.location.empty()) {
+  if(use.location.empty()) {
     return;
   }
-  if(!source_location_is_from_primary_file(ctx, decision.location)) {
+  if(!source_location_is_from_primary_file(ctx, use.location)) {
     return;
   }
-  if(!function_call_recording_enabled(ctx, decision.origin)) {
+  if(!function_call_recording_enabled(ctx, origin)) {
     return;
   }
   semantic_source_use::SemanticSourceUseTable * table = ctx.source_use_table;
@@ -487,16 +294,16 @@ void emit_function_call(const TemplateWitnessContext & ctx,
     table = &ctx.session->source_use_table;
   }
   record_function_call_source_use_in_table(
-      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, decision);
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, std::move(use));
 }
 
 void emit_alias_use(const TemplateWitnessContext & ctx,
-                    const AliasUseEmitRequest & request)
+                    semantic_source_use::SemanticSourceUse use)
 {
-  if(request.use_location.empty()) {
+  if(use.location.empty()) {
     return;
   }
-  if(!source_location_is_from_primary_file(ctx, request.use_location)) {
+  if(!source_location_is_from_primary_file(ctx, use.location)) {
     return;
   }
   if(!source_capture_enabled(ctx)) {
@@ -507,19 +314,19 @@ void emit_alias_use(const TemplateWitnessContext & ctx,
     table = &ctx.session->source_use_table;
   }
   record_alias_use_source_use_in_table(
-      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, request);
+      CPPGM_WITNESS_PROVENANCE_ARGUMENT(ctx.session) table, std::move(use));
 }
 
 void emit_variable_use(const VariableUseEmitRequest & request)
 {
   const bool capture_enabled = source_capture_enabled();
   if((!capture_enabled && !request.record_during_source_capture_pause) ||
-     request.use_location.empty()) {
+     request.location.empty()) {
     return;
   }
   if(!source_location_is_from_primary_file(
          template_api::current_template_witness_session(),
-         request.use_location)) {
+         request.location)) {
     return;
   }
   TemplateWitnessSession * session =
@@ -560,7 +367,7 @@ void finalize_variable_use_source_uses(TemplateWitnessSession * session)
     const witness_provenance::ScopedSourceUseAttempt provenance_attempt(
         session,
         &session->source_use_table,
-        pending.producer_site,
+        witness_provenance::WitnessProducerSite::VariableTemplateInstantiation,
         pending.source_use);
 #endif
     semantic_source_use::record_source_use(session->source_use_table,

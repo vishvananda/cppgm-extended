@@ -166,10 +166,6 @@ struct PendingVariableSourceUse
 {
   const void * semantic_owner = nullptr;
   semantic_source_use::SemanticSourceUse source_use;
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  witness_provenance::WitnessProducerSite producer_site =
-      witness_provenance::WitnessProducerSite::Unknown;
-#endif
 };
 
 struct TemplateLifecycleIdentity

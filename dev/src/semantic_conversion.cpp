@@ -248,7 +248,7 @@ void record_user_defined_conversion_source_use(
 
   semantic_template_function::FunctionTemplateCallSourceUseRequest request;
   request.binding = binding;
-  request.use_location = public_location;
+  request.location = public_location;
   request.source_traversal_order =
       source_occurrence_traversal_order(ctx, public_location);
   request.preserve_semantic_drop_order = !drops.empty();
