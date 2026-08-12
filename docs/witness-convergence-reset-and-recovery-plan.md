@@ -4291,6 +4291,173 @@ entry. Phase 5 remains open on the five function-call tests and the one
 class-use test. Phase 4 remains open on the lazy-alias lifecycle oracle
 divergence. Inception remains forbidden.
 
+## Typed call-result completion checkpoint, 2026-08-11
+
+Commit `b8a9c50afcf71aa09b05bce5ed0e84a98cceec1e` is the parent. This
+checkpoint closes the remaining actionable Phase 5 typed function-call debt
+as one coherent repair set. Four outputs become byte-exact:
+
+- `pa23/tests/spec/300-dependent-result-defaulted-nontype-declaring-scope.t`;
+- `pa22/tests/general/100-namespace-alias-qualified-function-decltype-type-argument.t`;
+- `pa22/tests/general/200-template-template-function-result-reconstruction.t`;
+- `pa24/tests/spec/200-defaulted-class-template-argument-pack-prefix-deduction.t`.
+
+The first repair is below semantic analysis. `BufferedIterator::peek(1)`
+advances the public line and column while `match_whitespace` decides whether a
+slash starts a comment. An ordinary slash following whitespace previously
+retained the following character's position. Saving and restoring the slash
+position around the failed comment lookahead changes the dependent-result call
+location from column 38 to its physical column 37.
+
+The decltype repair keeps the existing leaf shortcut for operands with no call
+subtree, but sends any structured operand containing a call expression to the
+authoritative semantic evaluator. Consequently
+`decltype(*alias::sequence_begin(...))` publishes the typed nested call instead
+of losing it because only the decltype root kind was inspected. No source text
+is reparsed.
+
+Concrete class-template typedef declarations remain lazy during ordinary
+compilation. During active witness source capture, a structured typedef
+declaration containing a call expression is resolved at the declaration
+boundary. This instantiates the declaration semantics for `owner<int>::result`
+and exposes the typed `call<generator<n::wrapper>>(0)` source row without
+changing the ordinary lazy-alias policy.
+
+The final repair constructs a call-only public binding view when a deduced
+function parameter pack appears inside a concrete class-template argument and
+the canonical actual class specialization contains defaulted trailing
+arguments. True function deduction and LowIR retain the two-element `Ts...`
+pack. The public call row instead uses the typed canonical class arguments,
+matching patched Clang's nine-element view for
+`take(const tuples::tuple<T0, Ts...> &)`. The function-call emitter accepts
+this already-complete typed binding vector and otherwise retains its normal
+binding construction.
+
+Expanded convergence improves from 1,523 to 1,527 exact outputs. The
+1,530-reference inventory now has three known mismatches, no warning output,
+and no missing actual file:
+
+- `pa22/tests/general/400-template-template-fixed-prefix-pack-order.t` is the
+  previously documented patched-Clang/runtime class-use oracle divergence;
+- `pa23/tests/general/500-tcc-member-constructible-pack-sfinae.t` is a second
+  cross-oracle divergence, not remaining source-ownership debt;
+- `pa24/tests/general/400-concrete-recursive-node-layout-retry.t` remains the
+  Phase 4 lazy-alias lifecycle gap.
+
+The TCC classification is independently reproducible. Homebrew Clang's AST
+selects the ellipsis `tupleish<int>::make(...)`, and the resulting executable
+returns 249 because the test computes `4 - 11`. Its witness therefore has no
+function-template call row. CPPGM and the checked-in reference LowIR are byte
+identical and both select the templated `make<int, 0>`, which returns 11. Hiding
+that CPPGM call would make the witness disagree with CPPGM's own authoritative
+runtime and LowIR semantics. The Clang AST record is
+`/tmp/cppgm-phase5-typed-call-tcc-clang-ast-20260811.txt`, SHA-256
+`c01844533958f3a11fb06e8ffd4bd2ec74af85b307eafd680de78364663ea2c6`.
+
+The final Homebrew-Clang validation produced these results:
+
+- the four repaired targets have byte-exact witness and LowIR outputs;
+- ordinary strict validation reports PA19 279 compared with zero failures,
+  PA20 158 with zero, PA22 293 with the one class-use oracle divergence, PA23
+  385 with the one TCC oracle divergence, and PA24 415 with the one lifecycle
+  gap; its expected nonzero exit is exactly this documented three-test set;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862, including PA30 runtime;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  ordinary/provenance witness and LowIR pairs match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,279 records, 4,821 source
+  attempts, and 6,298 lifecycle attempts with no unknown producer attempt and
+  no unexercised producer site;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and tracked structure-size reports match the parent byte
+  for byte.
+
+The function producer now makes 1,322 attempts, inserts 841 rows, classifies
+481 exact duplicates, and leaves 791 final visible rows. The renderer removes
+five same-location calls, 44 source-defined calls, and one visible duplicate;
+its legacy drop-order pass still rewrites 27 events. There are no rejected,
+replaced, or enriched function attempts. Class consolidation makes 3,004
+completed candidates, 3,211 early repeats, and 359 prepublication merges while
+retaining 2,645 collected occurrences and 2,632 publications. Lifecycle
+attempts remain unchanged.
+
+The ordinary convergence report is
+`/tmp/cppgm-phase5-typed-call-convergence-20260811.json`, SHA-256
+`594867437defbeed2c1b4b94c712d483ab92b19f348bee46152b6c0de602ecc0`.
+The strict and PA1-PA38 reports are
+`/tmp/cppgm-phase5-typed-call-strict-20260811.log` and
+`/tmp/cppgm-phase5-typed-call-broad-20260811.log`, with SHA-256 values
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`
+and
+`b490513133c0442fb9c0cb8a6708713a983aff7dfe5048a1f42dcfbcb50958d1`.
+
+The provenance trace directory is recorded in
+`/tmp/cppgm-phase5-typed-call-provenance-trace-path-20260811.txt`. The
+provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase5-typed-call-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase5-typed-call-provenance-convergence-20260811.json`, with
+SHA-256 values
+`19fd5b137fa221715e652669c7b436c65e04255b60aefee03cbf2d87570e09f3`
+and
+`bf9025c58efa16595f483e4223741dbc42167fd49f4f6fc3cdabf4aec820006e`.
+The byte-identical ordinary and provenance manifests both have SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`;
+their empty difference has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The 60-test helper report is
+`/tmp/cppgm-phase5-typed-call-helper-tests-20260811.log`, SHA-256
+`0979e4ed982ae8ccc28bbbfb4bae596c4c23ca5958cb9411aeae1f65ee8a255b`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports have the same SHA-256 values as
+the parent:
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary grows by 4,656 bytes to 17,266,384 bytes. Its Mach-O
+`__TEXT` segment grows by 4,096 bytes to 13,127,680; `__DATA_CONST`, `__DATA`,
+and `__LINKEDIT` remain 61,440, 442,368, and 4,071,424 bytes. It contains no
+witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-phase5-typed-call-ordinary-20260811`, SHA-256
+`a77a00eece48de6fe88a5862fbcf3ce2f0d32108aaaaee8a34b6a0ba34db550b`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.19% | -1.10% | -4.02% | `/tmp/cppgm-phase5-typed-call-perf-fixed-20260811.json` |
+| Semantic source-ownership parent | -0.07% | -0.83% | +0.07% | `/tmp/cppgm-phase5-typed-call-perf-parent-20260811.json` |
+
+The candidate medians are 173,916,685,858 instructions, 748,789,760 bytes
+maximum RSS, and 569,167,872 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-phase5-typed-call-raw-candidate-20260811.json`, SHA-256
+`4fb754c30533a7635dab903fade3b298a8d281482b29347ffd97d9dd4188ecad`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`0656ac456a4a292edb48b41edc37eb6ed4965a60072c09cf9411ebb4940ea561`
+and
+`ce539f65bea62a96bb41f8aed8b3b3b4827f7fa20b0ded25f33d4c16a62e5b7b`.
+The candidate metadata names commit `b8a9c50af` because the measurements cover
+this uncommitted checkpoint.
+
+An exploratory discovery run outside the defined checkpoint helper set ran
+249 script tests and found one unrelated macOS batch-timeout harness setup
+error: its temporary PA28 wrapper did not generate the expected status file.
+The defined audit/helper gate is the 60-test suite above and passes cleanly;
+the exploratory error caused no repository change.
+
+This checkpoint adds 221 and removes three production lines before this ledger
+entry. Phase 5 semantic ownership debt is complete: its only remaining report
+row is the documented TCC cross-oracle divergence. Phase 4 remains open on the
+lazy-alias lifecycle gap, and the earlier class-use cross-oracle divergence
+also remains documented. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

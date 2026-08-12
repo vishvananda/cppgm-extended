@@ -39787,6 +39787,42 @@ static bool ast_node_has_member_template_call(const CppAstNode & node)
   return false;
 }
 
+static bool ast_node_has_call_expression(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::call_expression) {
+    return true;
+  }
+  if(cppast_conversion_type_id_syntax_storage(node) &&
+     ast_node_has_call_expression(*cppast_conversion_type_id_syntax_storage(node))) {
+    return true;
+  }
+  if(cppast_base_type_syntax_storage(node) &&
+     ast_node_has_call_expression(*cppast_base_type_syntax_storage(node))) {
+    return true;
+  }
+  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(ast_node_has_call_expression(node.qualifier_type_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+    if(ast_node_has_call_expression(node.exception_type_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.alignment_specifier_nodes.size(); ++i) {
+    if(ast_node_has_call_expression(node.alignment_specifier_nodes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_node_has_call_expression(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static bool ast_node_has_member_access(const CppAstNode & node)
 {
   if(node.kind == CppAstKind::member_expression) {
@@ -41382,7 +41418,7 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
   // instantiates every nested overload candidate, then repeats the same work
   // in the normal evaluator.
   const bool use_leaf_evaluator =
-      request_expr->kind != CppAstKind::call_expression;
+      !ast_node_has_call_expression(*request_expr);
   if(use_leaf_evaluator &&
      evaluate_dependent_type_expression_leaf(services, scope, request, evaluated) &&
      evaluated &&

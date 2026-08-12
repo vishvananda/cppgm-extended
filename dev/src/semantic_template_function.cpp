@@ -579,7 +579,7 @@ void emit_function_template_call_source_use(
   decision.candidate_count = request.candidate_count;
   decision.candidates_built = request.candidates_built;
   decision.candidates_viable = request.candidates_viable;
-  if(binding) {
+  if(binding && decision.bindings.empty()) {
     template_api::append_function_template_witness_bindings(ctx,
                                                             binding,
                                                             request.explicit_arg_count,

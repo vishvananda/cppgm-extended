@@ -3377,6 +3377,171 @@ bool function_call_source_drop_is_conversion_probe_default_constructor_detail(
          dropped->params.size() == 1;
 }
 
+bool template_parameter_matches_dependent_pack_argument(
+    const TemplateParameterInfo & parameter,
+    const cpp_decl::DependentAliasTemplateArgumentSyntax & argument)
+{
+  if(!parameter.parameter_pack || !argument.syntax.pack_expansion) {
+    return false;
+  }
+  const auto matches_name =
+      [&](const std::string & name) -> bool
+  {
+    if(name.empty()) {
+      return false;
+    }
+    for(std::size_t i = 0;
+        i < argument.syntax.source_identifier_names.size();
+        ++i) {
+      if(argument.syntax.source_identifier_names[i] == name) {
+        return true;
+      }
+    }
+    return false;
+  };
+  if(matches_name(parameter.name) ||
+     matches_name(parameter.placeholder_key)) {
+    return true;
+  }
+  for(std::size_t i = 0; i < parameter.alternate_names.size(); ++i) {
+    if(matches_name(parameter.alternate_names[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool append_canonical_class_actual_pack_call_bindings(
+    SemanticContext & ctx,
+    FunctionBinding * binding,
+    const CandidateMatch & match,
+    std::size_t explicit_arg_count,
+    std::vector<witness::TemplateWitnessSourceBinding> & out)
+{
+  if(!binding ||
+     !binding->source_template ||
+     match.function != binding ||
+     match.source_args.size() != binding->source_template->params_pattern.size()) {
+    return false;
+  }
+  const std::vector<TemplateParameterInfo> & function_parameters =
+      binding->source_template->parameters;
+  for(std::size_t function_parameter_index = 0;
+      function_parameter_index < function_parameters.size();
+      ++function_parameter_index) {
+    const TemplateParameterInfo & function_parameter =
+        function_parameters[function_parameter_index];
+    if(!function_parameter.parameter_pack) {
+      continue;
+    }
+    for(std::size_t call_parameter_index = 0;
+        call_parameter_index < match.source_args.size();
+        ++call_parameter_index) {
+      TypePtr pattern_type = strip_top_level_cv(remove_reference_type(
+          binding->source_template->params_pattern[call_parameter_index].second));
+      TypePtr actual_type = strip_top_level_cv(remove_reference_type(
+          match.source_args[call_parameter_index].type));
+      void * pattern_template_identity = nullptr;
+      std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax>
+          pattern_arguments;
+      if(!pattern_type ||
+         !actual_type ||
+         !cpp_decl::named_type_dependent_class_template(
+             pattern_type,
+             pattern_template_identity,
+             pattern_arguments) ||
+         !pattern_template_identity) {
+        continue;
+      }
+      ClassInfo * actual_info = ctx.class_info_for_type(actual_type);
+      const ClassTemplateDecl * pattern_template =
+          static_cast<const ClassTemplateDecl *>(pattern_template_identity);
+      if(!actual_info ||
+         !actual_info->source_template ||
+         !semantic_lookup::same_inline_namespace_class_template_entity(
+             pattern_template,
+             actual_info->source_template)) {
+        continue;
+      }
+      for(std::size_t pattern_index = 0;
+          pattern_index < pattern_arguments.size();
+          ++pattern_index) {
+        if(!template_parameter_matches_dependent_pack_argument(
+               function_parameter,
+               pattern_arguments[pattern_index])) {
+          continue;
+        }
+        std::size_t suffix_count = 0;
+        for(std::size_t suffix_index = pattern_index + 1;
+            suffix_index < pattern_arguments.size();
+            ++suffix_index) {
+          if(!pattern_arguments[suffix_index].source_defaulted &&
+             !pattern_arguments[suffix_index].syntax.source_defaulted) {
+            ++suffix_count;
+          }
+        }
+        if(actual_info->instantiation_arguments.size() <
+           pattern_index + suffix_count) {
+          continue;
+        }
+        const std::size_t actual_pack_end =
+            actual_info->instantiation_arguments.size() - suffix_count;
+        const std::size_t actual_pack_count =
+            actual_pack_end - pattern_index;
+        std::map<std::string, std::size_t>::const_iterator deduced_pack =
+            binding->instantiation_pack_sizes.find(function_parameter.name);
+        const std::size_t deduced_pack_count =
+            deduced_pack == binding->instantiation_pack_sizes.end() ?
+                0 : deduced_pack->second;
+        if(actual_pack_count <= deduced_pack_count) {
+          continue;
+        }
+
+        std::vector<witness::TemplateWitnessSourceBinding> class_bindings;
+        template_api::append_class_template_witness_bindings(
+            ctx,
+            actual_info,
+            class_bindings,
+            true);
+        if(class_bindings.size() < actual_pack_end) {
+          continue;
+        }
+        template_api::append_function_template_witness_bindings(
+            ctx,
+            binding,
+            explicit_arg_count,
+            out);
+        const std::string binding_name = function_parameter.name.empty() ?
+            std::string("$") + std::to_string(function_parameter_index + 1) :
+            function_parameter.name;
+        for(std::size_t i = 0; i < out.size(); ++i) {
+          if(!out[i].pack_binding || out[i].param != binding_name) {
+            continue;
+          }
+          out[i].pack_arguments.clear();
+          out[i].type_like = true;
+          std::ostringstream pack_text;
+          pack_text << "<";
+          for(std::size_t j = pattern_index; j < actual_pack_end; ++j) {
+            if(j != pattern_index) {
+              pack_text << ", ";
+            }
+            out[i].pack_arguments.push_back(class_bindings[j].arg);
+            out[i].type_like = out[i].type_like && class_bindings[j].type_like;
+            pack_text << class_bindings[j].arg;
+          }
+          pack_text << ">";
+          out[i].arg = pack_text.str();
+          out[i].pack_aggregate = actual_pack_count > 1;
+          return true;
+        }
+        out.clear();
+      }
+    }
+  }
+  return false;
+}
+
 void note_function_call_source_event(
     SemanticContext & ctx,
     const std::string & use_location,
@@ -3921,6 +4086,14 @@ void note_function_call_source_event(
   source_use.selected_decl_anchor.kind = selected_decl_anchor.kind;
   source_use.explicit_arg_count = explicit_arg_count;
   source_use.candidates_viable = static_cast<int>(matches.size());
+  if(source_selected == chosen && selection.index < matches.size()) {
+    (void)append_canonical_class_actual_pack_call_bindings(
+        ctx,
+        source_selected,
+        matches[selection.index],
+        explicit_arg_count,
+        source_use.bindings);
+  }
   const bool explicit_member_source_call =
       callee_node &&
       callee_node->kind == CppAstKind::member_expression &&

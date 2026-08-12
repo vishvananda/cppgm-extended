@@ -1127,6 +1127,8 @@ inline int match_whitespace(BufferedIterator & it)
         value == '\f' || value == '\r') {
       it.next();
     } else if (value == '/') {
+      const unsigned long long slash_line = it.ln;
+      const unsigned long long slash_column = it.ch;
       int next = it.peek(1);
       if (next == '/') {
         it.next();
@@ -1151,6 +1153,8 @@ inline int match_whitespace(BufferedIterator & it)
           }
         }
       } else {
+        it.ln = slash_line;
+        it.ch = slash_column;
         break;
       }
       if (next == EndOfFile)

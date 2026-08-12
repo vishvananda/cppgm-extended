@@ -9813,7 +9813,12 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                                    init_decl.children[0],
                                    init_decl,
                                    access);
-      if(concrete_class_alias_requires_immediate_resolution(info)) {
+      const bool source_call_requires_declaration_instantiation =
+          witness::source_capture_enabled(ctx) &&
+          template_argument_semantics::
+              type_id_node_contains_call_expression_syntax(node);
+      if(concrete_class_alias_requires_immediate_resolution(info) ||
+         source_call_requires_declaration_instantiation) {
         TypePtr alias;
         if(!resolve_deferred_class_alias(ctx, info, member_name, alias) || !alias) {
           throw std::logic_error("unsupported class member type" +
