@@ -122,10 +122,6 @@ std::string populate_common_source_use_fields(
   use.location = normalize_template_witness_source_location(location);
   use.spelling_anchor = source_anchor_from_event(
       normalize_source_anchor(use_anchor));
-  use.provenance_anchor.location = use.location;
-  use.provenance_anchor.kind = use.location.empty() ?
-      semantic_source_use::SourceAnchorKind::None :
-      semantic_source_use::SourceAnchorKind::Provenance;
   const std::string normalized_selected_decl_location =
       normalize_template_witness_source_location(selected_decl_location);
   use.selected_decl_anchor = source_anchor_from_event(
@@ -167,9 +163,7 @@ semantic_source_use::SemanticSourceUse make_class_use_source_use(
   use.template_id_occurrence = request.template_id_occurrence;
   use.selection = source_selection_kind_from_event(request.selection);
   if(!request.template_name.empty() || !request.selected_decl_location.empty()) {
-    use.selected_entity.kind = semantic_source_use::EntityRefKind::Named;
-    use.selected_entity.name = request.template_name;
-    use.selected_entity.decl_location = selected_decl_location;
+    use.selected_entity_decl_location = selected_decl_location;
   }
   for(std::size_t i = 0; i < request.bindings.size(); ++i) {
     use.bindings.push_back(source_binding_from_event(request.bindings[i]));
@@ -287,11 +281,7 @@ semantic_source_use::SemanticSourceUse make_function_call_source_use(
   use.selection = source_selection_kind_from_event(decision.selection);
   use.template_id_occurrence = decision.template_id_occurrence;
   if(!decision.selected.empty() || !decision.template_name.empty()) {
-    use.selected_entity.kind = semantic_source_use::EntityRefKind::Named;
-    use.selected_entity.name =
-        normalize_source_event_angle_spacing(
-            !decision.selected.empty() ? decision.selected : decision.template_name);
-    use.selected_entity.decl_location = selected_decl_location;
+    use.selected_entity_decl_location = selected_decl_location;
   }
   for(std::size_t i = 0; i < decision.bindings.size(); ++i) {
     use.bindings.push_back(source_binding_from_event(decision.bindings[i]));
@@ -369,9 +359,7 @@ semantic_source_use::SemanticSourceUse make_alias_use_source_use(
           true);
   use.template_id_occurrence = request.template_id_occurrence;
   if(!request.template_name.empty()) {
-    use.selected_entity.kind = semantic_source_use::EntityRefKind::Named;
-    use.selected_entity.name = request.template_name;
-    use.selected_entity.decl_location = normalized_selected_decl_location;
+    use.selected_entity_decl_location = normalized_selected_decl_location;
   }
   for(std::size_t i = 0; i < request.bindings.size(); ++i) {
     // Alias source-occurrence arguments have already been rendered from their
@@ -435,9 +423,7 @@ semantic_source_use::SemanticSourceUse make_variable_use_source_use(
           true);
   use.selection = source_selection_kind_from_event(request.selection);
   if(!request.template_name.empty()) {
-    use.selected_entity.kind = semantic_source_use::EntityRefKind::Named;
-    use.selected_entity.name = request.template_name;
-    use.selected_entity.decl_location = selected_decl_location;
+    use.selected_entity_decl_location = selected_decl_location;
   }
   for(std::size_t i = 0; i < request.bindings.size(); ++i) {
     use.bindings.push_back(source_binding_from_event(request.bindings[i]));

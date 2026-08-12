@@ -591,17 +591,8 @@ struct WitnessEvent
   string selected;
   SourceSelectionKind selection = SourceSelectionKind::None;
   string selected_decl_location;
-  string resolved;
-  string spelling;
-  string pattern;
-  string expanded_to;
-  string value;
-  string guide;
-  string guide_decl_location;
-  string selected_type;
   int candidates_built = -1;
   int candidates_viable = -1;
-  int candidate_count = -1;
   vector<WitnessBinding> bindings;
   vector<WitnessBinding> specialization_bindings;
   vector<WitnessDrop> drops;
@@ -634,17 +625,8 @@ bool witness_events_equal(const WitnessEvent & lhs, const WitnessEvent & rhs)
       lhs.selected == rhs.selected &&
       lhs.selection == rhs.selection &&
       lhs.selected_decl_location == rhs.selected_decl_location &&
-      lhs.resolved == rhs.resolved &&
-      lhs.spelling == rhs.spelling &&
-      lhs.pattern == rhs.pattern &&
-      lhs.expanded_to == rhs.expanded_to &&
-      lhs.value == rhs.value &&
-      lhs.guide == rhs.guide &&
-      lhs.guide_decl_location == rhs.guide_decl_location &&
-      lhs.selected_type == rhs.selected_type &&
       lhs.candidates_built == rhs.candidates_built &&
       lhs.candidates_viable == rhs.candidates_viable &&
-      lhs.candidate_count == rhs.candidate_count &&
       lhs.bindings == rhs.bindings &&
       lhs.specialization_bindings == rhs.specialization_bindings &&
       lhs.drops == rhs.drops;
@@ -671,15 +653,6 @@ string renderer_changed_fields(const WitnessEvent & before,
   if(before.specialization_bindings != after.specialization_bindings)
     fields.push_back("specialization_bindings");
   if(before.drops != after.drops) fields.push_back("drops");
-  if(before.expanded_to != after.expanded_to ||
-     before.resolved != after.resolved ||
-     before.spelling != after.spelling ||
-     before.pattern != after.pattern ||
-     before.value != after.value ||
-     before.guide != after.guide ||
-     before.guide_decl_location != after.guide_decl_location ||
-     before.selected_type != after.selected_type)
-    fields.push_back("payload");
   string out;
   for(size_t i = 0; i < fields.size(); ++i) {
     if(i != 0) out += ',';
@@ -754,9 +727,7 @@ WitnessEvent witness_event_from_source_use(
   event.selection = use.selection;
   event.selected_decl_location = !use.selected_decl_anchor.location.empty() ?
       use.selected_decl_anchor.location :
-      use.selected_entity.decl_location;
-  event.expanded_to = normalize_source_event_entity_text(use.expanded_to);
-  event.candidate_count = use.candidate_count;
+      use.selected_entity_decl_location;
   event.candidates_built = use.candidates_built;
   event.candidates_viable = use.candidates_viable;
   event.bindings = use.bindings;
@@ -1415,14 +1386,6 @@ void normalize_event_names(vector<WitnessEvent> & events,
         witness_text::normalize_anonymous_namespace_segments(
             witness_text::strip_inline_namespace_segments(events[i].selected,
                                                           names));
-    events[i].resolved =
-        witness_text::normalize_anonymous_namespace_segments(
-            witness_text::strip_inline_namespace_segments(events[i].resolved,
-                                                          names));
-    events[i].expanded_to =
-        witness_text::normalize_anonymous_namespace_segments(
-            witness_text::strip_inline_namespace_segments(events[i].expanded_to,
-                                                          names));
     for(size_t j = 0; j < events[i].bindings.size(); ++j) {
       events[i].bindings[j].arg =
           witness_text::normalize_anonymous_namespace_segments(
@@ -1860,16 +1823,6 @@ void apply_binding_aliases(vector<WitnessEvent> & events,
     }
     events[i].template_name =
         apply_text_aliases(events[i].template_name, aliases);
-    events[i].resolved =
-        apply_text_aliases(events[i].resolved, aliases);
-    if(!events[i].expanded_to.empty()) {
-      events[i].expanded_to =
-          apply_text_aliases(events[i].expanded_to, aliases);
-    }
-    if(!events[i].value.empty()) {
-      events[i].value =
-          apply_text_aliases(events[i].value, aliases);
-    }
     if(!events[i].selected.empty()) {
       events[i].selected =
           apply_text_aliases(events[i].selected, aliases);
@@ -1890,12 +1843,6 @@ void apply_event_name_aliases(vector<WitnessEvent> & events,
   for(size_t i = 0; i < events.size(); ++i) {
     events[i].template_name =
         apply_text_aliases(events[i].template_name, aliases);
-    events[i].resolved =
-        apply_text_aliases(events[i].resolved, aliases);
-    if(!events[i].expanded_to.empty()) {
-      events[i].expanded_to =
-          apply_text_aliases(events[i].expanded_to, aliases);
-    }
     if(!events[i].selected.empty()) {
       events[i].selected =
           apply_text_aliases(events[i].selected, aliases);
@@ -2087,16 +2034,6 @@ void normalize_event_bindings(vector<WitnessEvent> & events,
     }
     events[i].template_name =
         normalize_entity_name_for_event(events[i].template_name);
-    events[i].resolved =
-        normalize_entity_name_for_event(events[i].resolved);
-    if(!events[i].expanded_to.empty()) {
-      events[i].expanded_to =
-          normalize_entity_name_for_event(events[i].expanded_to);
-    }
-    if(!events[i].value.empty()) {
-      events[i].value =
-          normalize_binding_arg_for_event(events[i].value);
-    }
     if(!events[i].selected.empty()) {
       events[i].selected =
           normalize_entity_name_for_event(events[i].selected);
@@ -2175,8 +2112,6 @@ string render_events_text(const vector<WitnessEvent> & events,
     ordered[i].location = source_location_compare_key(ordered[i].location);
     ordered[i].selected_decl_location =
         source_location_compare_key(ordered[i].selected_decl_location);
-    ordered[i].guide_decl_location =
-        source_location_compare_key(ordered[i].guide_decl_location);
     for(size_t j = 0; j < ordered[i].drops.size(); ++j) {
       ordered[i].drops[j].location =
           source_location_compare_key(ordered[i].drops[j].location);
@@ -2194,9 +2129,6 @@ string render_events_text(const vector<WitnessEvent> & events,
           << "\n";
     } else {
       out << "    template " << event.template_name << "\n";
-    }
-    if(!event.resolved.empty()) {
-      out << "    resolved " << event.resolved << "\n";
     }
     if(event.selection != SourceSelectionKind::None) {
       out << "    selected " << witness_selection_text(event) << "\n";
@@ -2222,15 +2154,6 @@ string render_events_text(const vector<WitnessEvent> & events,
               ("#" + std::to_string(j + 1))) << " = "
           << event.specialization_bindings[j].arg << " source="
           << event.specialization_bindings[j].source << "\n";
-    }
-    if(!event.value.empty()) {
-      out << "    value " << event.value << "\n";
-    }
-    if(!event.guide.empty()) {
-      out << "    guide " << event.guide << "\n";
-    }
-    if(debug && !event.guide_decl_location.empty()) {
-      out << "    guide_decl " << event.guide_decl_location << "\n";
     }
     for(size_t j = 0; j < event.drops.size(); ++j) {
       out << "    drop " << event.drops[j].candidate;

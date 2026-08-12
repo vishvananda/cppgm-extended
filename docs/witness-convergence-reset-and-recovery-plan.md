@@ -5153,6 +5153,144 @@ payload, and the final class-source duplicate. Phase 6 remains open for the
 remaining local semantic mirror inventory. Phase 7 and inception remain
 forbidden.
 
+## Dead source-event payload checkpoint, 2026-08-12
+
+This Phase 6 checkpoint removes the source-event payload left behind by the
+old direct-emission and renderer-arbitration pipelines. `SemanticSourceUse`
+no longer stores a provenance anchor that was always derived from `location`,
+an `expanded_to` string that no producer populated, or an `EntityRef` wrapper
+whose name duplicated `selected` or `template_name`. The one independently
+consumed entity fact is now the selected declaration location itself.
+`SourceAnchorKind::Provenance` and `EntityRefKind` therefore disappear with
+their sole construction paths.
+
+The renderer event also loses the unpopulated `resolved`, `spelling`,
+`pattern`, `expanded_to`, `value`, `guide`, `guide_decl_location`, and
+`selected_type` strings plus its unused copy of `candidate_count`. Their
+comparison, normalization, alias-rewrite, location-normalization, and output
+branches are deleted. Function candidate counts remain in the authoritative
+source-use table because its richer-candidate dominance rule and provenance
+analysis consume them; only the unused renderer copy is gone. The provenance
+JSON schema remains stable by deriving `selected_entity` from the canonical
+selected/template name.
+
+The audit also tested deletion of
+`completed_nondependent_class_observations`. Public output and all 2,631 class
+rows remained exact, but provenance exposed five additional `declval`
+semantic attempts: one in
+`pa23/tests/spec/300-member-overload-set-survives-class-completion.t` and four
+in
+`pa23/tests/spec/300-qualified-declval-dependent-operator-probe.t`. The map is
+therefore retained with a measured nonzero obligation: it prevents repeated
+semantic work before the canonical pending-use arbiter. The alias occurrence
+completion registry likewise remains responsible for recursion and repeated
+completion, so neither registry is migration-only scaffolding.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the PA1-PA38 direct-LowIR report passes 4,844/4,844 on the already-running
+  non-PA9 invocation and PA9 passes 18/18, for 4,862/4,862 total. The PA9
+  timeout source has now been optimized, so subsequent checkpoints should run
+  the normal integrated PA1-PA38 report rather than route PA9 separately;
+- all 3,060 ordinary/provenance witness and LowIR artifacts are byte-identical
+  to each other and to the parent checkpoint;
+- all 1,530 provenance session files exist. The trace has the parent-exact
+  26,389 records, 4,766 source attempts, 6,298 lifecycle attempts, and 4,289
+  unique public rows, with no unknown producer or unexercised site;
+- alias remains 835 attempts/insertions/public rows, class remains
+  2,631/2,631/2,631, function remains 1,268 attempts with 791 insertions, 469
+  exact duplicates and eight rejected replays, and variable remains
+  32/32/32. Source collision and replacement matrices remain empty;
+- renderer ownership remains limited to the same non-destructive presentation
+  work: 409 binding rewrites and 40 name rewrites;
+- the focused helper suite passes 60/60, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and neither template boundary audit
+  changes;
+- the dynamic class-materialization audit passes with five accepted source
+  occurrences, 55 rejected rows, 2,631 attempts/insertions/public rows, and no
+  failure.
+
+The final ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-payload-prune-final-ordinary-strict-20260812.log` and
+`/tmp/cppgm-phase6-payload-prune-final-provenance-strict-20260812.log`. Both
+have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The broad report and the already-started PA9 supplement are
+`/tmp/cppgm-phase6-payload-prune-broad-20260812.log` and
+`/tmp/cppgm-phase6-payload-prune-broad-pa9-20260812.log`, with SHA-256 values
+`861916af629aa52422d68dac2e2f129657d86aca963ea6c87573008bca60c0df`
+and
+`862028e4b4044e6d77246d5b3f4193698deded2f8acb3a769fdc4032d371a988`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-payload-prune-final-provenance-trace-20260812.vWvOaK`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-payload-prune-final-provenance-analysis-20260812.json` and
+`/tmp/cppgm-phase6-payload-prune-final-provenance-convergence-20260812.json`,
+with SHA-256 values
+`478aa6d11780b89b1612cd2a39e074e387d1c267c4f1c01dc3f73e9efd5b73f4`
+and
+`c434f88a728274373024cd8bb6df585a717b235813d602ff28f3c13a902bfae8`.
+The ordinary and provenance manifests both retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+The 60-test helper report is
+`/tmp/cppgm-phase6-payload-prune-helper-tests-20260812.log`, SHA-256
+`78a1e8ea85eb343535649113d78a278212aaee01c72fe75c663770ebeac9f5aa`.
+The materialization, zero-finding text-reparse, template-boundary, and
+semantic-boundary reports retain SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`9cd4fb7cf253e1f8c3458381698a1a7542262fcd1713bdc93356fdb704111239`,
+and
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`.
+The dynamic class audit is
+`/tmp/cppgm-phase6-payload-prune-class-materialization-audit-20260812.json`,
+SHA-256
+`5007a1a08c7a165b3621131120c3e786b1bf8d3f4fbcbf9f90124975bc519637`.
+
+The tracked semantic structure report is byte-identical to the parent:
+`Type`, `TemplateArgument`, and `ClassInfo` remain 280, 136, and 1,104 bytes.
+It is `/tmp/cppgm-phase6-payload-prune-structure-sizes-20260812.txt`, SHA-256
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+
+The ordinary binary shrinks by 20,808 bytes to 17,168,040 bytes. Its Mach-O
+`__TEXT` segment shrinks by 20,480 bytes to 13,037,568; `__text` shrinks by
+18,448 bytes, `__cstring` by 52 bytes, `__const` by 16 bytes, and
+`__unwind_info` by 24 bytes. `__DATA_CONST`, `__DATA`, and `__LINKEDIT` remain
+61,440, 442,368, and 4,063,232 bytes. The binary contains no provenance
+symbols. The frozen binary is
+`/tmp/cppgm-phase6-payload-prune-final-ordinary-20260812`, SHA-256
+`a00b84be45ef7bb9a5be18927df106a22686bb1fd2c882f6fa687afecc51a617`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.70% | +0.33% | -4.12% | `/tmp/cppgm-phase6-payload-prune-perf-fixed-20260812.json` |
+| Reference-reset parent | +0.27% | +0.95% | -0.01% | `/tmp/cppgm-phase6-payload-prune-perf-parent-20260812.json` |
+
+The candidate medians are 174,783,797,212 instructions, 759,611,392 bytes
+maximum RSS, and 568,606,720 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-payload-prune-raw-candidate-20260812.json`, SHA-256
+`c6de8d49128f9d86bfb43b73a29ac0c37380ffe779be6ad7b4822ca854eb005b`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`d71d4964d77a8614d1c4bb46c4c117095e0378d5a78c38983c6ea2b45cedaae1`
+and
+`7f54f6607e5a27427cc89fe479a4980fb057136a298a91f0a72f786a93c8383c`.
+The candidate metadata names commit `8221c0937` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 23 and removes 140 production lines, a net deletion of
+117. Phase 6 remains open for the rest of the local semantic mirror and
+generic-dedup obligation inventory. Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

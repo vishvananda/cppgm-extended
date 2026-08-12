@@ -372,8 +372,9 @@ std::string source_use_changed_fields(const SemanticSourceUse & before,
     fields.push_back("occurrence");
   if(before.ownership != after.ownership) fields.push_back("ownership");
   if(before.selection != after.selection) fields.push_back("selection");
-  if(!(before.selected_entity == after.selected_entity))
-    fields.push_back("selected_entity");
+  if(before.selected_entity_decl_location !=
+     after.selected_entity_decl_location)
+    fields.push_back("selected_decl");
   if(before.bindings != after.bindings) fields.push_back("bindings");
   if(before.specialization_bindings != after.specialization_bindings)
     fields.push_back("specialization_bindings");
@@ -402,8 +403,9 @@ std::string source_attempt_record(const SourceAttempt & attempt,
       << ",\"ownership\":" << quoted(source_use_ownership_name(use.ownership))
       << ",\"location\":" << quoted(use.location)
       << ",\"spelling_anchor\":" << quoted(use.spelling_anchor.location)
-      << ",\"selected_entity\":" << quoted(use.selected_entity.name)
-      << ",\"selected_decl\":" << quoted(use.selected_entity.decl_location)
+      << ",\"selected_entity\":"
+      << quoted(use.selected.empty() ? use.template_name : use.selected)
+      << ",\"selected_decl\":" << quoted(use.selected_entity_decl_location)
       << ",\"template_name\":" << quoted(use.template_name)
       << ",\"selection\":" << quoted(source_selection_name(use.selection))
       << ",\"binding_count\":" << use.bindings.size()
