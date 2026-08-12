@@ -220,11 +220,6 @@ struct TemplateNestedMemberClassCompletionResult
 };
 
 using witness::FunctionCallSourceDecision;
-using witness::SourceDropSet;
-using witness::SourceSelectionKind;
-using witness::TemplateWitnessSourceBinding;
-using witness::TemplateWitnessSourceDrop;
-using TemplateWitnessSourceDropSet = witness::SourceDropSet;
 
 class ScopedTemplateArgumentSourceLocations
 {
@@ -695,18 +690,16 @@ void observe_nested_member_class_reference_instantiation(
     SemanticContext & ctx,
     semantic_model::ClassInfo & info);
 
-using witness::append_source_drop;
-using witness::append_unique_source_drop;
 void append_function_template_witness_bindings(
     SemanticContext & ctx,
     const semantic_model::FunctionBinding * binding,
     std::size_t explicit_arg_count,
-    std::vector<TemplateWitnessSourceBinding> & out);
+    std::vector<semantic_source_use::SourceBinding> & out);
 
 void append_class_template_witness_bindings(
     SemanticContext & ctx,
     const semantic_model::ClassInfo * info,
-    std::vector<TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     bool prefer_structured_type_spelling = false);
 
 std::string canonicalize_template_parameter_source_text(
@@ -739,7 +732,7 @@ enum class TemplateWitnessSourceBindingPolicy
 
 void append_template_witness_source_bindings(
     SemanticContext & ctx,
-    std::vector<TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
     const std::string & source,
@@ -749,7 +742,7 @@ void append_template_witness_source_bindings(
 
 void append_template_witness_source_bindings(
     SemanticContext & ctx,
-    std::vector<TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
     const std::vector<std::string> & explicit_argument_texts,
@@ -771,7 +764,7 @@ std::string template_witness_semantic_argument_text(
 // contract separate from instantiation-oriented binding construction.
 void append_alias_template_witness_source_bindings(
     SemanticContext & ctx,
-    std::vector<TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> &
         source_occurrence_arguments,

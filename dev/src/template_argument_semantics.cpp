@@ -19535,7 +19535,7 @@ TypePtr collapse_rvalue_reference_type(const TypePtr & inner)
 void append_alias_template_source_bindings_impl(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
-    std::vector<template_api::TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     const std::vector<TemplateParameterInfo> & parameters,
     const std::vector<TemplateArgument> & arguments,
     const std::vector<std::string> & explicit_argument_texts,
@@ -19570,7 +19570,7 @@ void append_alias_template_source_bindings_impl(
   std::size_t arg_index = 0;
   std::size_t explicit_index = 0;
   for(std::size_t i = 0; i < parameters.size(); ++i) {
-    template_api::TemplateWitnessSourceBinding binding;
+    semantic_source_use::SourceBinding binding;
     binding.param = parameters[i].name.empty() ?
         std::string("$") + std::to_string(i + 1) :
         parameters[i].name;
@@ -27953,7 +27953,7 @@ bool template_id_syntax_has_dependent_owner(
 void append_alias_template_source_bindings(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
-    std::vector<template_api::TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     const std::vector<TemplateParameterInfo> & parameters,
     const std::vector<TemplateArgument> & arguments,
     const std::vector<std::string> & explicit_argument_texts,

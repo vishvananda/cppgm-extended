@@ -46,13 +46,13 @@ bool function_call_drop_pair_uses_location_order(
 }
 
 void canonicalize_function_call_drops(
-    std::vector<witness::TemplateWitnessSourceDrop> & drops)
+    std::vector<semantic_source_use::SourceDrop> & drops)
 {
   std::stable_sort(
       drops.begin(),
       drops.end(),
-      [](const witness::TemplateWitnessSourceDrop & lhs,
-         const witness::TemplateWitnessSourceDrop & rhs)
+      [](const semantic_source_use::SourceDrop & lhs,
+         const semantic_source_use::SourceDrop & rhs)
       {
         if(lhs.candidate == rhs.candidate &&
            function_call_drop_pair_uses_location_order(lhs.reason,
@@ -523,10 +523,10 @@ void suppress_defaulted_void_self_substitution_drop(
      decision.candidates_viable != 1) {
     return;
   }
-  std::vector<witness::TemplateWitnessSourceDrop> filtered;
+  std::vector<semantic_source_use::SourceDrop> filtered;
   filtered.reserve(decision.drops.size());
   for(std::size_t i = 0; i < decision.drops.size(); ++i) {
-    const witness::TemplateWitnessSourceDrop & drop = decision.drops[i];
+    const semantic_source_use::SourceDrop & drop = decision.drops[i];
     if(drop.reason == "substitution_failure" &&
        drop.candidate == decision.selected) {
       continue;
@@ -626,7 +626,7 @@ void emit_function_template_call_source_use(
     return;
   }
 
-  witness::SourceTemplateIdOccurrence source_occurrence =
+  semantic_source_use::SourceTemplateIdOccurrence source_occurrence =
       request.template_id_occurrence;
   source_occurrence.in_template_body =
       source_occurrence.in_template_body ||
@@ -660,11 +660,12 @@ void emit_function_template_call_source_use(
   decision.selected = function_call_selected_name(ctx, request);
   decision.role = request.role;
   decision.template_id_occurrence = source_occurrence;
-  decision.selection = request.selection != witness::SourceSelectionKind::None ?
+  decision.selection = request.selection !=
+          semantic_source_use::SourceSelectionKind::None ?
       request.selection :
       (binding && binding->is_explicit_specialization ?
-          witness::SourceSelectionKind::ExplicitSpecialization :
-          witness::SourceSelectionKind::Instantiation);
+          semantic_source_use::SourceSelectionKind::ExplicitSpecialization :
+          semantic_source_use::SourceSelectionKind::Instantiation);
   set_function_call_selected_decl_anchor(ctx, decision, request);
   decision.bindings = request.bindings;
   decision.drops = request.drops;

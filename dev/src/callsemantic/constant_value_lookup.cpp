@@ -598,11 +598,11 @@ public:
         source_template ? source_template->name : binding.name;
     request.selected =
         template_api::function_binding_witness_entity(*this, &binding);
-    request.role = witness::SourceUseRole::QualifierUse;
+    request.role = semantic_source_use::SourceUseRole::QualifierUse;
     request.selection =
         binding.is_explicit_specialization ?
-            witness::SourceSelectionKind::ExplicitSpecialization :
-            witness::SourceSelectionKind::Instantiation;
+            semantic_source_use::SourceSelectionKind::ExplicitSpecialization :
+            semantic_source_use::SourceSelectionKind::Instantiation;
     request.origin = witness::FunctionCallEmissionOrigin::ConstexprDirectCall;
     const semantic_model::SourceDeclAnchorCache & decl_anchor =
         source_template ?
@@ -685,7 +685,7 @@ public:
         if(resolved) {
           continue;
         }
-        witness::TemplateWitnessSourceDrop drop;
+        semantic_source_use::SourceDrop drop;
         drop.candidate =
             template_api::function_template_witness_entity(*this, candidate);
         drop.location =

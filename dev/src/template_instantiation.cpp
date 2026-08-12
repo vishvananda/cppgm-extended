@@ -7354,7 +7354,7 @@ void observe_out_of_class_static_member_owner_reference(
     ctx.observe_resolved_out_of_class_owner_reference(
         reconstructed,
         nullptr,
-        witness::SourceUseRole::StaticMemberDefinitionOwner,
+        semantic_source_use::SourceUseRole::StaticMemberDefinitionOwner,
         binding);
     return;
   }
@@ -7362,7 +7362,7 @@ void observe_out_of_class_static_member_owner_reference(
     ctx.observe_retained_out_of_class_owner_reference(
         member.owner_reference_handle,
         concrete_owner,
-        witness::SourceUseRole::StaticMemberDefinitionOwner,
+        semantic_source_use::SourceUseRole::StaticMemberDefinitionOwner,
         binding);
   }
 }
@@ -12660,19 +12660,19 @@ const ValueBinding * instantiate_variable_template(
 
     const CppAstNode * selected_decl_node =
         selection.declarator ? selection.declarator : selection.specifiers;
-    const witness::SourceSelectionKind selection_kind =
+    const semantic_source_use::SourceSelectionKind selection_kind =
         selection.kind == template_selection::MS_EXPLICIT_SPECIALIZATION ?
-            witness::SourceSelectionKind::ExplicitSpecialization :
+            semantic_source_use::SourceSelectionKind::ExplicitSpecialization :
             (selection.kind == template_selection::MS_PARTIAL_SPECIALIZATION ?
-                 witness::SourceSelectionKind::PartialSpecialization :
-                 witness::SourceSelectionKind::Primary);
+                 semantic_source_use::SourceSelectionKind::PartialSpecialization :
+                 semantic_source_use::SourceSelectionKind::Primary);
     if(source_capture_enabled || record_direct_source_use_during_pause) {
       witness::VariableUseEmitRequest request;
       request.use_location = effective_use_location;
       request.ownership =
           nested_replay_request ?
-              witness::SourceUseOwnership::NestedDerived :
-              witness::SourceUseOwnership::Direct;
+              semantic_source_use::SourceUseOwnership::NestedDerived :
+              semantic_source_use::SourceUseOwnership::Direct;
       request.template_name = qualified_variable_template_name(decl);
       request.selection = selection_kind;
       const std::vector<std::string> * source_template_arg_texts =
@@ -12712,7 +12712,8 @@ const ValueBinding * instantiate_variable_template(
             "deduced",
             template_api::TemplateWitnessSourceBindingPolicy::
                 DeducedWithDefaultedTrailingDefaults);
-      } else if(selection_kind == witness::SourceSelectionKind::ExplicitSpecialization) {
+      } else if(selection_kind ==
+                semantic_source_use::SourceSelectionKind::ExplicitSpecialization) {
         if(source_template_arg_texts) {
           template_api::append_template_witness_source_bindings(
               ctx,

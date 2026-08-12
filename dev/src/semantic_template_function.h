@@ -31,15 +31,17 @@ struct FunctionTemplateCallSourceUseRequest
   std::string use_location;
   std::string template_name;
   std::string selected;
-  witness::SourceUseRole role = witness::SourceUseRole::CallUse;
-  witness::SourceSelectionKind selection = witness::SourceSelectionKind::None;
+  semantic_source_use::SourceUseRole role =
+      semantic_source_use::SourceUseRole::CallUse;
+  semantic_source_use::SourceSelectionKind selection =
+      semantic_source_use::SourceSelectionKind::None;
   witness::FunctionCallEmissionOrigin origin =
       witness::FunctionCallEmissionOrigin::OverloadSelectedCall;
   std::string selected_decl_location;
   std::string selected_decl_anchor_location;
-  witness::SourceTemplateIdOccurrence template_id_occurrence;
-  std::vector<witness::TemplateWitnessSourceBinding> bindings;
-  std::vector<witness::TemplateWitnessSourceDrop> drops;
+  semantic_source_use::SourceTemplateIdOccurrence template_id_occurrence;
+  std::vector<semantic_source_use::SourceBinding> bindings;
+  std::vector<semantic_source_use::SourceDrop> drops;
   std::size_t explicit_arg_count = 0;
   int candidate_count = -1;
   int candidates_built = -1;

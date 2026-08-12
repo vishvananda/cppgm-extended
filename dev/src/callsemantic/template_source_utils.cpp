@@ -37,18 +37,18 @@ using semantic_utils::trim_space;
 using semantic_utils::unqualified_member_name;
 using namespace callsemantic_internal;
 
-witness::SourceSelectionKind source_selection_kind_for_match_kind(
+semantic_source_use::SourceSelectionKind source_selection_kind_for_match_kind(
     template_api::MatchKind kind)
 {
   switch(kind) {
   case template_api::MS_PRIMARY:
-    return witness::SourceSelectionKind::Primary;
+    return semantic_source_use::SourceSelectionKind::Primary;
   case template_api::MS_EXPLICIT_SPECIALIZATION:
-    return witness::SourceSelectionKind::ExplicitSpecialization;
+    return semantic_source_use::SourceSelectionKind::ExplicitSpecialization;
   case template_api::MS_PARTIAL_SPECIALIZATION:
-    return witness::SourceSelectionKind::PartialSpecialization;
+    return semantic_source_use::SourceSelectionKind::PartialSpecialization;
   }
-  return witness::SourceSelectionKind::None;
+  return semantic_source_use::SourceSelectionKind::None;
 }
 
 std::string class_use_selected_decl_anchor_location(
@@ -2631,7 +2631,7 @@ std::string join_alias_pack_binding_arguments(
 }
 
 void set_alias_pack_binding_argument(
-    template_api::TemplateWitnessSourceBinding & binding,
+    semantic_source_use::SourceBinding & binding,
     std::size_t index,
     const std::string & text)
 {
@@ -2645,7 +2645,7 @@ void set_alias_pack_binding_argument(
 }
 
 void rebuild_alias_pack_binding_text(
-    template_api::TemplateWitnessSourceBinding & binding)
+    semantic_source_use::SourceBinding & binding)
 {
   if(!binding.pack_binding || binding.pack_arguments.empty()) {
     return;
@@ -2709,7 +2709,7 @@ void rewrite_current_specialization_alias_binding_texts(
     const std::vector<TemplateArgument> & arguments,
     const std::vector<std::string> & explicit_argument_texts,
     const std::vector<TemplateArgumentSyntax> * explicit_argument_syntaxes,
-    std::vector<template_api::TemplateWitnessSourceBinding> & bindings,
+    std::vector<semantic_source_use::SourceBinding> & bindings,
     semantic_source_use::SourceTemplateIdOccurrence * occurrence)
 {
   std::size_t arg_index = 0;

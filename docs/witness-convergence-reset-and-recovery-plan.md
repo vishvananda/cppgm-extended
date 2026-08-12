@@ -5529,6 +5529,135 @@ This checkpoint adds 121 and removes 269 production lines, a net deletion of
 148. Phase 6 remains open for the rest of the local semantic mirror and
 generic-dedup obligation inventory. Phase 7 and inception remain forbidden.
 
+## Canonical source-use payload checkpoint, 2026-08-12
+
+This Phase 6 checkpoint removes the request-layer mirrors of the canonical
+source-use selection, ownership, binding, and drop payloads. Template witness
+requests and their semantic producers now use `SourceSelectionKind`,
+`SourceUseOwnership`, `SourceUseRole`, `SourceTemplateIdOccurrence`,
+`SourceBinding`, and `SourceDrop` directly from `semantic_source_use`.
+`TemplateWitnessSelectionKind`, `TemplateWitnessSourceOwnership`,
+`TemplateWitnessSourceBinding`, `TemplateWitnessSourceDrop`, their API aliases,
+and the three enum/record conversion adapters disappear. The remaining request
+structures still have a nonzero role: they carry producer control and semantic
+owner inputs which are not fields of the public source-use row.
+
+The source-binding normalization in `witness_api.cpp` remains because it
+normalizes angle spacing for presentation; it no longer converts between
+parallel payload types. The generic `SourceDropKey`, `SourceDropSet`, and
+`append_unique_source_drop` wrapper also disappear. One call-selection site
+retains a direct `set<SourceDrop>` uniqueness guard. A destructive validation
+probe proved its nonzero obligation: without it,
+`pa20/tests/general/400-defaulted-template-member-call-rematerialization.t`
+emits the identical `drop append reason=non_deduced_mismatch` row twice. That
+probe changed PA20 from 158/0 to 158/1 and caused larger downstream strict
+drift, so the guard is semantic candidate-rejection identity, not migration
+scaffolding. The rejected-probe log is
+`/tmp/cppgm-phase6-source-payload-unification-drop-dedup-probe-strict-20260812.log`,
+SHA-256
+`b958008ea8c74d5fba93a7d32ac6bc127c5c141c45cf8804b848c2087ce89aa0`.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the normal integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9
+  runs in its normal report position and has no separate validation lane;
+- all 3,060 ordinary/provenance witness and LowIR artifacts are byte-identical
+  to each other and to the selected-anchor parent;
+- all 1,530 provenance session files exist. The trace remains parent-exact at
+  26,389 records, 4,766 source attempts, 6,298 lifecycle attempts, and 4,289
+  unique public rows, with no unknown producer or unexercised site;
+- alias remains 835 attempts/insertions/public rows, class remains
+  2,631/2,631/2,631, function remains 1,268 attempts with 791 insertions, 469
+  exact duplicates and eight rejected replays, and variable remains 32/32/32.
+  All collision and replacement matrices remain empty;
+- renderer ownership remains limited to the same 409 binding rewrites and 40
+  name rewrites;
+- the focused helper suite passes 60/60, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and neither boundary audit nor any
+  tracked semantic structure size changes;
+- the dynamic class-materialization audit passes with five accepted source
+  occurrences, 55 rejected locations, and no failure.
+
+The ordinary, provenance, and post-probe-restoration strict reports all have
+SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The ordinary convergence report is
+`/tmp/cppgm-phase6-source-payload-unification-ordinary-convergence-20260812.json`,
+SHA-256
+`ce8840ba4ea937e580abd6e963d20167981d1c7acf85274b048b77dbd019791e`.
+The integrated broad report is
+`/tmp/cppgm-phase6-source-payload-unification-broad-20260812.log`, SHA-256
+`8ad851060c3ac6fefc0a9470622090c5c5ddabe8aedc3e508bf2841e7e16a76d`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-source-payload-unification-provenance-trace-20260812.GP8Hky`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-source-payload-unification-provenance-analysis-20260812.json`
+and
+`/tmp/cppgm-phase6-source-payload-unification-provenance-convergence-20260812.json`,
+with SHA-256 values
+`c243a5d6389fccd5c71c036410381362e3550c41cf412f6797fc7e0ac07a4b66`
+and
+`4f7900b58b6c3e320701ed127823dda2b8fdea8ec16a20b8bc82626445ddc9ec`.
+The ordinary and provenance manifests retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+The 60-test helper report is
+`/tmp/cppgm-phase6-source-payload-unification-helper-tests-20260812.log`,
+SHA-256
+`c85b3601e8e77b06f83d0724b626db488e8360764254f7d4ea3db2cc724a0782`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`9cd4fb7cf253e1f8c3458381698a1a7542262fcd1713bdc93356fdb704111239`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+The dynamic class audit is
+`/tmp/cppgm-phase6-source-payload-unification-class-materialization-audit-20260812.json`,
+SHA-256
+`56935d264598a05c49ccb8d10d4cea7d0d6a46d1fd33578d4f8367ba15b579e3`.
+
+The ordinary binary shrinks by 6,752 bytes to 17,151,440 bytes. Its Mach-O
+`__TEXT` segment shrinks by 4,096 bytes to 13,025,280; `__text` shrinks by
+4,800 bytes, `__gcc_except_tab` by 88 bytes, and `__unwind_info` by 120 bytes.
+`__cstring` grows by 16 bytes. `__DATA_CONST` and `__DATA` remain 61,440 and
+442,368 bytes; `__LINKEDIT` shrinks by 4,096 bytes to 4,059,136. The binary
+contains no provenance symbols. The frozen post-probe-restoration binary is
+`/tmp/cppgm-phase6-source-payload-unification-restored-final-ordinary-20260812`,
+SHA-256
+`10b87e276d29ddcb4c271fce6b6337da10d2743893bdaf6b647789ddc33a9018`.
+
+The restored ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.77% | +0.58% | -4.09% | `/tmp/cppgm-phase6-source-payload-unification-restored-perf-fixed-20260812.json` |
+| Selected-anchor parent | +0.09% | +0.29% | +0.00% | `/tmp/cppgm-phase6-source-payload-unification-restored-perf-parent-20260812.json` |
+
+The candidate medians are 174,661,482,235 instructions, 761,507,840 bytes
+maximum RSS, and 568,745,984 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-source-payload-unification-restored-candidate-20260812.json`,
+SHA-256
+`dac8a7a25a49a04e7e47adaddee33853e56788d472707fe79eb444dd5d0ebaf1`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`987aac8e8955e8222fa640daf8ff855a17b88c03af0e9b79adeecdea882a7b26`
+and
+`e3b88ea2ae8a45493b3eaa5cfd8d2c9c888f68f11b196d0553037371d114cc7c`.
+The candidate metadata names commit `dc198ef33` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 236 and removes 347 production lines, a net deletion of
+111. Phase 6 remains open for the rest of the local semantic mirror and
+generic-dedup obligation inventory. Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

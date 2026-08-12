@@ -4293,7 +4293,7 @@ private:
   }
 
   void mark_qualified_member_source_bindings(
-      std::vector<template_api::TemplateWitnessSourceBinding> & bindings,
+      std::vector<semantic_source_use::SourceBinding> & bindings,
       const std::vector<TemplateArgument> & arguments,
       const std::vector<TemplateArgumentSyntax> * source_arg_syntaxes) const
   {
@@ -11760,7 +11760,8 @@ private:
       witness::ClassUseEmitRequest request) override
   {
     const bool retained_source_owned_request =
-        request.ownership == witness::SourceUseOwnership::SourceOwned &&
+        request.ownership ==
+            semantic_source_use::SourceUseOwnership::SourceOwned &&
         request.origin !=
             witness::ClassUseEmissionOrigin::ResolvedTemplateId;
     if(template_witness_session_ == nullptr ||
@@ -11790,8 +11791,8 @@ private:
       parser_trace::note("template.resolve", request.location, trace.str());
     }
     const auto binding_equivalent = [](
-        const witness::TemplateWitnessSourceBinding & lhs,
-        const witness::TemplateWitnessSourceBinding & rhs) -> bool
+        const semantic_source_use::SourceBinding & lhs,
+        const semantic_source_use::SourceBinding & rhs) -> bool
     {
       if(lhs.source != rhs.source ||
          lhs.type_like != rhs.type_like ||
@@ -11814,8 +11815,8 @@ private:
       return true;
     };
     const auto bindings_equivalent = [&](
-        const vector<witness::TemplateWitnessSourceBinding> & lhs,
-        const vector<witness::TemplateWitnessSourceBinding> & rhs) -> bool
+        const vector<semantic_source_use::SourceBinding> & lhs,
+        const vector<semantic_source_use::SourceBinding> & rhs) -> bool
     {
       if(lhs.size() != rhs.size()) {
         return false;
@@ -11828,8 +11829,8 @@ private:
       return true;
     };
     const auto bindings_have_richer_pack_data = [](
-        const vector<witness::TemplateWitnessSourceBinding> & candidate,
-        const vector<witness::TemplateWitnessSourceBinding> & existing) -> bool
+        const vector<semantic_source_use::SourceBinding> & candidate,
+        const vector<semantic_source_use::SourceBinding> & existing) -> bool
     {
       if(candidate.size() != existing.size()) {
         return false;
@@ -11848,50 +11849,52 @@ private:
       }
       return richer;
     };
-    const auto ownership_rank = [](witness::SourceUseOwnership ownership)
+    const auto ownership_rank = [](
+        semantic_source_use::SourceUseOwnership ownership)
     {
       switch(ownership) {
-      case witness::SourceUseOwnership::SourceOwned:
+      case semantic_source_use::SourceUseOwnership::SourceOwned:
         return 3;
-      case witness::SourceUseOwnership::Direct:
+      case semantic_source_use::SourceUseOwnership::Direct:
         return 2;
-      case witness::SourceUseOwnership::NestedDerived:
+      case semantic_source_use::SourceUseOwnership::NestedDerived:
         return 1;
       }
       return 0;
     };
-    const auto role_rank = [](witness::SourceUseRole role)
+    const auto role_rank = [](semantic_source_use::SourceUseRole role)
     {
       switch(role) {
-      case witness::SourceUseRole::MaterializedTypeUse:
+      case semantic_source_use::SourceUseRole::MaterializedTypeUse:
         return 5;
-      case witness::SourceUseRole::TypeUse:
+      case semantic_source_use::SourceUseRole::TypeUse:
         return 4;
-      case witness::SourceUseRole::ValueUse:
+      case semantic_source_use::SourceUseRole::ValueUse:
         return 3;
-      case witness::SourceUseRole::QualifierUse:
-      case witness::SourceUseRole::CallUse:
-      case witness::SourceUseRole::DeclvalCall:
+      case semantic_source_use::SourceUseRole::QualifierUse:
+      case semantic_source_use::SourceUseRole::CallUse:
+      case semantic_source_use::SourceUseRole::DeclvalCall:
         return 2;
-      case witness::SourceUseRole::StaticMemberDefinitionOwner:
+      case semantic_source_use::SourceUseRole::StaticMemberDefinitionOwner:
         return 1;
-      case witness::SourceUseRole::Unknown:
+      case semantic_source_use::SourceUseRole::Unknown:
         return 0;
       }
       return 0;
     };
-    const auto selection_rank = [](witness::SourceSelectionKind selection)
+    const auto selection_rank = [](
+        semantic_source_use::SourceSelectionKind selection)
     {
       switch(selection) {
-      case witness::SourceSelectionKind::Instantiation:
+      case semantic_source_use::SourceSelectionKind::Instantiation:
         return 5;
-      case witness::SourceSelectionKind::ExplicitSpecialization:
+      case semantic_source_use::SourceSelectionKind::ExplicitSpecialization:
         return 4;
-      case witness::SourceSelectionKind::PartialSpecialization:
+      case semantic_source_use::SourceSelectionKind::PartialSpecialization:
         return 3;
-      case witness::SourceSelectionKind::Primary:
+      case semantic_source_use::SourceSelectionKind::Primary:
         return 2;
-      case witness::SourceSelectionKind::None:
+      case semantic_source_use::SourceSelectionKind::None:
         return 0;
       }
       return 0;
@@ -11919,9 +11922,9 @@ private:
       }
       const bool candidate_preferred =
           (request.role ==
-               witness::SourceUseRole::StaticMemberDefinitionOwner &&
+               semantic_source_use::SourceUseRole::StaticMemberDefinitionOwner &&
            existing.role ==
-               witness::SourceUseRole::StaticMemberDefinitionOwner &&
+               semantic_source_use::SourceUseRole::StaticMemberDefinitionOwner &&
            request.static_member_owner && existing.static_member_owner &&
            request.static_member_owner != existing.static_member_owner &&
            [&]() -> bool
@@ -12051,7 +12054,7 @@ private:
       witness::ClassUseEmitRequest & request =
           resolved_source_state_->pending_class_uses[i];
       if(request.role ==
-             witness::SourceUseRole::StaticMemberDefinitionOwner) {
+             semantic_source_use::SourceUseRole::StaticMemberDefinitionOwner) {
         if(!request.static_member_owner ||
            request.static_member_name.empty() ||
            materialized_variable_members.count(
@@ -12059,7 +12062,7 @@ private:
                               request.static_member_name)) == 0) {
           continue;
         }
-        request.role = witness::SourceUseRole::QualifierUse;
+        request.role = semantic_source_use::SourceUseRole::QualifierUse;
       }
       ClassTemplateDecl * const origin = request.semantic_template;
       const bool partial_selection_materialized =
@@ -12073,7 +12076,7 @@ private:
                        request.semantic_instance) != 0);
       if(request.partial_selection_visibility_deferred &&
          !partial_selection_materialized) {
-        request.selection = witness::SourceSelectionKind::Primary;
+        request.selection = semantic_source_use::SourceSelectionKind::Primary;
         request.specialization_bindings.clear();
         template_api::ClassSpecializationSelection primary_selection;
         primary_selection.kind = template_api::MS_PRIMARY;
@@ -12085,7 +12088,8 @@ private:
             class_use_selected_decl_anchor_location(origin, primary_selection));
       }
       if(origin &&
-         request.selection == witness::SourceSelectionKind::Primary &&
+         request.selection ==
+             semantic_source_use::SourceSelectionKind::Primary &&
          !request.semantic_specialization_key.empty()) {
         const std::map<std::string, ClassTemplateSpecializationDecl>::const_iterator
             explicit_found = origin->explicit_specializations.find(
@@ -12096,7 +12100,7 @@ private:
           final_selection.class_node = explicit_found->second.class_node;
           final_selection.binding_scope = explicit_found->second.declaring_scope;
           request.selection =
-              witness::SourceSelectionKind::ExplicitSpecialization;
+              semantic_source_use::SourceSelectionKind::ExplicitSpecialization;
           witness::set_selected_decl_anchor(
               request.selected_decl_location,
               request.selected_decl_anchor_location,
@@ -12449,12 +12453,12 @@ private:
       Scope & scope,
       uint32_t handle,
       const std::string & use_location,
-      witness::SourceUseRole role)
+      semantic_source_use::SourceUseRole role)
   {
     ResolvedSourceState * state = resolved_source_state_.get();
     if(!state || handle == 0 || handle > state->aliases.size() ||
        use_location.empty() ||
-       role != witness::SourceUseRole::MaterializedTypeUse ||
+       role != semantic_source_use::SourceUseRole::MaterializedTypeUse ||
        scope_has_template_placeholders(scope) ||
        scope_is_inside_source_template_context(scope) ||
        template_api::function_binding_has_source_template_identity(
@@ -12506,7 +12510,7 @@ private:
           template_api::TemplateWitnessSourceBindingPolicy::FixedSource,
           &selection.pack_sizes);
     }
-    request.ownership = witness::SourceUseOwnership::SourceOwned;
+    request.ownership = semantic_source_use::SourceUseOwnership::SourceOwned;
     request.role = role;
     request.origin = witness::ClassUseEmissionOrigin::DeclarationTypeSource;
     submit_resolved_class_use(std::move(request));
@@ -12528,7 +12532,7 @@ private:
       ClassInfo & instance,
       const TemplateIdSyntax & source_syntax,
       const std::string & location,
-      witness::SourceUseRole role,
+      semantic_source_use::SourceUseRole role,
       bool materialized_type)
   {
     if(location.empty() || !instance.source_template) {
@@ -12608,7 +12612,7 @@ private:
           template_api::TemplateWitnessSourceBindingPolicy::FixedSource,
           &use.selection.pack_sizes);
     }
-    request.ownership = witness::SourceUseOwnership::SourceOwned;
+    request.ownership = semantic_source_use::SourceUseOwnership::SourceOwned;
     request.role = role;
     request.origin =
         witness::ClassUseEmissionOrigin::DeclarationTypeSource;
@@ -12653,7 +12657,7 @@ private:
            *instance,
            *source_syntax,
            location,
-           witness::SourceUseRole::TypeUse,
+           semantic_source_use::SourceUseRole::TypeUse,
            false)) {
       return;
     }
@@ -12695,7 +12699,7 @@ private:
             *declaration_type,
             *resolved.declaration_type_source_syntax,
             explicit_location,
-            witness::SourceUseRole::TypeUse,
+            semantic_source_use::SourceUseRole::TypeUse,
             false);
         const std::string materialized_location =
             resolved.declaration_type_source_anchor ?
@@ -12707,7 +12711,7 @@ private:
             *declaration_type,
             *resolved.declaration_type_source_syntax,
             materialized_location,
-            witness::SourceUseRole::MaterializedTypeUse,
+            semantic_source_use::SourceUseRole::MaterializedTypeUse,
             true);
       }
     }
@@ -12729,7 +12733,7 @@ private:
   void observe_resolved_out_of_class_owner_reference(
       const resolved_source_semantics::ResolvedOwnerReference & resolved,
       const vector<TemplateParameterInfo> * canonical_parameters,
-      witness::SourceUseRole role,
+      semantic_source_use::SourceUseRole role,
       const ValueBinding * static_member_binding = nullptr) override
   {
     if(!resolved.valid() ||
@@ -12737,7 +12741,7 @@ private:
       return;
     }
     ClassInfo * const static_member_owner =
-        role == witness::SourceUseRole::StaticMemberDefinitionOwner ?
+        role == semantic_source_use::SourceUseRole::StaticMemberDefinitionOwner ?
             resolved.owner : nullptr;
     ClassInfo * source_owner = resolved.owner;
     while(source_owner &&
@@ -12758,7 +12762,7 @@ private:
          owner.template_output_node != origin->class_node);
     const bool dependent_arguments =
         template_arguments_are_dependent(owner.instantiation_arguments);
-    if(role == witness::SourceUseRole::QualifierUse &&
+    if(role == semantic_source_use::SourceUseRole::QualifierUse &&
        dependent_arguments && !specialized) {
       return;
     }
@@ -12793,8 +12797,8 @@ private:
     request.selection = has_concrete_selection ?
         source_selection_kind_for_match_kind(concrete_use.selection.kind) :
         specialized ?
-            witness::SourceSelectionKind::ExplicitSpecialization :
-            witness::SourceSelectionKind::Primary;
+            semantic_source_use::SourceSelectionKind::ExplicitSpecialization :
+            semantic_source_use::SourceSelectionKind::Primary;
     if(has_concrete_selection) {
       witness::set_selected_decl_anchor(
           request.selected_decl_location,
@@ -12850,11 +12854,11 @@ private:
     request.static_member_owner = static_member_owner;
     request.static_member_name = static_member_binding ?
         static_member_binding->name : std::string();
-    request.origin = role == witness::SourceUseRole::QualifierUse ?
+    request.origin = role == semantic_source_use::SourceUseRole::QualifierUse ?
         witness::ClassUseEmissionOrigin::QualifiedValueSource :
         witness::ClassUseEmissionOrigin::DeclarationTypeSource;
     submit_resolved_class_use(std::move(request));
-    if(role == witness::SourceUseRole::StaticMemberDefinitionOwner) {
+    if(role == semantic_source_use::SourceUseRole::StaticMemberDefinitionOwner) {
       observe_out_of_class_static_declaration_uses(resolved, owner);
     }
   }
@@ -12862,7 +12866,7 @@ private:
   void observe_retained_out_of_class_owner_reference(
       uint32_t handle,
       ClassInfo & concrete_owner,
-      witness::SourceUseRole role,
+      semantic_source_use::SourceUseRole role,
       const ValueBinding * static_member_binding = nullptr) override
   {
     if(!resolved_source_state_ || handle == 0 ||
@@ -20944,7 +20948,7 @@ private:
   }
 
   void canonicalize_template_parameter_source_bindings(
-      std::vector<witness::TemplateWitnessSourceBinding> & bindings,
+      std::vector<semantic_source_use::SourceBinding> & bindings,
       const std::vector<TemplateArgument> & arguments,
       const std::vector<TemplateParameterInfo> & canonical_parameters)
   {
@@ -21214,10 +21218,11 @@ private:
           selection.class_node,
           static_cast<int>(resolved.source_use_mode));
       int ownership_rank = 1;
-      if(resolved.source_ownership == witness::SourceUseOwnership::Direct) {
+      if(resolved.source_ownership ==
+         semantic_source_use::SourceUseOwnership::Direct) {
         ownership_rank = 2;
       } else if(resolved.source_ownership ==
-                    witness::SourceUseOwnership::SourceOwned) {
+                    semantic_source_use::SourceUseOwnership::SourceOwned) {
         ownership_rank = 3;
       }
       int & completed_rank =
@@ -21316,7 +21321,8 @@ private:
           template_api::class_template_witness_qualified_name(
               *this,
               *class_template);
-      request.selection = witness::SourceSelectionKind::ExplicitSpecialization;
+      request.selection =
+          semantic_source_use::SourceSelectionKind::ExplicitSpecialization;
       request.selected_decl_location = selected_decl_anchor_location;
       request.selected_decl_anchor_location = selected_decl_anchor_location;
       request.template_id_occurrence =
@@ -29202,7 +29208,7 @@ private:
                   out_of_class_static_member ?
                       out_of_class_static_member->owner_class : nullptr),
               nullptr,
-              witness::SourceUseRole::QualifierUse);
+              semantic_source_use::SourceUseRole::QualifierUse);
           TypePtr merged = merge_types(out_of_class_static_member->type, type);
           if(!merged) {
             throw logic_error(string("mismatched variable declaration") +
@@ -29929,7 +29935,7 @@ private:
         resolved_out_of_class_owner_reference(
             scope, *function_name_syntax, &node, method_binding->owner_class),
         nullptr,
-        witness::SourceUseRole::QualifierUse);
+        semantic_source_use::SourceUseRole::QualifierUse);
     apply_out_of_class_defaulted_or_deleted_member_definition(
         parse_scope,
         *method_binding,
@@ -30127,7 +30133,7 @@ private:
               declarator,
               method_binding->owner_class),
           nullptr,
-          witness::SourceUseRole::QualifierUse);
+          semantic_source_use::SourceUseRole::QualifierUse);
       return;
     }
 
@@ -30263,7 +30269,7 @@ private:
             &node,
             binding ? binding->owner_class : nullptr),
         nullptr,
-        witness::SourceUseRole::QualifierUse);
+        semantic_source_use::SourceUseRole::QualifierUse);
     if(!explicit_function_nothrow_specifications_match(
            *binding,
            declarator_function_qualifier(*declarator))) {

@@ -876,12 +876,13 @@ SourceCallPattern source_function_call_pattern(
   return SourceCallPattern();
 }
 
-witness::SourceTemplateIdOccurrence make_function_source_template_id_occurrence(
+semantic_source_use::SourceTemplateIdOccurrence
+make_function_source_template_id_occurrence(
     SemanticContext & ctx,
     const TemplateIdSyntax & syntax,
     const Scope * source_scope)
 {
-  witness::SourceTemplateIdOccurrence occurrence;
+  semantic_source_use::SourceTemplateIdOccurrence occurrence;
   occurrence.name_location = source_location_for_token_id(
       ctx.template_witness_context(),
       syntax.source_location_id);
@@ -2287,7 +2288,7 @@ void append_unmaterialized_copy_move_constructor_arity_drop(
     std::size_t arg_count,
     const ConstructorSelectionOptions & options,
     const FunctionBinding * chosen,
-    std::vector<witness::TemplateWitnessSourceDrop> & out)
+    std::vector<semantic_source_use::SourceDrop> & out)
 {
   if(!template_witness_source_capture_enabled_for_calls(ctx) ||
      arg_count == 1 ||
@@ -2309,7 +2310,7 @@ void append_template_function_candidate_drop(
     SemanticContext & ctx,
     const FunctionTemplateDecl * decl,
     const std::string & reason,
-    std::vector<witness::TemplateWitnessSourceDrop> * out,
+    std::vector<semantic_source_use::SourceDrop> * out,
     bool capture_while_source_paused = false)
 {
   const bool source_capture_active =
@@ -2329,7 +2330,7 @@ void append_template_function_candidate_drop(
   if(candidate.empty() || location.empty()) {
     return;
   }
-  witness::TemplateWitnessSourceDrop drop;
+  semantic_source_use::SourceDrop drop;
   drop.candidate = candidate;
   drop.location = location;
   drop.reason = reason;
@@ -2753,9 +2754,10 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
       request.template_name = qualified_declval_name;
       request.selected = qualified_declval_name;
       request.role = semantic_source_use::SourceUseRole::DeclvalCall;
-      request.selection = witness::SourceSelectionKind::Instantiation;
+      request.selection =
+          semantic_source_use::SourceSelectionKind::Instantiation;
       request.origin = witness::FunctionCallEmissionOrigin::DeclvalCall;
-      witness::TemplateWitnessSourceBinding binding;
+      semantic_source_use::SourceBinding binding;
       binding.param = "$1";
       binding.arg = semantic_dependent_type::lookup_type_argument_text(ctx, declval_type);
       if(binding.arg.empty()) {
@@ -3250,7 +3252,7 @@ bool source_drop_survives_out_of_class_member_definition_suppression(
 
 bool function_call_source_drop_is_internal_member_template_arity_detail(
     const FunctionBinding * chosen,
-    const template_api::TemplateWitnessSourceDrop & drop)
+    const semantic_source_use::SourceDrop & drop)
 {
   return chosen &&
          chosen->source_template &&
@@ -3363,7 +3365,7 @@ bool append_canonical_class_actual_pack_call_bindings(
     FunctionBinding * binding,
     const CandidateMatch & match,
     std::size_t explicit_arg_count,
-    std::vector<witness::TemplateWitnessSourceBinding> & out)
+    std::vector<semantic_source_use::SourceBinding> & out)
 {
   if(!binding ||
      !binding->source_template ||
@@ -3444,7 +3446,7 @@ bool append_canonical_class_actual_pack_call_bindings(
           continue;
         }
 
-        std::vector<witness::TemplateWitnessSourceBinding> class_bindings;
+        std::vector<semantic_source_use::SourceBinding> class_bindings;
         template_api::append_class_template_witness_bindings(
             ctx,
             actual_info,
@@ -3499,7 +3501,7 @@ void note_function_call_source_event(
     const std::vector<std::string> & candidate_rejections,
     const std::vector<CandidateMatch> & matches,
     const BestCandidateSelection & selection,
-    const std::vector<template_api::TemplateWitnessSourceDrop> & initial_drops,
+    const std::vector<semantic_source_use::SourceDrop> & initial_drops,
     bool constructor_source_location_is_authoritative,
     std::size_t explicit_arg_count,
     std::size_t built_candidate_count,
@@ -3610,7 +3612,7 @@ void note_function_call_source_event(
       }
     }
   }
-  witness::SourceTemplateIdOccurrence source_template_id_occurrence;
+  semantic_source_use::SourceTemplateIdOccurrence source_template_id_occurrence;
   if(source_template_id) {
     source_template_id_occurrence =
         make_function_source_template_id_occurrence(ctx,
@@ -3931,7 +3933,7 @@ void note_function_call_source_event(
           semantic_argument_conversion->candidates_viable;
       nested_use.drops.reserve(semantic_argument_conversion->drops.size());
       for(size_t i = 0; i < semantic_argument_conversion->drops.size(); ++i) {
-        witness::TemplateWitnessSourceDrop drop;
+        semantic_source_use::SourceDrop drop;
         drop.candidate = semantic_argument_conversion->drops[i].candidate;
         drop.location = semantic_argument_conversion->drops[i].location;
         drop.reason = semantic_argument_conversion->drops[i].reason;
@@ -4051,7 +4053,7 @@ void note_function_call_source_event(
   const bool suppress_source_drops =
       function_call_source_drops_follow_out_of_class_member_definition(chosen);
   const auto initial_drop_is_represented_by_built_candidate =
-      [&](const witness::TemplateWitnessSourceDrop & drop) -> bool
+      [&](const semantic_source_use::SourceDrop & drop) -> bool
   {
     for(std::size_t i = 0; i < built_candidates.size(); ++i) {
       if(!built_candidates[i]) {
@@ -4069,10 +4071,10 @@ void note_function_call_source_event(
     return false;
   };
 
-  witness::SourceDropSet seen_drops;
   const std::string selected_owner_decl =
       chosen->is_constructor ? constructor_owner_witness_decl_location(ctx, chosen) :
                                std::string();
+  std::set<semantic_source_use::SourceDrop> seen_drops;
   const auto append_drop =
       [&](const std::string & candidate,
           const std::string & location,
@@ -4089,12 +4091,17 @@ void note_function_call_source_event(
        candidate == selected_name) {
       effective_location = selected_decl_location;
     }
-    witness::append_unique_source_drop(
-        seen_drops,
-        source_use.drops,
-        candidate,
-        effective_location,
-        reason);
+    semantic_source_use::SourceDrop drop;
+    drop.candidate = candidate;
+    drop.location = effective_location;
+    drop.reason = reason;
+    if(seen_drops.insert(drop).second) {
+      witness::append_source_drop(
+          source_use.drops,
+          candidate,
+          effective_location,
+          reason);
+    }
   };
 
   const bool argument_conversion_selected =
@@ -11709,7 +11716,7 @@ void append_function_template_call_candidates_impl(
     const std::vector<const CppAstNode *> & arg_nodes,
     std::vector<FunctionBinding *> & out,
     const CallAnalysisOptions & options,
-    std::vector<template_api::TemplateWitnessSourceDrop> * witness_drops,
+    std::vector<semantic_source_use::SourceDrop> * witness_drops,
     const CppAstNode * name_node = nullptr,
     const QualifiedName * name_syntax = nullptr,
     const TemplateIdSyntax * name_template_id_syntax = nullptr)
@@ -12143,7 +12150,7 @@ void append_function_template_call_candidates_impl(
     vector<ExprInfo> args;
     args.reserve(arg_options.size());
     const size_t candidate_count_before_combinations = out.size();
-    std::vector<template_api::TemplateWitnessSourceDrop> combination_drops;
+    std::vector<semantic_source_use::SourceDrop> combination_drops;
     ExprInfo template_implicit_object_arg;
     bool template_implicit_object_ready = false;
     struct ArgumentCombinationRunner
@@ -12158,7 +12165,7 @@ void append_function_template_call_candidates_impl(
       std::vector<ExprInfo> & args;
       FunctionCandidateBucketMap & seen_candidates;
       std::vector<FunctionBinding *> & out;
-      std::vector<template_api::TemplateWitnessSourceDrop> & combination_drops;
+      std::vector<semantic_source_use::SourceDrop> & combination_drops;
       std::map<FunctionTemplateDecl *, ClassInfo *> & template_active_owners;
       const CallAnalysisHints * hints;
       ExprInfo & template_implicit_object_arg;
@@ -12411,7 +12418,7 @@ bool append_ordinary_call_adl_candidates(
     vector<ExprInfo> & merged_lookup_arg_values,
     SharedCallArgumentAnalyzer & argument_analyzer,
     vector<FunctionBinding *> & candidates,
-    std::vector<template_api::TemplateWitnessSourceDrop> * direct_function_source_drops)
+    std::vector<semantic_source_use::SourceDrop> * direct_function_source_drops)
 {
   ScopedCallSemConstructionPath construction_path("overload.adl-candidates");
   if(arg_nodes.empty()) {
@@ -12520,7 +12527,7 @@ struct ConstructorSelectionState
   set<FunctionBinding *> considered;
   vector<FunctionBinding *> built_candidates;
   vector<string> candidate_rejections;
-  vector<template_api::TemplateWitnessSourceDrop> source_drops;
+  vector<semantic_source_use::SourceDrop> source_drops;
   unordered_map<CachedArgumentConversionKey,
                 CachedArgumentConversionResult,
                 CachedArgumentConversionKeyHash> conversion_cache;
@@ -12837,7 +12844,7 @@ void append_constructor_template_candidates(
     const ConstructorSelectionOptions & options,
     bool overlay_local_named_types,
     const char * trace_label,
-    vector<template_api::TemplateWitnessSourceDrop> & source_drops,
+    vector<semantic_source_use::SourceDrop> & source_drops,
     AppendCandidate append_candidate)
 {
   vector<FunctionTemplateDecl *> constructor_templates =
@@ -13022,7 +13029,7 @@ void append_constructor_template_node_candidates(
     SharedCallArgumentAnalyzer & argument_analyzer,
     const ConstructorSelectionOptions & options,
     const char * trace_label,
-    vector<template_api::TemplateWitnessSourceDrop> & source_drops,
+    vector<semantic_source_use::SourceDrop> & source_drops,
     AppendCandidate append_candidate)
 {
   vector<FunctionTemplateDecl *> constructor_templates =
@@ -14744,7 +14751,7 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
   vector<AssignmentCandidate> assignment_candidates;
   assignment_candidates.reserve(candidates.functions.size() +
                                 template_candidates.templates.size());
-  vector<template_api::TemplateWitnessSourceDrop> assignment_source_drops;
+  vector<semantic_source_use::SourceDrop> assignment_source_drops;
   string template_source_args_error;
   for(size_t i = 0; i < candidates.functions.size(); ++i) {
     AssignmentCandidate candidate;
@@ -15231,7 +15238,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
   }
   const bool callee_name_was_parenthesized = effective_callee_node != &callee_node;
   const CppAstNode & lookup_callee_node = *effective_callee_node;
-  std::vector<template_api::TemplateWitnessSourceDrop> direct_function_source_drops;
+  std::vector<semantic_source_use::SourceDrop> direct_function_source_drops;
   QualifiedName direct_explicit_template_name;
   std::vector<std::string> explicit_template_arg_texts;
   std::size_t source_explicit_template_arg_count = 0;

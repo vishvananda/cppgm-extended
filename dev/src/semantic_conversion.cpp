@@ -257,7 +257,7 @@ void record_user_defined_conversion_source_use(
   request.candidate_count = static_cast<int>(drops.size() + 1);
   request.drops.reserve(drops.size());
   for(std::size_t i = 0; i < drops.size(); ++i) {
-    witness::TemplateWitnessSourceDrop drop;
+    semantic_source_use::SourceDrop drop;
     drop.candidate = drops[i].candidate;
     drop.location = drops[i].location;
     drop.reason = drops[i].reason;

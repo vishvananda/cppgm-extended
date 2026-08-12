@@ -19,7 +19,7 @@ class SemanticContext;
 
 namespace callsemantic {
 
-witness::SourceSelectionKind source_selection_kind_for_match_kind(
+semantic_source_use::SourceSelectionKind source_selection_kind_for_match_kind(
     template_api::MatchKind kind);
 std::string class_use_selected_decl_anchor_location(
     SemanticContext & ctx,
@@ -252,7 +252,7 @@ void rewrite_current_specialization_alias_binding_texts(
     const std::vector<template_model::TemplateArgument> & arguments,
     const std::vector<std::string> & explicit_argument_texts,
     const std::vector<cpp_decl::TemplateArgumentSyntax> * explicit_argument_syntaxes,
-    std::vector<template_api::TemplateWitnessSourceBinding> & bindings,
+    std::vector<semantic_source_use::SourceBinding> & bindings,
     semantic_source_use::SourceTemplateIdOccurrence * occurrence = nullptr);
 std::string template_public_use_location_or(const std::string & fallback);
 semantic_model::ClassTemplateDecl * class_template_origin_decl(

@@ -96,39 +96,6 @@ enum class TemplateLifecycleEventKind
   ClassFinalization,
 };
 
-enum class TemplateWitnessSelectionKind
-{
-  None,
-  Primary,
-  PartialSpecialization,
-  ExplicitSpecialization,
-  Instantiation,
-};
-
-inline const char * template_witness_selection_text(
-    TemplateWitnessSelectionKind kind)
-{
-  switch(kind) {
-  case TemplateWitnessSelectionKind::None:
-    return "";
-  case TemplateWitnessSelectionKind::Primary:
-    return "primary";
-  case TemplateWitnessSelectionKind::PartialSpecialization:
-    return "partial";
-  case TemplateWitnessSelectionKind::ExplicitSpecialization:
-    return "explicit";
-  case TemplateWitnessSelectionKind::Instantiation:
-    return "instantiation";
-  }
-  return "";
-}
-
-enum class TemplateWitnessSourceOwnership
-{
-  Direct,
-  NestedDerived,
-};
-
 struct TemplateWitnessEntryContext
 {
   TemplateWitnessOrigin origin = TemplateWitnessOrigin::Source;
@@ -173,28 +140,6 @@ struct TemplateLifecycleEvent
   bool template_related = false;
   bool directly_owned = true;
   bool cross_owner_dependency = false;
-};
-
-struct TemplateWitnessSourceBinding
-{
-  std::string param;
-  std::string arg;
-  std::string source;
-  bool type_like = false;
-  bool function_type_argument = false;
-  bool structured_type_spelling = false;
-  bool preserve_qualified_member = false;
-  bool pack_binding = false;
-  bool pack_aggregate = false;
-  std::vector<std::string> pack_arguments;
-  bool function_pointer_parameter = false;
-};
-
-struct TemplateWitnessSourceDrop
-{
-  std::string candidate;
-  std::string location;
-  std::string reason;
 };
 
 struct TemplateWitnessSourceRange

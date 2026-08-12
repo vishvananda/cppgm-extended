@@ -6439,7 +6439,7 @@ void append_function_template_witness_bindings(
     SemanticContext & ctx,
     const semantic_model::FunctionBinding * binding,
     std::size_t explicit_arg_count,
-    std::vector<TemplateWitnessSourceBinding> & out)
+    std::vector<semantic_source_use::SourceBinding> & out)
 {
   if(!(binding && binding->source_template && binding->has_instantiation_arguments)) {
     return;
@@ -6449,7 +6449,7 @@ void append_function_template_witness_bindings(
   std::size_t argument_index = 0;
   for(std::size_t i = 0; i < params.size(); ++i) {
     const template_model::TemplateParameterInfo & param = params[i];
-    TemplateWitnessSourceBinding source_binding;
+    semantic_source_use::SourceBinding source_binding;
     source_binding.param = witness_binding_param_name(param, i);
     source_binding.function_pointer_parameter =
         template_parameter_is_function_pointer_value(param);
@@ -6540,7 +6540,7 @@ void append_function_template_witness_bindings(
 void append_class_template_witness_bindings(
     SemanticContext & ctx,
     const semantic_model::ClassInfo * info,
-    std::vector<TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     bool prefer_structured_type_spelling)
 {
   if(!(info && info->source_template)) {
@@ -6565,7 +6565,7 @@ void append_class_template_witness_bindings(
   std::size_t argument_index = 0;
   for(std::size_t i = 0; i < params.size(); ++i) {
     const template_model::TemplateParameterInfo & param = params[i];
-    TemplateWitnessSourceBinding source_binding;
+    semantic_source_use::SourceBinding source_binding;
     source_binding.param = witness_binding_param_name(param, i);
     source_binding.function_pointer_parameter =
         template_parameter_is_function_pointer_value(param);
@@ -7529,7 +7529,7 @@ retain_enum_value_bindings_for_witness_source(
 
 void append_template_witness_source_bindings(
     SemanticContext & ctx,
-    std::vector<TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
     const std::string & source,
@@ -7582,7 +7582,7 @@ void append_template_witness_source_bindings(
   };
   std::size_t arg_index = 0;
   for(std::size_t i = 0; i < parameters.size(); ++i) {
-    TemplateWitnessSourceBinding binding;
+    semantic_source_use::SourceBinding binding;
     binding.param = template_witness_binding_param_name(parameters[i], i);
     binding.function_pointer_parameter =
         template_parameter_is_function_pointer_value(parameters[i]);
@@ -7664,7 +7664,7 @@ void append_template_witness_source_bindings(
 
 void append_template_witness_source_bindings(
     SemanticContext & ctx,
-    std::vector<TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
     const std::vector<std::string> & explicit_argument_texts,
@@ -7677,7 +7677,7 @@ void append_template_witness_source_bindings(
   std::size_t arg_index = 0;
   std::size_t explicit_index = 0;
   for(std::size_t i = 0; i < parameters.size(); ++i) {
-    TemplateWitnessSourceBinding binding;
+    semantic_source_use::SourceBinding binding;
     binding.param = template_witness_binding_param_name(parameters[i], i);
     binding.function_pointer_parameter =
         template_parameter_is_function_pointer_value(parameters[i]);
@@ -8002,7 +8002,7 @@ std::string template_witness_semantic_argument_text(
 
 void append_alias_template_witness_source_bindings(
     SemanticContext & ctx,
-    std::vector<TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> &
         source_occurrence_arguments,
@@ -8020,7 +8020,7 @@ void append_alias_template_witness_source_bindings(
   const std::size_t count =
       std::min(parameters.size(), source_occurrence_arguments.size());
   for(std::size_t i = 0; i < count; ++i) {
-    TemplateWitnessSourceBinding binding;
+    semantic_source_use::SourceBinding binding;
     binding.param = template_witness_binding_param_name(parameters[i], i);
     binding.type_like = template_witness_argument_is_type_like(
         source_occurrence_arguments[i]);

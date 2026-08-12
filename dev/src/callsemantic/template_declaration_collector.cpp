@@ -6055,7 +6055,7 @@ private:
     ctx.observe_resolved_out_of_class_owner_reference(
         resolved,
         canonical_parameters,
-        witness::SourceUseRole::QualifierUse);
+        semantic_source_use::SourceUseRole::QualifierUse);
   }
 
   FunctionTemplateDecl * resolve_out_of_class_method_template(

@@ -34,7 +34,7 @@ void retain_unique_enum_value_bindings_for_witness(
 void append_alias_template_source_bindings(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
-    std::vector<template_api::TemplateWitnessSourceBinding> & out,
+    std::vector<semantic_source_use::SourceBinding> & out,
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
     const std::vector<std::string> & explicit_argument_texts,

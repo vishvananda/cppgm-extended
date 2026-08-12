@@ -1,6 +1,5 @@
 #pragma once
 
-#include <set>
 #include <string>
 #include <vector>
 
@@ -25,11 +24,7 @@ using template_api::TemplateLifecycleEventKind;
 using template_api::TemplateWitnessContext;
 using template_api::TemplateWitnessEntryContext;
 using template_api::TemplateWitnessOrigin;
-using template_api::TemplateWitnessSelectionKind;
 using template_api::TemplateWitnessSession;
-using template_api::TemplateWitnessSourceBinding;
-using template_api::TemplateWitnessSourceDrop;
-using template_api::TemplateWitnessSourceOwnership;
 using template_api::ScopedTemplateWitnessEntryContext;
 using template_api::ScopedTemplateWitnessFunctionCallSourceCapturePause;
 using template_api::ScopedTemplateWitnessSession;
@@ -37,7 +32,6 @@ using template_api::ScopedTemplateWitnessSourceCapturePause;
 using template_api::ScopedTemplateWitnessSourceTypeLookup;
 using template_api::ScopedTemplateWitnessTypeLookupPause;
 
-using SourceSelectionKind = template_api::TemplateWitnessSelectionKind;
 using witness_provenance::WitnessProducerSite;
 
 enum class ClassUseEmissionOrigin
@@ -57,9 +51,22 @@ enum class FunctionCallEmissionOrigin
   DeclvalCall
 };
 
-inline const char * source_selection_text(SourceSelectionKind kind)
+inline const char * source_selection_text(
+    semantic_source_use::SourceSelectionKind kind)
 {
-  return template_api::template_witness_selection_text(kind);
+  switch(kind) {
+  case semantic_source_use::SourceSelectionKind::None:
+    return "";
+  case semantic_source_use::SourceSelectionKind::Primary:
+    return "primary";
+  case semantic_source_use::SourceSelectionKind::PartialSpecialization:
+    return "partial";
+  case semantic_source_use::SourceSelectionKind::ExplicitSpecialization:
+    return "explicit";
+  case semantic_source_use::SourceSelectionKind::Instantiation:
+    return "instantiation";
+  }
+  return "";
 }
 
 inline bool enabled(const TemplateWitnessContext & ctx)
@@ -229,9 +236,6 @@ using template_api::normalize_template_witness_source_location;
 using template_api::preferred_fragment_use_location;
 using template_api::template_witness_lifecycle_events_by_origin;
 using template_api::template_witness_source_type_lookup_active;
-using semantic_source_use::SourceUseOwnership;
-using semantic_source_use::SourceUseRole;
-using semantic_source_use::SourceTemplateIdOccurrence;
 struct ClassUseEmitRequest
 {
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
@@ -244,14 +248,17 @@ struct ClassUseEmitRequest
   std::string semantic_specialization_key;
   std::string location;
   std::string template_name;
-  SourceSelectionKind selection = SourceSelectionKind::None;
+  semantic_source_use::SourceSelectionKind selection =
+      semantic_source_use::SourceSelectionKind::None;
   std::string selected_decl_location;
   std::string selected_decl_anchor_location;
-  SourceTemplateIdOccurrence template_id_occurrence;
-  std::vector<TemplateWitnessSourceBinding> bindings;
-  std::vector<TemplateWitnessSourceBinding> specialization_bindings;
-  SourceUseOwnership ownership = SourceUseOwnership::Direct;
-  SourceUseRole role = SourceUseRole::TypeUse;
+  semantic_source_use::SourceTemplateIdOccurrence template_id_occurrence;
+  std::vector<semantic_source_use::SourceBinding> bindings;
+  std::vector<semantic_source_use::SourceBinding> specialization_bindings;
+  semantic_source_use::SourceUseOwnership ownership =
+      semantic_source_use::SourceUseOwnership::Direct;
+  semantic_source_use::SourceUseRole role =
+      semantic_source_use::SourceUseRole::TypeUse;
   ClassUseEmissionOrigin origin = ClassUseEmissionOrigin::ResolvedTemplateId;
   // Static-definition source rows remain pending until this semantic member
   // has a corresponding variable-instantiation transition.
@@ -275,12 +282,12 @@ struct AliasUseEmitRequest
 #endif
   std::size_t source_traversal_order = 0;
   std::string use_location;
-  SourceTemplateIdOccurrence template_id_occurrence;
+  semantic_source_use::SourceTemplateIdOccurrence template_id_occurrence;
   std::string template_name;
   std::string selected_decl_location;
   std::string selected_decl_anchor_location;
   bool selected_decl_anchor_explicit = false;
-  std::vector<TemplateWitnessSourceBinding> bindings;
+  std::vector<semantic_source_use::SourceBinding> bindings;
 };
 
 struct VariableUseEmitRequest
@@ -290,12 +297,14 @@ struct VariableUseEmitRequest
 #endif
   std::string use_location;
   std::string template_name;
-  SourceUseOwnership ownership = SourceUseOwnership::Direct;
-  SourceSelectionKind selection = SourceSelectionKind::None;
+  semantic_source_use::SourceUseOwnership ownership =
+      semantic_source_use::SourceUseOwnership::Direct;
+  semantic_source_use::SourceSelectionKind selection =
+      semantic_source_use::SourceSelectionKind::None;
   std::string selected_decl_location;
   std::string selected_decl_anchor_location;
-  std::vector<TemplateWitnessSourceBinding> bindings;
-  std::vector<TemplateWitnessSourceBinding> specialization_bindings;
+  std::vector<semantic_source_use::SourceBinding> bindings;
+  std::vector<semantic_source_use::SourceBinding> specialization_bindings;
   const semantic_model::ValueBinding * semantic_owner = nullptr;
   bool retain_until_semantic_finalization = false;
   bool record_during_source_capture_pause = false;
@@ -313,16 +322,18 @@ struct FunctionCallSourceDecision
   std::string location;
   std::string template_name;
   std::string selected;
-  SourceUseRole role = SourceUseRole::CallUse;
-  SourceSelectionKind selection = SourceSelectionKind::None;
+  semantic_source_use::SourceUseRole role =
+      semantic_source_use::SourceUseRole::CallUse;
+  semantic_source_use::SourceSelectionKind selection =
+      semantic_source_use::SourceSelectionKind::None;
   std::string selected_decl_location;
   std::string selected_decl_anchor_location;
-  SourceTemplateIdOccurrence template_id_occurrence;
-  TemplateWitnessSourceOwnership ownership =
-      TemplateWitnessSourceOwnership::Direct;
-  std::vector<TemplateWitnessSourceBinding> bindings;
-  std::vector<TemplateWitnessSourceBinding> specialization_bindings;
-  std::vector<TemplateWitnessSourceDrop> drops;
+  semantic_source_use::SourceTemplateIdOccurrence template_id_occurrence;
+  semantic_source_use::SourceUseOwnership ownership =
+      semantic_source_use::SourceUseOwnership::Direct;
+  std::vector<semantic_source_use::SourceBinding> bindings;
+  std::vector<semantic_source_use::SourceBinding> specialization_bindings;
+  std::vector<semantic_source_use::SourceDrop> drops;
   int candidate_count = -1;
   int candidates_built = -1;
   int candidates_viable = -1;
@@ -330,11 +341,12 @@ struct FunctionCallSourceDecision
       FunctionCallEmissionOrigin::OverloadSelectedCall;
 };
 
-inline SourceTemplateIdOccurrence make_source_template_id_occurrence(
+inline semantic_source_use::SourceTemplateIdOccurrence
+make_source_template_id_occurrence(
     const std::string & use_location,
     const std::vector<std::string> & source_arguments)
 {
-  SourceTemplateIdOccurrence occurrence;
+  semantic_source_use::SourceTemplateIdOccurrence occurrence;
   occurrence.present = true;
   occurrence.source_spelled = true;
   occurrence.argument_list_spelled = true;
@@ -357,29 +369,6 @@ void set_selected_decl_anchor(
     std::string & selected_decl_anchor_location,
     const semantic_model::SourceDeclAnchorCache & decl_anchor);
 
-struct SourceDropKey
-{
-  std::string candidate;
-  std::string location;
-  std::string reason;
-};
-
-inline bool operator<(const SourceDropKey & lhs, const SourceDropKey & rhs)
-{
-  if(lhs.candidate != rhs.candidate) {
-    return lhs.candidate < rhs.candidate;
-  }
-  if(lhs.location != rhs.location) {
-    return lhs.location < rhs.location;
-  }
-  return lhs.reason < rhs.reason;
-}
-
-struct SourceDropSet
-{
-  std::set<SourceDropKey> seen;
-};
-
 bool emit_class_use(const TemplateWitnessContext & ctx,
                     const ClassUseEmitRequest & request);
 void emit_alias_use(const TemplateWitnessContext & ctx,
@@ -389,15 +378,9 @@ void finalize_variable_use_source_uses(TemplateWitnessSession * session);
 void emit_function_call(const TemplateWitnessContext & ctx,
                         const FunctionCallSourceDecision & decision);
 
-bool append_source_drop(std::vector<TemplateWitnessSourceDrop> & out,
+bool append_source_drop(std::vector<semantic_source_use::SourceDrop> & out,
                         const std::string & candidate,
                         const std::string & location,
                         const std::string & reason);
-
-bool append_unique_source_drop(SourceDropSet & drop_set,
-                               std::vector<TemplateWitnessSourceDrop> & out,
-                               const std::string & candidate,
-                               const std::string & location,
-                               const std::string & reason);
 
 }  // namespace witness

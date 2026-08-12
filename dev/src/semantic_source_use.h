@@ -198,6 +198,13 @@ inline bool operator==(const SourceDrop & lhs, const SourceDrop & rhs)
          lhs.reason == rhs.reason;
 }
 
+inline bool operator<(const SourceDrop & lhs, const SourceDrop & rhs)
+{
+  if(lhs.candidate != rhs.candidate) return lhs.candidate < rhs.candidate;
+  if(lhs.location != rhs.location) return lhs.location < rhs.location;
+  return lhs.reason < rhs.reason;
+}
+
 inline bool operator==(const SemanticSourceUse & lhs,
                        const SemanticSourceUse & rhs)
 {
