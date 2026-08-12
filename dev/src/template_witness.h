@@ -7,6 +7,7 @@
 #include <regex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "cppast_ast.h"
@@ -21,6 +22,7 @@ struct Type;
 
 namespace semantic_model {
 struct ClassTemplateDecl;
+struct FunctionBinding;
 struct Scope;
 struct ValueBinding;
 }
@@ -147,6 +149,7 @@ struct TemplateWitnessEntryContext
   std::string trigger_decl_location;
   bool trigger_has_template_identity = false;
   TemplateWitnessTriggerKind trigger_kind = TemplateWitnessTriggerKind::None;
+  const semantic_model::FunctionBinding * semantic_trigger_function = nullptr;
 };
 
 struct TemplateLifecycleEvent
@@ -299,6 +302,8 @@ struct TemplateWitnessSession
   std::unordered_map<TemplateLifecycleIdentity,
                      unsigned int,
                      TemplateLifecycleIdentityHash> lifecycle_transition_states;
+  std::unordered_set<const semantic_model::FunctionBinding *>
+      public_source_definition_dependencies;
   semantic_source_use::SemanticSourceUseTable source_use_table;
   std::vector<PendingVariableSourceUse> pending_variable_source_uses;
   std::vector<std::string> inline_namespace_names;

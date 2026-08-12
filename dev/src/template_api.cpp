@@ -3302,12 +3302,14 @@ TemplateWitnessEntryContext make_function_binding_closure_entry_context(
     TemplateClosureReason reason,
     const semantic_model::FunctionBinding * binding)
 {
-  return make_template_closure_entry_context(
+  TemplateWitnessEntryContext context = make_template_closure_entry_context(
       reason,
       binding_log_entity(ctx, binding),
       binding_decl_location(ctx, binding),
       function_binding_has_template_identity(binding),
       TemplateWitnessTriggerKind::Function);
+  context.semantic_trigger_function = binding;
+  return context;
 }
 
 TemplateWitnessEntryContext make_class_closure_entry_context(
@@ -5525,7 +5527,7 @@ void observe_function_lifecycle_transition(
     const TemplateLifecycleTransition & transition,
     const std::string & event_location)
 {
-  const semantic_model::FunctionBinding * binding = transition.function_binding;
+  semantic_model::FunctionBinding * binding = transition.function_binding;
   const std::string entity = binding_log_entity(ctx, binding);
   const std::string decl_location = binding_decl_location(ctx, binding);
   if(entity.empty() || decl_location.empty() || event_location.empty()) {
@@ -5542,8 +5544,29 @@ void observe_function_lifecycle_transition(
       function_or_owner_has_template_identity(binding);
   event.entity_is_function_local_class_member =
       class_is_named_function_local_for_witness(binding->owner_class);
+  const TemplateWitnessEntryContext & entry_context =
+      current_template_witness_entry_context();
+  const semantic_model::FunctionBinding * semantic_trigger_function =
+      entry_context.semantic_trigger_function;
+  TemplateWitnessSession * session = ctx.template_witness_context().session;
+  const bool binding_is_public_source_definition_dependency =
+      session &&
+      session->public_source_definition_dependencies.count(binding) != 0;
+  const bool trigger_requires_public_source_definition =
+      semantic_trigger_function &&
+      (semantic_trigger_function->is_inherited_constructor ||
+       (semantic_trigger_function->source_template &&
+        semantic_trigger_function->source_template->is_inherited_constructor) ||
+       (session &&
+        session->public_source_definition_dependencies.count(
+            semantic_trigger_function) != 0));
   event.public_source_required =
-      binding->template_definition_required_by_public_source_call;
+      binding->template_definition_required_by_public_source_call ||
+      binding_is_public_source_definition_dependency ||
+      trigger_requires_public_source_definition;
+  if(session && trigger_requires_public_source_definition) {
+    session->public_source_definition_dependencies.insert(binding);
+  }
   event.entity_is_constexpr_function = binding->is_constexpr;
   event.entity_is_defaulted_copy_or_move_constructor =
       binding->is_constructor &&

@@ -3494,8 +3494,11 @@ bool try_argument_conversion(SemanticContext & ctx,
         append_unique_semantic_call_drop(operation_drops,
                                          conversion_template_drops[i]);
       }
-      append_constructor_probe_drops();
-      if(constructor_probe_source_call.selected) {
+      if(!selected.direct_reference_binding) {
+        append_constructor_probe_drops();
+      }
+      if(!selected.direct_reference_binding &&
+         constructor_probe_source_call.selected) {
         append_unique_semantic_call_drop(
             operation_drops,
             template_api::function_binding_witness_entity(
@@ -3569,6 +3572,16 @@ bool try_argument_conversion(SemanticContext & ctx,
       return false;
     }
     if(options.instantiate_user_defined_bodies) {
+      const bool direct_reference_source_dependency =
+          selected.direct_reference_binding &&
+          capture_source_facts &&
+          !options.source_use_location.empty() &&
+          ctx.template_witness_context().session != nullptr;
+      if(direct_reference_source_dependency) {
+        ctx.template_witness_context().session->
+            public_source_definition_dependencies.insert(
+                selected_conversion_function);
+      }
       selected_conversion_function =
           semantic_template_function::acquire_function_definition_binding(
               ctx, selected_conversion_function, scope);

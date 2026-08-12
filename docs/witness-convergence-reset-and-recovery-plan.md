@@ -4143,6 +4143,154 @@ entry. Phase 5 remains open on the ten function-call tests and the one
 class-use test. Phase 4 remains open on the lazy-alias lifecycle oracle
 divergence. Inception remains forbidden.
 
+## Semantic source ownership and definition-demand checkpoint, 2026-08-11
+
+This Phase 5 checkpoint removes four inherited-constructor source rows and
+repairs three other typed function-call facts without a fixture, path, line,
+or rendered-name exception.
+
+An inherited constructor wrapper is not a public function-template call
+owner. Function-call publication now recognizes that status on either the
+selected binding or its source template. It also recognizes constructor work
+performed while an inherited wrapper is the semantic closure trigger. Both
+the wrapper call and the nested synthesized-initializer call remain available
+to semantic analysis but no longer publish source rows.
+
+Suppressing those rows originally hid real base-constructor definition
+demands. Closure entry contexts therefore retain the semantic trigger binding,
+and each witness session carries a typed set of function-definition
+dependencies. The lifecycle observer propagates membership through semantic
+function edges. This preserves the required base-constructor closure facts
+without using a false function-call row as an ownership side channel. The
+same carrier lets a direct reference-binding conversion retain definition
+demands from the selected conversion-function body while excluding target
+constructor probes from its public candidate-drop set.
+
+Conditional-expression conversion now passes each operand's structured AST
+start location through `ArgumentConversionOptions`. The selected conversion
+operator is consequently anchored at the converted operand rather than at a
+later parser cursor. Out-of-class member-template drop suppression is also
+narrowed by the selected class definition: it remains in force for a primary
+class-template definition, but a selected class partial specialization keeps
+the overload ranks and partial-order drops produced by its semantic operation.
+
+The five newly exact outputs are:
+
+- `pa23/tests/general/200-inherited-constructor-template-forwarding.t`;
+- `pa23/tests/general/400-partial-specialization-inherited-constructor-template.t`;
+- `pa23/tests/general/500-inherited-constructor-template-member-alias-pack.t`;
+- `pa24/tests/general/400-out-of-class-partial-member-template-owner-parameter-alias.t`;
+- `pa23/tests/spec/500-conversion-function-template-reference-conditional-auto-ref.t`.
+
+Focused controls cover inherited non-constructor member templates, primary
+out-of-class member-template definitions, direct reference conversion
+operators, and object-result conversion operators. All 12 target and control
+outputs are byte-exact, and every focused LowIR result is accepted by the
+shared comparison contract.
+
+Expanded convergence improves from 1,518 to 1,523 exact outputs. The
+1,530-reference inventory has seven known mismatches, no warning output, and
+no missing actual file. Function-call debt falls from 14 mismatched
+occurrences across ten tests to six occurrences across five tests: one changed
+row, three missing rows, and two unexpected rows. Class-use remains one
+changed row in one test, and lifecycle remains the one lazy-alias
+class-instantiation gap. No test enters the mismatch set or changes family.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict runs both report PA19 279 compared with zero
+  failures, PA20 158 with zero, PA22 293 with three residuals, PA23 385 with
+  two, and PA24 415 with two; their expected nonzero exit is exactly the
+  documented seven-test residual set;
+- the PA1-PA38 direct-LowIR report passes 4,862/4,862, including PA30 runtime;
+- all 1,530 ordinary and provenance witness sessions complete, and all 3,060
+  ordinary/provenance witness and LowIR pairs match byte for byte;
+- all 1,530 provenance sessions flush, producing 69,187 records, 4,767 source
+  attempts, and 6,298 lifecycle attempts with no unknown producer attempt and
+  no unexercised producer site;
+- the convergence, provenance, materialization, text-reparse, path,
+  performance, template-boundary, and class-audit helper suites pass 60/60;
+- both materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and the template-boundary,
+  semantic-boundary, and tracked structure-size reports match the parent byte
+  for byte.
+
+The function producer now makes 1,268 attempts, inserts 838 rows, classifies
+430 exact duplicates, and leaves 789 final visible rows. Relative to the
+parent, four inherited-constructor rows disappear before publication and one
+duplicate attempt disappears. The renderer still removes four same-location
+calls, 44 source-defined calls, and one visible duplicate; its legacy
+drop-order pass still rewrites 27 events. There are no rejected, replaced, or
+enriched function attempts. Class consolidation is unchanged at 3,003
+completed candidates, 3,206 early repeats, 358 prepublication merges, 2,645
+collected occurrences, and 2,632 publications. Lifecycle attempts are
+unchanged in number; 39 definition-demand events move from incidental
+visibility to the typed public-source dependency route.
+
+The ordinary convergence report is
+`/tmp/cppgm-phase5-source-ownership-convergence-20260811.json`, SHA-256
+`e957b572bb885f8eaa1b038606c9b671e0c491e50439a225a2225958aa082b91`.
+The PA1-PA38 report is
+`/tmp/cppgm-phase5-source-ownership-broad-20260811.log`, SHA-256
+`1024fd1b54513eed3ab617c468a27c5f868c3abf72e815b7b1c38d6fe8909c85`.
+
+The provenance trace directory is recorded in
+`/tmp/cppgm-phase5-source-ownership-provenance-trace-path-20260811.txt`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase5-source-ownership-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase5-source-ownership-provenance-convergence-20260811.json`,
+with SHA-256 values
+`73b5c5bdf235d8e0fa67aa21ce6c71aa0de9a9221ef01f4e94447bfb11bbf84d`
+and
+`91bbadd5be6803e9e8a17dce1e56c0fcb43620338e2a43e15a3227c93e5219fa`.
+The byte-identical ordinary and provenance manifests both have SHA-256
+`e2b39c7b918fa4db0d951fcacb2c7116ba750c36ef581006aa74525c37931631`;
+their empty difference has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The 60-test helper report is
+`/tmp/cppgm-phase5-source-ownership-helper-tests-20260811.log`, SHA-256
+`8235f773fb26b9bcb5dd618733c91e0f98fa0776579f9161d260e329d7801e5d`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports have SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5fc6f13207db17161c012cf7e08327ab3c2ef0f6c04ad1b2e7c4355dbc40ec01`.
+
+The ordinary binary grows by 4,168 bytes to 17,261,728 bytes. Its Mach-O
+`__TEXT` segment grows by 4,096 bytes to 13,123,584; `__DATA_CONST`, `__DATA`,
+and `__LINKEDIT` remain 61,440, 442,368, and 4,071,424 bytes. It contains no
+witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-phase5-source-ownership-ordinary-20260811`, SHA-256
+`880b15f62cf506973114a39472f00657b453f2251e51e0cc386e39647b917d14`.
+
+The three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.13% | -0.27% | -4.09% | `/tmp/cppgm-phase5-source-ownership-perf-fixed-20260811.json` |
+| Typed candidate-normalization parent | +0.07% | +0.39% | -0.10% | `/tmp/cppgm-phase5-source-ownership-perf-parent-20260811.json` |
+
+The candidate medians are 174,036,777,199 instructions, 755,052,544 bytes
+maximum RSS, and 568,741,888 bytes peak footprint. Wall time remains an
+informational measurement. The raw candidate record is
+`/tmp/cppgm-phase5-source-ownership-raw-candidate-20260811.json`, SHA-256
+`45d225271d0db0218d2ed945b93ef04c05f0026ce709c5796ad2d7e8dee7179b`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`951c50fb0bd40a5a001cfd99b0f4e15b6bba0369aea2ec3099e563404f5f738a`
+and
+`b8ff75c44ce72ba51c293ffbc3bcaac87b5272927856d6a37ea263d31c801973`.
+The candidate metadata names commit `0f40cb6b1` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 110 and removes nine production lines before this ledger
+entry. Phase 5 remains open on the five function-call tests and the one
+class-use test. Phase 4 remains open on the lazy-alias lifecycle oracle
+divergence. Inception remains forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

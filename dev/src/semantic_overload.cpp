@@ -3258,12 +3258,23 @@ bool function_template_has_separate_member_definition(
          decl->definition_node != decl->declaration_node;
 }
 
+bool class_uses_partial_specialization_definition(const ClassInfo * info)
+{
+  return info &&
+         info->source_template &&
+         !info->is_explicit_specialization &&
+         info->template_output_node &&
+         info->source_template->class_node &&
+         info->template_output_node != info->source_template->class_node;
+}
+
 bool function_call_source_drops_follow_out_of_class_member_definition(
     const FunctionBinding * chosen)
 {
   return chosen &&
          chosen->source_template &&
          !chosen->is_constructor &&
+         !class_uses_partial_specialization_definition(chosen->owner_class) &&
          function_template_has_separate_member_definition(chosen->source_template);
 }
 
@@ -3336,6 +3347,15 @@ bool source_call_targets_current_dependent_specialization(
         caller->owner_class->source_template;
   }
   return false;
+}
+
+bool function_binding_is_inherited_constructor_source(
+    const FunctionBinding * binding)
+{
+  return binding &&
+      (binding->is_inherited_constructor ||
+       (binding->source_template &&
+        binding->source_template->is_inherited_constructor));
 }
 
 bool function_call_source_drop_is_conversion_probe_default_constructor_detail(
@@ -3652,6 +3672,18 @@ void note_function_call_source_event(
                                                            selected_name,
                                                            public_location);
   }
+  const FunctionBinding * semantic_trigger_function =
+      template_api::current_template_witness_entry_context().
+          semantic_trigger_function;
+  const bool inherited_constructor_dependency_call =
+      chosen->is_constructor &&
+      chosen != semantic_trigger_function &&
+      function_binding_is_inherited_constructor_source(
+          semantic_trigger_function);
+  if(inherited_constructor_dependency_call && !source_call_result_out) {
+    trace_return("inherited-constructor-dependency", public_location);
+    return;
+  }
   if(public_location.empty()) {
     trace_return("empty-public-location");
     return;
@@ -3800,6 +3832,13 @@ void note_function_call_source_event(
       semantic_template_function::emit_function_template_call_source_use(ctx,
                                                                           nested_use);
     }
+  }
+  const bool inherited_constructor_wrapper_call =
+      function_binding_is_inherited_constructor_source(chosen) ||
+      function_binding_is_inherited_constructor_source(source_selected);
+  if(inherited_constructor_wrapper_call && !source_call_result_out) {
+    trace_return("inherited-constructor-wrapper", public_location);
+    return;
   }
   if(trace_source_decision) {
     std::ostringstream trace;

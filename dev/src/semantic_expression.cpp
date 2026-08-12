@@ -6995,10 +6995,13 @@ ExprInfo analyze_conditional_expression(SemanticContext & ctx,
       const auto try_lvalue_conditional_conversion =
           [&](const TypePtr & target_type,
               const ExprInfo & source_expr,
+              const CppAstNode & source_node,
               ExprInfo & converted_source) -> bool
           {
             ConversionRank rank = CR_BAD;
             ArgumentConversionOptions options(false);
+            options.source_use_location =
+                ctx.source_location_for_node_syntax_start(source_node);
             if(!ctx.try_argument_conversion(scope,
                                             target_type,
                                             source_expr,
@@ -7020,10 +7023,12 @@ ExprInfo analyze_conditional_expression(SemanticContext & ctx,
       const bool else_to_then =
           try_lvalue_conditional_conversion(then_lvalue_type,
                                             else_expr,
+                                            node.children[2],
                                             converted_else);
       const bool then_to_else =
           try_lvalue_conditional_conversion(else_lvalue_type,
                                             then_expr,
+                                            node.children[1],
                                             converted_then);
       if(else_to_then && !then_to_else) {
         else_expr = converted_else;
@@ -7105,6 +7110,14 @@ ExprInfo analyze_conditional_expression(SemanticContext & ctx,
         ExprInfo converted_else;
         ConversionRank then_to_else_rank = CR_BAD;
         ConversionRank else_to_then_rank = CR_BAD;
+        ArgumentConversionOptions then_conversion_options =
+            semantic_policy::default_argument_conversion();
+        then_conversion_options.source_use_location =
+            ctx.source_location_for_node_syntax_start(node.children[1]);
+        ArgumentConversionOptions else_conversion_options =
+            semantic_policy::default_argument_conversion();
+        else_conversion_options.source_use_location =
+            ctx.source_location_for_node_syntax_start(node.children[2]);
         const bool then_to_else =
             else_reference_target &&
             ctx.try_argument_conversion(
@@ -7113,7 +7126,7 @@ ExprInfo analyze_conditional_expression(SemanticContext & ctx,
                 then_expr,
                 converted_then,
                 then_to_else_rank,
-                semantic_policy::default_argument_conversion()) &&
+                then_conversion_options) &&
             converted_matches_reference_target(else_reference_target,
                                                converted_then);
         const bool else_to_then =
@@ -7124,7 +7137,7 @@ ExprInfo analyze_conditional_expression(SemanticContext & ctx,
                 else_expr,
                 converted_else,
                 else_to_then_rank,
-                semantic_policy::default_argument_conversion()) &&
+                else_conversion_options) &&
             converted_matches_reference_target(then_reference_target,
                                                converted_else);
         if(then_to_else &&
@@ -7151,20 +7164,28 @@ ExprInfo analyze_conditional_expression(SemanticContext & ctx,
       ExprInfo converted_else;
       ConversionRank then_to_else_rank = CR_BAD;
       ConversionRank else_to_then_rank = CR_BAD;
+      ArgumentConversionOptions then_conversion_options =
+          semantic_policy::default_argument_conversion();
+      then_conversion_options.source_use_location =
+          ctx.source_location_for_node_syntax_start(node.children[1]);
+      ArgumentConversionOptions else_conversion_options =
+          semantic_policy::default_argument_conversion();
+      else_conversion_options.source_use_location =
+          ctx.source_location_for_node_syntax_start(node.children[2]);
       const bool then_to_else =
           ctx.try_argument_conversion(scope,
                                       else_type,
                                       then_expr,
                                       converted_then,
                                       then_to_else_rank,
-                                      semantic_policy::default_argument_conversion());
+                                      then_conversion_options);
       const bool else_to_then =
           ctx.try_argument_conversion(scope,
                                       then_type,
                                       else_expr,
                                       converted_else,
                                       else_to_then_rank,
-                                      semantic_policy::default_argument_conversion());
+                                      else_conversion_options);
       if(else_to_then &&
          (!then_to_else || else_to_then_rank < then_to_else_rank)) {
         else_expr = converted_else;
