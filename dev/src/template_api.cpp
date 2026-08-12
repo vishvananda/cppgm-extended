@@ -171,11 +171,8 @@ bool template_witness_value_state_contains(
   if(!session || !binding) {
     return false;
   }
-  const std::unordered_map<const semantic_model::ValueBinding *,
-                           unsigned int>::const_iterator found =
-      session->value_state_flags.find(binding);
-  return found != session->value_state_flags.end() &&
-      (found->second & static_cast<unsigned int>(flag)) != 0;
+  return (binding->template_witness_state_flags &
+          static_cast<unsigned int>(flag)) != 0;
 }
 
 void note_template_witness_value_state(
@@ -184,51 +181,46 @@ void note_template_witness_value_state(
 {
   TemplateWitnessSession * session = current_template_witness_session();
   if(session && binding) {
-    session->value_state_flags[binding] |= static_cast<unsigned int>(flag);
+    binding->template_witness_state_flags |=
+        static_cast<unsigned int>(flag);
   }
 }
 
 std::vector<template_model::TemplateValueDependency> *
 template_witness_signature_value_dependencies(
-    const semantic_model::FunctionBinding * binding,
+    semantic_model::FunctionBinding * binding,
     bool create)
 {
   TemplateWitnessSession * session = current_template_witness_session();
-  if(!session || !binding) {
+  if(!session || !binding || !binding->instantiation_cache_entries) {
     return nullptr;
   }
-  if(create) {
-    return &session->signature_value_dependencies[binding];
+  semantic_model::FunctionTemplateInstantiationCacheEntries & cache =
+      *binding->instantiation_cache_entries;
+  if(create && !cache.signature_value_dependencies) {
+    cache.signature_value_dependencies.reset(
+        new std::vector<template_model::TemplateValueDependency>());
   }
-  std::unordered_map<
-      const semantic_model::FunctionBinding *,
-      std::vector<template_model::TemplateValueDependency> >::iterator found =
-      session->signature_value_dependencies.find(binding);
-  return found == session->signature_value_dependencies.end() ?
-      nullptr : &found->second;
+  return cache.signature_value_dependencies.get();
 }
 
 bool template_witness_source_capture_header_instantiation_tracked(
     const semantic_model::ClassInfo * info)
 {
   const TemplateWitnessSession * session = current_template_witness_session();
-  return session &&
-      session->source_capture_header_instantiation_tracked.count(info) != 0;
+  return session && info &&
+      info->template_instantiation_tracked_from_source_capture_header;
 }
 
 void set_template_witness_source_capture_header_instantiation_tracked(
-    const semantic_model::ClassInfo * info,
+    semantic_model::ClassInfo * info,
     bool tracked)
 {
   TemplateWitnessSession * session = current_template_witness_session();
   if(!session || !info) {
     return;
   }
-  if(tracked) {
-    session->source_capture_header_instantiation_tracked.insert(info);
-  } else {
-    session->source_capture_header_instantiation_tracked.erase(info);
-  }
+  info->template_instantiation_tracked_from_source_capture_header = tracked;
 }
 
 std::string class_witness_output_qualified_name(

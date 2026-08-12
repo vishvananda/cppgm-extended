@@ -235,14 +235,6 @@ struct TemplateWitnessSession
                      TemplateLifecycleIdentityHash> lifecycle_transition_states;
   std::unordered_set<const semantic_model::FunctionBinding *>
       public_source_definition_dependencies;
-  std::unordered_map<const semantic_model::ValueBinding *, unsigned int>
-      value_state_flags;
-  std::unordered_map<
-      const semantic_model::FunctionBinding *,
-      std::vector<template_model::TemplateValueDependency> >
-      signature_value_dependencies;
-  std::unordered_set<const semantic_model::ClassInfo *>
-      source_capture_header_instantiation_tracked;
   semantic_source_use::SemanticSourceUseTable source_use_table;
   std::map<const semantic_model::ValueBinding *,
            semantic_source_use::SemanticSourceUse>
@@ -1517,14 +1509,14 @@ void note_template_witness_value_state(
 
 std::vector<template_model::TemplateValueDependency> *
 template_witness_signature_value_dependencies(
-    const semantic_model::FunctionBinding * binding,
+    semantic_model::FunctionBinding * binding,
     bool create);
 
 bool template_witness_source_capture_header_instantiation_tracked(
     const semantic_model::ClassInfo * info);
 
 void set_template_witness_source_capture_header_instantiation_tracked(
-    const semantic_model::ClassInfo * info,
+    semantic_model::ClassInfo * info,
     bool tracked);
 
 inline bool semantic_source_use_capture_enabled()

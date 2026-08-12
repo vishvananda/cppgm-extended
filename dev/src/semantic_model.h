@@ -40,6 +40,8 @@ struct FunctionTemplateInstantiationCacheEntries
 {
   FunctionTemplateInstantiationCacheEntry first;
   std::vector<FunctionTemplateInstantiationCacheEntry> extra;
+  std::unique_ptr<std::vector<template_model::TemplateValueDependency> >
+      signature_value_dependencies;
 };
 struct ClassTemplateSpecializationDecl;
 struct PartialClassTemplateSpecializationDecl;
@@ -227,6 +229,7 @@ struct ValueBinding
   symbol_linkage::SymbolIdentity symbol;
   unsigned int output_requirements = ORK_NONE;
   bool definition_output_emitted = false;
+  mutable unsigned char template_witness_state_flags = 0;
   mutable SourceDeclAnchorCache declaration_anchor;
 };
 
@@ -848,6 +851,7 @@ struct ClassInfo
   bool is_initializer_list = false;
   cpp_decl::TypePtr initializer_list_element_type;
   bool is_lambda_closure = false;
+  bool template_instantiation_tracked_from_source_capture_header = false;
   FunctionBinding * captureless_lambda_conversion_target = nullptr;
   bool source_is_unnamed_class = false;
   const CppAstNode * source_unnamed_class_node = nullptr;

@@ -7012,6 +7012,150 @@ and migration mirrors. The public definition-dependency set is now classified
 as a genuine session-scoped obligation rather than a mirror. Phase 7 and
 inception remain forbidden.
 
+## Binding-owned witness state checkpoint, 2026-08-12
+
+Commit `4e424163ee2990c34cffc3d4e24d49cbae2d5380` is the parent. This
+Phase 6 checkpoint removes three more pointer-keyed containers from
+`TemplateWitnessSession` by moving each fact to its stable semantic owner:
+
+- value-emission state is a compact flag byte on `ValueBinding`;
+- retained function-signature value dependencies are lazily allocated on the
+  existing `FunctionTemplateInstantiationCacheEntries` object;
+- the source-capture-header class marker is a `ClassInfo` flag placed in
+  existing padding.
+
+The function dependency remains optional, preserving the old distinction
+between an absent map entry and a retained empty vector. The public accessors
+continue to require an active witness session, so ordinary semantic operation
+does not observe or create witness-only state. The structure-size reporter now
+measures the session and the cache carrier directly.
+
+A temporary combined probe covered all 1,530 tracked strict references and is
+absent from production. The probe binary and its 52,502-event log have SHA-256
+values
+`aba5cfaa08d56cf2b194b665c3e803423207564c2b23c02d5d294144967460ed`
+and
+`164da413f38cbb81903a92acabe9bd9ffa86bb5333002d8e74e1571e350ff61a`.
+It observed 19,139 value-state reads and 9,119 writes, 2,576 class-marker
+reads and 7,075 writes, and 14,593 signature-dependency accesses. All 1,519
+creating signature accesses had an instantiation-cache object. Of the
+read-only accesses, 6,498 had a cache and 6,576 did not; an absent cache
+therefore continues to mean that no dependency vector was retained. After
+stripping probe diagnostics, all probe artifacts were byte-identical to the
+parent. The empty probe mismatch list has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The final Homebrew-Clang validation produced these results:
+
+- all 1,530 direct-reference inputs are byte-exact against the frozen parent
+  for witness output, LowIR, diagnostics, stdout, and exit status;
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs
+  exactly once in its normal report position and has no separate lane;
+- all 1,530 provenance sessions exist. Schema 6 remains exactly 10,587
+  records: 4,289 source publications and 6,298 lifecycle publications. Source
+  ownership remains alias 835, class 2,631, function 791, and variable 32,
+  with no unknown producer or unexercised site;
+- ordinary and provenance compilers have identical status, witness, LowIR,
+  stdout, and diagnostics on all 1,530 inputs;
+- the 61-test helper suite passes, both compiler builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden text-
+  reparse categories remain zero, and the dynamic class-materialization audit
+  remains exact at five accepted occurrences and 55 rejected rows at 53
+  locations;
+- the template and semantic boundary reports remain byte-identical to the
+  parent.
+
+The final parent-parity directory is
+`/tmp/cppgm-phase6-binding-state-layout-final-parity-20260812.mH1aEj`; its
+empty mismatch list has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-binding-state-layout-final-ordinary-strict-20260812.log`
+and
+`/tmp/cppgm-phase6-binding-state-layout-final-provenance-strict-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-binding-state-layout-final-integrated-20260812.log`,
+SHA-256
+`3b9e280551ad112b06285d0fbdc7d0c64dd0b45bc9755a7ff997e13cbdd90149`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-binding-state-layout-final-provenance-trace-20260812.GJeF2i`.
+The analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-binding-state-layout-final-provenance-analysis-20260812.json`
+and
+`/tmp/cppgm-phase6-binding-state-layout-final-provenance-convergence-20260812.json`,
+with SHA-256 values
+`6650a37d3690465ae6f89fded0ff63c90783560942c523c245997a2e00baf71b`
+and
+`626922631855223f4071f155366322d7edcb4007e6f8f9f5c243e2a5cf389695`.
+The ordinary/provenance mismatch list is empty, SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The helper report is
+`/tmp/cppgm-phase6-binding-state-layout-final-helper-tests-20260812.log`,
+SHA-256
+`6a801ed96360f0afbeb3dfd6c56472bbc0c0ffd78098d3bb8e7fb4d4f97f11c0`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and dynamic class-materialization reports have SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`8c8b7136ba50635a25175da91b80eb923410e4343a8fa244c7fdca30196c88d4`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`389d7f3bc5c4b38804a1e05725b3b9908c79050e6b6730fb89e03128956d4220`.
+
+`TemplateWitnessSession` shrinks from 496 to 376 bytes. `ClassInfo`,
+`FunctionBinding`, and `ValueBinding` remain 1,104, 824, and 504 bytes. The
+lazy function cache carrier grows from 56 to 64 bytes, but it is already
+heap-allocated only for instantiated function-template cache records, and the
+dependency vector remains separately lazy. The structure report is
+`/tmp/cppgm-phase6-binding-state-layout-final-structure-sizes-20260812.txt`,
+SHA-256
+`855b0a514b4cbb2c04c9f9474ce1c24aa073d4b30824e8d81e5a51531bef1baf`.
+
+The ordinary binary shrinks by 11,016 bytes to 17,048,552 bytes and contains
+no provenance symbols. Its Mach-O `__TEXT` segment shrinks by 8,192 bytes;
+`__text`, `__gcc_except_tab`, and `__unwind_info` shrink by 9,520, 96, and 56
+bytes, while `__cstring` grows by 16 bytes. The section report is
+`/tmp/cppgm-phase6-binding-state-layout-final-binary-sections-20260812.txt`,
+SHA-256
+`8a698325f471662507706bcb29f484a5b137311795ca5bc65f86551a90dc291c`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-binding-state-layout-final-ordinary-20260812`, SHA-256
+`45b39b3ab98c81ee9ac885a71ea6dcd9a52fe700d8de175939630a35d36ec228`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.88% | +0.07% | -4.09% | `/tmp/cppgm-phase6-binding-state-layout-final-perf-fixed-20260812.json` |
+| Semantic-mirror parent | +0.11% | -0.46% | -0.05% | `/tmp/cppgm-phase6-binding-state-layout-final-perf-parent-20260812.json` |
+
+The candidate medians are 174,470,248,421 instructions, 757,604,352 bytes
+maximum RSS, and 568,745,984 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-binding-state-layout-final-raw-candidate-20260812.json`,
+SHA-256
+`2862f367346fc482f91d6579ff23e11d5785640d3fb1685eec155b1de4ebef7b`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`18e2afee5673b2fffa7b8d9d49d136646b8066936e9fd66cfa943e6740f4bf83`
+and
+`e91bb7d5e65c8414256f639fb5d24b9fe91e6d830b7ddb7f3aee533575387693`.
+The candidate metadata names commit `4e424163e` because the measurements cover
+this uncommitted checkpoint.
+
+Production code adds 22 and removes 34 lines, a net deletion of 12. The size
+reporter adds 12 lines. Phase 6 remains open for the remaining measured nonzero
+local side stores and migration mirrors. Phase 7 and inception remain
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
