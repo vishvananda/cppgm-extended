@@ -163,6 +163,74 @@ const semantic_model::ValueBinding * instantiate_variable_template(
 
 namespace template_api {
 
+bool template_witness_value_state_contains(
+    const semantic_model::ValueBinding * binding,
+    TemplateWitnessValueStateFlag flag)
+{
+  const TemplateWitnessSession * session = current_template_witness_session();
+  if(!session || !binding) {
+    return false;
+  }
+  const std::unordered_map<const semantic_model::ValueBinding *,
+                           unsigned int>::const_iterator found =
+      session->value_state_flags.find(binding);
+  return found != session->value_state_flags.end() &&
+      (found->second & static_cast<unsigned int>(flag)) != 0;
+}
+
+void note_template_witness_value_state(
+    const semantic_model::ValueBinding * binding,
+    TemplateWitnessValueStateFlag flag)
+{
+  TemplateWitnessSession * session = current_template_witness_session();
+  if(session && binding) {
+    session->value_state_flags[binding] |= static_cast<unsigned int>(flag);
+  }
+}
+
+std::vector<template_model::TemplateValueDependency> *
+template_witness_signature_value_dependencies(
+    const semantic_model::FunctionBinding * binding,
+    bool create)
+{
+  TemplateWitnessSession * session = current_template_witness_session();
+  if(!session || !binding) {
+    return nullptr;
+  }
+  if(create) {
+    return &session->signature_value_dependencies[binding];
+  }
+  std::unordered_map<
+      const semantic_model::FunctionBinding *,
+      std::vector<template_model::TemplateValueDependency> >::iterator found =
+      session->signature_value_dependencies.find(binding);
+  return found == session->signature_value_dependencies.end() ?
+      nullptr : &found->second;
+}
+
+bool template_witness_source_capture_header_instantiation_tracked(
+    const semantic_model::ClassInfo * info)
+{
+  const TemplateWitnessSession * session = current_template_witness_session();
+  return session &&
+      session->source_capture_header_instantiation_tracked.count(info) != 0;
+}
+
+void set_template_witness_source_capture_header_instantiation_tracked(
+    const semantic_model::ClassInfo * info,
+    bool tracked)
+{
+  TemplateWitnessSession * session = current_template_witness_session();
+  if(!session || !info) {
+    return;
+  }
+  if(tracked) {
+    session->source_capture_header_instantiation_tracked.insert(info);
+  } else {
+    session->source_capture_header_instantiation_tracked.erase(info);
+  }
+}
+
 std::string class_witness_output_qualified_name(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info);
@@ -2216,7 +2284,7 @@ bool class_template_instance_has_materialized_definition(
     return false;
   }
   return info->template_instantiation_tracked ||
-      info->source_capture_header_instantiation_tracked ||
+      template_witness_source_capture_header_instantiation_tracked(info) ||
       info->complete ||
       info->reference_members_collected ||
       info->implicit_special_members_ensured ||
@@ -5180,8 +5248,12 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
   {
     const bool replay_initializer =
         request.replay_static_member_initializer &&
-        !binding.witness_static_member_initializer_replayed;
-    if(binding.witness_static_member_definition_replayed &&
+        !template_witness_value_state_contains(
+            &binding,
+            WitnessValueStaticInitializerReplayed);
+    if(template_witness_value_state_contains(
+           &binding,
+           WitnessValueStaticDefinitionReplayed) &&
        !replay_initializer) {
       return;
     }
@@ -5190,9 +5262,13 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
            binding,
            nullptr,
            replay_initializer)) {
-      binding.witness_static_member_definition_replayed = true;
+      note_template_witness_value_state(
+          &binding,
+          WitnessValueStaticDefinitionReplayed);
       if(replay_initializer) {
-        binding.witness_static_member_initializer_replayed = true;
+        note_template_witness_value_state(
+            &binding,
+            WitnessValueStaticInitializerReplayed);
       }
     }
   };
@@ -5274,7 +5350,9 @@ TemplateLifecycleTransition materialize_template_member_value_transition(
   }
 
   if(!retained_dependency) {
-    binding.witness_member_value_source_capture_noted = true;
+    note_template_witness_value_state(
+        &binding,
+        WitnessValueMemberSourceCaptureNoted);
     replay_static_member_definition_once();
   }
   if(trace_enabled) {

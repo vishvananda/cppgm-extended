@@ -4794,6 +4794,115 @@ entry, a net deletion of 397 lines. Phase 6 remains open for the remaining
 trace-only diagnostic inventory, shadow counters, and local semantic mirrors.
 Phase 7 and inception remain forbidden.
 
+## Witness semantic side-store checkpoint, 2026-08-11
+
+This Phase 6 checkpoint removes six witness-only members from the ordinary
+semantic object layouts. Four replay and source-capture booleans leave
+`ValueBinding`, the retained signature-dependency vector leaves
+`FunctionBinding`, and the source-capture header-instantiation flag leaves
+`ClassInfo`. Their state now lives in pointer-keyed maps and a set owned by the
+active `TemplateWitnessSession`, behind shared accessors in `template_api.cpp`.
+Ordinary semantic objects therefore no longer carry per-entity migration state
+for witness generation that may never run.
+
+The retained signature-dependency path preserves both modes of the old logic:
+cached specializations replay previously retained dependencies, while
+non-retaining probes still replay the current capture. Static-member replay,
+initializer replay, member-value source capture, and header-instantiation
+deduplication likewise use the same binding or class identity as before.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output, and the PA1-PA38 direct-LowIR report passes 4,862/4,862;
+- all 3,060 ordinary/provenance witness and LowIR artifacts match the parent
+  checkpoint byte for byte;
+- all 1,530 provenance sessions flush, producing the same 69,084 records,
+  4,767 source attempts, 6,298 lifecycle attempts, and 4,289 unique public
+  rows as the parent, with no unknown producer attempt and no unexercised
+  producer site;
+- site coverage, upstream-route coverage, semantic consolidation, collision,
+  replacement, and renderer-ownership summaries are identical to the parent;
+- the focused helper/audit suite passes 60/60, both ordinary and provenance
+  builds are warning-free, and the materialization, text-reparse,
+  template-boundary, and semantic-boundary reports match the parent byte for
+  byte.
+
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-witness-side-store-final-ordinary-strict-20260811.log` and
+`/tmp/cppgm-phase6-witness-side-store-provenance-strict-20260811.log`, with
+SHA-256 values
+`e7ea87f80269a4957bb6585cdf65c1cecc44eef69d6fdaa35ee51faccaa64d1f`
+and
+`8a2f9d429d3c2df92cd4d79a4bd05fe9eba8ac4a8904e28a0d968387c47956b9`.
+The PA1-PA38 report is
+`/tmp/cppgm-phase6-witness-side-store-broad-20260811.log`, SHA-256
+`24905bc990ca8bc93e501c66335201e03cb7c546385242a5f516466b97a98164`.
+The provenance trace directory is
+`/tmp/cppgm-phase6-witness-side-store-provenance-trace-20260811.nM518N`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-witness-side-store-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase6-witness-side-store-provenance-convergence-20260811.json`,
+with SHA-256 values
+`084d8e65f8dd584543556cbd4f4e3c3c99eabbaeaa9bdf629da215dda17c8b9a`
+and
+`a803c3fa582ffa363e1b5844c86859b6a03ca2a7465bae46d5cea2ff478308d9`.
+
+The ordinary and provenance manifests both retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+The 60-test helper report is
+`/tmp/cppgm-phase6-witness-side-store-helper-tests-20260811.log`, SHA-256
+`836c4542e9a125277ccc4239235c4a3b603f46597085d475d0a7182cd74d641f`.
+The materialization, zero-finding text-reparse, template-boundary, and
+semantic-boundary reports retain the parent SHA-256 values:
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`46ac0175a42595f5a98767eb76039a534543acd9059db17ce714150fcb7118ad`,
+and
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`.
+
+The structure report records the intended layout reduction: `ClassInfo`
+shrinks from 1,136 to 1,128 bytes, `FunctionBinding` from 848 to 824 bytes,
+and `ValueBinding` from 512 to 504 bytes. `Type` and `TemplateArgument` remain
+280 and 136 bytes. The report is
+`/tmp/cppgm-phase6-witness-side-store-structure-sizes-20260811.txt`, SHA-256
+`a21919d8e9cba38f9d8b2d66b7aa7db464e5836591ac214595a41b5a218aba79`.
+
+The ordinary binary grows by 8,280 bytes to 17,184,624 bytes because of the
+centralized side-store accessors. Its Mach-O `__TEXT` and `__LINKEDIT`
+segments each grow by 4,096 bytes to 13,053,952 and 4,063,232 bytes;
+`__DATA_CONST` and `__DATA` remain 61,440 and 442,368 bytes. It contains no
+witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-phase6-witness-side-store-ordinary-20260811`, SHA-256
+`52d32e0e924b45cb0c51a068ced024eae791b88d334d60e68166948fd1e31ec5`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.04% | -0.01% | -4.16% | `/tmp/cppgm-phase6-witness-side-store-perf-fixed-20260811.json` |
+| Source-use adapter parent | -0.08% | -0.00% | -0.15% | `/tmp/cppgm-phase6-witness-side-store-perf-parent-20260811.json` |
+
+The candidate medians are 174,184,993,921 instructions, 757,047,296 bytes
+maximum RSS, and 568,340,480 bytes peak footprint. The raw candidate record is
+`/tmp/cppgm-phase6-witness-side-store-raw-candidate-20260811.json`, SHA-256
+`6296e00ccf6ed33418a191e36617b8d9077d3569688e9871974d8aaa0c6faeb7`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`8d973b490d98a8b76ffd02c7b40f8ecb293ad2416865947ab61ee53ee921fb3d`
+and
+`929add72e2604de9e3f2cc08efe6242e3250bdd6339c27e87081b2b55939381b`.
+The candidate metadata names commit `7a0064a42` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 180 and removes 36 production lines before this ledger
+entry, a net addition of 144 lines in exchange for removing witness migration
+state from three hot semantic layouts. Phase 6 remains open for the remaining
+trace-only diagnostic inventory, shadow counters, and local semantic mirrors.
+Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

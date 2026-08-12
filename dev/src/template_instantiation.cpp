@@ -7423,7 +7423,9 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
           ctx, it->second, info, member);
     }
     if(witness::source_capture_enabled(ctx)) {
-      member->witness_static_member_definition_source_captured = true;
+      template_api::note_template_witness_value_state(
+          member,
+          template_api::WitnessValueStaticDefinitionSourceCaptured);
     }
     member->has_storage_definition = it->second.has_storage_definition;
     member->declaration_node = member->declaration_node ?
@@ -10330,17 +10332,21 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       [&](FunctionBinding * binding, bool retain_dependencies) -> void
       {
         signature_dependency_collection.reset();
-        if(binding && retain_dependencies) {
-          binding->witness_signature_value_dependencies =
-              signature_value_dependencies;
+        std::vector<TemplateValueDependency> * retained = binding ?
+            template_api::template_witness_signature_value_dependencies(
+                binding,
+                retain_dependencies) :
+            nullptr;
+        if(retained && retain_dependencies) {
+          *retained = signature_value_dependencies;
         }
-        if(binding) {
+        if(retained) {
           for(std::size_t i = 0;
-              i < binding->witness_signature_value_dependencies.size();
+              i < retained->size();
               ++i) {
             (void)template_argument_semantics::
                 collect_template_member_value_dependency_if_active(
-                    binding->witness_signature_value_dependencies[i]);
+                    (*retained)[i]);
           }
         }
         if(!retain_dependencies) {

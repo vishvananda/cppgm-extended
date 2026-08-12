@@ -3291,10 +3291,21 @@ bool try_argument_conversion(SemanticContext & ctx,
               // The signature may be reused from cache, so merge both newly
               // discovered and previously retained facts onto the semantic
               // candidate that will cross (or lose) overload selection.
-              const template_argument_semantics::
-                  ScopedTemplateMemberValueDependencyCollection
-                      retained_collection(
-                          binding->witness_signature_value_dependencies);
+              std::unique_ptr<template_argument_semantics::
+                  ScopedTemplateMemberValueDependencyCollection>
+                      retained_collection;
+              std::vector<template_model::TemplateValueDependency> *
+                  retained_dependencies =
+                      template_api::
+                          template_witness_signature_value_dependencies(
+                              binding,
+                              true);
+              if(retained_dependencies) {
+                retained_collection.reset(
+                    new template_argument_semantics::
+                        ScopedTemplateMemberValueDependencyCollection(
+                            *retained_dependencies));
+              }
               for(size_t dependency_index = 0;
                   dependency_index < candidate_value_dependencies.size();
                   ++dependency_index) {

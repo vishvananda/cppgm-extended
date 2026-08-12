@@ -3281,16 +3281,22 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
       ++it) {
     ValueBinding & binding = it->second;
     const bool source_capture_header_static_member_output =
-        info.source_capture_header_instantiation_tracked &&
+        template_api::
+            template_witness_source_capture_header_instantiation_tracked(
+                &info) &&
         witness::source_capture_enabled(ctx) &&
         !has_output_requirement(binding.output_requirements, ORK_DEFINITION);
     const bool witness_only_unrequired_integral_constant =
         witness::source_capture_enabled(ctx) &&
         !class_has_required_member_output(info) &&
         ((binding.name == "value" &&
-          !binding.witness_static_member_definition_source_captured) ||
+          !template_api::template_witness_value_state_contains(
+              &binding,
+              template_api::WitnessValueStaticDefinitionSourceCaptured)) ||
          (binding.name != "value" &&
-          !binding.witness_member_value_source_capture_noted)) &&
+          !template_api::template_witness_value_state_contains(
+              &binding,
+              template_api::WitnessValueMemberSourceCaptureNoted))) &&
         !binding.is_explicit_specialization &&
         !template_api::class_is_explicit_specialization(&info) &&
         !has_output_requirement(binding.output_requirements, ORK_DEFINITION) &&

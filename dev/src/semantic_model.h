@@ -227,10 +227,6 @@ struct ValueBinding
   symbol_linkage::SymbolIdentity symbol;
   unsigned int output_requirements = ORK_NONE;
   bool definition_output_emitted = false;
-  mutable bool witness_member_value_source_capture_noted = false;
-  mutable bool witness_static_member_definition_replayed = false;
-  mutable bool witness_static_member_initializer_replayed = false;
-  mutable bool witness_static_member_definition_source_captured = false;
   mutable SourceDeclAnchorCache declaration_anchor;
 };
 
@@ -710,10 +706,6 @@ struct FunctionBinding
   bool is_explicit_specialization = false;
   std::map<std::string, std::size_t> instantiation_pack_sizes;
   std::string template_instantiation_key;
-  // Retain member-value facts discovered while substituting the signature so
-  // cached specializations can replay them into an enclosing candidate.
-  std::vector<template_model::TemplateValueDependency>
-      witness_signature_value_dependencies;
   // A concrete function-template specialization has one immutable signature.
   // Signature-only overload probes may reuse it without rebuilding the
   // template argument scope once initial substitution and validation finish.
@@ -862,7 +854,6 @@ struct ClassInfo
   bool source_is_named_function_local_class = false;
   bool dependent_instantiation = false;
   bool template_instantiation_tracked = false;
-  bool source_capture_header_instantiation_tracked = false;
   bool template_instantiation_in_progress = false;
   bool full_member_collection_in_progress = false;
   bool reference_member_collection_in_progress = false;

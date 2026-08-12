@@ -532,8 +532,10 @@ void track_instantiated_class(TypeRegistryState & state, ClassInfo * info)
           current_use_location) &&
       !current_use_spells_instantiated_template;
   if(!info->template_instantiation_tracked) {
-    info->source_capture_header_instantiation_tracked =
-        source_capture_header_track;
+    template_api::
+        set_template_witness_source_capture_header_instantiation_tracked(
+            info,
+            source_capture_header_track);
     info->template_instantiation_tracked = true;
     state.instantiated_classes.push_back(info);
     if(info->has_late_required_static_member_output) {
@@ -542,7 +544,10 @@ void track_instantiated_class(TypeRegistryState & state, ClassInfo * info)
     return;
   }
   if(!source_capture_header_track) {
-    info->source_capture_header_instantiation_tracked = false;
+    template_api::
+        set_template_witness_source_capture_header_instantiation_tracked(
+            info,
+            false);
   }
   if(info->has_late_required_static_member_output &&
      !info->late_required_static_member_output_queued) {

@@ -14,6 +14,7 @@
 #include "recog_token_buffer.h"
 #include "semantic_source_use.h"
 #include "template_lifecycle.h"
+#include "template_model.h"
 #include "witness_provenance.h"
 
 namespace cpp_decl {
@@ -21,6 +22,7 @@ struct Type;
 }
 
 namespace semantic_model {
+struct ClassInfo;
 struct ClassTemplateDecl;
 struct FunctionBinding;
 struct Scope;
@@ -275,6 +277,14 @@ struct TemplateLifecycleIdentityHash
   }
 };
 
+enum TemplateWitnessValueStateFlag
+{
+  WitnessValueMemberSourceCaptureNoted = 1u << 0,
+  WitnessValueStaticDefinitionReplayed = 1u << 1,
+  WitnessValueStaticInitializerReplayed = 1u << 2,
+  WitnessValueStaticDefinitionSourceCaptured = 1u << 3,
+};
+
 struct TemplateWitnessSession
 {
   enum SourceValueDependency : unsigned char
@@ -304,6 +314,14 @@ struct TemplateWitnessSession
                      TemplateLifecycleIdentityHash> lifecycle_transition_states;
   std::unordered_set<const semantic_model::FunctionBinding *>
       public_source_definition_dependencies;
+  std::unordered_map<const semantic_model::ValueBinding *, unsigned int>
+      value_state_flags;
+  std::unordered_map<
+      const semantic_model::FunctionBinding *,
+      std::vector<template_model::TemplateValueDependency> >
+      signature_value_dependencies;
+  std::unordered_set<const semantic_model::ClassInfo *>
+      source_capture_header_instantiation_tracked;
   semantic_source_use::SemanticSourceUseTable source_use_table;
   std::vector<PendingVariableSourceUse> pending_variable_source_uses;
   std::vector<std::string> inline_namespace_names;
@@ -1595,6 +1613,26 @@ inline TemplateWitnessSession * current_template_witness_session()
 {
   return template_witness_detail::current_witness_session_storage();
 }
+
+bool template_witness_value_state_contains(
+    const semantic_model::ValueBinding * binding,
+    TemplateWitnessValueStateFlag flag);
+
+void note_template_witness_value_state(
+    const semantic_model::ValueBinding * binding,
+    TemplateWitnessValueStateFlag flag);
+
+std::vector<template_model::TemplateValueDependency> *
+template_witness_signature_value_dependencies(
+    const semantic_model::FunctionBinding * binding,
+    bool create);
+
+bool template_witness_source_capture_header_instantiation_tracked(
+    const semantic_model::ClassInfo * info);
+
+void set_template_witness_source_capture_header_instantiation_tracked(
+    const semantic_model::ClassInfo * info,
+    bool tracked);
 
 inline semantic_source_use::SemanticSourceUseTable *
 current_semantic_source_use_table()

@@ -21410,7 +21410,9 @@ private:
              << "instance_tracked="
              << (instance->template_instantiation_tracked ? "yes" : "no")
              << ";header_tracked="
-             << (instance->source_capture_header_instantiation_tracked ?
+             << (template_api::
+                     template_witness_source_capture_header_instantiation_tracked(
+                         instance) ?
                      "yes" : "no")
              << ";instantiation_in_progress="
              << (instance->template_instantiation_in_progress ? "yes" : "no")

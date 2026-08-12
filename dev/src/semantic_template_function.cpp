@@ -94,16 +94,23 @@ void commit_signature_value_dependencies(
   if(!binding || ctx.template_witness_context().session == nullptr) {
     return;
   }
+  const std::vector<template_model::TemplateValueDependency> * dependencies =
+      template_api::template_witness_signature_value_dependencies(
+          binding,
+          false);
+  if(!dependencies) {
+    return;
+  }
   std::vector<template_model::TemplateValueDependency> publish;
   for(std::size_t i = 0;
-      i < binding->witness_signature_value_dependencies.size();
+      i < dependencies->size();
       ++i) {
     if(template_argument_semantics::
            collect_template_member_value_dependency_if_active(
-               binding->witness_signature_value_dependencies[i])) {
+               (*dependencies)[i])) {
       continue;
     }
-    publish.push_back(binding->witness_signature_value_dependencies[i]);
+    publish.push_back((*dependencies)[i]);
   }
   template_argument_semantics::note_template_value_dependencies_for_witness(
       ctx,
