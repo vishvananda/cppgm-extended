@@ -1439,7 +1439,7 @@ private:
     std::vector<resolved_source_semantics::ResolvedOwnerReference>
         out_of_class_owners;
     std::vector<witness::ClassUseEmitRequest> pending_class_uses;
-    std::map<std::tuple<uint32_t, const ClassTemplateDecl *, std::string,
+    std::map<std::tuple<uint32_t, const void *, std::string,
                         std::string>,
              std::vector<std::size_t> > pending_class_use_indices;
     std::map<std::tuple<uint32_t, std::string, const void *, int,
@@ -11896,11 +11896,17 @@ private:
       }
       return 0;
     };
-    typedef std::tuple<uint32_t, const ClassTemplateDecl *, std::string,
+    typedef std::tuple<uint32_t, const void *, std::string,
                        std::string> ClassOccurrenceKey;
+    const void * const template_identity = request.semantic_template ?
+        (request.semantic_template->deferred_definition_source_identity ?
+             static_cast<const void *>(
+                 request.semantic_template->deferred_definition_source_identity) :
+             static_cast<const void *>(request.semantic_template)) :
+        nullptr;
     const ClassOccurrenceKey key(
         request.source_occurrence_id,
-        request.semantic_template,
+        template_identity,
         request.location,
         request.template_name);
     vector<size_t> & candidates =

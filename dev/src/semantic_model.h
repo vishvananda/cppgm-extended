@@ -914,8 +914,6 @@ struct ClassInfo
   bool concrete_layout_deferred = false;
   MemberAccess default_access = MA_PRIVATE;
   ClassTemplateDecl * source_template = nullptr;
-  std::map<std::string, ClassTemplateDecl *>
-      reference_reset_witness_class_templates;
   std::string instantiation_key;
   const std::string * instantiation_key_view = nullptr;
   std::size_t instantiation_specialization_epoch = 0;
@@ -1690,8 +1688,6 @@ struct PartialClassTemplateSpecializationDecl
   mutable std::vector<unsigned char>
       concrete_expression_recheck_pattern_states;
   std::map<std::string, OutOfClassStaticMemberDecl> static_member_definitions;
-  std::map<std::string, OutOfClassStaticMemberDecl>
-      witness_static_member_definitions;
   std::map<std::string, OutOfClassMemberClassDecl> member_class_definitions;
   std::map<std::string, std::vector<OutOfClassMemberFunctionDecl> >
       member_function_definitions;
@@ -1743,8 +1739,6 @@ struct ClassTemplateDecl
   std::vector<PartialClassTemplateSpecializationDecl> partial_specializations;
   std::vector<DeductionGuideDecl> deduction_guides;
   std::map<std::string, OutOfClassStaticMemberDecl> static_member_definitions;
-  std::map<std::string, OutOfClassStaticMemberDecl>
-      witness_static_member_definitions;
   std::map<std::string, OutOfClassMemberClassDecl> member_class_definitions;
   std::map<std::string, std::vector<PartialClassTemplateSpecializationDecl> >
       member_class_template_partial_specializations;

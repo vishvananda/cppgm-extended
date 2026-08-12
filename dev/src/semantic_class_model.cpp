@@ -224,6 +224,20 @@ bool ast_node_contains(const CppAstNode * outer, const CppAstNode * inner)
          inner->token_end <= outer->token_end;
 }
 
+const ClassTemplateDecl * reference_reset_class_template_source(
+    const ClassTemplateDecl * replacement)
+{
+  template_api::TemplateWitnessSession * const session =
+      template_api::current_template_witness_session();
+  if(!session || !replacement) {
+    return nullptr;
+  }
+  const auto found =
+      session->reference_reset_replacement_sources.find(replacement);
+  return found == session->reference_reset_replacement_sources.end() ?
+      nullptr : found->second;
+}
+
 bool should_preserve_class_template_across_reference_reset(
     const ClassInfo & info,
     const std::string & name,
@@ -239,6 +253,8 @@ bool should_preserve_class_template_across_reference_reset(
   const CppAstNode * owner_node =
       info.template_output_node ? info.template_output_node : info.class_node;
   if(decl && owner_node) {
+    const ClassTemplateDecl * const witness_source =
+        reference_reset_class_template_source(decl);
     for(std::map<std::string, ClassTemplateSpecializationDecl>::const_iterator it =
             decl->explicit_specializations.begin();
         it != decl->explicit_specializations.end();
@@ -251,17 +267,23 @@ bool should_preserve_class_template_across_reference_reset(
     for(std::size_t i = 0; i < decl->partial_specializations.size(); ++i) {
       const PartialClassTemplateSpecializationDecl & partial =
           decl->partial_specializations[i];
+      const bool has_witness_static_member_definition =
+          witness_source &&
+          i < witness_source->partial_specializations.size() &&
+          !witness_source->partial_specializations[i].
+              static_member_definitions.empty();
       if((partial.class_node &&
           !ast_node_contains(owner_node, partial.class_node)) ||
          !partial.static_member_definitions.empty() ||
-         !partial.witness_static_member_definitions.empty() ||
+         has_witness_static_member_definition ||
          !partial.member_function_definitions.empty() ||
          !partial.member_function_template_definitions.empty()) {
         return true;
       }
     }
     if(!decl->static_member_definitions.empty() ||
-       !decl->witness_static_member_definitions.empty() ||
+       (witness_source &&
+        !witness_source->static_member_definitions.empty()) ||
        !decl->member_class_definitions.empty() ||
        !decl->member_function_definitions.empty() ||
        !decl->member_function_template_definitions.empty()) {
@@ -7636,7 +7658,17 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.nonvirtual_alignment = 1;
   info.complete = false;
   info.concrete_layout_deferred = false;
-  info.reference_reset_witness_class_templates.clear();
+  if(template_api::TemplateWitnessSession * const session =
+         template_api::current_template_witness_session()) {
+    for(auto it = session->reference_reset_class_template_sources.begin();
+        it != session->reference_reset_class_template_sources.end();) {
+      if(it->first.first == &info) {
+        it = session->reference_reset_class_template_sources.erase(it);
+      } else {
+        ++it;
+      }
+    }
+  }
   info.reentrant_primary_selection = false;
   info.type->named_complete = false;
   info.type->named_has_layout = false;
@@ -7785,7 +7817,11 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
         preserved_class_templates[it->first] = it->second;
       } else if(class_template_has_reference_reset_witness_static_member_metadata(
                     it->second)) {
-        info.reference_reset_witness_class_templates[it->first] = it->second;
+        if(template_api::TemplateWitnessSession * const session =
+               template_api::current_template_witness_session()) {
+          session->reference_reset_class_template_sources[
+              std::make_pair(&info, it->first)] = it->second;
+        }
       }
     }
     for(std::set<std::string>::const_iterator it =

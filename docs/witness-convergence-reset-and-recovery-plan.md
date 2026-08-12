@@ -5024,6 +5024,135 @@ this ledger entry. Phase 6 remains open for remaining local semantic mirrors
 and the one measured class-source exact duplicate. Phase 7 and inception
 remain forbidden.
 
+## Reference-reset side-store and class-occurrence identity checkpoint, 2026-08-11
+
+This Phase 6 checkpoint removes the remaining witness-only class-template
+maps from ordinary semantic layouts and closes the sole measured class-source
+exact duplicate. Reference-only collection can discard and later recreate a
+nested `ClassTemplateDecl`. The old implementation retained the discarded
+declaration in `ClassInfo`, then copied its static-member definitions into
+second maps on the replacement `ClassTemplateDecl` and each partial
+specialization. The active witness session now retains only two non-owning
+associations: the pending old declaration by class and member name, and the
+old declaration by replacement declaration. Analyzer-owned class-template
+declarations have stable lifetime, so static-member replay reads the original
+definition map without copying it into the replacement semantic object.
+
+The exact duplicate had the same reference/full-collection cause. Both
+semantic visits described the source occurrence at
+`pa22/tests/general/300-sibling-namespace-dependent-member-template-id-owner.t:29:21`,
+but the pending-use arbiter keyed them by the two recreated declaration
+addresses. It now keys recreated nested declarations by their canonical
+deferred-definition source identity. Ordinary forward declarations retain
+their declaration address as the fallback identity because their `class_node`
+legitimately changes when the definition arrives. The two visits therefore
+converge before public source-table insertion without suppressing the later,
+more-specific partial-specialization update covered by PA23.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the PA1-PA38 direct-LowIR report passes 4,844/4,844 on the canonical
+  non-PA9 surface, and the separately routed PA9 surface passes 18/18, for the
+  required combined result of 4,862/4,862;
+- all 3,060 ordinary/provenance witness and LowIR artifacts remain byte-exact
+  with the parent checkpoint;
+- all 1,530 provenance session files exist. The retained trace has 26,389
+  records, 4,766 source attempts, 6,298 lifecycle attempts, and the unchanged
+  4,289 unique public rows, with no unknown producer or unexercised site;
+- class provenance is now exactly 2,631 attempts, 2,631 insertions, and 2,631
+  public rows. The former nested-source exact duplicate is absent, and class
+  collision and replacement matrices remain empty;
+- alias, function, variable, lifecycle, upstream-route, and renderer-ownership
+  counts remain unchanged;
+- the focused helper suite passes 60/60, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and neither template boundary audit
+  grows.
+
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-reset-identity-ordinary-strict-20260811.log` and
+`/tmp/cppgm-phase6-reset-identity-provenance-strict-20260811.log`. Both have
+SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The broad non-PA9 report and PA9 supplement are
+`/tmp/cppgm-phase6-reset-identity-broad-20260811.log` and
+`/tmp/cppgm-phase6-reset-identity-broad-pa9-20260811.log`, with SHA-256 values
+`6da6522ae441e6704a0d0883579ebe47919f044f99a265f041b942f3aab4b4d8`
+and
+`862028e4b4044e6d77246d5b3f4193698deded2f8acb3a769fdc4032d371a988`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-reset-identity-provenance-trace-20260811.1WY11x`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-reset-identity-provenance-analysis-20260811.json` and
+`/tmp/cppgm-phase6-reset-identity-provenance-convergence-20260811.json`, with
+SHA-256 values
+`6b8b0fd0dd8cbbb89138370e05ab08ea0e0eb7f9a2e4e75a5e789cea5768e778`
+and
+`ec3c58fa995765af09711f7f1a71a5f6bf62ebfc955026ec900749c1d313acda`.
+The ordinary and provenance manifests both retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+The 60-test helper report is
+`/tmp/cppgm-phase6-reset-identity-helper-tests-20260811.log`, SHA-256
+`1dab2fdb7bda4ef5724a7a5169b35e2be5b2610ed0fcf93df1f421045ff04af2`.
+The materialization, zero-finding text-reparse, and semantic-boundary reports
+retain SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+and
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`.
+The dynamic class-materialization audit passes with five accepted source
+occurrences, 55 rejected rows, and zero failure; it is
+`/tmp/cppgm-phase6-reset-identity-class-materialization-audit-20260811.json`,
+SHA-256
+`3db9befb002d00b75ad5d485bd7bae6bc0a8ac1ba9bddf3dd2bed750eee2a8bf`.
+
+The structure report records the intended ordinary-layout reduction:
+`ClassInfo` shrinks from 1,128 to 1,104 bytes. `Type`, `TemplateArgument`,
+`FunctionBinding`, and `ValueBinding` remain 280, 136, 824, and 504 bytes.
+The report is
+`/tmp/cppgm-phase6-reset-identity-structure-sizes-20260811.txt`, SHA-256
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+
+The ordinary binary grows by 4,808 bytes to 17,188,848 bytes. Its Mach-O
+`__TEXT` segment grows by 4,096 bytes to 13,058,048 bytes, while
+`__DATA_CONST`, `__DATA`, and `__LINKEDIT` remain 61,440, 442,368, and
+4,063,232 bytes. `__text` grows by 2,304 bytes and `__unwind_info` by 16
+bytes; `__cstring` and `__const` are unchanged. The binary contains no
+witness-provenance symbols. The frozen binary is
+`/tmp/cppgm-phase6-reset-identity-ordinary-20260811`, SHA-256
+`e2e787b653ff93523114f3fe39910bca8eabc45e6b503f719079bb179001568b`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.97% | -0.61% | -4.11% | `/tmp/cppgm-phase6-reset-identity-perf-fixed-20260811.json` |
+| Temporary-provenance-scaffold parent | -0.00% | -0.73% | +0.03% | `/tmp/cppgm-phase6-reset-identity-perf-parent-20260811.json` |
+
+The candidate medians are 174,306,440,559 instructions, 752,472,064 bytes
+maximum RSS, and 568,635,392 bytes peak footprint. The raw candidate record is
+`/tmp/cppgm-phase6-reset-identity-raw-candidate-20260811.json`, SHA-256
+`d92a3e90630709ba024778c2bef38acc4ea98447681423d8cfe3a97d25542734`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`9889028946ab24f55bfd80e2c6b1ebe2b1cb437b9cb1adee0216e42f1062cf23`
+and
+`62c95ee3007b38c3a3722b526b7136d497d6c433db168ce0bc8f51b25abf8a27`.
+The candidate metadata names commit `c17794563` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 92 and removes 44 production lines, a net addition of 48
+lines in exchange for removing three ordinary semantic maps, their copied
+payload, and the final class-source duplicate. Phase 6 remains open for the
+remaining local semantic mirror inventory. Phase 7 and inception remain
+forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

@@ -875,29 +875,20 @@ public:
           [&](ClassTemplateDecl & target)
       {
         ClassInfo * owner = class_template_scope->class_info;
-        if(!owner) {
+        template_api::TemplateWitnessSession * const session =
+            template_api::current_template_witness_session();
+        if(!owner || !session) {
           return;
         }
-        std::map<std::string, ClassTemplateDecl *>::iterator found =
-            owner->reference_reset_witness_class_templates.find(target.name);
-        if(found == owner->reference_reset_witness_class_templates.end() ||
+        const auto key = std::make_pair(owner, target.name);
+        auto found = session->reference_reset_class_template_sources.find(key);
+        if(found == session->reference_reset_class_template_sources.end() ||
            !found->second ||
            found->second == &target) {
           return;
         }
-        ClassTemplateDecl & source = *found->second;
-        target.witness_static_member_definitions.insert(
-            source.static_member_definitions.begin(),
-            source.static_member_definitions.end());
-        const std::size_t partial_count =
-            std::min(target.partial_specializations.size(),
-                     source.partial_specializations.size());
-        for(std::size_t i = 0; i < partial_count; ++i) {
-          target.partial_specializations[i].witness_static_member_definitions.insert(
-              source.partial_specializations[i].static_member_definitions.begin(),
-              source.partial_specializations[i].static_member_definitions.end());
-        }
-        owner->reference_reset_witness_class_templates.erase(found);
+        session->reference_reset_replacement_sources[&target] = found->second;
+        session->reference_reset_class_template_sources.erase(found);
       };
       if(existing) {
         vector<TemplateParameterInfo> merged_parameters = existing->parameters;

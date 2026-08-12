@@ -336,6 +336,12 @@ struct TemplateWitnessSession
   std::unordered_set<uint32_t> fixed_class_argument_occurrences;
   std::unordered_map<uint32_t, ParameterizedClassSourceOccurrence>
       class_source_occurrences;
+  std::map<std::pair<const semantic_model::ClassInfo *, std::string>,
+           const semantic_model::ClassTemplateDecl *>
+      reference_reset_class_template_sources;
+  std::unordered_map<const semantic_model::ClassTemplateDecl *,
+                     const semantic_model::ClassTemplateDecl *>
+      reference_reset_replacement_sources;
   std::map<std::pair<std::string, long long>, RetainedEnumValueBinding>
       retained_enum_value_bindings;
 };
