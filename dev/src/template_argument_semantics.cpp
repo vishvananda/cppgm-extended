@@ -24835,20 +24835,6 @@ bool source_type_binding_is_fixed_class_member_impl(
                      strip_top_level_cv(resolved_type)))) {
       continue;
     }
-    if(inspect_concrete) {
-      const template_api::TemplateWitnessSession * witness_session =
-          template_api::current_template_witness_session();
-      if(witness_session) {
-        const auto recorded =
-            witness_session->source_class_type_dependencies.find(
-                std::make_pair(concrete->source_template, name));
-        if(recorded !=
-               witness_session->source_class_type_dependencies.end()) {
-          return recorded->second ==
-              template_api::TemplateWitnessSession::SVD_FIXED;
-        }
-      }
-    }
     bool found_source_binding = false;
     const auto inspect_sites = [&](const ClassInfo & source) -> bool
     {

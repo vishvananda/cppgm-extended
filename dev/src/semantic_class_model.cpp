@@ -224,20 +224,6 @@ bool ast_node_contains(const CppAstNode * outer, const CppAstNode * inner)
          inner->token_end <= outer->token_end;
 }
 
-const ClassTemplateDecl * reference_reset_class_template_source(
-    const ClassTemplateDecl * replacement)
-{
-  template_api::TemplateWitnessSession * const session =
-      template_api::current_template_witness_session();
-  if(!session || !replacement) {
-    return nullptr;
-  }
-  const auto found =
-      session->reference_reset_replacement_sources.find(replacement);
-  return found == session->reference_reset_replacement_sources.end() ?
-      nullptr : found->second;
-}
-
 bool should_preserve_class_template_across_reference_reset(
     const ClassInfo & info,
     const std::string & name,
@@ -253,8 +239,6 @@ bool should_preserve_class_template_across_reference_reset(
   const CppAstNode * owner_node =
       info.template_output_node ? info.template_output_node : info.class_node;
   if(decl && owner_node) {
-    const ClassTemplateDecl * const witness_source =
-        reference_reset_class_template_source(decl);
     for(std::map<std::string, ClassTemplateSpecializationDecl>::const_iterator it =
             decl->explicit_specializations.begin();
         it != decl->explicit_specializations.end();
@@ -267,23 +251,15 @@ bool should_preserve_class_template_across_reference_reset(
     for(std::size_t i = 0; i < decl->partial_specializations.size(); ++i) {
       const PartialClassTemplateSpecializationDecl & partial =
           decl->partial_specializations[i];
-      const bool has_witness_static_member_definition =
-          witness_source &&
-          i < witness_source->partial_specializations.size() &&
-          !witness_source->partial_specializations[i].
-              static_member_definitions.empty();
       if((partial.class_node &&
           !ast_node_contains(owner_node, partial.class_node)) ||
          !partial.static_member_definitions.empty() ||
-         has_witness_static_member_definition ||
          !partial.member_function_definitions.empty() ||
          !partial.member_function_template_definitions.empty()) {
         return true;
       }
     }
     if(!decl->static_member_definitions.empty() ||
-       (witness_source &&
-        !witness_source->static_member_definitions.empty()) ||
        !decl->member_class_definitions.empty() ||
        !decl->member_function_definitions.empty() ||
        !decl->member_function_template_definitions.empty()) {
@@ -294,23 +270,6 @@ bool should_preserve_class_template_across_reference_reset(
          decl->class_node &&
          owner_node &&
          !ast_node_contains(owner_node, decl->class_node);
-}
-
-bool class_template_has_reference_reset_witness_static_member_metadata(
-    const ClassTemplateDecl * decl)
-{
-  if(!decl) {
-    return false;
-  }
-  if(!decl->static_member_definitions.empty()) {
-    return true;
-  }
-  for(std::size_t i = 0; i < decl->partial_specializations.size(); ++i) {
-    if(!decl->partial_specializations[i].static_member_definitions.empty()) {
-      return true;
-    }
-  }
-  return false;
 }
 
 void reset_method_syntax_info(MethodSyntaxInfo & out)
@@ -1295,24 +1254,29 @@ void record_member_named_type_declaration(
   const CppAstNode & source_syntax =
       source_type_syntax ? *source_type_syntax : declaration;
   bool source_named_type_is_dependent = false;
-  template_api::TemplateWitnessSession * witness_session =
-      ctx.template_witness_context().session;
-  if(info.source_template && witness_session) {
+  if(info.source_template) {
     for(auto recorded =
-            witness_session->source_class_type_dependencies.begin();
-        recorded != witness_session->source_class_type_dependencies.end();
+            info.typedef_member_declaration_sites.begin();
+        recorded != info.typedef_member_declaration_sites.end();
         ++recorded) {
-      if(recorded->first.first != info.source_template ||
-         recorded->first.second == name ||
-         recorded->second !=
-             template_api::TemplateWitnessSession::SVD_DEPENDENT) {
+      if(recorded->first == name) {
+        continue;
+      }
+      bool recorded_source_type_is_dependent = false;
+      for(std::size_t i = 0; i < recorded->second.size(); ++i) {
+        recorded_source_type_is_dependent =
+            recorded_source_type_is_dependent ||
+            recorded->second[i].source_template_type_dependency ==
+                ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT;
+      }
+      if(!recorded_source_type_is_dependent) {
         continue;
       }
       if(template_argument_semantics::expression_syntax_mentions_identifier(
-             source_syntax, recorded->first.second) ||
+             source_syntax, recorded->first) ||
          (&source_syntax != &declaration &&
           template_argument_semantics::expression_syntax_mentions_identifier(
-              declaration, recorded->first.second))) {
+              declaration, recorded->first))) {
         source_named_type_is_dependent = true;
         break;
       }
@@ -1340,23 +1304,6 @@ void record_member_named_type_declaration(
            source_syntax_is_dependent) ?
               ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT :
               ClassInfo::TypedefMemberDeclarationSite::STTD_FIXED;
-  if(info.source_template &&
-     witness_session &&
-     source_dependency !=
-         ClassInfo::TypedefMemberDeclarationSite::STTD_UNKNOWN) {
-    template_api::TemplateWitnessSession::SourceValueDependency & recorded =
-        witness_session->source_class_type_dependencies[
-            std::make_pair(info.source_template, name)];
-    const template_api::TemplateWitnessSession::SourceValueDependency result =
-        source_dependency ==
-                ClassInfo::TypedefMemberDeclarationSite::STTD_DEPENDENT ?
-            template_api::TemplateWitnessSession::SVD_DEPENDENT :
-            template_api::TemplateWitnessSession::SVD_FIXED;
-    if(recorded == template_api::TemplateWitnessSession::SVD_UNKNOWN ||
-       result == template_api::TemplateWitnessSession::SVD_DEPENDENT) {
-      recorded = result;
-    }
-  }
   bool already_processed = false;
   for(std::size_t i = 0; i < sites.size(); ++i) {
     if(sites[i].source_location_id == declaration.source_location_id &&
@@ -7658,17 +7605,6 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.nonvirtual_alignment = 1;
   info.complete = false;
   info.concrete_layout_deferred = false;
-  if(template_api::TemplateWitnessSession * const session =
-         template_api::current_template_witness_session()) {
-    for(auto it = session->reference_reset_class_template_sources.begin();
-        it != session->reference_reset_class_template_sources.end();) {
-      if(it->first.first == &info) {
-        it = session->reference_reset_class_template_sources.erase(it);
-      } else {
-        ++it;
-      }
-    }
-  }
   info.reentrant_primary_selection = false;
   info.type->named_complete = false;
   info.type->named_has_layout = false;
@@ -7815,13 +7751,6 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
                                                                it->first,
                                                                it->second)) {
         preserved_class_templates[it->first] = it->second;
-      } else if(class_template_has_reference_reset_witness_static_member_metadata(
-                    it->second)) {
-        if(template_api::TemplateWitnessSession * const session =
-               template_api::current_template_witness_session()) {
-          session->reference_reset_class_template_sources[
-              std::make_pair(&info, it->first)] = it->second;
-        }
       }
     }
     for(std::set<std::string>::const_iterator it =

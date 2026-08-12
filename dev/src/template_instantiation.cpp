@@ -8757,8 +8757,6 @@ bool replay_witness_static_member_definition_if_needed(
   }
 
   ClassInfo & info = *owner;
-  template_api::TemplateWitnessSession & witness_session =
-      *ctx.template_witness_context().session;
   ClassInfo * source_owner = &info;
   const PartialClassTemplateSpecializationDecl * source_partial = nullptr;
   const OutOfClassStaticMemberDecl * static_member = nullptr;
@@ -8775,28 +8773,6 @@ bool replay_witness_static_member_definition_if_needed(
     const ClassTemplateDecl * definition_decl = candidate_decl;
     const PartialClassTemplateSpecializationDecl * definition_partial =
         candidate_partial;
-    const auto replacement_source =
-        witness_session.reference_reset_replacement_sources.find(candidate_decl);
-    if(replacement_source !=
-           witness_session.reference_reset_replacement_sources.end() &&
-       replacement_source->second) {
-      const ClassTemplateDecl * const source = replacement_source->second;
-      if(candidate_partial) {
-        for(std::size_t i = 0;
-            i < candidate_decl->partial_specializations.size() &&
-            i < source->partial_specializations.size();
-            ++i) {
-          if(&candidate_decl->partial_specializations[i] == candidate_partial &&
-             !source->partial_specializations[i].
-                 static_member_definitions.empty()) {
-            definition_partial = &source->partial_specializations[i];
-            break;
-          }
-        }
-      } else if(!source->static_member_definitions.empty()) {
-        definition_decl = source;
-      }
-    }
     const std::map<std::string, OutOfClassStaticMemberDecl> & definitions =
         definition_partial ? definition_partial->static_member_definitions :
         definition_decl->static_member_definitions;

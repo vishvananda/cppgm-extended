@@ -871,25 +871,6 @@ public:
 
       ClassTemplateDecl * existing =
           direct_class_template(*class_template_scope, class_template_name);
-      const auto restore_reference_reset_witness_static_member_metadata =
-          [&](ClassTemplateDecl & target)
-      {
-        ClassInfo * owner = class_template_scope->class_info;
-        template_api::TemplateWitnessSession * const session =
-            template_api::current_template_witness_session();
-        if(!owner || !session) {
-          return;
-        }
-        const auto key = std::make_pair(owner, target.name);
-        auto found = session->reference_reset_class_template_sources.find(key);
-        if(found == session->reference_reset_class_template_sources.end() ||
-           !found->second ||
-           found->second == &target) {
-          return;
-        }
-        session->reference_reset_replacement_sources[&target] = found->second;
-        session->reference_reset_class_template_sources.erase(found);
-      };
       if(existing) {
         vector<TemplateParameterInfo> merged_parameters = existing->parameters;
         if(!merge_template_parameter_redeclarations(merged_parameters, template_parameters)) {
@@ -929,7 +910,6 @@ public:
         if(replacing_primary_forward_declaration) {
           ++existing->specialization_epoch;
         }
-        restore_reference_reset_witness_static_member_metadata(*existing);
         if(class_template_scope->class_info &&
            class_template_scope->class_info->source_template) {
           merge_pending_member_class_template_partial_specializations(
@@ -955,7 +935,6 @@ public:
       inherit_equivalent_class_template_deferred_definitions(*decl);
       register_class_template_deferred_definition_source(*decl);
       class_template_scope->class_templates[decl->name] = decl.get();
-      restore_reference_reset_witness_static_member_metadata(*decl);
       if(class_template_scope->class_info &&
          class_template_scope->class_info->source_template) {
         merge_pending_member_class_template_partial_specializations(

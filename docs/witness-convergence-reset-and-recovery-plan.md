@@ -6734,6 +6734,137 @@ migration mirrors. Class prepublication now has only its measured nonzero
 replacement and enrichment obligation. Phase 7 and inception remain
 forbidden.
 
+## Class declaration metadata mirror cleanup checkpoint, 2026-08-12
+
+Commit `2b764525766b62226d4cfce8f30f45b53107aa5f` is the parent. This
+Phase 6 checkpoint removes the class-type dependency mirror and an unreachable
+reference-reset static-member bridge. Two temporary probes covered every one
+of the 1,530 tracked strict references and are absent from production. The
+final-session census is
+`/tmp/cppgm-phase6-side-store-probe-events-20260812.log`, SHA-256
+`79db0a70c3a5a9a0f67ea5e7de25932f41f903df8ffe620c54afa1acb9d9c255`.
+The operation log is
+`/tmp/cppgm-phase6-side-store-action-probe-events-20260812.log`, SHA-256
+`fdd1a16680b4512ef8a80ef279ed44fd1de6e3601a6a34aa413c84cfab33262f`.
+
+The census found class-type dependency metadata in 512 sessions, with 1,141
+final entries and a maximum of 36. The operation probe observed 1,777 writes,
+128 fixed-class lookup reads, and 114 dependent-name propagation reads. Every
+fact was already present in the typed
+`ClassInfo::TypedefMemberDeclarationSite::source_template_type_dependency`
+records. Propagation and lookup now consume those declaration-site records
+directly, and `TemplateWitnessSession::source_class_type_dependencies` is
+deleted.
+
+Both reference-reset maps ended empty in all 1,530 sessions, and the operation
+probe observed zero writes, reads, replacements, or discards. The source-map
+write was also structurally unreachable: a class-template declaration or
+partial specialization with static-member definition metadata is retained by
+`should_preserve_class_template_across_reference_reset` before the removed
+fallback can run. The checkpoint therefore deletes both maps, their reset and
+restore paths, and the static-member replay replacement lookup. Nonzero value-
+dependency stores remain: the same probe observed 1,191 source-value writes,
+2,141 cached reads, 538 argument reads, 358 current-value reads, and 3,332
+class-value writes plus 914 class-value reads.
+
+The final Homebrew-Clang validation produced these results:
+
+- all 1,530 direct-reference inputs are byte-exact against the frozen parent
+  for witness output, LowIR, diagnostics, stdout, and exit status;
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs
+  once in its normal report position and has no separate validation lane;
+- all 1,530 provenance sessions exist. Schema 6 remains exactly 10,587
+  records: 4,289 source publications and 6,298 lifecycle publications. Source
+  ownership remains alias 835, class 2,631, function 791, and variable 32,
+  with no unknown producer or unexercised site;
+- ordinary and provenance compilers have identical status, witness, LowIR,
+  stdout, and diagnostics on all 1,530 inputs;
+- the 61-test helper suite passes, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden text-
+  reparse categories remain zero, and the dynamic class-materialization audit
+  remains exact at five accepted occurrences and 55 rejected rows at 53
+  locations;
+- the template and semantic boundaries and all tracked structure sizes match
+  the parent.
+
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-class-metadata-cleanup-ordinary-strict-20260812.log` and
+`/tmp/cppgm-phase6-class-metadata-cleanup-provenance-strict-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-class-metadata-cleanup-broad-20260812.log`, SHA-256
+`dd324d3a9ad488f56761914af24c8c2d5fe5abcf45413c9dae171fd9626f4374`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-class-metadata-provenance-trace-20260812.5kPt9y`.
+The analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-class-metadata-provenance-analysis-20260812.json` and
+`/tmp/cppgm-phase6-class-metadata-provenance-convergence-20260812.json`, with
+SHA-256 values
+`adec0df8de922441f2cf71a03379cf8314f7bec01c58482a2a874624f0be1592`
+and
+`61d4ab7066464ca4a5bbd7282932331f1bfbae18153270e28f2a99e89208f019`.
+The direct ordinary/provenance artifact manifests both have SHA-256
+`05745831554a8da3caf30283a8f2396a53302dc9fef0051be503903cf87bd8c5`;
+their empty mismatch list has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The helper report is
+`/tmp/cppgm-phase6-class-metadata-helper-tests-20260812.log`, SHA-256
+`86550088b8b31a4b07c6a7c2e04ae05a3345948042482371ea331de6f598d46c`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and dynamic class-materialization reports have SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`8c8b7136ba50635a25175da91b80eb923410e4343a8fa244c7fdca30196c88d4`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`5c1ae5e76d7becfe116f6f31675ec55bbe14411f1eec3da3bd634ad5a1d867e0`.
+
+Every tracked semantic structure remains byte-identical to the parent. The
+structure report is
+`/tmp/cppgm-phase6-class-metadata-structure-sizes-20260812.txt`, SHA-256
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+The ordinary binary shrinks by 10,256 bytes to 17,065,024 bytes. Its Mach-O
+`__TEXT` segment shrinks by 8,192 bytes and populated text sections shrink by
+5,584 bytes; `__DATA_CONST`, `__DATA`, and `__LINKEDIT` remain 61,440,
+442,368, and 4,046,848 bytes. The binary contains no provenance symbols. The
+section report is
+`/tmp/cppgm-phase6-class-metadata-binary-sections-20260812.txt`, SHA-256
+`be7db27b2e287495f727ae23260a14c06c04770869b26f5ea5cf58cde8011b63`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-class-metadata-mirror-cleanup-ordinary-20260812`, SHA-256
+`e2bfe319d7f776eb912de04a4ea753173f1e5606ec57a0819f751bade93d054b`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -1.09% | -0.09% | -4.10% | `/tmp/cppgm-phase6-class-metadata-perf-fixed-20260812.json` |
+| Class-result parent | -0.18% | -0.12% | +0.04% | `/tmp/cppgm-phase6-class-metadata-perf-parent-20260812.json` |
+
+The candidate medians are 174,093,870,280 instructions, 756,396,032 bytes
+maximum RSS, and 568,737,792 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-class-metadata-raw-candidate-20260812.json`, SHA-256
+`08318d291f3f28625874ffaad65309f6e72c4019be6251118b5136c67dc247ec`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`53228d0ed4dd657d219f4a1ce1ecf47ee73321069acbf59b405186f63049b2c6`
+and
+`65e0b3c616994a0c94cedaea76ef4dbc5ff36f9fba77ffe8d6efd243f53e8a75`.
+The candidate metadata names commit `2b7645257` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 16 and removes 154 production lines, a net deletion of
+138. Phase 6 remains open for the remaining measured nonzero local side stores
+and migration mirrors. Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds
