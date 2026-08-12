@@ -89,17 +89,12 @@ void record_class_use_source_use_in_table(
   }
   const semantic_source_use::SemanticSourceUse use =
       normalized_source_use(request, true, false);
-  const semantic_source_use::SourceUseRecordResult result =
-      semantic_source_use::record_source_use(*table, use);
+  semantic_source_use::record_source_use(*table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   witness_provenance::note_source_use_record(
       session,
       table,
-      witness_provenance::WitnessProducerSite::ClassTemplateReference02,
-      use,
-      result);
-#else
-  (void)result;
+      use);
 #endif
 }
 
@@ -112,17 +107,16 @@ void record_function_call_source_use_in_table(
     return;
   }
   use = normalized_source_use(std::move(use), true, true);
-  const semantic_source_use::SourceUseRecordResult result =
-      semantic_source_use::record_source_use(*table, use);
+  if(semantic_source_use::function_call_source_use_already_admitted(*table,
+                                                                    use)) {
+    return;
+  }
+  semantic_source_use::record_source_use(*table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   witness_provenance::note_source_use_record(
       session,
       table,
-      witness_provenance::WitnessProducerSite::FunctionSemanticTemplateFunction,
-      use,
-      result);
-#else
-  (void)result;
+      use);
 #endif
 }
 
@@ -138,17 +132,12 @@ void record_alias_use_source_use_in_table(
   // semantic AST. A generic angle-space pass cannot distinguish a template
   // closer from `>` or `>>` inside decltype and would corrupt the payload.
   use = normalized_source_use(std::move(use), false, true);
-  const semantic_source_use::SourceUseRecordResult result =
-      semantic_source_use::record_source_use(*table, use);
+  semantic_source_use::record_source_use(*table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   witness_provenance::note_source_use_record(
       session,
       table,
-      witness_provenance::WitnessProducerSite::AliasCanonicalOccurrence,
-      use,
-      result);
-#else
-  (void)result;
+      use);
 #endif
 }
 
@@ -170,17 +159,12 @@ void record_variable_use_source_use_in_table(
           witness_provenance::WitnessUpstreamRoute::
               VariableDirectInstantiation);
 #endif
-  const semantic_source_use::SourceUseRecordResult result =
-      semantic_source_use::record_source_use(*table, use);
+  semantic_source_use::record_source_use(*table, use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
   witness_provenance::note_source_use_record(
       session,
       table,
-      witness_provenance::WitnessProducerSite::VariableTemplateInstantiation,
-      use,
-      result);
-#else
-  (void)result;
+      use);
 #endif
 }
 
@@ -209,6 +193,9 @@ void retain_variable_use_source_use(
            pending.source_use,
            use)) {
       continue;
+    }
+    if(pending.source_use == use) {
+      return;
     }
 
     const bool pending_is_nested =
@@ -383,18 +370,13 @@ void finalize_variable_use_source_uses(TemplateWitnessSession * session)
             witness_provenance::WitnessUpstreamRoute::
                 VariableDirectInstantiation);
 #endif
-    const semantic_source_use::SourceUseRecordResult result =
-        semantic_source_use::record_source_use(session->source_use_table,
-                                               pending.source_use);
+    semantic_source_use::record_source_use(session->source_use_table,
+                                           pending.source_use);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
     witness_provenance::note_source_use_record(
         session,
         &session->source_use_table,
-        witness_provenance::WitnessProducerSite::VariableTemplateInstantiation,
-        pending.source_use,
-        result);
-#else
-    (void)result;
+        pending.source_use);
 #endif
   }
   session->pending_variable_source_uses.clear();

@@ -5536,9 +5536,7 @@ bool claim_template_lifecycle_transition(
 
 void emit_template_lifecycle_event(TemplateLifecycleEvent event)
 {
-  CPPGM_NOTE_TEMPLATE_WITNESS_LIFECYCLE_EVENT(
-      witness_provenance::WitnessProducerSite::LifecycleTransitionObserver01,
-      event);
+  note_template_witness_lifecycle_event(event);
 }
 
 void observe_function_lifecycle_transition(

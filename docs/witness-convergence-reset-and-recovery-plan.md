@@ -6047,6 +6047,155 @@ function replay ownership, pending-variable prepublication arbitration, and
 the remaining migration-mirror inventory. Phase 7 and inception remain
 forbidden.
 
+## Single-owner source publication checkpoint, 2026-08-12
+
+This Phase 6 checkpoint makes the public semantic source-use table a pure
+append ledger and removes the provenance structures that existed only to
+describe table arbitration. Function admission still recognizes exact
+binding-spacing replays plus the six candidate-dominance and two trailing-
+binding rejections measured in the preceding checkpoint, but that decision is
+now made before publication. `record_source_use` only appends. Its typed
+insert/replay/reject result and row index disappear, and provenance records
+only successfully published semantic rows.
+
+The old provenance lineage stored a set of producer enums and a set of
+upstream routes per row, plus a lifecycle-key map of producer sets. Full-corpus
+evidence proves one producer for each source family and one lifecycle observer.
+Producer ownership is now derived from the typed row kind, each published row
+stores at most its one upstream route, and lifecycle ownership is fixed at its
+sole observer boundary. The stable producer enum, lifecycle producer map,
+collision producer arrays, all collision matrices, and their analyzer counters
+are deleted. Analyzer schema version 5 expresses the resulting single-owner,
+insertion-only model.
+
+The parent provenance inventory located all 477 suppressed function
+publications. Concrete `declval` rediscovery accounted for 336 of the 469 exact
+replays: 368 semantic visits converged onto 32 distinct source occurrences.
+Overload resolution accounted for 130 exact replays and all eight named
+rejections; conversion accounted for the remaining three exact replays. After
+moving the admission decision ahead of publication, function provenance is
+exactly 791 attempts, 791 insertions, 791 surviving rows, and 791 public rows.
+The upstream routes are likewise exact: three constant-value lookup, 11
+conversion, 32 `declval`, and 745 overload-resolution rows.
+
+An isolated probe also inventories the retained-variable prepublication
+boundary across every strict test with a variable row. It observes 27 first
+retentions, 11 exact replays, one meaningful later-location replacement, one
+earlier-location rejection, and one nested-after-direct rejection. The exact
+replays no longer rewrite the retained row. The later-location choice and both
+dominance rejections remain named semantic obligations; direct ownership is
+the only observed cross-ownership winner. The temporary probe is absent from
+production. Its 41-event report is
+`/tmp/cppgm-phase6-variable-retention-probe2-events-20260812.log`, SHA-256
+`1ac69f77f16577b3fc16c774b84f0c8b405fc77bb7d2e390593d15934375c0f5`.
+
+The final Homebrew-Clang validation produced these results:
+
+- six focused function and variable owner fixtures are exact;
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output, and both 3,060-artifact manifests are byte-identical to the parent;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs in
+  its normal report position and has no separate validation lane;
+- all 1,530 provenance sessions exist. The trace shrinks by exactly the 477
+  suppressed function publications, from 26,389 to 25,912 records. It has
+  4,289 source attempts, insertions, surviving rows, and public rows, plus
+  6,298 lifecycle insertions, with no unknown producer or unexercised site;
+- source family ownership is exact at alias 835/835/835/835, class
+  2,631/2,631/2,631/2,631, function 791/791/791/791, and variable
+  32/32/32/32. Replacement, rejection, duplicate, and collision counters no
+  longer exist at the public ledger boundary;
+- renderer ownership remains limited to the same 409 binding rewrites and 40
+  name rewrites;
+- the 61-test helper suite passes, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, neither boundary audit changes, and
+  the dynamic class-materialization audit remains exact.
+
+The focused report is
+`/tmp/cppgm-phase6-single-owner-publication-focused-20260812.log`, SHA-256
+`ada5ef6ece43b385ade4a58b00db4050a2f14a4f712c733aba93bb6202cb0f28`.
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-single-owner-publication-ordinary-strict-20260812.log` and
+`/tmp/cppgm-phase6-single-owner-publication-provenance-strict-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-single-owner-publication-broad-20260812.log`, SHA-256
+`9af79175920ec9f8213485cc2fddb045e62a099227bce73018a23ef83e90cc96`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-single-owner-publication-provenance-trace-20260812.5MB9gX`.
+The analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-single-owner-publication-provenance-analysis-20260812.json`
+and
+`/tmp/cppgm-phase6-single-owner-publication-provenance-convergence-20260812.json`,
+with SHA-256 values
+`1017f2b8383f5800034552077947d15009b8abfe8acb4f80abac8b3ffb25aa81`
+and
+`8129ab67c3df1d302e8b787eb3eb42c215a662ed6e19f1a26961556f334bf9e6`.
+Both manifests retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+The helper report is
+`/tmp/cppgm-phase6-single-owner-publication-helper-tests-20260812.log`,
+SHA-256
+`49be24cf8c19e586bc800af3ed601c27426e2012cd3424dfdbfb81e4002a6a74`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and dynamic class-materialization reports have SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`9cd4fb7cf253e1f8c3458381698a1a7542262fcd1713bdc93356fdb704111239`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`2e5b89672aec6893b66f941eafae37fb131fcd79e7ec9e8fc6c8d4283a0faa26`.
+
+Every tracked semantic structure remains byte-identical to the parent. The
+structure report is
+`/tmp/cppgm-phase6-single-owner-publication-structure-sizes-20260812.txt`,
+SHA-256
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+The ordinary Mach-O retains the parent's segment allocation while `__text`
+shrinks by 352 bytes and `__gcc_except_tab` by 32 bytes; `__cstring` grows by
+16 bytes, for a net 368 section-byte reduction. File padding makes the frozen
+binary 16 bytes larger at 17,115,512 bytes; it contains no provenance symbols.
+The section report is
+`/tmp/cppgm-phase6-single-owner-publication-binary-sections-20260812.txt`,
+SHA-256
+`688c67024b89bec9f6a5de9d9a173e1384f9bb1b28af2fadbde6cb50fcfc0d17`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-single-owner-publication-ordinary-20260812`, SHA-256
+`2e6acf57c121549e9af2677f66b70294c529f27495df245c4726551c24b242ea`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.76% | -0.41% | -4.08% | `/tmp/cppgm-phase6-single-owner-publication-perf-fixed-20260812.json` |
+| Append-only-ledger parent | +0.20% | -0.73% | +0.01% | `/tmp/cppgm-phase6-single-owner-publication-perf-parent-20260812.json` |
+
+The candidate medians are 174,680,257,349 instructions, 754,003,968 bytes
+maximum RSS, and 568,811,520 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-single-owner-publication-raw-candidate-20260812.json`,
+SHA-256
+`600fbe3aecb0a295e60bdccc2d4ffffe76fc34c00b2c5e703d556715f94c6889`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`a200a7a4a578024fa133972559e868c06f079076070ce633d90f8785cb3a8e97`
+and
+`0d2f76ac094212d64a471338377eb9edcbb9ac067f76619151e0f0f70fd8277a`.
+The candidate metadata names commit `a53a7152f` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 83 and removes 259 production lines, a net deletion of
+176. Analyzer tooling adds 14 and removes 57 lines, so the complete code
+change is a net deletion of 219 lines. Phase 6 remains open for producer-side
+function rediscovery, the two named function admission rules, the three named
+variable-retention decisions, renderer normalization ownership, and the
+remaining migration-mirror inventory. Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

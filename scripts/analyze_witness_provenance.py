@@ -72,11 +72,6 @@ def build_report(
     site_coverage: dict[str, collections.Counter[str]] = {
         site: collections.Counter() for site in SOURCE_PRODUCERS + LIFECYCLE_PRODUCERS
     }
-    collision_pairs: collections.Counter[tuple[str, str]] = collections.Counter()
-    source_collision_pairs: collections.Counter[tuple[str, str]] = collections.Counter()
-    lifecycle_collision_pairs: collections.Counter[tuple[str, str]] = (
-        collections.Counter()
-    )
     renderer = nested_counter()
     upstream_routes: dict[str, collections.Counter[str]] = {
         route: collections.Counter() for route in UPSTREAM_ROUTES
@@ -140,17 +135,6 @@ def build_report(
                     "_trace_file", ""
                 )
 
-            collided = sorted(set(record.get("collided_producers", [])))
-            for other in collided:
-                if producer == other:
-                    continue
-                pair = tuple(sorted((producer, other)))
-                collision_pairs[pair] += 1
-                if record_kind == "source_attempt":
-                    source_collision_pairs[pair] += 1
-                else:
-                    lifecycle_collision_pairs[pair] += 1
-
             if record_kind == "source_attempt":
                 action = str(record.get("action", ""))
                 route = str(record.get("upstream_route", "unknown"))
@@ -184,7 +168,6 @@ def build_report(
                             "occurrence_argument_texts",
                             "occurrence_argument_semantic_texts",
                             "occurrence_argument_dependent",
-                            "collided_producers",
                         )
                     }
                 )
@@ -273,19 +256,9 @@ def build_report(
         coverage_output[site] = {
             "attempts": counts["attempts"],
             "inserted": counts["inserted"],
-            "exact_duplicate": counts["exact_duplicate"],
-            "rejected": counts["rejected"],
             "surviving_rows": counts["surviving_rows"],
             "final_visible_rows": counts["final_visible_rows"],
         }
-
-    def collision_output(
-        counter: collections.Counter[tuple[str, str]],
-    ) -> list[dict[str, Any]]:
-        return [
-            {"producer_a": pair[0], "producer_b": pair[1], "count": count}
-            for pair, count in sorted(counter.items())
-        ]
     renderer_output = {
         name: sorted_counter(counts) for name, counts in sorted(renderer.items())
     }
@@ -298,8 +271,6 @@ def build_report(
         alias_route_output[route] = {
             "attempts": counts["attempts"],
             "inserted": counts["inserted"],
-            "exact_duplicate": counts["exact_duplicate"],
-            "rejected": counts["rejected"],
             "surviving_rows": counts["surviving_rows"],
             "final_visible_rows": counts["final_visible_rows"],
         }
@@ -309,16 +280,13 @@ def build_report(
         upstream_route_output[route] = dict(sorted(counts.items()))
 
     return {
-        "schema_version": 4,
+        "schema_version": 5,
         "trace_files": trace_file_count if trace_file_count is not None else len(
             {record["_trace_file"] for record in records}
         ),
         "records": len(records),
         "site_coverage": coverage_output,
         "unexercised_sites": unexercised,
-        "collision_matrix": collision_output(collision_pairs),
-        "source_collision_matrix": collision_output(source_collision_pairs),
-        "lifecycle_collision_matrix": collision_output(lifecycle_collision_pairs),
         "renderer_ownership": renderer_output,
         "source_attempt_decisions": sorted(
             source_attempt_decisions,

@@ -146,19 +146,6 @@ struct SemanticSourceUseTable
   std::vector<SemanticSourceUse> uses;
 };
 
-enum class SourceUseRecordAction
-{
-  Inserted,
-  ExactReplay,
-  RejectedReplay,
-};
-
-struct SourceUseRecordResult
-{
-  SourceUseRecordAction action = SourceUseRecordAction::Inserted;
-  std::size_t row_index = 0;
-};
-
 inline bool operator==(const SourceTemplateArgumentOccurrence & lhs,
                        const SourceTemplateArgumentOccurrence & rhs)
 {
@@ -557,46 +544,36 @@ inline bool variable_use_equivalent_ignoring_location(
                                                    rhs.specialization_bindings);
 }
 
-inline std::size_t function_call_replay_index(
+inline bool function_call_source_use_already_admitted(
     const SemanticSourceUseTable & table,
     const SemanticSourceUse & use)
 {
   if(use.kind != SourceUseKind::FunctionCall) {
-    return table.uses.size();
+    return false;
   }
   for(std::size_t i = 0; i < table.uses.size(); ++i) {
     if(function_call_equivalent_ignoring_binding_spacing(table.uses[i], use)) {
-      return i;
+      return true;
     }
   }
   for(std::size_t i = 0; i < table.uses.size(); ++i) {
     if(function_calls_share_selected_source_identity(table.uses[i], use) &&
        function_call_candidate_facts_dominate(table.uses[i], use)) {
-      return i;
+      return true;
     }
   }
   for(std::size_t i = 0; i < table.uses.size(); ++i) {
     if(function_call_is_deduced_trailing_binding_replay(table.uses[i], use)) {
-      return i;
+      return true;
     }
   }
-  return table.uses.size();
+  return false;
 }
 
-inline SourceUseRecordResult record_source_use(SemanticSourceUseTable & table,
-                                               const SemanticSourceUse & use)
+inline void record_source_use(SemanticSourceUseTable & table,
+                              const SemanticSourceUse & use)
 {
-  SourceUseRecordResult result;
-  result.row_index = function_call_replay_index(table, use);
-  if(result.row_index != table.uses.size()) {
-    result.action = table.uses[result.row_index] == use ?
-        SourceUseRecordAction::ExactReplay :
-        SourceUseRecordAction::RejectedReplay;
-    return result;
-  }
-  result.action = SourceUseRecordAction::Inserted;
   table.uses.push_back(use);
-  return result;
 }
 
 }  // namespace semantic_source_use

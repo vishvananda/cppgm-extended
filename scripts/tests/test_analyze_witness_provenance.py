@@ -26,15 +26,6 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
                 upstream_route=route,
                 action="inserted",
                 kind="alias_use",
-                collided_producers=[],
-            ),
-            self.record(
-                "source_attempt",
-                producer=producer,
-                upstream_route=route,
-                action="exact_duplicate",
-                kind="alias_use",
-                collided_producers=[producer],
             ),
             self.record(
                 "final_table_row",
@@ -63,9 +54,8 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
 
         report = MODULE.build_report(records)
         coverage = report["alias_upstream_route_coverage"][route]
-        self.assertEqual(coverage["attempts"], 2)
+        self.assertEqual(coverage["attempts"], 1)
         self.assertEqual(coverage["inserted"], 1)
-        self.assertEqual(coverage["exact_duplicate"], 1)
         self.assertEqual(coverage["surviving_rows"], 1)
         self.assertEqual(coverage["final_visible_rows"], 1)
         self.assertEqual(
@@ -83,7 +73,6 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
                     producer="alias.canonical_occurrence",
                     action="inserted",
                     kind="alias_use",
-                    collided_producers=[],
                 )
             ]
         )
@@ -105,7 +94,6 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
                     kind="function_call",
                     location="test.t:4:3",
                     template_name="f",
-                    collided_producers=[],
                 ),
                 self.record(
                     "final_table_row",
@@ -139,18 +127,20 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
         self.assertEqual(report["trace_files"], 3)
         self.assertEqual(report["records"], 0)
 
-    def test_append_only_schema_has_no_replacement_counters(self):
+    def test_single_owner_schema_has_no_arbitration_counters(self):
         report = MODULE.build_report([])
-        self.assertEqual(report["schema_version"], 4)
+        self.assertEqual(report["schema_version"], 5)
         self.assertNotIn("replacement_matrix", report)
-        self.assertNotIn(
-            "replaced",
-            report["site_coverage"]["function.semantic_template_function"],
-        )
-        self.assertNotIn(
-            "enriched",
-            report["site_coverage"]["lifecycle.transition_observer.01"],
-        )
+        self.assertNotIn("collision_matrix", report)
+        function_coverage = report["site_coverage"][
+            "function.semantic_template_function"
+        ]
+        lifecycle_coverage = report["site_coverage"][
+            "lifecycle.transition_observer.01"
+        ]
+        for field in ("exact_duplicate", "rejected", "replaced", "enriched"):
+            self.assertNotIn(field, function_coverage)
+            self.assertNotIn(field, lifecycle_coverage)
 
     def test_lifecycle_context_is_reported(self):
         report = MODULE.build_report(
@@ -162,7 +152,6 @@ class AnalyzeWitnessProvenanceTest(unittest.TestCase):
                     kind="variable_instantiation",
                     location="test.t:7:3",
                     entity="value<int>",
-                    collided_producers=[],
                     entry_origin=1,
                     closure_reason=3,
                     cause=2,

@@ -1942,14 +1942,7 @@ inline TemplateLifecycleCause template_lifecycle_cause_from_closure_reason(
   return TemplateLifecycleCause::None;
 }
 
-inline void note_template_witness_lifecycle_event(
-    TemplateLifecycleEvent event
-#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-    ,
-    witness_provenance::WitnessProducerSite producer_site =
-        witness_provenance::WitnessProducerSite::Unknown
-#endif
-    )
+inline void note_template_witness_lifecycle_event(TemplateLifecycleEvent event)
 {
   TemplateWitnessSession * session =
       template_witness_detail::current_witness_session_storage();
@@ -1965,7 +1958,7 @@ inline void note_template_witness_lifecycle_event(
   template_witness_detail::refresh_lifecycle_event_metadata(event);
   session->lifecycle_events.push_back(event);
 #if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
-  witness_provenance::note_lifecycle_record(*session, producer_site, event);
+  witness_provenance::note_lifecycle_record(*session, event);
 #endif
 }
 
