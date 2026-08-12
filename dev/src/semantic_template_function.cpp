@@ -658,9 +658,7 @@ void emit_function_template_call_source_use(
     decision.semantic_owner_class_specialization_key =
         semantic_model::class_instantiation_key(*binding->owner_class);
   }
-  witness::set_use_anchor(decision.location,
-                          decision.use_anchor,
-                          public_location);
+  decision.location = public_location;
   decision.template_name = function_call_template_name(request);
   decision.selected = function_call_selected_name(ctx, request);
   decision.role = request.role;

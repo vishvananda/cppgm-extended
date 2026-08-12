@@ -245,8 +245,6 @@ struct ClassUseEmitRequest
   const semantic_model::ClassInfo * semantic_instance = nullptr;
   std::string semantic_specialization_key;
   std::string location;
-  bool use_anchor_present = false;
-  std::string use_anchor_location;
   std::string template_name;
   SourceSelectionKind selection = SourceSelectionKind::None;
   std::string selected_decl_location;
@@ -294,7 +292,6 @@ struct VariableUseEmitRequest
   WitnessProducerSite producer_site = WitnessProducerSite::Unknown;
 #endif
   std::string use_location;
-  std::string use_anchor_identifier;
   std::string template_name;
   SourceUseOwnership ownership = SourceUseOwnership::Direct;
   SourceSelectionKind selection = SourceSelectionKind::None;
@@ -317,7 +314,6 @@ struct FunctionCallSourceDecision
   const void * semantic_owner_class_template_identity = nullptr;
   std::string semantic_owner_class_specialization_key;
   std::string location;
-  TemplateWitnessSourceAnchor use_anchor;
   std::string template_name;
   std::string selected;
   SourceUseRole role = SourceUseRole::CallUse;
@@ -346,8 +342,7 @@ inline SourceTemplateIdOccurrence make_source_template_id_occurrence(
   occurrence.source_spelled = true;
   occurrence.argument_list_spelled = true;
   occurrence.empty_argument_list = source_arguments.empty();
-  occurrence.name_anchor.location = use_location;
-  occurrence.name_anchor.kind = semantic_source_use::SourceAnchorKind::Spelling;
+  occurrence.name_location = use_location;
   for(std::size_t i = 0; i < source_arguments.size(); ++i) {
     semantic_source_use::SourceTemplateArgumentOccurrence argument;
     argument.text = source_arguments[i];
@@ -357,13 +352,6 @@ inline SourceTemplateIdOccurrence make_source_template_id_occurrence(
   return occurrence;
 }
 
-void set_use_anchor(std::string & decision_location,
-                    TemplateWitnessSourceAnchor & use_anchor,
-                    const std::string & use_location);
-bool set_use_anchor_if_at_identifier(std::string & decision_location,
-                                     TemplateWitnessSourceAnchor & use_anchor,
-                                     const std::string & use_location,
-                                     const std::string & identifier);
 void set_selected_decl_anchor(std::string & selected_decl_location,
                               TemplateWitnessSourceAnchor & selected_decl_anchor,
                               const std::string & decl_location,

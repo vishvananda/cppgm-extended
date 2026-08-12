@@ -12669,7 +12669,6 @@ const ValueBinding * instantiate_variable_template(
     if(source_capture_enabled || record_direct_source_use_during_pause) {
       witness::VariableUseEmitRequest request;
       request.use_location = effective_use_location;
-      request.use_anchor_identifier = decl.name;
       request.ownership =
           nested_replay_request ?
               witness::SourceUseOwnership::NestedDerived :

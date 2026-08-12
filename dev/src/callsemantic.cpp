@@ -11918,7 +11918,6 @@ private:
         continue;
       }
       const bool candidate_preferred =
-          (request.use_anchor_present && !existing.use_anchor_present) ||
           (request.role ==
                witness::SourceUseRole::StaticMemberDefinitionOwner &&
            existing.role ==
@@ -11937,13 +11936,12 @@ private:
              }
              return false;
            }()) ||
-          (request.use_anchor_present == existing.use_anchor_present &&
-           std::make_tuple(selection_rank(request.selection),
-                           ownership_rank(request.ownership),
-                           role_rank(request.role)) >
-               std::make_tuple(selection_rank(existing.selection),
-                               ownership_rank(existing.ownership),
-                               role_rank(existing.role)));
+          std::make_tuple(selection_rank(request.selection),
+                          ownership_rank(request.ownership),
+                          role_rank(request.role)) >
+              std::make_tuple(selection_rank(existing.selection),
+                              ownership_rank(existing.ownership),
+                              role_rank(existing.role));
       if(candidate_preferred) {
         request.record_during_source_capture_pause =
             request.record_during_source_capture_pause ||
@@ -12481,8 +12479,6 @@ private:
     request.semantic_specialization_key =
         template_args_identity_key(retained.instance->instantiation_arguments);
     request.location = use_location;
-    request.use_anchor_present = true;
-    request.use_anchor_location = use_location;
     request.template_name =
         template_api::class_template_witness_qualified_name(
             *this, *retained.origin);
@@ -12560,8 +12556,6 @@ private:
     request.semantic_specialization_key =
         template_args_identity_key(*use.arguments);
     request.location = location;
-    request.use_anchor_present = true;
-    request.use_anchor_location = location;
     request.template_name =
         template_api::class_template_witness_qualified_name(
             *this, *source_origin);
@@ -12782,8 +12776,6 @@ private:
     request.semantic_specialization_key =
         template_args_identity_key(owner.instantiation_arguments);
     request.location = location;
-    request.use_anchor_present = true;
-    request.use_anchor_location = location;
     request.template_name =
         template_api::class_template_witness_qualified_name(*this, *origin);
     template_api::ClassTemplateUseInfo concrete_use;
@@ -21324,8 +21316,6 @@ private:
               *this,
               *class_template);
       request.selection = witness::SourceSelectionKind::ExplicitSpecialization;
-      request.use_anchor_present = true;
-      request.use_anchor_location = use_location;
       request.selected_decl_location = selected_decl_anchor.location;
       request.selected_decl_anchor = selected_decl_anchor;
       request.template_id_occurrence =
@@ -21469,8 +21459,6 @@ private:
     request.semantic_specialization_key = resolved.instantiation_key ?
         *resolved.instantiation_key : template_args_identity_key(arguments);
     request.location = use_location;
-    request.use_anchor_present = true;
-    request.use_anchor_location = use_location;
     request.template_name =
         template_api::class_template_witness_qualified_name(
             *this,

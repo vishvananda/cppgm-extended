@@ -364,9 +364,8 @@ std::string source_use_changed_fields(const SemanticSourceUse & before,
 {
   std::vector<std::string> fields;
   if(before.location != after.location) fields.push_back("location");
-  if(!(before.spelling_anchor == after.spelling_anchor))
-    fields.push_back("anchor");
-  if(!(before.selected_decl_anchor == after.selected_decl_anchor))
+  if(before.selected_decl_anchor_location !=
+     after.selected_decl_anchor_location)
     fields.push_back("selected_decl_anchor");
   if(!(before.template_id_occurrence == after.template_id_occurrence))
     fields.push_back("occurrence");
@@ -402,7 +401,7 @@ std::string source_attempt_record(const SourceAttempt & attempt,
       << ",\"role\":" << quoted(source_use_role_name(use.role))
       << ",\"ownership\":" << quoted(source_use_ownership_name(use.ownership))
       << ",\"location\":" << quoted(use.location)
-      << ",\"spelling_anchor\":" << quoted(use.spelling_anchor.location)
+      << ",\"spelling_anchor\":" << quoted(use.location)
       << ",\"selected_entity\":"
       << quoted(use.selected.empty() ? use.template_name : use.selected)
       << ",\"selected_decl\":" << quoted(use.selected_entity_decl_location)

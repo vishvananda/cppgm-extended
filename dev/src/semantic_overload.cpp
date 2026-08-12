@@ -882,20 +882,17 @@ witness::SourceTemplateIdOccurrence make_function_source_template_id_occurrence(
     const Scope * source_scope)
 {
   witness::SourceTemplateIdOccurrence occurrence;
-  occurrence.name_anchor.location = source_location_for_token_id(
+  occurrence.name_location = source_location_for_token_id(
       ctx.template_witness_context(),
       syntax.source_location_id);
-  occurrence.name_anchor.kind = occurrence.name_anchor.location.empty() ?
-      semantic_source_use::SourceAnchorKind::None :
-      semantic_source_use::SourceAnchorKind::Spelling;
-  occurrence.present = !occurrence.name_anchor.location.empty();
+  occurrence.present = !occurrence.name_location.empty();
   occurrence.source_spelled = occurrence.present;
   occurrence.argument_list_spelled = true;
   occurrence.empty_argument_list = syntax.argument_syntaxes.empty();
   occurrence.exact_source_arguments = true;
   occurrence.in_template_body = source_location_in_template_body_range(
       ctx,
-      occurrence.name_anchor.location);
+      occurrence.name_location);
   occurrence.arguments.reserve(syntax.argument_syntaxes.size());
   for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
     const TemplateArgumentSyntax & syntax_argument = syntax.argument_syntaxes[i];
@@ -3711,13 +3708,13 @@ void note_function_call_source_event(
                   "yes" : "no")
           << " args=" << source_template_id->argument_syntaxes.size();
     parser_trace::note("witness.call",
-                       source_template_id_occurrence.name_anchor.location,
+                       source_template_id_occurrence.name_location,
                        trace.str());
   }
   if(source_template_id_occurrence.has_dependent_argument ||
      source_call_retains_dependency) {
     trace_return("dependent-source-template-id",
-                 source_template_id_occurrence.name_anchor.location);
+                 source_template_id_occurrence.name_location);
     return;
   }
   if(!general_source_capture_enabled && !admitted_source_call) {
@@ -3818,7 +3815,7 @@ void note_function_call_source_event(
   if(admitted_source_template_id &&
      !source_template_id->name.rooted &&
      source_template_id->name.qualifiers.empty()) {
-    public_location = source_template_id_occurrence.name_anchor.location;
+    public_location = source_template_id_occurrence.name_location;
   }
   bool constructor_source_syntax = false;
   if(chosen->is_constructor) {

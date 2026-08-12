@@ -5291,6 +5291,124 @@ This checkpoint adds 23 and removes 140 production lines, a net deletion of
 117. Phase 6 remains open for the rest of the local semantic mirror and
 generic-dedup obligation inventory. Phase 7 and inception remain forbidden.
 
+## Derived source-anchor carrier collapse checkpoint, 2026-08-12
+
+This Phase 6 checkpoint removes the final source-table anchor wrappers whose
+values were already determined by canonical locations. Every public spelling
+anchor was either identical to `SemanticSourceUse::location` or absent, in
+which case the renderer fell back to that same location. The final
+`SourceAnchor`/`SourceAnchorKind` representation therefore disappears,
+template-id occurrences retain their name location directly, and provenance
+derives its schema-stable `spelling_anchor` field from the canonical use
+location. The selected-declaration location remains an independent string.
+
+The same proof deletes three upstream mirrors. All five class-use producers
+set `use_anchor_present` true and `use_anchor_location` equal to `location`, so
+the request pair and its always-equal preference term are gone. Function calls
+assigned `decision.use_anchor` from `decision.location`, and alias calls did
+the same through a helper, so both carriers and the helper disappear.
+Variable-use identifier validation could only decide whether to populate the
+redundant spelling anchor; a failed check still rendered the already-set use
+location, so that request field and branch are also gone. The richer
+`TemplateWitnessSourceAnchorKind` used by selected-declaration request policy
+is retained because it still distinguishes exact declaration-name anchors
+from approximate fallbacks.
+
+The final Homebrew-Clang validation produced these results:
+
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the normal integrated PA1-PA38 direct-LowIR report, including PA9, passes
+  4,862/4,862;
+- all 3,060 ordinary/provenance witness and LowIR artifacts are byte-identical
+  to each other and to the parent checkpoint;
+- all 1,530 provenance session files exist. The trace retains the parent-exact
+  26,389 records, 4,766 source attempts, 6,298 lifecycle attempts, and 4,289
+  unique public rows, with no unknown producer or unexercised site;
+- alias remains 835 attempts/insertions/public rows, class remains
+  2,631/2,631/2,631, function remains 1,268 attempts with 791 insertions, 469
+  exact duplicates and eight rejected replays, and variable remains 32/32/32.
+  All collision and replacement matrices remain empty;
+- renderer ownership remains limited to the same 409 binding rewrites and 40
+  name rewrites;
+- the focused helper suite passes 60/60, both builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden
+  text-reparse categories remain zero, and neither template boundary audit nor
+  any tracked semantic structure size changes;
+- the dynamic class-materialization audit passes with five accepted source
+  occurrences, 55 rejected rows, 2,631 attempts/insertions/public rows, and no
+  failure.
+
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-anchor-collapse-ordinary-strict-20260812.log` and
+`/tmp/cppgm-phase6-anchor-collapse-provenance-strict-20260812.log`. Both have
+SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated broad report is
+`/tmp/cppgm-phase6-anchor-collapse-broad-20260812.log`, SHA-256
+`2d79de16f5593712f6c0549f05a73618a248bda7bce7745403978687132346c3`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-anchor-collapse-final-provenance-trace-20260812.yqQ6aW`.
+The provenance analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-anchor-collapse-provenance-analysis-20260812.json` and
+`/tmp/cppgm-phase6-anchor-collapse-provenance-convergence-20260812.json`, with
+SHA-256 values
+`591b760ebe9671941d0c265170cbd19a9e3d6718c5e31b40daa3f4f66c741359`
+and
+`6de1ceb5ac0c937a5a131015acb64a567c265ad7649efa11486d8316624588b1`.
+The normalized ordinary and provenance manifests both retain SHA-256
+`fd40d5ae2cbf63b17387317c614d95f61d73c4bdeb0cf7630aadf7630c53e940`.
+
+The 60-test helper report is
+`/tmp/cppgm-phase6-anchor-collapse-helper-tests-20260812.log`, SHA-256
+`e2d529a83510538ed5efc20b65bd168220dd94d695b46cced04e363a3735de39`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and structure-size reports retain SHA-256 values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743555644db743b7c515`,
+`9cd4fb7cf253e1f8c3458381698a1a7542262fcd1713bdc93356fdb704111239`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`4f0a11b4f714f79a05808fd51bf8bfb2a048e9f615debd7365ba954b7c37afa8`.
+The dynamic class audit is
+`/tmp/cppgm-phase6-anchor-collapse-class-materialization-audit-20260812.json`,
+SHA-256
+`0fd5e887a77c3c1b38d330888b25679fc8c43151574ff52c19f1997718dba038`.
+
+The ordinary binary shrinks by 4,888 bytes to 17,163,152 bytes. Its Mach-O
+`__TEXT` segment shrinks by 4,096 bytes to 13,033,472; `__text` shrinks by
+3,664 bytes and `__gcc_except_tab` by 36 bytes. `__DATA_CONST`, `__DATA`, and
+`__LINKEDIT` remain 61,440, 442,368, and 4,063,232 bytes. The binary contains
+no provenance symbols. The frozen binary is
+`/tmp/cppgm-phase6-anchor-collapse-final-ordinary-20260812`, SHA-256
+`4de4e331c062f4b047dc3a0198ce2b7177f4359dd93fc7aaa09c5849d61c1be2`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.85% | +0.19% | -4.04% | `/tmp/cppgm-phase6-anchor-collapse-perf-fixed-20260812.json` |
+| Dead-payload parent | -0.15% | -0.14% | +0.08% | `/tmp/cppgm-phase6-anchor-collapse-perf-parent-20260812.json` |
+
+The candidate medians are 174,513,989,153 instructions, 758,538,240 bytes
+maximum RSS, and 569,061,376 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-anchor-collapse-raw-candidate-20260812.json`, SHA-256
+`2de04e50ac6e2f64f722bbf50fdeb6f9d2f8d199841989f70c0ae5fc602e6337`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`2cbc1239b9d7e596df7126f8d65f2c15baeb0b2643e677a506f638dedf99dfe2`
+and
+`835b6a6cab7329f5d7797724860683242639785e7dedcb42d81c317c5fefc27a`.
+The candidate metadata names commit `da263ef7e` because the measurements cover
+this uncommitted checkpoint.
+
+This checkpoint adds 45 and removes 170 production lines, a net deletion of
+125. Phase 6 remains open for the rest of the local semantic mirror and
+generic-dedup obligation inventory. Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

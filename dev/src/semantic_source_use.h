@@ -42,20 +42,6 @@ enum class SourceSelectionKind
   Instantiation,
 };
 
-enum class SourceAnchorKind
-{
-  None,
-  Spelling,
-  DeclarationName,
-  ApproximateDeclaration,
-};
-
-struct SourceAnchor
-{
-  std::string location;
-  SourceAnchorKind kind = SourceAnchorKind::None;
-};
-
 struct SourceTemplateArgumentOccurrence
 {
   std::string text;
@@ -86,7 +72,7 @@ struct SourceTemplateIdOccurrence
   bool current_specialization_use = false;
   bool has_dependent_argument = false;
   bool has_current_specialization_argument = false;
-  SourceAnchor name_anchor;
+  std::string name_location;
   std::vector<SourceTemplateArgumentOccurrence> arguments;
 };
 
@@ -132,8 +118,7 @@ struct SemanticSourceUse
   std::string semantic_owner_class_specialization_key;
 
   std::string location;
-  SourceAnchor spelling_anchor;
-  SourceAnchor selected_decl_anchor;
+  std::string selected_decl_anchor_location;
   SourceTemplateIdOccurrence template_id_occurrence;
 
   std::string selected_entity_decl_location;
@@ -154,11 +139,6 @@ struct SemanticSourceUseTable
 {
   std::vector<SemanticSourceUse> uses;
 };
-
-inline bool operator==(const SourceAnchor & lhs, const SourceAnchor & rhs)
-{
-  return lhs.location == rhs.location && lhs.kind == rhs.kind;
-}
 
 inline bool operator==(const SourceTemplateArgumentOccurrence & lhs,
                        const SourceTemplateArgumentOccurrence & rhs)
@@ -192,7 +172,7 @@ inline bool operator==(const SourceTemplateIdOccurrence & lhs,
          lhs.has_dependent_argument == rhs.has_dependent_argument &&
          lhs.has_current_specialization_argument ==
              rhs.has_current_specialization_argument &&
-         lhs.name_anchor == rhs.name_anchor &&
+         lhs.name_location == rhs.name_location &&
          lhs.arguments == rhs.arguments;
 }
 
@@ -225,8 +205,8 @@ inline bool operator==(const SemanticSourceUse & lhs,
          lhs.role == rhs.role &&
          lhs.ownership == rhs.ownership &&
          lhs.location == rhs.location &&
-         lhs.spelling_anchor == rhs.spelling_anchor &&
-         lhs.selected_decl_anchor == rhs.selected_decl_anchor &&
+         lhs.selected_decl_anchor_location ==
+             rhs.selected_decl_anchor_location &&
          lhs.template_id_occurrence == rhs.template_id_occurrence &&
          lhs.selected_entity_decl_location ==
              rhs.selected_entity_decl_location &&
@@ -269,8 +249,7 @@ inline bool source_template_id_occurrence_has_data(
          occurrence.current_specialization_use ||
          occurrence.has_dependent_argument ||
          occurrence.has_current_specialization_argument ||
-         occurrence.name_anchor.kind != SourceAnchorKind::None ||
-         !occurrence.name_anchor.location.empty() ||
+         !occurrence.name_location.empty() ||
          !occurrence.arguments.empty();
 }
 
@@ -400,8 +379,8 @@ inline bool function_call_equivalent_ignoring_binding_spacing(
          lhs.role == rhs.role &&
          lhs.ownership == rhs.ownership &&
          lhs.location == rhs.location &&
-         lhs.spelling_anchor == rhs.spelling_anchor &&
-         lhs.selected_decl_anchor == rhs.selected_decl_anchor &&
+         lhs.selected_decl_anchor_location ==
+             rhs.selected_decl_anchor_location &&
          lhs.template_id_occurrence == rhs.template_id_occurrence &&
          lhs.selected_entity_decl_location ==
              rhs.selected_entity_decl_location &&
@@ -420,15 +399,14 @@ inline bool function_call_equivalent_ignoring_binding_spacing(
 inline std::string function_call_effective_location(
     const SemanticSourceUse & use)
 {
-  return use.spelling_anchor.location.empty() ?
-      use.location : use.spelling_anchor.location;
+  return use.location;
 }
 
 inline std::string function_call_selected_decl_location(
     const SemanticSourceUse & use)
 {
-  return use.selected_decl_anchor.location.empty() ?
-      use.selected_entity_decl_location : use.selected_decl_anchor.location;
+  return use.selected_decl_anchor_location.empty() ?
+      use.selected_entity_decl_location : use.selected_decl_anchor_location;
 }
 
 inline bool function_calls_share_selected_source_identity(
@@ -570,8 +548,8 @@ inline bool alias_use_equivalent_ignoring_binding_spacing(
          lhs.role == rhs.role &&
          lhs.ownership == rhs.ownership &&
          lhs.location == rhs.location &&
-         lhs.spelling_anchor == rhs.spelling_anchor &&
-         lhs.selected_decl_anchor == rhs.selected_decl_anchor &&
+         lhs.selected_decl_anchor_location ==
+             rhs.selected_decl_anchor_location &&
          lhs.selected_entity_decl_location ==
              rhs.selected_entity_decl_location &&
          lhs.template_name == rhs.template_name &&
@@ -590,8 +568,8 @@ inline bool class_use_equivalent_ignoring_binding_spacing(
          rhs.kind == SourceUseKind::ClassUse &&
          lhs.role == rhs.role &&
          lhs.location == rhs.location &&
-         lhs.spelling_anchor == rhs.spelling_anchor &&
-         lhs.selected_decl_anchor == rhs.selected_decl_anchor &&
+         lhs.selected_decl_anchor_location ==
+             rhs.selected_decl_anchor_location &&
          lhs.selected_entity_decl_location ==
              rhs.selected_entity_decl_location &&
          lhs.template_name == rhs.template_name &&
@@ -610,7 +588,8 @@ inline bool variable_use_equivalent_ignoring_location(
          rhs.kind == SourceUseKind::VariableUse &&
          lhs.role == rhs.role &&
          lhs.ownership == rhs.ownership &&
-         lhs.selected_decl_anchor == rhs.selected_decl_anchor &&
+         lhs.selected_decl_anchor_location ==
+             rhs.selected_decl_anchor_location &&
          lhs.selected_entity_decl_location ==
              rhs.selected_entity_decl_location &&
          lhs.template_name == rhs.template_name &&

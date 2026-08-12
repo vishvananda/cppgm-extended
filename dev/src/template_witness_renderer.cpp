@@ -718,15 +718,13 @@ WitnessEvent witness_event_from_source_use(
       use.semantic_owner_class_template_identity;
   event.semantic_owner_class_specialization_key =
       use.semantic_owner_class_specialization_key;
-  event.location = !use.spelling_anchor.location.empty() ?
-      use.spelling_anchor.location :
-      use.location;
+  event.location = use.location;
   event.template_id_occurrence = use.template_id_occurrence;
   event.template_name = normalize_source_event_entity_text(use.template_name);
   event.selected = normalize_source_event_entity_text(use.selected);
   event.selection = use.selection;
-  event.selected_decl_location = !use.selected_decl_anchor.location.empty() ?
-      use.selected_decl_anchor.location :
+  event.selected_decl_location = !use.selected_decl_anchor_location.empty() ?
+      use.selected_decl_anchor_location :
       use.selected_entity_decl_location;
   event.candidates_built = use.candidates_built;
   event.candidates_viable = use.candidates_viable;

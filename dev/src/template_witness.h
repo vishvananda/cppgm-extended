@@ -132,7 +132,6 @@ enum class TemplateWitnessSourceOwnership
 enum class TemplateWitnessSourceAnchorKind
 {
   None,
-  UseSite,
   DeclarationName,
   ApproximateDeclaration,
 };
