@@ -733,6 +733,41 @@ Three-run medians against `42d55c49c`:
 
 Evidence: `/tmp/cppgm-runtime-symbol-identity-fast-path-final.json`.
 
+Third retained Phase 7 slice: function-symbol collection and lookup repeatedly
+serialized semantic function types into stable structural strings. A frozen
+census measured 305,404 key requests for 7,876 distinct `Type` objects:
+297,528 requests, or 97.4%, repeated a key already constructed during the same
+LowIR generation call. Each miss paid for recursive type traversal and a fresh
+`ostringstream`; the function-symbol lookup index cached keys for its entries
+but did not cover the other producers and probes.
+
+The generator now caches stable keys by `Type` address for the lifetime of one
+`build_lowir_program` call. An outer frame clears and reserves the table before
+generation and clears it again afterward, so raw addresses cannot survive into
+the next batch compilation. Nested frames share the live table. The semantic
+type graph remains owned and read-only for that scope. Setting
+`CPPGM_DIAGNOSTIC_STABLE_FUNCTION_TYPE_KEY_CACHE=1` reports lookups, hits,
+misses, entries, and scope invalidations; the frozen compile reports 305,404,
+297,528, 7,876, 7,876, and 1 respectively.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `152,441,499,735` | `-21,716,271,209` (`-12.47%`); `-2.93%` from `a28f2dda1` |
+| maximum RSS | `747,036,672 B` | `-14,168,064 B` (`-1.86%`) |
+| peak footprint | `555,773,952 B` | `-12,984,320 B` (`-2.28%`) |
+| elapsed cycles | `116,548,128,285` | `-9.26%` |
+| wall time | `35.73 s` | `-10.72%`, informational under host load |
+
+Evidence: `/tmp/cppgm-stable-key-cache-diagnostic.stderr` and
+`/tmp/cppgm-stable-function-type-key-cache-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -790,7 +825,8 @@ Fill one row after each retained commit.
 | `dc49aaa16` | return concrete alias-template cache hits before constructing an instantiation scope | `160,251,233,762` | `-7.99%` | `740,306,944` | `552,783,872` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-alias-concrete-hit-final.json` |
 | `a1f5d1db1` | share populated AST side vectors until mutable access | `159,287,615,401` | `-8.54%` | `741,462,016` | `552,189,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-lazy-vector-cow-final.json` |
 | `c0155750b` | build filtered AST roots without copying discarded children | `158,427,135,579` | `-9.03%` | `734,437,376` | `552,079,360` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-filter-shallow-copy-final.json` |
-| `(this commit)` | index class reference declarations by member name | `157,041,590,005` | `-9.83%` | `750,534,656` | `555,393,024` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-reference-member-name-index-final.json` |
+| `a28f2dda1` | index class reference declarations by member name | `157,041,590,005` | `-9.83%` | `750,534,656` | `555,393,024` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-reference-member-name-index-final.json` |
+| `(this commit)` | cache stable function-type keys for one LowIR generation | `152,441,499,735` | `-12.47%` | `747,036,672` | `555,773,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-stable-function-type-key-cache-final.json` |
 
 ## Rejected work ledger
 

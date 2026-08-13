@@ -1239,7 +1239,67 @@ bool infer_reference_storage_parameter_virtual_base_layout(
   return false;
 }
 
-string stable_function_type_key(const TypePtr & type);
+struct StableFunctionTypeKeyCacheState
+{
+  unordered_map<const Type *, string> values;
+  size_t depth = 0;
+  size_t lookups = 0;
+  size_t hits = 0;
+  size_t misses = 0;
+  size_t invalidations = 0;
+  bool diagnostic = false;
+
+  StableFunctionTypeKeyCacheState()
+      : diagnostic(
+            std::getenv("CPPGM_DIAGNOSTIC_STABLE_FUNCTION_TYPE_KEY_CACHE") != nullptr)
+  {}
+};
+
+StableFunctionTypeKeyCacheState & stable_function_type_key_cache_state()
+{
+  static thread_local StableFunctionTypeKeyCacheState state;
+  return state;
+}
+
+struct StableFunctionTypeKeyCacheFrame
+{
+  StableFunctionTypeKeyCacheFrame()
+      : state(stable_function_type_key_cache_state()),
+        root(state.depth++ == 0)
+  {
+    if(root) {
+      state.values.clear();
+      state.values.reserve(8192);
+      state.lookups = 0;
+      state.hits = 0;
+      state.misses = 0;
+      state.invalidations = 0;
+    }
+  }
+
+  ~StableFunctionTypeKeyCacheFrame()
+  {
+    if(--state.depth == 0) {
+      ++state.invalidations;
+      if(state.diagnostic) {
+        std::fprintf(stderr,
+                     "stable-function-type-key-cache lookups=%zu hits=%zu "
+                     "misses=%zu entries=%zu invalidations=%zu\n",
+                     state.lookups,
+                     state.hits,
+                     state.misses,
+                     state.values.size(),
+                     state.invalidations);
+      }
+      state.values.clear();
+    }
+  }
+
+  StableFunctionTypeKeyCacheState & state;
+  bool root;
+};
+
+const string & stable_function_type_key(const TypePtr & type);
 
 void append_stable_function_type_key(std::ostringstream & out, const TypePtr & type)
 {
@@ -1327,11 +1387,21 @@ void append_stable_function_type_key(std::ostringstream & out, const TypePtr & t
   out << "<unknown>";
 }
 
-string stable_function_type_key(const TypePtr & type)
+const string & stable_function_type_key(const TypePtr & type)
 {
+  StableFunctionTypeKeyCacheState & state =
+      stable_function_type_key_cache_state();
+  ++state.lookups;
+  unordered_map<const Type *, string>::const_iterator found =
+      state.values.find(type.get());
+  if(found != state.values.end()) {
+    ++state.hits;
+    return found->second;
+  }
+  ++state.misses;
   std::ostringstream out;
   append_stable_function_type_key(out, type);
-  return out.str();
+  return state.values.emplace(type.get(), out.str()).first->second;
 }
 
 string function_key(const string & name, const TypePtr & type)
@@ -24655,6 +24725,7 @@ lowir_internal::Program build_lowir_program(const vector<CallSemNode> & translat
                                             bool emit_runtime_support,
                                             bool enable_debug_value_names)
 {
+  StableFunctionTypeKeyCacheFrame stable_function_type_key_cache_frame;
   ProgramGenerator generator(translation_units,
                              validate_closure,
                              emit_runtime_support,
