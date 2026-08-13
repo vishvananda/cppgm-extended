@@ -768,6 +768,36 @@ Three-run medians against `42d55c49c`:
 Evidence: `/tmp/cppgm-stable-key-cache-diagnostic.stderr` and
 `/tmp/cppgm-stable-function-type-key-cache-final.json`.
 
+Fourth retained Phase 7 slice: runtime-symbol classification normalized the
+query and then linearly tested every runtime spelling, explicit object alias,
+and generated operator alias. It also normalized each table spelling again on
+every probe. A frozen census measured 120,058 classification calls,
+10,395,300 table-entry probes, and only 816 matches. Most ordinary function
+symbols therefore paid for a complete scan of the 87-entry runtime table.
+
+The classifier now builds one immutable hash index from normalized runtime
+names and aliases. An input spelling is normalized only when its prefix can be
+affected by the normalization rules. The index retains the lowest table
+position for a collision, preserving the original first-entry precedence.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `145,884,874,306` | `-28,272,896,638` (`-16.23%`); `-4.30%` from `80c3e4d47` |
+| maximum RSS | `744,771,584 B` | `-16,433,152 B` (`-2.16%`) |
+| peak footprint | `556,154,880 B` | `-12,603,392 B` (`-2.22%`) |
+
+The host was under unrelated load during this batch, so its wall time and
+cycle count are not progress evidence. Evidence:
+`/tmp/cppgm-runtime-symbol-policy-census.stderr` and
+`/tmp/cppgm-runtime-symbol-index-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -827,6 +857,7 @@ Fill one row after each retained commit.
 | `c0155750b` | build filtered AST roots without copying discarded children | `158,427,135,579` | `-9.03%` | `734,437,376` | `552,079,360` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-filter-shallow-copy-final.json` |
 | `a28f2dda1` | index class reference declarations by member name | `157,041,590,005` | `-9.83%` | `750,534,656` | `555,393,024` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-reference-member-name-index-final.json` |
 | `80c3e4d47` | cache stable function-type keys for one LowIR generation | `152,441,499,735` | `-12.47%` | `747,036,672` | `555,773,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-stable-function-type-key-cache-final.json` |
+| `87f17bd97` | index normalized runtime symbols | `145,884,874,306` | `-16.23%` | `744,771,584` | `556,154,880` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-runtime-symbol-index-final.json` |
 
 ## Rejected work ledger
 
