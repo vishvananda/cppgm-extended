@@ -50,7 +50,7 @@ bool is_relational_less_operator_at(const std::string & text, std::size_t pos)
 
 }  // namespace
 
-std::string trim_space(std::string text)
+std::string trim_space(const std::string & text)
 {
   std::size_t start = 0;
   while(start < text.size() &&
@@ -64,13 +64,7 @@ std::string trim_space(std::string text)
     --end;
   }
 
-  if(end < text.size()) {
-    text.resize(end);
-  }
-  if(start > 0) {
-    text.erase(0, start);
-  }
-  return text;
+  return text.substr(start, end - start);
 }
 
 std::string strip_elaborated_type_prefix(const std::string & text)
