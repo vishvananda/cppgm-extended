@@ -6,6 +6,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -41,15 +42,15 @@ struct TempInterval
 struct FunctionLayout
 {
   string function_name;
-  map<string, size_t> storage_offset;
-  map<string, string> storage_type;
+  unordered_map<string, size_t> storage_offset;
+  unordered_map<string, string> storage_type;
   map<string, X64Register> temp_register;
-  map<string, XmmRegister> float_temp_register;
+  unordered_map<string, XmmRegister> float_temp_register;
   map<string, mir::ParamBinding> forwarded_params;
   map<string, string> promoted_param_slots;
   map<string, string> aliased_param_slots;
   map<string, string> aliased_object_return_slots;
-  map<string, lir::Instruction> temp_def_instruction;
+  unordered_map<string, lir::Instruction> temp_def_instruction;
   map<string, lir::Operand> elided_direct_branch_load_sources;
   set<string> address_taken_temps;
   set<string> direct_branch_temps;
@@ -2373,7 +2374,7 @@ map<string, string> collect_aliased_object_return_slots(const lir::Function & fu
         continue;
       }
 
-      map<string, lir::Instruction>::const_iterator target_addr =
+      unordered_map<string, lir::Instruction>::const_iterator target_addr =
           layout.temp_def_instruction.find(inst.second.text);
       if(target_addr == layout.temp_def_instruction.end() ||
          target_addr->second.kind != lir::Instruction::IK_ADDR ||
@@ -2381,7 +2382,7 @@ map<string, string> collect_aliased_object_return_slots(const lir::Function & fu
         continue;
       }
 
-      map<string, string>::const_iterator slot_type =
+      unordered_map<string, string>::const_iterator slot_type =
           layout.storage_type.find(target_addr->second.first.text);
       if(slot_type == layout.storage_type.end() ||
          slot_type->second != call_result->second) {
@@ -2576,6 +2577,13 @@ FunctionLayout build_layout(const lir::Function & function,
                             const set<string> & thread_local_globals)
 {
   FunctionLayout layout;
+  size_t storage_capacity = function.params.size() + function.slots.size();
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    storage_capacity += function.blocks[bi].instructions.size();
+  }
+  layout.storage_offset.reserve(storage_capacity);
+  layout.storage_type.reserve(storage_capacity);
+  layout.temp_def_instruction.reserve(storage_capacity);
   layout.function_name = function.name;
   layout.scratch_bytes = scratch_bytes_for(function);
   layout.host_eh_enabled = host_eh_enabled;
@@ -2667,6 +2675,7 @@ FunctionLayout build_layout(const lir::Function & function,
                              def_info,
                              thread_local_globals,
                              layout.direct_call_arg_index_temps);
+  layout.float_temp_register.reserve(register_intervals.size());
   assign_temp_registers(function,
                         layout,
                         def_info,
@@ -2808,13 +2817,13 @@ vector<mir::DebugVariable> collect_debug_variables(const lir::Function & functio
       range.location = mir::DebugVariable::Range::LK_REG;
       range.reg = reg->second;
     } else {
-      map<string, XmmRegister>::const_iterator xmm =
+      unordered_map<string, XmmRegister>::const_iterator xmm =
           layout.float_temp_register.find(intervals[i].name);
       if(xmm != layout.float_temp_register.end()) {
         range.location = mir::DebugVariable::Range::LK_XMM;
         range.xmm = xmm->second;
       } else {
-        map<string, size_t>::const_iterator storage =
+        unordered_map<string, size_t>::const_iterator storage =
             layout.storage_offset.find(intervals[i].name);
         if(storage == layout.storage_offset.end()) {
           continue;
@@ -2829,7 +2838,7 @@ vector<mir::DebugVariable> collect_debug_variables(const lir::Function & functio
       mir::DebugVariable variable;
       variable.name = source_name;
       variable.type = intervals[i].type;
-      map<string, lir::Instruction>::const_iterator def =
+      unordered_map<string, lir::Instruction>::const_iterator def =
           layout.temp_def_instruction.find(intervals[i].name);
       if(def != layout.temp_def_instruction.end() &&
          def->second.debug_location.present()) {
@@ -2861,7 +2870,7 @@ string unknown_storage_error(const FunctionLayout & layout, const string & name)
 const lir::Instruction * rematerialized_slot_address_def(const FunctionLayout & layout,
                                                          const string & name)
 {
-  map<string, lir::Instruction>::const_iterator found =
+  unordered_map<string, lir::Instruction>::const_iterator found =
       layout.temp_def_instruction.find(name);
   if(found == layout.temp_def_instruction.end() ||
      found->second.kind != lir::Instruction::IK_ADDR ||
@@ -2873,7 +2882,8 @@ const lir::Instruction * rematerialized_slot_address_def(const FunctionLayout & 
 
 long long slot_offset(const FunctionLayout & layout, const string & name)
 {
-  map<string, size_t>::const_iterator found = layout.storage_offset.find(name);
+  unordered_map<string, size_t>::const_iterator found =
+      layout.storage_offset.find(name);
   if(found == layout.storage_offset.end()) {
     map<string, string>::const_iterator aliased =
         layout.aliased_param_slots.find(name);
@@ -2905,7 +2915,8 @@ const X64Register * temp_register_for(const FunctionLayout & layout,
 const XmmRegister * float_temp_register_for(const FunctionLayout & layout,
                                             const string & name)
 {
-  map<string, XmmRegister>::const_iterator found = layout.float_temp_register.find(name);
+  unordered_map<string, XmmRegister>::const_iterator found =
+      layout.float_temp_register.find(name);
   return found == layout.float_temp_register.end() ? nullptr : &found->second;
 }
 
@@ -2924,7 +2935,8 @@ const X64Register * direct_pointer_base_register(const FunctionLayout & layout,
   if(operand.kind != lir::Operand::OP_TEMP) {
     return nullptr;
   }
-  map<string, string>::const_iterator found = layout.storage_type.find(operand.text);
+  unordered_map<string, string>::const_iterator found =
+      layout.storage_type.find(operand.text);
   if(found == layout.storage_type.end() ||
      found->second != "ptr") {
     return nullptr;
@@ -3852,7 +3864,7 @@ private:
        layout.direct_branch_temps.count(inst.first.text) == 0) {
       return false;
     }
-    map<string, lir::Instruction>::const_iterator cmp_it =
+    unordered_map<string, lir::Instruction>::const_iterator cmp_it =
         layout.temp_def_instruction.find(inst.first.text);
     if(cmp_it == layout.temp_def_instruction.end()) {
       throw logic_error("missing direct-branch def for " + inst.first.text);
@@ -3881,7 +3893,7 @@ private:
     switch(operand.kind) {
       case lir::Operand::OP_TEMP:
       case lir::Operand::OP_SLOT: {
-        map<string, string>::const_iterator found =
+        unordered_map<string, string>::const_iterator found =
             layout.storage_type.find(operand.text);
         if(found == layout.storage_type.end()) {
           throw logic_error(unknown_storage_error(layout, operand.text));
@@ -4509,7 +4521,7 @@ private:
        inst.first.kind == lir::Operand::OP_TEMP &&
        preinitialized_param_slots.count(inst.first.text) != 0 &&
        inst.second.kind == lir::Operand::OP_TEMP) {
-      map<string, lir::Instruction>::const_iterator found =
+      unordered_map<string, lir::Instruction>::const_iterator found =
           layout.temp_def_instruction.find(inst.second.text);
       if(found != layout.temp_def_instruction.end() &&
          found->second.kind == lir::Instruction::IK_ADDR &&
@@ -4529,7 +4541,7 @@ private:
     if(inst.kind == lir::Instruction::IK_COPYOBJ &&
        inst.first.kind == lir::Operand::OP_TEMP &&
        inst.second.kind == lir::Operand::OP_TEMP) {
-      map<string, lir::Instruction>::const_iterator found =
+      unordered_map<string, lir::Instruction>::const_iterator found =
           layout.temp_def_instruction.find(inst.second.text);
       if(found != layout.temp_def_instruction.end() &&
          found->second.kind == lir::Instruction::IK_ADDR &&
@@ -4556,7 +4568,7 @@ private:
       return false;
     }
 
-    map<string, lir::Instruction>::const_iterator found =
+    unordered_map<string, lir::Instruction>::const_iterator found =
         layout.temp_def_instruction.find(inst.second.text);
     if(found == layout.temp_def_instruction.end() ||
        found->second.kind != lir::Instruction::IK_ADDR ||
@@ -4718,7 +4730,8 @@ private:
     if(temp_register_for(layout, dest) != nullptr) {
       throw logic_error("i128 temp unexpectedly allocated to a register " + dest);
     }
-    map<string, string>::const_iterator found = layout.storage_type.find(dest);
+    unordered_map<string, string>::const_iterator found =
+        layout.storage_type.find(dest);
     if(found == layout.storage_type.end()) {
       throw logic_error(unknown_storage_error(layout, dest));
     }
@@ -4893,7 +4906,7 @@ private:
       return false;
     }
 
-    map<string, lir::Instruction>::const_iterator found =
+    unordered_map<string, lir::Instruction>::const_iterator found =
         layout.temp_def_instruction.find(operand.text);
     if(found == layout.temp_def_instruction.end() ||
        found->second.kind != lir::Instruction::IK_ADDR ||
@@ -4930,7 +4943,8 @@ private:
       return;
     }
     if(const X64Register * assigned = temp_register_for(layout, dest)) {
-      map<string, string>::const_iterator found = layout.storage_type.find(dest);
+      unordered_map<string, string>::const_iterator found =
+          layout.storage_type.find(dest);
       if(found == layout.storage_type.end()) {
         throw logic_error(unknown_storage_error(layout, dest));
       }
@@ -4943,7 +4957,8 @@ private:
       emit_normalize_integer_temp(found->second, *assigned, out);
       return;
     }
-    map<string, string>::const_iterator found = layout.storage_type.find(dest);
+    unordered_map<string, string>::const_iterator found =
+        layout.storage_type.find(dest);
     if(found == layout.storage_type.end()) {
       throw logic_error(unknown_storage_error(layout, dest));
     }
@@ -5609,7 +5624,7 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
                                   lir::Operand & base,
                                   long long & scaled_offset) const
   {
-    map<string, lir::Instruction>::const_iterator found =
+    unordered_map<string, lir::Instruction>::const_iterator found =
         layout.temp_def_instruction.find(temp_name);
     if(found == layout.temp_def_instruction.end() ||
        found->second.kind != lir::Instruction::IK_INDEX ||
@@ -7307,7 +7322,7 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             !inst.call_returns_void &&
             layout.dead_call_result_temps.count(inst.dest) != 0;
         if(dead_call_result) {
-          map<string, string>::const_iterator result_type =
+          unordered_map<string, string>::const_iterator result_type =
               layout.storage_type.find(inst.dest);
           if(result_type != layout.storage_type.end() &&
              result_type->second == "f80") {
