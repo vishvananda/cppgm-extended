@@ -4,7 +4,7 @@
 
 namespace semantic_utils {
 
-std::string trim_space(const std::string & text);
+std::string trim_space(std::string text);
 std::string strip_elaborated_type_prefix(const std::string & text);
 std::string strip_trailing_top_level_template_arguments(const std::string & text);
 std::size_t top_level_scope_split(const std::string & name);
