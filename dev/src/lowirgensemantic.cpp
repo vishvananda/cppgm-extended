@@ -1466,6 +1466,15 @@ struct FunctionSymbolLookupIndex
       entries_by_simple_name[simple_lookup_name(compact_name)].push_back(i);
     }
   }
+
+  void append_entry(const FunctionSymbolEntry & entry, size_t entry_index)
+  {
+    const string compact_name = compact_lookup_text(entry.name);
+    entry_type_keys.push_back(stable_function_type_key(entry.type));
+    entries_by_name[entry.name].push_back(entry_index);
+    entries_by_compact_name[compact_name].push_back(entry_index);
+    entries_by_simple_name[simple_lookup_name(compact_name)].push_back(entry_index);
+  }
 };
 
 void append_unique_entry_indices(vector<size_t> & out,
@@ -22977,7 +22986,9 @@ private:
     const string key = function_key(name, node.semantic_type);
     if(function_symbols_.find(key) == function_symbols_.end()) {
       function_symbols_[key] = symbol;
-      invalidate_function_symbol_lookup_index();
+      if(!function_symbol_lookup_index_dirty_) {
+        function_symbol_lookup_index_.mapped_symbols.insert(symbol);
+      }
     }
     if(function_symbol_nodes_.find(symbol) == function_symbol_nodes_.end()) {
       function_symbol_nodes_[symbol] = &node;
@@ -23001,7 +23012,10 @@ private:
     entry.symbol = symbol;
     entry.has_definition = false;
     function_symbol_entries_.push_back(entry);
-    invalidate_function_symbol_lookup_index();
+    if(!function_symbol_lookup_index_dirty_) {
+      function_symbol_lookup_index_.append_entry(
+          function_symbol_entries_.back(), function_symbol_entries_.size() - 1);
+    }
   }
 
   void collect_reachable_function_symbols()
