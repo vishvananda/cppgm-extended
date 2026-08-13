@@ -474,6 +474,41 @@ Three-run medians against `42d55c49c`:
 
 Evidence: `/tmp/cppgm-template-body-single-atom-final.json`.
 
+Second retained Phase 4 slice: the service-layer function-local type overlay
+walked every named type in every intervening non-namespace scope, although it
+only consumes bindings whose semantic key contains the function-local marker.
+A frozen census measured 24,616 overlay calls across 123,204 scopes. They
+scanned 5,097,223 named-type entries to find 1,911 local candidates and bind
+591 names.
+
+Each scope now derives a lazy index containing only its function-local type
+names. Empty results remain allocation-free, and a changed named-type count
+invalidates the index; lexical function-local bindings are monotonic. Cached
+names are looked up again before use, so unordered-map rehashing cannot leave
+dangling entries. The instrumented candidate recorded 103,812 cache hits,
+19,392 misses, 82 invalidations, and only 37,549 named-type inspections, a
+99.3% reduction. It found the same 1,911 candidates and bound the same 591
+names. The temporary census was removed before commit.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `145,188,653,153` | `-28,969,117,791` (`-16.63%`); `-0.48%` from `87f17bd97` |
+| maximum RSS | `740,917,248 B` | `-20,287,488 B` (`-2.67%`) |
+| peak footprint | `556,396,544 B` | `-12,361,728 B` (`-2.17%`) |
+| elapsed cycles | `113,811,972,760` | `-11.39%` |
+| wall time | `42.49 s` | `+6.17%`, informational under host load |
+
+Evidence: `/tmp/cppgm-local-type-overlay-census.stderr`,
+`/tmp/cppgm-local-type-overlay-index-census.stderr`, and
+`/tmp/cppgm-local-type-overlay-index-final.json`.
+
 ### Phase 5: replace expected exception control flow
 
 The local semantic and template sources contain 211 matching substitution
@@ -858,6 +893,7 @@ Fill one row after each retained commit.
 | `a28f2dda1` | index class reference declarations by member name | `157,041,590,005` | `-9.83%` | `750,534,656` | `555,393,024` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-reference-member-name-index-final.json` |
 | `80c3e4d47` | cache stable function-type keys for one LowIR generation | `152,441,499,735` | `-12.47%` | `747,036,672` | `555,773,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-stable-function-type-key-cache-final.json` |
 | `87f17bd97` | index normalized runtime symbols | `145,884,874,306` | `-16.23%` | `744,771,584` | `556,154,880` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-runtime-symbol-index-final.json` |
+| `faf3a29a6` | index function-local type overlays | `145,188,653,153` | `-16.63%` | `740,917,248` | `556,396,544` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-local-type-overlay-index-final.json` |
 
 ## Rejected work ledger
 
@@ -907,3 +943,5 @@ experiment before starting the next candidate.
 | cache AST type lookup results by node and scope identity | 247,063 requests made 246,451 node lookups; raw node recurrence included 109,628 same results and 69,824 changing results, while the scope-aware analyzer population was 178,667 calls, 139,008 distinct keys, 20,262 same-result repeats, and 19,397 changed-result repeats | scope identity removes most apparent reuse, and results legitimately change as semantic state advances; the remaining stable population cannot repay a generation-aware cache and its invalidation machinery | `/tmp/cppgm-ast-type-lookup-census.stderr`, `/tmp/cppgm-ast-type-lookup-census-2.stderr`, `/tmp/cppgm-ast-scope-type-lookup-census.stderr` |
 | retain compacted class-template display strings instead of reconstructing them | `145,833,753,997` instructions, only `-0.035%` from the runtime-symbol index checkpoint; one-run RSS was about 8 MiB higher | recursive display reconstruction is visible in the profile but does not move the full compile enough to justify undoing the existing memory compaction | `/tmp/cppgm-retain-named-display-screen.json` |
 | consume normalized input with one streambuf fetch per byte, then extend it with an 8 KiB `sgetn` buffer | the single-fetch form used `145,373,405,816` instructions (`-0.35%` from the runtime-symbol checkpoint), while buffering regressed to `146,013,046,659` (`+0.09%`) | neither form meets the retention threshold, and buffering adds 8 KiB to every `Normalizer`; restore the original streambuf iterator before pursuing tokenizer work further | `/tmp/cppgm-normalizer-single-fetch-screen.json`, `/tmp/cppgm-normalizer-buffered-input-screen.json` |
+| cache source-body output across constructor/destructor ABI entry-point variants | 6,505 emitted bindings included 1,296 constructors and 974 destructors, but variant expansion duplicated only 643 source-statement visits versus 8,578 ordinary-function visits | most special-member variant cost is distinct generated lifecycle work, so shared source-body caching is not a large enough lever | `/tmp/cppgm-function-variant-census.stderr` |
+| store function-local overlay index entries as owned `(name,type)` pairs or raw map-entry pointers | the owned-pair screen used `145,288,273,365` instructions and the pointer screen used `145,502,550,768`, both worse than the name-only index | keep cached names: they have the best measured code shape and revalidate the source map before use | `/tmp/cppgm-local-type-overlay-binding-index-screen.json`, `/tmp/cppgm-local-type-overlay-pointer-index-screen.json` |
