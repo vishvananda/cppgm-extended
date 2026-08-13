@@ -413,6 +413,41 @@ Target: `5-10%` instructions and a measurable allocation or memory reduction.
 Reject the implementation if table work exceeds avoided construction and
 downstream comparisons.
 
+Phase 3 census at `787af744a` closed the proposed remaining-factory expansion.
+The frozen compile constructed 3,277 arrays and 37 member pointers, too few to
+repay a new interning table. The same census measured 2,550,753 `type_equals`
+calls and 1,403,227 structural comparisons. Named types accounted for 911,499
+of those structural comparisons. After 39,849 exact-key matches, 871,650 calls
+constructed two stripped-key strings to support elaborated type prefixes; only
+six calls matched through that compatibility rule.
+
+Commit `05b1eb38d` keeps the rule but represents each stripped key as an offset
+into its source string. Unequal named keys now compare their remaining lengths
+and character ranges without constructing temporary strings. The code accepts
+`class` and `struct` compatibility, rejects incompatible `union` and
+`enum` prefixes, and preserves the exact-key fast path.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `137,038,283,448` | `-37,119,487,496` (`-21.31%`); `-1.11%` from `4ed53c57e` |
+| maximum RSS | `745,762,816 B` | `-15,441,920 B` (`-2.03%`) |
+| peak footprint | `556,085,248 B` | `-12,673,024 B` (`-2.23%`) |
+| elapsed cycles | `106,466,772,358` | `-17.11%` |
+| wall time | `35.54 s` | `-11.19%`, informational under host load |
+
+Evidence: `/tmp/cppgm-type-factory-census-2.stderr`,
+`/tmp/cppgm-named-key-view-screen.json`,
+`/tmp/cppgm-named-key-view-test-strict.log`,
+`/tmp/cppgm-named-key-view-test-report.log`, and
+`/tmp/cppgm-named-key-view-final.json`.
+
 ### Phase 4: remove lookup walk allocation
 
 `semantic_lookup.cpp` and the template modules create pointer sets for
@@ -1033,6 +1068,7 @@ Fill one row after each retained commit.
 | `39d241018` | move overload CallSem trees between owners and make `ExprInfo` relocation non-throwing | `142,363,891,265` | `-18.26%` | `747,724,800` | `556,298,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-callsem-ownership-moves-final.json` |
 | `a268247dc` | guard the function-type pack probe before cloning template argument syntax | `140,749,490,447` | `-19.18%` | `744,112,128` | `556,294,144` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-pack-clone-guard-final.json` |
 | `4ed53c57e` | index LowIR function-symbol entries by exact name | `138,575,302,610` | `-20.43%` | `742,748,160` | `556,113,920` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-symbol-entry-name-index-final.json` |
+| `05b1eb38d` | compare elaborated named-type keys without stripped-string temporaries | `137,038,283,448` | `-21.31%` | `745,762,816` | `556,085,248` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-named-key-view-final.json` |
 
 ## Rejected work ledger
 
@@ -1053,6 +1089,7 @@ experiment before starting the next candidate.
 | replace text interning with an open-addressed table | instructions regressed to `167,555,357,053` | reject the `0.39%` regression from the retained interval checkpoint | `/tmp/cppgm-open-addressed-text-intern-screen.json` |
 | add a broad type-id parse cache | census found 10,110 calls, 2,544 exact repeats, but only 1,456 repeated results and 921 dependent cases | the safe hit population is too small for the proposed key and invalidation cost | `/tmp/cppgm-type-id-parse-stats.err` |
 | prune the existing wrapper and function type caches | wrapper cache had 303,441 hits in 341,674 calls; function cache had 65,438 hits in 112,465 calls | both caches are healthy; pruning would discard substantial reuse | `/tmp/cppgm-type-cache-census.stderr` |
+| intern the remaining array and member-pointer factories | the frozen compile constructed 3,277 arrays and 37 member pointers | the uncached factory population cannot repay another interning table; optimize the measured named-key comparison work instead | `/tmp/cppgm-type-factory-census-2.stderr` |
 | share one atom lookup across repeated identifier-set membership checks | `165,712,971,270` instructions | flat to slightly worse than the retained template-body checkpoint | `/tmp/cppgm-template-body-contains-atom-screen.json` |
 | borrow the top-level-CV child inside `class_info_for_type` | `166,119,709,124` instructions | shared-owner traffic was not the 2.14M-probe bottleneck; reject the regression | `/tmp/cppgm-class-info-borrowed-cv-screen.json` |
 | probe argument identifiers directly when overlaying function-local types | `165,959,328,141` instructions | local named-type maps are smaller than the argument token sets; iteration wins | `/tmp/cppgm-local-type-direct-probes-screen.json` |
