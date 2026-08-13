@@ -23,8 +23,8 @@ struct ExprInfo
   ExprInfo();
   ExprInfo(const ExprInfo & other);
   ExprInfo & operator=(const ExprInfo & other);
-  ExprInfo(ExprInfo && other);
-  ExprInfo & operator=(ExprInfo && other);
+  ExprInfo(ExprInfo && other) noexcept;
+  ExprInfo & operator=(ExprInfo && other) noexcept;
 
   cpp_decl::TypePtr type;
   ValueCategory category = VC_PRVALUE;

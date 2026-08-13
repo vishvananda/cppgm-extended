@@ -320,14 +320,14 @@ ExprInfo & ExprInfo::operator=(const ExprInfo & other)
   return *this;
 }
 
-ExprInfo::ExprInfo(ExprInfo && other)
+ExprInfo::ExprInfo(ExprInfo && other) noexcept
   : type(static_cast<TypePtr &&>(other.type)),
     category(other.category),
     node(static_cast<CallSemNode &&>(other.node)),
     null_pointer_constant(other.null_pointer_constant)
 {}
 
-ExprInfo & ExprInfo::operator=(ExprInfo && other)
+ExprInfo & ExprInfo::operator=(ExprInfo && other) noexcept
 {
   if(this == &other) {
     return *this;

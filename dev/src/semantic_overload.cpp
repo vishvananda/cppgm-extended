@@ -11948,7 +11948,7 @@ void append_function_template_call_candidates_impl(
                                                            argument_scope,
                                                            *arg_nodes[source_arg_index],
                                                            overload_options)) {
-          arg_options.push_back(overload_options);
+          arg_options.push_back(std::move(overload_options));
           continue;
         }
         if(TypePtr member_pointer_target =
@@ -11959,14 +11959,15 @@ void append_function_template_call_candidates_impl(
                  *arg_nodes[source_arg_index],
                  overload_options,
                  member_pointer_target)) {
-            arg_options.push_back(overload_options);
+            arg_options.push_back(std::move(overload_options));
             continue;
           }
         }
         ExprInfo reference_source;
         if(target && is_reference_type(target)) {
           if(argument_analyzer.analyze_reference_source(source_arg_index, reference_source)) {
-            arg_options.push_back(vector<ExprInfo>(1, reference_source));
+            overload_options.push_back(std::move(reference_source));
+            arg_options.push_back(std::move(overload_options));
             continue;
           }
         }
@@ -11979,7 +11980,8 @@ void append_function_template_call_candidates_impl(
               should_use_template_deduction_target_aware_argument_analysis(
                   ctx, *arg_nodes[source_arg_index], target));
         }
-        arg_options.push_back(vector<ExprInfo>(1, arg));
+        overload_options.push_back(std::move(arg));
+        arg_options.push_back(std::move(overload_options));
       } catch(const logic_error & e) {
         if(arg_nodes[source_arg_index]->kind == CppAstKind::id_expression &&
            collect_dependent_overloaded_function_id_placeholder(
@@ -11988,7 +11990,7 @@ void append_function_template_call_candidates_impl(
                *arg_nodes[source_arg_index],
                target,
                overload_options)) {
-          arg_options.push_back(overload_options);
+          arg_options.push_back(std::move(overload_options));
           continue;
         }
         args_ok = false;
@@ -12175,7 +12177,6 @@ void append_function_template_call_candidates_impl(
           template_implicit_object_ready = true;
         }
 
-        ExprInfo adjusted_this = template_implicit_object_arg;
         ExprInfo converted_this;
         const bool converted_this_ok =
             semantic_conversion::try_apply_unmaterialized_inheritance_conversion(
@@ -12183,9 +12184,8 @@ void append_function_template_call_candidates_impl(
                 function_type->params[0],
                 template_implicit_object_arg,
                 converted_this);
-        if(converted_this_ok) {
-          adjusted_this = converted_this;
-        }
+        const ExprInfo & adjusted_this =
+            converted_this_ok ? converted_this : template_implicit_object_arg;
 
         return semantic_conversion::implicit_object_conversion_rank(
                    ctx,
@@ -12341,8 +12341,10 @@ void append_function_template_call_candidates_impl(
         }
 
         for(size_t option_index = 0; option_index < arg_options[index].size(); ++option_index) {
-          args.push_back(arg_options[index][option_index]);
+          ExprInfo & option = arg_options[index][option_index];
+          args.push_back(std::move(option));
           run(index + 1);
+          option = std::move(args.back());
           args.pop_back();
         }
       }
@@ -13055,7 +13057,7 @@ void append_constructor_template_node_candidates(
         ExprInfo reference_source;
         if(target && is_reference_type(target)) {
           if(argument_analyzer.analyze_reference_source(j, reference_source)) {
-            source_args.push_back(reference_source);
+            source_args.push_back(std::move(reference_source));
             continue;
           }
         }
@@ -13069,7 +13071,7 @@ void append_constructor_template_node_candidates(
               should_use_template_deduction_target_aware_argument_analysis(
                   ctx, *arg_nodes[j], target));
         }
-        source_args.push_back(arg);
+        source_args.push_back(std::move(arg));
       }
       catch(const logic_error & e)
       {
@@ -13371,9 +13373,9 @@ bool append_constructor_default_arguments(
     }
 
     match.ranks.push_back(rank);
-    match.args.push_back(arg);
     match.call_args.push_back(arg);
-    match.source_args.push_back(source_arg);
+    match.args.push_back(std::move(arg));
+    match.source_args.push_back(std::move(source_arg));
     match.params.push_back(function_type->params[param_index]);
   }
   return true;
@@ -13578,7 +13580,7 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
         break;
       }
       match.ranks.push_back(rank);
-      match.args.push_back(arg);
+      match.args.push_back(std::move(arg));
       match.call_args.push_back(source_args[j]);
       match.source_args.push_back(source_args[j]);
       match.params.push_back(
@@ -14251,7 +14253,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
         }
         match.ranks.push_back(rank);
         match.call_args.push_back(source_arg);
-        match.source_args.push_back(source_arg);
+        match.source_args.push_back(std::move(source_arg));
         if(capture_argument_conversion_selections) {
           match.source_arg_locations.push_back(
               semantic_lifetime::earliest_source_location_for_node(
@@ -14277,7 +14279,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
         okay = false;
         break;
       }
-      match.args.push_back(arg);
+      match.args.push_back(std::move(arg));
       match.params.push_back(
           j + explicit_param_offset < function_type->params.size() ?
               function_type->params[j + explicit_param_offset] :
@@ -14906,9 +14908,9 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
       continue;
     }
     match.ranks.push_back(this_rank);
-    match.args.push_back(adjusted_this);
     match.call_args.push_back(adjusted_this);
-    match.source_args.push_back(this_source_arg);
+    match.args.push_back(std::move(adjusted_this));
+    match.source_args.push_back(std::move(this_source_arg));
     if(capture_argument_conversion_selections) {
       match.source_arg_locations.push_back(std::string());
     }
@@ -14965,9 +14967,9 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
       continue;
     }
     match.ranks.push_back(rhs_rank);
-    match.args.push_back(rhs);
     match.call_args.push_back(rhs);
-    match.source_args.push_back(source_rhs);
+    match.args.push_back(std::move(rhs));
+    match.source_args.push_back(std::move(source_rhs));
     if(capture_argument_conversion_selections) {
       match.source_arg_locations.push_back(
           ctx.source_location_for_node_syntax_start(node.children[1]));
@@ -15511,8 +15513,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
             }
             return false;
           }
-          match.call_args.push_back(arg);
-          match.source_args.push_back(source_arg);
+          match.call_args.push_back(std::move(arg));
+          match.source_args.push_back(std::move(source_arg));
         }
         return true;
       };
@@ -15695,7 +15697,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                   CandidateMatch match;
                   match.function = candidate;
                   match.ranks.push_back(this_rank);
-                  match.args.push_back(adjusted_this);
+                  match.args.push_back(std::move(adjusted_this));
                   match.source_args.push_back(implicit_object_arg);
                   match.source_arg_locations.push_back(std::string());
                   match.params.push_back(conversion_function_type->params[0]);
@@ -15739,9 +15741,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                     }
 
                     match.ranks.push_back(rank);
-                    match.args.push_back(arg);
                     match.call_args.push_back(arg);
-                    match.source_args.push_back(source_arg);
+                    match.args.push_back(std::move(arg));
+                    match.source_args.push_back(std::move(source_arg));
                     match.source_arg_locations.push_back(
                         ctx.source_location_for_node(*arg_nodes[arg_index]));
                     match.params.push_back(
@@ -15969,7 +15971,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           } else {
             arg = argument_analyzer.analyze_argument(i, TypePtr(), false);
           }
-          args.push_back(arg);
+          args.push_back(std::move(arg));
         }
 
         ValueCategory result_category = VC_PRVALUE;
@@ -16181,7 +16183,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                         effective_options))) {
       throw logic_error("invalid pointer-to-member call object");
     }
-    call_args.push_back(converted_object);
+    call_args.push_back(std::move(converted_object));
 
     if(!(callable_function_type->variadic || callable_function_type->prototype_relaxed) &&
        arg_nodes.size() + 1 != callable_function_type->params.size()) {
@@ -16200,7 +16202,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
               TypePtr(),
           param_index < callable_function_type->params.size());
       if(param_index >= callable_function_type->params.size()) {
-        call_args.push_back(source_arg);
+        call_args.push_back(std::move(source_arg));
         continue;
       }
 
@@ -16215,7 +16217,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                           effective_options))) {
         throw logic_error("invalid pointer-to-member call argument");
       }
-      call_args.push_back(converted_arg);
+      call_args.push_back(std::move(converted_arg));
     }
 
     ExprInfo callee_expr = member_pointer_expr;
@@ -17118,9 +17120,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           candidate_rejections[i] = "implicit object conversion failed";
         } else {
           match.ranks.push_back(this_rank);
-          match.args.push_back(adjusted_this);
           match.call_args.push_back(adjusted_this);
-          match.source_args.push_back(this_source_arg);
+          match.args.push_back(std::move(adjusted_this));
+          match.source_args.push_back(std::move(this_source_arg));
           match.source_arg_locations.push_back(std::string());
           if(capture_argument_conversion_selections) {
             if(!match.argument_conversion_selections) {
@@ -17305,9 +17307,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         }
 
         match.ranks.push_back(rank);
-        match.args.push_back(arg);
         match.call_args.push_back(arg);
-        match.source_args.push_back(source_arg);
+        match.args.push_back(std::move(arg));
+        match.source_args.push_back(std::move(source_arg));
         match.source_arg_locations.push_back(
             ctx.source_location_for_node_syntax_start(*arg_nodes[j]));
         if(capture_argument_conversion_selections) {
