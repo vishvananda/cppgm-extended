@@ -833,6 +833,41 @@ cycle count are not progress evidence. Evidence:
 `/tmp/cppgm-runtime-symbol-policy-census.stderr` and
 `/tmp/cppgm-runtime-symbol-index-final.json`.
 
+Fifth retained Phase 7 slice: the post-overlay full-run profile at
+`/tmp/cppgm-frozen-full-sample-91c21326ad.txt` showed the function-symbol
+lookup index rebuilding inside runtime-reference collection. A temporary
+frozen census measured 22 full rebuilds of an index that finished with 9,956
+entries. Runtime discovery added 717 constructor/destructor symbol mappings
+and 717 matching entries during that walk; an unresolved reference after a
+group of additions rebuilt every name table, compact name, simple name,
+mapped symbol, and stable type key.
+
+`FunctionSymbolLookupIndex` now supports appending one entry. When special
+member discovery changes an already-current index, it inserts the mapped
+symbol and appends the entry to the same four lookup structures. If the index
+is already dirty, the original lazy full rebuild remains authoritative. This
+keeps entry order, name compaction, type keys, and all pre-runtime symbol
+collection behavior unchanged while preventing phase-local additions from
+invalidating completed work.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `143,082,634,066` | `-31,075,136,878` (`-17.84%`); `-1.45%` from `faf3a29a6` |
+| maximum RSS | `754,479,104 B` | `-6,725,632 B` (`-0.88%`) |
+| peak footprint | `556,146,688 B` | `-12,611,584 B` (`-2.22%`) |
+| elapsed cycles | `115,719,518,200` | `-9.91%` |
+| wall time | `43.27 s` | `+8.12%`, informational under host load |
+
+Evidence: `/tmp/cppgm-function-symbol-index-census.stderr` and
+`/tmp/cppgm-function-symbol-index-incremental-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -894,6 +929,7 @@ Fill one row after each retained commit.
 | `80c3e4d47` | cache stable function-type keys for one LowIR generation | `152,441,499,735` | `-12.47%` | `747,036,672` | `555,773,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-stable-function-type-key-cache-final.json` |
 | `87f17bd97` | index normalized runtime symbols | `145,884,874,306` | `-16.23%` | `744,771,584` | `556,154,880` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-runtime-symbol-index-final.json` |
 | `faf3a29a6` | index function-local type overlays | `145,188,653,153` | `-16.63%` | `740,917,248` | `556,396,544` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-local-type-overlay-index-final.json` |
+| `70607afcd` | update function-symbol lookup index incrementally during runtime discovery | `143,082,634,066` | `-17.84%` | `754,479,104` | `556,146,688` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-symbol-index-incremental-final.json` |
 
 ## Rejected work ledger
 
