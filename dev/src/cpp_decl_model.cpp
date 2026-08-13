@@ -190,28 +190,28 @@ enum NamedTypeKeyPrefixKind
 };
 
 NamedTypeKeyPrefixKind named_type_key_prefix_kind(const string & text,
-                                                  string & stripped)
+                                                  size_t & prefix_size)
 {
   struct Prefix
   {
     const char * text;
+    size_t size;
     NamedTypeKeyPrefixKind kind;
   };
   static const Prefix prefixes[] = {
-      {"enum class ", NTKP_ENUM},
-      {"enum struct ", NTKP_ENUM},
-      {"class ", NTKP_CLASSLIKE},
-      {"struct ", NTKP_CLASSLIKE},
-      {"union ", NTKP_UNION},
-      {"enum ", NTKP_ENUM}};
+      {"enum class ", sizeof("enum class ") - 1, NTKP_ENUM},
+      {"enum struct ", sizeof("enum struct ") - 1, NTKP_ENUM},
+      {"class ", sizeof("class ") - 1, NTKP_CLASSLIKE},
+      {"struct ", sizeof("struct ") - 1, NTKP_CLASSLIKE},
+      {"union ", sizeof("union ") - 1, NTKP_UNION},
+      {"enum ", sizeof("enum ") - 1, NTKP_ENUM}};
   for(size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); ++i) {
-    const string prefix = prefixes[i].text;
-    if(text.compare(0, prefix.size(), prefix) == 0) {
-      stripped = text.substr(prefix.size());
+    if(text.compare(0, prefixes[i].size, prefixes[i].text) == 0) {
+      prefix_size = prefixes[i].size;
       return prefixes[i].kind;
     }
   }
-  stripped = text;
+  prefix_size = 0;
   return NTKP_NONE;
 }
 
@@ -220,13 +220,18 @@ bool named_type_keys_match(const string & lhs, const string & rhs)
   if(lhs == rhs) {
     return true;
   }
-  string lhs_stripped;
-  string rhs_stripped;
+  size_t lhs_prefix_size = 0;
+  size_t rhs_prefix_size = 0;
   const NamedTypeKeyPrefixKind lhs_prefix =
-      named_type_key_prefix_kind(lhs, lhs_stripped);
+      named_type_key_prefix_kind(lhs, lhs_prefix_size);
   const NamedTypeKeyPrefixKind rhs_prefix =
-      named_type_key_prefix_kind(rhs, rhs_stripped);
-  return lhs_stripped == rhs_stripped &&
+      named_type_key_prefix_kind(rhs, rhs_prefix_size);
+  return lhs.size() - lhs_prefix_size == rhs.size() - rhs_prefix_size &&
+         lhs.compare(lhs_prefix_size,
+                     string::npos,
+                     rhs,
+                     rhs_prefix_size,
+                     string::npos) == 0 &&
          (lhs_prefix == rhs_prefix ||
           lhs_prefix == NTKP_NONE ||
           rhs_prefix == NTKP_NONE);
