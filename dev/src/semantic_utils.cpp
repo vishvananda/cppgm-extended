@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cctype>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace semantic_utils {
@@ -48,6 +49,35 @@ bool is_relational_less_operator_at(const std::string & text, std::size_t pos)
          (text[prev] == ')' || text[prev] == ']');
 }
 
+std::size_t elaborated_type_prefix_size(const std::string & text)
+{
+  if(text.empty()) {
+    return 0;
+  }
+  switch(text[0]) {
+  case 'c':
+    return text.compare(0, sizeof("class ") - 1, "class ") == 0 ?
+               sizeof("class ") - 1 : 0;
+  case 'e':
+    if(text.compare(0, sizeof("enum class ") - 1, "enum class ") == 0) {
+      return sizeof("enum class ") - 1;
+    }
+    if(text.compare(0, sizeof("enum struct ") - 1, "enum struct ") == 0) {
+      return sizeof("enum struct ") - 1;
+    }
+    return text.compare(0, sizeof("enum ") - 1, "enum ") == 0 ?
+               sizeof("enum ") - 1 : 0;
+  case 's':
+    return text.compare(0, sizeof("struct ") - 1, "struct ") == 0 ?
+               sizeof("struct ") - 1 : 0;
+  case 'u':
+    return text.compare(0, sizeof("union ") - 1, "union ") == 0 ?
+               sizeof("union ") - 1 : 0;
+  default:
+    return 0;
+  }
+}
+
 }  // namespace
 
 std::string trim_space(const std::string & text)
@@ -69,24 +99,17 @@ std::string trim_space(const std::string & text)
 
 std::string strip_elaborated_type_prefix(const std::string & text)
 {
-  struct Prefix
-  {
-    const char * text;
-    std::size_t size;
-  };
-  static const Prefix prefixes[] = {
-      {"enum class ", 11},
-      {"enum struct ", 12},
-      {"class ", 6},
-      {"struct ", 7},
-      {"union ", 6},
-      {"enum ", 5}};
-  for(std::size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); ++i) {
-    if(text.compare(0, prefixes[i].size, prefixes[i].text) == 0) {
-      return text.substr(prefixes[i].size);
-    }
+  const std::size_t prefix_size = elaborated_type_prefix_size(text);
+  return prefix_size == 0 ? text : text.substr(prefix_size);
+}
+
+std::string strip_elaborated_type_prefix(std::string && text)
+{
+  const std::size_t prefix_size = elaborated_type_prefix_size(text);
+  if(prefix_size != 0) {
+    text.erase(0, prefix_size);
   }
-  return text;
+  return std::move(text);
 }
 
 std::string strip_trailing_top_level_template_arguments(const std::string & text)
