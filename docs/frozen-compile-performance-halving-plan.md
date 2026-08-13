@@ -448,6 +448,39 @@ Evidence: `/tmp/cppgm-type-factory-census-2.stderr`,
 `/tmp/cppgm-named-key-view-test-report.log`, and
 `/tmp/cppgm-named-key-view-final.json`.
 
+The post-`05b1eb38d` sample attributed 100 immediate `memcmp` samples to
+`semantic_utils::strip_elaborated_type_prefix`. A frozen census measured
+3,881,111 calls: 3,344,409 had no prefix, while 536,702 matched one of the six
+accepted spellings. The helper received 780,075 temporary strings.
+
+Commit `1060e05df` classifies the prefix family from the first byte. Most
+misses now skip textual comparison; `class`, `struct`, and `union` need one
+comparison, while the `enum` family preserves the required longest-prefix
+order. An rvalue overload uses the same classifier and erases a matched prefix
+from a temporary buffer. Lvalue callers keep the existing owned-result API.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `136,011,111,282` | `-38,146,659,662` (`-21.90%`); `-0.75%` from `05b1eb38d` |
+| maximum RSS | `735,920,128 B` | `-25,284,608 B` (`-3.32%`) |
+| peak footprint | `556,093,440 B` | `-12,664,832 B` (`-2.23%`) |
+| elapsed cycles | `98,365,785,242` | `-23.42%` |
+| wall time | `24.96 s` | `-37.63%`, informational under host load |
+
+Evidence: `/tmp/cppgm-elaborated-prefix-census.stderr`,
+`/tmp/cppgm-elaborated-prefix-rvalue-census.stderr`,
+`/tmp/cppgm-elaborated-prefix-dispatch-screen.json`,
+`/tmp/cppgm-elaborated-prefix-dispatch-rvalue-test-strict.log`,
+`/tmp/cppgm-elaborated-prefix-dispatch-rvalue-test-report.log`, and
+`/tmp/cppgm-elaborated-prefix-dispatch-rvalue-final.json`.
+
 ### Phase 4: remove lookup walk allocation
 
 `semantic_lookup.cpp` and the template modules create pointer sets for
@@ -1069,6 +1102,7 @@ Fill one row after each retained commit.
 | `a268247dc` | guard the function-type pack probe before cloning template argument syntax | `140,749,490,447` | `-19.18%` | `744,112,128` | `556,294,144` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-pack-clone-guard-final.json` |
 | `4ed53c57e` | index LowIR function-symbol entries by exact name | `138,575,302,610` | `-20.43%` | `742,748,160` | `556,113,920` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-symbol-entry-name-index-final.json` |
 | `05b1eb38d` | compare elaborated named-type keys without stripped-string temporaries | `137,038,283,448` | `-21.31%` | `745,762,816` | `556,085,248` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-named-key-view-final.json` |
+| `1060e05df` | classify elaborated type prefixes by family and reuse temporary input buffers | `136,011,111,282` | `-21.90%` | `735,920,128` | `556,093,440` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-elaborated-prefix-dispatch-rvalue-final.json` |
 
 ## Rejected work ledger
 
