@@ -21648,10 +21648,10 @@ private:
   string lookup_runtime_reference_function_symbol(const CallSemNode & node) const
   {
     if(!callsem_symbol(node).internal_symbol.empty()) {
-      if(known_function_symbol_exists(callsem_symbol(node).internal_symbol) ||
-         symbol_linkage::has_exported_object_symbol(callsem_symbol(node)) ||
+      if(symbol_linkage::has_exported_object_symbol(callsem_symbol(node)) ||
          eh_runtime::is_reserved_symbol(callsem_symbol(node).internal_symbol) ||
-         is_backend_passthrough_symbol(callsem_symbol(node).internal_symbol)) {
+         is_backend_passthrough_symbol(callsem_symbol(node).internal_symbol) ||
+         known_function_symbol_exists(callsem_symbol(node).internal_symbol)) {
         return callsem_symbol(node).internal_symbol;
       }
       return string();

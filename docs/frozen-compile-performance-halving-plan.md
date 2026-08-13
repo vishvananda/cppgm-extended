@@ -579,6 +579,31 @@ Three-run medians against `42d55c49c`:
 
 Evidence: `/tmp/cppgm-interval-reuse-final.json`.
 
+Second retained Phase 7 slice: runtime function-reference collection receives
+typed `CallSemNode` symbols from semantic analysis. When that identity already
+has an exported object symbol, it is sufficient to retain the reference, but
+the collector previously queried the generated-function set, semantic symbol
+map, and function lookup index first. The test order now accepts the existing
+exported identity before those fallback ownership probes. Reserved runtime,
+backend passthrough, and registry-only symbols retain their original checks.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report passes
+`4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `164,248,241,098` | `-9,909,529,846` (`-5.69%`) |
+| maximum RSS | `748,720,128 B` | `-12,484,608 B` (`-1.64%`) |
+| peak footprint | `557,678,592 B` | `-11,079,680 B` (`-1.95%`) |
+| elapsed cycles | `123,432,987,278` | `-3.90%` |
+| wall time | `38.82 s` | `-3.00%`, informational under host load |
+
+Evidence: `/tmp/cppgm-runtime-symbol-identity-fast-path-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -630,7 +655,8 @@ Fill one row after each retained commit.
 | `42d55c49c` | correctness checkpoint | `174,157,770,944` | `0.00%` | `761,204,736` | `568,758,272` | SHA-256 `4fc1303a...5c4` | pass | pass with isolated PA30 confirmation | `/tmp/cppgm-perf-halving-42d55c49c.json` |
 | `01f875b8f` | remove net-negative dependent-resolution cache and tree-backed recursion guard | `173,508,264,894` | `-0.37%` | `743,952,384` | `557,821,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-resolution-negative-cache-removal-final.json` |
 | `4ab86136b` | reuse native temp and forwarded-parameter interval analyses | `166,898,155,701` | `-4.17%` | `745,816,064` | `557,416,448` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-interval-reuse-final.json` |
-| `(this commit)` | intern each visible template-body value name once per scope walk | `165,685,333,837` | `-4.86%` | `749,821,952` | `557,666,304` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-single-atom-final.json` |
+| `325644977` | intern each visible template-body value name once per scope walk | `165,685,333,837` | `-4.86%` | `749,821,952` | `557,666,304` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-single-atom-final.json` |
+| `(this commit)` | trust existing exported runtime function identities before fallback ownership probes | `164,248,241,098` | `-5.69%` | `748,720,128` | `557,678,592` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-runtime-symbol-identity-fast-path-final.json` |
 
 ## Rejected work ledger
 
@@ -651,3 +677,8 @@ experiment before starting the next candidate.
 | replace text interning with an open-addressed table | instructions regressed to `167,555,357,053` | reject the `0.39%` regression from the retained interval checkpoint | `/tmp/cppgm-open-addressed-text-intern-screen.json` |
 | add a broad type-id parse cache | census found 10,110 calls, 2,544 exact repeats, but only 1,456 repeated results and 921 dependent cases | the safe hit population is too small for the proposed key and invalidation cost | `/tmp/cppgm-type-id-parse-stats.err` |
 | prune the existing wrapper and function type caches | wrapper cache had 303,441 hits in 341,674 calls; function cache had 65,438 hits in 112,465 calls | both caches are healthy; pruning would discard substantial reuse | `/tmp/cppgm-type-cache-census.stderr` |
+| share one atom lookup across repeated identifier-set membership checks | `165,712,971,270` instructions | flat to slightly worse than the retained template-body checkpoint | `/tmp/cppgm-template-body-contains-atom-screen.json` |
+| borrow the top-level-CV child inside `class_info_for_type` | `166,119,709,124` instructions | shared-owner traffic was not the 2.14M-probe bottleneck; reject the regression | `/tmp/cppgm-class-info-borrowed-cv-screen.json` |
+| probe argument identifiers directly when overlaying function-local types | `165,959,328,141` instructions | local named-type maps are smaller than the argument token sets; iteration wins | `/tmp/cppgm-local-type-direct-probes-screen.json` |
+| make the unused normal-compile `FunctionBinding` source-anchor cache lazy | footprint fell by about 2.1 MiB but instructions rose to `166,344,947,939` | reject the instruction regression; a larger cohesive record slice is required | `/tmp/cppgm-function-anchor-side-record-screen.json` |
+| replace recursive `CallSemNode` child vectors with a zero-allocation indexed view | LowIR-only screen was `165,749,705,323`; all walkers were `165,670,523,261` | operation removal was real but instruction results were flat; remove it from the retained symbol fast path | `/tmp/cppgm-callsem-zero-allocation-walk-screen.json`, `/tmp/cppgm-callsem-zero-allocation-walk-all-screen.json` |
