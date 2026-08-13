@@ -12294,36 +12294,23 @@ void record_source_template_value_dependencies_for_witness(
                                                          &found->second;
       };
   std::set<ValueBinding *> visiting;
-  std::function<template_api::TemplateWitnessSession::SourceValueDependency(
+  std::function<ValueBinding::TemplateWitnessSourceValueDependency(
       ValueBinding &)>
       classify;
   classify =
       [&](ValueBinding & binding)
-          -> template_api::TemplateWitnessSession::SourceValueDependency
+          -> ValueBinding::TemplateWitnessSourceValueDependency
       {
-        const auto recorded =
-            witness_session->source_value_dependencies.find(&binding);
-        if(recorded != witness_session->source_value_dependencies.end()) {
-          if(info.source_template) {
-            template_api::TemplateWitnessSession::SourceValueDependency &
-                source_result =
-                    witness_session->source_class_value_dependencies[
-                        std::make_pair(info.source_template, binding.name)];
-            if(source_result ==
-                   template_api::TemplateWitnessSession::SVD_UNKNOWN ||
-               recorded->second ==
-                   template_api::TemplateWitnessSession::SVD_DEPENDENT) {
-              source_result = recorded->second;
-            }
-          }
-          return recorded->second;
+        if(binding.template_witness_source_value_dependency !=
+               ValueBinding::TWVD_UNKNOWN) {
+          return binding.template_witness_source_value_dependency;
         }
         if(!binding.constant_initializer ||
            !binding.constant_initializer_scope) {
-          return template_api::TemplateWitnessSession::SVD_UNKNOWN;
+          return ValueBinding::TWVD_UNKNOWN;
         }
         if(!visiting.insert(&binding).second) {
-          return template_api::TemplateWitnessSession::SVD_DEPENDENT;
+          return ValueBinding::TWVD_DEPENDENT;
         }
 
         bool dependent = template_argument_semantics::
@@ -12346,7 +12333,7 @@ void record_source_template_value_dependencies_for_witness(
                   find_current_binding(referenced->name);
               if(retained &&
                  classify(*retained) ==
-                     template_api::TemplateWitnessSession::SVD_DEPENDENT) {
+                     ValueBinding::TWVD_DEPENDENT) {
                 dependent = true;
               }
             }
@@ -12358,23 +12345,10 @@ void record_source_template_value_dependencies_for_witness(
         if(!dependent) {
           inspect_member_references(*binding.constant_initializer);
         }
-        const template_api::TemplateWitnessSession::SourceValueDependency
-            result = dependent ?
-                template_api::TemplateWitnessSession::SVD_DEPENDENT :
-                template_api::TemplateWitnessSession::SVD_FIXED;
-        witness_session->source_value_dependencies[&binding] = result;
-        if(info.source_template) {
-          template_api::TemplateWitnessSession::SourceValueDependency &
-              source_result =
-                  witness_session->source_class_value_dependencies[
-                      std::make_pair(info.source_template, binding.name)];
-          if(source_result ==
-                 template_api::TemplateWitnessSession::SVD_UNKNOWN ||
-             result ==
-                 template_api::TemplateWitnessSession::SVD_DEPENDENT) {
-            source_result = result;
-          }
-        }
+        const ValueBinding::TemplateWitnessSourceValueDependency result =
+            dependent ? ValueBinding::TWVD_DEPENDENT :
+                        ValueBinding::TWVD_FIXED;
+        binding.template_witness_source_value_dependency = result;
         visiting.erase(&binding);
         return result;
       };

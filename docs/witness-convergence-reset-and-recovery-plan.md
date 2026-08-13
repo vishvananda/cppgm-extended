@@ -7156,6 +7156,152 @@ reporter adds 12 lines. Phase 6 remains open for the remaining measured nonzero
 local side stores and migration mirrors. Phase 7 and inception remain
 forbidden.
 
+## Value-dependency ownership checkpoint, 2026-08-12
+
+Commit `69d40c4cddd54fef3c321ec1dc4096cfeea3c9e8` is the parent. This
+Phase 6 checkpoint removes both remaining source-value dependency mirrors from
+`TemplateWitnessSession`. The three-state fixed/dependent classification now
+lives on its stable `ValueBinding` owner, in existing structure padding. The
+class-template/name aggregate map is deleted rather than moved: consumers use
+the binding-owned result, and nested-signature publication additionally checks
+that the binding's source-template owner is the class whose signature is being
+evaluated. That owner check preserves the old aggregate map's intentional
+absence for a same-named binding from another template.
+
+A temporary probe, absent from production, covered all 1,530 strict inputs. It
+observed 1,191 new value classifications, 2,141 cached classifications, 3,332
+aggregate class writes, and 1,066 aggregate class reads. Every nonzero class
+read matched the direct binding classification: six fixed and 350 dependent
+binding-owner reads, 316 fixed and 240 dependent nested-signature reads, and
+two fixed current-owner reads. The remaining 132 nested-signature reads had an
+absent aggregate and a dependent direct binding, but every one belonged to a
+different source-template owner. Twenty current-owner reads were absent in
+both representations. The refined and owner probe logs have SHA-256 values
+`519d0d2e5a774e012169bf190af22a4354b3ec44c6d56bcb838f9d5981919512`
+and
+`781fcacd200aa9d2337566018924e15329154e58a600c25742bbe66301dad92b`.
+
+The same probe classifies the remaining retained-enum map as a genuine
+session-scoped obligation rather than a removable mirror. Across 2,707
+retentions and 771 reads, the transformed `TemplateArgument` never retained
+the enumerator binding in its rare data, and the binding's declaration scope
+was never the retained enum scope. The map therefore still carries otherwise
+unavailable enumerator identity and qualification context. Moving that data
+onto an ordinary argument or binding would grow a general semantic carrier
+without eliminating the semantic obligation.
+
+The final Homebrew-Clang validation produced these results:
+
+- all 1,530 direct-reference inputs are byte-exact against the frozen parent
+  for witness output, LowIR, diagnostics, stdout, and exit status;
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no warning or missing actual
+  output;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs
+  exactly once in its normal integrated position and has no separate lane;
+- all 1,530 provenance sessions exist. Schema 6 remains exactly 10,587
+  records: 4,289 source publications and 6,298 lifecycle publications. Source
+  ownership remains alias 835, class 2,631, function 791, and variable 32,
+  with no unknown producer or unexercised site;
+- ordinary and provenance compilers have identical status, witness, LowIR,
+  stdout, and diagnostics on all 1,530 inputs;
+- the 61-test helper suite passes, both compiler builds are warning-free, both
+  materialization decision boundaries have no finding, all 23 forbidden text-
+  reparse categories remain zero, and the dynamic class-materialization audit
+  remains exact at five accepted occurrences and 55 rejected rows at 53
+  locations;
+- the template and semantic boundary reports remain byte-identical to the
+  parent.
+
+The final parent-parity directory is
+`/tmp/cppgm-phase6-value-dependency-owner-parent-parity-20260812.CXpWst`;
+its empty mismatch list has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-value-dependency-owner-ordinary-strict-20260812.log` and
+`/tmp/cppgm-phase6-value-dependency-owner-provenance-strict-20260812.log`.
+Both have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-value-dependency-owner-integrated-20260812.log`, SHA-256
+`cd0e33e0b6b496e590a3e05e940de8c07498c14d79d7bfbe8420bbed7a119040`.
+
+The provenance trace directory is
+`/tmp/cppgm-phase6-value-dependency-owner-provenance-trace-20260812.rsFkkX`.
+The analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-value-dependency-owner-provenance-analysis-20260812.json`
+and
+`/tmp/cppgm-phase6-value-dependency-owner-provenance-convergence-20260812.json`,
+with SHA-256 values
+`35aceea6babcc92e81c59238b5573f011a122990dac3bd0bb8afa81b1191490d`
+and
+`212541655962b1b710b2c00ae2debc2ce34feb3ed089a27af55c4a020b62d720`.
+After removing trace-file paths and ordering lists canonically, both reports
+are semantically identical to the parent reports. The ordinary/provenance
+mismatch list is empty, SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The helper report is
+`/tmp/cppgm-phase6-value-dependency-owner-helper-tests-20260812.log`, SHA-256
+`55bc01bfb3e5a8d709062f92ce720249c63f7b6bc2c5d4fbcf9483d6f0e986af`.
+The materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and dynamic class-materialization reports have SHA-256
+values
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743555644db743b7c515`,
+`8c8b7136ba50635a25175da91b80eb923410e4343a8fa244c7fdca30196c88d4`,
+`a8654f85de246d956481db71e121f1e8ff01fbf2e003bc2b9d968a847121dff2`,
+and
+`d66e4651768b4cd6fbcb82c6edcb1c28ce60af67ff0ee116be74fd047609a341`.
+The dynamic report differs from the parent only in its provenance-report path
+and hash metadata; its accepted, rejected, input, failure, and summary data are
+identical.
+
+`TemplateWitnessSession` shrinks from 376 to 312 bytes. `ValueBinding` remains
+504 bytes, and all other tracked semantic structures remain byte-identical to
+the parent. The structure report is
+`/tmp/cppgm-phase6-value-dependency-owner-structure-sizes-20260812.txt`,
+SHA-256
+`1f872ff18916238323328ce75039b29c15d01f4bd37303c6b4e604112e09b00d`.
+
+The ordinary binary shrinks by 3,072 bytes to 17,045,480 bytes and contains no
+provenance symbols. Its `__text`, `__gcc_except_tab`, `__const`, and
+`__unwind_info` sections shrink by 928, 92, 48, and 24 bytes;
+`__cstring` grows by 16 bytes and `__LINKEDIT` shrinks by 4,096 bytes. The
+section report is
+`/tmp/cppgm-phase6-value-dependency-owner-binary-sections-20260812.txt`,
+SHA-256
+`902f1f41c3ba2568fd4b04e45ed28a0b3b3857efb6ca9a610e8a61680a1e9deb`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-value-dependency-owner-candidate-ordinary-20260812`,
+SHA-256
+`94bc6316311ac72ff2e81815b2c6f23b830cff1b6841d1eb91ba69e25b3ba26c`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.77% | -0.21% | -4.13% | `/tmp/cppgm-phase6-value-dependency-owner-perf-fixed-20260812.json` |
+| Binding-state parent | +0.11% | -0.27% | -0.03% | `/tmp/cppgm-phase6-value-dependency-owner-perf-parent-20260812.json` |
+
+The candidate medians are 174,657,627,535 instructions, 755,527,680 bytes
+maximum RSS, and 568,549,376 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-value-dependency-owner-raw-candidate-20260812.json`,
+SHA-256
+`cda14f63ffe068ed9d2a4ea0484a81dd5b0f7b7ba7079b3f645293d607766cb6`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`570bd819e737fa5075729f42fefaa1b37058055f1cdd7aa1f3eaed21b4110672`
+and
+`828ea8178b4a6c0de23cd2b22ca32694bcec28c9f6566f7f0b899c5bc84facc6`.
+The candidate metadata names commit `69d40c4cd` because the measurements cover
+this uncommitted checkpoint.
+
+Production code adds 37 and removes 107 lines, a net deletion of 70. Phase 6
+remains open for the remaining measured nonzero local stores and for a final
+audit of their named obligations. Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

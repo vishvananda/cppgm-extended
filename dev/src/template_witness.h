@@ -208,13 +208,6 @@ enum TemplateWitnessValueStateFlag
 
 struct TemplateWitnessSession
 {
-  enum SourceValueDependency : unsigned char
-  {
-    SVD_UNKNOWN,
-    SVD_FIXED,
-    SVD_DEPENDENT
-  };
-
   struct ParameterizedClassSourceOccurrence
   {
     cpp_decl::TemplateIdSourceDependency dependency =
@@ -242,10 +235,6 @@ struct TemplateWitnessSession
   std::vector<std::string> inline_namespace_names;
   std::vector<TemplateWitnessSourceRange> template_body_ranges;
   std::vector<TemplateWitnessTemplateHeaderContext> template_header_contexts;
-  std::unordered_map<const semantic_model::ValueBinding *,
-                     SourceValueDependency> source_value_dependencies;
-  std::map<std::pair<const semantic_model::ClassTemplateDecl *, std::string>,
-           SourceValueDependency> source_class_value_dependencies;
   std::unordered_map<uint32_t, ParameterizedClassSourceOccurrence>
       class_source_occurrences;
   std::map<std::pair<std::string, long long>, RetainedEnumValueBinding>

@@ -7893,14 +7893,11 @@ void note_structured_bool_value_member_if_needed(
   bool publish_dependent_nested_signature_value = false;
   if(template_nested_signature_dependent_value_publication_active() &&
      info.source_template) {
-    const auto recorded = services.witness_context.session->
-        source_class_value_dependencies.find(
-            std::make_pair(info.source_template, member.binding->name));
     publish_dependent_nested_signature_value =
-        recorded != services.witness_context.session->
-                        source_class_value_dependencies.end() &&
-        recorded->second ==
-            template_api::TemplateWitnessSession::SVD_DEPENDENT;
+        member.binding->owner_class &&
+        member.binding->owner_class->source_template == info.source_template &&
+        member.binding->template_witness_source_value_dependency ==
+            ValueBinding::TWVD_DEPENDENT;
   }
   if(publish_dependent_nested_signature_value) {
     // A dependent source initializer is the predicate being evaluated by the
@@ -27995,16 +27992,12 @@ bool argument_syntax_uses_fixed_class_value(
     if(node.kind == CppAstKind::id_expression && !node.value.empty()) {
       const ValueBinding * binding = nullptr;
       if(lookup_leaf_value_binding(scope, node.value, binding) && binding) {
-        const auto recorded =
-            witness_session->source_value_dependencies.find(binding);
-        if(recorded != witness_session->source_value_dependencies.end()) {
-          matched = matched ||
-              recorded->second ==
-                  template_api::TemplateWitnessSession::SVD_FIXED;
-          dependent = dependent ||
-              recorded->second ==
-                  template_api::TemplateWitnessSession::SVD_DEPENDENT;
-        }
+        matched = matched ||
+            binding->template_witness_source_value_dependency ==
+                ValueBinding::TWVD_FIXED;
+        dependent = dependent ||
+            binding->template_witness_source_value_dependency ==
+                ValueBinding::TWVD_DEPENDENT;
       }
     }
     for(size_t i = 0; i < node.children.size(); ++i) {
@@ -28064,47 +28057,12 @@ bool argument_syntax_uses_fixed_current_class_value(
       }
       if(binding &&
          (!qualified_template_member || current_owner_template)) {
-        const auto recorded =
-            witness_session->source_value_dependencies.find(binding);
-        if(recorded != witness_session->source_value_dependencies.end()) {
-          matched = matched ||
-              recorded->second ==
-                  template_api::TemplateWitnessSession::SVD_FIXED;
-          dependent = dependent ||
-              recorded->second ==
-                  template_api::TemplateWitnessSession::SVD_DEPENDENT;
-        }
-        if(binding->owner_class &&
-           binding->owner_class->source_template &&
-           !qualified_template_member) {
-          const auto source_recorded =
-              witness_session->source_class_value_dependencies.find(
-                  std::make_pair(binding->owner_class->source_template,
-                                 binding->name));
-          if(source_recorded !=
-                 witness_session->source_class_value_dependencies.end()) {
-            matched = matched ||
-                source_recorded->second ==
-                    template_api::TemplateWitnessSession::SVD_FIXED;
-            dependent = dependent ||
-                source_recorded->second ==
-                    template_api::TemplateWitnessSession::SVD_DEPENDENT;
-          }
-        }
-      }
-      if(current_owner_template) {
-        const auto recorded =
-            witness_session->source_class_value_dependencies.find(
-                std::make_pair(current_owner_template, qualified->name));
-        if(recorded !=
-               witness_session->source_class_value_dependencies.end()) {
-          matched = matched ||
-              recorded->second ==
-                  template_api::TemplateWitnessSession::SVD_FIXED;
-          dependent = dependent ||
-              recorded->second ==
-                  template_api::TemplateWitnessSession::SVD_DEPENDENT;
-        }
+        matched = matched ||
+            binding->template_witness_source_value_dependency ==
+                ValueBinding::TWVD_FIXED;
+        dependent = dependent ||
+            binding->template_witness_source_value_dependency ==
+                ValueBinding::TWVD_DEPENDENT;
       }
     }
     for(size_t i = 0; i < node.children.size(); ++i) {

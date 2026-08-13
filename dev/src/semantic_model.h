@@ -185,6 +185,13 @@ struct ValueBinding
     VK_FIELD
   };
 
+  enum TemplateWitnessSourceValueDependency : unsigned char
+  {
+    TWVD_UNKNOWN,
+    TWVD_FIXED,
+    TWVD_DEPENDENT
+  };
+
   ValueBinding() : kind(VK_VARIABLE) {}
   ValueBinding(Kind kind, const std::string & name, const cpp_decl::TypePtr & type)
     : kind(kind), name(name), type(type)
@@ -230,6 +237,8 @@ struct ValueBinding
   unsigned int output_requirements = ORK_NONE;
   bool definition_output_emitted = false;
   mutable unsigned char template_witness_state_flags = 0;
+  mutable TemplateWitnessSourceValueDependency
+      template_witness_source_value_dependency = TWVD_UNKNOWN;
   mutable SourceDeclAnchorCache declaration_anchor;
 };
 
