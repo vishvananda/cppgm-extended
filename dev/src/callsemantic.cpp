@@ -17979,6 +17979,87 @@ private:
     return lookup_value_at_token(scope, name, node.token_start);
   }
 
+  static Scope * value_using_directive_injection_scope(
+      Scope & origin_scope,
+      Scope & target_scope)
+  {
+    for(Scope * origin = &origin_scope; origin; origin = origin->parent) {
+      if(!origin->namespace_scope) {
+        continue;
+      }
+      for(Scope * target = &target_scope; target; target = target->parent) {
+        if(target == origin) {
+          return origin;
+        }
+      }
+    }
+    return &origin_scope;
+  }
+
+  static void collect_imported_value_for_scope_impl(
+      Scope & origin_scope,
+      Scope & current_scope,
+      Scope & lookup_scope,
+      const string & name,
+      size_t source_token_start,
+      cpp_scope_lookup::ScopeVisitSet<Scope> & visited,
+      semantic_lookup::ValueLookupFromUsingDirectivesResult & result)
+  {
+    if(result.ambiguous || !visited.mark(&current_scope)) {
+      return;
+    }
+
+    for(size_t i = 0; i < current_scope.using_directives.size(); ++i) {
+      if(!cpp_scope_lookup::using_directive_visible_at_token(
+             current_scope, i, source_token_start, 0)) {
+        continue;
+      }
+      Scope * imported = current_scope.using_directives[i];
+      if(value_using_directive_injection_scope(origin_scope, *imported) ==
+         &lookup_scope) {
+        const ValueBinding * direct =
+            semantic_lookup::lookup_direct_value(*imported, name);
+        if(direct) {
+          if(!result.binding) {
+            result.binding = direct;
+          } else if(!semantic_lookup::same_value_binding_entity(result.binding,
+                                                                 direct)) {
+            result.ambiguous = true;
+            return;
+          }
+        }
+      }
+      collect_imported_value_for_scope_impl(origin_scope,
+                                            *imported,
+                                            lookup_scope,
+                                            name,
+                                            source_token_start,
+                                            visited,
+                                            result);
+      if(result.ambiguous) {
+        return;
+      }
+    }
+  }
+
+  static semantic_lookup::ValueLookupFromUsingDirectivesResult
+  collect_imported_value_for_scope(Scope & origin_scope,
+                                   Scope & lookup_scope,
+                                   const string & name,
+                                   size_t source_token_start)
+  {
+    semantic_lookup::ValueLookupFromUsingDirectivesResult result;
+    cpp_scope_lookup::ScopeVisitSet<Scope> visited;
+    collect_imported_value_for_scope_impl(origin_scope,
+                                          origin_scope,
+                                          lookup_scope,
+                                          name,
+                                          source_token_start,
+                                          visited,
+                                          result);
+    return result;
+  }
+
   const ValueBinding * lookup_value_at_token(Scope & scope,
                                              const string & name,
                                              size_t source_token_start)
@@ -17987,64 +18068,6 @@ private:
     for(Scope * current = &scope; current; current = current->parent) {
       scope_path.push_back(current);
     }
-
-    const auto using_directive_injection_scope =
-        [](Scope & origin_scope, Scope & target_scope) -> Scope *
-    {
-      set<Scope *> target_namespaces;
-      for(Scope * current = &target_scope; current; current = current->parent) {
-        if(current->namespace_scope) {
-          target_namespaces.insert(current);
-        }
-      }
-
-      for(Scope * current = &origin_scope; current; current = current->parent) {
-        if(current->namespace_scope && target_namespaces.count(current) != 0) {
-          return current;
-        }
-      }
-
-      return &origin_scope;
-    };
-
-    const auto collect_imported_value_for_scope =
-        [&](Scope & origin_scope,
-            Scope & lookup_scope) -> semantic_lookup::ValueLookupFromUsingDirectivesResult
-    {
-      semantic_lookup::ValueLookupFromUsingDirectivesResult result;
-      set<const Scope *> visited;
-      function<void(Scope &)> visit = [&](Scope & current_scope)
-      {
-        if(result.ambiguous || !visited.insert(&current_scope).second) {
-          return;
-        }
-
-        for(size_t i = 0; i < current_scope.using_directives.size(); ++i) {
-          if(!cpp_scope_lookup::using_directive_visible_at_token(
-                 current_scope, i, source_token_start, 0)) {
-            continue;
-          }
-          Scope * imported = current_scope.using_directives[i];
-          if(using_directive_injection_scope(origin_scope, *imported) == &lookup_scope) {
-            const ValueBinding * direct = semantic_lookup::lookup_direct_value(*imported, name);
-            if(direct) {
-              if(!result.binding) {
-                result.binding = direct;
-              } else if(!semantic_lookup::same_value_binding_entity(result.binding, direct)) {
-                result.ambiguous = true;
-                return;
-              }
-            }
-          }
-          visit(*imported);
-          if(result.ambiguous) {
-            return;
-          }
-        }
-      };
-      visit(origin_scope);
-      return result;
-    };
 
     for(size_t scope_index = 0; scope_index < scope_path.size(); ++scope_index) {
       Scope * current = scope_path[scope_index];
@@ -18081,7 +18104,10 @@ private:
         semantic_lookup::ValueLookupFromUsingDirectivesResult imported;
         for(size_t origin_index = 0; origin_index <= scope_index; ++origin_index) {
           semantic_lookup::ValueLookupFromUsingDirectivesResult partial =
-              collect_imported_value_for_scope(*scope_path[origin_index], *current);
+              collect_imported_value_for_scope(*scope_path[origin_index],
+                                               *current,
+                                               name,
+                                               source_token_start);
           if(partial.ambiguous) {
             return nullptr;
           }
