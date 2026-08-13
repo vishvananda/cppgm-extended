@@ -1036,6 +1036,45 @@ Evidence: `/tmp/cppgm-function-symbol-entry-scan.stderr`,
 `/tmp/cppgm-function-symbol-entry-name-index-screen.json`, and
 `/tmp/cppgm-function-symbol-entry-name-index-final.json`.
 
+Ninth retained Phase 7 slice: `FunctionLayout` kept four high-volume machine
+backend indexes in ordered maps even though their consumers only probe by
+name. The storage-offset, storage-type, floating-register, and temporary-
+definition indexes now use reserved hash maps. The integer register map stays
+ordered because register-allocation and frame-layout code traverse it. The
+smaller forwarded-parameter, promoted-slot, alias, and branch-load maps also
+stay ordered after a broader conversion screened worse.
+
+Two independent three-run batches initially disagreed by `0.42%` for the same
+candidate binary. A contemporaneous alternating A/B run therefore compared
+the exact prior-commit compiler with the candidate on the same frozen input.
+The prior compiler used a median `136,352,479,271` instructions and the
+candidate used `135,565,226,107`, a `0.577%` reduction. Median RSS changed from
+`735,928,320 B` to `735,244,288 B`; median footprint changed from
+`555,683,840 B` to `555,634,688 B`. All six objects had the frozen SHA-256.
+
+The post-commit absolute three-run result names `1a96ce861` as its head. The
+frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Absolute three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `135,861,805,665` | `-38,295,965,279` (`-21.99%`) |
+| maximum RSS | `736,321,536 B` | `-24,883,200 B` (`-3.27%`) |
+| peak footprint | `555,786,240 B` | `-12,972,032 B` (`-2.28%`) |
+| elapsed cycles | `107,109,005,429` | `-16.61%` |
+| wall time | `28.11 s` | `-29.76%`, informational under host load |
+
+Evidence: `/tmp/cppgm-layout-lookup-hashes-screen.json`,
+`/tmp/cppgm-layout-lookup-hashes-decision.json`,
+`/tmp/cppgm-layout-lookup-hashes-test-strict.log`,
+`/tmp/cppgm-layout-lookup-hashes-test-report.log`,
+`/tmp/cppgm-layout-lookup-hashes-final.json`, and the alternating A/B records
+`/tmp/cppgm-layout-ab-{base,candidate}-{1,2,3}.time`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1103,6 +1142,7 @@ Fill one row after each retained commit.
 | `4ed53c57e` | index LowIR function-symbol entries by exact name | `138,575,302,610` | `-20.43%` | `742,748,160` | `556,113,920` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-symbol-entry-name-index-final.json` |
 | `05b1eb38d` | compare elaborated named-type keys without stripped-string temporaries | `137,038,283,448` | `-21.31%` | `745,762,816` | `556,085,248` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-named-key-view-final.json` |
 | `1060e05df` | classify elaborated type prefixes by family and reuse temporary input buffers | `136,011,111,282` | `-21.90%` | `735,920,128` | `556,093,440` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-elaborated-prefix-dispatch-rvalue-final.json` |
+| `1a96ce861` | use reserved hash indexes for high-volume machine-layout probes | `135,861,805,665` | `-21.99%` | `736,321,536` | `555,786,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-layout-lookup-hashes-final.json`; paired A/B: `-0.577%` instructions |
 
 ## Rejected work ledger
 
@@ -1122,6 +1162,7 @@ experiment before starting the next candidate.
 | use `make_shared` at all 14 type factory allocation sites | instructions stayed flat at `166,867,247,562`, while RSS rose to `766,730,240 B` and footprint to `572,997,632 B` | weak cache entries retain coallocated control blocks; keep separate allocation | `/tmp/cppgm-type-make-shared-screen.json` |
 | replace text interning with an open-addressed table | instructions regressed to `167,555,357,053` | reject the `0.39%` regression from the retained interval checkpoint | `/tmp/cppgm-open-addressed-text-intern-screen.json` |
 | front the text atom pool with an 8,192-slot direct cache | the pool census measured 2,958,455 lvalue calls, 169,277 rvalue calls, and 786,766 span calls for only 28,538 atoms. Caching all overloads hit 98.4% but screened at `137,102,871,458` instructions, `0.047%` above retained. Caching only spans hit 782,905 calls, 99.5%, but screened at `137,256,264,376`, `0.16%` above retained | hashing the input for the front cache costs as much as libc++'s node-table probe, even when it avoids span-string construction. Restore the original pool and close this family with the earlier open-addressed rejection | `/tmp/cppgm-text-intern-census.stderr`, `/tmp/cppgm-text-intern-front-cache-census.stderr`, `/tmp/cppgm-text-intern-front-cache-screen.json`, `/tmp/cppgm-text-intern-span-cache-census.stderr`, `/tmp/cppgm-text-intern-span-cache-screen.json` |
+| convert every lookup-only `FunctionLayout` map to hash storage | extending the retained four-index candidate to forwarded parameters, promoted slots, alias maps, and elided branch loads screened at `135,770,906,462` instructions, worse than the scoped form's `135,455,438,572` screen | the small maps do not repay hash setup and reservation. Keep only storage offsets, storage types, floating-register assignments, and temporary definitions hashed | `/tmp/cppgm-layout-lookup-hashes-screen.json`, `/tmp/cppgm-layout-all-lookups-screen.json` |
 | add a broad type-id parse cache | census found 10,110 calls, 2,544 exact repeats, but only 1,456 repeated results and 921 dependent cases | the safe hit population is too small for the proposed key and invalidation cost | `/tmp/cppgm-type-id-parse-stats.err` |
 | prune the existing wrapper and function type caches | wrapper cache had 303,441 hits in 341,674 calls; function cache had 65,438 hits in 112,465 calls | both caches are healthy; pruning would discard substantial reuse | `/tmp/cppgm-type-cache-census.stderr` |
 | intern the remaining array and member-pointer factories | the frozen compile constructed 3,277 arrays and 37 member pointers | the uncached factory population cannot repay another interning table; optimize the measured named-key comparison work instead | `/tmp/cppgm-type-factory-census-2.stderr` |
