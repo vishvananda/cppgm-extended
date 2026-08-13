@@ -23,6 +23,21 @@ namespace lir = lowir_internal;
 namespace mir = machine_ir;
 namespace lowir = lowir_model;
 
+struct TempInterval
+{
+  string name;
+  string type;
+  size_t start = 0;
+  size_t end = 0;
+  size_t use_count = 0;
+  bool live_across_call = false;
+  bool used_in_call_setup = false;
+  bool has_def = false;
+  bool preferred_reg_present = false;
+  X64Register preferred_reg = XR_RAX;
+  lir::Instruction::Kind last_use_kind = lir::Instruction::IK_CONST;
+};
+
 struct FunctionLayout
 {
   string function_name;
@@ -44,6 +59,8 @@ struct FunctionLayout
   vector<string> params;
   vector<string> slots;
   vector<string> temps;
+  vector<TempInterval> temp_intervals;
+  vector<TempInterval> forwarded_intervals;
   size_t frame_bytes = 0;
   size_t scratch_bytes = 0;
   bool host_eh_enabled = false;
@@ -593,21 +610,6 @@ bool find_spare_callee_saved_register(const FunctionLayout & layout,
   return false;
 }
 
-struct TempInterval
-{
-  string name;
-  string type;
-  size_t start = 0;
-  size_t end = 0;
-  size_t use_count = 0;
-  bool live_across_call = false;
-  bool used_in_call_setup = false;
-  bool has_def = false;
-  bool preferred_reg_present = false;
-  X64Register preferred_reg = XR_RAX;
-  lir::Instruction::Kind last_use_kind = lir::Instruction::IK_CONST;
-};
-
 vector<X64Register> candidate_temp_registers(const TempInterval & interval,
                                             bool allow_callee_saved)
 {
@@ -669,6 +671,7 @@ map<string, string> collect_aliased_object_return_slots(const lir::Function & fu
                                                         const FunctionLayout & layout);
 map<string, lir::Operand> collect_elided_direct_branch_loads(
     const lir::Function & function,
+    const map<string, TempDefInfo> & def_info,
     const set<string> & direct_branch_temps,
     const map<string, string> & promoted_param_slots,
     const set<string> & thread_local_globals);
@@ -682,6 +685,7 @@ bool instruction_may_emit_tls_addr(const lir::Instruction & inst,
 bool instruction_may_emit_i128_helper_call(const lir::Instruction & inst);
 vector<TempInterval> collect_forwarded_param_intervals(
     const lir::Function & function,
+    const map<string, TempDefInfo> & def_info,
     const map<string, mir::ParamBinding> & forwarded_params,
     const map<string, string> & promoted_param_slots,
     const set<string> & direct_call_arg_index_temps,
@@ -1272,10 +1276,10 @@ vector<BlockValueLiveness> build_named_value_liveness(
 
 vector<TempInterval> collect_temp_intervals(
     const lir::Function & function,
+    const map<string, TempDefInfo> & def_info,
     const set<string> & thread_local_globals = set<string>(),
     const set<string> & direct_call_arg_index_temps = set<string>())
 {
-  const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
   map<string, TempInterval> intervals;
   vector<size_t> call_positions;
   vector<size_t> block_start(function.blocks.size(), 0);
@@ -1415,10 +1419,10 @@ vector<TempInterval> collect_temp_intervals(
   return out;
 }
 
-set<string> collect_dead_call_result_temps(const lir::Function & function)
+set<string> collect_dead_call_result_temps(
+    const map<string, TempDefInfo> & def_info,
+    const vector<TempInterval> & intervals)
 {
-  const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
-  const vector<TempInterval> intervals = collect_temp_intervals(function, set<string>());
   set<string> out;
   for(size_t i = 0; i < intervals.size(); ++i) {
     if(intervals[i].use_count != 0) {
@@ -1435,11 +1439,9 @@ set<string> collect_dead_call_result_temps(const lir::Function & function)
 set<string> collect_direct_call_arg_index_temps(
     const lir::Function & function,
     const map<string, vector<lir::Parameter> > & function_params,
-    const set<string> & thread_local_globals)
+    const map<string, TempDefInfo> & def_info,
+    const vector<TempInterval> & intervals)
 {
-  const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
-  const vector<TempInterval> intervals = collect_temp_intervals(function,
-                                                                thread_local_globals);
   set<string> out;
   for(size_t i = 0; i < intervals.size(); ++i) {
     if(intervals[i].use_count != 1 ||
@@ -1542,12 +1544,10 @@ map<string, TempDefInfo> collect_temp_def_info(const lir::Function & function)
   return out;
 }
 
-set<string> collect_direct_branch_temps(const lir::Function & function,
-                                        const set<string> & thread_local_globals)
+set<string> collect_direct_branch_temps(
+    const map<string, TempDefInfo> & def_info,
+    const vector<TempInterval> & intervals)
 {
-  const vector<TempInterval> intervals = collect_temp_intervals(function,
-                                                                thread_local_globals);
-  const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
   set<string> out;
   for(size_t i = 0; i < intervals.size(); ++i) {
     map<string, TempDefInfo>::const_iterator def = def_info.find(intervals[i].name);
@@ -1573,11 +1573,11 @@ set<string> collect_direct_branch_temps(const lir::Function & function,
 
 map<string, lir::Operand> collect_elided_direct_branch_loads(
     const lir::Function & function,
+    const map<string, TempDefInfo> & def_info,
     const set<string> & direct_branch_temps,
     const map<string, string> & promoted_param_slots,
     const set<string> & thread_local_globals)
 {
-  const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
   map<string, size_t> raw_use_count;
   map<string, size_t> raw_use_position;
   map<string, size_t> direct_branch_use_position;
@@ -1782,6 +1782,8 @@ bool instruction_may_emit_i128_helper_call(const lir::Instruction & inst)
 
 void assign_temp_registers(const lir::Function & function,
                            FunctionLayout & layout,
+                           const map<string, TempDefInfo> & def_info,
+                           const vector<TempInterval> & collected_intervals,
                            bool allow_callee_saved)
 {
   struct ActiveInterval
@@ -1790,17 +1792,17 @@ void assign_temp_registers(const lir::Function & function,
     X64Register reg = XR_R8;
   };
 
-  vector<TempInterval> intervals =
-      collect_temp_intervals(function,
-                             layout.thread_local_globals,
-                             layout.direct_call_arg_index_temps);
-  const vector<TempInterval> forwarded_params =
+  vector<TempInterval> intervals = collected_intervals;
+  layout.forwarded_intervals =
       collect_forwarded_param_intervals(function,
-                                       layout.forwarded_params,
-                                       layout.promoted_param_slots,
-                                       layout.direct_call_arg_index_temps,
-                                       layout.thread_local_globals);
-  intervals.insert(intervals.end(), forwarded_params.begin(), forwarded_params.end());
+                                        def_info,
+                                        layout.forwarded_params,
+                                        layout.promoted_param_slots,
+                                        layout.direct_call_arg_index_temps,
+                                        layout.thread_local_globals);
+  intervals.insert(intervals.end(),
+                   layout.forwarded_intervals.begin(),
+                   layout.forwarded_intervals.end());
   sort(intervals.begin(),
        intervals.end(),
        [](const TempInterval & lhs, const TempInterval & rhs)
@@ -1814,7 +1816,6 @@ void assign_temp_registers(const lir::Function & function,
   for(size_t i = 0; i < intervals.size(); ++i) {
     intervals_by_name[intervals[i].name] = intervals[i];
   }
-  const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
   vector<ActiveInterval> active;
   vector<X64Register> free_regs = candidate_temp_registers(TempInterval{},
                                                            allow_callee_saved);
@@ -1906,8 +1907,8 @@ void assign_temp_registers(const lir::Function & function,
   }
 }
 
-void assign_float_temp_registers(const lir::Function & function,
-                                 FunctionLayout & layout)
+void assign_float_temp_registers(FunctionLayout & layout,
+                                 const vector<TempInterval> & intervals)
 {
   struct ActiveInterval
   {
@@ -1915,10 +1916,6 @@ void assign_float_temp_registers(const lir::Function & function,
     XmmRegister reg = XMM_0;
   };
 
-  vector<TempInterval> intervals =
-      collect_temp_intervals(function,
-                             layout.thread_local_globals,
-                             layout.direct_call_arg_index_temps);
   vector<ActiveInterval> active;
   vector<XmmRegister> free_regs(candidate_xmm_temp_registers().begin(),
                                 candidate_xmm_temp_registers().end());
@@ -2407,6 +2404,7 @@ map<string, string> collect_aliased_object_return_slots(const lir::Function & fu
 
 vector<TempInterval> collect_forwarded_param_intervals(
     const lir::Function & function,
+    const map<string, TempDefInfo> & def_info,
     const map<string, mir::ParamBinding> & forwarded_params,
     const map<string, string> & promoted_param_slots,
     const set<string> & direct_call_arg_index_temps,
@@ -2429,7 +2427,6 @@ vector<TempInterval> collect_forwarded_param_intervals(
     tracked_names.insert(it->first);
   }
 
-  const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
   vector<size_t> block_start(function.blocks.size(), 0);
   vector<size_t> block_end(function.blocks.size(), 0);
   size_t position = 0;
@@ -2583,20 +2580,27 @@ FunctionLayout build_layout(const lir::Function & function,
   layout.scratch_bytes = scratch_bytes_for(function);
   layout.host_eh_enabled = host_eh_enabled;
   layout.thread_local_globals = thread_local_globals;
+  const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
+  layout.temp_intervals = collect_temp_intervals(function,
+                                                 def_info,
+                                                 thread_local_globals);
   layout.promoted_param_slots = collect_promoted_param_slots(function);
-  layout.direct_branch_temps = collect_direct_branch_temps(function,
-                                                           thread_local_globals);
+  layout.direct_branch_temps = collect_direct_branch_temps(def_info,
+                                                           layout.temp_intervals);
   layout.elided_direct_branch_load_sources =
       collect_elided_direct_branch_loads(function,
+                                         def_info,
                                          layout.direct_branch_temps,
                                          layout.promoted_param_slots,
                                          thread_local_globals);
   layout.aliased_param_slots = collect_aliased_object_param_slots(function);
-  layout.dead_call_result_temps = collect_dead_call_result_temps(function);
+  layout.dead_call_result_temps = collect_dead_call_result_temps(def_info,
+                                                                 layout.temp_intervals);
   layout.direct_call_arg_index_temps =
       collect_direct_call_arg_index_temps(function,
                                          function_params,
-                                         thread_local_globals);
+                                         def_info,
+                                         layout.temp_intervals);
   layout.address_taken_temps = collect_address_taken_temps(function, function_params);
   const vector<mir::ParamBinding> param_bindings = collect_param_bindings(function);
   layout.forwarded_params = collect_forwarded_register_params(function, param_bindings);
@@ -2658,8 +2662,17 @@ FunctionLayout build_layout(const lir::Function & function,
   }
   layout.aliased_object_return_slots =
       collect_aliased_object_return_slots(function, layout);
-  assign_temp_registers(function, layout, !host_eh_enabled);
-  assign_float_temp_registers(function, layout);
+  const vector<TempInterval> register_intervals =
+      collect_temp_intervals(function,
+                             def_info,
+                             thread_local_globals,
+                             layout.direct_call_arg_index_temps);
+  assign_temp_registers(function,
+                        layout,
+                        def_info,
+                        register_intervals,
+                        !host_eh_enabled);
+  assign_float_temp_registers(layout, register_intervals);
   for(size_t i = 0; i < function.params.size(); ++i) {
     const string & name = function.params[i].name;
     if(layout.forwarded_params.count(name) != 0 &&
@@ -2740,12 +2753,7 @@ vector<mir::DebugVariable> collect_debug_variables(const lir::Function & functio
 
   vector<mir::DebugVariable> out;
   map<string, size_t> variable_index;
-  const vector<TempInterval> forwarded_intervals =
-      collect_forwarded_param_intervals(function,
-                                       layout.forwarded_params,
-                                       layout.promoted_param_slots,
-                                       layout.direct_call_arg_index_temps,
-                                       layout.thread_local_globals);
+  const vector<TempInterval> & forwarded_intervals = layout.forwarded_intervals;
   for(size_t i = 0; i < forwarded_intervals.size(); ++i) {
     string source_name;
     if(!plain_storage_debug_name(forwarded_intervals[i].name, source_name) ||
@@ -2783,8 +2791,7 @@ vector<mir::DebugVariable> collect_debug_variables(const lir::Function & functio
     out[found->second].ranges.push_back(range);
   }
 
-  const vector<TempInterval> intervals = collect_temp_intervals(function,
-                                                                layout.thread_local_globals);
+  const vector<TempInterval> & intervals = layout.temp_intervals;
   for(size_t i = 0; i < intervals.size(); ++i) {
     string source_name;
     if(!lir::lowir_debug_value_source_name(intervals[i].name, source_name) ||

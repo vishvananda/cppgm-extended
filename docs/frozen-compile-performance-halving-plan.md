@@ -138,7 +138,9 @@ inclusive sample leaders include:
 
 The profile points to two large local surfaces: output readiness work and
 repeated construction during dependent type and alias resolution. Later phases
-must collect a full-run sample before ranking LowIR work.
+must collect a full-run sample before ranking LowIR work. That full-run sample
+was collected after the first retained cache change and is recorded under
+Phase 7.
 
 ## Work already present in this compiler
 
@@ -497,6 +499,15 @@ gates.
 Collect a full-run sample and phase timers after semantic work drops. Rank the
 LowIR pipeline from that evidence.
 
+A 60-second full-run sample at `01f875b8f`, stored at
+`/tmp/cppgm-frozen-full-sample-01f875b8f.txt`, reached the native backend. The
+largest compiler-owned leaf was `collect_temp_intervals` with 316 samples.
+String hashing had 267 leaf samples and string-set insertion had 246, while
+malloc and free routines occupied the first two leaf positions. The call graph
+also placed `collect_temp_intervals` on a broad native-backend path. This was
+enough local evidence to begin with interval analysis instead of assuming the
+LowIR inliner or value environment was the first long pole.
+
 Likely candidates:
 
 1. Assign dense numeric IDs to temps and slots at function entry. Use vectors
@@ -516,6 +527,32 @@ identical.
 Target: close the remaining distance to `87,078,885,472` instructions. Split
 dense IDs, inliner facts, and CFG state into separate commits unless one change
 needs the representation from another.
+
+First retained Phase 7 slice: `build_layout` used to compute ordinary temp
+intervals six times per function and forwarded-parameter intervals twice.
+These calls repeated definition indexing, block liveness, tree lookup, string
+comparison, and interval sorting. The backend now computes one base interval
+set, one allocation-specific set after direct-call index discovery, and one
+forwarded-parameter set. Consumers reuse the matching immutable result. The
+change leaves temp names, interval ordering, register allocation decisions,
+debug ranges, and emitted bytes unchanged.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `166,898,155,701` | `-7,259,615,243` (`-4.17%`) |
+| maximum RSS | `745,816,064 B` | `-15,388,672 B` (`-2.02%`) |
+| peak footprint | `557,416,448 B` | `-11,341,824 B` (`-1.99%`) |
+| elapsed cycles | `126,815,470,440` | `-1.27%` |
+| wall time | `41.18 s` | `+2.90%`, informational under host load |
+
+Evidence: `/tmp/cppgm-interval-reuse-final.json`.
 
 ### Phase 8: final halving proof
 
@@ -566,7 +603,8 @@ Fill one row after each retained commit.
 | Commit | Mechanism | Instructions | Change from start | Max RSS | Footprint | Frozen bytes | Strict | Full report | Evidence |
 | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- |
 | `42d55c49c` | correctness checkpoint | `174,157,770,944` | `0.00%` | `761,204,736` | `568,758,272` | SHA-256 `4fc1303a...5c4` | pass | pass with isolated PA30 confirmation | `/tmp/cppgm-perf-halving-42d55c49c.json` |
-| `(this commit)` | remove net-negative dependent-resolution cache and tree-backed recursion guard | `173,508,264,894` | `-0.37%` | `743,952,384` | `557,821,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-resolution-negative-cache-removal-final.json` |
+| `01f875b8f` | remove net-negative dependent-resolution cache and tree-backed recursion guard | `173,508,264,894` | `-0.37%` | `743,952,384` | `557,821,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-resolution-negative-cache-removal-final.json` |
+| `(this commit)` | reuse native temp and forwarded-parameter interval analyses | `166,898,155,701` | `-4.17%` | `745,816,064` | `557,416,448` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-interval-reuse-final.json` |
 
 ## Rejected work ledger
 
