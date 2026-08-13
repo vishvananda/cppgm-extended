@@ -481,6 +481,8 @@ struct Scope
     class_info = other.class_info;
     function = other.function;
     named_types = other.named_types;
+    cached_function_local_named_type_count = static_cast<std::size_t>(-1);
+    cached_function_local_named_type_names.reset();
     named_type_access = other.named_type_access;
     named_type_packs = other.named_type_packs;
     named_value_packs = other.named_value_packs;
@@ -553,6 +555,15 @@ struct Scope
   // Point-lookup keyed by type name; iteration order is not relied upon.
   typedef std::unordered_map<std::string, cpp_decl::TypePtr> NamedTypeMap;
   NamedTypeMap named_types;
+  // Service-layer instantiation overlays need only function-local class and
+  // enum bindings. Cache their rare names after the first scan and rebuild
+  // when the public named-type table changes size. Function-local lexical
+  // bindings are monotonic; lookup by cached name also keeps the derived index
+  // safe across unordered-map rehashes.
+  mutable std::size_t cached_function_local_named_type_count =
+      static_cast<std::size_t>(-1);
+  mutable std::unique_ptr<std::vector<std::string> >
+      cached_function_local_named_type_names;
   std::map<std::string, MemberAccess> named_type_access;
   LazyMap<std::string, std::vector<cpp_decl::TypePtr> > named_type_packs;
   LazyMap<std::string, std::vector<ValueBinding> > named_value_packs;

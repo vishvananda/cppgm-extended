@@ -270,6 +270,8 @@ Scope & Scope::operator=(Scope && other)
   class_info = other.class_info;
   function = other.function;
   named_types = std::move(other.named_types);
+  cached_function_local_named_type_count = static_cast<std::size_t>(-1);
+  cached_function_local_named_type_names.reset();
   named_type_access = std::move(other.named_type_access);
   named_type_packs = std::move(other.named_type_packs);
   named_value_packs = std::move(other.named_value_packs);

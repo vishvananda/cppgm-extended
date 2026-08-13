@@ -9315,23 +9315,41 @@ void overlay_instantiation_local_named_types(
   template_api::TemplateTypeSystem & type_system = service_type_system(services);
   const Scope * scope = &use_scope;
   while(scope && scope != declaring_scope) {
-    for(auto it = scope->named_types.begin();
-        it != scope->named_types.end();
-        ++it) {
-      if(excluded_names && excluded_names->count(it->first) != 0) {
-        continue;
+    const std::size_t named_type_count = scope->named_types.size();
+    if(scope->cached_function_local_named_type_count != named_type_count) {
+      std::unique_ptr<std::vector<std::string> > local_names;
+      for(auto it = scope->named_types.begin();
+          it != scope->named_types.end();
+          ++it) {
+        if(!it->second ||
+           it->second->named_key.empty() ||
+           it->second->named_key.find("__local_") == std::string::npos) {
+          continue;
+        }
+        if(!local_names) {
+          local_names.reset(new std::vector<std::string>());
+        }
+        local_names->push_back(it->first);
       }
-      if(!it->second) {
-        continue;
-      }
-      const bool is_local_named_type =
-          !it->second->named_key.empty() &&
-          it->second->named_key.find("__local_") != std::string::npos;
-      if(!is_local_named_type) {
-        continue;
-      }
-      if(target.named_types.count(it->first) == 0) {
-        template_scope::bind_named_type(target, it->first, it->second);
+      scope->cached_function_local_named_type_names = std::move(local_names);
+      scope->cached_function_local_named_type_count = named_type_count;
+    }
+    if(scope->cached_function_local_named_type_names) {
+      const std::vector<std::string> & local_names =
+          *scope->cached_function_local_named_type_names;
+      for(std::size_t i = 0; i < local_names.size(); ++i) {
+        if(excluded_names && excluded_names->count(local_names[i]) != 0) {
+          continue;
+        }
+        Scope::NamedTypeMap::const_iterator found =
+            scope->named_types.find(local_names[i]);
+        if(found == scope->named_types.end() || !found->second ||
+           found->second->named_key.find("__local_") == std::string::npos) {
+          continue;
+        }
+        if(target.named_types.count(found->first) == 0) {
+          template_scope::bind_named_type(target, found->first, found->second);
+        }
       }
     }
     scope = scope->parent;
