@@ -228,7 +228,6 @@ using template_api::current_template_witness_entry_context;
 using template_api::make_template_closure_entry_context;
 using template_api::normalize_template_witness_source_location;
 using template_api::preferred_fragment_use_location;
-using template_api::template_witness_lifecycle_events_by_origin;
 using template_api::template_witness_source_type_lookup_active;
 struct ClassUseEmitRequest : semantic_source_use::SemanticSourceUse
 {

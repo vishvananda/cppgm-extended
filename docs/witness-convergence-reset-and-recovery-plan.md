@@ -7457,6 +7457,169 @@ Production code adds 162 and removes 209 lines, a net deletion of 47. Phase 6
 remains open for the final store-by-store acceptance synthesis; Phase 7 and
 inception remain forbidden.
 
+## Store-ownership and lifecycle-analysis checkpoint, 2026-08-12
+
+Commit `318738b3eea7b4eff36d008795298d73151fddbb` is the parent. This
+Phase 6 checkpoint completes the store-by-store ownership synthesis and
+removes the last zero-obligation destructive branch found by that audit. The
+cumulative production-source size criterion keeps Phase 6 open.
+
+Before this checkpoint, closure rendering performed a presence scan, filtered
+lifecycle events through a public one-use adapter, and used separate
+traversals to build the function index, explicit-instantiation owners,
+explicit-class-instantiation owners, and non-materialized-function set.
+`ClosureLifecycleAnalysis` filters and builds all four projections in one
+session scan. The checkpoint deletes the adapter from `template_witness.h`
+and the public `witness_api.h` surface. Across the final provenance corpus,
+1,104 sessions contain 6,295 closure events and 426 sessions contain none; the
+other three lifecycle publications have source origin. The later public-event
+selection loop remains because it applies output policy rather than
+rebuilding the metadata projections.
+
+Compact lifecycle output still coalesces identical `(kind, entity)` rows at
+the public presentation boundary. That is a named nonzero obligation: the
+patched-Clang corpus contains 150 compact closure collisions in 64 files, all
+with distinct raw provenance. Debug output retains every event. A source
+comment and the new audit protect that distinction.
+
+`scripts/audit_witness_store_ownership.py` fixes the remaining session-store
+inventory and owner files as an executable contract. Its measured ownership
+synthesis is:
+
+| Session store | Retained semantic obligation |
+| --- | --- |
+| `primary_source_file` | Session identity, primary-file admission, and provenance for all 1,530 sessions. |
+| `lifecycle_events` | 6,298 append-only lifecycle publications; 6,295 closure and three source-origin events. |
+| `lifecycle_transition_states` | Monotonic lifecycle claim state; no erase or clear exists. |
+| `public_source_definition_dependencies` | 38 propagation inserts, eight direct inserts, and 32 reads in the retained probe; moving the fact to `FunctionBinding` caused 55 parity failures. |
+| `source_use_table` | One append-only ledger containing 4,289 public rows: alias 835, class 2,631, function 791, and variable 32. |
+| `variable_source_use_results` | 41 retention attempts across 27 owners produce 32 public rows, including five immediate rows; initializer replay and later-location preference require the terminal result boundary. |
+| `inline_namespace_names` | Structural namespace identity for closure rendering; 15 of 1,104 closure sessions contain one inline namespace and 1,089 contain none. |
+| `template_body_ranges` and `template_header_contexts` | The structural index records 12,401 contexts, 12,397 unique, including 169 that semantic declaration collection never sees; declaration collection has 999 additional or replayed observations. |
+| `class_source_occurrences` | The two-byte source-location record carries dependency and fixed-member identity; 35 fixed writes feed 32 reads, four of which cannot be reconstructed from the retained semantic carriers. |
+| `retained_enum_value_bindings` | 2,707 retentions and 771 reads preserve enumerator and qualification identity absent from the transformed argument and declaration scope. |
+
+The audit also makes every destructive boundary explicit. The source-use
+ledger is append-only. Lifecycle transition state is monotonic. One terminal
+alias idempotence clear, two terminal class queue/index clears, and one
+terminal variable-result clear release nonzero session state after its final
+consumer. The renderer retains one qualified-alias erase for the two distinct
+semantic ambiguities documented in the parent checkpoint, plus the compact
+lifecycle presentation coalescing above.
+
+The alias source-occurrence path used to erase a new completion key
+when publication returned false. Full-corpus evidence records 835 alias
+candidates, 835 completions, and 835 public rows, so that rollback has no
+action. It is deleted, and the audit rejects its restoration. The terminal
+alias clear remains because it releases the nonempty idempotence set between
+sessions.
+
+The final Homebrew-Clang validation produced these results:
+
+- all 1,530 direct-reference inputs are byte-exact against the frozen parent
+  for witness output, LowIR, diagnostics, stdout, and exit status;
+- final ordinary strict validation retains the three documented
+  cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1, PA23 385/1,
+  and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no missing actual file or
+  warning;
+- all 1,530 final provenance sessions exist. Schema 6 contains 10,587
+  records: 4,289 source publications and 6,298 lifecycle publications, with
+  no unknown producer and no unexercised site;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. It ran on
+  the lifecycle-consolidation candidate before deletion of the proven
+  zero-action, witness-only alias rollback. The exact final
+  1,530-input parity run covers that deletion. PA9 appears once in the
+  integrated report and was not run separately;
+- the complete helper suite passes 261 tests with one intentional skip; the
+  final ownership audit and dynamic class-materialization audit have no
+  failure; both static materialization boundaries and the duplicate-AST audit
+  have no finding; all 23 forbidden text-reparse categories remain zero; and
+  both compiler builds are warning-free;
+- template and semantic boundary reports are exact against the parent.
+
+The final ordinary parent-parity directory is
+`/tmp/cppgm-phase6-store-audit-final-parent-parity-20260812.9wvc5m5m`; its
+empty mismatch list has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+The final provenance parity and trace directories are
+`/tmp/cppgm-phase6-store-audit-final-provenance-parent-parity-20260812.qb79erp2`
+and
+`/tmp/cppgm-phase6-store-audit-final-provenance-trace-20260812.1k15sfl8`.
+The provenance analysis and convergence reports are
+`/tmp/cppgm-phase6-store-audit-final-provenance-analysis-20260812.json` and
+`/tmp/cppgm-phase6-store-audit-final-provenance-convergence-20260812.json`,
+with SHA-256 values
+`7d173054ec723722eec9665e06112b2b6a63451d629d53254eb1332fc2389f52`
+and
+`6c154f577d2c631d3eb0340976b43e8745f538dda4909f4c7371b3fc60f8b6c5`.
+
+The ordinary strict, integrated, and helper reports are
+`/tmp/cppgm-phase6-store-audit-final-ordinary-strict-20260812.log`,
+`/tmp/cppgm-phase6-store-audit-integrated-20260812.log`, and
+`/tmp/cppgm-phase6-store-audit-helper-tests-20260812.log`; their SHA-256
+values are
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`,
+`dd9c6eb7c99e6013d8faf2ce3ad7166cd5c5ce01e85e31bd0851e6a0504622e2`,
+and
+`ccfb6d3d11dd505f6a446f204241249b98e6fdf08cc2c2a080fbe06f1fc31423`.
+
+The zero-finding ownership, dynamic class-materialization, static
+materialization, text-reparse, duplicate-AST, template-boundary, and
+semantic-boundary reports have SHA-256 values
+`140b898f29adbba7fb5b61e3e2d3515afb8224ad1bdb4c61afa491289617695f`,
+`b9d3ed86904f4b454aa1a1e213a774531eaf77355f7a026fb49d9f21ac666162`,
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`ba5355fab0e7bd3a74b6c085371e204afcdc7f540b7d55294ab8a23928d02332`,
+`8bad5ecf5c64d41bdf73767b60edbf8705f29a8b6674ac7324ec068fc2c87725`,
+and
+`3359f4ce6338003024b14eb36059e0a312b62d4a2fe1d38838ca543c810430e8`.
+The dynamic report retains five accepted source occurrences, 55 rejected
+rows at 53 locations, 2,631 class publications, and zero failure.
+
+All tracked semantic structure sizes remain byte-identical to the parent.
+`Type`, `TemplateArgument`, `ClassInfo`, and `TemplateWitnessSession` remain
+280, 136, 1,104, and 312 bytes. The report is
+`/tmp/cppgm-phase6-store-audit-structure-sizes-20260812.txt`, SHA-256
+`1f872ff18916238323328ce75039b29c15d01f4bd37303c6b4e604112e09b00d`.
+
+The ordinary binary shrinks by 1,472 bytes to 17,040,016 bytes and contains no
+provenance symbols. `__text`, `__gcc_except_tab`, and `__unwind_info` shrink by
+912, 248, and 72 bytes; `__cstring` grows by 16 bytes, and all data sections
+are unchanged. The section report is
+`/tmp/cppgm-phase6-store-audit-binary-sections-20260812.txt`, SHA-256
+`39e9d58f59d5cb21c05589e76db89bc7c29fbba944748a4c7ad6985052f11b03`.
+The frozen binary is
+`/tmp/cppgm-phase6-store-audit-final-candidate-ordinary-20260812`, SHA-256
+`4b04f2eabff2a3f7d45f7de6efd97a29c25d73cda281309836cb602894881ec0`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.95% | +0.24% | -3.98% | `/tmp/cppgm-phase6-store-audit-final-perf-fixed-20260812.json` |
+| Immediate parent | -0.11% | +0.22% | +0.14% | `/tmp/cppgm-phase6-store-audit-final-perf-parent-20260812.json` |
+
+The candidate medians are 174,354,230,769 instructions, 758,906,880 bytes
+maximum RSS, and 569,401,344 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-store-audit-final-raw-candidate-20260812.json`, SHA-256
+`9cc566960f824c8b61abcb8d35a6a2d2508e0436fa36a0d41251872ea149dc97`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`579da2d470631cbb0b8127bf60590c2e1338717a7fecc565d1b5409a3ee644d5`
+and
+`3548d41ff33a8b79dc1452a9cd73a820015f2e861d52bf7a66bf9a045ff90394`.
+The candidate metadata names commit `318738b3e` because the measurements cover
+this uncommitted checkpoint.
+
+Production code adds 67 and removes 105 lines, a net deletion of 38. Since
+the Phase 6 entry commit `0014913a13cd1ba59abc24136be1026bf4631c5c`
+the cumulative production change is a net deletion of 4,666 lines. The
+current tree remains 3,732 lines larger than the Phase 0 recovery tree
+(`417,539` versus `413,807` total `dev/src` lines). The store-ownership
+acceptance question is closed, but Phase 6 remains open on that explicit
+cumulative source-size criterion. Phase 7 and inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

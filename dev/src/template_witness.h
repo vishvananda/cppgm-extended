@@ -1844,20 +1844,6 @@ inline TemplateWitnessEntryContext current_template_witness_entry_context()
   return template_witness_detail::current_witness_entry_contexts_storage().back();
 }
 
-inline std::vector<const TemplateLifecycleEvent *>
-template_witness_lifecycle_events_by_origin(
-    const TemplateWitnessSession & session,
-    TemplateWitnessOrigin origin)
-{
-  std::vector<const TemplateLifecycleEvent *> out;
-  for(std::size_t i = 0; i < session.lifecycle_events.size(); ++i) {
-    if(session.lifecycle_events[i].entry_context.origin == origin) {
-      out.push_back(&session.lifecycle_events[i]);
-    }
-  }
-  return out;
-}
-
 inline TemplateLifecycleCause template_lifecycle_cause_from_closure_reason(
     TemplateClosureReason reason)
 {

@@ -13991,9 +13991,6 @@ private:
         resolved.explicit_source_traversal = true;
         const bool source_occurrence_completed =
             observe_resolved_alias_template_id(resolved);
-        if(!source_occurrence_completed) {
-          completed_alias_source_occurrences_.erase(completion_key);
-        }
         if(source_occurrence_completed &&
            resolved.explicit_source_traversal &&
            complete_nested_source_occurrences) {

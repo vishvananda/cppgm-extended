@@ -779,70 +779,46 @@ struct ClosureLifecycleEventIndex
   std::set<std::string> materialized_function_instantiation_entities;
 };
 
-ClosureLifecycleEventIndex build_closure_lifecycle_event_index(
-    const std::vector<const template_api::TemplateLifecycleEvent *> & lifecycle_events)
+struct ClosureLifecycleAnalysis
+{
+  std::vector<const template_api::TemplateLifecycleEvent *> events;
+  ClosureLifecycleEventIndex event_index;
+  std::set<std::string> explicit_instantiation_entities;
+  std::set<std::string> explicit_class_instantiation_entities;
+  std::set<std::string> non_materialized_function_entities;
+};
+
+ClosureLifecycleAnalysis analyze_closure_lifecycle_events(
+    const template_api::TemplateWitnessSession & session)
 {
   using template_api::TemplateLifecycleEventKind;
-  ClosureLifecycleEventIndex out;
-  for(std::size_t i = 0; i < lifecycle_events.size(); ++i) {
-    const template_api::TemplateLifecycleEvent & event = *lifecycle_events[i];
-    if(event.kind != TemplateLifecycleEventKind::FunctionInstantiation) {
-      continue;
-    }
-    out.function_instantiation_normalized_entities.insert(event.normalized_entity);
-    out.function_instantiation_entities.insert(event.entity);
-    if(event.detail.find("created-new=yes") != std::string::npos) {
-      out.newly_created_function_instantiation_entities.insert(event.entity);
-    }
-    if(event.detail.find("definition-materialized=yes") != std::string::npos) {
-      out.materialized_function_instantiation_entities.insert(event.entity);
-    }
-  }
-  return out;
-}
-
-std::set<std::string> explicit_instantiation_owner_entities(
-    const std::vector<const template_api::TemplateLifecycleEvent *> & lifecycle_events)
-{
-  std::set<std::string> out;
-  for(std::size_t i = 0; i < lifecycle_events.size(); ++i) {
-    const template_api::TemplateLifecycleEvent & event = *lifecycle_events[i];
-    if(event.cause != template_api::TemplateLifecycleCause::ExplicitInstantiationDeclaration &&
-       event.cause != template_api::TemplateLifecycleCause::ExplicitInstantiationDefinition) {
-      continue;
-    }
-    record_explicit_instantiation_owner_entity(out, event);
-  }
-  return out;
-}
-
-std::set<std::string> explicit_class_instantiation_owner_entities(
-    const std::vector<const template_api::TemplateLifecycleEvent *> & lifecycle_events)
-{
-  std::set<std::string> out;
-  for(std::size_t i = 0; i < lifecycle_events.size(); ++i) {
-    const template_api::TemplateLifecycleEvent & event = *lifecycle_events[i];
-    if(event.kind != template_api::TemplateLifecycleEventKind::ClassFinalization) {
-      continue;
-    }
-    if(event.cause != template_api::TemplateLifecycleCause::ExplicitInstantiationDeclaration &&
-       event.cause != template_api::TemplateLifecycleCause::ExplicitInstantiationDefinition) {
-      continue;
-    }
-    record_explicit_instantiation_owner_entity(out, event);
-  }
-  return out;
-}
-
-std::set<std::string> non_materialized_function_closure_entities(
-    const std::vector<const template_api::TemplateLifecycleEvent *> & lifecycle_events)
-{
-  using template_api::TemplateLifecycleEventKind;
+  ClosureLifecycleAnalysis out;
   std::set<std::string> saw_non_materialized;
   std::set<std::string> saw_materialized;
   std::set<std::string> saw_direct_definition_requirement;
-  for(std::size_t i = 0; i < lifecycle_events.size(); ++i) {
-    const template_api::TemplateLifecycleEvent & event = *lifecycle_events[i];
+  for(std::size_t i = 0; i < session.lifecycle_events.size(); ++i) {
+    const template_api::TemplateLifecycleEvent & event =
+        session.lifecycle_events[i];
+    if(event.entry_context.origin !=
+       template_api::TemplateWitnessOrigin::Closure) {
+      continue;
+    }
+    out.events.push_back(&event);
+    const bool explicit_instantiation =
+        event.cause == template_api::TemplateLifecycleCause::
+                           ExplicitInstantiationDeclaration ||
+        event.cause == template_api::TemplateLifecycleCause::
+                           ExplicitInstantiationDefinition;
+    if(explicit_instantiation) {
+      record_explicit_instantiation_owner_entity(
+          out.explicit_instantiation_entities,
+          event);
+      if(event.kind == TemplateLifecycleEventKind::ClassFinalization) {
+        record_explicit_instantiation_owner_entity(
+            out.explicit_class_instantiation_entities,
+            event);
+      }
+    }
     if(event.kind == TemplateLifecycleEventKind::RequireDefinition &&
        event.directly_owned) {
       saw_direct_definition_requirement.insert(event.normalized_entity);
@@ -852,18 +828,26 @@ std::set<std::string> non_materialized_function_closure_entities(
     }
     if(event.detail.find("definition-materialized=yes") != std::string::npos) {
       saw_materialized.insert(event.normalized_entity);
+      out.event_index.materialized_function_instantiation_entities.insert(
+          event.entity);
     } else if(event.detail.find("definition-materialized=no") != std::string::npos) {
       saw_non_materialized.insert(event.normalized_entity);
     }
+    out.event_index.function_instantiation_normalized_entities.insert(
+        event.normalized_entity);
+    out.event_index.function_instantiation_entities.insert(event.entity);
+    if(event.detail.find("created-new=yes") != std::string::npos) {
+      out.event_index.newly_created_function_instantiation_entities.insert(
+          event.entity);
+    }
   }
 
-  std::set<std::string> out;
   for(std::set<std::string>::const_iterator it = saw_non_materialized.begin();
       it != saw_non_materialized.end();
       ++it) {
     if(saw_materialized.count(*it) == 0 &&
        saw_direct_definition_requirement.count(*it) == 0) {
-      out.insert(*it);
+      out.non_materialized_function_entities.insert(*it);
     }
   }
   return out;
@@ -1210,20 +1194,9 @@ const char * template_closure_reason_text(template_api::TemplateClosureReason re
   return "unknown";
 }
 
-bool session_has_closure_lifecycle_events(
-    const template_api::TemplateWitnessSession & session)
-{
-  for(std::size_t i = 0; i < session.lifecycle_events.size(); ++i) {
-    if(session.lifecycle_events[i].entry_context.origin ==
-       template_api::TemplateWitnessOrigin::Closure) {
-      return true;
-    }
-  }
-  return false;
-}
-
 std::string render_template_closure_events(
     const template_api::TemplateWitnessSession & session,
+    const ClosureLifecycleAnalysis & lifecycle_analysis,
     const template_api::RenderedTemplateSourceWitness & source_analysis,
     const std::string & source_path,
     bool debug)
@@ -1243,20 +1216,18 @@ std::string render_template_closure_events(
       source_analysis.argument_value_entities;
   const std::set<std::string> & source_argument_value_decl_locations =
       source_analysis.argument_value_decl_locations;
-  const std::vector<const template_api::TemplateLifecycleEvent *> lifecycle_events =
-      template_api::template_witness_lifecycle_events_by_origin(
-          session,
-          template_api::TemplateWitnessOrigin::Closure);
-  const ClosureLifecycleEventIndex lifecycle_index =
-      build_closure_lifecycle_event_index(lifecycle_events);
-  const std::set<std::string> explicit_instantiation_entities =
-      explicit_instantiation_owner_entities(lifecycle_events);
-  const std::set<std::string> explicit_class_instantiation_entities =
-      explicit_class_instantiation_owner_entities(lifecycle_events);
+  const std::vector<const template_api::TemplateLifecycleEvent *> &
+      lifecycle_events = lifecycle_analysis.events;
+  const ClosureLifecycleEventIndex & lifecycle_index =
+      lifecycle_analysis.event_index;
+  const std::set<std::string> & explicit_instantiation_entities =
+      lifecycle_analysis.explicit_instantiation_entities;
+  const std::set<std::string> & explicit_class_instantiation_entities =
+      lifecycle_analysis.explicit_class_instantiation_entities;
   std::vector<std::reference_wrapper<const template_api::TemplateLifecycleEvent> >
       closure_events;
-  const std::set<std::string> non_materialized_function_entities =
-      non_materialized_function_closure_entities(lifecycle_events);
+  const std::set<std::string> & non_materialized_function_entities =
+      lifecycle_analysis.non_materialized_function_entities;
   for(std::size_t i = 0; i < lifecycle_events.size(); ++i) {
     const template_api::TemplateLifecycleEvent & event = *lifecycle_events[i];
     if(debug) {
@@ -1330,6 +1301,9 @@ std::string render_template_closure_events(
                   right.normalized_entity);
         });
   }
+  // Compact closure rows intentionally omit provenance.  Coalesce the
+  // resulting nonzero `(kind, entity)` collisions only at this public-text
+  // projection; debug output retains every lifecycle event.
   std::set<std::pair<std::string, std::string> > public_seen;
 	  for(std::size_t i = 0; i < closure_events.size(); ++i) {
 	    const template_api::TemplateLifecycleEvent & event = closure_events[i].get();
@@ -1435,7 +1409,9 @@ std::string dump_template_witness_text(const TemplateWitnessSession & session,
 std::string dump_witness_text(const TemplateWitnessSession & session,
                               const std::string & source_path)
 {
-  if(!session_has_closure_lifecycle_events(session)) {
+  const ClosureLifecycleAnalysis lifecycle_analysis =
+      analyze_closure_lifecycle_events(session);
+  if(lifecycle_analysis.events.empty()) {
     return sort_rendered_source_blocks(
         normalize_template_log_text_paths(
             dump_template_witness_text(session, source_path)));
@@ -1448,6 +1424,7 @@ std::string dump_witness_text(const TemplateWitnessSession & session,
               source_analysis.text));
   return inject_template_closure_events(source_text,
                                         render_template_closure_events(session,
+                                                                       lifecycle_analysis,
                                                                        source_analysis,
                                                                        source_path,
                                                                        false));
@@ -1456,7 +1433,9 @@ std::string dump_witness_text(const TemplateWitnessSession & session,
 std::string dump_witness_debug_text(const TemplateWitnessSession & session,
                                     const std::string & source_path)
 {
-  if(!session_has_closure_lifecycle_events(session)) {
+  const ClosureLifecycleAnalysis lifecycle_analysis =
+      analyze_closure_lifecycle_events(session);
+  if(lifecycle_analysis.events.empty()) {
     return sort_rendered_source_blocks(
         normalize_template_log_text_paths(
             render_template_source_witness_debug_text(session, source_path)));
@@ -1469,6 +1448,7 @@ std::string dump_witness_debug_text(const TemplateWitnessSession & session,
               source_analysis.text));
   return inject_template_closure_events(source_text,
                                         render_template_closure_events(session,
+                                                                       lifecycle_analysis,
                                                                        source_analysis,
                                                                        source_path,
                                                                        true));
