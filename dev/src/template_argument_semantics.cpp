@@ -34983,6 +34983,17 @@ NonTypeArgumentStatus resolve_libstdcxx_tuple_constraints_owner_from_bindings(
     return NT_ARG_PARSE_FAILED;
   }
 
+  // This shortcut models libstdc++'s nested tuple constraint helper.  A user
+  // template can legally use the same reserved-looking member names, and its
+  // constexpr function body remains authoritative.
+  ClassTemplateDecl * owner_decl =
+      lookup_class_template_impl(services,
+                                 scope.require(),
+                                 owner_template_id.name);
+  if(!owner_decl || !owner_decl->comes_from_standard_include_path) {
+    return NT_ARG_PARSE_FAILED;
+  }
+
   long long condition_integral = 0;
   NonTypeArgumentStatus condition_status = NT_ARG_PARSE_FAILED;
   if(owner_template_id.argument_syntaxes.size() == 1) {

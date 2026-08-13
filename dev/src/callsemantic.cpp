@@ -32981,6 +32981,13 @@ private:
       note_performance_counter(&semantic_metrics::AnalyzerCounters::complete_class_type_no_class);
       return nullptr;
     }
+    if(!info->complete &&
+       witness::enabled(template_witness_context()) &&
+       semantic_class_model::nested_reference_member_collection_active()) {
+      // Nested witness traversal is observational. Let the later
+      // language-level demand perform authoritative class completion.
+      return nullptr;
+    }
     if(info->complete &&
        info->concrete_layout_deferred &&
        info->type &&

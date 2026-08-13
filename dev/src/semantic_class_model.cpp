@@ -54,6 +54,7 @@ void record_source_template_value_dependencies_for_witness(
 namespace {
 
 const int kMaxReferenceMemberCollectionDepth = 512;
+thread_local int g_reference_member_collection_depth = 0;
 
 bool reference_collection_can_defer_alias_failure(const std::string & message);
 
@@ -3764,8 +3765,18 @@ bool type_id_syntax_mentions_current_class_member_type(const ClassInfo & info,
 bool concrete_class_alias_requires_immediate_resolution(
     const ClassInfo & info)
 {
+  // [temp.inst] instantiates member declarations when a class-template
+  // specialization is instantiated.  A typedef or alias-declaration is not
+  // one of the member kinds whose definition may remain deferred.  Standard
+  // library declarations are a trusted hosted input and retain demand-driven
+  // alias resolution; eagerly replaying every unused implementation typedef
+  // would instantiate a large, otherwise unreachable vendor type graph.
+  // Untracked reference materializations are likewise semantic lookup shells,
+  // not language-level instantiations.
   return !info.source_template ||
-         info.is_explicit_specialization;
+         info.is_explicit_specialization ||
+         (info.template_instantiation_tracked &&
+          !info.source_template->comes_from_standard_include_path);
 }
 
 bool template_argument_syntax_mentions_current_class_member_type(
@@ -12012,10 +12023,14 @@ bool materialize_class_reference_named_function_definition(
   return false;
 }
 
+bool nested_reference_member_collection_active()
+{
+  return g_reference_member_collection_depth > 1;
+}
+
 void ensure_class_reference_members(SemanticContext & ctx,
                                     ClassInfo & info)
 {
-  static thread_local int reference_member_collection_depth = 0;
   DIAG_CONTEXT("ensure_class_reference_members [" + info.qualified_name + "]");
   if(semantic_hotspot::enabled()) {
     std::ostringstream query;
@@ -12033,7 +12048,7 @@ void ensure_class_reference_members(SemanticContext & ctx,
      info.reference_member_collection_in_progress || !reference_node) {
     return;
   }
-  if(reference_member_collection_depth > kMaxReferenceMemberCollectionDepth) {
+  if(g_reference_member_collection_depth > kMaxReferenceMemberCollectionDepth) {
     return;
   }
   if(info.reference_type_members_collected) {
@@ -12048,7 +12063,7 @@ void ensure_class_reference_members(SemanticContext & ctx,
                                                class_member_walk_units(*reference_node));
   }
   info.reference_member_collection_in_progress = true;
-  ++reference_member_collection_depth;
+  ++g_reference_member_collection_depth;
   struct ReferenceCollectionGuard
   {
     ClassInfo & info;
@@ -12058,8 +12073,21 @@ void ensure_class_reference_members(SemanticContext & ctx,
       info.reference_member_collection_in_progress = false;
       --depth;
     }
-  } guard{info, reference_member_collection_depth};
-  populate_class_reference_members(ctx, info, *reference_node, false);
+  } guard{info, g_reference_member_collection_depth};
+  try {
+    populate_class_reference_members(ctx, info, *reference_node, false);
+  } catch(const std::logic_error &) {
+    if(!witness::enabled(ctx.template_witness_context()) ||
+       !nested_reference_member_collection_active()) {
+      throw;
+    }
+    // Reference collection is a witness observer, not a semantic demand.
+    // Discard a partially collected shell and let an ordinary use perform
+    // authoritative instantiation (and diagnose it if it is ill-formed).
+    ctx.discard_class_function_bindings_for_reset(info);
+    reset_reference_member_state_for_full_collection(info);
+    return;
+  }
   template_api::observe_nested_member_class_reference_instantiation(ctx, info);
 }
 
