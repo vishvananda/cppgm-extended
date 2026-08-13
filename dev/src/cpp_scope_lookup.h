@@ -1,12 +1,46 @@
 #pragma once
 
 #include <cstddef>
-#include <set>
 #include <string>
+#include <vector>
 
 #include "cpp_decl_model.h"
 
 namespace cpp_scope_lookup {
+
+template<typename ScopeT, std::size_t InlineCapacity = 8>
+class ScopeVisitSet
+{
+public:
+  ScopeVisitSet() : inline_size_(0) {}
+
+  bool mark(const ScopeT * scope)
+  {
+    for(std::size_t i = 0; i < inline_size_; ++i) {
+      if(inline_values_[i] == scope) {
+        return false;
+      }
+    }
+    for(std::size_t i = 0; i < overflow_.size(); ++i) {
+      if(overflow_[i] == scope) {
+        return false;
+      }
+    }
+    if(inline_size_ != InlineCapacity) {
+      inline_values_[inline_size_++] = scope;
+    } else {
+      // Namespace graphs are normally tiny. Preserve unbounded traversal for
+      // larger programs without paying for an allocation on the common path.
+      overflow_.push_back(scope);
+    }
+    return true;
+  }
+
+private:
+  const ScopeT * inline_values_[InlineCapacity];
+  std::size_t inline_size_;
+  std::vector<const ScopeT *> overflow_;
+};
 
 template<typename Result>
 bool lookup_results_same(const Result & lhs, const Result & rhs)
@@ -63,7 +97,7 @@ template<typename Result,
          typename HasResult>
 void collect_lookup_from_using_directives(ScopeT & scope,
                                           const std::string & name,
-                                          std::set<const ScopeT *> & visited,
+                                          ScopeVisitSet<ScopeT> & visited,
                                           const DirectLookup & direct_lookup,
                                           const HasResult & has_result,
                                           bool & found,
@@ -71,7 +105,7 @@ void collect_lookup_from_using_directives(ScopeT & scope,
                                           bool & ambiguous,
                                           std::size_t source_token_start = 0)
 {
-  if(!visited.insert(&scope).second) {
+  if(!visited.mark(&scope)) {
     return;
   }
 
@@ -132,7 +166,7 @@ Result lookup_unqualified(ScopeT & scope,
       result_at_level = direct;
     }
 
-    std::set<const ScopeT *> visited;
+    ScopeVisitSet<ScopeT> visited;
     collect_lookup_from_using_directives<Result>(
         *current,
         name,

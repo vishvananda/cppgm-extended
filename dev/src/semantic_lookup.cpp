@@ -1044,7 +1044,7 @@ bool same_inline_namespace_alias_template_entity(const AliasTemplateDecl * lhs,
 template<typename DeclT, typename DirectLookup, typename SameEntity>
 void collect_decl_lookup_from_using_directives(Scope & scope,
                                                const std::string & name,
-                                               std::set<const Scope *> & visited,
+                                               cpp_scope_lookup::ScopeVisitSet<Scope> & visited,
                                                const DirectLookup & direct_lookup,
                                                const SameEntity & same_entity,
                                                bool & found,
@@ -1052,7 +1052,7 @@ void collect_decl_lookup_from_using_directives(Scope & scope,
                                                bool & ambiguous,
                                                std::size_t source_token_start = 0)
 {
-  if(!visited.insert(&scope).second) {
+  if(!visited.mark(&scope)) {
     return;
   }
 
@@ -1099,7 +1099,7 @@ DeclT * lookup_decl_from_using_directives_only(
 {
   bool found = false;
   DeclT * value = nullptr;
-  std::set<const Scope *> visited;
+  cpp_scope_lookup::ScopeVisitSet<Scope> visited;
   collect_decl_lookup_from_using_directives<DeclT>(
       scope,
       name,
@@ -1132,7 +1132,7 @@ DeclT * lookup_unqualified_decl_with_entity_equivalence(
       result_at_level = direct;
     }
 
-    std::set<const Scope *> visited;
+    cpp_scope_lookup::ScopeVisitSet<Scope> visited;
     collect_decl_lookup_from_using_directives(
         *current,
         name,
@@ -1635,7 +1635,7 @@ DeclT * lookup_qualified_decl_with_using_directives(
   bool found = false;
   bool ambiguous = false;
   DeclT * imported = nullptr;
-  std::set<const Scope *> visited;
+  cpp_scope_lookup::ScopeVisitSet<Scope> visited;
   collect_decl_lookup_from_using_directives<DeclT>(
       scope,
       name,
@@ -1825,7 +1825,7 @@ TypePtr lookup_type_from_using_directives_in_scope(SemanticContext & ctx,
   bool found = false;
   bool ambiguous = false;
   TypePtr value;
-  std::set<const Scope *> visited;
+  cpp_scope_lookup::ScopeVisitSet<Scope> visited;
   cpp_scope_lookup::collect_lookup_from_using_directives<TypePtr>(
       scope,
       name,
@@ -1912,7 +1912,7 @@ Scope * lookup_namespace_from_using_directives_in_scope(Scope & scope,
   bool found = false;
   bool ambiguous = false;
   Scope * value = nullptr;
-  std::set<const Scope *> visited;
+  cpp_scope_lookup::ScopeVisitSet<Scope> visited;
   collect_decl_lookup_from_using_directives<Scope>(
       scope,
       name,
@@ -1953,11 +1953,11 @@ void visit_using_directives_at_injection_scope(
     Scope & origin_scope,
     Scope & current_scope,
     Scope & lookup_scope,
-    set<const Scope *> & visited,
+    cpp_scope_lookup::ScopeVisitSet<Scope> & visited,
     const Visitor & visitor,
     size_t source_token_start = 0)
 {
-  if(!visited.insert(&current_scope).second) {
+  if(!visited.mark(&current_scope)) {
     return;
   }
   for(size_t i = 0; i < current_scope.using_directives.size(); ++i) {
@@ -1998,7 +1998,7 @@ InjectedNamespaceLookup lookup_injected_namespace(
       }
       continue;
     }
-    set<const Scope *> visited;
+    cpp_scope_lookup::ScopeVisitSet<Scope> visited;
     visit_using_directives_at_injection_scope(
         *origin,
         *origin,
@@ -2082,7 +2082,7 @@ InjectedQualifierLookup lookup_injected_qualifier(
       }
       continue;
     }
-    set<const Scope *> visited;
+    cpp_scope_lookup::ScopeVisitSet<Scope> visited;
     visit_using_directives_at_injection_scope(
         *origin,
         *origin,

@@ -449,7 +449,7 @@ private:
     bool found = false;
     bool ambiguous = false;
     Scope * value = nullptr;
-    set<const Scope *> visited;
+    cpp_scope_lookup::ScopeVisitSet<Scope> visited;
     cpp_scope_lookup::collect_lookup_from_using_directives<Scope *>(
         scope,
         name,
