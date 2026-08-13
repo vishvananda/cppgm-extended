@@ -2,6 +2,8 @@
 
 #include "abi_model.h"
 
+#include <unordered_map>
+
 namespace runtime_symbol_policy {
 
 namespace {
@@ -283,22 +285,6 @@ const std::string & generated_object_symbol_alias(RuntimeSymbolRole role)
   }
 }
 
-bool object_symbol_alias_matches(const std::string & name,
-                                 const std::string & normalized_name,
-                                 const RuntimeSymbolTableEntry & entry)
-{
-  if(entry.object_symbol_alias &&
-     (name == entry.object_symbol_alias ||
-      normalized_name == normalize_runtime_lookup_name(entry.object_symbol_alias))) {
-    return true;
-  }
-
-  const std::string & generated_alias = generated_object_symbol_alias(entry.role);
-  return !generated_alias.empty() &&
-         (name == generated_alias ||
-          normalized_name == normalize_runtime_lookup_name(generated_alias));
-}
-
 const char * object_symbol_alias_for_entry(const RuntimeSymbolTableEntry & entry)
 {
   if(entry.object_symbol_alias) {
@@ -331,25 +317,78 @@ std::string normalize_runtime_lookup_name(std::string name)
   return name;
 }
 
+bool runtime_lookup_name_needs_normalization(const std::string & name)
+{
+  return !name.empty() &&
+         (name[0] == '@' ||
+          name.compare(0, 20, "__external_runtime__") == 0 ||
+          name.compare(0, 20, "__external_runtime::") == 0 ||
+          (name[0] == '_' && name.compare(1, 6, "cppgm_") == 0));
+}
+
+struct RuntimeSymbolLookupIndex
+{
+  std::unordered_map<std::string, std::size_t> entries;
+
+  RuntimeSymbolLookupIndex()
+  {
+    const std::size_t table_size =
+        sizeof(kRuntimeSymbolTable) / sizeof(kRuntimeSymbolTable[0]);
+    entries.reserve(table_size * 2);
+    for(std::size_t i = 0; i < table_size; ++i) {
+      add(kRuntimeSymbolTable[i].name, i);
+      if(kRuntimeSymbolTable[i].object_symbol_alias) {
+        add(kRuntimeSymbolTable[i].object_symbol_alias, i);
+      }
+      const std::string & generated_alias =
+          generated_object_symbol_alias(kRuntimeSymbolTable[i].role);
+      if(!generated_alias.empty()) {
+        add(generated_alias, i);
+      }
+    }
+  }
+
+  void add(const std::string & name, std::size_t entry_index)
+  {
+    const std::string normalized = normalize_runtime_lookup_name(name);
+    std::unordered_map<std::string, std::size_t>::iterator found =
+        entries.find(normalized);
+    if(found == entries.end()) {
+      entries.insert(std::make_pair(normalized, entry_index));
+    } else if(entry_index < found->second) {
+      found->second = entry_index;
+    }
+  }
+};
+
+const RuntimeSymbolLookupIndex & runtime_symbol_lookup_index()
+{
+  static const RuntimeSymbolLookupIndex index;
+  return index;
+}
+
 }  // namespace
 
 RuntimeSymbolInfo classify(const std::string & name)
 {
-  const std::string normalized_name = normalize_runtime_lookup_name(name);
-  for(size_t i = 0; i < sizeof(kRuntimeSymbolTable) / sizeof(kRuntimeSymbolTable[0]); ++i) {
-    if(name == kRuntimeSymbolTable[i].name ||
-       normalized_name == normalize_runtime_lookup_name(kRuntimeSymbolTable[i].name) ||
-       object_symbol_alias_matches(name,
-                                   normalized_name,
-                                   kRuntimeSymbolTable[i])) {
-      RuntimeSymbolInfo out;
-      out.role = kRuntimeSymbolTable[i].role;
-      out.policy = kRuntimeSymbolTable[i].policy;
-      out.object_symbol_alias = object_symbol_alias_for_entry(kRuntimeSymbolTable[i]);
-      return out;
-    }
+  std::string normalized_name;
+  const std::string * lookup_name = &name;
+  if(runtime_lookup_name_needs_normalization(name)) {
+    normalized_name = normalize_runtime_lookup_name(name);
+    lookup_name = &normalized_name;
   }
-  return RuntimeSymbolInfo();
+  const RuntimeSymbolLookupIndex & index = runtime_symbol_lookup_index();
+  std::unordered_map<std::string, std::size_t>::const_iterator found =
+      index.entries.find(*lookup_name);
+  if(found == index.entries.end()) {
+    return RuntimeSymbolInfo();
+  }
+  const RuntimeSymbolTableEntry & entry = kRuntimeSymbolTable[found->second];
+  RuntimeSymbolInfo out;
+  out.role = entry.role;
+  out.policy = entry.policy;
+  out.object_symbol_alias = object_symbol_alias_for_entry(entry);
+  return out;
 }
 
 std::string normalize_lookup_name(const std::string & name)
