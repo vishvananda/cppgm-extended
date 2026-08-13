@@ -14,7 +14,6 @@ using namespace std;
 #include "lowir_machine_ir.h"
 #include "lowir_object_backend.h"
 #include "lowir_optimizer.h"
-#include "lowir_tool_cli.h"
 #include "machine_ir_optimizer.h"
 #include "machine_linker.h"
 #include "mir_model.h"

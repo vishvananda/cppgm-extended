@@ -15,14 +15,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
     std::string * eval_error = nullptr,
     const cpp_decl::TypePtr & target_type = cpp_decl::TypePtr());
 
-std::string lookup_text_for_type_argument(SemanticContext & ctx,
-                                          const cpp_decl::TypePtr & type);
-
-bool substitute_type(const cpp_decl::TypePtr & type,
-                     const std::vector<template_model::TemplateParameterInfo> & parameters,
-                     const std::vector<template_model::TemplateArgument> & arguments,
-                     cpp_decl::TypePtr & out);
-
 bool resolve_instantiated_dependent_type(SemanticContext & ctx,
                                          semantic_model::Scope & scope,
                                          const cpp_decl::TypePtr & type,
@@ -280,65 +272,5 @@ ClassSpecializationSelection select_class_specialization(
     const std::string & key,
     const std::vector<template_model::TemplateArgument> & arguments,
     const std::vector<std::string> * dependent_source_argument_texts = nullptr);
-
-VariableSpecializationSelection select_variable_specialization(
-    TemplateServices & services,
-    semantic_model::VariableTemplateDecl & decl,
-    const std::string & key,
-    const std::vector<template_model::TemplateArgument> & arguments);
-
-bool match_partial_class_specialization(
-    TemplateServices & services,
-    TemplateEnvironmentHandle scope,
-    const semantic_model::PartialClassTemplateSpecializationDecl & partial,
-    const std::vector<template_model::TemplateArgument> & actual_arguments,
-    std::vector<template_model::TemplateArgument> & deduced_arguments,
-    std::size_t & specificity_score,
-    std::map<std::string, std::size_t> * deduced_pack_sizes = nullptr);
-
-bool match_partial_variable_specialization(
-    TemplateServices & services,
-    TemplateEnvironmentHandle scope,
-    const semantic_model::VariableTemplateSpecializationDecl & partial,
-    const std::vector<template_model::TemplateArgument> & actual_arguments,
-    std::vector<template_model::TemplateArgument> & deduced_arguments,
-    std::size_t & specificity_score,
-    std::map<std::string, std::size_t> * deduced_pack_sizes = nullptr);
-
-std::string normalize_special_member_template_name(SemanticContext & ctx,
-                                                   const std::string & name,
-                                                   bool is_constructor,
-                                                   bool is_destructor);
-
-std::string normalize_special_member_template_name(TemplateServices & services,
-                                                   const std::string & name,
-                                                   bool is_constructor,
-                                                   bool is_destructor);
-
-void parse_function_template_parameter_clause(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & template_name,
-    const CppAstNode & parameter_clause,
-    std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
-    std::vector<const CppAstNode *> & default_arguments);
-
-ParsedFunctionTemplateSignature parse_function_template_signature(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & template_name,
-    const CppAstNode & raw_declarator,
-    const CppAstNode & parse_specifiers,
-    const CppAstNode & parse_declarator,
-    bool filter_nonmember_declarator);
-
-ParsedFunctionTemplateSignature parse_function_template_signature(
-    TemplateServices & services,
-    semantic_model::Scope & scope,
-    const std::string & template_name,
-    const CppAstNode & raw_declarator,
-    const CppAstNode & parse_specifiers,
-    const CppAstNode & parse_declarator,
-    bool filter_nonmember_declarator);
 
 }  // namespace template_api

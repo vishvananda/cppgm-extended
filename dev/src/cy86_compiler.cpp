@@ -112,37 +112,6 @@ uint64_t decode_uint64(const vector<unsigned char> & bytes, size_t width_bytes)
   return result;
 }
 
-int64_t sign_extend_uint(uint64_t value, size_t width_bytes)
-{
-  if(width_bytes >= 8) {
-    return static_cast<int64_t>(value);
-  }
-  uint64_t mask = mask_for_width(width_bytes);
-  uint64_t sign = uint64_t(1) << (width_bytes * 8 - 1);
-  value &= mask;
-  if(value & sign) {
-    value |= ~mask;
-  }
-  return static_cast<int64_t>(value);
-}
-
-long double load_float80(const vector<unsigned char> & bytes)
-{
-  if(sizeof(long double) < 10) {
-    throw logic_error("host long double does not support float80");
-  }
-
-  long double value = 0.0L;
-  unsigned char storage[sizeof(long double)];
-  memset(storage, 0, sizeof(storage));
-  size_t limit = min(bytes.size(), static_cast<size_t>(10));
-  if(limit != 0) {
-    memcpy(storage, bytes.data(), limit);
-  }
-  memcpy(&value, storage, sizeof(storage));
-  return value;
-}
-
 vector<unsigned char> store_float80(long double value)
 {
   if(sizeof(long double) < 10) {

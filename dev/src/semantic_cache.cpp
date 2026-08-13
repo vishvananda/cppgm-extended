@@ -43,11 +43,6 @@ std::size_t DependentTypeResolutionCacheKeyHash::operator()(
   return seed;
 }
 
-void SemanticCache::clear_scope_capture_cache()
-{
-  captured_local_scope_cache.clear();
-}
-
 void SemanticCache::dump(std::ostream & out) const
 {
   out << "semantic-cache"

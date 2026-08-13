@@ -1680,22 +1680,6 @@ string generate_lowir_from_translation_units(const vector<CallSemNode> & transla
   return lowir_internal::dump_program(program);
 }
 
-lowir_internal::Program build_lowir_program_from_cpp_sources(
-    const vector<string> & srcfiles,
-    const CppPreprocessOptions & options,
-    int debug_info_level)
-{
-  vector<CallSemNode> translation_units =
-      analyze_cpp_sources(srcfiles,
-                          options,
-                          true,
-                          nullptr,
-                          nullptr,
-                          debug_info_level >= 1);
-  PhaseTimer timer("build_lowir_program", source_count_detail(srcfiles));
-  return build_lowir_program(translation_units, true, true, debug_info_level >= 1);
-}
-
 lowir_internal::Program prepare_object_lowir_program(lowir_internal::Program program,
                                                      int optimization_level,
                                                      int debug_info_level)

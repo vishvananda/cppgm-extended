@@ -8955,22 +8955,6 @@ bool template_id_matches_class_template_origin(
          template_id.qualifiers == declared_name.qualifiers;
 }
 
-void append_class_template_type_arguments(
-    const ClassInfo * info,
-    std::vector<TypePtr> & out)
-{
-  if(!info) {
-    return;
-  }
-  for(std::size_t i = 0; i < info->instantiation_arguments.size(); ++i) {
-    if(info->instantiation_arguments[i].kind != TemplateArgument::TA_TYPE ||
-       !info->instantiation_arguments[i].type) {
-      continue;
-    }
-    out.push_back(info->instantiation_arguments[i].type);
-  }
-}
-
 bool class_template_instantiation_depends_on_template_parameter(
     SemanticContext & ctx,
     const ClassInfo & info)

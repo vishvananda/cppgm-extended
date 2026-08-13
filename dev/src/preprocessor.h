@@ -28,7 +28,6 @@ struct Preprocessor : IPPTokenSource, ISourceLocationProvider
   void load(const std::string & file);
   void load(std::streambuf * buf);
   void load(const std::string & file, std::streambuf * buf);
-  void stream(IPPTokenStream & output);
   inline const std::string file() const
       {return !files.empty() ? files.back()->file : "";};
   inline unsigned long long line() const

@@ -59,7 +59,6 @@ const CppAstNode * find_descendant_kind(const CppAstNode & node,
                                         CppAstKind kind);
 const cpp_decl::TemplateIdSyntax * first_template_id_syntax_in_subtree(
     const CppAstNode & node);
-bool qualified_template_id_syntax_in_subtree(const CppAstNode & node);
 std::string qualified_name_syntax_text(const cpp_decl::QualifiedName & name);
 std::string repair_compacted_template_argument_expression_spacing(
     const std::string & text);
@@ -73,8 +72,6 @@ const cpp_decl::TemplateIdSyntax * template_id_syntax_matching_lookup_text(
     const cpp_decl::TemplateIdSyntax & syntax,
     const std::string & lookup_text);
 std::vector<std::string> template_id_argument_texts_preserving_spacing(
-    const cpp_decl::TemplateIdSyntax & syntax);
-std::vector<std::string> template_id_argument_witness_source_texts(
     const cpp_decl::TemplateIdSyntax & syntax);
 std::vector<const CppAstNode *> parameter_declarations_from_clause(
     const CppAstNode & parameter_clause);
@@ -148,9 +145,6 @@ const ExactTemplateTypeLookupAnchor * matching_exact_template_type_lookup_anchor
     const std::string & identifier);
 extern thread_local std::set<std::pair<std::string, std::string> >
     source_dependent_class_template_use_drops_;
-bool exact_template_type_lookup_anchor_matches(
-    const ExactTemplateTypeLookupAnchor & anchor,
-    const std::string & normalized_name);
 bool exact_template_type_lookup_anchor_matches_syntax(
     const ExactTemplateTypeLookupAnchor & anchor,
     const std::string & normalized_name);
@@ -160,17 +154,11 @@ bool exact_template_type_lookup_anchor_matches_identifier(
 bool exact_template_type_lookup_anchor_matches_identifier_syntax(
     const ExactTemplateTypeLookupAnchor & anchor,
     const std::string & identifier);
-bool exact_template_type_lookup_anchor_arg_texts(
-    const std::string & normalized_name,
-    const std::string & identifier,
-    std::vector<std::string> & arg_texts);
 const std::vector<std::string> & exact_template_type_lookup_anchor_texts(
     const ExactTemplateTypeLookupAnchor & anchor);
 const std::vector<cpp_decl::TemplateArgumentSyntax> *
 exact_template_type_lookup_anchor_syntaxes(
     const ExactTemplateTypeLookupAnchor & anchor);
-bool exact_template_type_lookup_anchor_arg_texts_are_full_match(
-    const std::string & normalized_name);
 const std::vector<cpp_decl::TemplateArgumentSyntax> *
 exact_template_type_lookup_anchor_arg_syntaxes(
     const std::string & normalized_name,
@@ -213,15 +201,6 @@ const cpp_decl::TemplateIdSyntax * template_id_syntax_for_anchor_at_or_after_loc
     const CppAstNode & node,
     const std::string & identifier,
     const std::string & location);
-const cpp_decl::TemplateIdSyntax * template_id_syntax_for_anchor_at_or_after_location(
-    const template_api::TemplateWitnessContext & ctx,
-    const std::vector<cpp_decl::TemplateArgumentSyntax> & arguments,
-    const std::string & identifier,
-    const std::string & location);
-bool template_id_value_for_anchor(const CppAstNode & node,
-                                  const std::string & identifier,
-                                  cpp_decl::QualifiedName & out_name,
-                                  std::vector<std::string> & out_arg_texts);
 bool template_argument_texts_mention_source_bindings(
     SemanticContext & ctx,
     semantic_model::Scope & scope,
@@ -245,27 +224,12 @@ bool current_specialization_source_argument_semantic_text(
     semantic_model::Scope & scope,
     const cpp_decl::TemplateArgumentSyntax & syntax,
     std::string & out);
-void rewrite_current_specialization_alias_binding_texts(
-    SemanticContext & ctx,
-    semantic_model::Scope & use_scope,
-    const std::vector<template_model::TemplateParameterInfo> & parameters,
-    const std::vector<template_model::TemplateArgument> & arguments,
-    const std::vector<std::string> & explicit_argument_texts,
-    const std::vector<cpp_decl::TemplateArgumentSyntax> * explicit_argument_syntaxes,
-    std::vector<semantic_source_use::SourceBinding> & bindings,
-    semantic_source_use::SourceTemplateIdOccurrence * occurrence = nullptr);
 std::string template_public_use_location_or(const std::string & fallback);
 semantic_model::ClassTemplateDecl * class_template_origin_decl(
     semantic_model::ClassInfo * info);
 const semantic_model::ClassTemplateDecl * class_template_origin_decl(
     const semantic_model::ClassInfo * info);
 bool class_has_template_origin(const semantic_model::ClassInfo * info);
-const std::vector<template_model::TemplateArgument> * class_template_origin_arguments(
-    const semantic_model::ClassInfo * info);
-bool class_has_explicit_template_origin(
-    const semantic_model::ClassInfo * info);
-const CppAstNode * class_template_origin_class_node(
-    const semantic_model::ClassInfo * info);
 const CppAstNode * find_member_class_template_declaration_node(
     const semantic_model::ClassTemplateDecl * class_template);
 bool env_flag_enabled(const char * name);

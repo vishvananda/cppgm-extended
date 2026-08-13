@@ -456,30 +456,6 @@ bool note_constant_value_member_instantiations_in_expression(
       });
 }
 
-bool template_id_names_alias_template(SemanticContext & ctx,
-                                      semantic_model::Scope & scope,
-                                      const cpp_decl::TemplateIdSyntax & syntax)
-{
-  return template_api::with_template_services(
-      ctx,
-      [&](template_api::TemplateServices & services)
-      {
-        return lookup_alias_template_for_syntax(services, scope, syntax) != nullptr;
-      });
-}
-
-bool template_id_names_class_template(SemanticContext & ctx,
-                                      semantic_model::Scope & scope,
-                                      const cpp_decl::TemplateIdSyntax & syntax)
-{
-  return template_api::with_template_services(
-      ctx,
-      [&](template_api::TemplateServices & services)
-      {
-        return lookup_class_template_for_syntax(services, scope, syntax) != nullptr;
-      });
-}
-
 bool resolve_non_type_template_parameter_type(
     SemanticContext & ctx,
     semantic_model::Scope & scope,

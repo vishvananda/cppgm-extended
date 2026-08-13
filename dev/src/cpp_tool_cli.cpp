@@ -404,15 +404,6 @@ CppToolInvocation parse_cpp_tool_invocation(const vector<string> & args)
   return invocation;
 }
 
-CppToolInvocation parse_cpp_tool_invocation(int argc, char ** argv)
-{
-  vector<string> args;
-  for(int i = 1; i < argc; ++i) {
-    args.push_back(argv[i]);
-  }
-  return parse_cpp_tool_invocation(args);
-}
-
 bool path_looks_like_object_file(const string & path)
 {
   return ends_with(path, ".o") ||

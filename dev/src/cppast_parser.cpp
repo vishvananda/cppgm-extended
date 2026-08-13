@@ -12214,13 +12214,6 @@ bool CppAstParser::can_open_nested_template_angle_at(size_t boundary) const
   return template_angle::can_open_nested_template_angle_at(tokens, boundary, lookup);
 }
 
-bool CppAstParser::looks_like_unknown_nested_template_id_at(size_t boundary) const
-{
-  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup();
-
-  return template_angle::looks_like_unknown_nested_template_id_at(tokens, boundary, lookup);
-}
-
 bool CppAstParser::is_template_type_parameter_name(const RecogToken & token) const
 {
   return template_angle_lookup::lookup_in_scoped_names(

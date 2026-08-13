@@ -34,7 +34,6 @@ std::vector<unsigned char> encode_uint64(std::uint64_t value,
                                          std::size_t width_bytes);
 std::uint64_t decode_uint64(const std::vector<unsigned char> & bytes,
                             std::size_t width_bytes);
-std::int64_t sign_extend_uint(std::uint64_t value, std::size_t width_bytes);
 
 template<typename T>
 std::vector<unsigned char> bytes_of(const T & value)
@@ -56,7 +55,6 @@ T scalar_from_bytes(const std::vector<unsigned char> & bytes,
   return value;
 }
 
-long double load_float80(const std::vector<unsigned char> & bytes);
 std::vector<unsigned char> store_float80(long double value);
 
 struct LiteralValue

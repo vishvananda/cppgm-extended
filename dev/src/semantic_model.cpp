@@ -151,60 +151,6 @@ Scope * nonmember_hidden_friend_entity_scope(const FunctionBinding & binding)
 
 }  // namespace
 
-bool text_mentions_template_parameter(
-    const std::string & text,
-    const std::vector<template_model::TemplateParameterInfo> & parameters)
-{
-  for(std::size_t i = 0; i < parameters.size(); ++i) {
-    bool changed = false;
-    if(!parameters[i].name.empty()) {
-      callsemantic_internal::replace_identifier_token_text(
-          text,
-          parameters[i].name,
-          std::string(),
-          changed);
-      if(changed) {
-        return true;
-      }
-    }
-    if(!parameters[i].placeholder_key.empty()) {
-      callsemantic_internal::replace_identifier_token_text(
-          text,
-          parameters[i].placeholder_key,
-          std::string(),
-          changed);
-      if(changed) {
-        return true;
-      }
-    }
-    for(std::size_t j = 0; j < parameters[i].alternate_names.size(); ++j) {
-      if(parameters[i].alternate_names[j].empty()) {
-        continue;
-      }
-      callsemantic_internal::replace_identifier_token_text(
-          text,
-          parameters[i].alternate_names[j],
-          std::string(),
-          changed);
-      if(changed) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-bool conversion_display_name_needs_instantiated_result(
-    const FunctionBinding & binding,
-    const std::string & display_name)
-{
-  return binding.owner_class &&
-         binding.owner_class->source_template &&
-         text_mentions_template_parameter(
-             display_name,
-             binding.owner_class->source_template->parameters);
-}
-
 std::size_t next_scope_instance_id()
 {
   static std::atomic<std::size_t> next_id(1);

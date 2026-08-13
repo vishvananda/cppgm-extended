@@ -69,11 +69,6 @@ bool can_open_nested_template_angle_at(const IRecogTokenSequence & tokens,
                                        const NameLookup & lookup,
                                        ParseHeuristicCache * cache = nullptr);
 
-bool looks_like_unknown_nested_template_id_at(const IRecogTokenSequence & tokens,
-                                              std::size_t boundary,
-                                              const NameLookup & lookup,
-                                              ParseHeuristicCache * cache = nullptr);
-
 bool collect_template_argument_delimiters(const IRecogTokenSequence & tokens,
                                           std::size_t start,
                                           const NameLookup & lookup,
@@ -86,15 +81,6 @@ bool parse_template_id_suffix_ranges(
     const NameLookup & lookup,
     std::size_t & end,
     std::vector<std::pair<std::size_t, std::size_t> > & arg_ranges,
-    ParseHeuristicCache * cache = nullptr);
-
-bool collect_qualified_name_component_ranges(
-    const IRecogTokenSequence & tokens,
-    std::size_t start,
-    const NameLookup & lookup,
-    std::size_t & end,
-    bool & rooted,
-    std::vector<std::pair<std::size_t, std::size_t> > & component_ranges,
     ParseHeuristicCache * cache = nullptr);
 
 }  // namespace template_angle

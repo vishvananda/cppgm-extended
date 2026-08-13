@@ -27,10 +27,6 @@ std::string generate_lowir_from_translation_units(
     const std::vector<CallSemNode> & translation_units,
     int optimization_level = 0,
     int debug_info_level = 0);
-lowir_internal::Program build_lowir_program_from_cpp_sources(
-    const std::vector<std::string> & srcfiles,
-    const CppPreprocessOptions & options = CppPreprocessOptions(),
-    int debug_info_level = 0);
 lowir_internal::Program prepare_object_lowir_program(
     lowir_internal::Program program,
     int optimization_level = 0,

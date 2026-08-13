@@ -131,7 +131,6 @@ public:
   std::size_t offset() const;
   void append(const std::vector<unsigned char> & bytes);
   void patch_u32(std::size_t offset, std::uint32_t value);
-  void patch_u64(std::size_t offset, std::uint64_t value);
   void patch_rel32(std::size_t imm_offset, std::size_t target_offset);
   const std::vector<unsigned char> & bytes() const;
 

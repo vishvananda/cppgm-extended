@@ -99,7 +99,6 @@ using template_model::TemplateArgument;
 using template_model::TemplateParameterInfo;
 using template_model::template_arguments_are_dependent;
 using template_model::find_template_parameter_by_name;
-using semantic_utils::has_top_level_comma;
 using semantic_utils::is_wrapped_in_balanced_parens;
 using semantic_utils::strip_elaborated_type_prefix;
 using semantic_utils::strip_trailing_top_level_template_arguments;
@@ -438,7 +437,6 @@ using callsemantic::source_selection_kind_for_match_kind;
 using callsemantic::find_function_body_node;
 using callsemantic::find_descendant_kind;
 using callsemantic::first_template_id_syntax_in_subtree;
-using callsemantic::qualified_template_id_syntax_in_subtree;
 using callsemantic::qualified_name_syntax_text;
 using callsemantic::repair_compacted_template_argument_expression_spacing;
 using callsemantic::template_argument_syntax_text_preserving_spacing;
@@ -446,7 +444,6 @@ using callsemantic::template_argument_syntax_witness_source_text;
 using callsemantic::template_id_syntax_text_preserving_spacing;
 using callsemantic::template_id_syntax_matching_lookup_text;
 using callsemantic::template_id_argument_texts_preserving_spacing;
-using callsemantic::template_id_argument_witness_source_texts;
 using callsemantic::parameter_declarations_from_clause;
 using callsemantic::normalized_template_argument_syntaxes;
 using callsemantic::should_prefer_named_key_for_instantiation_identity;
@@ -458,14 +455,11 @@ using callsemantic::ScopedSuppressedTemplateUseLocation;
 using callsemantic::compact_lookup_text;
 using callsemantic::node_has_template_id_qualifier_syntax;
 using callsemantic::current_exact_template_type_lookup_anchor;
-using callsemantic::exact_template_type_lookup_anchor_matches;
 using callsemantic::exact_template_type_lookup_anchor_matches_syntax;
 using callsemantic::exact_template_type_lookup_anchor_matches_identifier;
 using callsemantic::exact_template_type_lookup_anchor_matches_identifier_syntax;
-using callsemantic::exact_template_type_lookup_anchor_arg_texts;
 using callsemantic::exact_template_type_lookup_anchor_texts;
 using callsemantic::exact_template_type_lookup_anchor_syntaxes;
-using callsemantic::exact_template_type_lookup_anchor_arg_texts_are_full_match;
 using callsemantic::exact_template_type_lookup_anchor_arg_syntaxes;
 using callsemantic::source_template_id_args_are_arity_compatible;
 using callsemantic::function_template_decl_primary_location;
@@ -478,20 +472,15 @@ using callsemantic::function_binding_source_template_primary_location;
 using callsemantic::function_binding_source_template_location_details;
 using callsemantic::template_id_syntax_for_anchor;
 using callsemantic::template_id_syntax_for_anchor_at_or_after_location;
-using callsemantic::template_id_value_for_anchor;
 using callsemantic::template_argument_texts_mention_source_bindings;
 using callsemantic::template_argument_texts_mention_instantiated_class_local_type_aliases;
 using callsemantic::template_argument_texts_mention_enclosing_source_template_parameters;
 using callsemantic::template_argument_texts_mention_template_bound_scope_names;
 using callsemantic::template_argument_texts_mention_current_specialization_names;
 using callsemantic::current_specialization_source_argument_semantic_text;
-using callsemantic::rewrite_current_specialization_alias_binding_texts;
 using callsemantic::template_public_use_location_or;
 using callsemantic::class_template_origin_decl;
 using callsemantic::class_has_template_origin;
-using callsemantic::class_template_origin_arguments;
-using callsemantic::class_has_explicit_template_origin;
-using callsemantic::class_template_origin_class_node;
 using callsemantic::find_member_class_template_declaration_node;
 using callsemantic::source_dependent_class_template_use_drops_;
 using callsemantic::env_flag_enabled;
@@ -2903,23 +2892,6 @@ private:
     return token_sequence->peek(index - 1).source == "::";
   }
 
-  bool source_location_identifier_followed_by_indirection_type_suffix(
-      const std::string & location,
-      const std::string & identifier) const
-  {
-    return source_location_tokens()
-        .source_location_identifier_followed_by_indirection_type_suffix(
-            location, identifier);
-  }
-
-  std::string source_location_for_qualified_member_start_on_line(
-      const std::string & location,
-      const std::string & member_name) const
-  {
-    return source_location_tokens().source_location_for_qualified_member_start_on_line(
-        location, member_name);
-  }
-
   bool source_location_mentions_qualified_member(
       const std::string & location,
       const std::string & member_name) const
@@ -2971,35 +2943,12 @@ private:
     return source_location_tokens().tokens_are_adjacent(left_index, right_index);
   }
 
-  std::string compact_token_range_text(std::size_t begin,
-                                       std::size_t end) const
-  {
-    return source_location_tokens().compact_token_range_text(begin, end);
-  }
-
-  std::string compact_template_id_token_text(std::size_t begin,
-                                             std::size_t close_index,
-                                             int close_chars) const
-  {
-    return source_location_tokens().compact_template_id_token_text(
-        begin, close_index, close_chars);
-  }
-
   bool template_name_before_open(std::size_t open_index,
                                  std::size_t & name_begin,
                                  std::size_t & anchor_index) const
   {
     return source_location_tokens().template_name_before_open(
         open_index, name_begin, anchor_index);
-  }
-
-  bool matching_template_close_token(std::size_t open_index,
-                                     std::size_t & close_index,
-                                     int & close_chars,
-                                     bool same_line_only = true) const
-  {
-    return source_location_tokens().matching_template_close_token(
-        open_index, close_index, close_chars, same_line_only);
   }
 
   bool template_argument_token_ranges_from_open(

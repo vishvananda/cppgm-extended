@@ -420,36 +420,6 @@ ClassSpecializationSelection to_api_class_specialization_selection_impl(
   return out;
 }
 
-VariableSpecializationSelection to_api_variable_specialization_selection_impl(
-    const template_selection::VariableSpecializationSelection & selection)
-{
-  VariableSpecializationSelection out;
-  out.binding_scope = selection.binding_scope;
-  out.parameters = selection.parameters;
-  out.arguments = selection.arguments;
-  out.pack_sizes = selection.pack_sizes;
-  out.specifiers = selection.specifiers;
-  out.declarator = selection.declarator;
-  out.initializer = selection.initializer;
-  out.selection_key = selection.selection_key;
-  out.kind = to_api_match_kind(selection.kind);
-  return out;
-}
-
-ParsedFunctionTemplateSignature to_api_parsed_function_template_signature(
-    const template_function_signature::ParsedFunctionTemplateSignature & parsed)
-{
-  ParsedFunctionTemplateSignature out;
-  out.name = parsed.name;
-  out.type = parsed.type;
-  out.params = parsed.params;
-  out.default_arguments = parsed.default_arguments;
-  out.parameter_declarations = parsed.parameter_declarations;
-  out.result_type_pattern = parsed.result_type_pattern;
-  out.effective_declarator = parsed.effective_declarator;
-  return out;
-}
-
 std::string strip_at_prefix(const std::string & location)
 {
   if(location.compare(0, 4, " at ") == 0) {
@@ -2250,12 +2220,6 @@ bool template_id_matches_class_template_origin(
       template_id, info);
 }
 
-void append_class_template_type_arguments(const semantic_model::ClassInfo * info,
-                                          std::vector<cpp_decl::TypePtr> & out)
-{
-  template_instantiation::append_class_template_type_arguments(info, out);
-}
-
 bool class_template_instantiation_depends_on_template_parameter(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info)
@@ -2304,12 +2268,6 @@ ClassSpecializationSelection to_api_class_specialization_selection(
     const template_selection::ClassSpecializationSelection & selection)
 {
   return to_api_class_specialization_selection_impl(selection);
-}
-
-VariableSpecializationSelection to_api_variable_specialization_selection(
-    const template_selection::VariableSpecializationSelection & selection)
-{
-  return to_api_variable_specialization_selection_impl(selection);
 }
 
 ScopedTemplateArgumentSourceLocations::ScopedTemplateArgumentSourceLocations(
@@ -8060,20 +8018,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
 }
 
 // template-boundary-audit: begin text_recovery_bridge
-std::string lookup_text_for_type_argument(SemanticContext & ctx,
-                                          const cpp_decl::TypePtr & type)
-{
-  return template_argument_semantics::lookup_text_for_type_argument(ctx, type);
-}
-
-bool substitute_type(const cpp_decl::TypePtr & type,
-                     const std::vector<template_model::TemplateParameterInfo> & parameters,
-                     const std::vector<template_model::TemplateArgument> & arguments,
-                     cpp_decl::TypePtr & out)
-{
-  return template_argument_semantics::substitute_type(type, parameters, arguments, out);
-}
-
 bool resolve_instantiated_dependent_type(SemanticContext & ctx,
                                          semantic_model::Scope & scope,
                                          const cpp_decl::TypePtr & type,
@@ -9179,203 +9123,6 @@ ClassSpecializationSelection select_class_specialization(
   return to_api_class_specialization_selection(
       template_selection::select_class_specialization(
           services, decl, use_scope, key, arguments, dependent_source_argument_texts));
-}
-
-VariableSpecializationSelection select_variable_specialization(
-    SemanticContext & ctx,
-    semantic_model::VariableTemplateDecl & decl,
-    const std::string & key,
-    const std::vector<template_model::TemplateArgument> & arguments)
-{
-  return with_template_services(
-      ctx,
-      [&](TemplateServices & services)
-      {
-        return select_variable_specialization(services, decl, key, arguments);
-      });
-}
-
-VariableSpecializationSelection select_variable_specialization(
-    TemplateServices & services,
-    semantic_model::VariableTemplateDecl & decl,
-    const std::string & key,
-    const std::vector<template_model::TemplateArgument> & arguments)
-{
-  return to_api_variable_specialization_selection(
-      template_selection::select_variable_specialization(
-          services, decl, key, arguments));
-}
-
-bool match_partial_class_specialization(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const semantic_model::PartialClassTemplateSpecializationDecl & partial,
-    const std::vector<template_model::TemplateArgument> & actual_arguments,
-    std::vector<template_model::TemplateArgument> & deduced_arguments,
-    std::size_t & specificity_score,
-    std::map<std::string, std::size_t> * deduced_pack_sizes)
-{
-  return with_template_services(
-      ctx,
-      [&](TemplateServices & services)
-      {
-        return match_partial_class_specialization(
-            services,
-            make_template_environment(scope),
-            partial,
-            actual_arguments,
-            deduced_arguments,
-            specificity_score,
-            deduced_pack_sizes);
-      });
-}
-
-bool match_partial_class_specialization(
-    TemplateServices & services,
-    TemplateEnvironmentHandle scope,
-    const semantic_model::PartialClassTemplateSpecializationDecl & partial,
-    const std::vector<template_model::TemplateArgument> & actual_arguments,
-    std::vector<template_model::TemplateArgument> & deduced_arguments,
-    std::size_t & specificity_score,
-    std::map<std::string, std::size_t> * deduced_pack_sizes)
-{
-  return template_specialization::match_partial_class_specialization(services,
-                                                                     scope,
-                                                                     partial,
-                                                                     actual_arguments,
-                                                                     deduced_arguments,
-                                                                     specificity_score,
-                                                                     deduced_pack_sizes);
-}
-
-bool match_partial_variable_specialization(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const semantic_model::VariableTemplateSpecializationDecl & partial,
-    const std::vector<template_model::TemplateArgument> & actual_arguments,
-    std::vector<template_model::TemplateArgument> & deduced_arguments,
-    std::size_t & specificity_score,
-    std::map<std::string, std::size_t> * deduced_pack_sizes)
-{
-  return with_template_services(
-      ctx,
-      [&](TemplateServices & services)
-      {
-        return match_partial_variable_specialization(
-            services,
-            make_template_environment(scope),
-            partial,
-            actual_arguments,
-            deduced_arguments,
-            specificity_score,
-            deduced_pack_sizes);
-      });
-}
-
-bool match_partial_variable_specialization(
-    TemplateServices & services,
-    TemplateEnvironmentHandle scope,
-    const semantic_model::VariableTemplateSpecializationDecl & partial,
-    const std::vector<template_model::TemplateArgument> & actual_arguments,
-    std::vector<template_model::TemplateArgument> & deduced_arguments,
-    std::size_t & specificity_score,
-    std::map<std::string, std::size_t> * deduced_pack_sizes)
-{
-  return template_specialization::match_partial_variable_specialization(services,
-                                                                        scope,
-                                                                        partial,
-                                                                        actual_arguments,
-                                                                        deduced_arguments,
-                                                                        specificity_score,
-                                                                        deduced_pack_sizes);
-}
-
-std::string normalize_special_member_template_name(SemanticContext & ctx,
-                                                   const std::string & name,
-                                                   bool is_constructor,
-                                                   bool is_destructor)
-{
-  return with_template_services(
-      ctx,
-      [&](TemplateServices & services)
-      {
-        return normalize_special_member_template_name(
-            services, name, is_constructor, is_destructor);
-      });
-}
-
-std::string normalize_special_member_template_name(TemplateServices & services,
-                                                   const std::string & name,
-                                                   bool is_constructor,
-                                                   bool is_destructor)
-{
-  return template_function_signature::normalize_special_member_template_name(
-      services, name, is_constructor, is_destructor);
-}
-
-void parse_function_template_parameter_clause(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & template_name,
-    const CppAstNode & parameter_clause,
-    std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
-    std::vector<const CppAstNode *> & default_arguments)
-{
-  with_template_services(
-      ctx,
-      [&](TemplateServices & services)
-      {
-        template_function_signature::parse_function_template_parameter_clause(
-            services,
-            make_template_environment(scope),
-            template_name,
-            parameter_clause,
-            params,
-            default_arguments);
-      });
-}
-
-ParsedFunctionTemplateSignature parse_function_template_signature(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & template_name,
-    const CppAstNode & raw_declarator,
-    const CppAstNode & parse_specifiers,
-    const CppAstNode & parse_declarator,
-    bool filter_nonmember_declarator)
-{
-  return with_template_services(
-      ctx,
-      [&](TemplateServices & services)
-      {
-        return parse_function_template_signature(services,
-                                                 scope,
-                                                 template_name,
-                                                 raw_declarator,
-                                                 parse_specifiers,
-                                                 parse_declarator,
-                                                 filter_nonmember_declarator);
-      });
-}
-
-ParsedFunctionTemplateSignature parse_function_template_signature(
-    TemplateServices & services,
-    semantic_model::Scope & scope,
-    const std::string & template_name,
-    const CppAstNode & raw_declarator,
-    const CppAstNode & parse_specifiers,
-    const CppAstNode & parse_declarator,
-    bool filter_nonmember_declarator)
-{
-  return to_api_parsed_function_template_signature(
-      template_function_signature::parse_function_template_signature(
-          services,
-          make_template_environment(scope),
-          template_name,
-          raw_declarator,
-          parse_specifiers,
-          parse_declarator,
-          filter_nonmember_declarator));
 }
 
 }  // namespace template_api

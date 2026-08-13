@@ -384,11 +384,6 @@ bool implicit_template_id_has_dependent_type_qualifier(
   return false;
 }
 
-bool token_can_start_template_id_component_suffix(const RecogToken & token)
-{
-  return token.is_identifier() || token.is_close_angle_bracket();
-}
-
 bool token_can_follow_unknown_nested_template_id(const RecogToken & token)
 {
   if(token.is_eof() || token.is_close_angle_bracket()) {
@@ -783,22 +778,6 @@ bool looks_like_unknown_nested_template_id_at_impl(const IRecogTokenSequence & t
   return false;
 }
 
-bool looks_like_unknown_nested_template_id_at(const IRecogTokenSequence & tokens,
-                                              std::size_t boundary,
-                                              const NameLookup & lookup,
-                                              ParseHeuristicCache * cache)
-{
-  if(cache == nullptr) {
-    ParseHeuristicCache local_cache;
-    return looks_like_unknown_nested_template_id_at(tokens, boundary, lookup, &local_cache);
-  }
-
-  return looks_like_unknown_nested_template_id_at_impl(tokens,
-                                                       boundary,
-                                                       lookup,
-                                                       cache);
-}
-
 bool collect_template_argument_delimiters(const IRecogTokenSequence & tokens,
                                           std::size_t start,
                                           const NameLookup & lookup,
@@ -962,140 +941,6 @@ bool parse_template_id_suffix_ranges(
                                 << token_span_text_spaced(tokens, start, end)
                                 << "}";
                         });
-  return true;
-}
-
-bool collect_qualified_name_component_ranges(
-    const IRecogTokenSequence & tokens,
-    std::size_t start,
-    const NameLookup & lookup,
-    std::size_t & end,
-    bool & rooted,
-    std::vector<std::pair<std::size_t, std::size_t> > & component_ranges,
-    ParseHeuristicCache * cache)
-{
-  if(cache == nullptr) {
-    ParseHeuristicCache local_cache;
-    return collect_qualified_name_component_ranges(tokens,
-                                                   start,
-                                                   lookup,
-                                                   end,
-                                                   rooted,
-                                                   component_ranges,
-                                                   &local_cache);
-  }
-
-  end = start;
-  rooted = false;
-  component_ranges.clear();
-  component_ranges.reserve(8);
-
-  std::size_t pos = start;
-  if(tokens.peek(pos).is_simple(OP_COLON2)) {
-    rooted = true;
-    ++pos;
-  }
-
-  if(tokens.peek(pos).is_eof()) {
-    return false;
-  }
-
-  std::size_t component_start = pos;
-  int angle_depth = 0;
-  int paren_depth = 0;
-  int bracket_depth = 0;
-  int brace_depth = 0;
-
-  while(!tokens.peek(pos).is_eof()) {
-    const RecogToken & token = tokens.peek(pos);
-    const bool track_angles =
-        paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
-
-    if(track_angles && token.is_simple(OP_LT) && pos > component_start &&
-       ((angle_depth == 0 &&
-         token_can_start_template_id_component_suffix(tokens.peek(pos - 1))) ||
-        can_open_nested_template_angle_at(tokens, pos, lookup, cache))) {
-      ++angle_depth;
-      ++pos;
-      continue;
-    }
-
-    if(track_angles && token.is_close_angle_bracket()) {
-      if(angle_depth == 0) {
-        return false;
-      }
-      --angle_depth;
-      ++pos;
-      continue;
-    }
-
-    if(token.is_simple(OP_LPAREN)) {
-      ++paren_depth;
-      ++pos;
-      continue;
-    }
-    if(token.is_simple(OP_RPAREN)) {
-      if(paren_depth == 0) {
-        return false;
-      }
-      --paren_depth;
-      ++pos;
-      continue;
-    }
-    if(token.is_simple(OP_LSQUARE)) {
-      ++bracket_depth;
-      ++pos;
-      continue;
-    }
-    if(token.is_simple(OP_RSQUARE)) {
-      if(bracket_depth == 0) {
-        return false;
-      }
-      --bracket_depth;
-      ++pos;
-      continue;
-    }
-    if(token.is_simple(OP_LBRACE)) {
-      ++brace_depth;
-      ++pos;
-      continue;
-    }
-    if(token.is_simple(OP_RBRACE)) {
-      if(brace_depth == 0) {
-        return false;
-      }
-      --brace_depth;
-      ++pos;
-      continue;
-    }
-
-    const bool top_level = angle_depth == 0 &&
-                           paren_depth == 0 &&
-                           bracket_depth == 0 &&
-                           brace_depth == 0;
-    if(top_level && token.is_simple(OP_COLON2)) {
-      if(pos <= component_start) {
-        return false;
-      }
-      component_ranges.push_back(std::make_pair(component_start, pos));
-      ++pos;
-      if(tokens.peek(pos).is_eof()) {
-        return false;
-      }
-      component_start = pos;
-      continue;
-    }
-
-    ++pos;
-  }
-
-  if(angle_depth != 0 || paren_depth != 0 || bracket_depth != 0 ||
-     brace_depth != 0 || pos <= component_start) {
-    return false;
-  }
-
-  component_ranges.push_back(std::make_pair(component_start, pos));
-  end = pos;
   return true;
 }
 

@@ -411,9 +411,6 @@ const semantic_model::ClassInfo * class_template_enclosing_instance(
 bool template_id_matches_class_template_origin(
     const cpp_decl::QualifiedName & template_id,
     const ClassTemplateUseInfo & info);
-void append_class_template_type_arguments(
-    const semantic_model::ClassInfo * info,
-    std::vector<cpp_decl::TypePtr> & out);
 bool class_template_instantiation_depends_on_template_parameter(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info);
@@ -929,14 +926,6 @@ bool note_constant_value_member_instantiations_in_expression(
     SemanticContext & ctx,
     semantic_model::Scope & scope,
     const CppAstNode & expr);
-
-bool template_id_names_alias_template(SemanticContext & ctx,
-                                      semantic_model::Scope & scope,
-                                      const cpp_decl::TemplateIdSyntax & syntax);
-
-bool template_id_names_class_template(SemanticContext & ctx,
-                                      semantic_model::Scope & scope,
-                                      const cpp_decl::TemplateIdSyntax & syntax);
 
 bool resolve_non_type_template_parameter_type(
     SemanticContext & ctx,

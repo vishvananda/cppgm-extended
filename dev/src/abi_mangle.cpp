@@ -3134,30 +3134,6 @@ struct FactSerializer
 
 }  // namespace
 
-string serialize_model_fact_file(const model::AbiFactFile & file)
-{
-  ostringstream out;
-  for(size_t i = 0; i < file.cases.size(); ++i) {
-    const model::AbiFactCase & fact_case = file.cases[i];
-    if(!fact_case.label.empty()) {
-      out << "case " << fact_case.label << "\n";
-    }
-    FactSerializer serializer;
-    serializer.reserve_case_ids(fact_case);
-    for(size_t j = 0; j < fact_case.facts.size(); ++j) {
-      serializer.emit_existing_fact(fact_case.facts[j]);
-    }
-    serializer.append_target(fact_case.target);
-    for(size_t j = 0; j < serializer.lines.size(); ++j) {
-      out << join_words(serializer.lines[j]) << "\n";
-    }
-    if(i + 1 != file.cases.size()) {
-      out << "\n";
-    }
-  }
-  return out.str();
-}
-
 string mangle_model_fact_file(const model::AbiFactFile & file)
 {
   ostringstream out;
@@ -4825,46 +4801,6 @@ vector<string> words_from_fact_record(const AbiFactRecord & record)
   return words;
 }
 
-AbiFactFile parse_fact_text(const string & text)
-{
-  istringstream in(text);
-  AbiFactFile file;
-  AbiFactCase pending;
-  PublicFactParseContext context;
-  bool have_pending = false;
-  string line;
-  while(getline(in, line)) {
-    const size_t comment = line.find('#');
-    if(comment != string::npos) {
-      line = line.substr(0, comment);
-    }
-    line = trim(line);
-    if(line.empty()) {
-      continue;
-    }
-    vector<string> words = split_words(line);
-    if(words.empty()) {
-      continue;
-    }
-    if(words[0] == "case") {
-      if(have_pending || !pending.records.empty() || !pending.label.empty()) {
-        file.cases.push_back(pending);
-        pending = AbiFactCase();
-      }
-      pending.label = words.size() > 1 ? words[1] : string();
-      context = PublicFactParseContext();
-      have_pending = true;
-      continue;
-    }
-    pending.records.push_back(parse_fact_record_words_with_context(words, context));
-    have_pending = true;
-  }
-  if(have_pending || !pending.records.empty() || !pending.label.empty()) {
-    file.cases.push_back(pending);
-  }
-  return file;
-}
-
 string serialize_fact_file(const AbiFactFile & file)
 {
   ostringstream out;
@@ -4881,12 +4817,6 @@ string serialize_fact_file(const AbiFactFile & file)
     }
   }
   return out.str();
-}
-
-string mangle_fact_file(const AbiFactFile & file)
-{
-  istringstream in(serialize_fact_file(file));
-  return mangle_model_fact_file(parse_fact_stream(in, "<AbiFactFile>"));
 }
 
 string mangle_fact_files(const vector<string> & input_paths)

@@ -655,14 +655,4 @@ std::string serialize_mir_program(const MirProgram & program)
   return machine_ir::dump_program(program);
 }
 
-void write_mir_program_file(const std::string & path,
-                            const MirProgram & program)
-{
-  std::ofstream out(path.c_str());
-  if(!out) {
-    throw std::logic_error("unable to open machine IR output file: " + path);
-  }
-  out << serialize_mir_program(program);
-}
-
 }  // namespace mir_model

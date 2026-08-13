@@ -719,20 +719,6 @@ void X86Assembler::patch_u32(std::size_t patch_offset, std::uint32_t value)
   }
 }
 
-void X86Assembler::patch_u64(std::size_t patch_offset, std::uint64_t value)
-{
-  if(patch_offset + 8 > size_) {
-    throw logic_error("x86 patch_u64 out of range");
-  }
-  if(count_only_) {
-    return;
-  }
-  for(std::size_t i = 0; i < 8; ++i) {
-    bytes_[patch_offset + i] =
-        static_cast<unsigned char>((value >> (8 * i)) & 0xFF);
-  }
-}
-
 void X86Assembler::patch_rel32(std::size_t imm_offset, std::size_t target_offset)
 {
   if(imm_offset + 4 > size_) {

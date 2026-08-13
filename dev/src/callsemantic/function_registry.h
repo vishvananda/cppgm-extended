@@ -88,13 +88,6 @@ bool function_binding_matches_instantiation_identity(
     semantic_model::FunctionTemplateDecl * source_template,
     const std::string & instantiation_key);
 
-void maybe_adopt_materialized_owner_template_identity(
-    semantic_model::FunctionBinding & binding,
-    semantic_model::FunctionTemplateDecl * source_template,
-    const std::string & instantiation_key,
-    const std::vector<template_model::TemplateArgument> * instantiation_arguments,
-    semantic_model::Scope * declaration_scope);
-
 semantic_model::FunctionBinding * find_exact_function_binding(
     std::map<std::string, std::vector<semantic_model::FunctionBinding *> > & functions,
     const std::string & name,

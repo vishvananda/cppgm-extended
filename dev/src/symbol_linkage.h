@@ -170,9 +170,6 @@ std::string virtual_base_override_thunk_object_symbol_for_function(
 std::string virtual_base_override_thunk_object_symbol_for_symbol(
     const SymbolIdentity & target_symbol,
     long long vcall_offset);
-std::string construction_vtable_object_symbol(const semantic_model::ClassInfo & dynamic_class,
-                                              unsigned long long base_offset,
-                                              const semantic_model::ClassInfo & base_class);
 std::string vtt_object_symbol_for_type(const cpp_decl::TypePtr & type);
 std::string vtt_object_symbol(const semantic_model::ClassInfo & class_info);
 std::size_t abi_mangle_fact_count(const SymbolIdentity & symbol);

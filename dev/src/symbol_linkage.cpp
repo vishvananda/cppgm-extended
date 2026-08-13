@@ -447,27 +447,6 @@ std::string virtual_base_override_thunk_object_symbol_for_function(
   return out;
 }
 
-string construction_vtable_object_symbol(const semantic_model::ClassInfo & dynamic_class,
-                                         unsigned long long base_offset,
-                                         const semantic_model::ClassInfo & base_class)
-{
-  string dynamic_encoding;
-  string base_encoding;
-  if(!try_emit_type_encoding_ir(dynamic_class.type, dynamic_encoding, nullptr) ||
-     !try_emit_type_encoding_ir(base_class.type, base_encoding, nullptr)) {
-    return string();
-  }
-  string out;
-  if(!abi_mangle::emit_construction_vtable_symbol_from_encodings(
-         dynamic_encoding,
-         base_offset,
-         base_encoding,
-         out)) {
-    return string();
-  }
-  return out;
-}
-
 string vtt_object_symbol(const semantic_model::ClassInfo & class_info)
 {
   return vtt_object_symbol_for_type(class_info.type);

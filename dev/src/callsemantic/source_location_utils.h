@@ -55,12 +55,6 @@ public:
   std::string source_location_for_name_in_subtree(const CppAstNode & node,
                                                   const std::string & name,
                                                   bool prefer_last = false) const;
-  bool source_location_identifier_followed_by_indirection_type_suffix(
-      const std::string & location,
-      const std::string & identifier) const;
-  std::string source_location_for_qualified_member_start_on_line(
-      const std::string & location,
-      const std::string & member_name) const;
   std::string source_location_for_token_index(std::size_t index) const;
   bool parsed_source_location_for_token_index(std::size_t index,
                                               ParsedSourceLocation & out) const;
@@ -74,36 +68,17 @@ public:
                                            std::size_t & out_index) const;
   bool tokens_are_adjacent(std::size_t left_index,
                            std::size_t right_index) const;
-  std::string compact_token_range_text(std::size_t begin,
-                                       std::size_t end) const;
-  std::string compact_template_id_token_text(std::size_t begin,
-                                             std::size_t close_index,
-                                             int close_chars) const;
   bool template_name_before_open(std::size_t open_index,
                                  std::size_t & name_begin,
                                  std::size_t & anchor_index) const;
-  bool template_id_at_location_is_nested(const std::string & location) const;
-  bool template_id_at_location_is_qualified_member_owner(
-      const std::string & location) const;
   bool template_id_at_location_is_conversion_operator_result(
       const std::string & location) const;
-  bool matching_template_close_token(std::size_t open_index,
-                                     std::size_t & close_index,
-                                     int & close_chars,
-                                     bool same_line_only = true) const;
   bool template_argument_token_ranges_from_open(
       std::size_t open_index,
       std::vector<std::pair<std::size_t, std::size_t> > & ranges) const;
 
 private:
   static bool token_source_is_name_part(const std::string & source);
-  static bool token_text_needs_separator(const std::string & left,
-                                         const std::string & right);
-  std::string source_location_for_qualified_member_start_on_line_in_range(
-      const std::string & location,
-      const std::string & member_name,
-      std::size_t begin,
-      std::size_t end) const;
   const SourceLocationTable * source_locations_;
   IRecogTokenSequence * token_sequence_;
 };

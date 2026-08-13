@@ -2400,19 +2400,6 @@ void Preprocessor::start_new_file() {
   ifstates.push_back({true, true, IfState::Start});
 }
 
-void Preprocessor::stream(IPPTokenStream & output) {
-  try {
-    stream_pp_tokens(*this, output);
-  } catch (exception& e) {
-    if(files.empty()) {
-      throw;
-    }
-    auto tokenizer = &files.back()->tokenizer;
-    throw logic_error(to_string(tokenizer->get_ln()) + ":" +
-                      to_string(tokenizer->get_ch()) + ":" + e.what());
-  }
-}
-
 void Preprocessor::note_dependency(const string & path, bool system)
 {
   if(system || path.empty()) {

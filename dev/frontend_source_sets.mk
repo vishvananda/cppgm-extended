@@ -489,7 +489,6 @@ FRONTEND_OBJ_BASENAMES_lowir2native := \
 	lowir_machine_ir \
 	lowir_object_backend \
 	lowir_optimizer \
-	lowir_tool_cli \
 	machine_ir \
 	machine_ir_optimizer \
 	machine_linker \

@@ -313,7 +313,5 @@ using MirObjectAlias = ObjectAlias;
 using MirProgram = Program;
 
 std::string serialize_mir_program(const MirProgram & program);
-void write_mir_program_file(const std::string & path,
-                            const MirProgram & program);
 
 }  // namespace mir_model

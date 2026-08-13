@@ -387,23 +387,6 @@ bool function_binding_matches_instantiation_identity(
       binding, identity);
 }
 
-void maybe_adopt_materialized_owner_template_identity(
-    FunctionBinding & binding,
-    FunctionTemplateDecl * source_template,
-    const std::string & instantiation_key,
-    const std::vector<TemplateArgument> * instantiation_arguments,
-    Scope * declaration_scope)
-{
-  FunctionTemplateRegistrationIdentity identity;
-  identity.decl = source_template;
-  identity.key = instantiation_key;
-  identity.arguments = instantiation_arguments;
-  template_api::adopt_materialized_owner_template_identity(
-      binding,
-      identity,
-      declaration_scope);
-}
-
 FunctionBinding * find_exact_function_binding(
     std::map<std::string, std::vector<FunctionBinding *> > & functions,
     const std::string & name,

@@ -117,7 +117,6 @@ struct SemanticCache
                    DependentTypeResolutionCacheKeyLess>
       dependent_type_resolution_cache;
 
-  void clear_scope_capture_cache();
   void dump(std::ostream & out) const;
   InternedTextPtr intern_text(const std::string & text) const;
 };

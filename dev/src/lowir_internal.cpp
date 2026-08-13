@@ -3458,14 +3458,4 @@ std::string serialize_lowir_program(const LowirProgram & program)
   return lowir_internal::dump_program(program);
 }
 
-void write_lowir_program_file(const std::string & path,
-                              const LowirProgram & program)
-{
-  std::ofstream out(path.c_str());
-  if(!out) {
-    throw ParseError("unable to open LowIR output file: " + path);
-  }
-  out << serialize_lowir_program(program);
-}
-
 }  // namespace lowir_model

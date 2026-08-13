@@ -34,6 +34,5 @@ struct CppToolInvocation
 };
 
 CppToolInvocation parse_cpp_tool_invocation(const std::vector<std::string> & args);
-CppToolInvocation parse_cpp_tool_invocation(int argc, char ** argv);
 bool path_looks_like_object_file(const std::string & path);
 bool path_looks_like_lowir_file(const std::string & path);
