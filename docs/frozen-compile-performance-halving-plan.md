@@ -586,6 +586,32 @@ Three-run medians against `42d55c49c`:
 
 Evidence: `/tmp/cppgm-ast-lazy-vector-cow-final.json`.
 
+Fourth retained Phase 6 slice: the profile at
+`/tmp/cppgm-frozen-full-sample-a1f5d1db1.txt` attributed 426 sampled AST copy
+constructor calls to child-vector copies. Four hot declarator filters copied a
+complete subtree, discarded the new root's children, and then copied or
+recursively filtered the retained children again. A shared helper now copies
+all root metadata while leaving `children` empty. The filters build the final
+child vector once. This keeps the ordinary parser representation unchanged and
+does not add a holder allocation to every non-leaf node.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `158,427,135,579` | `-15,730,635,365` (`-9.03%`); `-0.54%` from `a1f5d1db1` |
+| maximum RSS | `734,437,376 B` | `-26,767,360 B` (`-3.52%`) |
+| peak footprint | `552,079,360 B` | `-16,678,912 B` (`-2.93%`) |
+| elapsed cycles | `123,265,820,186` | `-4.03%` |
+| wall time | `39.97 s` | `-0.12%`, informational under host load |
+
+Evidence: `/tmp/cppgm-ast-filter-shallow-copy-final.json`.
+
 ### Phase 7: optimize the measured LowIR long pole
 
 Collect a full-run sample and phase timers after semantic work drops. Rank the
@@ -726,7 +752,8 @@ Fill one row after each retained commit.
 | `773cadc65` | trust existing exported runtime function identities before fallback ownership probes | `164,248,241,098` | `-5.69%` | `748,720,128` | `557,678,592` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-runtime-symbol-identity-fast-path-final.json` |
 | `10ab1b728` | avoid materializing empty sparse records in substitution and mangling AST clones | `163,459,605,743` | `-6.14%` | `738,054,144` | `553,398,272` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-sparse-clone-materialization-final.json` |
 | `dc49aaa16` | return concrete alias-template cache hits before constructing an instantiation scope | `160,251,233,762` | `-7.99%` | `740,306,944` | `552,783,872` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-alias-concrete-hit-final.json` |
-| `(this commit)` | share populated AST side vectors until mutable access | `159,287,615,401` | `-8.54%` | `741,462,016` | `552,189,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-lazy-vector-cow-final.json` |
+| `a1f5d1db1` | share populated AST side vectors until mutable access | `159,287,615,401` | `-8.54%` | `741,462,016` | `552,189,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-lazy-vector-cow-final.json` |
+| `(this commit)` | build filtered AST roots without copying discarded children | `158,427,135,579` | `-9.03%` | `734,437,376` | `552,079,360` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-filter-shallow-copy-final.json` |
 
 ## Rejected work ledger
 
@@ -764,3 +791,5 @@ experiment before starting the next candidate.
 | validate persistent type-dependency memo hits with ownership identity instead of `weak_ptr::lock()` | `160,149,979,516` instructions, only `-0.06%` from the retained concrete-hit checkpoint | three million locks disappear, but the node-based hash lookup remains the cost; do not retain an isolated policy change below threshold | `/tmp/cppgm-type-dependency-owner-identity-screen.json` |
 | replace the persistent type-dependency memo with a flat pointer table and ownership comparisons | `160,385,002,634` instructions (`+0.08%` from the retained concrete-hit checkpoint) | contiguous probing and lock removal do not improve the full compile; keep the healthy node-based memo and stop this family | `/tmp/cppgm-type-dependency-flat-root-screen.json` |
 | bypass the persistent type-dependency memo for fundamental and semantically dependent named types | `160,208,856,972` instructions, only `-0.03%` from the retained concrete-hit checkpoint | 476,754 fundamental hits and 2.14 million named-type hits do not translate into a useful full-compile gain; retain the uniform memo path and close this family | `/tmp/cppgm-type-dependency-immediate-screen.json`, `/tmp/cppgm-type-dependency-kind-diagnostic.err` |
+| disable the qualified-type lookup cache after a frozen census reported 9,283 misses and no hits | `159,108,436,598` instructions, only `-0.11%` from the retained AST-vector checkpoint | the frozen workload's failed lookups do not justify removing a general cache for a sub-threshold gain | `/tmp/cppgm-qualified-type-cache-off-screen.json`, `/tmp/cppgm-dc49-diagnostic.err` |
+| reuse the first identifier-mention result instead of rescanning a type-pack substitution node | `159,716,690,143` instructions (`+0.27%` from the retained AST-vector checkpoint) | the source cleanup did not improve the primary metric; restore the original code | `/tmp/cppgm-template-pack-duplicate-scan-screen.json` |

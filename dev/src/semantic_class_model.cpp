@@ -6023,11 +6023,11 @@ CppAstNode filtered_method_specifiers(const CppAstNode & specifiers)
 
 CppAstNode filtered_method_declarator(const CppAstNode & declarator)
 {
-  CppAstNode filtered = declarator;
+  CppAstNode filtered = cppast_copy_without_children(declarator);
   std::vector<CppAstNode> kept;
   bool after_parameter_clause = false;
-  for(size_t i = 0; i < filtered.children.size(); ++i) {
-    const CppAstNode & child = filtered.children[i];
+  for(size_t i = 0; i < declarator.children.size(); ++i) {
+    const CppAstNode & child = declarator.children[i];
     if(child.kind == CppAstKind::parameter_clause) {
       after_parameter_clause = true;
       kept.push_back(child);
@@ -6049,13 +6049,13 @@ CppAstNode filtered_method_declarator(const CppAstNode & declarator)
 
 CppAstNode function_declarator_without_trailing_return(const CppAstNode & declarator)
 {
-  CppAstNode filtered = declarator;
+  CppAstNode filtered = cppast_copy_without_children(declarator);
   std::vector<CppAstNode> kept;
-  for(size_t i = 0; i < filtered.children.size(); ++i) {
-    if(filtered.children[i].kind == CppAstKind::trailing_return_type) {
+  for(size_t i = 0; i < declarator.children.size(); ++i) {
+    if(declarator.children[i].kind == CppAstKind::trailing_return_type) {
       continue;
     }
-    kept.push_back(filtered.children[i]);
+    kept.push_back(declarator.children[i]);
   }
   filtered.children.swap(kept);
   return filtered;

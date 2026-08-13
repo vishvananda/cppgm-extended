@@ -755,6 +755,45 @@ struct CppAstNode
   std::vector<CppAstNode> children;
 };
 
+inline CppAstNode cppast_copy_without_children(const CppAstNode & source)
+{
+  CppAstNode out;
+  out.kind = source.kind;
+  out.value = source.value;
+  out.semantic_type = source.semantic_type;
+  out.sparse_data = source.sparse_data;
+  out.qualified_name_syntax = source.qualified_name_syntax;
+  out.template_id_syntax = source.template_id_syntax;
+  out.qualifier_template_id_syntaxes = source.qualifier_template_id_syntaxes;
+  out.qualifier_type_syntaxes = source.qualifier_type_syntaxes;
+  out.has_leading_typename = source.has_leading_typename;
+  out.allows_implicit_typename = source.allows_implicit_typename;
+  out.semantic_type_is_resolved_qualifier =
+      source.semantic_type_is_resolved_qualifier;
+  out.has_exception_type_id_syntaxes = source.has_exception_type_id_syntaxes;
+  out.exception_type_id_syntaxes = source.exception_type_id_syntaxes;
+  out.linkage_has_braces = source.linkage_has_braces;
+  out.enum_has_definition = source.enum_has_definition;
+  out.has_no_unique_address = source.has_no_unique_address;
+  out.has_using_if_exists = source.has_using_if_exists;
+  out.has_exclude_from_explicit_instantiation =
+      source.has_exclude_from_explicit_instantiation;
+  out.has_weak_attribute = source.has_weak_attribute;
+  out.has_always_inline_attribute = source.has_always_inline_attribute;
+  out.maximum_field_alignment = source.maximum_field_alignment;
+  out.alignment_specifier_nodes = source.alignment_specifier_nodes;
+  out.is_final_specifier = source.is_final_specifier;
+  out.uses_assignment_form = source.uses_assignment_form;
+  out.is_typeof_specifier = source.is_typeof_specifier;
+  out.has_token = source.has_token;
+  out.token_kind = source.token_kind;
+  out.simple_type = source.simple_type;
+  out.token_start = source.token_start;
+  out.token_end = source.token_end;
+  out.source_location_id = source.source_location_id;
+  return out;
+}
+
 inline const std::string & cppast_empty_rare_string()
 {
   static const std::string value;

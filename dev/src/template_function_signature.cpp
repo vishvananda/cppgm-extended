@@ -49,8 +49,7 @@ bool is_non_result_type_decl_specifier(const CppAstNode & node)
 
 CppAstNode result_type_specifier_pattern(const CppAstNode & parse_specifiers)
 {
-  CppAstNode out = parse_specifiers;
-  out.children.clear();
+  CppAstNode out = cppast_copy_without_children(parse_specifiers);
   for(std::size_t i = 0; i < parse_specifiers.children.size(); ++i) {
     const CppAstNode & child = parse_specifiers.children[i];
     if(is_non_result_type_decl_specifier(child)) {
@@ -63,15 +62,15 @@ CppAstNode result_type_specifier_pattern(const CppAstNode & parse_specifiers)
 
 CppAstNode filter_function_declarator(const CppAstNode & declarator)
 {
-  CppAstNode filtered = declarator;
+  CppAstNode filtered = cppast_copy_without_children(declarator);
   std::vector<CppAstNode> kept;
-  for(std::size_t i = 0; i < filtered.children.size(); ++i) {
-    if(filtered.children[i].kind == CppAstKind::function_qualifier ||
-       filtered.children[i].kind == CppAstKind::nullability_qualifier ||
-       filtered.children[i].kind == CppAstKind::trailing_return_type) {
+  for(std::size_t i = 0; i < declarator.children.size(); ++i) {
+    if(declarator.children[i].kind == CppAstKind::function_qualifier ||
+       declarator.children[i].kind == CppAstKind::nullability_qualifier ||
+       declarator.children[i].kind == CppAstKind::trailing_return_type) {
       continue;
     }
-    kept.push_back(filter_function_declarator(filtered.children[i]));
+    kept.push_back(filter_function_declarator(declarator.children[i]));
   }
   filtered.children.swap(kept);
   return filtered;

@@ -8998,15 +8998,15 @@ private:
   CppAstNode filtered_function_declarator(
       const CppAstNode & declarator) const override
   {
-    CppAstNode filtered = declarator;
+    CppAstNode filtered = cppast_copy_without_children(declarator);
     vector<CppAstNode> kept;
-    for(size_t i = 0; i < filtered.children.size(); ++i) {
-      if(filtered.children[i].kind == CppAstKind::function_qualifier ||
-         filtered.children[i].kind == CppAstKind::nullability_qualifier ||
-         filtered.children[i].kind == CppAstKind::trailing_return_type) {
+    for(size_t i = 0; i < declarator.children.size(); ++i) {
+      if(declarator.children[i].kind == CppAstKind::function_qualifier ||
+         declarator.children[i].kind == CppAstKind::nullability_qualifier ||
+         declarator.children[i].kind == CppAstKind::trailing_return_type) {
         continue;
       }
-      kept.push_back(filtered_function_declarator(filtered.children[i]));
+      kept.push_back(filtered_function_declarator(declarator.children[i]));
     }
     filtered.children.swap(kept);
     return filtered;
