@@ -34,6 +34,13 @@ using template_model::TemplateParameterInfo;
 class AtomNameSet
 {
 public:
+  void insert(text_intern::Atom atom)
+  {
+    if(atom) {
+      names.insert(atom);
+    }
+  }
+
   void insert(const std::string & name)
   {
     if(!name.empty()) {
@@ -92,11 +99,11 @@ static void collect_visible_scope_values_for_template_body(
             current->values.begin();
         value != current->values.end();
         ++value) {
-      names.insert(value->first);
-      if(!lookup_template_body_value_type(value_types, value->first)) {
-        record_template_body_value_type(value_types,
-                                        value->first,
-                                        value->second.type);
+      text_intern::Atom atom = text_intern::intern(value->first);
+      names.insert(atom);
+      TemplateBodyValueTypes::iterator found = value_types.find(atom);
+      if(found == value_types.end() || !found->second) {
+        value_types[atom] = value->second.type;
       }
     }
   }

@@ -449,6 +449,31 @@ elements before reuse and prove no pointer, iterator, or span escapes the call.
 Target: `5-10%` instructions with fewer allocation calls. Land each family in
 its own commit.
 
+First retained Phase 4 slice: visible-scope collection for template body
+checking used the same spelling for three separate operations. It interned the
+name for the visible-name set, looked it up in the atom-keyed value-type map,
+and interned it again when recording a missing type. The loop now interns the
+spelling once and uses that atom for both containers. It preserves the original
+shadowing rule, including replacement of a null inner entry by a non-null outer
+type. No new cache or lifetime rule is involved.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report passes
+`4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `165,685,333,837` | `-8,472,437,107` (`-4.86%`) |
+| maximum RSS | `749,821,952 B` | `-11,382,784 B` (`-1.50%`) |
+| peak footprint | `557,666,304 B` | `-11,091,968 B` (`-1.95%`) |
+| elapsed cycles | `123,872,411,586` | `-3.56%` |
+| wall time | `38.64 s` | `-3.45%`, informational under host load |
+
+Evidence: `/tmp/cppgm-template-body-single-atom-final.json`.
+
 ### Phase 5: replace expected exception control flow
 
 The local semantic and template sources contain 211 matching substitution
@@ -604,7 +629,8 @@ Fill one row after each retained commit.
 | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- |
 | `42d55c49c` | correctness checkpoint | `174,157,770,944` | `0.00%` | `761,204,736` | `568,758,272` | SHA-256 `4fc1303a...5c4` | pass | pass with isolated PA30 confirmation | `/tmp/cppgm-perf-halving-42d55c49c.json` |
 | `01f875b8f` | remove net-negative dependent-resolution cache and tree-backed recursion guard | `173,508,264,894` | `-0.37%` | `743,952,384` | `557,821,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-resolution-negative-cache-removal-final.json` |
-| `(this commit)` | reuse native temp and forwarded-parameter interval analyses | `166,898,155,701` | `-4.17%` | `745,816,064` | `557,416,448` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-interval-reuse-final.json` |
+| `4ab86136b` | reuse native temp and forwarded-parameter interval analyses | `166,898,155,701` | `-4.17%` | `745,816,064` | `557,416,448` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-interval-reuse-final.json` |
+| `(this commit)` | intern each visible template-body value name once per scope walk | `165,685,333,837` | `-4.86%` | `749,821,952` | `557,666,304` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-single-atom-final.json` |
 
 ## Rejected work ledger
 
@@ -615,3 +641,13 @@ experiment before starting the next candidate.
 | --- | --- | --- | --- |
 | reason-armed semantic output queues | only 352 pending outcomes; late output had zero pending outcomes | remove the temporary census and keep current indexed worklists | `/tmp/cppgm-output-retry-instrumented.err` |
 | change only the dependent-resolution cache from tree to hash storage | `-0.03%` instructions in the one-run screen | fold the finding into cache removal; key construction dominated lookup structure | `/tmp/cppgm-dependent-resolution-hash-screen.json` |
+| replace the transient dependent-resolution map with a vector | `166,808,551,179` instructions, only `-0.05%` from the retained interval checkpoint | below the retention threshold; remove the experiment | `/tmp/cppgm-dependent-resolution-vector-screen.json` |
+| return `CppAst::node_text` by reference | `166,956,248,006` instructions, slightly worse than the retained checkpoint | copies were not the measured cost | `/tmp/cppgm-node-text-reference-screen.json` |
+| pack rare `CppAst` flags into bitfields | reduced the record from 192 to 176 bytes but increased instructions to `167,128,922,568` | reject the instruction regression despite lower memory | `/tmp/cppgm-cppast-bitfields-screen.json` |
+| reorder `CppAst` booleans without bitfields | reduced the record from 192 to 184 bytes but increased instructions to `166,982,395,055` | the memory win did not pay for the access layout | `/tmp/cppgm-cppast-bool-layout-screen.json` |
+| return `strip_top_level_cv` results by reference | `166,984,183,167` instructions | flat to slightly worse; keep value semantics | `/tmp/cppgm-strip-cv-reference-screen.json` |
+| disable the nested dependent-resolution cache | `166,734,130,520` instructions, only `-0.10%` from the retained interval checkpoint | the inner cache remains useful for cycles and duplicate child work; the gain was too small | `/tmp/cppgm-dependent-nested-cache-off-screen.json` |
+| use `make_shared` at all 14 type factory allocation sites | instructions stayed flat at `166,867,247,562`, while RSS rose to `766,730,240 B` and footprint to `572,997,632 B` | weak cache entries retain coallocated control blocks; keep separate allocation | `/tmp/cppgm-type-make-shared-screen.json` |
+| replace text interning with an open-addressed table | instructions regressed to `167,555,357,053` | reject the `0.39%` regression from the retained interval checkpoint | `/tmp/cppgm-open-addressed-text-intern-screen.json` |
+| add a broad type-id parse cache | census found 10,110 calls, 2,544 exact repeats, but only 1,456 repeated results and 921 dependent cases | the safe hit population is too small for the proposed key and invalidation cost | `/tmp/cppgm-type-id-parse-stats.err` |
+| prune the existing wrapper and function type caches | wrapper cache had 303,441 hits in 341,674 calls; function cache had 65,438 hits in 112,465 calls | both caches are healthy; pruning would discard substantial reuse | `/tmp/cppgm-type-cache-census.stderr` |
