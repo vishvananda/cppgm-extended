@@ -348,12 +348,6 @@ std::string sort_rendered_source_blocks(const std::string & text)
   return out.str();
 }
 
-std::map<std::string, std::string> build_defaulted_source_aliases(
-    const template_api::TemplateWitnessSession & session)
-{
-  return template_api::template_source_defaulted_aliases(session);
-}
-
 std::string strip_trailing_template_id(const std::string & text);
 
 void add_anonymous_namespace_source_aliases(
@@ -688,18 +682,6 @@ bool source_mentions_member_outside_declaration(
     }
   }
   return false;
-}
-
-std::set<std::string> explicit_source_owner_entities(
-    const template_api::TemplateWitnessSession & session)
-{
-  return template_api::template_source_explicit_owner_entities(session);
-}
-
-std::set<std::string> source_owner_entities(
-    const template_api::TemplateWitnessSession & session)
-{
-  return template_api::template_source_owner_entities(session);
 }
 
 void add_inline_stripped_entities(std::set<std::string> & entities,
@@ -1242,24 +1224,25 @@ bool session_has_closure_lifecycle_events(
 
 std::string render_template_closure_events(
     const template_api::TemplateWitnessSession & session,
+    const template_api::RenderedTemplateSourceWitness & source_analysis,
     const std::string & source_path,
     bool debug)
 {
   std::map<std::string, std::string> aliases =
-      build_defaulted_source_aliases(session);
+      source_analysis.defaulted_aliases;
   const std::vector<std::string> source_lines = read_source_lines(source_path);
   const std::vector<std::string> & inline_names =
       session.inline_namespace_names;
   std::set<std::string> source_owner_entities =
-      ::source_owner_entities(session);
+      source_analysis.owner_entities;
   add_inline_stripped_entities(source_owner_entities, inline_names);
   add_anonymous_namespace_source_aliases(aliases, source_owner_entities);
-  const std::set<std::string> explicit_owner_entities =
-      explicit_source_owner_entities(session);
-  const std::set<std::string> source_argument_value_entities =
-      template_api::template_source_argument_value_entities(session);
-  const std::set<std::string> source_argument_value_decl_locations =
-      template_api::template_source_argument_value_decl_locations(session);
+  const std::set<std::string> & explicit_owner_entities =
+      source_analysis.explicit_owner_entities;
+  const std::set<std::string> & source_argument_value_entities =
+      source_analysis.argument_value_entities;
+  const std::set<std::string> & source_argument_value_decl_locations =
+      source_analysis.argument_value_decl_locations;
   const std::vector<const template_api::TemplateLifecycleEvent *> lifecycle_events =
       template_api::template_witness_lifecycle_events_by_origin(
           session,
@@ -1452,15 +1435,20 @@ std::string dump_template_witness_text(const TemplateWitnessSession & session,
 std::string dump_witness_text(const TemplateWitnessSession & session,
                               const std::string & source_path)
 {
+  if(!session_has_closure_lifecycle_events(session)) {
+    return sort_rendered_source_blocks(
+        normalize_template_log_text_paths(
+            dump_template_witness_text(session, source_path)));
+  }
+  const RenderedTemplateSourceWitness source_analysis =
+      analyze_template_source_witness(session, source_path, false);
   const std::string source_text =
       sort_rendered_source_blocks(
           normalize_template_log_text_paths(
-              dump_template_witness_text(session, source_path)));
-  if(!session_has_closure_lifecycle_events(session)) {
-    return source_text;
-  }
+              source_analysis.text));
   return inject_template_closure_events(source_text,
                                         render_template_closure_events(session,
+                                                                       source_analysis,
                                                                        source_path,
                                                                        false));
 }
@@ -1468,15 +1456,20 @@ std::string dump_witness_text(const TemplateWitnessSession & session,
 std::string dump_witness_debug_text(const TemplateWitnessSession & session,
                                     const std::string & source_path)
 {
+  if(!session_has_closure_lifecycle_events(session)) {
+    return sort_rendered_source_blocks(
+        normalize_template_log_text_paths(
+            render_template_source_witness_debug_text(session, source_path)));
+  }
+  const RenderedTemplateSourceWitness source_analysis =
+      analyze_template_source_witness(session, source_path, true);
   const std::string source_text =
       sort_rendered_source_blocks(
           normalize_template_log_text_paths(
-              render_template_source_witness_debug_text(session, source_path)));
-  if(!session_has_closure_lifecycle_events(session)) {
-    return source_text;
-  }
+              source_analysis.text));
   return inject_template_closure_events(source_text,
                                         render_template_closure_events(session,
+                                                                       source_analysis,
                                                                        source_path,
                                                                        true));
 }

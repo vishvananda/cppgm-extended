@@ -624,10 +624,6 @@ ScopedTemplateWitnessEntryContext maybe_enter_value_binding_closure_context(
     SemanticContext & ctx,
     TemplateClosureReason reason,
     const semantic_model::ValueBinding * binding);
-bool source_location_is_inside_recorded_template_body(
-    const TemplateWitnessContext & ctx,
-    const std::string & location);
-
 void note_output_tracked_class_instantiation_if_needed(
     SemanticContext & ctx,
     semantic_model::ClassInfo * info,

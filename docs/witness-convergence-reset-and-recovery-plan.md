@@ -7302,6 +7302,161 @@ Production code adds 37 and removes 107 lines, a net deletion of 70. Phase 6
 remains open for the remaining measured nonzero local stores and for a final
 audit of their named obligations. Phase 7 and inception remain forbidden.
 
+## Renderer/index pass consolidation checkpoint, 2026-08-12
+
+Commit `ede07e8b309949565933ebae1ed6fed2c4feca35` is the parent. This
+Phase 6 checkpoint removes repeated renderer analysis and duplicated source
+context queries without changing any compiler result. Closure rendering used
+to normalize and sort the same source-use ledger six times: once for text and
+once for each of five metadata projections. `RenderedTemplateSourceWitness`
+now carries the text and all five projections from one normalized event vector.
+Inputs without closure events retain their single renderer pass.
+
+A temporary renderer probe, absent from production, covered all 1,530 strict
+inputs. The parent performed 7,050 normalization/sort passes and copied 22,399
+events to render 4,289 actual source publications: 1,104 closure inputs ran six
+passes and 426 inputs ran one. The checkpoint performs exactly 1,530 passes and
+4,289 event copies, removing 5,520 repeated passes and 18,110 repeated event
+copies. The probe log is
+`/tmp/cppgm-phase6-renderer-pass-probe-events-20260812.log`, SHA-256
+`626eb8c669f1eac298d9061d4fbf453bd70d3dfdb59b7a845ade69be7d92f355`.
+
+The renderer's destructive ambiguous-qualified-alias branch remains for a
+named nonzero obligation. The probe observed seven erases because one conflict
+was revisited by the old six-pass closure path. They reduce to two distinct
+semantic ambiguities:
+
+- `pa22/tests/spec/200-deduced-template-template-qualified-identity.t`;
+- `pa23/tests/general/400-static-member-pointer-reference-nontype-identity.t`.
+
+The branch therefore rejects a genuinely ambiguous `(template, parameter,
+qualified tail)` key rather than acting as generic row deduplication. A source
+comment records that contract.
+
+Three independent template-body range queries and one template-header range
+query are replaced by one body and one header implementation in `template_api`.
+All consumers now use the session-owned structural index directly. The
+template-boundary report improves the parent's 138 witness-location sites to
+136; the semantic-boundary report is byte-identical to the parent.
+
+The source-context index itself is deliberately retained. A temporary probe,
+also absent from production, compared the pre-semantic structural walk with
+normal template-declaration collection across all 1,530 inputs. The structural
+walk recorded 12,401 contexts, 12,397 unique; declaration collection observed
+13,231 contexts, 12,231 unique. The structural walk supplied 169 explicit
+source contexts that declaration collection never sees, while declaration
+collection had 999 replayed or additional observations. It is therefore a
+source-range index, not a duplicate semantic pass. The probe and coverage
+reports are
+`/tmp/cppgm-phase6-source-context-probe-events-20260812.log` and
+`/tmp/cppgm-phase6-source-context-probe-coverage-20260812.txt`; the event log
+has SHA-256
+`5648bcf5f2b33d0fda0e741e591c47972167f9c11d96a0e856fb043066fb584d`.
+
+`scripts/audit_duplicate_ast_semantic_walks.py` makes this distinction
+executable. It requires exactly one named source-context index walk, forbids
+semantic parsing inside it, restricts `parse_template_parameters` to the
+primary declaration/lambda owners, and rejects recursive AST walks in witness
+renderers. Its four focused tests pass. The audit reports one named structural
+obligation and zero findings. During the full helper run, the native-backend
+wrapper test was corrected from the obsolete PA28 path to PA29, where that
+assignment now lives.
+
+The final Homebrew-Clang validation produced these results:
+
+- all 1,530 direct-reference inputs are byte-exact against the frozen parent
+  for witness output, LowIR, diagnostics, stdout, and exit status;
+- ordinary and provenance strict validation retain exactly the three
+  documented cross-oracle rows, with PA19 279/0, PA20 158/0, PA22 293/1,
+  PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no missing actual output;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 runs
+  exactly once in its normal integrated position and has no separate lane;
+- all 1,530 provenance sessions exist. Schema 6 remains exactly 10,587
+  records: 4,289 source publications and 6,298 lifecycle publications. Source
+  ownership remains alias 835, class 2,631, function 791, and variable 32,
+  with no unknown producer or unexercised site;
+- ordinary and provenance compilers have identical status, witness, LowIR,
+  stdout, and diagnostics on all 1,530 inputs;
+- all 254 helper tests pass with one intentional skip; both compiler builds
+  are warning-free; both materialization decision boundaries have no finding;
+  all 23 forbidden text-reparse categories remain zero; and the duplicate-AST
+  audit has zero findings with its one explicit structural-index obligation;
+- all tracked semantic structure sizes remain byte-identical to the parent.
+
+The final parent-parity directory is
+`/tmp/cppgm-phase6-render-index-final2-parent-parity-20260812.xTv1I4`; its empty
+mismatch list has SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+The ordinary and provenance strict reports are
+`/tmp/cppgm-phase6-render-index-final-ordinary-strict-20260812.log` and
+`/tmp/cppgm-phase6-render-index-final-provenance-strict-20260812.log`. Both
+have SHA-256
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`.
+The integrated report is
+`/tmp/cppgm-phase6-render-index-final-integrated-20260812.log`, SHA-256
+`5a06aba2ff10d9ca9eab0a9414bb88e9d6e1f6ade54069388d4abae9448764e9`.
+
+The final provenance trace directory is
+`/tmp/cppgm-phase6-render-index-final2-provenance-trace-20260812.hHyrSQ`. The
+analysis and correlated convergence reports are
+`/tmp/cppgm-phase6-render-index-final-provenance-analysis-20260812.json` and
+`/tmp/cppgm-phase6-render-index-final-provenance-convergence-20260812.json`,
+with SHA-256 values
+`a28d545eea9fa102882ffd1c3ec58d9146ce9ad8800b4170dc5d8cf0dfd6094c`
+and
+`442828f0146dc1b12abe5778b9199fb5964f205f032806fb62d072914e82ee43`.
+The ordinary/provenance mismatch list is empty, SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+The helper, materialization, zero-finding text-reparse, template-boundary,
+semantic-boundary, and duplicate-AST reports have SHA-256 values
+`52d98289dbee0b85187838ab66a6a47357b9a1780a54441310f230734747ea2d`,
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`8bad5ecf5c64d41bdf73767b60edbf8705f29a8b6674ac7324ec068fc2c87725`,
+`3359f4ce6338003024b14eb36059e0a312b62d4a2fe1d38838ca543c810430e8`,
+and
+`ba5355fab0e7bd3a74b6c085371e204afcdc7f540b7d55294ab8a23928d02332`.
+
+`Type`, `TemplateArgument`, `ClassInfo`, and `TemplateWitnessSession` remain
+280, 136, 1,104, and 312 bytes. Every other reported structure also matches
+the parent. The structure report is
+`/tmp/cppgm-phase6-render-index-final-structure-sizes-20260812.txt`, SHA-256
+`1f872ff18916238323328ce75039b29c15d01f4bd37303c6b4e604112e09b00d`.
+
+The ordinary binary shrinks by 3,992 bytes to 17,041,488 bytes and contains no
+provenance symbols. `__text` shrinks by 1,408 bytes and `__unwind_info` by 40;
+`__gcc_except_tab` grows by 60 bytes. The containing `__TEXT` segment shrinks
+by 4,096 bytes and all data segments are unchanged. The section report is
+`/tmp/cppgm-phase6-render-index-final-binary-sections-20260812.txt`, SHA-256
+`5b574ffce94065856cf2a0c69f7453aa5ea43408fbbec372efd90ca994bc6844`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-render-index-final-candidate-ordinary-20260812`, SHA-256
+`21570b010aae79a0f06dd5d6a8f6a5ead8ac5cd6b6540f0924d4bd8de01b420c`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.83% | +0.02% | -4.12% | `/tmp/cppgm-phase6-render-index-final-perf-fixed-20260812.json` |
+| Immediate parent | -0.06% | +0.23% | +0.01% | `/tmp/cppgm-phase6-render-index-final-perf-parent-20260812.json` |
+
+The candidate medians are 174,552,873,423 instructions, 757,252,096 bytes
+maximum RSS, and 568,586,240 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-render-index-final-raw-candidate-20260812.json`, SHA-256
+`082bdcf58c14684451dd49655b8b85ea32d9eeafcc508dcd88060ea52792c347`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`c0206f43b0923a56dbf0e98da89a56f989e3e8821af6bbec11ebed28e57d83bb`
+and
+`7cc76da4d12cb5211682ea0c4a068d25c897c4702147914e78167963ff8b7eff`.
+The candidate metadata names commit `ede07e8b3` because the measurements cover
+this uncommitted checkpoint.
+
+Production code adds 162 and removes 209 lines, a net deletion of 47. Phase 6
+remains open for the final store-by-store acceptance synthesis; Phase 7 and
+inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

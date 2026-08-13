@@ -1948,6 +1948,14 @@ inline std::string normalize_template_witness_source_location(
   return value;
 }
 
+bool template_witness_source_location_in_template_body(
+    const TemplateWitnessSession * session,
+    const std::string & location);
+
+bool template_witness_source_location_in_template_header(
+    const TemplateWitnessSession * session,
+    const std::string & location);
+
 std::string dump_template_witness_text(const TemplateWitnessSession & session,
                                        const std::string & source_path);
 std::string dump_witness_text(const TemplateWitnessSession & session,

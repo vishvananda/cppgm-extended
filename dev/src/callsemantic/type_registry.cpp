@@ -40,50 +40,6 @@ void append_class_node_abi_tags(const TypePtr & type,
       *class_node);
 }
 
-bool source_location_in_template_header_context_for_tracking(
-    const std::string & location)
-{
-  const template_api::TemplateWitnessSession * session =
-      template_api::current_template_witness_session();
-  if(!session || session->template_header_contexts.empty() || location.empty()) {
-    return false;
-  }
-  const ParsedSourceLocation parsed =
-      parse_source_location(
-          template_api::normalize_template_witness_source_location(location));
-  if(!parsed.valid) {
-    return false;
-  }
-  for(std::size_t i = 0; i < session->template_header_contexts.size(); ++i) {
-    const template_api::TemplateWitnessTemplateHeaderContext & context =
-        session->template_header_contexts[i];
-    const ParsedSourceLocation context_file =
-        parse_source_location(
-            template_api::normalize_template_witness_source_location(
-                context.file + ":1:1"));
-    const std::string normalized_context_file =
-        context_file.valid ? context_file.file : context.file;
-    if(normalized_context_file != parsed.file ||
-       parsed.line < context.begin_line ||
-       parsed.line > context.end_line) {
-      continue;
-    }
-    if(parsed.line == context.begin_line &&
-       context.begin_column > 0 &&
-       parsed.column > 0 &&
-       parsed.column < context.begin_column) {
-      continue;
-    }
-    if(parsed.line == context.end_line &&
-       context.end_column > 0 &&
-       parsed.column > context.end_column) {
-      continue;
-    }
-    return true;
-  }
-  return false;
-}
-
 const FunctionBinding * enclosing_function(const Scope & current_scope)
 {
   for(const Scope * current = &current_scope; current; current = current->parent) {
@@ -528,7 +484,8 @@ void track_instantiated_class(TypeRegistryState & state, ClassInfo * info)
           source_template_name);
   const bool source_capture_header_track =
       witness::source_capture_enabled() &&
-      source_location_in_template_header_context_for_tracking(
+      template_api::template_witness_source_location_in_template_header(
+          template_api::current_template_witness_session(),
           current_use_location) &&
       !current_use_spells_instantiated_template;
   if(!info->template_instantiation_tracked) {

@@ -439,9 +439,9 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
             self.assertEqual((tests / "basic.my.program.stdout").read_text(), "stdin\n")
 
     def test_driver_assignment_wrapper_uses_worker_script(self):
-        with tempfile.TemporaryDirectory(prefix="pa28-worker-wrapper.") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix="pa29-worker-wrapper.") as temp_dir:
             temp = Path(temp_dir)
-            pa = temp / "pa28"
+            pa = temp / "pa29"
             tests = pa / "tests"
             app = temp / "fake_lowir_native.py"
             test = tests / "basic.t"
@@ -476,7 +476,7 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
 
             result = run(
                 "perl",
-                str(REPO_ROOT / "pa28" / "scripts" / "run_all_tests.pl"),
+                str(REPO_ROOT / "pa29" / "scripts" / "run_all_tests.pl"),
                 str(app),
                 "my",
                 "tests",

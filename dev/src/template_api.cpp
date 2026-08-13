@@ -4985,11 +4985,25 @@ bool source_type_lookup_is_collecting_owner_template_members(
 	              true).empty();
 }
 
-bool source_location_is_inside_recorded_template_body(
-    const TemplateWitnessContext & ctx,
+namespace {
+
+std::string normalized_template_witness_context_file(
+    const std::string & file)
+{
+  const template_witness_detail::ParsedSourceLocation parsed =
+      template_witness_detail::parse_source_location(
+          normalize_template_witness_source_location(file + ":1:1"));
+  return parsed.valid ? parsed.file : file;
+}
+
+}  // namespace
+
+bool template_witness_source_location_in_template_body(
+    const TemplateWitnessSession * session,
     const std::string & location)
 {
-  if(!ctx.session) {
+  if(session == nullptr || session->template_body_ranges.empty() ||
+     location.empty()) {
     return false;
   }
   const template_witness_detail::ParsedSourceLocation parsed =
@@ -4998,16 +5012,48 @@ bool source_location_is_inside_recorded_template_body(
   if(!parsed.valid) {
     return false;
   }
-  for(std::size_t i = 0; i < ctx.session->template_body_ranges.size(); ++i) {
-    const TemplateWitnessSourceRange & range =
-        ctx.session->template_body_ranges[i];
-    if(range.file != parsed.file ||
-       parsed.line < range.begin_line ||
-       parsed.line > range.end_line) {
+  for(std::size_t i = 0; i < session->template_body_ranges.size(); ++i) {
+    const TemplateWitnessSourceRange & range = session->template_body_ranges[i];
+    if(normalized_template_witness_context_file(range.file) != parsed.file ||
+       parsed.line < range.begin_line || parsed.line > range.end_line) {
       continue;
     }
-    if(parsed.line == range.begin_line &&
-       parsed.column < range.first_body_column) {
+    if(parsed.line == range.begin_line && range.first_body_column > 1 &&
+       parsed.column > 0 && parsed.column < range.first_body_column) {
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
+bool template_witness_source_location_in_template_header(
+    const TemplateWitnessSession * session,
+    const std::string & location)
+{
+  if(session == nullptr || session->template_header_contexts.empty() ||
+     location.empty()) {
+    return false;
+  }
+  const template_witness_detail::ParsedSourceLocation parsed =
+      template_witness_detail::parse_source_location(
+          normalize_template_witness_source_location(location));
+  if(!parsed.valid) {
+    return false;
+  }
+  for(std::size_t i = 0; i < session->template_header_contexts.size(); ++i) {
+    const TemplateWitnessTemplateHeaderContext & context =
+        session->template_header_contexts[i];
+    if(normalized_template_witness_context_file(context.file) != parsed.file ||
+       parsed.line < context.begin_line || parsed.line > context.end_line) {
+      continue;
+    }
+    if(parsed.line == context.begin_line && context.begin_column > 0 &&
+       parsed.column > 0 && parsed.column < context.begin_column) {
+      continue;
+    }
+    if(parsed.line == context.end_line && context.end_column > 0 &&
+       parsed.column > context.end_column) {
       continue;
     }
     return true;
@@ -5042,8 +5088,8 @@ bool default_argument_member_value_note_is_speculative(
   }
   if(template_witness_source_type_lookup_active() &&
      binding.name == "value") {
-    return !source_location_is_inside_recorded_template_body(
-        ctx.template_witness_context(),
+    return !template_witness_source_location_in_template_body(
+        ctx.template_witness_context().session,
         effective_location);
   }
 

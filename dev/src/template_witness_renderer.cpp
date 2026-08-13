@@ -1044,6 +1044,8 @@ void collect_qualified_binding_alias(
     return;
   }
   if(found->second != binding.arg) {
+    // A qualified source tail can name different arguments for the same
+    // parameter.  Do not guess an alias when that semantic key is ambiguous.
     aliases.erase(found);
     ambiguous.insert(key);
   }
@@ -1976,11 +1978,11 @@ std::string render_template_source_witness_debug_text(
 #endif
 }
 
+namespace {
+
 std::map<std::string, std::string> template_source_defaulted_aliases(
-    const TemplateWitnessSession & session)
+    const vector<RenderedSourceUse> & events)
 {
-  vector<RenderedSourceUse> events;
-  collect_rendered_source_events(session, events);
   map<string, string> aliases = build_defaulted_class_aliases(events, false);
   const map<string, string> predecl_all_defaulted =
       build_predecl_all_defaulted_class_aliases(events);
@@ -1995,10 +1997,8 @@ std::map<std::string, std::string> template_source_defaulted_aliases(
 }
 
 std::set<std::string> template_source_owner_entities(
-    const TemplateWitnessSession & session)
+    const vector<RenderedSourceUse> & events)
 {
-  vector<RenderedSourceUse> events;
-  collect_rendered_source_events(session, events);
   set<string> out;
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].kind == SourceUseKind::FunctionCall) {
@@ -2046,10 +2046,8 @@ std::set<std::string> template_source_owner_entities(
 }
 
 std::set<std::string> template_source_explicit_owner_entities(
-    const TemplateWitnessSession & session)
+    const vector<RenderedSourceUse> & events)
 {
-  vector<RenderedSourceUse> events;
-  collect_rendered_source_events(session, events);
   set<string> out;
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].selection != SourceSelectionKind::ExplicitSpecialization) {
@@ -2087,10 +2085,8 @@ std::set<std::string> template_source_explicit_owner_entities(
 }
 
 std::set<std::string> template_source_argument_value_entities(
-    const TemplateWitnessSession & session)
+    const vector<RenderedSourceUse> & events)
 {
-  vector<RenderedSourceUse> events;
-  collect_rendered_source_events(session, events);
   set<string> out;
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].kind != SourceUseKind::ClassUse &&
@@ -2118,10 +2114,8 @@ std::set<std::string> template_source_argument_value_entities(
 }
 
 std::set<std::string> template_source_argument_value_decl_locations(
-    const TemplateWitnessSession & session)
+    const vector<RenderedSourceUse> & events)
 {
-  vector<RenderedSourceUse> events;
-  collect_rendered_source_events(session, events);
   set<string> out;
   for(size_t i = 0; i < events.size(); ++i) {
     if(events[i].kind != SourceUseKind::ClassUse &&
@@ -2145,6 +2139,33 @@ std::set<std::string> template_source_argument_value_decl_locations(
       }
     }
   }
+  return out;
+}
+
+}  // namespace
+
+RenderedTemplateSourceWitness analyze_template_source_witness(
+    const TemplateWitnessSession & session,
+    const std::string & source_path,
+    bool debug)
+{
+  vector<RenderedSourceUse> events;
+  collect_rendered_source_events(session, events);
+  RenderedTemplateSourceWitness out;
+  out.text = render_events_text(events, debug);
+  out.defaulted_aliases = template_source_defaulted_aliases(events);
+  out.owner_entities = template_source_owner_entities(events);
+  out.explicit_owner_entities =
+      template_source_explicit_owner_entities(events);
+  out.argument_value_entities =
+      template_source_argument_value_entities(events);
+  out.argument_value_decl_locations =
+      template_source_argument_value_decl_locations(events);
+#if defined(CPPGM_ENABLE_WITNESS_PROVENANCE)
+  witness_provenance::finish_session(session, source_path);
+#else
+  (void)source_path;
+#endif
   return out;
 }
 

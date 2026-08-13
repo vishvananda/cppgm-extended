@@ -307,39 +307,6 @@ bool source_location_is_strictly_later_in_same_file(const std::string & first,
          parsed_first.column > parsed_second.column;
 }
 
-bool source_location_in_template_body_range(SemanticContext & ctx,
-                                            const std::string & location)
-{
-  const ParsedSourceLocation parsed =
-      parse_source_location(normalize_template_witness_location(location));
-  if(!parsed.valid || ctx.template_witness_context().session == nullptr) {
-    return false;
-  }
-  const std::vector<template_api::TemplateWitnessSourceRange> & ranges =
-      ctx.template_witness_context().session->template_body_ranges;
-  for(std::size_t i = 0; i < ranges.size(); ++i) {
-    const ParsedSourceLocation range_file =
-        parse_source_location(normalize_template_witness_location(
-            ranges[i].file + ":1:1"));
-    const std::string normalized_range_file =
-        range_file.valid ? range_file.file : ranges[i].file;
-    if(normalized_range_file != parsed.file) {
-      continue;
-    }
-    if(parsed.line < ranges[i].begin_line || parsed.line > ranges[i].end_line) {
-      continue;
-    }
-    if(parsed.line == ranges[i].begin_line &&
-       ranges[i].first_body_column > 1 &&
-       parsed.column > 0 &&
-       parsed.column < ranges[i].first_body_column) {
-      continue;
-    }
-    return true;
-  }
-  return false;
-}
-
 std::string coarse_assignment_drop_reason(const std::string & rejection)
 {
   if(rejection == "implicit object conversion failed" ||
@@ -891,9 +858,9 @@ make_function_source_template_id_occurrence(
   occurrence.argument_list_spelled = true;
   occurrence.empty_argument_list = syntax.argument_syntaxes.empty();
   occurrence.exact_source_arguments = true;
-  occurrence.in_template_body = source_location_in_template_body_range(
-      ctx,
-      occurrence.name_location);
+  occurrence.in_template_body =
+      template_api::template_witness_source_location_in_template_body(
+          ctx.template_witness_context().session, occurrence.name_location);
   occurrence.arguments.reserve(syntax.argument_syntaxes.size());
   for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
     const TemplateArgumentSyntax & syntax_argument = syntax.argument_syntaxes[i];
@@ -3643,7 +3610,8 @@ void note_function_call_source_event(
       source_call_node &&
       source_call_node->kind == CppAstKind::call_expression &&
       !source_call_location.empty() &&
-      !source_location_in_template_body_range(ctx, source_call_location) &&
+      !template_api::template_witness_source_location_in_template_body(
+          ctx.template_witness_context().session, source_call_location) &&
       !source_binding_scope_is_template_dependent(source_scope) &&
       !source_scope_is_function_template_instantiation(source_scope) &&
       !source_call_retains_dependency;
@@ -3981,7 +3949,8 @@ void note_function_call_source_event(
      !selected_decl_location.empty() &&
      normalize_template_witness_location(public_location) != selected_decl_location &&
      (chosen->is_constexpr ||
-      !source_location_in_template_body_range(ctx, public_location));
+      !template_api::template_witness_source_location_in_template_body(
+          ctx.template_witness_context().session, public_location));
   if(source_constructor_template_call_requires_definition) {
     chosen->template_definition_required_by_public_source_call = true;
   }
@@ -3997,7 +3966,8 @@ void note_function_call_source_event(
      !selected_decl_location.empty() &&
      normalize_template_witness_location(public_location) != selected_decl_location &&
      (chosen->is_constexpr ||
-      !source_location_in_template_body_range(ctx, public_location))) {
+      !template_api::template_witness_source_location_in_template_body(
+          ctx.template_witness_context().session, public_location))) {
     chosen->template_definition_required_by_public_source_call = true;
   }
   if(!template_related && !source_call_result_out) {

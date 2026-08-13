@@ -659,8 +659,8 @@ void emit_function_template_call_source_use(
       request.template_id_occurrence;
   source_occurrence.in_template_body =
       source_occurrence.in_template_body ||
-      template_api::source_location_is_inside_recorded_template_body(
-          ctx.template_witness_context(), public_location);
+      template_api::template_witness_source_location_in_template_body(
+          ctx.template_witness_context().session, public_location);
   const bool implicit_template_body_call =
       source_occurrence.in_template_body &&
       !declval_call &&

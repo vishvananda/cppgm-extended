@@ -14638,8 +14638,8 @@ bool resolve_template_arguments(
         const bool committed_default =
             entry_context.origin ==
                 template_api::TemplateWitnessOrigin::Closure ||
-            !template_api::source_location_is_inside_recorded_template_body(
-                services.witness_context,
+            !template_api::template_witness_source_location_in_template_body(
+                services.witness_context.session,
                 default_use_location);
         if(committed_default) {
           default_argument_evaluation.reset();

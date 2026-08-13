@@ -525,46 +525,6 @@ bool template_id_syntax_has_dependent_source_argument(
   return false;
 }
 
-bool source_location_in_current_template_body_range(const string & location)
-{
-  const template_api::TemplateWitnessSession * session =
-      template_api::current_template_witness_session();
-  if(!session || session->template_body_ranges.empty() || location.empty()) {
-    return false;
-  }
-  const ParsedSourceLocation parsed =
-      parse_source_location(
-          template_api::normalize_template_witness_source_location(location));
-  if(!parsed.valid) {
-    return false;
-  }
-  const vector<template_api::TemplateWitnessSourceRange> & ranges =
-      session->template_body_ranges;
-  for(size_t i = 0; i < ranges.size(); ++i) {
-    const ParsedSourceLocation range_file =
-        parse_source_location(
-            template_api::normalize_template_witness_source_location(
-                ranges[i].file + ":1:1"));
-    const string normalized_range_file =
-        range_file.valid ? range_file.file : ranges[i].file;
-    if(normalized_range_file != parsed.file) {
-      continue;
-    }
-    if(parsed.line < ranges[i].begin_line ||
-       parsed.line > ranges[i].end_line) {
-      continue;
-    }
-    if(parsed.line == ranges[i].begin_line &&
-       ranges[i].first_body_column > 1 &&
-       parsed.column > 0 &&
-       parsed.column < ranges[i].first_body_column) {
-      continue;
-    }
-    return true;
-  }
-  return false;
-}
-
 template_api::ClassTemplateSourceUseMode qualifier_source_use_mode(
     Scope & scope,
     const TemplateIdSyntax & syntax,
@@ -576,7 +536,9 @@ template_api::ClassTemplateSourceUseMode qualifier_source_use_mode(
           template_api::function_binding_has_source_template_identity(
               scope.function) ||
           template_id_syntax_has_dependent_source_argument(syntax) ||
-          source_location_in_current_template_body_range(source_location)) ?
+          template_api::template_witness_source_location_in_template_body(
+              template_api::current_template_witness_session(),
+              source_location)) ?
       template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly :
       template_api::ClassTemplateSourceUseMode::EmitClassUse;
 }
