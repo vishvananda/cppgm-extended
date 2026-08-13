@@ -20550,6 +20550,7 @@ private:
   map<string, unsigned long long> class_host_vcall_offset_counts_;
   map<string, string> function_symbols_;
   vector<FunctionSymbolEntry> function_symbol_entries_;
+  unordered_map<string, vector<size_t> > function_symbol_entry_indices_by_name_;
   map<string, const CallSemNode *> function_symbol_nodes_;
   set<string> c_linkage_function_symbols_;
   map<string, vector<pair<string, unsigned long long> > > function_virtual_base_layouts_;
@@ -20595,6 +20596,33 @@ private:
   bool validate_closure_ = false;
   bool emit_runtime_support_ = false;
   bool enable_debug_value_names_ = false;
+
+  size_t find_function_symbol_entry_index(
+      const string & name,
+      const TypePtr & type,
+      const string & type_key) const
+  {
+    unordered_map<string, vector<size_t> >::const_iterator candidates =
+        function_symbol_entry_indices_by_name_.find(name);
+    if(candidates == function_symbol_entry_indices_by_name_.end()) {
+      return static_cast<size_t>(-1);
+    }
+    for(size_t i = 0; i < candidates->second.size(); ++i) {
+      const size_t entry_index = candidates->second[i];
+      const FunctionSymbolEntry & entry = function_symbol_entries_[entry_index];
+      if(type_equals(entry.type, type) ||
+         stable_function_type_key(entry.type) == type_key) {
+        return entry_index;
+      }
+    }
+    return static_cast<size_t>(-1);
+  }
+
+  void index_function_symbol_entry(size_t entry_index)
+  {
+    function_symbol_entry_indices_by_name_[
+        function_symbol_entries_[entry_index].name].push_back(entry_index);
+  }
 
   void invalidate_function_symbol_lookup_index()
   {
@@ -22453,23 +22481,19 @@ private:
       }
       bool updated_entry = false;
       const string node_type_key = stable_function_type_key(node.semantic_type);
-      for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
-        if(function_symbol_entries_[i].name != node.text) {
-          continue;
-        }
-        if(!type_equals(function_symbol_entries_[i].type, node.semantic_type) &&
-           stable_function_type_key(function_symbol_entries_[i].type) != node_type_key) {
-          continue;
-        }
+      const size_t entry_index =
+          find_function_symbol_entry_index(node.text,
+                                           node.semantic_type,
+                                           node_type_key);
+      if(entry_index != static_cast<size_t>(-1)) {
         if(prefer_symbol) {
-          function_symbol_entries_[i].symbol = symbol;
+          function_symbol_entries_[entry_index].symbol = symbol;
           invalidate_function_symbol_lookup_index();
         }
         if(node.kind == CallSemKind::function_definition) {
-          function_symbol_entries_[i].has_definition = true;
+          function_symbol_entries_[entry_index].has_definition = true;
         }
         updated_entry = true;
-        break;
       }
       if(!updated_entry) {
         FunctionSymbolEntry entry;
@@ -22478,6 +22502,7 @@ private:
         entry.symbol = symbol;
         entry.has_definition = node.kind == CallSemKind::function_definition;
         function_symbol_entries_.push_back(entry);
+        index_function_symbol_entry(function_symbol_entries_.size() - 1);
         invalidate_function_symbol_lookup_index();
       }
       if(symbol_linkage::has_object_symbol(callsem_symbol(node)) &&
@@ -22995,14 +23020,10 @@ private:
     }
 
     const string node_type_key = stable_function_type_key(node.semantic_type);
-    for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
-      if(function_symbol_entries_[i].name != name) {
-        continue;
-      }
-      if(!type_equals(function_symbol_entries_[i].type, node.semantic_type) &&
-         stable_function_type_key(function_symbol_entries_[i].type) != node_type_key) {
-        continue;
-      }
+    if(find_function_symbol_entry_index(name,
+                                        node.semantic_type,
+                                        node_type_key) !=
+       static_cast<size_t>(-1)) {
       return;
     }
 
@@ -23012,6 +23033,7 @@ private:
     entry.symbol = symbol;
     entry.has_definition = false;
     function_symbol_entries_.push_back(entry);
+    index_function_symbol_entry(function_symbol_entries_.size() - 1);
     if(!function_symbol_lookup_index_dirty_) {
       function_symbol_lookup_index_.append_entry(
           function_symbol_entries_.back(), function_symbol_entries_.size() - 1);
