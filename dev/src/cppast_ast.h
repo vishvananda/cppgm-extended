@@ -172,73 +172,70 @@ template <typename T>
 class CppAstLazyVector
 {
 public:
+  // Copies share populated storage. Every mutable entry point reaches
+  // mutable_vector(), which detaches before exposing the underlying vector.
   typedef typename std::vector<T>::iterator iterator;
   typedef typename std::vector<T>::const_iterator const_iterator;
 
-  CppAstLazyVector() {}
+  CppAstLazyVector() : values_(nullptr) {}
 
   CppAstLazyVector(const CppAstLazyVector & other)
+    : values_(other.values_)
   {
-    if(other.values_) {
-      values_.reset(new std::vector<T>(*other.values_));
-    }
+    retain();
   }
 
   CppAstLazyVector(CppAstLazyVector && other) noexcept
-    : values_(std::move(other.values_))
+    : values_(other.values_)
   {
+    other.values_ = nullptr;
   }
 
   CppAstLazyVector(const std::vector<T> & values)
+    : values_(values.empty() ? nullptr : new Holder(values))
   {
-    if(!values.empty()) {
-      values_.reset(new std::vector<T>(values));
-    }
   }
 
   CppAstLazyVector(std::vector<T> && values)
+    : values_(values.empty() ? nullptr : new Holder(std::move(values)))
   {
-    if(!values.empty()) {
-      values_.reset(new std::vector<T>(std::move(values)));
-    }
+  }
+
+  ~CppAstLazyVector()
+  {
+    release();
   }
 
   CppAstLazyVector & operator=(const CppAstLazyVector & other)
   {
-    if(this == &other) {
-      return *this;
-    }
-    if(other.values_) {
-      values_.reset(new std::vector<T>(*other.values_));
-    } else {
-      values_.reset();
+    if(this != &other) {
+      CppAstLazyVector replacement(other);
+      swap(replacement);
     }
     return *this;
   }
 
   CppAstLazyVector & operator=(CppAstLazyVector && other) noexcept
   {
-    values_ = std::move(other.values_);
+    if(this != &other) {
+      release();
+      values_ = other.values_;
+      other.values_ = nullptr;
+    }
     return *this;
   }
 
   CppAstLazyVector & operator=(const std::vector<T> & values)
   {
-    if(values.empty()) {
-      values_.reset();
-    } else {
-      values_.reset(new std::vector<T>(values));
-    }
+    CppAstLazyVector replacement(values);
+    swap(replacement);
     return *this;
   }
 
   CppAstLazyVector & operator=(std::vector<T> && values)
   {
-    if(values.empty()) {
-      values_.reset();
-    } else {
-      values_.reset(new std::vector<T>(std::move(values)));
-    }
+    CppAstLazyVector replacement(std::move(values));
+    swap(replacement);
     return *this;
   }
 
@@ -254,17 +251,17 @@ public:
 
   bool empty() const
   {
-    return !values_ || values_->empty();
+    return !values_ || values_->values.empty();
   }
 
   std::size_t size() const
   {
-    return values_ ? values_->size() : 0;
+    return values_ ? values_->values.size() : 0;
   }
 
   void clear()
   {
-    values_.reset();
+    release();
   }
 
   void reserve(std::size_t count)
@@ -286,7 +283,7 @@ public:
   void assign(InputIt first, InputIt last)
   {
     if(first == last) {
-      values_.reset();
+      release();
       return;
     }
     mutable_vector().assign(first, last);
@@ -354,25 +351,65 @@ public:
 
   const std::vector<T> & as_vector() const
   {
-    return values_ ? *values_ : empty_vector();
+    return values_ ? values_->values : empty_vector();
   }
 
   std::vector<T> & mutable_vector()
   {
     if(!values_) {
-      values_.reset(new std::vector<T>());
+      values_ = new Holder();
+    } else if(values_->reference_count != 1) {
+      Holder * replacement = new Holder(values_->values);
+      release();
+      values_ = replacement;
     }
-    return *values_;
+    return values_->values;
   }
 
 private:
+  struct Holder
+  {
+    Holder() : reference_count(1) {}
+
+    explicit Holder(const std::vector<T> & values_in)
+      : reference_count(1), values(values_in)
+    {}
+
+    explicit Holder(std::vector<T> && values_in)
+      : reference_count(1), values(std::move(values_in))
+    {}
+
+    std::size_t reference_count;
+    std::vector<T> values;
+  };
+
+  void retain()
+  {
+    if(values_) {
+      ++values_->reference_count;
+    }
+  }
+
+  void release()
+  {
+    if(values_ && --values_->reference_count == 0) {
+      delete values_;
+    }
+    values_ = nullptr;
+  }
+
+  void swap(CppAstLazyVector & other) noexcept
+  {
+    std::swap(values_, other.values_);
+  }
+
   static const std::vector<T> & empty_vector()
   {
     static const std::vector<T> empty;
     return empty;
   }
 
-  std::unique_ptr<std::vector<T> > values_;
+  Holder * values_;
 };
 
 template <typename T>

@@ -561,6 +561,31 @@ Configured direct strict passes `1530/1530`; the full direct report passes
 time. The instruction result is `-1.96%` from the sparse-clone checkpoint.
 Evidence: `/tmp/cppgm-alias-concrete-hit-final.json`.
 
+Third retained Phase 6 slice: `CppAstLazyVector` used unique ownership, so each
+copy of a populated AST side vector copied its elements and their nested
+syntax. Template substitution and mangling make many such copies before
+changing only a subset. The container now uses an intrusive, non-atomic shared
+holder. Const access shares the holder, and every mutable entry point detaches
+the vector first. Empty vectors remain allocation-free, the container remains
+one pointer wide, and callers keep value semantics.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report passes
+`4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `159,287,615,401` | `-14,870,155,543` (`-8.54%`); `-0.60%` from `dc49aaa16` |
+| maximum RSS | `741,462,016 B` | `-19,742,720 B` (`-2.59%`) |
+| peak footprint | `552,189,952 B` | `-16,568,320 B` (`-2.91%`) |
+| elapsed cycles | `121,861,759,732` | `-5.13%` |
+| wall time | `40.83 s` | `+2.02%`, informational under host load |
+
+Evidence: `/tmp/cppgm-ast-lazy-vector-cow-final.json`.
+
 ### Phase 7: optimize the measured LowIR long pole
 
 Collect a full-run sample and phase timers after semantic work drops. Rank the
@@ -700,7 +725,8 @@ Fill one row after each retained commit.
 | `325644977` | intern each visible template-body value name once per scope walk | `165,685,333,837` | `-4.86%` | `749,821,952` | `557,666,304` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-single-atom-final.json` |
 | `773cadc65` | trust existing exported runtime function identities before fallback ownership probes | `164,248,241,098` | `-5.69%` | `748,720,128` | `557,678,592` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-runtime-symbol-identity-fast-path-final.json` |
 | `10ab1b728` | avoid materializing empty sparse records in substitution and mangling AST clones | `163,459,605,743` | `-6.14%` | `738,054,144` | `553,398,272` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-sparse-clone-materialization-final.json` |
-| `(this commit)` | return concrete alias-template cache hits before constructing an instantiation scope | `160,251,233,762` | `-7.99%` | `740,306,944` | `552,783,872` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-alias-concrete-hit-final.json` |
+| `dc49aaa16` | return concrete alias-template cache hits before constructing an instantiation scope | `160,251,233,762` | `-7.99%` | `740,306,944` | `552,783,872` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-alias-concrete-hit-final.json` |
+| `(this commit)` | share populated AST side vectors until mutable access | `159,287,615,401` | `-8.54%` | `741,462,016` | `552,189,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-lazy-vector-cow-final.json` |
 
 ## Rejected work ledger
 
@@ -731,3 +757,10 @@ experiment before starting the next candidate.
 | store template-argument identifiers as interned atoms | `164,238,424,503` instructions, only `-0.006%` from the retained runtime-symbol checkpoint | pointer membership avoids string ownership but does not move the workload; remove the added global interning traffic | `/tmp/cppgm-template-argument-atoms-screen.json` |
 | make five rarely populated `Scope` sets lazy | `163,441,532,001` instructions, only `-0.01%` from the retained sparse-clone checkpoint; footprint fell by about 3.4 MiB | the pointer-backed headers save memory but do not advance compile throughput; keep the direct ordered-set layout | `/tmp/cppgm-scope-lazy-rare-sets-screen.json` |
 | raw-pointer fast path for `class_info_for_type` | `163,528,784,054` instructions | the 1.85M-call counter is dominated by the existing embedded `named_class_info` return; avoiding one shared-owner copy was flat to worse | `/tmp/cppgm-class-info-raw-fast-path-screen.json` |
+| return dependent alias-template cache hits before scope construction | `160,065,541,131` instructions, only `-0.12%` from the retained concrete-hit checkpoint | the concrete fast path captures the useful population; keep dependent results on the scope-sensitive redirect and repair path | `/tmp/cppgm-alias-dependent-hit-screen.json` |
+| move enum-underlying and host-ABI chunk storage into the named-type side record | footprint fell by about 6.9 MiB, but instructions rose to `161,042,270,068` (`+0.49%` from the retained concrete-hit checkpoint) | the smaller common allocation does not repay the extra named-record access; reject the primary-signal regression | `/tmp/cppgm-type-named-side-record-screen.json` |
+| filter the service-layer local-type overlay by template-argument names | `160,725,467,668` instructions (`+0.30%` from the retained concrete-hit checkpoint) | identifier-set membership costs more than scanning the small local type maps; keep the direct marker scan | `/tmp/cppgm-local-type-overlay-name-filter-screen.json` |
+| return early from type-pack AST substitution when no replacement name occurs | `160,918,097,342` instructions (`+0.42%` from the retained concrete-hit checkpoint) | the recursive mention predicate turns affected trees toward repeated subtree scans; keep the single-pass clone/substitute recursion | `/tmp/cppgm-noop-pack-substitution-copy-screen.json` |
+| validate persistent type-dependency memo hits with ownership identity instead of `weak_ptr::lock()` | `160,149,979,516` instructions, only `-0.06%` from the retained concrete-hit checkpoint | three million locks disappear, but the node-based hash lookup remains the cost; do not retain an isolated policy change below threshold | `/tmp/cppgm-type-dependency-owner-identity-screen.json` |
+| replace the persistent type-dependency memo with a flat pointer table and ownership comparisons | `160,385,002,634` instructions (`+0.08%` from the retained concrete-hit checkpoint) | contiguous probing and lock removal do not improve the full compile; keep the healthy node-based memo and stop this family | `/tmp/cppgm-type-dependency-flat-root-screen.json` |
+| bypass the persistent type-dependency memo for fundamental and semantically dependent named types | `160,208,856,972` instructions, only `-0.03%` from the retained concrete-hit checkpoint | 476,754 fundamental hits and 2.14 million named-type hits do not translate into a useful full-compile gain; retain the uniform memo path and close this family | `/tmp/cppgm-type-dependency-immediate-screen.json`, `/tmp/cppgm-type-dependency-kind-diagnostic.err` |
