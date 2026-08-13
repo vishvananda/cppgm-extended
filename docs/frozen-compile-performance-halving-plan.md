@@ -868,6 +868,45 @@ Three-run medians against `42d55c49c`:
 Evidence: `/tmp/cppgm-function-symbol-index-census.stderr` and
 `/tmp/cppgm-function-symbol-index-incremental-final.json`.
 
+Sixth retained Phase 7 slice: the post-index full-run profile at
+`/tmp/cppgm-frozen-full-sample-8a727d91c.txt` attributed sampled allocation
+work to recursive `CallSemNode` copies made through `ExprInfo`. The accompanying
+memory census at `/tmp/cppgm-memory-census-8a727d91c.stderr` measured 201,463
+retained CallSem output nodes and about 59 MiB of retained CallSem storage, so
+copying even transient semantic subtrees was worth screening.
+
+`ExprInfo`'s existing move operations are now declared `noexcept`, allowing
+`vector<ExprInfo>` growth to relocate values instead of falling back to deep
+copies. Overload analysis also transfers terminal local values into candidate
+records and argument vectors after making only the independent copies that
+those records retain. Function-template argument-option enumeration moves the
+selected option into the deduction vector and restores it after the recursive
+combination, preserving every option without cloning its CallSem subtree.
+Implicit-object ranking uses a reference to either the converted or original
+value when neither needs ownership.
+
+The one-run ownership screen used `142,054,830,302` instructions and produced
+the exact frozen object. The committed three-run confirmation names
+`39d241018` as its head. The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `142,363,891,265` | `-31,793,879,679` (`-18.26%`); `-0.50%` from `70607afcd` |
+| maximum RSS | `747,724,800 B` | `-13,479,936 B` (`-1.77%`) |
+| peak footprint | `556,298,240 B` | `-12,460,032 B` (`-2.19%`) |
+| elapsed cycles | `109,027,398,176` | `-15.12%`; `-5.78%` from `70607afcd` |
+| wall time | `34.09 s` | `-14.82%`, informational under host load |
+
+Evidence: `/tmp/cppgm-callsem-option-moves-screen.json`,
+`/tmp/cppgm-callsem-noexcept-moves-screen.json`,
+`/tmp/cppgm-callsem-ownership-moves-screen.json`, and
+`/tmp/cppgm-callsem-ownership-moves-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -930,6 +969,7 @@ Fill one row after each retained commit.
 | `87f17bd97` | index normalized runtime symbols | `145,884,874,306` | `-16.23%` | `744,771,584` | `556,154,880` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-runtime-symbol-index-final.json` |
 | `faf3a29a6` | index function-local type overlays | `145,188,653,153` | `-16.63%` | `740,917,248` | `556,396,544` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-local-type-overlay-index-final.json` |
 | `70607afcd` | update function-symbol lookup index incrementally during runtime discovery | `143,082,634,066` | `-17.84%` | `754,479,104` | `556,146,688` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-symbol-index-incremental-final.json` |
+| `39d241018` | move overload CallSem trees between owners and make `ExprInfo` relocation non-throwing | `142,363,891,265` | `-18.26%` | `747,724,800` | `556,298,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-callsem-ownership-moves-final.json` |
 
 ## Rejected work ledger
 
