@@ -540,6 +540,27 @@ time. The instruction result is `-0.48%` from `773cadc65`; the retained change
 also removes the profiled per-clone allocation and reduces both memory signals.
 Evidence: `/tmp/cppgm-sparse-clone-materialization-final.json`.
 
+Second retained Phase 6 slice: alias-template instantiation looked up its
+argument-identity cache before constructing an instantiation scope, but did
+not consume an ordinary hit until after that scope was allocated, populated,
+and the full substitution machinery had been prepared. The cache's store
+policy already puts a result under the ordinary argument key only when the
+result is independent of the use scope. The implementation now returns an
+ordinary cached result immediately when it is null or no longer depends on a
+template parameter. Dependent results, including the scope-sensitive form,
+continue through the original scope construction, redirect, repair, and
+substitution path. Source-occurrence completion remains in the caller and is
+therefore unchanged on the fast path.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report passes
+`4863/4863`. Three-run medians against `42d55c49c` are
+`160,251,233,762` instructions (`-7.99%`), `740,306,944 B` maximum RSS,
+`552,783,872 B` peak footprint, `121,147,496,331` cycles, and `38.38 s` wall
+time. The instruction result is `-1.96%` from the sparse-clone checkpoint.
+Evidence: `/tmp/cppgm-alias-concrete-hit-final.json`.
+
 ### Phase 7: optimize the measured LowIR long pole
 
 Collect a full-run sample and phase timers after semantic work drops. Rank the
@@ -678,7 +699,8 @@ Fill one row after each retained commit.
 | `4ab86136b` | reuse native temp and forwarded-parameter interval analyses | `166,898,155,701` | `-4.17%` | `745,816,064` | `557,416,448` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-interval-reuse-final.json` |
 | `325644977` | intern each visible template-body value name once per scope walk | `165,685,333,837` | `-4.86%` | `749,821,952` | `557,666,304` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-single-atom-final.json` |
 | `773cadc65` | trust existing exported runtime function identities before fallback ownership probes | `164,248,241,098` | `-5.69%` | `748,720,128` | `557,678,592` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-runtime-symbol-identity-fast-path-final.json` |
-| `(this commit)` | avoid materializing empty sparse records in substitution and mangling AST clones | `163,459,605,743` | `-6.14%` | `738,054,144` | `553,398,272` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-sparse-clone-materialization-final.json` |
+| `10ab1b728` | avoid materializing empty sparse records in substitution and mangling AST clones | `163,459,605,743` | `-6.14%` | `738,054,144` | `553,398,272` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-sparse-clone-materialization-final.json` |
+| `(this commit)` | return concrete alias-template cache hits before constructing an instantiation scope | `160,251,233,762` | `-7.99%` | `740,306,944` | `552,783,872` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-alias-concrete-hit-final.json` |
 
 ## Rejected work ledger
 
@@ -707,3 +729,5 @@ experiment before starting the next candidate.
 | hold a local reference to the runtime-reference node symbol | three-run median regressed to `164,574,311,869` instructions | repeated inline accessors produced better code than the local alias | `/tmp/cppgm-runtime-symbol-local-ref-final.json` |
 | hash the template-argument identifier membership set | `164,510,368,737` instructions | the identifier sets are too small to repay hash-table overhead | `/tmp/cppgm-template-argument-identifiers-hash-screen.json` |
 | store template-argument identifiers as interned atoms | `164,238,424,503` instructions, only `-0.006%` from the retained runtime-symbol checkpoint | pointer membership avoids string ownership but does not move the workload; remove the added global interning traffic | `/tmp/cppgm-template-argument-atoms-screen.json` |
+| make five rarely populated `Scope` sets lazy | `163,441,532,001` instructions, only `-0.01%` from the retained sparse-clone checkpoint; footprint fell by about 3.4 MiB | the pointer-backed headers save memory but do not advance compile throughput; keep the direct ordered-set layout | `/tmp/cppgm-scope-lazy-rare-sets-screen.json` |
+| raw-pointer fast path for `class_info_for_type` | `163,528,784,054` instructions | the 1.85M-call counter is dominated by the existing embedded `named_class_info` return; avoiding one shared-owner copy was flat to worse | `/tmp/cppgm-class-info-raw-fast-path-screen.json` |

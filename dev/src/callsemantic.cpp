@@ -14084,6 +14084,20 @@ private:
       return scope_sensitive_alias_cache_key;
     };
     auto found = instantiations.find(key);
+    // Concrete alias results are independent of the use scope by construction.
+    // Return them before allocating and populating an instantiation scope; the
+    // source occurrence is still completed by the caller.
+    if(found != instantiations.end() &&
+       (!found->second ||
+        !type_depends_on_template_parameter(found->second))) {
+      if(template_resolve_trace_enabled_) {
+        std::ostringstream trace;
+        trace << "instantiate-alias-template-hit name=" << decl.name
+              << " key=" << key;
+        parser_trace::note("template.resolve", std::string(), trace.str());
+      }
+      return completed_result(found->second);
+    }
 
     Scope local_inst_scope(decl.declaring_scope, string(), false);
     Scope * inst_scope = nullptr;
