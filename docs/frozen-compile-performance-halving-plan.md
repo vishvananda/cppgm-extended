@@ -1075,6 +1075,42 @@ Evidence: `/tmp/cppgm-layout-lookup-hashes-screen.json`,
 `/tmp/cppgm-layout-lookup-hashes-final.json`, and the alternating A/B records
 `/tmp/cppgm-layout-ab-{base,candidate}-{1,2,3}.time`.
 
+Tenth retained Phase 7 slice: using-directive lookup created a tree-backed
+visited set for every namespace-graph traversal. A temporary frozen census
+recorded `1,658,095` traversal sets and `3,908,076` total visited scopes. No
+set visited more than six scopes: `824,396` visited one, `44,720` visited two,
+`360,364` visited three, `252,767` visited four, `153,008` visited five, and
+`22,840` visited six. The replacement keeps eight pointers inline, compares
+them linearly, and preserves an overflow vector for larger source programs.
+
+The clean decision batch used a median `133,940,628,877` instructions versus
+`135,434,571,754` for the contemporaneous retained compiler, a `1.103%`
+reduction. Decision-batch median RSS was `731,324,416 B` and footprint was
+`555,806,720 B`. The post-commit absolute batch ran under heavier host load,
+so its cycles, wall time, and RSS moved independently of the stable retired-
+instruction count; those secondary signals remain recorded below without
+using them to inflate the result.
+
+The post-commit three-run result names `70fa6d879` as its head. The frozen
+object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Absolute three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `133,973,655,610` | `-40,184,115,334` (`-23.07%`) |
+| maximum RSS | `747,077,632 B` | `-14,127,104 B` (`-1.86%`) |
+| peak footprint | `555,909,120 B` | `-12,849,152 B` (`-2.26%`) |
+| elapsed cycles | `107,714,930,773` | `-16.14%` |
+| wall time | `29.05 s` | `-27.41%`, informational under host load |
+
+Evidence: `/tmp/cppgm-using-directive-inline-visited-screen.json`,
+`/tmp/cppgm-using-directive-inline-visited-decision.json`, and
+`/tmp/cppgm-using-directive-inline-visited-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1143,6 +1179,7 @@ Fill one row after each retained commit.
 | `05b1eb38d` | compare elaborated named-type keys without stripped-string temporaries | `137,038,283,448` | `-21.31%` | `745,762,816` | `556,085,248` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-named-key-view-final.json` |
 | `1060e05df` | classify elaborated type prefixes by family and reuse temporary input buffers | `136,011,111,282` | `-21.90%` | `735,920,128` | `556,093,440` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-elaborated-prefix-dispatch-rvalue-final.json` |
 | `1a96ce861` | use reserved hash indexes for high-volume machine-layout probes | `135,861,805,665` | `-21.99%` | `736,321,536` | `555,786,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-layout-lookup-hashes-final.json`; paired A/B: `-0.577%` instructions |
+| `70fa6d879` | keep using-directive traversal visited sets inline | `133,973,655,610` | `-23.07%` | `747,077,632` | `555,909,120` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-using-directive-inline-visited-final.json`; paired decision: `-1.103%` instructions |
 
 ## Rejected work ledger
 
