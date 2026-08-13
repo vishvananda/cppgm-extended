@@ -907,6 +907,38 @@ Evidence: `/tmp/cppgm-callsem-option-moves-screen.json`,
 `/tmp/cppgm-callsem-ownership-moves-screen.json`, and
 `/tmp/cppgm-callsem-ownership-moves-final.json`.
 
+Seventh retained Phase 7 slice: a post-ownership clone census measured
+1,202,262 AST nodes cloned for template substitution. The function-type pack
+probe in `expand_template_argument_inputs` accounted for 402,159 of those
+nodes. It cloned every source syntax whose text matched the current argument,
+then immediately rejected the clone unless its type-id described a direct
+function type with a non-varargs pack parameter.
+
+The caller now applies that same read-only structural predicate to the source
+syntax before cloning. Qualifying arguments still enter the existing cloning
+and expansion helper unchanged; nonqualifying arguments skip construction of
+a temporary that the helper could not mutate successfully. The temporary
+census was removed before commit.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `140,749,490,447` | `-33,408,280,497` (`-19.18%`); `-1.13%` from `39d241018` |
+| maximum RSS | `744,112,128 B` | `-17,092,608 B` (`-2.25%`) |
+| peak footprint | `556,294,144 B` | `-12,464,128 B` (`-2.19%`) |
+| elapsed cycles | `109,060,116,025` | `-15.09%` |
+| wall time | `35.37 s` | `-11.62%`, informational under host load |
+
+Evidence: `/tmp/cppgm-template-clone-origin-census.stderr`,
+`/tmp/cppgm-function-pack-clone-guard-screen.json`, and
+`/tmp/cppgm-function-pack-clone-guard-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -970,6 +1002,7 @@ Fill one row after each retained commit.
 | `faf3a29a6` | index function-local type overlays | `145,188,653,153` | `-16.63%` | `740,917,248` | `556,396,544` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-local-type-overlay-index-final.json` |
 | `70607afcd` | update function-symbol lookup index incrementally during runtime discovery | `143,082,634,066` | `-17.84%` | `754,479,104` | `556,146,688` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-symbol-index-incremental-final.json` |
 | `39d241018` | move overload CallSem trees between owners and make `ExprInfo` relocation non-throwing | `142,363,891,265` | `-18.26%` | `747,724,800` | `556,298,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-callsem-ownership-moves-final.json` |
+| `a268247dc` | guard the function-type pack probe before cloning template argument syntax | `140,749,490,447` | `-19.18%` | `744,112,128` | `556,294,144` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-pack-clone-guard-final.json` |
 
 ## Rejected work ledger
 
