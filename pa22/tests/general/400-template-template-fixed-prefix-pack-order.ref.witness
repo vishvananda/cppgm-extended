@@ -7,8 +7,7 @@ translation-unit
     bind #3 = 0 source=explicit
     specialize #1 = alloc source=deduced
     specialize #2 = int source=deduced
-    specialize #3 = <> source=deduced
-    specialize #4 = void source=deduced
+    specialize #3 = void source=deduced
   class-use at tests/general/400-template-template-fixed-prefix-pack-order.t:29:27
     template alloc
     selected primary

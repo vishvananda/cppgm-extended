@@ -11,12 +11,19 @@ import sys
 import tempfile
 from typing import Iterable, List
 
+from witness_adjudications import (
+    apply_witness_adjudication,
+    load_witness_adjudications,
+)
+
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 DEFAULT_CLANG = pathlib.Path.home() / "llvm-project-template-metrics-20260416" / \
     "build-clang-template-trace" / "bin" / "clang"
 DEFAULT_LIBCXX = pathlib.Path("/usr/local/opt/llvm/include/c++/v1")
 DEFAULT_SDK = pathlib.Path("/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk")
+DEFAULT_ADJUDICATIONS = ROOT / "validation" / "templates" / \
+    "witness_cross_oracle_adjudications.json"
 DEFAULT_PAS = ("pa18", "pa19", "pa21", "pa22", "pa23")
 LINK_SOURCE_RE = re.compile(r"\.t\.\d+$")
 
@@ -136,8 +143,11 @@ def main() -> int:
     parser.add_argument("--clang", default=str(DEFAULT_CLANG))
     parser.add_argument("--libcxx", default=str(DEFAULT_LIBCXX))
     parser.add_argument("--sdk", default=str(DEFAULT_SDK))
+    parser.add_argument("--adjudications", default=str(DEFAULT_ADJUDICATIONS),
+                        help="Fail-closed patched-Clang witness adjudication manifest")
     args = parser.parse_args()
 
+    adjudications = load_witness_adjudications(pathlib.Path(args.adjudications))
     warnings = 0
     updated = 0
     removed = 0
@@ -180,7 +190,11 @@ def main() -> int:
                 continue
 
             document = json.loads(witness_json.read_text(encoding="utf-8"))
-            text = EMIT.render_emit_templates_text(document)
+            raw_text = EMIT.render_emit_templates_text(document)
+            text, adjudication = apply_witness_adjudication(
+                ROOT, test, raw_text, adjudications)
+            if adjudication is not None:
+                print(f"ADJUDICATE {rel} [{adjudication}]")
             before = ref_witness.read_text(encoding="utf-8") if ref_witness.exists() else None
             write_if_different(ref_witness, text)
             if before != text:

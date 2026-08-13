@@ -82,6 +82,13 @@ Adjacent `.ref.witness` files are generated from the patched Clang witness
 materialization flow. They are intentionally a public, student-facing
 projection rather than a dump of every compiler-internal trace field.
 
+Known patched-Clang semantic divergences are corrected during that same
+materialization flow. `materialize_pa_tests.py` requires the source and raw
+rendered-witness hashes in `witness_cross_oracle_adjudications.json`, applies
+the declared exact rewrite, verifies the adjudicated hash, and only then writes
+the adjacent reference. The comparison harness treats the resulting reference
+like every other literal witness oracle.
+
 Source locations start at `tests/` or `course/`. The Clang and compiler
 renderers remove the checkout prefix and outer `paNN/` directory so moving a
 test between assignments does not change its witness output.
