@@ -939,6 +939,35 @@ Evidence: `/tmp/cppgm-template-clone-origin-census.stderr`,
 `/tmp/cppgm-function-pack-clone-guard-screen.json`, and
 `/tmp/cppgm-function-pack-clone-guard-final.json`.
 
+Eighth retained Phase 7 slice: initial LowIR function-symbol collection
+performed 12,060 entry lookups. The old lookup scanned the growing entry
+vector and made 55,477,400 probes to find 44,811 same-name candidates and
+2,821 matching entries. The frozen program finished with 9,239 entries.
+
+`ProgramGenerator` now records each entry position under its exact function
+name. A lookup visits those positions in insertion order and applies the same
+`type_equals` and stable-type-key tests. Initial collection and runtime special
+member discovery both update the index when they append an entry.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `138,575,302,610` | `-35,582,468,334` (`-20.43%`); `-1.54%` from `a268247dc` |
+| maximum RSS | `742,748,160 B` | `-18,456,576 B` (`-2.42%`) |
+| peak footprint | `556,113,920 B` | `-12,644,352 B` (`-2.22%`) |
+| elapsed cycles | `107,346,055,232` | `-16.43%` |
+| wall time | `35.11 s` | `-12.27%`, informational under host load |
+
+Evidence: `/tmp/cppgm-function-symbol-entry-scan.stderr`,
+`/tmp/cppgm-function-symbol-entry-name-index-screen.json`, and
+`/tmp/cppgm-function-symbol-entry-name-index-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1003,6 +1032,7 @@ Fill one row after each retained commit.
 | `70607afcd` | update function-symbol lookup index incrementally during runtime discovery | `143,082,634,066` | `-17.84%` | `754,479,104` | `556,146,688` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-symbol-index-incremental-final.json` |
 | `39d241018` | move overload CallSem trees between owners and make `ExprInfo` relocation non-throwing | `142,363,891,265` | `-18.26%` | `747,724,800` | `556,298,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-callsem-ownership-moves-final.json` |
 | `a268247dc` | guard the function-type pack probe before cloning template argument syntax | `140,749,490,447` | `-19.18%` | `744,112,128` | `556,294,144` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-pack-clone-guard-final.json` |
+| `4ed53c57e` | index LowIR function-symbol entries by exact name | `138,575,302,610` | `-20.43%` | `742,748,160` | `556,113,920` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-function-symbol-entry-name-index-final.json` |
 
 ## Rejected work ledger
 
