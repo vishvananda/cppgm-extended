@@ -3781,8 +3781,10 @@ static CppAstNode clone_ast_node_for_mangling(const CppAstNode & source)
   out.kind = source.kind;
   out.value = source.value;
   out.semantic_type = source.semantic_type;
-  mutable_cppast_builtin_type_transform_name(out) =
-      cppast_builtin_type_transform_name(source);
+  if(!cppast_builtin_type_transform_name(source).empty()) {
+    mutable_cppast_builtin_type_transform_name(out) =
+        cppast_builtin_type_transform_name(source);
+  }
   out.has_leading_typename = source.has_leading_typename;
   out.has_exception_type_id_syntaxes = source.has_exception_type_id_syntaxes;
   out.linkage_has_braces = source.linkage_has_braces;
@@ -3795,9 +3797,13 @@ static CppAstNode clone_ast_node_for_mangling(const CppAstNode & source)
   if(!cppast_asm_label(source).empty()) {
     mutable_cppast_asm_label(out) = cppast_asm_label(source);
   }
-  mutable_cppast_abi_tags(out) = cppast_abi_tags(source);
-  mutable_cppast_alignment_specifiers(out) =
-      cppast_alignment_specifiers(source);
+  if(!cppast_abi_tags(source).empty()) {
+    mutable_cppast_abi_tags(out) = cppast_abi_tags(source);
+  }
+  if(!cppast_alignment_specifiers(source).empty()) {
+    mutable_cppast_alignment_specifiers(out) =
+        cppast_alignment_specifiers(source);
+  }
   out.is_final_specifier = source.is_final_specifier;
   out.uses_assignment_form = source.uses_assignment_form;
   out.has_token = source.has_token;
@@ -3806,8 +3812,10 @@ static CppAstNode clone_ast_node_for_mangling(const CppAstNode & source)
   out.token_start = source.token_start;
   out.token_end = source.token_end;
   out.source_location_id = source.source_location_id;
-  mutable_cppast_name_lookup_snapshot(out) =
-      cppast_name_lookup_snapshot(source);
+  if(cppast_name_lookup_snapshot(source)) {
+    mutable_cppast_name_lookup_snapshot(out) =
+        cppast_name_lookup_snapshot(source);
+  }
   if(source.qualified_name_syntax) {
     out.qualified_name_syntax.reset(new QualifiedName(*source.qualified_name_syntax));
   }

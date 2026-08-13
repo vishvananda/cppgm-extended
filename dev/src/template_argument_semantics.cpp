@@ -20567,8 +20567,10 @@ CppAstNode clone_expression_node_for_template_substitution_impl(
   out.kind = source.kind;
   out.value = source.value;
   out.semantic_type = source.semantic_type;
-  mutable_cppast_builtin_type_transform_name(out) =
-      cppast_builtin_type_transform_name(source);
+  if(!cppast_builtin_type_transform_name(source).empty()) {
+    mutable_cppast_builtin_type_transform_name(out) =
+        cppast_builtin_type_transform_name(source);
+  }
   if(source.qualified_name_syntax) {
     out.qualified_name_syntax.reset(new QualifiedName(*source.qualified_name_syntax));
   }
@@ -20618,9 +20620,13 @@ CppAstNode clone_expression_node_for_template_substitution_impl(
   if(!cppast_asm_label(source).empty()) {
     mutable_cppast_asm_label(out) = cppast_asm_label(source);
   }
-  mutable_cppast_abi_tags(out) = cppast_abi_tags(source);
-  mutable_cppast_alignment_specifiers(out) =
-      cppast_alignment_specifiers(source);
+  if(!cppast_abi_tags(source).empty()) {
+    mutable_cppast_abi_tags(out) = cppast_abi_tags(source);
+  }
+  if(!cppast_alignment_specifiers(source).empty()) {
+    mutable_cppast_alignment_specifiers(out) =
+        cppast_alignment_specifiers(source);
+  }
   out.alignment_specifier_nodes.reserve(source.alignment_specifier_nodes.size());
   for(size_t i = 0; i < source.alignment_specifier_nodes.size(); ++i) {
     out.alignment_specifier_nodes.push_back(
@@ -20636,8 +20642,10 @@ CppAstNode clone_expression_node_for_template_substitution_impl(
   out.token_start = source.token_start;
   out.token_end = source.token_end;
   out.source_location_id = source.source_location_id;
-  mutable_cppast_name_lookup_snapshot(out) =
-      cppast_name_lookup_snapshot(source);
+  if(cppast_name_lookup_snapshot(source)) {
+    mutable_cppast_name_lookup_snapshot(out) =
+        cppast_name_lookup_snapshot(source);
+  }
   if(clone_children) {
     out.children.reserve(source.children.size());
     for(size_t i = 0; i < source.children.size(); ++i) {

@@ -519,6 +519,27 @@ Target: `5-10%` instructions or enough memory reduction to enable the next
 algorithmic slice. The final memory signals must remain within the project
 gates.
 
+First retained Phase 6 slice: a fresh full-run profile at `773cadc65`, stored
+at `/tmp/cppgm-frozen-full-sample-773cadc65.txt`, attributed 36.2 seconds to
+semantic analysis and 3.3 seconds to LowIR and object output. Allocation and
+free routines were the two largest leaf groups. The template-substitution and
+mangling AST clone helpers both called mutable sparse-field accessors even
+when the corresponding source fields were empty. Each call materialized a
+`CppAstSparseData` record that the clone did not need. The helpers now test the
+source fields first, while preserving the exact set of sparse fields they copy
+when those fields are present. Pack-substitution clones already share the
+sparse record through its copy-on-write pointer and needed no change.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report passes
+`4863/4863`. Three-run medians against `42d55c49c` are
+`163,459,605,743` instructions (`-6.14%`), `738,054,144 B` maximum RSS,
+`553,398,272 B` peak footprint, `122,453,802,165` cycles, and `38.21 s` wall
+time. The instruction result is `-0.48%` from `773cadc65`; the retained change
+also removes the profiled per-clone allocation and reduces both memory signals.
+Evidence: `/tmp/cppgm-sparse-clone-materialization-final.json`.
+
 ### Phase 7: optimize the measured LowIR long pole
 
 Collect a full-run sample and phase timers after semantic work drops. Rank the
@@ -656,7 +677,8 @@ Fill one row after each retained commit.
 | `01f875b8f` | remove net-negative dependent-resolution cache and tree-backed recursion guard | `173,508,264,894` | `-0.37%` | `743,952,384` | `557,821,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-resolution-negative-cache-removal-final.json` |
 | `4ab86136b` | reuse native temp and forwarded-parameter interval analyses | `166,898,155,701` | `-4.17%` | `745,816,064` | `557,416,448` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-interval-reuse-final.json` |
 | `325644977` | intern each visible template-body value name once per scope walk | `165,685,333,837` | `-4.86%` | `749,821,952` | `557,666,304` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-single-atom-final.json` |
-| `(this commit)` | trust existing exported runtime function identities before fallback ownership probes | `164,248,241,098` | `-5.69%` | `748,720,128` | `557,678,592` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-runtime-symbol-identity-fast-path-final.json` |
+| `773cadc65` | trust existing exported runtime function identities before fallback ownership probes | `164,248,241,098` | `-5.69%` | `748,720,128` | `557,678,592` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-runtime-symbol-identity-fast-path-final.json` |
+| `(this commit)` | avoid materializing empty sparse records in substitution and mangling AST clones | `163,459,605,743` | `-6.14%` | `738,054,144` | `553,398,272` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-sparse-clone-materialization-final.json` |
 
 ## Rejected work ledger
 
@@ -682,3 +704,6 @@ experiment before starting the next candidate.
 | probe argument identifiers directly when overlaying function-local types | `165,959,328,141` instructions | local named-type maps are smaller than the argument token sets; iteration wins | `/tmp/cppgm-local-type-direct-probes-screen.json` |
 | make the unused normal-compile `FunctionBinding` source-anchor cache lazy | footprint fell by about 2.1 MiB but instructions rose to `166,344,947,939` | reject the instruction regression; a larger cohesive record slice is required | `/tmp/cppgm-function-anchor-side-record-screen.json` |
 | replace recursive `CallSemNode` child vectors with a zero-allocation indexed view | LowIR-only screen was `165,749,705,323`; all walkers were `165,670,523,261` | operation removal was real but instruction results were flat; remove it from the retained symbol fast path | `/tmp/cppgm-callsem-zero-allocation-walk-screen.json`, `/tmp/cppgm-callsem-zero-allocation-walk-all-screen.json` |
+| hold a local reference to the runtime-reference node symbol | three-run median regressed to `164,574,311,869` instructions | repeated inline accessors produced better code than the local alias | `/tmp/cppgm-runtime-symbol-local-ref-final.json` |
+| hash the template-argument identifier membership set | `164,510,368,737` instructions | the identifier sets are too small to repay hash-table overhead | `/tmp/cppgm-template-argument-identifiers-hash-screen.json` |
+| store template-argument identifiers as interned atoms | `164,238,424,503` instructions, only `-0.006%` from the retained runtime-symbol checkpoint | pointer membership avoids string ownership but does not move the workload; remove the added global interning traffic | `/tmp/cppgm-template-argument-atoms-screen.json` |
