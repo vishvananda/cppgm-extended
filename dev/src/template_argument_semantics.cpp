@@ -42158,7 +42158,10 @@ ExpandedTemplateArgumentInputs expand_template_argument_inputs(
     const string trimmed_text = trim_space(texts[i]);
     TypePtr carried_type;
     if(source_syntax &&
-       template_argument_syntax_matches_text(*source_syntax, trimmed_text)) {
+       template_argument_syntax_matches_text(*source_syntax, trimmed_text) &&
+       source_syntax->type_id &&
+       direct_function_type_syntax_has_pack_parameter_without_varargs(
+           *source_syntax)) {
       TemplateArgumentSyntax function_type_syntax =
           clone_argument_syntax_for_template_substitution(*source_syntax);
       if(expand_bound_type_pack_function_type_argument(
