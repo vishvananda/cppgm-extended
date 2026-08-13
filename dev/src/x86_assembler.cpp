@@ -332,11 +332,6 @@ void X86Assembler::emit_and_r64_imm32(X64Register dst, std::uint32_t imm)
   emit_binary_r64_imm32(4, dst, static_cast<std::int32_t>(imm));
 }
 
-void X86Assembler::emit_or_r64_imm32(X64Register dst, std::uint32_t imm)
-{
-  emit_binary_r64_imm32(1, dst, static_cast<std::int32_t>(imm));
-}
-
 void X86Assembler::emit_add_r64_imm32(X64Register dst, std::int32_t imm)
 {
   emit_binary_r64_imm32(0, dst, imm);
@@ -538,16 +533,6 @@ void X86Assembler::emit_fld_m80(const X86Memory & src)
   emit_x87_mem(0xDB, 5, src);
 }
 
-void X86Assembler::emit_fild_m16(const X86Memory & src)
-{
-  emit_x87_mem(0xDF, 0, src);
-}
-
-void X86Assembler::emit_fild_m32(const X86Memory & src)
-{
-  emit_x87_mem(0xDB, 0, src);
-}
-
 void X86Assembler::emit_fild_m64(const X86Memory & src)
 {
   emit_x87_mem(0xDF, 5, src);
@@ -571,12 +556,6 @@ void X86Assembler::emit_fstp_m80(const X86Memory & dst)
 void X86Assembler::emit_fisttp_m64(const X86Memory & dst)
 {
   emit_x87_mem(0xDD, 1, dst);
-}
-
-void X86Assembler::emit_fldz()
-{
-  emit_u8(0xD9);
-  emit_u8(0xEE);
 }
 
 void X86Assembler::emit_fchs()

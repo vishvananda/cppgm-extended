@@ -24661,15 +24661,3 @@ lowir_internal::Program build_lowir_program(const vector<CallSemNode> & translat
                              enable_debug_value_names);
   return generator.build_program();
 }
-
-string generate_lowir_program(const vector<CallSemNode> & translation_units,
-                              bool validate_closure,
-                              bool emit_runtime_support,
-                              bool enable_debug_value_names)
-{
-  return lowir_internal::dump_program(
-      build_lowir_program(translation_units,
-                          validate_closure,
-                          emit_runtime_support,
-                          enable_debug_value_names));
-}

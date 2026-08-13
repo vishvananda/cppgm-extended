@@ -9,8 +9,6 @@ char value_to_hex(int c);
 
 std::string hex_dump(const void* pdata, std::size_t nbytes);
 
-std::u32string decode_escape(const std::u32string& data);
-
 std::u32string decode_utf8(const std::string& data);
 
 std::string encode_utf8(const std::u32string& data);

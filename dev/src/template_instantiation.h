@@ -68,10 +68,6 @@ std::string class_template_instance_key(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info);
 
-void record_class_template_dependent_argument_texts(
-    semantic_model::ClassInfo & info,
-    const std::vector<std::string> & argument_texts);
-
 void adopt_materialized_owner_template_identity(
     semantic_model::FunctionBinding & binding,
     semantic_model::FunctionTemplateDecl * source_template,

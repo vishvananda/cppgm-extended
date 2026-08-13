@@ -29,13 +29,7 @@ struct CppAstParser : RecogTokenCursor
 
   bool parse_translation_unit(CppAstNode & out);
   bool parse_compound_statement_fragment(CppAstNode & out);
-  bool parse_class_specifier_fragment(CppAstNode & out);
   const std::string & error() const { return error_msg; }
-  void seed_known_type_names(const NameSet & names);
-  void seed_known_template_names(const NameSet & names);
-  void seed_known_value_names(const NameSet & names);
-  void seed_known_template_value_names(const NameSet & names);
-  void set_external_name_lookup(const template_angle::NameLookup * lookup);
   std::shared_ptr<const CppAstNameLookupSnapshot> snapshot_name_lookup_state(
       const NameSet * used_names = nullptr) const;
   void restore_name_lookup_state_from(const CppAstNameLookupSnapshot & snapshot);
@@ -78,7 +72,6 @@ protected:
   bool parse_deduction_guide_declaration(CppAstNode & out);
   bool parse_bit_field_declaration(CppAstNode & out);
   bool parse_decl_specifier_leading_declaration(CppAstNode & out);
-  bool parse_function_definition(CppAstNode & out);
   bool parse_simple_declaration(CppAstNode & out);
   bool parse_simple_declaration_after_specifiers(CppAstNode & out,
                                                  CppAstNode & specifiers,
@@ -96,7 +89,6 @@ protected:
   bool parse_type_id(CppAstNode & out);
   bool parse_new_type_id(CppAstNode & out);
   bool parse_type_specifier_seq(CppAstNode & out);
-  bool parse_init_declarator_list(CppAstNode & out);
   bool parse_init_declarator(CppAstNode & out);
   bool parse_initializer(CppAstNode & out);
   bool parse_declarator(CppAstNode & out, bool require_parameters = false);
@@ -193,10 +185,8 @@ protected:
   bool can_start_named_decl_specifier_seq() const;
   bool scan_named_decl_specifier_seq_end(std::size_t & end) const;
   bool can_start_id_expression() const;
-  bool can_start_primary_expression() const;
   bool can_start_block_declaration();
   bool can_start_range_declaration();
-  bool can_start_special_member_candidate() const;
   bool find_template_parameter_clause_end(std::size_t template_pos,
                                           std::size_t & end) const;
   bool can_start_unqualified_implicit_type_function_candidate_at(
@@ -221,11 +211,7 @@ protected:
                                              bool is_typeof,
                                              CppAstNode & out);
   bool parse_type_name_component_text(std::string & out);
-  bool parse_decltype_specifier_text(std::string & out);
-  bool parse_name_component_text(std::string & out);
   bool parse_ptr_operator_node(CppAstNode & out);
-  bool parse_template_argument_text(std::string & out);
-  bool parse_template_id_suffix_text(std::string & out);
   bool parse_function_style_simple_type_text(std::string & out);
   bool parse_type_name_text(std::string & out);
   bool parse_qualified_name_text(std::string & out,

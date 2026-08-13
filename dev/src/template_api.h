@@ -259,10 +259,6 @@ private:
   bool active_ = false;
 };
 
-bool current_template_id_source_arguments(
-    const std::string & location,
-    const std::string & template_name,
-    std::vector<std::string> & arg_texts);
 const std::vector<std::string> * current_template_id_source_arguments_ptr(
     const std::string & location,
     const std::string & template_name);
@@ -563,8 +559,6 @@ std::string function_template_witness_decl_location(
     const semantic_model::FunctionTemplateDecl * decl);
 std::string function_binding_template_trace_key(
     const semantic_model::FunctionBinding * binding);
-std::string alias_template_witness_entity(
-    const semantic_model::AliasTemplateDecl * decl);
 std::string alias_template_witness_source_entity(
     SemanticContext & ctx,
     const semantic_model::AliasTemplateDecl * decl,
@@ -832,9 +826,6 @@ semantic_model::Scope & bind_class_template_arguments_for_instantiation(
     const std::map<std::string, std::size_t> * pack_sizes = nullptr);
 
 }  // namespace binding
-
-std::size_t scope_template_binding_fingerprint(
-    const semantic_model::Scope & scope);
 
 std::size_t scope_template_instance_fingerprint(
     const semantic_model::Scope & scope);

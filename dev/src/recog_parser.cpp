@@ -62,27 +62,6 @@ bool RecogToken::is_close_angle_bracket() const
   return is_simple(OP_GT) || is_rshift_piece();
 }
 
-bool RecogToken::is_nonparen() const
-{
-  if(is_eof()) {
-    return false;
-  }
-  if(kind != RT_SIMPLE) {
-    return true;
-  }
-  switch(simple_type) {
-  case OP_LPAREN:
-  case OP_RPAREN:
-  case OP_LSQUARE:
-  case OP_RSQUARE:
-  case OP_LBRACE:
-  case OP_RBRACE:
-    return false;
-  default:
-    return true;
-  }
-}
-
 bool RecogToken::is_empty_string() const
 {
   return is_literal() && source == "\"\"";
@@ -121,11 +100,6 @@ bool RecogToken::is_typedef_name() const
 bool RecogToken::is_enum_name() const
 {
   return is_identifier() && PA6_IsEnumName(source);
-}
-
-bool RecogToken::is_namespace_name() const
-{
-  return is_identifier() && PA6_IsNamespaceName(source);
 }
 
 bool RecogToken::is_invalid() const

@@ -127,10 +127,6 @@ semantic_model::FunctionBinding * resolve_output_function_binding(
     SemanticContext & ctx,
     semantic_model::FunctionBinding * binding);
 
-std::string explain_function_output_state(
-    SemanticContext & ctx,
-    semantic_model::FunctionBinding & binding);
-
 void analyze_late_required_function_output(SemanticContext & ctx,
                                            OutputState & state,
                                            CallSemNode & out);

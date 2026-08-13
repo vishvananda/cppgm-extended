@@ -550,9 +550,7 @@ struct Scope
   bool persistent_lifetime = false;
   ClassInfo * class_info = nullptr;
   FunctionBinding * function = nullptr;
-  // Point-lookup keyed by type name; iteration order is not relied upon (the one
-  // order-sensitive lookup, dependent_member_type_owner_text_from_scope, picks the
-  // lexicographically-smallest match explicitly).
+  // Point-lookup keyed by type name; iteration order is not relied upon.
   typedef std::unordered_map<std::string, cpp_decl::TypePtr> NamedTypeMap;
   NamedTypeMap named_types;
   std::map<std::string, MemberAccess> named_type_access;

@@ -612,26 +612,6 @@ bool declarator_has_parameter_pack(const CppAstNode & declarator)
   return nested && !nested->children.empty() && declarator_has_parameter_pack(nested->children[0]);
 }
 
-bool declarator_has_trailing_function_parameter_pack(const CppAstNode & declarator)
-{
-  const CppAstNode * parameter_clause =
-      cpp_decl::find_child(declarator, CppAstKind::parameter_clause);
-  if(!parameter_clause || parameter_clause->children.empty()) {
-    return false;
-  }
-  const CppAstNode & last = parameter_clause->children.back();
-  if(last.kind != CppAstKind::parameter_declaration) {
-    return false;
-  }
-  const CppAstNode * declarator_child = cpp_decl::find_child(last, CppAstKind::declarator);
-  const CppAstNode * abstract = cpp_decl::find_child(last, CppAstKind::abstract_declarator);
-  if(!(declarator_child && declarator_has_parameter_pack(*declarator_child)) &&
-     !(abstract && declarator_has_parameter_pack(*abstract))) {
-    return false;
-  }
-  return true;
-}
-
 bool is_pure_virtual_initializer(const CppAstNode & initializer)
 {
   if(initializer.kind != CppAstKind::initializer ||
@@ -1843,11 +1823,6 @@ string render_template_argument_expression(
   return render_structured_expression(node,
                                       true,
                                       &type_name_replacements);
-}
-
-string render_template_argument_type(const CppAstNode & node)
-{
-  return render_structured_type(node, nullptr);
 }
 
 string render_template_argument_syntax(

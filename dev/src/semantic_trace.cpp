@@ -534,14 +534,6 @@ bool source_location_points_at_identifier(const std::string & location,
   return line.compare(offset, identifier.size(), identifier) == 0;
 }
 
-std::string name_location_in_node(const SemanticContext & ctx,
-                                  const CppAstNode * node,
-                                  const std::string & unqualified_name,
-                                  bool prefer_last_name)
-{
-  return node_name_location(ctx, node, unqualified_name, prefer_last_name);
-}
-
 const semantic_model::SourceDeclAnchorCache & function_template_decl_anchor(
     const SemanticContext & ctx,
     const semantic_model::FunctionTemplateDecl * decl)
@@ -773,13 +765,6 @@ const semantic_model::SourceDeclAnchorCache & variable_template_decl_anchor(
       node_location_or_empty(ctx, decl->declarator) :
       node_location_or_empty(ctx, decl->specifiers);
   return cache;
-}
-
-std::string function_template_name_location(
-    const SemanticContext & ctx,
-    const semantic_model::FunctionTemplateDecl * decl)
-{
-  return function_template_decl_anchor(ctx, decl).name_location;
 }
 
 std::string template_decl_primary_location(const SemanticContext & ctx,

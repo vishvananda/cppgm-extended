@@ -5747,11 +5747,6 @@ bool class_function_name_is_implicitly_static(const std::string & name)
          simple_name == "operatordelete[]";
 }
 
-bool is_anonymous_union_specifier(const CppAstNode & node)
-{
-  return find_anonymous_union_specifier(node) != nullptr;
-}
-
 std::string scope_anonymous_union_type_name(const CppAstNode & node)
 {
   const CppAstNode * anon = find_anonymous_union_specifier(node);
@@ -14509,12 +14504,6 @@ ClassInfo * anonymous_storage_union_info(SemanticContext & ctx, const FieldInfo 
 const FieldInfo * aggregate_input_field(SemanticContext & ctx, const FieldInfo & field)
 {
   return aggregate_input_field_impl(ctx, field);
-}
-
-TypePtr aggregate_constructor_parameter_type(SemanticContext & ctx,
-                                             const FieldInfo & field)
-{
-  return aggregate_constructor_parameter_type_impl(ctx, field);
 }
 
 FunctionBinding * ensure_implicit_aggregate_constructor(SemanticContext & ctx,

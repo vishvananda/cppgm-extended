@@ -2108,20 +2108,6 @@ bool describe_dependent_builtin_type_transform(const TypePtr & type,
   return !builtin_name.empty() && arg_type;
 }
 
-bool is_dependent_builtin_type_transform_type(const TypePtr & type)
-{
-  std::string builtin_name;
-  TypePtr arg_type;
-  return describe_dependent_builtin_type_transform(type,
-                                                   builtin_name,
-                                                   arg_type);
-}
-
-bool is_supported_builtin_type_transform_name(const std::string & name)
-{
-  return builtin_type_transforms::is_supported_name(name);
-}
-
 bool apply_builtin_type_transform_kind(builtin_type_transforms::Kind kind,
                                        const TypePtr & arg_type,
                                        TypePtr & out)

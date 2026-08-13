@@ -68,7 +68,6 @@ struct RecogToken
   bool is_eof() const;
   bool is_rshift_piece() const;
   bool is_close_angle_bracket() const;
-  bool is_nonparen() const;
   bool is_empty_string() const;
   bool is_zero() const;
   bool is_final() const;
@@ -77,7 +76,6 @@ struct RecogToken
   bool is_template_name() const;
   bool is_typedef_name() const;
   bool is_enum_name() const;
-  bool is_namespace_name() const;
 };
 
 struct IRecogTokenSource

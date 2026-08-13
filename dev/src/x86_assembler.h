@@ -65,7 +65,6 @@ public:
   void emit_add_r64_r64(X64Register dst, X64Register src);
   void emit_sub_r64_r64(X64Register dst, X64Register src);
   void emit_and_r64_imm32(X64Register dst, std::uint32_t imm);
-  void emit_or_r64_imm32(X64Register dst, std::uint32_t imm);
   void emit_add_r64_imm32(X64Register dst, std::int32_t imm);
   void emit_sub_r64_imm32(X64Register dst, std::int32_t imm);
   void emit_cmp_r32_imm32(X64Register lhs, std::uint32_t imm);
@@ -101,14 +100,11 @@ public:
   void emit_fld_m32(const X86Memory & src);
   void emit_fld_m64(const X86Memory & src);
   void emit_fld_m80(const X86Memory & src);
-  void emit_fild_m16(const X86Memory & src);
-  void emit_fild_m32(const X86Memory & src);
   void emit_fild_m64(const X86Memory & src);
   void emit_fstp_m32(const X86Memory & dst);
   void emit_fstp_m64(const X86Memory & dst);
   void emit_fstp_m80(const X86Memory & dst);
   void emit_fisttp_m64(const X86Memory & dst);
-  void emit_fldz();
   void emit_fchs();
   void emit_faddp_st1();
   void emit_fsubp_st1();

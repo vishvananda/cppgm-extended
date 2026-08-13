@@ -107,23 +107,6 @@ string shell_quote(const string & value)
   return out;
 }
 
-string run_command_capture_stdout(const string & command)
-{
-  FILE * pipe = popen(command.c_str(), "r");
-  if(pipe == nullptr) {
-    return string();
-  }
-  string output;
-  char buffer[4096];
-  while(fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-    output += buffer;
-  }
-  if(pclose(pipe) != 0) {
-    return string();
-  }
-  return output;
-}
-
 string host_default_target_name()
 {
 #if defined(__APPLE__)
@@ -322,31 +305,6 @@ bool emit_macos_dsym_bundle(const string & outfile)
   return run_tool_command_status("dsymutil", args) == 0;
 }
 
-HostToolchainFamily detect_host_toolchain_family()
-{
-  const string command = host_cxx_command();
-  const string basename =
-      command.rfind('/') == string::npos ? command : command.substr(command.rfind('/') + 1);
-  if(basename.find("clang") != string::npos) {
-    return HOST_TOOLCHAIN_CLANG;
-  }
-  if(basename.find("g++") != string::npos ||
-     basename.find("gcc") != string::npos) {
-    return HOST_TOOLCHAIN_GNU;
-  }
-
-  const string probe =
-      command + " -std=gnu++11 -dM -E -x c++ - < /dev/null 2>/dev/null";
-  const string output = run_command_capture_stdout(probe);
-  if(output.find("__clang__") != string::npos) {
-    return HOST_TOOLCHAIN_CLANG;
-  }
-  if(output.find("__GNUC__") != string::npos) {
-    return HOST_TOOLCHAIN_GNU;
-  }
-  return HOST_TOOLCHAIN_UNKNOWN;
-}
-
 }  // namespace
 
 void set_cpp_tool_program_path(const string & path)
@@ -357,12 +315,6 @@ void set_cpp_tool_program_path(const string & path)
 string cpp_tool_program_path()
 {
   return cpp_tool_program_path_storage();
-}
-
-HostToolchainFamily host_toolchain_family()
-{
-  static const HostToolchainFamily family = detect_host_toolchain_family();
-  return family;
 }
 
 bool can_use_host_toolchain_for_output_target(const string & output_target)
@@ -1710,22 +1662,6 @@ void prune_unreferenced_object_symbol_definitions(
   program.function_declarations.swap(kept_function_declarations);
 }
 
-string generate_lowir_from_cpp_sources(const vector<string> & srcfiles,
-                                       const CppPreprocessOptions & options,
-                                       int optimization_level,
-                                       int debug_info_level)
-{
-  return generate_lowir_from_translation_units(
-      analyze_cpp_sources(srcfiles,
-                          options,
-                          true,
-                          nullptr,
-                          nullptr,
-                          debug_info_level >= 1),
-      optimization_level,
-      debug_info_level);
-}
-
 string generate_lowir_from_translation_units(const vector<CallSemNode> & translation_units,
                                              int optimization_level,
                                              int debug_info_level)
@@ -1804,43 +1740,6 @@ lowir_internal::Program prepare_object_lowir_program(lowir_internal::Program pro
          << "\n";
   }
   return program;
-}
-
-machine_object::ObjectFile build_cpp_object_file(const vector<string> & srcfiles,
-                                                 const CppPreprocessOptions & options,
-                                                 const string & output_target,
-                                                 int optimization_level,
-                                                 int debug_info_level)
-{
-  lowir_internal::Program program = prepare_object_lowir_program(
-      build_lowir_program_from_cpp_sources(srcfiles, options, debug_info_level),
-      optimization_level,
-      debug_info_level);
-  PhaseTimer timer("build_machine_object",
-                   string("target=") + output_target + " " + source_count_detail(srcfiles));
-  return build_machine_object(std::move(program),
-                              effective_host_output_target(output_target),
-                              true,
-                              true,
-                              debug_info_level);
-}
-
-machine_object::ObjectFile build_cpp_lowir_object_file(const vector<string> & srcfiles,
-                                                       const string & output_target,
-                                                       int optimization_level,
-                                                       int debug_info_level)
-{
-  lowir_internal::Program program = prepare_object_lowir_program(
-      lowir_internal::parse_program(srcfiles),
-      optimization_level,
-      debug_info_level);
-  PhaseTimer timer("build_machine_object",
-                   string("target=") + output_target + " " + source_count_detail(srcfiles));
-  return build_machine_object(std::move(program),
-                              effective_host_output_target(output_target),
-                              true,
-                              true,
-                              debug_info_level);
 }
 
 void write_cpp_object_file(const vector<string> & srcfiles,

@@ -4357,22 +4357,6 @@ bool build_aggregate_initializer_plan(SemanticContext & ctx,
                                                synthesized_nodes);
 }
 
-bool build_designated_aggregate_initializer_plan(
-    SemanticContext & ctx,
-    Scope & scope,
-    const ClassInfo & info,
-    const CppAstNode & payload,
-    vector<const CppAstNode *> & field_initializers,
-    vector<CppAstNode> & synthesized_nodes)
-{
-  return build_aggregate_initializer_plan_impl(ctx,
-                                               scope,
-                                               info,
-                                               payload,
-                                               field_initializers,
-                                               synthesized_nodes);
-}
-
 bool build_aggregate_constructor_source_args(SemanticContext & ctx,
                                              Scope & scope,
                                              ClassInfo & info,

@@ -7959,12 +7959,6 @@ std::string explain_function_output_state_impl(SemanticContext & ctx,
 
 }  // namespace
 
-std::string explain_function_output_state(SemanticContext & ctx,
-                                          FunctionBinding & binding)
-{
-  return explain_function_output_state_impl(ctx, binding);
-}
-
 void validate_required_function_definition_closure(SemanticContext & ctx,
                                                    OutputState & state)
 {

@@ -151,16 +151,6 @@ bool collect_enabled()
   return env_enabled();
 }
 
-const std::string & fragment_trace_filter()
-{
-  static const std::string filter = []() -> std::string
-  {
-    const char * value = std::getenv("CPPGM_SEMANTIC_HOTSPOT_TRACE_FRAGMENT");
-    return value ? std::string(value) : std::string();
-  }();
-  return filter;
-}
-
 const std::string & node_trace_filter()
 {
   static const std::string filter = []() -> std::string
@@ -520,39 +510,6 @@ struct Profiler
 
 Profiler & profiler();
 
-void note_fragment(const char * kind,
-                   const std::string & text)
-{
-  if(!collect_enabled()) {
-    return;
-  }
-
-  FragmentKey key;
-  key.kind = kind ? kind : "fragment";
-  key.text = text;
-  FragmentRecord & record = profiler().fragments[key];
-  ++record.count;
-  record.total_chars += text.size();
-  ++record.frames[DiagnosticContext::current_frame()];
-
-  const std::string & trace_filter = fragment_trace_filter();
-  if(!trace_filter.empty() &&
-     text.find(trace_filter) != std::string::npos &&
-     profiler().emitted_fragment_traces < fragment_trace_limit()) {
-    ++profiler().emitted_fragment_traces;
-    std::cerr << "SEMANTIC_HOTSPOT fragment_trace"
-              << " count=" << record.count
-              << " kind=" << key.kind
-              << " text=" << text
-              << '\n'
-              << DiagnosticContext::format_stack()
-              << '\n';
-  }
-
-  ++profiler().total_fragment_requests;
-  profiler().total_fragment_request_chars += text.size();
-}
-
 Profiler & profiler()
 {
   static Profiler instance;
@@ -649,12 +606,6 @@ void note_semantic_query(const char * kind,
               << DiagnosticContext::format_stack()
               << '\n';
   }
-}
-
-void note_fragment_request(const char * kind,
-                           const std::string & text)
-{
-  note_fragment(kind, text);
 }
 
 }  // namespace semantic_hotspot

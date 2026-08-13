@@ -164,10 +164,6 @@ std::string previous_function_location_note(const SemanticContext & ctx,
                                             const semantic_model::FunctionBinding * binding);
 bool source_location_points_at_identifier(const std::string & location,
                                           const std::string & identifier);
-std::string name_location_in_node(const SemanticContext & ctx,
-                                  const CppAstNode * node,
-                                  const std::string & unqualified_name,
-                                  bool prefer_last_name);
 const semantic_model::SourceDeclAnchorCache & function_template_decl_anchor(
     const SemanticContext & ctx,
     const semantic_model::FunctionTemplateDecl * decl);
@@ -189,9 +185,6 @@ const semantic_model::SourceDeclAnchorCache & alias_template_decl_anchor(
 const semantic_model::SourceDeclAnchorCache & variable_template_decl_anchor(
     const SemanticContext & ctx,
     const semantic_model::VariableTemplateDecl * decl);
-std::string function_template_name_location(
-    const SemanticContext & ctx,
-    const semantic_model::FunctionTemplateDecl * decl);
 std::string template_decl_primary_location(const SemanticContext & ctx,
                                            const semantic_model::FunctionTemplateDecl * decl);
 std::string template_decl_location_details(const SemanticContext & ctx,

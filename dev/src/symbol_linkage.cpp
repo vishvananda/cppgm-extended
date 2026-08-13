@@ -19376,11 +19376,6 @@ bool mangle_itanium_type_encoding(const TypePtr & type, string & out)
   return true;
 }
 
-bool mangle_itanium_name_encoding(const QualifiedName & qualified_name, string & out)
-{
-  return try_emit_qualified_name_encoding_ir(qualified_name, out);
-}
-
 static bool type_needs_structural_internal_symbol_impl(
     const TypePtr & type,
     vector<const Type *> & active_types);

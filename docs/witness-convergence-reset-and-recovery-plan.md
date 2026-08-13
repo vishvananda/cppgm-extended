@@ -7620,6 +7620,128 @@ current tree remains 3,732 lines larger than the Phase 0 recovery tree
 acceptance question is closed, but Phase 6 remains open on that explicit
 cumulative source-size criterion. Phase 7 and inception remain forbidden.
 
+## Retired internal API surface checkpoint, 2026-08-12
+
+Commit `f2ae3168ab1f39b1a44c1f191158f5f3c3fd6ed1` is the parent. This
+Phase 6 checkpoint removes declaration-and-definition pairs that no compiled
+repository C++ source calls. It also removes the private helper chains that
+became unreachable with those entry points. The cumulative production-source
+size criterion keeps Phase 6 open.
+
+The inventory scanned C++ identifiers across `dev/` and PA1 through PA39. It
+found 51 names with one header declaration, one source definition, and no call
+site. The retired group covers parser fragment entry points and seeders,
+witness recovery adapters, semantic convenience wrappers, object/toolchain
+wrappers, unused assembler emitters, and old diagnostics hooks. A warning-clean
+full build then exposed private closure under four of those wrappers. Removing
+that closure deleted the obsolete alias-source spelling reconstruction path,
+the LowIR host-EH file writer scan, host-toolchain detection, and fragment
+hotspot recording. The checkpoint leaves the user-facing binaries and live
+shared APIs unchanged.
+
+The Homebrew-Clang validation produced these results:
+
+- the full `dev/` frontend set and `mobjroundtrip` build without warnings;
+- the frozen parent and candidate produce 10,884 artifacts each over all 1,530
+  strict inputs. Exit status, witness output, LowIR, diagnostics, and stdout
+  match byte for byte;
+- ordinary and provenance strict runs retain the three documented cross-oracle
+  rows: PA19 279/0, PA20 158/0, PA22 293/1, PA23 385/1, and PA24 415/1;
+- expanded convergence remains 1,527/1,530 with no missing actual output or
+  warning;
+- the integrated PA1-PA38 direct-LowIR report passes 4,862/4,862. PA9 ran once
+  in that report and had no separate invocation;
+- ordinary and provenance compilers produce 10,884 byte-identical artifacts
+  per lane;
+- all 1,530 provenance trace files exist. Schema 6 contains 10,587 records:
+  4,289 source publications and 6,298 lifecycle publications, with no unknown
+  producer and no unexercised site;
+- the helper suite passes 261 tests with one intentional skip. Ownership,
+  materialization, and duplicate-AST audits report no finding. All 23
+  text-reparse categories and all semantic-side boundary categories remain
+  zero;
+- the template-side boundary inventory adds no debt and reduces
+  `canonical_key_metadata` from 65 sites to 63. Its other counts remain 4, 2,
+  15, 115, 136, and 193.
+
+The ordinary parent-parity and ordinary/provenance mismatch reports are
+`/tmp/cppgm-phase6-dead-api-parent-parity-20260812.txt` and
+`/tmp/cppgm-phase6-dead-api-ordinary-provenance-parity-20260812.txt`. Both are
+empty and have SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+The provenance trace directory is
+`/tmp/cppgm-phase6-dead-api-provenance-trace-20260812.BRpIgzuy`. The analysis
+and convergence reports are
+`/tmp/cppgm-phase6-dead-api-provenance-analysis-20260812.json` and
+`/tmp/cppgm-phase6-dead-api-provenance-convergence-20260812.json`, with
+SHA-256 values
+`5fe8c7cf16d3dac2d96ec4e05a5b3adf12cc60cdb401c7d6aedba20418da418d`
+and
+`4b43d50c3efd30995b00cc632602f699b9de0218d81955804cd86b5e5bf66aee`.
+
+The ordinary strict, provenance strict, integrated, and helper reports are
+`/tmp/cppgm-phase6-dead-api-strict-20260812.log`,
+`/tmp/cppgm-phase6-dead-api-provenance-strict-20260812.log`,
+`/tmp/cppgm-phase6-dead-api-integrated-20260812.log`, and
+`/tmp/cppgm-phase6-dead-api-helper-tests-20260812.log`. Their SHA-256 values
+are
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`,
+`bec6edbbb5a4cdeb8d9064ab5773d4194921f82d9ab63723493769e91f950a94`,
+`ee77ddeff28948e947539c0b41157f83ee5d846e2faf85db2d20257ac6b27c79`,
+and
+`fb95fc5f7edb9c3dc411e428b5b48e0aca9763f59afce0a1a68b68f3427650d9`.
+
+The ownership, materialization, duplicate-AST, text-reparse,
+semantic-boundary, and template-boundary reports have SHA-256 values
+`140b898f29adbba7fb5b61e3e2d3515afb8224ad1bdb4c61afa491289617695f`,
+`27acfb819a6872ffb36e59e33cccdec28a83ea0543b69f5b4c0a8bb3ee33e526`,
+`ba5355fab0e7bd3a74b6c085371e204afcdc7f540b7d55294ab8a23928d02332`,
+`1de948196cc856fc673897264f3b7210dab0ab768743743555644db743b7c515`,
+`b3485a7584fbde7b0600e9714bb041d988be34909289f9bf6d363e4cdfaddd80`,
+and
+`99a332ac14d005d11a34a9d1b25d5aaf43c3c705da54cf930ef3e98a7dc52dfe`.
+
+All tracked semantic structure sizes match the parent. `Type`,
+`TemplateArgument`, `ClassInfo`, and `TemplateWitnessSession` remain 280, 136,
+1,104, and 312 bytes. The report is
+`/tmp/cppgm-phase6-dead-api-structure-sizes-20260812.txt`, SHA-256
+`1f872ff18916238323328ce75039b29c15d01f4bd37303c6b4e604112e09b00d`.
+
+The ordinary binary shrinks by 84,744 bytes to 16,955,272 bytes and contains
+no provenance symbols. Its `__text`, `__gcc_except_tab`, and `__unwind_info`
+sections shrink by 48,800, 2,000, and 496 bytes. The section report is
+`/tmp/cppgm-phase6-dead-api-binary-sections-20260812.txt`, SHA-256
+`a070b8bd0b64f34549c906ab4d38c816767431a774f178024caf58a60b0008d3`.
+The frozen ordinary binary is
+`/tmp/cppgm-phase6-dead-api-candidate-20260812`, SHA-256
+`035a77778ea86e3ed942bc92d46d3df4b20d5214b38bce4ba812d8fb61a16798`.
+
+The clean ordinary three-run performance record passes both comparisons:
+
+| Comparison | Instructions | Maximum RSS | Peak footprint | Report |
+| --- | ---: | ---: | ---: | --- |
+| Fixed alias-convergence baseline | -0.56% | +0.13% | -4.19% | `/tmp/cppgm-phase6-dead-api-perf-fixed-20260812.json` |
+| Immediate parent | +0.39% | -0.11% | -0.21% | `/tmp/cppgm-phase6-dead-api-perf-parent-20260812.json` |
+
+The candidate medians are 175,029,747,531 instructions, 758,108,160 bytes
+maximum RSS, and 568,184,832 bytes peak footprint. The raw candidate is
+`/tmp/cppgm-phase6-dead-api-raw-candidate-20260812.json`, SHA-256
+`d57a2f4c4a0a6ce7dc54400fd41c7272e298f2da33dab412b161019687582c6a`.
+The fixed-baseline and parent-comparison reports have SHA-256 values
+`59ef8e626e5356d436f3ad05ba37eb06d6b815823bd0dd05201838b31ba68e13`
+and
+`7b92c8470176492be616558da172e425ad650cae17ebfac5d90c252e85a1e704`.
+The candidate metadata names `f2ae3168a` because the measurements cover this
+uncommitted checkpoint.
+
+Production code adds one line and removes 1,471, a net deletion of 1,470.
+Since the Phase 6 entry commit
+`0014913a13cd1ba59abc24136be1026bf4631c5c`, the cumulative production change
+is a net deletion of 6,136 lines. The current tree remains 2,262 lines larger
+than the Phase 0 recovery tree (`416,069` versus `413,807` total `dev/src`
+lines). Phase 6 remains open on that source-size criterion. Phase 7 and
+inception remain forbidden.
+
 ## Current decision, 2026-08-09
 
 Commit `b03f2530dad6513aabfa1064a8919bb61fea7d3f` is the restart point. It adds

@@ -51,8 +51,6 @@ struct Preprocessor : IPPTokenSource, ISourceLocationProvider
       {return cursor.complete() && !macroizer.active(); };
   const std::vector<std::string> & dependency_files() const
       {return dependency_files_;};
-  EPPToken get_input();
-
 protected:
   void start_new_file();
   bool process(const EPPTokenType type, const std::string & data,

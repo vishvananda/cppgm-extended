@@ -1456,23 +1456,6 @@ std::string dump_witness_debug_text(const TemplateWitnessSession & session,
 
 }  // namespace template_api
 
-std::string describe_template_translation_unit(IRecogTokenSequence & tokens,
-                                               const std::string & source_path)
-{
-  (void)tokens;
-  (void)source_path;
-  return std::string();
-}
-
-std::string canonicalize_template_translation_unit_text(const std::string & text,
-                                                        const std::string & source_path)
-{
-  (void)text;
-  return template_api::dump_template_witness_text(
-      template_api::create_template_witness_session(),
-      source_path);
-}
-
 std::string render_witness_sessions(
     const std::vector<std::string> & source_paths,
     const std::vector<template_api::TemplateWitnessSession> & sessions)

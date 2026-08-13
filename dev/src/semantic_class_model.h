@@ -240,7 +240,6 @@ void collect_class_declaration(SemanticContext & ctx,
                                semantic_model::Scope & scope,
                                const CppAstNode & node,
                                const CppAstNode * source_unnamed_node = nullptr);
-bool is_anonymous_union_specifier(const CppAstNode & node);
 std::string scope_anonymous_union_type_name(const CppAstNode & node);
 std::string scope_anonymous_union_storage_name(const CppAstNode & node);
 bool synthesize_anonymous_union_storage_declaration(const CppAstNode & node,
@@ -284,9 +283,6 @@ semantic_model::ClassInfo * anonymous_storage_union_info(
     SemanticContext & ctx,
     const semantic_model::FieldInfo & field);
 const semantic_model::FieldInfo * aggregate_input_field(
-    SemanticContext & ctx,
-    const semantic_model::FieldInfo & field);
-cpp_decl::TypePtr aggregate_constructor_parameter_type(
     SemanticContext & ctx,
     const semantic_model::FieldInfo & field);
 semantic_model::FunctionBinding * ensure_implicit_aggregate_constructor(

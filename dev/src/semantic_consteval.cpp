@@ -3854,16 +3854,6 @@ bool evaluate_expression_value(SemanticContext & ctx,
   return evaluator.eval_expr(node, out);
 }
 
-bool evaluate_expression_integral(SemanticContext & ctx,
-                                  Scope & scope,
-                                  const CppAstNode & node,
-                                  long long & out)
-{
-  constant_eval::ConstexprValue value;
-  return evaluate_expression_value(ctx, scope, node, value) &&
-         constant_eval::constexpr_value_to_integral(value, out);
-}
-
 bool evaluate_initializer_value(SemanticContext & ctx,
                                 Scope & scope,
                                 const CppAstNode & initializer,

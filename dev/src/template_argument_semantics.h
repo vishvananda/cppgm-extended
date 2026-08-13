@@ -31,15 +31,6 @@ void retain_unique_enum_value_bindings_for_witness(
     template_api::TemplateServices & services,
     const std::vector<template_model::TemplateArgument> & arguments);
 
-void append_alias_template_source_bindings(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    std::vector<semantic_source_use::SourceBinding> & out,
-    const std::vector<template_model::TemplateParameterInfo> & parameters,
-    const std::vector<template_model::TemplateArgument> & arguments,
-    const std::vector<std::string> & explicit_argument_texts,
-    const std::string & source);
-
 enum NonTypeArgumentStatus
 {
   NT_ARG_PARSE_FAILED,
@@ -244,10 +235,6 @@ void note_structured_bool_value_members_in_template_argument_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const cpp_decl::TemplateArgumentSyntax & syntax);
-void note_structured_bool_value_member_for_type_if_needed(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const cpp_decl::TypePtr & type);
 void note_alias_target_structured_bool_value_member_for_witness_capture(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

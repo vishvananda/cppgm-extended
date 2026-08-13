@@ -2966,48 +2966,6 @@ void CppAstParser::restore_name_lookup_state_from(
   note_name_lookup_mutation();
 }
 
-void CppAstParser::seed_known_type_names(const NameSet & names)
-{
-  if(type_name_scopes.empty()) {
-    type_name_scopes.push_back(NameSet());
-  }
-  type_name_scopes.back().insert(names.begin(), names.end());
-  note_name_lookup_mutation();
-}
-
-void CppAstParser::seed_known_template_names(const NameSet & names)
-{
-  if(template_name_scopes.empty()) {
-    template_name_scopes.push_back(NameSet());
-  }
-  template_name_scopes.back().insert(names.begin(), names.end());
-  note_name_lookup_mutation();
-}
-
-void CppAstParser::seed_known_value_names(const NameSet & names)
-{
-  if(value_name_scopes.empty()) {
-    value_name_scopes.push_back(NameSet());
-  }
-  value_name_scopes.back().insert(names.begin(), names.end());
-  note_name_lookup_mutation();
-}
-
-void CppAstParser::seed_known_template_value_names(const NameSet & names)
-{
-  if(template_value_parameter_scopes.empty()) {
-    template_value_parameter_scopes.push_back(NameSet());
-  }
-  template_value_parameter_scopes.back().insert(names.begin(), names.end());
-  note_name_lookup_mutation();
-}
-
-void CppAstParser::set_external_name_lookup(const template_angle::NameLookup * lookup)
-{
-  external_name_lookup = lookup;
-  note_name_lookup_mutation();
-}
-
 string CppAstParser::normalized_name_without_template_args(const string & text) const
 {
   string out;
@@ -3320,27 +3278,6 @@ bool CppAstParser::parse_compound_statement_fragment(CppAstNode & out)
   }
   if(!at_eof()) {
     set_error("unexpected token after compound-statement fragment near " + token_label(peek()));
-    pos = start;
-    return false;
-  }
-  return true;
-}
-
-bool CppAstParser::parse_class_specifier_fragment(CppAstNode & out)
-{
-  const size_t start = pos;
-  if(!parse_class_specifier(out)) {
-    if(error_msg.empty()) {
-      set_error("expected class-specifier fragment near " + token_label(peek()));
-    }
-    pos = start;
-    return false;
-  }
-  if(peek().is_simple(OP_SEMICOLON)) {
-    ++pos;
-  }
-  if(!at_eof()) {
-    set_error("unexpected token after class-specifier fragment near " + token_label(peek()));
     pos = start;
     return false;
   }
@@ -4217,20 +4154,6 @@ bool CppAstParser::can_start_id_expression() const
          token.is_simple(KW_OPERATOR);
 }
 
-bool CppAstParser::can_start_primary_expression() const
-{
-  const RecogToken & token = peek();
-  return token.is_simple(OP_LSQUARE) ||
-         token.is_simple(OP_LBRACE) ||
-         token.is_literal() ||
-         can_start_id_expression() ||
-         token.is_simple(KW_TRUE) ||
-         token.is_simple(KW_FALSE) ||
-         token.is_simple(KW_NULLPTR) ||
-         token.is_simple(KW_THIS) ||
-         token.is_simple(OP_LPAREN);
-}
-
 bool CppAstParser::can_start_block_declaration()
 {
   size_t cursor = pos;
@@ -4270,16 +4193,6 @@ bool CppAstParser::is_current_class_name_identifier(const RecogToken & token) co
 {
   return token.is_identifier() && !class_name_stack.empty() &&
          token.source == class_name_stack.back();
-}
-
-bool CppAstParser::can_start_special_member_candidate() const
-{
-  const RecogToken & token = peek();
-  return token.is_simple(KW_EXPLICIT) ||
-         is_current_class_name_identifier(token) ||
-         token.is_simple(OP_COMPL) ||
-         token.is_simple(KW_OPERATOR) ||
-         is_member_function_specifier(token);
 }
 
 bool CppAstParser::find_template_parameter_clause_end(size_t template_pos,
@@ -6422,59 +6335,6 @@ bool CppAstParser::parse_bit_field_declaration(CppAstNode & out)
   return true;
 }
 
-bool CppAstParser::parse_function_definition(CppAstNode & out)
-{
-  size_t start = pos;
-  CppAstNode specifiers;
-  CppAstNode declarator;
-  CppAstNode body;
-
-  CppAstNode trailing_extensions;
-  if(!parse_decl_specifier_seq(specifiers) || !parse_declarator(declarator) ||
-     !skip_trailing_declarator_extensions(&trailing_extensions) ||
-     !declarator_has_parameter_clause(declarator) ||
-     !(peek().is_simple(OP_LBRACE) || peek().is_simple(KW_TRY))) {
-    pos = start;
-    return false;
-  }
-  apply_trailing_declarator_extensions(declarator, trailing_extensions);
-
-  NameSet signature_type_hints;
-  collect_signature_type_hint_names(specifiers, signature_type_hints);
-  collect_signature_type_hint_names(declarator, signature_type_hints);
-  NameSet parameter_value_names;
-  string class_key;
-  SeededClassNameScopes seeded_class_names;
-  resolve_declarator_owner_class_scope_key(declarator, class_key);
-  collect_outer_parameter_value_names(declarator, parameter_value_names);
-  if(!class_key.empty()) {
-    seeded_class_names = push_class_member_name_hints(class_key);
-  }
-  type_name_scopes.push_back(signature_type_hints);
-  if(!parameter_value_names.empty()) {
-    value_name_scopes.push_back(parameter_value_names);
-  }
-  const bool parsed_body = parse_function_body(body);
-  if(!parameter_value_names.empty()) {
-    value_name_scopes.pop_back();
-  }
-  type_name_scopes.pop_back();
-  if(!class_key.empty()) {
-    pop_class_member_name_hints(seeded_class_names);
-  }
-  if(!parsed_body) {
-    pos = start;
-    return false;
-  }
-
-  out = make_node(CppAstKind::function_definition);
-  out.children.push_back(std::move(specifiers));
-  out.children.push_back(std::move(declarator));
-  out.children.push_back(std::move(body));
-  set_span(out, start);
-  return true;
-}
-
 bool CppAstParser::parse_simple_declaration(CppAstNode & out)
 {
   size_t start = pos;
@@ -7097,30 +6957,6 @@ bool CppAstParser::parse_decl_specifier_seq(CppAstNode & out)
   }
 
   set_span(out, start);
-  return true;
-}
-
-bool CppAstParser::parse_init_declarator_list(CppAstNode & out)
-{
-  size_t start = pos;
-  CppAstNode first;
-  if(!parse_init_declarator(first)) {
-    pos = start;
-    return false;
-  }
-
-  out = make_node(CppAstKind::init_declarator_list);
-  out.children.push_back(std::move(first));
-
-  while(consume_simple(OP_COMMA)) {
-    CppAstNode next;
-    if(!parse_init_declarator(next)) {
-      pos = start;
-      return false;
-    }
-    out.children.push_back(std::move(next));
-  }
-
   return true;
 }
 
@@ -11800,21 +11636,6 @@ bool CppAstParser::parse_unqualified_name_text(string & out,
   return true;
 }
 
-bool CppAstParser::parse_name_component_text(string & out)
-{
-  size_t start = pos;
-  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup();
-
-  qualified_name_parser::NameComponentParseResult parsed;
-  if(!qualified_name_parser::parse_name_component(tokens, start, lookup, parsed)) {
-    pos = start;
-    return false;
-  }
-  pos = parsed.end;
-  out = token_span_text_spaced(start, pos);
-  return true;
-}
-
 bool CppAstParser::parse_template_argument_fragment_node(std::size_t start,
                                                          std::size_t end,
                                                          CppAstNode & out,
@@ -11959,162 +11780,6 @@ bool CppAstParser::parse_template_argument_fragment_syntax(
         out.pack_expansion || expr_pack_expansion || has_trailing_pack_expansion;
   }
   return out.type_id || out.expression;
-}
-
-bool CppAstParser::parse_template_argument_text(string & out)
-{
-  size_t start = pos;
-  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup();
-
-  const auto parse_fragment = [&](size_t end) -> bool
-  {
-    CppAstNode argument;
-    bool is_type_id = false;
-    if(parse_template_argument_fragment_node(start, end, argument, is_type_id)) {
-      pos = end;
-      out = token_span_text_spaced(start, pos);
-      return true;
-    }
-    return false;
-  };
-
-  std::vector<template_angle::Delimiter> delimiters;
-  if(!template_angle::collect_template_argument_delimiters(tokens,
-                                                           start,
-                                                           lookup,
-                                                           delimiters)) {
-    pos = start;
-    return false;
-  }
-  const bool trace_fragment = parser_trace::enabled("parser.fragment");
-  for(std::size_t i = 0; i < delimiters.size(); ++i) {
-    if(trace_fragment) {
-      std::ostringstream trace;
-      trace << "template-argument boundary kind="
-            << (delimiters[i].kind == template_angle::DK_COMMA ? "comma" : "close")
-            << " candidate={" << token_span_text_spaced(start, delimiters[i].pos) << "}";
-      parser_trace::note("parser.fragment", tokens, start, trace.str());
-    }
-    if(parse_fragment(delimiters[i].pos)) {
-      if(trace_fragment) {
-        parser_trace::note("parser.fragment",
-                           tokens,
-                           start,
-                           "template-argument accepted");
-      }
-      return true;
-    }
-  }
-
-  pos = start;
-  return false;
-}
-
-bool CppAstParser::parse_decltype_specifier_text(string & out)
-{
-  size_t start = pos;
-  size_t end = start;
-  if(!qualified_name_parser::parse_decltype_specifier(tokens, start, end)) {
-    pos = start;
-    return false;
-  }
-
-  pos = end;
-  out = token_span_text_spaced(start, pos);
-  return true;
-}
-
-bool CppAstParser::parse_template_id_suffix_text(string & out)
-{
-  size_t start = pos;
-  if(!peek().is_simple(OP_LT)) {
-    pos = start;
-    return false;
-  }
-
-  if(start > 0) {
-    const RecogToken & prev = tokens.peek(start - 1);
-    if(prev.is_identifier()) {
-      const bool known_template = is_known_template_name_identifier(prev);
-      const bool known_type = is_known_type_name_identifier(prev);
-      const bool known_value_template =
-          is_known_value_template_parameter_identifier(prev);
-      const bool known_value = is_known_value_name_identifier(prev);
-      if((known_value_template || known_value) &&
-         !known_template && !known_type) {
-        pos = start;
-        return false;
-      }
-    }
-  }
-
-  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup();
-
-  std::size_t end = start;
-  std::vector<std::pair<std::size_t, std::size_t> > arg_ranges;
-  if(!template_angle::parse_template_id_suffix_ranges(tokens,
-                                                      start,
-                                                      lookup,
-                                                      end,
-                                                      arg_ranges)) {
-    pos = start;
-    return false;
-  }
-
-  const auto follower_allows_unknown_template_id =
-      [](const RecogToken & follower) -> bool
-  {
-    if(follower.is_eof()) {
-      return true;
-    }
-    if(follower.kind != RT_SIMPLE) {
-      return false;
-    }
-
-    switch(follower.simple_type) {
-    case OP_COLON2:
-    case OP_LPAREN:
-    case OP_RPAREN:
-    case OP_RSQUARE:
-    case OP_COMMA:
-    case OP_SEMICOLON:
-    case OP_COLON:
-    case OP_DOT:
-    case OP_ARROW:
-    case OP_DOTS:
-    case OP_RBRACE:
-      return true;
-    default:
-      return false;
-    }
-  };
-
-  if(start > 0) {
-    const RecogToken & prev = tokens.peek(start - 1);
-    if(prev.is_identifier()) {
-      const bool known_type = lookup.is_known_type_name_identifier(prev);
-      const bool known_template = lookup.is_known_template_name_identifier(prev);
-      const bool known_value_template =
-          lookup.is_known_value_template_parameter_identifier(prev);
-      const bool known_value = lookup.is_known_value_name_identifier(prev);
-      const bool explicit_template =
-          start >= 2 &&
-          (tokens.peek(start - 2).is_simple(KW_TEMPLATE) ||
-           tokens.peek(start - 2).is_simple(OP_COLON2));
-
-      if(!known_type && !known_template &&
-         !known_value_template && !known_value &&
-         !explicit_template &&
-         !follower_allows_unknown_template_id(tokens.peek(end))) {
-        pos = start;
-        return false;
-      }
-    }
-  }
-
-  pos = end;
-  out = token_span_text_spaced(start, pos);
-  return true;
 }
 
 bool CppAstParser::parse_function_style_simple_type_text(string & out)

@@ -1468,11 +1468,6 @@ EPPToken Preprocessor::RawInputSource::get()
   return cursor->get_collapsed();
 }
 
-EPPToken Preprocessor::get_input()
-{
-  return cursor.get();
-}
-
 EPPToken Preprocessor::get()
 {
   if (complete()) {

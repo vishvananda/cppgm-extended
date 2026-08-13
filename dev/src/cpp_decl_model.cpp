@@ -1066,11 +1066,6 @@ bool named_type_has_dependent_semantic(const TypePtr & type)
   return false;
 }
 
-bool named_type_key_contains_dependent_semantic(const TypePtr & type)
-{
-  return named_type_has_dependent_semantic(type);
-}
-
 bool named_type_key_contains_partial_order_placeholder(const TypePtr & type)
 {
   return named_type_is_partial_order_placeholder(type);
@@ -1558,12 +1553,6 @@ bool is_function_type(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
   return base && base->kind == Type::TK_FUNCTION;
-}
-
-bool is_block_pointer_type(const TypePtr & type)
-{
-  TypePtr base = strip_top_level_cv(type);
-  return base && base->kind == Type::TK_BLOCK_POINTER;
 }
 
 bool is_pointer_type(const TypePtr & type)

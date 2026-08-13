@@ -58,8 +58,6 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
                                  long long & out);
 bool is_supported_builtin_type_trait_name(const std::string & name);
 cpp_decl::TypePtr builtin_type_trait_result_type(const std::string & name);
-bool is_supported_builtin_type_transform_name(const std::string & name);
-
 cpp_decl::TypePtr make_dependent_builtin_type_transform_type(
     const std::string & builtin_name,
     const std::string & arg_text,
@@ -67,7 +65,6 @@ cpp_decl::TypePtr make_dependent_builtin_type_transform_type(
 bool describe_dependent_builtin_type_transform(const cpp_decl::TypePtr & type,
                                                std::string & builtin_name,
                                                cpp_decl::TypePtr & arg_type);
-bool is_dependent_builtin_type_transform_type(const cpp_decl::TypePtr & type);
 bool try_parse_builtin_type_trait_call_arg(SemanticContext & ctx,
                                            semantic_model::Scope & scope,
                                            const CppAstNode & arg,

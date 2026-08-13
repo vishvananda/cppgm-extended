@@ -8173,13 +8173,6 @@ void merge_template_argument_value_dependencies(
   }
 }
 
-void record_class_template_dependent_argument_texts(
-    ClassInfo & info,
-    const std::vector<std::string> & argument_texts)
-{
-  info.instantiation_arg_texts = argument_texts;
-}
-
 void adopt_materialized_owner_template_identity(
     FunctionBinding & binding,
     FunctionTemplateDecl * source_template,

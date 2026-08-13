@@ -2380,21 +2380,6 @@ ScopedTemplateIdSourceArguments::~ScopedTemplateIdSourceArguments()
   }
 }
 
-bool current_template_id_source_arguments(
-    const std::string & location,
-    const std::string & template_name,
-    std::vector<std::string> & arg_texts)
-{
-  arg_texts.clear();
-  const std::vector<std::string> * current =
-      current_template_id_source_arguments_ptr(location, template_name);
-  if(!current) {
-    return false;
-  }
-  arg_texts = *current;
-  return true;
-}
-
 const std::vector<std::string> * current_template_id_source_arguments_ptr(
     const std::string & location,
     const std::string & template_name)
@@ -3063,12 +3048,6 @@ void bump_scope_template_binding_fingerprint_epoch(semantic_model::Scope & scope
   template_scope::bump_binding_fingerprint_epoch(scope);
 }
 
-std::size_t scope_template_binding_fingerprint(
-    const semantic_model::Scope & scope)
-{
-  return template_scope::scope_binding_fingerprint(scope);
-}
-
 std::size_t scope_template_instance_fingerprint(
     const semantic_model::Scope & scope)
 {
@@ -3175,12 +3154,6 @@ std::string function_binding_template_trace_key(
 {
   return binding ? function_binding_template_instantiation_key(*binding) :
                    std::string();
-}
-
-std::string alias_template_witness_entity(
-    const semantic_model::AliasTemplateDecl * decl)
-{
-  return alias_template_log_entity(decl);
 }
 
 std::string alias_template_witness_source_entity(

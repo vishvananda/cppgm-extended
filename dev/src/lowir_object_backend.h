@@ -24,6 +24,3 @@ machine_object::ObjectFile build_machine_object(const std::vector<std::string> &
                                                 int debug_info_level = 0,
                                                 int optimization_level = 0,
                                                 bool use_direct_native_tls_abi = false);
-void write_lowir_object_file(const std::vector<std::string> & srcfiles,
-                             const std::string & outfile,
-                             const std::string & output_target);

@@ -39,14 +39,6 @@ bool build_aggregate_initializer_plan(
     std::vector<const CppAstNode *> & field_initializers,
     std::vector<CppAstNode> & synthesized_nodes);
 
-bool build_designated_aggregate_initializer_plan(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const semantic_model::ClassInfo & info,
-    const CppAstNode & payload,
-    std::vector<const CppAstNode *> & field_initializers,
-    std::vector<CppAstNode> & synthesized_nodes);
-
 bool build_aggregate_constructor_source_args(
     SemanticContext & ctx,
     semantic_model::Scope & scope,

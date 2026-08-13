@@ -142,8 +142,6 @@ std::string typeinfo_name_symbol_for_type(const cpp_decl::TypePtr & type);
 std::string vtable_object_symbol_for_type(const cpp_decl::TypePtr & type);
 bool mangle_itanium_type_encoding(const cpp_decl::TypePtr & type,
                                   std::string & out);
-bool mangle_itanium_name_encoding(const cpp_decl::QualifiedName & qualified_name,
-                                  std::string & out);
 std::string virtual_override_thunk_object_symbol_for_function(
     const cpp_decl::QualifiedName & qualified_name,
     const std::string & display_name,
