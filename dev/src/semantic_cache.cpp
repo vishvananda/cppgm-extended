@@ -34,15 +34,6 @@ std::size_t QualifiedTypeLookupKeyHash::operator()(const QualifiedTypeLookupKey 
   return seed;
 }
 
-std::size_t DependentTypeResolutionCacheKeyHash::operator()(
-    const DependentTypeResolutionCacheKey & key) const
-{
-  std::size_t seed = 0;
-  hash_combine(seed, key.scope_key);
-  hash_combine(seed, key.type_key);
-  return seed;
-}
-
 void SemanticCache::dump(std::ostream & out) const
 {
   out << "semantic-cache"
@@ -54,7 +45,6 @@ void SemanticCache::dump(std::ostream & out) const
       << " mention.dependent_non_namespace="
       << dependent_non_namespace_binding_mentions_cache.size()
       << " lookup.qualified_type=" << qualified_type_lookup_cache.size()
-      << " dependent.type_resolution=" << dependent_type_resolution_cache.size()
       << '\n';
 }
 

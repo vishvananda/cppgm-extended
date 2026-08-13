@@ -309,6 +309,15 @@ change. Seek a `10-15%` instruction reduction from the phase before advancing.
 Retain a smaller result only when the counters prove the remaining work emits
 new output.
 
+Phase 1 audit result at `27d6bc9d0`: a temporary reason census found only 352
+pending outcomes in the frozen compile. Instantiated classes accounted for 308
+missing-node outcomes and 10 placeholder-scope outcomes. Instantiated functions
+accounted for 34 missing-demand outcomes. Late required functions, methods, and
+static functions produced no pending outcomes. The remaining attempts either
+emitted new output or dismissed a newly observed record. The implementation
+already contains the useful worklists, so the census code was removed and no
+queue behavior changed.
+
 ### Phase 2: remove repeated dependent type and alias construction
 
 The early sample spends most of its time parsing type-id ASTs, resolving
@@ -344,6 +353,27 @@ must not run witness-only source reconstruction.
 
 Target: another `10-15%` instruction reduction. Require cache hit rates and
 avoided clone counts in the commit evidence.
+
+First retained Phase 2 slice: the analyzer-wide dependent-type resolution
+cache recorded 6,674 hits and 42,859 misses. Each probe built a recursive
+structural string and interned it before map lookup. A controlled cache-off
+compile improved instructions and cut retained memory, while the inner
+per-resolution recursion cache still handled cycles and duplicate child work.
+The retained change removes the analyzer-wide cache and replaces the inner
+active `std::set<const Type *>` with a thread-local LIFO vector. The frozen
+object remains byte-identical. Configured direct strict passes `1530/1530`, and
+the full direct report passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `173,508,264,894` | `-649,506,050` (`-0.37%`) |
+| maximum RSS | `743,952,384 B` | `-17,252,352 B` (`-2.27%`) |
+| peak footprint | `557,821,952 B` | `-10,936,320 B` (`-1.92%`) |
+| wall time | `41.84 s` | `+4.55%`, informational under host load |
+
+Evidence: `/tmp/cppgm-dependent-resolution-negative-cache-removal-final.json`.
 
 ### Phase 3: complete eligible type interning as one program
 
@@ -536,6 +566,7 @@ Fill one row after each retained commit.
 | Commit | Mechanism | Instructions | Change from start | Max RSS | Footprint | Frozen bytes | Strict | Full report | Evidence |
 | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- |
 | `42d55c49c` | correctness checkpoint | `174,157,770,944` | `0.00%` | `761,204,736` | `568,758,272` | SHA-256 `4fc1303a...5c4` | pass | pass with isolated PA30 confirmation | `/tmp/cppgm-perf-halving-42d55c49c.json` |
+| `(this commit)` | remove net-negative dependent-resolution cache and tree-backed recursion guard | `173,508,264,894` | `-0.37%` | `743,952,384` | `557,821,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-resolution-negative-cache-removal-final.json` |
 
 ## Rejected work ledger
 
@@ -544,4 +575,5 @@ experiment before starting the next candidate.
 
 | Experiment | Result | Decision | Evidence |
 | --- | --- | --- | --- |
-| none in this performance program | | | |
+| reason-armed semantic output queues | only 352 pending outcomes; late output had zero pending outcomes | remove the temporary census and keep current indexed worklists | `/tmp/cppgm-output-retry-instrumented.err` |
+| change only the dependent-resolution cache from tree to hash storage | `-0.03%` instructions in the one-run screen | fold the finding into cache removal; key construction dominated lookup structure | `/tmp/cppgm-dependent-resolution-hash-screen.json` |

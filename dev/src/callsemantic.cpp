@@ -986,9 +986,6 @@ public:
 
 private:
   using TextMentionCacheState = semantic_cache::TextMentionCacheState;
-  using DependentTypeResolutionCacheEntry =
-      semantic_cache::DependentTypeResolutionCacheEntry;
-
   void finalize_retained_named_type_output_names()
   {
     // ClassInfo and Scope form the analysis graph and intentionally die with
@@ -1448,13 +1445,6 @@ private:
   {
     static const bool enabled =
         !env_flag_enabled("CPPGM_DISABLE_QUALIFIED_TYPE_LOOKUP_CACHE");
-    return enabled;
-  }
-
-  static bool dependent_type_resolution_cache_enabled()
-  {
-    static const bool enabled =
-        !env_flag_enabled("CPPGM_DISABLE_DEPENDENT_TYPE_RESOLUTION_CACHE");
     return enabled;
   }
 
@@ -26627,83 +26617,8 @@ private:
     if(!type) {
       return false;
     }
-
-    if(!dependent_type_resolution_cache_enabled()) {
-      if(template_resolve_trace_enabled_) {
-        std::ostringstream trace;
-        trace << "resolve-instantiated-dependent-type bypass-disabled-cache"
-              << " type=" << describe_type(type);
-        parser_trace::note("template.resolve", std::string(), trace.str());
-      }
-      return template_api::type::resolve_instantiated_dependent_type(*this, scope, type, out);
-    }
-
-    semantic_cache::DependentTypeResolutionCacheKey cache_key;
-    const std::size_t cache_scope_key = scope_cache_key(scope);
-    std::string cache_text;
-    const bool cacheable = try_dependent_type_resolution_cache_key(type, cache_text);
-    if(!cacheable) {
-      if(template_resolve_trace_enabled_) {
-        std::ostringstream trace;
-        trace << "resolve-instantiated-dependent-type bypass-cache"
-              << " scope-key=" << cache_scope_key
-              << " type=" << describe_type(type);
-        parser_trace::note("template.resolve", std::string(), trace.str());
-      }
-      return template_api::type::resolve_instantiated_dependent_type(*this, scope, type, out);
-    }
-    cache_key.scope_key = cache_scope_key;
-    cache_key.type_key = intern_query_text(cache_text);
-    map<semantic_cache::DependentTypeResolutionCacheKey,
-        DependentTypeResolutionCacheEntry,
-        semantic_cache::DependentTypeResolutionCacheKeyLess>::iterator found =
-        cache_state_.dependent_type_resolution_cache.find(cache_key);
-    if(found != cache_state_.dependent_type_resolution_cache.end()) {
-      metrics_.note_cache_hit(semantic_metrics::CK_DEPENDENT_TYPE_RESOLUTION);
-      if(found->second.status == DependentTypeResolutionCacheEntry::DTS_RESOLVED) {
-        if(!found->second.resolved) {
-          if(template_resolve_trace_enabled_) {
-            std::ostringstream trace;
-            trace << "resolve-instantiated-dependent-type invalid-cached-null key="
-                  << (cache_key.type_key ? *cache_key.type_key : string("<null>"))
-                  << " scope-key=" << cache_key.scope_key;
-            parser_trace::note("template.resolve", std::string(), trace.str());
-          }
-          found->second.status = DependentTypeResolutionCacheEntry::DTS_UNRESOLVED;
-          return false;
-        }
-        out = found->second.resolved;
-        return true;
-      }
-      return false;
-    }
-    metrics_.note_cache_miss(semantic_metrics::CK_DEPENDENT_TYPE_RESOLUTION);
-
-    DependentTypeResolutionCacheEntry & entry =
-        cache_state_.dependent_type_resolution_cache[cache_key];
-    entry.status = DependentTypeResolutionCacheEntry::DTS_IN_PROGRESS;
-
-    TypePtr resolved;
-    const bool ok =
-        template_api::type::resolve_instantiated_dependent_type(*this, scope, type, resolved);
-    if(ok && resolved) {
-      entry.status = DependentTypeResolutionCacheEntry::DTS_RESOLVED;
-      entry.resolved = resolved;
-      out = resolved;
-      return true;
-    }
-
-    if(ok && !resolved && template_resolve_trace_enabled_) {
-      std::ostringstream trace;
-      trace << "resolve-instantiated-dependent-type invalid-null key="
-            << (cache_key.type_key ? *cache_key.type_key : string("<null>"))
-            << " scope-key=" << cache_key.scope_key;
-      parser_trace::note("template.resolve", std::string(), trace.str());
-    }
-
-    entry.status = DependentTypeResolutionCacheEntry::DTS_UNRESOLVED;
-    entry.resolved.reset();
-    return false;
+    return template_api::type::resolve_instantiated_dependent_type(
+        *this, scope, type, out);
   }
 
   string qualified_name_syntax_text(const QualifiedName & qualified) const

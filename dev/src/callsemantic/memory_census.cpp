@@ -2157,11 +2157,6 @@ void census_semantic_cache(const semantic_cache::SemanticCache & cache,
     census_type(it->second, census, seen_types);
   }
   census.note("cache.qualified_type_lookup", bytes, cache.qualified_type_lookup_cache.size());
-
-  bytes = map_storage_bytes(cache.dependent_type_resolution_cache);
-  census.note("cache.dependent_type_resolution",
-              bytes,
-              cache.dependent_type_resolution_cache.size());
 }
 
 uint64_t hash_mix(uint64_t seed, uint64_t value)

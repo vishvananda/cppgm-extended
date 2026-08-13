@@ -31595,19 +31595,20 @@ bool resolve_instantiated_dependent_type_uncached(
   if(!type) {
     return false;
   }
-  static thread_local std::set<const Type *> resolving_types;
+  static thread_local std::vector<const Type *> resolving_types;
   const Type * resolving_key = type.get();
-  if(!resolving_types.insert(resolving_key).second) {
+  if(std::find(resolving_types.begin(), resolving_types.end(), resolving_key) !=
+     resolving_types.end()) {
     return false;
   }
+  resolving_types.push_back(resolving_key);
   struct ResolvingTypeGuard {
-    std::set<const Type *> & resolving_types;
-    const Type * resolving_key;
+    std::vector<const Type *> & resolving_types;
     ~ResolvingTypeGuard()
     {
-      resolving_types.erase(resolving_key);
+      resolving_types.pop_back();
     }
-  } resolving_type_guard = { resolving_types, resolving_key };
+  } resolving_type_guard = { resolving_types };
 
   switch(type->kind) {
   case Type::TK_FUNDAMENTAL:

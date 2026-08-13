@@ -73,8 +73,6 @@ const char * cache_kind_name(CacheKind kind)
     return "dependent_non_namespace_binding_mentions";
   case CK_QUALIFIED_TYPE_LOOKUP:
     return "qualified_type_lookup";
-  case CK_DEPENDENT_TYPE_RESOLUTION:
-    return "dependent_type_resolution";
   case CK_COUNT:
     break;
   }

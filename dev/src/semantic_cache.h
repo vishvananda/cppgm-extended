@@ -1,7 +1,6 @@
 #pragma once
 
 #include <iosfwd>
-#include <map>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -57,40 +56,6 @@ enum TextMentionCacheState
   TMCS_TRUE
 };
 
-struct DependentTypeResolutionCacheEntry
-{
-  enum Status { DTS_IN_PROGRESS, DTS_UNRESOLVED, DTS_RESOLVED } status = DTS_UNRESOLVED;
-  cpp_decl::TypePtr resolved;
-};
-
-struct DependentTypeResolutionCacheKey
-{
-  std::size_t scope_key = 0;
-  InternedTextPtr type_key = nullptr;
-
-  bool operator==(const DependentTypeResolutionCacheKey & rhs) const
-  {
-    return scope_key == rhs.scope_key && type_key == rhs.type_key;
-  }
-};
-
-struct DependentTypeResolutionCacheKeyHash
-{
-  std::size_t operator()(const DependentTypeResolutionCacheKey & key) const;
-};
-
-struct DependentTypeResolutionCacheKeyLess
-{
-  bool operator()(const DependentTypeResolutionCacheKey & lhs,
-                  const DependentTypeResolutionCacheKey & rhs) const
-  {
-    if(lhs.scope_key != rhs.scope_key) {
-      return lhs.scope_key < rhs.scope_key;
-    }
-    return lhs.type_key < rhs.type_key;
-  }
-};
-
 struct SemanticCache
 {
   std::unordered_map<std::size_t, semantic_model::Scope *> captured_local_scope_cache;
@@ -109,14 +74,6 @@ struct SemanticCache
                              cpp_decl::TypePtr,
                              QualifiedTypeLookupKeyHash>
       qualified_type_lookup_cache;
-  // Keep dependent type resolution keyed by stable semantic identity rather
-  // than TypePtr graph structure. Reuse interned semantic text so this cache
-  // follows the same pointer-keyed lifetime model as the other semantic caches.
-  mutable std::map<DependentTypeResolutionCacheKey,
-                   DependentTypeResolutionCacheEntry,
-                   DependentTypeResolutionCacheKeyLess>
-      dependent_type_resolution_cache;
-
   void dump(std::ostream & out) const;
   InternedTextPtr intern_text(const std::string & text) const;
 };
