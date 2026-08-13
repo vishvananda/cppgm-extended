@@ -872,6 +872,19 @@ struct ClassInfo
   bool reference_type_members_collected = false;
   std::set<std::string> reference_named_members_collected;
   std::set<std::string> reference_named_members_in_progress;
+  struct ReferenceNamedMemberCandidate
+  {
+    std::size_t member_index = 0;
+    MemberAccess access = MA_PRIVATE;
+  };
+  struct ReferenceNamedMemberIndex
+  {
+    const CppAstNode * source_node = nullptr;
+    std::unordered_map<std::string,
+                       std::vector<ReferenceNamedMemberCandidate> > by_name;
+  };
+  mutable std::unique_ptr<ReferenceNamedMemberIndex>
+      reference_named_member_index;
   struct TypedefMemberDeclarationSite
   {
     enum SourceTemplateTypeDependency : unsigned char

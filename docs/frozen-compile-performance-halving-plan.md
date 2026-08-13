@@ -612,6 +612,42 @@ Three-run medians against `42d55c49c`:
 
 Evidence: `/tmp/cppgm-ast-filter-shallow-copy-final.json`.
 
+Fifth retained Phase 6 slice: the post-filter profile at
+`/tmp/cppgm-frozen-full-sample-c0155750b.txt` attributed 5,579 inclusive
+samples to lazy named-member collection and 2,624 to its per-name class scan.
+A temporary frozen-workload census measured 14,526 scans for 13,655 unique
+class/name queries. Those scans made 4.19 million declaration probes, 13.84
+million recursive declarator visits, and 3.99 million identifier comparisons.
+Of the 4,253 queried classes, 1,927 were queried for more than one name, with a
+maximum of 38.
+
+`ClassInfo` now builds a name-to-declaration-position index on first use. Each
+entry retains the access at that source position. Consumers use the index to
+select candidates, then run the existing exact declaration predicate before
+materializing a member. The cache records its source node and rebuilds if
+template selection changes that node. The optional memory census includes the
+index's table, strings, and candidate vectors; the frozen compile reports
+`2,760,312 B` for that bucket.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `157,041,590,005` | `-17,116,180,939` (`-9.83%`); `-0.87%` from `c0155750b` |
+| maximum RSS | `750,534,656 B` | `-10,670,080 B` (`-1.40%`) |
+| peak footprint | `555,393,024 B` | `-13,365,248 B` (`-2.35%`) |
+| elapsed cycles | `120,005,029,370` | `-6.57%` |
+| wall time | `39.07 s` | `-2.37%`, informational under host load |
+
+Evidence: `/tmp/cppgm-reference-named-member-census.stderr`,
+`/tmp/cppgm-reference-index-memory-census.stderr`, and
+`/tmp/cppgm-reference-member-name-index-final.json`.
+
 ### Phase 7: optimize the measured LowIR long pole
 
 Collect a full-run sample and phase timers after semantic work drops. Rank the
@@ -753,7 +789,8 @@ Fill one row after each retained commit.
 | `10ab1b728` | avoid materializing empty sparse records in substitution and mangling AST clones | `163,459,605,743` | `-6.14%` | `738,054,144` | `553,398,272` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-sparse-clone-materialization-final.json` |
 | `dc49aaa16` | return concrete alias-template cache hits before constructing an instantiation scope | `160,251,233,762` | `-7.99%` | `740,306,944` | `552,783,872` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-alias-concrete-hit-final.json` |
 | `a1f5d1db1` | share populated AST side vectors until mutable access | `159,287,615,401` | `-8.54%` | `741,462,016` | `552,189,952` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-lazy-vector-cow-final.json` |
-| `(this commit)` | build filtered AST roots without copying discarded children | `158,427,135,579` | `-9.03%` | `734,437,376` | `552,079,360` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-filter-shallow-copy-final.json` |
+| `c0155750b` | build filtered AST roots without copying discarded children | `158,427,135,579` | `-9.03%` | `734,437,376` | `552,079,360` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-filter-shallow-copy-final.json` |
+| `(this commit)` | index class reference declarations by member name | `157,041,590,005` | `-9.83%` | `750,534,656` | `555,393,024` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-reference-member-name-index-final.json` |
 
 ## Rejected work ledger
 

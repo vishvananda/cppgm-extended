@@ -1654,6 +1654,20 @@ void census_class_info(const ClassInfo * info,
     return;
   }
 
+  size_t reference_named_member_index_bytes = 0;
+  if(info->reference_named_member_index) {
+    const ClassInfo::ReferenceNamedMemberIndex & index =
+        *info->reference_named_member_index;
+    reference_named_member_index_bytes =
+        sizeof(ClassInfo::ReferenceNamedMemberIndex) +
+        unordered_map_storage_bytes(index.by_name);
+    for(auto it = index.by_name.begin(); it != index.by_name.end(); ++it) {
+      reference_named_member_index_bytes +=
+          string_storage_bytes(it->first) +
+          vector_storage_bytes(it->second);
+    }
+  }
+
   size_t bytes = sizeof(ClassInfo) +
                  string_storage_bytes(info->name) +
                  string_storage_bytes(info->qualified_name) +
@@ -1680,7 +1694,8 @@ void census_class_info(const ClassInfo * info,
                  vector_storage_bytes(info->instantiation_arg_texts) +
                  vector_storage_bytes(info->instantiation_arguments) +
                  vector_storage_bytes(info->instantiation_binding_arguments) +
-                 map_storage_bytes(info->instantiation_binding_pack_sizes);
+                 map_storage_bytes(info->instantiation_binding_pack_sizes) +
+                 reference_named_member_index_bytes;
   census.note_detail("class_info.string_capacity.name",
                      string_storage_bytes(info->name));
   census.note_detail("class_info.string_capacity.qualified_name",
@@ -1694,6 +1709,8 @@ void census_class_info(const ClassInfo * info,
                      string_storage_bytes(info->creation_context));
   census.note_detail("class_info.string_capacity.instantiation_key",
                      string_storage_bytes(info->instantiation_key));
+  census.note_detail("class_info.reference_named_member_index",
+                     reference_named_member_index_bytes);
   size_t instantiation_arg_text_bytes = 0;
   for(size_t i = 0; i < info->fields.size(); ++i) {
     bytes += string_storage_bytes(info->fields[i].name);

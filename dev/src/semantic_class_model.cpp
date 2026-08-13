@@ -10126,6 +10126,11 @@ bool reference_member_declaration_declares_alias_or_value_name(
     const CppAstNode & node,
     const std::string & name);
 
+bool reference_class_has_direct_alias_or_value_name(
+    const ClassInfo & info,
+    const CppAstNode & node,
+    const std::string & name);
+
 void collect_template_argument_value_reference_names(
     const TemplateIdSyntax & syntax,
     std::set<const CppAstNode *> & visited,
@@ -10260,13 +10265,8 @@ void collect_direct_class_value_reference_names(
       it != names.end();
       ++it) {
     const bool directly_declared =
-        std::any_of(class_node->children.begin(),
-                    class_node->children.end(),
-                    [&](const CppAstNode & member)
-                    {
-                      return reference_member_declaration_declares_alias_or_value_name(
-                          member, *it);
-                    });
+        reference_class_has_direct_alias_or_value_name(
+            info, *class_node, *it);
     if(directly_declared) {
       out.insert(*it);
     }
@@ -11114,11 +11114,178 @@ bool reference_member_declaration_is_type_alias(
          declaration_declarators_declare_reference_name(*payload, name);
 }
 
-bool reference_class_has_direct_type_alias(const CppAstNode & node,
+void collect_reference_declarator_names(const CppAstNode & node,
+                                        std::vector<std::string> & out)
+{
+  if(node.kind == CppAstKind::identifier) {
+    if(const QualifiedName * qualified = cppast_qualified_name_syntax(node)) {
+      if(!qualified->name.empty()) {
+        out.push_back(qualified->name);
+      }
+    } else if(!node.value.empty()) {
+      out.push_back(node.value);
+    }
+    return;
+  }
+  if(node.kind == CppAstKind::parameter_clause) {
+    return;
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    collect_reference_declarator_names(node.children[i], out);
+  }
+}
+
+void collect_reference_declaration_declarator_names(
+    const CppAstNode & node,
+    std::vector<std::string> & out)
+{
+  if(const CppAstNode * declarators =
+         find_child(node, CppAstKind::init_declarator_list)) {
+    for(std::size_t i = 0; i < declarators->children.size(); ++i) {
+      const CppAstNode & init_decl = declarators->children[i];
+      for(std::size_t j = 0; j < init_decl.children.size(); ++j) {
+        if(init_decl.children[j].kind == CppAstKind::declarator) {
+          collect_reference_declarator_names(init_decl.children[j], out);
+        }
+      }
+    }
+  }
+  if(const CppAstNode * declarator =
+         find_child(node, CppAstKind::declarator)) {
+    collect_reference_declarator_names(*declarator, out);
+  }
+}
+
+void collect_reference_enumerator_names(const CppAstNode & node,
+                                        std::vector<std::string> & out)
+{
+  if(node.kind == CppAstKind::enumerator && !node.value.empty()) {
+    out.push_back(node.value);
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    collect_reference_enumerator_names(node.children[i], out);
+  }
+}
+
+void collect_reference_member_declaration_names(
+    const CppAstNode & node,
+    std::vector<std::string> & out)
+{
+  const CppAstNode * payload = innermost_template_declaration_payload(node);
+  if(!payload) {
+    return;
+  }
+  if(payload->kind == CppAstKind::class_specifier ||
+     payload->kind == CppAstKind::class_forward_declaration ||
+     payload->kind == CppAstKind::enum_specifier ||
+     payload->kind == CppAstKind::alias_declaration) {
+    if(!payload->value.empty()) {
+      out.push_back(payload->value);
+    }
+    if(payload->kind == CppAstKind::class_specifier ||
+       payload->kind == CppAstKind::class_forward_declaration) {
+      const std::string stripped =
+          semantic_utils::strip_trailing_top_level_template_arguments(
+              payload->value);
+      if(!stripped.empty()) {
+        out.push_back(stripped);
+      }
+    }
+  }
+  if(payload->kind == CppAstKind::enum_specifier) {
+    collect_reference_enumerator_names(*payload, out);
+  }
+  if(payload->kind == CppAstKind::using_declaration) {
+    if(!payload->value.empty()) {
+      out.push_back(payload->value);
+    }
+    const std::string::size_type separator = payload->value.rfind("::");
+    if(separator != std::string::npos && separator + 2 < payload->value.size()) {
+      out.push_back(payload->value.substr(separator + 2));
+    }
+  }
+  collect_reference_declaration_declarator_names(*payload, out);
+}
+
+const ClassInfo::ReferenceNamedMemberIndex & reference_named_member_index(
+    const ClassInfo & info,
+    const CppAstNode & node)
+{
+  if(info.reference_named_member_index &&
+     info.reference_named_member_index->source_node == &node) {
+    return *info.reference_named_member_index;
+  }
+
+  std::unique_ptr<ClassInfo::ReferenceNamedMemberIndex> index(
+      new ClassInfo::ReferenceNamedMemberIndex());
+  index->source_node = &node;
+  MemberAccess current_access = info.default_access;
+  std::vector<std::string> names;
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.kind == CppAstKind::access_specifier) {
+      current_access = access_from_node(child);
+      continue;
+    }
+    names.clear();
+    collect_reference_member_declaration_names(child, names);
+    std::sort(names.begin(), names.end());
+    names.erase(std::unique(names.begin(), names.end()), names.end());
+    ClassInfo::ReferenceNamedMemberCandidate candidate;
+    candidate.member_index = i;
+    candidate.access = current_access;
+    for(std::size_t j = 0; j < names.size(); ++j) {
+      index->by_name[names[j]].push_back(candidate);
+    }
+  }
+  info.reference_named_member_index = std::move(index);
+  return *info.reference_named_member_index;
+}
+
+const std::vector<ClassInfo::ReferenceNamedMemberCandidate> &
+reference_named_member_candidates(const ClassInfo & info,
+                                  const CppAstNode & node,
+                                  const std::string & name)
+{
+  const ClassInfo::ReferenceNamedMemberIndex & index =
+      reference_named_member_index(info, node);
+  const auto found = index.by_name.find(name);
+  if(found != index.by_name.end()) {
+    return found->second;
+  }
+  static const std::vector<ClassInfo::ReferenceNamedMemberCandidate> empty;
+  return empty;
+}
+
+bool reference_class_has_direct_alias_or_value_name(
+    const ClassInfo & info,
+    const CppAstNode & node,
+    const std::string & name)
+{
+  const std::vector<ClassInfo::ReferenceNamedMemberCandidate> & candidates =
+      reference_named_member_candidates(info, node, name);
+  for(std::size_t i = 0; i < candidates.size(); ++i) {
+    const std::size_t member_index = candidates[i].member_index;
+    if(member_index < node.children.size() &&
+       reference_member_declaration_declares_alias_or_value_name(
+           node.children[member_index], name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool reference_class_has_direct_type_alias(const ClassInfo & info,
+                                           const CppAstNode & node,
                                            const std::string & name)
 {
-  for(std::size_t i = 0; i < node.children.size(); ++i) {
-    if(reference_member_declaration_is_type_alias(node.children[i], name)) {
+  const std::vector<ClassInfo::ReferenceNamedMemberCandidate> & candidates =
+      reference_named_member_candidates(info, node, name);
+  for(std::size_t i = 0; i < candidates.size(); ++i) {
+    const std::size_t member_index = candidates[i].member_index;
+    if(member_index < node.children.size() &&
+       reference_member_declaration_is_type_alias(
+           node.children[member_index], name)) {
       return true;
     }
   }
@@ -11631,9 +11798,14 @@ bool reference_named_member_is_after_active_declaration(
     if(current->info != &info || current->class_node != &class_node) {
       continue;
     }
-    for(std::size_t i = 0; i < class_node.children.size(); ++i) {
-      if(reference_member_declaration_declares_name(class_node.children[i], name)) {
-        return i >= current->member_index;
+    const std::vector<ClassInfo::ReferenceNamedMemberCandidate> & candidates =
+        reference_named_member_candidates(info, class_node, name);
+    for(std::size_t i = 0; i < candidates.size(); ++i) {
+      const std::size_t member_index = candidates[i].member_index;
+      if(member_index < class_node.children.size() &&
+         reference_member_declaration_declares_name(
+             class_node.children[member_index], name)) {
+        return member_index >= current->member_index;
       }
     }
     return false;
@@ -11647,18 +11819,22 @@ bool populate_class_reference_named_member(SemanticContext & ctx,
                                            const std::string & name)
 {
   const bool dependent_class = class_instantiation_is_dependent(ctx, info);
-  MemberAccess current_access = info.default_access;
   bool has_direct_declaration = false;
 
-  for(size_t i = 0; i < node.children.size(); ++i) {
-    const CppAstNode & child = node.children[i];
-    if(child.kind == CppAstKind::access_specifier) {
-      current_access = access_from_node(child);
+  const std::vector<ClassInfo::ReferenceNamedMemberCandidate> & candidates =
+      reference_named_member_candidates(info, node, name);
+  for(size_t candidate_index = 0;
+      candidate_index < candidates.size();
+      ++candidate_index) {
+    const ClassInfo::ReferenceNamedMemberCandidate & candidate =
+        candidates[candidate_index];
+    if(candidate.member_index >= node.children.size()) {
       continue;
     }
-    if(child.kind == CppAstKind::class_key ||
-       child.kind == CppAstKind::base_clause ||
-       !reference_member_declaration_declares_name(child, name)) {
+    const size_t i = candidate.member_index;
+    const MemberAccess current_access = candidate.access;
+    const CppAstNode & child = node.children[i];
+    if(!reference_member_declaration_declares_name(child, name)) {
       continue;
     }
     has_direct_declaration = true;
@@ -11953,7 +12129,8 @@ void ensure_class_reference_named_member(SemanticContext & ctx,
   }
 
   if(!class_instantiation_is_dependent(ctx, info) &&
-     reference_class_has_direct_type_alias(*reference_node, lookup_name)) {
+     reference_class_has_direct_type_alias(
+         info, *reference_node, lookup_name)) {
     instantiate_reference_address_alias_declarations(ctx, info);
     for(std::size_t i = 0; i < info.bases.size(); ++i) {
       if(info.bases[i].type) {
@@ -12001,22 +12178,27 @@ bool materialize_class_reference_named_function_definition(
     return false;
   }
 
-  MemberAccess current_access = info.default_access;
-  for(std::size_t i = 0; i < reference_node->children.size(); ++i) {
-    const CppAstNode & child = reference_node->children[i];
-    if(child.kind == CppAstKind::access_specifier) {
-      current_access = access_from_node(child);
+  const std::vector<ClassInfo::ReferenceNamedMemberCandidate> & candidates =
+      reference_named_member_candidates(info, *reference_node, lookup_name);
+  for(std::size_t candidate_index = 0;
+      candidate_index < candidates.size();
+      ++candidate_index) {
+    const ClassInfo::ReferenceNamedMemberCandidate & candidate =
+        candidates[candidate_index];
+    if(candidate.member_index >= reference_node->children.size()) {
       continue;
     }
+    const CppAstNode & child =
+        reference_node->children[candidate.member_index];
     if(!reference_member_declaration_declares_name(child, lookup_name)) {
       continue;
     }
     if(child.kind == CppAstKind::function_definition) {
-      collect_class_method_definition(ctx, info, child, current_access);
+      collect_class_method_definition(ctx, info, child, candidate.access);
       return true;
     }
     if(child.kind == CppAstKind::special_member_definition) {
-      collect_special_member(ctx, info, child, current_access);
+      collect_special_member(ctx, info, child, candidate.access);
       return true;
     }
   }
