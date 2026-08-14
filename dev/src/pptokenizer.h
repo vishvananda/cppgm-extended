@@ -116,18 +116,22 @@ struct BufferedIterator : CodePointIterator
 };
 
 struct UTF8Translator : BufferedIterator {
-  UTF8Translator(CodePointIterator & source);
+  UTF8Translator(Normalizer & source);
   int operator*() override;
+  CodePointIterator& operator++() override;
 protected:
   inline void translate_utf8();
+  Normalizer & normalizer_source;
   bool allow_initial_bom;
 };
 
 struct FullTranslator : BufferedIterator {
-  FullTranslator(CodePointIterator & source);
+  FullTranslator(UTF8Translator & source);
   int operator*() override;
+  CodePointIterator& operator++() override;
 protected:
   inline void translate_trigraph_ucn_splice();
+  UTF8Translator & utf8_source;
 
 };
 

@@ -673,8 +673,9 @@ inline void append_code_point(int value, string & data)
   }
 }
 
-UTF8Translator::UTF8Translator(CodePointIterator & source) :
+UTF8Translator::UTF8Translator(Normalizer & source) :
   BufferedIterator(source),
+  normalizer_source(source),
   allow_initial_bom(true)
 {}
 
@@ -716,7 +717,7 @@ int UTF8Translator::operator*()
 {
   if (buffer.empty())
   {
-    int value = *source;
+    int value = normalizer_source.Normalizer::operator*();
     if (value >= 0 && value < 0x80) {
       ln = source.ln;
       ch = source.ch;
@@ -728,21 +729,30 @@ int UTF8Translator::operator*()
   return buffer.front();
 }
 
+CodePointIterator& UTF8Translator::operator++()
+{
+  if (!buffer.empty())
+    buffer.pop_front();
+  else
+    normalizer_source.Normalizer::operator++();
+  return *this;
+}
+
 inline void UTF8Translator::translate_utf8()
 {
   PeekScope scope(PS_TRANSLATE_UTF8);
   for(;;) {
-    int value = *source;
+    int value = normalizer_source.Normalizer::operator*();
     ln = source.ln;
     ch = source.ch;
     if (value < 0x80 || value == EndOfFile) {
       buffer.push_back(value);
-      ++source;
+      normalizer_source.Normalizer::operator++();
       allow_initial_bom = false;
       return;
     }
 
-    ++source;
+    normalizer_source.Normalizer::operator++();
     if (value <= 0xFF) {
       auto tail = utf8_tail_length(value);
       if (!tail) {
@@ -754,11 +764,11 @@ inline void UTF8Translator::translate_utf8()
         value &= (0x3f >> tail);
 
         for (int i = 0; i < tail; ++i) {
-          int next = *source;
+          int next = normalizer_source.Normalizer::operator*();
           if (next == EndOfFile || (next & 0xc0) != 0x80)
             throw logic_error("Invalid utf-8 character");
           value = ((value << 6) + (next & 0x3f));
-          ++source;
+          normalizer_source.Normalizer::operator++();
         }
       }
     }
@@ -856,21 +866,25 @@ inline void FullTranslator::translate_trigraph_ucn_splice()
   }
 }
 
-FullTranslator::FullTranslator(CodePointIterator & source) :
-  BufferedIterator(source)
+FullTranslator::FullTranslator(UTF8Translator & source) :
+  // Avoid selecting BufferedIterator's copy constructor through the derived
+  // source object. This layer must read the UTF-8 translator, not its raw
+  // Normalizer source.
+  BufferedIterator(static_cast<CodePointIterator &>(source)),
+  utf8_source(source)
 {}
 
 int FullTranslator::operator*()
 {
   if (buffer.empty())
   {
-    int value = *source;
+    int value = utf8_source.UTF8Translator::operator*();
     if (value >= 0 && value < 0x80) {
       ln = source.ln;
       ch = source.ch;
       if (value == '?' || value == '\\') {
         buffer.push_back(value);
-        ++source;
+        utf8_source.UTF8Translator::operator++();
         translate_trigraph_ucn_splice();
       } else {
         return value;
@@ -879,10 +893,19 @@ int FullTranslator::operator*()
       ln = source.ln;
       ch = source.ch;
       buffer.push_back(value);
-      ++source;
+      utf8_source.UTF8Translator::operator++();
     }
   }
   return buffer.front();
+}
+
+CodePointIterator& FullTranslator::operator++()
+{
+  if (!buffer.empty())
+    buffer.pop_front();
+  else
+    utf8_source.UTF8Translator::operator++();
+  return *this;
 }
 
 inline bool consume_identifier_known_initial(BufferedIterator & it,
