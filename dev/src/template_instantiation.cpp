@@ -3146,15 +3146,21 @@ bool class_template_primary_placeholder_instantiation(
     const ClassTemplateDecl & decl,
     const ClassInfo & candidate)
 {
+  if(candidate.primary_placeholder_instantiation_state != 0) {
+    return candidate.primary_placeholder_instantiation_state == 2;
+  }
   if(candidate.instantiation_arguments.size() != decl.parameters.size()) {
+    candidate.primary_placeholder_instantiation_state = 1;
     return false;
   }
   for(std::size_t i = 0; i < decl.parameters.size(); ++i) {
     if(!template_argument_is_primary_parameter_placeholder(
            decl, i, candidate.instantiation_arguments[i])) {
+      candidate.primary_placeholder_instantiation_state = 1;
       return false;
     }
   }
+  candidate.primary_placeholder_instantiation_state = 2;
   return true;
 }
 
@@ -5259,6 +5265,7 @@ void record_class_template_argument_state(
     std::vector<std::string>().swap(info.instantiation_arg_texts);
   }
   detach_shared_class_template_mangle_arguments(info);
+  info.primary_placeholder_instantiation_state = 0;
   info.instantiation_arguments = normalized_arguments;
   reuse_primary_class_instantiation_binding_arguments(info);
   info.instantiation_binding_pack_sizes.clear();
@@ -8285,6 +8292,7 @@ bool record_class_template_instantiation_state(
       dependent_argument_syntaxes;
   if(mutates_primary_arguments) {
     detach_shared_class_template_mangle_arguments(info);
+    info.primary_placeholder_instantiation_state = 0;
   }
 
   info.is_explicit_specialization = is_explicit_specialization;

@@ -976,6 +976,9 @@ struct ClassInfo
   std::vector<template_model::TemplateArgument> instantiation_binding_arguments;
   std::map<std::string, std::size_t> instantiation_binding_pack_sizes;
   bool has_instantiation_binding_arguments = false;
+  // Both users first prove source_template identity. Argument-state writers
+  // reset this three-state byte before changing the placeholder shape.
+  mutable unsigned char primary_placeholder_instantiation_state = 0;
   const std::vector<template_model::TemplateArgument> *
       instantiation_binding_arguments_view = nullptr;
   std::vector<template_model::TemplateValueDependency> template_value_dependencies;
