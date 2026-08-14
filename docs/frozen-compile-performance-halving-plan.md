@@ -1151,6 +1151,47 @@ Evidence: `/tmp/cppgm-template-body-sorted-atoms-screen.json`,
 `/tmp/cppgm-sorted-atoms-ab-{parent,candidate}-{1,2,3}.json`, and
 `/tmp/cppgm-using-directive-profile.sample.txt`.
 
+Twelfth retained Phase 7 slice: `build_layout` ran
+`collect_temp_intervals` twice for every LowIR function. The first result
+supported dead-result, direct-branch, and call-index decisions as well as
+debug ranges. The second rebuilt the interval map, rescanned every
+instruction, and recomputed block liveness only to extend source-pointer
+lifetimes for the selected direct call-index temporaries. The fresh profile
+attributed 70 leaf samples to interval collection and 91 to `build_layout`.
+
+Register allocation now copies the first interval vector, indexes its entries
+by name, scans call sites for the selected index temporaries, and extends only
+their source intervals. The scan preserves the original call-like positions
+for ordinary calls, TLS address materialization, and i128 helpers, then marks
+newly crossing intervals live across calls. Debug intervals keep the original
+first-pass result.
+
+The one-run screen used `131,969,763,580` instructions. An alternating binary
+A/B made the retention decision: the parent used median `132,950,915,256`
+and the candidate used `131,968,317,406`, a `0.739%` reduction. Every paired
+run emitted the frozen object.
+
+The post-commit three-run result names `650dc50cd` as its head. The frozen
+object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Absolute three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `132,299,680,071` | `-41,858,090,873` (`-24.03%`) |
+| maximum RSS | `695,853,056 B` | `-65,351,680 B` (`-8.59%`) |
+| peak footprint | `556,654,592 B` | `-12,103,680 B` (`-2.13%`) |
+| elapsed cycles | `97,889,941,035` | `-23.79%` |
+| wall time | `27.47 s` | `-31.36%`, informational under host load |
+
+Evidence: `/tmp/cppgm-register-interval-reuse-screen.json`,
+`/tmp/cppgm-register-interval-reuse-final.json`, the alternating records
+`/tmp/cppgm-register-interval-ab-{parent,candidate}-{1,2,3}.json`, and
+`/tmp/cppgm-using-directive-profile.sample.txt`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1221,6 +1262,7 @@ Fill one row after each retained commit.
 | `1a96ce861` | use reserved hash indexes for high-volume machine-layout probes | `135,861,805,665` | `-21.99%` | `736,321,536` | `555,786,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-layout-lookup-hashes-final.json`; paired A/B: `-0.577%` instructions |
 | `70fa6d879` | keep using-directive traversal visited sets inline | `133,973,655,610` | `-23.07%` | `747,077,632` | `555,909,120` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-using-directive-inline-visited-final.json`; paired decision: `-1.103%` instructions |
 | `af290029f` | store template-body validation name atoms contiguously | `132,942,123,779` | `-23.67%` | `749,297,664` | `556,949,504` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-sorted-atoms-final.json`; paired A/B: `-0.909%` instructions |
+| `650dc50cd` | reuse the first temp-interval analysis for register allocation | `132,299,680,071` | `-24.03%` | `695,853,056` | `556,654,592` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-register-interval-reuse-final.json`; paired A/B: `-0.739%` instructions |
 
 ## Rejected work ledger
 
