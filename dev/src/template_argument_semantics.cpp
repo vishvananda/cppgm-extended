@@ -29185,25 +29185,53 @@ enum class DependentNamedTypeResolutionStatus
 
 struct DependentNamedTypeResolutionGuard
 {
-  std::pair<const Scope *, string> key;
+  struct Entry
+  {
+    const Scope * scope = nullptr;
+    const Type * type = nullptr;
+    const string * named_key = nullptr;
+  };
+
   bool active = false;
 
-  explicit DependentNamedTypeResolutionGuard(const Scope * scope, const string & text)
-    : key(scope, text)
+  explicit DependentNamedTypeResolutionGuard(const Scope * scope,
+                                             const TypePtr & type)
   {
-    active = visiting().insert(key).second;
+    vector<Entry> & entries = visiting();
+    const string * named_key = type && !type->named_key.empty() ?
+        &type->named_key : nullptr;
+    for(size_t i = entries.size(); i > 0; --i) {
+      const Entry & entry = entries[i - 1];
+      if(entry.scope != scope) {
+        continue;
+      }
+      if(named_key ?
+             (entry.named_key && *entry.named_key == *named_key) :
+             (entry.named_key == nullptr && entry.type == type.get())) {
+        return;
+      }
+    }
+    Entry entry;
+    entry.scope = scope;
+    entry.type = type.get();
+    entry.named_key = named_key;
+    entries.push_back(entry);
+    active = true;
   }
 
   ~DependentNamedTypeResolutionGuard()
   {
     if(active) {
-      visiting().erase(key);
+      visiting().pop_back();
     }
   }
 
-  static set<pair<const Scope *, string> > & visiting()
+  static vector<Entry> & visiting()
   {
-    static set<pair<const Scope *, string> > state;
+    static thread_local vector<Entry> state;
+    if(state.capacity() == 0) {
+      state.reserve(32);
+    }
     return state;
   }
 };
@@ -31126,7 +31154,6 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
     return service_type_depends_on_template_parameter(services, candidate);
   };
 
-  const string & key = type->named_key;
   const string lookup_text = named_type_is_template_parameter(type) ?
       trim_space(type->named_source_name()) :
       trim_space(named_type_semantic_payload(type));
@@ -31145,13 +31172,7 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   if(!semantically_dependent) {
     return DependentNamedTypeResolutionStatus::Fallback;
   }
-  string recursion_key = key;
-  if(recursion_key.empty()) {
-    ostringstream identity;
-    identity << "type@" << type.get();
-    recursion_key = identity.str();
-  }
-  DependentNamedTypeResolutionGuard recursion_guard(&raw_scope, recursion_key);
+  DependentNamedTypeResolutionGuard recursion_guard(&raw_scope, type);
   if(!recursion_guard.active) {
     return DependentNamedTypeResolutionStatus::KeepDependent;
   }
@@ -31160,9 +31181,6 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
     return DependentNamedTypeResolutionStatus::KeepDependent;
   }
 
-  const bool keep_local_type_placeholders_dependent =
-      structured_type_mentions_local_dependent_placeholder(
-          services, raw_scope, type);
   shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization_info =
       named_type_class_template_specialization_mangle_info_const(type);
   const bool has_concrete_specialization_arguments =
@@ -31228,9 +31246,6 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   };
   if(TypePtr named = strip_top_level_cv(type)) {
     if(named_type_is_template_parameter(named)) {
-      if(keep_local_type_placeholders_dependent) {
-        return DependentNamedTypeResolutionStatus::KeepDependent;
-      }
       vector<string> lookup_names;
       const auto append_lookup_name =
           [&lookup_names](const string & raw) -> void
@@ -31264,6 +31279,9 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
       }
     }
   }
+  const bool keep_local_type_placeholders_dependent =
+      structured_type_mentions_local_dependent_placeholder(
+          services, raw_scope, type);
   {
     string cv_core_name;
     bool top_const = false;
