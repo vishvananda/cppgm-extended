@@ -1615,6 +1615,40 @@ Evidence is in `/tmp/cppgm-template-visible-composite-once-screen.json`,
 `/tmp/cppgm-template-visible-composite-test-strict.log`, and
 `/tmp/cppgm-template-visible-composite-test-report.log`.
 
+#### Template-parameter placeholder-identity checkpoint
+
+The frozen census counted `1,329,940` calls to
+`find_template_parameter(TypePtr)`, including `1,197,826` named inputs. Lists
+with one or two parameters accounted for `1,053,259` calls. The type overload
+found `240,112` parameters: `239,256` from the named key, `844` from the
+semantic payload, and `12` from the source spelling. Each named-key hit shared
+an interned identity with its parameter placeholder.
+
+The retained path stores that identity on `TemplateParameterInfo`, preserves
+it through copy, move, and redeclaration merges, and checks pointer identity
+before string lookup. It requires an unprefixed named key so elaborated
+class/enum normalization cannot create a false match. The fallback path
+borrows the three type strings and handles the remaining `856` hits.
+
+The first guarded three-pair batch improved instructions by `0.197%`, RSS by
+`0.814%`, and regressed footprint by `0.120%`, producing a `0.604` balance
+score. The independent batch improved instructions by `0.828%`, RSS by
+`0.257%`, and regressed footprint by `0.038%`. All pair directions agreed for
+instructions, and all twelve objects had the frozen SHA-256.
+
+The clean three-run median at `0e5b1af2d` is `116,375,621,217` instructions,
+`33.18%` below the original baseline. Maximum RSS is `708,911,104 B`, and
+footprint is `525,758,464 B`. Direct strict passes `1530/1530`; the full direct
+report passes `4863/4863`.
+
+Evidence is in `/tmp/cppgm-template-parameter-identity-census.stderr`,
+`/tmp/cppgm-template-parameter-identity-current-screen.json`,
+`/tmp/cppgm-template-parameter-identity-guarded-{parent,candidate}-{1,2,3}.time`,
+`/tmp/cppgm-template-parameter-identity-guarded-{parent,candidate}-{4,5,6}.time`,
+`/tmp/cppgm-template-parameter-identity-final.json`,
+`/tmp/cppgm-template-parameter-identity-guarded-test-strict.log`, and
+`/tmp/cppgm-template-parameter-identity-guarded-test-report.log`.
+
 #### Multi-signal retention rubric at `3686d87b0`
 
 The former rolling `0.5%` instruction floor was useful for rejecting noise, but
@@ -1759,7 +1793,7 @@ construction, or complete-entry symbol reuse without a new census.
 
 #### Revised investigation order
 
-The 32.86% cumulative reduction leaves `29,854,737,268` instructions. A chain
+The 33.18% cumulative reduction leaves `29,296,735,745` instructions. A chain
 of boundary-sized representation changes will not close that gap. New work
 must start with operation counts and favor semantic work removal. Use this
 order:
@@ -1791,9 +1825,11 @@ order:
    score. Packing each angle-cache state into its index word reduced that to a
    `0.105%` instruction gain and a `0.284` score. Every object remained exact;
    we restored both parent implementations.
-5. Census template-parameter lookup by overload, parameter count, candidate
-   source, and atom-identity match. A direct identity path may now use
-   `Type::named_key_identity`; the prior string-borrow experiment could not.
+5. Completed: retain template-parameter placeholder identity. The frozen
+   census found `239,256` direct identity hits among `1,329,940` type-overload
+   calls. The guarded path keeps the `856` semantic-payload and source-name
+   fallbacks. One paired batch meets the balanced lane at `0.604`; an
+   independent batch improves instructions by `0.828%` and meets the CPU lane.
 6. Recount dependent-resolution root repeats before restoring the last-result
    memo. Later resolver fast paths overlap its old population, so its `0.540`
    historical balance score is sufficient to retest only if the census still
@@ -1909,6 +1945,7 @@ Fill one row after each retained commit.
 | `3686d87b0` | supply final synthesized special-member linkage during registration instead of regenerating the symbol immediately | `118,245,739,070` | `-32.10%` | `700,035,072` | `524,410,880` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-synthesized-linkage-registration-final.json`; `-1.109%` from `56128c65d` |
 | `a3dc6e079` | return expected constructor and root standard `enable_if` probe failures as status | `117,674,519,926` | `-32.43%` | `712,704,000` | `524,689,408` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-exception-status-composite-final.json`; 4,465 throws removed; paired A/B: `-0.974%` instructions |
 | `2ba26c3f4` | cache template-body scope value views and bulk-sort visible names | `116,933,622,740` | `-32.86%` | `718,651,392` | `525,627,392` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-visible-composite-final.json`; two paired batches: `-0.485%` and `-0.474%` instructions; balance scores `0.682` and `0.773` |
+| `0e5b1af2d` | resolve template-parameter placeholder types by interned identity | `116,375,621,217` | `-33.18%` | `708,911,104` | `525,758,464` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-parameter-identity-final.json`; 239,256 identity hits; paired batches `-0.197%` and `-0.828%` instructions |
 
 ## Rejected work ledger
 
@@ -1977,7 +2014,7 @@ experiment before starting the next candidate.
 | bypass witness-anchor setup for simple unqualified AST type lookups | the branch census measured 247,063 AST lookup calls. The node hook resolved 240,029; the legacy spelling fallback ran 3,025 times and had no hits. A guarded fast path applied to 155,407 of 202,868 instrumented hook calls, but its three-run median was `135,548,474,216` instructions versus a contemporaneous retained median of `135,639,792,208`, only `-0.067%` | normal-mode witness guards and empty anchors are cheap. Restore the common path and follow the dependent-resolution work below it | `/tmp/cppgm-ast-type-lookup-branches.stderr`, `/tmp/cppgm-simple-type-lookup-fast-path-census.stderr`, `/tmp/cppgm-simple-type-lookup-fast-path-screen.json`, `/tmp/cppgm-simple-type-lookup-fast-path-decision.json`, `/tmp/cppgm-simple-type-fast-retained-ab.json` |
 | extend dependent-type resolution reuse across root calls | a frozen census measured 307,516 roots, 177,324 distinct `(scope instance, binding fingerprint, type)` keys, and 130,192 repeated results with no observed transitions. Of the repeats, 128,935 remained unresolved; their outer kinds were led by 108,361 named types, including 48,700 template parameters and 39,321 dependent types. Returning immediately after an unbound template-parameter lookup screened at `135,673,819,299` instructions. An operation-scoped tree cache found 46,926 hits against 261,857 misses across 208,697 operations, with at most 39 entries, and screened at `135,927,876,353`. A single-entry last-root memo retained 45,005 hits. Its three-run median was `135,359,414,885`; a same-host alternating comparison measured retained `135,580,233,289` versus candidate `135,154,528,753`, a `0.314%` reduction. Retained and candidate median RSS were `730,443,776` and `727,146,496`; footprints were `555,524,096` and `555,024,384`. All six paired objects had SHA-256 `4fc1303a...5c4` | the only cache shape that repaid its lookup cost remains below the `0.5%` retention threshold. Restore the resolver and services interface, and do not add global semantic invalidation machinery for this population | `/tmp/cppgm-dependent-resolution-roots-2.stderr`, `/tmp/cppgm-dependent-resolution-kind-census.stderr`, `/tmp/cppgm-unbound-template-parameter-screen.json`, `/tmp/cppgm-operation-resolution-cache-screen.json`, `/tmp/cppgm-dependent-operation-cache-census.stderr`, `/tmp/cppgm-dependent-operation-last-cache-census.stderr`, `/tmp/cppgm-operation-last-resolution-screen.json`, `/tmp/cppgm-operation-last-resolution-decision.json`, `/tmp/cppgm-operation-ab-{retained,candidate}-{1,2,3}.time` |
 | skip alias source-occurrence materialization when witness capture is disabled | the frozen compile built 19,532 alias source-occurrence vectors containing 31,604 copied arguments and 31,604 deep-copied syntax records; every call had source capture disabled. Guarding only those records screened at `135,680,956,488` instructions. Also borrowing the caller's argument-text vector instead of copying and rewriting witness spellings improved the screen to `135,082,147,793`; the three-run median was `135,200,957,915`, about `0.28%` below the immediately preceding retained A/B median of `135,580,233,289`. The frozen object remained exact | the allocations are avoidable but do not meet the `0.5%` full-compile retention threshold. Keep the uniform source-observation path and seek a larger allocation owner | `/tmp/cppgm-alias-source-arguments-census.stderr`, `/tmp/cppgm-alias-source-arguments-screen.json`, `/tmp/cppgm-alias-source-materialization-screen.json`, `/tmp/cppgm-alias-source-materialization-decision.json` |
-| borrow named-type strings while finding a template parameter | `find_template_parameter(TypePtr)` copied the named key, semantic payload, and source name into a local candidate array even though it only compared them. Replacing the copies with pointers produced a three-run median of `135,050,779,339` instructions versus `135,434,571,754` for the interleaved retained build, a `0.283%` reduction. Candidate and retained median RSS were `727,531,520` and `735,023,104`; footprints were `555,859,968` and `555,630,592` | the ownership cleanup removes sampled string allocations, but the full-compile instruction change is below the `0.5%` retention threshold. Restore the value array and use the profile to find a larger allocation family | `/tmp/cppgm-template-parameter-candidate-refs-{screen,candidate-2runs,retained-screen,retained-2runs}.json` |
+| borrow named-type strings while finding a template parameter | `find_template_parameter(TypePtr)` copied the named key, semantic payload, and source name into a local candidate array even though it only compared them. Replacing the copies with pointers produced a three-run median of `135,050,779,339` instructions versus `135,434,571,754` for the interleaved retained build, a `0.283%` reduction. Candidate and retained median RSS were `727,531,520` and `735,023,104`; footprints were `555,859,968` and `555,630,592` | the isolated borrow remained rejected. Commit `0e5b1af2d` later paired it with the measured placeholder-identity fast path; the cohesive lookup change met the balanced and CPU lanes in independent batches | `/tmp/cppgm-template-parameter-candidate-refs-{screen,candidate-2runs,retained-screen,retained-2runs}.json` and `/tmp/cppgm-template-parameter-identity-guarded-{parent,candidate}-{1,2,3}.time` |
 | remove tree and `std::function` scratch from value lookup through using-directives | the fresh profile attributed 56 top-stack samples and 21 direct allocations to `Analyzer::lookup_value_at_token`. A direct recursive helper used the retained inline scope visit set and ancestor comparison in place of two tree sets and a recursive `std::function`. The initial three-run candidate median was `133,162,716,462`, but its post-commit absolute median moved to `133,581,240,724`. A contemporaneous three-pair binary A/B measured parent `133,535,105,679` versus candidate `133,254,277,052`, only `-0.210%`. Candidate and parent median RSS were `752,021,504` and `749,436,928`; footprints were `556,036,096` and `555,831,296`. The candidate emitted the exact frozen object and passed direct strict `1530/1530` and full report `4863/4863` | the allocations are real, but the paired instruction reduction is below the `0.5%` threshold and secondary memory signals are slightly worse. Commit `ddd19fd3a` records the tested form and `709061c3f` removes it | `/tmp/cppgm-value-using-directive-scratch-{screen,decision,final}.json`, `/tmp/cppgm-value-ab-{parent,candidate}-{1,2,3}.json`, and `/tmp/cppgm-using-directive-profile.sample.txt` |
 | store template-body visible value types in a sorted contiguous map | the companion value map supported only lookup, overwrite, copy, and const iteration, so a private sorted vector could preserve its interface. Its one-run screen used `132,755,079,558` instructions, but a contemporaneous three-pair binary A/B measured parent median `132,781,984,174` versus candidate `133,060,302,274`, a `0.210%` regression | the smaller value-map population does not repay ordered insertion and binary lookup. Restore the hash map and stop extending the template-body container-rewrite family | `/tmp/cppgm-template-body-sorted-value-map-screen.json` and `/tmp/cppgm-value-map-ab-{parent,candidate}-{1,2,3}.json` |
 | inline or borrow the result of `strip_top_level_cv` | exposing the three-branch body in the header screened at `132,748,141,512` instructions, only about `0.03%` below its contemporaneous parent median. A later profile attributed 202 leaf samples to the helper across 1,692 source uses. Returning a borrowed `const TypePtr&` removed refcount pairs from inspection-only callers but screened at `128,509,370,739`, effectively flat against the retained `128,444,585,958` median | neither call dispatch nor result ownership explains enough of the profile attribution. Restore the value-returning out-of-line API and close this helper family after two measured forms | `/tmp/cppgm-inline-strip-cv-screen.json`, `/tmp/cppgm-using-directive-profile.sample.txt`, `/tmp/cppgm-lazy-reserve-profile.sample.txt`, and `/tmp/cppgm-borrow-strip-cv-screen.json` |
