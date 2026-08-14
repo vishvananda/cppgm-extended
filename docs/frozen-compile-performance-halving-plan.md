@@ -1607,13 +1607,14 @@ of boundary-sized representation changes will not close that gap. New work
 must start with operation counts and favor semantic work removal. Use this
 order:
 
-1. Retry the template-body scope-value snapshot on the current representation.
-   The old census found 44,552 scope visits, 35,202 repeated unchanged scopes,
-   and 1,825,503 scanned entries. Store `(Atom, TypePtr)` entries by local
-   `binding_fingerprint_epoch`, then feed the retained sorted name set and
-   value-type map. Count builds, hits, invalidations, entries scanned, and
-   entries replayed. A one-run win must receive an alternating binary A/B
-   decision because the old result sat near the floor.
+1. Completed: retry the template-body scope-value snapshot on the current
+   representation. A node-pointer cache reduced 1,825,503 map-entry scans to
+   3,092 first-build scans across 44,552 scope visits. The lean form stored a
+   cache for nonempty scopes and reset it at each erase, clear, or swap.
+   Three interleaved binary pairs measured `118,654,162,513` instructions for
+   the retained compiler and `118,365,277,484` for the candidate, a `0.243%`
+   reduction. This saves less than half of the current `0.5%` floor. We
+   rejected the source-map snapshot and restored the direct scan.
 2. Census expected semantic exceptions by producer and catch owner. The first
    status slice changed overload selection because it swallowed nested
    recoverable SFINAE. A replacement must preserve that nesting and remove at
@@ -1869,3 +1870,4 @@ experiment before starting the next candidate.
 | admit metadata-free negative `class_info_for_type` results before declaration collection completes | the existing registry epoch and metadata guards made the earlier admission exact. It converted 21,330 registry misses into named-key cache hits, reducing misses from 30,928 to 9,598, but used `118,388,459,077` instructions, `0.121%` above the retained checkpoint | the added negative-cache traffic costs as much as the second hash lookup it avoids. Restore post-declaration admission and keep the cache focused on stable negatives | `/tmp/cppgm-early-negative-class-cache-census.stderr` and `/tmp/cppgm-early-negative-class-cache-screen.json` |
 | coallocate CallSem optional payloads with their shared control blocks | coallocating the common extra record, rare payloads, qualified names, and interned symbols emitted the exact frozen object but used `118,748,695,498` instructions, `0.425%` above the retained checkpoint. Restricting coallocation to the roughly 91K common extra records was worse at `118,923,591,013`, a `0.573%` regression | the larger allocation changes recover part of the common-record loss but do not make the family competitive. Restore separate object and control-block allocations and keep the existing copy-on-write representation | `/tmp/cppgm-callsem-make-shared-screen.json` and `/tmp/cppgm-callsem-extra-make-shared-screen.json` |
 | move cold `FunctionBinding` strings and source anchors to a side record, then compact scalar layout | only 266 of 33,713 bindings stored an explicit `noexcept` expression and 50 stored an object-symbol override; source anchors are unused in normal compilation. Moving that union behind one pointer reduced footprint by about 2.7 MiB but used `118,374,356,578` instructions, `0.109%` above the retained checkpoint. Grouping scalar state removed alignment holes and reduced the record from 824 to 656 bytes, but used `118,496,295,717` instructions, a `0.212%` regression, while reducing footprint by about 5.8 MiB | density alone does not repay cold-access branches or the changed hot-field layout. Restore the original direct fields and close `FunctionBinding` compaction unless a future change removes work as well as bytes | `/tmp/cppgm-function-binding-rare-census.stderr`, `/tmp/cppgm-function-binding-cold-metadata-screen.json`, and `/tmp/cppgm-function-binding-compact-layout-screen.json` |
+| retry the interned template-body scope-value snapshot after atom-set compaction | the safe cache stored `(Atom, ValueBinding*)` entries, rebuilt after erase/clear/swap, and preserved live mapped-value updates. The census recorded 44,552 scope visits, 35,194 hits, 9,358 builds, 68 invalidation rebuilds, 3,092 source entries scanned, and 1,825,503 cached entries replayed. A lean optional-vector form screened at `118,075,598,689` instructions. Three interleaved binary pairs measured retained and candidate medians of `118,654,162,513` and `118,365,277,484`, a `288,885,029` instruction or `0.243%` reduction. Median RSS changed from `710,828,032` to `712,835,072`; footprint changed from `524,652,544` to `525,099,008`. All six objects had the frozen SHA-256 | after atom-set compaction, the retry saved less than half of the `591,228,695`-instruction retention floor. Restore the direct scan. Another attempt must remove destination replay or validation work; another source index will not qualify | `/tmp/cppgm-template-body-value-snapshot-census.stderr`, `/tmp/cppgm-template-body-value-snapshot-{screen,lean-screen}.json`, and `/tmp/cppgm-template-body-value-{retained,candidate}-{1,2,3}.time` |
