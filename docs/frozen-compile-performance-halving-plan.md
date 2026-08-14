@@ -1677,6 +1677,45 @@ Evidence is in `/tmp/cppgm-ast-layout-current-screen.time`,
 `/tmp/cppgm-ast-layout-test-strict.log`, and
 `/tmp/cppgm-ast-layout-test-report.log`.
 
+#### Primary-placeholder shape checkpoint
+
+The revised leaf census found `760,824` calls that checked whether a class
+instantiation's arguments were the source template's own placeholders. Those
+calls covered only `4,132` candidate classes. The retained three-state byte is
+valid only after both private callers establish source-template identity. The
+two argument-state writers reset it before changing the argument vector.
+
+An environment-gated cache census measured `754,890` hits and `5,934` misses.
+Only `15` first computations were true; `5,919` were false. The writers made
+`20,914` invalidation calls, including `1,928` that cleared a live result. The
+census path was removed before performance and correctness validation.
+
+Three interleaved pairs measured parent and candidate instruction medians of
+`116,217,254,527` and `115,590,286,386`, a `0.539%` improvement. All three
+instruction pairs agreed. Median RSS improved by `0.420%`, and footprint
+improved by `0.006%`. Every object had the frozen SHA-256, so the candidate
+meets the CPU lane without relying on memory noise.
+
+A broader form also retained a positive dependent source-owner pointer. Its
+first paired batch had a `0.948` balance score, but the required independent
+batch scored only `0.406` and regressed RSS by `0.440%`. That pointer was
+removed; null and source-owner transitions still run through the original map
+search.
+
+The clean three-run median at `9ad60e6c6` is `115,576,376,842` instructions,
+`33.64%` below the original baseline. Maximum RSS is `707,428,352 B`, and
+footprint is `516,362,240 B`. The focused PA19 report passes `295/295`, direct
+strict passes `1530/1530`, and the full direct report passes `4863/4863`.
+
+Evidence is in `/tmp/cppgm-revised-profile.sample.txt`,
+`/tmp/cppgm-revised-leaf-census.stderr`,
+`/tmp/cppgm-primary-placeholder-census.stderr`,
+`/tmp/cppgm-primary-placeholder-byte-{parent,candidate}-{1,2,3}.time`,
+`/tmp/cppgm-primary-placeholder-final.json`,
+`/tmp/cppgm-primary-placeholder-test-pa19.log`,
+`/tmp/cppgm-primary-placeholder-test-strict.log`, and
+`/tmp/cppgm-primary-placeholder-test-report.log`.
+
 #### Multi-signal retention rubric at `3686d87b0`
 
 The former rolling `0.5%` instruction floor was useful for rejecting noise, but
@@ -1881,14 +1920,16 @@ order:
    `1.622%` RSS improvement, but the required independent batch improved RSS
    by only `0.801%`. Its `0.780%` footprint and `0.077%` instruction gains miss
    the other lanes, so `std::vector` remains.
-9. Attribute four new profile leaves before editing their representations:
-   5,943 lazy-body name-lookup snapshots retain 2,329,656 base bytes;
-   class-template display reconstruction has 86 leaf samples;
-   `overlay_scope_bindings_impl` has 61; class primary-placeholder and source-
-   owner lookup have 67 and 63. For each path, count requests, distinct source
-   identities, repeated stable results, copied entries, and state transitions.
-   Prefer producer-attached facts or operation-scoped views over another
-   analyzer-wide cache.
+9. In progress: attribute four new profile leaves before editing their
+   representations. The current sample records 89 display-reconstruction
+   leaves, 63 source-owner leaves, 57 primary-placeholder leaves, 53 overlay
+   leaves, and 44 snapshot-construction leaves. Retain the primary-placeholder
+   shape byte: `754,890` cache hits clear the CPU lane at `0.539%`. Keep the
+   broader owner pointer rejected after its independent balance score fell to
+   `0.406`. Close snapshot interning: only 29 of 6,746 snapshots were empty,
+   and sharing the 2,903 repeated contents would save roughly 1.1 MiB through
+   another broad cache. Continue with the 922,353 stable display repeats and
+   166,963 no-change overlay requests.
 10. Measure the two remaining narrow traversal families. Conversion-function
    group collection still uses two tree-backed class visit sets and has 37
    fresh leaf samples. It can use inline storage only if a population census
@@ -1990,6 +2031,7 @@ Fill one row after each retained commit.
 | `2ba26c3f4` | cache template-body scope value views and bulk-sort visible names | `116,933,622,740` | `-32.86%` | `718,651,392` | `525,627,392` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-visible-composite-final.json`; two paired batches: `-0.485%` and `-0.474%` instructions; balance scores `0.682` and `0.773` |
 | `0e5b1af2d` | resolve template-parameter placeholder types by interned identity | `116,375,621,217` | `-33.18%` | `708,911,104` | `525,758,464` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-parameter-identity-final.json`; 239,256 identity hits; paired batches `-0.197%` and `-0.828%` instructions |
 | `4d0fddd3e` | compact `CppAstNode` by declaration-only field reordering | `116,167,632,347` | `-33.30%` | `701,468,672` | `516,448,256` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-layout-final.json`; paired footprint: `-1.776%`, or `-9,338,880 B`; instructions: `-0.080%` |
+| `9ad60e6c6` | memoize each class instantiation's primary-placeholder argument shape | `115,576,376,842` | `-33.64%` | `707,428,352` | `516,362,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-primary-placeholder-final.json`; 754,890 hits; paired instructions: `-0.539%` |
 
 ## Rejected work ledger
 
