@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -50,13 +51,12 @@ struct FunctionLayout
   map<string, string> promoted_param_slots;
   map<string, string> aliased_param_slots;
   map<string, string> aliased_object_return_slots;
-  unordered_map<string, lir::Instruction> temp_def_instruction;
+  unordered_map<string, const lir::Instruction *> temp_def_instruction;
   map<string, lir::Operand> elided_direct_branch_load_sources;
   set<string> address_taken_temps;
   set<string> direct_branch_temps;
   set<string> dead_call_result_temps;
   set<string> direct_call_arg_index_temps;
-  set<string> thread_local_globals;
   vector<string> params;
   vector<string> slots;
   vector<string> temps;
@@ -654,14 +654,23 @@ const vector<XmmRegister> & candidate_xmm_temp_registers()
 struct TempDefInfo
 {
   size_t position = 0;
-  lir::Instruction::Kind kind = lir::Instruction::IK_CONST;
-  string op;
-  string type;
-  lir::Operand first;
-  lir::Operand second;
+  // Layout construction and MIR emission run while the LowIR function is
+  // immutable, so definition indexes can borrow its instruction records.
+  const lir::Instruction * instruction = nullptr;
+
+  lir::Instruction::Kind kind() const { return instruction->kind; }
+  const string & op() const { return instruction->op; }
+  const string & type() const { return instruction->type.text; }
+  const lir::Operand & first() const { return instruction->first; }
+  const lir::Operand & second() const { return instruction->second; }
 };
 
-map<string, TempDefInfo> collect_temp_def_info(const lir::Function & function);
+using TempDefIndex = unordered_map<string, TempDefInfo>;
+// These vectors belong to the immutable LowIR program for the builder's
+// lifetime. The index is lookup-only and does not need to copy their payload.
+using FunctionParamIndex = unordered_map<string, const vector<lir::Parameter> *>;
+
+TempDefIndex collect_temp_def_info(const lir::Function & function);
 vector<mir::ParamBinding> collect_param_bindings(const lir::Function & function);
 map<string, mir::ParamBinding> collect_forwarded_register_params(
     const lir::Function & function,
@@ -672,13 +681,13 @@ map<string, string> collect_aliased_object_return_slots(const lir::Function & fu
                                                         const FunctionLayout & layout);
 map<string, lir::Operand> collect_elided_direct_branch_loads(
     const lir::Function & function,
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const set<string> & direct_branch_temps,
     const map<string, string> & promoted_param_slots,
     const set<string> & thread_local_globals);
 set<string> collect_address_taken_temps(
     const lir::Function & function,
-    const map<string, vector<lir::Parameter> > & function_params);
+    const FunctionParamIndex & function_params);
 bool operand_may_emit_tls_addr(const lir::Operand & operand,
                                const set<string> & thread_local_globals);
 bool instruction_may_emit_tls_addr(const lir::Instruction & inst,
@@ -686,7 +695,7 @@ bool instruction_may_emit_tls_addr(const lir::Instruction & inst,
 bool instruction_may_emit_i128_helper_call(const lir::Instruction & inst);
 vector<TempInterval> collect_forwarded_param_intervals(
     const lir::Function & function,
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const map<string, mir::ParamBinding> & forwarded_params,
     const map<string, string> & promoted_param_slots,
     const set<string> & direct_call_arg_index_temps,
@@ -758,24 +767,24 @@ void note_storage_address_required(set<string> & out,
   }
 }
 
-vector<lir::Parameter> instruction_call_params(
+const vector<lir::Parameter> * instruction_call_params(
     const lir::Instruction & inst,
-    const map<string, vector<lir::Parameter> > & function_params)
+    const FunctionParamIndex & function_params)
 {
   if(inst.has_call_signature) {
-    return inst.call_params;
+    return &inst.call_params;
   }
   if(inst.first.kind != lir::Operand::OP_GLOBAL) {
-    return vector<lir::Parameter>();
+    return nullptr;
   }
-  map<string, vector<lir::Parameter> >::const_iterator found =
+  FunctionParamIndex::const_iterator found =
       function_params.find(inst.first.text);
-  return found == function_params.end() ? vector<lir::Parameter>() : found->second;
+  return found == function_params.end() ? nullptr : found->second;
 }
 
 set<string> collect_address_taken_temps(
     const lir::Function & function,
-    const map<string, vector<lir::Parameter> > & function_params)
+    const FunctionParamIndex & function_params)
 {
   const map<string, string> temp_types = collect_temp_result_types(function);
   set<string> out;
@@ -811,15 +820,18 @@ set<string> collect_address_taken_temps(
           note_storage_address_required(out, temp_types, inst.first);
           break;
         case lir::Instruction::IK_CALL: {
-          const vector<lir::Parameter> call_params =
+          const vector<lir::Parameter> * call_params =
               instruction_call_params(inst, function_params);
+          if(!call_params) {
+            break;
+          }
           for(size_t ai = 0; ai < inst.args.size(); ++ai) {
-            if(ai >= call_params.size()) {
+            if(ai >= call_params->size()) {
               continue;
             }
-            const string & param_type = call_params[ai].type.text;
+            const string & param_type = (*call_params)[ai].type.text;
             if(!scalar_abi_chunk_types(param_type).empty() ||
-               uses_storage_address_passing(call_params[ai].metadata.passing)) {
+               uses_storage_address_passing((*call_params)[ai].metadata.passing)) {
               note_storage_address_required(out, temp_types, inst.args[ai]);
             }
           }
@@ -835,7 +847,7 @@ set<string> collect_address_taken_temps(
 }
 
 void note_direct_branch_source_uses(map<string, TempInterval> & intervals,
-                                    const map<string, TempDefInfo> & def_info,
+                                    const TempDefIndex & def_info,
                                     const lir::Instruction & inst,
                                     size_t position)
 {
@@ -844,26 +856,26 @@ void note_direct_branch_source_uses(map<string, TempInterval> & intervals,
     return;
   }
 
-  map<string, TempDefInfo>::const_iterator def = def_info.find(inst.first.text);
+  TempDefIndex::const_iterator def = def_info.find(inst.first.text);
   if(def == def_info.end()) {
     return;
   }
 
   const bool direct_cmp =
-      def->second.kind == lir::Instruction::IK_CMP &&
-      !is_i128_scalar_type(def->second.type);
+      def->second.kind() == lir::Instruction::IK_CMP &&
+      !is_i128_scalar_type(def->second.type());
   const bool direct_integer_not =
-      def->second.kind == lir::Instruction::IK_UNARY &&
-      def->second.op == "not" &&
-      !is_float_type(def->second.type) &&
-      !is_i128_scalar_type(def->second.type);
+      def->second.kind() == lir::Instruction::IK_UNARY &&
+      def->second.op() == "not" &&
+      !is_float_type(def->second.type()) &&
+      !is_i128_scalar_type(def->second.type());
   if(!(direct_cmp || direct_integer_not)) {
     return;
   }
 
-  note_operand_use(intervals, def->second.first, position, lir::Instruction::IK_BRANCH);
+  note_operand_use(intervals, def->second.first(), position, lir::Instruction::IK_BRANCH);
   if(direct_cmp) {
-    note_operand_use(intervals, def->second.second, position, lir::Instruction::IK_BRANCH);
+    note_operand_use(intervals, def->second.second(), position, lir::Instruction::IK_BRANCH);
   }
 }
 
@@ -889,7 +901,7 @@ void note_promoted_slot_load_use(map<string, TempInterval> & intervals,
 
 void note_direct_call_arg_index_source_uses(
     map<string, TempInterval> & intervals,
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const set<string> & direct_call_arg_index_temps,
     const lir::Instruction & inst,
     size_t position)
@@ -904,15 +916,15 @@ void note_direct_call_arg_index_source_uses(
       continue;
     }
 
-    map<string, TempDefInfo>::const_iterator def = def_info.find(inst.args[ai].text);
+    TempDefIndex::const_iterator def = def_info.find(inst.args[ai].text);
     if(def == def_info.end() ||
-       def->second.kind != lir::Instruction::IK_INDEX ||
-       def->second.second.kind != lir::Operand::OP_INTEGER) {
+       def->second.kind() != lir::Instruction::IK_INDEX ||
+       def->second.second().kind != lir::Operand::OP_INTEGER) {
       continue;
     }
 
     note_operand_use(intervals,
-                     def->second.first,
+                     def->second.first(),
                      position,
                      lir::Instruction::IK_CALL);
   }
@@ -931,7 +943,7 @@ void note_named_temp_use(set<string> & names,
 
 void note_named_identity_source_use(set<string> & names,
                                     const set<string> & tracked_names,
-                                    const map<string, TempDefInfo> & def_info,
+                                    const TempDefIndex & def_info,
                                     const lir::Operand & operand,
                                     set<string> & visited)
 {
@@ -944,28 +956,28 @@ void note_named_identity_source_use(set<string> & names,
     return;
   }
 
-  map<string, TempDefInfo>::const_iterator def = def_info.find(operand.text);
+  TempDefIndex::const_iterator def = def_info.find(operand.text);
   if(def == def_info.end()) {
     return;
   }
 
-  if(def->second.kind == lir::Instruction::IK_COPY) {
+  if(def->second.kind() == lir::Instruction::IK_COPY) {
     note_named_identity_source_use(names,
                                    tracked_names,
                                    def_info,
-                                   def->second.first,
+                                   def->second.first(),
                                    visited);
     return;
   }
 
-  if(def->second.kind == lir::Instruction::IK_INDEX &&
-     def->second.first.kind == lir::Operand::OP_TEMP &&
-     def->second.second.kind == lir::Operand::OP_INTEGER &&
-     def->second.second.int_value == 0) {
+  if(def->second.kind() == lir::Instruction::IK_INDEX &&
+     def->second.first().kind == lir::Operand::OP_TEMP &&
+     def->second.second().kind == lir::Operand::OP_INTEGER &&
+     def->second.second().int_value == 0) {
     note_named_identity_source_use(names,
                                    tracked_names,
                                    def_info,
-                                   def->second.first,
+                                   def->second.first(),
                                    visited);
   }
 }
@@ -973,7 +985,7 @@ void note_named_identity_source_use(set<string> & names,
 void note_direct_call_arg_index_source_names(
     set<string> & names,
     const set<string> & tracked_names,
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const set<string> & direct_call_arg_index_temps,
     const lir::Instruction & inst)
 {
@@ -987,22 +999,22 @@ void note_direct_call_arg_index_source_names(
       continue;
     }
 
-    map<string, TempDefInfo>::const_iterator def = def_info.find(inst.args[ai].text);
+    TempDefIndex::const_iterator def = def_info.find(inst.args[ai].text);
     if(def == def_info.end() ||
-       def->second.kind != lir::Instruction::IK_INDEX ||
-       def->second.second.kind != lir::Operand::OP_INTEGER) {
+       def->second.kind() != lir::Instruction::IK_INDEX ||
+       def->second.second().kind != lir::Operand::OP_INTEGER) {
       continue;
     }
 
     set<string> visited;
-    note_named_temp_use(names, tracked_names, def->second.first);
-    note_named_identity_source_use(names, tracked_names, def_info, def->second.first, visited);
+    note_named_temp_use(names, tracked_names, def->second.first());
+    note_named_identity_source_use(names, tracked_names, def_info, def->second.first(), visited);
   }
 }
 
 void note_instruction_named_uses(set<string> & names,
                                  const set<string> & tracked_names,
-                                 const map<string, TempDefInfo> & def_info,
+                                 const TempDefIndex & def_info,
                                  const lir::Instruction & inst)
 {
   set<string> visited;
@@ -1023,7 +1035,7 @@ void note_instruction_named_uses(set<string> & names,
 
 void note_direct_branch_source_names(set<string> & names,
                                      const set<string> & tracked_names,
-                                     const map<string, TempDefInfo> & def_info,
+                                     const TempDefIndex & def_info,
                                      const lir::Instruction & inst)
 {
   if(inst.kind != lir::Instruction::IK_BRANCH ||
@@ -1031,26 +1043,26 @@ void note_direct_branch_source_names(set<string> & names,
     return;
   }
 
-  map<string, TempDefInfo>::const_iterator def = def_info.find(inst.first.text);
+  TempDefIndex::const_iterator def = def_info.find(inst.first.text);
   if(def == def_info.end()) {
     return;
   }
 
   const bool direct_cmp =
-      def->second.kind == lir::Instruction::IK_CMP &&
-      !is_i128_scalar_type(def->second.type);
+      def->second.kind() == lir::Instruction::IK_CMP &&
+      !is_i128_scalar_type(def->second.type());
   const bool direct_integer_not =
-      def->second.kind == lir::Instruction::IK_UNARY &&
-      def->second.op == "not" &&
-      !is_float_type(def->second.type) &&
-      !is_i128_scalar_type(def->second.type);
+      def->second.kind() == lir::Instruction::IK_UNARY &&
+      def->second.op() == "not" &&
+      !is_float_type(def->second.type()) &&
+      !is_i128_scalar_type(def->second.type());
   if(!(direct_cmp || direct_integer_not)) {
     return;
   }
 
-  note_named_temp_use(names, tracked_names, def->second.first);
+  note_named_temp_use(names, tracked_names, def->second.first());
   if(direct_cmp) {
-    note_named_temp_use(names, tracked_names, def->second.second);
+    note_named_temp_use(names, tracked_names, def->second.second());
   }
 }
 
@@ -1228,7 +1240,7 @@ vector<BlockTempLiveness> build_block_temp_liveness(const lir::Function & functi
 vector<BlockValueLiveness> build_named_value_liveness(
     const lir::Function & function,
     const set<string> & tracked_names,
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const map<string, string> & promoted_param_slots,
     const set<string> & direct_call_arg_index_temps)
 {
@@ -1277,7 +1289,7 @@ vector<BlockValueLiveness> build_named_value_liveness(
 
 vector<TempInterval> collect_temp_intervals(
     const lir::Function & function,
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const set<string> & thread_local_globals = set<string>(),
     const set<string> & direct_call_arg_index_temps = set<string>())
 {
@@ -1285,16 +1297,12 @@ vector<TempInterval> collect_temp_intervals(
   vector<size_t> call_positions;
   vector<size_t> block_start(function.blocks.size(), 0);
   vector<size_t> block_end(function.blocks.size(), 0);
-  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
-    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
-      const lir::Instruction & inst = function.blocks[bi].instructions[ii];
-      if(inst.dest.empty()) {
-        continue;
-      }
-      TempInterval & interval = intervals[inst.dest];
-      interval.name = inst.dest;
-      interval.type = lir::instruction_result_storage_type(inst);
-    }
+  for(TempDefIndex::const_iterator it = def_info.begin();
+      it != def_info.end();
+      ++it) {
+    TempInterval & interval = intervals[it->first];
+    interval.name = it->first;
+    interval.type = lir::instruction_result_storage_type(*it->second.instruction);
   }
 
   size_t position = 0;
@@ -1421,7 +1429,7 @@ vector<TempInterval> collect_temp_intervals(
 }
 
 set<string> collect_dead_call_result_temps(
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const vector<TempInterval> & intervals)
 {
   set<string> out;
@@ -1429,8 +1437,8 @@ set<string> collect_dead_call_result_temps(
     if(intervals[i].use_count != 0) {
       continue;
     }
-    map<string, TempDefInfo>::const_iterator def = def_info.find(intervals[i].name);
-    if(def != def_info.end() && def->second.kind == lir::Instruction::IK_CALL) {
+    TempDefIndex::const_iterator def = def_info.find(intervals[i].name);
+    if(def != def_info.end() && def->second.kind() == lir::Instruction::IK_CALL) {
       out.insert(intervals[i].name);
     }
   }
@@ -1439,77 +1447,77 @@ set<string> collect_dead_call_result_temps(
 
 set<string> collect_direct_call_arg_index_temps(
     const lir::Function & function,
-    const map<string, vector<lir::Parameter> > & function_params,
-    const map<string, TempDefInfo> & def_info,
+    const FunctionParamIndex & function_params,
+    const TempDefIndex & def_info,
     const vector<TempInterval> & intervals)
 {
-  set<string> out;
+  set<string> candidates;
   for(size_t i = 0; i < intervals.size(); ++i) {
     if(intervals[i].use_count != 1 ||
        intervals[i].last_use_kind != lir::Instruction::IK_CALL ||
        intervals[i].type != "ptr") {
       continue;
     }
-    map<string, TempDefInfo>::const_iterator def = def_info.find(intervals[i].name);
+    TempDefIndex::const_iterator def = def_info.find(intervals[i].name);
     if(def == def_info.end() ||
-       def->second.kind != lir::Instruction::IK_INDEX ||
-       def->second.second.kind != lir::Operand::OP_INTEGER) {
+       def->second.kind() != lir::Instruction::IK_INDEX ||
+       def->second.second().kind != lir::Operand::OP_INTEGER) {
       continue;
     }
-    const size_t scale = lir::type_size(lir::LowType{def->second.op});
+    const size_t scale = lir::type_size(lir::LowType{def->second.op()});
     long long scaled_offset = 0;
-    if(__builtin_mul_overflow(def->second.second.int_value,
+    if(__builtin_mul_overflow(def->second.second().int_value,
                               static_cast<long long>(scale),
                               &scaled_offset)) {
       continue;
     }
+    candidates.insert(intervals[i].name);
+  }
 
-    bool safe_direct_call_arg_use = false;
-    for(size_t bi = 0; bi < function.blocks.size() && !safe_direct_call_arg_use; ++bi) {
-      for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
-        const lir::Instruction & call = function.blocks[bi].instructions[ii];
-        if(call.kind != lir::Instruction::IK_CALL) {
+  set<string> out;
+  if(candidates.empty()) {
+    return out;
+  }
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+      const lir::Instruction & call = function.blocks[bi].instructions[ii];
+      if(call.kind != lir::Instruction::IK_CALL) {
+        continue;
+      }
+      const vector<lir::Parameter> * call_params = nullptr;
+      if(call.has_call_signature) {
+        call_params = &call.call_params;
+      } else if(call.first.kind == lir::Operand::OP_GLOBAL) {
+        FunctionParamIndex::const_iterator found =
+            function_params.find(call.first.text);
+        if(found != function_params.end()) {
+          call_params = found->second;
+        }
+      }
+      if(!call_params) {
+        continue;
+      }
+      for(size_t ai = 0; ai < call.args.size(); ++ai) {
+        if(call.args[ai].kind != lir::Operand::OP_TEMP ||
+           candidates.count(call.args[ai].text) == 0 ||
+           ai >= call_params->size()) {
           continue;
         }
-        for(size_t ai = 0; ai < call.args.size(); ++ai) {
-          if(call.args[ai].kind != lir::Operand::OP_TEMP ||
-             call.args[ai].text != intervals[i].name) {
-            continue;
-          }
-          vector<lir::Parameter> call_params;
-          if(call.has_call_signature) {
-            call_params = call.call_params;
-          } else if(call.first.kind == lir::Operand::OP_GLOBAL) {
-            map<string, vector<lir::Parameter> >::const_iterator found =
-                function_params.find(call.first.text);
-            if(found != function_params.end()) {
-              call_params = found->second;
-            }
-          }
-          if(ai >= call_params.size()) {
-            break;
-          }
-          const lir::Parameter & param = call_params[ai];
-          if(param.type.text == "ptr" &&
-             scalar_abi_chunk_types(param.type.text).empty() &&
-             !uses_storage_address_passing(param.metadata.passing)) {
-            safe_direct_call_arg_use = true;
-          }
-          break;
+        const lir::Parameter & param = (*call_params)[ai];
+        if(param.type.text == "ptr" &&
+           scalar_abi_chunk_types(param.type.text).empty() &&
+           !uses_storage_address_passing(param.metadata.passing)) {
+          out.insert(call.args[ai].text);
         }
       }
     }
-    if(!safe_direct_call_arg_use) {
-      continue;
-    }
-    out.insert(intervals[i].name);
   }
   return out;
 }
 
 vector<TempInterval> extend_direct_call_arg_index_source_intervals(
     const lir::Function & function,
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const set<string> & direct_call_arg_index_temps,
     const set<string> & thread_local_globals,
     const vector<TempInterval> & intervals)
@@ -1540,16 +1548,16 @@ vector<TempInterval> extend_direct_call_arg_index_source_intervals(
            direct_call_arg_index_temps.count(inst.args[ai].text) == 0) {
           continue;
         }
-        map<string, TempDefInfo>::const_iterator def =
+        TempDefIndex::const_iterator def =
             def_info.find(inst.args[ai].text);
         if(def == def_info.end() ||
-           def->second.kind != lir::Instruction::IK_INDEX ||
-           def->second.first.kind != lir::Operand::OP_TEMP ||
-           def->second.second.kind != lir::Operand::OP_INTEGER) {
+           def->second.kind() != lir::Instruction::IK_INDEX ||
+           def->second.first().kind != lir::Operand::OP_TEMP ||
+           def->second.second().kind != lir::Operand::OP_INTEGER) {
           continue;
         }
         unordered_map<string, size_t>::const_iterator source =
-            interval_index.find(def->second.first.text);
+            interval_index.find(def->second.first().text);
         if(source != interval_index.end()) {
           out[source->second].end = max(out[source->second].end, position);
         }
@@ -1585,9 +1593,14 @@ bool plain_storage_debug_name(const string & storage_name,
   return true;
 }
 
-map<string, TempDefInfo> collect_temp_def_info(const lir::Function & function)
+TempDefIndex collect_temp_def_info(const lir::Function & function)
 {
-  map<string, TempDefInfo> out;
+  TempDefIndex out;
+  size_t definition_capacity = 0;
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    definition_capacity += function.blocks[bi].instructions.size();
+  }
+  out.reserve(definition_capacity);
   size_t position = 0;
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
     for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii, ++position) {
@@ -1597,11 +1610,7 @@ map<string, TempDefInfo> collect_temp_def_info(const lir::Function & function)
       }
       TempDefInfo info;
       info.position = position;
-      info.kind = inst.kind;
-      info.op = inst.op;
-      info.type = inst.type.text;
-      info.first = inst.first;
-      info.second = inst.second;
+      info.instruction = &inst;
       out[inst.dest] = info;
     }
   }
@@ -1609,23 +1618,23 @@ map<string, TempDefInfo> collect_temp_def_info(const lir::Function & function)
 }
 
 set<string> collect_direct_branch_temps(
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const vector<TempInterval> & intervals)
 {
   set<string> out;
   for(size_t i = 0; i < intervals.size(); ++i) {
-    map<string, TempDefInfo>::const_iterator def = def_info.find(intervals[i].name);
+    TempDefIndex::const_iterator def = def_info.find(intervals[i].name);
     if(def == def_info.end()) {
       continue;
     }
     const bool direct_cmp =
-        def->second.kind == lir::Instruction::IK_CMP &&
-        !is_i128_scalar_type(def->second.type);
+        def->second.kind() == lir::Instruction::IK_CMP &&
+        !is_i128_scalar_type(def->second.type());
     const bool direct_integer_not =
-        def->second.kind == lir::Instruction::IK_UNARY &&
-        def->second.op == "not" &&
-        !is_float_type(def->second.type) &&
-        !is_i128_scalar_type(def->second.type);
+        def->second.kind() == lir::Instruction::IK_UNARY &&
+        def->second.op() == "not" &&
+        !is_float_type(def->second.type()) &&
+        !is_i128_scalar_type(def->second.type());
     if((direct_cmp || direct_integer_not) &&
        intervals[i].use_count == 1 &&
        intervals[i].last_use_kind == lir::Instruction::IK_BRANCH) {
@@ -1637,7 +1646,7 @@ set<string> collect_direct_branch_temps(
 
 map<string, lir::Operand> collect_elided_direct_branch_loads(
     const lir::Function & function,
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const set<string> & direct_branch_temps,
     const map<string, string> & promoted_param_slots,
     const set<string> & thread_local_globals)
@@ -1702,19 +1711,19 @@ map<string, lir::Operand> collect_elided_direct_branch_loads(
         if(uses == raw_use_count.end() || uses->second != 1) {
           return false;
         }
-        map<string, TempDefInfo>::const_iterator def =
+        TempDefIndex::const_iterator def =
             def_info.find(operand.text);
         if(def == def_info.end() ||
-           def->second.kind != lir::Instruction::IK_LOAD ||
-           def->second.type != compare_type) {
+           def->second.kind() != lir::Instruction::IK_LOAD ||
+           def->second.type() != compare_type) {
           return false;
         }
-        if(def->second.first.kind == lir::Operand::OP_GLOBAL &&
-           thread_local_globals.count(def->second.first.text) != 0) {
+        if(def->second.first().kind == lir::Operand::OP_GLOBAL &&
+           thread_local_globals.count(def->second.first().text) != 0) {
           return false;
         }
-        if(def->second.first.kind == lir::Operand::OP_SLOT &&
-           promoted_param_slots.count(def->second.first.text) != 0) {
+        if(def->second.first().kind == lir::Operand::OP_SLOT &&
+           promoted_param_slots.count(def->second.first().text) != 0) {
           map<string, size_t>::const_iterator branch_use =
               direct_branch_use_position.find(direct_branch_temp);
           map<string, size_t>::const_iterator raw_use =
@@ -1727,40 +1736,40 @@ map<string, lir::Operand> collect_elided_direct_branch_loads(
             return false;
           }
         }
-        return def->second.first.kind == lir::Operand::OP_SLOT ||
-               def->second.first.kind == lir::Operand::OP_GLOBAL;
+        return def->second.first().kind == lir::Operand::OP_SLOT ||
+               def->second.first().kind == lir::Operand::OP_GLOBAL;
       };
 
   map<string, lir::Operand> out;
   for(set<string>::const_iterator it = direct_branch_temps.begin();
       it != direct_branch_temps.end();
       ++it) {
-    map<string, TempDefInfo>::const_iterator def = def_info.find(*it);
+    TempDefIndex::const_iterator def = def_info.find(*it);
     if(def == def_info.end()) {
       continue;
     }
     const bool direct_cmp =
-        def->second.kind == lir::Instruction::IK_CMP &&
-        !is_float_type(def->second.type) &&
-        !is_i128_scalar_type(def->second.type);
+        def->second.kind() == lir::Instruction::IK_CMP &&
+        !is_float_type(def->second.type()) &&
+        !is_i128_scalar_type(def->second.type());
     const bool direct_integer_not =
-        def->second.kind == lir::Instruction::IK_UNARY &&
-        def->second.op == "not" &&
-        !is_float_type(def->second.type) &&
-        !is_i128_scalar_type(def->second.type);
+        def->second.kind() == lir::Instruction::IK_UNARY &&
+        def->second.op() == "not" &&
+        !is_float_type(def->second.type()) &&
+        !is_i128_scalar_type(def->second.type());
     if(direct_cmp) {
-      if(is_elidable_direct_load(*it, def->second.first, def->second.type)) {
-        out[def->second.first.text] =
-            def_info.find(def->second.first.text)->second.first;
+      if(is_elidable_direct_load(*it, def->second.first(), def->second.type())) {
+        out[def->second.first().text] =
+            def_info.find(def->second.first().text)->second.first();
       }
-      if(is_elidable_direct_load(*it, def->second.second, def->second.type)) {
-        out[def->second.second.text] =
-            def_info.find(def->second.second.text)->second.first;
+      if(is_elidable_direct_load(*it, def->second.second(), def->second.type())) {
+        out[def->second.second().text] =
+            def_info.find(def->second.second().text)->second.first();
       }
     } else if(direct_integer_not &&
-              is_elidable_direct_load(*it, def->second.first, def->second.type)) {
-      out[def->second.first.text] =
-          def_info.find(def->second.first.text)->second.first;
+              is_elidable_direct_load(*it, def->second.first(), def->second.type())) {
+      out[def->second.first().text] =
+          def_info.find(def->second.first().text)->second.first();
     }
   }
   return out;
@@ -1768,15 +1777,15 @@ map<string, lir::Operand> collect_elided_direct_branch_loads(
 
 const X64Register * reusable_first_input_register(
     const TempInterval & interval,
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const map<string, TempInterval> & intervals_by_name,
     const map<string, X64Register> & assigned_regs)
 {
-  map<string, TempDefInfo>::const_iterator def = def_info.find(interval.name);
+  TempDefIndex::const_iterator def = def_info.find(interval.name);
   if(def == def_info.end()) {
     return nullptr;
   }
-  switch(def->second.kind) {
+  switch(def->second.kind()) {
     case lir::Instruction::IK_COPY:
     case lir::Instruction::IK_UNARY:
     case lir::Instruction::IK_BINARY:
@@ -1786,16 +1795,16 @@ const X64Register * reusable_first_input_register(
     default:
       return nullptr;
   }
-  if(def->second.first.kind != lir::Operand::OP_TEMP) {
+  if(def->second.first().kind != lir::Operand::OP_TEMP) {
     return nullptr;
   }
   map<string, TempInterval>::const_iterator source =
-      intervals_by_name.find(def->second.first.text);
+      intervals_by_name.find(def->second.first().text);
   if(source == intervals_by_name.end() || source->second.end != interval.start) {
     return nullptr;
   }
   map<string, X64Register>::const_iterator assigned =
-      assigned_regs.find(def->second.first.text);
+      assigned_regs.find(def->second.first().text);
   if(assigned == assigned_regs.end()) {
     return nullptr;
   }
@@ -1846,8 +1855,9 @@ bool instruction_may_emit_i128_helper_call(const lir::Instruction & inst)
 
 void assign_temp_registers(const lir::Function & function,
                            FunctionLayout & layout,
-                           const map<string, TempDefInfo> & def_info,
+                           const TempDefIndex & def_info,
                            const vector<TempInterval> & collected_intervals,
+                           const set<string> & thread_local_globals,
                            bool allow_callee_saved)
 {
   struct ActiveInterval
@@ -1863,7 +1873,7 @@ void assign_temp_registers(const lir::Function & function,
                                         layout.forwarded_params,
                                         layout.promoted_param_slots,
                                         layout.direct_call_arg_index_temps,
-                                        layout.thread_local_globals);
+                                        thread_local_globals);
   intervals.insert(intervals.end(),
                    layout.forwarded_intervals.begin(),
                    layout.forwarded_intervals.end());
@@ -1900,10 +1910,10 @@ void assign_temp_registers(const lir::Function & function,
     if(!is_register_allocatable_temp_type(interval.type)) {
       continue;
     }
-    map<string, TempDefInfo>::const_iterator def = def_info.find(interval.name);
+    TempDefIndex::const_iterator def = def_info.find(interval.name);
     if(def != def_info.end() &&
-       def->second.kind == lir::Instruction::IK_ADDR &&
-       def->second.first.kind == lir::Operand::OP_SLOT) {
+       def->second.kind() == lir::Instruction::IK_ADDR &&
+       def->second.first().kind == lir::Operand::OP_SLOT) {
       continue;
     }
 
@@ -2437,16 +2447,16 @@ map<string, string> collect_aliased_object_return_slots(const lir::Function & fu
         continue;
       }
 
-      unordered_map<string, lir::Instruction>::const_iterator target_addr =
+      unordered_map<string, const lir::Instruction *>::const_iterator target_addr =
           layout.temp_def_instruction.find(inst.second.text);
       if(target_addr == layout.temp_def_instruction.end() ||
-         target_addr->second.kind != lir::Instruction::IK_ADDR ||
-         target_addr->second.first.kind != lir::Operand::OP_SLOT) {
+         target_addr->second->kind != lir::Instruction::IK_ADDR ||
+         target_addr->second->first.kind != lir::Operand::OP_SLOT) {
         continue;
       }
 
       unordered_map<string, string>::const_iterator slot_type =
-          layout.storage_type.find(target_addr->second.first.text);
+          layout.storage_type.find(target_addr->second->first.text);
       if(slot_type == layout.storage_type.end() ||
          slot_type->second != call_result->second) {
         continue;
@@ -2459,7 +2469,7 @@ map<string, string> collect_aliased_object_return_slots(const lir::Function & fu
         continue;
       }
 
-      out[inst.first.text] = target_addr->second.first.text;
+      out[inst.first.text] = target_addr->second->first.text;
     }
   }
 
@@ -2468,7 +2478,7 @@ map<string, string> collect_aliased_object_return_slots(const lir::Function & fu
 
 vector<TempInterval> collect_forwarded_param_intervals(
     const lir::Function & function,
-    const map<string, TempDefInfo> & def_info,
+    const TempDefIndex & def_info,
     const map<string, mir::ParamBinding> & forwarded_params,
     const map<string, string> & promoted_param_slots,
     const set<string> & direct_call_arg_index_temps,
@@ -2636,7 +2646,7 @@ vector<TempInterval> collect_forwarded_param_intervals(
 
 FunctionLayout build_layout(const lir::Function & function,
                             bool host_eh_enabled,
-                            const map<string, vector<lir::Parameter> > & function_params,
+                            const FunctionParamIndex & function_params,
                             const set<string> & thread_local_globals)
 {
   FunctionLayout layout;
@@ -2650,8 +2660,7 @@ FunctionLayout build_layout(const lir::Function & function,
   layout.function_name = function.name;
   layout.scratch_bytes = scratch_bytes_for(function);
   layout.host_eh_enabled = host_eh_enabled;
-  layout.thread_local_globals = thread_local_globals;
-  const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
+  const TempDefIndex def_info = collect_temp_def_info(function);
   layout.temp_intervals = collect_temp_intervals(function,
                                                  def_info,
                                                  thread_local_globals);
@@ -2725,7 +2734,7 @@ FunctionLayout build_layout(const lir::Function & function,
       if(inst.dest.empty()) {
         continue;
       }
-      layout.temp_def_instruction[inst.dest] = inst;
+      layout.temp_def_instruction[inst.dest] = &inst;
       if(layout.storage_type.count(inst.dest) == 0) {
         note_type(inst.dest, lir::instruction_result_storage_type(inst));
       }
@@ -2745,6 +2754,7 @@ FunctionLayout build_layout(const lir::Function & function,
                         layout,
                         def_info,
                         register_intervals,
+                        thread_local_globals,
                         !host_eh_enabled);
   assign_float_temp_registers(layout, register_intervals);
   for(size_t i = 0; i < function.params.size(); ++i) {
@@ -2903,13 +2913,13 @@ vector<mir::DebugVariable> collect_debug_variables(const lir::Function & functio
       mir::DebugVariable variable;
       variable.name = source_name;
       variable.type = intervals[i].type;
-      unordered_map<string, lir::Instruction>::const_iterator def =
+      unordered_map<string, const lir::Instruction *>::const_iterator def =
           layout.temp_def_instruction.find(intervals[i].name);
       if(def != layout.temp_def_instruction.end() &&
-         def->second.debug_location.present()) {
-        variable.decl_location.file = def->second.debug_location.file;
-        variable.decl_location.line = def->second.debug_location.line;
-        variable.decl_location.column = def->second.debug_location.column;
+         def->second->debug_location.present()) {
+        variable.decl_location.file = def->second->debug_location.file;
+        variable.decl_location.line = def->second->debug_location.line;
+        variable.decl_location.column = def->second->debug_location.column;
       } else if(function.debug_location.present()) {
         variable.decl_location.file = function.debug_location.file;
         variable.decl_location.line = function.debug_location.line;
@@ -2935,14 +2945,14 @@ string unknown_storage_error(const FunctionLayout & layout, const string & name)
 const lir::Instruction * rematerialized_slot_address_def(const FunctionLayout & layout,
                                                          const string & name)
 {
-  unordered_map<string, lir::Instruction>::const_iterator found =
+  unordered_map<string, const lir::Instruction *>::const_iterator found =
       layout.temp_def_instruction.find(name);
   if(found == layout.temp_def_instruction.end() ||
-     found->second.kind != lir::Instruction::IK_ADDR ||
-     found->second.first.kind != lir::Operand::OP_SLOT) {
+     found->second->kind != lir::Instruction::IK_ADDR ||
+     found->second->first.kind != lir::Operand::OP_SLOT) {
     return nullptr;
   }
-  return &found->second;
+  return found->second;
 }
 
 long long slot_offset(const FunctionLayout & layout, const string & name)
@@ -3328,6 +3338,11 @@ public:
   {
     machine_.target = target_text(output_target);
     machine_.exported_symbols = program_.exported_symbols;
+    const size_t function_count =
+        program_.function_declarations.size() + program_.functions.size();
+    function_names_.reserve(function_count);
+    defined_function_names_.reserve(program_.functions.size());
+    function_params_.reserve(function_count);
     for(size_t i = 0; i < program_.object_aliases.size(); ++i) {
       mir::ObjectAlias alias;
       alias.object_symbol = program_.object_aliases[i].object_symbol;
@@ -3337,7 +3352,7 @@ public:
     for(size_t i = 0; i < program_.function_declarations.size(); ++i) {
       const lir::FunctionDeclaration & declaration = program_.function_declarations[i];
       function_names_.insert(declaration.name);
-      function_params_[declaration.name] = declaration.params;
+      function_params_[declaration.name] = &declaration.params;
       merge_boundary_metadata(function_boundaries_[declaration.name], declaration.boundary);
       register_function_role(declaration.name, declaration.metadata.role);
       register_thread_local_wrapper(declaration.name,
@@ -3347,7 +3362,7 @@ public:
       const lir::Function & function = program_.functions[i];
       function_names_.insert(function.name);
       defined_function_names_.insert(function.name);
-      function_params_[function.name] = function.params;
+      function_params_[function.name] = &function.params;
       merge_boundary_metadata(function_boundaries_[function.name], function.boundary);
       register_function_role(function.name, function.metadata.role);
       register_thread_local_wrapper(function.name, function.metadata.tls_for_symbol);
@@ -3413,9 +3428,9 @@ private:
   }
   const lir::Program & program_;
   lir::Program * consumed_program_;
-  set<string> function_names_;
-  set<string> defined_function_names_;
-  map<string, vector<lir::Parameter> > function_params_;
+  unordered_set<string> function_names_;
+  unordered_set<string> defined_function_names_;
+  FunctionParamIndex function_params_;
   map<string, lir::FunctionBoundaryMetadata> function_boundaries_;
   map<string, lir::SymbolRole> function_roles_;
   set<string> global_names_;
@@ -3929,12 +3944,12 @@ private:
        layout.direct_branch_temps.count(inst.first.text) == 0) {
       return false;
     }
-    unordered_map<string, lir::Instruction>::const_iterator cmp_it =
+    unordered_map<string, const lir::Instruction *>::const_iterator cmp_it =
         layout.temp_def_instruction.find(inst.first.text);
     if(cmp_it == layout.temp_def_instruction.end()) {
       throw logic_error("missing direct-branch def for " + inst.first.text);
     }
-    const lir::Instruction & source = cmp_it->second;
+    const lir::Instruction & source = *cmp_it->second;
     if(source.kind == lir::Instruction::IK_CMP) {
       if(is_float_type(source.type)) {
         emit_direct_float_compare_branch(layout, source, inst, out);
@@ -4586,16 +4601,16 @@ private:
        inst.first.kind == lir::Operand::OP_TEMP &&
        preinitialized_param_slots.count(inst.first.text) != 0 &&
        inst.second.kind == lir::Operand::OP_TEMP) {
-      unordered_map<string, lir::Instruction>::const_iterator found =
+      unordered_map<string, const lir::Instruction *>::const_iterator found =
           layout.temp_def_instruction.find(inst.second.text);
       if(found != layout.temp_def_instruction.end() &&
-         found->second.kind == lir::Instruction::IK_ADDR &&
-         found->second.first.kind == lir::Operand::OP_SLOT) {
-        if(found->second.first.text == inst.first.text) {
+         found->second->kind == lir::Instruction::IK_ADDR &&
+         found->second->first.kind == lir::Operand::OP_SLOT) {
+        if(found->second->first.text == inst.first.text) {
           return true;
         }
         map<string, string>::const_iterator aliased =
-            layout.aliased_param_slots.find(found->second.first.text);
+            layout.aliased_param_slots.find(found->second->first.text);
         if(aliased != layout.aliased_param_slots.end() &&
            aliased->second == inst.first.text) {
           return true;
@@ -4606,13 +4621,13 @@ private:
     if(inst.kind == lir::Instruction::IK_COPYOBJ &&
        inst.first.kind == lir::Operand::OP_TEMP &&
        inst.second.kind == lir::Operand::OP_TEMP) {
-      unordered_map<string, lir::Instruction>::const_iterator found =
+      unordered_map<string, const lir::Instruction *>::const_iterator found =
           layout.temp_def_instruction.find(inst.second.text);
       if(found != layout.temp_def_instruction.end() &&
-         found->second.kind == lir::Instruction::IK_ADDR &&
-         found->second.first.kind == lir::Operand::OP_SLOT) {
+         found->second->kind == lir::Instruction::IK_ADDR &&
+         found->second->first.kind == lir::Operand::OP_SLOT) {
         map<string, string>::const_iterator aliased =
-            layout.aliased_param_slots.find(found->second.first.text);
+            layout.aliased_param_slots.find(found->second->first.text);
         if(aliased != layout.aliased_param_slots.end() &&
            aliased->second == inst.first.text) {
           return true;
@@ -4633,18 +4648,18 @@ private:
       return false;
     }
 
-    unordered_map<string, lir::Instruction>::const_iterator found =
+    unordered_map<string, const lir::Instruction *>::const_iterator found =
         layout.temp_def_instruction.find(inst.second.text);
     if(found == layout.temp_def_instruction.end() ||
-       found->second.kind != lir::Instruction::IK_ADDR ||
-       found->second.first.kind != lir::Operand::OP_SLOT) {
+       found->second->kind != lir::Instruction::IK_ADDR ||
+       found->second->first.kind != lir::Operand::OP_SLOT) {
       return false;
     }
 
     map<string, string>::const_iterator aliased =
         layout.aliased_object_return_slots.find(inst.first.text);
     return aliased != layout.aliased_object_return_slots.end() &&
-           aliased->second == found->second.first.text;
+           aliased->second == found->second->first.text;
   }
 
   bool is_promoted_param_slot_store(const FunctionLayout & layout,
@@ -4810,17 +4825,19 @@ private:
     emit_store_i128_to_address_register(XR_R11, lo, hi, out);
   }
 
-  vector<lir::Parameter> call_signature_params(const lir::Instruction & inst) const
+  const vector<lir::Parameter> & call_signature_params(
+      const lir::Instruction & inst) const
   {
+    static const vector<lir::Parameter> empty;
     if(inst.has_call_signature) {
       return inst.call_params;
     }
     if(inst.first.kind != lir::Operand::OP_GLOBAL) {
-      return vector<lir::Parameter>();
+      return empty;
     }
-    map<string, vector<lir::Parameter> >::const_iterator found =
+    FunctionParamIndex::const_iterator found =
         function_params_.find(inst.first.text);
-    return found == function_params_.end() ? vector<lir::Parameter>() : found->second;
+    return found == function_params_.end() ? empty : *found->second;
   }
 
   lir::FunctionBoundaryMetadata resolved_call_boundary(const lir::Instruction & inst) const
@@ -4971,15 +4988,15 @@ private:
       return false;
     }
 
-    unordered_map<string, lir::Instruction>::const_iterator found =
+    unordered_map<string, const lir::Instruction *>::const_iterator found =
         layout.temp_def_instruction.find(operand.text);
     if(found == layout.temp_def_instruction.end() ||
-       found->second.kind != lir::Instruction::IK_ADDR ||
-       found->second.first.kind != lir::Operand::OP_GLOBAL) {
+       found->second->kind != lir::Instruction::IK_ADDR ||
+       found->second->first.kind != lir::Operand::OP_GLOBAL) {
       return false;
     }
 
-    const string & global_name = found->second.first.text;
+    const string & global_name = found->second->first.text;
     map<string, string>::const_iterator global_type =
         scalar_global_types_.find(global_name);
     if(global_type == scalar_global_types_.end() || global_type->second != "ptr") {
@@ -4990,7 +5007,7 @@ private:
     inst.type = "ptr";
     inst.operands.push_back(reg(dst));
     if(is_thread_local_global_name(global_name)) {
-      emit_load_address(layout, found->second.first, XR_R11, out);
+      emit_load_address(layout, found->second->first, XR_R11, out);
       inst.operands.push_back(deref(XR_R11));
     } else {
       inst.operands.push_back(global_ref(global_name));
@@ -5347,7 +5364,7 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
           continue;
         }
 
-        const vector<lir::Parameter> call_params = call_signature_params(inst);
+        const vector<lir::Parameter> & call_params = call_signature_params(inst);
         struct CallArgPiece
         {
           lir::Operand operand;
@@ -5689,15 +5706,15 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
                                   lir::Operand & base,
                                   long long & scaled_offset) const
   {
-    unordered_map<string, lir::Instruction>::const_iterator found =
+    unordered_map<string, const lir::Instruction *>::const_iterator found =
         layout.temp_def_instruction.find(temp_name);
     if(found == layout.temp_def_instruction.end() ||
-       found->second.kind != lir::Instruction::IK_INDEX ||
-       found->second.second.kind != lir::Operand::OP_INTEGER) {
+       found->second->kind != lir::Instruction::IK_INDEX ||
+       found->second->second.kind != lir::Operand::OP_INTEGER) {
       return false;
     }
 
-    const lir::Instruction & inst = found->second;
+    const lir::Instruction & inst = *found->second;
     const size_t scale = lir::type_size(lir::LowType{inst.op});
     if(__builtin_mul_overflow(inst.second.int_value,
                               static_cast<long long>(scale),
@@ -6976,7 +6993,7 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             inst.first.kind == lir::Operand::OP_GLOBAL &&
             function_names_.count(inst.first.text) != 0;
         const X64Register indirect_target_reg = XR_R10;
-        const vector<lir::Parameter> call_params = call_signature_params(inst);
+        const vector<lir::Parameter> & call_params = call_signature_params(inst);
         vector<CallArgPiece> pieces;
         for(size_t i = 0; i < inst.args.size(); ++i) {
           const string param_type =
