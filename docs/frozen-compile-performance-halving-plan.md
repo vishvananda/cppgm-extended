@@ -2096,7 +2096,7 @@ order:
    clears the balanced lane with a `0.204%` instruction gain, `0.602%`
    footprint gain, `0.846%` RSS gain, and `0.806` balance score. The two
    allocation-heavier vector forms remain rejected under the refined rubric.
-13. In progress: refresh the release-binary sample at `9bcbc6fc6`. The exact
+13. Completed: refresh the release-binary sample at `9bcbc6fc6`. The exact
    20-second sample contains `15,651` main-thread samples. The dense
    template-angle zero-fill remains the top compiler leaf, but both current
    sparse retries are already closed by paired evidence. Two new
@@ -2107,8 +2107,27 @@ order:
    serves `2,752,628` persistent hits for only `27,264` misses. A 16K direct
    front cache intercepted `1,780,998` probes, but retained too many otherwise
    temporary types and regressed to `112,512,270,234` instructions with a
-   `529,502,208 B` footprint. Continue down the fresh semantic leaves rather
-   than adding another type-identity cache.
+   `529,502,208 B` footprint. A fused placeholder walk, a 1K-entry front cache
+   for `top_level_scope_split`, symbol-sanitizer reservations, and metadata-only
+   CallSem ranking copies also miss every lane after their required screens or
+   paired batches. The CallSem form removed `186,767` child allocations and
+   `30,606,928` requested bytes, but five pairs made user and wall time worse;
+   this is the allocation lane working as intended rather than treating fewer
+   allocations as sufficient proof.
+14. Completed: borrow dependent-class template argument metadata for read-only
+   consumers. The old accessor made about `382,984` outer-vector allocations
+   and copied `244,588,352` requested bytes on one frozen census. The focused
+   view conversion leaves `37,258` copies and `22,575,624` requested bytes,
+   removing about `345,726` allocations and `222,012,728` bytes without a cache
+   or invalidation state. Three interleaved pairs improve instructions by
+   `0.863%`, cycles by `0.961%`, user time by `1.051%`, wall time by `1.178%`,
+   and RSS by `0.467%`; every CPU and latency pair agrees. Direct strict is
+   `1530/1530`, the full report is `4863/4863`, and the final committed record
+   is `109,780,001,232` instructions. The cumulative improvement is `36.97%`,
+   leaving `22,701,115,760` instructions to the halving target.
+15. In progress: profile and census the next unclosed semantic ownership or
+   repeated-work slice from `ee4ad64b0`. Do not add another type-identity cache
+   without new population evidence.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, general container swaps, common-record
@@ -2207,6 +2226,7 @@ Fill one row after each retained commit.
 | `8d58a3d6a` | reconstruct compacted named-type displays once and return an owned-lifetime view | `112,101,667,646` | `-35.63%` | `703,864,832` | `517,873,664` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-display-view-final.json`; 922,353 stable repeats; paired instructions: `-2.892%` |
 | `589b40ac8` | represent inline-namespace visibility with its implicit using-directive instead of copying accumulated bindings | `111,031,651,654` | `-36.25%` | `712,437,760` | `517,394,432` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-inline-namespace-directive-final.json`; paired instructions: `-1.107%`; paired RSS: `-1.035%` |
 | `9bcbc6fc6` | store immutable parser lookup snapshots in null-delimited contiguous atom buffers | `110,890,016,889` | `-36.33%` | `696,147,968` | `514,641,920` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lookup-snapshot-final.json`; paired instructions: `-0.204%`; footprint: `-0.602%`; balance score: `0.806` |
+| `ee4ad64b0` | borrow dependent-class template argument vectors for read-only semantic queries | `109,780,001,232` | `-36.97%` | `693,858,304` | `514,256,896` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-class-argument-view-final.json`; removed about 345,726 vector allocations and 222,012,728 requested bytes; paired instructions: `-0.863%`; user time: `-1.051%` |
 
 ## Rejected work ledger
 
@@ -2358,3 +2378,7 @@ experiment before starting the next candidate.
 | flatten parser lookup-snapshot atoms with separate scope-boundary vectors | three pairs improved instructions by `0.109%` and footprint by `0.424%`, while RSS regressed by `1.31%` | misses the balanced lane's `0.15%` instruction floor and `0.50` score. Commit `9bcbc6fc6` removes the nine boundary vectors and clears the balanced lane | `/tmp/cppgm-flat-lookup-snapshot-screen.json` and `/tmp/cppgm-flat-snapshot-{parent,candidate}-{1,2,3}.time` |
 | memoize Analyzer template-dependence results by type identity | a frozen census counted `2,421,362` recursive calls over `31,801` type identities, `2,389,561` repeats, and no changed result. A broad cache used `111,062,135,186` instructions, a `0.155%` regression from the clean checkpoint; a root-only cache was worse at `111,355,980,603` | the repeated fundamental and shallow-wrapper classifications are cheaper than a shared-pointer hash lookup. Restore direct recursion; the zero-transition census does not override the measured loss | `/tmp/cppgm-type-dependence-census.stderr`, `/tmp/cppgm-type-dependence-cache-screen.json`, and `/tmp/cppgm-type-dependence-root-cache-screen.json` |
 | add a direct-mapped front cache to template-services type-dependence memoization | the existing weak root memo handled `2,752,628` hits for `27,264` misses. Simulated direct tables hit `215,693`, `361,399`, `477,939`, `631,103`, `1,122,747`, and `1,780,998` times at 16, 64, 256, 1K, 4K, and 16K slots. The 16K production form retained strong type identities and screened at `112,512,270,234` instructions, with footprint rising from `514,641,920 B` to `529,502,208 B` | the front lookup and retained lifetimes cost more than the avoided hash and weak-pointer locks, and both CPU and memory regress far outside every lane. Restore the existing weak root map and close direct fronts | `/tmp/cppgm-template-type-dependency-memo-census.stderr`, `/tmp/cppgm-template-type-dependency-direct-census-2.stderr`, and `/tmp/cppgm-template-type-dependency-direct-screen.json` |
+| fuse placeholder binding collection and traversal | the exact one-run candidate used `111,028,274,823` instructions, a regression from the `110,890,016,889` retained checkpoint | removing an intermediate traversal does not remove enough work to offset the fused control flow. Restore the separate walk and stop before paired testing | `/tmp/cppgm-placeholder-fused-scope-screen.json` |
+| reserve symbol-sanitizer output capacity | a census found `68,507` calls, `180,279` growth events, `32,617,584` requested capacity bytes, and `12,517,113` input bytes. Five pairs improved median instructions by `0.222%` but regressed wall time by `0.954%`, user time by `0.969%`, and RSS by `0.321%`; only three latency pairs improved. Reserving only `size + 1` regressed wall time, user time, instructions, and cycles | the measured allocation reduction fails the allocation-and-latency lane because latency moves in the wrong direction. Restore ordinary string growth | `/tmp/cppgm-symbol-mangle-allocation-census.stderr`, `/tmp/cppgm-symbol-reserve-{parent,candidate}-{1,2,3,4,5}.time`, and `/tmp/cppgm-symbol-prefix-{parent,candidate}-{1,2,3,4,5}.time` |
+| add a direct front cache to `top_level_scope_split` | `2,829,936` calls produced `2,808,299` existing map hits and only `21,637` misses. A simulated 1K direct table intercepted `1,934,256` calls, but the content-validated production form used `110,838,095,430` instructions, only about `0.047%` below the checkpoint, with flat memory | the existing content cache already removes the split work. A second lookup layer misses every lane, so restore the single map | `/tmp/cppgm-scope-split-census.stderr`, `/tmp/cppgm-scope-split-direct-census.stderr`, and `/tmp/cppgm-scope-split-direct-screen.json` |
+| keep only CallSem ranking metadata in copied overload candidates | the change removed `68,178` full tree copies, `415,984` copied nodes, `186,767` child allocations, and `30,606,928` requested bytes. Five exact interleaved pairs improved instructions by `0.070%` and RSS by `0.082%`, but regressed wall time by `0.469%`, user time by `0.569%`, and footprint by `0.045%`; only one latency pair improved | this is a large allocation reduction, but it fails the allocation-and-latency lane and every CPU/memory lane. Restore full candidate copies until a representation change also reduces ranking latency | `/tmp/cppgm-call-ranking-metadata-census.stderr`, `/tmp/cppgm-call-ranking-metadata-screen-2.json`, and `/tmp/cppgm-call-ranking-{parent,candidate}-{1,2,3,4,5}.time` |
