@@ -4909,10 +4909,44 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
     trace << "}";
     parser_trace::note("template.resolve", std::string(), trace.str());
   }
+  size_t reusable_base_variant_index = static_cast<size_t>(-1);
   const auto emit_function_variant =
       [&](const symbol_linkage::SymbolIdentity & function_symbol,
           symbol_linkage::SpecialMemberEntryPointKind entry_point_kind) -> void
       {
+        const bool can_reuse_base_variant =
+            entry_point_kind == symbol_linkage::SMEK_COMPLETE &&
+            reusable_base_variant_index != static_cast<size_t>(-1) &&
+            binding.owner_class &&
+            !class_has_virtual_bases(*binding.owner_class);
+        if(can_reuse_base_variant) {
+          // The ABI permits the base and complete object symbols to alias in
+          // this case, so only their root identity metadata can differ.
+          DumpNode function_node = out.children[reusable_base_variant_index];
+          set_dump_symbol(function_node, function_symbol);
+          set_callsem_special_member_entry_point_kind(
+              function_node, symbol_linkage::SMEK_COMPLETE);
+          function_node.uses_vtt_parameter = false;
+          set_callsem_vtt_symbol(function_node, string());
+          const symbol_linkage::SymbolIdentity base_entry_symbol =
+              function_entry_point_symbol(binding, symbol_linkage::SMEK_BASE);
+          if(symbol_linkage::has_exported_object_symbol(base_entry_symbol) &&
+             base_entry_symbol.object_symbol != function_symbol.object_symbol) {
+            std::vector<std::string> object_aliases;
+            object_aliases.push_back(base_entry_symbol.object_symbol);
+            set_callsem_object_aliases(function_node, object_aliases);
+          }
+          note_required_callee_rescan(ctx, function_node);
+          collect_required_callees_from_node(ctx, function_node, &binding);
+          const std::size_t emitted_index = out.children.size();
+          out.children.push_back(std::move(function_node));
+          if(out.kind == CallSemKind::translation_unit &&
+             state.emitted_output_callee_scan_index == emitted_index) {
+            state.emitted_output_callee_scan_index = emitted_index + 1;
+          }
+          return;
+        }
+
         DumpNode function_node = make_dump_node(CallSemKind::function_definition, binding.name);
         set_callsem_resolved_name(function_node, function_output_name(binding));
         set_dump_qualified_name_syntax_from_function_binding(function_node, binding);
@@ -5173,6 +5207,11 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
         emit_function_body_and_collect();
         const std::size_t emitted_index = out.children.size();
         out.children.push_back(std::move(function_node));
+        if(entry_point_kind == symbol_linkage::SMEK_BASE &&
+           binding.owner_class &&
+           !class_has_virtual_bases(*binding.owner_class)) {
+          reusable_base_variant_index = emitted_index;
+        }
         if(out.kind == CallSemKind::translation_unit &&
            state.emitted_output_callee_scan_index == emitted_index) {
           state.emitted_output_callee_scan_index = emitted_index + 1;
