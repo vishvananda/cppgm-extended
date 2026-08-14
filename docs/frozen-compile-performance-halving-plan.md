@@ -1269,6 +1269,34 @@ Evidence: `/tmp/cppgm-backend-metadata-profile.sample.txt`,
 `/tmp/cppgm-lazy-reserve-zero-final.json`, and the alternating records
 `/tmp/cppgm-lazy-reserve-ab-{parent,candidate}-{1,2,3}.json`.
 
+Fifteenth retained Phase 7 slice: constructor and destructor output analyzed
+the same function body independently for the Itanium base and complete object
+entry points. The compiler already emits an object-symbol alias between those
+entry points when the owner has no virtual bases. In that case their typed
+children are identical; only root identity metadata differs. The complete
+entry now copies the previously emitted base entry, then replaces its symbol,
+entry-point tag, and object-alias metadata. Classes with virtual bases and
+deleting destructor entries still take the independent semantic path.
+
+The semantic census confirms that the change removes 2,267 body analyses.
+Instantiated-template output fell from 3,144 body emissions to 2,439, while
+late synthesized output fell from 5,216 to 3,654. The candidate emits the
+byte-identical frozen object. PA17 passes `228/228`, configured direct strict
+passes `1530/1530`, and the full direct report passes `4863/4863`.
+
+Absolute three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `127,129,199,627` | `-47,028,571,317` (`-27.00%`); `-1.02%` from `8e46f9fc2` |
+| maximum RSS | `737,443,840 B` | `-23,760,896 B` (`-3.12%`) |
+| peak footprint | `551,108,608 B` | `-17,649,664 B` (`-3.10%`) |
+| wall time | `30.75 s` | `-23.16%`, informational under host load |
+
+Evidence: `/tmp/cppgm-special-member-base-body-reuse-screen.json`,
+`/tmp/cppgm-special-member-base-body-reuse-stats.stderr`, and
+`/tmp/cppgm-special-member-base-body-reuse-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1342,6 +1370,7 @@ Fill one row after each retained commit.
 | `650dc50cd` | reuse the first temp-interval analysis for register allocation | `132,299,680,071` | `-24.03%` | `695,853,056` | `556,654,592` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-register-interval-reuse-final.json`; paired A/B: `-0.739%` instructions |
 | `59505722b` | borrow immutable backend definitions and signatures; classify direct-call indexes in one pass | `130,886,247,307` | `-24.85%` | `735,780,864` | `556,519,424` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-backend-borrowed-metadata-final.json`; paired A/B: `-0.849%` instructions |
 | `8e46f9fc2` | keep zero-length lazy AST vector reservations allocation-free | `128,444,585,958` | `-26.25%` | `734,158,848` | `554,516,480` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-reserve-zero-final.json`; paired A/B: `-2.040%` instructions |
+| `a74749dcd` | reuse nonvirtual special-member base-entry bodies for complete-entry output | `127,129,199,627` | `-27.00%` | `737,443,840` | `551,108,608` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-special-member-base-body-reuse-final.json`; removed 2,267 duplicate body analyses |
 
 ## Rejected work ledger
 
