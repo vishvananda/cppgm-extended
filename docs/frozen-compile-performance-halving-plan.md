@@ -2096,9 +2096,19 @@ order:
    clears the balanced lane with a `0.204%` instruction gain, `0.602%`
    footprint gain, `0.846%` RSS gain, and `0.806` balance score. The two
    allocation-heavier vector forms remain rejected under the refined rubric.
-13. Refresh the release-binary sample at `9bcbc6fc6`. Use the new top leaves to
-   start the next census, preferring operation removal or an existing
-   cache/index contract over another general container swap.
+13. In progress: refresh the release-binary sample at `9bcbc6fc6`. The exact
+   20-second sample contains `15,651` main-thread samples. The dense
+   template-angle zero-fill remains the top compiler leaf, but both current
+   sparse retries are already closed by paired evidence. Two new
+   template-dependence cache families were also rejected. The Analyzer path
+   made `2,421,362` calls over `31,801` identities with no observed result
+   change, but hashing every recursive call regressed instructions by
+   `0.155%`; root-only caching was worse. The template-services path already
+   serves `2,752,628` persistent hits for only `27,264` misses. A 16K direct
+   front cache intercepted `1,780,998` probes, but retained too many otherwise
+   temporary types and regressed to `112,512,270,234` instructions with a
+   `529,502,208 B` footprint. Continue down the fresh semantic leaves rather
+   than adding another type-identity cache.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, general container swaps, common-record
@@ -2346,3 +2356,5 @@ experiment before starting the next candidate.
 | use one insertion probe while eagerly copying inline-namespace maps | 556 import calls rescanned 61,162 named types, 7,442 values, 118,067 class templates, 46,257 alias templates, and 24,313 variable templates. Replacing `count` plus `operator[]` with `insert` emitted exact frozen bytes but used `112,236,996,211` instructions, slightly worse than the retained checkpoint | the duplicate probe was not the dominant cost. Commit `589b40ac8` removes the redundant copies and retains only the implicit using-directive plus conservative parent invalidation | `/tmp/cppgm-inline-namespace-import-census.stderr`, `/tmp/cppgm-inline-namespace-single-probe-screen.json`, and `/tmp/cppgm-inline-namespace-directive-final.json` |
 | store one compact atom vector per parser lookup-snapshot scope | the screen emitted exact output and reduced RSS and footprint, but instructions regressed by about `0.14%`; footprint improved by only about `0.26%` | misses the memory-density lane, and the per-scope vector still retains one allocation per populated scope. Commit `9bcbc6fc6` instead removes those allocations with one delimited buffer per stack | `/tmp/cppgm-compact-lookup-snapshot-screen.json` and `/tmp/cppgm-compact-snapshot-census.stderr` |
 | flatten parser lookup-snapshot atoms with separate scope-boundary vectors | three pairs improved instructions by `0.109%` and footprint by `0.424%`, while RSS regressed by `1.31%` | misses the balanced lane's `0.15%` instruction floor and `0.50` score. Commit `9bcbc6fc6` removes the nine boundary vectors and clears the balanced lane | `/tmp/cppgm-flat-lookup-snapshot-screen.json` and `/tmp/cppgm-flat-snapshot-{parent,candidate}-{1,2,3}.time` |
+| memoize Analyzer template-dependence results by type identity | a frozen census counted `2,421,362` recursive calls over `31,801` type identities, `2,389,561` repeats, and no changed result. A broad cache used `111,062,135,186` instructions, a `0.155%` regression from the clean checkpoint; a root-only cache was worse at `111,355,980,603` | the repeated fundamental and shallow-wrapper classifications are cheaper than a shared-pointer hash lookup. Restore direct recursion; the zero-transition census does not override the measured loss | `/tmp/cppgm-type-dependence-census.stderr`, `/tmp/cppgm-type-dependence-cache-screen.json`, and `/tmp/cppgm-type-dependence-root-cache-screen.json` |
+| add a direct-mapped front cache to template-services type-dependence memoization | the existing weak root memo handled `2,752,628` hits for `27,264` misses. Simulated direct tables hit `215,693`, `361,399`, `477,939`, `631,103`, `1,122,747`, and `1,780,998` times at 16, 64, 256, 1K, 4K, and 16K slots. The 16K production form retained strong type identities and screened at `112,512,270,234` instructions, with footprint rising from `514,641,920 B` to `529,502,208 B` | the front lookup and retained lifetimes cost more than the avoided hash and weak-pointer locks, and both CPU and memory regress far outside every lane. Restore the existing weak root map and close direct fronts | `/tmp/cppgm-template-type-dependency-memo-census.stderr`, `/tmp/cppgm-template-type-dependency-direct-census-2.stderr`, and `/tmp/cppgm-template-type-dependency-direct-screen.json` |
